@@ -193,6 +193,11 @@ static agc_status_t senseget(lm_dap_t *d)
     d->nextu = (uint16_t) ((uint16_t) d->polytemp & QR_UBITS); /* TSNEXTS */
     d->nextv = (uint16_t) ((uint16_t) d->polytemp & (uint16_t) ~QR_UBITS & 0377u);
 
+    if (!AGC_ASSERT((d->nextu & (uint16_t) ~QR_UBITS) == 0u))
+    {
+        return (AGC_STATUS_BAD_ARG); /* U jets only in NEXTU */
+    }
+
     return (AGC_STATUS_OK);
 } /* senseget */
 
@@ -225,6 +230,11 @@ agc_status_t lm_dap_rcs(void)
     if (st != AGC_STATUS_OK)
     {
         return (st);
+    }
+
+    if (!AGC_ASSERT(d->nextu <= 0377u && d->nextv <= 0377u))
+    {
+        return (AGC_STATUS_BAD_ARG); /* channel 5 jet codes are 8 bits */
     }
 
     if ((agc_chan_read(031) & QR_CH31_AUTO) != 0u)

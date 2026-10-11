@@ -70,6 +70,11 @@
  **********************************************************************/
 static agc_status_t settime5(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* TIME5 is the LM DAP's clock */
+    }
+
     agc_rupt_set_time(5, LM_MS100);
 
     if (!AGC_ASSERT(agc_rupt_time(5) == LM_MS100))
@@ -104,6 +109,16 @@ agc_status_t lm_dap_shutdown(void)
     agc_chan_write(006, 0);
     agc_chan_and(012, (uint16_t) ~BGIM23 & 077777u);
     agc_status_t t5 = settime5(); /* next T5RUPT in 100 ms */
+
+    if (!AGC_ASSERT(st != AGC_STATUS_OK || d->t5adr == LM_T5_DAPIDLER))
+    {
+        return (AGC_STATUS_BAD_ARG); /* the next T5RUPT idles */
+    }
+
+    if (!AGC_ASSERT((agc_chan_read(012) & BGIM23) == 0u))
+    {
+        return (AGC_STATUS_BAD_ARG); /* trim gimbal drives off */
+    }
 
     return ((st != AGC_STATUS_OK) ? st : t5); /* first failure wins */
 }

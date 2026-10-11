@@ -311,6 +311,11 @@ static agc_status_t norotat(int axis)
  **********************************************************************/
 static agc_status_t rotation_failed(lm_dap_t *d, int axis)
 {
+    if (!AGC_ASSERT(axis == 0 || axis == 1))
+    {
+        return (AGC_STATUS_BAD_ARG); /* U or V only */
+    }
+
     d->tj[axis + 1] = 0;
     agc_alarm(AGC_ALARM_02004); /* the pass goes on */
 
@@ -372,6 +377,11 @@ static void feedback(lm_dap_t *d, int axis)
  **********************************************************************/
 static agc_status_t doskip(lm_dap_t *d, int axis)
 {
+    if (!AGC_ASSERT(axis == 0 || axis == 1))
+    {
+        return (AGC_STATUS_BAD_ARG); /* U or V only */
+    }
+
     if (QJ_TJMIN - d->abstj > 0)
     {
         d->abstj        = QJ_TJMIN;
@@ -409,7 +419,7 @@ static agc_status_t doskip(lm_dap_t *d, int axis)
     }
 
     return (sw);
-}
+} /* doskip */
 
 /**********************************************************************
  * AFTERTJ / DOROTAT (pp.1453-1454): select and fire the rotation jets for
@@ -431,6 +441,11 @@ static agc_status_t doskip(lm_dap_t *d, int axis)
  **********************************************************************/
 static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
 {
+    if (!AGC_ASSERT(end != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     *end = false;
 
     if (agc_flag_test(AGC_FLAG_SNUFFER) && !agc_flag_test(AGC_FLAG_APSFLAG) && !agc_flag_test(AGC_FLAG_DRIFTDFL))
@@ -530,6 +545,11 @@ static bool skip_axis(lm_dap_t *d, int axis)
  **********************************************************************/
 static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
 {
+    if (!AGC_ASSERT(axis == 0 || axis == 1))
+    {
+        return (AGC_STATUS_BAD_ARG); /* U or V only */
+    }
+
     if (skip_axis(d, axis))
     {
         return (AGC_STATUS_OK);
@@ -584,6 +604,11 @@ static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
  **********************************************************************/
 static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
 {
+    if (!AGC_ASSERT(axis == 0 || axis == 1))
+    {
+        return (AGC_STATUS_BAD_ARG); /* U or V only */
+    }
+
     d->numbert = 4;
 
     if (skip_axis(d, axis))
@@ -625,6 +650,16 @@ static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
  **********************************************************************/
 static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
 {
+    if (!AGC_ASSERT(axis == 0 || axis == 1))
+    {
+        return (AGC_STATUS_BAD_ARG); /* U or V only */
+    }
+
+    if (!AGC_ASSERT(end != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     if (agc_flag_test(AGC_FLAG_CSMDKFLG))
     {
         agc_sp_t tj = d->tj[axis + 1]; /* TJU or TJV, scaled 0.625 ms per count */
@@ -640,11 +675,6 @@ static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
     }
 
     d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2; /* B : A     */
-
-    if (!AGC_ASSERT(axis == 0 || axis == 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (aftertj(d, axis, end));
 }

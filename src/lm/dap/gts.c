@@ -93,6 +93,11 @@ static const uint16_t r_drive[3] = {GT_BIT11, 0u, GT_BIT12};
  **********************************************************************/
 static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
 {
+    if (!AGC_ASSERT(k >= LM_NEGMAX && k <= LM_POSMAX && x.hi >= LM_NEGMAX && x.hi <= LM_POSMAX))
+    {
+        return ((lm_dp_pair_t){0}); /* operands must be words */
+    }
+
     lm_dp_pair_t hi = lm_dap_mp(x.hi, k); /* x.hi k, same scale as x k */
     lm_dp_pair_t lo = {0, lm_dap_mphi(x.lo, k)};
     lm_dp_pair_t r  = lm_dap_das(hi, lo); /* x k with the minor product carried */
@@ -147,6 +152,11 @@ static agc_sp_t dp_sign(lm_dp_pair_t x)
     agc_sp_t w = (x.hi != 0) ? x.hi : x.lo; /* sign word: major, or minor when major is 0; unscaled (only its sign is used) */
 
     if (!AGC_ASSERT(x.hi >= LM_NEGMAX && x.lo >= LM_NEGMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(x.hi <= LM_POSMAX && x.lo <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
@@ -214,6 +224,11 @@ agc_status_t lm_dap_gimbal_drive_update(void)
  **********************************************************************/
 static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
 {
+    if (!AGC_ASSERT(halfarg >= 0))
+    {
+        return (0); /* the root of a negative argument */
+    }
+
     if (!AGC_ASSERT(x > 0))
     {
         return (0);
@@ -373,6 +388,11 @@ static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
  **********************************************************************/
 static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
 {
+    if (!AGC_ASSERT(i == 0 || i == 1))
+    {
+        return; /* Q or R only */
+    }
+
     agc_sp_t     err  = (i == 0) ? d->qerror : d->rerror; /* QDIFF or RDIFF, scaled pi rad */
     lm_dp_pair_t ke   = lm_dap_mp(err, w->k);             /* at pi^2/2^8    */
     lm_dp_pair_t hi16 = lm_dap_mp(ke.hi, (agc_sp_t) 16);  /* MP BIT5        */
@@ -465,6 +485,11 @@ static void gts_middle_terms(gts_w_t *w)
  **********************************************************************/
 static void gts_root_term(gts_w_t *w)
 {
+    if (!AGC_ASSERT(w->k > 0))
+    {
+        return; /* K = 0 goes to POSDRIVE +1 before ALGORTHM */
+    }
+
     w->fn = dp_x_sp(w->k2, w->k); /* at pi^2/16     */
 
     if (w->del == 0)
@@ -517,6 +542,11 @@ static void gts_root_term(gts_w_t *w)
  **********************************************************************/
 static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 {
+    if (!AGC_ASSERT(i == 0 || i == 1))
+    {
+        return (AGC_STATUS_BAD_ARG); /* Q or R only */
+    }
+
     agc_sp_t old = (i == 0) ? d->neguq : d->negur; /* previous NEGU of the axis, unscaled sign */
 
     if (i == 0)
@@ -591,7 +621,7 @@ agc_status_t lm_dap_gts(void)
         gts_w_t w = {{0, 0}, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0, 0};
 
         gts_inputs(d, i, &w);
-        agc_sp_t newneg = 0; /* new NEGU, unscaled sign (+1 when K = 0: POSDRIVE) */
+        agc_sp_t newneg = 0; /* new NEGU, unscaled sign (0 when K = 0: BZF POSDRIVE +1 stores A = 0) */
 
         if (w.k != 0)
         { /* else POSDRIVE +1 */

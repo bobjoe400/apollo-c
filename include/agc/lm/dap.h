@@ -61,7 +61,6 @@ agc_status_t agc_lm_dap_t6rupt(void);                 /* DOT6RUPT               
 agc_status_t agc_lm_dap_t6jobchk(void);               /* T6JOBCHK                          */
 void         agc_lm_dap_time6_count(uint16_t counts); /* sim: TIME6 DINC pulses */
 bool         agc_lm_dap_t6_pending(void);             /* TIME6 = -0: a T6RUPT is due       */
-bool         agc_lm_dap_running(void);                /* T5ADR = PAXIS                     */
 agc_status_t agc_lm_dap_rcsmon(void);                 /* RCSMONIT, from T4RUPT every 480 ms */
 
 /* T5ADR programs as exec tasks (agc_rupt_set_t5_task / dispatch.c).        */
@@ -86,28 +85,22 @@ agc_status_t agc_lm_dap_needles_init(void); /* set RCSFLAGS bit 3 (FDAI init)  *
 
 /* ---- erasables owned by the LM DAP and shared with other modules ------- */
 /* KALCMANU / FINDCDUW interface (ERASABLE_ASSIGNMENTS p. 134)              */
-uint16_t agc_erase_cduxd(void);    /* desired CDU X, 2's comp at pi */
+uint16_t agc_erase_cduxd(void);              /* desired CDU X, 2's comp at pi */
 uint16_t agc_erase_cduyd(void);
 uint16_t agc_erase_cduzd(void);
 void     agc_erase_set_cduxd(uint16_t v);
 void     agc_erase_set_cduyd(uint16_t v);
 void     agc_erase_set_cduzd(uint16_t v);
-agc_sp_t agc_erase_delcdux(void);  /* -desired 100 ms CDU increment, at pi */
-agc_sp_t agc_erase_delcduy(void);
-agc_sp_t agc_erase_delcduz(void);
-void     agc_erase_set_delcdux(agc_sp_t v);
+void     agc_erase_set_delcdux(agc_sp_t v);  /* -desired 100 ms CDU increment, at pi */
 void     agc_erase_set_delcduy(agc_sp_t v);
 void     agc_erase_set_delcduz(agc_sp_t v);
-agc_sp_t agc_erase_omegapd(void);  /* desired body rates, at pi/4     */
+agc_sp_t agc_erase_omegapd(void);            /* desired body rates, at pi/4     */
 agc_sp_t agc_erase_omegaqd(void);
 agc_sp_t agc_erase_omegard(void);
 void     agc_erase_set_omegapd(agc_sp_t v);
 void     agc_erase_set_omegaqd(agc_sp_t v);
 void     agc_erase_set_omegard(agc_sp_t v);
-agc_sp_t agc_erase_delperor(void); /* KALCMANU command lags, at pi    */
-agc_sp_t agc_erase_delqeror(void);
-agc_sp_t agc_erase_delreror(void);
-void     agc_erase_set_delperor(agc_sp_t v);
+void     agc_erase_set_delperor(agc_sp_t v); /* KALCMANU command lags, at pi */
 void     agc_erase_set_delqeror(agc_sp_t v);
 void     agc_erase_set_delreror(agc_sp_t v);
 
@@ -121,24 +114,13 @@ void     agc_erase_set_aosq(agc_dp_t v);
 void     agc_erase_set_aosr(agc_dp_t v);
 agc_sp_t agc_erase_alphaq(void); /* downlink copies of AOSQ/R       */
 agc_sp_t agc_erase_alphar(void);
-agc_sp_t agc_erase_perror(void); /* attitude errors, at pi          */
-agc_sp_t agc_erase_qerror(void);
-agc_sp_t agc_erase_rerror(void);
 agc_sp_t agc_erase_1jacc(void);  /* 1-jet P accel, at pi/4          */
 agc_sp_t agc_erase_1jaccq(void); /* 1-jet Q accel, at pi/4          */
 agc_sp_t agc_erase_1jaccr(void); /* 1-jet R accel, at pi/4          */
-agc_sp_t agc_erase_kq(void);     /* GTS jerk gain, at pi/2^8        */
 
 /* crew/pad-load parameters                                                 */
-agc_sp_t agc_erase_db(void);         /* deadband, at 45 deg             */
-void     agc_erase_set_db(agc_sp_t v);
-agc_sp_t agc_erase_stiksens(void);   /* RHC sensitivity                 */
+agc_sp_t agc_erase_stiksens(void);             /* RHC sensitivity                 */
 void     agc_erase_set_stiksens(agc_sp_t v);
-agc_sp_t agc_erase_neg_ratedb(void); /* -RATEDB, rate deadband (neg)    */
-void     agc_erase_set_neg_ratedb(agc_sp_t v);
-agc_sp_t agc_erase_hiascent(void);   /* max ascent mass, B16 kg         */
-void     agc_erase_set_hiascent(agc_sp_t v);
-uint16_t agc_erase_ch5mask(void);    /* failed-jet masks, chan formats  */
-uint16_t agc_erase_ch6mask(void);
+void     agc_erase_set_neg_ratedb(agc_sp_t v); /* -RATEDB, rate deadband (neg) */
 
 #endif /* AGC_LM_DAP_H */

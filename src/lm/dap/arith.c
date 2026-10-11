@@ -158,6 +158,11 @@ lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
  **********************************************************************/
 agc_sp_t lm_dap_mphi(agc_sp_t a, agc_sp_t b)
 {
+    if (!AGC_ASSERT(a >= -ARITH_MAXMAG && a <= ARITH_MAXMAG && b >= -ARITH_MAXMAG && b <= ARITH_MAXMAG))
+    {
+        return (0); /* operands must be words */
+    }
+
     lm_dp_pair_t p = lm_dap_mp(a, b); /* A,L product, same scale as a b */
 
     if (!AGC_ASSERT(p.hi >= -ARITH_MAXMAG && p.hi <= ARITH_MAXMAG))
@@ -190,6 +195,11 @@ static uint16_t arith_reg16(int32_t v)
         return (0); /* no valid result */
     }
 
+    if (!AGC_ASSERT((v > 0 && (r & 0x8000u) == 0u) || (v < 0 && (r & 0x8000u) != 0u) || v == 0))
+    {
+        return (0); /* bit 16 carries the sign */
+    }
+
     return (r);
 }
 
@@ -214,6 +224,11 @@ static agc_sp_t arith_val16(uint16_t w)
     if (!AGC_ASSERT(r >= -ARITH_MAXMAG && r <= ARITH_MAXMAG))
     {
         return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(r <= 0 || (w & 0x8000u) == 0u))
+    {
+        return (0); /* a positive value has bit 16 clear */
     }
 
     return (r);
@@ -247,6 +262,11 @@ static uint16_t arith_add16(uint16_t a, uint16_t b)
         return (0); /* no valid result */
     }
 
+    if (!AGC_ASSERT(s != 0u || (a == 0u && b == 0u)))
+    {
+        return (0); /* +0 only from +0 + +0 with end-around carry */
+    }
+
     return ((uint16_t) s);
 }
 
@@ -270,6 +290,16 @@ static uint16_t arith_add16(uint16_t a, uint16_t b)
  **********************************************************************/
 static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
 {
+    if (!AGC_ASSERT(n.hi >= -ARITH_MAXMAG && n.hi <= ARITH_MAXMAG && n.lo >= -ARITH_MAXMAG && n.lo <= ARITH_MAXMAG))
+    {
+        return ((lm_dp_pair_t){0}); /* A, L must be words */
+    }
+
+    if (!AGC_ASSERT(d >= -ARITH_MAXMAG && d <= ARITH_MAXMAG))
+    {
+        return ((lm_dp_pair_t){0}); /* divisor must be a word */
+    }
+
     uint16_t a       = arith_reg16(n.hi); /* A register */
     uint16_t l       = arith_reg16(n.lo); /* L register */
     uint16_t div     = arith_reg16(d);    /* divisor register */
@@ -335,7 +365,7 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
     r.hi = arith_val16((dvdsign != divsign) ? (uint16_t) ~a : a); /* quotient sign = sign product */
     r.lo = arith_val16((dvdsign != 0u) ? rem : (uint16_t) ~rem);  /* remainder takes the dividend sign */
 
-    if (!AGC_ASSERT(r.hi >= -ARITH_MAXMAG && r.hi <= ARITH_MAXMAG))
+    if (!AGC_ASSERT(r.hi >= -ARITH_MAXMAG && r.hi <= ARITH_MAXMAG && r.lo >= -ARITH_MAXMAG && r.lo <= ARITH_MAXMAG))
     {
         return ((lm_dp_pair_t){0}); /* no valid result */
     }
@@ -365,6 +395,11 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
  **********************************************************************/
 lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
 {
+    if (!AGC_ASSERT(d >= -ARITH_MAXMAG && d <= ARITH_MAXMAG))
+    {
+        return ((lm_dp_pair_t){0}); /* divisor must be a word */
+    }
+
     lm_dp_pair_t r   = {0, 0};
     int32_t      num = lm_dap_dpval(n);                         /* dividend, scaled 2^-14 of the major word */
     lm_dp_pair_t nn  = lm_dap_dpmake(num);                      /* sign-agreeing form  */
@@ -403,7 +438,7 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
     r.lo = (agc_sp_t) rem;
 
     return (r);
-}
+} /* lm_dap_dvqr */
 
 /**********************************************************************
  * DV, quotient only (A).  AGC: none (helper)
@@ -421,6 +456,11 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
 agc_sp_t lm_dap_dv(lm_dp_pair_t n, agc_sp_t d)
 {
     lm_dp_pair_t r = lm_dap_dvqr(n, d); /* quotient and remainder */
+
+    if (!AGC_ASSERT(r.lo >= -ARITH_MAXMAG && r.lo <= ARITH_MAXMAG))
+    {
+        return (0); /* remainder (L) must be a word */
+    }
 
     if (!AGC_ASSERT(r.hi >= -ARITH_MAXMAG && r.hi <= ARITH_MAXMAG))
     {
@@ -488,6 +528,11 @@ agc_sp_t lm_dap_sat(int32_t v)
 {
     agc_sp_t r; /* OVERSUB result, unscaled word */
 
+    if (!AGC_ASSERT(v >= -4 * ARITH_WORD && v <= 4 * ARITH_WORD))
+    {
+        return (0); /* more than a 16-bit A can hold */
+    }
+
     if (v > ARITH_MAXMAG)
     {
         r = ARITH_MAXMAG;
@@ -550,6 +595,11 @@ bool lm_dap_ovf(int32_t v)
  **********************************************************************/
 lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y)
 {
+    if (!AGC_ASSERT(x.lo >= -ARITH_MAXMAG && x.lo <= ARITH_MAXMAG && y.lo >= -ARITH_MAXMAG && y.lo <= ARITH_MAXMAG))
+    {
+        return ((lm_dp_pair_t){0}); /* minor words must be words */
+    }
+
     int32_t lo    = (int32_t) x.lo + (int32_t) y.lo; /* minor-word sum, scaled 2^-14 of the major word */
     int32_t carry = 0;                               /* carry into the major word: -1, 0, +1 */
 

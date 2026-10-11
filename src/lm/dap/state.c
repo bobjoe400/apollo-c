@@ -69,6 +69,11 @@ static lm_dap_t g_dap; /* the DAP erasables (EBANK 6), one instance */
  **********************************************************************/
 lm_dap_t *lm_dap_state(void)
 {
+    if (!AGC_ASSERT(g_dap.t5adr == LM_T5_DAPIDLER || g_dap.t5adr == LM_T5_PAXIS))
+    {
+        return (&g_dap); /* reported; the callers' own checks follow */
+    }
+
     return (&g_dap);
 }
 
@@ -87,6 +92,11 @@ agc_status_t agc_lm_dap_restart(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* LM rope only */
+    }
+
     d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_ACCSET); /* DAPIDLER calls 1/ACCS */
     d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;                   /* a pending T6RUPT is made     */
     agc_chan_and(013, LM_T6_POSMAX);                             /* ineffectual        */
@@ -94,6 +104,16 @@ agc_status_t agc_lm_dap_restart(void)
     d->nextp        = 0;
     agc_flag_clear(AGC_FLAG_ACCOKFLG);                           /* ACCSOKAY = 0    */
     agc_status_t ts = lm_dap_set_t5adr(LM_T5_DAPIDLER);          /* T5ADR = DAPIDLER */
+
+    if (!AGC_ASSERT((d->rcsflags & LM_RCS_ACCSET) == 0u))
+    {
+        return (AGC_STATUS_BAD_ARG); /* DAPIDLER must call 1/ACCS */
+    }
+
+    if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER || ts != AGC_STATUS_OK))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     return (ts);
 }
@@ -112,6 +132,11 @@ agc_status_t agc_lm_dap_restart(void)
 agc_status_t agc_lm_dap_fresh_start(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* LM rope only */
+    }
 
     d->rcsflags                 = FS_RCSFLAGS;
     agc_guid_state()->lm.abdelv = 0; /* ABDELV: DAP initialisation     */
@@ -133,10 +158,46 @@ agc_status_t agc_lm_dap_fresh_start(void)
     d->dkomegan                 = FS_DKOMEGAN;
     d->dkdb                     = FS_DKDB;
 
-    return (agc_lm_dap_restart());
-}
+    if (!AGC_ASSERT(d->db > 0 && d->neg_ratedb < 0))
+    {
+        return (AGC_STATUS_BAD_ARG); /* pad-load defaults */
+    }
+
+    agc_status_t st = agc_lm_dap_restart(); /* STARTSB1 */
+
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_ACCOKFLG)))
+    {
+        return (AGC_STATUS_BAD_ARG); /* ACCSOKAY cleared: DAPIDLER runs 1/ACCS */
+    }
+
+    return (st);
+} /* agc_lm_dap_fresh_start */
 
 /* ---- accessors of DAP erasables shared with other modules -------------- */
+/**********************************************************************
+ * AGC: none -- consistency of the DAP block before an accessor uses it:
+ * the indexes and enum-valued cells hold values the DAP can write (a
+ * smashed block would show here first).
+ *
+ * FUNCTION NAME: dap_valid
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  --------------------
+ *   d         const lm_dap_t *  I    DAP erasables (lm_dap_state())
+ *
+ * RETURNS: bool -- true when T5ADR, RETJADR and AXISCTR are in range
+ **********************************************************************/
+static bool dap_valid(const lm_dap_t *d)
+{
+    if (!AGC_ASSERT(d == &g_dap))
+    {
+        return (false);
+    }
+
+    return ((d->t5adr == LM_T5_DAPIDLER || d->t5adr == LM_T5_PAXIS) && d->retjadr <= LM_UV_MINRTN && d->axisctr >= -1 && d->axisctr <= 1);
+}
+
 /**********************************************************************
  * AGC: none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).
  *
@@ -148,7 +209,20 @@ agc_status_t agc_lm_dap_fresh_start(void)
  **********************************************************************/
 uint16_t agc_erase_cduxd(void)
 {
-    return (lm_dap_state()->cduxd);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    uint16_t        v = d->cduxd;       /* CDUXD, 2's complement scaled pi rad */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v <= 077777u))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -162,7 +236,20 @@ uint16_t agc_erase_cduxd(void)
  **********************************************************************/
 uint16_t agc_erase_cduyd(void)
 {
-    return (lm_dap_state()->cduyd);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    uint16_t        v = d->cduyd;       /* CDUYD, 2's complement scaled pi rad */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v <= 077777u))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -176,7 +263,20 @@ uint16_t agc_erase_cduyd(void)
  **********************************************************************/
 uint16_t agc_erase_cduzd(void)
 {
-    return (lm_dap_state()->cduzd);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    uint16_t        v = d->cduzd;       /* CDUZD, 2's complement scaled pi rad */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v <= 077777u))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -193,9 +293,16 @@ uint16_t agc_erase_cduzd(void)
  **********************************************************************/
 void agc_erase_set_cduxd(uint16_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v <= 077777u))
     {
-        lm_dap_state()->cduxd = v;
+        d->cduxd = v;
     }
 }
 
@@ -213,9 +320,16 @@ void agc_erase_set_cduxd(uint16_t v)
  **********************************************************************/
 void agc_erase_set_cduyd(uint16_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v <= 077777u))
     {
-        lm_dap_state()->cduyd = v;
+        d->cduyd = v;
     }
 }
 
@@ -233,52 +347,17 @@ void agc_erase_set_cduyd(uint16_t v)
  **********************************************************************/
 void agc_erase_set_cduzd(uint16_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v <= 077777u))
     {
-        lm_dap_state()->cduzd = v;
+        d->cduzd = v;
     }
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable DELCDUX (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_delcdux
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_delcdux(void)
-{
-    return (lm_dap_state()->delcdux);
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable DELCDUY (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_delcduy
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_delcduy(void)
-{
-    return (lm_dap_state()->delcduy);
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable DELCDUZ (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_delcduz
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_delcduz(void)
-{
-    return (lm_dap_state()->delcduz);
 }
 
 /**********************************************************************
@@ -295,9 +374,16 @@ agc_sp_t agc_erase_delcduz(void)
  **********************************************************************/
 void agc_erase_set_delcdux(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
-        lm_dap_state()->delcdux = v;
+        d->delcdux = v;
     }
 }
 
@@ -315,9 +401,16 @@ void agc_erase_set_delcdux(agc_sp_t v)
  **********************************************************************/
 void agc_erase_set_delcduy(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
-        lm_dap_state()->delcduy = v;
+        d->delcduy = v;
     }
 }
 
@@ -335,9 +428,16 @@ void agc_erase_set_delcduy(agc_sp_t v)
  **********************************************************************/
 void agc_erase_set_delcduz(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
-        lm_dap_state()->delcduz = v;
+        d->delcduz = v;
     }
 }
 
@@ -352,7 +452,20 @@ void agc_erase_set_delcduz(agc_sp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_omegapd(void)
 {
-    return (lm_dap_state()->omegapd);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->omegapd;     /* OMEGAPD, scaled pi/4 rad/s */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -366,7 +479,20 @@ agc_sp_t agc_erase_omegapd(void)
  **********************************************************************/
 agc_sp_t agc_erase_omegaqd(void)
 {
-    return (lm_dap_state()->omegaqd);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->omegaqd;     /* OMEGAQD, scaled pi/4 rad/s */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -380,7 +506,20 @@ agc_sp_t agc_erase_omegaqd(void)
  **********************************************************************/
 agc_sp_t agc_erase_omegard(void)
 {
-    return (lm_dap_state()->omegard);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->omegard;     /* OMEGARD, scaled pi/4 rad/s */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -397,9 +536,16 @@ agc_sp_t agc_erase_omegard(void)
  **********************************************************************/
 void agc_erase_set_omegapd(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
-        lm_dap_state()->omegapd = v;
+        d->omegapd = v;
     }
 }
 
@@ -417,9 +563,16 @@ void agc_erase_set_omegapd(agc_sp_t v)
  **********************************************************************/
 void agc_erase_set_omegaqd(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
-        lm_dap_state()->omegaqd = v;
+        d->omegaqd = v;
     }
 }
 
@@ -437,52 +590,17 @@ void agc_erase_set_omegaqd(agc_sp_t v)
  **********************************************************************/
 void agc_erase_set_omegard(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
-        lm_dap_state()->omegard = v;
+        d->omegard = v;
     }
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable DELPEROR (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_delperor
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_delperor(void)
-{
-    return (lm_dap_state()->delperor);
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable DELQEROR (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_delqeror
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_delqeror(void)
-{
-    return (lm_dap_state()->delqeror);
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable DELREROR (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_delreror
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_delreror(void)
-{
-    return (lm_dap_state()->delreror);
 }
 
 /**********************************************************************
@@ -499,9 +617,16 @@ agc_sp_t agc_erase_delreror(void)
  **********************************************************************/
 void agc_erase_set_delperor(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
-        lm_dap_state()->delperor = v;
+        d->delperor = v;
     }
 }
 
@@ -519,9 +644,16 @@ void agc_erase_set_delperor(agc_sp_t v)
  **********************************************************************/
 void agc_erase_set_delqeror(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
-        lm_dap_state()->delqeror = v;
+        d->delqeror = v;
     }
 }
 
@@ -539,9 +671,16 @@ void agc_erase_set_delqeror(agc_sp_t v)
  **********************************************************************/
 void agc_erase_set_delreror(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
-        lm_dap_state()->delreror = v;
+        d->delreror = v;
     }
 }
 
@@ -556,7 +695,20 @@ void agc_erase_set_delreror(agc_sp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_omegap(void)
 {
-    return (lm_dap_state()->omegap);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->omegap;      /* OMEGAP, scaled pi/4 rad/s */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -570,7 +722,20 @@ agc_sp_t agc_erase_omegap(void)
  **********************************************************************/
 agc_sp_t agc_erase_omegaq(void)
 {
-    return (lm_dap_state()->omegaq);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->omegaq;      /* OMEGAQ, scaled pi/4 rad/s */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -584,7 +749,20 @@ agc_sp_t agc_erase_omegaq(void)
  **********************************************************************/
 agc_sp_t agc_erase_omegar(void)
 {
-    return (lm_dap_state()->omegar);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->omegar;      /* OMEGAR, scaled pi/4 rad/s */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -600,8 +778,18 @@ agc_sp_t agc_erase_omegar(void)
  **********************************************************************/
 agc_dp_t agc_erase_aosq(void)
 {
-    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-    lm_dp_pair_t    p = {d->aosq, d->aosq_lo};
+    const lm_dap_t *d = lm_dap_state();        /* DAP erasables */
+    lm_dp_pair_t    p = {d->aosq, d->aosq_lo}; /* AOSQ words, DP scaled pi/2 rad/s^2 */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(p.hi >= LM_NEGMAX && p.hi <= LM_POSMAX && p.lo >= LM_NEGMAX && p.lo <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
 
     return ((agc_dp_t) lm_dap_dpval(p));
 }
@@ -617,8 +805,18 @@ agc_dp_t agc_erase_aosq(void)
  **********************************************************************/
 agc_dp_t agc_erase_aosr(void)
 {
-    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-    lm_dp_pair_t    p = {d->aosr, d->aosr_lo};
+    const lm_dap_t *d = lm_dap_state();        /* DAP erasables */
+    lm_dp_pair_t    p = {d->aosr, d->aosr_lo}; /* AOSR words, DP scaled pi/2 rad/s^2 */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(p.hi >= LM_NEGMAX && p.hi <= LM_POSMAX && p.lo >= LM_NEGMAX && p.lo <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
 
     return ((agc_dp_t) lm_dap_dpval(p));
 }
@@ -637,12 +835,19 @@ agc_dp_t agc_erase_aosr(void)
  **********************************************************************/
 void agc_erase_set_aosq(agc_dp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
         lm_dp_pair_t p = lm_dap_dpmake((int32_t) v); /* AOSQ words, scaled pi/2 rad/s^2 */
 
-        lm_dap_state()->aosq    = p.hi;
-        lm_dap_state()->aosq_lo = p.lo;
+        d->aosq    = p.hi;
+        d->aosq_lo = p.lo;
     }
 }
 
@@ -660,12 +865,19 @@ void agc_erase_set_aosq(agc_dp_t v)
  **********************************************************************/
 void agc_erase_set_aosr(agc_dp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
         lm_dp_pair_t p = lm_dap_dpmake((int32_t) v); /* AOSR words, scaled pi/2 rad/s^2 */
 
-        lm_dap_state()->aosr    = p.hi;
-        lm_dap_state()->aosr_lo = p.lo;
+        d->aosr    = p.hi;
+        d->aosr_lo = p.lo;
     }
 }
 
@@ -680,7 +892,20 @@ void agc_erase_set_aosr(agc_dp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_alphaq(void)
 {
-    return (lm_dap_state()->alphaq);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->alphaq;      /* ALPHAQ, scaled pi/2 rad/s^2 */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -694,49 +919,20 @@ agc_sp_t agc_erase_alphaq(void)
  **********************************************************************/
 agc_sp_t agc_erase_alphar(void)
 {
-    return (lm_dap_state()->alphar);
-}
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->alphar;      /* ALPHAR, scaled pi/2 rad/s^2 */
 
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable PERROR (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_perror
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_perror(void)
-{
-    return (lm_dap_state()->perror);
-}
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
 
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable QERROR (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_qerror
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_qerror(void)
-{
-    return (lm_dap_state()->qerror);
-}
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
 
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable RERROR (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_rerror
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_rerror(void)
-{
-    return (lm_dap_state()->rerror);
+    return (v);
 }
 
 /**********************************************************************
@@ -750,7 +946,20 @@ agc_sp_t agc_erase_rerror(void)
  **********************************************************************/
 agc_sp_t agc_erase_1jacc(void)
 {
-    return (lm_dap_state()->jacc[0]);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->jacc[0];     /* 1JACC, scaled pi/4 rad/s^2 */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -764,7 +973,20 @@ agc_sp_t agc_erase_1jacc(void)
  **********************************************************************/
 agc_sp_t agc_erase_1jaccq(void)
 {
-    return (lm_dap_state()->jacc[1]);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->jacc[1];     /* 1JACCQ, scaled pi/4 rad/s^2 */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -778,55 +1000,20 @@ agc_sp_t agc_erase_1jaccq(void)
  **********************************************************************/
 agc_sp_t agc_erase_1jaccr(void)
 {
-    return (lm_dap_state()->jacc[2]);
-}
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->jacc[2];     /* 1JACCR, scaled pi/4 rad/s^2 */
 
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable KQ (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_kq
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_kq(void)
-{
-    return (lm_dap_state()->kq);
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable DB (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_db
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_db(void)
-{
-    return (lm_dap_state()->db);
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable DB (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_set_db
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------
- *   v         agc_sp_t  I    new value, at the scale of the erasable
- *
- * RETURNS: none
- **********************************************************************/
-void agc_erase_set_db(agc_sp_t v)
-{
-    if (AGC_ASSERT(v >= 0))
+    if (!AGC_ASSERT(dap_valid(d)))
     {
-        lm_dap_state()->db = v;
+        return (0); /* no valid result */
     }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -840,7 +1027,20 @@ void agc_erase_set_db(agc_sp_t v)
  **********************************************************************/
 agc_sp_t agc_erase_stiksens(void)
 {
-    return (lm_dap_state()->stiksens);
+    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+    agc_sp_t        v = d->stiksens;    /* STIKSENS, scaled 1 */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return (0); /* no valid result */
+    }
+
+    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
+    {
+        return (0); /* no valid result */
+    }
+
+    return (v);
 }
 
 /**********************************************************************
@@ -857,24 +1057,17 @@ agc_sp_t agc_erase_stiksens(void)
  **********************************************************************/
 void agc_erase_set_stiksens(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v >= 0))
     {
-        lm_dap_state()->stiksens = v;
+        d->stiksens = v;
     }
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable NEG_RATEDB (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_neg_ratedb
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_neg_ratedb(void)
-{
-    return (lm_dap_state()->neg_ratedb);
 }
 
 /**********************************************************************
@@ -891,91 +1084,15 @@ agc_sp_t agc_erase_neg_ratedb(void)
  **********************************************************************/
 void agc_erase_set_neg_ratedb(agc_sp_t v)
 {
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(dap_valid(d)))
+    {
+        return;
+    }
+
     if (AGC_ASSERT(v <= 0))
     {
-        lm_dap_state()->neg_ratedb = v;
+        d->neg_ratedb = v;
     }
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable HIASCENT (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_hiascent
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-agc_sp_t agc_erase_hiascent(void)
-{
-    return (lm_dap_state()->hiascent);
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable HIASCENT (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_set_hiascent
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------
- *   v         agc_sp_t  I    new value, at the scale of the erasable
- *
- * RETURNS: none
- **********************************************************************/
-void agc_erase_set_hiascent(agc_sp_t v)
-{
-    if (AGC_ASSERT(v >= 0))
-    {
-        lm_dap_state()->hiascent = v;
-    }
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable CH5MASK (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_ch5mask
- *
- * ARGUMENTS: none
- *
- * RETURNS: uint16_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-uint16_t agc_erase_ch5mask(void)
-{
-    return (lm_dap_state()->ch5mask);
-}
-
-/**********************************************************************
- * AGC: none -- accessor of the DAP erasable CH6MASK (ERASABLE_ASSIGNMENTS.agc).
- *
- * FUNCTION NAME: agc_erase_ch6mask
- *
- * ARGUMENTS: none
- *
- * RETURNS: uint16_t -- the erasable, at the scale given in agc/lm/dap.h
- **********************************************************************/
-uint16_t agc_erase_ch6mask(void)
-{
-    return (lm_dap_state()->ch6mask);
-}
-
-/**********************************************************************
- * AGC: none -- DAP running (T5ADR = PAXIS), for the sim.
- *
- * FUNCTION NAME: agc_lm_dap_running
- *
- * ARGUMENTS: none
- *
- * RETURNS: bool -- true when T5ADR is PAXIS
- **********************************************************************/
-bool agc_lm_dap_running(void)
-{
-    const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
-    {
-        return (false);
-    }
-
-    return (d->t5adr == LM_T5_PAXIS);
 }

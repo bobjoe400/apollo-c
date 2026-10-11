@@ -506,6 +506,11 @@ static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
  **********************************************************************/
 static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 {
+    if (!AGC_ASSERT(a >= 0))
+    {
+        return (0); /* RUFLAW12 gets the magnitude of the rate change */
+    }
+
     lm_dp_pair_t p = lm_dap_mp(a, blk(d, LM_BK_1ANET1 + 2, w->adr2)); /* desired change x 1/ANET (2 jets): TJET, DP scaled 32 s */
     int32_t      x = (int32_t) p.hi + TJ_M1_8;                        /* TJET - 4 s, scaled 32 s */
 
@@ -541,6 +546,11 @@ static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a
  **********************************************************************/
 static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error)
 {
+    if (!AGC_ASSERT(d->edot >= 0))
+    {
+        return (0); /* NEGEDOT has reflected EDOT */
+    }
+
     if (!negative_error)
     { /* RUFLAW2        */
         rufsetup(d, w, true);
@@ -593,6 +603,11 @@ static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error
  **********************************************************************/
 static agc_sp_t rough_law_large_rate(lm_dap_t *d, tjl_t *w)
 {
+    if (!AGC_ASSERT(d->edot > 0))
+    {
+        return (0); /* EDOT >= pi/32 after NEGEDOT */
+    }
+
     rufsetup(d, w, true);
     agc_sp_t dist = lm_dap_wrap((int32_t) d->e - blk(d, LM_BK_FIREDB, w->adr1)); /* E - FIREDB, scaled pi/4 rad */
     agc_sp_t t    = lm_dap_mphi(dist, TJ_BIT11);                                 /* distance from the switch curve, scaled 4 pi rad */
@@ -701,6 +716,11 @@ agc_status_t lm_dap_tjetlaw(void)
             d->edot = pd.lo; /* at pi/32       */
             a       = finelaw(d, &w);
         }
+    }
+
+    if (!AGC_ASSERT(w.rotsense == TJ_SENSOR || w.rotsense == -TJ_SENSOR))
+    {
+        return (AGC_STATUS_BAD_ARG); /* ROTSENSE is +-SENSOR */
     }
 
     returntj(d, &w, a);

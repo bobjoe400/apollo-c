@@ -71,6 +71,11 @@ agc_status_t lm_dap_qrminimp(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_PULSEFLG)))
+    {
+        return (AGC_STATUS_BAD_ARG); /* QRCONTRL comes here in minimum impulse only */
+    }
+
     agc_inhint();
     agc_lm_dap_zatteror();
     d->qerror    = 0;                  /* displays       */
@@ -206,6 +211,16 @@ static bool beyond(agc_sp_t x, agc_sp_t negdb)
  **********************************************************************/
 static agc_status_t enteruv(lm_dap_t *d)
 {
+    if (!AGC_ASSERT(d->neg_ratedb <= 0))
+    {
+        return (AGC_STATUS_BAD_ARG); /* -RATEDB is the negative target deadband */
+    }
+
+    if (!AGC_ASSERT(d->tcqr >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG); /* QRTIME counts down to 0 */
+    }
+
     agc_inhint();
     agc_lm_dap_zatteror();
     agc_relint();
@@ -267,6 +282,16 @@ static agc_status_t enteruv(lm_dap_t *d)
  **********************************************************************/
 static agc_status_t rhcactiv(lm_dap_t *d)
 {
+    if (!AGC_ASSERT(d->stiksens >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG); /* STIKSENS is a magnitude */
+    }
+
+    if (!AGC_ASSERT(d->neg_ratedb <= 0))
+    {
+        return (AGC_STATUS_BAD_ARG); /* breakout test uses -RATEDB */
+    }
+
     agc_sp_t q  = stick_rate(d->savehand[0], d->stiksens); /* commanded Q rate, scaled 45 deg/s */
     agc_sp_t dq = lm_dap_wrap((int32_t) q - d->qlast);     /* DAPTEMP3: change of the Q command, scaled 45 deg/s */
 
@@ -313,6 +338,11 @@ static agc_status_t rhcactiv(lm_dap_t *d)
 agc_status_t lm_dap_chekstik(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_PULSEFLG)))
+    {
+        return (AGC_STATUS_BAD_ARG); /* rate command, not minimum impulse */
+    }
 
     d->ingts    = 0;
     d->cotroler = -1;

@@ -114,6 +114,11 @@ static agc_status_t set_time6(agc_sp_t v)
 
     agc_rupt_set_time(6, (uint16_t) v);
 
+    if (!AGC_ASSERT(agc_rupt_time(6) == (uint16_t) v))
+    {
+        return (AGC_STATUS_BAD_ARG); /* TIME6 holds the new count */
+    }
+
     return (AGC_STATUS_OK);
 }
 
@@ -202,6 +207,11 @@ agc_status_t lm_dap_write_next(agc_sp_t index)
         jets = d->nextu;
     }
 
+    if (!AGC_ASSERT(jets <= 0377u))
+    {
+        return (AGC_STATUS_BAD_ARG); /* jet codes are 8 bits */
+    }
+
     return (lm_dap_write(index, jets));
 }
 
@@ -287,6 +297,11 @@ static agc_status_t t6job(lm_dap_t *d)
     agc_sp_t head = d->t6next[0];    /* DXCH T6NEXT: delta to the next entry, scaled 0.625 ms per count */
     agc_sp_t done = d->nxt6adr;      /* LXCH NXT6ADR: axis index whose firing ends now (unscaled) */
 
+    if (!AGC_ASSERT(done == T6_IDX_P || done == T6_IDX_U || done == T6_IDX_V))
+    {
+        return (AGC_STATUS_BAD_ARG); /* NXT6ADR is an axis index */
+    }
+
     d->nxt6adr     = d->t6next[1];
     d->t6next[0]   = d->t6furtha[0]; /* DXCH T6FURTHA  */
     d->t6next[1]   = d->t6furtha[1];
@@ -332,6 +347,11 @@ static agc_status_t t6job(lm_dap_t *d)
  **********************************************************************/
 agc_status_t agc_lm_dap_t6jobchk(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* TIME6 belongs to the LM DAP */
+    }
+
     uint16_t raw = agc_rupt_time(6); /* TIME6 register */
 
     if (raw > 0u && raw <= LM_T6_POSMAX)
@@ -396,6 +416,11 @@ agc_status_t agc_lm_dap_t6rupt(void)
  **********************************************************************/
 void agc_lm_dap_time6_count(uint16_t counts)
 {
+    if (!AGC_ASSERT(counts <= LM_T6_POSMAX))
+    {
+        return; /* more than one TIME6 period per call */
+    }
+
     uint16_t raw = agc_rupt_time(6); /* TIME6 register */
 
     if ((agc_chan_read(013) & T6_ENABLE) == 0u || raw > LM_T6_POSMAX || counts == 0u)
@@ -425,6 +450,11 @@ void agc_lm_dap_time6_count(uint16_t counts)
  **********************************************************************/
 bool agc_lm_dap_t6_pending(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (false); /* TIME6 belongs to the LM DAP */
+    }
+
     uint16_t raw = agc_rupt_time(6); /* TIME6 register */
 
     if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))

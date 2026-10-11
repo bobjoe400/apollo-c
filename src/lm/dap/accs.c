@@ -150,6 +150,11 @@ static agc_sp_t mass_hi(void)
  **********************************************************************/
 static bool lem_mass(lm_dap_t *d, bool docked)
 {
+    if (!AGC_ASSERT(d->hiascent >= 0))
+    {
+        return (false); /* HIASCENT is a mass */
+    }
+
     agc_sp_t csm    = docked ? agc_erase_csmmass() : 0;                              /* CSMMASS when docked, scaled 2^16 kg */
     agc_sp_t lem    = (agc_sp_t) (mass_hi() - csm);                                  /* LEMMASS candidate, scaled 2^16 kg */
     bool     ascent = agc_flag_test(AGC_FLAG_APSFLAG);                               /* APSFLAG: ascent stage */
@@ -574,6 +579,11 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
  **********************************************************************/
 agc_status_t agc_lm_dap_jet_accel_update(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* LM rope only */
+    }
+
     lm_dap_t *d    = lm_dap_state();                   /* DAP erasables */
     bool      dock = agc_flag_test(AGC_FLAG_CSMDKFLG); /* DOCKTEMP       */
 
@@ -682,6 +692,11 @@ agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t lm_dap_accfix(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* LM rope only */
+    }
+
     agc_status_t st = agc_exec_novac(AC_PRIO27, AGC_JOB_JET_ACCEL_UPDATE); /* NOVAC 1/ACCS */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))

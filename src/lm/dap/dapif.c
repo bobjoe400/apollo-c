@@ -118,6 +118,11 @@ agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
  **********************************************************************/
 agc_status_t agc_lm_dap_setmaxdb(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* LM rope only */
+    }
+
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->db = DB_WIDE;
@@ -143,6 +148,11 @@ agc_status_t agc_lm_dap_setmaxdb(void)
  **********************************************************************/
 agc_status_t agc_lm_dap_setmindb(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* LM rope only */
+    }
+
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->db = DB_NARROW;
@@ -169,6 +179,11 @@ agc_status_t agc_lm_dap_setmindb(void)
  **********************************************************************/
 agc_status_t agc_lm_dap_restordb(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* LM rope only */
+    }
+
     bool wide = agc_flag_test(AGC_FLAG_DBSELFLG); /* DBSELECT: wide deadband */
 
     if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_DBSELFLG)))
@@ -193,6 +208,11 @@ agc_status_t agc_lm_dap_restordb(void)
  **********************************************************************/
 agc_status_t agc_lm_dap_pflitedb(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* LM rope only */
+    }
+
     agc_lm_dap_zatteror();
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -286,6 +306,11 @@ void agc_lm_dap_stoprate(void)
  **********************************************************************/
 agc_status_t agc_lm_dap_allcoast(void)
 {
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    {
+        return (AGC_STATUS_BAD_ARG); /* LM rope only */
+    }
+
     agc_lm_dap_stoprate();
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -299,7 +324,14 @@ agc_status_t agc_lm_dap_allcoast(void)
     d->aosrterm = 0;
     agc_flag_set(AGC_FLAG_DRIFTDFL); /* DRIFTBIT       */
 
-    return (agc_lm_dap_restordb()); /* TC RESTORDB +1                 */
+    agc_status_t st = agc_lm_dap_restordb(); /* TC RESTORDB +1 */
+
+    if (!AGC_ASSERT(st != AGC_STATUS_OK || d->db == DB_WIDE || d->db == DB_NARROW))
+    {
+        return (AGC_STATUS_BAD_ARG); /* RESTORDB leaves 5 or 0.3 deg */
+    }
+
+    return (st);
 }
 
 /**********************************************************************
