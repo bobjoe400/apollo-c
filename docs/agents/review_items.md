@@ -1,6 +1,6 @@
 # Lane-specific review items (routed from oracle findings, open questions, worklog)
 
-- core-numeric: UNIT precision at B27 for short vectors (R63 ranges); oracle F1-F6; stale-DVSIGN deviation on V/SC and UNIT overflow (model or justify).
+- core-numeric: UNIT precision at B27 for short vectors (R63 ranges); oracle F1-F6; stale-DVSIGN deviation on V/SC and UNIT overflow (model or justify). **Word-level MPAC API** (requested by nav-aux, imu, prog-rendz, guid-entry): a public type/ops carrying DP/TP values as the AGC's sign-disagreeing word pairs, with DAS/DMP/DDV/SQRT/ASIN/ACOS on it, so R1A in GETX, GCOMP, 1-cos A and the entry L/D residuals can be bit-exact; keep agc_dp_t for the common path. Also: SQRT keeping MPAC+2; TP-input ASIN/ACOS; `agc_dp_sign` AGC SIGN semantics confirmed.
 - exec-sched: deferred-restart vs immediate ENEMA (observable differences); V37 handoff completeness; activity-light mask fix verified; P23/R22LEM restart-priority deviation; ZOOM/P40ZOOMA group-3 question.
 - state-flags: unconfirmed CSM channel bits; flag-table typo list; RADMODES one word; noun write-path gaps (VHFCNT, FUNNYDSP, negative TTOGO/TIG); include/agc/core/assert.h name shadows <assert.h> (guide 3.4): rename if clean.
 - nav-conic: -0 / mixed-sign gap on circular orbits (model now that oracle inputs keep -0?); assembled TWEEKIT/GEOMSGN; LEMCONIC SURFFLAG ownership.
