@@ -380,3 +380,10 @@
             src/csm/prelaunch_align.c -> review-imu moved to the front of
             the queue. Requests to core-numeric: TP-input ASIN/ACOS,
             word-level MPAC (residual 1-4 LSB diffs).
+2026-10-11  review-io-dsky DONE: dsky oracle 1627 bit-exact (64 KNOWN fixed);
+            sim bug B1 (QUIKDSP skipped when DSKYFLAG off) fixed; 4 ordering
+            bugs from new assertions. Cross-lane: `agc_chan_and(~BIT)` passed
+            bit 16 and tripped the mask assert at 5 CSM sites -> lead made
+            agc_chan_and mask to 15 bits (WAND semantics). Open: loadable
+            noun components without write path (list in review-io-dsky.md).
+            Launching review-prog-rendz (queue #4).
