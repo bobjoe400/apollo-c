@@ -188,11 +188,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_earth_orbit_insertion_monitor_ephemeris(agc_job_ctx_t *ctx)
 {
-    agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_PREREAD,
-        AGC_TASK_NONE, (int16_t) 022,
-        false, 0U
-    };
+    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_PREREAD, AGC_TASK_NONE, (int16_t) 022, false, 0U };
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(tliftoff_set))
     {
@@ -224,11 +220,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_ephemeris(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx)
 {
-    agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_SETUP,
-        AGC_TASK_NONE, (int16_t) 022,
-        false, 0U
-    };
+    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_SETUP, AGC_TASK_NONE, (int16_t) 022, false, 0U };
     agc_status_t    st; /* PREREAD1 status */
 
     if (!AGC_ASSERT(ctx != NULL))
@@ -431,9 +423,7 @@ static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
  **********************************************************************/
 static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
 {
-    agc_phase_var_t v = {
-        AGC_RESTART_JOB, AGC_JOB_MATRXJOB, AGC_TASK_NONE, 0, false, 0U
-    };
+    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_MATRXJOB, AGC_TASK_NONE, 0, false, 0U };
     int32_t         dt; /* READACCS delay, cs */
 
     if (!AGC_ASSERT(ctx != NULL))
@@ -540,8 +530,7 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
     agc_interp_t           *ip  = entry_ip();             /* entry job interpreter state */
     agc_avg_g_t            *avg = &agc_guid_state()->avg; /* average-G data (RN1, VN1, UNITW) */
     agc_navaux_padload_t    pad;                          /* pad loads (earth radius) */
-    agc_latlong_t           ll  = {insertion_pad.latitude, insertion_pad.padlong,
-                                   insertion_pad.pgncsalt, 0};
+    agc_latlong_t           ll  = {insertion_pad.latitude, insertion_pad.padlong, insertion_pad.pgncsalt, 0};
     agc_vec_t               down;                         /* down at the pad, m B29 */
     agc_mat_t               m;                            /* REFSMMAT to store, half-unit */
     agc_status_t            st;                           /* status */

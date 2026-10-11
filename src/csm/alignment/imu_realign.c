@@ -266,8 +266,7 @@ agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
     ll.lon                         = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
     ll.alt                         = ram->landalt;
     ll.eradm                       = 0;
-    const agc_latlong_opt_t opt    = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG),
-                                      .erad = agc_flag_test(AGC_FLAG_ERADFLAG)};
+    const agc_latlong_opt_t opt    = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG),.erad = agc_flag_test(AGC_FLAG_ERADFLAG)};
     agc_navaux_padload_t    pad;
     agc_status_t            st     = agc_navaux_get_padload(&pad);
     agc_vec_t               alphav = agc_vec_zero();

@@ -17,7 +17,10 @@ direction 2026-10-11; NASA SEL-94-003 2.2.1, 2.3, 5.4):
    Uncrustify aligns each argument under the first.  A break inside a
    nested call, after `=`, or after an operator is always joined.  Brace
    initialiser tables, statements around preprocessor lines and macros are
-   left alone.
+   left alone.  A brace initialiser `{...}` is joined onto one line like
+   any other statement unless it is a table: one element per line (a
+   nested brace is one element; at least two continuation lines), or with
+   a comment inside (rows with trailing comments).
 2. A comment never sits inside a statement.  In a function body every
    comment inside a statement (after `=`, inside a call, between operands,
    on a continuation line) merges with the statement's trailing comment
@@ -447,6 +450,45 @@ def merged_words(trail, inner):
     return '; '.join(w for w in words if w)
 
 
+def init_is_table(src, o, c):
+    """True when the multi-line brace initialiser sig[o]..sig[c] is a
+    table that is kept as written: one element per line (each element
+    starts its own line, the first may share the `{` line; at least two
+    continuation lines; a nested brace counts as one element), or a
+    documented table (any comment inside: rows with trailing comments).
+    Anything else is a partial wrap and is joined onto one line."""
+    sig = src.sig
+    if any(sig[o].start < x.start < sig[c].start for x in src.comments):
+        return True
+    if sig[c].line - sig[o].line < 2:
+        return False
+    depth = 0
+    firsts = []
+    start = True
+    for j in range(o + 1, c):
+        t = sig[j]
+        if start:
+            firsts.append(j)
+            start = False
+        if t.text in ('(', '[', '{'):
+            depth += 1
+        elif t.text in (')', ']', '}'):
+            depth -= 1
+        elif t.text == ',' and depth == 0:
+            start = True
+    seen = set()
+    for n, j in enumerate(firsts):
+        ln = sig[j].line
+        if ln in seen:
+            return False            # two elements on one line
+        seen.add(ln)
+        if n == 0 and ln == sig[o].line:
+            continue
+        if sig[j - 1].line == ln:
+            return False            # not first on its line
+    return True
+
+
 def fix_segment(src, g):
     """Edits for one segment, or []."""
     sig = src.sig
@@ -460,10 +502,14 @@ def fix_segment(src, g):
         return []
     multi = first.line != last.line
     for k in toks:
-        if sig[k].text == '{' and src.brace_kind.get(k) == 'init':
+        if sig[k].text == '{' and src.brace_kind.get(k) == 'init' and \
+                src.inner_at[k][0] != 'init':
             close = _match(sig, k)
-            if close is None or sig[close].line != sig[k].line:
-                return []           # a brace initialiser table
+            if close is None:
+                return []
+            if sig[close].line != sig[k].line and \
+                    init_is_table(src, k, close):
+                return []           # a brace initialiser table: kept
     inner, trail = seg_comments(src, g)
     in_func = 'func' in g.ctx and 'record' not in g.ctx and \
         'enum' not in g.ctx
@@ -887,7 +933,9 @@ def long_statements(path, text):
         last = src.sig[g.toks[-1]]
         if first.pp or g.kind == 'label' or any(
                 src.brace_kind.get(k) == 'init' and
-                src.sig[_match(src.sig, k) or k].line != src.sig[k].line
+                src.inner_at[k][0] != 'init' and
+                src.sig[_match(src.sig, k) or k].line != src.sig[k].line and
+                init_is_table(src, k, _match(src.sig, k))
                 for k in g.toks if src.sig[k].text == '{'):
             continue                # tables are not statements to split
         n = last.line - first.line + 1

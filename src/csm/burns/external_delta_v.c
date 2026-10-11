@@ -95,9 +95,7 @@ agc_status_t agc_csm_comptgo(void)
         return (st);
     }
 
-    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_MARKS_TFI_MGA_DISPLAY,
-                         AGC_TASK_NONE, (int16_t) AGC_PRIO13,
-                         false, 0U};
+    agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_MARKS_TFI_MGA_DISPLAY, AGC_TASK_NONE, (int16_t) AGC_PRIO13, false, 0U};
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_TIMRFLAG)))
     {
@@ -193,9 +191,7 @@ agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
     }
 
     /* A flashing display whose terminate goes to P00 (GOTOPOOH).             */
-    agc_dsky_cont_t cont =
-    {AGC_JOB_GOTOPOOH, AGC_JOB_MARKS_TFI_MGA_DONE,
-     AGC_JOB_MARKS_TFI_MGA_DISPLAY};
+    agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_MARKS_TFI_MGA_DONE, AGC_JOB_MARKS_TFI_MGA_DISPLAY};
 
     if (!AGC_ASSERT(AGC_JOB_MARKS_TFI_MGA_DONE != AGC_JOB_NONE))
     {
@@ -495,12 +491,11 @@ agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t t
         }
     }
 
-    agc_latlong_t        ll = {agc_entry_state()->lat_spl,
-                        agc_entry_state()->lng_spl, 0, 0}; /* GETARG */
-    agc_dp_t             t  = rz->tstart_orbit;            /* TIME: TSTART82, cs 2^28 */
-    agc_navaux_padload_t pad;                              /* pad loads (LALOTORV) */
-    agc_vec_t            r  = agc_vec_zero();              /* target, m 2^29       */
-    agc_status_t         st = agc_navaux_set_latlong(&ll); /* LAT LONG ALT */
+    agc_latlong_t        ll = {agc_entry_state()->lat_spl, agc_entry_state()->lng_spl, 0, 0}; /* GETARG */
+    agc_dp_t             t  = rz->tstart_orbit;                                               /* TIME: TSTART82, cs 2^28 */
+    agc_navaux_padload_t pad;                                                                 /* pad loads (LALOTORV) */
+    agc_vec_t            r  = agc_vec_zero();                                                 /* target, m 2^29       */
+    agc_status_t         st = agc_navaux_set_latlong(&ll);                                    /* LAT LONG ALT */
 
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {
