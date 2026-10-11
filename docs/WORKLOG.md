@@ -342,3 +342,11 @@
             Oracle finding to carry into review: tests/oracle/dsky fails
             64/1544 checks on pre-collapse source too -> genuine DSKY
             conversion mismatch vs yaAGC (io-pinball review).
+2026-10-10  oracle-cases DONE: nav-integ 247, nav-aux 484, imu 211, guidance
+            203, landing 154, entry 521, dap-lm 473, dap-csm 246, targeting
+            116, return_to_earth 144, dsky 1544 checks. Findings F1-F15
+            (F7 CM J2 constants 1/4 of assembled; F8 S40.2,3 raw RTIG not
+            UNIT; F9 sign-disagreeing DAS high word used alone; F13 CDH
+            DIFFALT 62 m; F14 RTE INVC115 convergence; F15 OPDEGOUT -0
+            treated as CCSHOLE). Oracle tool defects: channel 7 writes,
+            symbol parsing. Launching review wave: 16 per-lane agents.
