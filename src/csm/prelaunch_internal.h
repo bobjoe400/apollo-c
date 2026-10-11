@@ -71,8 +71,7 @@ typedef struct prelaunch_ram
     agc_sp_t           ndxctr;    /* NDXCTR: 1 if gimbal lock, B0         */
     agc_sp_t           run;       /* RUN: 0 target 1, 2 target 2, B0      */
     agc_sp_t           targ;      /* TARG1/2: 0 target 1, 6 target 2, B0  */
-    uint16_t           tazel[4];  /* TAZEL1: AZ1 (CDU), EL1 (90 deg = 1),
-                                   * AZ2, EL2; raw 15-bit words          */
+    uint16_t           tazel[4];  /* TAZEL1: AZ1 (CDU), EL1 (90 deg = 1), AZ2, EL2; raw 15-bit words */
 } prelaunch_ram_t;
 
 #define PRELAUNCH_ALARM_DRIFT  ((agc_alarm_code_t) 01600) /* overflow  */
@@ -88,24 +87,30 @@ prelaunch_ram_t *prelaunch_ram(void);
 
 /* NBPOSPL (p.423-424): XNB, YNB, ZNB from AZIMUTH, half-unit.          */
 agc_status_t prelaunch_nbpospl(agc_interp_t *ip);
+
 /* IMUSTLLG after a stall: *done when good; SOMERR2 when bad.           */
 agc_status_t prelaunch_imustall(agc_job_id_t wake_as, bool *done);
 agc_status_t prelaunch_stall_outcome(bool *good);
+
 /* EARTHR* (p.430): EARTHR then IMUSTLLG.  busy_wake: the job to run
  * again when the gyros are busy (GYROBUSY); stall_wake: the job woken
  * when the torquing ends.                                              */
-agc_status_t prelaunch_earthr_star(agc_interp_t *ip, agc_job_id_t busy_wake,
-                                   agc_job_id_t stall_wake, bool *done);
-agc_status_t prelaunch_set_tmark(agc_dp_t t);  /* TMARK, cs 2^28   */
-agc_dp_t     prelaunch_tmark(void);            /* TMARK, cs 2^28   */
+agc_status_t prelaunch_earthr_star(agc_interp_t *ip, agc_job_id_t busy_wake, agc_job_id_t stall_wake, bool *done);
+agc_status_t prelaunch_set_tmark(agc_dp_t t); /* TMARK, cs 2^28   */
+agc_dp_t     prelaunch_tmark(void);           /* TMARK, cs 2^28   */
+
 /* SOMERR2 (p.442): alarm 1601, group 5 off, ENDTEST1.                  */
 agc_status_t prelaunch_somerr2(void);
+
 /* ENDTEST1 (p.427): IMUSE down, MODREG -0, MKRELEAS, ENDEXT.           */
 agc_status_t prelaunch_endtest1(void);
+
 /* POSN17C on NEWAZ1 into the alignment XSM.                            */
 agc_status_t prelaunch_posn17c(agc_interp_t *ip);
+
 /* ESTIMS (p.434) in the calling job.                                   */
 agc_status_t prelaunch_estims(agc_job_ctx_t *ctx);
+
 /* SETNBPOS +1 (p.449): MKRELEAS, then OPTDATA in the calling job.      */
 agc_status_t prelaunch_verify_start(agc_job_ctx_t *ctx);
 

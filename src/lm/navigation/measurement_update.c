@@ -87,17 +87,17 @@ typedef enum mu_step
  * INCORP1 result kept across the noun 49 display.                     */
 typedef struct mu_state
 {
-    mu_step_t    step;       /* the measurement in work (WHCHREAD)        */
-    int          x2;         /* SCALSHFT: 2 earth, 0 moon                 */
-    agc_vec_t    ulc;        /* ULC: unit LM-to-CSM, half unit 2^1        */
-    agc_dp_t     rlc;        /* 36D: |CSM - LM|, body scale               */
-    agc_vec_t    mx;         /* MX: NB X axis in reference axes, 2^1      */
-    agc_vec_t    my;         /* MY: NB Y axis, 2^1                        */
-    agc_vec_t    mz;         /* MZ: NB Z axis, 2^1                        */
-    agc_dp_t     rxz;        /* RXZ: RLC cos theta, normalized, 2^(S+X1)  */
-    int          rxz_x1;     /* X1 after NORM of RXZ (-shifts)            */
-    agc_dp_t     sintheta;   /* SINTHETA: -ULC . MY, 2^1                  */
-    agc_incorp_t inc;        /* BVECTOR DELTAQ VARIANCE .. DELTAX         */
+    mu_step_t    step;     /* the measurement in work (WHCHREAD)        */
+    int          x2;       /* SCALSHFT: 2 earth, 0 moon                 */
+    agc_vec_t    ulc;      /* ULC: unit LM-to-CSM, half unit 2^1        */
+    agc_dp_t     rlc;      /* 36D: |CSM - LM|, body scale               */
+    agc_vec_t    mx;       /* MX: NB X axis in reference axes, 2^1      */
+    agc_vec_t    my;       /* MY: NB Y axis, 2^1                        */
+    agc_vec_t    mz;       /* MZ: NB Z axis, 2^1                        */
+    agc_dp_t     rxz;      /* RXZ: RLC cos theta, normalized, 2^(S+X1)  */
+    int          rxz_x1;   /* X1 after NORM of RXZ (-shifts)            */
+    agc_dp_t     sintheta; /* SINTHETA: -ULC . MY, 2^1                  */
+    agc_incorp_t inc;      /* BVECTOR DELTAQ VARIANCE .. DELTAX         */
 } mu_state_t;
 
 static mu_state_t mu; /* LSR22.3 erasables */
@@ -257,9 +257,9 @@ static agc_status_t mu_intgrcal(agc_interp_t *ip)
  **********************************************************************/
 static void mu_wlinit(void)
 {
-    agc_incorp_w_t            *w = &agc_integ_shared_ctx()->w;    /* W matrix */
-    const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
-    bool                       surf; /* on the moon */
+    agc_incorp_w_t            *w = &agc_integ_shared_ctx()->w; /* W matrix */
+    const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad();        /* pad loads */
+    bool                       surf;                           /* on the moon */
 
     surf = agc_flag_test(AGC_FLAG_SURFFLAG);
 
@@ -281,7 +281,7 @@ static void mu_wlinit(void)
     }
 
     agc_dp_t pos = agc_dp_shr(agc_dp_from_sp(wpos), 5); /* SR 5, B-19 */
-    agc_dp_t vel = agc_dp_from_sp(wvel);               /* pad scale */
+    agc_dp_t vel = agc_dp_from_sp(wvel);                /* pad scale */
 
     for (int k = 0; k < 3; k++)
     {
@@ -315,7 +315,7 @@ static void mu_wlinit(void)
 static agc_status_t mu_integrate(agc_interp_t *ip, agc_job_id_t resume)
 {
     bool         csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* CSM corrected */
-    agc_status_t st  = agc_integ_install(0, resume); /* INTSTALL */
+    agc_status_t st  = agc_integ_install(0, resume);     /* INTSTALL */
 
     if (st != AGC_STATUS_OK)
     {
@@ -426,8 +426,8 @@ static agc_status_t mu_integrate_surface(agc_interp_t *ip, agc_job_id_t resume)
  **********************************************************************/
 static agc_status_t mu_getulc(agc_interp_t *ip)
 {
-    agc_integ_sv_t l; /* LM state */
-    agc_integ_sv_t c; /* CSM state */
+    agc_integ_sv_t l;                                           /* LM state */
+    agc_integ_sv_t c;                                           /* CSM state */
     agc_status_t   st = agc_integ_perm_get(AGC_VEHICLE_LM, &l); /* LM state */
 
     if (st == AGC_STATUS_OK)
@@ -435,14 +435,14 @@ static agc_status_t mu_getulc(agc_interp_t *ip)
         st = agc_integ_perm_get(AGC_VEHICLE_CSM, &c);
     }
 
-    int       k = 9 - mu.x2;   /* VSR* 9D,2 */
-    agc_vec_t rl; /* body scale */
+    int       k = 9 - mu.x2; /* VSR* 9D,2 */
+    agc_vec_t rl;            /* body scale */
 
     rl = agc_vec_add(ip, agc_vec_shr(l.deltav, k), l.rcv);
     agc_vec_t rc; /* body scale */
 
-    rc = agc_vec_add(ip, agc_vec_shr(c.deltav, k), c.rcv);
-    int      x1  = 0;  /* NORM index, -(left shifts) */
+    rc           = agc_vec_add(ip, agc_vec_shr(c.deltav, k), c.rcv);
+    int      x1  = 0; /* NORM index, -(left shifts) */
     agc_dp_t mag = 0; /* |RC - RL|, 2^(S+X1) */
 
     mu.ulc = agc_rtb_normunit(ip, agc_vec_sub(ip, rc, rl), &x1, &mag, NULL);
@@ -466,12 +466,11 @@ static agc_status_t mu_getulc(agc_interp_t *ip)
  **********************************************************************/
 static agc_status_t mu_radarang(agc_interp_t *ip)
 {
-    agc_status_t st = mu_getulc(ip); /* GETULC */
+    agc_status_t st = mu_getulc(ip);                               /* GETULC */
     agc_dp_t     s  = agc_vec_dot(ip, agc_vec_neg(mu.ulc), mu.my); /* 2^2 */
 
     mu.sintheta = agc_dp_shl_round(ip, s, 1);
-    agc_dp_t c = agc_dp_sqrt( /* 2^1 */
-        ip, agc_dp_sub(ip, AGC_DP_QUARTER, agc_dp_sq(ip, mu.sintheta)));
+    agc_dp_t c  = agc_dp_sqrt(ip, agc_dp_sub(ip, AGC_DP_QUARTER, agc_dp_sq(ip, mu.sintheta))); /* 2^1 */
 
     c      = agc_dp_shl(ip, agc_dp_mul_trunc(c, mu.rlc), 1);
     mu.rxz = rz_norm(c, &mu.rxz_x1);
@@ -498,9 +497,9 @@ static agc_status_t mu_rate(agc_interp_t *ip)
      * (B-5), DELTAQ = (RDOTM - ULC . VLC) RLC (B-33), VARIANCE =
      * max(RDOT^2 RATEVAR, VVARMIN) RLC^2; B0, B1, DELTAQ normalized
      * together (the smaller shift of B0 and B1).                      */
-    agc_vec_t      vlc; /* VC - VL, m/cs body scale */
-    agc_integ_sv_t l; /* LM state */
-    agc_integ_sv_t c; /* CSM state */
+    agc_vec_t      vlc;                /* VC - VL, m/cs body scale */
+    agc_integ_sv_t l;                  /* LM state */
+    agc_integ_sv_t c;                  /* CSM state */
     agc_status_t   st = mu_getulc(ip); /* GETULC */
 
     if (st == AGC_STATUS_OK)
@@ -515,45 +514,43 @@ static agc_status_t mu_rate(agc_interp_t *ip)
 
     mu.rlc            = rz_sr_star(ip, mu.rlc, -4, mu.x2); /* to B-23  */
     mu.inc.bvector[1] = agc_vec_scale(ip, mu_sign(mu.ulc, false), mu.rlc);
-    int       k = 6 - mu.x2;       /* VSR* 6,2 */
-    agc_vec_t vl; /* body scale */
+    int       k       = 6 - mu.x2;                         /* VSR* 6,2 */
+    agc_vec_t vl;                                          /* body scale */
 
     vl = agc_vec_add(ip, agc_vec_shr(l.nuv, k), l.vcv);
     agc_vec_t vc; /* body scale */
 
     vc = agc_vec_add(ip, agc_vec_shr(c.nuv, k), c.vcv);
 
-    vlc = agc_vec_sub(ip, vc, vl);
+    vlc                          = agc_vec_sub(ip, vc, vl);
     const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
-    agc_dp_t                   rdot; /* B-8/B-6 */
+    agc_dp_t                   rdot;                    /* B-8/B-6 */
 
     rdot = agc_vec_dot(ip, mu.ulc, vlc);
     agc_dp_t r8; /* B-8 */
 
-    r8 = mu_srr_star(ip, rdot, 2 - mu.x2);
+    r8            = mu_srr_star(ip, rdot, 2 - mu.x2);
     agc_dp_t var  = agc_dp_mul(ip, agc_dp_sq(ip, r8), p->ratevar); /* B-4 */
-    agc_dp_t vmin = agc_dp_shr(agc_dp_from_sp(p->vvarmin), 16);   /* B-4 */
+    agc_dp_t vmin = agc_dp_shr(agc_dp_from_sp(p->vvarmin), 16);    /* B-4 */
 
     if (agc_dp_sub(ip, vmin, var) >= 0)
     {
         var = vmin; /* the minimum variance (VOK otherwise) */
     }
 
-    agc_dp_t dq =
-        agc_dp_sub(ip, mu_slr_star(ip, lmnav_state()->rdotm, -1 - mu.x2),
-                   agc_dp_shr(rdot, 2)); /* B-10/B-8 */
+    agc_dp_t dq = agc_dp_sub(ip, mu_slr_star(ip, lmnav_state()->rdotm, -1 - mu.x2), agc_dp_shr(rdot, 2)); /* B-10/B-8 */
 
     dq = agc_dp_mul(ip, dq, mu.rlc); /* B-33     */
-    agc_vec_t b0; /* 2^4 */
+    agc_vec_t b0;                    /* 2^4 */
 
     b0 = agc_vec_cross(ip, agc_vec_cross(ip, mu.ulc, vlc), mu.ulc);
 
-    b0                = rz_vshift(ip, mu_sign(b0, false), 2 + mu.x2); /* VSR* */
+    b0                = rz_vshift(ip, mu_sign(b0, false), 2 + mu.x2);       /* VSR* */
     mu.inc.bvector[0] = b0;
     mu.inc.bvector[2] = agc_vec_zero();
-    int s0 = rz_norm_xreg(agc_vec_abval(ip, b0)); /* 20D      */
-    int s1 = rz_norm_xreg(agc_vec_abval(ip, mu.inc.bvector[1])); /* 22D   */
-    int x1 = s1; /* VOK1/VOK2: the smaller shift */
+    int s0            = rz_norm_xreg(agc_vec_abval(ip, b0));                /* 20D      */
+    int s1            = rz_norm_xreg(agc_vec_abval(ip, mu.inc.bvector[1])); /* 22D   */
+    int x1            = s1;                                                 /* VOK1/VOK2: the smaller shift */
 
     if (s1 - s0 < 0)
     {
@@ -563,8 +560,8 @@ static agc_status_t mu_rate(agc_interp_t *ip)
     mu.inc.bvector[0] = rz_vshift(ip, b0, -x1);                /* VSL* 0,1 */
     mu.inc.bvector[1] = rz_vshift(ip, mu.inc.bvector[1], -x1);
     mu.inc.deltaq     = rz_shift(ip, dq, -x1);
-    agc_dp_t rl = rz_shift(ip, mu.rlc, -1 - x1); /* SL* 0-1,1, B-24 */
-    agc_tp_t v  = agc_dp_mul_tp(agc_dp_sq(ip, rl), var); /* TP, B-44 */
+    agc_dp_t rl       = rz_shift(ip, mu.rlc, -1 - x1);         /* SL* 0-1,1, B-24 */
+    agc_tp_t v        = agc_dp_mul_tp(agc_dp_sq(ip, rl), var); /* TP, B-44 */
 
     mu.inc.variance = agc_tp_shift(ip, v, 4); /* SL4, TP  */
 
@@ -587,14 +584,14 @@ static agc_status_t mu_rate(agc_interp_t *ip)
  **********************************************************************/
 static agc_status_t mu_mxmymz(agc_interp_t *ip)
 {
-    lmnav_state_t *n        = lmnav_state(); /* LM navigation erasables */
-    agc_mat_t      refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
-    agc_cdutrig_t  trig; /* CDUTRIG sines / cosines */
-    uint16_t       yzx[3] = {n->aig, n->amg, n->aog};
-    agc_vec_t      ax[3]  = {agc_vec_make(AGC_DP_HALF, 0, 0),
-                             agc_vec_make(0, AGC_DP_HALF, 0),
-                             agc_vec_make(0, 0, AGC_DP_HALF)};
-    agc_status_t   st = agc_guid_trg_nbsm(&trig, yzx, &ax[0]);     /* UNITX */
+    lmnav_state_t *n        = lmnav_state();                         /* LM navigation erasables */
+    agc_mat_t      refsmmat = agc_erase_refsmmat();                  /* REFSMMAT, 2^1 */
+    agc_cdutrig_t  trig;                                             /* CDUTRIG sines / cosines */
+    uint16_t       yzx[3]   = {n->aig, n->amg, n->aog};
+    agc_vec_t      ax[3]    = {agc_vec_make(AGC_DP_HALF, 0, 0),
+                               agc_vec_make(0, AGC_DP_HALF, 0),
+                               agc_vec_make(0, 0, AGC_DP_HALF)};
+    agc_status_t   st       = agc_guid_trg_nbsm(&trig, yzx, &ax[0]); /* UNITX */
 
     if (st == AGC_STATUS_OK)
     {
@@ -629,26 +626,25 @@ static agc_status_t mu_mxmymz(agc_interp_t *ip)
  **********************************************************************/
 static void mu_angle(agc_interp_t *ip, int bias, agc_sp_t var, agc_dp_t dangle)
 {
-    int       nx = -mu.rxz_x1; /* shifts   */
+    int       nx = -mu.rxz_x1;     /* shifts   */
     agc_vec_t b2 = agc_vec_zero(); /* B2 */
 
-    b2.c[bias] =
-        mu_srr_star(ip, rz_sr_star(ip, mu.rxz, -2, mu.rxz_x1), 0 - mu.x2);
+    b2.c[bias]        = mu_srr_star(ip, rz_sr_star(ip, mu.rxz, -2, mu.rxz_x1), 0 - mu.x2);
     mu.inc.bvector[1] = agc_vec_zero();
     mu.inc.bvector[2] = b2;
-    agc_dp_t v = agc_dp_add(ip, agc_dp_from_sp(var), MU_IMUVAR); /* B12 */
-    agc_tp_t t; /* SRR* 0,1, TP, B-40 */
+    agc_dp_t v        = agc_dp_add(ip, agc_dp_from_sp(var), MU_IMUVAR); /* B12 */
+    agc_tp_t t;                                                         /* SRR* 0,1, TP, B-40 */
 
     t = agc_tp_shift(ip, agc_dp_mul_tp(v, mu.rxz), -nx); /* SRR* 0,1 */
 
     t               = agc_dp_mul_tp(agc_tp_round(ip, t), mu.rxz);
-    t               = mu_tp_sr(ip, t, nx - 2); /* SR* 0-2,1 */
+    t               = mu_tp_sr(ip, t, nx - 2);                     /* SR* 0-2,1 */
     t               = mu_tp_sr(ip, t, 0 - mu.x2);
     mu.inc.variance = mu_tp_sr(ip, t, 0 - mu.x2);
-    agc_dp_t xb = agc_dp_shl(ip, agc_erase_x789().c[bias], 3); /* SL3, B-2/B0 */
+    agc_dp_t xb     = agc_dp_shl(ip, agc_erase_x789().c[bias], 3); /* SL3, B-2/B0 */
 
     xb = mu_srr_star(ip, xb, 0 - mu.x2); /* from B-5/B-3 to B0  */
-    agc_tp_t dq; /* TP, B0 */
+    agc_tp_t dq;                         /* TP, B0 */
 
     dq = agc_dp_mul_tp(agc_dp_sub(ip, dangle, xb), mu.rxz);
 
@@ -678,15 +674,13 @@ static bool mu_incorp1(agc_interp_t *ip, agc_status_t *st)
     ctx = agc_integ_shared_ctx();
     lmnav_state_t *n; /* LM navigation erasables */
 
-    n = lmnav_state();
+    n                            = lmnav_state();
     const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
 
     mu.inc.dim9   = agc_flag_test(AGC_FLAG_DMENFLG);
     *st           = agc_incorp_state_deviation(ip, &ctx->w, &mu.inc);
-    n->r22disp[1] =
-        mu_srr_star(ip, agc_vec_abval(ip, mu.inc.deltax[1]), 2 - mu.x2);
-    n->r22disp[0] =
-        mu_srr_star(ip, agc_vec_abval(ip, mu.inc.deltax[0]), 2 - mu.x2);
+    n->r22disp[1] = mu_srr_star(ip, agc_vec_abval(ip, mu.inc.deltax[1]), 2 - mu.x2);
+    n->r22disp[0] = mu_srr_star(ip, agc_vec_abval(ip, mu.inc.deltax[0]), 2 - mu.x2);
     agc_dp_t rmax = agc_dp_shr(agc_dp_from_sp(p->rmax), 10); /* m 2^29 */
 
     if (agc_dp_sub(ip, rmax, n->r22disp[0]) < 0)
@@ -731,26 +725,26 @@ static agc_status_t mu_incorp2(agc_interp_t *ip)
  **********************************************************************/
 static agc_status_t mu_range(agc_interp_t *ip)
 {
-    const agc_rendz_nav_pad_t *p    = agc_rendz_nav_pad(); /* pad loads */
+    const agc_rendz_nav_pad_t *p    = agc_rendz_nav_pad();   /* pad loads */
     agc_tp_t                   vmin = (agc_tp_t) p->rvarmin; /* B-40 */
     agc_status_t               st   = mu_getulc(ip);         /* GETULC */
 
     mu.inc.bvector[0] = mu_sign(mu.ulc, false);
     mu.inc.bvector[1] = agc_vec_zero();
     mu.inc.bvector[2] = agc_vec_zero();
-    agc_dp_t rlc = mu_srr_star(ip, mu.rlc, 2 - mu.x2);      /* m 2^29 */
-    agc_dp_t r   = agc_dp_sub(ip, lmnav_state()->rm, rlc); /* m 2^29 */
+    agc_dp_t rlc      = mu_srr_star(ip, mu.rlc, 2 - mu.x2);     /* m 2^29 */
+    agc_dp_t r        = agc_dp_sub(ip, lmnav_state()->rm, rlc); /* m 2^29 */
 
-    mu.inc.deltaq = mu_slr_star(ip, r, 2 - mu.x2); /* B-29/B-27 */
-    int      x1 = 0;                   /* NORM index, -(left shifts) */
-    agc_dp_t n  = rz_norm(mu.rlc, &x1); /* 2^(S+X1) */
-    agc_tp_t v  = agc_dp_mul_tp(agc_dp_sq(ip, n), p->rangevar); /* TP, B12 */
+    mu.inc.deltaq = mu_slr_star(ip, r, 2 - mu.x2);                /* B-29/B-27 */
+    int      x1   = 0;                                            /* NORM index, -(left shifts) */
+    agc_dp_t n    = rz_norm(mu.rlc, &x1);                         /* 2^(S+X1) */
+    agc_tp_t v    = agc_dp_mul_tp(agc_dp_sq(ip, n), p->rangevar); /* TP, B12 */
 
     v               = mu_tp_sr(ip, v, -2 - x1); /* SR* 0-2,1 */
     v               = mu_tp_sr(ip, v, 0 - x1);
     v               = mu_tp_sr(ip, v, 0 - mu.x2);
     v               = mu_tp_sr(ip, v, 0 - mu.x2);
-    mu.inc.variance = vmin; /* RVARMIN unless larger (QOK) */
+    mu.inc.variance = vmin;                     /* RVARMIN unless larger (QOK) */
 
     if (vmin - v < 0)
     {
@@ -778,7 +772,7 @@ static agc_status_t mu_range(agc_interp_t *ip)
 static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
 {
     lmnav_state()->whchread = (agc_sp_t) step; /* WHCHREAD */
-    agc_phase_change(2, 04022);                        /* GRP2PC   */
+    agc_phase_change(2, 04022);                /* GRP2PC   */
 
     switch (step)
     {
@@ -787,8 +781,7 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
         case MU_RATE:
             return (mu_rate(ip));
         case MU_SHAFT:
-        { /* Shaft (SHAFTBQ p.580): angle = ARCTAN(ULC . MX, ULC . MZ);
-           * B0 = UNIT(ULC x MY), complemented if the CSM is corrected. */
+        { /* Shaft (SHAFTBQ p.580): angle = ARCTAN(ULC . MX, ULC . MZ); B0 = UNIT(ULC x MY), complemented if the CSM is corrected. */
             agc_status_t st = mu_mxmymz(ip); /* MXMYMZ */
 
             if (st == AGC_STATUS_OK)
@@ -801,9 +794,9 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
             sinth = agc_dp_shl(ip, agc_vec_dot(ip, mu.ulc, mu.mx), 1);
             agc_dp_t costh; /* 2^1 */
 
-            costh = agc_dp_shl(ip, agc_vec_dot(ip, mu.ulc, mu.mz), 1);
+            costh      = agc_dp_shl(ip, agc_vec_dot(ip, mu.ulc, mu.mz), 1);
             agc_dp_t a = agc_latlong_arctan(ip, sinth, costh); /* rev 2^0 */
-            agc_dp_t d; /* rev 2^0 */
+            agc_dp_t d;                                        /* rev 2^0 */
 
             d = agc_dp_sub(ip, lmnav_state()->rrshaft, a);
 
@@ -819,20 +812,15 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
             return (st);
         }
         case MU_TRUNNION:
-        { /* Trunnion (TRUNBQ p.581): angle = ASIN(SINTHETA); B0 =
-           * (ULC x MY) x ULC, complemented if the CSM is corrected.    */
+        { /* Trunnion (TRUNBQ p.581): angle = ASIN(SINTHETA); B0 = (ULC x MY) x ULC, complemented if the CSM is corrected. */
             agc_status_t st = mu_radarang(ip); /* RADARANG */
-            agc_vec_t    b0; /* 2^1 */
+            agc_vec_t    b0;                   /* 2^1 */
 
-            b0 = agc_vec_shl(ip, agc_vec_cross(ip, mu.ulc,
-                                               mu.my), 1);
+            b0 = agc_vec_shl(ip, agc_vec_cross(ip, mu.ulc, mu.my), 1);
 
-            b0 =
-                agc_vec_shl(ip, agc_vec_cross(ip, b0, mu.ulc), 1);
+            b0                = agc_vec_shl(ip, agc_vec_cross(ip, b0, mu.ulc), 1);
             mu.inc.bvector[0] = mu_sign(b0, true);
-            agc_dp_t d =
-                agc_dp_sub(ip, lmnav_state()->rrtrun,
-                           agc_dp_asin(ip, mu.sintheta)); /* rev 2^0 */
+            agc_dp_t d        = agc_dp_sub(ip, lmnav_state()->rrtrun, agc_dp_asin(ip, mu.sintheta)); /* rev 2^0 */
 
             d = agc_dp_shl_round(ip, agc_dp_mul_trunc(d, MU_2PI_8), 3);
             mu_angle(ip, 1, agc_rendz_nav_pad()->trunvar, d);
@@ -901,7 +889,7 @@ static agc_status_t mu_run(agc_job_ctx_t *ctx, agc_interp_t *ip)
         }
 
         agc_status_t st  = mu_compute(ip, mu.step); /* B, DELTAQ */
-        bool         big = false; /* over RMAX/VMAX */
+        bool         big = false;                   /* over RMAX/VMAX */
 
         if (st == AGC_STATUS_OK)
         {
@@ -995,15 +983,14 @@ agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
     }
 
     agc_phase_change(2, 04022); /* GRP2PC   */
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;            /* interpreter state */
 
     agc_interp_init(&ip);
     agc_status_t st; /* integration status */
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
-        st = mu_integrate_surface(&ip,
-                                  AGC_JOB_RENDEZVOUS_TRACKING_DATA_INCORPORATE);
+        st = mu_integrate_surface(&ip, AGC_JOB_RENDEZVOUS_TRACKING_DATA_INCORPORATE);
     }
     else
     {
@@ -1028,8 +1015,7 @@ agc_status_t agc_job_rendezvous_tracking_data_incorporate(agc_job_ctx_t *ctx)
 
     lmnav_state()->r65cntr = 0;
 
-    return (lmnav_tracking_attitude(ctx, false,
-                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE));
+    return (lmnav_tracking_attitude(ctx, false, AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE));
 } /* agc_job_rendezvous_tracking_data_incorporate */
 
 /**********************************************************************

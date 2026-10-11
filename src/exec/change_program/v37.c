@@ -35,7 +35,7 @@
 #include "agc/io/service.h"
 #include "agc/nav/integration.h"
 
-#define CP_BIT6       000040u /* IMODES30 bit 6: IMU being initialised */
+#define CP_BIT6       000040u             /* IMODES30 bit 6: IMU being initialised */
 #define CP_DPS_ABORT  70U
 #define CP_APS_ABORT  71U
 #define CP_GROUP4_JOB ((uint16_t) 005024) /* type C, D, J, group 4      */
@@ -56,8 +56,7 @@ uint8_t exec_cp_mmnumber(void)
 
 static const exec_cp_mode_t *cp_modes(int *n)
 {
-    return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? exec_cp_modes_lm(n) :
-            exec_cp_modes_csm(n));
+    return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? exec_cp_modes_lm(n) : exec_cp_modes_csm(n));
 }
 
 /* CHECKTAB / AGAINMM (C p.198 / L p.228): MINDEX of `mm`, -1 if none.  */
@@ -112,8 +111,8 @@ static agc_status_t cp_refuse(bool alarm_1520)
 static agc_job_ctx_t cp_running_ctx(void)
 {
     agc_exec_core_info_t ci;
-    agc_job_ctx_t        c = {AGC_JOB_CHANGE_PROGRAM_CONTINUE, 030, false,
-                              -1, 0};
+    agc_job_ctx_t        c  = {AGC_JOB_CHANGE_PROGRAM_CONTINUE, 030, false,
+                               -1, 0};
     agc_status_t         st = agc_exec_core_info(0, &ci);
 
     if (AGC_ASSERT(st == AGC_STATUS_OK))
@@ -180,7 +179,7 @@ agc_status_t agc_change_program(uint8_t new_mm)
 
     mmnumber = new_mm; /* TS MMNUMBER       */
     mindex   = -1;
-    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+    bool lm  = agc_state_vehicle() == AGC_VEHICLE_LM;
 
     if ((agc_erase_imodes30() & CP_BIT6) != 0U)
     { /* IMU initialising  */
@@ -257,7 +256,7 @@ static agc_status_t cp_pooh(void)
     agc_phase_set_priority(2, CP_PRIO5); /* CAF PRIO5 / TS PHSPRDT2 */
     agc_inhint();
     agc_flag_clear(AGC_FLAG_NODOFLAG);
-    agc_phase_newphase(2, 5, false); /* 2.5: STATINT1 restart  */
+    agc_phase_newphase(2, 5, false);     /* 2.5: STATINT1 restart  */
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {

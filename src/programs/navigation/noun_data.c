@@ -87,10 +87,10 @@ static agc_dp_t *nd_dp(uint16_t id)
         case AGC_DATA_POSTTPI:
             return (&rz->posttpi);
         case AGC_DATA_RANGE:
-        case AGC_DATA_WWPOS: /* WWPOS EQUALS RANGE   */
+        case AGC_DATA_WWPOS:  /* WWPOS EQUALS RANGE   */
             return (&rz->range);
         case AGC_DATA_RRATE:
-        case AGC_DATA_WWVEL: /* WWVEL EQUALS RRATE   */
+        case AGC_DATA_WWVEL:  /* WWVEL EQUALS RRATE   */
             return (&rz->rrate);
         case AGC_DATA_RTHETA:
         case AGC_DATA_WWBIAS: /* WWBIAS EQUALS RTHETA */
@@ -330,10 +330,10 @@ agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t  *p  = nd_dp(data_id); /* DP field, or NULL */
-    int        k  = 0; /* vector component */
+    agc_dp_t  *p  = nd_dp(data_id);      /* DP field, or NULL */
+    int        k  = 0;                   /* vector component */
     agc_vec_t *vp = nd_vec(data_id, &k); /* vector, or NULL */
-    uint16_t   w  = 0U; /* raw word */
+    uint16_t   w  = 0U;                  /* raw word */
 
     if (p != NULL)
     {
@@ -378,8 +378,8 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t  *p  = nd_dp(data_id); /* DP field, or NULL */
-    int        k  = 0; /* vector component */
+    agc_dp_t  *p  = nd_dp(data_id);      /* DP field, or NULL */
+    int        k  = 0;                   /* vector component */
     agc_vec_t *vp = nd_vec(data_id, &k); /* vector, or NULL */
 
     if (p != NULL)
@@ -396,8 +396,7 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
     }
     else if (data_id == AGC_DATA_LANDMARK)
     {
-        agc_erase_set_landmark(
-            (agc_sp_t) rz_word_value((uint16_t) (value & 077777)));
+        agc_erase_set_landmark((agc_sp_t) rz_word_value((uint16_t) (value & 077777)));
     }
     else if (data_id == AGC_DATA_HORIZON)
     {
@@ -405,9 +404,7 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
     }
     else if (data_id == AGC_DATA_TANG || data_id == AGC_DATA_TANG_P1)
     {
-        agc_erase_set_tang(
-            (data_id == AGC_DATA_TANG) ? 0 : 1, /* TANG or TANG +1 */
-            (agc_sp_t) rz_word_value((uint16_t) (value & 077777)));
+        agc_erase_set_tang((data_id == AGC_DATA_TANG) ? 0 : 1, (agc_sp_t) rz_word_value((uint16_t) (value & 077777))); /* TANG or TANG +1 */
     }
     else
     {

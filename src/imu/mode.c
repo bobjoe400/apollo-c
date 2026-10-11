@@ -85,17 +85,17 @@
 #define ALARM_REFSMMAT      ((agc_alarm_code_t) 00220) /* REFSMMAT not known  */
 #define ALARM_TWO_USERS     ((agc_alarm_code_t) 01210) /* two users, 1 device */
 
-#define DT_ZERO_RELEASE 32u   /* BIT6: 320 ms for the AGS pulse train, cs  */
-#define DT_ZERO_SETTLE  1024u /* BIT11: 10.24 s for the CDUs to find gimbals */
-#define DT_COARS        6u   /* CAF SIX                                  */
-#define DT_PULSES_START 2u   /* "minimum of 4 ms wait"                   */
-#define DT_600MS        60u  /* 600MS DEC 60                             */
-#define DT_SETTLE       150u /* FIXDELAY DEC 150                         */
-#define DT_IFAILOK      512u /* BIT10: 5.12 s                            */
-#define DT_2SECS        200u /* 2SECS                                    */
-#define COMMAX          191  /* -COMMAX  DEC -191 (max pulses minus one)  */
-#define COMMAX_         192  /* -COMMAX- DEC -192                         */
-#define COARSTOL        182  /* DEC -.01111 at half-rev = 2 deg, counts   */
+#define DT_ZERO_RELEASE 32u     /* BIT6: 320 ms for the AGS pulse train, cs  */
+#define DT_ZERO_SETTLE  1024u   /* BIT11: 10.24 s for the CDUs to find gimbals */
+#define DT_COARS        6u      /* CAF SIX                                  */
+#define DT_PULSES_START 2u      /* "minimum of 4 ms wait"                   */
+#define DT_600MS        60u     /* 600MS DEC 60                             */
+#define DT_SETTLE       150u    /* FIXDELAY DEC 150                         */
+#define DT_IFAILOK      512u    /* BIT10: 5.12 s                            */
+#define DT_2SECS        200u    /* 2SECS                                    */
+#define COMMAX          191     /* -COMMAX  DEC -191 (max pulses minus one)  */
+#define COMMAX_         192     /* -COMMAX- DEC -192                         */
+#define COARSTOL        182     /* DEC -.01111 at half-rev = 2 deg, counts   */
 #define CDU_MASK        077777u /* 15-bit CDU / channel word            */
 
 typedef enum modecadr_state
@@ -109,7 +109,7 @@ typedef enum modecadr_state
 typedef struct modecadr_word
 {
     modecadr_state_t state; /* +0, -1, -0 or a stalled job         */
-    agc_job_id_t     job; /* MC_STALLED: job to wake                   */
+    agc_job_id_t     job;   /* MC_STALLED: job to wake                   */
 } modecadr_word_t;
 
 /* MODECADR words live in exec (agc_exec.h; STARTSB2 clears them, SVCT3
@@ -236,8 +236,8 @@ static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)
 }
 
 static agc_imu_stall_result_t outcome[AGC_IMU_DEV_COUNT]; /* L+2/L+3 */
-static agc_sp_t               command[3]; /* COMMAND: pulses to go, B0  */
-static agc_sp_t               cducmd[3]; /* CDUXCMD..: pulses, B0       */
+static agc_sp_t               command[3];                 /* COMMAND: pulses to go, B0  */
+static agc_sp_t               cducmd[3];                  /* CDUXCMD..: pulses, B0       */
 
 /* ---- small helpers ------------------------------------------------------ */
 
@@ -363,8 +363,7 @@ static void iss_lamps_write(uint16_t v)
  **********************************************************************/
 static void chan_clear(int chan, uint16_t bits)
 {
-    if (!AGC_ASSERT(chan == AGC_CHAN_CHAN12 || chan == AGC_CHAN_CHAN13 ||
-                    chan == AGC_CHAN_CHAN14))
+    if (!AGC_ASSERT(chan == AGC_CHAN_CHAN12 || chan == AGC_CHAN_CHAN13 || chan == AGC_CHAN_CHAN14))
     {
         return;
     }
@@ -569,8 +568,7 @@ agc_status_t imu_cagetstj(void)
         return (AGC_STATUS_OK); /* TC Q             */
     }
 
-    mc_set(AGC_IMU_DEV_IMU, MC_DONE_BAD,
-           AGC_JOB_NONE); /* CS ZERO; TS IMUCADR */
+    mc_set(AGC_IMU_DEV_IMU, MC_DONE_BAD, AGC_JOB_NONE); /* CS ZERO; TS IMUCADR */
 
     if (!AGC_ASSERT(mc_get(AGC_IMU_DEV_IMU).state == MC_DONE_BAD))
     {
@@ -681,9 +679,7 @@ void agc_imu_noattoff(void)
         return;
     }
 
-    v =
-        (uint16_t) ((v & notmask(ISS_LAMP_NO_ATT | ISS_LAMPS_CHANGED)) |
-                    ISS_LAMPS_CHANGED);
+    v = (uint16_t) ((v & notmask(ISS_LAMP_NO_ATT | ISS_LAMPS_CHANGED)) | ISS_LAMPS_CHANGED);
     iss_lamps_write(v);
 
     if (!AGC_ASSERT((agc_erase_dsptab(11) & ISS_LAMP_NO_ATT) == 0u))
@@ -867,8 +863,7 @@ agc_status_t agc_task_imu_zero_release(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_waitlist_vardelay(DT_ZERO_SETTLE,
-                                            AGC_TASK_IMU_ZERO_DONE);                 /* status of the call */
+    agc_status_t st = agc_waitlist_vardelay(DT_ZERO_SETTLE, AGC_TASK_IMU_ZERO_DONE); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -891,8 +886,7 @@ agc_status_t agc_task_imu_zero_done(void)
         return (AGC_STATUS_OK);
     }
 
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) ==
-                    0u))
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) == 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -906,8 +900,7 @@ agc_status_t agc_task_imu_zero_done(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) ==
-                    0u))
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) == 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -983,8 +976,8 @@ agc_status_t agc_imu_coarse(const uint16_t thetad[3])
 static agc_sp_t coarse_command(int axis)
 {
     int diff = cdu_msu(agc_erase_thetad(axis), cdu_read(axis)); /* CDU */
-    int mag  = (diff < 0) ? -diff : diff; /* |THETAD - CDU|, CDU    */
-    int cmd  = (mag >> 2) + (((mag & 3) >= 2) ? 1 : 0); /* MP BIT13, round */
+    int mag  = (diff < 0) ? -diff : diff;                       /* |THETAD - CDU|, CDU    */
+    int cmd  = (mag >> 2) + (((mag & 3) >= 2) ? 1 : 0);         /* MP BIT13, round */
 
     if (!AGC_ASSERT(mag >= 0 && mag <= 040000))
     {
@@ -1021,14 +1014,12 @@ agc_status_t agc_task_coarse_align_commands(void)
         command[cduind] = coarse_command(cduind);
     }
 
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) !=
-                    0u))
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) != 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_waitlist_vardelay(DT_PULSES_START,
-                                            AGC_TASK_COARSE_ALIGN_PULSES);                  /* status of the call */
+    agc_status_t st = agc_waitlist_vardelay(DT_PULSES_START, AGC_TASK_COARSE_ALIGN_PULSES); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -1056,7 +1047,7 @@ static agc_sp_t coarse_slice(int axis)
         return (0); /* no valid result */
     }
 
-    int c   = command[axis];      /* COMMAND, pulses             */
+    int c   = command[axis];    /* COMMAND, pulses             */
     int mag = (c < 0) ? -c : c; /* CCS COMMAND magnitude       */
 
     if (mag - 1 - COMMAX <= 0)
@@ -1098,8 +1089,8 @@ agc_status_t agc_task_coarse_align_pulses(void)
     {
         agc_sp_t slice = (command[cduind] == 0) ? 0 : coarse_slice(cduind); /* CCS COMMAND, pulses B0 */
 
-        itemp1        += (slice != 0) ? 1 : 0; /* NEXTCDU INCR     */
-        cducmd[cduind] = slice;         /* TS CDUXCMD       */
+        itemp1         += (slice != 0) ? 1 : 0; /* NEXTCDU INCR     */
+        cducmd[cduind] = slice;                 /* TS CDUXCMD       */
     }
 
     if (!AGC_ASSERT(itemp1 >= 0 && itemp1 <= 3))
@@ -1111,8 +1102,7 @@ agc_status_t agc_task_coarse_align_pulses(void)
 
     if (itemp1 > 0)
     { /* SENDPULS         */
-        agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_DRIVECDUX | AGC_CH014_DRIVECDUY |
-                    AGC_CH014_DRIVECDUZ);
+        agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_DRIVECDUX | AGC_CH014_DRIVECDUY | AGC_CH014_DRIVECDUZ);
         st = agc_waitlist_vardelay(DT_600MS, AGC_TASK_COARSE_ALIGN_PULSES);
     }
     else
@@ -1152,7 +1142,7 @@ agc_status_t agc_task_coarse_align_check(void)
     for (int i = 2; i >= 0; i--)
     {
         int diff = cdu_msu(cdu_read(i), agc_erase_thetad(i)); /* CDU   */
-        int mag  = (diff < 0) ? -diff : diff; /* CCS magnitude, CDU  */
+        int mag  = (diff < 0) ? -diff : diff;                 /* CCS magnitude, CDU  */
 
         if (mag != 0 && (mag - 1) - COARSTOL > 0)
         { /* COARSERR         */
@@ -1175,8 +1165,7 @@ agc_status_t agc_task_ca_ece(void)
 {
     agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR);
 
-    if (!AGC_ASSERT((agc_chan_read(
-                         AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) != 0u))
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) != 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1204,12 +1193,10 @@ void agc_imu_setcoars(void)
     }
 
     chan_clear(AGC_CHAN_CHAN12, AGC_CH012_ENBIMUERR); /* clear error ctrs */
-    chan_clear(AGC_CHAN_CHAN14, AGC_CH014_GYROACT); /* gyro activity   */
-    agc_imu_hw_set_gyrocmd(0);                      /* CS ZERO: -0     */
+    chan_clear(AGC_CHAN_CHAN14, AGC_CH014_GYROACT);   /* gyro activity   */
+    agc_imu_hw_set_gyrocmd(0);                        /* CS ZERO: -0     */
     agc_chan_or(AGC_CHAN_CHAN12, AGC_CH012_COARSE);
-    iss_lamps_write(
-        (uint16_t) (agc_erase_dsptab(11) | ISS_LAMP_NO_ATT |
-                    ISS_LAMPS_CHANGED));
+    iss_lamps_write((uint16_t) (agc_erase_dsptab(11) | ISS_LAMP_NO_ATT | ISS_LAMPS_CHANGED));
     imodes33_set(IM33_DAPDIS6, true);
     imodes30_or(IM30_IMUFAILINH);
 
@@ -1243,8 +1230,7 @@ void agc_imu_rndrefdr(void)
         return;
     }
 
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_TRACKFLG) &&
-                    !agc_flag_test(AGC_FLAG_DRIFTFLG)))
+    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_TRACKFLG) && !agc_flag_test(AGC_FLAG_DRIFTFLG)))
     {
         return;
     }
@@ -1332,8 +1318,7 @@ agc_status_t agc_task_imufined(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) ==
-                    0u))
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) == 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1352,8 +1337,7 @@ agc_status_t agc_task_imufined(void)
  **********************************************************************/
 static agc_status_t fail_inhibit_remove(uint16_t clear_bits)
 {
-    if (!AGC_ASSERT(clear_bits == IM30_IMUFAILINH ||
-                    clear_bits == IM30_PIPFAILINH))
+    if (!AGC_ASSERT(clear_bits == IM30_IMUFAILINH || clear_bits == IM30_PIPFAILINH))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1365,7 +1349,7 @@ static agc_status_t fail_inhibit_remove(uint16_t clear_bits)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    setissw();            /* the ISS warning may come on now               */
+    setissw(); /* the ISS warning may come on now               */
 
     return (AGC_STATUS_OK); /* TASKOVER         */
 }
@@ -1566,14 +1550,12 @@ static agc_status_t goodend_common(agc_imu_device_t dev, bool good)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    modecadr_word_t        w   = mc_get((int) dev); /* MODECADR +dev */
-    agc_imu_stall_result_t res =
-        good ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* RUPTREG3 */
+    modecadr_word_t        w   = mc_get((int) dev);                             /* MODECADR +dev */
+    agc_imu_stall_result_t res = good ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* RUPTREG3 */
 
     if (w.state == MC_FREE)
     { /* ENDMODE          */
-        mc_set((int) dev, good ? MC_DONE_GOOD : MC_DONE_BAD, /* -1 / -0 */
-               AGC_JOB_NONE);
+        mc_set((int) dev, good ? MC_DONE_GOOD : MC_DONE_BAD, AGC_JOB_NONE); /* -1 / -0 */
 
         return (AGC_STATUS_OK);
     }
@@ -1742,11 +1724,9 @@ static agc_status_t modabort(agc_imu_device_t dev)
  *
  * RETURNS: agc_status_t -- OK, or MODABORT status
  **********************************************************************/
-agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as,
-                               agc_imu_stall_result_t *result)
+agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as, agc_imu_stall_result_t *result)
 {
-    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT &&
-                    result != NULL))
+    if (!AGC_ASSERT((int) dev >= 0 && dev < AGC_IMU_DEV_COUNT && result != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1779,10 +1759,9 @@ agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as,
         return (AGC_STATUS_OK);
     }
 
-    *result =
-        (w.state == MC_DONE_GOOD) ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* -1 / -0 */
+    *result      = (w.state == MC_DONE_GOOD) ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* -1 / -0 */
     outcome[dev] = *result;
-    mc_set((int) dev, MC_FREE, AGC_JOB_NONE); /* MG2: reset to +0 */
+    mc_set((int) dev, MC_FREE, AGC_JOB_NONE);                                          /* MG2: reset to +0 */
     imu_modeexit();
 
     return (AGC_STATUS_OK);
@@ -1897,14 +1876,14 @@ agc_status_t agc_imu_set_in_use(void)
 /* P06 standby and time recovery (pp.1445-1448 CM, pp.1334-1337 LM)        */
 /* ======================================================================= */
 
-#define STANDBY_CHECKLIST  062u   /* OCT62 (= .5SEC): GOPERF1 R1 code       */
-#define STANDBY_PHASE      07024u /* PHASCHNG type C, group 4, job + prio   */
-#define STANDBY_PRIO       020    /* OCT 20000: POSTAND at PRIO20, FINDVAC  */
-#define SCALER_5MS         020u   /* BIT5 of LOSCALAR: 5 ms (16/3200 s)     */
-#define SCALER_LOW5        037u   /* LOW5: scaler bits below 10 ms          */
+#define STANDBY_CHECKLIST  062u        /* OCT62 (= .5SEC): GOPERF1 R1 code       */
+#define STANDBY_PHASE      07024u      /* PHASCHNG type C, group 4, job + prio   */
+#define STANDBY_PRIO       020         /* OCT 20000: POSTAND at PRIO20, FINDVAC  */
+#define SCALER_5MS         020u        /* BIT5 of LOSCALAR: 5 ms (16/3200 s)     */
+#define SCALER_LOW5        037u        /* LOW5: scaler bits below 10 ms          */
 #define SCALER_MOD         0x10000000u /* 2^28: HISCALAR,LOSCALAR wrap      */
-#define SCALER_TO_CS_SHIFT 5      /* SHORTMP by BIT10 = 2^-5: scaler to cs  */
-#define SCALER_TRIES       4      /* bound on the SCALPREP re-reads         */
+#define SCALER_TO_CS_SHIFT 5           /* SHORTMP by BIT10 = 2^-5: scaler to cs  */
+#define SCALER_TRIES       4           /* bound on the SCALPREP re-reads         */
 
 static uint32_t time2sav; /* TIME2SAV: TIME2,TIME1 at PRESTAND, cs B28     */
 static uint32_t scalsave; /* SCALSAVE: scaler at PRESTAND, 1/3200 s B28    */
@@ -2007,7 +1986,7 @@ agc_status_t agc_job_standby(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    scalsave = scaler; /* DXCH MPAC, DXCH SCALSAVE        */
+    scalsave = scaler;                                  /* DXCH MPAC, DXCH SCALSAVE        */
     agc_imu_rndrefdr();
     agc_flag_clear(AGC_FLAG_IMUSE);
     agc_flag_clear(AGC_FLAG_RNDVZFLG);
@@ -2033,8 +2012,8 @@ agc_status_t agc_job_standby(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_standby_request(agc_job_ctx_t *ctx)
 {
-    const agc_dsky_cont_t again = {AGC_JOB_STANDBY_REQUEST,  /* V34   */
-                                   AGC_JOB_STANDBY_REQUEST,  /* V33   */
+    const agc_dsky_cont_t again = {AGC_JOB_STANDBY_REQUEST, /* V34   */
+                                   AGC_JOB_STANDBY_REQUEST, /* V33   */
                                    AGC_JOB_STANDBY_REQUEST}; /* ENTER */
 
     if (!AGC_ASSERT(ctx != NULL))
@@ -2047,8 +2026,7 @@ agc_status_t agc_job_standby_request(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOPERF1, STANDBY_CHECKLIST,
-                             &again));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOPERF1, STANDBY_CHECKLIST, &again));
 }
 
 /**********************************************************************
@@ -2100,9 +2078,8 @@ agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx)
     }
 
     /* DCS SCALSAVE, DAS MPAC, SHORTMP BIT10; + BIT10 if negative.      */
-    uint32_t dt_cs = /* scaler advance since PRESTAND, cs B28 */
-                     ((scaler - scalsave) % SCALER_MOD) >> SCALER_TO_CS_SHIFT;
-    uint32_t now = agc_time_now_cs(); /* counted since the clear, cs */
+    uint32_t dt_cs = ((scaler - scalsave) % SCALER_MOD) >> SCALER_TO_CS_SHIFT; /* scaler advance since PRESTAND, cs B28 */
+    uint32_t now   = agc_time_now_cs();                                        /* counted since the clear, cs */
 
     if (!AGC_ASSERT(dt_cs < (SCALER_MOD >> SCALER_TO_CS_SHIFT)))
     {

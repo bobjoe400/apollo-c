@@ -79,8 +79,7 @@ int main(void)
     test_roll_phase_plane();
     test_xt1lim();
     test_angle_wrap();
-    (void) printf("test_entry: %d checks, %d failures, %d assert reports\n",
-                  g_checks, g_failures, g_assert_reports);
+    (void) printf("test_entry: %d checks, %d failures, %d assert reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
 }
@@ -151,12 +150,12 @@ static void set_nominal_upcontrol_state(void)
 
     agc_entry_lexicon_reset();
     es->v       = agc_dp_from_double(v, 0);
-    es->vsquare = agc_dp_from_double(v * v, 0); /* (V/VS)^2 / 4 = v^2 */
+    es->vsquare = agc_dp_from_double(v * v, 0);          /* (V/VS)^2 / 4 = v^2 */
     es->rdot    = agc_dp_from_double(-300.0 / TWO_VS_FPS, 0);
     es->d       = agc_dp_from_double(4.0 * 32.2 / G25_FPSS, 0);
     es->lad     = agc_dp_from_double(0.3, 0);
-    es->l_d     = es->lad;                     /* lift up            */
-    es->lewd    = agc_dp_from_double(0.15, 0); /* LEWD1              */
+    es->l_d     = es->lad;                               /* lift up            */
+    es->lewd    = agc_dp_from_double(0.15, 0);           /* LEWD1              */
     es->q7      = agc_dp_from_double(6.0 / G25_FPSS, 0); /* Q7F          */
     es->q2      = agc_dp_from_double((0.3 * 500.0 - 1152.0) / REV_NM, 0);
     es->thetah  = agc_dp_from_double(1300.0 / REV_NM, 0);
@@ -180,37 +179,36 @@ static void set_nominal_upcontrol_state(void)
  **********************************************************************/
 static double model_range_revs(double *vl_out, double *gammal_out)
 {
-    const double v         = 32000.0 / TWO_VS_FPS;  /* V, 2VS           */
-    const double vsq       = v * v;                 /* VSQ, 4           */
-    const double rdot      = -300.0 / TWO_VS_FPS;   /* RDOT, 2VS        */
-    const double d         = 4.0 * 32.2 / G25_FPSS; /* D, 805           */
-    const double lad       = 0.3;                   /* LAD              */
-    const double lewd      = 0.15;                  /* LEWD             */
-    const double q7        = 6.0 / G25_FPSS;        /* Q7, 805          */
-    const double q2        = (0.3 * 500.0 - 1152.0) / REV_NM; /* Q2, revs */
-    const double two_c1_hs = 0.0215983264; /* 2C1HS            */
-    const double chook     = 1.0 / 64.0;  /* CHOOK            */
-    const double ch1       = 0.64;        /* CH1 2DEC 0.32 B1 = 16/25 */
-    double       v1        = rdot / lad + v; /* RDOT < 0: LAD, 2VS      */
-    double       a0        = (rdot * rdot / lad / two_c1_hs + d) * v1 *
-                             v1 / vsq;              /* A0, 805          */
-    double alp   = a0 * two_c1_hs / v1 / v1 / lewd; /* ALP    */
-    double fact1 = v1 / (1.0 - alp);                /* FACT1            */
-    double fact2 = (alp - 1.0) * alp / a0; /* FACT2           */
-    double vl    = (1.0 - sqrt(fact2 * q7 + alp)) * fact1; /* VL */
-    double gl1   = lewd * (v1 - vl) / vl;                  /* GAMMAL1 */
-    double vbars = vl * vl;                                /* VBARS, 4 */
-    double dvl   = 0.5 - vl;                               /* DVL, 2VS */
-    double vs1   = 0.5;                                    /* VS1, 2VS */
-    double q7n   = q7; /* Q7 after NEGAMA, 805 */
-    double dhook;                                          /* DHOOK, 805 */
-    double ahookdv;                                        /* AHOOKDV, 16 */
-    double g;                                              /* GAMMAL, rad */
-    double cosg;                                           /* COSG/2 */
-    double e4;                                             /* E/4 */
-    double askep;                                          /* ASKEP, revs */
-    double aspup;                                          /* ASPUP, revs */
-    double aspdwn;                                         /* ASPDWN, revs */
+    const double v         = 32000.0 / TWO_VS_FPS;                                /* V, 2VS           */
+    const double vsq       = v * v;                                               /* VSQ, 4           */
+    const double rdot      = -300.0 / TWO_VS_FPS;                                 /* RDOT, 2VS        */
+    const double d         = 4.0 * 32.2 / G25_FPSS;                               /* D, 805           */
+    const double lad       = 0.3;                                                 /* LAD              */
+    const double lewd      = 0.15;                                                /* LEWD             */
+    const double q7        = 6.0 / G25_FPSS;                                      /* Q7, 805          */
+    const double q2        = (0.3 * 500.0 - 1152.0) / REV_NM;                     /* Q2, revs */
+    const double two_c1_hs = 0.0215983264;                                        /* 2C1HS            */
+    const double chook     = 1.0 / 64.0;                                          /* CHOOK            */
+    const double ch1       = 0.64;                                                /* CH1 2DEC 0.32 B1 = 16/25 */
+    double       v1        = rdot / lad + v;                                      /* RDOT < 0: LAD, 2VS      */
+    double       a0        = (rdot * rdot / lad / two_c1_hs + d) * v1 * v1 / vsq; /* A0, 805          */
+    double       alp       = a0 * two_c1_hs / v1 / v1 / lewd;                     /* ALP    */
+    double       fact1     = v1 / (1.0 - alp);                                    /* FACT1            */
+    double       fact2     = (alp - 1.0) * alp / a0;                              /* FACT2           */
+    double       vl        = (1.0 - sqrt(fact2 * q7 + alp)) * fact1;              /* VL */
+    double       gl1       = lewd * (v1 - vl) / vl;                               /* GAMMAL1 */
+    double       vbars     = vl * vl;                                             /* VBARS, 4 */
+    double       dvl       = 0.5 - vl;                                            /* DVL, 2VS */
+    double       vs1       = 0.5;                                                 /* VS1, 2VS */
+    double       q7n       = q7;                                                  /* Q7 after NEGAMA, 805 */
+    double       dhook;                                                           /* DHOOK, 805 */
+    double       ahookdv;                                                         /* AHOOKDV, 16 */
+    double       g;                                                               /* GAMMAL, rad */
+    double       cosg;                                                            /* COSG/2 */
+    double       e4;                                                              /* E/4 */
+    double       askep;                                                           /* ASKEP, revs */
+    double       aspup;                                                           /* ASPUP, revs */
+    double       aspdwn;                                                          /* ASPDWN, revs */
 
     if (v1 > 0.5)
     {
@@ -224,25 +222,22 @@ static double model_range_revs(double *vl_out, double *gammal_out)
 
     if (g < 0)
     { /* NEGAMA         */
-        vl += (g * vl / 3.0) /
-              (lewd / 3.0 - (ahookdv + 1.0 / 24.0) * dvl * ch1 / dhook / vl);
+        vl    += (g * vl / 3.0) / (lewd / 3.0 - (ahookdv + 1.0 / 24.0) * dvl * ch1 / dhook / vl);
         q7n   = (pow(1.0 - vl / fact1, 2) - alp) / fact2;
         vbars = vl * vl;
         g     = 0;
     }
 
-    gl1  += (g - gl1) * 0.5; /* Q19            */
-    cosg  = 0.5 - g * g / 4.0;
-    e4    = sqrt(4.0 * (vbars - 0.5) * vbars * cosg * cosg + 1.0 / 16.0);
-    askep = 2.0 * asin(vbars * cosg * g / e4) / 6.283185307179586;
-    aspup = (-log(v1 * v1 * q7n / vbars / a0) / 32.0) * 0.00684572901 /
-            gl1;
+    gl1         += (g - gl1) * 0.5; /* Q19            */
+    cosg        = 0.5 - g * g / 4.0;
+    e4          = sqrt(4.0 * (vbars - 0.5) * vbars * cosg * cosg + 1.0 / 16.0);
+    askep       = 2.0 * asin(vbars * cosg * g / e4) / 6.283185307179586;
+    aspup       = (-log(v1 * v1 * q7n / vbars / a0) / 32.0) * 0.00684572901 / gl1;
     aspdwn      = -0.0247622232 * rdot * v / a0 / lad;
     *vl_out     = vl;
     *gammal_out = g;
 
-    return (askep + (vl * 0.167003132 + q2) + aspup + aspdwn +
-            (0.0349 - g) * 0.326388889);
+    return (askep + (vl * 0.167003132 + q2) + aspup + aspdwn + (0.0349 - g) * 0.326388889);
 } /* model_range_revs */
 
 /**********************************************************************
@@ -257,29 +252,26 @@ static double model_range_revs(double *vl_out, double *gammal_out)
  **********************************************************************/
 static void test_huntest_range(void)
 {
-    agc_entry_hunt_result_t  r      = AGC_ENTRY_HUNT_CONSTD; /* HUNTEST exit */
-    agc_dp_t                 gammal = 0;   /* GAMMAL, revs B0           */
-    agc_dp_t                 diff   = 0;   /* DIFF, revs B0             */
-    const agc_entry_state_t *es;           /* entry erasables           */
-    double                   range_nm;     /* predicted range, NM       */
-    double                   model_vl = 0; /* model VL, scale 2VS       */
-    double                   model_g  = 0; /* model GAMMAL, rad         */
-    double                   model_nm;     /* model range, NM           */
+    agc_entry_hunt_result_t  r        = AGC_ENTRY_HUNT_CONSTD; /* HUNTEST exit */
+    agc_dp_t                 gammal   = 0;                     /* GAMMAL, revs B0           */
+    agc_dp_t                 diff     = 0;                     /* DIFF, revs B0             */
+    const agc_entry_state_t *es;                               /* entry erasables           */
+    double                   range_nm;                         /* predicted range, NM       */
+    double                   model_vl = 0;                     /* model VL, scale 2VS       */
+    double                   model_g  = 0;                     /* model GAMMAL, rad         */
+    double                   model_nm;                         /* model range, NM           */
 
     model_nm = model_range_revs(&model_vl, &model_g) * REV_NM;
     set_nominal_upcontrol_state();
     CHECK(agc_entry_huntest_predict(&r, &gammal) == AGC_STATUS_OK);
     CHECK(r == AGC_ENTRY_HUNT_RANGER);
-    es = agc_entry_state();
+    es       = agc_entry_state();
     CHECK(fabs(agc_dp_to_double(es->vl, 0) - model_vl) < 1e-5); /* 0.5 fps */
     CHECK(fabs(agc_dp_to_double(gammal, 0) - model_g) < 1e-6);
-    CHECK(agc_dp_to_double(es->vl, 0) * TWO_VS_FPS > 18000.0); /* > VLMIN */
+    CHECK(agc_dp_to_double(es->vl, 0) * TWO_VS_FPS > 18000.0);  /* > VLMIN */
     CHECK(agc_entry_range_predict(gammal, &diff) == AGC_STATUS_OK);
     range_nm = (agc_dp_to_double(diff, 0) + 1300.0 / REV_NM) * REV_NM;
-    (void) printf(
-        "  HUNTEST: VL %.0f fps, GAMMAL %.5f rad, range %.1f NM (model %.1f)\n",
-        agc_dp_to_double(es->vl, 0) * TWO_VS_FPS, agc_dp_to_double(gammal, 0),
-        range_nm, model_nm);
+    (void) printf("  HUNTEST: VL %.0f fps, GAMMAL %.5f rad, range %.1f NM (model %.1f)\n", agc_dp_to_double(es->vl, 0) * TWO_VS_FPS, agc_dp_to_double(gammal, 0), range_nm, model_nm);
     CHECK(isfinite(range_nm));
     CHECK(range_nm > 100.0 && range_nm < 10000.0);
     CHECK(fabs(range_nm - model_nm) < 1.0);
@@ -298,7 +290,7 @@ static void test_huntest_range(void)
  **********************************************************************/
 static void test_roll_phase_plane(void)
 {
-    agc_entry_roll_cmd_t o; /* phase-plane solution                 */
+    agc_entry_roll_cmd_t o;     /* phase-plane solution                 */
     agc_sp_t             err20; /* X/360 for 20 deg, B0 */
 
     err20 = agc_sp_from_double(20.0 / 360.0, 0);
@@ -306,15 +298,14 @@ static void test_roll_phase_plane(void)
     CHECK(!o.in_deadzone);
     CHECK(o.jndx == -1); /* positive roll jets     */
     CHECK(o.ton1 > 0);
-    CHECK(agc_entry_dap_roll_phase_plane((agc_sp_t) (-err20), 0, &o) ==
-          AGC_STATUS_OK);
+    CHECK(agc_entry_dap_roll_phase_plane((agc_sp_t) (-err20), 0, &o) == AGC_STATUS_OK);
     CHECK(!o.in_deadzone);
-    CHECK(o.jndx == 1); /* negative roll jets     */
+    CHECK(o.jndx == 1);  /* negative roll jets     */
     CHECK(o.ton1 > 0);
     CHECK(agc_entry_dap_roll_jet_bits(-1) != agc_entry_dap_roll_jet_bits(1));
+
     /* 1 deg error, no rate: inside the 4 deg dead zone (XMIN).           */
-    CHECK(agc_entry_dap_roll_phase_plane(agc_sp_from_double(1.0 / 360.0, 0), 0,
-                                         &o) == AGC_STATUS_OK);
+    CHECK(agc_entry_dap_roll_phase_plane(agc_sp_from_double(1.0 / 360.0, 0), 0, &o) == AGC_STATUS_OK);
     CHECK(o.in_deadzone);
 }
 
@@ -334,8 +325,7 @@ static void test_xt1lim(void)
     agc_dp_t rc = agc_dp_from_double(0.7e7, 29); /* RCON = R(T1), m B29 */
     agc_dp_t x  = 0;                             /* X(T1)LIM, B5        */
 
-    CHECK(agc_return_to_earth_xt1lim(ma, rc, rc, agc_dp_from_double(5.0, 9),
-                                     &x) == AGC_STATUS_OK);
+    CHECK(agc_return_to_earth_xt1lim(ma, rc, rc, agc_dp_from_double(5.0, 9), &x) == AGC_STATUS_OK);
     CHECK(fabs(agc_dp_to_double(x, 5) - 2.0) < 1e-4);
 }
 
@@ -354,7 +344,7 @@ static void test_angle_wrap(void)
 {
     agc_sp_t a170 = (agc_sp_t) (170.0 / 180.0 * 16384.0); /* /180, B0 */
     agc_sp_t a20  = (agc_sp_t) (20.0 / 180.0 * 16384.0);  /* /180, B0 */
-    agc_sp_t w; /* 190 deg wrapped, /180 B0 */
+    agc_sp_t w;                                           /* 190 deg wrapped, /180 B0 */
 
     w = entry_angle_wrap((int32_t) a170 + (int32_t) a20);
     CHECK(w < 0);

@@ -19,18 +19,18 @@
 #include "agc/core/flags_common.h"
 #include "agc/programs/alignment.h"
 
-#define PH_REALIGN ((uint16_t) 00254) /* PROG52 (CM): group 4 phase 25    */
+#define PH_REALIGN ((uint16_t) 00254)    /* PROG52 (CM): group 4 phase 25    */
 #define PH_OPTION_RETURN \
     ((uint16_t) 00014)                   /* P52B display return: phase 1     */
 #define VN_ALIGN_TIME    ALIGN_VN(6, 34) /* VN 0634: TALIGN / time           */
 #define VN_GIMBAL_ANGLES ALIGN_VN(6, 22) /* VN 00622: gimbal angles THETAD   */
 #define VN_MONITOR_GIMBALS \
-    ALIGN_VN(16, 20)                  /* VN 1620: monitor the gimbals     */
-#define OPT_CODE_1   ((uint16_t) 1)   /* GOPERF4R with BIT1: V04N06       */
-#define CHK_OCT13    ((uint16_t) 013) /* OCT13: coarse align checklist    */
-#define OPTION2_PREF ((agc_sp_t) 1)   /* BIT1: preferred                  */
-#define OPTION2_NOM  ((agc_sp_t) 2)   /* BIT2: nominal                    */
-#define OPTION_MASK3 3                /* MASK THREE                       */
+    ALIGN_VN(16, 20)                     /* VN 1620: monitor the gimbals     */
+#define OPT_CODE_1   ((uint16_t) 1)      /* GOPERF4R with BIT1: V04N06       */
+#define CHK_OCT13    ((uint16_t) 013)    /* OCT13: coarse align checklist    */
+#define OPTION2_PREF ((agc_sp_t) 1)      /* BIT1: preferred                  */
+#define OPTION2_NOM  ((agc_sp_t) 2)      /* BIT2: nominal                    */
+#define OPTION_MASK3 3                   /* MASK THREE                       */
 
 static bool is_csm(void)
 {
@@ -78,8 +78,7 @@ agc_status_t agc_job_imu_realign(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* alarm 210/220, GOTOPOOH done */
     }
 
-    agc_erase_set_option1(1, agc_flag_test(AGC_FLAG_PFRATFLG) ? OPTION2_PREF :
-                          OPTION2_NOM);
+    agc_erase_set_option1(1, agc_flag_test(AGC_FLAG_PFRATFLG) ? OPTION2_PREF : OPTION2_NOM);
 
     if (!AGC_ASSERT(option2() != 0))
     {
@@ -101,9 +100,7 @@ agc_status_t agc_job_imu_realign_option_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = align_flash(ctx, AGC_DSKY_GOPERF4R, OPT_CODE_1,
-                                  AGC_JOB_GOTOPOOH, AGC_JOB_IMU_REALIGN_OPTION,
-                                  AGC_JOB_IMU_REALIGN_OPTION_DISPLAY);
+    agc_status_t st = align_flash(ctx, AGC_DSKY_GOPERF4R, OPT_CODE_1, AGC_JOB_GOTOPOOH, AGC_JOB_IMU_REALIGN_OPTION, AGC_JOB_IMU_REALIGN_OPTION_DISPLAY);
 
     if (st == AGC_STATUS_OK)
     {
@@ -145,8 +142,7 @@ agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
 
     if (is_csm())
     {
-        return ((opt == 0) ? agc_job_realign_time(ctx) :
-                agc_job_csm_realign_star_selection(ctx));
+        return ((opt == 0) ? agc_job_realign_time(ctx) : agc_job_csm_realign_star_selection(ctx));
     }
 
     if (opt == 0)
@@ -158,7 +154,7 @@ agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
 
     agc_align_ram()->qmaj = AGC_JOB_GOTOPOOH; /* P52OUT         */
 
-    return (agc_job_lm_fine_align(ctx));        /* P52E, P52F     */
+    return (agc_job_lm_fine_align(ctx)); /* P52E, P52F     */
 }
 
 /* P52T: DSPTEM1 = -0 (0 here: both tests treat +-0 alike), then VN_ALIGN_TIME. */
@@ -192,9 +188,7 @@ agc_status_t agc_job_realign_time_flash(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALIGN_TIME, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_REALIGN_TIME_PROCEED,
-                        AGC_JOB_REALIGN_TIME_FLASH));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALIGN_TIME, AGC_JOB_GOTOPOOH, AGC_JOB_REALIGN_TIME_PROCEED, AGC_JOB_REALIGN_TIME_FLASH));
 }
 
 /*
@@ -224,8 +218,7 @@ agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
             }
         }
 
-        return (nominal ? agc_job_realign_nominal_orientation(ctx) :
-                agc_job_csm_imu_realign_landing_site(ctx));
+        return (nominal ? agc_job_realign_nominal_orientation(ctx) : agc_job_csm_imu_realign_landing_site(ctx));
     }
 
     agc_align_ram()->talign = (t <= 0) ? align_loadtime() : t; /* BZMF   */
@@ -235,8 +228,7 @@ agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (nominal ? agc_job_realign_nominal_orientation(ctx) :
-            agc_job_lm_imu_realign_landing_site(ctx));
+    return (nominal ? agc_job_realign_nominal_orientation(ctx) : agc_job_lm_imu_realign_landing_site(ctx));
 }
 
 /*
@@ -256,8 +248,7 @@ agc_status_t agc_job_realign_nominal_orientation(agc_job_ctx_t *ctx)
     agc_interp_t     ip;
 
     agc_interp_init(&ip);
-    const agc_status_t st = agc_align_nominal_orientation(
-        &ip, t, AGC_JOB_REALIGN_NOMINAL_ORIENTATION, &ram->xsmd);
+    const agc_status_t st = agc_align_nominal_orientation(&ip, t, AGC_JOB_REALIGN_NOMINAL_ORIENTATION, &ram->xsmd);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -284,8 +275,7 @@ static agc_status_t realign_gimbal_angles(void)
     align_read_cdus(cdu);
     const agc_mat_t    refsmmat = agc_erase_refsmmat();
     uint16_t           thetad[3];
-    const agc_status_t st = agc_align_gimbal_angles(
-        &ip, &ram->xsmd, &refsmmat, cdu, &ram->xsm, &ram->xnb, thetad);
+    const agc_status_t st       = agc_align_gimbal_angles(&ip, &ram->xsmd, &refsmmat, cdu, &ram->xsm, &ram->xnb, thetad);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -310,9 +300,7 @@ agc_status_t agc_job_realign_gimbal_display(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_GIMBAL_ANGLES,
-                        AGC_JOB_GOTOPOOH, AGC_JOB_COARSTYP,
-                        AGC_JOB_REALIGN_GIMBAL_DISPLAY));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_GIMBAL_ANGLES, AGC_JOB_GOTOPOOH, AGC_JOB_COARSTYP, AGC_JOB_REALIGN_GIMBAL_DISPLAY));
 }
 
 /* COARSTYP: V50N25 R1 00013; V33 normal coarse (CAL53A), V32 gyro torque. */
@@ -328,8 +316,7 @@ agc_status_t agc_job_coarstyp(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_OCT13, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_COARSE_ALIGN, AGC_JOB_GYCRS));
+    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_OCT13, AGC_JOB_GOTOPOOH, AGC_JOB_COARSE_ALIGN, AGC_JOB_GYCRS));
 }
 
 /*
@@ -367,8 +354,7 @@ agc_status_t agc_job_coarse_align(agc_job_ctx_t *ctx)
         return (agc_job_coarse_align_fineonly(ctx)); /* CALOOP1   */
     }
 
-    align_phase_job(ALIGN_PH_04024, AGC_JOB_COARSE_ALIGN,
-                    ctx->prio);      /* COARFINE */
+    align_phase_job(ALIGN_PH_04024, AGC_JOB_COARSE_ALIGN, ctx->prio); /* COARFINE */
 
     return (align_coarse(AGC_JOB_COARSE_ALIGN_COARSED));
 }
@@ -435,8 +421,7 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     const agc_mat_t refsmmat = agc_erase_refsmmat();
-    agc_status_t    st       =
-        agc_align_gyro_coarse_dc(&ip, &ram->xsmd, &refsmmat, &ram->xdc);
+    agc_status_t    st       = agc_align_gyro_coarse_dc(&ip, &ram->xsmd, &refsmmat, &ram->xdc);
 
     if (st == AGC_STATUS_OK)
     {
@@ -448,7 +433,7 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_flag_clear(AGC_FLAG_DRIFTFLG); /* flag ids are valid  */
+    agc_flag_clear(AGC_FLAG_DRIFTFLG);                         /* flag ids are valid  */
     agc_flag_clear(AGC_FLAG_REFSMFLG);
     st = align_show(ctx, AGC_DSKY_GODSPR, VN_MONITOR_GIMBALS); /* GODSPR    */
 

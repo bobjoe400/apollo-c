@@ -43,7 +43,7 @@ typedef struct rst_group_tab
 {
     const rst_entry_t *even; /* 2 entries per even phase from G.2       */
     int                n_even;
-    const rst_entry_t *odd; /* 1 entry per odd phase from G.3          */
+    const rst_entry_t *odd;  /* 1 entry per odd phase from G.3          */
     int                n_odd;
 } rst_group_tab_t;
 
@@ -67,30 +67,31 @@ static const rst_entry_t csm_even6[] = {
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_GIMBAL_TRIM_RESTART}, /* 6.2 */
     {RST_T, 100, RST_D, RST_E0, RST_JN, AGC_TASK_CLOKTASK},
 };
-static const rst_entry_t csm_odd1[] = {
+static const rst_entry_t csm_odd1[]  = {
     {RST_T, 120, RST_D, RST_E0, RST_JN, AGC_TASK_SETJTAG}, /* 1.3 */
     {RST_J, 010, RST_D, RST_E0, AGC_JOB_REDO40_9, RST_TN}, /* 1.5 */
     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN},  /* 1.7 */
-    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK,
-     RST_TN}, /* 1.11 */
-};
-static const rst_entry_t csm_odd2[] = {
+     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK,
+     RST_TN},                                              /* 1.11 */
+ };
+static const rst_entry_t csm_odd2[]  = {
     {RST_L, 0, RST_G, RST_E_600SECS, RST_JN, AGC_TASK_STATEINT}, /* 2.3 */
     {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN},        /* 2.5 */
-    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA,
-     RST_TN},                                                         /* 2.7 */
-    {RST_J, 014, RST_D, RST_E0, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT,
-     RST_TN},
-    /* 2.11 */
-    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK,
+     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA,
+     RST_TN},                                                    /* 2.7 */
+     {RST_J, 014, RST_D, RST_E0, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT,
+      RST_TN},
+
+     /* 2.11 */
+     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK,
      RST_TN}, /* 2.13 */
-};
+ };
 static const rst_entry_t csm_odd3[] = {
-    {RST_J, 020, RST_D, RST_E0, AGC_JOB_TIMEBURN, RST_TN}, /* 3.3 */
-    {RST_N, 0, RST_D, RST_E0, RST_JN, RST_TN},             /* 3.5 */
-    {RST_J, 022, RST_D, RST_E0, AGC_JOB_MATRXJOB, RST_TN}, /* 3.7 */
+    {RST_J, 020, RST_D, RST_E0, AGC_JOB_TIMEBURN, RST_TN},     /* 3.3 */
+    {RST_N, 0, RST_D, RST_E0, RST_JN, RST_TN},                 /* 3.5 */
+    {RST_J, 022, RST_D, RST_E0, AGC_JOB_MATRXJOB, RST_TN},     /* 3.7 */
     {RST_J, 022, RST_D, RST_E0, AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_RESTART,
-     RST_TN}, /* 3.11 */
+     RST_TN},                                                  /* 3.11 */
     {RST_J, 022, RST_D, RST_E0, AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_EPHEMERIS,
      RST_TN},                                                  /* 3.13 */
     {RST_T, 0, RST_X, RST_E_TGO_1, RST_JN, AGC_TASK_ENGINOFF}, /* 3.15 */
@@ -100,31 +101,32 @@ static const rst_entry_t csm_odd4[] = {
     {RST_T, 160, RST_D, RST_E0, RST_JN, AGC_TASK_DOSTRULL}, /* 4.5 */
     {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_0},    /* 4.7 */
     {RST_T, 250, RST_D, RST_E0, RST_JN,
-     AGC_TASK_ENGINE_FAIL_REIGNITE_TRIM}, /* 4.11 */
+     AGC_TASK_ENGINE_FAIL_REIGNITE_TRIM},                   /* 4.11 */
     {RST_T, 200, RST_D, RST_E0, RST_JN,
-     AGC_TASK_ENGINE_FAIL_REENABLE},                                  /* 4.13 */
-    {RST_J, 016, RST_D, RST_E0, AGC_JOB_COMPVER, RST_TN},             /* 4.15 */
+     AGC_TASK_ENGINE_FAIL_REENABLE},                        /* 4.13 */
+    {RST_J, 016, RST_D, RST_E0, AGC_JOB_COMPVER, RST_TN},   /* 4.15 */
     {RST_J, 016, RST_D, RST_E0, AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE, RST_TN},
+
     /* 4.17 */
     {RST_L, 0, RST_G, RST_E_PREREAD_DELAY, RST_JN, AGC_TASK_TIGBLNK}, /* 4.21 */
     {RST_J, 012, RST_D, RST_E0, AGC_JOB_PREBURN_STATE_VECTOR,
-     RST_TN},                                                 /* 4.23 */
-    {RST_J, 024, RST_D, RST_E0, AGC_JOB_IMU_REALIGN, RST_TN}, /* 4.25 */
-    {RST_T, 250, RST_D, RST_E0, RST_JN, AGC_TASK_DOTVCRCS},   /* 4.27 */
-    {RST_J, 013, RST_D, RST_E0, AGC_JOB_CSM_FINE_ALIGN, RST_TN}, /* 4.31 */
+     RST_TN},                                                         /* 4.23 */
+    {RST_J, 024, RST_D, RST_E0, AGC_JOB_IMU_REALIGN, RST_TN},         /* 4.25 */
+    {RST_T, 250, RST_D, RST_E0, RST_JN, AGC_TASK_DOTVCRCS},           /* 4.27 */
+    {RST_J, 013, RST_D, RST_E0, AGC_JOB_CSM_FINE_ALIGN, RST_TN},      /* 4.31 */
     {RST_T, 2100, RST_D, RST_E0, RST_JN,
-     AGC_TASK_WAKE_CM_SM_SEPARATION},                      /* 4.33 */
-    {RST_J, 012, RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN}, /* 4.35 */
-    {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIGAVEG}, /* 4.37 */
+     AGC_TASK_WAKE_CM_SM_SEPARATION},                                 /* 4.33 */
+    {RST_J, 012, RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN},            /* 4.35 */
+    {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIGAVEG},            /* 4.37 */
     {RST_J, 017, RST_D, RST_E0, AGC_JOB_ENTRY_FINAL_PHASE_DISPLAY,
-     RST_TN}, /* 4.41 */
+     RST_TN},                                                         /* 4.41 */
     {RST_T, 0, RST_X, RST_E_S61DT, RST_JN,
      AGC_TASK_ENTRY_START_AVERAGE_G},                                 /* 4.43 */
     {RST_J, 013, RST_D, RST_E0, AGC_JOB_ENTRY_IMU_AXIS_TEST, RST_TN}, /* 4.45 */
     {RST_J, 017, RST_D, RST_E0, AGC_JOB_PRE_HUNT, RST_TN},            /* 4.47 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_ATERTASK},             /* 4.51 */
     {RST_T, 0, RST_I, RST_E0, RST_JN,
-     AGC_TASK_ENGINE_FAIL_REIGNITE_PREP}, /* 4.53 */
+     AGC_TASK_ENGINE_FAIL_REIGNITE_PREP},                             /* 4.53 */
     {RST_J, 013, RST_D, RST_E0, AGC_JOB_ENTRY_UPCONTROL_DISPLAY,
      RST_TN},                                                         /* 4.55 */
     {RST_T, 0, RST_X, RST_E_PREREAD_DELAY, RST_JN, AGC_TASK_TIGON},   /* 4.57 */
@@ -133,10 +135,10 @@ static const rst_entry_t csm_odd4[] = {
     {RST_T, 10, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_5},               /* 4.65 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_ENGINE_FAIL_SHUTDOWN}, /* 4.67 */
     {RST_T, 250, RST_D, RST_E0, RST_JN,
-     AGC_TASK_ENGINE_FAIL_RCS_DAP},                                 /* 4.71 */
-    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_ENGINE_FAIL_RESUME}, /* 4.73 */
-    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_SPSOFF97},           /* 4.75 */
-    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_TIG_0},              /* 4.77 */
+     AGC_TASK_ENGINE_FAIL_RCS_DAP},                                   /* 4.71 */
+    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_ENGINE_FAIL_RESUME},   /* 4.73 */
+    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_SPSOFF97},             /* 4.75 */
+    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_TIG_0},                /* 4.77 */
 };
 static const rst_entry_t csm_odd5[] = {
     {RST_T, 200, RST_D, RST_E0, RST_JN, AGC_TASK_REREADAC}, /* 5.3 */
@@ -175,52 +177,53 @@ static const rst_entry_t lm_even4[] = {
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO4_2},
 };
 static const rst_entry_t lm_even5[] = {
-    {RST_J, 022, RST_D, RST_E0, AGC_JOB_NORMLIZE, RST_TN}, /* 5.2 */
+    {RST_J, 022, RST_D, RST_E0, AGC_JOB_NORMLIZE, RST_TN},  /* 5.2 */
     {RST_T, 200, RST_D, RST_E0, RST_JN, AGC_TASK_REREADAC},
     {RST_T, 200, RST_D, RST_E0, RST_JN, AGC_TASK_REREADAC}, /* 5.4 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_SERVICER, RST_TN},
 };
-static const rst_entry_t lm_odd1[] = {
+static const rst_entry_t lm_odd1[]  = {
     {RST_T, 0, RST_X, RST_E_SAVET_30, RST_JN, AGC_TASK_ULLGTASK}, /* 1.3 */
-};
-static const rst_entry_t lm_odd2[] = {
+ };
+static const rst_entry_t lm_odd2[]  = {
     {RST_L, 0, RST_G, RST_E_600SECS, RST_JN, AGC_TASK_STATEINT}, /* 2.3 */
     {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN},        /* 2.5 */
-    {RST_T, 1500, RST_D, RST_E0, RST_JN,
-     AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK}, /* 2.7 */
-    {RST_J, 014, RST_D, RST_E0, AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK,
-     RST_TN},                                             /* 2.11 */
-    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN}, /* 2.13 */
-    {RST_J, 026, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART,
-     RST_TN},                                             /* 2.15 */
-    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO2_17}, /* 2.17 */
-    {RST_T, 25, RST_D, RST_E0, RST_JN,
-     AGC_TASK_ABORT_MONITOR}, /* 2.21 */
-};
-static const rst_entry_t lm_odd3[] = {
+     {RST_T, 1500, RST_D, RST_E0, RST_JN,
+     AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK},                /* 2.7 */
+     {RST_J, 014, RST_D, RST_E0, AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK,
+     RST_TN},                                                    /* 2.11 */
+    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN},        /* 2.13 */
+     {RST_J, 026, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART,
+     RST_TN},                                                    /* 2.15 */
+    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO2_17},        /* 2.17 */
+     {RST_T, 25, RST_D, RST_E0, RST_JN,
+     AGC_TASK_ABORT_MONITOR},                                    /* 2.21 */
+ };
+static const rst_entry_t lm_odd3[]  = {
     {RST_T, 0, RST_X, RST_E_ZOOMTIME, RST_JN, AGC_TASK_ZOOM}, /* 3.3 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_TIMEBURN, RST_TN},    /* 3.5 */
-};
-static const rst_entry_t lm_odd4[] = {
-    {RST_J, 025, RST_D, RST_E0, AGC_JOB_GOABORT, RST_TN},            /* 4.3 */
-    {RST_T, 50, RST_D, RST_E0, RST_JN, AGC_TASK_ULLAGOFF},           /* 4.5 */
-    {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_0},             /* 4.7 */
-    {RST_T, 0, RST_X, RST_E_TGO_1, RST_JN, AGC_TASK_ENGOFTSK},       /* 4.11 */
-    {RST_J, 012, RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN},           /* 4.13 */
-    {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_30},            /* 4.15 */
-    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_TIG_5},               /* 4.17 */
-    {RST_J, 013, RST_D, RST_E0, AGC_JOB_LM_FINE_ALIGN_PERFORM, RST_TN},
-    /* 4.21 */
-    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_IGNITION},            /* 4.23 */
-    {RST_L, 0, RST_G, RST_E_SAVET_30, RST_JN, AGC_TASK_TIG_35},      /* 4.25 */
-    {RST_J, -025, RST_D, RST_E0, AGC_JOB_DPS_ABORT_COMMANDED,
-     RST_TN}, /* 4.27 */
-    {RST_J, -025, RST_D, RST_E0, AGC_JOB_APS_ABORT_COMMANDED,
-     RST_TN},                                                  /* 4.31 */
-    {RST_J, -031, RST_D, RST_E0, AGC_JOB_GO_IDLE_FIX, RST_TN}, /* 4.33 */
-    {RST_J, -031, RST_D, RST_E0, AGC_JOB_GOPOODOO, RST_TN},    /* 4.35 */
-    {RST_J, -025, RST_D, RST_E0, AGC_JOB_COMFAIL, RST_TN},     /* 4.37 */
-};
+ };
+static const rst_entry_t lm_odd4[]  = {
+    {RST_J, 025, RST_D, RST_E0, AGC_JOB_GOABORT, RST_TN},      /* 4.3 */
+    {RST_T, 50, RST_D, RST_E0, RST_JN, AGC_TASK_ULLAGOFF},     /* 4.5 */
+    {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_0},       /* 4.7 */
+    {RST_T, 0, RST_X, RST_E_TGO_1, RST_JN, AGC_TASK_ENGOFTSK}, /* 4.11 */
+    {RST_J, 012, RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN},     /* 4.13 */
+    {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_30},      /* 4.15 */
+    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_TIG_5},         /* 4.17 */
+     {RST_J, 013, RST_D, RST_E0, AGC_JOB_LM_FINE_ALIGN_PERFORM, RST_TN},
+
+     /* 4.21 */
+    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_IGNITION},       /* 4.23 */
+    {RST_L, 0, RST_G, RST_E_SAVET_30, RST_JN, AGC_TASK_TIG_35}, /* 4.25 */
+     {RST_J, -025, RST_D, RST_E0, AGC_JOB_DPS_ABORT_COMMANDED,
+     RST_TN},                                                   /* 4.27 */
+     {RST_J, -025, RST_D, RST_E0, AGC_JOB_APS_ABORT_COMMANDED,
+     RST_TN},                                                   /* 4.31 */
+    {RST_J, -031, RST_D, RST_E0, AGC_JOB_GO_IDLE_FIX, RST_TN},  /* 4.33 */
+    {RST_J, -031, RST_D, RST_E0, AGC_JOB_GOPOODOO, RST_TN},     /* 4.35 */
+    {RST_J, -025, RST_D, RST_E0, AGC_JOB_COMFAIL, RST_TN},      /* 4.37 */
+ };
 static const rst_entry_t lm_odd5[] = {
     {RST_T, 200, RST_D, RST_E0, RST_JN, AGC_TASK_REREADAC}, /* 5.3 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO5_5},    /* 5.5 */
@@ -247,20 +250,20 @@ static const rst_group_tab_t csm_tab[AGC_RESTART_GROUPS] = {
     {csm_even6, (int) (sizeof (csm_even6) / sizeof (csm_even6[0])), csm_odd6,
      (int) (sizeof (csm_odd6) / sizeof (csm_odd6[0]))},
 };
-static const rst_group_tab_t lm_tab[AGC_RESTART_GROUPS] = {
-    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd1,
-     (int) (sizeof (lm_odd1) / sizeof (lm_odd1[0]))},
-    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd2,
-     (int) (sizeof (lm_odd2) / sizeof (lm_odd2[0]))},
-    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd3,
-     (int) (sizeof (lm_odd3) / sizeof (lm_odd3[0]))},
-    {lm_even4, (int) (sizeof (lm_even4) / sizeof (lm_even4[0])), lm_odd4,
-     (int) (sizeof (lm_odd4) / sizeof (lm_odd4[0]))},
-    {lm_even5, (int) (sizeof (lm_even5) / sizeof (lm_even5[0])), lm_odd5,
-     (int) (sizeof (lm_odd5) / sizeof (lm_odd5[0]))},
-    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd6,
-     (int) (sizeof (lm_odd6) / sizeof (lm_odd6[0]))},
-};
+static const rst_group_tab_t lm_tab[AGC_RESTART_GROUPS]  = {
+     {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd1,
+      (int) (sizeof (lm_odd1) / sizeof (lm_odd1[0]))},
+     {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd2,
+      (int) (sizeof (lm_odd2) / sizeof (lm_odd2[0]))},
+     {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd3,
+      (int) (sizeof (lm_odd3) / sizeof (lm_odd3[0]))},
+     {lm_even4, (int) (sizeof (lm_even4) / sizeof (lm_even4[0])), lm_odd4,
+      (int) (sizeof (lm_odd4) / sizeof (lm_odd4[0]))},
+     {lm_even5, (int) (sizeof (lm_even5) / sizeof (lm_even5[0])), lm_odd5,
+      (int) (sizeof (lm_odd5) / sizeof (lm_odd5[0]))},
+     {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd6,
+      (int) (sizeof (lm_odd6) / sizeof (lm_odd6[0]))},
+ };
 
 /* ITSATBL / ITSEVEN / PHSPART2 (RESTARTS_ROUTINE C pp.1416-1419): the
  * entry for phase `phase` (>= 2, octal value) of `group`. For an even
@@ -269,19 +272,15 @@ static const rst_group_tab_t lm_tab[AGC_RESTART_GROUPS] = {
  * next table).                                                         */
 agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
 {
-    if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS) ||
-        !AGC_ASSERT(phase >= 2 && phase <= 0177) || !AGC_ASSERT(out != 0) ||
-        !AGC_ASSERT(part == 0 || (part == 1 && (phase % 2) == 0)))
+    if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS) || !AGC_ASSERT(phase >= 2 && phase <= 0177) || !AGC_ASSERT(out != 0) || !AGC_ASSERT(part == 0 || (part == 1 && (phase % 2) == 0)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const rst_group_tab_t *t = (agc_state_vehicle() == AGC_VEHICLE_LM) ?
-                               &lm_tab[group - 1] :
-                               &csm_tab[group - 1];
-    int                idx;
-    int                n;
-    const rst_entry_t *base;
+    const rst_group_tab_t *t = (agc_state_vehicle() == AGC_VEHICLE_LM) ? &lm_tab[group - 1] : &csm_tab[group - 1];
+    int                    idx;
+    int                    n;
+    const rst_entry_t     *base;
 
     if ((phase % 2) == 0)
     {
@@ -336,25 +335,25 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
 
     switch (src)
     {
-        case RST_E_TGO_1: /* TGO +1: low word of TGO, cs          */
+        case RST_E_TGO_1:         /* TGO +1: low word of TGO, cs          */
             *out = dp_low_word(agc_erase_tgo());
             break;
-        case RST_E_600SECS: /* high word of 2DEC 60000              */
+        case RST_E_600SECS:       /* high word of 2DEC 60000              */
             *out = (int16_t) (RST_600SECS_CS / RST_SP_SCALE);
             break;
-        case RST_E_SAVET_30: /* LM -GENADR SAVET-30: TIG-30 TS, cs     */
+        case RST_E_SAVET_30:      /* LM -GENADR SAVET-30: TIG-30 TS, cs     */
             *out = dp_low_word(agc_erase_savet_30());
             break;
-        case RST_E_ZOOMTIME: /* LM ZOOMTIME (pad load), cs             */
+        case RST_E_ZOOMTIME:      /* LM ZOOMTIME (pad load), cs             */
             *out = agc_erase_zoomtime();
             break;
         case RST_E_PREREAD_DELAY: /* CSM -GENADR P40TMP: P47CSM TS, cs  */
             *out = dp_low_word(agc_erase_p40tmp());
             break;
-        case RST_E_S61DT: /* CSM S61DT, cs                             */
+        case RST_E_S61DT:         /* CSM S61DT, cs                             */
             *out = agc_erase_s61dt();
             break;
-        case RST_E_CM_GYMDT: /* CSM CM/GYMDT, cs                       */
+        case RST_E_CM_GYMDT:      /* CSM CM/GYMDT, cs                       */
             *out = agc_erase_cm_gymdt();
             break;
         case RST_E_NONE:
@@ -385,10 +384,10 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
 
     switch (src)
     {
-        case RST_E_600SECS: /* 600SECS 2DEC 60000 (FRESH_START)      */
+        case RST_E_600SECS:       /* 600SECS 2DEC 60000 (FRESH_START)      */
             *out = (uint32_t) RST_600SECS_CS;
             break;
-        case RST_E_SAVET_30: /* LM SAVET-30 B(2), cs                   */
+        case RST_E_SAVET_30:      /* LM SAVET-30 B(2), cs                   */
             *out = (uint32_t) agc_erase_savet_30();
             break;
         case RST_E_PREREAD_DELAY: /* CSM P40TMP B(2), cs                */

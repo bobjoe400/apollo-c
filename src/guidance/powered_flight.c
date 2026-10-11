@@ -61,7 +61,7 @@
 
 #define CDU_SIGN_BIT   ((uint16_t) 040000) /* bit 15 of the 15-bit CDU word  */
 #define CDU_MASK       ((uint16_t) 077777) /* the 15 bits of a CDU word */
-#define CDU_FULL_SCALE 0100000L /* 2^15 counts = one revolution    */
+#define CDU_FULL_SCALE 0100000L            /* 2^15 counts = one revolution    */
 
 /* ---------------------------------------------------------------------- */
 /* Helpers                                                                 */
@@ -142,7 +142,7 @@ static agc_dp_t dmpsub(agc_dp_t a, agc_dp_t b)
  **********************************************************************/
 static agc_dp_t ddoubl(agc_dp_t a)
 {
-    agc_ovf_t ovf = 0;                         /* overflow of the shift */
+    agc_ovf_t ovf = 0;                          /* overflow of the shift */
     agc_dp_t  r   = agc_dp_shl_raw(a, 1, &ovf); /* 2 a, scale of a / 2   */
 
     if (!AGC_ASSERT(ovf == 0))
@@ -169,7 +169,7 @@ static agc_dp_t ddoubl(agc_dp_t a)
  **********************************************************************/
 static agc_dp_t das(agc_dp_t a, agc_dp_t b)
 {
-    agc_ovf_t ovf = 0;                         /* overflow of the sum */
+    agc_ovf_t ovf = 0;                          /* overflow of the sum */
     agc_dp_t  r   = agc_dp_add_raw(a, b, &ovf); /* a + b, scale of a   */
 
     if (!AGC_ASSERT(ovf == 0))
@@ -330,8 +330,7 @@ void agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
  *   v         agc_vec_t *            I/O  vector rotated in place, any
  *                                         scale |v| < 1
  **********************************************************************/
-void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
-                      agc_vec_t *v)
+void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
@@ -348,7 +347,7 @@ void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
     const bool       nbsm      = (dir == AGC_AXISROT_NBSM); /* A = +3 */
 
     for (int dexdex = 3; dexdex >= 1; dexdex--)
-    {                                               /* ROTLOOP, DIM DEXDEX */
+    { /* ROTLOOP, DIM DEXDEX */
         int k = nbsm ? (3 - dexdex) : (dexdex - 1); /* +3->0 ... -3->2      */
 
         if (!AGC_ASSERT(k >= 0 && k <= 2))
@@ -369,6 +368,7 @@ void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
         agc_dp_t s    = t->sincdu[d1]; /* half sine, scale 2^1      */
         agc_dp_t c    = t->coscdu[d1]; /* half cosine, scale 2^1    */
         agc_dp_t old2 = v->c[d2];      /* VBUF(D2) before, scale of v */
+
         /* first pass, BUF = 1: DCS VBUF(D1) times sine                       */
         agc_dp_t term = dmpsub(agc_dp_neg(v->c[d1]), s); /* TERM1TMP, 2^-1 v */
 
@@ -378,6 +378,7 @@ void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
         }
 
         v->c[d2] = ddoubl(das(term, dmpsub(v->c[d2], c)));
+
         /* second pass, BUF = 0: old VBUF(D2) times sine                      */
         term = dmpsub(old2, s);
 
@@ -510,8 +511,7 @@ agc_status_t agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
  *   v         agc_vec_t *      I/O  vector rotated in place, any scale |v|
  *                                   < 1
  **********************************************************************/
-void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
-                       agc_vec_t *v)
+void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
@@ -542,8 +542,7 @@ void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
  *          precondition failed)
  **********************************************************************/
-agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
-                               agc_vec_t *v)
+agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
 {
     if (!AGC_ASSERT(t != NULL) || !AGC_ASSERT(v != NULL))
     {
@@ -579,11 +578,9 @@ agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
  *          precondition failed)
  **********************************************************************/
-agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
-                               agc_vec_t dthetasm, agc_vec_t *dcdu)
+agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(t != NULL) ||
-        !AGC_ASSERT(dcdu != NULL))
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(t != NULL) || !AGC_ASSERT(dcdu != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -592,22 +589,21 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
     const agc_dp_t cy = t->coscdu[AGC_TRIG_Y]; /* cos IGA / 2, scale 2^1 */
     const agc_dp_t sz = t->sincdu[AGC_TRIG_Z]; /* sin MGA / 2, scale 2^1 */
     const agc_dp_t cz = t->coscdu[AGC_TRIG_Z]; /* cos MGA / 2, scale 2^1 */
+
     /* DLOAD DMP DTHETASM COSCDUY ; PDDL DMP DTHETASM+4 SINCDUY ; BDSU ; DDV.
      * DMP keeps the third product word in MPAC+2: PDDL and DDV use the top
      * two (truncation), SL1 shifts all three, and DAD leaves MPAC+2 alone. */
-    agc_dp_t pd0 = agc_dp_mul_trunc(dthetasm.c[0], cy); /* PDL 0, rev 2^1 */
-    agc_dp_t a   = /* DCDU(X) numerator, rev 2^1 */
-                   agc_dp_sub(ip, pd0, agc_dp_mul_trunc(dthetasm.c[2], sy));
+    agc_dp_t pd0 = agc_dp_mul_trunc(dthetasm.c[0], cy);                      /* PDL 0, rev 2^1 */
+    agc_dp_t a   = agc_dp_sub(ip, pd0, agc_dp_mul_trunc(dthetasm.c[2], sy)); /* DCDU(X) numerator, rev 2^1 */
 
     a          = agc_dp_div(ip, a, cz);
-    dcdu->c[0] = a; /* STORE DCDU     */
+    dcdu->c[0] = a;                                                       /* STORE DCDU     */
     a          = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, sz), 1)); /* DMP SL1 */
-    dcdu->c[1] = agc_dp_sub(ip, dthetasm.c[1], a); /* BDSU DTHETASM+2 */
+    dcdu->c[1] = agc_dp_sub(ip, dthetasm.c[1], a);                        /* BDSU DTHETASM+2 */
+
     /* DLOAD DTHETASM ; DMP PDDL SINCDUY DTHETASM+4 ; DMP DAD COSCDUY ; SL1 */
-    pd0 = agc_dp_mul_trunc(dthetasm.c[0], sy);
-    agc_tp_t z = /* DCDU(Z) / 2, rev 2^1 (TP) */
-                 agc_tp_add(ip, agc_dp_mul_tp(dthetasm.c[2], cy), agc_tp_from_dp(
-                                pd0));
+    pd0        = agc_dp_mul_trunc(dthetasm.c[0], sy);
+    agc_tp_t z = agc_tp_add(ip, agc_dp_mul_tp(dthetasm.c[2], cy), agc_tp_from_dp(pd0)); /* DCDU(Z) / 2, rev 2^1 (TP) */
 
     dcdu->c[2] = agc_tp_to_dp(agc_tp_shift(ip, z, 1)); /* STORE DCDU +4  */
 
@@ -643,15 +639,16 @@ void agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
     const agc_dp_t sz = t->sincdu[AGC_TRIG_Z]; /* sin MGA / 2, scale 2^1 */
     const agc_dp_t cz = t->coscdu[AGC_TRIG_Z]; /* cos MGA / 2, scale 2^1 */
 
-    xnb->row[0].c[0] = ddoubl(dmpsub(cy, cz));                /* COSY COSZ  */
-    xnb->row[0].c[1] = sz;                                    /* SINZ       */
-    xnb->row[0].c[2] = ddoubl(dmpsub(agc_dp_neg(sy), cz));    /* -SINY COSZ */
-    xnb->row[2].c[1] = ddoubl(dmpsub(agc_dp_neg(sx), cz));    /* -SINX COSZ */
-    agc_dp_t mxz = dmpsub(agc_dp_neg(sx), sz);                /* -SX SZ, 2^2  */
-    agc_dp_t t5  = ddoubl(ddoubl(dmpsub(mxz, sy)));           /* -SX SY SZ, 2^1 */
-    agc_dp_t buf = ddoubl(ddoubl(dmpsub(agc_dp_neg(mxz), cy))); /* SX SZ CY, 2^1 */
+    xnb->row[0].c[0] = ddoubl(dmpsub(cy, cz));                      /* COSY COSZ  */
+    xnb->row[0].c[1] = sz;                                          /* SINZ       */
+    xnb->row[0].c[2] = ddoubl(dmpsub(agc_dp_neg(sy), cz));          /* -SINY COSZ */
+    xnb->row[2].c[1] = ddoubl(dmpsub(agc_dp_neg(sx), cz));          /* -SINX COSZ */
+    agc_dp_t mxz     = dmpsub(agc_dp_neg(sx), sz);                  /* -SX SZ, 2^2  */
+    agc_dp_t t5      = ddoubl(ddoubl(dmpsub(mxz, sy)));             /* -SX SY SZ, 2^1 */
+    agc_dp_t buf     = ddoubl(ddoubl(dmpsub(agc_dp_neg(mxz), cy))); /* SX SZ CY, 2^1 */
 
     xnb->row[2].c[2] = das(t5, ddoubl(dmpsub(cy, cx))); /* CX CY - SX SY SZ */
+
     /* The listing's comment reads "- SINY COSX + SINX SINZ COSY" but the
      * code loads +SINCDUY (DCA, not DCS): the element is +SY CX + SX SZ CY,
      * the correct Z_NB component. The code is translated, not the comment. */

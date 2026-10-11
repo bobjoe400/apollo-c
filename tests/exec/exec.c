@@ -72,8 +72,8 @@ static agc_job_id_t  job_log[LOG_N];
 static int           job_n;
 static agc_task_id_t task_log[LOG_N];
 static int           task_n;
-static int           prio_nj1; /* NEWJOB after PRIOCHNG 25 */
-static int           prio_nj2; /* NEWJOB after PRIOCHNG 5  */
+static int           prio_nj1;      /* NEWJOB after PRIOCHNG 25 */
+static int           prio_nj2;      /* NEWJOB after PRIOCHNG 5  */
 static agc_dp_t      interp_result; /* TJ_ACOS / TJ_SQRT MPAC   */
 
 agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
@@ -114,9 +114,7 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
         agc_interp_t ip;
 
         agc_interp_init(&ip);
-        interp_result = (ctx->id == TJ_ACOS) ?
-                        agc_dp_acos(&ip, AGC_DP_MAX) :
-                        agc_dp_sqrt(&ip, -AGC_DP_HALF);
+        interp_result = (ctx->id == TJ_ACOS) ? agc_dp_acos(&ip, AGC_DP_MAX) : agc_dp_sqrt(&ip, -AGC_DP_HALF);
     }
     else if (ctx->id == AGC_JOB_ENDOFJOB)
     {
@@ -230,8 +228,7 @@ static bool job_present(agc_job_id_t loc, agc_prio_t prio, int vac)
 
         (void) agc_exec_core_info(i, &ci);
 
-        if (ci.state != AGC_CORE_FREE && ci.loc == loc && ci.prio == prio &&
-            ((vac < 0) == (ci.vac_index < 0)))
+        if (ci.state != AGC_CORE_FREE && ci.loc == loc && ci.prio == prio && ((vac < 0) == (ci.vac_index < 0)))
         {
             return (true);
         }
@@ -282,6 +279,7 @@ static void test_priority_order(void)
     CHECK(job_log[0] == TJ_B && job_log[1] == TJ_C && job_log[2] == TJ_A);
     CHECK(agc_exec_idle());
     CHECK(agc_exec_core_sets() == 7);
+
     /* equal priority: a FINDVAC job (VAC address in the low bits) beats
      * the NOVAC job created before it                                  */
     job_n = 0;
@@ -305,10 +303,11 @@ static void test_vac_exhaustion_1201(void)
     CHECK(agc_erase_failreg(0) == 01201);
     CHECK((agc_erase_dsptab(11) & 0400u) != 0U); /* PROG lamp       */
     CHECK(agc_exec_restart_pending());
-    (void) agc_exec_service_restart(); /* ENEMA           */
+    (void) agc_exec_service_restart();           /* ENEMA           */
     CHECK(!agc_exec_restart_pending());
-    CHECK(only_dspmm_waiting()); /* tables cleared  */
+    CHECK(only_dspmm_waiting());                 /* tables cleared  */
     CHECK(agc_exec_findvac(010, TJ_A) == AGC_STATUS_OK);
+
     /* second and third alarms; the fourth marks FAILREG +2 bit 15     */
     agc_alarm(01202);
     agc_alarm(01203);
@@ -358,8 +357,8 @@ static void test_prio_change(void)
     reset(AGC_VEHICLE_CSM);
     CHECK(agc_exec_novac(010, TJ_PRIO) == AGC_STATUS_OK);
     CHECK(agc_exec_run_one() == AGC_STATUS_OK);
-    CHECK(prio_nj1 == 0); /* 25 > 20: keep running */
-    CHECK(prio_nj2 > 0);  /* 5 < 20: change job    */
+    CHECK(prio_nj1 == 0);                            /* 25 > 20: keep running */
+    CHECK(prio_nj2 > 0);                             /* 5 < 20: change job    */
     CHECK(run_all() == 2);
     CHECK(job_log[1] == TJ_C && job_log[2] == TJ_A); /* C, then resumed */
 }
@@ -390,7 +389,7 @@ static void test_waitlist_order(void)
     CHECK(task_entry(4, AGC_TASK_ENDTASK, -7992)); /* -(8193-200) + 1 */
     CHECK(agc_waitlist_tick(49) == AGC_STATUS_OK);
     CHECK(task_n == 0);
-    CHECK(agc_waitlist_tick(1) == AGC_STATUS_OK); /* RUPTAGN: B, D   */
+    CHECK(agc_waitlist_tick(1) == AGC_STATUS_OK);  /* RUPTAGN: B, D   */
     CHECK(task_n == 2 && task_log[0] == TT_B && task_log[1] == TT_D);
     CHECK(agc_waitlist_tick(50) == AGC_STATUS_OK);
     CHECK(task_n == 3 && task_log[2] == TT_A);
@@ -404,8 +403,7 @@ static void test_waitlist_overflow_1203(void)
 
     for (int i = 0; i < AGC_WAITLIST_MAX_TASKS; i++)
     {
-        CHECK(agc_waitlist_call((uint16_t) (10 * (i + 1)), TT_A) ==
-              AGC_STATUS_OK);
+        CHECK(agc_waitlist_call((uint16_t) (10 * (i + 1)), TT_A) == AGC_STATUS_OK);
     }
 
     CHECK(agc_waitlist_call(5, TT_B) == AGC_STATUS_BAILOUT);
@@ -468,16 +466,16 @@ static void test_restart_table_task_timing(void)
 {
     reset(AGC_VEHICLE_CSM);
     agc_time_set_cs(5000);
-    agc_phase_change(4, 040064); /* TBASE4 */
+    agc_phase_change(4, 040064);                 /* TBASE4 */
     agc_time_advance_cs(1000);
     CHECK(agc_restart_group(4) == AGC_STATUS_OK);
     CHECK(task_entry(0, AGC_TASK_PRECHECK, 0));  /* -0: in 1 cs     */
     CHECK(task_entry(1, AGC_TASK_TIG_5, -1494)); /* 2496-1000 = 1496 */
     wl_clean();
-    agc_time_advance_cs(3000); /* now overdue     */
+    agc_time_advance_cs(3000);                   /* now overdue     */
     CHECK(agc_restart_group(4) == AGC_STATUS_OK);
     CHECK(task_entry(0, AGC_TASK_PRECHECK, 0));
-    CHECK(task_entry(1, AGC_TASK_TIG_5, 1)); /* also in 1 cs    */
+    CHECK(task_entry(1, AGC_TASK_TIG_5, 1));     /* also in 1 cs    */
 }
 
 static void test_restart_variable(void)
@@ -498,6 +496,7 @@ static void test_restart_variable(void)
     agc_phase_change_var(05015, &vt);
     CHECK(agc_restart_group(5) == AGC_STATUS_OK);
     CHECK(task_entry(0, TT_C, 0)); /* immediate: 1 cs */
+
     /* type B: job + first entry of the fixed phase (5.3 REREADAC)    */
     wl_clean();
     agc_phase_var_t vb = {AGC_RESTART_JOB, TJ_C, AGC_TASK_NONE, 015, false, 0};
@@ -507,6 +506,7 @@ static void test_restart_variable(void)
     CHECK(agc_restart_group(5) == AGC_STATUS_OK);
     CHECK(job_present(TJ_C, 015, 0));
     CHECK(task_queued(AGC_TASK_REREADAC));
+
     /* X.1: redisplay                                                  */
     agc_phase_change(2, 012);
     CHECK(agc_restart_group(2) == AGC_STATUS_OK);
@@ -519,15 +519,15 @@ static void test_lm_tables(void)
     agc_phase_newphase(4, 033, false);
     CHECK(agc_restart_group(4) == AGC_STATUS_OK);
     CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 031, -1)); /* OCT 46777 NOVAC  */
-    agc_phase_newphase(1, 2, false); /* 1.2SPOT */
+    agc_phase_newphase(1, 2, false);                  /* 1.2SPOT */
     CHECK(agc_restart_group(1) == AGC_STATUS_OK);
     CHECK(job_present(AGC_JOB_ENDOFJOB, 021, 0));
     CHECK(task_queued(AGC_TASK_TASKOVER));
-    agc_phase_newphase(2, 3, false); /* 2.3 LONGCALL */
-    CHECK(agc_restart_group(2) == AGC_STATUS_OK); /* 600 s from LONGBASE */
+    agc_phase_newphase(2, 3, false);                  /* 2.3 LONGCALL */
+    CHECK(agc_restart_group(2) == AGC_STATUS_OK);     /* 600 s from LONGBASE */
     CHECK(task_queued(AGC_TASK_LONGCYCL));
-    agc_erase_set_zoomtime(2600); /* ZOOMTIME pad load, 26 s */
-    agc_phase_newphase(3, 3, true); /* 3.3: ZOOM at TBASE3 + ZOOMTIME */
+    agc_erase_set_zoomtime(2600);                     /* ZOOMTIME pad load, 26 s */
+    agc_phase_newphase(3, 3, true);                   /* 3.3: ZOOM at TBASE3 + ZOOMTIME */
     CHECK(agc_restart_group(3) == AGC_STATUS_OK);
     CHECK(task_queued(AGC_TASK_ZOOM));
 }
@@ -562,18 +562,20 @@ static void test_goprog(void)
     uint16_t redo = agc_restart_redoctr();
 
     agc_erase_set_modreg(0);
-    phase_debug_set_negative(3, 0); /* tables disagree */
+    phase_debug_set_negative(3, 0);                /* tables disagree */
     CHECK(agc_rupt_go() == AGC_STATUS_ALARM);
     CHECK(agc_erase_failreg(0) == 01107);
     CHECK(agc_erase_modreg() == EXEC_MODREG_NEG0); /* fresh start     */
     CHECK(phase_group_agrees(3));
     CHECK(agc_restart_redoctr() == (uint16_t) (redo + 1U));
+
     /* no active group, MODREG = 0: P00 via GOTOPOOH                   */
     agc_erase_set_modreg(0);
     CHECK(agc_restart_goprog() == AGC_STATUS_OK);
     CHECK(job_present(AGC_JOB_DSPMMJB, 030, -1)); /* MMDSPLAY        */
     CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
     CHECK(agc_phase_get(4) == 1U);
+
     /* an active group is restarted                                    */
     reset(AGC_VEHICLE_CSM);
     agc_phase_newphase(2, 5, false); /* 2.5 */
@@ -589,9 +591,9 @@ static void test_poodoo_lm(void)
     agc_phase_newphase(2, 5, false);
     CHECK(agc_poodoo(01206) == AGC_STATUS_POODOO);
     CHECK(agc_erase_failreg(0) == 01206);
-    CHECK(agc_phase_get(2) == 0U);     /* MR.KLEAN        */
-    (void) agc_exec_service_restart(); /* WHIMPER -> ENEMA */
-    CHECK(agc_phase_get(4) == 033U);   /* GOTOPOOH 4.33   */
+    CHECK(agc_phase_get(2) == 0U);                  /* MR.KLEAN        */
+    (void) agc_exec_service_restart();              /* WHIMPER -> ENEMA */
+    CHECK(agc_phase_get(4) == 033U);                /* GOTOPOOH 4.33   */
     CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
     CHECK(agc_rupt_t5_task() == AGC_TASK_DAPIDLER); /* STARTSB1      */
 }
@@ -648,8 +650,7 @@ int main(void)
     test_goprog();
     test_poodoo_lm();
     test_inhint();
-    (void) printf("test_exec: %d checks, %d failures, %d assertion reports\n",
-                  g_checks, g_failures, g_assert_reports);
+    (void) printf("test_exec: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return (g_failures == 0 ? 0 : 1);
 }

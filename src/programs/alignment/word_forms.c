@@ -50,6 +50,7 @@
 #define QUARTER_HI 4096  /* QUARTER = .25: major word                    */
 #define HALF_HI    8192  /* HALF / HIDPHALF / LODPHALF = .5: major word  */
 #define CDU_MOD    32768 /* one revolution in CDU counts                 */
+
 /* QTSN45 2DEC .1768 (= sin 45 deg / 4), Luminary099 rope 05520 26075.   */
 #define QTSN45 ((agc_dp_t) 47459389)
 
@@ -94,20 +95,20 @@ align_words_t align_words_of(agc_dp_t v)
  **********************************************************************/
 align_words_t align_words_add(align_words_t a, align_words_t b)
 {
-    align_words_t r;         /* result pair              */
+    align_words_t r;                             /* result pair              */
     int32_t       lo    = (int32_t) a.lo + b.lo; /* minor sum, 2^-28 */
-    int32_t       hi    = 0; /* major sum, 2^-14 units   */
-    int32_t       carry = 0; /* minor overflow, -1/0/+1  */
+    int32_t       hi    = 0;                     /* major sum, 2^-14 units   */
+    int32_t       carry = 0;                     /* minor overflow, -1/0/+1  */
 
     if (lo > WORD_MAX)
     {
         carry = 1;
-        lo   -= WORD_CARRY;
+        lo    -= WORD_CARRY;
     }
     else if (lo < -WORD_MAX)
     {
         carry = -1;
-        lo   += WORD_CARRY;
+        lo    += WORD_CARRY;
     }
     else
     {
@@ -178,7 +179,7 @@ align_words_t align_words_neg(align_words_t a)
 align_words_t align_asin_words(agc_dp_t v)
 {
     const align_words_t quarter = {QUARTER_HI, 0}; /* QUARTER */
-    align_words_t       c;      /* ARCCOS(|x|) words, positive        */
+    align_words_t       c;                         /* ARCCOS(|x|) words, positive        */
 
     (void) AGC_ASSERT((v >= -(AGC_DP_HALF / 2)) && (v <= AGC_DP_HALF / 2));
 
@@ -190,8 +191,8 @@ align_words_t align_asin_words(agc_dp_t v)
     }
 
     /* SUBTR: HALF - c, then ASINEX: QUARTER - (HALF - c). */
-    c = align_words_of((AGC_DP_HALF / 2) + v);
-    const align_words_t half = {HALF_HI, 0};      /* HALF    */
+    c                        = align_words_of((AGC_DP_HALF / 2) + v);
+    const align_words_t half = {HALF_HI, 0}; /* HALF    */
     const align_words_t acos = align_words_add(align_words_neg(c), half);
 
     return (align_words_add(align_words_neg(acos), quarter));
@@ -246,8 +247,7 @@ align_words_t align_acos_words(agc_dp_t v, bool arg_negative)
  *          HIDPHALF SIGN SINTH, DSU THETA; otherwise the ACOS words,
  *          SIGN SINTH (complemented when SINTH < 0)
  **********************************************************************/
-align_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth,
-                                  agc_dp_t costh, agc_dp_t theta)
+align_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh, agc_dp_t theta)
 {
     (void) AGC_ASSERT(ip != NULL);
     (void) AGC_ASSERT((theta >= -AGC_DP_HALF) && (theta <= AGC_DP_HALF));

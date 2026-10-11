@@ -56,14 +56,12 @@ static const double PI = 3.14159265358979323846;
 
 static agc_vec_t pos(double x, double y, double z)
 {
-    return (agc_vec_make(agc_dp_from_double(x, 29), agc_dp_from_double(y, 29),
-                         agc_dp_from_double(z, 29)));
+    return (agc_vec_make(agc_dp_from_double(x, 29), agc_dp_from_double(y, 29), agc_dp_from_double(z, 29)));
 }
 
 static agc_vec_t vel(double x, double y, double z)
 {
-    return (agc_vec_make(agc_dp_from_double(x, 7), agc_dp_from_double(y, 7),
-                         agc_dp_from_double(z, 7)));
+    return (agc_vec_make(agc_dp_from_double(x, 7), agc_dp_from_double(y, 7), agc_dp_from_double(z, 7)));
 }
 
 static double comp(agc_vec_t v, int i, int scale)
@@ -71,12 +69,9 @@ static double comp(agc_vec_t v, int i, int scale)
     return (agc_dp_to_double(v.c[i], scale));
 }
 
-static bool near_vec(agc_vec_t v, int scale, double x, double y, double z,
-                     double tol)
+static bool near_vec(agc_vec_t v, int scale, double x, double y, double z, double tol)
 {
-    return (fabs(comp(v, 0, scale) - x) < tol &&
-            fabs(comp(v, 1, scale) - y) < tol &&
-            fabs(comp(v, 2, scale) - z) < tol);
+    return (fabs(comp(v, 0, scale) - x) < tol && fabs(comp(v, 1, scale) - y) < tol && fabs(comp(v, 2, scale) - z) < tol);
 }
 
 static double circ_speed(void)
@@ -90,18 +85,17 @@ static double circ_period(void)
 } /* cs */
 
 /* KEPPREP + KEPLER from the circular state at (R0,0,0) by tau cs. */
-static agc_status_t run_kepler(agc_interp_t *ip, double tau,
-                               agc_kepler_out_t *out)
+static agc_status_t run_kepler(agc_interp_t *ip, double tau, agc_kepler_out_t *out)
 {
     agc_kepler_in_t in;
 
-    in.rrect   = pos(R0, 0.0, 0.0);
-    in.vrect   = vel(0.0, circ_speed(), 0.0);
-    in.tau     = agc_dp_from_double(tau, 28);
-    in.tc      = 0;
-    in.xprev   = 0;
-    in.xkepnew = 0;
-    in.body    = AGC_CONIC_EARTH;
+    in.rrect        = pos(R0, 0.0, 0.0);
+    in.vrect        = vel(0.0, circ_speed(), 0.0);
+    in.tau          = agc_dp_from_double(tau, 28);
+    in.tc           = 0;
+    in.xprev        = 0;
+    in.xkepnew      = 0;
+    in.body         = AGC_CONIC_EARTH;
     agc_status_t st = agc_conic_kepprep(ip, &in, &in.xkepnew);
 
     CHECK(st == AGC_STATUS_OK);
@@ -132,7 +126,7 @@ static void test_kepler(void)
     CHECK(run_kepler(&ip, 9.0 * q, &out) == AGC_STATUS_OK); /* 2.25 periods */
     CHECK(near_vec(out.rcv, 29, 0.0, R0, 0.0, 600.0));
     CHECK(fabs(agc_dp_to_double(out.tmodulo, 28) - 8.0 * q) < 5.0);
-    CHECK(fabs(agc_dp_to_double(out.tau, 28) - q) < 5.0); /* period LSB 1 cs */
+    CHECK(fabs(agc_dp_to_double(out.tau, 28) - q) < 5.0);   /* period LSB 1 cs */
 }
 
 static void test_lambert(void)
@@ -147,12 +141,12 @@ static void test_lambert(void)
     in.r1vec    = pos(R0, 0.0, 0.0);
     in.r2vec    = pos(0.0, R0, 0.0);
     in.tdesired = agc_dp_from_double(circ_period() / 4.0, 28);
-    in.geomsgn  = (agc_sp_t) 0x2000;         /* +.5: less than 180 degrees  */
+    in.geomsgn  = (agc_sp_t) 0x2000;                   /* +.5: less than 180 degrees  */
     in.guessw   = true;
     in.coga     = 0;
     in.normsw   = false;
     in.un       = agc_vec_zero();
-    in.vtargtag = 0; /* also compute VTARGET        */
+    in.vtargtag = 0;                                   /* also compute VTARGET        */
     in.iterctr  = AGC_CONIC_LAMBERT_ITERCTR;
     in.body     = AGC_CONIC_EARTH;
     CHECK(agc_conic_lambert(&ip, &in, &out) == AGC_STATUS_OK);
@@ -185,14 +179,13 @@ static void test_apsides(void)
     ellipse(&rp, &vp, &a, &e);
     agc_apsides_out_t out;
 
-    CHECK(agc_conic_apsides(&ip, pos(rp, 0.0, 0.0), vel(0.0, vp, 0.0),
-                            AGC_CONIC_EARTH, &out) == AGC_STATUS_OK);
+    CHECK(agc_conic_apsides(&ip, pos(rp, 0.0, 0.0), vel(0.0, vp, 0.0), AGC_CONIC_EARTH, &out) == AGC_STATUS_OK);
     CHECK(fabs(agc_dp_to_double(out.rperi, 29) - rp) < 200.0);
     CHECK(fabs(agc_dp_to_double(out.rapo, 29) - a * (1.0 + e)) < 500.0);
     CHECK(fabs(agc_dp_to_double(out.ecc, 3) - e) < 1e-5);
+
     /* hyperbola: apocenter returned as DPPOSMAX */
-    CHECK(agc_conic_apsides(&ip, pos(rp, 0.0, 0.0), vel(0.0, 1.5 * vp, 0.0),
-                            AGC_CONIC_EARTH, &out) == AGC_STATUS_OK);
+    CHECK(agc_conic_apsides(&ip, pos(rp, 0.0, 0.0), vel(0.0, 1.5 * vp, 0.0), AGC_CONIC_EARTH, &out) == AGC_STATUS_OK);
     CHECK(out.rapo == AGC_DP_MAX);
 }
 
@@ -218,7 +211,7 @@ static void test_timethet_timerad(void)
     double rp, vp, a, e;
 
     ellipse(&rp, &vp, &a, &e);
-    const double     rd       = a; /* E = 90 deg: r = a           */
+    const double     rd       = a;                  /* E = 90 deg: r = a           */
     const double     n        = sqrt(MU / (a * a * a));
     const double     t_expect = (PI / 2.0 - e) / n; /* M = E - e sin E       */
     agc_timerad_in_t tr;
@@ -241,8 +234,7 @@ int main(void)
     test_lambert();
     test_apsides();
     test_timethet_timerad();
-    (void) printf("test_conic: %d checks, %d failures, %d assert reports\n",
-                  g_checks, g_failures, g_assert_reports);
+    (void) printf("test_conic: %d checks, %d failures, %d assert reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1);
 }

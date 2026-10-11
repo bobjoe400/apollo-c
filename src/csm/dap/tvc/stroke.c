@@ -86,7 +86,7 @@ static void stroke_next_set(void)
     t->card = (agc_sp_t) (t->card + 1); /* INCR CARD            */
 
     if (t->card >= 0)
-    {                   /* all sets completed   */
+    { /* all sets completed   */
         t->card    = 0; /* (AGC: -0)            */
         t->stroker = 0; /* STROKILL: +0 ends it */
 
@@ -138,7 +138,7 @@ static agc_status_t stroke_burst(void)
         t->caddy = csm_dap_ads(t->n, t->n); /* 2 x 1/2 amplitude    */
     }
     else if (t->revs == 0)
-    {                    /* final reversal, set  */
+    { /* final reversal, set  */
         t->revs  = -1;   /* prepare for new burst*/
         t->caddy = t->n; /* just return to zero  */
     }
@@ -170,7 +170,7 @@ agc_status_t csm_tvc_hack(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    t->bunker_task = false; /* QXCH BUNKER          */
+    t->bunker_task  = false; /* QXCH BUNKER          */
     agc_status_t st = agc_waitlist_call(HACK_DELAY, AGC_TASK_HACKWLST);
     agc_status_t s2 = stroke_burst();
 
@@ -187,7 +187,7 @@ agc_status_t agc_task_hackwlst(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
 
-    t->bunker_task = true;
+    t->bunker_task  = true;
     agc_status_t st = stroke_burst();
 
     if (!AGC_ASSERT(t->bunker_task))

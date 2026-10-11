@@ -53,15 +53,19 @@
 #include "internal.h"
 
 /* B2XSC 2DEC .0179450689, oct 00446 00305: B^2, scale 2^51 m^2.          */
-static const agc_dp_t B2XSC = 4817093;   /* B^2, 2^51 m^2       */
+static const agc_dp_t B2XSC = 4817093; /* B^2, 2^51 m^2       */
+
 /* B2/A2 2DEC .9933064884 B-1, oct 17711 05254: GAMMA = B^2/A^2, 2^1.     */
 static const agc_dp_t B2_A2 = 133319340; /* GAMMA, scale 2^1    */
+
 /* EE 2DEC 6.6935116 E-3, oct 00155 25250: 1 - B^2/A^2, scale 2^0.        */
-static const agc_dp_t EE = 1796776;      /* e^2, scale 2^0      */
+static const agc_dp_t EE = 1796776; /* e^2, scale 2^0      */
+
 /* ERAD 2DEC 6373338 B-29, oct 00302 17755: pad 37-B radius, 2^29 m.      */
-static const agc_dp_t ERAD = 3186669;    /* pad radius, 2^29 m  */
+static const agc_dp_t ERAD = 3186669; /* pad radius, 2^29 m  */
+
 /* 504RM 2DEC 1738090 B-29, oct 00065 01265: moon radius, scale 2^29 m.   */
-static const agc_dp_t RM504 = 869045;    /* moon radius, 2^29 m */
+static const agc_dp_t RM504 = 869045; /* moon radius, 2^29 m */
 
 /* LAT, LONG, ALT (both ropes, noun 43; the CM's LANDLAT/LANDLONG/LANDALT
  * EQUALS them): the erasables LAT-LONG writes and LALOTORV reads, kept
@@ -158,12 +162,10 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
 
     /* DSQ leaves the TP square in MPAC; SL1 shifts all three words and
      * BDSU then uses the top two (truncation after the shift).            */
-    agc_dp_t sin2 = agc_tp_to_dp(
-        agc_tp_shift(ip, agc_dp_sq_tp(half_sin_lat), 1)); /* sin^2/2, 2^0 */
-    agc_dp_t cos2 = agc_dp_sub(ip, AGC_DP_HALF, sin2);  /* BDSU, 2^0  */
-    agc_dp_t den  =                                     /* scale 2^0  */
-                    agc_dp_sub(ip, AGC_DP_HALF, agc_dp_mul(ip, cos2, EE));
-    agc_dp_t q = agc_dp_div(ip, B2XSC, den);     /* BDDV, 2^51 m^2 */
+    agc_dp_t sin2 = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_sq_tp(half_sin_lat), 1)); /* sin^2/2, 2^0 */
+    agc_dp_t cos2 = agc_dp_sub(ip, AGC_DP_HALF, sin2);                             /* BDSU, 2^0  */
+    agc_dp_t den  = agc_dp_sub(ip, AGC_DP_HALF, agc_dp_mul(ip, cos2, EE));         /* scale 2^0 */
+    agc_dp_t q    = agc_dp_div(ip, B2XSC, den);                                    /* BDDV, 2^51 m^2 */
 
     return (agc_dp_shr_round(agc_dp_sqrt(ip, q), 4)); /* SQRT, SR4R     */
 }
@@ -187,10 +189,7 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
  *          out-of-range RLS.  Earth: ERADFLAG = 0 -> ERAD, 1 -> GETERAD.
  *          Moon: ERADFLAG = 1 -> 504RM, 0 -> |RLS| (TSTRLSRM, SR2R).
  **********************************************************************/
-agc_status_t agc_latlong_setre(agc_interp_t *ip,
-                               const agc_navaux_padload_t *pad,
-                               agc_latlong_opt_t opt, agc_dp_t half_sin_lat,
-                               agc_dp_t *eradm)
+agc_status_t agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_dp_t half_sin_lat, agc_dp_t *eradm)
 {
     if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (eradm != NULL)))
     {
@@ -250,7 +249,7 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
         return (0);
     }
 
-    agc_interp_clear_ovf(ip); /* BOV CLROVFLW   */
+    agc_interp_clear_ovf(ip);                       /* BOV CLROVFLW   */
     agc_tp_t r2 = sum_of_squares(ip, sinth, costh); /* r^2, scale 2^2 */
 
     if (agc_tp_to_dp(r2) == 0)
@@ -303,10 +302,7 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
  *          status of R-TO-RP / SETRE.  The geodetic latitude uses
  *          tan(LAT) = sin(Lc) / (GAMMA cos(Lc)).
  **********************************************************************/
-agc_status_t agc_latlong_from_r(agc_interp_t *ip,
-                                const agc_navaux_padload_t *pad,
-                                agc_latlong_opt_t opt, agc_vec_t r,
-                                agc_dp_t t_cs, agc_latlong_t *out)
+agc_status_t agc_latlong_from_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_vec_t r, agc_dp_t t_cs, agc_latlong_t *out)
 {
     if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (out != NULL)))
     {
@@ -318,10 +314,9 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t     alpham = agc_vec_abval(ip, r); /* ALPHAM 2^29 m  */
-    agc_vec_t    rp;                            /* RP, 2^29 m     */
-    agc_status_t st =                           /* returned   */
-                      agc_planet_r_to_rp(ip, pad, opt.lunar, r, t_cs, &rp);
+    agc_dp_t     alpham = agc_vec_abval(ip, r);                                 /* ALPHAM 2^29 m  */
+    agc_vec_t    rp;                                                            /* RP, 2^29 m     */
+    agc_status_t st     = agc_planet_r_to_rp(ip, pad, opt.lunar, r, t_cs, &rp); /* returned */
 
     if (st != AGC_STATUS_OK)
     {
@@ -329,7 +324,7 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip,
     }
 
     agc_vec_t alphav = agc_vec_unit(ip, rp, NULL, NULL); /* unit RP 2^1    */
-    agc_dp_t  gamrp  = agc_latlong_setgamma(opt.lunar); /* GAMRP, 2^1 */
+    agc_dp_t  gamrp  = agc_latlong_setgamma(opt.lunar);  /* GAMRP, 2^1 */
 
     st = agc_latlong_setre(ip, pad, opt, alphav.c[2], &out->eradm);
 
@@ -338,13 +333,10 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip,
         return (st);
     }
 
-    agc_dp_t costh = /* cos Lc, scale 2^1 */
-                     agc_tp_sqrt(ip, sum_of_squares(ip, alphav.c[0],
-                                                    alphav.c[1]));
+    agc_dp_t costh = agc_tp_sqrt(ip, sum_of_squares(ip, alphav.c[0], alphav.c[1])); /* cos Lc, scale 2^1 */
 
     /* DMP SL1R: shift the TP product, then round once.                     */
-    costh =
-        agc_tp_round(ip, agc_tp_shift(ip, agc_dp_mul_tp(costh, gamrp), 1));
+    costh    = agc_tp_round(ip, agc_tp_shift(ip, agc_dp_mul_tp(costh, gamrp), 1));
     out->lat = agc_latlong_arctan(ip, alphav.c[2], costh);
     out->lon = agc_latlong_arctan(ip, alphav.c[1], alphav.c[0]);
     out->alt = agc_dp_sub(ip, alpham, out->eradm);
@@ -374,12 +366,9 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip,
  *          status of SETRE / RP-TO-R.  Unit RP = UNIT(cos LONG cos LAT,
  *          sin LONG cos LAT, GAMMA sin LAT); R = (ERADM + ALT) * RP-TO-R.
  **********************************************************************/
-agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
-                              agc_latlong_opt_t opt, const agc_latlong_t *in,
-                              agc_dp_t t_cs, agc_vec_t *r, agc_dp_t *out_eradm)
+agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, const agc_latlong_t *in, agc_dp_t t_cs, agc_vec_t *r, agc_dp_t *out_eradm)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (in != NULL) &&
-                    (r != NULL)))
+    if (!AGC_ASSERT((ip != NULL) && (pad != NULL) && (in != NULL) && (r != NULL)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -393,8 +382,8 @@ agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
     agc_dp_t     clat  = agc_dp_cos(ip, in->lat);         /* scale 2^1 */
     agc_dp_t     slat  = agc_dp_sin(ip, in->lat);         /* scale 2^1 */
     agc_dp_t     z     = agc_dp_mul(ip, slat, gamrp);     /* scale 2^2 */
-    agc_dp_t     y     = agc_dp_sin(ip, in->lon); /* RP y, 2^2 after DMP */
-    agc_dp_t     x     = agc_dp_cos(ip, in->lon); /* RP x, 2^2 after DMP */
+    agc_dp_t     y     = agc_dp_sin(ip, in->lon);         /* RP y, 2^2 after DMP */
+    agc_dp_t     x     = agc_dp_cos(ip, in->lon);         /* RP x, 2^2 after DMP */
     agc_vec_t    urp   = agc_vec_zero();                  /* unit RP 2^1 */
     agc_dp_t     eradm = 0;                               /* 2^29 m    */
     agc_status_t st    = AGC_STATUS_OK;                   /* returned  */
@@ -416,7 +405,7 @@ agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
         return (st);
     }
 
-    agc_dp_t rad = agc_dp_add(ip, eradm, in->alt);       /* RE + ALT 2^29 m */
+    agc_dp_t rad = agc_dp_add(ip, eradm, in->alt); /* RE + ALT 2^29 m */
 
     *r = agc_vec_shl(ip, agc_vec_scale(ip, ur, rad), 1); /* VXSC VSL1      */
 
@@ -448,8 +437,7 @@ agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(agc_navaux_dp_ok(ll->lat) && agc_navaux_dp_ok(ll->lon) &&
-                    agc_navaux_dp_ok(ll->alt)))
+    if (!AGC_ASSERT(agc_navaux_dp_ok(ll->lat) && agc_navaux_dp_ok(ll->lon) && agc_navaux_dp_ok(ll->alt)))
     {
         return (AGC_STATUS_BAD_ARG);
     }

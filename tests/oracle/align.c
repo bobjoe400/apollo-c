@@ -45,8 +45,7 @@ static agc_mat_t mat_in(const char *t, const char *name)
 }
 
 /* CDU words compared modulo one revolution (2's complement, 15 bits). */
-static void cmp_cdu(const char *t, const char *what, uint16_t got,
-                    const char *name, long tol)
+static void cmp_cdu(const char *t, const char *what, uint16_t got, const char *name, long tol)
 {
     long d = ((long) got - (long) oracle_out_raw(t, name)) & 077777L;
 
@@ -65,8 +64,7 @@ static void rrnb(const char *t, long tol)
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "DSPLY81");
-    (void) agc_lm_rrnb(&ip, oracle_in_raw(t, "TANGNB", 0),
-                       oracle_in_raw(t, "TANGNB", 1), &los);
+    (void) agc_lm_rrnb(&ip, oracle_in_raw(t, "TANGNB", 0), oracle_in_raw(t, "TANGNB", 1), &los);
     oracle_cmp_vec(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol);
 }
 
@@ -83,10 +81,8 @@ static void rrangles(const char *t, bool along_y_expected, long tol)
     los.c[0] = oracle_in_dp(t, "MPAC", 0);
     los.c[1] = oracle_in_dp(t, "MPAC", 3);
     los.c[2] = oracle_in_dp(t, "MPAC", 5);
-    (void) agc_lm_rrangles(&ip, los, oracle_in(t, "RADMODES", 0) != 0, a, b,
-                           &along_y);
-    (void) oracle_cmp(t, "along_y", along_y ? 1 : 0,
-                      along_y_expected ? 1 : 0, 0);
+    (void) agc_lm_rrangles(&ip, los, oracle_in(t, "RADMODES", 0) != 0, a, b, &along_y);
+    (void) oracle_cmp(t, "along_y", along_y ? 1 : 0, along_y_expected ? 1 : 0, 0);
 
     if (!along_y_expected)
     {
@@ -101,19 +97,17 @@ static void scalevec(const char *t)
 {
     static const char *const names[6] = {"MPAC", "MPAC+1", "MPAC+3",
                                          "MPAC+4", "MPAC+5", "MPAC+6"};
-    agc_interp_t             ip;
-    uint16_t                 out[6] = {0, 0, 0, 0, 0, 0};
-    const agc_mat_t          ref    = mat_in(t, "REFSMMAT");
+    agc_interp_t    ip;
+    uint16_t        out[6]            = {0, 0, 0, 0, 0, 0};
+    const agc_mat_t ref               = mat_in(t, "REFSMMAT");
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "DSPLY81");
-    (void) agc_ags_scalevec(&ip, oracle_in_vec(t, "VAC1+14"),
-                            oracle_in_vec(t, "VAC1+20"), &ref, out);
+    (void) agc_ags_scalevec(&ip, oracle_in_vec(t, "VAC1+14"), oracle_in_vec(t, "VAC1+20"), &ref, out);
 
     for (int k = 0; k < 6; k++)
     {
-        (void) oracle_cmp(t, names[k], (long) out[k],
-                          (long) oracle_out_raw(t, names[k]), 0);
+        (void) oracle_cmp(t, names[k], (long) out[k], (long) oracle_out_raw(t, names[k]), 0);
     }
 }
 
@@ -128,19 +122,16 @@ static void sband_lm(const char *t, long tol)
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "42,3746");
-    agc_vec_t ue = agc_vec_neg(agc_vec_unit(&ip, oracle_in_vec(t, "VAC1"),
-                                            NULL, NULL));
+    agc_vec_t ue = agc_vec_neg(agc_vec_unit(&ip, oracle_in_vec(t, "VAC1"), NULL, NULL));
 
     ue = agc_vec_shl(&ip, agc_mat_vec(&ip, &ref, ue), 1);
     (void) agc_sband_lm_angles(&ip, ue, &pitch, &yaw);
+
     /* ABVAL leaves MPAC +2 (e.g. 20000) and ASIN's SQRTSUB sees it; the
      * C ASIN takes a DP (review-prog-align.md W3): KNOWN at 0, hard at 1. */
-    oracle_cmp_known(t, "PITCHANG", (long) pitch,
-                     (long) oracle_out_dp(t, "PITCHANG"), tol, "PA-W3");
-    (void) oracle_cmp(t, "PITCHANG", (long) pitch,
-                      (long) oracle_out_dp(t, "PITCHANG"), tol + 1);
-    (void) oracle_cmp(t, "YAWANG", (long) yaw,
-                      (long) oracle_out_dp(t, "YAWANG"), tol);
+    oracle_cmp_known(t, "PITCHANG", (long) pitch, (long) oracle_out_dp(t, "PITCHANG"), tol, "PA-W3");
+    (void) oracle_cmp(t, "PITCHANG", (long) pitch, (long) oracle_out_dp(t, "PITCHANG"), tol + 1);
+    (void) oracle_cmp(t, "YAWANG", (long) yaw, (long) oracle_out_dp(t, "YAWANG"), tol);
 }
 
 /* R05 (CSM) angle part from the AGC's own NB vector R (2D).            */
@@ -152,12 +143,9 @@ static void sband_cm(const char *t, long tol)
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "42,3751");
-    (void) agc_sband_cm_angles(&ip, oracle_out_vec(t, "VAC1+2"), &pitch,
-                               &yaw);
-    (void) oracle_cmp(t, "RHOSB", (long) pitch,
-                      (long) oracle_out_dp(t, "RHOSB"), tol);
-    (void) oracle_cmp(t, "GAMMASB", (long) yaw,
-                      (long) oracle_out_dp(t, "GAMMASB"), tol);
+    (void) agc_sband_cm_angles(&ip, oracle_out_vec(t, "VAC1+2"), &pitch, &yaw);
+    (void) oracle_cmp(t, "RHOSB", (long) pitch, (long) oracle_out_dp(t, "RHOSB"), tol);
+    (void) oracle_cmp(t, "GAMMASB", (long) yaw, (long) oracle_out_dp(t, "GAMMASB"), tol);
 }
 
 static void sxtnb(const char *t, long tol)
@@ -167,13 +155,12 @@ static void sxtnb(const char *t, long tol)
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "POODOO");
-    (void) agc_csm_sxtnb(&ip, oracle_in_raw(t, "VAC4+5", 0),
-                         oracle_in_raw(t, "VAC4+3", 0), &los);
+    (void) agc_csm_sxtnb(&ip, oracle_in_raw(t, "VAC4+5", 0), oracle_in_raw(t, "VAC4+3", 0), &los);
+
     /* SXTNB's SIN SL1 shifts SIN's MPAC +2 into the result; agc_dp_sin
      * returns two words, so sin TA can be 1 LSB low and 32D 2 LSB off
      * (docs/modules/review-prog-align.md W2): KNOWN at 0, hard at 2.    */
-    oracle_cmp_vec_known(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol,
-                         "PA-W2");
+    oracle_cmp_vec_known(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol, "PA-W2");
     oracle_cmp_vec(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol + 2);
 }
 
@@ -187,8 +174,7 @@ static void sxtang(const char *t, long tol)
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "POODOO");
-    (void) agc_csm_sxtang(&ip, oracle_in_vec(t, "STAR"), &nb, &sac, &pac,
-                          &cult);
+    (void) agc_csm_sxtang(&ip, oracle_in_vec(t, "STAR"), &nb, &sac, &pac, &cult);
     cmp_cdu(t, "SAC", sac, "SAC", tol);
     const bool agc_cult = (oracle_out_raw(t, "FLAGWRD3") & CULTFLAG_BIT) != 0;
 
@@ -208,8 +194,7 @@ static void log_case(const char *t, long tol)
     agc_interp_init(&ip);
     oracle_require_ok(t, "POODOO");
     (void) agc_csm_log(&ip, oracle_in_dp(t, "MPAC", 0), &l);
-    (void) oracle_cmp(t, "MPAC", (long) l, (long) oracle_out_dp(t, "MPAC"),
-                      tol);
+    (void) oracle_cmp(t, "MPAC", (long) l, (long) oracle_out_dp(t, "MPAC"), tol);
 }
 
 int main(void)

@@ -48,7 +48,7 @@ typedef enum pp_region
 } pp_region_t;
 
 typedef struct pp_point
-{                     /* one axis in the phase plane          */
+{ /* one axis in the phase plane          */
     agc_dp_t edot;    /* EDOT = ADOT - WBODY, 450 deg/s       */
     agc_dp_t edotvel; /* EDOTVEL = |EDOT| by sign of EDOT     */
     agc_sp_t aerr;    /* AERR = ERROR, 180 deg                */
@@ -105,11 +105,11 @@ static agc_status_t rcs_freecont(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs();
 
-    r->holdflag = 1; /* inhibit automatic steering        */
+    r->holdflag   = 1; /* inhibit automatic steering        */
     uint16_t ch32 = agc_chan_read(AGC_CHAN_CHAN32);
     uint16_t bits = (uint16_t) (~(unsigned) ch32 & MANROT & r->chantemp);
 
-    r->chantemp = ch32; /* LXCH CHANTEMP                     */
+    r->chantemp     = ch32; /* LXCH CHANTEMP                     */
     agc_status_t st = csm_rcs_stickchk(bits);
 
     if (st != AGC_STATUS_OK)
@@ -236,12 +236,12 @@ agc_status_t csm_rcs_jets(void)
             p.edot = csm_dap_das(p.edot, -r->wbody[i]); /* ADOT-WBODY */
         }
 
-        p.aerr = r->error[i];   /* AERR = BIAS + AK                  */
+        p.aerr   = r->error[i];   /* AERR = BIAS + AK                  */
         bool pos = (p.edot >= 0); /* POSVEL / NEGVEL (SIGNCK1)         */
 
-        p.edotvel = pos ? p.edot : -p.edot;
-        p.adbvel  = pos ? p.adbaf : (agc_sp_t) -p.adbaf;
-        p.aerrvel = pos ? p.aerr : (agc_sp_t) -p.aerr;
+        p.edotvel      = pos ? p.edot : -p.edot;
+        p.adbvel       = pos ? p.adbaf : (agc_sp_t) -p.adbaf;
+        p.aerrvel      = pos ? p.aerr : (agc_sp_t) -p.aerr;
         agc_dp_t kmpac = 0;
 
         if (rcs_delta_w(i, &p, &kmpac))
@@ -268,9 +268,7 @@ static pp_region_t rcs_region(const pp_point_t *p)
     { /* J6.        */
         if ((int) p->aerrvel - (int) p->adbaf > 0)
         { /* J7         */
-            return (((-WLMH_SLP - (int) p->adbaf + (int) p->aerrvel) <= 0) ?
-                    PP_J20 :
-                    PP_J21);
+            return (((-WLMH_SLP - (int) p->adbaf + (int) p->aerrvel) <= 0) ? PP_J20 : PP_J21);
         }
 
         int q = (int) csm_dap_dv(-p->edotvel, r->slope);
@@ -283,8 +281,7 @@ static pp_region_t rcs_region(const pp_point_t *p)
         return (PP_J22);
     }
 
-    int a = (int) csm_dap_dv(p->edotvel, r->slope) + (int) p->adbaf +
-            (int) p->aerrvel;
+    int a = (int) csm_dap_dv(p->edotvel, r->slope) + (int) p->adbaf + (int) p->aerrvel;
 
     if (a >= 0)
     { /* NJ22       */
@@ -314,34 +311,27 @@ static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_t *kmpac)
     switch (reg)
     {
         case PP_J23:
-            c->rcsflags =
-                (uint16_t) (c->rcsflags &
-                            ~(unsigned) dampbit[i]);     /* damping over */
-            fire   = (c->rcsflags & forcemask[i]) != 0u; /* forced: J18 */
-            *kmpac = medot;
+            c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned) dampbit[i]); /* damping over */
+            fire        = (c->rcsflags & forcemask[i]) != 0u;                /* forced: J18 */
+            *kmpac      = medot;
             break;
         case PP_J18:
-            *kmpac = medot;
+            *kmpac      = medot;
             break;
-        case PP_J20: /* (ADBVEL - AERR)(SLOPE2) - EDOT                       */
-            *kmpac = csm_dap_das(
-                agc_sp_mul(csm_dap_ads((agc_sp_t) -p->aerr, p->adbvel), SLOPE2),
-                medot);
+        case PP_J20:                                                         /* (ADBVEL - AERR)(SLOPE2) - EDOT                       */
+            *kmpac      = csm_dap_das(agc_sp_mul(csm_dap_ads((agc_sp_t) -p->aerr, p->adbvel), SLOPE2), medot);
             break;
-        case PP_J24: /* (-AERR - ADBVEL)(SLOPE2) - EDOT                      */
-            *kmpac = csm_dap_das(agc_sp_mul(csm_dap_ads((agc_sp_t) -p->aerr,
-                                                        (agc_sp_t) -p->adbvel),
-                                            SLOPE2),
-                                 medot);
+        case PP_J24:                                                         /* (-AERR - ADBVEL)(SLOPE2) - EDOT                      */
+            *kmpac      = csm_dap_das(agc_sp_mul(csm_dap_ads((agc_sp_t) -p->aerr, (agc_sp_t) -p->adbvel), SLOPE2), medot);
             break;
-        case PP_J21: /* EDOT >= 0: JP (-EDOT - WL), else JN (-EDOT + WL)     */
-            *kmpac = csm_dap_das(medot, (p->edot >= 0) ? -WL : WL);
+        case PP_J21:                                                         /* EDOT >= 0: JP (-EDOT - WL), else JN (-EDOT + WL)     */
+            *kmpac      = csm_dap_das(medot, (p->edot >= 0) ? -WL : WL);
             break;
-        case PP_J22: /* EDOT >= 0: JN, else JP                               */
-            *kmpac = csm_dap_das(medot, (p->edot >= 0) ? WL : -WL);
+        case PP_J22:                                                         /* EDOT >= 0: JN, else JP                               */
+            *kmpac      = csm_dap_das(medot, (p->edot >= 0) ? WL : -WL);
             break;
         default:
-            fire = false; /* unreachable: cannot happen */
+            fire        = false;                                             /* unreachable: cannot happen */
             break;
     }
 
@@ -367,7 +357,7 @@ static agc_sp_t rcs_jtime(int i, agc_dp_t kmpac)
 
     agc_dp_t k = csm_dap_smallmp(kmpac, r->jm[i]); /* J/M, J/M1, J/M2     */
 
-    k = csm_dap_smallmp(k, BIT11);
+    k           = csm_dap_smallmp(k, BIT11);
     agc_sp_t hi = agc_dp_high(k);
 
     if (hi > 0)

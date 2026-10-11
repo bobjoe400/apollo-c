@@ -62,26 +62,16 @@
 #include "internal.h"
 
 /* Constants (P37_P70.agc pp. 912-913, 931-932, words from the rope).       */
-static const agc_dp_t ONE_B1 =
-    134217728; /* 1RTEB1   20000 00000  1.0 B-1          */
-static const agc_dp_t ONE_B3 =
-    33554432; /* 1RTEB3   04000 00000  1.0 B-3          */
-static const agc_dp_t ONE_B4 =
-    16777216; /* 1RTEB4   02000 00000  1.0 B-4          */
-static const agc_dp_t TWO_B1 =
-    268435455; /* 2RTEB1 37777 37777 POSMAX, B1 */
-static const agc_dp_t M_POINT6 =
-    -161061274; /* M.6RTE 54631 63145 -.6, B0 */
-static const agc_dp_t EPC4RTE =
-    2684; /* EPC4RTE 00000 05174 .00001, B0 */
-static const agc_dp_t EPC6RTE =
-    940; /* EPC6RTE  00000 01654  .000007 B-1      */
-static const agc_dp_t EPC7RTE =
-    500; /* EPC7RTE  00000 00764  1000. B-29 m     */
-static const agc_dp_t EPC8RTE =
-    536871; /* EPC8RTE 00040 30447 .002, B0 */
-static const agc_sp_t SGNRDOT_HALF =
-    0x2000; /* .5, B0 (SP): sign of radial speed */
+static const agc_dp_t ONE_B1       = 134217728;  /* 1RTEB1   20000 00000  1.0 B-1          */
+static const agc_dp_t ONE_B3       = 33554432;   /* 1RTEB3   04000 00000  1.0 B-3          */
+static const agc_dp_t ONE_B4       = 16777216;   /* 1RTEB4   02000 00000  1.0 B-4          */
+static const agc_dp_t TWO_B1       = 268435455;  /* 2RTEB1 37777 37777 POSMAX, B1 */
+static const agc_dp_t M_POINT6     = -161061274; /* M.6RTE 54631 63145 -.6, B0 */
+static const agc_dp_t EPC4RTE      = 2684;       /* EPC4RTE 00000 05174 .00001, B0 */
+static const agc_dp_t EPC6RTE      = 940;        /* EPC6RTE  00000 01654  .000007 B-1      */
+static const agc_dp_t EPC7RTE      = 500;        /* EPC7RTE  00000 00764  1000. B-29 m     */
+static const agc_dp_t EPC8RTE      = 536871;     /* EPC8RTE 00040 30447 .002, B0 */
+static const agc_sp_t SGNRDOT_HALF = 0x2000;     /* .5, B0 (SP): sign of radial speed */
 
 /**********************************************************************
  * RTENCK1 / RTENCK2 / RTENCK3 .. RTENCK3D (P37_P70.agc pp. 914-916):
@@ -113,14 +103,11 @@ static const agc_sp_t SGNRDOT_HALF =
  *          put the job to sleep (it resumes as resume); AGC_STATUS_BAD_ARG
  *          on a failed assertion; else the status of INTEGRVS
  **********************************************************************/
-agc_status_t rte_integrate(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t r,
-                           agc_vec_t v, agc_dp_t tet, agc_dp_t tdec1,
-                           bool conic, agc_job_id_t resume)
+agc_status_t rte_integrate(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t r, agc_vec_t v, agc_dp_t tet, agc_dp_t tdec1, bool conic, agc_job_id_t resume)
 {
     agc_integ_ctx_t *ic = agc_integ_shared_ctx(); /* INTSTALL work area */
 
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) ||
-        !AGC_ASSERT((ic != NULL) && (resume != AGC_JOB_NONE)))
+    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT((ic != NULL) && (resume != AGC_JOB_NONE)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -150,7 +137,7 @@ agc_status_t rte_integrate(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t r,
     ic->sv.vcv = v;
     ic->sv.tet = tet;
     agc_flag_clear(AGC_FLAG_MOONFLAG); /* RTENCK3D      */
-    st = agc_integ_integrvs(ip, ic, tdec1);
+    st         = agc_integ_integrvs(ip, ic, tdec1);
 
     if (st != AGC_STATUS_OK)
     {
@@ -274,12 +261,11 @@ static agc_dp_t prec_radius_ratio(agc_interp_t *ip, const rte_erasable_t *rs)
         return (0); /* no valid result */
     }
 
-    agc_tp_t t = /* TP MPAC, B2 then B4 */
-                 agc_dp_mul_tp(agc_dp_shl(ip, rs->p_rpre, 2), rs->beta1);
-    agc_dp_t beta2 = agc_tp_to_dp(agc_tp_shift(ip, t, 1));   /* BETA2 B2      */
+    agc_tp_t t     = agc_dp_mul_tp(agc_dp_shl(ip, rs->p_rpre, 2), rs->beta1); /* TP MPAC, B2 then B4 */
+    agc_dp_t beta2 = agc_tp_to_dp(agc_tp_shift(ip, t, 1));                    /* BETA2 B2      */
 
-    t = agc_dp_mul_tp(agc_dp_shl(ip, rs->r_apre, 4), beta2); /* SL4 DMP 00D   */
-    agc_tp_t beta3 = rte_tp_bdsu(ip, ONE_B4, t);             /* BETA3 B4      */
+    t              = agc_dp_mul_tp(agc_dp_shl(ip, rs->r_apre, 4), beta2); /* SL4 DMP 00D   */
+    agc_tp_t beta3 = rte_tp_bdsu(ip, ONE_B4, t);                          /* BETA3 B4      */
 
     if (agc_tp_to_dp(beta3) < 0)
     { /* PREC160       */
@@ -291,10 +277,9 @@ static agc_dp_t prec_radius_ratio(agc_interp_t *ip, const rte_erasable_t *rs)
     /* PREC155: SL2 SQRT DMP BDSU NORM stay on the TP MPAC; the NORM
      * brings MPAC+2 into the pushed divisor (1 - PHI2 SQRT(BETA3) can be
      * a small difference).                                               */
-    agc_dp_t s   = agc_tp_sqrt(ip, agc_tp_shift(ip, beta3, 2)); /* B1     */
-    agc_tp_t dtp = agc_dp_mul_tp(s, rs->phi2); /* PHI2 SQRT(BETA3), B3 */
-    agc_dp_t den = /* 1 - PHI2 SQRT(BETA3), B3 x 2^n1 */
-                   agc_tp_to_dp(agc_tp_norm(rte_tp_bdsu(ip, ONE_B3, dtp), &n1));
+    agc_dp_t s   = agc_tp_sqrt(ip, agc_tp_shift(ip, beta3, 2));                  /* B1     */
+    agc_tp_t dtp = agc_dp_mul_tp(s, rs->phi2);                                   /* PHI2 SQRT(BETA3), B3 */
+    agc_dp_t den = agc_tp_to_dp(agc_tp_norm(rte_tp_bdsu(ip, ONE_B3, dtp), &n1)); /* 1 - PHI2 SQRT(BETA3), B3 x 2^n1 */
 
     return (agc_dp_shl(ip, agc_dp_div(ip, agc_dp_shr(beta2, 1), den), n1 - 1));
 } /* prec_radius_ratio */
@@ -319,11 +304,10 @@ static agc_dp_t prec_radius_ratio(agc_interp_t *ip, const rte_erasable_t *rs)
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-static agc_status_t prec_time_step(agc_interp_t *ip, rte_erasable_t *rs,
-                                   agc_dp_t rf)
+static agc_status_t prec_time_step(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t rf)
 {
-    agc_timerad_in_t     in; /* TIMERAD inputs (R, V, RF, SGNRDOT) */
-    agc_conic_time_out_t out; /* TIMERAD outputs (T, cs B28) */
+    agc_timerad_in_t     in;     /* TIMERAD inputs (R, V, RF, SGNRDOT) */
+    agc_conic_time_out_t out;    /* TIMERAD outputs (T, cs B28) */
     int                  n1 = 0; /* NORM shift count of DT21PR */
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rf > 0))
@@ -331,17 +315,15 @@ static agc_status_t prec_time_step(agc_interp_t *ip, rte_erasable_t *rs,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rs->nn2 += 1; /* PREC170       */
+    rs->nn2         += 1;                                                         /* PREC170       */
     agc_flag_set(AGC_FLAG_RVSW);
-    in.rvec = rs->r_t2v;
-    in.vvec =
-        (rs->beta12 < 0) ? agc_vec_neg(rs->v_t2v) : rs->v_t2v; /* SIGN      */
-    in.rdesired = rf;
-    in.sgnrdot  = (rs->beta12 < 0) ? /* backwards: +.5          */
-                  SGNRDOT_HALF : (agc_sp_t) -SGNRDOT_HALF;
-    in.rvsw = true;
-    in.body = AGC_CONIC_EARTH;
-    agc_status_t st = agc_conic_timerad(ip, &in, &out); /* TIMERAD status */
+    in.rvec         = rs->r_t2v;
+    in.vvec         = (rs->beta12 < 0) ? agc_vec_neg(rs->v_t2v) : rs->v_t2v;      /* SIGN      */
+    in.rdesired     = rf;
+    in.sgnrdot      = (rs->beta12 < 0) ? SGNRDOT_HALF : (agc_sp_t) -SGNRDOT_HALF; /* backwards: +.5 */
+    in.rvsw         = true;
+    in.body         = AGC_CONIC_EARTH;
+    agc_status_t st = agc_conic_timerad(ip, &in, &out);                           /* TIMERAD status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -355,18 +337,17 @@ static agc_status_t prec_time_step(agc_interp_t *ip, rte_erasable_t *rs,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t dt21   = agc_dp_sign(out.t, rs->beta12); /* PHI4 DT21, cs B28 */
-    agc_dp_t rn     = agc_dp_norm(rs->dt21pr, &n1); /* DT21PR x 2^n1, cs B28 */
-    agc_dp_t beta13 =
-        agc_dp_shl(ip, agc_dp_div(ip, dt21, rn), n1 - 3); /* B3   */
-    agc_dp_t beta14 = (beta13 < 0) ? M_POINT6 : TWO_B1; /* PREC172/3, B1 */
+    agc_dp_t dt21   = agc_dp_sign(out.t, rs->beta12);                   /* PHI4 DT21, cs B28 */
+    agc_dp_t rn     = agc_dp_norm(rs->dt21pr, &n1);                     /* DT21PR x 2^n1, cs B28 */
+    agc_dp_t beta13 = agc_dp_shl(ip, agc_dp_div(ip, dt21, rn), n1 - 3); /* B3   */
+    agc_dp_t beta14 = (beta13 < 0) ? M_POINT6 : TWO_B1;                 /* PREC172/3, B1 */
 
     if (agc_dp_sub(ip, agc_dp_div(ip, beta13, beta14), ONE_B3) >= 0)
     {
         dt21 = agc_dp_mul_trunc(beta14, rs->dt21pr); /* BETA14 DT21PR */
     }
 
-    rs->dt21      = dt21; /* PREC174       */
+    rs->dt21      = dt21;               /* PREC174       */
     rs->dt21pr    = dt21;
     rs->prec_step = RTE_PREC_TIME_STEP; /* RTENCK2       */
 
@@ -420,8 +401,7 @@ static agc_status_t prec_angle_not_met(agc_interp_t *ip, rte_erasable_t *rs)
         return (AGC_STATUS_NOT_FOUND);
     }
 
-    agc_tp_t rf =
-        agc_tp_shift(ip, agc_dp_mul_tp(beta4, rs->rpre), 1); /* RF B29 */
+    agc_tp_t rf = agc_tp_shift(ip, agc_dp_mul_tp(beta4, rs->rpre), 1); /* RF B29 */
 
     return (prec_time_step(ip, rs, agc_tp_to_dp(rf)));
 }
@@ -461,33 +441,28 @@ static void prec_new_rcon(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t rerr)
 
     if (rs->nn1a == RTE_PREC_OUTER)
     { /* PREC207       */
-        agc_dp_t a = /* RD^2 x 2^n1, m^2 B58 */
-                     agc_tp_to_dp(agc_tp_norm(agc_dp_sq_tp(rs->rd), &n1));
-        agc_dp_t rn = agc_dp_norm(rs->rpre, &n2); /* RPRE x 2^n2, m B29 */
-        agc_dp_t q  = agc_dp_div(ip, agc_dp_shr(a, 1), rn); /* BDDV, B0 */
+        agc_dp_t a  = agc_tp_to_dp(agc_tp_norm(agc_dp_sq_tp(rs->rd), &n1)); /* RD^2 x 2^n1, m^2 B58 */
+        agc_dp_t rn = agc_dp_norm(rs->rpre, &n2);                           /* RPRE x 2^n2, m B29 */
+        agc_dp_t q  = agc_dp_div(ip, agc_dp_shr(a, 1), rn);                 /* BDDV, B0 */
 
-        rs->rcon  = agc_dp_shl(ip, q, 1 - n1 + n2);         /* SR* 0-1,1     */
+        rs->rcon  = agc_dp_shl(ip, q, 1 - n1 + n2); /* SR* 0-1,1     */
         rs->drcon = agc_dp_sub(ip, rs->rcon, rs->rd);
 
         return;
     }
 
-    agc_dp_t d = /* dRPRE x 2^n2, m B29 */
-                 agc_dp_norm(agc_dp_sub(ip, rs->rpre_prev, rs->rpre), &n2);
-    agc_dp_t s =
-        agc_dp_shl(ip, agc_dp_div(ip, rs->drcon, d), n2 - 2); /* S B2  */
-    agc_dp_t sp2 = agc_dp_add(ip, s, ONE_B1); /* S + 1, B2 */
+    agc_dp_t d   = agc_dp_norm(agc_dp_sub(ip, rs->rpre_prev, rs->rpre), &n2); /* dRPRE x 2^n2, m B29 */
+    agc_dp_t s   = agc_dp_shl(ip, agc_dp_div(ip, rs->drcon, d), n2 - 2);      /* S B2  */
+    agc_dp_t sp2 = agc_dp_add(ip, s, ONE_B1);                                 /* S + 1, B2 */
 
-    if (agc_interp_test_ovf(ip) ||
-        (agc_dp_sub(ip, agc_dp_abs(sp2), ONE_B1) >= 0))
+    if (agc_interp_test_ovf(ip) || (agc_dp_sub(ip, agc_dp_abs(sp2), ONE_B1) >= 0))
     {
         s = agc_dp_neg(TWO_B1); /* PREC205M: -4  */
     }
 
-    agc_tp_t t = /* DMP SL2: S RERR, m B29 */
-                 agc_tp_shift(ip, agc_dp_mul_tp(s, rerr), 2);
+    agc_tp_t t = agc_tp_shift(ip, agc_dp_mul_tp(s, rerr), 2); /* DMP SL2: S RERR, m B29 */
 
-    rs->drcon = agc_tp_to_dp(t);                     /* PREC206       */
+    rs->drcon = agc_tp_to_dp(t); /* PREC206       */
     rs->rcon  = agc_dp_add(ip, rs->drcon, rs->rcon);
 } /* prec_new_rcon */
 
@@ -523,8 +498,7 @@ static agc_status_t prec_radius_check(agc_interp_t *ip, rte_erasable_t *rs)
 
     if (agc_dp_sub(ip, agc_dp_abs(rerr), EPC7RTE) < 0)
     { /* PREC220       */
-        agc_dp_t e = /* |dX(T2)|, B0 */
-                     agc_dp_abs(agc_dp_sub(ip, rs->x_t2, rs->x_t2pre));
+        agc_dp_t e = agc_dp_abs(agc_dp_sub(ip, rs->x_t2, rs->x_t2pre)); /* |dX(T2)|, B0 */
 
         if (agc_dp_sub(ip, e, EPC8RTE) < 0)
         {
@@ -549,8 +523,8 @@ static agc_status_t prec_radius_check(agc_interp_t *ip, rte_erasable_t *rs)
     }
 
     prec_new_rcon(ip, rs, rerr);
-    rs->rpre_prev = rs->rpre; /* PREC210       */
-    rs->nn1a     -= 1;
+    rs->rpre_prev   = rs->rpre;                          /* PREC210       */
+    rs->nn1a        -= 1;
     agc_status_t st = rte_post_impulse_velocity(ip, rs); /* V2T100        */
 
     if (st == AGC_STATUS_OK)
@@ -589,9 +563,7 @@ static agc_status_t prec_after_integration(agc_interp_t *ip, rte_erasable_t *rs)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = /* status of PARAM, then PREC130 */
-                      agc_conic_param(ip, rs->r_t2v, rs->v_t2v, AGC_CONIC_EARTH,
-                                      &po);
+    agc_status_t st = agc_conic_param(ip, rs->r_t2v, rs->v_t2v, AGC_CONIC_EARTH, &po); /* status of PARAM, then PREC130 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -606,9 +578,8 @@ static agc_status_t prec_after_integration(agc_interp_t *ip, rte_erasable_t *rs)
     rs->p_rpre  = po.p;
     rs->r_apre  = po.r1a;
     rs->rpre    = po.r1;
-    rs->x_t2pre = agc_dp_shl(ip, po.coga, 5); /* SL 5 -> B0    */
-    agc_dp_t e = /* |dX(T2)| - EPC4, B0 */
-                 agc_dp_abs(agc_dp_add(ip, agc_dp_neg(rs->x_t2pre), rs->x_t2));
+    rs->x_t2pre = agc_dp_shl(ip, po.coga, 5);                                    /* SL 5 -> B0    */
+    agc_dp_t e  = agc_dp_abs(agc_dp_add(ip, agc_dp_neg(rs->x_t2pre), rs->x_t2)); /* |dX(T2)| - EPC4, B0 */
 
     e = agc_dp_sub(ip, e, EPC4RTE);
 
@@ -648,11 +619,9 @@ static agc_status_t prec_after_integration(agc_interp_t *ip, rte_erasable_t *rs)
  *          rs->alarm_code 605 or 613; AGC_STATUS_BAD_ARG on a failed
  *          assertion; else POODOO statuses from V2T100 / TIMERAD
  **********************************************************************/
-agc_status_t rte_precision_run(agc_interp_t *ip, rte_erasable_t *rs,
-                               agc_job_id_t resume)
+agc_status_t rte_precision_run(agc_interp_t *ip, rte_erasable_t *rs, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) ||
-        !AGC_ASSERT(resume != AGC_JOB_NONE))
+    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -663,16 +632,13 @@ agc_status_t rte_precision_run(agc_interp_t *ip, rte_erasable_t *rs,
 
         if (rs->prec_step == RTE_PREC_FROM_TIG)
         { /* RTENCK3       */
-            st = rte_integrate(ip, rs, rs->r_t1v, rs->v2_t1v, rs->t1, rs->t2,
-                               false, resume);
+            st = rte_integrate(ip, rs, rs->r_t1v, rs->v2_t1v, rs->t1, rs->t2, false, resume);
         }
         else
         { /* RTENCK2       */
-            agc_dp_t tdec1 = /* T2 + DT21, cs B28 */
-                             agc_dp_add(ip, rs->t2, rs->dt21);
+            agc_dp_t tdec1 = agc_dp_add(ip, rs->t2, rs->dt21); /* T2 + DT21, cs B28 */
 
-            st = rte_integrate(ip, rs, rs->r_t2v, rs->v_t2v, rs->t2, tdec1,
-                               false, resume);
+            st = rte_integrate(ip, rs, rs->r_t2v, rs->v_t2v, rs->t2, tdec1, false, resume);
         }
 
         if (st != AGC_STATUS_OK)
@@ -681,17 +647,15 @@ agc_status_t rte_precision_run(agc_interp_t *ip, rte_erasable_t *rs,
         }
 
         rs->prec_steps += 1;
-        st              = prec_after_integration(ip, rs); /* PREC125       */
+        st             = prec_after_integration(ip, rs); /* PREC125       */
 
         if (st != AGC_STATUS_OK)
         {
-            return ((st == AGC_STATUS_NOT_FOUND) ? /* done: OK */
-                    AGC_STATUS_OK : st);
+            return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st); /* done: OK */
         }
     }
 
-    rs->alarm_code =
-        RTE_ALARM_ITERATIONS; /* cannot happen: NN1A, NN2 bound it */
+    rs->alarm_code = RTE_ALARM_ITERATIONS; /* cannot happen: NN1A, NN2 bound it */
 
     return (AGC_STATUS_ALARM);
 } /* rte_precision_run */

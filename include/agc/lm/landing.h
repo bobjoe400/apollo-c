@@ -102,53 +102,52 @@ typedef struct agc_lm_pad
 /* ---- landing guidance erasables ----------------------------------------- */
 typedef struct agc_lm_ldg
 {
-    agc_vec_t land;     /* LAND landing site, SM, 2^24 m                  */
-    agc_vec_t landtemp; /* LANDTEMP redesignated site, SM, 2^24 m        */
-    agc_dp_t  land_mag; /* /LAND/ lunar radius at site, 2^24 m            */
-    agc_vec_t wm;    /* WM lunar rotation vector (SM), 2^-17 rad/cs (derived) */
-    agc_dp_t  ttf_8; /* TTF/8 time-to-go/8 (negative), 2^14 cs         */
-    agc_dp_t  ttf_8tmp; /* TTF/8TMP TTF/8 at the last pass, 2^14 cs      */
-    agc_sp_t  ttf_8_hi; /* TTF/8 high word as DAS left it, cs 2^14       */
-    agc_sp_t  ttf_8tmp_hi; /* TTF/8TMP high word, likewise, cs 2^14     */
-    agc_dp_t  tpip;     /* TPIP time of PIPA reading, 2^28 cs             */
-    agc_dp_t  tpipold;  /* TPIPOLD TPIP of the last pass, 2^28 cs        */
-    agc_mat_t cg;       /* CG guidance->SM rows (half unit)               */
-    agc_vec_t rgu;      /* RGU position, guidance frame, 2^24 m           */
-    agc_vec_t vgu;      /* VGU velocity, guidance frame, 2^10 m/cs        */
-    agc_vec_t angterm;  /* ANGTERM V + R x WM, 2^9 m/cs                   */
-    agc_dp_t  vhoriz;   /* VHORIZ horizontal velocity, 2^7 m/cs           */
-    agc_dp_t  rangedsp; /* RANGEDSP slant range, 2^24 m                   */
-    agc_sp_t  lookangl; /* LOOKANGL LPD angle, degrees, unscaled         */
-    agc_vec_t unfc_2;   /* UNFC/2 thrust command, 2^-4 m/cs^2 (any length;
-                             FINDCDUW -2 input, also used by P40 / ascent) */
-    agc_vec_t unwc_2;   /* UNWC/2 window command, half unit 2^1          */
-    agc_dp_t  afc;      /* /AFC/ commanded acceleration, 2^-4 m/cs^2      */
-    agc_sp_t  wchphase; /* WCHPHASE -1..2, unscaled                      */
-    agc_sp_t  wchphold; /* WCHPHOLD WCHPHASE of the last pass, unscaled  */
-    agc_sp_t  flpass0;  /* FLPASS0 pass counter in phase, unscaled       */
-    agc_sp_t  nguidsub; /* NGUIDSUB IGNALG passes left, unscaled         */
-    agc_sp_t  nignloop; /* NIGNLOOP IGNALG iterations left, unscaled     */
-    agc_sp_t  wchvert;  /* WCHVERT -2 P65, 0 P66, 10 P67, unscaled       */
-    agc_sp_t  rodcount; /* RODCOUNT ROD switch clicks, unscaled          */
-    agc_dp_t  vdgvert;  /* VDGVERT desired altitude rate, 2^7 m/cs        */
-    agc_dp_t  ttfdisp;  /* TTFDISP 2^28 cs                                */
-    agc_sp_t  tredes;   /* TREDES redesignation time left, s, unscaled   */
-    agc_dp_t  elincr;   /* ELINCR elevation increment (pi rad scale)      */
-    agc_dp_t  azincr;   /* AZINCR azimuth increment, scale pi rad       */
-    agc_sp_t  elincr1;  /* ELINCR1 accumulating (COUNT'EM), scale pi rad */
-    agc_sp_t  azincr1;  /* AZINCR1 accumulating, scale pi rad           */
-    agc_sp_t  elvira;   /* ELVIRA LPD bits last pass, unscaled          */
-    agc_sp_t  zerlina;  /* ZERLINA monitor countdown, unscaled          */
-    agc_dp_t  outofpln; /* OUTOFPLN out-of-plane distance, 2^24 m (derived) */
+    agc_vec_t land;          /* LAND landing site, SM, 2^24 m                  */
+    agc_vec_t landtemp;      /* LANDTEMP redesignated site, SM, 2^24 m        */
+    agc_dp_t  land_mag;      /* /LAND/ lunar radius at site, 2^24 m            */
+    agc_vec_t wm;            /* WM lunar rotation vector (SM), 2^-17 rad/cs (derived) */
+    agc_dp_t  ttf_8;         /* TTF/8 time-to-go/8 (negative), 2^14 cs         */
+    agc_dp_t  ttf_8tmp;      /* TTF/8TMP TTF/8 at the last pass, 2^14 cs      */
+    agc_sp_t  ttf_8_hi;      /* TTF/8 high word as DAS left it, cs 2^14       */
+    agc_sp_t  ttf_8tmp_hi;   /* TTF/8TMP high word, likewise, cs 2^14     */
+    agc_dp_t  tpip;          /* TPIP time of PIPA reading, 2^28 cs             */
+    agc_dp_t  tpipold;       /* TPIPOLD TPIP of the last pass, 2^28 cs        */
+    agc_mat_t cg;            /* CG guidance->SM rows (half unit)               */
+    agc_vec_t rgu;           /* RGU position, guidance frame, 2^24 m           */
+    agc_vec_t vgu;           /* VGU velocity, guidance frame, 2^10 m/cs        */
+    agc_vec_t angterm;       /* ANGTERM V + R x WM, 2^9 m/cs                   */
+    agc_dp_t  vhoriz;        /* VHORIZ horizontal velocity, 2^7 m/cs           */
+    agc_dp_t  rangedsp;      /* RANGEDSP slant range, 2^24 m                   */
+    agc_sp_t  lookangl;      /* LOOKANGL LPD angle, degrees, unscaled         */
+    agc_vec_t unfc_2;        /* UNFC/2 thrust command, 2^-4 m/cs^2 (any length; FINDCDUW -2 input, also used by P40 / ascent) */
+    agc_vec_t unwc_2;        /* UNWC/2 window command, half unit 2^1          */
+    agc_dp_t  afc;           /* /AFC/ commanded acceleration, 2^-4 m/cs^2      */
+    agc_sp_t  wchphase;      /* WCHPHASE -1..2, unscaled                      */
+    agc_sp_t  wchphold;      /* WCHPHOLD WCHPHASE of the last pass, unscaled  */
+    agc_sp_t  flpass0;       /* FLPASS0 pass counter in phase, unscaled       */
+    agc_sp_t  nguidsub;      /* NGUIDSUB IGNALG passes left, unscaled         */
+    agc_sp_t  nignloop;      /* NIGNLOOP IGNALG iterations left, unscaled     */
+    agc_sp_t  wchvert;       /* WCHVERT -2 P65, 0 P66, 10 P67, unscaled       */
+    agc_sp_t  rodcount;      /* RODCOUNT ROD switch clicks, unscaled          */
+    agc_dp_t  vdgvert;       /* VDGVERT desired altitude rate, 2^7 m/cs        */
+    agc_dp_t  ttfdisp;       /* TTFDISP 2^28 cs                                */
+    agc_sp_t  tredes;        /* TREDES redesignation time left, s, unscaled   */
+    agc_dp_t  elincr;        /* ELINCR elevation increment (pi rad scale)      */
+    agc_dp_t  azincr;        /* AZINCR azimuth increment, scale pi rad       */
+    agc_sp_t  elincr1;       /* ELINCR1 accumulating (COUNT'EM), scale pi rad */
+    agc_sp_t  azincr1;       /* AZINCR1 accumulating, scale pi rad           */
+    agc_sp_t  elvira;        /* ELVIRA LPD bits last pass, unscaled          */
+    agc_sp_t  zerlina;       /* ZERLINA monitor countdown, unscaled          */
+    agc_dp_t  outofpln;      /* OUTOFPLN out-of-plane distance, 2^24 m (derived) */
     agc_vec_t pointvsm_save; /* R60VSAVE: UNFC/2 for R60, 2^-4 m/cs^2  */
-    agc_dp_t  deltah;       /* DELTAH display init, 2^24 m                    */
-    agc_dp_t  hcalc1;       /* HCALC1 P66 altitude, 2^24 m                    */
-    agc_vec_t delvrod;      /* DELVROD P66 PIPA delta, counts 2^14          */
-    agc_vec_t vbias;        /* VBIAS PIPA bias velocity, 2^7 m/cs           */
-    agc_sp_t  oldpipa[3];   /* OLDPIPAX/Y/Z, counts 2^14                     */
-    agc_dp_t  lasttpip;     /* LASTTPIP 2^28 cs                               */
-    agc_dp_t  thistpip;     /* THISTPIP 2^28 cs                               */
-    agc_sp_t  rodscal1;     /* RODSCAL1 m/cs per click, 2^7 (derived)        */
+    agc_dp_t  deltah;        /* DELTAH display init, 2^24 m                    */
+    agc_dp_t  hcalc1;        /* HCALC1 P66 altitude, 2^24 m                    */
+    agc_vec_t delvrod;       /* DELVROD P66 PIPA delta, counts 2^14          */
+    agc_vec_t vbias;         /* VBIAS PIPA bias velocity, 2^7 m/cs           */
+    agc_sp_t  oldpipa[3];    /* OLDPIPAX/Y/Z, counts 2^14                     */
+    agc_dp_t  lasttpip;      /* LASTTPIP 2^28 cs                               */
+    agc_dp_t  thistpip;      /* THISTPIP 2^28 cs                               */
+    agc_sp_t  rodscal1;      /* RODSCAL1 m/cs per click, 2^7 (derived)        */
 } agc_lm_ldg_t;
 
 /* ---- throttle erasables (THROTTLE, p. 793) ------------------------------ */
@@ -164,14 +163,14 @@ typedef struct agc_lm_words
 
 typedef struct agc_lm_thr
 {
-    agc_lm_words_t fp;    /* FP present thrust, hi = pulses (2^14 pulses) */
-    agc_dp_t       fc;    /* FC thrust desired, hi = pulses 2^14 (TS FC) */
-    agc_lm_words_t fcodd; /* FCODD what it is going to get, 2^14 pulses   */
-    agc_sp_t       fcold; /* FCOLD previous FCODD, pulses 2^14           */
-    agc_lm_words_t pif;     /* PIF = FCODD - FP by DAS, hi = pulses         */
-    agc_sp_t       pifpset; /* PIFPSET offset (FMAXODD-FP, FEXTRA), 2^14   */
-    agc_lm_words_t fweight; /* FWEIGHT thrust lag weighting, 2^14 pulses  */
-    agc_sp_t       tthrot; /* TTHROT TIME1 of last throttling, cs 2^14       */
+    agc_lm_words_t fp;       /* FP present thrust, hi = pulses (2^14 pulses) */
+    agc_dp_t       fc;       /* FC thrust desired, hi = pulses 2^14 (TS FC) */
+    agc_lm_words_t fcodd;    /* FCODD what it is going to get, 2^14 pulses   */
+    agc_sp_t       fcold;    /* FCOLD previous FCODD, pulses 2^14           */
+    agc_lm_words_t pif;      /* PIF = FCODD - FP by DAS, hi = pulses         */
+    agc_sp_t       pifpset;  /* PIFPSET offset (FMAXODD-FP, FEXTRA), 2^14   */
+    agc_lm_words_t fweight;  /* FWEIGHT thrust lag weighting, 2^14 pulses  */
+    agc_sp_t       tthrot;   /* TTHROT TIME1 of last throttling, cs 2^14       */
     agc_sp_t       pseudo55; /* PSEUDO55 downlink, pulses 2^14 */
 } agc_lm_thr_t;
 
@@ -228,18 +227,17 @@ agc_lm_asc_t *agc_lm_asc(void);
 void          agc_lm_landing_reset(void);
 
 /* basic-language helpers shared by the lane (state.c) */
-void           agc_lm_phaschng(uint16_t octal_code); /* PHASCHNG  */
-void           agc_lm_fastchng(void);                /* FASTCHNG  */
-agc_sp_t       agc_lm_time1(void);                   /* TIME1     */
-agc_sp_t       agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor); /* DV        */
-agc_sp_t       agc_lm_mp_hi(agc_sp_t a, agc_sp_t b); /* MP, high  */
-agc_sp_t       agc_lm_ad(agc_sp_t a, agc_sp_t b);    /* AD, wraps */
-agc_lm_words_t agc_lm_words(agc_dp_t v);             /* sign-agreeing split */
-agc_dp_t       agc_lm_words_value(agc_lm_words_t w); /* hi * 2^14 + lo    */
-agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y); /* DAS     */
-agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y,
-                              int *ovf); /* DAS, A = net overflow    */
-bool agc_lm_chan_bit_present(int chan, uint16_t bit); /* inverted ch30-33 */
+void           agc_lm_phaschng(uint16_t octal_code);                         /* PHASCHNG  */
+void           agc_lm_fastchng(void);                                        /* FASTCHNG  */
+agc_sp_t       agc_lm_time1(void);                                           /* TIME1     */
+agc_sp_t       agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor);               /* DV        */
+agc_sp_t       agc_lm_mp_hi(agc_sp_t a, agc_sp_t b);                         /* MP, high  */
+agc_sp_t       agc_lm_ad(agc_sp_t a, agc_sp_t b);                            /* AD, wraps */
+agc_lm_words_t agc_lm_words(agc_dp_t v);                                     /* sign-agreeing split */
+agc_dp_t       agc_lm_words_value(agc_lm_words_t w);                         /* hi * 2^14 + lo    */
+agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y);               /* DAS     */
+agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y, int *ovf); /* DAS, A = net overflow    */
+bool           agc_lm_chan_bit_present(int chan, uint16_t bit);              /* inverted ch30-33 */
 
 /* ---- THROTTLE_CONTROL_ROUTINES (throttle.c) ----------------------------- */
 agc_status_t agc_lm_throttle(void);
@@ -248,31 +246,31 @@ agc_status_t agc_lm_throttle_flatout(void);
 
 /* ---- FINDCDUW--GUIDAP_INTERFACE (findcduw.c) ---------------------------- */
 void agc_lm_initcduw(void);
+
 /* FINDCDUW: thrust command (any length) in MPAC; window command is
  * agc_lm_ldg()->unwc_2. FINDCDUW -2: thrust command from UNFC/2
  * (agc_lm_ldg()->unfc_2).                                        */
 agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2);
 agc_status_t agc_lm_findcduw_from_unfc(agc_interp_t *ip);
-agc_sp_t     agc_lm_sparcsin(agc_sp_t x);    /* arg scale 1, angle 180 deg */
+agc_sp_t     agc_lm_sparcsin(agc_sp_t x); /* arg scale 1, angle 180 deg */
+
 /* SPARCSIN -1: arg scale 2 */
 agc_sp_t agc_lm_sparcsin_doubled(agc_sp_t x);
 agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c); /* 2's comp, pi    */
 agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit);
-uint16_t agc_lm_onesto2s(agc_sp_t a); /* -> 15-bit 2's comp word    */
+uint16_t agc_lm_onesto2s(agc_sp_t a);             /* -> 15-bit 2's comp word    */
 
 /* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (guidance.c) --------------
  * Job functions take the executive's job context (dispatch.c calls them);
  * display continuations are job ids.                                     */
-#define AGC_LM_ROOT_MAX_DEGREE 5 /* ROOTPSRS erasables allow N <= 5      */
-#define AGC_LM_ROOT_MAX_PASSES 8 /* "Klumpp says give up after 8 passes" */
-agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess,
-                             agc_sp_t precroot, agc_dp_t *root,
-                             agc_sp_t *root_hi, int *passes);
-#define AGC_LM_ENTRY_GUILDRET 0 /* normal pass via LUNLAND/GUILDEN     */
-#define AGC_LM_ENTRY_GUIDSUB  1 /* IGNALG passes after the first       */
-#define AGC_LM_ENTRY_QGUIDSUB 2 /* ?GUIDSUB first IGNALG pass          */
-#define AGC_LM_ENTRY_VERTGUID 3 /* straight to VERTGUID                */
-agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx); /* LUNLAND      */
+#define AGC_LM_ROOT_MAX_DEGREE 5                              /* ROOTPSRS erasables allow N <= 5      */
+#define AGC_LM_ROOT_MAX_PASSES 8                              /* "Klumpp says give up after 8 passes" */
+agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, agc_sp_t precroot, agc_dp_t *root, agc_sp_t *root_hi, int *passes);
+#define AGC_LM_ENTRY_GUILDRET 0                               /* normal pass via LUNLAND/GUILDEN     */
+#define AGC_LM_ENTRY_GUIDSUB  1                               /* IGNALG passes after the first       */
+#define AGC_LM_ENTRY_QGUIDSUB 2                               /* ?GUIDSUB first IGNALG pass          */
+#define AGC_LM_ENTRY_VERTGUID 3                               /* straight to VERTGUID                */
+agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx);          /* LUNLAND      */
 agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry);
 agc_status_t agc_lm_start_approach_phase(void);               /* STARTP64     */
 agc_status_t agc_lm_start_velocity_nulling(void);             /* P65START     */
@@ -286,67 +284,80 @@ agc_status_t agc_lm_cgcalc(agc_interp_t *ip);                 /* CGCALC       */
 agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3);
+
 /* P63DISPS -2 */
 agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx);
+
 /* P64DISPS */
 agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx);
+
 /* P64CEED */
 agc_status_t agc_lm_job_approach_phase_proceed(agc_job_ctx_t *ctx);
-void         agc_lm_tdispset(void);                         /* TDISPSET     */
+void         agc_lm_tdispset(void);  /* TDISPSET     */
 agc_sp_t     agc_lm_ttf8_high(void); /* CA TTF/8: the raw high word      */
 
 /* ---- landing program flow (lunar_landing.c) ----------------------------- */
 agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx); /* P63LM        */
+
 /* IGNALG LEMPREC retry */
 agc_status_t agc_lm_job_ignalg_prec(agc_job_ctx_t *ctx);
+
 /* IGNALOOP (INTSTALL retry) */
 agc_status_t agc_lm_job_ignaloop(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_ignalgrt(agc_job_ctx_t *ctx); /* IGNALGRT     */
 agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx);  /* ASTNRET      */
+
 /* P63SPOT2 */
 agc_status_t agc_lm_job_braking_phase_burn_attitude(agc_job_ctx_t *ctx);
+
 /* P63SPOT3 */
 agc_status_t agc_lm_job_braking_phase_antenna_check(agc_job_ctx_t *ctx);
+
 /* P63SPOT4 */
 agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx,
-                                 int                 *entry);  /* R13 */
-agc_status_t agc_lm_redesig(agc_interp_t *ip); /* REDESIG      */
+agc_status_t agc_lm_guildenstern(const agc_job_ctx_t *ctx, int *entry); /* R13 */
+agc_status_t agc_lm_redesig(agc_interp_t *ip);                          /* REDESIG      */
+
 /* P66VERTA */
 agc_status_t agc_lm_rate_of_descent_vertical(const agc_job_ctx_t *ctx);
-agc_status_t agc_lm_manual_landing_vertical(const agc_job_ctx_t *ctx,
-                                            agc_interp_t        *ip);
+agc_status_t agc_lm_manual_landing_vertical(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_task_rodtask(void);              /* RODTASK      */
 agc_status_t agc_lm_job_rodcomp(agc_job_ctx_t *ctx); /* RODCOMP      */
 agc_status_t agc_lm_pitfall(void);                   /* PITFALL (RUPT10) */
 agc_status_t agc_lm_task_redesmon(void);             /* REDESMON     */
 agc_status_t agc_lm_descbits(void);                  /* DESCBITS (ch 16) */
+
 /* LANDJUNK */
 agc_status_t agc_lm_job_landing_confirmation(agc_job_ctx_t *ctx);
+
 /* V06N43 flash */
 agc_status_t agc_lm_job_landing_confirmation_flash(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_landing_confirmation_proceed(
-    agc_job_ctx_t *ctx); /* after V06N43 PROCEED */
+agc_status_t agc_lm_job_landing_confirmation_proceed(agc_job_ctx_t *ctx); /* after V06N43 PROCEED */
 
 /* ---- P70-P71 (aborts.c) ------------------------------------------------ */
 agc_status_t agc_lm_task_abort_monitor(void);          /* R10,R11      */
 agc_status_t agc_lm_abort_monitor_resume(void);        /* R10,R11A     */
 agc_status_t agc_lm_job_dps_abort(agc_job_ctx_t *ctx); /* P70          */
 agc_status_t agc_lm_job_aps_abort(agc_job_ctx_t *ctx); /* P71          */
+
 /* P70A restart */
 agc_status_t agc_lm_job_dps_abort_commanded(agc_job_ctx_t *ctx);
+
 /* P71A restart */
 agc_status_t agc_lm_job_aps_abort_commanded(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx); /* GOABORT      */
+
 /* UPTHROT1 -3 */
 agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx);
+
 /* UPTHROT1 */
 agc_status_t agc_lm_job_abort_to_ascent_guidance(agc_job_ctx_t *ctx);
+
 /* OLDTIME restart */
 agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx);
 agc_sp_t     agc_lm_pipctr1(void);             /* PIPCTR1 for LANDISP */
 void         agc_lm_tgocomp(agc_interp_t *ip); /* TGOCOMP      */
-void         agc_lm_throtup(void);     /* THROTUP      */
+void         agc_lm_throtup(void);             /* THROTUP      */
 
 /* ---- P12 and ASCENT_GUIDANCE (ascent.c) --------------------------------- */
 agc_status_t agc_lm_guidinit(agc_interp_t *ip);
@@ -356,15 +367,17 @@ agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx);
+
 /* V06N33 flash */
 agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx);
+
 /* P12LMB */
 agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx,
-                                          agc_interp_t        *ip);
+agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t *ip);
+
 /* P12RET tail */
 agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx);  /* ATMAG (AVGEXIT) */
+agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx);          /* ATMAG (AVGEXIT) */
 agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_dp_t     agc_lm_ycomp(agc_interp_t *ip);
 agc_dp_t     agc_lm_logsub(agc_interp_t *ip, agc_dp_t x);

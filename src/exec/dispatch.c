@@ -44,9 +44,9 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
-#include "agc/exec/exec.h"
 #include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"

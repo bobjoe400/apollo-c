@@ -60,9 +60,9 @@
 #define FS_HALF_SEC         50      /* .5SEC (cs)                             */
 #define FS_CA_ECE_CS        6       /* CAF SIX / TC WAITLIST CA+ECE           */
 #define FS_PRIO30           ((agc_prio_t) 030)
-#define FS_PHASE_4_1        014u /* GOTOPOOH (CSM): PHASCHNG OCT 14        */
-#define FS_PHASE_4_33       033u /* GOTOPOOH (LM): 4.33SPOT, GOP00FIX      */
-#define FS_FLAGWORDS_SWINIT 12   /* SWINIT covers STATE .. STATE +11D      */
+#define FS_PHASE_4_1        014u    /* GOTOPOOH (CSM): PHASCHNG OCT 14        */
+#define FS_PHASE_4_33       033u    /* GOTOPOOH (LM): 4.33SPOT, GOP00FIX      */
+#define FS_FLAGWORDS_SWINIT 12      /* SWINIT covers STATE .. STATE +11D      */
 
 static uint16_t   redoctr; /* REDOCTR: restarts since fresh start     */
 static agc_prio_t restreg; /* RESTREG: display restart priority       */
@@ -118,23 +118,22 @@ static void startsb2_outbits(void)
 
     if (!is_lm())
     {
-        agc_chan_and(AGC_CHAN_DSALMOUT, 077603u); /* UPLINK ACTY .. OPR ERR off */
-        agc_chan_and(AGC_CHAN_CHAN13, 074777u);   /* test alarms, standby enable */
-        flagword_init(2, (uint16_t) ~025000u & 077777u, 001000u); /* R21MARK,
-                                                                     P21FLAG off; SKIPVHF on               */
+        agc_chan_and(AGC_CHAN_DSALMOUT, 077603u);                 /* UPLINK ACTY .. OPR ERR off */
+        agc_chan_and(AGC_CHAN_CHAN13, 074777u);                   /* test alarms, standby enable */
+        flagword_init(2, (uint16_t) ~025000u & 077777u, 001000u); /* R21MARK, P21FLAG off; SKIPVHF on */
 
         return;
     }
 
-    agc_chan_and(AGC_CHAN_DSALMOUT, 030001u); /* keep engine on/off, ISS warning */
+    agc_chan_and(AGC_CHAN_DSALMOUT, 030001u);            /* keep engine on/off, ISS warning */
     flagword_init(3, (uint16_t) ~000400u & 077777u, 0u); /* READRFLG off   */
+
     /* delegated: RADMODES turn-on/reposition/CDU zero/remode bits (prog-rendz) */
-    agc_chan_and(AGC_CHAN_CHAN12, 027470u); /* keep IMU flags, trims, RR lockon */
-    flagword_init(5, (uint16_t) ~002010u & 077777u,
-                  0u);                  /* NORRMON, R77FLAG off */
-    agc_chan_and(AGC_CHAN_CHAN13, 074160u); /* keep telemetry flags        */
-    agc_chan_or(AGC_CHAN_CHAN13, FS_BIT12); /* re-enable RUPT10            */
-    agc_chan_and(AGC_CHAN_CHAN14, FS_BIT6); /* keep gyro enable            */
+    agc_chan_and(AGC_CHAN_CHAN12, 027470u);              /* keep IMU flags, trims, RR lockon */
+    flagword_init(5, (uint16_t) ~002010u & 077777u, 0u); /* NORRMON, R77FLAG off */
+    agc_chan_and(AGC_CHAN_CHAN13, 074160u);              /* keep telemetry flags        */
+    agc_chan_or(AGC_CHAN_CHAN13, FS_BIT12);              /* re-enable RUPT10            */
+    agc_chan_and(AGC_CHAN_CHAN14, FS_BIT6);              /* keep gyro enable            */
 
     if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) & ~FS_BIT6) == 0U))
     {
@@ -167,13 +166,12 @@ static void startsb2(void)
     }
 
     agc_erase_set_markstat(0);
-    exec_clear_modecadr();                    /* IMUCADR OPTCADR RADCADR */
+    exec_clear_modecadr();  /* IMUCADR OPTCADR RADCADR */
     agc_flagword_set(4, 0); /* kill interface displays */
 
     if (is_lm())
     { /* leave bit 6 unchanged   */
-        agc_erase_set_imodes33(
-            (uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
+        agc_erase_set_imodes33((uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
     }
 
     if (!AGC_ASSERT(agc_flagword_get(4) == 0u))
@@ -275,9 +273,7 @@ static void dofstart_common(void)
      * LMOONFLG, SURFFLAG; LM REFSMFLG, SURFFLAG, CMOONFLG, LMOONFLG, APSFLAG.
      * SWINIT sets CSM FLAGWRD5 0200 (COMPUTER); LM FLAGWRD3 02000
      * (NOR29FLG), FLAGWRD7 0100, FLAGWRD11 40000 (LRBYPASS).              */
-    uint16_t moons = (uint16_t) (agc_flag_mask(AGC_FLAG_CMOONFLG) |
-                                 agc_flag_mask(AGC_FLAG_LMOONFLG) |
-                                 agc_flag_mask(AGC_FLAG_SURFFLAG));
+    uint16_t moons = (uint16_t) (agc_flag_mask(AGC_FLAG_CMOONFLG) | agc_flag_mask(AGC_FLAG_LMOONFLG) | agc_flag_mask(AGC_FLAG_SURFFLAG));
     uint16_t refsm = agc_flag_mask(AGC_FLAG_REFSMFLG);
 
     for (int w = 0; w < FS_FLAGWORDS_SWINIT; w++)
@@ -354,6 +350,7 @@ static void dofstart_csm(void)
     agc_chan_write(AGC_CHAN_CHAN12, 0);
     agc_chan_write(AGC_CHAN_CHAN13, 0);
     agc_chan_write(AGC_CHAN_CHAN14, 0);
+
     /* delegated: WTOPTION, DNLSTCOD, NVSAVE, EBANKTEM, RATEINDX, TRKMKCNT,
      * VHFCNT, EXTVBACT.                                                */
     dofstart_common();
@@ -398,7 +395,7 @@ static void dofstart(bool slap1, bool engine_off)
         if (engine_off)
         {
             agc_chan_write(AGC_CHAN_DSALMOUT, FS_BIT14); /* engine off  */
-            agc_erase_set_thrust(0); /* CS ZERO / TS THRUST (-0)      */
+            agc_erase_set_thrust(0);                     /* CS ZERO / TS THRUST (-0)      */
         }
 
         dofstrt1_lm();
@@ -504,8 +501,7 @@ static agc_status_t goprog3(void)
 
     if (is_lm())
     {
-        flagword_init(1, (uint16_t) ~024000u & 077777u,
-                      0u); /* DIDFLAG, RODFLAG */
+        flagword_init(1, (uint16_t) ~024000u & 077777u, 0u); /* DIDFLAG, RODFLAG */
         flagword_init(0, (uint16_t) ~002000u & 077777u, 0u); /* P21FLAG */
     }
     else if ((agc_flagword_get(6) & FS_F6_DAPBITS) == FS_F6_RCS)
@@ -544,22 +540,20 @@ static void goprog_csm_tail(void)
         /* T5IDLER 2CADRs       */
         AGC_TASK_T5IDLOC, AGC_TASK_REDORCS, AGC_TASK_REDOTVC, AGC_TASK_REDOSAT
     };
-    unsigned                   sel =
-        (unsigned) (agc_flagword_get(6) >> 13) & 3u;            /* bits 15,14 */
+    unsigned                   sel        = (unsigned) (agc_flagword_get(6) >> 13) & 3u; /* bits 15,14 */
 
     agc_rupt_set_t5_task(t5idler[sel]); /* T5LOC     */
     agc_status_t st = AGC_STATUS_OK;
 
     agc_flag_clear(AGC_FLAG_INTFLAG); /* RASFLAG INTFLBIT     */
-    st = exec_up_goprog_optics(); /* OPTMODES = (OPTMODES & OPTINITR) + BIT7 */
+    st = exec_up_goprog_optics();     /* OPTMODES = (OPTMODES & OPTINITR) + BIT7 */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
         return;
     }
 
-    agc_erase_set_imodes33(
-        (uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
+    agc_erase_set_imodes33((uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
     uint16_t old = agc_erase_dsptab(FS_LAMPWORD);
 
     set_lampword((uint16_t) ((old & FS_LAMPS_964) | FS_BIT15));
@@ -573,8 +567,7 @@ static void goprog_csm_tail(void)
             return;
         }
 
-        const agc_status_t st_ca_ece = agc_waitlist_call(FS_CA_ECE_CS,
-                                                         AGC_TASK_CA_ECE);
+        const agc_status_t st_ca_ece = agc_waitlist_call(FS_CA_ECE_CS, AGC_TASK_CA_ECE);
 
         if (!AGC_ASSERT(st_ca_ece != AGC_STATUS_BAD_ARG))
         {
@@ -582,8 +575,7 @@ static void goprog_csm_tail(void)
         }
     }
 
-    agc_erase_set_imodes30(
-        (uint16_t) ((agc_erase_imodes30() & FS_IFAILINH) | FS_IM30INIR));
+    agc_erase_set_imodes30((uint16_t) ((agc_erase_imodes30() & FS_IFAILINH) | FS_IM30INIR));
 
     if (agc_flag_test(AGC_FLAG_ENGONFLG))
     {
@@ -603,8 +595,8 @@ static void goprog_lm_tail(void)
     uint16_t old = agc_erase_dsptab(FS_LAMPWORD);
 
     set_lampword((uint16_t) ((old & FS_LAMPS_964) | FS_BIT15));
-    agc_erase_set_imodes30(
-        (uint16_t) ((agc_erase_imodes30() & FS_IFAILINH) | FS_IM30INIR));
+    agc_erase_set_imodes30((uint16_t) ((agc_erase_imodes30() & FS_IFAILINH) | FS_IM30INIR));
+
     /* delegated (sys-misc): DNLSTCOD = AGSWORD                         */
     agc_chan_or(AGC_CHAN_CHAN14, FS_BIT4); /* throttle counter on  */
 
@@ -637,6 +629,7 @@ agc_status_t agc_restart_goprog(void)
     if (!is_lm())
     {
         exec_vac5stor();
+
         /* OSC FAIL (ch 33 bit 15) absent and AGC WARNING (bit 14) on:
          * a restart loop; do a fresh start. Channel 33 reads 0 when the
          * signal is present. DEVIATION: the WAND that resets the
@@ -654,8 +647,7 @@ agc_status_t agc_restart_goprog(void)
     }
     else if ((agc_erase_dsptab(FS_LAMPWORD) & FS_BIT4) != 0U)
     {
-        agc_chan_or(AGC_CHAN_CHAN12,
-                    (uint16_t) (FS_BIT4 | FS_BIT6)); /* coarse align */
+        agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) (FS_BIT4 | FS_BIT6)); /* coarse align */
     }
     else
     {
@@ -665,7 +657,7 @@ agc_status_t agc_restart_goprog(void)
     agc_status_t st = AGC_STATUS_OK;
 
     if (!lightset())
-    {               /* BUTTONS              */
+    { /* BUTTONS              */
         startsub(); /* ERESTORE = +0        */
 
         if (is_lm())
@@ -726,8 +718,7 @@ agc_status_t fresh_enema(void)
 
     if ((agc_flagword_get(6) & FS_F6_DAPBITS) == FS_F6_TVC)
     {
-        const agc_status_t st_tvc = agc_waitlist_call(FS_HALF_SEC,
-                                                      AGC_TASK_TVCEXEC);
+        const agc_status_t st_tvc = agc_waitlist_call(FS_HALF_SEC, AGC_TASK_TVCEXEC);
 
         if (!AGC_ASSERT(st_tvc != AGC_STATUS_BAD_ARG)) /* TVC on */
         {
@@ -751,10 +742,12 @@ agc_status_t agc_fresh_start_slap1(void)
 {
     agc_inhint();
     startsub();
+
     /* STARTSW: TCF SKIPSIM (the simulation start patch is not used).   */
     uint16_t lamps = agc_erase_dsptab(FS_LAMPWORD);
 
     set_lampword((uint16_t) ((lamps & FS_BITS4_6) | FS_BIT15));
+
     /* delegated: LM DUMPCNT = BIT12 (sys-misc); DSRUPTSW = -PRIO12.    */
     ercount = 0;
 
@@ -848,8 +841,7 @@ agc_status_t agc_exec_gotopooh(void)
     }
     else
     {
-        st = agc_exec_novac(restreg > 0U ? restreg : FS_PRIO30,
-                            AGC_JOB_GO_IDLE_FIX);
+        st = agc_exec_novac(restreg > 0U ? restreg : FS_PRIO30, AGC_JOB_GO_IDLE_FIX);
     }
 
     if (!AGC_ASSERT(phase_group_agrees(4)))

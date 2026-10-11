@@ -20,7 +20,6 @@ TEST_BINS := $(patsubst tests/%.c,$(BUILD)/tests/%,$(TEST_SRCS))
 
 # NASA SEL-94-003 style (docs/STYLE.md): Uncrustify 0.72 + tools/check_style.py
 UNCRUSTIFY     ?= uncrustify
-UNCRUSTIFY_CFG := uncrustify.cfg
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
@@ -81,19 +80,17 @@ check-rules:
 	python3 -I tools/check_rules.py src include
 
 # Rewrites files in place: run on a clean tree and rebuild afterwards.
-# Two passes: Uncrustify 0.72 aligns before it wraps long lines, so a line
-# it wraps (or a trailing comment whose gap changed) can regroup on the next
-# run.  The second pass reaches the fixed point; a third changes nothing.
+# tools/format.sh runs tools/fix_comments.py (comments out of expressions,
+# wraps joined, paragraphs), Uncrustify twice, then tools/fix_comments.py
+# again (paragraph column alignment); the result is a fixed point.
 format:
-	@command -v $(UNCRUSTIFY) >/dev/null || { echo "$(UNCRUSTIFY) not installed"; exit 1; }
-	$(UNCRUSTIFY) -q -c $(UNCRUSTIFY_CFG) --replace --no-backup $(FORMAT_SRCS)
-	$(UNCRUSTIFY) -q -c $(UNCRUSTIFY_CFG) --replace --no-backup $(FORMAT_SRCS)
+	@echo "tools/format.sh: $(words $(FORMAT_SRCS)) files"
+	@UNCRUSTIFY=$(UNCRUSTIFY) sh tools/format.sh $(FORMAT_SRCS)
 
-# Lists each file that would change (FAIL: ...) and fails if there is one.
+# Formats copies; lists each file that would change (FAIL: ...) and fails
+# if there is one.
 format-check:
-	@command -v $(UNCRUSTIFY) >/dev/null || { echo "$(UNCRUSTIFY) not installed"; exit 1; }
-	@out=$$($(UNCRUSTIFY) -q -c $(UNCRUSTIFY_CFG) --check $(FORMAT_SRCS)); rc=$$?; \
-	  printf '%s\n' "$$out" | grep -v '^PASS' || true; exit $$rc
+	@UNCRUSTIFY=$(UNCRUSTIFY) sh tools/format.sh --check $(FORMAT_SRCS)
 
 # Report only (never edits). STYLE_FLAGS=--summary or --exit-zero, or
 # STYLE_FLAGS='--rule return-parens' to narrow the report.

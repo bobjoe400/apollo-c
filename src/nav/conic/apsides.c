@@ -50,15 +50,14 @@
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
  *          NULL pointer or an unknown body
  **********************************************************************/
-agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
-                               agc_conic_body_t body, agc_apsides_out_t *out)
+agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_apsides_out_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && out != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_conic_ctx_t ctx;                                    /* PARAM results */
+    agc_conic_ctx_t ctx;                                  /* PARAM results */
     agc_status_t    st = agc_conic_ctx_init_(&ctx, body); /* MUTABLE,1     */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -79,27 +78,21 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
     agc_interp_clear_ovf(ip);           /* BOV GETECC     */
     agc_tp_t m = agc_tp_from_dp(ctx.p); /* MPAC, 2^4 then 2^3 */
 
-    m = agc_tp_shift(ip, agc_conic_mdmp_(m, ctx.r1a), 4); /* DMP R1A SL4 */
-    m = agc_conic_msqrt_(
-        ip, agc_conic_mbdsu_(ip, m, AGC_CONIC_D1_64));    /* BDSU SQRT */
-    out->ecc = agc_tp_to_dp(m);                           /* ECC 2^3   */
-    const agc_dp_t one_p_e = agc_tp_to_dp(
-        agc_conic_mdad_(ip, m, AGC_CONIC_D1_8)); /* 1 + ECC, 2^3 */
+    m                      = agc_tp_shift(ip, agc_conic_mdmp_(m, ctx.r1a), 4);               /* DMP R1A SL4 */
+    m                      = agc_conic_msqrt_(ip, agc_conic_mbdsu_(ip, m, AGC_CONIC_D1_64)); /* BDSU SQRT */
+    out->ecc               = agc_tp_to_dp(m);                                                /* ECC 2^3   */
+    const agc_dp_t one_p_e = agc_tp_to_dp(agc_conic_mdad_(ip, m, AGC_CONIC_D1_8));           /* 1 + ECC, 2^3 */
 
-    m = agc_tp_shift(ip, agc_conic_mdmp_(agc_tp_from_dp(ctx.r1), ctx.p),
-                     1);
-    out->rperi =
-        agc_tp_to_dp(agc_conic_mddv_(ip, m, one_p_e)); /* 0D = RP */
-    int            n    = 0; /* NORM X1 shift count */
-    const agc_dp_t r1an = agc_tp_to_dp(
-        agc_conic_mnorm_(agc_tp_from_dp(ctx.r1a), &n)); /* R1A 2^(6-n) */
+    m                   = agc_tp_shift(ip, agc_conic_mdmp_(agc_tp_from_dp(ctx.r1), ctx.p), 1);
+    out->rperi          = agc_tp_to_dp(agc_conic_mddv_(ip, m, one_p_e));               /* 0D = RP */
+    int            n    = 0;                                                           /* NORM X1 shift count */
+    const agc_dp_t r1an = agc_tp_to_dp(agc_conic_mnorm_(agc_tp_from_dp(ctx.r1a), &n)); /* R1A 2^(6-n) */
 
-    m = agc_tp_shift(ip, agc_tp_from_dp(ctx.r1), n - 5); /* SL* 0 -5,1 */
-    m = agc_conic_mdsu_(ip, agc_conic_mddv_(ip, m, r1an),
-                        out->rperi); /* DDV DSU */
+    m = agc_tp_shift(ip, agc_tp_from_dp(ctx.r1), n - 5);               /* SL* 0 -5,1 */
+    m = agc_conic_mdsu_(ip, agc_conic_mddv_(ip, m, r1an), out->rperi); /* DDV DSU */
 
     if (agc_interp_test_ovf(ip) || agc_conic_mbmn_(m))
-    {                                   /* BOV BMN INFINAPO */
+    { /* BOV BMN INFINAPO */
         out->rapo = AGC_CONIC_LDPOSMAX; /* DLOAD LDPOSMAX */
     }
     else

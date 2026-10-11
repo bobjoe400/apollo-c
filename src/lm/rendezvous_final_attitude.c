@@ -29,25 +29,20 @@ static agc_vec_t rone;
  * R63 line of sight (V89RECL): POINTVSM = NORMUNIT(REFSMMAT (RCSM -
  * RLEM)), half-unit SM axes; both positions in the same frame and scale.
  */
-agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
-                                               agc_vec_t rlem,
-                                               const agc_mat_t *refsmmat,
-                                               agc_vec_t *pointvsm)
+agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm, agc_vec_t rlem, const agc_mat_t *refsmmat, agc_vec_t *pointvsm)
 {
-    if (!AGC_ASSERT((ip != NULL) && (refsmmat != NULL)) ||
-        !AGC_ASSERT(pointvsm != NULL))
+    if (!AGC_ASSERT((ip != NULL) && (refsmmat != NULL)) || !AGC_ASSERT(pointvsm != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_vec_t los   = agc_vec_sub(ip, rcsm, rlem); /* RONE - RATT, B27 m */
-    int             shift = 0; /* NORMUNIT pre-shift: 13 or 0 */
+    int             shift = 0;                           /* NORMUNIT pre-shift: 13 or 0 */
 
     /* MXV RTB NORMUNIT: a LOS of a few km has zero high words at B27 (and
      * MXV halves it once more), so NORMUNIT shifts it left 13 before UNIT;
      * plain UNIT would lose ~15 mrad at 1 km. */
-    *pointvsm = agc_rtb_normunit(ip, agc_mat_vec(ip, refsmmat, los), &shift,
-                                 NULL, NULL);
+    *pointvsm = agc_rtb_normunit(ip, agc_mat_vec(ip, refsmmat, los), &shift, NULL, NULL);
 
     if (!AGC_ASSERT((shift == 0) || (shift == 13)))
     {
@@ -63,8 +58,7 @@ agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
  */
 agc_status_t agc_job_rendezvous_final_attitude(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -93,29 +87,22 @@ agc_status_t agc_job_rendezvous_final_attitude_option(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_AXIS_OPTION,
-                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END,
-                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE,
-                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_OPTION));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_AXIS_OPTION, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_OPTION));
 }
 
 /*
  * V89CALL1: SCAXIS = UNITZ (option 1) or UNITX (option 2); VECPOINT ->
  * CPHI (THETAD); BALLANGS -> FDAIX..Z; flash V06N18.
  */
-static agc_status_t final_attitude_angles(const agc_job_ctx_t *ctx,
-                                          agc_vec_t            pointvsm)
+static agc_status_t final_attitude_angles(const agc_job_ctx_t *ctx, agc_vec_t pointvsm)
 {
     agc_interp_t ip;
 
     agc_interp_init(&ip);
     const bool      z_axis = (agc_erase_optionx(1) == AXIS_Z);
-    const agc_vec_t scaxis = z_axis ?
-                             agc_vec_make(0, 0, AGC_DP_HALF)     /* ALINEZ */
-                             :
-                             agc_vec_make(AGC_DP_HALF, 0, 0);     /* ALINEX */
-    uint16_t gimbal[3];
-    uint16_t fdai[3];
+    const agc_vec_t scaxis = z_axis ? agc_vec_make(0, 0, AGC_DP_HALF) : agc_vec_make(AGC_DP_HALF, 0, 0); /* ALINEZ; ALINEX */
+    uint16_t        gimbal[3];
+    uint16_t        fdai[3];
 
     agc_imu_set_pointvsm(pointvsm);
     agc_status_t st = AGC_STATUS_OK;
@@ -142,10 +129,7 @@ static agc_status_t final_attitude_angles(const agc_job_ctx_t *ctx,
         return (st);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_BALL_ANGLES,
-                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END,
-                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER,
-                        AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_BALL_ANGLES, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE));
 }
 
 /* LEMCONIC to TSTART82; POINTVSM from RONE - RATT. */
@@ -155,9 +139,7 @@ static agc_status_t final_attitude_lm(const agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_integ_out_t o;
-    agc_status_t    st =
-        align_integ(&ip, ALIGN_LEMCONIC, tstart82,
-                    AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_LM_STATE, &o);
+    agc_status_t    st = align_integ(&ip, ALIGN_LEMCONIC, tstart82, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_LM_STATE, &o);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -169,8 +151,7 @@ static agc_status_t final_attitude_lm(const agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_rendezvous_final_attitude_los(&ip, rone, o.ratt, &refsmmat,
-                                               &pointvsm);
+        st = agc_rendezvous_final_attitude_los(&ip, rone, o.ratt, &refsmmat, &pointvsm);
     }
 
     if (st != AGC_STATUS_OK)
@@ -188,9 +169,7 @@ static agc_status_t final_attitude_csm(const agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_integ_out_t    o;
-    const agc_status_t st =
-        align_integ(&ip, ALIGN_CSMCONIC, tstart82,
-                    AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_STATE, &o);
+    const agc_status_t st = align_integ(&ip, ALIGN_CSMCONIC, tstart82, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_STATE, &o);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -275,8 +254,7 @@ agc_status_t agc_job_rendezvous_final_attitude_maneuver(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_imu_attitude_maneuver(ctx,
-                                      AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END));
+    return (agc_imu_attitude_maneuver(ctx, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END));
 }
 
 /* ENDEXT: the extended verb is over. */

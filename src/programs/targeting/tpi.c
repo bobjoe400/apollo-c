@@ -63,11 +63,12 @@
 #define TPI_THIRD   ((agc_dp_t) 89478485) /* THIRD 2DEC .333333333         */
 #define TPI_ELEPS   ((agc_dp_t) 74565)    /* ELEPS .27777777 E-3: .1 deg   */
 #define TPI_EPSFOUR ((agc_dp_t) 11184811) /* EPSFOUR .0416666666: 15 deg   */
+
 /* TITER start: OCT 40000, the SP word with only the sign bit (ones'
  * complement -37777); halved each pass, the search gives up when it
  * reaches zero (AGC_RENDZ_TPI_MAXITER passes).                           */
-#define TPI_TITER0   AGC_SP_MIN /* TITER start, OCT 40000 */
-#define TPI_TITER1   AGC_SP_MAX /* OCT 37777 after the 1st pass  */
+#define TPI_TITER0   AGC_SP_MIN                  /* TITER start, OCT 40000 */
+#define TPI_TITER1   AGC_SP_MAX                  /* OCT 37777 after the 1st pass  */
 #define TPI_MAX_LOOP (AGC_RENDZ_TPI_MAXITER + 2) /* TITER passes + 2 */
 
 /**********************************************************************
@@ -102,9 +103,9 @@
  **********************************************************************/
 static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
 {
-    agc_dp_t  rp = 0;  /* |RP|, m 2^29 */
-    agc_dp_t  ra = 0;  /* |RA|, m 2^29 */
-    agc_vec_t urp; /* 12D UNIT RP, 2^1 */
+    agc_dp_t  rp = 0; /* |RP|, m 2^29 */
+    agc_dp_t  ra = 0; /* |RA|, m 2^29 */
+    agc_vec_t urp;    /* 12D UNIT RP, 2^1 */
 
     urp = agc_vec_unit(ip, rz->rpass3, &rp, NULL);
     agc_vec_t ura; /* 14D UNIT RA, 2^1 */
@@ -117,17 +118,17 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
     }
 
     bool fail = false; /* no solution (NORMEX) */
+
     /* FIGTIME angle part (pp.470-471): the central angle the active vehicle
      * must gain on the passive one, revolutions. *fail when the geometry has
      * no solution (the AGC's BMN NORMEX with a negative MPAC).             */
     agc_dp_t d30 = agc_dp_sub(ip, rp, ra); /* 30D RP - RA, m 2^29 */
-    agc_dp_t m; /* rev 2^0 */
+    agc_dp_t m;                            /* rev 2^0 */
 
     m = agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, rz->elev), d30);
 
-    fail = (m < 0);
-    agc_dp_t c28 = agc_dp_mul_trunc( /* 28D, 2^30 */
-        agc_dp_cos(ip, agc_dp_sub(ip, RZ_DPHALF, rz->elev)), ra);
+    fail         = (m < 0);
+    agc_dp_t c28 = agc_dp_mul_trunc(agc_dp_cos(ip, agc_dp_sub(ip, RZ_DPHALF, rz->elev)), ra); /* 28D, 2^30 */
 
     c28 = agc_dp_neg(agc_dp_div(ip, c28, rp)); /* COS(180-A) = -COS A */
 
@@ -137,18 +138,13 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
     }
 
     agc_vec_t urp_angle = rz_unit(ip, rz->rpass3); /* 0D UNIT RP, 2^1 */
-    agc_vec_t ura_angle = rz_unit(ip, rz->ract3); /* 6D UNIT RA, 2^1 */
-    agc_dp_t  s; /* sign only, 2^3 */
+    agc_vec_t ura_angle = rz_unit(ip, rz->ract3);  /* 6D UNIT RA, 2^1 */
+    agc_dp_t  s;                                   /* sign only, 2^3 */
 
-    s = agc_vec_dot(ip, agc_vec_cross(ip, ura_angle,
-                                      urp_angle), rz->unrm);
-    agc_dp_t ang_angle =
-        agc_dp_acos(ip, /* rev 2^0 */
-                    agc_dp_shl(ip, agc_vec_dot(ip, urp_angle, ura_angle), 1));
-    agc_dp_t a1 =
-        agc_dp_add(ip, agc_dp_sub(ip, agc_dp_sign(ang_angle, s), RZ_DPHALF),
-                   rz->elev); /* rev 2^0 */
-    agc_dp_t a2; /* rev 2^0 */
+    s                  = agc_vec_dot(ip, agc_vec_cross(ip, ura_angle, urp_angle), rz->unrm);
+    agc_dp_t ang_angle = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, urp_angle, ura_angle), 1));      /* rev 2^0 */
+    agc_dp_t a1        = agc_dp_add(ip, agc_dp_sub(ip, agc_dp_sign(ang_angle, s), RZ_DPHALF), rz->elev); /* rev 2^0 */
+    agc_dp_t a2;                                                                                         /* rev 2^0 */
 
     a2 = agc_dp_sign(agc_dp_sub(ip, RZ_DPHALF, agc_dp_acos(ip, c28)), d30);
 
@@ -165,24 +161,23 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
     }
 
     int x1 = 0; /* NORM index, -(left shifts) */
+
     /* FIGTIME rate part (pp.470-471): WA - WP, both angular rates times
      * RA RP, normalized; *x1 = the NORM index.                             */
-    agc_vec_t ura_rate = rz_unit(ip, rz->ract3); /* UNIT RA, 2^1 */
+    agc_vec_t ura_rate = rz_unit(ip, rz->ract3);  /* UNIT RA, 2^1 */
     agc_vec_t urp_rate = rz_unit(ip, rz->rpass3); /* UNIT RP, 2^1 */
-    agc_vec_t ha; /* UN*RA, 2^1 */
+    agc_vec_t ha;                                 /* UN*RA, 2^1 */
 
     ha = rz_unit(ip, agc_vec_cross(ip, rz->unrm, ura_rate));
     agc_dp_t wa; /* WA RA RP, 2^37 */
 
-    wa = agc_dp_mul_trunc(agc_vec_dot(ip, ha, rz->vact3), rp);
-    agc_vec_t hp =
-        rz_unit(ip, agc_vec_cross(ip, agc_vec_cross(ip, urp_rate, rz->vpass3),
-                                  urp_rate)); /* (RP*VP)*RP, 2^1 */
-    agc_dp_t wp; /* WP RA RP, 2^37 */
+    wa           = agc_dp_mul_trunc(agc_vec_dot(ip, ha, rz->vact3), rp);
+    agc_vec_t hp = rz_unit(ip, agc_vec_cross(ip, agc_vec_cross(ip, urp_rate, rz->vpass3), urp_rate)); /* (RP*VP)*RP, 2^1 */
+    agc_dp_t  wp;                                                                                     /* WP RA RP, 2^37 */
 
-    wp = agc_dp_mul_trunc(agc_vec_dot(ip, hp, rz->vpass3), ra);
+    wp         = agc_dp_mul_trunc(agc_vec_dot(ip, hp, rz->vpass3), ra);
     agc_dp_t w = rz_norm(agc_dp_sub(ip, wa, wp), &x1); /* 2^(37+X1) */
-    agc_dp_t t; /* to cs 2^28 below */
+    agc_dp_t t;                                        /* to cs 2^28 below */
 
     t = agc_dp_div(ip, agc_dp_mul_trunc(ang, RZ_TWOPI_B4), w);
 
@@ -233,10 +228,10 @@ static bool tpi_figtime(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t *dt)
  *          AGC_STATUS_ALARM for no solution, AGC_STATUS_BAD_ARG when an
  *          invariant fails
  **********************************************************************/
-static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
-                                    bool *done)
+static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz, bool *done)
 {
     *done = true;
+
     /* ---- ELCALC (p.469): LOS elevation EA of the passive vehicle seen from
      * the active one, revolutions; > .5 rev when the LOS is below the local
      * horizontal (EA = DPPOSMAX - angle).                                   */
@@ -249,15 +244,15 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
 
     agc_vec_t h; /* 0D UNRM x RA, 2^30 */
 
-    h = agc_vec_cross(ip, rz->unrm, rz->ract3);
-    agc_vec_t ura  = rz_unit(ip, rz->ract3); /* UNIT RA, 2^1 */
+    h              = agc_vec_cross(ip, rz->unrm, rz->ract3);
+    agc_vec_t ura  = rz_unit(ip, rz->ract3);          /* UNIT RA, 2^1 */
     agc_vec_t proj = agc_vec_proj(ip, rz->ulos, ura); /* VPROJ, 2^3 */
-    agc_vec_t up; /* 2^1 */
+    agc_vec_t up;                                     /* 2^1 */
 
-    up = rz_unit(ip, agc_vec_sub(ip, rz->ulos, agc_vec_shl(ip, proj, 2)));
-    agc_dp_t hup = agc_vec_dot(ip, h, up); /* 0D, 2^31 */
+    up           = rz_unit(ip, agc_vec_sub(ip, rz->ulos, agc_vec_shl(ip, proj, 2)));
+    agc_dp_t hup = agc_vec_dot(ip, h, up);                          /* 0D, 2^31 */
     agc_dp_t c   = agc_dp_sign(agc_vec_dot(ip, up, rz->ulos), hup); /* 2^2 */
-    agc_dp_t ea  = agc_dp_acos(ip, agc_dp_shl(ip, c, 1)); /* EA, rev 2^0 */
+    agc_dp_t ea  = agc_dp_acos(ip, agc_dp_shl(ip, c, 1));           /* EA, rev 2^0 */
 
     if (agc_vec_dot(ip, rz->ulos, rz->ract3) < 0)
     { /* BPL      */
@@ -298,7 +293,7 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
         return (AGC_STATUS_OK); /* too many iterations: MPAC 0 */
     }
 
-    rz->titer = agc_dp_high(titer);
+    rz->titer   = agc_dp_high(titer);
     agc_dp_t dt = 0; /* FIGTIME step, cs 2^28 */
 
     if (!tpi_figtime(ip, rz, &dt))
@@ -319,9 +314,8 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
     }
     else if (agc_dp_mul_trunc(rz->delel, rz->delelo) < 0)
     {
-        rz->secmax = agc_dp_mul_trunc(rz->secmax, TPI_THIRD); /* crossed */
-        step       = agc_dp_sign(agc_dp_neg(agc_dp_shr(agc_dp_abs(dt), 1)),
-                                 rz->delteeo);  /* RESIGN        */
+        rz->secmax  = agc_dp_mul_trunc(rz->secmax, TPI_THIRD);                             /* crossed */
+        step        = agc_dp_sign(agc_dp_neg(agc_dp_shr(agc_dp_abs(dt), 1)), rz->delteeo); /* RESIGN        */
         rz->delteeo = step;
     }
     else if (agc_dp_sub(ip, agc_dp_abs(rz->delelo), agc_dp_abs(rz->delel)) < 0)
@@ -365,14 +359,12 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-static agc_status_t tpi_goint(agc_interp_t *ip, agc_rendz_t *rz,
-                              agc_job_id_t resume)
+static agc_status_t tpi_goint(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
-    bool         conic = (rz->nomtpi != 0); /* conic unless NOMTPI = 0 */
-    agc_vec_t    r; /* position, m 2^29 */
-    agc_vec_t    v; /* velocity, m/cs 2^7 */
-    agc_status_t st = rz_intint(ip, rz, rz->raprec, rz->vaprec, 0, rz->nomtpi,
-                                conic, resume, &r, &v); /* active */
+    bool         conic = (rz->nomtpi != 0);                                                               /* conic unless NOMTPI = 0 */
+    agc_vec_t    r;                                                                                       /* position, m 2^29 */
+    agc_vec_t    v;                                                                                       /* velocity, m/cs 2^7 */
+    agc_status_t st    = rz_intint(ip, rz, rz->raprec, rz->vaprec, 0, rz->nomtpi, conic, resume, &r, &v); /* active */
 
     if (st != AGC_STATUS_OK)
     {
@@ -380,8 +372,7 @@ static agc_status_t tpi_goint(agc_interp_t *ip, agc_rendz_t *rz,
     }
 
     rz_store_active(rz, r, v);
-    st = rz_intint(ip, rz, rz->rpprec, rz->vpprec, 0, rz->nomtpi, conic, resume,
-                   &r, &v);
+    st = rz_intint(ip, rz, rz->rpprec, rz->vpprec, 0, rz->nomtpi, conic, resume, &r, &v);
 
     if (st == AGC_STATUS_OK)
     {
@@ -410,8 +401,7 @@ static agc_status_t tpi_goint(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- the status of the exiting pass (OK or
  *          AGC_STATUS_ALARM), else the integration status (INTSTALL sleep)
  **********************************************************************/
-static agc_status_t tpi_search_loop(agc_interp_t *ip, agc_rendz_t *rz,
-                                    bool goint_first, agc_job_id_t resume)
+static agc_status_t tpi_search_loop(agc_interp_t *ip, agc_rendz_t *rz, bool goint_first, agc_job_id_t resume)
 {
     for (int pass = 0; pass < TPI_MAX_LOOP; pass++)
     {
@@ -425,7 +415,7 @@ static agc_status_t tpi_search_loop(agc_interp_t *ip, agc_rendz_t *rz,
             }
         }
 
-        bool         done = false; /* search exited */
+        bool         done = false;                          /* search exited */
         agc_status_t st   = tpi_search_pass(ip, rz, &done); /* pass status */
 
         if (done || st != AGC_STATUS_OK)
@@ -468,11 +458,9 @@ static agc_status_t tpi_search_loop(agc_interp_t *ip, agc_rendz_t *rz,
  *          (no solution: caller raises 00611), AGC_STATUS_BAD_ARG, else the
  *          integration status
  **********************************************************************/
-agc_status_t agc_rendz_tpi_time_search(agc_interp_t *ip, agc_rendz_t *rz,
-                                       agc_job_id_t resume)
+agc_status_t agc_rendz_tpi_time_search(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
-        !AGC_ASSERT(resume != AGC_JOB_NONE))
+    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -502,11 +490,9 @@ agc_status_t agc_rendz_tpi_time_search(agc_interp_t *ip, agc_rendz_t *rz,
  *
  * RETURNS: agc_status_t -- as agc_rendz_tpi_time_search
  **********************************************************************/
-agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz,
-                                            agc_job_id_t resume)
+agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
-        !AGC_ASSERT(resume != AGC_JOB_NONE))
+    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -545,21 +531,18 @@ agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the integration or INITVEL status
  **********************************************************************/
-agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz,
-                                             agc_job_id_t resume)
+agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
-        !AGC_ASSERT(resume != AGC_JOB_NONE))
+    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_vec_t    r; /* position, m 2^29 */
-    agc_vec_t    v; /* velocity, m/cs 2^7 */
+    agc_vec_t    r;  /* position, m 2^29 */
+    agc_vec_t    v;  /* velocity, m/cs 2^7 */
     agc_status_t st; /* to TPASS4 */
 
-    st = rz_intint(ip, rz, rz->rpass3, rz->vpass3, rz->intime,
-                   rz->tpass4, rz->nn == 0, resume, &r, &v);
+    st = rz_intint(ip, rz, rz->rpass3, rz->vpass3, rz->intime, rz->tpass4, rz->nn == 0, resume, &r, &v);
 
     if (st != AGC_STATUS_OK)
     {
@@ -610,25 +593,22 @@ agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the INITVEL or LOMAT status
  **********************************************************************/
-agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz,
-                                          agc_vec_t rtarg, agc_vec_t vpass4,
-                                          agc_job_id_t resume)
+agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rtarg, agc_vec_t vpass4, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
-        !AGC_ASSERT(resume != AGC_JOB_NONE))
+    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz->rtarg  = rtarg;    /* S3435.25     */
-    rz->vpass4 = vpass4;
+    rz->rtarg     = rtarg;                  /* S3435.25     */
+    rz->vpass4    = vpass4;
     agc_vec_t urp = rz_unit(ip, rz->rtarg); /* 0D UNIT RP, 2^1 */
     agc_vec_t ura = rz_unit(ip, rz->ract3); /* UNIT RA, 2^1 */
-    agc_dp_t  s; /* sign only, 2^3 */
+    agc_dp_t  s;                            /* sign only, 2^3 */
 
-    s = agc_vec_dot(ip, agc_vec_cross(ip, ura, urp), rz->unrm);
-    agc_dp_t c   = agc_dp_shl(ip, agc_vec_dot(ip, ura, urp), 1);  /* cos, 2^1 */
-    agc_dp_t phi = agc_dp_sign(agc_dp_acos(ip, c), s); /* ACTCENT, rev 2^0 */
+    s            = agc_vec_dot(ip, agc_vec_cross(ip, ura, urp), rz->unrm);
+    agc_dp_t c   = agc_dp_shl(ip, agc_vec_dot(ip, ura, urp), 1); /* cos, 2^1 */
+    agc_dp_t phi = agc_dp_sign(agc_dp_acos(ip, c), s);           /* ACTCENT, rev 2^0 */
 
     if (phi < 0)
     {
@@ -639,7 +619,7 @@ agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz,
     rz->dellt4  = agc_dp_sub(ip, rz->tpass4, rz->intime);
     rz->rinit   = rz->ract3;
     rz->vinit   = rz->vact3;
-    agc_status_t st; /* INITVEL */
+    agc_status_t st;   /* INITVEL */
 
     st = agc_rendz_initvel(ip, rz, rz->nn, TPI_EPSFOUR, resume);
 
@@ -689,27 +669,24 @@ agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the LOMAT or integration status
  **********************************************************************/
-agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz,
-                                          agc_job_id_t resume)
+agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
-        !AGC_ASSERT(resume != AGC_JOB_NONE))
+    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_mat_t    m; /* LOMAT / LOS rows, 2^1 */
+    agc_mat_t    m;                                /* LOMAT / LOS rows, 2^1 */
     agc_status_t st = agc_rendz_lomat(ip, rz, &m); /* LOMAT status */
 
-    rz->delveet3 = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
+    rz->delveet3   = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
     agc_vec_t vnew = agc_vec_add(ip, rz->delveet3, rz->vact3); /* m/cs 2^7 */
-    agc_vec_t r; /* position, m 2^29 */
-    agc_vec_t v; /* velocity, m/cs 2^7 */
+    agc_vec_t r;                                               /* position, m 2^29 */
+    agc_vec_t v;                                               /* velocity, m/cs 2^7 */
 
     if (st == AGC_STATUS_OK)
     {
-        st = rz_intint(ip, rz, rz->ract3, vnew, agc_erase_tig(), rz->tpass4,
-                       true, resume, &r, &v);
+        st = rz_intint(ip, rz, rz->ract3, vnew, agc_erase_tig(), rz->tpass4, true, resume, &r, &v);
     }
 
     if (st != AGC_STATUS_OK)
@@ -761,12 +738,12 @@ agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz)
     agc_mat_t m; /* LOMAT / LOS rows, 2^1 */
 
     m.row[0] = rz->ulos; /* 0D       */
-    agc_vec_t b; /* 12D B, 2^1 */
+    agc_vec_t b;         /* 12D B, 2^1 */
 
     b = rz_unit(ip, agc_vec_neg(agc_vec_cross(ip, rz->ulos, rz->unrm)));
 
     m.row[1]  = agc_vec_shl(ip, agc_vec_cross(ip, b, rz->ulos), 1); /* 6D   */
-    m.row[2]  = b; /* 12D      */
+    m.row[2]  = b;                                                  /* 12D      */
     rz->dvlos = agc_vec_shl(ip, agc_mat_vec(ip, &m, rz->delveet3), 1);
 
     if (!AGC_ASSERT(rz->dvlos.c[0] != AGC_DP_MIN))
@@ -809,19 +786,17 @@ agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of TIMETHET, S34/35.2 or PERIAPO1
  **********************************************************************/
-agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz,
-                                   agc_job_id_t resume)
+agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
-        !AGC_ASSERT(resume != AGC_JOB_NONE))
+    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     agc_dp_t             csth = agc_dp_cos(ip, rz->centang); /* CSTH, 2^1 */
     agc_dp_t             snth = agc_dp_sin(ip, rz->centang); /* SNTH, 2^1 */
-    agc_conic_time_out_t o; /* TIMETHET result */
-    agc_status_t         st; /* TIMETHET */
+    agc_conic_time_out_t o;                                  /* TIMETHET result */
+    agc_status_t         st;                                 /* TIMETHET */
 
     st = rz_timethet_rv(ip, rz, rz->rpass3, rz->vpass3, snth, csth, true, &o);
 
@@ -845,8 +820,7 @@ agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz,
     rz->delvtpf = rz_abval(ip, agc_vec_sub(ip, rz->vpass4, rz->vtprime));
     agc_rendz_periapo_t pa; /* PERIAPO1 results */
 
-    st = agc_rendz_periapo_body_scale(ip, rz, rz->ract3, rz->viprime,
-                                      &pa);
+    st          = agc_rendz_periapo_body_scale(ip, rz, rz->ract3, rz->viprime, &pa);
     rz->posttpi = agc_rendz_scalar_from_body(rz, pa.hperi);
     agc_erase_set_tig(ttpi);
 

@@ -56,6 +56,7 @@
 
 /* K.01 2DEC .01 (p.459) */
 #define GTD_K01 ((agc_dp_t) 2684355) /* K.01, .01 at 2^0 */
+
 /* GOPERF4 option code: BIT2 = "option 2", vehicle */
 #define GTD_OPTION_CODE ((uint16_t) 2) /* option 2 */
 
@@ -145,8 +146,7 @@ agc_status_t agc_job_ground_track_time(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 34U, AGC_JOB_GOTOPOOH,
-                     AGC_JOB_GROUND_TRACK_COMPUTE, AGC_JOB_GROUND_TRACK_TIME));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 34U, AGC_JOB_GOTOPOOH, AGC_JOB_GROUND_TRACK_COMPUTE, AGC_JOB_GROUND_TRACK_TIME));
 }
 
 /**********************************************************************
@@ -169,12 +169,9 @@ agc_status_t agc_job_ground_track_time(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_ground_track_determination_flight_path(
-    agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2,
-    agc_dp_t *vel, agc_dp_t *gamma)
+agc_status_t agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2, agc_dp_t *vel, agc_dp_t *gamma)
 {
-    if (!AGC_ASSERT(ip != NULL && vel != NULL && gamma != NULL) ||
-        !AGC_ASSERT(x2 == 0 || x2 == 2))
+    if (!AGC_ASSERT(ip != NULL && vel != NULL && gamma != NULL) || !AGC_ASSERT(x2 == 0 || x2 == 2))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -209,8 +206,7 @@ agc_status_t agc_ground_track_determination_flight_path(
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the INTEGRVS status
  **********************************************************************/
-static agc_status_t gtd_from_base(agc_interp_t *ip, agc_integ_ctx_t *ic,
-                                  const agc_rendz_t *rz, agc_dp_t tdec1)
+static agc_status_t gtd_from_base(agc_interp_t *ip, agc_integ_ctx_t *ic, const agc_rendz_t *rz, agc_dp_t tdec1)
 {
     ic->sv.rcv = rz->ground_track_base_r;
     ic->sv.vcv = rz->ground_track_base_v;
@@ -235,15 +231,12 @@ static agc_status_t gtd_from_base(agc_interp_t *ip, agc_integ_ctx_t *ic,
  *   rz        agc_rendz_t *            I/O  rendezvous erasables
  *   o         const agc_integ_out_t *  I    the integration result
  **********************************************************************/
-static void gtd_save_base(agc_interp_t *ip, agc_rendz_t *rz,
-                          const agc_integ_out_t *o)
+static void gtd_save_base(agc_interp_t *ip, agc_rendz_t *rz, const agc_integ_out_t *o)
 {
     rz->ground_track_time   = o->tat;
     rz->ground_track_base_r = o->ratt1;
     rz->ground_track_base_v = o->vatt1;
-    agc_status_t st = agc_ground_track_determination_flight_path(
-        ip, o->ratt, o->vatt, o->vatt1, o->x2, &rz->ground_track_vel,
-        &rz->ground_track_gamma); /* P21VSAVE */
+    agc_status_t st         = agc_ground_track_determination_flight_path(ip, o->ratt, o->vatt, o->vatt1, o->x2, &rz->ground_track_vel, &rz->ground_track_gamma); /* P21VSAVE */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -251,7 +244,7 @@ static void gtd_save_base(agc_interp_t *ip, agc_rendz_t *rz,
     }
 
     rz->ground_track_origin = (agc_sp_t) o->x2;
-    bool this_vehicle = ((rz_option(2) >> 1) == 0U); /* option 1 */
+    bool this_vehicle       = ((rz_option(2) >> 1) == 0U); /* option 1 */
 
     if (rz_is_csm() || !this_vehicle || !agc_flag_test(AGC_FLAG_SURFFLAG))
     {
@@ -278,18 +271,17 @@ static void gtd_save_base(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
-                                agc_rendz_t *rz, const agc_integ_out_t *o)
+static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, const agc_integ_out_t *o)
 {
     agc_latlong_opt_t opt; /* LUNAFLAG ERADFLAG */
 
-    opt.lunar = (o->x2 != 0);
-    opt.erad  = false;
+    opt.lunar               = (o->x2 != 0);
+    opt.erad                = false;
     rz_flag_put(AGC_FLAG_LUNAFLAG, opt.lunar);
     rz_flag_put(AGC_FLAG_ERADFLAG, false);
-    agc_navaux_padload_t pad; /* pad loads */
+    agc_navaux_padload_t pad;                               /* pad loads */
     agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
-    agc_latlong_t        ll; /* LAT LONG ALT */
+    agc_latlong_t        ll;                                /* LAT LONG ALT */
 
     if (st == AGC_STATUS_OK)
     {
@@ -310,8 +302,7 @@ static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
 
     rz->ground_track_alt = agc_dp_mul_trunc(ll.alt, GTD_K01); /* DMP K.01 */
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 43U, AGC_JOB_GOTOPOOH,
-                     AGC_JOB_GOTOPOOH, AGC_JOB_GROUND_TRACK_RECYCLE));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 43U, AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_GROUND_TRACK_RECYCLE));
 }
 
 /**********************************************************************
@@ -341,9 +332,9 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz    = agc_rendz_erasable(); /* rendezvous erasables */
+    agc_rendz_t *rz    = agc_rendz_erasable();     /* rendezvous erasables */
     agc_dp_t     tdec1 = rz_dsptem_dp(RZ_DSPTEM1); /* TDEC1, cs 2^28 */
-    agc_status_t st; /* INTSTALL */
+    agc_status_t st;                               /* INTSTALL */
 
     st = agc_integ_install(0, AGC_JOB_GROUND_TRACK_COMPUTE);
 
@@ -362,7 +353,7 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
     {
         /* First pass (P21FLAG clear): INTEGRV of the chosen vehicle's
          * permanent state, precision, VINTFLAG = integrate the CSM.  */
-        bool other = ((rz_option(2) >> 1) != 0U); /* SR1 BHIZ      */
+        bool other = ((rz_option(2) >> 1) != 0U);  /* SR1 BHIZ      */
         bool csm   = rz_is_csm() ? !other : other; /* VINTFLAG */
 
         rz_flag_put(AGC_FLAG_VINTFLAG, csm);
@@ -408,9 +399,8 @@ agc_status_t agc_job_ground_track_recycle(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_dp_t t = agc_dp_add(&ip, /* cs 2^28 */
-                            agc_rendz_erasable()->ground_track_time, RZ_600SEC);
-    agc_status_t st = rz_set_dsptem_dp(RZ_DSPTEM1, t); /* DSPTEM1 */
+    agc_dp_t     t  = agc_dp_add(&ip, agc_rendz_erasable()->ground_track_time, RZ_600SEC); /* cs 2^28 */
+    agc_status_t st = rz_set_dsptem_dp(RZ_DSPTEM1, t);                                     /* DSPTEM1 */
 
     if (st != AGC_STATUS_OK)
     {

@@ -25,8 +25,10 @@
 
 /* INDEXES (p.1455): T6 axis index of U and V (WRITEP +4, WRITEP +13).    */
 static const agc_sp_t indexes[2] = {4, 13};
+
 /* AXISDIFF (TJET_LAW p.1469) for U, V.                                   */
 static const agc_sp_t uvdiff[2] = {0, 16};
+
 /* ALLJETS (-U -V +U +V) followed by TYPEPOLY (-X +X A B ALL), contiguous
  * as in the AGC so that X translation indexes ALLJETS with 4 and 5.     */
 static const uint16_t alljets[QJ_NALL] = {00110, 00022, 00204, 00041, 00125,
@@ -77,8 +79,7 @@ bool lm_dap_selctsub(void)
 {
     lm_dap_t *d = lm_dap_state();
 
-    if (!AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 5) ||
-        !AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
+    if (!AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 5) || !AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
     {
         return (false);
     }
@@ -336,8 +337,7 @@ static agc_status_t doskip(lm_dap_t *d, int axis)
     if (QJ_TJMIN - d->abstj > 0)
     {
         d->abstj        = QJ_TJMIN;
-        d->tj[axis + 1] =
-            (agc_sp_t) ((d->tj[axis + 1] > 0) ? QJ_TJMIN : -QJ_TJMIN);
+        d->tj[axis + 1] = (agc_sp_t) ((d->tj[axis + 1] > 0) ? QJ_TJMIN : -QJ_TJMIN);
 
         if (d->sensetyp > 0)
         {
@@ -355,10 +355,10 @@ static agc_status_t doskip(lm_dap_t *d, int axis)
     }
 
     agc_inhint();
-    d->t6furtha[1] = indexes[axis];
+    d->t6furtha[1]  = indexes[axis];
     agc_status_t sw = lm_dap_write(indexes[axis], (uint16_t) d->polytemp);
 
-    d->t6furtha[0] = d->abstj;
+    d->t6furtha[0]  = d->abstj;
     agc_status_t sj = lm_dap_jtlst();
 
     agc_relint();
@@ -395,8 +395,7 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
 {
     *end = false;
 
-    if (agc_flag_test(AGC_FLAG_SNUFFER) && !agc_flag_test(AGC_FLAG_APSFLAG) &&
-        !agc_flag_test(AGC_FLAG_DRIFTDFL))
+    if (agc_flag_test(AGC_FLAG_SNUFFER) && !agc_flag_test(AGC_FLAG_APSFLAG) && !agc_flag_test(AGC_FLAG_DRIFTDFL))
     {
         *end = true;
 
@@ -514,7 +513,7 @@ static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
         }
 
         agc_inhint();
-        st = lm_dap_spsrcs();
+        st         = lm_dap_spsrcs();
         agc_relint();
         d->numbert = 4; /* 2 jets U,V     */
     }
@@ -555,8 +554,7 @@ static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
     }
 
     agc_sp_t rate = (axis == 0) ? d->omegau : d->omegav; /* URATEDIF       */
-    int      i    = LM_BLK_U + uvdiff[axis] +
-                    ((rate < 0) ? 1 : 0) + LM_BK_1ANET2 + 1;
+    int      i    = LM_BLK_U + uvdiff[axis] + ((rate < 0) ? 1 : 0) + LM_BK_1ANET2 + 1;
 
     if (!AGC_ASSERT(i >= 0 && i < LM_BLOCK_N))
     {
@@ -593,8 +591,7 @@ static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
     {
         agc_sp_t tj = d->tj[axis + 1];
 
-        d->tj[axis + 1] =
-            (agc_sp_t) ((tj > 0) ? QJ_60MS : ((tj < 0) ? -QJ_60MS : 0));
+        d->tj[axis + 1] = (agc_sp_t) ((tj > 0) ? QJ_60MS : ((tj < 0) ? -QJ_60MS : 0));
     }
 
     d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2; /* B : A     */
@@ -627,8 +624,7 @@ agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
 {
     lm_dap_t *d = lm_dap_state();
 
-    if (!AGC_ASSERT(first_axis == 0 || first_axis == 1) ||
-        !AGC_ASSERT(body <= LM_UV_MINRTN))
+    if (!AGC_ASSERT(first_axis == 0 || first_axis == 1) || !AGC_ASSERT(body <= LM_UV_MINRTN))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -637,7 +633,7 @@ agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
 
     for (int axis = first_axis; axis >= 0; axis--)
     {
-        d->axisctr = (agc_sp_t) axis;
+        d->axisctr       = (agc_sp_t) axis;
         bool         end = false;
         agc_status_t st;
 

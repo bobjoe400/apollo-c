@@ -23,8 +23,7 @@
 /* Star code x 6 (the CATLOG index) from STARCODE / AOTCODE bits 1-6. */
 static agc_sp_t star6_of_code(void)
 {
-    const agc_sp_t code =
-        (agc_sp_t) (agc_align_ram()->starcode & STAR_CODE_MASK);
+    const agc_sp_t code = (agc_sp_t) (agc_align_ram()->starcode & STAR_CODE_MASK);
 
     if (!AGC_ASSERT((code >= 0) && (code <= AGC_ALIGN_STAR_CODE_MAX)))
     {
@@ -47,9 +46,7 @@ static agc_status_t planet_compute(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_status_t st =
-        agc_align_planet_vector(&ip, star6_of_code(), ram->starind, ram->tsight,
-                                AGC_JOB_PLANET_RESUME, &ram->planet_los);
+    const agc_status_t st = agc_align_planet_vector(&ip, star6_of_code(), ram->starind, ram->tsight, AGC_JOB_PLANET_RESUME, &ram->planet_los);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -73,20 +70,16 @@ static agc_status_t planet_flash(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_job_id_t term = (agc_state_vehicle() == AGC_VEHICLE_CSM) ?
-                              AGC_JOB_GOTOPOOH :
-                              AGC_JOB_PLANET_FLASH;
+    const agc_job_id_t term = (agc_state_vehicle() == AGC_VEHICLE_CSM) ? AGC_JOB_GOTOPOOH : AGC_JOB_PLANET_FLASH;
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_PLANET_VECTOR, term,
-                        AGC_JOB_PLANET_LOADED, AGC_JOB_PLANET_FLASH));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_PLANET_VECTOR, term, AGC_JOB_PLANET_LOADED, AGC_JOB_PLANET_FLASH));
 }
 
 /*
  * PLANET entry: TSIGHT = t; (LM) STARAD = 0 for the N88 load; BESTI or
  * BESTJ = code x 6 (set by the vector routine); code 00 flashes V06N88.
  */
-agc_status_t align_planet(const agc_job_ctx_t *ctx, agc_dp_t t,
-                          agc_job_id_t ret)
+agc_status_t align_planet(const agc_job_ctx_t *ctx, agc_dp_t t, agc_job_id_t ret)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
     {

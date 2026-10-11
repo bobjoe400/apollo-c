@@ -266,8 +266,7 @@ void agc_pipasr_noscale(void)
         g_tem[i] = p[i];
     }
 
-    agc_erase_set_delv(agc_vec_make(agc_dp_pack(p[0], 0), agc_dp_pack(p[1], 0),
-                                    agc_dp_pack(p[2], 0)));
+    agc_erase_set_delv(agc_vec_make(agc_dp_pack(p[0], 0), agc_dp_pack(p[1], 0), agc_dp_pack(p[2], 0)));
 
     if (!AGC_ASSERT(agc_erase_pipax() == 0 && agc_erase_pipaz() == 0))
     {

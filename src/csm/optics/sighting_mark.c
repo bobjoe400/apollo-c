@@ -138,10 +138,7 @@ agc_status_t agc_job_sighting_mark_code_clean(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(
-                ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_SIGHTING_MARK_CODE_DISPLAY,
-                AGC_JOB_SIGHTING_MARK_CODE_DISPLAY,
-                AGC_JOB_SIGHTING_MARK_CODE_DISPLAY));
+    return (align_flash(ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_SIGHTING_MARK_CODE_DISPLAY, AGC_JOB_SIGHTING_MARK_CODE_DISPLAY, AGC_JOB_SIGHTING_MARK_CODE_DISPLAY));
 }
 
 /* R53C: flash V01N71; V34 terminates, V33 R53Z, ENTER re-flashes. */
@@ -157,9 +154,7 @@ agc_status_t agc_job_sighting_mark_code_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_SIGHTING_MARK_CODE_ENTERED,
-                        AGC_JOB_SIGHTING_MARK_CODE_DISPLAY));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH, AGC_JOB_SIGHTING_MARK_CODE_ENTERED, AGC_JOB_SIGHTING_MARK_CODE_DISPLAY));
 }
 
 /*
@@ -205,8 +200,7 @@ agc_status_t agc_job_sighting_mark_code_entered(agc_job_ctx_t *ctx)
  * R56 (Comanche p. 781): STQ R53EXIT, then flash V06N94 (the optics
  * angles of the alternate line of sight).
  */
-agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx,
-                                                 agc_job_id_t         ret)
+agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx, agc_job_id_t ret)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
     {
@@ -215,9 +209,7 @@ agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx,
 
     agc_align_ram()->sighting_mark_return = ret; /* R53EXIT  */
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALT_ANGLES, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_ALTERNATE_LOS_RESERVE,
-                        AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALT_ANGLES, AGC_JOB_GOTOPOOH, AGC_JOB_ALTERNATE_LOS_RESERVE, AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY));
 }
 
 /* R56 ENTER on V06N94: new angles, flash again. */
@@ -228,9 +220,7 @@ agc_status_t agc_job_alternate_los_angles_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALT_ANGLES, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_ALTERNATE_LOS_RESERVE,
-                        AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALT_ANGLES, AGC_JOB_GOTOPOOH, AGC_JOB_ALTERNATE_LOS_RESERVE, AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY));
 }
 
 /* R56A +2: CLEANDSP, continuing at R56A1. */
@@ -246,10 +236,7 @@ static agc_status_t alternate_los_clean(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(
-                ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_ALTERNATE_LOS_MARK_REQUEST,
-                AGC_JOB_ALTERNATE_LOS_MARK_REQUEST,
-                AGC_JOB_ALTERNATE_LOS_MARK_REQUEST));
+    return (align_flash(ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_ALTERNATE_LOS_MARK_REQUEST, AGC_JOB_ALTERNATE_LOS_MARK_REQUEST, AGC_JOB_ALTERNATE_LOS_MARK_REQUEST));
 }
 
 /* R56A (V33 on V06N94): SXTMARK +2 (marks system and a VAC area only). */
@@ -284,9 +271,7 @@ agc_status_t agc_job_alternate_los_mark_request(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOMARK2, VN_ALT_MARK, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_ALTERNATE_LOS_MARK_REQUEST,
-                        AGC_JOB_ALTERNATE_LOS_MARKED));
+    return (align_flash(ctx, AGC_DSKY_GOMARK2, VN_ALT_MARK, AGC_JOB_GOTOPOOH, AGC_JOB_ALTERNATE_LOS_MARK_REQUEST, AGC_JOB_ALTERNATE_LOS_MARKED));
 }
 
 /*
@@ -309,19 +294,16 @@ agc_status_t agc_job_alternate_los_marked(agc_job_ctx_t *ctx)
     agc_inhint();
     agc_align_sxt_mark_t m;
 
-    m.t         = align_loadtime();
-    m.cduy      = agc_erase_cduy();
-    m.cdus      = ram->sac;
-    m.cduz      = agc_erase_cduz();
-    m.cdut      = ram->pac;
-    m.cdux      = agc_erase_cdux();
-    ram->sxt[0] = m; /* INDEX MARKSTAT TS */
+    m.t             = align_loadtime();
+    m.cduy          = agc_erase_cduy();
+    m.cdus          = ram->sac;
+    m.cduz          = agc_erase_cduz();
+    m.cdut          = ram->pac;
+    m.cdux          = agc_erase_cdux();
+    ram->sxt[0]     = m; /* INDEX MARKSTAT TS */
     agc_relint();
     agc_dsky_clearmrk(); /* CLEARMRK */
-    agc_status_t st = align_flash(ctx, AGC_DSKY_GOPERF1, CHK_MARK_DONE,
-                                  AGC_JOB_GOTOPOOH,
-                                  AGC_JOB_SIGHTING_MARK_CODE_CLEAN,
-                                  AGC_JOB_ALTERNATE_LOS_REMARK);
+    agc_status_t st = align_flash(ctx, AGC_DSKY_GOPERF1, CHK_MARK_DONE, AGC_JOB_GOTOPOOH, AGC_JOB_SIGHTING_MARK_CODE_CLEAN, AGC_JOB_ALTERNATE_LOS_REMARK);
 
     return (st);
 }
@@ -342,8 +324,7 @@ agc_status_t agc_job_alternate_los_remark(agc_job_ctx_t *ctx)
  * shaft CDUs (half-unit, nav base), then NBSM with the mark's IMU CDUs
  * (CDUY, CDUZ, CDUX at words 2, 4, 6 of the mark): half-unit, SM axes.
  */
-agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m,
-                           agc_vec_t *los_sm)
+agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *los_sm)
 {
     if (!AGC_ASSERT((ip != NULL) && (m != NULL)) || !AGC_ASSERT(los_sm != NULL))
     {

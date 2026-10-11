@@ -82,18 +82,17 @@ static void test_average_g_coast(void)
     agc_interp_init(&ip);
     agc_avg_g_t a = {0};
 
-    a.pguide = 200;                 /* 2 s, cs at 2^28    */
-    a.gdt_2  = agc_vec_zero();      /* no previous gravity */
-    const double       r0 = 1.85e6; /* m, ~110 km altitude */
-    const double       vx = 16.3;   /* m/cs (1630 m/s)    */
+    a.pguide              = 200;            /* 2 s, cs at 2^28    */
+    a.gdt_2               = agc_vec_zero(); /* no previous gravity */
+    const double       r0 = 1.85e6;         /* m, ~110 km altitude */
+    const double       vx = 16.3;           /* m/cs (1630 m/s)    */
     agc_state_vector_t sv = {agc_vec_zero(), agc_vec_zero(), 0, true};
 
-    sv.r = agc_vec_make(0, agc_dp_from_double(r0, 29), 0);
-    sv.v = agc_vec_make(agc_dp_from_double(vx, 7), 0, 0);
+    sv.r                     = agc_vec_make(0, agc_dp_from_double(r0, 29), 0);
+    sv.v                     = agc_vec_make(agc_dp_from_double(vx, 7), 0, 0);
     const agc_mat_t refsmmat = identity_half();
 
-    agc_status_t st = agc_guid_calcrvg(&ip, AGC_VEHICLE_LM, true, &refsmmat,
-                                       agc_vec_zero(), &sv, &a);
+    agc_status_t st = agc_guid_calcrvg(&ip, AGC_VEHICLE_LM, true, &refsmmat, agc_vec_zero(), &sv, &a);
 
     CHECK(st == AGC_STATUS_OK);
 
@@ -116,8 +115,7 @@ static void test_average_g_coast(void)
     double vx1    = agc_dp_to_double(a.vn1.c[0], 7);
 
     CHECK(fabs(vy1 - gy) <= 0.002 * g_half);
-    CHECK(fabs(vx1 - (vx + gx)) <=
-          0.002 * g_half + ldexp(1.0, 7 - AGC_DP_BITS) * 4.0);
+    CHECK(fabs(vx1 - (vx + gx)) <= 0.002 * g_half + ldexp(1.0, 7 - AGC_DP_BITS) * 4.0);
 }
 
 /* ---- 2. cross-product steering ------------------------------------------ */
@@ -134,14 +132,13 @@ static agc_vec_t steer(agc_vec_t vg, agc_vec_t delvref)
     const agc_mat_t refsmmat = identity_half();
     agc_xprod_in_t  in;
 
-    in.vg       = vg;
-    in.delvref  = delvref;
-    in.bdt      = agc_vec_zero();
-    in.csteer   = AGC_DP_HALF;                        /* CSTEER = 1, 2^1    */
-    in.kprimedt = agc_dp_from_double(0.1, 0); /* arbitrary gain     */
+    in.vg               = vg;
+    in.delvref          = delvref;
+    in.bdt              = agc_vec_zero();
+    in.csteer           = AGC_DP_HALF;                /* CSTEER = 1, 2^1    */
+    in.kprimedt         = agc_dp_from_double(0.1, 0); /* arbitrary gain     */
     agc_vec_t    omegac = agc_vec_zero();
-    agc_status_t st     =
-        agc_guid_steering_cross_product(&ip, &in, &refsmmat, &trig, &omegac);
+    agc_status_t st     = agc_guid_steering_cross_product(&ip, &in, &refsmmat, &trig, &omegac);
 
     CHECK(st == AGC_STATUS_OK);
 
@@ -151,13 +148,13 @@ static agc_vec_t steer(agc_vec_t vg, agc_vec_t delvref)
 static void test_cross_product_steering(void)
 {
     /* VG 300 m/s and 2 s of thrust (6 m/s) both along SM (1, 2, 2)/3.     */
-    const double ux = 1.0 / 3.0, uy = 2.0 / 3.0, uz = 2.0 / 3.0;
-    agc_vec_t    vg = agc_vec_make(agc_dp_from_double(3.0 * ux, 7),
-                                   agc_dp_from_double(3.0 * uy, 7),
-                                   agc_dp_from_double(3.0 * uz, 7));
-    agc_vec_t dv = agc_vec_make(agc_dp_from_double(0.06 * ux, 7),
-                                agc_dp_from_double(0.06 * uy, 7),
-                                agc_dp_from_double(0.06 * uz, 7));
+    const double   ux  = 1.0 / 3.0, uy = 2.0 / 3.0, uz = 2.0 / 3.0;
+    agc_vec_t      vg  = agc_vec_make(agc_dp_from_double(3.0 * ux, 7),
+                                      agc_dp_from_double(3.0 * uy, 7),
+                                      agc_dp_from_double(3.0 * uz, 7));
+    agc_vec_t      dv  = agc_vec_make(agc_dp_from_double(0.06 * ux, 7),
+                                      agc_dp_from_double(0.06 * uy, 7),
+                                      agc_dp_from_double(0.06 * uz, 7));
     agc_vec_t      om  = steer(vg, dv);
     const agc_dp_t tol = 64; /* a few unit-vector LSBs */
 
@@ -170,15 +167,13 @@ static void test_cross_product_steering(void)
     agc_vec_t vg2 = agc_vec_make(0, agc_dp_from_double(3.0, 7), 0);
     agc_vec_t dv2 = agc_vec_make(agc_dp_from_double(0.06, 7), 0, 0);
     agc_vec_t om2 = steer(vg2, dv2);
-    long      mag =
-        labs((long) om2.c[0]) + labs((long) om2.c[1]) + labs((long) om2.c[2]);
+    long      mag = labs((long) om2.c[0]) + labs((long) om2.c[1]) + labs((long) om2.c[2]);
 
     CHECK(mag > 1000L * (long) tol);
 }
 
 /* DELRSPL on an earth trajectory: RONE (m 2^29), VONE (m/cs 2^7).       */
-static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo,
-                         double hi)
+static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo, double hi)
 {
     agc_interp_t         ip;
     agc_tff_t            tff = {0};
@@ -197,16 +192,13 @@ static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo,
     tff.vone                           = v;
     tff.rtmu                           = (agc_dp_t) 176229826; /* 1/RTMUE, 2^17 (R30)             */
     CHECK(agc_tff_conic(&ip, &tff) == AGC_STATUS_OK);
-    CHECK(agc_tff_calctff(&ip, &tff,
-                          agc_dp_from_double(6373338.0 + 91440.0, 29),
-                          &t) == AGC_STATUS_OK);
+    CHECK(agc_tff_calctff(&ip, &tff, agc_dp_from_double(6373338.0 + 91440.0, 29), &t) == AGC_STATUS_OK);
     CHECK(agc_navaux_get_padload(&pad) == AGC_STATUS_OK);
     CHECK(agc_latlong_from_r(&ip, &pad, opt, r, 0, &ll) == AGC_STATUS_OK);
-    agc_entry_state()->lat_spl = ll.lat; /* target under RONE at TIME 0 */
-    agc_entry_state()->lng_spl = ll.lon;
-    CHECK(agc_guid_delrspl(&ip, &tff, past ? 0 : agc_dp_neg(t)) ==
-          AGC_STATUS_OK);
-    double e = agc_dp_to_double(agc_guid_state()->csm.rsp_rrec, 0);
+    agc_entry_state()->lat_spl         = ll.lat;               /* target under RONE at TIME 0 */
+    agc_entry_state()->lng_spl         = ll.lon;
+    CHECK(agc_guid_delrspl(&ip, &tff, past ? 0 : agc_dp_neg(t)) == AGC_STATUS_OK);
+    double e                           = agc_dp_to_double(agc_guid_state()->csm.rsp_rrec, 0);
 
     CHECK(e >= lo && e <= hi);
     CHECK(!agc_flag_test(AGC_FLAG_ERADFLAG));
@@ -215,8 +207,7 @@ static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo,
 static void test_splash_error(void)
 {
     agc_vec_t r = agc_vec_make(agc_dp_from_double(6578000.0, 29), 0, 0);
-    agc_vec_t v = agc_vec_make(agc_dp_from_double(-1.0, 7),
-                               agc_dp_from_double(76.0, 7), 0);
+    agc_vec_t v = agc_vec_make(agc_dp_from_double(-1.0, 7), agc_dp_from_double(76.0, 7), 0);
 
     delrspl_case(r, v, true, -2e-4, 2e-4); /* CANTDO: -angle to target  */
     delrspl_case(r, v, false, 0.005, 0.3); /* free fall + entry range   */
@@ -227,9 +218,7 @@ int main(void)
     test_average_g_coast();
     test_cross_product_steering();
     test_splash_error();
-    (void) printf(
-        "test_guidance: %d checks, %d failures, %d assertion reports\n",
-        g_checks, g_failures, g_assert_reports);
+    (void) printf("test_guidance: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1);
 }

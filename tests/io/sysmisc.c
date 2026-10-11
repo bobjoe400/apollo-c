@@ -68,8 +68,7 @@ static void test_downlist_word_counts(void)
     for (int code = 1; code < AGC_DNLIST_CSM_COUNT; code++)
     {
         words = 0;
-        CHECK(agc_dnlist_word_count(AGC_VEHICLE_CSM, code, &words) ==
-              AGC_STATUS_OK);
+        CHECK(agc_dnlist_word_count(AGC_VEHICLE_CSM, code, &words) == AGC_STATUS_OK);
         CHECK(words == AGC_DNLIST_WORDS);
     }
 
@@ -78,15 +77,13 @@ static void test_downlist_word_counts(void)
     for (int code = 0; code < AGC_DNLIST_LM_COUNT; code++)
     {
         words = 0;
-        CHECK(agc_dnlist_word_count(AGC_VEHICLE_LM, code, &words) ==
-              AGC_STATUS_OK);
+        CHECK(agc_dnlist_word_count(AGC_VEHICLE_LM, code, &words) == AGC_STATUS_OK);
         CHECK(words == AGC_DNLIST_WORDS);
     }
 
     /* out-of-range list code: refused (the library is built without
      * AGC_HOST_DEBUG, so its AGC_ASSERTs do not reach agc_assert_report) */
-    CHECK(agc_dnlist_word_count(AGC_VEHICLE_LM, AGC_DNLIST_LM_COUNT, &words) !=
-          AGC_STATUS_OK);
+    CHECK(agc_dnlist_word_count(AGC_VEHICLE_LM, AGC_DNLIST_LM_COUNT, &words) != AGC_STATUS_OK);
 }
 
 /* DODOWNTM on the CM coast-and-align list (DNLSTCOD 0, ID 77777).        */
@@ -109,10 +106,8 @@ static void test_downrupt_sequence(void)
         if ((agc_chan_read(AGC_CHAN_CHAN13) & 0100u) == 0u)
         {
             time_words++; /* TIME2,TIME1 (WOZERO) */
-            CHECK(agc_chan_read(AGC_CHAN_DNTM1) ==
-                  (uint16_t) agc_erase_time2());
-            CHECK(agc_chan_read(AGC_CHAN_DNTM2) ==
-                  (uint16_t) agc_erase_time1());
+            CHECK(agc_chan_read(AGC_CHAN_DNTM1) == (uint16_t) agc_erase_time2());
+            CHECK(agc_chan_read(AGC_CHAN_DNTM2) == (uint16_t) agc_erase_time1());
         }
     }
 
@@ -120,7 +115,7 @@ static void test_downrupt_sequence(void)
     CHECK(agc_telem_downrupt() == AGC_STATUS_OK); /* word 101: next list */
     CHECK(agc_chan_read(AGC_CHAN_DNTM1) == 077777u);
     CHECK(agc_chan_read(AGC_CHAN_DNTM2) == AGC_DN_LOWIDCOD);
-    agc_telem_select_list(1); /* UPDNLIST          */
+    agc_telem_select_list(1);                     /* UPDNLIST          */
     CHECK(agc_telem_restart() == AGC_STATUS_OK);
     CHECK(agc_telem_downrupt() == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_DNTM1) == 077776u);
@@ -160,18 +155,19 @@ static void test_banksum(void)
 {
     uint16_t *b5 = &g_rope[5 * AGC_ROPE_BANK_WORDS];
 
-    b5[0]  = 012345u;
-    b5[1]  = 070000u;       /* negative: overflow paths */
-    b5[2]  = 070000u;
-    b5[10] = (uint16_t) (002000u + 10u); /* TC SELF at 2012       */
-    b5[11] = (uint16_t) (002000u + 11u); /* TC SELF at 2013       */
-    b5[12] = 0;                          /* bugger word (set below) */
-    b5[13] = 077777u;                    /* not summed            */
+    b5[0]        = 012345u;
+    b5[1]        = 070000u;                    /* negative: overflow paths */
+    b5[2]        = 070000u;
+    b5[10]       = (uint16_t) (002000u + 10u); /* TC SELF at 2012       */
+    b5[11]       = (uint16_t) (002000u + 11u); /* TC SELF at 2013       */
+    b5[12]       = 0;                          /* bugger word (set below) */
+    b5[13]       = 077777u;                    /* not summed            */
     CHECK(agc_selfcheck_set_rope(g_rope, 6) == AGC_STATUS_OK);
     uint16_t sum = 0;
     uint16_t bug = 0;
 
     CHECK(agc_selfcheck_banksum(5, &sum, &bug) == AGC_STATUS_OK);
+
     /* choose the bugger word so the sum becomes +5 and check it           */
     uint16_t need = (uint16_t) ((5u + (077777u - sum)) % 077777u);
 
@@ -196,7 +192,7 @@ static void test_banksum(void)
 
     CHECK(agc_selfcheck_idle_pass() == AGC_STATUS_ALARM); /* bank 1 fails  */
     CHECK(agc_selfcheck_error_count() == (uint16_t) (errs + 1u));
-    CHECK(agc_selfcheck_smode() == 0u); /* + option: idle loop    */
+    CHECK(agc_selfcheck_smode() == 0u);                   /* + option: idle loop    */
     CHECK(agc_selfcheck_set_rope(NULL, 0) == AGC_STATUS_OK);
 }
 
@@ -208,7 +204,7 @@ static void test_service(void)
 
     CHECK((w & agc_flag_mask(AGC_FLAG_QUITFLAG)) != 0u);
     CHECK(agc_flag_test(AGC_FLAG_QUITFLAG));
-    w = agc_svc_downflag(AGC_FLAG_QUITFLAG);
+    w                = agc_svc_downflag(AGC_FLAG_QUITFLAG);
     CHECK((w & agc_flag_mask(AGC_FLAG_QUITFLAG)) == 0u);
     uint16_t from[5] = {1, 2, 3, 4, 5};
     uint16_t to[5]   = {0, 0, 0, 0, 0};
@@ -270,6 +266,7 @@ static void test_radar_verbs(void)
     CHECK(agc_extverb_rr_designate_end(&ctx) == AGC_STATUS_OK);
     CHECK(agc_erase_radmodes() == 01000u);
     CHECK(agc_flag_test(AGC_FLAG_NORRMON));
+
     /* after the 1 s delay of a real RRDESEND: R25 back on, GOPIN          */
     CHECK(agc_job_rr_designate_end_monitor(&ctx) == AGC_STATUS_OK);
     CHECK(!agc_flag_test(AGC_FLAG_NORRMON));
@@ -287,9 +284,7 @@ int main(void)
     test_service();
     test_t4rupt_gimbal_matrix();
     test_radar_verbs();
-    (void) printf(
-        "test_sysmisc: %d checks, %d failures, %d expected assert reports\n",
-        g_checks, g_failures, g_assert_reports);
+    (void) printf("test_sysmisc: %d checks, %d failures, %d expected assert reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1);
 }

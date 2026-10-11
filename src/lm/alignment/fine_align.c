@@ -25,7 +25,7 @@
 #define CHK_FINE_RECHECK ((uint16_t) 014)   /* OCT14: V50N25 00014           */
 #define TSIGHT1_CS       ((agc_dp_t) 36000) /* TSIGHT1 2DEC 36000: 6 min     */
 #define ALM_NO_STARS     ((agc_alarm_code_t) 0405)
-#define VN_ALARM         ALIGN_VN(5, 9) /* VB05N09                       */
+#define VN_ALARM         ALIGN_VN(5, 9)     /* VB05N09                       */
 
 static agc_status_t fine_align_phase(void)
 {
@@ -42,8 +42,7 @@ static agc_status_t fine_align_phase(void)
 /* R51 (STQ QMAJ: the caller has set agc_align_ram()->qmaj). */
 agc_status_t agc_job_lm_fine_align(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -87,9 +86,7 @@ agc_status_t agc_job_lm_fine_align_star_acquire(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_LM_FINE_ALIGN_PICK_STARS,
-                        AGC_JOB_LM_FINE_ALIGN_FIRST_STAR));
+    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH, AGC_JOB_LM_FINE_ALIGN_PICK_STARS, AGC_JOB_LM_FINE_ALIGN_FIRST_STAR));
 }
 
 /*
@@ -102,8 +99,7 @@ static agc_status_t fine_align_pick(agc_job_ctx_t *ctx)
     agc_interp_t     ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_align_locsam(
-        &ip, ram->tsight, AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED, &ram->locsam);
+    agc_status_t st = agc_align_locsam(&ip, ram->tsight, AGC_JOB_LM_FINE_ALIGN_STARS_LOCATED, &ram->locsam);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -118,8 +114,7 @@ static agc_status_t fine_align_pick(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_align_picapar(&ip, &ram->locsam, &refsmmat, cdu, &ram->besti,
-                               &ram->bestj, &found);
+        st = agc_align_picapar(&ip, &ram->locsam, &refsmmat, cdu, &ram->besti, &ram->bestj, &found);
     }
 
     if (st != AGC_STATUS_OK)
@@ -134,9 +129,7 @@ static agc_status_t fine_align_pick(agc_job_ctx_t *ctx)
 
     agc_alarm(ALM_NO_STARS); /* R51I     */
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_LM_FINE_ALIGN_FIRST_STAR,
-                        AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH, AGC_JOB_LM_FINE_ALIGN_FIRST_STAR, AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE));
 }
 
 /* R51C V33: TSIGHT = now + TSIGHT1 (6 min to marking); LOCSAM. */
@@ -204,8 +197,7 @@ agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    if (!AGC_ASSERT((agc_align_ram()->starind == 0) ||
-                    (agc_align_ram()->starind == 1)))
+    if (!AGC_ASSERT((agc_align_ram()->starind == 0) || (agc_align_ram()->starind == 1)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -263,11 +255,10 @@ agc_status_t agc_job_lm_fine_align_marked(agc_job_ctx_t *ctx)
     {
         ram->starsav1 = ram->starad[1]; /* R51.4    */
 
-        return (align_planet(ctx, ram->tsight,
-                             AGC_JOB_LM_FINE_ALIGN_FIRST_LOCATED));
+        return (align_planet(ctx, ram->tsight, AGC_JOB_LM_FINE_ALIGN_FIRST_LOCATED));
     }
 
-    ram->starsav2 = ram->starad[1];
+    ram->starsav2         = ram->starad[1];
     const agc_status_t st = fine_align_phase();
 
     if (st != AGC_STATUS_OK)
@@ -275,8 +266,7 @@ agc_status_t agc_job_lm_fine_align_marked(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (align_planet(ctx, ram->tsight,
-                         AGC_JOB_LM_FINE_ALIGN_SECOND_LOCATED));
+    return (align_planet(ctx, ram->tsight, AGC_JOB_LM_FINE_ALIGN_SECOND_LOCATED));
 }
 
 /* R51.4 after PLANET: PLANVEC = LOS (ref); STARIND = 1; R51.3. */
@@ -312,15 +302,12 @@ agc_status_t agc_job_lm_fine_align_second_located(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     const agc_mat_t refsmmat = agc_erase_refsmmat();
 
-    ram->starad[1] = agc_vec_unit(
-        &ip, agc_mat_vec(&ip, &refsmmat, ram->planet_los), NULL, NULL);
-    ram->starad[0] = agc_vec_unit(
-        &ip, agc_mat_vec(&ip, &refsmmat, ram->planvec), NULL, NULL);
-    ram->vac6  = ram->starsav1;
-    ram->vac12 = ram->starsav2;
+    ram->starad[1] = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, ram->planet_los), NULL, NULL);
+    ram->starad[0] = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, ram->planvec), NULL, NULL);
+    ram->vac6      = ram->starsav1;
+    ram->vac12     = ram->starsav2;
 
-    return (agc_align_sighting_data_display(ctx,
-                                            AGC_JOB_LM_FINE_ALIGN_DATA_CHECKED));
+    return (agc_align_sighting_data_display(ctx, AGC_JOB_LM_FINE_ALIGN_DATA_CHECKED));
 }
 
 /* After R54: rejected -> R51K; else AXISGEN and R55, CLEAR PFRATFLG. */
@@ -342,16 +329,14 @@ agc_status_t agc_job_lm_fine_align_data_checked(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     const agc_vec_t    a[2] = {ram->starad[0], ram->starad[1]};
     const agc_vec_t    b[2] = {ram->vac6, ram->vac12};
-    const agc_status_t st   =
-        agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
+    const agc_status_t st   = agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    return (agc_align_gyro_torquing(ctx,
-                                    AGC_JOB_LM_FINE_ALIGN_TORQUED)); /* R55 */
+    return (agc_align_gyro_torquing(ctx, AGC_JOB_LM_FINE_ALIGN_TORQUED)); /* R55 */
 }
 
 /* After R55: CLEAR PFRATFLG, R51K. */
@@ -390,7 +375,5 @@ agc_status_t agc_job_lm_fine_align_recheck(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_FINE_RECHECK,
-                        AGC_JOB_GOTOPOOH, AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE,
-                        ret));
+    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_FINE_RECHECK, AGC_JOB_GOTOPOOH, AGC_JOB_LM_FINE_ALIGN_STAR_ACQUIRE, ret));
 }

@@ -85,14 +85,14 @@ agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
     }
 
     /* MPACSRND: residual = major(m2 t) + minor(m1 t); DOUBLE; TS MPAC +2.  */
-    p.hi  = 0;
-    p.lo  = agc_w_mp(t, m.m1).hi; /* trial minor part */
-    o     = agc_w_ovf(2 * (agc_w_mp(t, m.m2).hi + agc_w_mp(t, m.m1).lo));
+    p.hi = 0;
+    p.lo = agc_w_mp(t, m.m1).hi;                /* trial minor part */
+    o    = agc_w_ovf(2 * (agc_w_mp(t, m.m2).hi + agc_w_mp(t, m.m1).lo));
     p.lo += o;                                  /* ADS MPAC +1      */
-    p     = agc_w_das(p, agc_w_mp(t, m.m0), &o); /* DAS MPAC         */
-    m.m0  = p.hi;
-    m.m1  = p.lo;
-    m.m2  = 0;
+    p    = agc_w_das(p, agc_w_mp(t, m.m0), &o); /* DAS MPAC         */
+    m.m0 = p.hi;
+    m.m1 = p.lo;
+    m.m2 = 0;
 
     return (m);
 } /* agc_w_mpacshr */
@@ -141,7 +141,7 @@ agc_w2_t agc_w_vshrrnd(agc_w2_t p, int n)
  **********************************************************************/
 agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
 {
-    int       pass; /* whole-word passes done */
+    int       pass;       /* whole-word passes done */
     int       left   = n; /* MPTEMP + 1       */ /* still to shift */
     agc_ovf_t unused = 0; /* ROUNDSUB OVFIND (cannot overflow here) */
 
@@ -157,9 +157,9 @@ agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
             return (agc_w_mpacshr(m, left, round));
         }
 
-        m.m2  = m.m1; /* XCH x4: right 14 */
-        m.m1  = m.m0;
-        m.m0  = 0;
+        m.m2 = m.m1; /* XCH x4: right 14 */
+        m.m1 = m.m0;
+        m.m0 = 0;
         left -= 14;
 
         if (left == 0)
@@ -191,9 +191,9 @@ agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
  **********************************************************************/
 agc_w2_t agc_w_vright(agc_w2_t p, int n)
 {
-    int      pass; /* whole-word passes done */
-    int      left = n; /* places still to shift */
-    int      o    = 0; /* SETROUND carry, then DAS overflow */
+    int      pass;          /* whole-word passes done */
+    int      left = n;      /* places still to shift */
+    int      o    = 0;      /* SETROUND carry, then DAS overflow */
     agc_w2_t rnd  = {0, 0}; /* rounding carry as a pair */
 
     if (!AGC_ASSERT(n >= 1))
@@ -213,12 +213,12 @@ agc_w2_t agc_w_vright(agc_w2_t p, int n)
             return (agc_w_vshrrnd(p, left));
         }
 
-        o      = agc_w_ovf(2 * p.lo); /* SETROUND         */
+        o      = agc_w_ovf(2 * p.lo);   /* SETROUND         */
         rnd.lo = o;
-        p.lo   = p.hi; /* XCH MPAC; +1     */
+        p.lo   = p.hi;                  /* XCH MPAC; +1     */
         p.hi   = 0;
         p      = agc_w_das(p, rnd, &o); /* DAS MPAC         */
-        left  -= 14;
+        left   -= 14;
 
         if (left == 0)
         { /* MPTEMP = -0      */
@@ -246,7 +246,7 @@ agc_w2_t agc_w_vright(agc_w2_t p, int n)
  **********************************************************************/
 agc_w3_t agc_w_tssl(agc_w3_t m, int n, agc_ovf_t *ovfind)
 {
-    int k; /* steps done */
+    int k;     /* steps done */
     int o = 0; /* overflow of one step, +-1 or 0 */
 
     if (!AGC_ASSERT(ovfind != 0))
@@ -293,7 +293,7 @@ agc_w3_t agc_w_tssl(agc_w3_t m, int n, agc_ovf_t *ovfind)
  **********************************************************************/
 agc_w3_t agc_w_tslc(agc_w3_t m, int *count)
 {
-    int k; /* steps done */
+    int k;     /* steps done */
     int o = 0; /* overflow of one step (never: |m0| < 1/2) */
 
     if (!AGC_ASSERT(count != 0))
@@ -315,7 +315,7 @@ agc_w3_t agc_w_tslc(agc_w3_t m, int *count)
             break; /* DOUBLE; OVSK     */
         }
 
-        m       = agc_w_tp_shl1(m, &o); /* TSLCLOOP         */
+        m      = agc_w_tp_shl1(m, &o); /* TSLCLOOP         */
         *count += 1;
     }
 

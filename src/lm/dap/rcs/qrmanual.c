@@ -38,8 +38,8 @@ agc_status_t lm_dap_qrminimp(void)
 
     agc_inhint();
     agc_lm_dap_zatteror();
-    d->qerror = 0; /* displays       */
-    d->rerror = 0;
+    d->qerror    = 0;                  /* displays       */
+    d->rerror    = 0;
     agc_relint();
     uint16_t t31 = agc_chan_read(031); /* TEMP31         */
 
@@ -174,12 +174,12 @@ static agc_status_t enteruv(lm_dap_t *d)
     agc_inhint();
     agc_lm_dap_zatteror();
     agc_relint();
-    d->qerror     = 0; /* DYERROR        */
+    d->qerror     = 0;                                /* DYERROR        */
     d->dyerror_lo = 0;
-    d->rerror     = 0; /* DZERROR        */
+    d->rerror     = 0;                                /* DZERROR        */
     d->dzerror_lo = 0;
-    bool uout = beyond(d->omegau, d->neg_ratedb); /* TARGETDB       */
-    bool vout = beyond(d->omegav, d->neg_ratedb);
+    bool uout     = beyond(d->omegau, d->neg_ratedb); /* TARGETDB       */
+    bool vout     = beyond(d->omegav, d->neg_ratedb);
     bool direct;
 
     if (uout)
@@ -235,11 +235,12 @@ static agc_status_t rhcactiv(lm_dap_t *d)
     agc_sp_t q  = stick_rate(d->savehand[0], d->stiksens);
     agc_sp_t dq = lm_dap_wrap((int32_t) q - d->qlast); /* DAPTEMP3       */
 
-    d->qlast = q;
+    d->qlast    = q;
     agc_sp_t r  = stick_rate(d->savehand[1], d->stiksens);
     agc_sp_t dr = lm_dap_wrap((int32_t) r - d->rlast); /* DAPTEMP4       */
 
     d->rlast = r;
+
     /* TS QRATEDIF / RRATEDIF: an overflow (> 45 deg/s difference) would
      * make the AGC skip an instruction; the stored wrapped value is used. */
     d->edotq = lm_dap_wrap((int32_t) d->omegaq - d->qlast);

@@ -16,6 +16,7 @@
 bool agc_assert_report(const char *file, int line, const char *expr);
 
 #ifdef AGC_HOST_DEBUG
+
 /* The report's result is dropped and the expression is false, so the
  * compiler sees the same control flow as in the release build.          */
 #define AGC_ASSERT(e) \

@@ -65,6 +65,7 @@ static void fresh(void)
     (void) agc_waitlist_init();
     (void) agc_guid_init(AGC_VEHICLE_LM);
     (void) agc_lm_dap_fresh_start();
+
     /* The AGC runs start from zeroed erasable: drop the fresh-start pad
      * values (1/ACCSET block, gains) the C keeps in lm_dap_t.            */
     (void) memset(lm_dap_state(), 0, sizeof (lm_dap_t));
@@ -86,8 +87,7 @@ static void fresh(void)
  *
  * RETURNS: none
  **********************************************************************/
-static void cmp_sp(const char *t, const char *what, long got, const char *n,
-                   long tol)
+static void cmp_sp(const char *t, const char *what, long got, const char *n, long tol)
 {
     (void) oracle_cmp(t, what, got, oracle_out_sp(t, n), tol);
 }
@@ -113,13 +113,13 @@ static void accs(const char *t, long tol)
     agc_guid_state()->lm.mass   = oracle_in_dp(t, "MASS", 0);
     agc_guid_state()->lm.abdelv = (agc_sp_t) oracle_in(t, "ABDELV", 0);
     agc_erase_set_csmmass((agc_sp_t) oracle_in(t, "CSMMASS", 0));
-    d->hiascent = (agc_sp_t) oracle_in(t, "HIASCENT", 0);
-    d->db       = (agc_sp_t) oracle_in(t, "DB", 0);
-    d->aosq     = (agc_sp_t) oracle_in(t, "AOSQ", 0);
-    d->aosq_lo  = (agc_sp_t) oracle_in(t, "AOSQ", 1);
-    d->aosr     = (agc_sp_t) oracle_in(t, "AOSQ", 2);
-    d->aosr_lo  = (agc_sp_t) oracle_in(t, "AOSQ", 3);
-    d->ch5mask  = oracle_in_raw(t, "CH5MASK", 0);
+    d->hiascent                 = (agc_sp_t) oracle_in(t, "HIASCENT", 0);
+    d->db                       = (agc_sp_t) oracle_in(t, "DB", 0);
+    d->aosq                     = (agc_sp_t) oracle_in(t, "AOSQ", 0);
+    d->aosq_lo                  = (agc_sp_t) oracle_in(t, "AOSQ", 1);
+    d->aosr                     = (agc_sp_t) oracle_in(t, "AOSQ", 2);
+    d->aosr_lo                  = (agc_sp_t) oracle_in(t, "AOSQ", 3);
+    d->ch5mask                  = oracle_in_raw(t, "CH5MASK", 0);
     agc_flagword_set(DAPBOOLS_WORD, oracle_in_raw(t, "DAPBOOLS", 0));
     agc_flagword_set(FLGWRD10, oracle_in_raw(t, "FLGWRD10", 0));
     (void) agc_lm_dap_jet_accel_update();
@@ -145,8 +145,7 @@ static void accs(const char *t, long tol)
     cmp_sp(t, "RACCDOT", d->raccdot, "RACCDOT", tol);
     cmp_sp(t, "-2JETLIM", d->neg_2jetlim, "-2JETLIM", 0);
     cmp_sp(t, "ALLOWGTS", d->allowgts, "ALLOWGTS", 0);
-    (void) oracle_cmp(t, "MASS", agc_guid_state()->lm.mass,
-                      oracle_out_dp(t, "MASS"), 0);
+    (void) oracle_cmp(t, "MASS", agc_guid_state()->lm.mass, oracle_out_dp(t, "MASS"), 0);
 
     /* AOSQ = AOSR = 0 leaves AOSV = -0 in the AGC; 1/ACCONT models that
      * sign (SIGNAOS = 1), so the V-axis pairs are compared as stored.    */
@@ -328,32 +327,24 @@ static void kalman(const char *t, const char *gp, long tol)
     cmp_sp(t, "NPTRAPS", d->nptraps, "NPTRAPS", 0);
     cmp_sp(t, "NQTRAPS", d->nqtraps, "NQTRAPS", 0);
     cmp_sp(t, "NRTRAPS", d->nrtraps, "NRTRAPS", 0);
-    (void) oracle_cmp(t, "AOSQ", (long) d->aosq * 16384 + d->aosq_lo,
-                      oracle_out_dp(t, "AOSQ"), tol);
-    (void) oracle_cmp(t, "AOSR", (long) d->aosr * 16384 + d->aosr_lo,
-                      oracle_out_dp(t, "AOSR"), tol);
+    (void) oracle_cmp(t, "AOSQ", (long) d->aosq * 16384 + d->aosq_lo, oracle_out_dp(t, "AOSQ"), tol);
+    (void) oracle_cmp(t, "AOSR", (long) d->aosr * 16384 + d->aosr_lo, oracle_out_dp(t, "AOSR"), tol);
     cmp_sp(t, "ALPHAQ", d->alphaq, "ALPHAQ", tol);
     cmp_sp(t, "ALPHAR", d->alphar, "ALPHAR", tol);
     cmp_sp(t, "AOSQTERM", d->aosqterm, "AOSQTERM", tol);
     cmp_sp(t, "AOSRTERM", d->aosrterm, "AOSRTERM", tol);
-    (void) oracle_cmp(t, "DXERROR", (long) d->dxerror * 16384 + d->dxerror_lo,
-                      oracle_out_dp(t, "DXERROR"), tol);
-    (void) oracle_cmp(t, "DYERROR", (long) d->qerror * 16384 + d->dyerror_lo,
-                      oracle_out_dp(t, "DYERROR"), tol);
-    (void) oracle_cmp(t, "DZERROR", (long) d->rerror * 16384 + d->dzerror_lo,
-                      oracle_out_dp(t, "DZERROR"), tol);
+    (void) oracle_cmp(t, "DXERROR", (long) d->dxerror * 16384 + d->dxerror_lo, oracle_out_dp(t, "DXERROR"), tol);
+    (void) oracle_cmp(t, "DYERROR", (long) d->qerror * 16384 + d->dyerror_lo, oracle_out_dp(t, "DYERROR"), tol);
+    (void) oracle_cmp(t, "DZERROR", (long) d->rerror * 16384 + d->dzerror_lo, oracle_out_dp(t, "DZERROR"), tol);
     cmp_sp(t, "JETRATE", d->jetrate[0], "JETRATE", tol);
     cmp_sp(t, "JETRATEQ", d->jetrate[1], "JETRATEQ", tol);
     cmp_sp(t, "JETRATER", d->jetrate[2], "JETRATER", tol);
     cmp_sp(t, "TJP", d->tj[0], "TJP", 0);
     cmp_sp(t, "TJU", d->tj[1], "TJU", 0);
     cmp_sp(t, "TJV", d->tj[2], "TJV", 0);
-    (void) oracle_cmp(t, "OLDXFORP", d->oldxforp,
-                      (long) oracle_out_raw(t, "OLDXFORP"), 0);
-    (void) oracle_cmp(t, "OLDYFORP", d->oldyforp,
-                      (long) oracle_out_raw(t, "OLDYFORP"), 0);
-    (void) oracle_cmp(t, "OLDZFORQ", d->oldzforq,
-                      (long) oracle_out_raw(t, "OLDZFORQ"), 0);
+    (void) oracle_cmp(t, "OLDXFORP", d->oldxforp, (long) oracle_out_raw(t, "OLDXFORP"), 0);
+    (void) oracle_cmp(t, "OLDYFORP", d->oldyforp, (long) oracle_out_raw(t, "OLDYFORP"), 0);
+    (void) oracle_cmp(t, "OLDZFORQ", d->oldzforq, (long) oracle_out_raw(t, "OLDZFORQ"), 0);
 
     for (int k = 0; k < 6; k++)
     {
@@ -412,8 +403,7 @@ static void gts_outputs(const char *t, const lm_dap_t *d)
     cmp_sp(t, "NEGUR", d->negur, "NEGUQ+2", 0);
     cmp_sp(t, "QACCDOT", d->qaccdot, "QACCDOT", 0);
     cmp_sp(t, "RACCDOT", d->raccdot, "RACCDOT", 0);
-    (void) oracle_cmp(t, "RCSFLAGS", d->rcsflags,
-                      (long) oracle_out_raw(t, "RCSFLAGS"), 0);
+    (void) oracle_cmp(t, "RCSFLAGS", d->rcsflags, (long) oracle_out_raw(t, "RCSFLAGS"), 0);
     cmp_sp(t, "QGIMTIMR", d->qgimtimr, "QGIMTIMR", 0);
     cmp_sp(t, "RGIMTIMR", d->rgimtimr, "QGIMTIMR+2", 0);
     cmp_sp(t, "ALLOWGTS", d->allowgts, "ALLOWGTS", 0);

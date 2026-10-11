@@ -50,8 +50,8 @@
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 
-static int g_checks; /* checks run */
-static int g_failures; /* checks failed */
+static int g_checks;         /* checks run */
+static int g_failures;       /* checks failed */
 static int g_assert_reports; /* AGC_ASSERT failures reported */
 
 /* Prototypes: main() comes first (STYLE 4.6). */
@@ -98,8 +98,7 @@ int main(void)
     test_pipfree_alarm();
     test_lastbias_pipuse();
     test_optical_verification();
-    (void) printf("test_imu: %d checks, %d failures, %d assertion reports\n",
-                  g_checks, g_failures, g_assert_reports);
+    (void) printf("test_imu: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
 }
@@ -256,10 +255,8 @@ static agc_mat_t nb_about_z(double deg)
     double    r = deg * PI_D / 180.0;
     agc_mat_t m; /* matrix, B1 */
 
-    m.row[0] = agc_vec_make(agc_dp_from_double(cos(r) / 2, 0),
-                            agc_dp_from_double(sin(r) / 2, 0), 0);
-    m.row[1] = agc_vec_make(agc_dp_from_double(-sin(r) / 2, 0),
-                            agc_dp_from_double(cos(r) / 2, 0), 0);
+    m.row[0] = agc_vec_make(agc_dp_from_double(cos(r) / 2, 0), agc_dp_from_double(sin(r) / 2, 0), 0);
+    m.row[1] = agc_vec_make(agc_dp_from_double(-sin(r) / 2, 0), agc_dp_from_double(cos(r) / 2, 0), 0);
     m.row[2] = agc_vec_make(0, 0, AGC_DP_HALF);
 
     return (m);
@@ -275,7 +272,7 @@ static void test_calcga_gimbal_lock(void)
 
     agc_interp_init(&ip);
     agc_mat_t sm = agc_mat_identity_half(); /* XSM..ZSM, B1 */
-    uint16_t  thetad[3]; /* CDU patterns */
+    uint16_t  thetad[3];                    /* CDU patterns */
 
     agc_flag_clear(AGC_FLAG_GLOKFAIL);
     agc_flag_clear(AGC_FLAG_CPHIFLAG);
@@ -304,10 +301,9 @@ static void test_pipa_zero_comp(void)
 
     CHECK(agc_imu_comp_load(&p) == AGC_STATUS_OK);
     CHECK(agc_imu_gcompzer() == AGC_STATUS_OK);
-    agc_imu_set_pipa_interval((agc_sp_t) (200 * 64)); /* 2 s, cs x 2^8        */
-    agc_vec_t in = agc_vec_make(agc_dp_pack(123, 0), agc_dp_pack(-45, 0),
-                                agc_dp_pack(7000, 0)); /* DELV, PIPA pulses x 2^14 */
-    agc_vec_t delv = in; /* DELV, PIPA pulses x 2^14 */
+    agc_imu_set_pipa_interval((agc_sp_t) (200 * 64));                                              /* 2 s, cs x 2^8        */
+    agc_vec_t in   = agc_vec_make(agc_dp_pack(123, 0), agc_dp_pack(-45, 0), agc_dp_pack(7000, 0)); /* DELV, PIPA pulses x 2^14 */
+    agc_vec_t delv = in;                                                                           /* DELV, PIPA pulses x 2^14 */
 
     CHECK(agc_imu_one_over_pipa(&delv) == AGC_STATUS_OK);
 
@@ -335,7 +331,7 @@ static void test_dcm_round_trip(void)
     agc_mat_t      m; /* matrix, B1 */
 
     CHECK(agc_kalc_cdutodcm(&ip, cdu, &m) == AGC_STATUS_OK);
-    agc_vec_t ang; /* angles, rev 2^0 */
+    agc_vec_t ang;  /* angles, rev 2^0 */
     agc_dp_t  cmga; /* COS(MGA), 2^0 */
 
     CHECK(agc_kalc_dcmtocdu(&ip, &m, &ang, &cmga) == AGC_STATUS_OK);
@@ -354,7 +350,7 @@ static void test_delcomp_zero(void)
 
     agc_interp_init(&ip);
     agc_vec_t u = agc_vec_make(0, 0, AGC_DP_HALF); /* axis, B1 */
-    agc_mat_t del; /* DEL, 2^0 */
+    agc_mat_t del;                                 /* DEL, 2^0 */
 
     CHECK(agc_kalc_delcomp(&ip, u, 0, &del) == AGC_STATUS_OK);
 
@@ -381,10 +377,10 @@ static void test_gyro_pulse(void)
     CHECK(agc_imu_gyros_busy());
     CHECK(agc_task_strtgyro() == AGC_STATUS_OK); /* phase Y          */
     CHECK(agc_imu_gyrocmd() == 1000u);           /* +.215 pulse: 78/128 */
-    agc_dp_t buf[3]; /* gyro buffer, rev 2^0 */
+    agc_dp_t buf[3];                             /* gyro buffer, rev 2^0 */
 
     CHECK(agc_imu_gyro_buf_get(AGC_IMU_GBUF_OGC, buf) == AGC_STATUS_OK);
-    CHECK(buf[1] == 78); /* unsent fraction  */
+    CHECK(buf[1] == 78);                         /* unsent fraction  */
     CHECK(agc_imu_gyros_busy());
     CHECK(agc_task_strtgyro() == AGC_STATUS_OK); /* Z, X: nothing    */
     CHECK(!agc_imu_gyros_busy());
@@ -400,7 +396,7 @@ static void test_kalc_compute(void)
     agc_interp_init(&ip);
     const uint16_t   b[3] = {0, 0, 0};
     const uint16_t   f[3] = {0, 0, cdu_deg(30.0)}; /* 30 deg about Z   */
-    agc_kalc_setup_t k; /* KALCMANU setup */
+    agc_kalc_setup_t k;                            /* KALCMANU setup */
 
     CHECK(agc_kalc_compute(&ip, b, f, &k) == AGC_STATUS_OK);
     CHECK(k.kcase == AGC_KALC_NORMAL);
@@ -425,10 +421,9 @@ static void test_vecpoint(void)
     agc_erase_set_cduy(0);
     agc_erase_set_cduz(0);
     double    r  = 30.0 * PI_D / 180.0;
-    agc_vec_t pv = agc_vec_make(agc_dp_from_double(cos(r) / 2, 0), 0,
-                                agc_dp_from_double(-sin(r) / 2, 0)); /* POINTVSM, B1 */
-    agc_vec_t sx = agc_vec_make(AGC_DP_HALF, 0, 0); /* point +X, B1     */
-    uint16_t  g[3]; /* gyro angles, rev 2^0 */
+    agc_vec_t pv = agc_vec_make(agc_dp_from_double(cos(r) / 2, 0), 0, agc_dp_from_double(-sin(r) / 2, 0)); /* POINTVSM, B1 */
+    agc_vec_t sx = agc_vec_make(AGC_DP_HALF, 0, 0);                                                        /* point +X, B1     */
+    uint16_t  g[3];                                                                                        /* gyro angles, rev 2^0 */
 
     CHECK(agc_imu_vecpoint(&ip, pv, sx, g) == AGC_STATUS_OK);
     CHECK(near(cdu_to_deg(g[0]), 0.0, 0.05));
@@ -496,7 +491,7 @@ static void p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx)
     (void) agc_sxtmark_mark2();
     CHECK(agc_sxtmark_marks_made() == 1);
     CHECK(agc_job_entanswr(&crew) == AGC_STATUS_OK); /* V33 on V50N25 */
-    CHECK(agc_task_endmarks() == AGC_STATUS_OK);      /* GOODEND        */
+    CHECK(agc_task_endmarks() == AGC_STATUS_OK);     /* GOODEND        */
     CHECK(agc_job_optical_verification_marked(ctx) == AGC_STATUS_OK);
 }
 
@@ -508,24 +503,23 @@ static void p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx)
  **********************************************************************/
 static void test_optical_verification(void)
 {
-    agc_job_ctx_t  ctx = {AGC_JOB_COMPVER, AGC_PRIO5, false, -1, 0};
-    agc_interp_t   ip; /* interpreter state */
-    uint16_t       imu[3]; /* IMU CDUs of the aligned attitude */
+    agc_job_ctx_t  ctx    = {AGC_JOB_COMPVER, AGC_PRIO5, false, -1, 0};
+    agc_interp_t   ip;                                  /* interpreter state */
+    uint16_t       imu[3];                              /* IMU CDUs of the aligned attitude */
     agc_dp_t       erc[3] = {0, 0, 0};
     const agc_dp_t az     = agc_dp_from_double(0.1, 0); /* 36 deg, rev 2^0 */
 
     agc_interp_init(&ip);
     CHECK(agc_dsky_init() == AGC_STATUS_OK);
-    CHECK(agc_csm_prelaunch_set_pad(agc_dp_from_double(0.08, 0), az, az) ==
-          AGC_STATUS_OK);
+    CHECK(agc_csm_prelaunch_set_pad(agc_dp_from_double(0.08, 0), az, az) == AGC_STATUS_OK);
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, erc);
     CHECK(agc_job_optical_verification(&ctx) == AGC_STATUS_OK);
     CHECK(agc_phase_checkmm(3));
-    CHECK(agc_dsky_dsptem(2) == 1u); /* target 1 shown */
+    CHECK(agc_dsky_dsptem(2) == 1u);                        /* target 1 shown */
     CHECK(agc_dsky_set_dsptem(0, cdu_deg(20.0)) == AGC_STATUS_OK);
-    CHECK(agc_dsky_set_dsptem(1, 0546u) == AGC_STATUS_OK); /* EL 2 deg */
+    CHECK(agc_dsky_set_dsptem(1, 0546u) == AGC_STATUS_OK);  /* EL 2 deg */
     CHECK(agc_job_optical_verification_target_loaded(&ctx) == AGC_STATUS_OK);
-    CHECK(agc_dsky_dsptem(2) == 2u); /* target 2 shown */
+    CHECK(agc_dsky_dsptem(2) == 2u);                        /* target 2 shown */
     CHECK(agc_dsky_set_dsptem(0, cdu_deg(60.0)) == AGC_STATUS_OK);
     CHECK(agc_dsky_set_dsptem(1, 01326u) == AGC_STATUS_OK); /* EL 5 deg */
 
@@ -535,9 +529,9 @@ static void test_optical_verification(void)
     CHECK(agc_imu_calcga(&ip, &ar->xnb, &ar->xsm, imu) == AGC_STATUS_OK);
     CHECK(agc_job_optical_verification_target_loaded(&ctx) == AGC_STATUS_OK);
     CHECK(ar->starcode == 1);
-    p03_mark(imu, &ctx); /* target 1: then drives to target 2 */
+    p03_mark(imu, &ctx);               /* target 1: then drives to target 2 */
     CHECK(ar->starcode == 2);
-    p03_mark(imu, &ctx); /* target 2: AXISGEN, CALCGTA, V06N93 */
+    p03_mark(imu, &ctx);               /* target 2: AXISGEN, CALCGTA, V06N93 */
 
     for (int k = 0; k < 3; k++)
     {
@@ -545,8 +539,7 @@ static void test_optical_verification(void)
         CHECK(near(rev(ar->ogc[k]), 0.0, 5e-5));
     }
 
-    CHECK(agc_job_optical_verification_torque_accepted(&ctx) ==
-          AGC_STATUS_OK);
+    CHECK(agc_job_optical_verification_torque_accepted(&ctx) == AGC_STATUS_OK);
     CHECK(agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, erc) == AGC_STATUS_OK);
     CHECK(erc[0] == ar->ogc[0] && erc[2] == ar->ogc[2]);
     CHECK(agc_phase_checkmm(2)); /* GCOMP5: back to P02 */

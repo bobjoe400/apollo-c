@@ -61,27 +61,27 @@
  **********************************************************************/
 #include "../internal.h"
 
-#define HALF_SEC_CS    ((uint16_t) 50) /* .5SEC DEC 50: TVCEXEC period, cs     */
-#define ROLL_DELAY     ((uint16_t) 3)  /* THREE: ROLLDAP task delay, cs        */
-#define NINETEEN       ((agc_sp_t) 19) /* VD1: 20 passes = 10 s, unscaled     */
-#define FCORFRAC       ((agc_sp_t) 4096) /* OCT 10000: one-shot fraction .25   */
+#define HALF_SEC_CS    ((uint16_t) 50)    /* .5SEC DEC 50: TVCEXEC period, cs     */
+#define ROLL_DELAY     ((uint16_t) 3)     /* THREE: ROLLDAP task delay, cs        */
+#define NINETEEN       ((agc_sp_t) 19)    /* VD1: 20 passes = 10 s, unscaled     */
+#define FCORFRAC       ((agc_sp_t) 4096)  /* OCT 10000: one-shot fraction .25   */
 #define NEG_BIT14      ((agc_sp_t) -8192) /* -BIT14: B-1 -> B+0 rev, sign change */
-#define TVCX_MAX_STEPS 10              /* longest path: 1 .. 6 plus branches */
+#define TVCX_MAX_STEPS 10                 /* longest path: 1 .. 6 plus branches */
 
 /* Restart points of the TVC executive, in the order of TVCEXADR +1 ..
  * +6 (TVCRESTARTS p. 960), then the branch targets that are not
  * restart points.                                                       */
 typedef enum tvcx_step
 {
-    TVCX_EXEC_COPY = 1,     /* EXECCOPY +1 (TVCEXPHS 1)              */
-    TVCX_ONE_SHOT_CHECK,    /* 1SHOTCHK    (TVCEXPHS 2)              */
-    TVCX_TEMPSET,           /* TEMPSET     (TVCEXPHS 3)              */
-    TVCX_CORSETUP,          /* CORSETUP    (TVCEXPHS 4)              */
-    TVCX_CORRECTION_COPY,   /* CORCOPY +1  (TVCEXPHS 5)              */
-    TVCX_CNTRCOPY,          /* CNTRCOPY    (TVCEXPHS 6)              */
-    TVCX_REPCHEK,           /* REPCHEK                               */
-    TVCX_ONE_SHOT_OK,       /* 1SHOTOK                               */
-    TVCX_FIN                /* TVCEXFIN                              */
+    TVCX_EXEC_COPY = 1,   /* EXECCOPY +1 (TVCEXPHS 1)              */
+    TVCX_ONE_SHOT_CHECK,  /* 1SHOTCHK    (TVCEXPHS 2)              */
+    TVCX_TEMPSET,         /* TEMPSET     (TVCEXPHS 3)              */
+    TVCX_CORSETUP,        /* CORSETUP    (TVCEXPHS 4)              */
+    TVCX_CORRECTION_COPY, /* CORCOPY +1  (TVCEXPHS 5)              */
+    TVCX_CNTRCOPY,        /* CNTRCOPY    (TVCEXPHS 6)              */
+    TVCX_REPCHEK,         /* REPCHEK                               */
+    TVCX_ONE_SHOT_OK,     /* 1SHOTOK                               */
+    TVCX_FIN              /* TVCEXFIN                              */
 } tvcx_step_t;
 
 /**********************************************************************
@@ -99,9 +99,9 @@ static agc_status_t tvcx_rollprep(void)
     agc_csm_tvc_t    *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* AK, OGAD                */
 
-    t->ogapast = t->oganow;          /* XCH OGANOW; XCH OGAPAST       */
+    t->ogapast = t->oganow;                          /* XCH OGANOW; XCH OGAPAST       */
     t->oganow  = agc_erase_cdux();
-    c->ak[0]   = csm_dap_msu(c->ogad, t->oganow); /* MSU: AK, B-1 rev */
+    c->ak[0]   = csm_dap_msu(c->ogad, t->oganow);    /* MSU: AK, B-1 rev */
     t->ogaerr  = csm_dap_mp_hi(c->ak[0], NEG_BIT14); /* B+0 rev       */
 
     if (!AGC_ASSERT(t->oganow <= CSM_DAP_NEG0))
@@ -140,17 +140,16 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
     }
 
     if (t->vcntr > 0)
-    {                                            /* not yet             */
+    { /* not yet             */
         t->vcntrtmp = (agc_sp_t) (t->vcntr - 1); /* protect VCNTR and   */
-        t->masstmp  = agc_erase_csmmass(); /* CSMMASS (impulsive burn)  */
+        t->masstmp  = agc_erase_csmmass();       /* CSMMASS (impulsive burn)  */
     }
     else
-    {                              /* GAINCHNG                          */
-        agc_csm_dap_fixcw();       /* IXX, IAVG, IAVG/TLX               */
-        *st        = csm_tvc_gains(true); /* 1/CONACC, VARK             */
-        t->masstmp = csm_dap_ads(agc_erase_csmmass(),
-                                 (agc_sp_t) -t->tenmdot); /* 2^16 kg    */
-        t->vcntrtmp = NINETEEN; /* reset the variable-gain counter      */
+    { /* GAINCHNG                          */
+        agc_csm_dap_fixcw();                                                    /* IXX, IAVG, IAVG/TLX               */
+        *st         = csm_tvc_gains(true);                                      /* 1/CONACC, VARK             */
+        t->masstmp  = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot); /* 2^16 kg    */
+        t->vcntrtmp = NINETEEN;                                                 /* reset the variable-gain counter      */
     }
 
     t->tvcexphs = (agc_sp_t) (t->tvcexphs + 1); /* EXECCOPY: INCR (1)  */
@@ -177,7 +176,7 @@ static tvcx_step_t tvcx_exec_copy(void)
         return (TVCX_FIN);
     }
 
-    agc_erase_set_csmmass(t->masstmp); /* CSMMASS, 2^16 kg              */
+    agc_erase_set_csmmass(t->masstmp);  /* CSMMASS, 2^16 kg              */
     t->vcntr             = t->vcntrtmp;
     t->engine_fail_vcntr = t->vcntrtmp; /* V97VCNTR (R41 at SPSOFF)    */
     t->tvcexphs          = 2;           /* INCR: copycycle over (2)    */
@@ -207,9 +206,9 @@ static tvcx_step_t tvcx_one_shot_check(void)
     }
 
     if (t->cntr > 0)
-    {                                           /* not yet: count down  */
+    { /* not yet: count down  */
         t->cntrtmp  = (agc_sp_t) (t->cntr - 1);
-        t->tvcexphs = 6;                        /* entry at CNTRCOPY    */
+        t->tvcexphs = 6; /* entry at CNTRCOPY    */
         next        = TVCX_CNTRCOPY;
     }
     else if (t->cntr < 0)
@@ -284,8 +283,7 @@ static void tvcx_corsetup(void)
  *
  * RETURNS: agc_csm_dp_pair_t -- PACTTMP or YACTTMP, 1 ascrev
  **********************************************************************/
-static agc_csm_dp_pair_t tvcx_cgcorr(agc_csm_dp_pair_t deloff,
-                                     agc_csm_dp_pair_t delbar, agc_sp_t frac)
+static agc_csm_dp_pair_t tvcx_cgcorr(agc_csm_dp_pair_t deloff, agc_csm_dp_pair_t delbar, agc_sp_t frac)
 {
     agc_csm_dp_pair_t act = deloff; /* DCA xDELOFF; DXCH xACTTMP       */
 
@@ -295,12 +293,11 @@ static agc_csm_dp_pair_t tvcx_cgcorr(agc_csm_dp_pair_t deloff,
     }
 
     /* DCS xDELOFF; DDOUBL; DDOUBL; DXCH TTMP1 (4 ascrev scale)          */
-    agc_csm_dp_pair_t ttmp1 = csm_dap_pair_ddoubl(
-        csm_dap_pair_ddoubl(csm_dap_pair_neg(deloff))); /* B+2 ascrev  */
+    agc_csm_dp_pair_t ttmp1 = csm_dap_pair_ddoubl(csm_dap_pair_ddoubl(csm_dap_pair_neg(deloff))); /* B+2 ascrev  */
 
     /* DCA DELxBAR; DDOUBL; DDOUBL; DAS TTMP1                             */
-    (void) csm_dap_pair_das(&ttmp1,
-                            csm_dap_pair_ddoubl(csm_dap_pair_ddoubl(delbar)));
+    (void) csm_dap_pair_das(&ttmp1, csm_dap_pair_ddoubl(csm_dap_pair_ddoubl(delbar)));
+
     /* DCA TTMP1; MP TEMPDAP (upper word only); DAS xACTTMP               */
     (void) csm_dap_pair_das(&act, csm_dap_pair_mp(ttmp1.hi, frac));
 
@@ -370,24 +367,24 @@ static tvcx_step_t tvcx_step(tvcx_step_t s)
             }
 
             break;
-        case TVCX_TEMPSET:              /* one-shot correction fraction */
+        case TVCX_TEMPSET:     /* one-shot correction fraction */
             t->tempdap[1] = FCORFRAC;
-            t->tvcexphs   = 4;          /* INCR (4)                     */
+            t->tvcexphs   = 4; /* INCR (4)                     */
             next          = TVCX_CORSETUP;
             break;
         case TVCX_CORSETUP:
             tvcx_corsetup();
-            t->pacttmp  = tvcx_cgcorr(t->pdeloff, t->delpbar, t->tempdap[0]);
-            t->yacttmp  = tvcx_cgcorr(t->ydeloff, t->delybar, t->tempdap[0]);
-            t->tvcexphs = 5;            /* CORCOPY: INCR (5)            */
-            next        = TVCX_CORRECTION_COPY;
+            t->pacttmp    = tvcx_cgcorr(t->pdeloff, t->delpbar, t->tempdap[0]);
+            t->yacttmp    = tvcx_cgcorr(t->ydeloff, t->delybar, t->tempdap[0]);
+            t->tvcexphs   = 5; /* CORCOPY: INCR (5)            */
+            next          = TVCX_CORRECTION_COPY;
             break;
         case TVCX_CORRECTION_COPY:
             tvcx_correction_copy();
-            next = TVCX_CNTRCOPY;
+            next          = TVCX_CNTRCOPY;
             break;
-        case TVCX_CNTRCOPY:             /* restarts OK, follows copy    */
-            t->cntr = t->cntrtmp;
+        case TVCX_CNTRCOPY:    /* restarts OK, follows copy    */
+            t->cntr       = t->cntrtmp;
             break;
         case TVCX_FIN:
         default:
@@ -484,12 +481,12 @@ agc_status_t agc_task_tvcexec(void)
     }
 
     agc_status_t st   = agc_waitlist_call(HALF_SEC_CS, AGC_TASK_TVCEXEC);
-    agc_status_t s2   = tvcx_rollprep();     /* ROLLPREP               */
-    agc_status_t s3   = csm_dap_needler();   /* NEEDLEUP               */
-    agc_status_t s4   = AGC_STATUS_OK;       /* S40.15 in GAINCHNG     */
-    tvcx_step_t  from = tvcx_vargains(&s4);  /* VARGAINS               */
-    agc_status_t s5   = tvcx_run(from);      /* .. TVCEXFIN            */
-    agc_status_t r    = st;                  /* first failure          */
+    agc_status_t s2   = tvcx_rollprep();    /* ROLLPREP               */
+    agc_status_t s3   = csm_dap_needler();  /* NEEDLEUP               */
+    agc_status_t s4   = AGC_STATUS_OK;      /* S40.15 in GAINCHNG     */
+    tvcx_step_t  from = tvcx_vargains(&s4); /* VARGAINS               */
+    agc_status_t s5   = tvcx_run(from);     /* .. TVCEXFIN            */
+    agc_status_t r    = st;                 /* first failure          */
 
     if (r == AGC_STATUS_OK)
     {

@@ -52,7 +52,7 @@
 #include "agc/programs/rendezvous.h"
 
 /* ---- constants (pp. 842, 836, 852, 855-856; CONTROLLED_CONSTANTS) ----- */
-#define AS_THRESH2  308 /* THRESH2: DVMON threshold after ignition (APS) */
+#define AS_THRESH2  308                    /* THRESH2: DVMON threshold after ignition (APS) */
 #define AS_TGOA     ((agc_dp_t) 75776000)  /* (TGO)A 2DEC 37000 B-17       */
 #define AS_1DVA     ((agc_dp_t) 31876710)  /* (1/DV)A 2DEC 15.20 B-7       */
 #define AS_ATA      ((agc_dp_t) 45194051)  /* (AT)A 2DEC 3.2883 E-4 B9     */
@@ -60,11 +60,11 @@
 #define AS_ATDECAY  ((agc_dp_t) -10)       /* ATDECAY 2DEC -10             */
 #define AS_APSVEX   (-15514)               /* APSVEX DEC -3030 E-2 B-5     */
 #define AS_HINJECT  ((agc_dp_t) 292608)    /* 2DEC 18288 B-24: 60,000 ft   */
-#define AS_MOONRATE ((agc_dp_t) 3746009) /* 2DEC* .26616994890062991 E-7 B+19 */
-#define AS_49FPS    ((agc_dp_t) 626428)   /* 2DEC .149352 B-6             */
-#define AS_VINJNOM  ((agc_dp_t) 35216215) /* 2DEC 16.7924 B-7: 5509.5 fps */
-#define AS_RDOTDNOM ((agc_dp_t) 124646)   /* 2DEC .059436 B-7: 19.5 fps   */
-#define AS_ATRCS    ((agc_dp_t) 21577916) /* AT/RCS 2DEC .0000785 B+10    */
+#define AS_MOONRATE ((agc_dp_t) 3746009)   /* 2DEC* .26616994890062991 E-7 B+19 */
+#define AS_49FPS    ((agc_dp_t) 626428)    /* 2DEC .149352 B-6             */
+#define AS_VINJNOM  ((agc_dp_t) 35216215)  /* 2DEC 16.7924 B-7: 5509.5 fps */
+#define AS_RDOTDNOM ((agc_dp_t) 124646)    /* 2DEC .059436 B-7: 19.5 fps   */
+#define AS_ATRCS    ((agc_dp_t) 21577916)  /* AT/RCS 2DEC .0000785 B+10    */
 #define AS_KT1      ((agc_dp_t) 134217728) /* KT1 2DEC 0.5000              */
 #define AS_NEARONE  AGC_DP_MAX             /* NEARONE 2DEC .999999999      */
 #define AS_4SEC17   ((agc_dp_t) 819200)    /* 2DEC 400 B-17                */
@@ -82,7 +82,7 @@
 #define AS_SIN5DEG  ((agc_dp_t) 5849209)   /* 2DEC 0.08716 B-2             */
 #define AS_40FPS    ((agc_dp_t) 255685)    /* 2DEC 0.12192 B-7             */
 #define AS_CLOG2_32 ((agc_dp_t) 5814540)   /* 2DEC .0216608494             */
-#define AS_PRIO17   017 /* PRIO17: CUTOFF job priority                   */
+#define AS_PRIO17   017                    /* PRIO17: CUTOFF job priority                   */
 
 /* LOGSUB polynomial (p. 856), -LOG via ln(1 - u)/32. */
 static const agc_dp_t as_logcoef[8] = {2, -8388994, -4179185, -3019954,
@@ -109,7 +109,7 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_navaux_padload_t nav; /* pad loads of the auxiliary nav lane */
+    agc_navaux_padload_t nav;                               /* pad loads of the auxiliary nav lane */
     agc_status_t         st = agc_navaux_get_padload(&nav); /* step status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -119,9 +119,7 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
 
     agc_vec_t pole = agc_vec_zero(); /* moon's pole in SM, half unit 2^1 */
 
-    const agc_status_t st_pole = agc_planet_rp_to_r(
-        ip, &nav, true, agc_vec_make(0, 0, AGC_DP_HALF),
-        agc_rtb_loadtime(), &pole); /* step status */
+    const agc_status_t st_pole = agc_planet_rp_to_r(ip, &nav, true, agc_vec_make(0, 0, AGC_DP_HALF), agc_rtb_loadtime(), &pole); /* step status */
 
     if (!AGC_ASSERT(st_pole == AGC_STATUS_OK))
     {
@@ -129,7 +127,7 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
     }
 
     agc_mat_t     m = agc_erase_refsmmat(); /* REFSMMAT, half unit */
-    agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
+    agc_lm_ldg_t *l = agc_lm_ldg();         /* landing erasables */
 
     l->wm       = agc_vec_scale(ip, agc_mat_vec(ip, &m, pole), AS_MOONRATE);
     l->land_mag = agc_dp_shl(ip, agc_vec_abval(ip, agc_erase_rls()), 3);
@@ -153,14 +151,13 @@ void agc_lm_comminit(agc_interp_t *ip)
 
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
-    a->rco   = agc_dp_add(ip, AS_HINJECT, agc_lm_ldg()->land_mag);
-    a->txo   = 0;
-    a->yco   = 0;
-    a->rdotd = 0;
-    a->ydotd = 0;
-    agc_mat_t m = agc_erase_refsmmat(); /* REFSMMAT, half unit */
-    agc_vec_t h = /* VCSM x RCSM: CSM orbit normal, 2^36 */
-                  agc_vec_cross(ip, agc_erase_vrectcsm(), agc_erase_rrectcsm());
+    a->rco      = agc_dp_add(ip, AS_HINJECT, agc_lm_ldg()->land_mag);
+    a->txo      = 0;
+    a->yco      = 0;
+    a->rdotd    = 0;
+    a->ydotd    = 0;
+    agc_mat_t m = agc_erase_refsmmat();                                          /* REFSMMAT, half unit */
+    agc_vec_t h = agc_vec_cross(ip, agc_erase_vrectcsm(), agc_erase_rrectcsm()); /* VCSM x RCSM: CSM orbit normal, 2^36 */
 
     a->qaxis = agc_vec_unit(ip, agc_mat_vec(ip, &m, h), NULL, NULL);
 
@@ -223,12 +220,9 @@ agc_dp_t agc_lm_ycomp(agc_interp_t *ip)
     }
 
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
+
     /* DOT SL2: the shift takes in MPAC+2 of the DOT's TP product.     */
-    agc_dp_t d = agc_tp_to_dp(agc_tp_shift( /* UNIT/R/ . QAXIS SL2, scale 2^0 */
-                                  ip,
-                                  agc_vec_dot_tp(ip,
-                                                 agc_guid_state()->avg.unitr,
-                                                 a->qaxis), 2));
+    agc_dp_t d = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, agc_guid_state()->avg.unitr, a->qaxis), 2)); /* UNIT/R/ . QAXIS SL2, scale 2^0 */
 
     a->y = agc_dp_mul_trunc(d, a->rco);
 
@@ -257,14 +251,11 @@ agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
         return (0);
     }
 
-    int      n  = 0;  /* NORM shift count (MPAC+6 = -n) */
-    agc_dp_t xn = agc_dp_norm(x, &n); /* NORM: x left-justified, 2^0 */
-    agc_dp_t p  =  /* ln(1 - u)/32 by POLY, scale 2^5 */
-                  agc_dp_poly(agc_dp_sub(ip, AS_NEARONE, xn), as_logcoef, 7);
-    agc_tp_t s = /* -n ln(2)/32 as a TP, 2^5 */
-                 agc_tp_mul_sp(agc_tp_from_dp(AS_CLOG2_32), (agc_sp_t) -n);
-    agc_dp_t sum = /* DAS MPAC: ln(x)/32, scale 2^5 */
-                   agc_dp_add(ip, (agc_dp_t) s, p);
+    int      n   = 0;                                                          /* NORM shift count (MPAC+6 = -n) */
+    agc_dp_t xn  = agc_dp_norm(x, &n);                                         /* NORM: x left-justified, 2^0 */
+    agc_dp_t p   = agc_dp_poly(agc_dp_sub(ip, AS_NEARONE, xn), as_logcoef, 7); /* ln(1 - u)/32 by POLY, scale 2^5 */
+    agc_tp_t s   = agc_tp_mul_sp(agc_tp_from_dp(AS_CLOG2_32), (agc_sp_t) -n);  /* -n ln(2)/32 as a TP, 2^5 */
+    agc_dp_t sum = agc_dp_add(ip, (agc_dp_t) s, p);                            /* DAS MPAC: ln(x)/32, scale 2^5 */
 
     if (!AGC_ASSERT(n >= 0 && n < 28))
     {
@@ -293,10 +284,9 @@ agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
  **********************************************************************/
 static void as_maineng(agc_interp_t *ip, agc_dp_t vgmag)
 {
-    agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
-    agc_dp_t      r = agc_dp_div(ip, vgmag, a->ve); /* VG/VE, scale 2^0 */
-    agc_dp_t      t = /* 1 - KT VG/VE, scale 2^0 */
-                      agc_dp_sub(ip, AS_NEARONE, agc_dp_mul_trunc(r, AS_KT1));
+    agc_lm_asc_t *a = agc_lm_asc();                                            /* ascent erasables */
+    agc_dp_t      r = agc_dp_div(ip, vgmag, a->ve);                            /* VG/VE, scale 2^0 */
+    agc_dp_t      t = agc_dp_sub(ip, AS_NEARONE, agc_dp_mul_trunc(r, AS_KT1)); /* 1 - KT VG/VE, scale 2^0 */
 
     t      = agc_dp_mul_trunc(agc_dp_mul_trunc(t, r), a->tbup);
     a->tgo = agc_dp_sub(ip, t, a->tto);
@@ -332,20 +322,15 @@ static void as_rates(agc_interp_t *ip, agc_dp_t d12)
         return;
     }
 
-    agc_dp_t d21 = agc_dp_sub(ip, a->tgo, d12); /* PDL 4D, 2^17 cs  */
-    agc_dp_t e   = /* E = TGO - 2 D21, SL3 (PDL 6D), 2^14 cs */
-                   agc_dp_shl(ip, agc_dp_sub(ip, a->tgo, agc_dp_shl(ip, d21,
-                                                                    1)),
-                              3);
-    agc_dp_t mdr = /* -DR = R + RDOT TGO - RCO, 2^24 m */
-                   agc_dp_mul_trunc(a->tgo, g->lm.hdotdisp);
+    agc_dp_t d21 = agc_dp_sub(ip, a->tgo, d12);                                       /* PDL 4D, 2^17 cs  */
+    agc_dp_t e   = agc_dp_shl(ip, agc_dp_sub(ip, a->tgo, agc_dp_shl(ip, d21, 1)), 3); /* E = TGO - 2 D21, SL3 (PDL 6D), 2^14 cs */
+    agc_dp_t mdr = agc_dp_mul_trunc(a->tgo, g->lm.hdotdisp);                          /* -DR = R + RDOT TGO - RCO, 2^24 m */
 
     mdr = agc_dp_sub(ip, agc_dp_add(ip, mdr, a->r_mag), a->rco);
+
     /* DMP, DAD, SL2: DAD leaves the DMP's MPAC+2, which SL2 takes in. */
-    agc_tp_t tb = agc_tp_add(ip, agc_dp_mul_tp(a->drdot, d21), /* 2^24 m */
-                             agc_tp_from_dp(mdr));
-    agc_dp_t b = /* D21 DRDOT - DR, SL2, 2^22 m */
-                 agc_tp_to_dp(agc_tp_shift(ip, tb, 2));
+    agc_tp_t tb = agc_tp_add(ip, agc_dp_mul_tp(a->drdot, d21), agc_tp_from_dp(mdr)); /* 2^24 m */
+    agc_dp_t b  = agc_tp_to_dp(agc_tp_shift(ip, tb, 2));                             /* D21 DRDOT - DR, SL2, 2^22 m */
 
     a->prate = agc_dp_div(ip, agc_dp_div(ip, b, e), a->tgo);
 
@@ -353,21 +338,16 @@ static void as_rates(agc_interp_t *ip, agc_dp_t d12)
     {
         a->prate = 0; /* B > 0 not allowed */
     }
-    else if (agc_dp_sub(ip, agc_dp_div(ip, agc_dp_shr(a->prate, 4), a->tbup),
-                        AS_PRLIMIT) < 0)
+    else if (agc_dp_sub(ip, agc_dp_div(ip, agc_dp_shr(a->prate, 4), a->tbup), AS_PRLIMIT) < 0)
     { /* PRLIMIT TBUP, SL4 */
-        a->prate = agc_tp_to_dp(
-            agc_tp_shift(ip, agc_dp_mul_tp(AS_PRLIMIT, a->tbup), 4));
+        a->prate = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(AS_PRLIMIT, a->tbup), 4));
     }
 
-    agc_dp_t mdy = /* -DY = Y + YDOT TGO - YCO, 2^24 m */
-                   agc_dp_add(ip, agc_dp_mul_trunc(a->tgo, a->ydot), a->y);
+    agc_dp_t mdy = agc_dp_add(ip, agc_dp_mul_trunc(a->tgo, a->ydot), a->y); /* -DY = Y + YDOT TGO - YCO, 2^24 m */
 
-    mdy = agc_dp_sub(ip, mdy, a->yco);
-    agc_tp_t td = agc_tp_add(ip, agc_dp_mul_tp(a->dydot, d21), /* 2^24 m */
-                             agc_tp_from_dp(mdy));
-    agc_dp_t d = /* D21 DYDOT - DY, SL2, 2^22 m */
-                 agc_tp_to_dp(agc_tp_shift(ip, td, 2));
+    mdy         = agc_dp_sub(ip, mdy, a->yco);
+    agc_tp_t td = agc_tp_add(ip, agc_dp_mul_tp(a->dydot, d21), agc_tp_from_dp(mdy)); /* 2^24 m */
+    agc_dp_t d  = agc_tp_to_dp(agc_tp_shift(ip, td, 2));                             /* D21 DYDOT - DY, SL2, 2^22 m */
 
     a->yrate = agc_dp_div(ip, agc_dp_div(ip, d, e), a->tgo);
 
@@ -394,14 +374,10 @@ static void as_t2test(agc_interp_t *ip)
         return; /* CMPONENT     */
     }
 
-    agc_dp_t x = /* 1 - TGO/TBUP, scale 2^0 */
-                 agc_dp_div(ip, agc_dp_sub(ip, a->tbup, a->tgo), a->tbup);
-    agc_dp_t negl = /* -L in PDL(0), scale 2^0 */
-                    agc_dp_shl(ip, agc_lm_logsub(ip, x), 5);
-    agc_dp_t d12 = /* D12 = TBUP + TGO/L in PDL(2), 2^17 cs */
-                   agc_dp_sub(ip, a->tbup, agc_dp_div(ip, a->tgo, negl));
-    bool norates = /* FLPC: no position control (B, D frozen) */
-                   agc_flag_test(AGC_FLAG_FLPC);
+    agc_dp_t x       = agc_dp_div(ip, agc_dp_sub(ip, a->tbup, a->tgo), a->tbup); /* 1 - TGO/TBUP, scale 2^0 */
+    agc_dp_t negl    = agc_dp_shl(ip, agc_lm_logsub(ip, x), 5);                  /* -L in PDL(0), scale 2^0 */
+    agc_dp_t d12     = agc_dp_sub(ip, a->tbup, agc_dp_div(ip, a->tgo, negl));    /* D12 = TBUP + TGO/L in PDL(2), 2^17 cs */
+    bool     norates = agc_flag_test(AGC_FLAG_FLPC);                             /* FLPC: no position control (B, D frozen) */
 
     if (!norates && agc_dp_sub(ip, a->tgo, AS_T3) < 0)
     {
@@ -419,15 +395,12 @@ static void as_t2test(agc_interp_t *ip)
         as_rates(ip, d12);
     }
 
-    agc_dp_t bd = /* CONST: B D12, scale 2^-9 */
-                  agc_dp_mul_trunc(a->prate, d12);
+    agc_dp_t bd = agc_dp_mul_trunc(a->prate, d12); /* CONST: B D12, scale 2^-9 */
 
-    a->pcons =
-        agc_dp_sub(ip, agc_dp_shr(agc_dp_div(ip, a->drdot, negl), 2), bd);
+    a->pcons    = agc_dp_sub(ip, agc_dp_shr(agc_dp_div(ip, a->drdot, negl), 2), bd);
     agc_dp_t dd = agc_dp_mul_trunc(a->yrate, d12); /* D D12, scale 2^-9 */
 
-    a->ycons =
-        agc_dp_sub(ip, agc_dp_shr(agc_dp_div(ip, a->dydot, negl), 2), dd);
+    a->ycons = agc_dp_sub(ip, agc_dp_shr(agc_dp_div(ip, a->dydot, negl), 2), dd);
 
     if (!AGC_ASSERT(negl != 0))
     {
@@ -445,29 +418,22 @@ static void as_t2test(agc_interp_t *ip)
  **********************************************************************/
 static void as_cmponent(agc_interp_t *ip)
 {
-    agc_lm_asc_t   *a  = agc_lm_asc(); /* ascent erasables */
-    const agc_vec_t ur = /* UNIT/R/, half unit 2^1 */
-                         agc_guid_state()->avg.unitr;
-    agc_dp_t t = /* A + B (T - T0), scale 2^-9 */
-                 agc_dp_add(ip, agc_dp_mul_trunc(AS_100CS,
-                                                 a->prate), a->pcons);
+    agc_lm_asc_t   *a  = agc_lm_asc();                                                   /* ascent erasables */
+    const agc_vec_t ur = agc_guid_state()->avg.unitr;                                    /* UNIT/R/, half unit 2^1 */
+    agc_dp_t        t  = agc_dp_add(ip, agc_dp_mul_trunc(AS_100CS, a->prate), a->pcons); /* A + B (T - T0), scale 2^-9 */
 
-    a->atr =
-        agc_dp_sub(ip, agc_dp_shl(ip, agc_dp_div(ip, t, a->tbup), 1), a->geff);
-    t      = agc_dp_add(ip, agc_dp_mul_trunc(AS_100CS, a->yrate), a->ycons);
-    a->aty = agc_dp_shl(ip, agc_dp_div(ip, t, a->tbup), 1);
-    agc_vec_t ah = /* AH = ATR UNIT/R/ + ATY LAXIS, 2^8 */
-                   agc_vec_add(ip, agc_vec_scale(ip, ur, a->atr),
-                               agc_vec_scale(ip, a->laxis, a->aty));
+    a->atr       = agc_dp_sub(ip, agc_dp_shl(ip, agc_dp_div(ip, t, a->tbup), 1), a->geff);
+    t            = agc_dp_add(ip, agc_dp_mul_trunc(AS_100CS, a->yrate), a->ycons);
+    a->aty       = agc_dp_shl(ip, agc_dp_div(ip, t, a->tbup), 1);
+    agc_vec_t ah = agc_vec_add(ip, agc_vec_scale(ip, ur, a->atr), agc_vec_scale(ip, a->laxis, a->aty)); /* AH = ATR UNIT/R/ + ATY LAXIS, 2^8 */
 
-    ah = agc_vec_shl(ip, ah, 1);
-    agc_dp_t ahsq  = 0; /* |AH|^2 (34D), scale 2^18 */
+    ah             = agc_vec_shl(ip, ah, 1);
+    agc_dp_t ahsq  = 0;                     /* |AH|^2 (34D), scale 2^18 */
     agc_dp_t ahmag = agc_vec_abval(ip, ah); /* |AH| (PDL 6), scale 2^9 */
 
-    ahsq = agc_vec_sq(ip, ah); /* 34D */
-    agc_dp_t atp2 = /* AT^2 - AH^2 = ATP^2, scale 2^18 */
-                    agc_dp_sub(ip, agc_dp_sq(ip, a->at), ahsq);
-    agc_dp_t atp = 0; /* ATP before SIGN, scale 2^-9 m/cs^2 */
+    ahsq          = agc_vec_sq(ip, ah);                         /* 34D */
+    agc_dp_t atp2 = agc_dp_sub(ip, agc_dp_sq(ip, a->at), ahsq); /* AT^2 - AH^2 = ATP^2, scale 2^18 */
+    agc_dp_t atp  = 0;                                          /* ATP before SIGN, scale 2^-9 m/cs^2 */
 
     if (atp2 >= 0)
     {
@@ -478,9 +444,8 @@ static void as_cmponent(agc_interp_t *ip)
         ah = agc_vec_scale(ip, ah, agc_dp_div(ip, a->at, ahmag));
     }
 
-    a->atp = agc_dp_sign(atp, a->dzdot); /* AIMER */
-    agc_vec_t f = /* ATP ZAXIS1, scale 2^-9 m/cs^2 */
-                  agc_vec_shl(ip, agc_vec_scale(ip, a->zaxis1, a->atp), 1);
+    a->atp      = agc_dp_sign(atp, a->dzdot);                               /* AIMER */
+    agc_vec_t f = agc_vec_shl(ip, agc_vec_scale(ip, a->zaxis1, a->atp), 1); /* ATP ZAXIS1, scale 2^-9 m/cs^2 */
 
     agc_lm_ldg()->unfc_2 = agc_vec_add(ip, f, ah);
 
@@ -559,8 +524,7 @@ static agc_status_t as_ascterm(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-static agc_status_t as_keepvr_radial_thrust(const agc_job_ctx_t *ctx,
-                                            agc_interp_t        *ip)
+static agc_status_t as_keepvr_radial_thrust(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ctx != NULL)) /* job context */
     {
@@ -600,7 +564,7 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
+    agc_lm_asc_t *a = agc_lm_asc();     /* ascent erasables */
     agc_guid_t   *g = agc_guid_state(); /* guidance state */
 
     agc_lm_ldg()->unwc_2 = agc_vec_neg(g->avg.unitr);
@@ -612,13 +576,10 @@ static agc_status_t as_mainline(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (agc_flag_test(AGC_FLAG_ROTFLAG))
     { /* ANG1CHEK */
-        const agc_vec_t xnb = g->lm.xnbpip.row[0]; /* XNBPIP, half unit 2^1 */
-        agc_dp_t        c1  = /* UNFC/2 . XNBPIP, scale 2^2 */
-                              agc_vec_dot(ip, agc_lm_ldg()->unfc_2, xnb);
+        const agc_vec_t xnb = g->lm.xnbpip.row[0];                        /* XNBPIP, half unit 2^1 */
+        agc_dp_t        c1  = agc_vec_dot(ip, agc_lm_ldg()->unfc_2, xnb); /* UNFC/2 . XNBPIP, scale 2^2 */
 
-        if (agc_dp_sub(ip, c1, agc_lm_pad()->costhet1) < 0 &&
-            agc_dp_sub(ip, agc_vec_dot(ip, xnb, g->avg.unitr),
-                       agc_lm_pad()->costhet2) < 0)
+        if (agc_dp_sub(ip, c1, agc_lm_pad()->costhet1) < 0 && agc_dp_sub(ip, agc_vec_dot(ip, xnb, g->avg.unitr), agc_lm_pad()->costhet2) < 0)
         {
             return (as_keepvr_radial_thrust(ctx, ip));
         }
@@ -690,27 +651,22 @@ static agc_status_t as_checkalt(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
-    agc_guid_t   *g = agc_guid_state(); /* guidance state */
-    agc_dp_t      h = agc_dp_sub( /* /R/MAG - /LAND/ - 25KFT, 2^24 m */
-        ip, agc_dp_sub(ip, a->r_mag, agc_lm_ldg()->land_mag), AS_25KFT);
+    agc_lm_asc_t *a = agc_lm_asc();                                                               /* ascent erasables */
+    agc_guid_t   *g = agc_guid_state();                                                           /* guidance state */
+    agc_dp_t      h = agc_dp_sub(ip, agc_dp_sub(ip, a->r_mag, agc_lm_ldg()->land_mag), AS_25KFT); /* /R/MAG - /LAND/ - 25KFT, 2^24 m */
 
     if (h >= 0)
     {
         return (as_exitvr(ctx, ip));
     }
 
-    agc_flag_set(AGC_FLAG_XOVINFLG); /* prohibit X override    */
-    agc_vec_t los = /* ATY LAXIS + ATP ZAXIS1 (LOSVEC), 2^8 */
-                    agc_vec_add(ip, agc_vec_scale(ip, a->laxis, a->aty),
-                                agc_vec_scale(ip, a->zaxis1, a->atp));
+    agc_flag_set(AGC_FLAG_XOVINFLG);                                                                            /* prohibit X override    */
+    agc_vec_t los = agc_vec_add(ip, agc_vec_scale(ip, a->laxis, a->aty), agc_vec_scale(ip, a->zaxis1, a->atp)); /* ATY LAXIS + ATP ZAXIS1 (LOSVEC), 2^8 */
 
-    los = agc_vec_unit(ip, los, NULL, NULL);
-    agc_dp_t s = /* |LOS . YNBPIP|, scale 2^2 */
-                 agc_dp_abs(agc_vec_dot(ip, los, g->lm.xnbpip.row[1]));
+    los        = agc_vec_unit(ip, los, NULL, NULL);
+    agc_dp_t s = agc_dp_abs(agc_vec_dot(ip, los, g->lm.xnbpip.row[1])); /* |LOS . YNBPIP|, scale 2^2 */
 
-    if (agc_dp_sub(ip, s, AS_SIN5DEG) < 0 &&
-        agc_dp_sub(ip, g->lm.hdotdisp, AS_40FPS) >= 0)
+    if (agc_dp_sub(ip, s, AS_SIN5DEG) < 0 && agc_dp_sub(ip, g->lm.hdotdisp, AS_40FPS) >= 0)
     {
         agc_flag_clear(AGC_FLAG_ROTFLAG); /* EXITVR1 */
 
@@ -731,18 +687,13 @@ static agc_status_t as_checkalt(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  **********************************************************************/
 static void as_engoff(agc_interp_t *ip)
 {
-    agc_lm_asc_t *a  = agc_lm_asc(); /* ascent erasables */
-    agc_dp_t      dt =
-        agc_dp_add(ip, agc_dp_sub(ip, agc_rtb_loadtime(), agc_erase_piptime()),
-                   agc_erase_ttogo()); /* DT to engine off, cs 2^28 */
-    agc_sp_t lo = /* TPAGREE, CCS: low word, cs 2^14 */
-                  agc_dp_low(agc_dp_neg(dt));
+    agc_lm_asc_t *a  = agc_lm_asc();                                                                               /* ascent erasables */
+    agc_dp_t      dt = agc_dp_add(ip, agc_dp_sub(ip, agc_rtb_loadtime(), agc_erase_piptime()), agc_erase_ttogo()); /* DT to engine off, cs 2^28 */
+    agc_sp_t      lo = agc_dp_low(agc_dp_neg(dt));                                                                 /* TPAGREE, CCS: low word, cs 2^14 */
 
-    a->engoffdt = (agc_sp_t) ((lo > 0) ? lo : 1); /* at least 1 bit */
+    a->engoffdt     = (agc_sp_t) ((lo > 0) ? lo : 1);                                        /* at least 1 bit */
     agc_inhint();
-    agc_status_t st = /* step status */
-                      agc_waitlist_call((uint16_t) a->engoffdt,
-                                        AGC_TASK_ASCENT_ENGINE_OFF);
+    agc_status_t st = agc_waitlist_call((uint16_t) a->engoffdt, AGC_TASK_ASCENT_ENGINE_OFF); /* step status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -784,68 +735,47 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     }
 
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
+
     /* ASCENT first part (pp. 845-846): the state in the ascent frame, GEFF,
      * the velocity to be gained (compensated for GEFF over TGO) and VGBODY
      * for N85. Returns |VGVECT|.                                        */
-    agc_lm_asc_t   *a_vgvect = agc_lm_asc(); /* ascent erasables */
+    agc_lm_asc_t   *a_vgvect = agc_lm_asc();     /* ascent erasables */
     agc_guid_t     *g        = agc_guid_state(); /* guidance state */
-    const agc_vec_t ur       = g->avg.unitr; /* UNIT/R/, half unit 2^1 */
+    const agc_vec_t ur       = g->avg.unitr;     /* UNIT/R/, half unit 2^1 */
 
     a_vgvect->r_mag = agc_vec_abval(ip, g->lm.r);
+
     /* DOT SL1 (twice below): the shift takes in MPAC+2 of the TP.    */
-    a_vgvect->zdot = agc_tp_to_dp(agc_tp_shift(
-                                      ip,
-                                      agc_vec_dot_tp(ip, a_vgvect->zaxis1,
-                                                     g->lm.v), 1));
-    a_vgvect->laxis =
-        agc_vec_shl(ip, agc_vec_cross(ip, a_vgvect->zaxis1, ur), 1);
-    a_vgvect->ydot = agc_tp_to_dp(agc_tp_shift(
-                                      ip,
-                                      agc_vec_dot_tp(ip, a_vgvect->laxis,
-                                                     g->lm.v), 1));
-    a_vgvect->y = agc_lm_ycomp(ip);     /* YCOMP: Y */
-    agc_dp_t gr = /* G . UR = GR, scale 2^9 m/cs^2 */
-                  agc_vec_dot(ip, agc_vec_div(ip, g->avg.gdt1_2, AS_2SEC18),
-                              ur);
-    agc_dp_t h2 = agc_dp_div(ip, agc_vec_sq(ip, agc_vec_cross(ip, ur, g->lm.v)),
-                             a_vgvect->r_mag); /* H^2/R^3, scale 2^9 */
+    a_vgvect->zdot  = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, a_vgvect->zaxis1, g->lm.v), 1));
+    a_vgvect->laxis = agc_vec_shl(ip, agc_vec_cross(ip, a_vgvect->zaxis1, ur), 1);
+    a_vgvect->ydot  = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, a_vgvect->laxis, g->lm.v), 1));
+    a_vgvect->y     = agc_lm_ycomp(ip);                                                                /* YCOMP: Y */
+    agc_dp_t gr     = agc_vec_dot(ip, agc_vec_div(ip, g->avg.gdt1_2, AS_2SEC18), ur);                  /* G . UR = GR, scale 2^9 m/cs^2 */
+    agc_dp_t h2     = agc_dp_div(ip, agc_vec_sq(ip, agc_vec_cross(ip, ur, g->lm.v)), a_vgvect->r_mag); /* H^2/R^3, scale 2^9 */
 
     a_vgvect->geff  = agc_dp_add(ip, agc_dp_shl(ip, h2, 1), gr);
     a_vgvect->dzdot = agc_dp_sub(ip, a_vgvect->zdotd, a_vgvect->zdot);
     a_vgvect->dydot = agc_dp_sub(ip, a_vgvect->ydotd, a_vgvect->ydot);
-    a_vgvect->drdot = /* RDOT */
-                      agc_dp_sub(ip, a_vgvect->rdotd, g->lm.hdotdisp);
-    agc_vec_t vg = /* DRDOT UR + DYDOT LAXIS, 2^7 m/cs */
-                   agc_vec_add(ip, agc_vec_scale(ip, ur, a_vgvect->drdot),
-                               agc_vec_scale(ip, a_vgvect->laxis,
-                                             a_vgvect->dydot));
+    a_vgvect->drdot = agc_dp_sub(ip, a_vgvect->rdotd, g->lm.hdotdisp);                                                              /* RDOT */
+    agc_vec_t vg    = agc_vec_add(ip, agc_vec_scale(ip, ur, a_vgvect->drdot), agc_vec_scale(ip, a_vgvect->laxis, a_vgvect->dydot)); /* DRDOT UR + DYDOT LAXIS, 2^7 m/cs */
 
-    vg = agc_vec_shl(
-        ip,
-        agc_vec_add(ip, vg, agc_vec_scale(ip, a_vgvect->zaxis1,
-                                          a_vgvect->dzdot)),
-        1);
-    agc_dp_t tg = /* TGO GEFF, 2^7 m/cs */
-                  agc_dp_mul_trunc(a_vgvect->tgo, a_vgvect->geff);
+    vg          = agc_vec_shl(ip, agc_vec_add(ip, vg, agc_vec_scale(ip, a_vgvect->zaxis1, a_vgvect->dzdot)), 1);
+    agc_dp_t tg = agc_dp_mul_trunc(a_vgvect->tgo, a_vgvect->geff); /* TGO GEFF, 2^7 m/cs */
 
-    a_vgvect->vgvect =
-        agc_vec_sub(ip, vg, agc_vec_shl(ip, agc_vec_scale(ip, ur, tg), 1));
-    a_vgvect->vgbody =
-        agc_vec_shl(ip, agc_mat_vec(ip, &g->lm.xnbpip, a_vgvect->vgvect), 1);
-    agc_dp_t vgmag = /* |VGVECT|, 2^7 m/cs */
-                     agc_vec_abval(ip, a_vgvect->vgvect);
+    a_vgvect->vgvect = agc_vec_sub(ip, vg, agc_vec_shl(ip, agc_vec_scale(ip, ur, tg), 1));
+    a_vgvect->vgbody = agc_vec_shl(ip, agc_mat_vec(ip, &g->lm.xnbpip, a_vgvect->vgvect), 1);
+    agc_dp_t vgmag   = agc_vec_abval(ip, a_vgvect->vgvect); /* |VGVECT|, 2^7 m/cs */
 
     if (agc_flag_test(AGC_FLAG_FLRCS))
     {
         a->tgo = agc_dp_div(ip, vgmag, AS_ATRCS); /* TGO = VG/AT   */
 
-        return (AGC_STATUS_OK);                     /* ASCTERM2      */
+        return (AGC_STATUS_OK); /* ASCTERM2      */
     }
 
     as_maineng(ip, vgmag);
 
-    if (!agc_flag_test(AGC_FLAG_IDLEFLAG) &&
-        agc_dp_sub(ip, a->tgo, AS_4SEC17) < 0)
+    if (!agc_flag_test(AGC_FLAG_IDLEFLAG) && agc_dp_sub(ip, a->tgo, AS_4SEC17) < 0)
     {
         as_engoff(ip);
     }
@@ -889,7 +819,7 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_lm_phaschng(00035);
     agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
-    agc_lm_asc_t  *a = agc_lm_asc(); /* ascent erasables */
+    agc_lm_asc_t  *a = agc_lm_asc();          /* ascent erasables */
 
     if (!agc_flag_test(AGC_FLAG_FLRCS))
     {
@@ -904,25 +834,18 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
 
         agc_flag_clear(AGC_FLAG_SURFFLAG);
         agc_flag_clear(AGC_FLAG_RENDWFLG);
-        agc_dp_t n = /* BIT3H / ABDVCONV: new 1/DV, 2^7 cs/m */
-                     agc_dp_div(&ip, agc_dp_from_sp(AS_BIT3H), g->abdvconv);
+        agc_dp_t n = agc_dp_div(&ip, agc_dp_from_sp(AS_BIT3H), g->abdvconv); /* BIT3H / ABDVCONV: new 1/DV, 2^7 cs/m */
 
-        g->mass1 = a->dv[1]; /* 1/DV0 = MASS1 */
-        a->dv[1] = a->dv[2];
-        a->dv[2] = a->dv[3];
-        a->dv[3] = n;
-        agc_dp_t s = agc_dp_add(
-            &ip, agc_dp_add(&ip, agc_dp_add(&ip, g->mass1, a->dv[1]), a->dv[2]),
-            a->dv[3]); /* 1/DV0 + .. + 1/DV3, scale 2^9 */
+        g->mass1   = a->dv[1];                                                                                  /* 1/DV0 = MASS1 */
+        a->dv[1]   = a->dv[2];
+        a->dv[2]   = a->dv[3];
+        a->dv[3]   = n;
+        agc_dp_t s = agc_dp_add(&ip, agc_dp_add(&ip, agc_dp_add(&ip, g->mass1, a->dv[1]), a->dv[2]), a->dv[3]); /* 1/DV0 + .. + 1/DV3, scale 2^9 */
 
         /* DMP DMP SL3: the second product's MPAC+2 enters the shift.    */
-        s = agc_tp_to_dp(agc_tp_shift(
-                             &ip,
-                             agc_dp_mul_tp(agc_dp_mul_trunc(s, a->ve),
-                                           AS_2SEC9), 3));
-        a->tbup = agc_dp_sub(&ip, agc_dp_add(&ip, agc_dp_shr(a->tbup, 1), s),
-                             AS_6SEC18);
-        a->at = agc_dp_div(&ip, agc_dp_shr(a->ve, 1), a->tbup);
+        s       = agc_tp_to_dp(agc_tp_shift(&ip, agc_dp_mul_tp(agc_dp_mul_trunc(s, a->ve), AS_2SEC9), 3));
+        a->tbup = agc_dp_sub(&ip, agc_dp_add(&ip, agc_dp_shr(a->tbup, 1), s), AS_6SEC18);
+        a->at   = agc_dp_div(&ip, agc_dp_shr(a->ve, 1), a->tbup);
     }
 
     return (agc_lm_ascent(ctx, &ip));
@@ -976,9 +899,7 @@ agc_status_t agc_lm_task_ascent_engine_off(void)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-static agc_status_t as_flash(const agc_job_ctx_t *ctx, uint8_t verb,
-                             uint8_t noun, agc_job_id_t proceed,
-                             agc_job_id_t enter)
+static agc_status_t as_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t proceed, agc_job_id_t enter)
 {
     const agc_dsky_cont_t cont = {AGC_JOB_TERMASC, proceed, enter};
 
@@ -992,8 +913,7 @@ static agc_status_t as_flash(const agc_job_ctx_t *ctx, uint8_t verb,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(verb, noun),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(verb, noun), &cont));
 }
 
 /**********************************************************************
@@ -1043,8 +963,7 @@ agc_status_t agc_lm_job_cutoff_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (as_flash(ctx, 16, 63, AGC_JOB_CUTOFF_PROCEED,
-                     AGC_JOB_CUTOFF_DISPLAY));
+    return (as_flash(ctx, 16, 63, AGC_JOB_CUTOFF_PROCEED, AGC_JOB_CUTOFF_DISPLAY));
 }
 
 /**********************************************************************
@@ -1112,8 +1031,7 @@ agc_status_t agc_lm_job_cutoff_trim_display(agc_job_ctx_t *ctx)
 
     agc_phase_change_var(04024, &v);
 
-    return (as_flash(ctx, 16, 85, AGC_JOB_TERMASC,
-                     AGC_JOB_CUTOFF_TRIM_DISPLAY));
+    return (as_flash(ctx, 16, 85, AGC_JOB_TERMASC, AGC_JOB_CUTOFF_TRIM_DISPLAY));
 }
 
 /**********************************************************************
@@ -1213,8 +1131,7 @@ static agc_status_t as_flash_or_terminate(const agc_job_ctx_t *ctx,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, noun),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, noun), &cont));
 }
 
 /**********************************************************************
@@ -1242,9 +1159,10 @@ agc_status_t agc_lm_job_powered_ascent(agc_job_ctx_t *ctx)
 
     agc_flag_set(AGC_FLAG_MUNFLAG);
     agc_flag_set(AGC_FLAG_ACC4_2FL); /* insure 4-jet translation    */
+
     /* R10FLAG set: no cross-pointer outputs */
     agc_flag_set(AGC_FLAG_ALTITUDE_METERS_ONLY);
-    agc_rendz_clradmod();        /* RADMODES for R29            */
+    agc_rendz_clradmod();                     /* RADMODES for R29            */
     agc_flag_clear(AGC_FLAG_RNDVZFLG);
     agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
 
@@ -1276,8 +1194,7 @@ agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (as_flash_or_terminate(ctx, 33, AGC_JOB_POWERED_ASCENT_PROCEED,
-                                  AGC_JOB_POWERED_ASCENT_FLASH));
+    return (as_flash_or_terminate(ctx, 33, AGC_JOB_POWERED_ASCENT_PROCEED, AGC_JOB_POWERED_ASCENT_FLASH));
 }
 
 /**********************************************************************
@@ -1335,11 +1252,8 @@ agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state (OVFIND) */
 
     agc_interp_init(&ip);
-    agc_integ_ctx_t *ic = /* shared integration context */
-                          agc_integ_shared_ctx();
-    agc_status_t st = /* step status */
-                      agc_integ_lemprec(&ip, ic, agc_erase_tig(),
-                                        AGC_JOB_POWERED_ASCENT_AT_IGNITION);
+    agc_integ_ctx_t *ic = agc_integ_shared_ctx();                                                          /* shared integration context */
+    agc_status_t     st = agc_integ_lemprec(&ip, ic, agc_erase_tig(), AGC_JOB_POWERED_ASCENT_AT_IGNITION); /* step status */
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -1351,8 +1265,8 @@ agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_guid_t   *g = agc_guid_state(); /* guidance state */
-    agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
+    agc_guid_t   *g = agc_guid_state();     /* guidance state */
+    agc_lm_asc_t *a = agc_lm_asc();         /* ascent erasables */
     agc_mat_t     m = agc_erase_refsmmat(); /* REFSMMAT, half unit */
 
     a->v1s        = agc_vec_shl(&ip, agc_mat_vec(&ip, &m, ic->out.vatt), 1);
@@ -1388,8 +1302,7 @@ agc_status_t agc_lm_job_newload(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (as_flash_or_terminate(ctx, 76, AGC_JOB_NEWLOAD_PROCEED,
-                                  AGC_JOB_NEWLOAD));
+    return (as_flash_or_terminate(ctx, 76, AGC_JOB_NEWLOAD_PROCEED, AGC_JOB_NEWLOAD));
 }
 
 /**********************************************************************
@@ -1413,18 +1326,16 @@ agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_guid_t   *g = agc_guid_state(); /* guidance state */
-    agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
+    agc_lm_asc_t *a = agc_lm_asc();     /* ascent erasables */
 
-    g->lm.which = AGC_LM_WHICH_POWERED_ASCENT;
+    g->lm.which        = AGC_LM_WHICH_POWERED_ASCENT;
     as_restart_here(AGC_JOB_NEWLOAD_PROCEED);
-    a->yco = agc_dp_add(&ip, agc_dp_shl(&ip, a->xrange, 5), a->y);
+    a->yco             = agc_dp_add(&ip, agc_dp_shl(&ip, a->xrange, 5), a->y);
     const agc_vec_t ur = g->avg.unitr; /* UNIT/R/, half unit 2^1 */
 
     g->lm.v        = agc_vec_add(&ip, agc_vec_scale(&ip, ur, AS_49FPS), a->v1s);
-    g->lm.hdotdisp = agc_tp_to_dp(agc_tp_shift( /* RDOT: DOT SL1 on the TP */
-                                      &ip, agc_vec_dot_tp(&ip, g->lm.v, ur),
-                                      1));
-    a->zaxis1 = agc_vec_unit(&ip, agc_vec_cross(&ip, ur, a->qaxis), NULL, NULL);
+    g->lm.hdotdisp = agc_tp_to_dp(agc_tp_shift(&ip, agc_vec_dot_tp(&ip, g->lm.v, ur), 1)); /* RDOT: DOT SL1 on the TP */
+    a->zaxis1      = agc_vec_unit(&ip, agc_vec_cross(&ip, ur, a->qaxis), NULL, NULL);
     agc_flag_set(AGC_FLAG_FLVR);
 
     return (agc_lm_ascent(ctx, &ip));
@@ -1441,8 +1352,7 @@ agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx,
-                                          agc_interp_t        *ip)
+agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL))
     {
@@ -1450,11 +1360,10 @@ agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx,
     }
 
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
+
     /* ATY^2 by DSQ is a TP; DAD adds ATP^2 to its top words and SQRT
      * reads all three (MPAC+2 takes part).                            */
-    agc_tp_t s = /* ATY^2 + ATP^2, scale 2^18 (m/cs^2)^2 */
-                 agc_tp_add(ip, agc_dp_sq_tp(a->aty),
-                            agc_tp_from_dp(agc_dp_sq(ip, a->atp)));
+    agc_tp_t s = agc_tp_add(ip, agc_dp_sq_tp(a->aty), agc_tp_from_dp(agc_dp_sq(ip, a->atp))); /* ATY^2 + ATP^2, scale 2^18 (m/cs^2)^2 */
 
     a->yaw = 0;
 
@@ -1469,24 +1378,16 @@ agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx,
          * shift in MPAC+2 and SL1 takes the top one back. SQRT(4 s)
          * has the same normalised root and one shift fewer, so it is
          * the same two words (s < 1/8 keeps 4 s in range).          */
-        agc_dp_t root2 = /* SQRT(4 s) = 2 sqrt(s), scale 2^9 */
-                         agc_tp_sqrt(ip, agc_tp_shift(ip, s, 2));
-        agc_dp_t h = /* ATY/|AT horizontal|, scale 2^1 */
-                     agc_dp_div(ip, a->aty, root2);
+        agc_dp_t root2 = agc_tp_sqrt(ip, agc_tp_shift(ip, s, 2)); /* SQRT(4 s) = 2 sqrt(s), scale 2^9 */
+        agc_dp_t h     = agc_dp_div(ip, a->aty, root2);           /* ATY/|AT horizontal|, scale 2^1 */
 
         a->yaw = agc_dp_asin(ip, h); /* revolutions   */
     }
 
-    agc_vec_t u = /* UNIT(UNFC/2), half unit 2^1 */
-                  agc_vec_unit(ip, agc_lm_ldg()->unfc_2, NULL, NULL);
-    agc_dp_t c = /* UNIT(UNFC/2) . UNIT/R/ SL1, scale 2^1; DOT SL1 on the TP */
-                 agc_tp_to_dp(agc_tp_shift(
-                                  ip,
-                                  agc_vec_dot_tp(ip, u,
-                                                 agc_guid_state()->avg.unitr),
-                                  1));
+    agc_vec_t u = agc_vec_unit(ip, agc_lm_ldg()->unfc_2, NULL, NULL);                                    /* UNIT(UNFC/2), half unit 2^1 */
+    agc_dp_t  c = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, u, agc_guid_state()->avg.unitr), 1)); /* UNIT(UNFC/2) . UNIT/R/ SL1, scale 2^1; DOT SL1 on the TP */
 
-    a->pitch = agc_dp_neg(agc_dp_acos(ip, c));
+    a->pitch         = agc_dp_neg(agc_dp_acos(ip, c));
     as_restart_here(AGC_JOB_POWERED_ASCENT_BURN);
     agc_job_ctx_t c2 = *ctx; /* job context copy */
 

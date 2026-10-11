@@ -74,17 +74,18 @@
 #include "radar.h"
 
 #define RR_MAXTRYS 60 /* MAXTRYS DEC 60             */
+
 /* RDESGAIN DEC .53624: null .5 of the error in .5 s                    */
-#define RR_RDESGAIN         8786                  /* RDESGAIN, 2^0         */
-#define RR_COS_HALFDEG      ((agc_dp_t) 67106309) /* COS1/2DG, B-2        */
-#define RR_MCTOMS           ((agc_dp_t) 3276800) /* MCTOMS 100, B-13      */
-#define RR_LIM_T1           (-5006) /* 55 degrees (RRLIMCHK)      */
-#define RR_LIM_S1           (-5871) /* 64.5 degrees               */
-#define RR_5_5DEGS          501 /* 5.5DEGS, CDU units */
-#define RR_20_5DEGS         1866 /* 20.5DEGS DEC .11389        */
-#define RR_DT_20MS          2U /* 20 ms, cs */
-#define RR_DT_HALFSEC       50U /* .5 s, cs */
-#define RR_PRIO26           ((agc_prio_t) 026) /* PRIO26 */
+#define RR_RDESGAIN         8786                       /* RDESGAIN, 2^0         */
+#define RR_COS_HALFDEG      ((agc_dp_t) 67106309)      /* COS1/2DG, B-2        */
+#define RR_MCTOMS           ((agc_dp_t) 3276800)       /* MCTOMS 100, B-13      */
+#define RR_LIM_T1           (-5006)                    /* 55 degrees (RRLIMCHK)      */
+#define RR_LIM_S1           (-5871)                    /* 64.5 degrees               */
+#define RR_5_5DEGS          501                        /* 5.5DEGS, CDU units */
+#define RR_20_5DEGS         1866                       /* 20.5DEGS DEC .11389        */
+#define RR_DT_20MS          2U                         /* 20 ms, cs */
+#define RR_DT_HALFSEC       50U                        /* .5 s, cs */
+#define RR_PRIO26           ((agc_prio_t) 026)         /* PRIO26 */
 #define RR_ALARM_BAD_ANGLES ((agc_alarm_code_t) 00502) /* bad RR angles */
 
 /**********************************************************************
@@ -218,8 +219,7 @@ static agc_status_t rr_lundesch(agc_rr_designate_result_t *res)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the RRANGLES or waitlist status
  **********************************************************************/
-agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
-                                 agc_rr_designate_result_t *res)
+agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *res)
 {
     if (!AGC_ASSERT(ip != NULL && res != NULL))
     {
@@ -229,7 +229,7 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
     rr_state_t *s = rr_state(); /* radar erasables */
 
     rz_flag_put(AGC_FLAG_RRNBSW, false);
-    agc_cdutrig_t trig; /* CDUTRIG sines / cosines */
+    agc_cdutrig_t trig;              /* CDUTRIG sines / cosines */
     agc_vec_t     los = s->rrtarget; /* LOS, 2^1 */
 
     agc_guid_cdutrig(&trig);
@@ -267,7 +267,7 @@ agc_status_t agc_rr_designate_sm(agc_interp_t              *ip,
         return (AGC_STATUS_OK);
     }
 
-    rr_mode_invert(); /* TRYSWS  */
+    rr_mode_invert();                                     /* TRYSWS  */
     bool other = agc_rr_limchk(s->modeb[0], s->modeb[1]); /* other mode OK */
 
     rr_mode_invert();
@@ -339,21 +339,19 @@ static bool rr_limnb(uint16_t t, uint16_t s)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the RRNB or waitlist status
  **********************************************************************/
-agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion,
-                                 uint16_t shaft, agc_rr_designate_result_t *res)
+agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion, uint16_t shaft, agc_rr_designate_result_t *res)
 {
-    if (!AGC_ASSERT(ip != NULL && res != NULL) ||
-        !AGC_ASSERT(trunnion <= RR_WORD_MASK && shaft <= RR_WORD_MASK))
+    if (!AGC_ASSERT(ip != NULL && res != NULL) || !AGC_ASSERT(trunnion <= RR_WORD_MASK && shaft <= RR_WORD_MASK))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     rr_state_t *s = rr_state(); /* radar erasables */
 
-    rz_flag_put(AGC_FLAG_LOSCMFLG, false); /* keep DODES out of R21     */
+    rz_flag_put(AGC_FLAG_LOSCMFLG, false);   /* keep DODES out of R21     */
     s->descount = RR_MAXTRYS;
     agc_inhint();
-    bool ok = rr_limnb(trunnion, shaft); /* within limits */
+    bool ok     = rr_limnb(trunnion, shaft); /* within limits */
 
     if (!ok)
     {
@@ -379,8 +377,8 @@ agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion,
         return (AGC_STATUS_OK); /* avoid the 503 alarm      */
     }
 
-    s->tangnb[0] = trunnion; /* OKDESNB */
-    s->tangnb[1] = shaft;
+    s->tangnb[0]    = trunnion;                                       /* OKDESNB */
+    s->tangnb[1]    = shaft;
     agc_status_t st = agc_lm_rrnb(ip, trunnion, shaft, &s->rrtarget); /* RRNB */
 
     if (st != AGC_STATUS_OK)
@@ -430,8 +428,7 @@ agc_status_t rr_stdesig(void)
 
         if (s->descount <= 0)
         { /* STDESIG1 */
-            rr_chan_clear(AGC_CHAN_CHAN12,
-                          (uint16_t) (RR_CH12_TRACK | RR_CH12_ENB_ECTR));
+            rr_chan_clear(AGC_CHAN_CHAN12, (uint16_t) (RR_CH12_TRACK | RR_CH12_ENB_ECTR));
             rr_radmodes_clear(RR_DESIGBIT);
 
             return (rr_badend());
@@ -520,8 +517,7 @@ agc_status_t agc_task_rr_designate_loop(void)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK
  **********************************************************************/
-static agc_status_t rr_dodes_los(agc_interp_t *ip, const rr_state_t *s,
-                                 agc_cdutrig_t *trig, agc_vec_t *los)
+static agc_status_t rr_dodes_los(agc_interp_t *ip, const rr_state_t *s, agc_cdutrig_t *trig, agc_vec_t *los)
 {
     if (agc_flag_test(AGC_FLAG_RRNBSW))
     {
@@ -653,22 +649,20 @@ static agc_status_t rr_dorrout(agc_interp_t *ip, rr_state_t *s)
  *
  * RETURNS: agc_dp_t -- cos(boresight, RRTARGET) - cos(.5 deg), B-2
  **********************************************************************/
-static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s,
-                                  const agc_cdutrig_t *trig, agc_vec_t los)
+static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s, const agc_cdutrig_t *trig, agc_vec_t los)
 {
-    agc_dp_t sa    = agc_guid_cdulogic(agc_erase_cdus()); /* rev 2^0 */
-    agc_dp_t sn_s  = agc_dp_sin(ip, sa);                  /* 0D, 2^1 */
-    agc_dp_t cs_s  = agc_dp_cos(ip, sa);                  /* 2D, 2^1 */
-    agc_dp_t shaft = agc_dp_sub(ip, agc_dp_mul_trunc(cs_s, los.c[0]),
-                                agc_dp_mul_trunc(los.c[2], sn_s)); /* 2^2 */
-    agc_dp_t ta    = agc_guid_cdulogic(agc_erase_cdut()); /* rev 2^0 */
-    agc_dp_t cs_t  = agc_dp_cos(ip, ta);                  /* 4D, 2^1 */
-    agc_dp_t sn_t  = agc_dp_sin(ip, ta);                  /* 6D, 2^1 */
-    agc_dp_t ux    = agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, sn_s), 1); /* 2^1 */
-    agc_dp_t uz    = agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, cs_s), 1); /* 2^1 */
-    agc_dp_t trun  = agc_vec_dot(ip, agc_vec_make(ux, cs_t, uz), los); /* 2^2 */
-    agc_sp_t cmd_t = (agc_sp_t) -agc_dp_high(trun); /* trunnion, 2^2 */
-    agc_sp_t sh    = agc_dp_high(shaft);            /* shaft, 2^2 */
+    agc_dp_t sa    = agc_guid_cdulogic(agc_erase_cdus());                                                /* rev 2^0 */
+    agc_dp_t sn_s  = agc_dp_sin(ip, sa);                                                                 /* 0D, 2^1 */
+    agc_dp_t cs_s  = agc_dp_cos(ip, sa);                                                                 /* 2D, 2^1 */
+    agc_dp_t shaft = agc_dp_sub(ip, agc_dp_mul_trunc(cs_s, los.c[0]), agc_dp_mul_trunc(los.c[2], sn_s)); /* 2^2 */
+    agc_dp_t ta    = agc_guid_cdulogic(agc_erase_cdut());                                                /* rev 2^0 */
+    agc_dp_t cs_t  = agc_dp_cos(ip, ta);                                                                 /* 4D, 2^1 */
+    agc_dp_t sn_t  = agc_dp_sin(ip, ta);                                                                 /* 6D, 2^1 */
+    agc_dp_t ux    = agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, sn_s), 1);                                    /* 2^1 */
+    agc_dp_t uz    = agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, cs_s), 1);                                    /* 2^1 */
+    agc_dp_t trun  = agc_vec_dot(ip, agc_vec_make(ux, cs_t, uz), los);                                   /* 2^2 */
+    agc_sp_t cmd_t = (agc_sp_t) -agc_dp_high(trun);                                                      /* trunnion, 2^2 */
+    agc_sp_t sh    = agc_dp_high(shaft);                                                                 /* shaft, 2^2 */
 
     agc_erase_set_tang(0, agc_dp_high(agc_sp_mul(cmd_t, RR_RDESGAIN)));
 
@@ -680,7 +674,7 @@ static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s,
     agc_erase_set_tang(1, agc_dp_high(agc_sp_mul(sh, RR_RDESGAIN)));
     agc_dp_t  rx  = agc_dp_shl(ip, agc_dp_mul_trunc(sn_s, cs_t), 1); /* 2^1 */
     agc_dp_t  rz  = agc_dp_shl(ip, agc_dp_mul_trunc(cs_s, cs_t), 1); /* 2^1 */
-    agc_vec_t urr = agc_vec_make(rx, agc_dp_neg(sn_t), rz);       /* URR, 2^1 */
+    agc_vec_t urr = agc_vec_make(rx, agc_dp_neg(sn_t), rz);          /* URR, 2^1 */
 
     if (!agc_flag_test(AGC_FLAG_RRNBSW))
     {
@@ -716,8 +710,8 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
     agc_interp_t ip;             /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_cdutrig_t trig;                                  /* CDUTRIG */
-    agc_vec_t     los = s->rrtarget;                     /* LOS, 2^1 */
+    agc_cdutrig_t trig;                                    /* CDUTRIG */
+    agc_vec_t     los = s->rrtarget;                       /* LOS, 2^1 */
     agc_status_t  st  = rr_dodes_los(&ip, s, &trig, &los); /* NB LOS */
 
     if (st != AGC_STATUS_OK)
@@ -726,7 +720,7 @@ agc_status_t agc_job_rr_designate_command(agc_job_ctx_t *ctx)
     }
 
     agc_dp_t cos_err = rr_dodes_commands(&ip, s, &trig, los); /* B-2 */
-    bool     off     = agc_dp_high(cos_err) < 0; /* MPAC +1 = 1: not pointed */
+    bool     off     = agc_dp_high(cos_err) < 0;              /* MPAC +1 = 1: not pointed */
 
     if (rr_radmodes_test(RR_CDESBIT))
     {
@@ -799,10 +793,10 @@ agc_status_t agc_rr_designate_gimbal(bool *started)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_rr_designate_result_t res = AGC_RR_DESIGNATE_END_JOB; /* result */
+    agc_rr_designate_result_t res = AGC_RR_DESIGNATE_END_JOB;   /* result */
     uint16_t                  t   = rr_word(agc_erase_tang(0)); /* TANG    */
     uint16_t                  sh  = rr_word(agc_erase_tang(1)); /* TANG +1 */
-    agc_status_t              st; /* RRDESNB */
+    agc_status_t              st;                               /* RRDESNB */
 
     st = agc_rr_designate_nb(&ip, t, sh, &res);
 

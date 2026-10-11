@@ -21,22 +21,29 @@
 #define NB_COS  ((agc_dp_t) 113169126) /* .8431756920 B-1                 */
 #define NB_SIN  ((agc_dp_t) 72160568)  /* .5376381241 B-1                 */
 #define NB_HALF AGC_DP_HALF            /* HALFNFLT .5                     */
+
 /* 10DEGS- DEC 3600 (added to the MPAC high word): 79.1 deg = 4 x 19.775.  */
 #define TEN_DEGS_MINUS ((agc_dp_t) (3600 * 16384))
+
 /* 20DEG- DEC 03600, DEC 00000: the same offset as a DP.                    */
 #define TWENTY_DEG_MINUS ((agc_dp_t) (3600 * 16384))
+
 /* 270DEG OCT 60000: shaft 270 degrees, 2's complement CDU word.          */
 #define SHAFT_270DEG ((uint16_t) 060000)
+
 /* 20DEGS- DEC -07199, DEC -00000 (PAC high word), as a raw 1's complement
  * word: 077777 - 7199.                                                    */
 #define PAC_20DEGS_MINUS ((uint16_t) (077777 - 7199))
+
 /* LOG: NEARLY1 .999999999, CLOG2/32 .0216608494 = ln 2 / 32.              */
 #define NEARLY1  ((agc_dp_t) 268435456 - 1)
 #define CLOG2_32 ((agc_dp_t) 5814540)
+
 /* POLY coefficients a0..a3 (2DEC 0, .031335467, .0130145859, .0215738898). */
 #define LOG_A1 ((agc_dp_t) 8411550)
 #define LOG_A2 ((agc_dp_t) 3493576)
 #define LOG_A3 ((agc_dp_t) 5791197)
+
 /* 1/WIE 2DEC 8616410: one sidereal day in cs (B28 cs, i.e. raw cs).      */
 #define ONE_OVER_WIE ((agc_dp_t) 8616410)
 #define OVERADAY_MAX 32 /* DTEAROT < 2^28 cs = 31.2 sidereal days        */
@@ -73,8 +80,7 @@ agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
     }
 
     agc_ovf_t      ovf = 0;
-    const agc_dp_t a   = agc_dp_add_raw(agc_align_cdulogic(trunnion_cdu),
-                                        TEN_DEGS_MINUS, &ovf); /* ADS MPAC */
+    const agc_dp_t a   = agc_dp_add_raw(agc_align_cdulogic(trunnion_cdu), TEN_DEGS_MINUS, &ovf); /* ADS MPAC */
 
     if (!AGC_ASSERT(ovf == 0))
     {
@@ -90,8 +96,7 @@ agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
  *   STARM = (cos SA sin TA, sin SA sin TA, cos TA)/2   (optics base)
  *   result = NB1NB2 STARM, VSL1  (half-unit, NB)       (32D)
  */
-agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu,
-                           uint16_t shaft_cdu, agc_vec_t *starm_nb)
+agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(starm_nb != NULL))
     {
@@ -106,6 +111,7 @@ agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu,
     starm.c[0] = agc_dp_mul_trunc(agc_dp_cos(ip, sa), sin_ta); /* DMP */
     starm.c[1] = agc_dp_mul_trunc(agc_dp_sin(ip, sa), sin_ta);
     starm.c[2] = agc_dp_cos(ip, ta);
+
     /* NB1NB2 (optics base NB1 -> NB), the transpose of NB2NB1. */
     const agc_mat_t m_nb1nb2 = nb2nb1();
 
@@ -135,9 +141,7 @@ agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu,
  * A negative trunnion or one over 90 degrees sets CULTFLAG (SXTALARM; the
  * alarm itself was removed from the routine); otherwise CULTFLAG is clear.
  */
-static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
-                            const agc_mat_t *nb1, uint16_t *sac, uint16_t *pac,
-                            bool *cult)
+static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb1, uint16_t *sac, uint16_t *pac, bool *cult)
 {
     if (!AGC_ASSERT(nb1 != NULL))
     {
@@ -170,10 +174,10 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
     const agc_dp_t sa = agc_imu_arctrig(ip, sinth, costh); /* revs */
 
     /* 1STO2S of ARCTRIG's words (word_forms.c), not of the value. */
-    *sac = align_words_to_cdu(align_arctrig_words(ip, sinth, costh, sa));
-    align_clear_ovf(ip); /* BOV +1  */
+    *sac                  = align_words_to_cdu(align_arctrig_words(ip, sinth, costh, sa));
+    align_clear_ovf(ip);                                             /* BOV +1  */
     const agc_dp_t cos_ta = align_dot_shl(ip, star, nb1->row[2], 1); /* B0 */
-    const agc_dp_t ta     = agc_dp_acos(ip, cos_ta); /* revs */
+    const agc_dp_t ta     = agc_dp_acos(ip, cos_ta);                 /* revs */
 
     if (ta < 0)
     {
@@ -197,10 +201,7 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star,
     const align_words_t ta2w = align_words_add(taw, taw);
     const align_words_t ta4w = align_words_add(ta2w, ta2w);
 
-    *pac = align_words_to_cdu(align_words_add(
-                                  ta4w,
-                                  align_words_neg(align_words_of(
-                                                      TWENTY_DEG_MINUS))));
+    *pac  = align_words_to_cdu(align_words_add(ta4w, align_words_neg(align_words_of(TWENTY_DEG_MINUS))));
     (void) AGC_ASSERT(ta4 >= 0);
     *cult = false; /* CLRGO CULTFLAG            */
 
@@ -226,12 +227,9 @@ static agc_status_t store_cult(bool cult)
  * t, then NB2NB1, VSL1 into optics-base axes; XNB1..ZNB1 = unit axes;
  * SXTANG1.  STAR is left in optics-base axes (ram->star), as the AGC does.
  */
-agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm,
-                             const agc_cdutrig_t *t, uint16_t *sac,
-                             uint16_t *pac, bool *cult)
+agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t, uint16_t *sac, uint16_t *pac, bool *cult)
 {
-    if (!AGC_ASSERT((ip != NULL) && (t != NULL)) ||
-        !AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL)))
+    if (!AGC_ASSERT((ip != NULL) && (t != NULL)) || !AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -243,8 +241,8 @@ agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm,
 
     s                     = agc_vec_shl(ip, agc_mat_vec(ip, &m, s), 1); /* MXV VSL1 */
     agc_align_ram()->star = s;                                          /* STOVL STAR */
-    const agc_mat_t unit = agc_mat_identity_half(); /* HIUNITX.. */
-    agc_status_t    st   = sxtang1(ip, s, &unit, sac, pac, cult);
+    const agc_mat_t unit  = agc_mat_identity_half();                    /* HIUNITX.. */
+    agc_status_t    st    = sxtang1(ip, s, &unit, sac, pac, cult);
 
     if (st == AGC_STATUS_OK)
     {
@@ -260,12 +258,9 @@ agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm,
  * TRANSP1, XNB1.. = NB2NB1 (rows of the transpose), VSL1, TRANSP1/2, then
  * SXTANG1.
  */
-agc_status_t agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star,
-                            const agc_mat_t *nb, uint16_t *sac, uint16_t *pac,
-                            bool *cult)
+agc_status_t agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb, uint16_t *sac, uint16_t *pac, bool *cult)
 {
-    if (!AGC_ASSERT((ip != NULL) && (nb != NULL)) ||
-        !AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL)))
+    if (!AGC_ASSERT((ip != NULL) && (nb != NULL)) || !AGC_ASSERT((sac != NULL) && (pac != NULL) && (cult != NULL)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -310,9 +305,9 @@ agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_dp_t y       = agc_dp_sub(ip, NEARLY1, xn); /* BDSU     */
+    const agc_dp_t y       = agc_dp_sub(ip, NEARLY1, xn);            /* BDSU     */
     const agc_dp_t coef[4] = {0, LOG_A1, LOG_A2, LOG_A3};
-    const agc_dp_t p       = agc_dp_poly(y, coef, 3);            /* POLY     */
+    const agc_dp_t p       = agc_dp_poly(y, coef, 3);                /* POLY     */
     const agc_dp_t k       = agc_dp_mul_int(CLOG2_32, (agc_sp_t) n); /* SHORTMP  */
     agc_ovf_t      ovf     = 0;
 
@@ -368,8 +363,7 @@ agc_status_t agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e)
         wt         = agc_dp_div(ip, e->dtearot, ONE_OVER_WIE);
     }
 
-    const agc_vec_t a = agc_vec_scale(
-        ip, e->rtnorm, agc_dp_sub(ip, agc_dp_cos(ip, wt), AGC_DP_HALF));
+    const agc_vec_t a = agc_vec_scale(ip, e->rtnorm, agc_dp_sub(ip, agc_dp_cos(ip, wt), AGC_DP_HALF));
     const agc_vec_t b = agc_vec_scale(ip, e->rteast, agc_dp_sin(ip, wt));
     const agc_vec_t c = agc_vec_shl(ip, agc_vec_add(ip, b, a), 1); /* VSL1 */
 

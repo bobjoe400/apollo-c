@@ -119,16 +119,16 @@ static void rte(const char *t, long int tol)
     (void) agc_exec_init();
     (void) agc_waitlist_init();
     (void) agc_navaux_set_padload(&pad);
-    ip = rte_ip();
-    rs = rte_state();
+    ip           = rte_ip();
+    rs           = rte_state();
     agc_interp_init(ip);
     rs->rtedvd   = oracle_in_dp(t, "VPRED", 0);
     rs->rtegam2d = oracle_in_dp(t, "GAMMAEI", 0);
     agc_erase_set_rted1(oracle_in_dp(t, "1351", 0));
-    r   = oracle_in_vec_at(t, "RRECTCSM", 0);
-    v   = oracle_in_vec_at(t, "RRECTCSM", 1);
-    tig = oracle_in_dp(t, "TIG", 0);
-    st  = rte_initial_vectors(ip, rs, r, v, tig, 0);
+    r            = oracle_in_vec_at(t, "RRECTCSM", 0);
+    v            = oracle_in_vec_at(t, "RRECTCSM", 1);
+    tig          = oracle_in_dp(t, "TIG", 0);
+    st           = rte_initial_vectors(ip, rs, r, v, tig, 0);
 
     if (st == AGC_STATUS_OK)
     {
@@ -151,10 +151,12 @@ static void rte(const char *t, long int tol)
     oracle_cmp_vec(t, "UR1/", rs->ur1, oracle_out_vec(t, "UR1/"), 0);
     (void) oracle_cmp(t, "CFPA", rs->cfpa, oracle_out_dp(t, "CFPA"), 1);
     (void) oracle_cmp(t, "MAMAX2", rs->mamax2, oracle_out_dp(t, "MAMAX2"), 1);
+
     /* INVC115: the AGC keeps N = UR1 x UV1 as sign-disagreeing DP words
      * (e.g. 00232 76635); the next VXV and UNIT round differently, UH/ by
      * up to ~80 LSB for a near-radial state.                             */
     oracle_cmp_vec(t, "UH/", rs->uh, oracle_out_vec(t, "UH/"), tol);
+
     /* F14 (review-guid-entry): the C now matches the AGC word for word
      * through V2T100/GAMDV/DVCALC from the same start. What is left comes
      * from outside the lane: UH/ above (INVC115, core VXV on disagreeing
@@ -163,30 +165,20 @@ static void rte(const char *t, long int tol)
      * search then converges inside its tolerance to a slightly different
      * solution; the flat DV minimum moves X(T1) most.                    */
     (void) oracle_cmp(t, "RCON", rs->rcon, oracle_out_dp(t, "RCON"), tol);
-    oracle_cmp_known(t, "X(T2)", rs->x_t2, oracle_out_dp(t, "X(T2)"), tol,
-                     "F14");
-    oracle_cmp_known(t, "X(T1)", rs->x_t1, oracle_out_dp(t, "X(T1)"), tol,
-                     "F14");
+    oracle_cmp_known(t, "X(T2)", rs->x_t2, oracle_out_dp(t, "X(T2)"), tol, "F14");
+    oracle_cmp_known(t, "X(T1)", rs->x_t1, oracle_out_dp(t, "X(T1)"), tol, "F14");
     (void) oracle_cmp(t, "PCON", rs->pcon, oracle_out_dp(t, "PCON"), tol);
-    oracle_cmp_vec_known(t, "V2(T1)/", rs->v2_t1v,
-                         oracle_out_vec(t, "V2(T1)/"), tol, "F14");
+    oracle_cmp_vec_known(t, "V2(T1)/", rs->v2_t1v, oracle_out_vec(t, "V2(T1)/"), tol, "F14");
     (void) oracle_cmp(t, "DV", rs->dv, oracle_out_dp(t, "DV"), tol);
     oracle_cmp_vec(t, "R(T2)/", rs->r_t2v, oracle_out_vec(t, "R(T2)/"), tol);
-    oracle_cmp_vec_known(t, "V(T2)/", rs->v_t2v, oracle_out_vec(t, "V(T2)/"),
-                         tol, "F14");
+    oracle_cmp_vec_known(t, "V(T2)/", rs->v_t2v, oracle_out_vec(t, "V(T2)/"), tol, "F14");
     oracle_cmp_known(t, "T2", rs->t2, oracle_out_dp(t, "T2"), tol, "F14");
     (void) oracle_cmp(t, "T12", rs->t12, oracle_out_dp(t, "T12"), tol);
     (void) oracle_cmp(t, "NN1A", rs->nn1a, oracle_out_dp(t, "NN1A"), 2);
-    oracle_cmp_known(t, "VPRED", d.vpred, oracle_out_dp(t, "VPRED"), tol,
-                     "F14");
-    oracle_cmp_known(t, "T3TOT4", d.t3tot4, oracle_out_dp(t, "T3TOT4"), tol,
-                     "F14");
-    oracle_cmp_known(t, "GAMMAEI", d.gammaei, oracle_out_dp(t, "GAMMAEI"), tol,
-                     "F14");
-    oracle_cmp_known(t, "LAT(SPL)", d.lat_spl, oracle_out_dp(t, "LAT(SPL)"),
-                     tol, "F14");
-    oracle_cmp_known(t, "LNG(SPL)", d.lng_spl, oracle_out_dp(t, "LNG(SPL)"),
-                     tol, "F14");
-    oracle_cmp_vec_known(t, "DELVLVC", d.delvlvc, oracle_out_vec(t, "DELVLVC"),
-                         tol, "F14");
+    oracle_cmp_known(t, "VPRED", d.vpred, oracle_out_dp(t, "VPRED"), tol, "F14");
+    oracle_cmp_known(t, "T3TOT4", d.t3tot4, oracle_out_dp(t, "T3TOT4"), tol, "F14");
+    oracle_cmp_known(t, "GAMMAEI", d.gammaei, oracle_out_dp(t, "GAMMAEI"), tol, "F14");
+    oracle_cmp_known(t, "LAT(SPL)", d.lat_spl, oracle_out_dp(t, "LAT(SPL)"), tol, "F14");
+    oracle_cmp_known(t, "LNG(SPL)", d.lng_spl, oracle_out_dp(t, "LNG(SPL)"), tol, "F14");
+    oracle_cmp_vec_known(t, "DELVLVC", d.delvlvc, oracle_out_vec(t, "DELVLVC"), tol, "F14");
 } /* rte */

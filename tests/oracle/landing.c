@@ -43,15 +43,14 @@
 #include "oracle_txt.h"
 
 static agc_mat_t mat_in(const char *t, const char *name);
-static void      target_in(const char *t, const char *name,
-                           agc_lm_target_t *g);
-static void common_in(const char *t);
-static void guid_pass(const char *t, long int tol);
-static void cgcalc(const char *t, long int tol);
-static void throttle(const char *t);
-static void findcduw(const char *t, long int tol);
-static void ascent(const char *t);
-static void rodcomp(const char *t);
+static void      target_in(const char *t, const char *name, agc_lm_target_t *g);
+static void      common_in(const char *t);
+static void      guid_pass(const char *t, long int tol);
+static void      cgcalc(const char *t, long int tol);
+static void      throttle(const char *t);
+static void      findcduw(const char *t, long int tol);
+static void      ascent(const char *t);
+static void      rodcomp(const char *t);
 
 /**********************************************************************
  * AGC: none -- run every case; the exit status reports failures.
@@ -163,8 +162,8 @@ static void target_in(const char *t, const char *name, agc_lm_target_t *g)
  **********************************************************************/
 static void common_in(const char *t)
 {
-    agc_lm_pad_t  *p = agc_lm_pad(); /* pad loads */
-    agc_lm_ldg_t  *l = agc_lm_ldg(); /* landing erasables */
+    agc_lm_pad_t  *p = agc_lm_pad();          /* pad loads */
+    agc_lm_ldg_t  *l = agc_lm_ldg();          /* landing erasables */
     agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
 
     agc_state_init(AGC_VEHICLE_LM);
@@ -188,8 +187,8 @@ static void common_in(const char *t)
  **********************************************************************/
 static void guid_pass(const char *t, long int tol)
 {
-    agc_interp_t   ip; /* interpreter state (OVFIND) */
-    agc_lm_ldg_t  *l = agc_lm_ldg(); /* landing erasables */
+    agc_interp_t   ip;                        /* interpreter state (OVFIND) */
+    agc_lm_ldg_t  *l = agc_lm_ldg();          /* landing erasables */
     agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
 
     common_in(t);
@@ -213,25 +212,22 @@ static void guid_pass(const char *t, long int tol)
     oracle_cmp_vec(t, "VGU", l->vgu, oracle_out_vec(t, "VGU"), tol);
     (void) oracle_cmp(t, "VHORIZ", l->vhoriz, oracle_out_dp(t, "VHORIZ"), tol);
     oracle_cmp_vec(t, "RGU", l->rgu, oracle_out_vec(t, "RGU"), tol);
-    (void) oracle_cmp(t, "RANGEDSP", l->rangedsp,
-                      oracle_out_dp(t, "RANGEDSP"), tol);
-    (void) oracle_cmp(t, "LOOKANGL", l->lookangl,
-                      oracle_out_sp(t, "LOOKANGL"), 0);
+    (void) oracle_cmp(t, "RANGEDSP", l->rangedsp, oracle_out_dp(t, "RANGEDSP"), tol);
+    (void) oracle_cmp(t, "LOOKANGL", l->lookangl, oracle_out_sp(t, "LOOKANGL"), 0);
+
     /* ROOTPSRS stops at |DX| <= TTF/8 * 2^-7: last-pass rounding moves the
      * root by a few hundred LSB. TTFDISP = 8 * high word of a DAS result
      * the AGC leaves sign-disagreeing (F9): one high-word LSB = 8.       */
     (void) oracle_cmp(t, "TTF/8", l->ttf_8, oracle_out_dp(t, "TTF/8"), 0);
-    (void) oracle_cmp(t, "TTFDISP", l->ttfdisp, oracle_out_dp(t, "TTFDISP"),
-                      0);
+    (void) oracle_cmp(t, "TTFDISP", l->ttfdisp, oracle_out_dp(t, "TTFDISP"), 0);
     (void) oracle_cmp(t, "TREDES", l->tredes, oracle_out_sp(t, "TREDES"), 0);
+
     /* QUADGUID coefficients: the AGC stores them as single words over
      * stale low words of the push list (guidance.c DEVIATION).           */
     oracle_cmp_vec(t, "UNFC/2", l->unfc_2, oracle_out_vec(t, "UNFC/2"), 128);
     (void) oracle_cmp(t, "/AFC/", l->afc, oracle_out_dp(t, "/AFC/"), 128);
-    (void) oracle_cmp(t, "FLPASS0", l->flpass0, oracle_out_sp(t, "FLPASS0"),
-                      0);
-    (void) oracle_cmp(t, "WCHPHOLD", l->wchphold,
-                      oracle_out_sp(t, "WCHPHOLD"), 0);
+    (void) oracle_cmp(t, "FLPASS0", l->flpass0, oracle_out_sp(t, "FLPASS0"), 0);
+    (void) oracle_cmp(t, "WCHPHOLD", l->wchphold, oracle_out_sp(t, "WCHPHOLD"), 0);
 } /* guid_pass */
 
 /**********************************************************************
@@ -243,7 +239,7 @@ static void guid_pass(const char *t, long int tol)
  **********************************************************************/
 static void cgcalc(const char *t, long int tol)
 {
-    agc_interp_t  ip; /* interpreter state (OVFIND) */
+    agc_interp_t  ip;               /* interpreter state (OVFIND) */
     agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
     common_in(t);
@@ -263,8 +259,7 @@ static void cgcalc(const char *t, long int tol)
         char n[16]; /* erasable name of the row */
         char w[16]; /* comparison label */
 
-        (void) snprintf(n, sizeof (n), (r == 0) ? "CG" : "CG+%d", /* row */
-                        6 * r);
+        (void) snprintf(n, sizeof (n), (r == 0) ? "CG" : "CG+%d", 6 * r); /* row */
         (void) snprintf(w, sizeof (w), "CG[%d]", r);
         oracle_cmp_vec(t, w, l->cg.row[r], oracle_out_vec(t, n), tol);
     }
@@ -293,32 +288,27 @@ static void throttle(const char *t)
     h->fcold                    = (agc_sp_t) oracle_in(t, "FCOLD", 0);
     agc_erase_set_modreg((agc_sp_t) oracle_in(t, "MODREG", 0));
     agc_erase_set_piptime(oracle_in_dp(t, "PIPTIME", 0));
+
     /* TIME1 as the AGC read it at DOIT (the emulated counter ticks once
      * while THROTTLE runs; the AGC stored that reading in TTHROT).       */
     agc_time_set_cs((uint32_t) oracle_out_sp(t, "TTHROT"));
     (void) agc_lm_throttle();
     oracle_require_ok(t, "ENDOFJOB");
+
     /* FP, FCODD, PIF, FWEIGHT: both words as the AGC stores them (a DAS
      * leaves them sign-disagreeing; THROTTLE reads the high word alone). */
-    (void) oracle_cmp(t, "FP", agc_lm_words_value(h->fp),
-                      oracle_out_dp(t, "FP"), 0);
+    (void) oracle_cmp(t, "FP", agc_lm_words_value(h->fp), oracle_out_dp(t, "FP"), 0);
     (void) oracle_cmp(t, "FP hi", h->fp.hi, oracle_out_sp(t, "FP"), 0);
     (void) oracle_cmp(t, "FC", agc_dp_high(h->fc), oracle_out_sp(t, "FC"), 0);
-    (void) oracle_cmp(t, "FCODD", agc_lm_words_value(h->fcodd),
-                      oracle_out_dp(t, "FCODD"), 0);
+    (void) oracle_cmp(t, "FCODD", agc_lm_words_value(h->fcodd), oracle_out_dp(t, "FCODD"), 0);
     (void) oracle_cmp(t, "FCOLD", h->fcold, oracle_out_sp(t, "FCOLD"), 0);
-    (void) oracle_cmp(t, "PIF", agc_lm_words_value(h->pif),
-                      oracle_out_dp(t, "PIF"), 0);
+    (void) oracle_cmp(t, "PIF", agc_lm_words_value(h->pif), oracle_out_dp(t, "PIF"), 0);
     (void) oracle_cmp(t, "PIF hi", h->pif.hi, oracle_out_sp(t, "PIF"), 0);
     (void) oracle_cmp(t, "PIFPSET", h->pifpset, oracle_out_sp(t, "PIFPSET"), 0);
-    (void) oracle_cmp(t, "PSEUDO55", h->pseudo55, oracle_out_sp(t, "PSEUDO55"),
-                      0);
-    (void) oracle_cmp(t, "THRUST", agc_erase_thrust(),
-                      oracle_out_sp(t, "THRUST"), 0);
-    (void) oracle_cmp(t, "FWEIGHT", agc_lm_words_value(h->fweight),
-                      oracle_out_dp(t, "FWEIGHT"), 0);
-    (void) oracle_cmp(t, "FWEIGHT hi", h->fweight.hi,
-                      oracle_out_sp(t, "FWEIGHT"), 0);
+    (void) oracle_cmp(t, "PSEUDO55", h->pseudo55, oracle_out_sp(t, "PSEUDO55"), 0);
+    (void) oracle_cmp(t, "THRUST", agc_erase_thrust(), oracle_out_sp(t, "THRUST"), 0);
+    (void) oracle_cmp(t, "FWEIGHT", agc_lm_words_value(h->fweight), oracle_out_dp(t, "FWEIGHT"), 0);
+    (void) oracle_cmp(t, "FWEIGHT hi", h->fweight.hi, oracle_out_sp(t, "FWEIGHT"), 0);
 } /* throttle */
 
 /**********************************************************************
@@ -330,9 +320,9 @@ static void throttle(const char *t)
  **********************************************************************/
 static void findcduw(const char *t, long int tol)
 {
-    agc_interp_t   ip; /* interpreter state (OVFIND) */
+    agc_interp_t   ip;                        /* interpreter state (OVFIND) */
     agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
-    agc_vec_t      unfc; /* thrust command UNFC/2 (MPAC), 2^1 */
+    agc_vec_t      unfc;                      /* thrust command UNFC/2 (MPAC), 2^1 */
 
     common_in(t);
     agc_interp_init(&ip);
@@ -346,9 +336,9 @@ static void findcduw(const char *t, long int tol)
     agc_erase_set_cdux(oracle_in_raw(t, "CDUX", 0));
     agc_erase_set_cduy(oracle_in_raw(t, "CDUX", 1));
     agc_erase_set_cduz(oracle_in_raw(t, "CDUX", 2));
-    unfc.c[0] = oracle_in_dp(t, "MPAC", 0);
-    unfc.c[1] = oracle_in_dp(t, "MPAC", 3);
-    unfc.c[2] = oracle_in_dp(t, "MPAC", 5);
+    unfc.c[0]            = oracle_in_dp(t, "MPAC", 0);
+    unfc.c[1]            = oracle_in_dp(t, "MPAC", 3);
+    unfc.c[2]            = oracle_in_dp(t, "MPAC", 5);
     (void) agc_lm_findcduw(&ip, unfc);
     oracle_require_ok(t, "DSPLY81");
 
@@ -356,12 +346,11 @@ static void findcduw(const char *t, long int tol)
     {
         char n[16]; /* erasable name */
 
-        (void) snprintf(n, sizeof (n), (k == 0) ? "CPHI" : /* word */
-                        "CPHI+%d", k);
+        (void) snprintf(n, sizeof (n), (k == 0) ? "CPHI" : "CPHI+%d", k); /* word */
+
         /* CPHI are two's-complement CDU words: compare the raw 15 bits
          * (read as ones' complement, a negative angle is one LSB off). */
-        (void) oracle_cmp(t, n, (long int) (agc_erase_thetad(k) & 077777u),
-                          (long int) oracle_out_raw(t, n), tol);
+        (void) oracle_cmp(t, n, (long int) (agc_erase_thetad(k) & 077777u), (long int) oracle_out_raw(t, n), tol);
     }
 }
 
@@ -377,7 +366,7 @@ static void findcduw(const char *t, long int tol)
 static void ascent(const char *t)
 {
     agc_guid_t   *g   = agc_guid_state(); /* guidance state */
-    agc_lm_asc_t *a   = agc_lm_asc(); /* ascent erasables */
+    agc_lm_asc_t *a   = agc_lm_asc();     /* ascent erasables */
     agc_job_ctx_t ctx = {AGC_JOB_ATMAG, 020, false, -1, 0};
 
     agc_state_init(AGC_VEHICLE_LM);
@@ -421,8 +410,8 @@ static void ascent(const char *t)
     const struct
     {
         const char *name; /* erasable name in the case */
-        agc_dp_t    got; /* C value, scale 2^S of the word pair */
-        long int    tol; /* tolerance, LSB */
+        agc_dp_t    got;  /* C value, scale 2^S of the word pair */
+        long int    tol;  /* tolerance, LSB */
     } dps[] = {
         {"TBUP", a->tbup, 0}, {"AT", a->at, 4},
         {"MASS1", g->lm.mass1, 0}, {"E7,1634", a->dv[1], 0},
@@ -441,18 +430,16 @@ static void ascent(const char *t)
 
     for (size_t k = 0; k < sizeof (dps) / sizeof (dps[0]); k++)
     {
-        (void) oracle_cmp(t, dps[k].name, dps[k].got,
-                          oracle_out_dp(t, dps[k].name), dps[k].tol);
+        (void) oracle_cmp(t, dps[k].name, dps[k].got, oracle_out_dp(t, dps[k].name), dps[k].tol);
     }
 
     oracle_cmp_vec(t, "LAXIS", a->laxis, oracle_out_vec(t, "LAXIS"), 0);
     oracle_cmp_vec(t, "VGVECT", a->vgvect, oracle_out_vec(t, "VGVECT"), 0);
     oracle_cmp_vec(t, "VGBODY", a->vgbody, oracle_out_vec(t, "VGBODY"), 0);
-    oracle_cmp_vec(t, "UNFC/2", agc_lm_ldg()->unfc_2,
-                   oracle_out_vec(t, "UNFC/2"), 8);
+    oracle_cmp_vec(t, "UNFC/2", agc_lm_ldg()->unfc_2, oracle_out_vec(t, "UNFC/2"), 8);
     long int flpc = agc_flag_test(AGC_FLAG_FLPC) ? 1 : 0; /* C FLPC  */
-    int      w9   = oracle_out_sp(t, "FLAGWRD9"); /* FLPC = bit 12 */
-    long int want = ((w9 & 04000) != 0) ? 1 : 0; /* rope's FLPC */
+    int      w9   = oracle_out_sp(t, "FLAGWRD9");         /* FLPC = bit 12 */
+    long int want = ((w9 & 04000) != 0) ? 1 : 0;          /* rope's FLPC */
 
     (void) oracle_cmp(t, "FLPC", flpc, want, 0);
 } /* ascent */
@@ -468,8 +455,8 @@ static void ascent(const char *t)
 static void rodcomp(const char *t)
 {
     agc_guid_t   *g   = agc_guid_state(); /* guidance state */
-    agc_lm_ldg_t *l   = agc_lm_ldg(); /* landing erasables */
-    agc_lm_pad_t *p   = agc_lm_pad(); /* pad loads */
+    agc_lm_ldg_t *l   = agc_lm_ldg();     /* landing erasables */
+    agc_lm_pad_t *p   = agc_lm_pad();     /* pad loads */
     agc_job_ctx_t ctx = {AGC_JOB_RODCOMP, 022, false, -1, 0};
 
     agc_state_init(AGC_VEHICLE_LM);
@@ -513,12 +500,9 @@ static void rodcomp(const char *t)
     (void) agc_lm_job_rodcomp(&ctx);
     oracle_require_ok(t, "31,2221");
     (void) oracle_cmp(t, "VDGVERT", l->vdgvert, oracle_out_dp(t, "VDGVERT"), 0);
-    (void) oracle_cmp(t, "THISTPIP", l->thistpip, oracle_out_dp(t, "THISTPIP"),
-                      0);
-    (void) oracle_cmp(t, "LASTTPIP", l->lasttpip, oracle_out_dp(t, "LASTTPIP"),
-                      0);
-    (void) oracle_cmp(t, "HDOTDISP", g->lm.hdotdisp,
-                      oracle_out_dp(t, "HDOTDISP"), 0);
+    (void) oracle_cmp(t, "THISTPIP", l->thistpip, oracle_out_dp(t, "THISTPIP"), 0);
+    (void) oracle_cmp(t, "LASTTPIP", l->lasttpip, oracle_out_dp(t, "LASTTPIP"), 0);
+    (void) oracle_cmp(t, "HDOTDISP", g->lm.hdotdisp, oracle_out_dp(t, "HDOTDISP"), 0);
     (void) oracle_cmp(t, "HCALC1", l->hcalc1, oracle_out_dp(t, "HCALC1"), 0);
     (void) oracle_cmp(t, "/AFC/", l->afc, oracle_out_dp(t, "/AFC/"), 0);
 
@@ -526,10 +510,7 @@ static void rodcomp(const char *t)
     {
         char n[16]; /* erasable name */
 
-        (void) snprintf(n, sizeof (n), (k == 0) ? "DELVROD" : /* word */
-                        "DELVROD+%d",
-                        2 * k);
-        (void) oracle_cmp(t, n, agc_dp_high(l->delvrod.c[k]),
-                          oracle_out_sp(t, n), 0);
+        (void) snprintf(n, sizeof (n), (k == 0) ? "DELVROD" : "DELVROD+%d", 2 * k); /* word */
+        (void) oracle_cmp(t, n, agc_dp_high(l->delvrod.c[k]), oracle_out_sp(t, n), 0);
     }
 } /* rodcomp */

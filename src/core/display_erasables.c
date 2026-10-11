@@ -24,18 +24,24 @@ static bool sp_ok(agc_sp_t v)
 
 /* OPTION1 +0..+2 = OPTION1, OPTION2, OPTION3 (noun 06), octal words.     */
 static agc_sp_t g_option[3];
+
 /* SAMPTIME, SAMPTIME +1: sampled TIME2, TIME1 (noun 65), cs 2^28.         */
 static agc_dp_t g_samptime;
+
 /* SFAIL (= SELFERAS): self-check failure address, octal word.             */
 static uint16_t g_sfail;
+
 /* MARKDOWN +0..+6 (CSM P22/P23/R21 mark data for the downlink), MARK2DWN
  * +0..+6 (second mark of the alignment P50s), raw words.                  */
 static uint16_t g_markdown[7];
 static uint16_t g_mark2dwn[7];
+
 /* TRKMKCNT: rendezvous tracking mark counter (noun 45 R1), whole count.   */
 static agc_sp_t g_trkmkcnt;
+
 /* T3TOT4 (= RELDELV +2): TPF time for N39 (P34/P35/P37), cs 2^28.         */
 static agc_dp_t g_t3tot4;
+
 /* RR-AZ, RR-ELEV (LM, noun 56): RR LOS azimuth / elevation, revs 2^0.     */
 static agc_dp_t g_rr_az;
 static agc_dp_t g_rr_elev;

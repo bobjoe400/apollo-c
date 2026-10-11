@@ -78,19 +78,13 @@ agc_status_t lm_dap_altdsply(void)
 agc_status_t lm_dap_dsplytot(void)
 {
     lm_dap_t *d    = lm_dap_state();
-    agc_sp_t  ydif =
-        lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY */
-    agc_sp_t zdif =
-        lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ   */
-    agc_sp_t xdif =
-        lm_dap_msu(agc_erase_thetad(0), agc_erase_cdux()); /* CPHI-CDUX   */
+    agc_sp_t  ydif = lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY */
+    agc_sp_t  zdif = lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ   */
+    agc_sp_t  xdif = lm_dap_msu(agc_erase_thetad(0), agc_erase_cdux()); /* CPHI-CDUX   */
 
-    d->ak[1] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m21()) +
-                          (int32_t) lm_dap_mphi(zdif, agc_erase_m22()));
-    d->ak[2] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m31()) +
-                          (int32_t) lm_dap_mphi(zdif, agc_erase_m32()));
-    d->ak[0] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m11()) +
-                          (int32_t) xdif);
+    d->ak[1] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m21()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m22()));
+    d->ak[2] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m31()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m32()));
+    d->ak[0] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m11()) + (int32_t) xdif);
 
     if (!AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX))
     {
@@ -126,8 +120,8 @@ static agc_status_t needles_first_pass(lm_dap_t *d)
 
     for (int i = 0; i < 3; i++)
     {
-        d->ak[i]     = 0;
-        d->edrive[i] = 0;
+        d->ak[i]       = 0;
+        d->edrive[i]   = 0;
         agc_status_t s = agc_imu_hw_set_cducmd(i, 0); /* CS ZERO: -0       */
 
         st = (s != AGC_STATUS_OK) ? s : st;
@@ -179,8 +173,7 @@ static agc_status_t needles(lm_dap_t *d)
 
     for (int i = 2; i >= 0; i--)
     { /* DINDX = 2, 1, 0       */
-        int32_t l =
-            lm_dap_mphi((agc_sp_t) -NDL_ONETENTH, d->ak[i]); /* at 1800 deg */
+        int32_t l = lm_dap_mphi((agc_sp_t) -NDL_ONETENTH, d->ak[i]); /* at 1800 deg */
 
         if (l > NDL_DACMAX)
         {
@@ -191,10 +184,8 @@ static agc_status_t needles(lm_dap_t *d)
             l = -NDL_DACMAX;
         }
 
-        int32_t cmd = (int32_t) agc_imu_cducmd(i) + l -
-                      (int32_t) d->edrive[i];
-        agc_status_t s =
-            agc_imu_hw_set_cducmd(i, lm_dap_wrap(cmd)); /* ADS CDUXCMD */
+        int32_t      cmd = (int32_t) agc_imu_cducmd(i) + l - (int32_t) d->edrive[i];
+        agc_status_t s   = agc_imu_hw_set_cducmd(i, lm_dap_wrap(cmd)); /* ADS CDUXCMD */
 
         st           = (s != AGC_STATUS_OK) ? s : st;
         d->edrive[i] = (agc_sp_t) l;

@@ -35,7 +35,7 @@
 #include "agc/imu/imu.h"
 #include "internal.h"
 
-#define CH_SLOTS        0200 /* channels 0..0177 (fictitious included)  */
+#define CH_SLOTS        0200    /* channels 0..0177 (fictitious included)  */
 #define CH_RELAY_ROWS   16
 #define LAMP_AGC_WARN   000001u
 #define LAMP_TEMP       000010u
@@ -67,10 +67,10 @@
 #define SIGN15          040000u
 #define CH16_KEYS_MARKS 000177u /* nav DSKY key code + mark buttons    */
 
-static uint16_t g_sent[CH_SLOTS];         /* last value broadcast     */
-static uint16_t g_relay[CH_RELAY_ROWS];   /* last 010 word per relay  */
-static uint16_t g_rhc[3];                 /* 0166-0170 pitch yaw roll */
-static bool     g_restart_light;          /* yaAGC RestartLight       */
+static uint16_t g_sent[CH_SLOTS];       /* last value broadcast     */
+static uint16_t g_relay[CH_RELAY_ROWS]; /* last 010 word per relay  */
+static uint16_t g_rhc[3];               /* 0166-0170 pitch yaw roll */
+static bool     g_restart_light;        /* yaAGC RestartLight       */
 
 /* Output channels sampled for changes (010, 034, 035 are forced).        */
 static const uint16_t k_outputs[] = {005, 006, 011, 012, 013, 014};
@@ -172,8 +172,7 @@ void sim_channels_send_all(void)
 
     for (uint16_t c = 011; c < CH_SLOTS; c++)
     {
-        uint16_t v = (c < AGC_CHAN_COUNT && c != (uint16_t) AGC_CHAN_OUT0) ?
-                     agc_chan_read((int) c) : g_sent[c];
+        uint16_t v = (c < AGC_CHAN_COUNT && c != (uint16_t) AGC_CHAN_OUT0) ? agc_chan_read((int) c) : g_sent[c];
 
         if (v != 0u && c != SIM_CH_STEP_ACK)
         {
@@ -197,8 +196,7 @@ static void dsky_lamps(uint32_t cs)
 
     v |= ((c13 & CH13_LAMP_TEST) != 0u) ? (LAMP_RESTART | LAMP_STBY) : 0u;
     v |= g_restart_light ? LAMP_RESTART : 0u;
-    v |= ((c11 & CH11_TEMP) != 0u || (c30 & CH30_TEMP_BAD) != 0u) ?
-         LAMP_TEMP : 0u;
+    v |= ((c11 & CH11_TEMP) != 0u || (c30 & CH30_TEMP_BAD) != 0u) ? LAMP_TEMP : 0u;
     v |= ((c11 & CH11_KEY_REL) != 0u) ? LAMP_KEY_REL : 0u;
     v |= ((c11 & CH11_OPER_ERR) != 0u) ? LAMP_OPER_ERR : 0u;
 
@@ -232,9 +230,7 @@ static void cdu_drive(uint16_t c14)
         int32_t part = (mag > CDU_BURST) ? CDU_BURST : mag;
         int32_t left = (cmd < 0) ? -(mag - part) : (mag - part);
 
-        sim_socket_send((uint16_t) (SIM_CH_CDUX_DRV + (uint16_t) axis),
-                        (uint16_t) (((cmd <
-                                      0) ? SIGN15 : 0u) | (uint16_t) part));
+        sim_socket_send((uint16_t) (SIM_CH_CDUX_DRV + (uint16_t) axis), (uint16_t) (((cmd < 0) ? SIGN15 : 0u) | (uint16_t) part));
         agc_status_t st = agc_imu_hw_set_cducmd(axis, (agc_sp_t) left);
 
         if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -287,10 +283,7 @@ static void optics_drive(uint16_t c14)
             continue;
         }
 
-        uint16_t word = (cmd < 0) ?
-                        (uint16_t) (~(uint16_t) (-(int32_t) cmd) &
-                                    SIM_WORD_MASK) :
-                        (uint16_t) cmd; /* ones' complement, as yaAGC sends */
+        uint16_t word = (cmd < 0) ? (uint16_t) (~(uint16_t) (-(int32_t) cmd) & SIM_WORD_MASK) : (uint16_t) cmd; /* ones' complement, as yaAGC sends */
 
         sim_socket_send(chan[which], word);
         agc_erase_set_cdutcmd(which, 0);
@@ -310,9 +303,7 @@ static agc_sp_t sp_of_word(uint16_t w)
         return (0);
     }
 
-    agc_sp_t v = ((w & SIGN15) != 0u) ?
-                 (agc_sp_t) -(int32_t) ((uint16_t) ~w & 037777u) :
-                 (agc_sp_t) w;
+    agc_sp_t v = ((w & SIGN15) != 0u) ? (agc_sp_t) -(int32_t) ((uint16_t) ~w & 037777u) : (agc_sp_t) w;
 
     if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
@@ -328,8 +319,7 @@ static void rhc_latch(void)
 {
     uint16_t c13 = agc_chan_read((int) AGC_CHAN_CHAN13);
 
-    if ((c13 & CH13_RHC_READ) != CH13_RHC_READ ||
-        agc_state_vehicle() != AGC_VEHICLE_LM)
+    if ((c13 & CH13_RHC_READ) != CH13_RHC_READ || agc_state_vehicle() != AGC_VEHICLE_LM)
     {
         return;
     }
@@ -375,8 +365,7 @@ static void input_channel(uint16_t chan, uint16_t value, uint16_t mask)
     uint16_t old = agc_chan_read((int) chan);
     uint16_t v   = (uint16_t) ((value & mask) | (old & (uint16_t) ~mask));
 
-    agc_status_t st =
-        agc_chan_set_input((int) chan, (uint16_t) (v & SIM_WORD_MASK));
+    agc_status_t st = agc_chan_set_input((int) chan, (uint16_t) (v & SIM_WORD_MASK));
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAD_ARG))
     {

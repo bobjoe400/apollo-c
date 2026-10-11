@@ -76,7 +76,7 @@ agc_status_t agc_systems_test_finetime(agc_dp_t *t)
 
     for (int k = 0; k < FINETIME_TRIES && lo == POSMAX; k++)
     {
-        lo = agc_chan_read((int) AGC_CHAN_LOSCALAR);
+        lo             = agc_chan_read((int) AGC_CHAN_LOSCALAR);
         uint16_t again = agc_chan_read((int) AGC_CHAN_LOSCALAR);
 
         if (again != lo)

@@ -88,9 +88,8 @@ agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int base = (body == AGC_CONIC_EARTH) ? /* MUTABLE+2   */
-               1 : 5;                               /* or +10 words */
-    agc_conic_ctx_t z = {0};                        /* cleared context */
+    int             base = (body == AGC_CONIC_EARTH) ? 1 : 5; /* MUTABLE+2; or +10 words */
+    agc_conic_ctx_t z    = {0};                               /* cleared context */
 
     *ctx             = z;
     ctx->body        = body;
@@ -130,8 +129,7 @@ agc_dp_t agc_conic_mu_(agc_conic_body_t body)
         return (mutable_tab[0]);
     }
 
-    return ((body == AGC_CONIC_EARTH) ? /* MUEARTH, else MUM */
-            mutable_tab[0] : mutable_tab[4]);
+    return ((body == AGC_CONIC_EARTH) ? mutable_tab[0] : mutable_tab[4]); /* MUEARTH, else MUM */
 }
 
 /* ---- interpretive MPAC as a TP accumulator (see internal.h) ------- */
@@ -151,8 +149,7 @@ agc_dp_t agc_conic_mu_(agc_conic_body_t body)
  *********************************************************************/
 static agc_tp_t mpac_low(agc_tp_t m)
 {
-    agc_tp_t lo = m - agc_tp_from_dp(
-        agc_tp_to_dp(m)); /* MPAC+2, 2^-28 of the MPAC scale */
+    agc_tp_t lo = m - agc_tp_from_dp(agc_tp_to_dp(m)); /* MPAC+2, 2^-28 of the MPAC scale */
 
     if (!AGC_ASSERT(lo > -((agc_tp_t) 1 << AGC_SP_BITS)))
     {
@@ -762,8 +759,7 @@ agc_status_t agc_conic_abtconic_(void)
 {
     _Static_assert(AGC_CONIC_ALARM_ABTCONIC == 0607, "AGC constant");
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM ||
-                    agc_state_vehicle() == AGC_VEHICLE_LM))
+    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM || agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -776,7 +772,7 @@ agc_status_t agc_conic_abtconic_(void)
     }
 
     if (st == AGC_STATUS_BAILOUT)
-    {               /* CSM POODOO with average G on: WHIMPER */
+    { /* CSM POODOO with average G on: WHIMPER */
         return (st);
     }
 
@@ -803,8 +799,7 @@ agc_conic_body_t agc_conic_body_of_x1(int x1)
         return (AGC_CONIC_EARTH);
     }
 
-    agc_conic_body_t b = (x1 == -10) ? /* MUTABLE index -10D: moon */
-                         AGC_CONIC_MOON : AGC_CONIC_EARTH;
+    agc_conic_body_t b = (x1 == -10) ? AGC_CONIC_MOON : AGC_CONIC_EARTH; /* MUTABLE index -10D: moon */
 
     if (!AGC_ASSERT(b == AGC_CONIC_EARTH || b == AGC_CONIC_MOON))
     {

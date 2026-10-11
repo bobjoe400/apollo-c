@@ -30,10 +30,10 @@
 #include "internal.h"
 
 #define PAD_LINE        512
-#define PAD_LINES_MAX   256  /* bound on lines read                 */
-#define PAD_FLAGWORDS   14   /* FLAGWRD0 .. FLGWRD13                 */
+#define PAD_LINES_MAX   256   /* bound on lines read                 */
+#define PAD_FLAGWORDS   14    /* FLAGWRD0 .. FLGWRD13                 */
 #define PAD_MAT_N       9
-#define PAD_SCALE_REFSM 1    /* REFSMMAT 'SCALE OF B1'               */
+#define PAD_SCALE_REFSM 1     /* REFSMMAT 'SCALE OF B1'               */
 #define PAD_UNIT_MAX    1.0
 #define PAD_SCALE_R     29    /* RRECT earth sphere, m                */
 #define PAD_SCALE_V     7     /* VRECT earth sphere, m/cs             */
@@ -53,8 +53,7 @@ static bool pad_refsmmat(const char *args)
         return (false);
     }
 
-    if (sscanf(args, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", &m[0], &m[1],
-               &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], &m[8]) != PAD_MAT_N)
+    if (sscanf(args, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], &m[8]) != PAD_MAT_N)
     {
         return (false);
     }
@@ -110,12 +109,10 @@ static bool pad_state_vector(const char *args)
         return (false);
     }
 
-    int n = sscanf(args, "%7s %lf %lf %lf %lf %lf %lf %lf", veh, &x[0], &x[1],
-                   &x[2], &x[3], &x[4], &x[5], &x[6]);
+    int  n  = sscanf(args, "%7s %lf %lf %lf %lf %lf %lf %lf", veh, &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &x[6]);
     bool lm = strcmp(veh, "lm") == 0;
 
-    if (n < 7 || (!lm && strcmp(veh, "csm") != 0) || x[6] < 0.0 ||
-        x[6] > PAD_T_MAX)
+    if (n < 7 || (!lm && strcmp(veh, "csm") != 0) || x[6] < 0.0 || x[6] > PAD_T_MAX)
     {
         return (false);
     }
@@ -124,23 +121,20 @@ static bool pad_state_vector(const char *args)
 
     for (int i = 0; i < 3; i++)
     {
-        if (x[i] > PAD_R_MAX || x[i] < -PAD_R_MAX || x[i + 3] > PAD_V_MAX ||
-            x[i + 3] < -PAD_V_MAX)
+        if (x[i] > PAD_R_MAX || x[i] < -PAD_R_MAX || x[i + 3] > PAD_V_MAX || x[i + 3] < -PAD_V_MAX)
         {
             return (false);
         }
 
         sv.rrect.c[i] = agc_dp_from_double(x[i], PAD_SCALE_R);
-        sv.vrect.c[i] = agc_dp_from_double(x[i + 3] / PAD_CS_PER_S,
-                                           PAD_SCALE_V);
+        sv.vrect.c[i] = agc_dp_from_double(x[i + 3] / PAD_CS_PER_S, PAD_SCALE_V);
     }
 
     sv.rcv = sv.rrect;
     sv.vcv = sv.vrect;
     sv.tet = agc_dp_from_double(x[6] * PAD_CS_PER_S, PAD_SCALE_T);
 
-    return (agc_integ_perm_set(lm ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM, &sv) ==
-            AGC_STATUS_OK);
+    return (agc_integ_perm_set(lm ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM, &sv) == AGC_STATUS_OK);
 }
 
 /* One line; true when it is blank, a comment, or applied.              */
@@ -216,8 +210,7 @@ agc_status_t sim_pad_load(const char *path)
 
         if (!ok)
         {
-            (void) fprintf(stderr, "agc_sim: pad %s line %d not understood\n",
-                           path, i); /* diagnostic only */
+            (void) fprintf(stderr, "agc_sim: pad %s line %d not understood\n", path, i); /* diagnostic only */
         }
     }
 

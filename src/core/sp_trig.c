@@ -132,7 +132,7 @@ static agc_sp_t sp_sine(int32_t a16)
     }
 
     if (o != 0)
-    {           /* arg beyond +-pi  */
+    { /* arg beyond +-pi  */
         t = -t; /* CS TEMK          */
     }
 

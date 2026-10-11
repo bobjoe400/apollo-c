@@ -45,7 +45,7 @@
 
 #define BITPERF 0.0797959872 /* throttle pulses per newton            */
 
-#define CS_PER_S 100.0          /* centiseconds per second             */
+#define CS_PER_S 100.0                    /* centiseconds per second             */
 #define CHECK(c) check((c), __LINE__, #c) /* count and report a check */
 
 static int g_checks;         /* checks run                          */
@@ -56,9 +56,8 @@ static void     check(bool ok, int line, const char *text);
 static void     fresh_lm(void);
 static agc_dp_t accel_dp(double a_ms2);
 static void     test_throttle_band(void);
-static void     setup_trajectory(double tgo_s, double dx_m, const double rd[3],
-                                 const double vd[3], const double ad[3]);
-static void test_quadguid_on_trajectory(void);
+static void     setup_trajectory(double tgo_s, double dx_m, const double rd[3], const double vd[3], const double ad[3]);
+static void     test_quadguid_on_trajectory(void);
 
 /**********************************************************************
  * AGC: none -- run the tests; the exit status reports failures.
@@ -69,9 +68,7 @@ int main(void)
 {
     test_throttle_band();
     test_quadguid_on_trajectory();
-    (void) printf(
-        "test_landing: %d checks, %d failures, %d assertion reports\n",
-        g_checks, g_failures, g_assert_reports);
+    (void) printf("test_landing: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
 }
@@ -146,12 +143,13 @@ static void test_throttle_band(void)
     fresh_lm();
     agc_lm_pad_t *pad = agc_lm_pad(); /* pad loads */
 
-    pad->lowcrit  = 2853;     /* ~ 82% of FMAXPOS (test values)      */
-    pad->highcrit = 3070;
+    pad->lowcrit      = 2853;   /* ~ 82% of FMAXPOS (test values)      */
+    pad->highcrit     = 3070;
     const double mass = 8000.0; /* kg                                   */
 
     agc_guid_state()->lm.mass = agc_dp_from_double(mass, 16);
     agc_time_set_cs(50000u);
+
     /* TTHROT more than 3 s ago */
     agc_lm_thr()->tthrot = (agc_sp_t) ((agc_lm_time1() + 16384 - 1000) % 16384);
 
@@ -161,30 +159,27 @@ static void test_throttle_band(void)
     const double a_now = 1.5; /* present, m/s^2 */
 
     agc_lm_ldg()->afc = accel_dp(a_cmd);
-    agc_status_t st = /* step status */
-                      agc_lm_throttle_measured(accel_dp(a_now));
+    agc_status_t st   = agc_lm_throttle_measured(accel_dp(a_now)); /* step status */
 
     CHECK(st == AGC_STATUS_OK);
 
     const double        fc     = mass * a_cmd * BITPERF; /* 1276.7 pulses */
     const double        fp     = mass * a_now * BITPERF; /* 957.6 pulses */
-    const agc_lm_thr_t *t      = agc_lm_thr(); /* throttle erasables */
-    double              fc_got = agc_dp_to_double(agc_lm_words_value(
-                                                      t->fcodd), 14);
-    double fp_got =
-        agc_dp_to_double(agc_lm_words_value(t->fp), 14);
+    const agc_lm_thr_t *t      = agc_lm_thr();           /* throttle erasables */
+    double              fc_got = agc_dp_to_double(agc_lm_words_value(t->fcodd), 14);
+    double              fp_got = agc_dp_to_double(agc_lm_words_value(t->fp), 14);
 
     CHECK(fabs(fc_got - fc) < 1.0);
     CHECK(fabs(fp_got - fp) < 1.0);
     CHECK(t->pifpset == 0);
+
     /* Pulses sent = high word of FCODD - FP = 319 (within one pulse).   */
     int expected = (int) lround(fc - fp); /* FC - FP */
 
     CHECK(abs((int) t->pseudo55 - expected) <= 1);
     CHECK(agc_erase_thrust() == t->pseudo55);
     CHECK(t->fcold == t->fcodd.hi);
-    (void) printf("throttle: FC %.1f FP %.1f -> %d pulses (expect %d)\n",
-                  fc_got, fp_got, (int) t->pseudo55, expected);
+    (void) printf("throttle: FC %.1f FP %.1f -> %d pulses (expect %d)\n", fc_got, fp_got, (int) t->pseudo55, expected);
 
     /* Above HIGHCRIT from the throttleable region: throttle-up to the
      * fixed region (FCODD = FMAXPOS, PIFPSET = FEXTRA).                */
@@ -210,16 +205,15 @@ static void test_throttle_band(void)
  *   vd     const double  I    VDG target velocity, m/s
  *   ad     const double  I    ADG target acceleration, m/s^2
  **********************************************************************/
-static void setup_trajectory(double tgo_s, double dx_m, const double rd[3],
-                             const double vd[3], const double ad[3])
+static void setup_trajectory(double tgo_s, double dx_m, const double rd[3], const double vd[3], const double ad[3])
 {
-    agc_lm_pad_t    *pad = agc_lm_pad(); /* pad loads */
-    agc_lm_ldg_t    *l   = agc_lm_ldg(); /* pad loads */
+    agc_lm_pad_t    *pad = agc_lm_pad();    /* pad loads */
+    agc_lm_ldg_t    *l   = agc_lm_ldg();    /* pad loads */
     agc_lm_target_t *tg  = &pad->target[0]; /* landing erasables */
 
-    pad->leadtime = -1; /* 1 cs: essentially no lag */
+    pad->leadtime = -1;               /* 1 cs: essentially no lag */
     l->wchphase   = AGC_LM_PHASE_BRAKQUAD;
-    double tt = tgo_s * CS_PER_S; /* cs                       */
+    double tt     = tgo_s * CS_PER_S; /* cs                       */
 
     l->ttf_8 = agc_dp_from_double(tt / 8.0, 14);
 
@@ -260,7 +254,7 @@ static void test_quadguid_on_trajectory(void)
     const double vd[3] = {-1.0, 0.5, 2.0};      /* m/s                */
     const double ad[3] = {0.5, 0.2, -0.3};      /* m/s^2              */
     const double tgo   = -400.0;                /* s                  */
-    agc_interp_t ip; /* interpreter state (OVFIND) */
+    agc_interp_t ip;                            /* interpreter state (OVFIND) */
 
     fresh_lm();
     setup_trajectory(tgo, 0.0, rd, vd, ad);
@@ -273,9 +267,8 @@ static void test_quadguid_on_trajectory(void)
     for (int i = 0; i < 3; i++)
     {
         acg0[i] = agc_dp_to_double(agc_lm_ldg()->unfc_2.c[i], -4) * 1.0e4;
-        (void) printf(
-            "quadguid on-trajectory: ACG[%d] = %+.5f m/s^2 (ADG %+.5f)\n", i,
-            acg0[i], ad[i]);
+        (void) printf("quadguid on-trajectory: ACG[%d] = %+.5f m/s^2 (ADG %+.5f)\n", i, acg0[i], ad[i]);
+
         /* zero correction: ACG = ADG to 1% (lag coefficients of a
          * 1 cs LEADTIME and the 2^-28 word length)                    */
         CHECK(fabs(acg0[i] - ad[i]) <= 0.01 * fabs(ad[i]) + 1.0e-4);
@@ -283,8 +276,7 @@ static void test_quadguid_on_trajectory(void)
 
     double mag = sqrt(ad[0] * ad[0] + ad[1] * ad[1] + ad[2] * ad[2]);
 
-    CHECK(fabs(agc_dp_to_double(agc_lm_ldg()->afc, -4) * 1.0e4 - mag) <=
-          0.01 * mag);
+    CHECK(fabs(agc_dp_to_double(agc_lm_ldg()->afc, -4) * 1.0e4 - mag) <= 0.01 * mag);
 
     /* 10 m off the trajectory in x: correction 12 dx / T^2 back toward it. */
     const double dx = 10.0; /* x offset, m */
@@ -292,12 +284,11 @@ static void test_quadguid_on_trajectory(void)
     fresh_lm();
     setup_trajectory(tgo, dx, rd, vd, ad);
     agc_interp_init(&ip);
-    st = agc_lm_quadguid(&ip);
+    st          = agc_lm_quadguid(&ip);
     CHECK(st == AGC_STATUS_OK);
     double acgx = agc_dp_to_double(agc_lm_ldg()->unfc_2.c[0], -4) * 1.0e4;
     double corr = -12.0 * dx / (tgo * tgo); /* m/s^2              */
 
-    (void) printf("quadguid 10 m off: dACG x = %+.6f m/s^2 (expect %+.6f)\n",
-                  acgx - acg0[0], corr);
+    (void) printf("quadguid 10 m off: dACG x = %+.6f m/s^2 (expect %+.6f)\n", acgx - acg0[0], corr);
     CHECK(fabs((acgx - acg0[0]) - corr) <= 0.05 * fabs(corr) + 2.0e-5);
 } /* test_quadguid_on_trajectory */

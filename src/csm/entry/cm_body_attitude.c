@@ -110,26 +110,23 @@ static uint16_t cdu_pattern(agc_sp_t a)
  **********************************************************************/
 agc_status_t agc_entry_cm_pose_triad(void)
 {
-    agc_interp_t      *ip  = entry_ip(); /* entry job interpreter state */
-    agc_entry_state_t *es  = agc_entry_state(); /* entry erasables */
-    agc_avg_g_t       *avg = /* average-G data (UNITW, UNITR) */
-                             &agc_guid_state()->avg;
-    agc_vec_t w; /* KWE (UNITW x UNITR), m/cs B7 */
-    agc_vec_t uy; /* UNIT(UNITR x UXA), B1 */
-    agc_dp_t  vmag = 0;          /* |VREL|, 2VS B1 */
+    agc_interp_t      *ip   = entry_ip();             /* entry job interpreter state */
+    agc_entry_state_t *es   = agc_entry_state();      /* entry erasables */
+    agc_avg_g_t       *avg  = &agc_guid_state()->avg; /* average-G data (UNITW, UNITR) */
+    agc_vec_t          w;                             /* KWE (UNITW x UNITR), m/cs B7 */
+    agc_vec_t          uy;                            /* UNIT(UNITR x UXA), B1 */
+    agc_dp_t           vmag = 0;                      /* |VREL|, 2VS B1 */
 
     if (!AGC_ASSERT(es != NULL) || !AGC_ASSERT(avg != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    w = agc_vec_scale(ip, agc_vec_cross(ip, avg->unitw, avg->unitr),
-                      AGC_ENTRY_KWE);
-    es->mvrel = agc_vec_add(
-        ip, w, agc_vec_scale(ip, agc_erase_vn(), AGC_ENTRY_MKVSCALE));
-    es->uxa = agc_vec_unit(ip, es->mvrel, &vmag, NULL); /* LXA,1 36D  */
-    uy      = agc_vec_neg(agc_vec_cross(ip, es->uxa, avg->unitr));
-    uy      = agc_vec_unit(ip, uy, NULL, NULL);
+    w         = agc_vec_scale(ip, agc_vec_cross(ip, avg->unitw, avg->unitr), AGC_ENTRY_KWE);
+    es->mvrel = agc_vec_add(ip, w, agc_vec_scale(ip, agc_erase_vn(), AGC_ENTRY_MKVSCALE));
+    es->uxa   = agc_vec_unit(ip, es->mvrel, &vmag, NULL); /* LXA,1 36D  */
+    uy        = agc_vec_neg(agc_vec_cross(ip, es->uxa, avg->unitr));
+    uy        = agc_vec_unit(ip, uy, NULL, NULL);
 
     /* TIX,1: branch to CM/POSE2 (new UYA) when X1 = |VREL| > S1 = SPVQUIT. */
     if (agc_dp_high(vmag) > AGC_ENTRY_SPVQUIT)
@@ -138,8 +135,7 @@ agc_status_t agc_entry_cm_pose_triad(void)
     }
 
     es->uya = es->olduya; /* CM/POSE2  */
-    es->uza =
-        agc_vec_shl(ip, agc_vec_neg(agc_vec_cross(ip, es->uya, es->uxa)), 1);
+    es->uza = agc_vec_shl(ip, agc_vec_neg(agc_vec_cross(ip, es->uya, es->uxa)), 1);
 
     if (!AGC_ASSERT(vmag >= 0))
     {
@@ -169,11 +165,11 @@ agc_status_t agc_entry_cm_pose_triad(void)
  **********************************************************************/
 agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
 {
-    agc_interp_t      *ip = entry_ip(); /* entry job interpreter state */
+    agc_interp_t      *ip = entry_ip();        /* entry job interpreter state */
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
-    agc_vec_t          ul; /* UL = UNIT(UXA x UBY), B1 */
-    agc_dp_t           s; /* sine term, B2 */
-    agc_dp_t           c; /* cosine term, B2 */
+    agc_vec_t          ul;                     /* UL = UNIT(UXA x UBY), B1 */
+    agc_dp_t           s;                      /* sine term, B2 */
+    agc_dp_t           c;                      /* cosine term, B2 */
 
     if (!AGC_ASSERT(angles != NULL) || !AGC_ASSERT(es != NULL))
     {
@@ -182,18 +178,15 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
 
     /* CM/TRIO part 2 (pp. 884-885): UBX, UBY, UBZ in reference coordinates
      * from the PIP-time gimbal angles and REFSMMAT. */
-    agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows */
-    agc_dp_t  aig      = /* AIG/PIP, revs B0 */
-                         agc_guid_cdulogic(cdu_pattern(es->aig_pip));
-    agc_dp_t amg = /* AMG/PIP, revs B0 */
-                   agc_guid_cdulogic(cdu_pattern(es->amg_pip));
-    agc_dp_t aog = /* AOG/PIP, revs B0 */
-                   agc_guid_cdulogic(cdu_pattern(es->aog_pip));
-    agc_dp_t  ci = agc_dp_cos(ip, aig);       /* COS AIG /2, B1 */
-    agc_dp_t  si = agc_dp_sin(ip, aig);       /* SIN AIG /2, B1 */
-    agc_dp_t  sm = agc_dp_sin(ip, amg);       /* SIN AMG /2, B1 */
-    agc_dp_t  cm = agc_dp_cos(ip, amg);       /* COS AMG /2, B1 */
-    agc_vec_t ubx; /* XB/2 platform, B1 */
+    agc_mat_t refsmmat = agc_erase_refsmmat();                        /* REFSMMAT, half-unit rows */
+    agc_dp_t  aig      = agc_guid_cdulogic(cdu_pattern(es->aig_pip)); /* AIG/PIP, revs B0 */
+    agc_dp_t  amg      = agc_guid_cdulogic(cdu_pattern(es->amg_pip)); /* AMG/PIP, revs B0 */
+    agc_dp_t  aog      = agc_guid_cdulogic(cdu_pattern(es->aog_pip)); /* AOG/PIP, revs B0 */
+    agc_dp_t  ci       = agc_dp_cos(ip, aig);                         /* COS AIG /2, B1 */
+    agc_dp_t  si       = agc_dp_sin(ip, aig);                         /* SIN AIG /2, B1 */
+    agc_dp_t  sm       = agc_dp_sin(ip, amg);                         /* SIN AMG /2, B1 */
+    agc_dp_t  cm       = agc_dp_cos(ip, amg);                         /* COS AMG /2, B1 */
+    agc_vec_t ubx;                                                    /* XB/2 platform, B1 */
 
     /* CM/TRIO part 1 (p. 884): UBY in platform coordinates /4,
      * YB = (-CO SM CI + SO SI, CO CM, CO SM SI + SO CI). */
@@ -213,21 +206,16 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     }
 
     /* (-SM CI, noise, SM SI)/2 with CM/2 replacing the noise              */
-    uby = agc_vec_make(
-        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), ci), 1), cm,
-        agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), agc_dp_neg(si)), 1));
-    uby      = agc_vec_scale(ip, uby, co); /* x CO/2 -> /4 */
-    uby.c[0] = agc_dp_add(ip, agc_dp_neg(agc_dp_mul_trunc(so, agc_dp_neg(si))),
-                          uby.c[0]);
+    uby      = agc_vec_make(agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), ci), 1), cm, agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), agc_dp_neg(si)), 1));
+    uby      = agc_vec_scale(ip, uby, co);                              /* x CO/2 -> /4 */
+    uby.c[0] = agc_dp_add(ip, agc_dp_neg(agc_dp_mul_trunc(so, agc_dp_neg(si))), uby.c[0]);
     uby.c[2] = agc_dp_add(ip, agc_dp_mul_trunc(so, ci), uby.c[2]);
     es->uby  = uby;
-    es->uby  =
-        agc_vec_shl(ip, agc_vec_mat(ip, es->uby, &refsmmat), 2); /* VXM VSL2 */
+    es->uby  = agc_vec_shl(ip, agc_vec_mat(ip, es->uby, &refsmmat), 2); /* VXM VSL2 */
+
     /* XB = (CM CI, SM, -CM SI)/2                                          */
-    ubx = agc_vec_make(agc_dp_shl(ip, agc_dp_mul(ip, cm, ci), 1), sm,
-                       agc_dp_shl(ip, agc_dp_mul(ip, cm, agc_dp_neg(si)), 1));
-    es->ubx =
-        agc_vec_shl(ip, agc_vec_mat(ip, ubx, &refsmmat), 1); /* VXM VSL1 */
+    ubx     = agc_vec_make(agc_dp_shl(ip, agc_dp_mul(ip, cm, ci), 1), sm, agc_dp_shl(ip, agc_dp_mul(ip, cm, agc_dp_neg(si)), 1));
+    es->ubx = agc_vec_shl(ip, agc_vec_mat(ip, ubx, &refsmmat), 1); /* VXM VSL1 */
     es->ubz = agc_vec_shl(ip, agc_vec_cross(ip, es->ubx, es->uby), 1);
 
     if (!AGC_ASSERT(agc_dp_abs(sm) <= AGC_DP_HALF))
@@ -235,8 +223,7 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
         return (AGC_STATUS_BAD_ARG);
     }
 
-    ul =
-        agc_vec_unit(ip, agc_vec_cross(ip, es->uxa, es->uby), NULL, NULL);
+    ul        = agc_vec_unit(ip, agc_vec_cross(ip, es->uxa, es->uby), NULL, NULL);
     c         = agc_vec_dot(ip, ul, es->uza); /* COS(ROLL)/4  */
     s         = agc_vec_dot(ip, ul, es->uya); /* -SIN(ROLL)/4 */
     angles[0] = agc_imu_arctrig(ip, s, c);
@@ -245,8 +232,7 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     s         = agc_vec_dot(ip, ul, es->ubx); /* -SIN(ALFA)/4 */
     c         = agc_vec_dot(ip, ul, es->ubz); /* COS(ALFA)/4  */
     angles[2] = agc_imu_arctrig(ip, s, c);
-    c         = entry_tp_shl(
-        ip, agc_vec_dot_tp(ip, agc_guid_state()->avg.unitr, es->uza), 1);
+    c         = entry_tp_shl(ip, agc_vec_dot_tp(ip, agc_guid_state()->avg.unitr, es->uza), 1);
     angles[3] = agc_dp_acos(ip, c);
 
     return (AGC_STATUS_OK);
@@ -272,7 +258,7 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
 static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
 {
     agc_sp_t old = es->gama; /* old GAMA, B0 */
-    int32_t  g; /* -|GAMDOT|, SP units */
+    int32_t  g;              /* -|GAMDOT|, SP units */
 
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
     {
@@ -284,15 +270,13 @@ static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
     if (!agc_flag_test(AGC_FLAG_GAMDIFSW))
     {
         agc_flag_set(AGC_FLAG_GAMDIFSW); /* first difference next */
-        es->gamdot = 0;                         /* NOGAMDOT              */
+        es->gamdot = 0;                  /* NOGAMDOT              */
 
         return;
     }
 
-    es->gamdot = entry_sp_mp(entry_sp_sat((int32_t) es->gama - (int32_t) old),
-                             AGC_ENTRY_TCDU);
-    g = (es->gamdot > 0) ? /* -|GAMDOT| */
-        -(int32_t) es->gamdot : (int32_t) es->gamdot;
+    es->gamdot = entry_sp_mp(entry_sp_sat((int32_t) es->gama - (int32_t) old), AGC_ENTRY_TCDU);
+    g          = (es->gamdot > 0) ? -(int32_t) es->gamdot : (int32_t) es->gamdot; /* -|GAMDOT| */
 
     if (g + 5 > 0)
     { /* |GAMDOT| < 5 bits     */
@@ -328,7 +312,7 @@ static void atup_gamdot(agc_entry_state_t *es, agc_sp_t gama_new)
 static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
 {
     int32_t eul = -2 * (int32_t) agc_dp_high(mpac); /* CS MPAC, DOUBLE      */
-    int32_t sum; /* EUL - PIP + NOW, /180 */
+    int32_t sum;                                    /* EUL - PIP + NOW, /180 */
 
     if (!AGC_ASSERT(eul >= -32768 && eul <= 32768))
     {
@@ -369,19 +353,20 @@ static void entry_cm_atup(const agc_dp_t angles[4])
 {
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
     agc_phase_var_t    v  = {
-        AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U
-    };
+            AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U
+        };
 
     if (!AGC_ASSERT(angles != NULL))
     {
         return;
     }
 
-    agc_inhint(); /* until the body angles are updated     */
+    agc_inhint();                                          /* until the body angles are updated     */
     atup_gamdot(es, (agc_sp_t) (-agc_dp_high(angles[3]))); /* CS 10D */
     temproll = atup_angle(angles[0], es->roll_pip, es->roll_180, true);
     tempalfa = atup_angle(angles[2], es->alfa_pip, es->alfa_180, true);
     tempbeta = atup_angle(angles[1], es->beta_pip, es->beta_180, false);
+
     /* DCA REPOSADR / DXCH PHSNAME5: group 5 now restarts at REDOPOSE.     */
     agc_phase_change_var(010035, &v);
     agc_relint();
@@ -452,8 +437,8 @@ agc_status_t entry_servnout(agc_job_ctx_t *ctx)
 static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
 {
     agc_entry_state_t *es   = agc_entry_state(); /* entry erasables */
-    agc_status_t       st   = AGC_STATUS_OK; /* status of the POSEXIT step */
-    bool               disp = true; /* OVERNOUT display wanted */
+    agc_status_t       st   = AGC_STATUS_OK;     /* status of the POSEXIT step */
+    bool               disp = true;              /* OVERNOUT display wanted */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -463,15 +448,14 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
     switch (es->posexit)
     {
         case AGC_ENTRY_POSEXIT_DESIRED_GIMBALS:
-            st =
-                agc_entry_desired_gimbal_angles(); /* QPRET = ENDEXIT */
+            st   = agc_entry_desired_gimbal_angles(); /* QPRET = ENDEXIT */
             break;
         case AGC_ENTRY_POSEXIT_STARTENT:
             st   = agc_entry_startent();
-            disp = false; /* RTB SERVNOUT                */
+            disp = false;                             /* RTB SERVNOUT                */
             break;
         case AGC_ENTRY_POSEXIT_SCALEPOP:
-            st = agc_entry_scalepop(&disp);
+            st   = agc_entry_scalepop(&disp);
             break;
         case AGC_ENTRY_POSEXIT_ENDEXIT:
         case AGC_ENTRY_POSEXIT_COUNT:
@@ -531,7 +515,7 @@ static agc_status_t entry_redopose_tail(agc_job_ctx_t *ctx)
     es->alfa_180 = tempalfa;
     es->beta_180 = tempbeta;
     agc_relint();
-    es->vmagi = agc_vec_abval(entry_ip(), agc_erase_vn()); /* 2^7 m/cs */
+    es->vmagi    = agc_vec_abval(entry_ip(), agc_erase_vn()); /* 2^7 m/cs */
 
     return (entry_posexit(ctx));
 }
@@ -631,7 +615,7 @@ agc_status_t agc_job_redopose(agc_job_ctx_t *ctx)
 agc_status_t agc_job_refaze10(agc_job_ctx_t *ctx)
 {
     bool         disp = false; /* OVERNOUT display wanted */
-    agc_status_t st; /* REFAZE10 status */
+    agc_status_t st;           /* REFAZE10 status */
 
     if (!AGC_ASSERT(ctx != NULL))
     {

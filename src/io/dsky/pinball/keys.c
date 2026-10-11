@@ -56,13 +56,14 @@
 
 #define PIN_ELRCODE  022u /* ELRCODE: error light reset key code */
 #define PIN_KEYS_MAX 64   /* longest key string agc_dsky_keys takes */
+
 /* DECON 2DEC 1 E-5 B14 = 2^14/10^5 = .16384 as a DP fraction (05174 13261). */
 #define PIN_DECON       ((int64_t) 43980465) /* 2^14/10^5 at 2^-28 */
-#define PIN_ERCON       0104u   /* ERCON: channel 11 bits 3, 7          */
-#define PIN_GLNOATT     0050u   /* GL+NOATT: gimbal lock, no att lamps  */
-#define PIN_RFAILS      0330u   /* RFAILS (LM): radar CDU and data fail */
-#define PIN_RCDUFBIT    0100u   /* RCDUFBIT (LM) = BIT7                 */
-#define PIN_PRIO16_BITS 016000u /* PRIO16 OCT 16000                     */
+#define PIN_ERCON       0104u                /* ERCON: channel 11 bits 3, 7          */
+#define PIN_GLNOATT     0050u                /* GL+NOATT: gimbal lock, no att lamps  */
+#define PIN_RFAILS      0330u                /* RFAILS (LM): radar CDU and data fail */
+#define PIN_RCDUFBIT    0100u                /* RCDUFBIT (LM) = BIT7                 */
+#define PIN_PRIO16_BITS 016000u              /* PRIO16 OCT 16000                     */
 
 /* CRITCON (p. 317): DSPCOUNT of the last character of VERB, NOUN, R1-R3. */
 static const int16_t k_critcon[5] = {022, 020, 012, 005, 000};
@@ -90,7 +91,7 @@ static void pin_decend(int inrel)
     }
 
     int     k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
-    int64_t n = s->xyz_dec[k]; /* decimal integer keyed so far */
+    int64_t n = s->xyz_dec[k];       /* decimal integer keyed so far */
 
     if (!AGC_ASSERT(n >= 0 && n <= 99999))
     {
@@ -98,7 +99,7 @@ static void pin_decend(int inrel)
     }
 
     agc_dp_t frac  = (agc_dp_t) ((n * PIN_DECON) >> AGC_SP_BITS); /* 2^-28 */
-    bool     minus = (s->decbrnch & 3u) == 2u; /* minus sign keyed */
+    bool     minus = (s->decbrnch & 3u) == 2u;                    /* minus sign keyed */
 
     s->xyz_frac[k]    = minus ? -frac : frac; /* DCS     */
     s->xyz_negzero[k] = minus && frac == 0;
@@ -118,8 +119,7 @@ static agc_status_t pin_endnmtst(int inrel)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
-        !AGC_ASSERT(!s->dspcount_neg))
+    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) || !AGC_ASSERT(!s->dspcount_neg))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -164,8 +164,7 @@ static agc_status_t pin_num(void)
 
     int inrel = pin_getinrel(); /* INREL of DSPCOUNT */
 
-    if (!AGC_ASSERT(inrel >= 0) ||
-        !AGC_ASSERT(s->chr <= 9))
+    if (!AGC_ASSERT(inrel >= 0) || !AGC_ASSERT(s->chr <= 9))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -188,12 +187,11 @@ static agc_status_t pin_num(void)
     /* Accumulate one character into VERBREG, NOUNREG or X/Y/ZREG: octal by
      * CYL x3 + CHAR, decimal by DECTOBIN (sum x 10 + CHAR).                 */
     bool decimal = (s->decbrnch & 3u) != 0u; /* a sign made the entry decimal */
-    int  chr     = s->chr; /* the digit keyed (CHAR) */
+    int  chr     = s->chr;                   /* the digit keyed (CHAR) */
 
     pin_state_t *s_accumulate = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) ||
-        !AGC_ASSERT(chr >= 0 && chr <= 9))
+    if (!AGC_ASSERT(inrel >= 0 && inrel <= PIN_INREL_Z) || !AGC_ASSERT(chr >= 0 && chr <= 9))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -233,10 +231,7 @@ static agc_status_t pin_num(void)
     {
         int k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
 
-        s_accumulate->xyz_oct[k] =
-            (uint16_t) (((uint32_t) s_accumulate->xyz_oct[k] <<
-                         3 | (uint32_t) chr) &
-                        PIN_WORD);
+        s_accumulate->xyz_oct[k] = (uint16_t) (((uint32_t) s_accumulate->xyz_oct[k] << 3 | (uint32_t) chr) & PIN_WORD);
     }
 
     return (pin_endnmtst(inrel));
@@ -314,9 +309,10 @@ static agc_status_t pin_nvcom(bool verb)
 
     agc_status_t st = pin_2blank(); /* status so far */
 
-    s->decbrnch   = 1u;              /* set for dec V/N code              */
-    s->reqret     = PIN_REQ_PASS0;   /* set for ENTPAS0                   */
+    s->decbrnch   = 1u;            /* set for dec V/N code              */
+    s->reqret     = PIN_REQ_PASS0; /* set for ENTPAS0                   */
     s->reqret_neg = false;
+
     /* If DSPALARM occurs before first ENTPAS0 or NVSUB, ENTRET must already
      * be set to TC ENDOFJOB.                                              */
     s->entret = PIN_ENT_ENDOFJOB;
@@ -360,8 +356,7 @@ static bool pin_signtest(void)
         return (false);
     }
 
-    return (s->dspcount == PIN_R1D1 || s->dspcount == PIN_R2D1 ||
-            s->dspcount == PIN_R3D1);
+    return (s->dspcount == PIN_R1D1 || s->dspcount == PIN_R2D1 || s->dspcount == PIN_R3D1);
 }
 
 /**********************************************************************
@@ -394,8 +389,7 @@ static agc_status_t pin_sign_key(bool minus)
 
     int inrel = pin_getinrel(); /* INREL of DSPCOUNT */
 
-    if (!AGC_ASSERT(inrel >= PIN_INREL_X) ||
-        !AGC_ASSERT(inrel <= PIN_INREL_Z))
+    if (!AGC_ASSERT(inrel >= PIN_INREL_X) || !AGC_ASSERT(inrel <= PIN_INREL_Z))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -433,8 +427,7 @@ static agc_status_t pin_sign_key(bool minus)
  **********************************************************************/
 static bool pin_legaltst(int inrel)
 {
-    if (!AGC_ASSERT(inrel >= 0) ||
-        !AGC_ASSERT(inrel <= PIN_INREL_Z))
+    if (!AGC_ASSERT(inrel >= 0) || !AGC_ASSERT(inrel <= PIN_INREL_Z))
     {
         return (false); /* no register: not clearable */
     }
@@ -512,8 +505,7 @@ agc_status_t pin_enter(void)
 
     agc_status_t st = PIN_STATUS_RECYCLE; /* status so far */
 
-    for (int pass = 0; pass < PIN_RECYCLE_MAX && st == PIN_STATUS_RECYCLE;
-         pass++)
+    for (int pass = 0; pass < PIN_RECYCLE_MAX && st == PIN_STATUS_RECYCLE; pass++)
     {
         st = pin_enter_once();
     }
@@ -576,8 +568,7 @@ agc_status_t pin_vbreldsp(void)
 
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    agc_chan_and((int) AGC_CHAN_DSALMOUT,
-                 (uint16_t) (PIN_WORD ^ PIN_CH11_UPACT)); /* UPACT off */
+    agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (PIN_WORD ^ PIN_CH11_UPACT)); /* UPACT off */
 
     if (s->old_dsplock && (s->monsave1 & PIN_BIT14) != 0u)
     {
@@ -625,12 +616,10 @@ static agc_status_t pin_tstab(void)
     for (int i = PIN_DSPTAB_PANEL - 1; i >= 0 && st == AGC_STATUS_OK; i--)
     {
         agc_inhint();
-        uint16_t w   = agc_erase_dsptab(i); /* DSPTAB word */
+        uint16_t w   = agc_erase_dsptab(i);                      /* DSPTAB word */
         uint16_t mag = (uint16_t) (pin_ones_mag(w) | PIN_BIT12); /* magnitude */
 
-        agc_erase_set_dsptab(i, pin_ones_negative(w) ? /* keep the sign */
-                             pin_ones_neg(mag) :
-                             mag);
+        agc_erase_set_dsptab(i, pin_ones_negative(w) ? pin_ones_neg(mag) : mag); /* keep the sign */
         st = AGC_STATUS_OK;
         agc_relint();
     }
@@ -658,9 +647,10 @@ agc_status_t pin_error_key(void)
 
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->dsplock = s->old_dsplock; /* XCH 21/22REG           */
+    s->dsplock = s->old_dsplock;                            /* XCH 21/22REG           */
     agc_inhint();
     agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_CAUTRST); /* caution reset */
+
     /* Leave gimbal lock and no att intact, turning off auto, hold, free,
      * prog alarm and tracker.                                           */
     uint16_t c; /* new DSPTAB +11D lamp word */
@@ -682,12 +672,10 @@ agc_status_t pin_error_key(void)
     }
     else
     {
-        agc_erase_set_radmodes(
-            (uint16_t) ((agc_erase_radmodes() & ~PIN_RFAILS) | PIN_RCDUFBIT));
+        agc_erase_set_radmodes((uint16_t) ((agc_erase_radmodes() & ~PIN_RFAILS) | PIN_RCDUFBIT));
     }
 
-    agc_chan_and((int) AGC_CHAN_CHAN13,
-                 (uint16_t) (PIN_WORD ^ PIN_CH13_TESTALM));
+    agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (PIN_WORD ^ PIN_CH13_TESTALM));
     agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (PIN_WORD ^ PIN_ERCON));
     agc_relint();
     st = pin_tstab();
@@ -724,7 +712,7 @@ static agc_status_t pin_clear_key(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s_key = pin_st(); /* pinball erasables */
+    pin_state_t *s_key = pin_st();                      /* pinball erasables */
     int          inrel = pin_inrel_of(s_key->dspcount); /* INREL of DSPCOUNT */
 
     if (!AGC_ASSERT(inrel >= 0))
@@ -733,7 +721,7 @@ static agc_status_t pin_clear_key(void)
     }
 
     if (s_key->clpass > 0)
-    {     /* CLPASHI      */
+    { /* CLPASHI      */
         inrel = (inrel > 0) ? inrel - 1 : 0; /* previous register */
 
         if (!pin_legaltst(inrel))
@@ -746,7 +734,7 @@ static agc_status_t pin_clear_key(void)
 
         if (s_key->verbreg > 0)
         {
-            s_key->verbreg--;     /* DIM VERBREG  */
+            s_key->verbreg--; /* DIM VERBREG  */
         }
 
         agc_status_t st = pin_updatvb(s_key->verbreg); /* status */
@@ -758,10 +746,10 @@ static agc_status_t pin_clear_key(void)
     }
     else if (!pin_legaltst(inrel))
     {
-        return (AGC_STATUS_OK);     /* illegal      */
+        return (AGC_STATUS_OK); /* illegal      */
     }
 
-    agc_status_t st = pin_5blank_rel(inrel);     /* CLEAR1, CLR5 */
+    agc_status_t st = pin_5blank_rel(inrel); /* CLEAR1, CLR5 */
 
     s_key->clpass++; /* set for higher pass */
 
@@ -817,21 +805,21 @@ static agc_status_t pin_charin2(uint8_t code)
 
             return (pin_num());
         case 021:
-            return (pin_nvcom(true)); /* VERB                   */
+            return (pin_nvcom(true));     /* VERB                   */
         case 022:
-            return (pin_error_key()); /* ERROR LIGHT RESET      */
+            return (pin_error_key());     /* ERROR LIGHT RESET      */
         case 031:
-            return (pin_vbreldsp()); /* KEY RELEASE            */
+            return (pin_vbreldsp());      /* KEY RELEASE            */
         case 032:
             return (pin_sign_key(false)); /* +                      */
         case 033:
-            return (pin_sign_key(true)); /* -                      */
+            return (pin_sign_key(true));  /* -                      */
         case 034:
-            return (pin_enter()); /* ENTER                  */
+            return (pin_enter());         /* ENTER                  */
         case 036:
-            return (pin_clear_key()); /* CLEAR */
+            return (pin_clear_key());     /* CLEAR */
         case 037:
-            return (pin_nvcom(false)); /* NOUN                   */
+            return (pin_nvcom(false));    /* NOUN                   */
         default:
             return (pin_charalrm());
     } /* end switch (code) */
@@ -896,8 +884,7 @@ agc_status_t pin_charin(uint8_t code)
  **********************************************************************/
 agc_status_t agc_job_charin(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(ctx->arg >= 0 && ctx->arg <= (agc_sp_t) PIN_LOW5))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ctx->arg >= 0 && ctx->arg <= (agc_sp_t) PIN_LOW5))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -928,9 +915,9 @@ agc_status_t agc_job_prockey(agc_job_ctx_t *ctx)
 
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->reqret     = PIN_REQ_PASS0;  /* set REQRET for ENTER pass 0 */
+    s->reqret     = PIN_REQ_PASS0; /* set REQRET for ENTER pass 0 */
     s->reqret_neg = false;
-    pin_block_dspcount(PIN_VD1); /* block num chars, signs, clear */
+    pin_block_dspcount(PIN_VD1);   /* block num chars, signs, clear */
 
     if (!AGC_ASSERT(s->dspcount_neg))
     {
@@ -1002,8 +989,7 @@ static agc_status_t pin_keycom(uint16_t code)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_exec_set_new_job_arg(
-            (agc_sp_t) code); /* INDEX LOCCTR TS MPAC */
+        st = agc_exec_set_new_job_arg((agc_sp_t) code); /* INDEX LOCCTR TS MPAC */
     }
 
     return (st);
@@ -1027,7 +1013,7 @@ agc_status_t agc_dsky_keyrupt1(void)
     }
 
     pin_lodsampt(); /* time snatched for N65  */
-    uint16_t code; /* 5-bit key code */
+    uint16_t code;  /* 5-bit key code */
 
     code = (uint16_t) (agc_chan_read((int) AGC_CHAN_MNKEYIN) & PIN_LOW5);
 
@@ -1097,13 +1083,13 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
     }
 
     pin_lodsampt();
-    agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_UPACT); /* UPACT on */
-    uint16_t low  = (uint16_t) (inlink & PIN_LOW5); /* C, bits 1-5 */
-    uint16_t mid  = (uint16_t) ((inlink >> 5) & PIN_LOW5); /* NOT-C */
+    agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_UPACT);   /* UPACT on */
+    uint16_t low  = (uint16_t) (inlink & PIN_LOW5);         /* C, bits 1-5 */
+    uint16_t mid  = (uint16_t) ((inlink >> 5) & PIN_LOW5);  /* NOT-C */
     uint16_t high = (uint16_t) ((inlink >> 10) & PIN_LOW5); /* C, bits 11-15 */
 
     if (mid != (uint16_t) (~low & PIN_LOW5) || high != low)
-    {                                                           /* UPTEST */
+    { /* UPTEST */
         agc_flag_set((agc_flag_id_t) AGC_FLAG_UPLOCKFL);
 
         return (AGC_STATUS_OK); /* TMFAIL2 */
@@ -1114,7 +1100,7 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
     if (low == PIN_ELRCODE)
     {
         agc_flag_clear((agc_flag_id_t) AGC_FLAG_UPLOCKFL); /* CLUPLOCK */
-        agc_status_t st = AGC_STATUS_OK; /* status so far */
+        agc_status_t st = AGC_STATUS_OK;                   /* status so far */
 
         return ((st == AGC_STATUS_OK) ? pin_keycom(low) : st); /* if OK */
     }
@@ -1146,8 +1132,7 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
  **********************************************************************/
 agc_status_t agc_dsky_key(uint8_t code)
 {
-    if (!AGC_ASSERT(code <= PIN_LOW5) ||
-        !AGC_ASSERT(code != 0u))
+    if (!AGC_ASSERT(code <= PIN_LOW5) || !AGC_ASSERT(code != 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1238,8 +1223,7 @@ agc_status_t agc_dsky_keys(const char *seq)
 
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
-    for (int i = 0; i < PIN_KEYS_MAX && seq[i] != '\0' && st == AGC_STATUS_OK;
-         i++)
+    for (int i = 0; i < PIN_KEYS_MAX && seq[i] != '\0' && st == AGC_STATUS_OK; i++)
     {
         if (seq[i] == 'P')
         {
@@ -1257,8 +1241,7 @@ agc_status_t agc_dsky_keys(const char *seq)
 
         uint8_t code = pin_key_of_char(seq[i]); /* 5-bit key code */
 
-        st = (code != 0u) ? /* unknown char */
-             agc_dsky_key(code) : AGC_STATUS_BAD_ARG;
+        st = (code != 0u) ? agc_dsky_key(code) : AGC_STATUS_BAD_ARG; /* unknown char */
     }
 
     return (st);

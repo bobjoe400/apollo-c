@@ -66,8 +66,7 @@ agc_lm_pad_t *agc_lm_pad(void)
  **********************************************************************/
 agc_lm_ldg_t *agc_lm_ldg(void)
 {
-    if (!AGC_ASSERT(lm_ldg.wchphase >= AGC_LM_PHASE_IGNALG &&
-                    lm_ldg.wchphase <= AGC_LM_PHASE_VERTICAL)) /* WCHPHASE */
+    if (!AGC_ASSERT(lm_ldg.wchphase >= AGC_LM_PHASE_IGNALG && lm_ldg.wchphase <= AGC_LM_PHASE_VERTICAL)) /* WCHPHASE */
     {
         return (&lm_ldg);
     }
@@ -92,8 +91,7 @@ agc_lm_thr_t *agc_lm_thr(void)
         return (&lm_thr);
     }
 
-    if (!AGC_ASSERT(lm_thr.fweight.hi >= AGC_SP_MIN &&
-                    lm_thr.fweight.lo >= AGC_SP_MIN)) /* FWEIGHT words */
+    if (!AGC_ASSERT(lm_thr.fweight.hi >= AGC_SP_MIN && lm_thr.fweight.lo >= AGC_SP_MIN)) /* FWEIGHT words */
     {
         return (&lm_thr);
     }
@@ -199,7 +197,7 @@ void agc_lm_fastchng(void)
  **********************************************************************/
 agc_sp_t agc_lm_time1(void)
 {
-    uint32_t t  = agc_time_now_cs();             /* TIME2,TIME1, cs */
+    uint32_t t  = agc_time_now_cs();        /* TIME2,TIME1, cs */
     agc_sp_t t1 = (agc_sp_t) (t & 0x3FFFu); /* TIME1, cs, unscaled */
 
     if (!AGC_ASSERT(t1 >= 0))
@@ -235,7 +233,7 @@ agc_sp_t agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor)
         return ((dividend >= 0) ? AGC_SP_MAX : AGC_SP_MIN); /* by sign */
     }
 
-    int32_t q = dividend / (int32_t) divisor;     /* quotient, 2^(S-D)   */
+    int32_t q = dividend / (int32_t) divisor; /* quotient, 2^(S-D)   */
 
     if (!AGC_ASSERT(q <= AGC_SP_MAX && q >= AGC_SP_MIN))
     { /* |dividend| >= |divisor|: the hardware result is meaningless */
@@ -387,15 +385,15 @@ agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y, int *ovf)
     if (hi > AGC_SP_MAX)
     {
         hi -= LM_WORD;
-        a   = 1;
+        a  = 1;
     }
     else if (hi < AGC_SP_MIN)
     {
         hi += LM_WORD;
-        a   = -1;
+        a  = -1;
     }
 
-    *ovf = a;
+    *ovf             = a;
     agc_lm_words_t r = {(agc_sp_t) hi, (agc_sp_t) lo}; /* result, 2^S */
 
     if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
@@ -403,9 +401,7 @@ agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y, int *ovf)
         return (x); /* not reached: one carry corrects a word sum */
     }
 
-    if (!AGC_ASSERT((int64_t) agc_lm_words_value(r) + (int64_t) a *
-                    LM_WORD * LM_WORD ==
-                    (int64_t) agc_lm_words_value(x) + agc_lm_words_value(y)))
+    if (!AGC_ASSERT((int64_t) agc_lm_words_value(r) + (int64_t) a * LM_WORD * LM_WORD == (int64_t) agc_lm_words_value(x) + agc_lm_words_value(y)))
     {
         return (x); /* not reached: DAS is exact up to the overflow */
     }

@@ -17,20 +17,20 @@
 #include "agc/core/channels.h"
 #include "agc/lm/dap.h"
 
-#define PM_CH31_ATTHOLD 0x1000u /* BIT13 of 31 = 0: attitude hold        */
-#define PM_CH31_DETENT  0x4000u /* BIT15 of 31 = 0: RHC out of detent    */
-#define PM_CH31_PLUSX   0x0004u /* BIT3 of 31 = 0: +X (+P) min impulse   */
-#define PM_CH31_MINUSX  0x0008u /* BIT4 of 31 = 0: -X (-P) min impulse   */
-#define PM_OCT14        0x000Cu /* OCT14: bits 3,4                       */
-#define PM_BITS9_11     02400u  /* BITS9,11 (= EBANK5)                   */
-#define PM_PQRBIT       074777u /* PQRBIT: clears RCSFLAGS bits 10,11    */
-#define PM_BITS8_9      000600u /* BITS8,9: chan 13 RHC counter enable   */
-#define PM_MINTJ        ((agc_sp_t) 10) /* TEN: < 14 ms, raised by PJETSLEC */
-#define PM_LINRATP      46 /* LINRATP DEC 46: linear stick term     */
-#define PM_40CYC        ((agc_sp_t) 40) /* 40CYC OCT 50: 4 s of DAP passes  */
+#define PM_CH31_ATTHOLD 0x1000u            /* BIT13 of 31 = 0: attitude hold        */
+#define PM_CH31_DETENT  0x4000u            /* BIT15 of 31 = 0: RHC out of detent    */
+#define PM_CH31_PLUSX   0x0004u            /* BIT3 of 31 = 0: +X (+P) min impulse   */
+#define PM_CH31_MINUSX  0x0008u            /* BIT4 of 31 = 0: -X (-P) min impulse   */
+#define PM_OCT14        0x000Cu            /* OCT14: bits 3,4                       */
+#define PM_BITS9_11     02400u             /* BITS9,11 (= EBANK5)                   */
+#define PM_PQRBIT       074777u            /* PQRBIT: clears RCSFLAGS bits 10,11    */
+#define PM_BITS8_9      000600u            /* BITS8,9: chan 13 RHC counter enable   */
+#define PM_MINTJ        ((agc_sp_t) 10)    /* TEN: < 14 ms, raised by PJETSLEC */
+#define PM_LINRATP      46                 /* LINRATP DEC 46: linear stick term     */
+#define PM_40CYC        ((agc_sp_t) 40)    /* 40CYC OCT 50: 4 s of DAP passes  */
 #define PM_25_32        ((agc_sp_t) 12800) /* 25/32 = PRIO31 (DEC .78125)   */
-#define PM_1ANETP       2     /* 1/ANETP = BLOCKTOP +2                 */
-#define PM_DPWORD       16384 /* 2^14                                  */
+#define PM_1ANETP       2                  /* 1/ANETP = BLOCKTOP +2                 */
+#define PM_DPWORD       16384              /* 2^14                                  */
 
 /**********************************************************************
  * ZEROENBL (p.1434): save the Q,R hand-controller counts in SAVEHAND,
@@ -112,8 +112,8 @@ agc_status_t lm_dap_pstate(void)
          * until the controller is released.                                       */
         lm_dap_t *d = lm_dap_state();
 
-        d->perror = 0;
-        d->cduxd  = agc_erase_cdux();
+        d->perror     = 0;
+        d->cduxd      = agc_erase_cdux();
         uint16_t ch31 = agc_chan_read(031);
 
         if (!AGC_ASSERT(d->oldpmin >= 0))
@@ -172,21 +172,21 @@ agc_status_t lm_dap_pstate(void)
  **********************************************************************/
 static agc_status_t justout(lm_dap_t *d)
 {
-    d->perror = 0;
+    d->perror       = 0;
     agc_flag_set(AGC_FLAG_OURRCFLG);
-    d->dxerror    = 0;
-    d->dxerror_lo = 0;
-    d->qerror     = 0;   /* DYERROR                        */
-    d->dyerror_lo = 0;
-    d->rerror     = 0;   /* DZERROR                        */
-    d->dzerror_lo = 0;
-    d->plast      = 0;
-    d->qlast      = 0;
-    d->rlast      = 0;
+    d->dxerror      = 0;
+    d->dxerror_lo   = 0;
+    d->qerror       = 0; /* DYERROR                        */
+    d->dyerror_lo   = 0;
+    d->rerror       = 0; /* DZERROR                        */
+    d->dzerror_lo   = 0;
+    d->plast        = 0;
+    d->qlast        = 0;
+    d->rlast        = 0;
     agc_erase_set_q_rhcctr(0);
     agc_erase_set_r_rhcctr(0);
-    d->rcsflags = (uint16_t) (d->rcsflags & PM_PQRBIT);
-    d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_JUSTIN);
+    d->rcsflags     = (uint16_t) (d->rcsflags & PM_PQRBIT);
+    d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_JUSTIN);
     agc_status_t sz = lm_dap_zeroenbl();
 
     if (!AGC_ASSERT(sz == AGC_STATUS_OK))
@@ -265,13 +265,12 @@ static agc_status_t ratedone(lm_dap_t *d)
  **********************************************************************/
 static agc_status_t pegi(lm_dap_t *d)
 {
-    d->cduxd      = agc_erase_cdux();
-    d->dxerror    = 0;
-    d->dxerror_lo = 0;
-    d->perror     = 0;
+    d->cduxd          = agc_erase_cdux();
+    d->dxerror        = 0;
+    d->dxerror_lo     = 0;
+    d->perror         = 0;
     agc_sp_t absedotp = lm_dap_ccs_dim(d->edot); /* ABSEDOTP       */
-    bool     outside  = ((int32_t) absedotp + d->neg_ratedb > 0) &&
-                        (d->tcp > 0);
+    bool     outside  = ((int32_t) absedotp + d->neg_ratedb > 0) && (d->tcp > 0);
 
     if (outside)
     {
@@ -299,7 +298,7 @@ static agc_status_t pegi(lm_dap_t *d)
     int32_t      twice = 2 * lm_dap_dpval(p);           /* DAS A          */
     agc_sp_t     a     = lm_dap_sat(twice / PM_DPWORD); /* OVERSUB        */
 
-    d->tj[0] = lm_dap_mphi(a, PM_25_32);      /* T6 counts      */
+    d->tj[0] = lm_dap_mphi(a, PM_25_32); /* T6 counts      */
 
     if (!AGC_ASSERT(d->neg_2jetlim <= 0))
     {
@@ -341,7 +340,7 @@ static agc_status_t pegi(lm_dap_t *d)
  **********************************************************************/
 static agc_status_t raterror(lm_dap_t *d)
 {
-    d->cduxd = agc_erase_cdux();
+    d->cduxd     = agc_erase_cdux();
     agc_sp_t cnt = agc_erase_p_rhcctr();
 
     if (!AGC_ASSERT(cnt >= LM_NEGMAX && cnt <= LM_POSMAX))
@@ -349,13 +348,12 @@ static agc_status_t raterror(lm_dap_t *d)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_sp_t k =
-        lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP);
-    agc_sp_t lin    = lm_dap_mp(k, cnt).lo; /* CA L           */
+    agc_sp_t k      = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP);
+    agc_sp_t lin    = lm_dap_mp(k, cnt).lo;                  /* CA L           */
     agc_sp_t cmd    = lm_dap_mphi(lin, d->stiksens);
     agc_sp_t change = lm_dap_wrap((int32_t) cmd - d->plast); /* DAPTEMP1    */
 
-    d->plast = cmd;
+    d->plast        = cmd;
     agc_status_t sz = lm_dap_zeroenbl();
 
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->plast); /* EDOTP       */
@@ -400,7 +398,7 @@ agc_status_t lm_dap_detentck(void)
     lm_dap_t *d = lm_dap_state();
 
     d->ch31temp = agc_chan_read(031);
-    bool ourrc = agc_flag_test(AGC_FLAG_OURRCFLG);
+    bool ourrc  = agc_flag_test(AGC_FLAG_OURRCFLG);
 
     if ((d->ch31temp & PM_CH31_DETENT) == 0u)
     { /* RHCMOVED       */

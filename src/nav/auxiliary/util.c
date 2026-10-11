@@ -72,8 +72,7 @@ bool agc_navaux_dp_ok(agc_dp_t a)
 bool agc_navaux_vec_ok(agc_vec_t v)
 {
     /* No AGC_ASSERT here: this is the predicate the assertions use.        */
-    return (agc_navaux_dp_ok(v.c[0]) && agc_navaux_dp_ok(v.c[1]) &&
-            agc_navaux_dp_ok(v.c[2]));
+    return (agc_navaux_dp_ok(v.c[0]) && agc_navaux_dp_ok(v.c[1]) && agc_navaux_dp_ok(v.c[2]));
 }
 
 /**********************************************************************
@@ -192,10 +191,7 @@ agc_vec_t agc_navaux_vec_shift(agc_interp_t *ip, agc_vec_t v, int n)
         return (agc_vec_zero());
     }
 
-    if (!AGC_ASSERT((n >= 0) ||
-                    ((agc_dp_abs(r.c[0]) <= agc_dp_abs(v.c[0])) &&
-                     (agc_dp_abs(r.c[1]) <= agc_dp_abs(v.c[1])) &&
-                     (agc_dp_abs(r.c[2]) <= agc_dp_abs(v.c[2])))))
+    if (!AGC_ASSERT((n >= 0) || ((agc_dp_abs(r.c[0]) <= agc_dp_abs(v.c[0])) && (agc_dp_abs(r.c[1]) <= agc_dp_abs(v.c[1])) && (agc_dp_abs(r.c[2]) <= agc_dp_abs(v.c[2])))))
     {
         return (agc_vec_zero()); /* post: VSR never grows a component */
     }
@@ -224,8 +220,8 @@ agc_dp_t agc_navaux_tp_low_dp(agc_tp_t v)
         return (0);
     }
 
-    int64_t mag = v;                   /* |v|, raw TP units       */
-    int64_t low = 0;                   /* low words, raw DP units */
+    int64_t mag = v; /* |v|, raw TP units       */
+    int64_t low = 0; /* low words, raw DP units */
 
     if (v < 0)
     {

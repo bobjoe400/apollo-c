@@ -33,8 +33,9 @@ agc_status_t agc_job_ambgupdt(agc_job_ctx_t *ctx)
 
     agc_sp_t psi = csm_dap_word_sp(agc_erase_cduz()); /* CA CDUZ (raw word) */
 
-    r->amgb1 = agc_sp_sin(psi);                   /* SPSIN2               */
-    r->capsi = agc_sp_cos(psi);                   /* SPCOS2: gimbal lock  */
+    r->amgb1 = agc_sp_sin(psi); /* SPSIN2               */
+    r->capsi = agc_sp_cos(psi); /* SPCOS2: gimbal lock  */
+
     /* CAF QUADANGL; MSU CDUX; COM: CDUX - 7.25 DEG                        */
     agc_sp_t phi = (agc_sp_t) -csm_dap_msu(QUADANGL, agc_erase_cdux());
 

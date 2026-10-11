@@ -73,15 +73,16 @@ static const agc_sp_t fc_gainfltr[2] = {
 };
 #define FC_DUNFVLIM 57   /* DEC .007 B-1: 7 mr max change in 2 s       */
 #define FC_UNFVLIM  1057 /* DEC .129 B-1: 129 mr max thrust offset     */
+
 /* DOTSWFMX DEC .93302 B-4 = cos^2(15 deg)/16, whose low word is the next
  * constant DAXMAX (DEC .11111111111): the DP limit on (UNWC.UNFC)^2.     */
 #define FC_DOTSWFMX_HI 955  /* DOTSWFMX high word                    */
 #define FC_DOTSWFMX_LO 1820 /* its low word = DAXMAX's high word      */
-static const agc_sp_t fc_daxmax[2] = {
-    /* DAXMAX = DAZMAX, 1's, pi     */
+static const agc_sp_t fc_daxmax[2]       = {
+          /* DAXMAX = DAZMAX, 1's, pi     */
     1820, /* DEC .11111111111  20 deg in 2 s                          */
     182   /* DEC .0111111111   2 deg when CSM docked                  */
-};
+      };
 static const agc_sp_t fc_day_half_max[2] = {
     /* DAY/2MAX, 1's, pi            */
     910, /* DEC .05555555555                                         */
@@ -94,20 +95,22 @@ static const agc_sp_t fc_day_half_max[2] = {
 #define FC_BIT11     1024     /* 1/16                                       */
 #define FC_NEGMAX_2S (-16384) /* NEGMAX read as 2's complement: pi        */
 #define FC_HALF      8192     /* HALF: pi/2 as a 2's, pi angle            */
+
 /* SPARCSIN polynomial (Bob Crisp), argument scaled 1, angle scaled 180 deg */
-#define FC_DPL1 10502   /* SPARCSIN coefficient of x                */
-#define FC_DPL3 432     /* of x^3                                   */
-#define FC_DPL5 7300    /* of x^5                                   */
+#define FC_DPL1 10502    /* SPARCSIN coefficient of x                */
+#define FC_DPL3 432      /* of x^3                                   */
+#define FC_DPL5 7300     /* of x^5                                   */
 #define FC_DPL7 (-11803) /* of x^7                                  */
-#define FC_DPL9 8397    /* of x^9                                   */
+#define FC_DPL9 8397     /* of x^9                                   */
 
 /* ---- erasables of the ECDUW block (ERASABLE_ASSIGNMENTS, "overlaying
  * KALCMANU storage"); module private.                                    */
 /* UNFV/2: thrust direction in vehicle axes; only Y and Z are filtered. */
 static agc_vec_t fc_unfv_2;   /* UNFV/2, half unit 2^1                   */
-static agc_sp_t  fc_ndxcduw; /* NDXCDUW 1 if CSM docked, else 0, 2^14 */
+static agc_sp_t  fc_ndxcduw;  /* NDXCDUW 1 if CSM docked, else 0, 2^14 */
 static agc_sp_t  fc_flpautno; /* FLPAUTNO non-zero = not PNGCS auto, 2^14 */
 static agc_sp_t  fc_flagoodw; /* FLAGOODW non-zero = window good, 2^14 */
+
 /* -DELGMB X Y Z: minus the gimbal angle changes (later -DELATT, then
  * limited).                                                             */
 static agc_sp_t fc_delgmb[3]; /* -DELGMB, 1's, scale pi (2^0 pi)        */
@@ -207,8 +210,7 @@ uint16_t agc_lm_onesto2s(agc_sp_t a)
         return (0); /* no valid result */
     }
 
-    uint16_t w = /* 15-bit two's complement word */
-                 (uint16_t) ((int32_t) a & 0x7FFF);
+    uint16_t w = (uint16_t) ((int32_t) a & 0x7FFF); /* 15-bit two's complement word */
 
     if (!AGC_ASSERT(w <= 0x7FFFu))
     {
@@ -270,15 +272,14 @@ agc_sp_t agc_lm_sparcsin(agc_sp_t x)
         return (0); /* no valid result */
     }
 
-    agc_sp_t sr = (agc_sp_t) (x / 2); /* TS SR: x/2, scale 2^1 */
-    agc_sp_t x2 = agc_lm_mp_hi(x, x); /* MP A, TS TEM1: x^2, scale 2^0 */
+    agc_sp_t sr = (agc_sp_t) (x / 2);        /* TS SR: x/2, scale 2^1 */
+    agc_sp_t x2 = agc_lm_mp_hi(x, x);        /* MP A, TS TEM1: x^2, scale 2^0 */
     agc_sp_t p  = agc_lm_mp_hi(x2, FC_DPL9); /* Horner sum, scale 2^0 */
 
-    p = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL7), x2);
-    p = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL5), x2);
-    p = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL3), x2);
-    agc_sp_t r = /* arcsin(x), half-revolutions 2^0 */
-                 agc_lm_mp_hi(agc_lm_ad(p, FC_DPL1), sr);
+    p          = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL7), x2);
+    p          = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL5), x2);
+    p          = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL3), x2);
+    agc_sp_t r = agc_lm_mp_hi(agc_lm_ad(p, FC_DPL1), sr); /* arcsin(x), half-revolutions 2^0 */
 
     if (!AGC_ASSERT(r >= -8192 && r <= 8192))
     {
@@ -347,8 +348,7 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
 
     if (ac < as)
     { /* USECOS            */
-        agc_sp_t a = /* pi/2 - arcsin(|cos|), 2's scale pi */
-                     agc_lm_ad(agc_lm_sparcsin_doubled((agc_sp_t) -c), FC_HALF);
+        agc_sp_t a = agc_lm_ad(agc_lm_sparcsin_doubled((agc_sp_t) -c), FC_HALF); /* pi/2 - arcsin(|cos|), 2's scale pi */
 
         return ((s > 0) ? a : (agc_sp_t) -a); /* 1TO2&TCQ          */
     }
@@ -362,9 +362,8 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
         base = FC_NEGMAX_2S;
     }
 
-    agc_sp_t a = agc_lm_sparcsin_doubled(sn); /* arcsin(sn), 2's scale pi */
-    agc_sp_t r = /* MSU TEM3: angle, 2's, scale pi */
-                 fc_wrap15((int32_t) a - base);
+    agc_sp_t a = agc_lm_sparcsin_doubled(sn);   /* arcsin(sn), 2's scale pi */
+    agc_sp_t r = fc_wrap15((int32_t) a - base); /* MSU TEM3: angle, 2's, scale pi */
 
     if (!AGC_ASSERT(r >= -16384 && r <= 16383))
     {
@@ -388,7 +387,7 @@ agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
  **********************************************************************/
 static agc_sp_t fc_dvbycosm(agc_dp_t op, agc_sp_t tem5)
 {
-    agc_sp_t hi   = agc_dp_high(op); /* high word of op, 2^1 */
+    agc_sp_t hi   = agc_dp_high(op);          /* high word of op, 2^1 */
     int32_t  diff = (int32_t) tem5 - abs(hi); /* TEM5 - |high word|, 2^0 */
 
     if (!AGC_ASSERT(tem5 >= 0))
@@ -425,8 +424,7 @@ static agc_sp_t fc_dvbycosm(agc_dp_t op, agc_sp_t tem5)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb,
-                                agc_sp_t cdu[3])
+static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb, agc_sp_t cdu[3])
 {
     if (!AGC_ASSERT(ip != NULL && nb != NULL && cdu != NULL))
     {
@@ -436,10 +434,9 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb,
     /* DSQ leaves a TP; BDSU DP1/4TH complements only MPAC, MPAC+1, so
      * MPAC+2 keeps the square's low word with its own sign, and SQRT
      * reads all three words: 1/4 - top(s^2) + low(s^2), at 2^2.      */
-    agc_dp_t sq   = agc_dp_sq(ip, nb->row[0].c[1]); /* top words of DSQ, 2^2 */
-    agc_tp_t sqtp = agc_dp_sq_tp(nb->row[0].c[1]); /* DSQ as a TP, 2^2 */
-    agc_tp_t c2   = agc_tp_from_dp(agc_dp_sub(ip, AGC_DP_QUARTER, sq)) +
-                    (sqtp - agc_tp_from_dp(sq)); /* as SQRT sees it, 2^2 */
+    agc_dp_t sq   = agc_dp_sq(ip, nb->row[0].c[1]);                                                   /* top words of DSQ, 2^2 */
+    agc_tp_t sqtp = agc_dp_sq_tp(nb->row[0].c[1]);                                                    /* DSQ as a TP, 2^2 */
+    agc_tp_t c2   = agc_tp_from_dp(agc_dp_sub(ip, AGC_DP_QUARTER, sq)) + (sqtp - agc_tp_from_dp(sq)); /* as SQRT sees it, 2^2 */
 
     if (agc_tp_to_dp(c2) < 0)
     {
@@ -447,20 +444,20 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb,
     }
 
     agc_dp_t cos2 = agc_tp_sqrt(ip, c2); /* cos(CDUZ) in units of 2, 2^1 */
-    agc_sp_t tem5 = AGC_SP_MAX; /* DDOUBL overflow -> POSMAX, cos 2^0 */
+    agc_sp_t tem5 = AGC_SP_MAX;          /* DDOUBL overflow -> POSMAX, cos 2^0 */
 
     if (cos2 < AGC_DP_HALF)
     {
         tem5 = agc_dp_high(2 * cos2); /* cos(CDUZ) in units of 1      */
     }
 
-    cdu[2] = agc_lm_arctrgsp(agc_dp_high(nb->row[0].c[1]), agc_dp_high(cos2));
+    cdu[2]      = agc_lm_arctrgsp(agc_dp_high(nb->row[0].c[1]), agc_dp_high(cos2));
     agc_sp_t cy = fc_dvbycosm(nb->row[0].c[0], tem5); /* cos(CDUY), 2^1 */
     agc_sp_t sy = fc_dvbycosm(nb->row[0].c[2], tem5); /* sin(CDUY), 2^1 */
 
-    cdu[1] = agc_lm_arctrgsp((agc_sp_t) -sy, cy); /* CDUY             */
-    agc_sp_t cx = fc_dvbycosm(nb->row[1].c[1], tem5); /* cos(CDUX), 2^1 */
-    agc_sp_t sx = fc_dvbycosm(nb->row[2].c[1], tem5); /* sin(CDUX), 2^1 */
+    cdu[1]      = agc_lm_arctrgsp((agc_sp_t) -sy, cy); /* CDUY             */
+    agc_sp_t cx = fc_dvbycosm(nb->row[1].c[1], tem5);  /* cos(CDUX), 2^1 */
+    agc_sp_t sx = fc_dvbycosm(nb->row[2].c[1], tem5);  /* sin(CDUX), 2^1 */
 
     cdu[0] = agc_lm_arctrgsp((agc_sp_t) -sx, cx); /* CDUX             */
 
@@ -492,12 +489,11 @@ static agc_sp_t fc_fltrsub(agc_sp_t orig, agc_sp_t meas)
         return (orig);
     }
 
-    agc_sp_t err  = agc_lm_ad(meas, (agc_sp_t) -orig); /* error, 2^1    */
+    agc_sp_t err  = agc_lm_ad(meas, (agc_sp_t) -orig);          /* error, 2^1    */
     agc_sp_t incr = agc_lm_mp_hi(err, fc_gainfltr[fc_ndxcduw]); /* 2^1 */
 
-    incr = agc_lm_limitsub(incr, FC_DUNFVLIM);
-    agc_sp_t total = /* new offset, 2^1 */
-                     agc_lm_limitsub(agc_lm_ad(incr, orig), FC_UNFVLIM);
+    incr           = agc_lm_limitsub(incr, FC_DUNFVLIM);
+    agc_sp_t total = agc_lm_limitsub(agc_lm_ad(incr, orig), FC_UNFVLIM); /* new offset, 2^1 */
 
     if (!AGC_ASSERT(total >= -FC_UNFVLIM && total <= FC_UNFVLIM))
     {
@@ -525,10 +521,8 @@ static bool fc_unwctest(agc_interp_t *ip, agc_vec_t unz, agc_vec_t unx)
         return (false);
     }
 
-    agc_dp_t d = /* (UNZ . UNX)^2, 2^2 */
-                 agc_dp_sq(ip, agc_vec_dot(ip, unz, unx));
-    agc_dp_t lim = /* DOTSWFMX: cos^2(15 deg)/16, 2^2 */
-                   agc_dp_pack(FC_DOTSWFMX_HI, FC_DOTSWFMX_LO);
+    agc_dp_t d   = agc_dp_sq(ip, agc_vec_dot(ip, unz, unx));    /* (UNZ . UNX)^2, 2^2 */
+    agc_dp_t lim = agc_dp_pack(FC_DOTSWFMX_HI, FC_DOTSWFMX_LO); /* DOTSWFMX: cos^2(15 deg)/16, 2^2 */
 
     if (agc_dp_sub(ip, d, lim) < 0)
     {
@@ -564,22 +558,16 @@ static agc_mat_t fc_dcmcl(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
         return ((agc_mat_t){0}); /* no valid result */
     }
 
-    agc_vec_t uny1 = /* UNIT(UNZ x UNX), half unit 2^1 */
-                     agc_vec_unit(ip, agc_vec_cross(ip, unz, unx), NULL, NULL);
-    agc_vec_t munz = /* -UNZ, half unit 2^1 */
-                     agc_vec_shl(ip, agc_vec_cross(ip, uny1, unx), 1);
-    agc_vec_t a = /* UNFVZ/2 (-UNZ), 2^1 */
-                  agc_vec_scale(ip, munz, fc_unfv_2.c[2]);
-    agc_vec_t b = /* UNFVY/2 UNY1, 2^1 */
-                  agc_vec_scale(ip, uny1, fc_unfv_2.c[1]);
-    agc_vec_t t = /* BVSU: thrust offset vector, 2^1 */
-                  agc_vec_shl(ip, agc_vec_sub(ip, a, b), 1);
-    agc_mat_t m; /* required nav base rows X, Y, Z, 2^1 */
+    agc_vec_t uny1 = agc_vec_unit(ip, agc_vec_cross(ip, unz, unx), NULL, NULL); /* UNIT(UNZ x UNX), half unit 2^1 */
+    agc_vec_t munz = agc_vec_shl(ip, agc_vec_cross(ip, uny1, unx), 1);          /* -UNZ, half unit 2^1 */
+    agc_vec_t a    = agc_vec_scale(ip, munz, fc_unfv_2.c[2]);                   /* UNFVZ/2 (-UNZ), 2^1 */
+    agc_vec_t b    = agc_vec_scale(ip, uny1, fc_unfv_2.c[1]);                   /* UNFVY/2 UNY1, 2^1 */
+    agc_vec_t t    = agc_vec_shl(ip, agc_vec_sub(ip, a, b), 1);                 /* BVSU: thrust offset vector, 2^1 */
+    agc_mat_t m;                                                                /* required nav base rows X, Y, Z, 2^1 */
 
     m.row[0] = agc_vec_unit(ip, agc_vec_add(ip, t, unx), NULL, NULL);
     m.row[1] = agc_vec_shl(ip, agc_vec_cross(ip, m.row[0], munz), 1);
-    m.row[2] =
-        agc_vec_shl(ip, agc_vec_cross(ip, agc_vec_neg(m.row[1]), m.row[0]), 1);
+    m.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, agc_vec_neg(m.row[1]), m.row[0]), 1);
 
     if (!AGC_ASSERT(m.row[0].c[0] <= AGC_DP_MAX))
     {
@@ -594,8 +582,7 @@ static agc_mat_t fc_dcmcl(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
  **********************************************************************/
 void agc_lm_initcduw(void)
 {
-    agc_vec_t unitx = /* UNITX, half unit 2^1 */
-                      agc_vec_make(AGC_DP_HALF, 0, 0);
+    agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0); /* UNITX, half unit 2^1 */
 
     fc_unfv_2            = unitx;
     agc_lm_ldg()->unwc_2 = unitx;
@@ -622,17 +609,16 @@ void agc_lm_initcduw(void)
 static void fc_fetch_basic(uint16_t yzx[3])
 {
     fc_ndxcduw = agc_flag_test(AGC_FLAG_CSMDKFLG) ? 1 : 0; /* docked gains */
-    bool xov = agc_flag_test(AGC_FLAG_XOVINFLG); /* X-axis override inhibited */
+    bool xov   = agc_flag_test(AGC_FLAG_XOVINFLG);         /* X-axis override inhibited */
 
     fc_flpautno = xov ? 1 : 0; /* set to PNZ flag "PNGCS auto not"  */
     fc_flagoodw = xov ? 1 : 0; /* PNZ if X override inhibited      */
     agc_inhint();              /* RELINT at PAUTNO                 */
-    yzx[0] = agc_erase_cduy();
-    yzx[1] = agc_erase_cduz();
-    yzx[2] = agc_erase_cdux();
+    yzx[0]      = agc_erase_cduy();
+    yzx[1]      = agc_erase_cduz();
+    yzx[2]      = agc_erase_cdux();
 
-    if (agc_lm_chan_bit_present(AGC_CHAN_CHAN30, AGC_CH030_LMCONTROL) &&
-        agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_AUTOSTAB))
+    if (agc_lm_chan_bit_present(AGC_CHAN_CHAN30, AGC_CH030_LMCONTROL) && agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_AUTOSTAB))
     {
         fc_flpautno = 0; /* PNGCS auto: use CDUXD,YD,ZD      */
         yzx[0]      = agc_erase_cduyd();
@@ -724,11 +710,11 @@ static void fc_gimbal_changes(agc_sp_t cdu[3])
         agc_alarm(AGC_ALARM_00401); /* ALARMMGA         */
     }
 
-    cdu[2] = limited;
+    cdu[2]                 = limited;
     const uint16_t cdud[3] = {agc_erase_cduxd(), agc_erase_cduyd(),
                               agc_erase_cduzd()};
 
-    agc_inhint(); /* RELINT after TCQCDUW         */
+    agc_inhint();   /* RELINT after TCQCDUW         */
     agc_sp_t l = 0; /* last -DELGMB, 1's, scale pi */
 
     for (int i = 2; i >= 0; i--)
@@ -739,8 +725,7 @@ static void fc_gimbal_changes(agc_sp_t cdu[3])
         }
 
         agc_erase_set_thetad(i, agc_lm_onesto2s(cdu[i]));
-        agc_sp_t d = /* MSU CDUxD: required - desired, 2's, scale pi */
-                     fc_wrap15((int32_t) cdu[i] - (int32_t) cdud[i]);
+        agc_sp_t d = fc_wrap15((int32_t) cdu[i] - (int32_t) cdud[i]); /* MSU CDUxD: required - desired, 2's, scale pi */
 
         fc_delgmb[i] = (agc_sp_t) -d; /* MSU CDUXD, COM               */
         l            = fc_delgmb[i];
@@ -766,21 +751,18 @@ static void fc_rates(const agc_cdutrig_t *trig)
     agc_sp_t cosz = agc_dp_high(trig->coscdu[AGC_TRIG_Z]); /* cos(CDUZ), 2^1 */
     agc_sp_t sinx = agc_dp_high(trig->sincdu[AGC_TRIG_X]); /* sin(CDUX), 2^1 */
     agc_sp_t cosx = agc_dp_high(trig->coscdu[AGC_TRIG_X]); /* cos(CDUX), 2^1 */
-    agc_sp_t gx   = (agc_sp_t) -fc_delgmb[0]; /* DELGMBX, 1's, scale pi */
-    agc_sp_t gy   = (agc_sp_t) -fc_delgmb[1]; /* DELGMBY, 1's, scale pi */
-    agc_sp_t gz   = (agc_sp_t) -fc_delgmb[2]; /* DELGMBZ, 1's, scale pi */
-    agc_sp_t p    = /* OMEGAPD before doubling, scale pi/4 rad/s */
-                    agc_lm_ad(gx, fc_mp_dbl(gy, sinz));
+    agc_sp_t gx   = (agc_sp_t) -fc_delgmb[0];              /* DELGMBX, 1's, scale pi */
+    agc_sp_t gy   = (agc_sp_t) -fc_delgmb[1];              /* DELGMBY, 1's, scale pi */
+    agc_sp_t gz   = (agc_sp_t) -fc_delgmb[2];              /* DELGMBZ, 1's, scale pi */
+    agc_sp_t p    = agc_lm_ad(gx, fc_mp_dbl(gy, sinz));    /* OMEGAPD before doubling, scale pi/4 rad/s */
 
-    p = agc_lm_ad(p, p); /* two ADS          */
-    agc_sp_t q = /* OMEGAQD partial, scale pi/4 rad/s */
-                 agc_lm_mp_hi(fc_mp_dbl(gy, cosx), cosz);
+    p          = agc_lm_ad(p, p);                         /* two ADS          */
+    agc_sp_t q = agc_lm_mp_hi(fc_mp_dbl(gy, cosx), cosz); /* OMEGAQD partial, scale pi/4 rad/s */
 
-    q = agc_lm_ad(q, agc_lm_mp_hi(gz, sinx));
-    q = agc_lm_ad(q, q);
-    q = agc_lm_ad(q, q); /* three ADS        */
-    agc_sp_t r = /* OMEGARD partial, scale pi/4 rad/s */
-                 agc_lm_mp_hi(fc_mp_dbl((agc_sp_t) -gy, sinx), cosz);
+    q          = agc_lm_ad(q, agc_lm_mp_hi(gz, sinx));
+    q          = agc_lm_ad(q, q);
+    q          = agc_lm_ad(q, q);                                     /* three ADS        */
+    agc_sp_t r = agc_lm_mp_hi(fc_mp_dbl((agc_sp_t) -gy, sinx), cosz); /* OMEGARD partial, scale pi/4 rad/s */
 
     r = agc_lm_ad(r, agc_lm_mp_hi(gz, cosx));
     r = agc_lm_ad(r, r);
@@ -803,14 +785,13 @@ static void fc_transfer(void)
 {
     const agc_sp_t omega[3] = {agc_erase_omegapd(), agc_erase_omegaqd(),
                                agc_erase_omegard()};
-    const agc_sp_t jacc[3] = {agc_erase_1jacc(), agc_erase_1jaccq(),
-                              agc_erase_1jaccr()};
+    const agc_sp_t jacc[3]  = {agc_erase_1jacc(), agc_erase_1jaccq(),
+                               agc_erase_1jaccr()};
     agc_sp_t       lag[3]; /* DELPEROR..DELREROR, 1's, scale pi */
 
     for (int i = 2; i >= 0; i--)
     { /* bound 3          */
-        agc_sp_t inc = /* DELCDUx for 0.1 s, 1's, scale pi */
-                       agc_lm_mp_hi(fc_delgmb[i], FC_DT_DELT);
+        agc_sp_t inc = agc_lm_mp_hi(fc_delgmb[i], FC_DT_DELT); /* DELCDUx for 0.1 s, 1's, scale pi */
 
         /* ONESTO2S         */
         /* DELCDUX, DELCDUY, DELCDUZ by index (INDEX TEM2 / TS DELCDUX). */
@@ -837,11 +818,10 @@ static void fc_transfer(void)
             agc_erase_set_delcduz(inc);
         }
 
-        agc_sp_t aw  = (agc_sp_t) abs(omega[i]); /* |OMEGA|, pi/4 rad/s 2^0 */
-        agc_dp_t num = /* OMEGA |OMEGA| / 16, 2^-28 units */
-                       agc_sp_mul(agc_lm_mp_hi(aw, omega[i]), FC_BIT11);
-        agc_sp_t j = jacc[i]; /* 1/JACC for this axis, 2^14 */
-        agc_sp_t q = FC_DELERLIM; /* DELERLIM, sign of num, scale pi */
+        agc_sp_t aw  = (agc_sp_t) abs(omega[i]);                         /* |OMEGA|, pi/4 rad/s 2^0 */
+        agc_dp_t num = agc_sp_mul(agc_lm_mp_hi(aw, omega[i]), FC_BIT11); /* OMEGA |OMEGA| / 16, 2^-28 units */
+        agc_sp_t j   = jacc[i];                                          /* 1/JACC for this axis, 2^14 */
+        agc_sp_t q   = FC_DELERLIM;                                      /* DELERLIM, sign of num, scale pi */
 
         if (num < 0)
         {
@@ -880,8 +860,7 @@ static void fc_transfer(void)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx,
-                              agc_vec_t *unz, agc_cdutrig_t *trig)
+static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx, agc_vec_t *unz, agc_cdutrig_t *trig)
 {
     uint16_t yzx[3]; /* CDU angles Y, Z, X, 2's, pi */
 
@@ -897,8 +876,7 @@ static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx,
         return (AGC_STATUS_NOT_FOUND); /* BOVB NOATTCNT    */
     }
 
-    agc_vec_t u = /* unit DELV, SM, half unit 2^1 */
-                  agc_vec_unit(ip, agc_erase_delv(), NULL, NULL);
+    agc_vec_t u = agc_vec_unit(ip, agc_erase_delv(), NULL, NULL); /* unit DELV, SM, half unit 2^1 */
 
     if (agc_interp_test_ovf(ip))
     {
@@ -906,10 +884,8 @@ static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx,
     }
 
     agc_guid_smnb(trig, &u); /* unit DELV, NB    */
-    fc_unfv_2.c[1] = agc_dp_from_sp(
-        fc_fltrsub(agc_dp_high(fc_unfv_2.c[1]), agc_dp_high(u.c[1])));
-    fc_unfv_2.c[2] = agc_dp_from_sp(
-        fc_fltrsub(agc_dp_high(fc_unfv_2.c[2]), agc_dp_high(u.c[2])));
+    fc_unfv_2.c[1] = agc_dp_from_sp(fc_fltrsub(agc_dp_high(fc_unfv_2.c[1]), agc_dp_high(u.c[1])));
+    fc_unfv_2.c[2] = agc_dp_from_sp(fc_fltrsub(agc_dp_high(fc_unfv_2.c[2]), agc_dp_high(u.c[2])));
 
     return (AGC_STATUS_OK);
 }
@@ -926,8 +902,7 @@ static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx,
  **********************************************************************/
 static agc_vec_t fc_window(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 {
-    const agc_mat_t *xnb = /* XNBPIP..ZNBPIP rows, 2^1 */
-                           &agc_guid_state()->lm.xnbpip;
+    const agc_mat_t *xnb = &agc_guid_state()->lm.xnbpip; /* XNBPIP..ZNBPIP rows, 2^1 */
 
     if (!AGC_ASSERT(ip != NULL))
     {
@@ -975,12 +950,11 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_interp_clear_ovf(ip);                /* BOV: clear       */
-    agc_cdutrig_t *trig = &agc_guid_state()->trig; /* debris: SIN/COSCDU */
-    agc_vec_t      unx; /* unit thrust command, half unit 2^1 */
-    agc_vec_t      unz; /* unit window command, half unit 2^1 */
-    agc_status_t   st = /* step status */
-                        fc_inputs(ip, unfc_2, &unx, &unz, trig);
+    agc_interp_clear_ovf(ip);                                      /* BOV: clear       */
+    agc_cdutrig_t *trig = &agc_guid_state()->trig;                 /* debris: SIN/COSCDU */
+    agc_vec_t      unx;                                            /* unit thrust command, half unit 2^1 */
+    agc_vec_t      unz;                                            /* unit window command, half unit 2^1 */
+    agc_status_t   st   = fc_inputs(ip, unfc_2, &unx, &unz, trig); /* step status */
 
     if (st == AGC_STATUS_NOT_FOUND)
     {
@@ -992,9 +966,8 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
         return (st);
     }
 
-    agc_mat_t m = /* required nav base rows, 2^1 */
-                  fc_dcmcl(ip, unx, fc_window(ip, unx, unz));
-    agc_sp_t cdu[3]; /* required CDU angles X, Y, Z, 2's, scale pi */
+    agc_mat_t m = fc_dcmcl(ip, unx, fc_window(ip, unx, unz)); /* required nav base rows, 2^1 */
+    agc_sp_t  cdu[3];                                         /* required CDU angles X, Y, Z, 2's, scale pi */
 
     st = fc_nb2cdusp(ip, &m, cdu);
 
@@ -1015,7 +988,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
     /* Limit the attitude angle changes about X, Y', Z' (p. 916).            */
     agc_sp_t sinz = agc_dp_high(trig->sincdu[AGC_TRIG_Z]); /* sin(CDUZ), 2^1 */
     agc_sp_t cosz = agc_dp_high(trig->coscdu[AGC_TRIG_Z]); /* cos(CDUZ), 2^1 */
-    int      n    = fc_ndxcduw; /* NDXCDUW: 1 if CSM docked */
+    int      n    = fc_ndxcduw;                            /* NDXCDUW: 1 if CSM docked */
 
     if (!AGC_ASSERT(n == 0 || n == 1))
     {
@@ -1023,13 +996,13 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
     }
 
     fc_delgmb[2] = agc_lm_limitsub(fc_delgmb[2], fc_daxmax[n]); /* DAZMAX */
-    agc_sp_t y2 = agc_lm_mp_hi(fc_delgmb[1], cosz); /* -DELATTY'/2, scale pi */
+    agc_sp_t y2  = agc_lm_mp_hi(fc_delgmb[1], cosz);            /* -DELATTY'/2, scale pi */
 
     y2 = agc_lm_limitsub(y2, fc_day_half_max[n]);
+
     /* DEVIATION: DV takes (A,L); L after LIMITSUB is modelled as A (true
      * unless the value was limited negative, where L is a DV remainder). */
-    agc_sp_t newy = /* new -DELGMBY, 1's, scale pi (POSMAX on DV overflow) */
-                    AGC_SP_MAX;
+    agc_sp_t newy = AGC_SP_MAX; /* new -DELGMBY, 1's, scale pi (POSMAX on DV overflow) */
 
     if (cosz != 0 && abs(y2) < abs(cosz)) /* DV cannot overflow     */
     {
@@ -1038,22 +1011,20 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
 
     agc_sp_t oldy = fc_delgmb[1]; /* -DELGMBY before limiting, 1's, scale pi */
 
-    fc_delgmb[1] = newy; /* -DELGMBY          */
-    agc_sp_t t = /* -DELATTX implied by Y, 1's, scale pi */
-                 (agc_sp_t) -fc_mp_dbl(oldy, sinz);
-    /* MSU on ones' complement operands: one bit error if signs mixed.   */
-    agc_sp_t datx = /* +DELATTX, 1's, scale pi (MSU on 1's words) */
-                    fc_wrap15(fc_ones_word(t) - fc_ones_word(fc_delgmb[0]));
+    fc_delgmb[1] = newy;                              /* -DELGMBY          */
+    agc_sp_t t   = (agc_sp_t) -fc_mp_dbl(oldy, sinz); /* -DELATTX implied by Y, 1's, scale pi */
 
-    datx         = agc_lm_limitsub(datx, fc_daxmax[n]);  /* +DELATTX limited  */
+    /* MSU on ones' complement operands: one bit error if signs mixed.   */
+    agc_sp_t datx = fc_wrap15(fc_ones_word(t) - fc_ones_word(fc_delgmb[0])); /* +DELATTX, 1's, scale pi (MSU on 1's words) */
+
+    datx         = agc_lm_limitsub(datx, fc_daxmax[n]);       /* +DELATTX limited  */
     fc_delgmb[0] = (fc_flagoodw != 0) ? (agc_sp_t) -datx : 0; /* good window */
-    agc_sp_t c = /* X change from the new Y, 1's, scale pi */
-                 fc_mp_dbl((agc_sp_t) -fc_delgmb[1], sinz);
+    agc_sp_t c   = fc_mp_dbl((agc_sp_t) -fc_delgmb[1], sinz); /* X change from the new Y, 1's, scale pi */
 
     fc_delgmb[0] = agc_lm_ad(fc_delgmb[0], c); /* ADS: -DELGMBX     */
     fc_rates(trig);
     fc_transfer();
-    agc_relint(); /* TC INTPRET after TCQCDUW     */
+    agc_relint();                              /* TC INTPRET after TCQCDUW     */
 
     return (AGC_STATUS_OK);
 } /* agc_lm_findcduw */

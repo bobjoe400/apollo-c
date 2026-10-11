@@ -49,13 +49,12 @@
  * ==================================================================== */
 typedef struct agc_navaux_padload
 {
-    agc_tp_t tephem;  /* TEPHEM (= TIMSUBO): cs from midnight 1 July
-                           preceding launch to AGC clock zero, 2^42 cs */
-    agc_dp_t  azo;    /* AZO: earth rotation angle at TEPHEM, scale 2^0 revs  */
-    agc_dp_t  axo;    /* AXO: earth precession angle about X, scale 2^0 rad   */
+    agc_tp_t  tephem;  /* TEPHEM (= TIMSUBO): cs from midnight 1 July preceding launch to AGC clock zero, 2^42 cs */
+    agc_dp_t  azo;     /* AZO: earth rotation angle at TEPHEM, scale 2^0 revs  */
+    agc_dp_t  axo;     /* AXO: earth precession angle about X, scale 2^0 rad   */
     agc_dp_t  neg_ayo; /* -AYO: minus the angle about Y, scale 2^0 rad   */
-    agc_vec_t lm504;  /* 504LM: lunar libration vector, moon-fixed, 2^0 rad   */
-    agc_vec_t rls;    /* RLS: landing site, moon-fixed, scale 2^27 m          */
+    agc_vec_t lm504;   /* 504LM: lunar libration vector, moon-fixed, 2^0 rad   */
+    agc_vec_t rls;     /* RLS: landing site, moon-fixed, scale 2^27 m          */
 } agc_navaux_padload_t;
 
 agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad);
@@ -69,26 +68,16 @@ agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out);
 /* NEWANGLE: X = X0 + XDOT (T + TIMSUBO) modulo one revolution.
  * xdot scale 2^-(23 + shift) rev/cs, where xdot_shift is the AGC X1:
  * 0 for WEARTH (2^-23), 5 for NODDOT/BDOT (2^-28), 4 for FDOT (2^-27).    */
-agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo,
-                                 agc_dp_t t_cs, agc_dp_t x0, agc_dp_t xdot,
-                                 int xdot_shift, agc_dp_t *x);
-agc_status_t agc_planet_earthmx(agc_interp_t *ip,
-                                const agc_navaux_padload_t *pad, agc_dp_t t_cs,
-                                agc_mat_t *m); /* EARTHMX */
-agc_status_t agc_planet_moonmx(agc_interp_t *ip,
-                               const agc_navaux_padload_t *pad, agc_dp_t t_cs,
-                               agc_mat_t *m); /* MOONMX  */
-agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad,
-                               agc_vec_t                  *l); /* EARTHL  */
+agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo, agc_dp_t t_cs, agc_dp_t x0, agc_dp_t xdot, int xdot_shift, agc_dp_t *x);
+agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m); /* EARTHMX */
+agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m);  /* MOONMX  */
+agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l);                                   /* EARTHL  */
+
 /* R-TO-RP: RP = M(T) (R - L x R); RP-TO-R: R = MT(T) (RP + LP x RP).
  * Scale preserving: 2^29 m (earth) / 2^27 m (moon) in the AGC callers, or
  * a half-unit vector.  moon selects MOONMX/504LM versus EARTHMX/EARTHL.   */
-agc_status_t agc_planet_r_to_rp(agc_interp_t *ip,
-                                const agc_navaux_padload_t *pad, bool moon,
-                                agc_vec_t r, agc_dp_t t_cs, agc_vec_t *rp);
-agc_status_t agc_planet_rp_to_r(agc_interp_t *ip,
-                                const agc_navaux_padload_t *pad, bool moon,
-                                agc_vec_t rp, agc_dp_t t_cs, agc_vec_t *r);
+agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t r, agc_dp_t t_cs, agc_vec_t *rp);
+agc_status_t agc_planet_rp_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t rp, agc_dp_t t_cs, agc_vec_t *r);
 
 /* ======================================================================
  * Latitude / longitude (latlong.c)
@@ -96,9 +85,7 @@ agc_status_t agc_planet_rp_to_r(agc_interp_t *ip,
 typedef struct agc_latlong_opt
 {
     bool lunar; /* LUNAFLAG: true = moon, false = earth                   */
-    bool erad;  /* ERADFLAG: earth: true = Fischer ellipsoid (GETERAD),
-                      false = fixed pad radius ERAD; moon: true = 504RM,
-                      false = |RLS|                                          */
+    bool erad;  /* ERADFLAG: earth: true = Fischer ellipsoid (GETERAD), false = fixed pad radius ERAD; moon: true = 504RM, false = |RLS| */
 } agc_latlong_opt_t;
 
 typedef struct agc_latlong
@@ -115,26 +102,23 @@ agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);
 agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
 
 /* LAT-LONG: r scale 2^29 m (earth or moon centred).                       */
-agc_status_t agc_latlong_from_r(agc_interp_t *ip,
-                                const agc_navaux_padload_t *pad,
-                                agc_latlong_opt_t opt, agc_vec_t r,
-                                agc_dp_t t_cs, agc_latlong_t *out);
+agc_status_t agc_latlong_from_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_vec_t r, agc_dp_t t_cs, agc_latlong_t *out);
+
 /* LALOTORV: in->lat/lon/alt used; returns r scale 2^29 m and in->eradm
  * is not read (out_eradm, if non-NULL, receives ERADM).                   */
-agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
-                              agc_latlong_opt_t opt, const agc_latlong_t *in,
-                              agc_dp_t t_cs, agc_vec_t *r, agc_dp_t *out_eradm);
+agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, const agc_latlong_t *in, agc_dp_t t_cs, agc_vec_t *r, agc_dp_t *out_eradm);
+
 /* GETERAD: half_sin_lat = sin(geocentric lat)/2; returns radius 2^29 m.    */
 agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat);
+
 /* ARCTAN: sinth, costh scale 2^1; returns theta revs 2^0 in [-1/2, 1/2].  */
 agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh);
+
 /* SETGAMMA: b^2/a^2 (earth) or 1 (moon), scale 2^1.                       */
 agc_dp_t agc_latlong_setgamma(bool lunar);
+
 /* SETRE: radius ERADM scale 2^29 m.                                        */
-agc_status_t agc_latlong_setre(agc_interp_t *ip,
-                               const agc_navaux_padload_t *pad,
-                               agc_latlong_opt_t opt, agc_dp_t half_sin_lat,
-                               agc_dp_t *eradm);
+agc_status_t agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_dp_t half_sin_lat, agc_dp_t *eradm);
 
 /* ======================================================================
  * Measurement incorporation (measurement.c)
@@ -157,15 +141,13 @@ typedef struct agc_incorp
     agc_vec_t bvector[AGC_INCORP_BLKS]; /* BVECTOR, per-measurement scale */
     agc_dp_t  deltaq;                   /* DELTAQ, measurement scale  */
     agc_tp_t  variance;                 /* VARIANCE, scale of ZI^2    */
+
     /* outputs of INCORP1 (inputs of INCORP2) */
     agc_vec_t zi[AGC_INCORP_BLKS];     /* ZI, scale set by NEWZCOMP  */
     agc_vec_t omega[AGC_INCORP_BLKS];  /* OMEGA, scale of W ZI       */
-    agc_vec_t deltax[AGC_INCORP_BLKS]; /* DELTAX state deviations:
-                                               [0] pos 2^29/2^27 m,
-                                               [1] vel 2^7/2^5 m/cs,
-                                               [2] bias                   */
-    agc_dp_t gamma;                   /* GAMMA, scale 2^-NORMGAM    */
-    int      normgam;                 /* NORMGAM, AGC index value   */
+    agc_vec_t deltax[AGC_INCORP_BLKS]; /* DELTAX state deviations: [0] pos 2^29/2^27 m, [1] vel 2^7/2^5 m/cs, [2] bias */
+    agc_dp_t  gamma;                   /* GAMMA, scale 2^-NORMGAM    */
+    int       normgam;                 /* NORMGAM, AGC index value   */
 } agc_incorp_t;
 
 /* Integration temporaries touched by INCORP2 phase 3 (FAZC..FAZAB5). */
@@ -184,12 +166,12 @@ typedef struct agc_incorp_sv
 agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
                                         const agc_incorp_w_t *w,
                                         agc_incorp_t         *inc);
+
 /* INCORP2 FAZA-FAZB5 */
-agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc,
-                                 agc_incorp_w_t *w);
+agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_w_t *w);
+
 /* INCORP2 FAZC-FAZAB5 */
-agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc,
-                                     agc_incorp_sv_t *sv);
+agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_sv_t *sv);
 
 /* ======================================================================
  * Time of free fall (free_fall.c).  E = earth scale, M = moon scale.
@@ -202,6 +184,7 @@ typedef struct agc_tff
     agc_vec_t rone; /* RONE  E 2^29 m,  M 2^27 m                       */
     agc_vec_t vone; /* VONE  E 2^7 m/cs, M 2^5 m/cs                    */
     agc_dp_t  rtmu; /* TFF/RTMU 1/sqrt(mu) E 2^-17, M 2^-14            */
+
     /* TFFCONIC outputs */
     agc_vec_t vone_p;   /* VONE' = VN/sqrt(mu)  E 2^-10, M 2^-9            */
     agc_dp_t  rmag1;    /* RMAG1 |RN|            E 2^29, M 2^27 m          */
@@ -213,9 +196,11 @@ typedef struct agc_tff
     agc_dp_t  tffrtalf; /* TFFRTALF sqrt|alfa| E 2^-(10+NA), M 2^-(9+NA)   */
     int       na;       /* NA (AGC X2 = -NA)                               */
     agc_dp_t  tff1_alf; /* TFF1/ALF 1/alfa m E 2^(22+2NA), M 2^(20+2NA)    */
+
     /* TFFRP/RA outputs */
     agc_dp_t rper; /* RPER perigee radius E 2^29, M 2^27 m            */
     agc_dp_t rapo; /* RAPO apogee E 2^29, M 2^27 m (NEARONE: none) */
+
     /* CALCTFF/CALCTPER debris left for the entry displays */
     agc_dp_t rterm;   /* RTERM  E 2^29, M 2^27 m                         */
     agc_dp_t nrterm;  /* NRTERM E 2^(29-NR) m                            */
@@ -227,16 +212,14 @@ typedef struct agc_tff
 
 agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff); /* TFFCONIC */
 agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff); /* TFFRP/RA */
+
 /* Returned time: cs scale 2^28; NEARONE (AGC_TFF_NEARONE) = no free fall. */
-agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
-                             agc_dp_t *t_cs); /* CALCTFF  */
-agc_status_t agc_tff_calctper(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rper,
-                              agc_dp_t *t_cs);           /* CALCTPER */
-agc_dp_t agc_tff_poly(agc_interp_t *ip, agc_dp_t x); /* T(X)     */
+agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, agc_dp_t *t_cs); /* CALCTFF  */
+agc_status_t agc_tff_calctper(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rper, agc_dp_t *t_cs); /* CALCTPER */
+agc_dp_t     agc_tff_poly(agc_interp_t *ip, agc_dp_t x);                                        /* T(X)     */
 
 #define AGC_TFF_NEARONE \
-    ((agc_dp_t) 268435455) /* NEARONE 2DEC .999999999,
-                                                  oct 37777 37777          */
+    ((agc_dp_t) 268435455) /* NEARONE 2DEC .999999999, oct 37777 37777 */
 
 /* ======================================================================
  * Lunar and solar ephemerides (ephemerides.c)
@@ -245,14 +228,11 @@ agc_dp_t agc_tff_poly(agc_interp_t *ip, agc_dp_t x); /* T(X)     */
 
 typedef struct agc_ephem_csm
 {
-    agc_tp_t  timemo; /* TIMEMO centre of validity, TP 2^42 cs */
-    agc_vec_t vecoem[AGC_EPHEM_NCOEF]; /* VECOEM, descending: [0] = a9 ..
-                                          [9] = a0; a_n m/cs^n at scale
-                                          2^(31 - 26n) so that the Horner
-                                          sum with t at 2^26 cs is 2^31 m  */
-    agc_vec_t reso;    /* RESO sun position at TIMEMO, 2^38 m  */
-    agc_vec_t veso;    /* VESO sun velocity at TIMEMO, 2^9 m/cs*/
-    agc_dp_t  omegaes; /* OMEGAES rate of RESO, 2^-26 rev/cs   */
+    agc_tp_t  timemo;                  /* TIMEMO centre of validity, TP 2^42 cs */
+    agc_vec_t vecoem[AGC_EPHEM_NCOEF]; /* VECOEM, descending: [0] = a9 .. [9] = a0; a_n m/cs^n at scale 2^(31 - 26n) so that the Horner sum with t at 2^26 cs is 2^31 m */
+    agc_vec_t reso;                    /* RESO sun position at TIMEMO, 2^38 m  */
+    agc_vec_t veso;                    /* VESO sun velocity at TIMEMO, 2^9 m/cs*/
+    agc_dp_t  omegaes;                 /* OMEGAES rate of RESO, 2^-26 rev/cs   */
 } agc_ephem_csm_t;
 
 agc_status_t agc_ephem_set_csm_data(const agc_ephem_csm_t *eph);
@@ -260,22 +240,13 @@ agc_status_t agc_ephem_get_csm_data(agc_ephem_csm_t *out);
 
 /* CM: moon position earth-centred 2^29 m; moon velocity 2^7 m/cs; sun
  * position earth-centred 2^38 m.                                          */
-agc_status_t agc_ephem_csm_lunpos(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                                  agc_tp_t tephem, agc_dp_t t_cs,
-                                  agc_vec_t *moon);
-agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                                  agc_tp_t tephem, agc_dp_t t_cs,
-                                  agc_vec_t *vmoon);
-agc_status_t agc_ephem_csm_solpos(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                                  agc_tp_t tephem, agc_dp_t t_cs,
-                                  agc_vec_t *sun);
-agc_status_t agc_ephem_csm_lspos(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                                 agc_tp_t tephem, agc_dp_t t_cs,
-                                 agc_vec_t *moon, agc_vec_t *sun);
+agc_status_t agc_ephem_csm_lunpos(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *moon);
+agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *vmoon);
+agc_status_t agc_ephem_csm_solpos(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *sun);
+agc_status_t agc_ephem_csm_lspos(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *moon, agc_vec_t *sun);
+
 /* LM: unit vectors (scale 2^1) VMOON and VSUN in the basic reference frame. */
-agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem,
-                                agc_dp_t t_cs, agc_vec_t *vmoon,
-                                agc_vec_t *vsun);
+agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *vmoon, agc_vec_t *vsun);
 
 /* LSPOS for the vehicle selected by agc_state_vehicle(), using the pad load
  * (agc_navaux_set_padload) and, for the CSM, agc_ephem_set_csm_data().
@@ -284,8 +255,7 @@ agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem,
  *        *sun_pos  = sun position  (earth-centred) scale 2^38 m
  *   LM:  *moon_pos = VMOON unit vector scale 2^1
  *        *sun_pos  = VSUN  unit vector scale 2^1                          */
-agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs,
-                            agc_vec_t *moon_pos, agc_vec_t *sun_pos);
+agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs, agc_vec_t *moon_pos, agc_vec_t *sun_pos);
 
 /* ======================================================================
  * Star table (star_tables.c): 37 navigation stars, unit vectors in the

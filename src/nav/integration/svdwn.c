@@ -36,12 +36,9 @@ static agc_vec_t v_other;
  * The other vehicle: R-OTHER, V-OTHER.  VSL* by a negative count is a
  * rounding right shift, as agc_vec_shr is.
  */
-agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
-                             agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav,
-                             agc_vec_t tnuv, agc_dp_t tet)
+agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2, agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav, agc_vec_t tnuv, agc_dp_t tet)
 {
-    if (!AGC_ASSERT(ip != NULL) ||
-        !AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == AGC_INTEG_X2_ORIGEX)))
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == AGC_INTEG_X2_ORIGEX)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -56,11 +53,8 @@ agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2,
 
     if (x2 != AGC_INTEG_X2_ORIGEX)
     {
-        r = agc_vec_shr(
-            agc_vec_add(ip, agc_vec_shr(tdeltav, SVDWN_R_SHIFT + x2), rcv),
-            x2);
-        v = agc_vec_shr(
-            agc_vec_add(ip, agc_vec_shr(tnuv, SVDWN_V_SHIFT + x2), vcv), x2);
+        r = agc_vec_shr(agc_vec_add(ip, agc_vec_shr(tdeltav, SVDWN_R_SHIFT + x2), rcv), x2);
+        v = agc_vec_shr(agc_vec_add(ip, agc_vec_shr(tnuv, SVDWN_V_SHIFT + x2), vcv), x2);
     }
 
     if (this_vehicle)

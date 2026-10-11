@@ -1,64 +1,65 @@
 #!/usr/bin/env python3
-"""fix_comments.py -- comment placement, paragraphs and continuation layout.
+"""fix_comments.py -- comment placement, wraps, paragraphs and alignment.
 
 Usage (from the repo root; `make format` runs it around Uncrustify):
-    python3 -I tools/fix_comments.py [--stats] [--long TSV] FILE...
+    python3 -I tools/fix_comments.py [--stats] FILE...
+    python3 -I tools/fix_comments.py --long TSV FILE...   (report only)
 
-Rules (docs/CODING_STANDARD.md "Comment placement and wrapping"; user
-direction 2026-10-11, NASA SEL-94-003 2.2.1 and 2.3):
+Rules (docs/CODING_STANDARD.md "Comment placement and wrapping", user
+direction 2026-10-11; NASA SEL-94-003 2.2.1, 2.3, 5.4):
 
-1. A comment never sits inside a statement.  A comment inside a statement
-   of a function body (after `=`, inside a call's parentheses, between
-   arguments or operands, on a continuation line, or trailing a statement
-   that spans several lines) moves to its own line immediately above the
-   statement, at the statement's indentation.  Several comments of one
-   statement merge into one, in order, separated by "; ".  The words are
-   kept verbatim (only the white space around them is normalised).
-   Function prologs, `#define` lines, struct/union/enum bodies and `case`
-   labels are not touched.  A trailing comment after the `;` of a one-line
-   statement stays.
-2. Continuation lines indent a fixed 8 columns from the statement's first
-   line and never align to an open parenthesis.  A statement that spans
-   lines (or passes column 80) is re-broken from scratch: the fewest lines
-   that fit in 80 columns, breaking after `,`, a binary operator or `=`,
-   preferring the outermost nesting level.  `for` headers, statements
-   with a multi-line brace initialiser, statements that still contain a
-   comment and preprocessor lines are left to Uncrustify.
-3. A standalone comment that follows a statement or declaration (a line
-   ending in `;` or `}`, or a preprocessor line) starts a paragraph: a
-   blank line goes above it.  Consecutive comment lines stay together.
-4. Within a paragraph (consecutive non-blank lines) the single-line
-   trailing comments at one brace level start in one column, one space
-   after the longest code among them; a comment after an open brace is not
-   aligned.  Where that column would push a comment past column 80, the
-   comment moves above its statement (rule 1 layout) and the paragraph is
-   re-aligned.
+1. No column limit; one statement per line.  A statement that spans lines
+   is joined back onto one line, except in the one allowed wrap shape: the
+   OUTERMOST call of the statement has its arguments one per line (the
+   first line of a call may carry two, e.g. `ip` and the first real
+   argument; at least two continuation lines, so a list wrapped once is
+   joined), every line break sits after a comma of that call, and
+   Uncrustify aligns each argument under the first.  A break inside a
+   nested call, after `=`, or after an operator is always joined.  Brace
+   initialiser tables, statements around preprocessor lines and macros are
+   left alone.
+2. A comment never sits inside a statement.  In a function body every
+   comment inside a statement (after `=`, inside a call, between operands,
+   on a continuation line) merges with the statement's trailing comment
+   into one trailing comment on the statement's (first) line, in source
+   order, separated by "; ".  The
+   words are kept verbatim.  Function prologs, `#define` lines, struct /
+   union / enum bodies, `case` labels and initialiser tables are not
+   touched.  A trailing comment that itself spans lines is put on one line
+   (no column limit), so every trailing comment is a single line.
+3. A standalone comment that follows a statement, declaration, table row
+   or preprocessor line starts a paragraph: a blank line goes above it.
+   Consecutive comment lines stay together.
+4. Within a paragraph (consecutive non-blank lines), at one brace level,
+   one-line statements line up as columns: declaration type | name (the
+   `*` dangles left of the name) | assignment operator | expression |
+   trailing comment, the comment column one space past the longest code
+   line of the paragraph.  A comment after `{` is not aligned.  The
+   continuation lines of a kept wrap move with their first line.
 
-Uses the libclang token stream (python3 clang.cindex), so string and
-character literals, comments and preprocessor lines are recognised exactly.
-Only white space and comment positions change: `gcc -E` output (comments
-stripped) is token-identical before and after.  Idempotent.
+Uses the libclang token stream (python3 clang.cindex) for lexing, so
+string and character literals, comments and preprocessor lines are
+recognised exactly.  Only white space, line breaks and comment positions
+change: `gcc -E` output (comments stripped) is token-identical before and
+after, except for the white space inside a `#x` stringification of a
+joined macro argument (assertion text).  Idempotent; `make format` runs it
+before and after Uncrustify, and `make format-check` runs the whole
+pipeline on a copy.
 """
 import argparse
-import os
 import re
 import sys
 
 import clang.cindex as ci
 
-WIDTH = 80
-CONT = 8
 # Lexing only: headers are not needed (and not read).
 CLANG_ARGS = ['-x', 'c', '-std=c11', '-nostdinc']
-
-BREAK_OPS = {
-    '&&': 0, '||': 0, '?': 4, ':': 4,
-    '==': 12, '!=': 12, '<': 12, '>': 12, '<=': 12, '>=': 12,
-    '+': 8, '-': 8, '/': 8, '%': 8, '|': 10, '^': 10, '<<': 10, '>>': 10,
-}
 ASSIGN_OPS = {'=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '|=',
               '^='}
-KEYWORD_PAREN = {'if', 'while', 'for', 'switch', 'return', 'sizeof'}
+STMT_KEYWORDS = {'return', 'break', 'continue', 'goto', 'case', 'default',
+                 'if', 'while', 'for', 'do', 'switch', 'else', 'sizeof',
+                 'typedef'}
+LONG_WIDTH = 120
 
 _INDEX = None
 
@@ -163,7 +164,8 @@ def segment(src):
     segs = []
     stack = []          # 'func' | 'block' | 'record' | 'enum' | 'init'
     brace_kind = {}     # index of `{` in src.sig -> kind
-    level_at = []       # brace depth before each sig token
+    level_at = []       # innermost open brace (index) around each token;
+    bidx = []           # for a `}` the brace around the block it closes
     inner_at = []       # (innermost brace kind, paren depth) at each token
     cur = []
     paren = 0
@@ -177,7 +179,7 @@ def segment(src):
         cur = []
 
     for i, t in enumerate(sig):
-        level_at.append(len(stack))
+        level_at.append(bidx[-1] if bidx else -1)
         inner_at.append((stack[-1] if stack else None, paren))
         s = t.text
         in_init = bool(stack) and stack[-1] == 'init'
@@ -204,6 +206,7 @@ def segment(src):
             if kind == 'init':
                 brace_kind[i] = 'init'
                 stack.append('init')
+                bidx.append(i)
                 cur.append(i)
                 continue
             head = [sig[k].text for k in cur]
@@ -221,8 +224,12 @@ def segment(src):
             close('header')
             brace_kind[i] = kind
             stack.append(kind)
+            bidx.append(i)
             continue
         if s == '}':
+            if bidx:
+                bidx.pop()
+            level_at[-1] = bidx[-1] if bidx else -1
             if in_init:
                 stack.pop()
                 cur.append(i)
@@ -263,32 +270,6 @@ def comment_words(text):
     return ' '.join(parts)
 
 
-def comment_block(indent, words):
-    """`/* words */` at `indent`, wrapped at column 80 with ` * ` lines."""
-    pad = ' ' * indent
-    one = pad + '/* ' + words + ' */'
-    if len(one) <= WIDTH or ' ' not in words:
-        return [one]
-    out = []
-    line = ''
-    for w in words.split(' '):
-        lead = pad + ('/* ' if not out else ' * ')
-        cand = (line + ' ' + w) if line else w
-        if line and len(lead) + len(cand) + 3 > WIDTH:
-            out.append(lead + line)
-            line = w
-        else:
-            line = cand
-    lead = pad + ('/* ' if not out else ' * ')
-    out.append(lead + line + ' */')
-    return out
-
-
-def indent_of(src, ln):
-    s = src.line_text(ln)
-    return len(s) - len(s.lstrip(' '))
-
-
 def apply_edits(text, edits):
     """edits: (start, end, replacement); non-overlapping."""
     edits = sorted(edits, key=lambda e: (e[0], e[1]))
@@ -325,98 +306,6 @@ def removal(src, c):
     return (c.start, e, '')
 
 
-# ---------------------------------------------------------------------------
-# Phase 1: comments inside statements
-# ---------------------------------------------------------------------------
-
-def movable(src, seg, how):
-    """Comments inside statements of function bodies move; so does the
-    trailing comment of a multi-line file-scope declaration (a prototype),
-    but not of a table with a brace initialiser.  Struct/union/enum bodies,
-    labels and initialiser tables are never touched."""
-    if seg.kind == 'label' or 'record' in seg.ctx or 'enum' in seg.ctx:
-        return False
-    if 'func' in seg.ctx:
-        return True
-    return how == 'trail' and not seg.ctx and seg.kind == 'stmt' and \
-        not any(src.sig[k].text == '{' for k in seg.toks)
-
-
-def seg_of_comments(src):
-    """Map each comment to (segment, 'in' | 'trail') when it is inside a
-    segment or trails its last token on the same line."""
-    sig = src.sig
-    res = {}
-    spans = [(sig[g.toks[0]].start, sig[g.toks[-1]].end, g)
-             for g in src.segs]
-    spans.sort(key=lambda x: x[0])
-    starts = [s[0] for s in spans]
-    import bisect
-    sig_starts = [t.start for t in sig]
-    for c in src.comments:
-        k = bisect.bisect_right(starts, c.start) - 1
-        if k < 0:
-            continue
-        s, e, g = spans[k]
-        if c.start < e:
-            res[id(c)] = (g, 'in')
-            continue
-        last = sig[g.toks[-1]]
-        if last.line == c.line:
-            j = bisect.bisect_left(sig_starts, last.end)
-            if j >= len(sig) or sig[j].start > c.start:
-                res[id(c)] = (g, 'trail')
-    return res
-
-
-def move_inside(src, stats, trailing):
-    """trailing=False: comments inside statements; True: comments that
-    trail a statement spanning several lines (run after the re-break)."""
-    where = seg_of_comments(src)
-    groups = {}
-    order = []
-    for c in src.comments:
-        w = where.get(id(c))
-        if not w:
-            continue
-        g, how = w
-        if (how == 'trail') != trailing or not movable(src, g, how):
-            continue
-        first = src.sig[g.toks[0]]
-        last = src.sig[g.toks[-1]]
-        if how == 'trail' and first.line == last.line:
-            continue
-        if how == 'trail' and c.text.count('\n'):
-            continue
-        if id(g) not in groups:
-            groups[id(g)] = (g, [])
-            order.append(id(g))
-        groups[id(g)][1].append(c)
-    if not groups:
-        return src.text, 0
-    edits = []
-    n = 0
-    for gid in order:
-        g, cs = groups[gid]
-        first = src.sig[g.toks[0]]
-        ind = indent_of(src, first.line)
-        words = '; '.join(w for w in (comment_words(c.text) for c in cs)
-                          if w)
-        ls = src.line_starts[first.line]
-        if words:
-            edits.append((ls, ls, '\n'.join(comment_block(ind, words))
-                          + '\n'))
-        for c in cs:
-            edits.append(removal(src, c))
-            n += 1
-    stats['moved'] += n
-    return apply_edits(src.text, edits), n
-
-
-# ---------------------------------------------------------------------------
-# Phase 2: continuation layout
-# ---------------------------------------------------------------------------
-
 def joined_sep(a, b):
     """Separator for two tokens that were on different lines."""
     if a.text in ('(', '[') or b.text in (')', ']', ',', ';', '[') or \
@@ -427,150 +316,6 @@ def joined_sep(a, b):
     if a.text in ('!', '~', '++', '--') or b.text in ('++', '--'):
         return ''
     return ' '
-
-
-def break_penalty(sig, toks, k, depth):
-    """Penalty for a line break after toks[k], or None (not allowed)."""
-    t = sig[toks[k]]
-    s = t.text
-    if t.kind == 'l' and s.endswith('"') and k + 1 < len(toks) and \
-            sig[toks[k + 1]].text.startswith('"'):
-        return 30 * depth * depth       # between concatenated strings
-    if t.kind not in ('p',):
-        return None
-    if s == ',':
-        kind = 0
-    elif s in ASSIGN_OPS:
-        kind = 2
-    elif s in BREAK_OPS:
-        if s in ('+', '-'):
-            p = sig[toks[k - 1]] if k else None
-            if p is None or not (p.kind in ('i', 'l') or
-                                 p.text in (')', ']')):
-                return None
-        if s == ':' and not any(sig[toks[j]].text == '?' for j in range(k)):
-            return None
-        kind = BREAK_OPS[s]
-    elif s == '(':
-        kind = 400
-    else:
-        return None
-    return 30 * depth * depth + kind
-
-
-def layout(widths, seps, pens, col0, cind):
-    """Fewest-penalty line breaking.  Returns list of break indices (break
-    after token k)."""
-    n = len(widths)
-    INF = float('inf')
-    best = [INF] * (n + 1)
-    back = [0] * (n + 1)
-    best[0] = 0.0
-    for i in range(n):
-        if best[i] == INF:
-            continue
-        if i > 0 and pens[i - 1] is None:
-            continue
-        start = col0 if i == 0 else cind
-        w = start
-        base = best[i] + (0 if i == 0 else 100 + pens[i - 1])
-        for j in range(i, n):
-            w += widths[j] + (seps[j] if j > i else 0)
-            over = max(0, w - WIDTH)
-            cost = base + over * 1000
-            if j == n - 1:
-                if cost < best[n]:
-                    best[n] = cost
-                    back[n] = i
-            elif pens[j] is not None and cost < best[j + 1]:
-                best[j + 1] = cost
-                back[j + 1] = i
-            if over > 0 and j > i and w > WIDTH + 60:
-                break
-    brks = []
-    k = n
-    while k > 0:
-        i = back[k]
-        if i > 0:
-            brks.append(i - 1)
-        k = i
-    return sorted(brks)
-
-
-def reflow_seg(src, g):
-    """Return (start, end, text) replacing the segment's lines, or None."""
-    sig = src.sig
-    toks = g.toks
-    first = sig[toks[0]]
-    last = sig[toks[-1]]
-    if g.kind == 'label' or first.text == 'for':
-        return None
-    if g.kind == 'tail' and ('record' in g.ctx or 'enum' in g.ctx):
-        return None
-    if any(ln in src.pp_lines for ln in range(first.line, last.line + 1)):
-        return None
-    multi = first.line != last.line
-    if not multi and src.col(last.end) <= WIDTH:
-        return None
-    # No comment may remain inside; no multi-line brace initialiser.
-    for c in src.comments:
-        if first.start < c.start < last.end:
-            return None
-    if multi:
-        for k in toks:
-            if sig[k].text == '{' and k + 0 in src.brace_kind:
-                close = _match(sig, k)
-                if close is not None and sig[close].line != sig[k].line:
-                    return None
-    widths = []
-    seps = []
-    for n_, k in enumerate(toks):
-        t = sig[k]
-        widths.append(len(t.text))
-        if n_ == 0:
-            seps.append(0)
-            continue
-        p = sig[toks[n_ - 1]]
-        if p.line == t.line:
-            gap = src.text[p.end:t.start]
-            seps.append(len(gap))
-        else:
-            seps.append(len(joined_sep(p, t)))
-    depth = 0
-    pens = []
-    for n_, k in enumerate(toks):
-        s = sig[k].text
-        if s in ('(', '[', '{'):
-            depth += 1
-        elif s in (')', ']', '}'):
-            depth -= 1
-        pens.append(break_penalty(sig, toks, n_, depth)
-                    if n_ < len(toks) - 1 else None)
-    ls = src.line_starts[first.line]
-    col0 = first.start - ls
-    cind = indent_of(src, first.line) + CONT
-    brks = set(layout(widths, seps, pens, col0, cind))
-    out = [src.text[ls:first.start]]
-    for n_, k in enumerate(toks):
-        t = sig[k]
-        if n_ > 0:
-            p = sig[toks[n_ - 1]]
-            if (n_ - 1) in brks:
-                out.append('\n' + ' ' * cind)
-            elif p.line == t.line:
-                out.append(src.text[p.end:t.start])
-            else:
-                out.append(joined_sep(p, t))
-        out.append(t.text)
-    le = src.text.find('\n', last.end)
-    le = len(src.text) if le < 0 else le
-    new = ''.join(out).rstrip(' ')
-    tail = src.text[last.end:le]
-    new += tail.rstrip(' ') if tail.strip() else ''
-    old = src.text[ls:le]
-    if new == old:
-        return None
-    return (ls, le, new)
 
 
 def _match(sig, k):
@@ -585,27 +330,6 @@ def _match(sig, k):
     return None
 
 
-def reflow(src, stats):
-    edits = []
-    used = set()
-    for g in src.segs:
-        e = reflow_seg(src, g)
-        if e is None:
-            continue
-        ln0 = src.line_of(e[0])
-        ln1 = src.line_of(e[1])
-        if any(ln in used for ln in range(ln0, ln1 + 1)):
-            continue
-        used.update(range(ln0, ln1 + 1))
-        edits.append(e)
-    stats['reflowed'] += len(edits)
-    return apply_edits(src.text, edits), len(edits)
-
-
-# ---------------------------------------------------------------------------
-# Phase 3: paragraphs and trailing-comment alignment
-# ---------------------------------------------------------------------------
-
 def line_info(src):
     """Per line: last significant token, first token, trailing comment."""
     last_sig = {}
@@ -617,6 +341,185 @@ def line_info(src):
             last_sig[t.line] = t
     return last_sig, first_tok
 
+
+# ---------------------------------------------------------------------------
+# Phase 1: wraps and comments inside statements
+# ---------------------------------------------------------------------------
+
+def paren_info(sig, toks):
+    """inner[n]: position (in toks) of the innermost open bracket around
+    toks[n]; call: position of the outermost call's `(` (a `(` after an
+    identifier with no call around it), or None."""
+    inner = []
+    stack = []
+    calls = []
+    call = None
+    for n, k in enumerate(toks):
+        t = sig[k]
+        inner.append(stack[-1] if stack else None)
+        if t.text in ('(', '[', '{'):
+            c = t.text == '(' and n > 0 and sig[toks[n - 1]].kind == 'i'
+            if c and call is None and not any(calls):
+                call = n
+            stack.append(n)
+            calls.append(c)
+        elif t.text in (')', ']', '}') and stack:
+            stack.pop()
+            calls.pop()
+    return inner, call
+
+
+def is_declarator(src, g):
+    """A function definition header or prototype at file scope."""
+    return not g.ctx and g.kind in ('header', 'stmt')
+
+
+def kept_wrap(src, g):
+    """True when the segment is in the one allowed wrap shape."""
+    sig = src.sig
+    toks = g.toks
+    inner, p = paren_info(sig, toks)
+    if p is None or sig[toks[p]].line != sig[toks[0]].line:
+        return False
+    breaks = [n for n in range(len(toks) - 1)
+              if sig[toks[n]].line != sig[toks[n + 1]].line]
+    if not breaks:
+        return False
+    for n in breaks:
+        if sig[toks[n]].text != ',' or inner[n] != p:
+            return False
+    first_args = 1 + sum(1 for m in range(p + 1, breaks[0])
+                         if sig[toks[m]].text == ',' and inner[m] == p)
+    for i, n in enumerate(breaks):
+        end = breaks[i + 1] if i + 1 < len(breaks) else len(toks) - 1
+        for m in range(n + 1, end):
+            if sig[toks[m]].text == ',' and inner[m] == p:
+                return False
+    if len(breaks) < 2:
+        return False
+    if is_declarator(src, g):
+        return first_args == 1
+    return first_args <= 2
+
+
+def seg_comments(src, g):
+    """(interior comments, trailing comments) of a segment.  Trailing ones
+    follow the last token on its line, before any further code."""
+    sig = src.sig
+    first = sig[g.toks[0]]
+    last = sig[g.toks[-1]]
+    kl = src.sig_index[id(last)]
+    nxt = sig[kl + 1].start if kl + 1 < len(sig) else len(src.text) + 1
+    inner = []
+    trail = []
+    for c in src.comments:
+        if first.start < c.start < last.end:
+            inner.append(c)
+        elif last.end <= c.start < nxt and c.line == last.line:
+            trail.append(c)
+    return inner, trail
+
+
+def join_text(src, toks):
+    """The tokens on one line: same-line gaps kept, others one space or
+    none (Uncrustify settles the spacing)."""
+    sig = src.sig
+    out = []
+    for n, k in enumerate(toks):
+        t = sig[k]
+        if n:
+            p = sig[toks[n - 1]]
+            gap = src.text[p.end:t.start]
+            if p.line == t.line and '/*' not in gap and '//' not in gap:
+                out.append(gap)
+            elif p.line == t.line:
+                out.append(' ')
+            else:
+                out.append(joined_sep(p, t))
+        out.append(t.text)
+    return ''.join(out)
+
+
+def merged_words(trail, inner):
+    """The comments' words in source order, separated by '; '."""
+    words = [comment_words(c.text)
+             for c in sorted(trail + inner, key=lambda t: t.start)]
+    return '; '.join(w for w in words if w)
+
+
+def fix_segment(src, g):
+    """Edits for one segment, or []."""
+    sig = src.sig
+    toks = g.toks
+    first = sig[toks[0]]
+    last = sig[toks[-1]]
+    if g.kind == 'label' or g.kind == 'tail' and \
+            ('record' in g.ctx or 'enum' in g.ctx):
+        return []
+    if any(ln in src.pp_lines for ln in range(first.line, last.line + 1)):
+        return []
+    multi = first.line != last.line
+    for k in toks:
+        if sig[k].text == '{' and src.brace_kind.get(k) == 'init':
+            close = _match(sig, k)
+            if close is None or sig[close].line != sig[k].line:
+                return []           # a brace initialiser table
+    inner, trail = seg_comments(src, g)
+    in_func = 'func' in g.ctx and 'record' not in g.ctx and \
+        'enum' not in g.ctx
+    if inner and not in_func:
+        return []                   # struct/enum/file-scope: untouched
+    if not multi and not inner:
+        return []
+    ls = src.line_starts[first.line]
+    prefix = src.text[ls:first.start]
+    if multi and kept_wrap(src, g):
+        # Allowed wrap: the statement's comments become one trailing
+        # comment on its first line.
+        on_first = [c for c in inner if c.line == first.line and not any(
+            sig[k].line == first.line and sig[k].start > c.start
+            for k in toks)]
+        others = [c for c in inner if c not in on_first]
+        if not others and not trail:
+            return []
+        words = merged_words(on_first + trail, others)
+        fl = [sig[k] for k in toks if sig[k].line == first.line][-1]
+        edits = [removal(src, c) for c in inner + trail]
+        edits.append((fl.end, fl.end, ' /* ' + words + ' */'))
+        return edits
+    if trail:
+        endc = trail[-1]
+        le = src.text.find('\n', endc.end)
+    else:
+        le = src.text.find('\n', last.end)
+    le = len(src.text) if le < 0 else le
+    tail_end = trail[-1].end if trail else last.end
+    if src.text[tail_end:le].strip():
+        return []                   # more code on the line: leave it
+    new = prefix + join_text(src, toks)
+    if inner:
+        new += ' /* ' + merged_words(trail, inner) + ' */'
+    elif trail:
+        new += ' ' + ' '.join(c.text for c in trail)
+    if new == src.text[ls:le]:
+        return []
+    return [(ls, le, new)]
+
+
+def fix_statements(src, stats):
+    edits = []
+    for g in src.segs:
+        e = fix_segment(src, g)
+        if e:
+            edits.extend(e)
+            stats['statements'] += 1
+    return apply_edits(src.text, edits), len(edits)
+
+
+# ---------------------------------------------------------------------------
+# Phase 2: paragraphs (blank line before a standalone comment) and
+# trailing comments that span lines
+# ---------------------------------------------------------------------------
 
 def ends_group(src, prev, last_sig):
     """True when line `prev` ends a statement, declaration, table row or
@@ -678,6 +581,236 @@ def blank_before_comments(src, stats):
     return apply_edits(src.text, ins), len(ins)
 
 
+def multiline_trailing(src):
+    """Trailing comments that span lines (they always move)."""
+    out = []
+    prev = None
+    for t in src.toks:
+        if t.kind == 'c' and '\n' in t.text and prev is not None and \
+                prev.kind != 'c' and prev.line == t.line:
+            out.append(t)
+        prev = t
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: paragraph alignment
+# ---------------------------------------------------------------------------
+
+def parse_decl(sig, lhs):
+    """(type words, stars, name position) when the tokens before `=` (or
+    `;`) are a plain declaration `type... [*...]name[[...]]`, else None."""
+    if not lhs or sig[lhs[0]].kind not in ('i', 'k') or \
+            sig[lhs[0]].text in STMT_KEYWORDS:
+        return None
+    n = 0
+    words = []
+    while n < len(lhs) and sig[lhs[n]].kind in ('i', 'k'):
+        words.append(n)
+        n += 1
+    stars = 0
+    while n < len(lhs) and sig[lhs[n]].text == '*':
+        stars += 1
+        n += 1
+    if stars:
+        if n >= len(lhs) or sig[lhs[n]].kind != 'i':
+            return None
+        name = n
+        n += 1
+    else:
+        if len(words) < 2:
+            return None
+        name = words.pop()
+    if not words:
+        return None
+    depth = 0
+    for m in range(n, len(lhs)):
+        s = sig[lhs[m]].text
+        if s == '[':
+            depth += 1
+        elif s == ']':
+            depth -= 1
+        elif depth == 0:
+            return None
+    return words, stars, name
+
+
+def statement_lines(src):
+    """line -> (segment, lhs positions, op position or None, decl)."""
+    sig = src.sig
+    out = {}
+    for g in src.segs:
+        if g.kind != 'stmt' or 'enum' in g.ctx or 'init' in g.ctx:
+            continue
+        toks = g.toks
+        first = sig[toks[0]]
+        if first.pp or src.text[src.line_starts[first.line]:first.start]\
+                .strip():
+            continue
+        depth = 0
+        op = None
+        for n, k in enumerate(toks):
+            t = sig[k]
+            if t.line != first.line:
+                break
+            if t.text in ('(', '[', '{'):
+                depth += 1
+            elif t.text in (')', ']', '}'):
+                depth -= 1
+            elif depth == 0 and t.text in ASSIGN_OPS:
+                op = n
+                break
+        if op is None and sig[toks[-1]].line != first.line:
+            continue
+        lhs = toks[:op] if op is not None else toks[:-1]
+        decl = parse_decl(sig, lhs)
+        if op is None and decl is None:
+            continue
+        out[first.line] = (g, lhs, op, decl)
+    return out
+
+
+def blank_after_top_decls(src, stats):
+    """5.4: a blank line after the declarations that open a function body
+    (later declarations may share a paragraph with the statements that use
+    them)."""
+    sig = src.sig
+    stl = statement_lines(src)
+    by_body = {}
+    for g in src.segs:
+        k = src.sig_index[id(sig[g.toks[0]])]
+        b = src.level_at[k]
+        if b >= 0 and src.brace_kind.get(b) == 'func':
+            by_body.setdefault(b, []).append(g)
+    ins = []
+    for segs in by_body.values():
+        prev = None
+        for g in segs:
+            first = sig[g.toks[0]]
+            info = stl.get(first.line)
+            if info is not None and info[0] is g and info[3] is not None:
+                prev = g
+                continue
+            if prev is not None and \
+                    first.line == sig[prev.toks[-1]].line + 1:
+                ls = src.line_starts[first.line]
+                ins.append((ls, ls, '\n'))
+            break
+    stats['blanks'] += len(ins)
+    return apply_edits(src.text, ins), len(ins)
+
+
+def paragraphs(src):
+    """Lists of consecutive non-blank line numbers."""
+    paras = []
+    cur = []
+    for ln in range(len(src.line_starts)):
+        if src.line_text(ln).strip():
+            cur.append(ln)
+        elif cur:
+            paras.append(cur)
+            cur = []
+    if cur:
+        paras.append(cur)
+    return paras
+
+
+def align(src, stats):
+    sig = src.sig
+    stl = statement_lines(src)
+    new_code = {}       # line -> new code text (no trailing comment)
+    shift = {}          # continuation line -> column delta
+    line_level = {}
+    for ln, (g, lhs, op, decl) in stl.items():
+        line_level[ln] = src.level_at[src.sig_index[id(sig[g.toks[0]])]]
+    for para in paragraphs(src):
+        by_level = {}
+        for ln in para:
+            if ln in stl:
+                by_level.setdefault(line_level[ln], []).append(ln)
+        for lines in by_level.values():
+            parts = {}
+            ncol = 0
+            for ln in lines:
+                g, lhs, op, decl = stl[ln]
+                if decl:
+                    words, stars, name = decl
+                    ttext = ' '.join(sig[lhs[w]].text for w in words)
+                    ncol = max(ncol, len(ttext) + 1 + stars)
+            for ln in lines:
+                g, lhs, op, decl = stl[ln]
+                if decl:
+                    words, stars, name = decl
+                    ttext = ' '.join(sig[lhs[w]].text for w in words)
+                    ntext = src.text[sig[lhs[name]].start:sig[lhs[-1]].end]
+                    left = ttext + ' ' * (ncol - len(ttext) - stars) + \
+                        '*' * stars + ntext
+                else:
+                    left = src.text[sig[lhs[0]].start:sig[lhs[-1]].end]
+                parts[ln] = left
+            ecol = max([len(parts[ln]) for ln in lines
+                        if stl[ln][2] is not None] or [0]) + 1
+            for ln in lines:
+                g, lhs, op, decl = stl[ln]
+                toks = g.toks
+                first = sig[toks[0]]
+                ls = src.line_starts[ln]
+                indent = src.text[ls:first.start]
+                on_line = [sig[k] for k in toks if sig[k].line == ln]
+                code_end = on_line[-1].end
+                if op is not None:
+                    opt = sig[toks[op]]
+                    code = indent + parts[ln] + \
+                        ' ' * (ecol - len(parts[ln])) + \
+                        src.text[opt.start:code_end]
+                    old_op = opt.start - ls
+                    new_op = len(indent) + ecol
+                else:
+                    code = indent + parts[ln] + \
+                        src.text[sig[lhs[-1]].end:code_end]
+                    old_op = new_op = 0
+                new_code[ln] = code
+                last = sig[toks[-1]]
+                if last.line != ln and new_op != old_op:
+                    for k in range(ln + 1, last.line + 1):
+                        shift[k] = new_op - old_op
+    # Trailing comments: one column per paragraph and level.
+    groups = trailing_groups(src)
+    cmt_col = {}
+    for grp in groups:
+        width = 0
+        for c, ce, ln, _ in grp:
+            width = max(width, len(new_code.get(ln, src.line_text(ln)[:ce])))
+        for c, ce, ln, _ in grp:
+            cmt_col[ln] = (c, width + 1)
+    edits = []
+    for ln in range(len(src.line_starts)):
+        old = src.line_text(ln)
+        if ln in cmt_col:
+            c, col = cmt_col[ln]
+            ce = c.start - src.line_starts[ln]
+            code = new_code.get(ln, old[:ce].rstrip())
+            new = code + ' ' * (col - len(code)) + old[ce:].rstrip()
+        elif ln in new_code:
+            code_old_end = len(old.rstrip())
+            # keep anything after the code (e.g. an unaligned comment)
+            g = stl[ln][0]
+            on_line = [src.sig[k] for k in g.toks if src.sig[k].line == ln]
+            ce = on_line[-1].end - src.line_starts[ln]
+            new = new_code[ln] + old[ce:code_old_end]
+        elif ln in shift and old.strip():
+            d = shift[ln]
+            lead = len(old) - len(old.lstrip(' '))
+            new = ' ' * max(0, lead + d) + old.lstrip(' ')
+        else:
+            continue
+        if new != old:
+            ls = src.line_starts[ln]
+            edits.append((ls, ls + len(old), new))
+    stats['aligned'] += len(edits)
+    return apply_edits(src.text, edits), len(edits)
+
+
 def trailing_groups(src):
     """Trailing single-line comments grouped by paragraph and brace level.
     Each item is (comment, code_end_col, line, level)."""
@@ -701,7 +834,7 @@ def trailing_groups(src):
         elif p.pp or k is None:
             lvl = -1
         else:
-            lvl = src.level_at[k] - (1 if p.text == '}' else 0)
+            lvl = src.level_at[k]
         items.append((c, p.end - src.line_starts[c.line], c.line, lvl))
     groups = []
     cur = []
@@ -719,142 +852,49 @@ def trailing_groups(src):
     return groups
 
 
-def overflow_move(src, c):
-    """Edits moving trailing comment c off its code line, or None.
-
-    The comment goes on its own line above the code when the line holds
-    whole items -- it starts after `;`, `,`, `{`, `}` or a label at
-    parenthesis depth 0 and ends in `;`, `,` or `}` (a one-line statement,
-    declaration, struct member, enumerator or table row), or is exactly one
-    statement header (`if (...)`, `else`) -- or is a one-line preprocessor
-    directive.  After a block's `{` it goes on the line below, one level
-    in."""
-    toks = [t for t in src.sig if t.line == c.line]
-    ls = src.line_starts[c.line]
-    words = comment_words(c.text)
-    if c.pp:
-        line = src.line_text(c.line)
-        if c.line - 1 in src.pp_lines and \
-                src.line_text(c.line - 1).rstrip().endswith('\\'):
-            return None
-        if line.rstrip().endswith('\\') or not line.startswith('#'):
-            return None
-        return [(ls, ls, '\n'.join(comment_block(0, words)) + '\n'),
-                removal(src, c)]
-    if not toks:
-        return None
-    first, last = toks[0], toks[-1]
-    if last.end > c.start or src.text[ls:first.start].strip():
-        return None
-    kl = src.sig_index[id(last)]
-    if last.text == '{' and src.brace_kind.get(kl) != 'init':
-        le = src.text.find('\n', c.end)
-        le = len(src.text) if le < 0 else le + 1
-        block = comment_block(indent_of(src, c.line) + 4, words)
-        return [removal(src, c), (le, le, '\n'.join(block) + '\n')]
-    k = src.sig_index[id(first)]
-    whole = (k == 0 or src.sig[k - 1].text in (';', ',', '{', '}', ':')) \
-        and src.inner_at[k][1] == 0 and last.text in (';', ',', '}') \
-        and src.inner_at[kl][1] == 0
-    if not whole:
-        whole = any(src.sig[g.toks[0]] is first and src.sig[g.toks[-1]] is
-                    last for g in src.segs if g.kind != 'label')
-    if not whole:
-        return None
-    return [(ls, ls, '\n'.join(comment_block(indent_of(src, c.line),
-                                             words)) + '\n'),
-            removal(src, c)]
-
-
-def multiline_trailing(src):
-    """Trailing comments that span lines (they always move)."""
-    out = []
-    prev = None
-    for t in src.toks:
-        if t.kind == 'c' and '\n' in t.text and prev is not None and \
-                prev.kind != 'c' and prev.line == t.line:
-            out.append(t)
-        prev = t
-    return out
-
-
-def align_and_overflow(src, stats):
-    """Align trailing comments per group, or move the comments that would
-    pass column 80 (one per group per round).  Returns (text, moved)."""
-    edits = []
-    for c in multiline_trailing(src):
-        mv = overflow_move(src, c)
-        if mv is not None:
-            edits.extend(mv)
-    if edits:
-        stats['overflow'] += len(edits) // 2
-        return apply_edits(src.text, edits), len(edits) // 2
-    groups = trailing_groups(src)
-    final = []
-    for grp in groups:
-        grp = list(grp)
-        while grp:
-            colm = max(ce for _, ce, _, _ in grp) + 1
-            worst = None
-            for it in grp:
-                c, ce, ln, _ = it
-                rest = len(src.line_text(ln)) - src.col(c.start)
-                if colm + rest > WIDTH:
-                    key = (ce + rest, -ln)
-                    if worst is None or key > worst[0]:
-                        worst = (key, it)
-            if worst is None:
-                break
-            mv = overflow_move(src, worst[1][0])
-            if mv is not None:
-                edits.extend(mv)
-                break
-            grp.remove(worst[1])     # cannot move: left out of the column
-            final.append([worst[1]])
-        final.append(grp)
-    if edits:
-        stats['overflow'] += len(edits) // 2
-        return apply_edits(src.text, edits), len(edits) // 2
-    for grp in final:
-        if not grp:
-            continue
-        colm = max(ce for _, ce, _, _ in grp) + 1
-        for c, ce, ln, _ in grp:
-            ls = src.line_starts[ln]
-            if c.start != ls + colm:
-                edits.append((ls + ce, c.start, ' ' * (colm - ce)))
-    return apply_edits(src.text, edits), 0
-
-
 # ---------------------------------------------------------------------------
 
 def process(path, text, stats):
     src = Source(path, text)
-    text, _ = move_inside(src, stats, False)
-    src = Source(path, text)
-    text, _ = reflow(src, stats)
-    src = Source(path, text)
-    text, _ = move_inside(src, stats, True)
-    for _ in range(200):
+    text, _ = fix_statements(src, stats)
+    for _ in range(10):
         src = Source(path, text)
-        text, _ = blank_before_comments(src, stats)
+        text, n1 = blank_before_comments(src, stats)
         src = Source(path, text)
-        text, moved = align_and_overflow(src, stats)
-        if not moved:
+        text, n2 = blank_after_top_decls(src, stats)
+        n1 += n2
+        src = Source(path, text)
+        edits = [(c.start, c.end, '/* ' + comment_words(c.text) + ' */')
+                 for c in multiline_trailing(src)]
+        if edits:
+            stats['joined_comments'] += len(edits)
+            text = apply_edits(src.text, edits)
+        if not n1 and not edits:
             break
+    src = Source(path, text)
+    text, _ = align(src, stats)
     return text
 
 
 def long_statements(path, text):
-    """(line, lines) for segments with more than two continuation lines."""
+    """(line, lines, width) for statements kept on several lines with more
+    than two continuation lines, or wider than LONG_WIDTH (brace
+    initialiser tables excluded): candidates for named temporaries."""
     src = Source(path, text)
     out = []
     for g in src.segs:
-        a = src.sig[g.toks[0]].line
-        b = src.sig[g.toks[-1]].line
-        if b - a + 1 > 3 and not any(ln in src.pp_lines
-                                     for ln in range(a, b + 1)):
-            out.append((a + 1, b - a + 1))
+        first = src.sig[g.toks[0]]
+        last = src.sig[g.toks[-1]]
+        if first.pp or g.kind == 'label' or any(
+                src.brace_kind.get(k) == 'init' and
+                src.sig[_match(src.sig, k) or k].line != src.sig[k].line
+                for k in g.toks if src.sig[k].text == '{'):
+            continue                # tables are not statements to split
+        n = last.line - first.line + 1
+        width = max(len(src.line_text(k).rstrip())
+                    for k in range(first.line, last.line + 1))
+        if n > 3 or width > LONG_WIDTH:
+            out.append((first.line + 1, n, width))
     return out
 
 
@@ -863,17 +903,18 @@ def main():
     ap.add_argument('files', nargs='+')
     ap.add_argument('--stats', action='store_true')
     ap.add_argument('--long', metavar='TSV',
-                    help='write statements with > 2 continuation lines')
+                    help='report statements with > 2 continuation lines or '
+                    'wider than %d columns (no edits)' % LONG_WIDTH)
     args = ap.parse_args()
-    stats = {'moved': 0, 'reflowed': 0, 'blanks': 0, 'overflow': 0,
+    stats = {'statements': 0, 'blanks': 0, 'joined_comments': 0, 'aligned': 0,
              'files': 0}
-    long_rows = []
+    rows = []
     for path in args.files:
         with open(path, encoding='utf-8') as f:
             text = f.read()
         if args.long:
-            for ln, n in long_statements(path, text):
-                long_rows.append('%s:%d\t%d' % (path, ln, n))
+            for ln, n, w in long_statements(path, text):
+                rows.append('%s:%d\t%d\t%d' % (path, ln, n, w))
             continue
         new = process(path, text, stats)
         if new != text:
@@ -882,9 +923,9 @@ def main():
                 f.write(new)
     if args.long:
         with open(args.long, 'w', encoding='utf-8') as f:
-            f.write('location\tlines\n')
-            f.write('\n'.join(long_rows) + ('\n' if long_rows else ''))
-        print('%d statements with > 2 continuation lines' % len(long_rows))
+            f.write('location\tlines\twidth\n')
+            f.write(''.join(r + '\n' for r in rows))
+        print('%d long statements' % len(rows))
     if args.stats:
         print(' '.join('%s=%d' % kv for kv in sorted(stats.items())))
     return 0

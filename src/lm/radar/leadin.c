@@ -55,7 +55,7 @@
 #include "radar.h"
 
 #define LEADIN_PRIO25   ((agc_prio_t) 025) /* DORSAMP job priority */
-#define LEADIN_RSTACK_N 4 /* RSTACK: B(8), four DP readings          */
+#define LEADIN_RSTACK_N 4                  /* RSTACK: B(8), four DP readings          */
 
 /**********************************************************************
  * RADSAMP (p.490): recall in RSAMPDT - 1 cs, start DORSAMP, and for
@@ -94,7 +94,7 @@ agc_status_t agc_task_radsamp(void)
         return (st);
     }
 
-    st = agc_exec_novac(LEADIN_PRIO25, AGC_JOB_RADAR_SAMPLE);
+    st           = agc_exec_novac(LEADIN_PRIO25, AGC_JOB_RADAR_SAMPLE);
     agc_sp_t loc = agc_erase_rtstloc(); /* RTSTLOC offset (unscaled) */
 
     agc_erase_set_rtstdex((agc_sp_t) (loc / 2 + agc_erase_rtstbase()));
@@ -220,14 +220,12 @@ agc_status_t agc_job_radar_sample_done(agc_job_ctx_t *ctx)
     agc_inhint();
     agc_sp_t loc = agc_erase_rtstloc(); /* RTSTLOC offset (unscaled) */
 
-    if (!agc_flag_test(AGC_FLAG_RADAR_ALARMS_SUPPRESSED) &&
-        AGC_ASSERT(loc >= 0 && loc / 2 < LEADIN_RSTACK_N))
+    if (!agc_flag_test(AGC_FLAG_RADAR_ALARMS_SUPPRESSED) && AGC_ASSERT(loc >= 0 && loc / 2 < LEADIN_RSTACK_N))
     {
         agc_erase_set_rstack(loc / 2, agc_radar_samplsum());
     }
 
-    agc_erase_set_rtstloc((loc == agc_erase_rtstmax()) ? 0 : /* wrap to 0 */
-                          (agc_sp_t) (loc + 2));
+    agc_erase_set_rtstloc((loc == agc_erase_rtstmax()) ? 0 : (agc_sp_t) (loc + 2)); /* wrap to 0 */
     agc_relint();
 
     return (AGC_STATUS_OK); /* ENDOFJOB */

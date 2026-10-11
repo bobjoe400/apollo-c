@@ -44,7 +44,7 @@
 #define INC_DINC  4u
 #define INC_SHINC 5u
 #define INC_SHANC 6u
-#define INC_FAST  020u  /* yaAGC 021 / 023: fast CDU rate          */
+#define INC_FAST  020u /* yaAGC 021 / 023: fast CDU rate          */
 
 /* +1 / -1 / toward zero for a signed SP counter; PINC past POSMAX wraps
  * to +0 (the overflow the hardware would turn into a fail bit).        */
@@ -88,8 +88,7 @@ static uint16_t cdu_step(uint16_t v, uint16_t type)
 
     bool     up = (type == INC_PINC || type == INC_PCDU);
     bool     dn = (type == INC_MINC || type == INC_MCDU);
-    uint32_t n  = up ? (uint32_t) v + 1u :
-                  (dn ? (uint32_t) v + SIM_WORD_MASK : (uint32_t) v);
+    uint32_t n  = up ? (uint32_t) v + 1u : (dn ? (uint32_t) v + SIM_WORD_MASK : (uint32_t) v);
 
     if (!AGC_ASSERT((n & SIM_WORD_MASK) <= SIM_WORD_MASK))
     {
@@ -195,9 +194,7 @@ static agc_status_t sp_increment(uint16_t addr, uint16_t type)
 
 agc_status_t sim_counter_increment(uint16_t addr, uint16_t type)
 {
-    uint16_t t = (type == (INC_FAST | INC_PCDU) ||
-                  type == (INC_FAST | INC_MCDU)) ?
-                 (uint16_t) (type & ~INC_FAST) : type;
+    uint16_t t = (type == (INC_FAST | INC_PCDU) || type == (INC_FAST | INC_MCDU)) ? (uint16_t) (type & ~INC_FAST) : type;
 
     if (!AGC_ASSERT(addr < SIM_CH_COUNTER) || t > INC_SHANC)
     {

@@ -53,14 +53,18 @@
 #include "internal.h"
 
 /* PI/16 2DEC 3.141592653 B-4, oct 06220 37553: pi scale 2^4 (2 pi at 2^5). */
-static const agc_dp_t PI_16 = 52707179;  /* pi, scale 2^4  */
+static const agc_dp_t PI_16 = 52707179; /* pi, scale 2^4  */
+
 /* DP2(-3) 2DEC 1 B-3, oct 04000 00000: 1 scale 2^3.                       */
 static const agc_dp_t DP2_M3 = 33554432; /* 1, scale 2^3   */
+
 /* DP2(-4) 2DEC 1 B-4, oct 02000 00000: 1 scale 2^4.                       */
 static const agc_dp_t DP2_M4 = 16777216; /* 1, scale 2^4   */
+
 /* DP(-22) 2OCT 0000000100: 2^-22.  LIM(-22) 2OCT 3777737700 = 1 - 2^-22;
  * DAD LIM(-22) overflows exactly when |DEN| >= DP(-22).                   */
-static const agc_dp_t DP_M22 = 64;       /* 2^-22, 2^0     */
+static const agc_dp_t DP_M22 = 64; /* 2^-22, 2^0     */
+
 /* 1/RTMU 2DEC* .5005750271 E-5 B17*, oct 24775 30424: modified earth
  * 1/sqrt(MU) (MU = 3.990815471E10 m^3/cs^2), scale 2^-17.  Exported for
  * callers through agc_tff_t.rtmu; kept here for reference.                */
@@ -145,41 +149,38 @@ agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(agc_navaux_vec_ok(tff->rone) &&
-                    agc_navaux_vec_ok(tff->vone)))
+    if (!AGC_ASSERT(agc_navaux_vec_ok(tff->rone) && agc_navaux_vec_ok(tff->vone)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t  mag = 0; /* |RN|, E 2^29 m */
+    agc_dp_t  mag = 0;                                       /* |RN|, E 2^29 m */
     agc_vec_t ur  = agc_vec_unit(ip, tff->rone, &mag, NULL); /* UR, 2^1 */
 
     tff->rmag1  = mag;
-    tff->nrmag  = agc_dp_norm(mag, &tff->nr);                /* NORM X1    */
-    tff->vone_p = agc_vec_scale(ip, tff->vone, tff->rtmu); /* VONE'      */
-    agc_vec_t h = /* H/sqrt(MU), E 2^(20-NR) */
-                  agc_vec_cross(ip, agc_vec_scale(ip, tff->vone_p,
-                                                  tff->nrmag), ur);
+    tff->nrmag  = agc_dp_norm(mag, &tff->nr);                                        /* NORM X1    */
+    tff->vone_p = agc_vec_scale(ip, tff->vone, tff->rtmu);                           /* VONE'      */
+    agc_vec_t h = agc_vec_cross(ip, agc_vec_scale(ip, tff->vone_p, tff->nrmag), ur); /* H/sqrt(MU), E 2^(20-NR) */
 
-    tff->tffnp = agc_vec_sq(ip, agc_vec_shl(ip, h, 1)); /* VSL1 VSQ   */
-    agc_dp_t two_r = /* 2/RMAG, E 2^-(26-NR) */
-                     agc_dp_div(ip, AGC_DP_QUARTER, tff->nrmag);
+    tff->tffnp     = agc_vec_sq(ip, agc_vec_shl(ip, h, 1));      /* VSL1 VSQ   */
+    agc_dp_t two_r = agc_dp_div(ip, AGC_DP_QUARTER, tff->nrmag); /* 2/RMAG, E 2^-(26-NR) */
 
     /* VSQ DCOMP keeps the TP ("KEEP MPAC+2 HONEST FOR SQRT"); the SR*,
      * DAD, SL* and ABS SQRT that follow all work on the TP MPAC.          */
     agc_tp_t vsq = -agc_vec_sq_tp(ip, tff->vone_p); /* -V^2/MU, 2^-20 */
 
-    tff->tffvsq = agc_tp_to_dp(vsq);                       /* STORE    */
+    tff->tffvsq = agc_tp_to_dp(vsq);                  /* STORE    */
     vsq         = agc_tp_shift(ip, vsq, 6 - tff->nr); /* SR* 0-6,1 */
+
     /* DAD adds 2/RMAG to the top two words only; MPAC+2 keeps the sign of
      * -V^2, so the stored ALFA is the truncated top plus 2/RMAG (not the
      * truncation of the TP sum).                                          */
-    tff->tffalfa = agc_dp_add(ip, agc_tp_to_dp(vsq), two_r); /* ALFA   */
+    tff->tffalfa  = agc_dp_add(ip, agc_tp_to_dp(vsq), two_r);   /* ALFA   */
     agc_tp_t alfa = agc_tp_add(ip, vsq, agc_tp_from_dp(two_r)); /* 2^-26+NR */
 
-    alfa = agc_tp_shift(ip, alfa, tff->nr - 6);    /* SL* 0-6,1 */
-    agc_dp_t alfa20   = agc_tp_to_dp(alfa); /* PUSH, E 2^-20     */
-    agc_tp_t abs_alfa = alfa;               /* ABS: TP, 2^-20    */
+    alfa              = agc_tp_shift(ip, alfa, tff->nr - 6); /* SL* 0-6,1 */
+    agc_dp_t alfa20   = agc_tp_to_dp(alfa);                  /* PUSH, E 2^-20     */
+    agc_tp_t abs_alfa = alfa;                                /* ABS: TP, 2^-20    */
 
     if (alfa < 0)
     {
@@ -187,7 +188,7 @@ agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
     }
 
     tff->tffrtalf = agc_dp_norm(agc_tp_sqrt(ip, abs_alfa), &tff->na);
-    agc_tp_t a = agc_dp_sq_tp(tff->tffrtalf); /* DSQ, 2^-(20+2NA) */
+    agc_tp_t a    = agc_dp_sq_tp(tff->tffrtalf); /* DSQ, 2^-(20+2NA) */
 
     if (alfa20 < 0)
     {
@@ -229,8 +230,7 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT((tff->nr >= 0) && (tff->nr <= AGC_DP_BITS) &&
-                    (tff->na >= 0) && (tff->na <= AGC_DP_BITS)))
+    if (!AGC_ASSERT((tff->nr >= 0) && (tff->nr <= AGC_DP_BITS) && (tff->na >= 0) && (tff->na <= AGC_DP_BITS)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -239,7 +239,7 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
      * and SQRT see MPAC+2 ("DCOMP GIVES VALID TP RESULT FOR SQRT").       */
     agc_tp_t ap = agc_dp_mul_tp(tff->tffalfa, tff->tffnp); /* 2^(12-NR) */
 
-    ap = agc_tp_shift(ip, ap, 8 - tff->nr);                /* -> 2^4   */
+    ap          = agc_tp_shift(ip, ap, 8 - tff->nr);           /* -> 2^4   */
     agc_tp_t e2 = agc_tp_add(ip, -ap, agc_tp_from_dp(DP2_M4)); /* E^2, 2^4 */
 
     if (e2 < 0)
@@ -247,20 +247,18 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
         e2 = -e2; /* ABS */
     }
 
-    agc_dp_t onepe = /* 1+E, scale 2^2 */
-                     agc_dp_add(ip, agc_tp_sqrt(ip, e2), AGC_DP_QUARTER);
-    agc_tp_t rp = /* P/(1+E), 2^(36-2NR) */
-                  agc_tp_from_dp(agc_dp_div(ip, tff->tffnp, onepe));
+    agc_dp_t onepe = agc_dp_add(ip, agc_tp_sqrt(ip, e2), AGC_DP_QUARTER); /* 1+E, scale 2^2 */
+    agc_tp_t rp    = agc_tp_from_dp(agc_dp_div(ip, tff->tffnp, onepe));   /* P/(1+E), 2^(36-2NR) */
 
-    rp        = agc_tp_shift(ip, rp, -tff->nr);            /* SR* 0,1  */
-    tff->rper = agc_tp_to_dp(agc_tp_shift(ip, rp, 7 - tff->nr)); /* 0-7,1 */
-    agc_tp_t ra = agc_dp_mul_tp(onepe, tff->tff1_alf); /* 2^(24+2NA) */
+    rp          = agc_tp_shift(ip, rp, -tff->nr);                  /* SR* 0,1  */
+    tff->rper   = agc_tp_to_dp(agc_tp_shift(ip, rp, 7 - tff->nr)); /* 0-7,1 */
+    agc_tp_t ra = agc_dp_mul_tp(onepe, tff->tff1_alf);             /* 2^(24+2NA) */
 
     agc_interp_clear_ovf(ip);    /* BOVB TCDANZIG */
     tff->rapo = AGC_TFF_NEARONE; /* MAXRA    */
 
     if (ra != 0)
-    {                                           /* BZE MAXRA */
+    { /* BZE MAXRA */
         ra = agc_tp_shift(ip, ra, tff->na - 5); /* SL* 0-5,2 */
         ra = agc_tp_shift(ip, ra, tff->na);     /* SL* 0,2   */
 
@@ -290,8 +288,7 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
  * RETURNS: agc_status_t -- AGC_STATUS_OK (NEARONE in t_cs on overflow),
  *          AGC_STATUS_BAD_ARG on NULL
  **********************************************************************/
-static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff,
-                            agc_dp_t tff_rtmu, agc_dp_t *t_cs)
+static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t tff_rtmu, agc_dp_t *t_cs)
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
@@ -331,8 +328,7 @@ static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff,
  *
  * RETURNS: agc_status_t -- status of ENDTFF, AGC_STATUS_BAD_ARG on NULL
  **********************************************************************/
-static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
-                            agc_dp_t q2, agc_dp_t *t_cs)
+static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn, agc_dp_t q2, agc_dp_t *t_cs)
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
@@ -342,12 +338,10 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
     int na = tff->na; /* NA, normalization count */
 
     tff->tffdelq = agc_dp_sub(ip, q2, tff->tffq1); /* Q2-Q1    */
+
     /* DMP SL* 0,2 / PUSH: 1/(ALFA Z), TP shifted, pushed as DP.           */
-    agc_dp_t inv_az = /* 1/(ALFA Z), E 2^(11+NA) */
-                      agc_tp_to_dp(agc_tp_shift(ip,
-                                                agc_dp_mul_tp(dn,
-                                                              tff->tff1_alf),
-                                                na));
+    agc_dp_t inv_az = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(dn, tff->tff1_alf), na)); /* 1/(ALFA Z), E 2^(11+NA) */
+
     /* DMP SL* 0,2 BOVB SIGNMPAC: X = 1/(ALFA Z^2); on overflow (X = 1.0)
      * SIGNMPAC loads +-DPPOSMAX with the sign of the overflow.            */
     agc_tp_t xp = agc_dp_mul_tp(inv_az, dn); /* X before SL*, 2^-NA */
@@ -367,21 +361,19 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
     }
 
     tff->tffx = x;
+
     /* RTB DMP T(X) X, SR3 DSU DP2(-3), DMP (1/ALFA Z), PUSH.               */
-    agc_tp_t xt = /* X T(X), scale 2^3 */
-                  agc_tp_shift(ip, agc_dp_mul_tp(agc_tff_poly(ip, x), x), -3);
-    agc_dp_t term = /* (X T(X) - 1)/(ALFA Z), 2^(14+NA) */
-                    agc_dp_mul_trunc(agc_dp_sub(ip, agc_tp_to_dp(
-                                                    xt), DP2_M3), inv_az);
+    agc_tp_t xt   = agc_tp_shift(ip, agc_dp_mul_tp(agc_tff_poly(ip, x), x), -3);        /* X T(X), scale 2^3 */
+    agc_dp_t term = agc_dp_mul_trunc(agc_dp_sub(ip, agc_tp_to_dp(xt), DP2_M3), inv_az); /* (X T(X) - 1)/(ALFA Z), 2^(14+NA) */
+
     /* DLOAD DMP D/N RMAG1, SL2, DAD TFFQ1: sign of SDELF.                 */
     agc_tp_t sgt = agc_dp_mul_tp(dn, tff->rmag1); /* D/N RMAG1, 2^14 */
 
-    sgt = agc_tp_shift(ip, sgt, 2);               /* SL2, scale 2^16  */
+    sgt         = agc_tp_shift(ip, sgt, 2);                      /* SL2, scale 2^16  */
     agc_dp_t sg = agc_dp_add(ip, agc_tp_to_dp(sgt), tff->tffq1); /* 2^16 */
+
     /* DLOAD TFFNP, DMP SL* 1,2, SIGN, SL* 0,2: P/ALFA for TFF/TRIG.       */
-    agc_tp_t pa = /* P/ALFA, E 2^(59-2NR) after the second SL* */
-                  agc_tp_shift(ip, agc_dp_mul_tp(tff->tffnp,
-                                                 tff->tff1_alf), 1 + na);
+    agc_tp_t pa = agc_tp_shift(ip, agc_dp_mul_tp(tff->tffnp, tff->tff1_alf), 1 + na); /* P/ALFA, E 2^(59-2NR) after the second SL* */
 
     if (sg < 0)
     {
@@ -389,13 +381,13 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
     }
 
     tff->tfftem = agc_tp_to_dp(agc_tp_shift(ip, pa, na)); /* P/ALFA   */
+
     /* DLOAD 1/ALFA, SQRT DMP PI/16, DAD term, SL* 0-1,2, DSU Q2-Q1,
      * DMP 1/ALFA SL* 0-3,2 SL* 0-4,2: TFF sqrt(MU) scale 2^45 (E).        */
-    agc_tp_t st = /* running sum, TP, E 2^(15+NA) .. 2^45 */
-                  agc_dp_mul_tp(agc_dp_sqrt(ip, tff->tff1_alf), PI_16);
+    agc_tp_t st = agc_dp_mul_tp(agc_dp_sqrt(ip, tff->tff1_alf), PI_16); /* running sum, TP, E 2^(15+NA) .. 2^45 */
 
-    st = agc_tp_add(ip, st, agc_tp_from_dp(term));
-    st = agc_tp_shift(ip, st, na - 1);
+    st         = agc_tp_add(ip, st, agc_tp_from_dp(term));
+    st         = agc_tp_shift(ip, st, na - 1);
     agc_dp_t s = agc_dp_sub(ip, agc_tp_to_dp(st), tff->tffdelq); /* 2^16 */
 
     st = agc_dp_mul_tp(s, tff->tff1_alf);
@@ -425,8 +417,7 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn,
  * RETURNS: agc_status_t -- status of ENDTFF / TFFEL1, or
  *          AGC_STATUS_BAD_ARG on NULL, bad inputs or TFFRTALF = 0
  **********************************************************************/
-static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
-                          agc_dp_t den, agc_dp_t q2, agc_dp_t *t_cs)
+static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num, agc_dp_t den, agc_dp_t q2, agc_dp_t *t_cs)
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
@@ -438,8 +429,9 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    tff->tffx = num;
+    tff->tffx       = num;
     agc_dp_t absden = agc_dp_abs(den); /* |DEN|, scale of den */
+
     /* DAD LIM(-22) BOV TFFXTEST: overflows iff |DEN| >= 2^-22; the BOV also
      * sees any OVFIND left by the Q1/DEN arithmetic, and clears it.       */
     bool ovf_prior = agc_interp_test_ovf(ip); /* OVFIND before DAD */
@@ -473,10 +465,11 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
      * X = ALFA Z^2, TFF = (RTERM + RN - 2 Z^2 T(X)) Z / sqrt(MU).            */
     agc_dp_t z   = agc_dp_div(ip, num, den); /* Z, E 2^13 */
     agc_dp_t zsq = agc_dp_sq(ip, z);         /* Z^2, 2^26, pushed */
+
     /* DMP TFFNP, SL 5, SIGN Z: P Z^2 for TFF/TRIG, TP shifted.            */
     agc_tp_t pz = agc_dp_mul_tp(zsq, tff->tffnp); /* P Z^2, E 2^64 */
 
-    pz = agc_tp_shift(ip, pz, 5);                 /* SL 5, E 2^59  */
+    pz = agc_tp_shift(ip, pz, 5); /* SL 5, E 2^59  */
 
     if (z < 0)
     {
@@ -484,23 +477,20 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
     }
 
     tff->tfftem = agc_tp_to_dp(pz);
-    /* DMP TFFALFA, SL* 0,1: X = ALFA Z^2.                                  */
-    tff->tffx = agc_tp_to_dp(
-        agc_tp_shift(ip, agc_dp_mul_tp(zsq, tff->tffalfa), tff->nr));
-    /* RTB DMP T(X) Z^2, SR2, BDSU RTERM, DAD RMAG1, DMP Z, SR3.            */
-    agc_tp_t tz = /* Z^2 T(X), E 2^28 */
-                  agc_tp_shift(ip,
-                               agc_dp_mul_tp(agc_tff_poly(ip,
-                                                          tff->tffx), zsq), -2);
-    agc_dp_t s = /* RTERM + RN - Z^2 T(X), E 2^29 m */
-                 agc_dp_sub(ip, tff->rterm, agc_tp_to_dp(tz));
 
-    s = agc_dp_add(ip, s, tff->rmag1);
+    /* DMP TFFALFA, SL* 0,1: X = ALFA Z^2.                                  */
+    tff->tffx = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(zsq, tff->tffalfa), tff->nr));
+
+    /* RTB DMP T(X) Z^2, SR2, BDSU RTERM, DAD RMAG1, DMP Z, SR3.            */
+    agc_tp_t tz = agc_tp_shift(ip, agc_dp_mul_tp(agc_tff_poly(ip, tff->tffx), zsq), -2); /* Z^2 T(X), E 2^28 */
+    agc_dp_t s  = agc_dp_sub(ip, tff->rterm, agc_tp_to_dp(tz));                          /* RTERM + RN - Z^2 T(X), E 2^29 m */
+
+    s               = agc_dp_add(ip, s, tff->rmag1);
     agc_tp_t tsm_tp = agc_tp_shift(ip, agc_dp_mul_tp(s, z), -3); /* 2^45 */
-    agc_dp_t tsm    = agc_tp_to_dp(tsm_tp); /* TFF sqrt(MU), E 2^45 */
+    agc_dp_t tsm    = agc_tp_to_dp(tsm_tp);                      /* TFF sqrt(MU), E 2^45 */
 
     if (tsm_tp < 0)
-    {                                                       /* BPL ENDTFF   */
+    { /* BPL ENDTFF   */
         bool gone_past = (agc_dp_sign(tsm, tff->tffq1) >= 0); /* SIGN TFFQ1 */
 
         if (!gone_past && (tff->tff1_alf > 0))
@@ -513,10 +503,8 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
             }
 
             /* DMP PI/16 DDV TFFRTALF (top words), SL* SL* SL* on the TP. */
-            agc_dp_t pia = /* pi/ALFA, E 2^(26+2NA) */
-                           agc_dp_mul_trunc(tff->tff1_alf, PI_16);
-            agc_tp_t per = /* period term, E 2^45 after the shifts */
-                           agc_tp_from_dp(agc_dp_div(ip, pia, tff->tffrtalf));
+            agc_dp_t pia = agc_dp_mul_trunc(tff->tff1_alf, PI_16);             /* pi/ALFA, E 2^(26+2NA) */
+            agc_tp_t per = agc_tp_from_dp(agc_dp_div(ip, pia, tff->tffrtalf)); /* period term, E 2^45 after the shifts */
 
             per = agc_tp_shift(ip, per, tff->na - 4);
             per = agc_tp_shift(ip, per, tff->na - 4);
@@ -552,16 +540,14 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t num,
  * RETURNS: agc_status_t -- status of TFFXTEST, AGC_STATUS_BAD_ARG on
  *          NULL or bad inputs
  **********************************************************************/
-static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
-                             bool tper, agc_dp_t *t_cs)
+static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, bool tper, agc_dp_t *t_cs)
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(agc_navaux_dp_ok(rterm) && (tff->nr >= 0) &&
-                    (tff->nr <= AGC_DP_BITS)))
+    if (!AGC_ASSERT(agc_navaux_dp_ok(rterm) && (tff->nr >= 0) && (tff->nr <= AGC_DP_BITS)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -570,17 +556,17 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
 
     tff->rterm  = rterm;
     tff->nrterm = agc_navaux_dp_shift(ip, rterm, nr); /* SL* 0,1 */
+
     /* DMP BDSU: the products below are used by DP instructions (BDSU,
      * PUSH), i.e. truncated to the top two words.                         */
-    agc_dp_t two_m = /* 2 - ALFA RTERM, scale 2^3 */
-                     agc_dp_mul_trunc(tff->nrterm, tff->tffalfa);
+    agc_dp_t two_m = agc_dp_mul_trunc(tff->nrterm, tff->tffalfa); /* 2 - ALFA RTERM, scale 2^3 */
 
-    two_m = agc_dp_sub(ip, AGC_DP_QUARTER, two_m);
+    two_m        = agc_dp_sub(ip, AGC_DP_QUARTER, two_m);
     agc_dp_t rt2 = agc_dp_mul_trunc(two_m, tff->nrterm); /* E 2^(32-NR) */
+
     /* DLOAD TFFNP SR* 0-6,1, DCOMP, DAD, SR* 0,1 on the TP ("DUE TO
      * SHIFTS, KEEP PRECISION FOR SQRT"); BMN and SQRT see all three words. */
-    agc_tp_t q2sq = /* Q2^2, E 2^32 after SR* 0,1 */
-                    agc_tp_shift(ip, agc_tp_from_dp(tff->tffnp), 6 - nr);
+    agc_tp_t q2sq = agc_tp_shift(ip, agc_tp_from_dp(tff->tffnp), 6 - nr); /* Q2^2, E 2^32 after SR* 0,1 */
 
     q2sq = agc_tp_add(ip, -q2sq, agc_tp_from_dp(rt2));
     q2sq = agc_tp_shift(ip, q2sq, -nr);
@@ -601,6 +587,7 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
 
     agc_interp_clear_ovf(ip); /* BOVB TCDANZIG     */
     tff->tfftem = q2;
+
     /* VLOAD VONE' DOT RONE SL3: the TP dot product shifted, then stored. */
     agc_tp_t q1 = agc_vec_dot_tp(ip, tff->vone_p, tff->rone); /* 2^19 */
 
@@ -608,13 +595,10 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
 
     if (tff->tffq1 < 0)
     { /* INBOUND           */
-        return (tff_z(ip, tff, agc_dp_sub(ip, rterm, tff->rmag1),
-                      agc_dp_add(ip, q2, tff->tffq1), q2, t_cs));
+        return (tff_z(ip, tff, agc_dp_sub(ip, rterm, tff->rmag1), agc_dp_add(ip, q2, tff->tffq1), q2, t_cs));
     }
 
-    agc_dp_t den = /* 2 - ALFA (RTERM + RN), scale 2^3 */
-                   agc_dp_sub(ip, two_m,
-                              agc_dp_mul_trunc(tff->tffalfa, tff->nrmag));
+    agc_dp_t den = agc_dp_sub(ip, two_m, agc_dp_mul_trunc(tff->tffalfa, tff->nrmag)); /* 2 - ALFA (RTERM + RN), scale 2^3 */
 
     return (tff_z(ip, tff, agc_dp_sub(ip, q2, tff->tffq1), den, q2, t_cs));
 } /* tff_calc */
@@ -635,8 +619,7 @@ static agc_status_t tff_calc(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG
  **********************************************************************/
-agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
-                             agc_dp_t *t_cs)
+agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, agc_dp_t *t_cs)
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {
@@ -667,8 +650,7 @@ agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm,
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG
  **********************************************************************/
-agc_status_t agc_tff_calctper(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rper,
-                              agc_dp_t *t_cs)
+agc_status_t agc_tff_calctper(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rper, agc_dp_t *t_cs)
 {
     if (!AGC_ASSERT((ip != NULL) && (tff != NULL) && (t_cs != NULL)))
     {

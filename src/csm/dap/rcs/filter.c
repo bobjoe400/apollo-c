@@ -76,10 +76,10 @@ agc_status_t csm_rcs_ratefilt(void)
     }
 
     for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
-    {                                                         /* DRHOLOOP   */
+    { /* DRHOLOOP   */
         agc_sp_t m = (agc_sp_t) -agc_dp_high(r->drho[i]); /* CS DRHO    */
 
-        r->drho[i] = csm_dap_das(r->drho[i], agc_sp_mul(m, gain1[g]));
+        r->drho[i]     = csm_dap_das(r->drho[i], agc_sp_mul(m, gain1[g]));
         agc_dp_t kmpac = csm_dap_smallmp(-r->adot[i], QUARTER); /* -(.1)ADOT */
 
         r->drho[i] = csm_dap_das(r->drho[i], kmpac);
@@ -92,10 +92,10 @@ agc_status_t csm_rcs_ratefilt(void)
     { /* ADOTLOOP   */
         r->drho[i]   = csm_dap_das(r->drho[i], deltemp[i]);
         r->merror[i] = csm_dap_das(r->merror[i], deltemp[i]);
-        agc_sp_t d = agc_dp_high(r->drho[i]);
+        agc_sp_t d   = agc_dp_high(r->drho[i]);
 
-        d          = csm_dap_ads(d, d);   /* DOUBLE N.B. */
-        d          = csm_dap_ads(d, d);   /* DOUBLE N.B. */
+        d          = csm_dap_ads(d, d); /* DOUBLE N.B. */
+        d          = csm_dap_ads(d, d); /* DOUBLE N.B. */
         r->adot[i] = csm_dap_das(r->adot[i], agc_sp_mul(d, gain2[g]));
         r->adot[i] = csm_dap_das(r->adot[i], agc_sp_mul(r->kmj[i], r->dft[i]));
     }
@@ -129,8 +129,7 @@ static agc_status_t rcs_delrho(agc_dp_t deltemp[AGC_CSM_AXES])
         r->rho[i] = now;
     }
 
-    deltemp[0] =
-        csm_dap_das(agc_dp_from_sp(dx[0]), agc_sp_mul(dx[1], r->amgb1));
+    deltemp[0] = csm_dap_das(agc_dp_from_sp(dx[0]), agc_sp_mul(dx[1], r->amgb1));
     deltemp[1] = agc_sp_mul(r->amgb4, dx[1]);
     deltemp[2] = agc_sp_mul(r->amgb7, dx[1]);
     deltemp[1] = csm_dap_das(deltemp[1], agc_sp_mul(dx[2], r->amgb5));
@@ -256,19 +255,17 @@ static agc_status_t rcs_dacndls(void)
  * S/C control axes as a fly-to indicator: AK = AMGB (THETA - CDU).       */
 static agc_status_t rcs_fdaitotl(void)
 {
-    const agc_csm_rcs_t *r = agc_csm_dap_rcs();
-    agc_csm_dapcom_t    *c = agc_csm_dap_com();
+    const agc_csm_rcs_t *r                  = agc_csm_dap_rcs();
+    agc_csm_dapcom_t    *c                  = agc_csm_dap_com();
     uint16_t             ref[AGC_CSM_AXES];
-    bool                 use_desired_angles =
-        agc_flag_test(AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES);
+    bool                 use_desired_angles = agc_flag_test(AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES);
 
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
-        ref[i] = use_desired_angles ? agc_erase_thetad(i) :
-                 c->cphix[i];                      /* CPHI.. / CPHIX.. */
+        ref[i] = use_desired_angles ? agc_erase_thetad(i) : c->cphix[i]; /* CPHI.. / CPHIX.. */
     }
 
-    c->ak[0] = csm_dap_msu(ref[0], agc_erase_cdux());
+    c->ak[0]   = csm_dap_msu(ref[0], agc_erase_cdux());
     agc_sp_t t = csm_dap_msu(ref[1], agc_erase_cduy());
 
     c->ak[0] = csm_dap_ads(c->ak[0], csm_dap_mp_hi(t, r->amgb1));

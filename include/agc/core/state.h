@@ -45,35 +45,32 @@ typedef enum agc_vehicle
     AGC_VEHICLE_LM  = 1
 } agc_vehicle_t;
 
-void agc_state_init(
-    agc_vehicle_t v); /* select vehicle, zero ALL shared state (fresh start) */
+void          agc_state_init(agc_vehicle_t v); /* select vehicle, zero ALL shared state (fresh start) */
 agc_vehicle_t agc_state_vehicle(void);
-void          agc_erase_reset(
-    void);          /* zero every shared erasable below (used by agc_state_init) */
+void          agc_erase_reset(void);           /* zero every shared erasable below (used by agc_state_init) */
 
 /* ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private */
 #define AGC_TIME_MODULUS_CS \
-    0x10000000u /* TIME2,TIME1 wrap at 2^28 cs (about 745.7 h) */
-uint32_t agc_time_now_cs(void);          /* C(TIME2,TIME1) as 28-bit  */
-void     agc_time_set_cs(uint32_t t_cs); /* t_cs < 2^28, else ignored */
-void     agc_time_advance_cs(
-    uint16_t dt_cs);         /* wraps modulo 2^28 like TIME2 overflow */
-agc_sp_t agc_erase_time1(void); /* TIME1: low 14 bits of the count (register 025) */
-agc_sp_t agc_erase_time2(void); /* TIME2: high 14 bits of the count (register 024) */
+    0x10000000u                               /* TIME2,TIME1 wrap at 2^28 cs (about 745.7 h) */
+uint32_t agc_time_now_cs(void);               /* C(TIME2,TIME1) as 28-bit  */
+void     agc_time_set_cs(uint32_t t_cs);      /* t_cs < 2^28, else ignored */
+void     agc_time_advance_cs(uint16_t dt_cs); /* wraps modulo 2^28 like TIME2 overflow */
+agc_sp_t agc_erase_time1(void);               /* TIME1: low 14 bits of the count (register 025) */
+agc_sp_t agc_erase_time2(void);               /* TIME2: high 14 bits of the count (register 024) */
 
 /* ---- flagwords: FLAGWRD0..FLAGWRD13, bit names in agc_flags_*.h --------- */
-typedef uint16_t agc_flag_id_t; /* (flagword << 4) | bitindex  */
-#define AGC_FLAGWORDS     14 /* LM has FLGWRD0..13 (STATE+0..+13D); CSM has 0..11 */
-#define AGC_FLAGWORDS_CSM 12 /* Comanche055: FLAGWRD0..FLGWRD11     */
-#define AGC_FLAGWORDS_LM  14 /* Luminary099: FLAGWRD0..FLGWRD13     */
-bool     agc_flag_valid(agc_flag_id_t f); /* word/bit exist for this vehicle */
-int      agc_flag_word(agc_flag_id_t f);  /* flagword index of f   */
-int      agc_flag_bit(agc_flag_id_t f);   /* AGC bit number 1..15  */
-uint16_t agc_flag_mask(agc_flag_id_t f);  /* 1 << (bit - 1)        */
-bool     agc_flag_test(agc_flag_id_t f);  /* BON/BOFF        */
-void     agc_flag_set(agc_flag_id_t f);   /* SET             */
-void     agc_flag_clear(agc_flag_id_t f); /* CLEAR           */
-void     agc_flag_invert(agc_flag_id_t f);     /* INVERT          */
+typedef uint16_t agc_flag_id_t;                  /* (flagword << 4) | bitindex  */
+#define AGC_FLAGWORDS     14                     /* LM has FLGWRD0..13 (STATE+0..+13D); CSM has 0..11 */
+#define AGC_FLAGWORDS_CSM 12                     /* Comanche055: FLAGWRD0..FLGWRD11     */
+#define AGC_FLAGWORDS_LM  14                     /* Luminary099: FLAGWRD0..FLGWRD13     */
+bool     agc_flag_valid(agc_flag_id_t f);        /* word/bit exist for this vehicle */
+int      agc_flag_word(agc_flag_id_t f);         /* flagword index of f   */
+int      agc_flag_bit(agc_flag_id_t f);          /* AGC bit number 1..15  */
+uint16_t agc_flag_mask(agc_flag_id_t f);         /* 1 << (bit - 1)        */
+bool     agc_flag_test(agc_flag_id_t f);         /* BON/BOFF        */
+void     agc_flag_set(agc_flag_id_t f);          /* SET             */
+void     agc_flag_clear(agc_flag_id_t f);        /* CLEAR           */
+void     agc_flag_invert(agc_flag_id_t f);       /* INVERT          */
 void     agc_flag_put(agc_flag_id_t f, bool on); /* SET if on, else CLEAR */
 uint16_t agc_flagword_get(int word);
 void     agc_flagword_set(int word, uint16_t value);
@@ -81,12 +78,10 @@ void     agc_flagword_set(int word, uint16_t value);
 /* ---- state vectors shared by navigation, guidance and programs --------- */
 typedef struct agc_state_vector
 {
-    agc_vec_t
-        r; /* position, meters, scale 2^29 always (RN); conic-local copies use 2^27 for moon */
-    agc_vec_t
-             v; /* velocity, m/cs,   scale 2^7 always (VN); conic-local copies use 2^5 for moon  */
-    agc_dp_t t; /* time of state, centiseconds, scale 2^28        */
-    bool     moon; /* primary body (MOONFLAG equivalent)             */
+    agc_vec_t r;    /* position, meters, scale 2^29 always (RN); conic-local copies use 2^27 for moon */
+    agc_vec_t v;    /* velocity, m/cs,   scale 2^7 always (VN); conic-local copies use 2^5 for moon  */
+    agc_dp_t  t;    /* time of state, centiseconds, scale 2^28        */
+    bool      moon; /* primary body (MOONFLAG equivalent)             */
 } agc_state_vector_t;
 
 /*
@@ -105,8 +100,7 @@ typedef enum agc_vehicle_sv
     AGC_SV_OTHER = 1
 } agc_vehicle_sv_t;
 
-agc_status_t agc_sv_get(agc_vehicle_sv_t    which,
-                        agc_state_vector_t *out); /* RN,VN,PIPTIME / other */
+agc_status_t agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out); /* RN,VN,PIPTIME / other */
 agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in);
 
 /* ---- shared erasables: agc_erase_<agcname>() / agc_erase_set_<agcname>() --
@@ -310,7 +304,7 @@ void     agc_erase_set_inlink(uint16_t v);
  * same cells are TVCYAW / TVCPITCH, 85.41 arc-sec per pulse.               */
 agc_sp_t agc_erase_cdutcmd(int which);
 void     agc_erase_set_cdutcmd(int which, agc_sp_t v);
-agc_sp_t agc_erase_tvcyaw(void); /* = CDUTCMD */
+agc_sp_t agc_erase_tvcyaw(void);   /* = CDUTCMD */
 void     agc_erase_set_tvcyaw(agc_sp_t v);
 agc_sp_t agc_erase_tvcpitch(void); /* = CDUSCMD */
 void     agc_erase_set_tvcpitch(agc_sp_t v);

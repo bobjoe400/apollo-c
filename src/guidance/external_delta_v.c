@@ -94,8 +94,7 @@ static const agc_dp_t EP4_10 = 7456540;  /* 10 deg, rev 2^0 */
  *          precondition failed), AGC_STATUS_NOT_FOUND (no RECTOUT); otherwise the status of the routine it
  *          continues in
  **********************************************************************/
-static agc_status_t prec_to(agc_interp_t *ip, bool lm_only, agc_dp_t tdec1,
-                            agc_rendz_t *rz)
+static agc_status_t prec_to(agc_interp_t *ip, bool lm_only, agc_dp_t tdec1, agc_rendz_t *rz)
 {
     agc_integ_ctx_t *ic = agc_integ_shared_ctx(); /* integration area */
     agc_status_t     st;                          /* integration status */
@@ -123,8 +122,7 @@ static agc_status_t prec_to(agc_interp_t *ip, bool lm_only, agc_dp_t tdec1,
     rz->body.rtx2 = (agc_sp_t) ic->out.x2;
     rz->body.moon = (ic->out.x2 != 0);
 
-    return (ic->out.valid ? AGC_STATUS_OK : /* RECTOUT reached */
-            AGC_STATUS_NOT_FOUND);                 /* no state        */
+    return (ic->out.valid ? AGC_STATUS_OK : AGC_STATUS_NOT_FOUND); /* RECTOUT reached; no state */
 }
 
 /**********************************************************************
@@ -149,23 +147,19 @@ static agc_status_t prec_to(agc_interp_t *ip, bool lm_only, agc_dp_t tdec1,
  *          precondition failed); otherwise the status of the routine it
  *          continues in
  **********************************************************************/
-static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r,
-                             agc_vec_t v)
+static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r, agc_vec_t v)
 {
-    agc_burn_t         *b = &agc_guid_state()->burn; /* HAPO, HPER      */
-    agc_rendz_periapo_t pa;                           /* PERIAPO1 output */
-    agc_status_t        st = /* status of PERIAPO1 */
-                             agc_rendz_periapo_body_scale(ip, rz, r, v, &pa);
+    agc_burn_t         *b  = &agc_guid_state()->burn;                         /* HAPO, HPER      */
+    agc_rendz_periapo_t pa;                                                   /* PERIAPO1 output */
+    agc_status_t        st = agc_rendz_periapo_body_scale(ip, rz, r, v, &pa); /* status of PERIAPO1 */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    b->hper = agc_orbit_params_maxchk(
-        ip, agc_rendz_scalar_from_body(rz, pa.hperi)); /* HPER B+29 */
-    b->hapo = agc_orbit_params_maxchk(
-        ip, agc_rendz_scalar_from_body(rz, pa.hapo)); /* HAPO B+29 */
+    b->hper = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hperi)); /* HPER B+29 */
+    b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hapo));  /* HAPO B+29 */
 
     if (!AGC_ASSERT(rz->body.rtx2 == 0 || rz->body.rtx2 == 2))
     {
@@ -192,11 +186,10 @@ static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r,
  *
  * RETURNS: agc_status_t -- the status of the routine it continues in
  **********************************************************************/
-static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip,
-                                                 agc_rendz_t  *rz)
+static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip, agc_rendz_t *rz)
 {
     agc_status_t           st = prec_to(ip, false, agc_erase_tig(), rz); /* status */
-    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out; /* RATT VATT */
+    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;            /* RATT VATT */
 
     if (st != AGC_STATUS_OK)
     {
@@ -206,8 +199,7 @@ static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip,
     rz->vtig  = p->vatt;
     rz->rtig  = p->ratt;
     rz->ract3 = p->ratt;
-    rz->unrm  =
-        agc_vec_unit(ip, agc_vec_cross(ip, rz->rtig, rz->vtig), NULL, NULL);
+    rz->unrm  = agc_vec_unit(ip, agc_vec_cross(ip, rz->rtig, rz->vtig), NULL, NULL);
     agc_mat_t m; /* LOMAT rows, half unit (2^1) */
 
     st = agc_rendz_lomat(ip, rz, &m);
@@ -217,10 +209,8 @@ static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip,
         return (st);
     }
 
-    rz->delvsin = /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
-                  agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
-    agc_guid_state()->burn.vgdisp =
-        agc_vec_abval(ip, rz->delvsin); /* MAG DELV */
+    rz->delvsin                   = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1); /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
+    agc_guid_state()->burn.vgdisp = agc_vec_abval(ip, rz->delvsin);                       /* MAG DELV */
 
     return (apo_peri(ip, rz, rz->rtig, agc_vec_add(ip, rz->delvsin, rz->vtig)));
 }
@@ -242,11 +232,10 @@ static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip,
  *
  * RETURNS: agc_status_t -- the status of the routine it continues in
  **********************************************************************/
-static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip,
-                                                agc_rendz_t  *rz)
+static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip, agc_rendz_t *rz)
 {
     agc_status_t           st = prec_to(ip, true, agc_erase_tig(), rz); /* status */
-    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out; /* RATT VATT */
+    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;           /* RATT VATT */
 
     if (st != AGC_STATUS_OK)
     {
@@ -256,14 +245,12 @@ static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip,
     rz->rtig = p->ratt;
     agc_mat_t m; /* LV axes X Y Z at TIG, half unit (2^1) */
 
-    m.row[2] = agc_vec_neg(agc_vec_unit(ip, rz->rtig, NULL, NULL)); /* ZRF/LV */
-    rz->vtig = p->vatt;
-    m.row[1] =
-        agc_vec_unit(ip, agc_vec_cross(ip, rz->vtig, rz->rtig), NULL, NULL);
+    m.row[2]    = agc_vec_neg(agc_vec_unit(ip, rz->rtig, NULL, NULL));  /* ZRF/LV */
+    rz->vtig    = p->vatt;
+    m.row[1]    = agc_vec_unit(ip, agc_vec_cross(ip, rz->vtig, rz->rtig), NULL, NULL);
     m.row[0]    = agc_vec_shl(ip, agc_vec_cross(ip, m.row[1], m.row[2]), 1);
-    rz->delvsin = /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
-                  agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
-    rz->delvsab = agc_vec_abval(ip, rz->delvsin); /* DELTA V MAG. */
+    rz->delvsin = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1); /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
+    rz->delvsab = agc_vec_abval(ip, rz->delvsin);                       /* DELTA V MAG. */
 
     return (apo_peri(ip, rz, rz->rtig, agc_vec_add(ip, rz->vtig, rz->delvsin)));
 }
@@ -284,11 +271,9 @@ static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip,
  * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
  *          otherwise the status of the routine it continues in
  **********************************************************************/
-agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip,
-                                               agc_vehicle_t veh)
+agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip, agc_vehicle_t veh)
 {
-    if (!AGC_ASSERT(ip != NULL) ||
-        !AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -300,9 +285,7 @@ agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((veh == AGC_VEHICLE_CSM) ?
-            external_delta_v_vectors_csm(ip, rz) : /* Comanche S30.1  */
-            external_delta_v_vectors_lm(ip, rz));   /* Luminary S30.1 */
+    return ((veh == AGC_VEHICLE_CSM) ? external_delta_v_vectors_csm(ip, rz) : external_delta_v_vectors_lm(ip, rz)); /* Comanche S30.1; Luminary S30.1 */
 }
 
 /**********************************************************************
@@ -330,8 +313,8 @@ agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_rendz_t *rz  = agc_rendz_erasable();          /* RINIT VINIT */
-    bool         av  = agc_flag_test(AGC_FLAG_AVFLAG); /* AVFLAG      */
+    agc_rendz_t *rz  = agc_rendz_erasable();                     /* RINIT VINIT */
+    bool         av  = agc_flag_test(AGC_FLAG_AVFLAG);           /* AVFLAG      */
     bool         cmc = (agc_state_vehicle() == AGC_VEHICLE_CSM); /* COMPUTER flag    */
 
     if (av == cmc)
@@ -377,19 +360,18 @@ agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
      * (NORMSW: 165-195 degree transfer) or 10 degrees.                        */
     agc_rendz_t           *rz = agc_rendz_erasable();          /* targeting */
     agc_status_t           st = prec_to(ip, false, tdec1, rz); /* status    */
-    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out; /* RATT VATT */
+    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;  /* RATT VATT */
 
     if (st != AGC_STATUS_OK)
     {
         return (st); /* THISPREC */
     }
 
-    rz->rtig  = p->ratt;
-    rz->rinit = p->ratt;
-    rz->vtig  = p->vatt;
-    rz->vinit = p->vatt;
-    agc_dp_t e4 = /* EPSILON4, rev 2^0 */
-                  agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45 : EP4_10; /* NORMSW: 45 */
+    rz->rtig    = p->ratt;
+    rz->rinit   = p->ratt;
+    rz->vtig    = p->vatt;
+    rz->vinit   = p->vatt;
+    agc_dp_t e4 = agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45 : EP4_10; /* EPSILON4, rev 2^0; NORMSW: 45 */
 
     if (!AGC_ASSERT(e4 > 0))
     {
@@ -423,7 +405,7 @@ agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_rendz_t *rz = agc_rendz_erasable(); /* targeting erasables */
+    agc_rendz_t *rz = agc_rendz_erasable();                /* targeting erasables */
     agc_status_t st = agc_guid_again(ip, agc_erase_tig()); /* TDEC1 = TIG */
 
     if (st != AGC_STATUS_OK)
@@ -447,8 +429,7 @@ agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
     }
 
     agc_guid_state()->burn.vgdisp = agc_vec_abval(ip, rz->delvlvc);
-    rz->tpass4                    =
-        agc_dp_add(ip, rz->dellt4, agc_erase_tig()); /* FOR S40.1     */
+    rz->tpass4                    = agc_dp_add(ip, rz->dellt4, agc_erase_tig()); /* FOR S40.1     */
 
     return (AGC_STATUS_OK);
 }
@@ -478,9 +459,7 @@ agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
  * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
  *          otherwise the status of the routine it continues in
  **********************************************************************/
-static agc_status_t flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
-                          uint8_t verb, uint8_t noun, agc_job_id_t proceed,
-                          agc_job_id_t enter)
+static agc_status_t flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint8_t verb, uint8_t noun, agc_job_id_t proceed, agc_job_id_t enter)
 {
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, proceed, enter}; /* TERM PRO ENTER */
 
@@ -513,16 +492,14 @@ static agc_status_t flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
  * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
  *          routine it continues in
  **********************************************************************/
-static agc_status_t ignition_time_entry(agc_job_ctx_t *ctx, agc_job_id_t self,
-                                        agc_job_id_t next)
+static agc_status_t ignition_time_entry(agc_job_ctx_t *ctx, agc_job_id_t self, agc_job_id_t next)
 {
     agc_flag_set(AGC_FLAG_UPDATFLG);
     agc_flag_set(AGC_FLAG_TRACKFLG);
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        return (flash(ctx, AGC_DSKY_GOFLASH, 6, 33, next,
-                      self)); /* VNPOOH      */
+        return (flash(ctx, AGC_DSKY_GOFLASH, 6, 33, next, self)); /* VNPOOH      */
     }
 
     agc_status_t st = flash(ctx, AGC_DSKY_GOFLASHR, 6, 33, next, self); /* V06N33 */
@@ -563,8 +540,7 @@ agc_status_t agc_job_external_delta_v(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (ignition_time_entry(ctx, AGC_JOB_EXTERNAL_DELTA_V,
-                                AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV));
+    return (ignition_time_entry(ctx, AGC_JOB_EXTERNAL_DELTA_V, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV));
 }
 
 /**********************************************************************
@@ -592,9 +568,7 @@ agc_status_t agc_job_external_delta_v_display_dv(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (flash(ctx, AGC_DSKY_GOFLASH, 6, 81,
-                  AGC_JOB_EXTERNAL_DELTA_V_COMPUTE,
-                  AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV));
+    return (flash(ctx, AGC_DSKY_GOFLASH, 6, 81, AGC_JOB_EXTERNAL_DELTA_V_COMPUTE, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV));
 }
 
 /**********************************************************************
@@ -627,9 +601,7 @@ agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);
-    agc_status_t st = /* status of S30.1 */
-                      agc_guid_external_delta_v_vectors(&ip,
-                                                        agc_state_vehicle());
+    agc_status_t st = agc_guid_external_delta_v_vectors(&ip, agc_state_vehicle()); /* status of S30.1 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -677,8 +649,7 @@ agc_status_t agc_job_external_delta_v_display_parameters(agc_job_ctx_t *ctx)
         pro = AGC_JOB_EXTERNAL_DELTA_V_ACCEPT; /* XDELVFLG, REVN1645 */
     }
 
-    return (flash(ctx, AGC_DSKY_GOFLASH, 6, 42, pro,
-                  AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_PARAMETERS));
+    return (flash(ctx, AGC_DSKY_GOFLASH, 6, 42, pro, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_PARAMETERS));
 }
 
 /**********************************************************************
@@ -737,8 +708,7 @@ agc_status_t agc_job_lambert_aimpoint_guidance_csm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (ignition_time_entry(ctx, AGC_JOB_LAMBERT_AIMPOINT_GUIDANCE,
-                                AGC_JOB_LAMBERT_AIMPOINT_COMPUTE));
+    return (ignition_time_entry(ctx, AGC_JOB_LAMBERT_AIMPOINT_GUIDANCE, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE));
 }
 
 /**********************************************************************
@@ -809,7 +779,5 @@ agc_status_t agc_job_lambert_aimpoint_display_dv(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (flash(ctx, AGC_DSKY_GOFLASH, 6, 81,
-                  AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_PARAMETERS,
-                  AGC_JOB_LAMBERT_AIMPOINT_DISPLAY_DV));
+    return (flash(ctx, AGC_DSKY_GOFLASH, 6, 81, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_PARAMETERS, AGC_JOB_LAMBERT_AIMPOINT_DISPLAY_DV));
 }

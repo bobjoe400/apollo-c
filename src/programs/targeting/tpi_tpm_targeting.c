@@ -94,8 +94,7 @@ static agc_rendz_t *tpi_begin(agc_interp_t *ip)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-static agc_status_t tpi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip,
-                                 agc_rendz_t *rz, agc_job_id_t next)
+static agc_status_t tpi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t next)
 {
     agc_status_t st; /* SELECTMU */
 
@@ -248,7 +247,7 @@ agc_status_t agc_job_tpi_after_ttpi(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_after_elev(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
 
     agc_flag_clear(AGC_FLAG_ETPIFLAG);
@@ -365,9 +364,9 @@ static agc_status_t tpi_after_search(agc_job_ctx_t *ctx, agc_status_t st)
  **********************************************************************/
 agc_status_t agc_job_tpi_intloop(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
-    agc_dp_t     tdec1; /* cs 2^28 */
+    agc_dp_t     tdec1;               /* cs 2^28 */
 
     tdec1 = agc_dp_add(&ip, agc_erase_ttpi(), rz->nomtpi);
     agc_status_t st; /* PRECSET */
@@ -401,9 +400,9 @@ agc_status_t agc_job_tpi_intloop(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_time_search(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
-    agc_status_t st; /* S33/34.1 */
+    agc_status_t st;                  /* S33/34.1 */
 
     st = agc_rendz_tpi_time_search_cont(&ip, rz, AGC_JOB_TPI_TIME_SEARCH);
 
@@ -432,8 +431,7 @@ agc_status_t agc_job_tpi_alarm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_alarm_flash(ctx, (agc_alarm_code_t) AGC_ALARM_00611,
-                           AGC_JOB_TPI_INPUT, AGC_JOB_TPI_ALARM));
+    return (rz_alarm_flash(ctx, (agc_alarm_code_t) AGC_ALARM_00611, AGC_JOB_TPI_INPUT, AGC_JOB_TPI_ALARM));
 }
 
 /**********************************************************************
@@ -453,9 +451,9 @@ agc_status_t agc_job_tpi_alarm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_compute(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
-    agc_status_t st; /* P34/P74E */
+    agc_status_t st;                  /* P34/P74E */
 
     st = agc_rendz_tpi_compute(&ip, rz, AGC_JOB_TPI_COMPUTE);
 
@@ -484,7 +482,7 @@ agc_status_t agc_job_tpi_compute(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_after_results(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
 
     return (rz_tpi_final_displays(ctx, &ip, rz, AGC_JOB_TPI_AFTER_FINAL));
@@ -507,7 +505,7 @@ agc_status_t agc_job_tpi_after_results(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpi_after_final(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
 
     return (rz_ttogo_display(ctx, &ip, rz, AGC_JOB_TPI_CYCLE));
@@ -532,7 +530,7 @@ agc_status_t agc_job_tpi_after_final(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t tpm_start(agc_job_ctx_t *ctx, bool this_active)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
 
     rz_avflag(this_active);
@@ -607,10 +605,10 @@ agc_status_t agc_job_tpm_targeting_other_vehicle(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpm_compute(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
 
-    rz->tstrt = agc_rtb_loadtime(); /* RTB LOADTIME        */
+    rz->tstrt    = agc_rtb_loadtime();                 /* RTB LOADTIME        */
     agc_dp_t tig = agc_dp_add(&ip, rz->tstrt, rz->kt); /* TSTRT + KT, cs 2^28 */
 
     agc_erase_set_tig(tig);
@@ -645,9 +643,9 @@ agc_status_t agc_job_tpm_compute(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpm_advance(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
-    agc_status_t st; /* PRECSET */
+    agc_status_t st;                  /* PRECSET */
 
     st = rz_precset(&ip, rz, rz->intime, AGC_JOB_TPM_ADVANCE);
 
@@ -690,7 +688,7 @@ agc_status_t agc_job_tpm_advance(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_tpm_after_final(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = tpi_begin(&ip); /* rendezvous erasables */
 
     return (rz_ttogo_display(ctx, &ip, rz, AGC_JOB_TPM_COMPUTE));

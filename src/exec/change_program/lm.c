@@ -21,7 +21,7 @@
 #include "agc/programs/rendezvous.h"
 
 #define CP_PRIO13     ((agc_prio_t) 013)
-#define CP_COSTALIN   0 /* downlist codes (DNLADMM1, L p.235-236) */
+#define CP_COSTALIN   0                   /* downlist codes (DNLADMM1, L p.235-236) */
 #define CP_RENDEZVU   2
 #define CP_ORBMANUV   3
 #define CP_DESASCNT   4
@@ -142,9 +142,8 @@ agc_status_t agc_job_change_program_return(agc_job_ctx_t *ctx)
 agc_status_t exec_cp_cleanup_lm(void)
 {
     agc_flag_clear(AGC_FLAG_3AXISFLG);
-    agc_flagword_set(agc_flag_word(AGC_FLAG_LRBYPASS),
-                     agc_flag_mask(AGC_FLAG_LRBYPASS)); /* TS FLGWRD11 */
-    agc_flag_clear(AGC_FLAG_ALARM_521_SUPPRESSED);    /* R04FLAG     */
+    agc_flagword_set(agc_flag_word(AGC_FLAG_LRBYPASS), agc_flag_mask(AGC_FLAG_LRBYPASS)); /* TS FLGWRD11 */
+    agc_flag_clear(AGC_FLAG_ALARM_521_SUPPRESSED);                                        /* R04FLAG     */
     agc_flag_clear(AGC_FLAG_MUNFLAG);
     agc_flag_clear(AGC_FLAG_XOVINFLG);
 
@@ -194,8 +193,7 @@ agc_status_t exec_cp_pooh_flags_lm(void)
 /* NOUVEAU (L p.231): IMUSE off unless P20 or P25 runs, then SEUDOP00.  */
 agc_status_t exec_cp_nouveau_flags_lm(void)
 {
-    if (!agc_flag_test(AGC_FLAG_RNDVZFLG) &&
-        !agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE))
+    if (!agc_flag_test(AGC_FLAG_RNDVZFLG) && !agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE))
     {
         agc_flag_clear(AGC_FLAG_IMUSE);
     }
@@ -222,8 +220,7 @@ agc_status_t exec_cp_rendezvous_lm(uint8_t mm, bool *statquo)
 {
     agc_sp_t modreg = agc_erase_modreg();
     bool     p20    = agc_flag_test(AGC_FLAG_RNDVZFLG);
-    bool     p25    =
-        agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE);
+    bool     p25    = agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE);
 
     if (!AGC_ASSERT(statquo != NULL))
     {
@@ -238,8 +235,7 @@ agc_status_t exec_cp_rendezvous_lm(uint8_t mm, bool *statquo)
     }
     else if (mm == 20U || mm == 25U)
     {
-        *statquo = (modreg != 20 && modreg != 25) &&
-                   ((mm == 20U && p20) || (mm == 25U && p25));
+        *statquo = (modreg != 20 && modreg != 25) && ((mm == 20U && p20) || (mm == 25U && p25));
 
         if (!*statquo)
         {

@@ -43,10 +43,10 @@
 #define RUPT_TIME5_SB  037774u /* STARTSUB: 37774 to TIME5         */
 #define RUPT_HALF_SEC  50      /* .5SEC DEC 50 (cs)                */
 
-static int           inhint_depth; /* > 0: interrupts inhibited        */
-static uint16_t      time4;        /* TIME4 (T4RUPT every 10-120 ms)   */
-static uint16_t      time5;        /* TIME5 (T5RUPT, autopilot)        */
-static uint16_t      time6;        /* TIME6 (T6RUPT, LM jet timing)    */
+static int           inhint_depth;             /* > 0: interrupts inhibited        */
+static uint16_t      time4;                    /* TIME4 (T4RUPT every 10-120 ms)   */
+static uint16_t      time5;                    /* TIME5 (T5RUPT, autopilot)        */
+static uint16_t      time6;                    /* TIME6 (T6RUPT, LM jet timing)    */
 static agc_task_id_t t5loc = AGC_TASK_T5IDLOC; /* T5LOC / T5ADR          */
 static agc_task_id_t t6loc = AGC_TASK_NONE;    /* T6LOC (CSM)            */
 
@@ -186,8 +186,7 @@ agc_task_id_t agc_rupt_t5_task(void)
 /* T6LOC (CSM only; the LM T6RUPT always goes to DOT6RUPT).            */
 void agc_rupt_set_t6_task(agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    if (!AGC_ASSERT(task != AGC_TASK_NONE) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return;
     }
@@ -282,8 +281,7 @@ agc_status_t agc_rupt_t5(void)
 {
     agc_inhint();
     agc_status_t st       = AGC_STATUS_OK;
-    bool         spurious = (agc_state_vehicle() == AGC_VEHICLE_CSM) &&
-                            (RUPT_HALF_SEC - (int32_t) time5 <= 0);
+    bool         spurious = (agc_state_vehicle() == AGC_VEHICLE_CSM) && (RUPT_HALF_SEC - (int32_t) time5 <= 0);
 
     if (!AGC_ASSERT(time5 <= RUPT_TIME_MASK))
     {
@@ -417,10 +415,10 @@ agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 
     switch (rupt)
     {
-        case AGC_RUPT_T6: /* LM DOT6RUPT; CSM goes through T6LOC     */
+        case AGC_RUPT_T6:       /* LM DOT6RUPT; CSM goes through T6LOC     */
             st = lm ? agc_lm_dap_t6rupt() : AGC_STATUS_NOT_FOUND;
             break;
-        case AGC_RUPT_T5: /* T5LOC / T5ADR                           */
+        case AGC_RUPT_T5:       /* T5LOC / T5ADR                           */
             st = agc_dispatch_task(agc_rupt_t5_task());
             break;
         case AGC_RUPT_T3:
@@ -429,22 +427,22 @@ agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
         case AGC_RUPT_KEY1:
             st = agc_dsky_keyrupt1();
             break;
-        case AGC_RUPT_KEY2: /* MARKRUPT: CSM sextant, LM AOT           */
+        case AGC_RUPT_KEY2:     /* MARKRUPT: CSM sextant, LM AOT           */
             st = lm ? agc_aotmark_markrupt() : agc_sxtmark_markrupt();
             break;
-        case AGC_RUPT_HAND: /* LM PITFALL; CSM RESUME +3 (not used)    */
+        case AGC_RUPT_HAND:     /* LM PITFALL; CSM RESUME +3 (not used)    */
             st = lm ? agc_lm_pitfall() : AGC_STATUS_OK;
             break;
-        case AGC_RUPT_T4: /* T4RUPT (T4RUPT_PROGRAM), reloads TIME4    */
+        case AGC_RUPT_T4:       /* T4RUPT (T4RUPT_PROGRAM), reloads TIME4    */
             st = agc_t4rupt_rupt();
             break;
-        case AGC_RUPT_UPRUPT: /* UPRUPT: the uplinked word in INLINK      */
+        case AGC_RUPT_UPRUPT:   /* UPRUPT: the uplinked word in INLINK      */
             st = agc_dsky_uprupt(agc_erase_inlink());
             break;
         case AGC_RUPT_DOWNRUPT: /* DODOWNTM: next downlink word pair      */
             st = agc_telem_downrupt();
             break;
-        case AGC_RUPT_RADAR: /* CSM VHFREAD (VHF range) / LM RADAREAD     */
+        case AGC_RUPT_RADAR:    /* CSM VHFREAD (VHF range) / LM RADAREAD     */
             st = lm ? agc_rendz_radar_read() : agc_rendz_vhf_read();
             break;
         default:

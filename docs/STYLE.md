@@ -14,13 +14,20 @@ the guide's rule is recorded as overridden, not silently dropped.
 **Enforcement column**
 
 * `uncrustify` -- `uncrustify.cfg` (Uncrustify 0.72.0; every option is
-  documented in the file with the guide section it serves, and the whole
-  tree was formatted on a scratch copy to validate it: same compile
-  results, identical preprocessed tokens, fixed point after two passes --
-  docs/modules/style2.md). `make format` applies it (two passes),
-  `make format-check` fails on any difference. It replaced clang-format 14
-  (`.clang-format`, kept in git history) because clang-format cannot insert
-  the blank lines of statement paragraphing (5.5).
+  documented in the file with the guide section it serves -- validation
+  in docs/modules/style2.md and docs/modules/format2.md). It replaced
+  clang-format 14 (`.clang-format`, kept in git history) because
+  clang-format cannot insert the blank lines of statement paragraphing
+  (5.5).
+* `fix_comments` -- `tools/fix_comments.py` (libclang tokens), the part of
+  the layout Uncrustify 0.72 cannot express: comments out of expressions,
+  wraps joined (one statement per line), a blank line before a comment that
+  starts a paragraph, and per-paragraph column alignment of declarations,
+  `=` and trailing comments (Uncrustify's alignment spans do not stop at a
+  blank line). `make format` runs `tools/format.sh`: fix_comments,
+  Uncrustify twice, fix_comments; the result is a fixed point.
+  `make format-check` runs the same pipeline on copies and lists every
+  file that would change.
 * `check_rules` -- `tools/check_style.py`, rule id in brackets; `make style`.
   (Power of Ten checks stay in `tools/check_rules.py`.)
 * `compiler` -- the project's gcc flag set with `-Werror` already rejects it.
@@ -40,7 +47,7 @@ the full warning set).
 | 2.1 | Encapsulate one idea per header; group data and functions into files, related functions together. | review | Matches docs/ARCHITECTURE.md module layout. |
 | 2.1 | Hide information: include a header only where needed; make external variables visible only where declared. | review; CS rule 6 | CS goes further: shared erasables only through accessors, module state `static`. |
 | 2.2 | Use white space (blank lines, spaces, indentation) for readability. | uncrustify | |
-| 2.2.1 | A single blank line separates program parts; do not overuse blank lines. | uncrustify `nl_max = 2`, `nl_max_blank_in_func = 2`, `eat_blanks_after_open_brace`, `eat_blanks_before_close_brace`, `nl_after_func_body = 2` | |
+| 2.2.1 | A single blank line separates program parts; do not overuse blank lines. | uncrustify `nl_max = 2`, `nl_max_blank_in_func = 2`, `eat_blanks_after_open_brace`, `eat_blanks_before_close_brace`, `nl_after_func_body = 2`; fix_comments: a standalone comment after a line ending in `;`, `}`, a table row's `,` or a preprocessor line starts a paragraph (blank line above it), at file scope and in functions; consecutive comment lines stay together | User direction 2026-10-11. Uncrustify's `nl_before_c_comment`/`nl_before_block_comment` are 0: they skip a comment after a trailing comment and put a blank between two comment lines. |
 | 2.2.2 | Space around binary operators (avoids `*total/*count` opening a comment); one space after a comma. | uncrustify `sp_arith`, `sp_assign`, `sp_compare`, `sp_bool` = force; `sp_after_comma = force` | |
 | 2.2.3 | Indent four spaces. | uncrustify `indent_columns = 4`, `indent_with_tabs = 0`, `output_tab_size = 4` | |
 | 2.3 | Comment at program (README), file (prolog), function (prolog) and data-declaration level. | check_rules [file-prolog], [function-prolog], [decl-comment]; README: review | |
@@ -49,7 +56,8 @@ the full warning set).
 | 2.3 | Block comments (`/*`, ` * text`, ` */`, full sentences) introduce major sections. | review | |
 | 2.3 | Short comments on the same line as the code/data they describe. | check_rules [decl-comment] for declarations; review otherwise | |
 | 2.3 | Inline comments at the indentation of the code they describe. | uncrustify (re-indents comments with their code, `indent_col1_comment = true`; continuation lines move with the comment, `cmt_indent_multi`) | |
-| 2.3 | Several short comments in a block start in one column (and end in one). | uncrustify `align_right_cmt_span = 2`, `align_right_cmt_gap = 2` (start column of consecutive trailing comments); end column: review | A comment written ONE space after its code stays out of the aligned group; write two or more spaces before a comment to have it aligned. That is how a line too long to align is kept out: Uncrustify 0.72 has no column limit on alignment (clang-format split such groups at column 80 itself). Right-edge `*/` alignment is not maintained. |
+| 2.3 | Several short comments in a block start in one column (and end in one). | fix_comments: within a paragraph (consecutive non-blank lines), at one brace level, every single-line trailing comment starts one space past the longest code line of the paragraph (user direction 2026-10-11); a comment after `{` is not aligned; a trailing comment that spans lines is put on one line. End column: review | No column limit (user direction 2026-10-11), so no line is kept out of the group. Right-edge `*/` alignment is not maintained. Uncrustify's `align_right_cmt_span` is 0: its span counts lines across blank lines. |
+| 2.3 / CS | A comment never sits inside an expression. | fix_comments: in a function body every comment inside a statement (after `=`, in an argument list, between operands, on a continuation line) joins the statement's trailing comment, in source order, separated by `; ` | User direction 2026-10-11 (docs/CODING_STANDARD.md "Comment placement and wrapping"). Struct/enum bodies, initialiser tables, `#define` lines and labels are not touched. |
 | 2.3 | Use short comments for variable definitions, block comments for computations. | review | |
 | 2.4 | Precise names, used consistently throughout the program. | review | NAMING.md rule 7: one name per concept tree-wide. |
 | 2.4 | A uniform abbreviation/prefix scheme (e.g. `dr_` for one subsystem). | review | CS: `agc_<module>_<verb>()`. |
@@ -131,11 +139,11 @@ the full warning set).
 | 5.2 | Declare argument types in the definition (even `int`); definition starts in column 1. | compiler `-Wstrict-prototypes`, C11 (no implicit int); uncrustify (column 1; `nl_func_type_name = remove`) | K&R-style argument lists are not valid in this build. |
 | 5.2 | Arguments are explained in the prolog, not by comments after the declaration. | review | |
 | 5.3 | Declare external variables right after the function's opening brace. | n/a -- overridden; check_rules [extern-in-c] | CS rule 6: no `extern` variables; shared state via accessors, declarations in headers. |
-| 5.4 | Internal variables after externs, with names aligned in one column. | uncrustify `align_var_def_span = 1`, `align_var_struct_span = 1`, `align_func_params_span = 1`, `align_func_proto_span = 1` (alignment) | Placement overridden: CS rule 6 says declare where used (smallest scope), not at the top of the function. |
+| 5.4 | Internal variables after externs, with names aligned in one column. | fix_comments: within a paragraph, at one brace level (function bodies, file scope, struct members), one-line statements are columns: type, name (`*` dangling left of it), assignment operator, expression, trailing comment; uncrustify `align_func_params_span = 1`, `align_func_proto_span = 1` | Placement overridden: CS rule 6 says declare where used (smallest scope), not at the top of the function. User reference: agc_guid_calcut / calcthet (docs/modules/format2.md). |
 | 5.4 | One internal variable per line, each with an explanatory comment; loop indices may share a line and a comment. | check_rules [one-declaration] (`i, j, k` exempt), [decl-comment] | |
 | 5.4 | Same parameter/variable name for the same thing across a group of functions. | review | |
 | 5.4 | No declarations that hide outer ones. | compiler `-Wshadow` | |
-| 5.5 | Blank lines separate statement paragraphs; inline comments explain them. | uncrustify: blank line after a run of declarations (`nl_func_var_def_blk = 1`, `nl_var_def_blk_end = 2`), before and after `if`/`for`/`while`/`do`/`switch` (`nl_before_*`, `nl_after_*` = add; the blank goes above a leading comment, never after `{` or before `}`/`else`), before `return` (`nl_before_return`); review for other paragraphs | Not exact: a run of `if (!AGC_ASSERT(...)) { return ...; }` guards gets a blank line between guards (Uncrustify has no "consecutive if" exception), and an `if`/`for`/... directly after a `case X:` label gets a blank line after the label (Uncrustify treats the label as a statement). Merge a guard run into one `if (!AGC_ASSERT(a) \|\| !AGC_ASSERT(b))` where that reads better. |
+| 5.5 | Blank lines separate statement paragraphs; inline comments explain them. | fix_comments: blank line after the declarations that open a function body (later declarations may share a paragraph with the statements that use them, as in the user's calcthet; Uncrustify's `nl_func_var_def_blk`/`nl_var_def_blk_end` would split those, so they are 0); uncrustify: blank line before and after `if`/`for`/`while`/`do`/`switch` (`nl_before_*`, `nl_after_*` = add; the blank goes above a leading comment, never after `{` or before `}`/`else`), before `return` (`nl_before_return`); review for other paragraphs | Not exact: a run of `if (!AGC_ASSERT(...)) { return ...; }` guards gets a blank line between guards (Uncrustify has no "consecutive if" exception), and an `if`/`for`/... directly after a `case X:` label gets a blank line after the label (Uncrustify treats the label as a statement). Merge a guard run into one `if (!AGC_ASSERT(a) \|\| !AGC_ASSERT(b))` where that reads better. |
 | 5.6 | Use expressions in `return` sparingly (debuggability). | review | |
 | 5.6 | One `return` per function unless that makes the logic convoluted. | n/a -- overridden | CS rule 1 prescribes early `return` to replace AGC jumps; the guide's own exception covers it. |
 | 5.6 | Always declare the return type; `void` when nothing is returned. | compiler (C11: no implicit int; `-Wall`) | |
@@ -148,7 +156,7 @@ the full warning set).
 | 6 | Short comments explain all variables and constants. | check_rules [decl-comment] (locals, file scope, struct members), [define-comment] | CS strengthens this: SP/DP/TP/vector comments give the scale -> check_rules [scale-comment]. |
 | 6 | Group related variables and constants. | review | |
 | 6.1 | Several variables on one line only if related and self-explanatory (`int year, month, day;`). | check_rules [one-declaration] reports every case; review decides | |
-| 6.2 | Constant names in capitals, with comments, components aligned. | check_rules [constant-case], [define-comment]; uncrustify `align_pp_define_span = 1`, `align_assign_span = 1` | |
+| 6.2 | Constant names in capitals, with comments, components aligned. | check_rules [constant-case], [define-comment]; uncrustify `align_pp_define_span = 1`; fix_comments (`static const` declarations, per paragraph) | |
 | 6.2.1 | Use the `const` modifier for constants. | review | The guide's example `const int SIZE 32;` is not valid C (missing `=`). |
 | 6.2.2 | No hard-coded numbers or array bounds; name them with `#define`. | review | CS: give the AGC octal/decimal and the engineering value in a comment where a literal stays inline. |
 | 6.2.3 | Enums: one identifier per line, aligned braces, assigned values aligned. | uncrustify `nl_enum_own_lines = force`, `align_enum_equ_span = 1`, `nl_enum_brace = force` | |
@@ -174,7 +182,7 @@ the full warning set).
 | 6.7 | No side-effect operators inside relational expressions. | check_rules [side-effect-condition] (in `if`/`while`/`switch` tests) | |
 | 6.7 | Comma operator only where essential (e.g. `for` headers). | review | |
 | 6.7 | Parenthesise liberally, especially masks with shifts. | compiler `-Wparentheses` (in `-Wall`) for the common traps; review | |
-| 6.7 | A long condition is split AFTER the logical operators. | uncrustify `pos_bool = trail`, `indent_align_paren = true`, `code_width = 80` | The guide's 7.1.2 and 7.4.2 examples break before `&&`; the 6.7 rule text wins. `pos_conditional = trail` keeps `?`/`:` consistent with it. |
+| 6.7 | A long condition is split AFTER the logical operators. | overridden: no column limit, one statement per line (`code_width = 0`); fix_comments joins every wrap except the one allowed shape -- the outermost call of a statement with one argument per line (the first line of a call may carry two, e.g. `ip`), at least two continuation lines, breaks only after that call's commas; uncrustify `indent_align_paren = true` puts each argument under the first | User direction 2026-10-11 (CALCGRAV call in agc_guid_calcut is the reference). A statement unreadable on one line is split with named temporaries (review; docs/overview/long_statements.tsv). |
 | 6.8 | Embedded assignments very sparingly (the `while ((c = getchar()) != EOF)` idiom at most). | check_rules [side-effect-condition] reports them all | |
 | 6.9 | Avoid conditional expressions unless very clear; comment the ones you use. | check_rules [ternary-comment] (uncommented or nested `?:`) | |
 | 6.10 | `* / %` before `+ -`; parenthesise everything else. | review; compiler `-Wparentheses` | |
@@ -244,22 +252,17 @@ the full warning set).
 * Braces around single statements and parentheses around `return` objects
   are not added: the formatter is set never to change tokens (review and
   check_style [return-parens]).
-* Alignment has no column limit. clang-format dropped a line from an
-  aligned group when aligning it would pass column 80; Uncrustify cannot.
-  For trailing comments the gap rule above keeps the tree's existing
-  choices, but a run that clang-format had split in two is merged when the
-  line between them is not in the group, so after `make format` about 920
-  lines exceed 80 columns (447 before), almost all of them trailing
-  comments in struct and prototype blocks. Shorten those comments or move
-  them above the line.
-* Alignment runs before long lines are wrapped, so a line wrapped in one
-  pass can leave its group in the next; `make format` therefore runs two
-  passes (a third changes nothing).
-* A continuation after a line that ends in a nested call's `(` is aligned
-  under the enclosing parenthesis, which can wrap the inner call again
-  (earth_orbit_insertion.c `ak_out[]` lines). Break such statements up (7).
-* Column limit: the guide states none; its printed examples fit 80 columns,
-  so `code_width = 80`.
+* Column limit: none (user direction 2026-10-11; the guide states none).
+  `code_width = 0`. docs/overview/long_statements.tsv lists statements
+  wider than 120 columns or kept on more than three lines, for the review
+  wave to split with named temporaries.
+* Paragraph alignment (2.3, 5.4) and paragraph blank lines (2.2.1) are done
+  by tools/fix_comments.py: Uncrustify 0.72 alignment spans count lines
+  across blank lines, and its comment-paragraph options insert blanks
+  between two comment lines.
+* Inside `return (...)` and other plain parentheses Uncrustify 0.72 indents
+  a continuation 4 instead of aligning; only the allowed outer-call wrap
+  stays multi-line, so this does not arise after `make format`.
 * Comments are never reflowed (`cmt_width = 0`): AGC comment layouts and
   boxed prologs are left as written, so over-long comment lines are not
   rewrapped.
@@ -275,3 +278,9 @@ is a no-op. Paragraphing adds blank lines only, and tools/check_rules.py
 does not count blank lines, so rule 4 results are unchanged (one finding,
 reentry.c `entry_step_a`, before and after). check_style [long-block-comment]
 does count them: blocks longer than 40 lines rise from 122 to 292.
+
+format2 (2026-10-11, docs/modules/format2.md): joining wraps onto one line
+lowers the code-line counts, and tools/check_rules.py now counts every
+`AGC_ASSERT(` on a line (two guards joined by `||` are two assertions) and
+recognises function headers that used to be wrapped; hard violations are
+unchanged (50 before and after, all pre-existing).

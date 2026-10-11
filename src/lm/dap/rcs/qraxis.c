@@ -36,10 +36,8 @@ agc_status_t lm_dap_qerrcalc(void)
     lm_dap_t *d    = lm_dap_state();
     agc_sp_t  ydif = lm_dap_msu(agc_erase_cduy(), d->cduyd); /* DAPTEMP1 */
     agc_sp_t  zdif = lm_dap_msu(agc_erase_cduz(), d->cduzd); /* DAPTEMP2 */
-    int32_t   q    = (int32_t) lm_dap_mphi(ydif, agc_erase_m21()) +
-                     lm_dap_mphi(zdif, agc_erase_m22()) + d->delqeror;
-    int32_t r = (int32_t) lm_dap_mphi(ydif, agc_erase_m31()) +
-                lm_dap_mphi(zdif, agc_erase_m32()) + d->delreror;
+    int32_t   q    = (int32_t) lm_dap_mphi(ydif, agc_erase_m21()) + lm_dap_mphi(zdif, agc_erase_m22()) + d->delqeror;
+    int32_t   r    = (int32_t) lm_dap_mphi(ydif, agc_erase_m31()) + lm_dap_mphi(zdif, agc_erase_m32()) + d->delreror;
 
     d->qerror = lm_dap_wrap(q); /* XCH QERROR     */
     d->rerror = lm_dap_wrap(r);
@@ -106,20 +104,17 @@ agc_status_t lm_dap_stillrcs(void)
  **********************************************************************/
 static agc_status_t senseget(lm_dap_t *d)
 {
-    uint16_t ch31 = agc_chan_read(031);
-    bool     plus =
-        ((ch31 & QR_CH31_PLUSX) == 0u) ||
-        (((ch31 & QR_CH31_MINUSX) != 0u) && agc_flag_test(AGC_FLAG_ULLAGFLG));
-    bool minus = !plus && ((ch31 & QR_CH31_MINUSX) == 0u);
+    uint16_t ch31  = agc_chan_read(031);
+    bool     plus  = ((ch31 & QR_CH31_PLUSX) == 0u) || (((ch31 & QR_CH31_MINUSX) != 0u) && agc_flag_test(AGC_FLAG_ULLAGFLG));
+    bool     minus = !plus && ((ch31 & QR_CH31_MINUSX) == 0u);
 
     if (!plus && !minus)
     {
-        d->nextu = 0;
-        d->nextv = 0;
+        d->nextu     = 0;
+        d->nextv     = 0;
         bool burning = !agc_flag_test(AGC_FLAG_DRIFTDFL);
 
-        d->sensetyp =
-            (burning && agc_flag_test(AGC_FLAG_APSFLAG)) ? 2 : 0; /* TSENSE */
+        d->sensetyp = (burning && agc_flag_test(AGC_FLAG_APSFLAG)) ? 2 : 0; /* TSENSE */
 
         return (AGC_STATUS_OK);
     }
@@ -150,8 +145,7 @@ static agc_status_t senseget(lm_dap_t *d)
     }
 
     d->nextu = (uint16_t) ((uint16_t) d->polytemp & QR_UBITS); /* TSNEXTS */
-    d->nextv =
-        (uint16_t) ((uint16_t) d->polytemp & (uint16_t) ~QR_UBITS & 0377u);
+    d->nextv = (uint16_t) ((uint16_t) d->polytemp & (uint16_t) ~QR_UBITS & 0377u);
 
     return (AGC_STATUS_OK);
 }
@@ -173,7 +167,7 @@ agc_status_t lm_dap_rcs(void)
 {
     lm_dap_t *d = lm_dap_state();
 
-    d->cotroler = 0;
+    d->cotroler     = 0;
     lm_dap_rot_touv(d->edotq, d->edotr, &d->omegau, &d->omegav);
     agc_status_t st = senseget(d);
 
@@ -267,8 +261,8 @@ agc_status_t lm_dap_qraxis(void)
 {
     lm_dap_t *d = lm_dap_state();
 
-    d->edotr = lm_dap_sat((int32_t) d->omegar - d->omegard); /* OVERSUB   */
-    d->edotq = lm_dap_sat((int32_t) d->omegaq - d->omegaqd);
+    d->edotr       = lm_dap_sat((int32_t) d->omegar - d->omegard); /* OVERSUB   */
+    d->edotq       = lm_dap_sat((int32_t) d->omegaq - d->omegaqd);
     bool automatic = (agc_chan_read(031) & QR_CH31_AUTO) != 0u;
 
     if (automatic || !agc_flag_test(AGC_FLAG_OURRCFLG))

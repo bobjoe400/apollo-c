@@ -310,19 +310,14 @@ static const oracle_row_t ROWS[] = { /* AGC cases, DP words */
 static int g_checks;   /* checks made    */
 static int g_failures; /* checks failed  */
 
-static void cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want,
-                agc_dp_t tol);
-static void cmp_flag(const char *tag, const char *name, bool got,
-                     bool want);
+static void      cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want, agc_dp_t tol);
+static void      cmp_flag(const char *tag, const char *name, bool got, bool want);
 static agc_vec_t vec3(const agc_dp_t *a);
 static int       run_kepler(const oracle_row_t *r, agc_dp_t got[10]);
-static void      run_lambert(const oracle_row_t *r, agc_dp_t got[10],
-                             bool *solnsw);
-static void run_time(const oracle_row_t *r, agc_dp_t got[10],
-                     agc_conic_time_out_t *o);
-static void check_time(const oracle_row_t *r, agc_dp_t got[10],
-                       agc_dp_t tol, int *n);
-static void check_row(const oracle_row_t *r);
+static void      run_lambert(const oracle_row_t *r, agc_dp_t got[10], bool *solnsw);
+static void      run_time(const oracle_row_t *r, agc_dp_t got[10], agc_conic_time_out_t *o);
+static void      check_time(const oracle_row_t *r, agc_dp_t got[10], agc_dp_t tol, int *n);
+static void      check_row(const oracle_row_t *r);
 
 /**********************************************************************
  * AGC: none (test driver) -- run every row, CSM rows on the CSM build
@@ -357,8 +352,7 @@ int main(void)
         }
     }
 
-    (void) printf("oracle_conic: %d checks, %d failures\n", g_checks,
-                  g_failures);
+    (void) printf("oracle_conic: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
 }
@@ -398,8 +392,7 @@ bool agc_assert_report(const char *file, int line, const char *expr)
  *   want      agc_dp_t      I    AGC value
  *   tol       agc_dp_t      I    allowed |got - want|, DP LSB
  **********************************************************************/
-static void cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want,
-                agc_dp_t tol)
+static void cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want, agc_dp_t tol)
 {
     agc_dp_t d = got - want; /* C - AGC, DP LSB */
 
@@ -408,8 +401,7 @@ static void cmp(const char *tag, int idx, agc_dp_t got, agc_dp_t want,
     if ((d > tol) || (d < -tol))
     {
         g_failures++;
-        (void) printf("FAIL %s[%d]: C %ld AGC %ld (diff %ld)\n", tag, idx,
-                      (long int) got, (long int) want, (long int) d);
+        (void) printf("FAIL %s[%d]: C %ld AGC %ld (diff %ld)\n", tag, idx, (long int) got, (long int) want, (long int) d);
     }
 }
 
@@ -433,8 +425,7 @@ static void cmp_flag(const char *tag, const char *name, bool got, bool want)
     if (got != want)
     {
         g_failures++;
-        (void) printf("FAIL %s: %s C %d AGC %d\n", tag, name, (int) got,
-                      (int) want);
+        (void) printf("FAIL %s: %s C %d AGC %d\n", tag, name, (int) got, (int) want);
     }
 }
 
@@ -473,12 +464,11 @@ static agc_vec_t vec3(const agc_dp_t *a)
  **********************************************************************/
 static int run_kepler(const oracle_row_t *r, agc_dp_t got[10])
 {
-    agc_interp_t     ip;                      /* interpreter state */
-    agc_kepler_in_t  in;                      /* KEPLER inputs     */
-    agc_kepler_out_t o;                       /* KEPLER outputs    */
-    const bool       prep = (r->kind == 'K'); /* KEPPREP first     */
-    const agc_dp_t  *p    = prep ? &r->in[1] : /* skip body word   */
-                            &r->in[0];
+    agc_interp_t     ip;                                  /* interpreter state */
+    agc_kepler_in_t  in;                                  /* KEPLER inputs     */
+    agc_kepler_out_t o;                                   /* KEPLER outputs    */
+    const bool       prep = (r->kind == 'K');             /* KEPPREP first     */
+    const agc_dp_t  *p    = prep ? &r->in[1] : &r->in[0]; /* skip body word */
 
     agc_interp_init(&ip);
     in.rrect   = vec3(&p[0]);
@@ -486,9 +476,8 @@ static int run_kepler(const oracle_row_t *r, agc_dp_t got[10])
     in.tau     = p[6];
     in.tc      = 0;
     in.xprev   = 0;
-    in.xkepnew = prep ? 0 : p[7]; /* KEPPREP computes it */
-    in.body    = (prep && (r->in[0] != 0)) ? /* moon row */
-                 AGC_CONIC_MOON : AGC_CONIC_EARTH;
+    in.xkepnew = prep ? 0 : p[7];                                              /* KEPPREP computes it */
+    in.body    = (prep && (r->in[0] != 0)) ? AGC_CONIC_MOON : AGC_CONIC_EARTH; /* moon row */
 
     if (prep)
     {
@@ -525,23 +514,21 @@ static void run_lambert(const oracle_row_t *r, agc_dp_t got[10], bool *solnsw)
     const bool        csm = (r->kind == 'C'); /* CSM row           */
 
     agc_interp_init(&ip);
-    in.r1vec    = vec3(&r->in[0]);
-    in.r2vec    = vec3(&r->in[3]);
-    in.tdesired = r->in[6];
-    in.geomsgn  = (agc_sp_t) r->in[7];
-    in.guessw   = (r->in[8] != 0);
-    in.coga     = r->in[9];
-    in.normsw   = csm && (r->in[10] != 0); /* C: in[10] NORMSW */
-    in.un       = csm ? vec3(&r->in[11]) : /* C: in[11..13] UN */
-                  agc_vec_zero();
-    in.vtargtag = 0;
-    in.iterctr  = csm ? (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR : /* L: in[10] */
-                  (agc_sp_t) r->in[10];
-    in.body = AGC_CONIC_EARTH;
+    in.r1vec       = vec3(&r->in[0]);
+    in.r2vec       = vec3(&r->in[3]);
+    in.tdesired    = r->in[6];
+    in.geomsgn     = (agc_sp_t) r->in[7];
+    in.guessw      = (r->in[8] != 0);
+    in.coga        = r->in[9];
+    in.normsw      = csm && (r->in[10] != 0);                                           /* C: in[10] NORMSW */
+    in.un          = csm ? vec3(&r->in[11]) : agc_vec_zero();                           /* C: in[11..13] UN */
+    in.vtargtag    = 0;
+    in.iterctr     = csm ? (agc_sp_t) AGC_CONIC_LAMBERT_ITERCTR : (agc_sp_t) r->in[10]; /* L: in[10] */
+    in.body        = AGC_CONIC_EARTH;
     (void) agc_conic_lambert(&ip, &in, &o);
     agc_dp_t v[10] = {o.vvec.c[0], o.vvec.c[1], o.vvec.c[2],
                       o.vtarget.c[0], o.vtarget.c[1], o.vtarget.c[2],
-                      o.coga, o.p, o.r1a, 0}; /* outputs in exp[] order */
+                      o.coga, o.p, o.r1a, 0};                                           /* outputs in exp[] order */
 
     memcpy(got, v, sizeof (v));
     *solnsw = o.solnsw;
@@ -559,8 +546,7 @@ static void run_lambert(const oracle_row_t *r, agc_dp_t got[10], bool *solnsw)
  *   got       agc_dp_t []             O    T, RNEW, VNEW, CSTH, SNTH
  *   o         agc_conic_time_out_t *  O    full output record
  **********************************************************************/
-static void run_time(const oracle_row_t *r, agc_dp_t got[10],
-                     agc_conic_time_out_t *o)
+static void run_time(const oracle_row_t *r, agc_dp_t got[10], agc_conic_time_out_t *o)
 {
     agc_interp_t ip; /* interpreter state */
 
@@ -614,13 +600,11 @@ static void run_time(const oracle_row_t *r, agc_dp_t got[10],
  *   n         int *                 O    outputs to compare: 0 after an
  *                                        abort, 1 with RVSW, else 7
  **********************************************************************/
-static void check_time(const oracle_row_t *r, agc_dp_t got[10],
-                       agc_dp_t tol, int *n)
+static void check_time(const oracle_row_t *r, agc_dp_t got[10], agc_dp_t tol, int *n)
 {
-    agc_conic_time_out_t o;                     /* routine outputs    */
-    const bool           rvsw  = (r->in[8] != 0); /* time only        */
-    const bool           abort = ((r->fl8 & 0110) != 0) ||
-                                 ((r->fl5 & 004) != 0); /* ABTCONIC   */
+    agc_conic_time_out_t o;                                                       /* routine outputs    */
+    const bool           rvsw  = (r->in[8] != 0);                                 /* time only        */
+    const bool           abort = ((r->fl8 & 0110) != 0) || ((r->fl5 & 004) != 0); /* ABTCONIC   */
 
     run_time(r, got, &o);
     cmp_flag(r->tag, "INFINFLG", o.infinflg, (r->fl8 & 0100) != 0);
@@ -660,10 +644,10 @@ static void check_time(const oracle_row_t *r, agc_dp_t got[10],
  **********************************************************************/
 static void check_row(const oracle_row_t *r)
 {
-    agc_dp_t got[10] = {0}; /* C outputs, exp[] scales  */
+    agc_dp_t got[10] = {0};         /* C outputs, exp[] scales  */
     agc_dp_t tol     = TOL_DEFAULT; /* DP LSB           */
-    int      n       = 0;   /* outputs to compare       */
-    int      first   = 0;   /* first output to compare  */
+    int      n       = 0;           /* outputs to compare       */
+    int      first   = 0;           /* first output to compare  */
 
     if (strcmp(r->tag, "kep_leo_2p25") == 0)
     {
@@ -693,12 +677,9 @@ static void check_row(const oracle_row_t *r)
         agc_apsides_out_t o;  /* APSIDES outputs   */
 
         agc_interp_init(&ip);
-        (void) agc_conic_apsides(
-            &ip, vec3(&r->in[1]), vec3(&r->in[4]),
-            (r->in[0] != 0) ? AGC_CONIC_MOON : /* moon row */
-            AGC_CONIC_EARTH, &o);
+        (void) agc_conic_apsides(&ip, vec3(&r->in[1]), vec3(&r->in[4]), (r->in[0] != 0) ? AGC_CONIC_MOON : AGC_CONIC_EARTH, &o); /* moon row */
         agc_dp_t v[5] = {o.rapo, o.rperi, o.ecc, o.p,
-                         o.r1a}; /* outputs in exp[] order */
+                         o.r1a};                                                                                                 /* outputs in exp[] order */
 
         memcpy(got, v, sizeof (v));
         n = 5;

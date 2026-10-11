@@ -33,9 +33,10 @@
 #define SIM_CH_CDUX_DRV   0174u /* out: IMU CDU X coarse drive       */
 #define SIM_CH_GYRO       0177u /* out: gyro torque pulses           */
 #define SIM_CH_COUNTER    0200u /* in: 0200 | counter address        */
+
 /* Sim-only lockstep channels (not used by any Virtual AGC peripheral).    */
-#define SIM_CH_STEP     0150u   /* in: run N centiseconds            */
-#define SIM_CH_STEP_ACK 0151u   /* out: N centiseconds done          */
+#define SIM_CH_STEP     0150u /* in: run N centiseconds            */
+#define SIM_CH_STEP_ACK 0151u /* out: N centiseconds done          */
 
 /* Interrupt requests, in AGC priority order (INTERRUPT_LEAD_INS).         */
 typedef enum sim_irq
@@ -54,28 +55,26 @@ typedef enum sim_irq
 } sim_irq_t;
 
 /* ---- packets (socket.c) ----------------------------------------------- */
-void sim_packet_form(uint16_t chan, uint16_t value,
-                     uint8_t pkt[SIM_PACKET_BYTES]);
-bool sim_packet_parse(const uint8_t pkt[SIM_PACKET_BYTES], uint16_t *chan,
-                      uint16_t *value, bool *ubit);
+void sim_packet_form(uint16_t chan, uint16_t value, uint8_t pkt[SIM_PACKET_BYTES]);
+bool sim_packet_parse(const uint8_t pkt[SIM_PACKET_BYTES], uint16_t *chan, uint16_t *value, bool *ubit);
 
 /* ---- socket server (socket.c) ----------------------------------------- */
 agc_status_t sim_socket_open(int base_port);
 void         sim_socket_close(void);
-void         sim_socket_poll(void);   /* accept, read inbound packets  */
+void         sim_socket_poll(void);                          /* accept, read inbound packets  */
 void         sim_socket_send(uint16_t chan, uint16_t value); /* broadcast */
 int          sim_socket_clients(void);
-bool         sim_socket_wait(int timeout_ms); /* input or timeout     */
-uint32_t     sim_socket_take_steps(void);     /* lockstep credit       */
-void         sim_socket_ack(uint32_t done);   /* lockstep: N cs run    */
-bool         sim_socket_lost_lockstep(void);  /* stepping client gone  */
+bool         sim_socket_wait(int timeout_ms);                /* input or timeout     */
+uint32_t     sim_socket_take_steps(void);                    /* lockstep credit       */
+void         sim_socket_ack(uint32_t done);                  /* lockstep: N cs run    */
+bool         sim_socket_lost_lockstep(void);                 /* stepping client gone  */
 
 /* ---- channels and counters (channels.c, counters.c) ------------------- */
 void         sim_channels_init(void);
-void         sim_channels_sync(void);            /* broadcast changes     */
-void         sim_channels_force(uint16_t chan);  /* send even if same     */
-void         sim_channels_send_all(void);        /* connect update        */
-void         sim_channels_tick(uint32_t cs);     /* 0163, drives, RHC     */
+void         sim_channels_sync(void);           /* broadcast changes     */
+void         sim_channels_force(uint16_t chan); /* send even if same     */
+void         sim_channels_send_all(void);       /* connect update        */
+void         sim_channels_tick(uint32_t cs);    /* 0163, drives, RHC     */
 bool         sim_input(uint16_t chan, uint16_t value, uint16_t mask);
 agc_status_t sim_counter_increment(uint16_t addr, uint16_t type);
 

@@ -241,9 +241,9 @@ static void test_rate_estimator(void)
         d->dapcdu[i] = 0;
     }
 
-    d->oldxforp = 0;
-    d->oldyforp = 0;
-    d->oldzforq = 0;
+    d->oldxforp      = 0;
+    d->oldyforp      = 0;
+    d->oldzforq      = 0;
     int converged_at = -1;
 
     for (int pass = 1; pass <= 30; pass++)
@@ -251,7 +251,7 @@ static void test_rate_estimator(void)
         d->dapcdu[0] = (uint16_t) ((d->dapcdu[0] + 10u) & 077777u);
         CHECK(lm_dap_rateloop() == AGC_STATUS_OK);
         CHECK(lm_dap_backp() == AGC_STATUS_OK);
-        int32_t err = (int32_t) d->omegap - 400;
+        int32_t err  = (int32_t) d->omegap - 400;
 
         if (converged_at < 0 && err >= -8 && err <= 8)
         {
@@ -307,19 +307,19 @@ static void test_spsrcs(void)
 
     agc_flag_clear(AGC_FLAG_DRIFTDFL);
     d->jetctr[1] = 0;
-    set_axis(d, 0, 0, 700); /* 1.92 deg/s               */
+    set_axis(d, 0, 0, 700);                       /* 1.92 deg/s               */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
     CHECK(d->tj[1] == -8192);
-    d->edot = 0; /* target is -0.1 deg/s     */
+    d->edot      = 0;                             /* target is -0.1 deg/s     */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
-    CHECK(d->tj[1] == -8192); /* keep firing              */
-    d->edot = -50;            /* past target: stop        */
+    CHECK(d->tj[1] == -8192);                     /* keep firing              */
+    d->edot      = -50;                           /* past target: stop        */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
     CHECK(d->tj[1] == 0);
     CHECK(d->jetctr[1] == 10);
-    d->e = (agc_sp_t) (16384 * 10 / 180); /* outside deadband        */
+    d->e         = (agc_sp_t) (16384 * 10 / 180); /* outside deadband        */
     CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
-    CHECK(d->tj[1] == 0); /* inhibited by counter     */
+    CHECK(d->tj[1] == 0);                         /* inhibited by counter     */
 }
 
 /**********************************************************************
@@ -335,8 +335,8 @@ static void test_rot_touv(void)
 {
     lm_dap_t *d = lm_dap_state();
 
-    d->coeffq = -11585;
-    d->coeffr = 11585;
+    d->coeffq  = -11585;
+    d->coeffr  = 11585;
     agc_sp_t u = 0;
     agc_sp_t v = 0;
 
@@ -369,7 +369,7 @@ static void test_zero_erasable(void)
     CHECK(agc_flag_test(AGC_FLAG_ACCOKFLG));
     CHECK(agc_erase_lemmass() == 438); /* DEC 1750 B-16    */
     CHECK(g_assert_reports == reports);
-    lm_dp_pair_t q = lm_dap_dvqr((lm_dp_pair_t){-199, 0}, -85);
+    lm_dp_pair_t q              = lm_dap_dvqr((lm_dp_pair_t){-199, 0}, -85);
 
     CHECK(q.hi == 16383 && q.lo == -85);
 }
@@ -393,8 +393,7 @@ int main(void)
     test_spsrcs();
     test_rot_touv();
     test_zero_erasable();
-    (void) printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n",
-                  g_checks, g_failures, g_assert_reports);
+    (void) printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1);
 }

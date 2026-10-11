@@ -47,32 +47,32 @@
 #define CSM_DAP_TIME6  6
 
 /* ---- word arithmetic in the AGC's manner (mysubs.c) --------------------- */
-agc_sp_t csm_dap_word_sp(uint16_t w);     /* 1's comp word -> value  */
-uint16_t csm_dap_sp_word(agc_sp_t v);     /* value -> 1's comp word  */
-agc_sp_t csm_dap_msu(uint16_t a, uint16_t b); /* MSU: (a - b) mod 2^15   */
-agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b); /* AD/ADS, overflow-corrected */
-agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b); /* AD; TS; INDEX A CS LIMITS */
-agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b);   /* DAS, overflow-corrected */
-agc_dp_t csm_dap_ddoubl(agc_dp_t a);            /* DDOUBL                  */
-agc_sp_t csm_dap_mp_hi(agc_sp_t a, agc_sp_t b); /* MP, upper word (A)      */
-agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b); /* MP, lower word (L)      */
-agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den); /* DV, limited to +-POSMAX */
+agc_sp_t csm_dap_word_sp(uint16_t w);                 /* 1's comp word -> value  */
+uint16_t csm_dap_sp_word(agc_sp_t v);                 /* value -> 1's comp word  */
+agc_sp_t csm_dap_msu(uint16_t a, uint16_t b);         /* MSU: (a - b) mod 2^15   */
+agc_sp_t csm_dap_ads(agc_sp_t a, agc_sp_t b);         /* AD/ADS, overflow-corrected */
+agc_sp_t csm_dap_ad_sat(agc_sp_t a, agc_sp_t b);      /* AD; TS; INDEX A CS LIMITS */
+agc_dp_t csm_dap_das(agc_dp_t a, agc_dp_t b);         /* DAS, overflow-corrected */
+agc_dp_t csm_dap_ddoubl(agc_dp_t a);                  /* DDOUBL                  */
+agc_sp_t csm_dap_mp_hi(agc_sp_t a, agc_sp_t b);       /* MP, upper word (A)      */
+agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b);       /* MP, lower word (L)      */
+agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den);      /* DV, limited to +-POSMAX */
 agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a); /* SMALLMP            */
-agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al); /* DPADD (mod 360 deg) */
+agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al);  /* DPADD (mod 360 deg) */
 
 /* ---- DP word pairs as stored (TVC filter; mysubs.c) -------------------- */
-agc_csm_dp_pair_t csm_dap_pair(agc_dp_t v);        /* sign-agreed split */
-agc_dp_t          csm_dap_pair_value(agc_csm_dp_pair_t p); /* hi 2^14 + lo   */
-agc_csm_dp_pair_t csm_dap_pair_neg(agc_csm_dp_pair_t p); /* DCS          */
-agc_csm_dp_pair_t csm_dap_pair_mp(agc_sp_t a, agc_sp_t b); /* MP -> A,L  */
+agc_csm_dp_pair_t csm_dap_pair(agc_dp_t v);                 /* sign-agreed split */
+agc_dp_t          csm_dap_pair_value(agc_csm_dp_pair_t p);  /* hi 2^14 + lo   */
+agc_csm_dp_pair_t csm_dap_pair_neg(agc_csm_dp_pair_t p);    /* DCS          */
+agc_csm_dp_pair_t csm_dap_pair_mp(agc_sp_t a, agc_sp_t b);  /* MP -> A,L  */
 agc_sp_t          csm_dap_pair_das(agc_csm_dp_pair_t *k, agc_csm_dp_pair_t al);
 agc_csm_dp_pair_t csm_dap_pair_ddoubl(agc_csm_dp_pair_t p); /* DDOUBL    */
 agc_csm_dp_pair_t csm_dap_pair_smallmp(agc_csm_dp_pair_t in, agc_sp_t n);
-uint16_t          csm_dap_cdu(int axis); /* CDUX, CDUY, CDUZ raw    */
+uint16_t          csm_dap_cdu(int axis);                    /* CDUX, CDUY, CDUZ raw    */
 agc_status_t      csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word);
 agc_status_t      csm_dap_set_time5(uint16_t time5_word);
-bool              csm_dap_engine_on(void); /* channel 11 bit 13       */
-agc_status_t      csm_dap_needler(void); /* NEEDLER on AK..AK2      */
+bool              csm_dap_engine_on(void);                  /* channel 11 bit 13       */
+agc_status_t      csm_dap_needler(void);                    /* NEEDLER on AK..AK2      */
 
 /* ---- RCS DAP (t5rupt.c, filter.c, manual.c, attitude.c) ---- */
 agc_status_t csm_rcs_freshdap(bool fresh);         /* FRESHDAP (true) / REDAP     */
@@ -85,17 +85,17 @@ agc_status_t csm_rcs_manual(void);                 /* MANUAL ROTATION COMMANDS  
 agc_status_t csm_rcs_ahfnorot(void);               /* AHFNOROT                    */
 agc_status_t csm_rcs_jets(void);                   /* JETS .. JTIME .. T6PROG     */
 agc_status_t csm_rcs_t6prog_manual(void);          /* T6PROGM: zero errors, T6PROG*/
-agc_status_t csm_rcs_stickchk(uint16_t bits); /* STICKCHK                    */
-bool         csm_rcs_rate_init_pending(void); /* RCSFLAGS BIT14 (NORATE)     */
+agc_status_t csm_rcs_stickchk(uint16_t bits);      /* STICKCHK                    */
+bool         csm_rcs_rate_init_pending(void);      /* RCSFLAGS BIT14 (NORATE)     */
 
 /* ---- TVC DAP (tvc_*.c) -------------------------------------------------- */
-agc_status_t csm_tvc_mrclean(void);       /* MRCLEAN .. ENDMRC           */
-agc_status_t csm_tvc_init_complete(void); /* TVCINIT4 .. ENDTVCIN        */
-agc_status_t csm_tvc_swichovr_body(void); /* SWICHOVR +5 .. TC RTRNLOC   */
-agc_status_t csm_tvc_gains(bool full);    /* S40.15 (full) or S40.15 +7  */
-agc_status_t csm_tvc_pcopy(bool restart); /* PCOPY (restart: PCOPY +1)   */
-agc_status_t csm_tvc_ycopy(bool restart); /* YCOPY (restart: YCOPY +1)   */
+agc_status_t csm_tvc_mrclean(void);                   /* MRCLEAN .. ENDMRC           */
+agc_status_t csm_tvc_init_complete(void);             /* TVCINIT4 .. ENDTVCIN        */
+agc_status_t csm_tvc_swichovr_body(void);             /* SWICHOVR +5 .. TC RTRNLOC   */
+agc_status_t csm_tvc_gains(bool full);                /* S40.15 (full) or S40.15 +7  */
+agc_status_t csm_tvc_pcopy(bool restart);             /* PCOPY (restart: PCOPY +1)   */
+agc_status_t csm_tvc_ycopy(bool restart);             /* YCOPY (restart: YCOPY +1)   */
 agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs); /* EXRSTRT targets    */
-agc_status_t csm_tvc_tstinit(void);    /* TSTINIT                     */
-agc_status_t csm_tvc_hack(void);       /* HACK (entry from the DAPs)  */
-#endif /* CSM_DAP_INTERNAL_H */
+agc_status_t csm_tvc_tstinit(void);                   /* TSTINIT                     */
+agc_status_t csm_tvc_hack(void);                      /* HACK (entry from the DAPs)  */
+#endif                                                /* CSM_DAP_INTERNAL_H */

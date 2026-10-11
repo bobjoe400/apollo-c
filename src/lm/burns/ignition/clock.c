@@ -14,7 +14,7 @@
 
 #define ONE_SEC      100 /* 1SEC                                       */
 #define LOW5         037
-#define DVMON_PASSES 4 /* COMFAIL: CAF FOUR / TS DVCNTR              */
+#define DVMON_PASSES 4   /* COMFAIL: CAF FOUR / TS DVCNTR              */
 
 /* STCLOK3 (p.743-744): DT = TIG - TIME (positive: we passed the 45 s
  * check); CLOKTASK in (DT mod 1 s) + 20 ms so that it runs just after each
@@ -30,13 +30,12 @@ agc_status_t ign_start_clock(agc_job_id_t restart_job)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int32_t hi  = (int32_t) agc_dp_high(dt) & LOW5; /* MASK LOW5              */
+    int32_t hi  = (int32_t) agc_dp_high(dt) & LOW5;     /* MASK LOW5              */
     int32_t lo  = (int32_t) agc_dp_low(dt);
     int32_t rem = ((hi << AGC_SP_BITS) + lo) % ONE_SEC; /* DV, CA L         */
 
     agc_inhint();
-    agc_status_t sw =
-        agc_waitlist_call((uint16_t) (rem + 2), AGC_TASK_CLOKTASK);
+    agc_status_t sw = agc_waitlist_call((uint16_t) (rem + 2), AGC_TASK_CLOKTASK);
 
     if (sw != AGC_STATUS_OK)
     {
@@ -60,8 +59,7 @@ agc_status_t ign_start_clock(agc_job_id_t restart_job)
 }
 
 /* STCLOK2 (p.743): DISPDEX = dispdex, STCLOK3, return to ret_job.         */
-agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex,
-                            agc_job_id_t ret_job)
+agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex, agc_job_id_t ret_job)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(dispdex <= 0))
     {
@@ -69,7 +67,7 @@ agc_status_t agc_lm_stclok2(const agc_job_ctx_t *ctx, agc_sp_t dispdex,
     }
 
     agc_guid_state()->lm.dispdex = dispdex;
-    agc_status_t st = ign_start_clock(ret_job);
+    agc_status_t st              = ign_start_clock(ret_job);
 
     if (st != AGC_STATUS_OK)
     {
@@ -140,8 +138,7 @@ static agc_status_t engine_enable_display(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY,
-                             agc_dsky_vn(99, ign_table()->noun), &c99));
+    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(99, ign_table()->noun), &c99));
 }
 
 /* CLOKJOB (p.744-746): TTOGO = TIME - TIG; DISPDEX >= 0: no display (a
@@ -171,10 +168,9 @@ agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
             {AGC_JOB_STOPCLOK, AGC_JOB_CLOKJOB_ENGINE_FAIL,
              AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN};
 
-            agc_dsky_set_nvword1((uint16_t) 077777U);     /* CS ZERO                */
+            agc_dsky_set_nvword1((uint16_t) 077777U); /* CS ZERO                */
 
-            return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY,
-                                     agc_dsky_vn(97, ign_table()->noun), &c97));
+            return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(97, ign_table()->noun), &c97));
         }
         case IGN_ASTNDEX:
             /* -25 (p.745): V06N61 by ASTNCLOK, used by the crew in P63 to set the
@@ -190,12 +186,10 @@ agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
                 return (AGC_STATUS_BAD_ARG);
             }
 
-            return (agc_dsky_display(ctx, AGC_DSKY_REFLASH, agc_dsky_vn(6, 61),
-                                     &c61));
+            return (agc_dsky_display(ctx, AGC_DSKY_REFLASH, agc_dsky_vn(6, 61), &c61));
         }
         case IGN_CNTDNDEX: /* ONE-SECOND COUNTDOWN   */
-            return (agc_dsky_display(ctx, AGC_DSKY_REGODSP,
-                                     agc_dsky_vn(6, ign_table()->noun), NULL));
+            return (agc_dsky_display(ctx, AGC_DSKY_REGODSP, agc_dsky_vn(6, ign_table()->noun), NULL));
         case IGN_VB99DEX:
             return (engine_enable_display(ctx));
         case IGN_BLANKDEX: /* AVERAGE G IS STARTING  */
@@ -443,8 +437,7 @@ agc_status_t agc_job_clokjob_engine_fail(agc_job_ctx_t *ctx)
 
     agc_guid_lm_t *lm = &agc_guid_state()->lm;
 
-    lm->dispdex = ign_table()->comfail_kill ? (agc_sp_t) IGN_DISPDEX_KILL :
-                  (agc_sp_t) -IGN_CNTDNDEX;
+    lm->dispdex = ign_table()->comfail_kill ? (agc_sp_t) IGN_DISPDEX_KILL : (agc_sp_t) -IGN_CNTDNDEX;
     agc_flag_clear(AGC_FLAG_IDLEFLAG); /* RECONNECT DV MONITOR   */
     agc_flag_clear(AGC_FLAG_FLUNDISP);
 
@@ -541,8 +534,7 @@ agc_status_t agc_job_stage_alarm_proceed(agc_job_ctx_t *ctx)
  * (channel 30 bit 5 = 0, inverted input), return. Otherwise V50N25
  * R1 = 00203 "please perform checklist 203": V34 P00, PROCEED check
  * again, ENTER return anyway (GOBACK).                                     */
-static agc_status_t auto_control_check(const agc_job_ctx_t *ctx,
-                                       agc_job_id_t         ret_job)
+static agc_status_t auto_control_check(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
 {
     bool ok = (agc_imu_gn_auto() == 0);
 
@@ -568,8 +560,7 @@ static agc_status_t auto_control_check(const agc_job_ctx_t *ctx,
 }
 
 /* P40AUTO (p.748): save the return (TEMPR60), then P40A/P.                */
-agc_status_t agc_lm_check_auto_control(const agc_job_ctx_t *ctx,
-                                       agc_job_id_t         ret_job)
+agc_status_t agc_lm_check_auto_control(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE))
     {

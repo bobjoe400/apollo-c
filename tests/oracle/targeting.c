@@ -67,6 +67,7 @@ int main(void)
 
     initvel("initvel_earth", 0);
     initvel("initvel_earth_far", 0);
+
     /* Tolerances = the observed residual (2026-10-11, after the DMP/DMPR
      * audit), rounded up. They come from the conic word forms (LAMBERT /
      * GETX R1A, review-prog-rendz P1) and, for _prec, the integration. */
@@ -150,31 +151,23 @@ static agc_rendz_t *fresh(const char *t)
  **********************************************************************/
 static void initvel(const char *t, long int tol)
 {
-    agc_interp_t ip;             /* interpreter state */
+    agc_interp_t ip;            /* interpreter state */
     agc_rendz_t *rz = fresh(t); /* rendezvous erasables */
 
     agc_interp_init(&ip);
-    rz->rinit  = oracle_in_vec(t, "RINIT");
-    rz->vinit  = oracle_in_vec(t, "VINIT");
-    rz->rtarg  = oracle_in_vec(t, "RTARG");
-    rz->dellt4 = oracle_in_dp(t, "DELLT4", 0);
-    rz->intime = oracle_in_dp(t, "INTIME", 0);
-    const agc_status_t st = /* INITVEL */
-                            agc_rendz_initvel(&ip, rz,
-                                              (agc_sp_t) oracle_in(t, "VAC1",
-                                                                   0),
-                                              oracle_in_dp(t, "VAC1+2",
-                                                           0), AGC_JOB_NONE);
+    rz->rinit             = oracle_in_vec(t, "RINIT");
+    rz->vinit             = oracle_in_vec(t, "VINIT");
+    rz->rtarg             = oracle_in_vec(t, "RTARG");
+    rz->dellt4            = oracle_in_dp(t, "DELLT4", 0);
+    rz->intime            = oracle_in_dp(t, "INTIME", 0);
+    const agc_status_t st = agc_rendz_initvel(&ip, rz, (agc_sp_t) oracle_in(t, "VAC1", 0), oracle_in_dp(t, "VAC1+2", 0), AGC_JOB_NONE); /* INITVEL */
 
     oracle_require_ok(t, "POODOO");
     (void) oracle_cmp(t, "status", st, AGC_STATUS_OK, 0);
     oracle_cmp_vec(t, "RTARG", rz->rtarg, oracle_out_vec(t, "RTARG"), tol);
-    oracle_cmp_vec(t, "VIPRIME", rz->viprime, oracle_out_vec(t, "VIPRIME"),
-                   tol);
-    oracle_cmp_vec(t, "VTPRIME", rz->vtprime, oracle_out_vec(t, "VTPRIME"),
-                   tol);
-    oracle_cmp_vec(t, "DELVEET3", rz->delveet3, oracle_out_vec(t, "DELVEET3"),
-                   tol);
+    oracle_cmp_vec(t, "VIPRIME", rz->viprime, oracle_out_vec(t, "VIPRIME"), tol);
+    oracle_cmp_vec(t, "VTPRIME", rz->vtprime, oracle_out_vec(t, "VTPRIME"), tol);
+    oracle_cmp_vec(t, "DELVEET3", rz->delveet3, oracle_out_vec(t, "DELVEET3"), tol);
 }
 
 /**********************************************************************
@@ -191,7 +184,7 @@ static void initvel(const char *t, long int tol)
  **********************************************************************/
 static void cdh(const char *t, long int tol)
 {
-    agc_interp_t ip;             /* interpreter state */
+    agc_interp_t ip;            /* interpreter state */
     agc_rendz_t *rz = fresh(t); /* rendezvous erasables */
 
     agc_interp_init(&ip);
@@ -202,6 +195,7 @@ static void cdh(const char *t, long int tol)
     rz->up1    = oracle_in_vec(t, "UP1");
     (void) agc_rendz_cdhmvr(&ip, rz);
     oracle_require_ok(t, "POODOO");
+
     /* F13: DIFFALT 31 LSB (62 m) for cdh_earth_ell. Traced (review-
      * prog-rendz): PARAM leaves R1A as the sign-disagreeing pair
      * (00401, 40000); GETX's SR4/TAD keep that form and SQRTSUB reads
@@ -209,11 +203,9 @@ static void cdh(const char *t, long int tol)
      * vs 20827920) -> X, XI, XSQC(XI) -> NEWSTATE R2 off 2 LSB at its
      * own 2^33 scale (32 m per LSB) -> DIFFALT. Same ones'-complement
      * class as F9/F14; a word-level WLOOP removes it (nav-conic).      */
-    (void) oracle_cmp(t, "DIFFALT", rz->diffalt, oracle_out_dp(t, "DIFFALT"),
-                      32);
+    (void) oracle_cmp(t, "DIFFALT", rz->diffalt, oracle_out_dp(t, "DIFFALT"), 32);
     oracle_cmp_vec(t, "VACT3", rz->vact3, oracle_out_vec(t, "VACT3"), tol);
-    oracle_cmp_vec(t, "DELVEET2", rz->delveet2, oracle_out_vec(t, "DELVEET2"),
-                   tol);
+    oracle_cmp_vec(t, "DELVEET2", rz->delveet2, oracle_out_vec(t, "DELVEET2"), tol);
 }
 
 /**********************************************************************
@@ -230,35 +222,28 @@ static void cdh(const char *t, long int tol)
  **********************************************************************/
 static void tpi(const char *t, long int tol)
 {
-    agc_interp_t ip;             /* interpreter state */
+    agc_interp_t ip;            /* interpreter state */
     agc_rendz_t *rz = fresh(t); /* rendezvous erasables */
 
     agc_interp_init(&ip);
-    rz->ract3  = oracle_in_vec(t, "RACT3");
-    rz->vact3  = oracle_in_vec(t, "VACT3");
-    rz->rpass3 = oracle_in_vec(t, "RPASS3");
-    rz->vpass3 = oracle_in_vec(t, "VPASS3");
-    rz->unrm   = oracle_in_vec(t, "UNRM");
-    rz->intime = oracle_in_dp(t, "INTIME", 0);
-    rz->tpass4 = oracle_in_dp(t, "TPASS4", 0);
-    rz->nn     = 0;
-    const agc_status_t st = /* S34/35.2 */
-                            agc_rendz_tpi_required_velocity(&ip, rz,
-                                                            AGC_JOB_STATINT1);
+    rz->ract3             = oracle_in_vec(t, "RACT3");
+    rz->vact3             = oracle_in_vec(t, "VACT3");
+    rz->rpass3            = oracle_in_vec(t, "RPASS3");
+    rz->vpass3            = oracle_in_vec(t, "VPASS3");
+    rz->unrm              = oracle_in_vec(t, "UNRM");
+    rz->intime            = oracle_in_dp(t, "INTIME", 0);
+    rz->tpass4            = oracle_in_dp(t, "TPASS4", 0);
+    rz->nn                = 0;
+    const agc_status_t st = agc_rendz_tpi_required_velocity(&ip, rz, AGC_JOB_STATINT1); /* S34/35.2 */
 
     oracle_require_ok(t, "POODOO");
     (void) oracle_cmp(t, "status", st, AGC_STATUS_OK, 0);
     oracle_cmp_vec(t, "RTARG", rz->rtarg, oracle_out_vec(t, "RTARG"), tol);
     oracle_cmp_vec(t, "VPASS4", rz->vpass4, oracle_out_vec(t, "VPASS4"), tol);
-    (void) oracle_cmp(t, "ACTCENT", rz->actcent, oracle_out_dp(t, "ACTCENT"),
-                      tol);
+    (void) oracle_cmp(t, "ACTCENT", rz->actcent, oracle_out_dp(t, "ACTCENT"), tol);
     (void) oracle_cmp(t, "DELLT4", rz->dellt4, oracle_out_dp(t, "DELLT4"), 0);
-    oracle_cmp_vec(t, "VIPRIME", rz->viprime, oracle_out_vec(t, "VIPRIME"),
-                   tol);
-    oracle_cmp_vec(t, "VTPRIME", rz->vtprime, oracle_out_vec(t, "VTPRIME"),
-                   tol);
-    oracle_cmp_vec(t, "DELVEET3", rz->delveet3, oracle_out_vec(t, "DELVEET3"),
-                   tol);
-    oracle_cmp_vec(t, "DELVLVC", rz->delvlvc, oracle_out_vec(t, "DELVLVC"),
-                   tol);
+    oracle_cmp_vec(t, "VIPRIME", rz->viprime, oracle_out_vec(t, "VIPRIME"), tol);
+    oracle_cmp_vec(t, "VTPRIME", rz->vtprime, oracle_out_vec(t, "VTPRIME"), tol);
+    oracle_cmp_vec(t, "DELVEET3", rz->delveet3, oracle_out_vec(t, "DELVEET3"), tol);
+    oracle_cmp_vec(t, "DELVLVC", rz->delvlvc, oracle_out_vec(t, "DELVLVC"), tol);
 }

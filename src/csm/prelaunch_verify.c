@@ -77,11 +77,11 @@
 #define VN_TARGET_NUMBER ((uint16_t) ((5 << 7) | 30)) /* V05N30E: VN 0530 */
 #define VN_TARGET_AZ_EL  ((uint16_t) ((6 << 7) | 41)) /* VN0641: V06N41  */
 #define VN_GYRO_ANGLES   ((uint16_t) ((6 << 7) | 93)) /* V06N93S: VN 0693 */
-#define PHASE_VERIFY     ((uint16_t) 00154) /* PHASCHNG 4.15 (GCOMPVER)    */
-#define PHASE_GROUP4_OFF ((uint16_t) 00004) /* PHASCHNG group 4 inactive   */
-#define RUN_TARGET2      ((agc_sp_t) 2)     /* RUN: TAZEL1 +2 (CAF TWO)    */
-#define TARG_TARGET2     ((agc_sp_t) 6)     /* TARG1/2: PD12 (CAF SIX)     */
-#define TARGETS          2                  /* TAR/EREF builds two vectors */
+#define PHASE_VERIFY     ((uint16_t) 00154)           /* PHASCHNG 4.15 (GCOMPVER)    */
+#define PHASE_GROUP4_OFF ((uint16_t) 00004)           /* PHASCHNG group 4 inactive   */
+#define RUN_TARGET2      ((agc_sp_t) 2)               /* RUN: TAZEL1 +2 (CAF TWO)    */
+#define TARG_TARGET2     ((agc_sp_t) 6)               /* TARG1/2: PD12 (CAF SIX)     */
+#define TARGETS          2                            /* TAR/EREF builds two vectors */
 
 /**********************************************************************
  * TAR/EREF / TAR1 (IMU_CALIBRATION_AND_ALIGNMENT.agc pp.449-450) -- the
@@ -109,15 +109,16 @@ static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
     for (int i = 0; i < TARGETS; i++) /* TIX,2 TAR1: two passes        */
     {
         agc_sp_t el_sp  = align_word_to_sp(r->tazel[(2 * i) + 1]); /* EL word, 90 deg = 2^14 */
-        agc_dp_t el     = agc_dp_shr(agc_dp_pack(el_sp, 0), 2); /* SR2: rev 2^0 */
-        agc_dp_t az     = agc_rtb_cdulogic(r->tazel[2 * i]);  /* rev 2^0 */
-        agc_dp_t cos_el = agc_dp_cos(ip, el);                 /* PUSH: cos / 2, 2^0 */
+        agc_dp_t el     = agc_dp_shr(agc_dp_pack(el_sp, 0), 2);    /* SR2: rev 2^0 */
+        agc_dp_t az     = agc_rtb_cdulogic(r->tazel[2 * i]);       /* rev 2^0 */
+        agc_dp_t cos_el = agc_dp_cos(ip, el);                      /* PUSH: cos / 2, 2^0 */
+
         /* DMP SL1 on the TP product (MPAC+2's top bit reaches the LSB). */
         agc_dp_t s_az = align_dmp_shl(ip, agc_dp_sin(ip, az), cos_el, 1); /* sin AZ cos EL / 2, 2^0 */
         agc_dp_t c_az = align_dmp_shl(ip, agc_dp_cos(ip, az), cos_el, 1); /* cos AZ cos EL / 2, 2^0 */
 
-        tar[i] = agc_vec_make(agc_dp_sin(ip, el), /* SIN(EL)            */
-                              agc_dp_neg(c_az),   /* DCOMP              */
+        tar[i] = agc_vec_make(agc_dp_sin(ip, el), /* SIN(EL); DCOMP */
+                              agc_dp_neg(c_az),
                               s_az);
     }
 
@@ -148,7 +149,7 @@ static agc_status_t optdata_load(agc_sp_t run)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    r->run = run; /* LXCH RUN                                         */
+    r->run              = run;                    /* LXCH RUN                                         */
     const uint16_t w[3] = {r->tazel[run], r->tazel[run + 1],
                            (run == 0) ? 1u : 2u}; /* BIT1 / TWO       */
 
@@ -179,13 +180,12 @@ agc_status_t agc_job_optical_verification(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip; /* interpreter state for NBPOSPL            */
 
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_change(4, PHASE_VERIFY); /* PHASCHNG OCT 00154          */
+    agc_phase_change(4, PHASE_VERIFY);                        /* PHASCHNG OCT 00154          */
     agc_status_t st = agc_phase_newmode(PRELAUNCH_MM_VERIFY); /* MM 03 */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -263,8 +263,7 @@ agc_status_t agc_job_optical_verification_target_show(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GODSPRET, VN_TARGET_NUMBER,
-                             &next));
+    return (agc_dsky_display(ctx, AGC_DSKY_GODSPRET, VN_TARGET_NUMBER, &next));
 }
 
 /**********************************************************************
@@ -279,18 +278,17 @@ agc_status_t agc_job_optical_verification_target_show(agc_job_ctx_t *ctx)
 agc_status_t agc_job_optical_verification_target_flash(agc_job_ctx_t *ctx)
 {
     const agc_dsky_cont_t cont = {
-        AGC_JOB_OPTICAL_VERIFICATION_END,         /* TC GCOMP5 */
+        AGC_JOB_OPTICAL_VERIFICATION_END,           /* TC GCOMP5 */
         AGC_JOB_OPTICAL_VERIFICATION_TARGET_LOADED, /* TC +3     */
         AGC_JOB_OPTICAL_VERIFICATION_TARGET_SHOW
-    };                                              /* TC -8D    */
+    }; /* TC -8D    */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT((prelaunch_ram()->run == 0) ||
-                    (prelaunch_ram()->run == RUN_TARGET2)))
+    if (!AGC_ASSERT((prelaunch_ram()->run == 0) || (prelaunch_ram()->run == RUN_TARGET2)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -308,7 +306,7 @@ static agc_status_t retarg(void)
 {
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING; /* OPTSTALL  */
 
-    agc_erase_set_optind(0); /* RETARG: CAF ZERO, TS OPTIND            */
+    agc_erase_set_optind(0);          /* RETARG: CAF ZERO, TS OPTIND            */
     agc_status_t st = agc_sxtmark(1); /* CAF ONE, SXTMARK             */
 
     if (st != AGC_STATUS_OK)
@@ -316,8 +314,7 @@ static agc_status_t retarg(void)
         return ((st == AGC_STATUS_ALARM) ? AGC_STATUS_OK : st); /* BAILOUT */
     }
 
-    st = agc_imu_stall_dev(AGC_IMU_DEV_OPTICS,
-                           AGC_JOB_OPTICAL_VERIFICATION_MARKED, &res);
+    st = agc_imu_stall_dev(AGC_IMU_DEV_OPTICS, AGC_JOB_OPTICAL_VERIFICATION_MARKED, &res);
 
     if ((st != AGC_STATUS_OK) || (res == AGC_IMU_STALL_SLEEPING))
     {
@@ -345,21 +342,20 @@ static agc_status_t retarg(void)
  **********************************************************************/
 static agc_status_t targdrve(agc_sp_t starcode, agc_sp_t targ)
 {
-    agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
-    agc_interp_t     ip;               /* interpreter state           */
-    agc_vec_t        tar[TARGETS];     /* PD06, PD12: B1 (half-unit)  */
-    bool             cult = false;     /* CULTFLAG (not tested here)  */
+    agc_align_ram_t *ar   = agc_align_ram(); /* alignment erasables */
+    agc_interp_t     ip;                     /* interpreter state           */
+    agc_vec_t        tar[TARGETS];           /* PD06, PD12: B1 (half-unit)  */
+    bool             cult = false;           /* CULTFLAG (not tested here)  */
 
-    if (!AGC_ASSERT((targ == 0) || (targ == TARG_TARGET2)) ||
-        !AGC_ASSERT((starcode == 1) || (starcode == 2)))
+    if (!AGC_ASSERT((targ == 0) || (targ == TARG_TARGET2)) || !AGC_ASSERT((starcode == 1) || (starcode == 2)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    ar->starcode          = starcode; /* TS STARCODE                 */
-    prelaunch_ram()->targ = targ;     /* QXCH QPLAC, TS TARG1/2      */
+    ar->starcode          = starcode;                 /* TS STARCODE                 */
+    prelaunch_ram()->targ = targ;                     /* QXCH QPLAC, TS TARG1/2      */
     agc_interp_init(&ip);
-    agc_status_t st = target_vectors(&ip, tar); /* CALL TAR/EREF       */
+    agc_status_t st       = target_vectors(&ip, tar); /* CALL TAR/EREF       */
 
     if (st != AGC_STATUS_OK)
     {
@@ -367,8 +363,7 @@ static agc_status_t targdrve(agc_sp_t starcode, agc_sp_t targ)
     }
 
     ar->star = tar[(targ == 0) ? 0 : 1]; /* VLOAD* 6D,1; STCALL STAR    */
-    st       =
-        agc_csm_sxtang(&ip, ar->star, &ar->xnb, &ar->sac, &ar->pac, &cult);
+    st       = agc_csm_sxtang(&ip, ar->star, &ar->xnb, &ar->sac, &ar->pac, &cult);
 
     if (st != AGC_STATUS_OK)
     {
@@ -395,8 +390,7 @@ agc_status_t agc_job_optical_verification_target_loaded(agc_job_ctx_t *ctx)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT((r->run == 0) || (r->run == RUN_TARGET2)))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT((r->run == 0) || (r->run == RUN_TARGET2)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -430,9 +424,9 @@ agc_status_t agc_job_optical_verification_target_loaded(agc_job_ctx_t *ctx)
 static agc_status_t target1_marked(void)
 {
     agc_align_ram_t     *ar = agc_align_ram(); /* alignment erasables */
-    agc_interp_t         ip;           /* interpreter state           */
-    agc_vec_t            tar[TARGETS]; /* PD06, PD12: B1 (half-unit)  */
-    agc_align_sxt_mark_t m;            /* the mark (VAC +2 .. +6)     */
+    agc_interp_t         ip;                   /* interpreter state           */
+    agc_vec_t            tar[TARGETS];         /* PD06, PD12: B1 (half-unit)  */
+    agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)     */
 
     agc_interp_init(&ip);
     agc_status_t st = target_vectors(&ip, tar); /* CALL TAR/EREF       */
@@ -484,10 +478,10 @@ static agc_status_t target1_marked(void)
 static agc_status_t target2_marked(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t     *ar = agc_align_ram(); /* alignment erasables */
-    agc_interp_t         ip;         /* interpreter state             */
-    agc_vec_t            marked[2];  /* 6D, 12D: marked LOS, B1 */
-    agc_align_sxt_mark_t m;          /* the mark (VAC +2 .. +6)       */
-    agc_mat_t            xdc;        /* XDC..ZDC, half-unit           */
+    agc_interp_t         ip;                   /* interpreter state             */
+    agc_vec_t            marked[2];            /* 6D, 12D: marked LOS, B1 */
+    agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)       */
+    agc_mat_t            xdc;                  /* XDC..ZDC, half-unit           */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -509,7 +503,7 @@ static agc_status_t target2_marked(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    marked[0] = prelaunch_ram()->losvec; /* LOSVEC, STCALL 06D        */
+    marked[0] = prelaunch_ram()->losvec;                        /* LOSVEC, STCALL 06D        */
     st        = agc_imu_axisgen(&ip, ar->starad, marked, &xdc); /* AXISGEN */
 
     if (st != AGC_STATUS_OK)
@@ -537,8 +531,7 @@ agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx)
 {
     const agc_sp_t targ = prelaunch_ram()->targ; /* QPLAC (TARG1/2), B0 */
 
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT((targ == 0) || (targ == TARG_TARGET2)))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT((targ == 0) || (targ == TARG_TARGET2)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -590,7 +583,7 @@ agc_status_t agc_job_optical_verification_torque_display(agc_job_ctx_t *ctx)
         AGC_JOB_OPTICAL_VERIFICATION_END,             /* TC GCOMP5  */
         AGC_JOB_OPTICAL_VERIFICATION_TORQUE_ACCEPTED, /* TCF +2     */
         AGC_JOB_OPTICAL_VERIFICATION_TORQUE_DISPLAY
-    };                                                /* TCF GCOMP4 */
+    }; /* TCF GCOMP4 */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -617,8 +610,8 @@ agc_status_t agc_job_optical_verification_torque_display(agc_job_ctx_t *ctx)
 agc_status_t agc_job_optical_verification_torque_accepted(agc_job_ctx_t *ctx)
 {
     const agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
-    agc_interp_t           ip;     /* interpreter state (VAD)         */
-    agc_dp_t               buf[3]; /* ERCOMP1, rev 2^0                */
+    agc_interp_t           ip;                   /* interpreter state (VAD)         */
+    agc_dp_t               buf[3];               /* ERCOMP1, rev 2^0                */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -633,11 +626,7 @@ agc_status_t agc_job_optical_verification_torque_accepted(agc_job_ctx_t *ctx)
     }
 
     agc_interp_init(&ip);
-    const agc_vec_t sum = /* OGC + ERCOMP1, rev 2^0 */
-                          agc_vec_add(&ip,
-                                      agc_vec_make(ar->ogc[0], ar->ogc[1],
-                                                   ar->ogc[2]),
-                                      agc_vec_make(buf[0], buf[1], buf[2])); /* VLOAD VAD */
+    const agc_vec_t sum = agc_vec_add(&ip, agc_vec_make(ar->ogc[0], ar->ogc[1], ar->ogc[2]), agc_vec_make(buf[0], buf[1], buf[2])); /* OGC + ERCOMP1, rev 2^0; VLOAD VAD */
 
     for (int i = 0; i < 3; i++)
     {
@@ -672,7 +661,7 @@ agc_status_t agc_job_optical_verification_end(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_flag_clear(AGC_FLAG_TRM03FLG); /* DOWNFLAG TRM03FLG            */
+    agc_flag_clear(AGC_FLAG_TRM03FLG);            /* DOWNFLAG TRM03FLG            */
     st = agc_phase_newmode(PRELAUNCH_MM_COMPASS); /* NEWMODEX MM 02     */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))

@@ -33,10 +33,10 @@
 #include "agc/io/service.h"
 #include "agc/programs/rendezvous.h"
 
-#define MAXDELV  6398 /* -MAXDELV DEC -6398: 3200 pps for 2 s, less 1 (CCS) */
-#define JTAGTIME 120  /* JTAGTIME DEC 120 cs = 1 s + T CDU (0.1 s)  */
-#define TWO_SECS 200  /* 2SECS, cs                                  */
-#define HALF_SEC 50   /* 0.5SEC DEC 50, cs                          */
+#define MAXDELV  6398  /* -MAXDELV DEC -6398: 3200 pps for 2 s, less 1 (CCS) */
+#define JTAGTIME 120   /* JTAGTIME DEC 120 cs = 1 s + T CDU (0.1 s)  */
+#define TWO_SECS 200   /* 2SECS, cs                                  */
+#define HALF_SEC 50    /* 0.5SEC DEC 50, cs                          */
 #define ONEPIPADT_2S \
     ((agc_sp_t) 12800) /* PRIO31 = OCT 31000: 2.0 s at B+8 cs */
 
@@ -102,11 +102,11 @@ static agc_status_t preread1(agc_avg_g_t *a)
         return (st);
     }
 
-    a->pipage = 1;                           /* for REREADAC           */
+    a->pipage  = 1;                          /* for REREADAC           */
     agc_flag_set(AGC_FLAG_AVEGFLAG);         /* SET AVEG FLAG          */
     agc_flag_clear(AGC_FLAG_DRIFTFLG);       /* KNOCK DOWN DRIFT FLAG  */
     agc_flag_set(AGC_FLAG_SERVICER_RUNNING); /* SET V37 FLAG           */
-    a->dvtotal = 0;                                 /* CLEAR DVTOTAL          */
+    a->dvtotal = 0;                          /* CLEAR DVTOTAL          */
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_AVEGFLAG)))
     {
@@ -219,7 +219,7 @@ static agc_status_t readaccs_entry(agc_avg_g_t *a)
     e->amg_pip  = agc_erase_amg(); /* CA AMG XCH AMG/PIP     */
     e->roll_pip = e->roll_180;     /* DCA ROLL/180           */
     e->alfa_pip = e->alfa_180;
-    e->beta_pip = e->beta_180; /* CA BETA/180            */
+    e->beta_pip = e->beta_180;     /* CA BETA/180            */
 
     if (agc_flag_test(AGC_FLAG_CMDAPARM))
     { /* SAVE PIPAS EACH 0.5 SEC */
@@ -290,8 +290,7 @@ static agc_status_t chekaveg(agc_avg_g_t *a)
         }
     }
 
-    agc_status_t st =
-        agc_exec_findvac(AGC_PRIO20, AGC_JOB_SERVICER); /* MAKESERV */
+    agc_status_t st = agc_exec_findvac(AGC_PRIO20, AGC_JOB_SERVICER); /* MAKESERV */
 
     if (st != AGC_STATUS_OK)
     {
@@ -320,8 +319,8 @@ static agc_status_t chekaveg(agc_avg_g_t *a)
  **********************************************************************/
 static agc_status_t redo5_5(agc_avg_g_t *a)
 {
-    a->pipage = 1;                             /* SHOW PIPS HAVE BEEN READ */
-    a->pipctr = 2;                             /* PIPCTR FOR ONMNITOR    */
+    a->pipage = 1; /* SHOW PIPS HAVE BEEN READ */
+    a->pipctr = 2; /* PIPCTR FOR ONMNITOR    */
 
     if (agc_flag_test(AGC_FLAG_CM_DSTBY))
     {
@@ -452,7 +451,7 @@ agc_status_t agc_task_rereadac_csm(void)
     agc_guid_t *g = agc_guid_state();
 
     if (agc_phase_get(GRP5) == 0U)
-    {                         /* LAST PASS CHECK        */
+    { /* LAST PASS CHECK        */
         return (AGC_STATUS_OK); /* TASKOVER               */
     }
 
@@ -498,7 +497,7 @@ agc_status_t agc_task_quikread(void)
     }
 
     if (g->avg.pipctr > 0)
-    {                    /* CCS PIPCTR             */
+    { /* CCS PIPCTR             */
         g->avg.pipctr--; /* ONMNITOR: TS PIPCTR    */
 
         return (agc_waitlist_fixdelay(HALF_SEC, AGC_TASK_ONMNITOR));
@@ -565,11 +564,7 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = /* CALCGRAV at RN (moon: RTX2 = 2, LXC,1 SLOAD RTX2) */
-                      agc_guid_calcgrav(&ip, AGC_VEHICLE_CSM,
-                                        agc_rendz_erasable()->body.rtx2 != 0,
-                                        agc_erase_rn(),
-                                        &g->avg);
+    agc_status_t st = agc_guid_calcgrav(&ip, AGC_VEHICLE_CSM, agc_rendz_erasable()->body.rtx2 != 0, agc_erase_rn(), &g->avg); /* CALCGRAV at RN (moon: RTX2 = 2, LXC,1 SLOAD RTX2) */
 
     if (st != AGC_STATUS_OK)
     {
@@ -579,7 +574,7 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
     g->avg.gdt_2  = g->avg.gdt1_2;  /* STOVL GDT/2            */
     g->avg.gobl_2 = g->avg.gobl1_2; /* STORE GOBL/2           */
 
-    return (AGC_STATUS_OK);           /* ENDOFJOB               */
+    return (AGC_STATUS_OK); /* ENDOFJOB               */
 }
 
 /**********************************************************************
@@ -655,7 +650,7 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
         return (agc_job_serv_averageg_csm(ctx));
     }
 
-    serv_phase(PH_5_3_BJOB, AGC_JOB_SERV_DVTOTUP); /* RESTART REREADAC+SERVICER */
+    serv_phase(PH_5_3_BJOB, AGC_JOB_SERV_DVTOTUP);    /* RESTART REREADAC+SERVICER */
     agc_vec_t    delv = agc_erase_delv();
     agc_status_t st   = agc_imu_one_over_pipa(&delv); /* PIPA COMPENSATION      */
 
@@ -693,8 +688,7 @@ agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_dp_t dv =
-        agc_dp_mul_trunc(agc_vec_abval(&ip, agc_erase_delv()), KPIP1_CM);
+    agc_dp_t  dv  = agc_dp_mul_trunc(agc_vec_abval(&ip, agc_erase_delv()), KPIP1_CM);
     agc_ovf_t ovf = 0;
 
     g->avg.dvtotal = agc_dp_add_raw(g->avg.dvtotal, dv, &ovf); /* DAS DVTOTAL */
@@ -747,10 +741,7 @@ agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    st =
-        agc_guid_calcrvg(&ip, AGC_VEHICLE_CSM,
-                         agc_rendz_erasable()->body.rtx2 != 0, /* RTX2 */
-                         &refsmmat, agc_erase_delv(), &sv, &g->avg);
+    st = agc_guid_calcrvg(&ip, AGC_VEHICLE_CSM, agc_rendz_erasable()->body.rtx2 != 0, &refsmmat, agc_erase_delv(), &sv, &g->avg); /* RTX2 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -891,15 +882,14 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_status_t st =
-        agc_integ_avetomid(&ip, agc_integ_shared_ctx(), ctx->id); /* CONVERT STATE VECTOR   */
+    agc_status_t st = agc_integ_avetomid(&ip, agc_integ_shared_ctx(), ctx->id); /* CONVERT STATE VECTOR   */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    agc_erase_set_vhfcnt(0); /* ZERO MARK COUNTERS     */
+    agc_erase_set_vhfcnt(0);                    /* ZERO MARK COUNTERS     */
     agc_erase_set_trkmkcnt(0);
     agc_imu_pipfree();
     agc_erase_set_mrkbuf2(0, (agc_sp_t) -0400); /* CS BIT9: INVALIDATE    */

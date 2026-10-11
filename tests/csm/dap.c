@@ -68,7 +68,7 @@ static agc_csm_jet_in_t jet_in(agc_sp_t roll, agc_sp_t pitch, agc_sp_t yaw)
     in.tau[2]  = yaw;
     in.racfail = 0;
     in.rbdfail = 0;
-    in.acorbd  = 1; /* BD roll                              */
+    in.acorbd  = 1;                 /* BD roll                              */
     in.xtrans  = 0;
 
     return (in);
@@ -80,7 +80,7 @@ static void test_jet_select(void)
     agc_csm_jet_in_t  in = jet_in(0, 100, 0);
 
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
-    CHECK(out.pword1 == 01005u); /* 2 jets + count  */
+    CHECK(out.pword1 == 01005u);                   /* 2 jets + count  */
     CHECK((out.pword1 & 017u) == (AGC_CH005_PYJET1 | AGC_CH005_PYJET3));
     CHECK(out.yword1 == 0u);
     CHECK(out.pword2 == 0u);                       /* off afterwards  */
@@ -88,7 +88,7 @@ static void test_jet_select(void)
     CHECK(out.blast[2].time == 50);                /* TAU / 2 jets    */
     CHECK(out.dft[1] == 100);
     CHECK(out.tau[1] == 0);
-    CHECK(out.attkalmn_xln == 0x7FFF); /* no translation  */
+    CHECK(out.attkalmn_xln == 0x7FFF);             /* no translation  */
 
     in = jet_in(0, -100, 0);
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
@@ -96,7 +96,7 @@ static void test_jet_select(void)
     CHECK(out.dft[1] == -100);
 
     in         = jet_in(0, 100, 0);
-    in.racfail = 1; /* quad A failed   */
+    in.racfail = 1;                 /* quad A failed   */
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
     CHECK(out.pword1 == 0401u);     /* one jet         */
     CHECK(out.blast[2].time == 99); /* TAU x .99999    */
@@ -111,7 +111,7 @@ static void test_jet_select(void)
     in.chan31 = (uint16_t) (077777u & ~0100u); /* +X: bit 7 low   */
     CHECK(agc_csm_jet_select(&in, &out) == AGC_STATUS_OK);
     CHECK((uint16_t) (out.pword1 | out.yword1) == 0231u);
-    CHECK(out.attkalmn_xln == -2); /* LM off          */
+    CHECK(out.attkalmn_xln == -2);             /* LM off          */
 }
 
 /* CSM/LM low-bandwidth pitch DAP (V46 switch-over coefficients).         */
@@ -120,7 +120,7 @@ static void tvc_setup(agc_sp_t perrb_hi)
     agc_csm_tvc_t    *t = agc_csm_dap_tvc();
     agc_csm_dapcom_t *c = agc_csm_dap_com();
 
-    agc_erase_set_dapdatr1((uint16_t) 020000); /* 010: CSM/LM     */
+    agc_erase_set_dapdatr1((uint16_t) 020000);      /* 010: CSM/LM     */
     c->ektlx_i[2] = 8000;
     c->iavg_tlx   = 4000;
     c->pactoff    = 0;
@@ -131,14 +131,14 @@ static void tvc_setup(agc_sp_t perrb_hi)
     CHECK(agc_csm_tvc_preswtch() == AGC_STATUS_OK); /* LBN10, VARK     */
     CHECK(t->vark == 7812);                         /* 8000 x 4000 x 4 */
     CHECK(t->n10[5] == 512);                        /* N20 = .03125    */
-    t->t5tvcdt   = 16380;
-    t->perrb.hi  = perrb_hi;
-    t->perrb.lo  = 0;
-    t->omegac[1] = 0;
-    t->pcmd      = 0;
-    t->stroker   = 0;
-    t->pcduypst  = agc_erase_cduy(); /* zero CDU rates  */
-    t->pcduzpst  = agc_erase_cduz();
+    t->t5tvcdt    = 16380;
+    t->perrb.hi   = perrb_hi;
+    t->perrb.lo   = 0;
+    t->omegac[1]  = 0;
+    t->pcmd       = 0;
+    t->stroker    = 0;
+    t->pcduypst   = agc_erase_cduy();               /* zero CDU rates  */
+    t->pcduzpst   = agc_erase_cduz();
 
     for (int i = 0; i < 6; i++)
     { /* filter memory   */
@@ -153,9 +153,9 @@ static void test_tvc_step(void)
 
     tvc_setup(1000);
     CHECK(agc_task_pitchdap() == AGC_STATUS_OK);
-    CHECK(t->pcmd < 0); /* sign change     */
+    CHECK(t->pcmd < 0);         /* sign change     */
     CHECK(t->pcmd > -253);
-    CHECK(t->tvcphase == 2);              /* pitch copycycle */
+    CHECK(t->tvcphase == 2);    /* pitch copycycle */
     CHECK(t->perrb.hi == 1000); /* integrator held */
     CHECK(agc_rupt_t5_task() != AGC_TASK_NONE);
 
@@ -167,7 +167,7 @@ static void test_tvc_step(void)
      * 4096 x N10 x N20 x N30 x VARK x 4 = 122 < ACTSAT. TMP3 (second
      * cascade) = 1000 -> DAP2 = 1125, DAP3 = 562, CMDTMP = -1072. A large
      * TMP1 would overflow DAP1 (DAS wraps as in the AGC), so use TMP3.   */
-    tvc_setup(4000); /* large error     */
+    tvc_setup(4000);        /* large error     */
     agc_csm_dap_tvc()->ptmp[2].hi = 1000;
     CHECK(agc_task_pitchdap() == AGC_STATUS_OK);
     CHECK(t->pcmd == -253); /* ACTSAT limit    */
@@ -192,12 +192,12 @@ static void test_stroke(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
 
-    t->caddy   = -10;       /* TSTINIT: -FCADDY */
+    t->caddy   = -10;                  /* TSTINIT: -FCADDY */
     t->n       = -10;
     t->revs    = 3;                    /* FREVS           */
     t->card    = -4;                   /* -FCARD          */
     t->stroker = 5;                    /* ESTROKER        */
-    int pos = stroke_bursts(80, 0); /* set 1           */
+    int pos    = stroke_bursts(80, 0); /* set 1           */
 
     CHECK(pos == 0);
     CHECK(t->card == -3);
@@ -208,7 +208,7 @@ static void test_stroke(void)
     CHECK(t->stroker == 5);
     pos = stroke_bursts(1, pos);
     CHECK(pos == 0);
-    CHECK(t->stroker == 0); /* STROKILL        */
+    CHECK(t->stroker == 0);                   /* STROKILL        */
 }
 
 static void test_rolldap(void)
@@ -216,12 +216,12 @@ static void test_rolldap(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc();
 
     t->oganow     = 0;
-    t->ogapast    = 0;    /* OGARATE 0       */
+    t->ogapast    = 0;                               /* OGARATE 0       */
     t->one_conacc = 1000;
     t->rollfire   = 0;
     t->temreg     = 0;
     t->rollword   = 0;
-    t->ogaerr     = 455;    /* 10 deg, B+0 rev */
+    t->ogaerr     = 455;                             /* 10 deg, B+0 rev */
     CHECK(agc_task_rolldap() == AGC_STATUS_OK);
     CHECK(t->rollfire < 0);                          /* -TORQUE         */
     CHECK(t->temreg > 24);                           /* > TMINFIRE      */
@@ -231,7 +231,7 @@ static void test_rolldap(void)
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
 
     t->temreg = 0;
-    t->ogaerr = 100; /* inside 5 deg DB */
+    t->ogaerr = 100;         /* inside 5 deg DB */
     CHECK(agc_task_rolldap() == AGC_STATUS_OK);
     CHECK(t->rollfire == 0); /* coast           */
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
@@ -245,6 +245,7 @@ static void test_massprop(void)
     agc_erase_set_csmmass(5000);               /* kg, B+16        */
     agc_erase_set_lemmass(0);
     agc_csm_dap_massprop();
+
     /* TEMP333 = 2 (5000 - 3851) = 2298 > 0: slopes VARST3, 4; VARST5.   */
     agc_sp_t d   = 2298;
     agc_sp_t ixx = (agc_sp_t) (398 + 2 * ((394 * d) >> 14));
@@ -260,9 +261,7 @@ int main(void)
     test_stroke();
     test_rolldap();
     test_massprop();
-    (void) printf(
-        "test_csm_dap: %d checks, %d failures, %d assertion reports\n",
-        g_checks, g_failures, g_assert_reports);
+    (void) printf("test_csm_dap: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1);
 }

@@ -53,18 +53,16 @@ static int g_checks;         /* checks run                        */
 static int g_failures;       /* checks failed                     */
 static int g_assert_reports; /* AGC_ASSERT failures reported      */
 
-static const double MU  = 3.986032e10; /* m^3/cs^2 (RTMURTE^2)     */
-static const double DEG = 1.0 / 360.0; /* revs per degree          */
+static const double MU  = 3.986032e10;      /* m^3/cs^2 (RTMURTE^2)     */
+static const double DEG = 1.0 / 360.0;      /* revs per degree          */
 static const double PI  = 3.14159265358979; /* pi                  */
 
 static void   check(bool ok, int line, const char *text);
 static double vnorm(const double v[3]);
-static double fpa_at_radius(const double r1[3], const double v[3],
-                            double r);
-static void set_vec(agc_vec_t *out, const double v[3], int scale);
-static void get_vec(double out[3], agc_vec_t v, int scale);
-static void start_state(const double r1[3], const double v1[3],
-                        agc_dp_t rtedvd);
+static double fpa_at_radius(const double r1[3], const double v[3], double r);
+static void   set_vec(agc_vec_t *out, const double v[3], int scale);
+static void   get_vec(double out[3], agc_vec_t v, int scale);
+static void   start_state(const double r1[3], const double v1[3], agc_dp_t rtedvd);
 static double model_dv(double xk, double rcon);
 static void   test_coplanar_conic_return(void);
 static void   test_time_critical_return(void);
@@ -87,9 +85,7 @@ int main(void)
     test_time_critical_return();
     test_augekugl();
     test_xt1lim();
-    (void) printf(
-        "test_return_to_earth: %d checks, %d failures, %d assert reports\n",
-        g_checks, g_failures, g_assert_reports);
+    (void) printf("test_return_to_earth: %d checks, %d failures, %d assert reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
 }
@@ -177,12 +173,10 @@ static double vnorm(const double v[3])
 static double fpa_at_radius(const double r1[3], const double v[3], double r)
 {
     double h[3] = {r1[1] * v[2] - r1[2] * v[1], r1[2] * v[0] - r1[0] * v[2],
-                   r1[0] * v[1] - r1[1] * v[0]}; /* r1 x v, m^2/cs   */
-    double en = /* specific energy, m^2/cs^2 */
-                0.5 * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) -
-                MU / vnorm(r1);
-    double vr = sqrt(2.0 * (en + MU / r)); /* speed at r, m/cs        */
-    double c  = vnorm(h) / (r * vr);       /* cos(gamma)              */
+                   r1[0] * v[1] - r1[1] * v[0]};                                    /* r1 x v, m^2/cs   */
+    double en   = 0.5 * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) - MU / vnorm(r1); /* specific energy, m^2/cs^2 */
+    double vr   = sqrt(2.0 * (en + MU / r));                                        /* speed at r, m/cs        */
+    double c    = vnorm(h) / (r * vr);                                              /* cos(gamma)              */
 
     if (c > 1.0)
     {
@@ -250,22 +244,20 @@ static void get_vec(double out[3], agc_vec_t v, int scale)
  *
  * RETURNS: none
  **********************************************************************/
-static void start_state(const double r1[3], const double v1[3],
-                        agc_dp_t rtedvd)
+static void start_state(const double r1[3], const double v1[3], agc_dp_t rtedvd)
 {
     rte_erasable_t *rs = rte_state(); /* P37 erasables           */
     agc_interp_t   *ip = rte_ip();    /* P37 interpreter state   */
     agc_vec_t       r;                /* R(T1)/, m B29           */
     agc_vec_t       v;                /* V(T1)/, m/cs B7         */
 
-    (void) memset(rs, 0, sizeof (*rs)); /* returns rs */
+    (void) memset(rs, 0, sizeof (*rs));               /* returns rs */
     agc_interp_init(ip);
     set_vec(&r, r1, 29);
     set_vec(&v, v1, 7);
     rs->rtedvd   = rtedvd;
     rs->rtegam2d = agc_dp_from_double(-6.5 * DEG, 0); /* -6.5 deg     */
-    CHECK(rte_initial_vectors(ip, rs, r, v, agc_dp_from_double(1.0e6, 28), 0) ==
-          AGC_STATUS_OK);
+    CHECK(rte_initial_vectors(ip, rs, r, v, agc_dp_from_double(1.0e6, 28), 0) == AGC_STATUS_OK);
     CHECK(rte_conic_setup(ip, rs) == AGC_STATUS_OK);
     CHECK(rte_conic_search(ip, rs, 0) == AGC_STATUS_OK);
 }
@@ -286,14 +278,12 @@ static void start_state(const double r1[3], const double v1[3],
  **********************************************************************/
 static double model_dv(double xk, double rcon)
 {
-    const rte_erasable_t *rs  = rte_state();             /* X(T2)     */
-    const double          r1  = 3.0e8;                   /* R(T1), m  */
-    double                lam = r1 / rcon;               /* LAMBDA    */
-    double                b1  = 1.0 + pow(agc_dp_to_double(rs->x_t2, 0),
-                                          2); /* BETA1 */
-    double p = /* PCON, m */
-               2.0 * r1 * (lam - 1.0) / (b1 * lam * lam - 1.0 - xk * xk);
-    double s = sqrt(MU * p) / r1; /* THETA3 PCON^.5, m/cs */
+    const rte_erasable_t *rs  = rte_state();                                               /* X(T2)     */
+    const double          r1  = 3.0e8;                                                     /* R(T1), m  */
+    double                lam = r1 / rcon;                                                 /* LAMBDA    */
+    double                b1  = 1.0 + pow(agc_dp_to_double(rs->x_t2, 0), 2);               /* BETA1 */
+    double                p   = 2.0 * r1 * (lam - 1.0) / (b1 * lam * lam - 1.0 - xk * xk); /* PCON, m */
+    double                s   = sqrt(MU * p) / r1;                                         /* THETA3 PCON^.5, m/cs */
 
     return (hypot(s * xk + 3.0, s - 6.0)); /* |V2 - V1|, V1 = (-3, 6) */
 }
@@ -310,32 +300,28 @@ static double model_dv(double xk, double rcon)
  **********************************************************************/
 static void test_coplanar_conic_return(void)
 {
-    const rte_erasable_t *rs    = rte_state();             /* P37 erasables */
-    const double          r1[3] = {3.0e8, 0.0, 0.0};       /* m             */
-    const double          v1[3] = {-3.0, 6.0, 0.0};        /* m/cs          */
-    double                v2[3];                           /* V2(T1), m/cs  */
-    double                rcon;                            /* RCON, m       */
-    double                gam;                             /* entry, deg    */
-    double                dv;                              /* DV, m/cs      */
-    double                x;                               /* X(T1)         */
-    double                best = 1e30;                     /* min DV, m/cs  */
-    int                   k;                               /* step          */
+    const rte_erasable_t *rs    = rte_state();       /* P37 erasables */
+    const double          r1[3] = {3.0e8, 0.0, 0.0}; /* m             */
+    const double          v1[3] = {-3.0, 6.0, 0.0};  /* m/cs          */
+    double                v2[3];                     /* V2(T1), m/cs  */
+    double                rcon;                      /* RCON, m       */
+    double                gam;                       /* entry, deg    */
+    double                dv;                        /* DV, m/cs      */
+    double                x;                         /* X(T1)         */
+    double                best  = 1e30;              /* min DV, m/cs  */
+    int                   k;                         /* step          */
 
     start_state(r1, v1, 0); /* minimum fuel      */
     get_vec(v2, rs->v2_t1v, 7);
     rcon = agc_dp_to_double(rs->rcon, 29);
     gam  = fpa_at_radius(r1, v2, rcon);
     dv   = agc_dp_to_double(rs->dv, 7);
-    (void) printf(
-        "conic: RCON %.0f m, V2 (%.4f %.4f %.4f) m/cs, DV %.4f m/cs, "
-        "gamma %.3f deg, X(T2) %.5f, T12 %.0f s, iterations %d\n",
-        rcon, v2[0], v2[1], v2[2], dv, gam, agc_dp_to_double(rs->x_t2, 0),
-        agc_dp_to_double(rs->t12, 28) / 100.0, rs->nn1a + RTE_CONIC_PASSES);
+    (void) printf("conic: RCON %.0f m, V2 (%.4f %.4f %.4f) m/cs, DV %.4f m/cs, " "gamma %.3f deg, X(T2) %.5f, T12 %.0f s, iterations %d\n", rcon, v2[0], v2[1], v2[2], dv, gam, agc_dp_to_double(rs->x_t2, 0), agc_dp_to_double(rs->t12, 28) / 100.0, rs->nn1a + RTE_CONIC_PASSES);
     CHECK(rcon > 6.47e6 && rcon < 6.52e6);
     CHECK(fabs(gam + 6.5) < 0.05);
     CHECK(fabs(v2[2]) < 1e-6);
-    CHECK(fabs(agc_dp_to_double(rs->x_t2, 0) - tan(-6.5 * PI / 180.0)) <
-          2e-3);
+    CHECK(fabs(agc_dp_to_double(rs->x_t2, 0) - tan(-6.5 * PI / 180.0)) < 2e-3);
+
     /* minimum DV along X(T1): a step either way costs more (double model) */
     x = agc_dp_to_double(rs->x_t1, 5);
     CHECK(fabs(model_dv(x, rcon) - dv) < 1e-3 * dv);
@@ -392,23 +378,18 @@ static void test_time_critical_return(void)
  **********************************************************************/
 static void test_augekugl(void)
 {
-    agc_interp_t *ip     = rte_ip();                   /* interpreter   */
-    agc_dp_t      phie   = 0;                          /* PHIE, revs B0 */
-    agc_dp_t      te     = 0;                          /* TE, cs B28    */
-    double        v      = 36000.0 * 0.3048 / 100.0;   /* m/cs          */
+    agc_interp_t *ip     = rte_ip();                             /* interpreter   */
+    agc_dp_t      phie   = 0;                                    /* PHIE, revs B0 */
+    agc_dp_t      te     = 0;                                    /* TE, cs B28    */
+    double        v      = 36000.0 * 0.3048 / 100.0;             /* m/cs          */
     double        k2     = 2.4 + 0.000285 * (36000.0 - 32000.0); /* deg */
-    double        phi_nm = 2400.0 / (6.5 - k2);        /* fit range, NM */
+    double        phi_nm = 2400.0 / (6.5 - k2);                  /* fit range, NM */
 
     agc_interp_init(ip);
-    CHECK(rte_augekugl(ip, agc_dp_from_double(v, 7),
-                       agc_dp_from_double(6.5 * DEG, 0), &phie,
-                       &te) == AGC_STATUS_OK);
-    (void) printf("augekugl: PHIE %.2f NM (fit %.2f), TE %.1f s\n",
-                  agc_dp_to_double(phie, 0) * 21600.0, phi_nm,
-                  agc_dp_to_double(te, 28) / 100.0);
+    CHECK(rte_augekugl(ip, agc_dp_from_double(v, 7), agc_dp_from_double(6.5 * DEG, 0), &phie, &te) == AGC_STATUS_OK);
+    (void) printf("augekugl: PHIE %.2f NM (fit %.2f), TE %.1f s\n", agc_dp_to_double(phie, 0) * 21600.0, phi_nm, agc_dp_to_double(te, 28) / 100.0);
     CHECK(fabs(agc_dp_to_double(phie, 0) * 21600.0 - phi_nm) < 1.0);
-    CHECK(fabs(agc_dp_to_double(te, 28) - agc_dp_to_double(phie, 0) * 7.2e5) <
-          2.0);
+    CHECK(fabs(agc_dp_to_double(te, 28) - agc_dp_to_double(phie, 0) * 7.2e5) < 2.0);
 }
 
 /**********************************************************************
@@ -425,9 +406,6 @@ static void test_xt1lim(void)
 {
     agc_dp_t x = 0; /* X(T1)LIM, B5 */
 
-    CHECK(agc_return_to_earth_xt1lim(
-              agc_dp_from_double(1.4e7, 30), agc_dp_from_double(0.7e7, 29),
-              agc_dp_from_double(0.7e7, 29), agc_dp_from_double(5.0, 9),
-              &x) == AGC_STATUS_OK);
+    CHECK(agc_return_to_earth_xt1lim(agc_dp_from_double(1.4e7, 30), agc_dp_from_double(0.7e7, 29), agc_dp_from_double(0.7e7, 29), agc_dp_from_double(5.0, 9), &x) == AGC_STATUS_OK);
     CHECK(fabs(agc_dp_to_double(x, 5) - 2.0) < 1e-4);
 }

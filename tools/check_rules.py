@@ -52,8 +52,9 @@ def check_file(path):
             HARD.append(f'{path}:{i}: rule 9: function pointer')
         if re.search(r'\*\*\s*[A-Za-z_]', s) and not s.startswith(('/*', '*', '//')):
             HARD.append(f'{path}:{i}: rule 9: double dereference')
-        if 'AGC_ASSERT(' in s:
-            n_asserts += 1
+        # Count every assertion: one-statement-per-line formatting puts
+        # `!AGC_ASSERT(a) || !AGC_ASSERT(b)` on one line (format2).
+        n_asserts += len(re.findall(r'\bAGC_ASSERT\(', s))
         if in_func is None:
             m = FUNC_RE.match(s)
             if m and m.group(1) not in C_KEYWORDS and not s.startswith(('#', 'typedef', 'return')) and path.endswith('.c'):

@@ -39,7 +39,7 @@
 #include "agc/programs/rendezvous.h"
 
 #define WORD15         077777u
-#define BIT7           000100u /* CHAN13 bit 7: downlink word order code   */
+#define BIT7           000100u    /* CHAN13 bit 7: downlink word order code   */
 #define LOW8           000377u
 #define PRIO34         034000u    /* DUMPLOC dump counter, bits 12-14         */
 #define ERASID_CSM     001777u    /* ERASID EQUALS LOW10 (Comanche)           */
@@ -69,15 +69,15 @@ typedef struct tm_cursor
 } tm_cursor_t;
 
 static tm_phase_t    dntmgoto = TM_PHASE1;
-static int           dnlstcod;  /* DNLSTCOD, B(1)PRM list code      */
-static uint16_t      agsword;   /* AGSWORD (LM): saved DNLSTCOD     */
-static uint16_t      dumpcnt;   /* DUMPCNT, B(1)PRM                 */
-static uint16_t      dumploc;   /* DUMPLOC: dump counter + ECADR    */
-static tm_cursor_t   ctlist;    /* CTLIST                           */
-static tm_cursor_t   sublist;   /* SUBLIST                          */
-static agc_dn_item_t dn_item;   /* DNECADR: item of the nDNADR      */
-static int           dn_offset; /*   its next SP-word offset        */
-static int           dn_left;   /*   DP words still to send (> 0)   */
+static int           dnlstcod;                 /* DNLSTCOD, B(1)PRM list code      */
+static uint16_t      agsword;                  /* AGSWORD (LM): saved DNLSTCOD     */
+static uint16_t      dumpcnt;                  /* DUMPCNT, B(1)PRM                 */
+static uint16_t      dumploc;                  /* DUMPLOC: dump counter + ECADR    */
+static tm_cursor_t   ctlist;                   /* CTLIST                           */
+static tm_cursor_t   sublist;                  /* SUBLIST                          */
+static agc_dn_item_t dn_item;                  /* DNECADR: item of the nDNADR      */
+static int           dn_offset;                /*   its next SP-word offset        */
+static int           dn_left;                  /*   DP words still to send (> 0)   */
 static uint16_t      dntmbuff[DNTMBUFF_WORDS]; /* DNTMBUFF snapshot buffer    */
 
 /* ---- word images ------------------------------------------------------- */
@@ -171,22 +171,22 @@ static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
     switch ((int) item)
     {
         case AGC_DN_RN:
-            v = agc_erase_rn();
+            v   = agc_erase_rn();
             break;
         case AGC_DN_VN:
-            v = agc_erase_vn();
+            v   = agc_erase_vn();
             break;
         case AGC_DN_DELV:
-            v = agc_erase_delv();
+            v   = agc_erase_delv();
             break;
         case AGC_DN_VGTIG:
-            v = agc_erase_vgtig();
+            v   = agc_erase_vgtig();
             break;
         case AGC_DN_DELVSLV:
-            v = agc_rendz_erasable()->delvlvc; /* DELVSLV = DELVLVC */
+            v   = agc_rendz_erasable()->delvlvc; /* DELVSLV = DELVLVC */
             break;
         case AGC_DN_RLS:
-            v = agc_erase_rls();
+            v   = agc_erase_rls();
             break;
         case AGC_DN_PIPTIME:
             vec = false;
@@ -237,14 +237,10 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
     switch ((int) item)
     {
         case AGC_DN_TIME2:
-            *w = (k == 0) ? sp_word(agc_erase_time2()) :
-                 (k == 1) ? sp_word(agc_erase_time1()) :
-                 0u;
+            *w = (k == 0) ? sp_word(agc_erase_time2()) : (k == 1) ? sp_word(agc_erase_time1()) : 0u;
             break;
         case AGC_DN_STATE:
-            *w = (k < (lm ? AGC_FLAGWORDS_LM : AGC_FLAGWORDS_CSM)) ?
-                 agc_flagword_get(k) :
-                 0u;
+            *w = (k < (lm ? AGC_FLAGWORDS_LM : AGC_FLAGWORDS_CSM)) ? agc_flagword_get(k) : 0u;
             break;
         case AGC_DN_DSPTAB:
             *w = (k < 12) ? agc_erase_dsptab(k) : 0u;
@@ -259,9 +255,7 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
             *w = counter_word(4 + k);
             break;
         case AGC_DN_IMODES30:
-            *w = (k == 0) ? agc_erase_imodes30() :
-                 (k == 1) ? agc_erase_imodes33() :
-                 0u;
+            *w = (k == 0) ? agc_erase_imodes30() : (k == 1) ? agc_erase_imodes33() : 0u;
             break;
         case AGC_DN_OPTMODES:
             *w = (k == 0 && !lm) ? agc_erase_optmodes() : 0u;
@@ -271,22 +265,16 @@ static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
             *w = (lm && k < 2) ? agc_flagword_get(12 + k) : 0u;
             break;
         case AGC_DN_LEMMASS:
-            *w = (k == 0) ? sp_word(agc_erase_lemmass()) :
-                 (k == 1) ? sp_word(agc_erase_csmmass()) :
-                 0u;
+            *w = (k == 0) ? sp_word(agc_erase_lemmass()) : (k == 1) ? sp_word(agc_erase_csmmass()) : 0u;
             break;
         case AGC_DN_DAPDATR1:
-            *w = (k == 0) ? agc_erase_dapdatr1() :
-                 (k == 1) ? agc_erase_dapdatr2() :
-                 0u;
+            *w = (k == 0) ? agc_erase_dapdatr1() : (k == 1) ? agc_erase_dapdatr2() : 0u;
             break;
         case AGC_DN_CADRFLSH:
             *w = (k >= 3 && k < 6) ? agc_erase_failreg(k - 3) : 0u;
             break;
         case AGC_DN_REDOCTR:
-            *w = (k == 0) ? agc_restart_redoctr() :
-                 (k < 4) ? agc_erase_thetad(k - 1) :
-                 0u;
+            *w = (k == 0) ? agc_restart_redoctr() : (k < 4) ? agc_erase_thetad(k - 1) : 0u;
             break;
         case AGC_DN_COMPNUMB:
             *w = agc_uplink_update_dnword(k);
@@ -320,27 +308,16 @@ static bool item_word_lm_dap(agc_dn_item_t item, int k, uint16_t *w)
     switch ((int) item)
     {
         case AGC_DN_CDUXD:
-            *w = (k == 0) ? agc_erase_cduxd() :
-                 (k == 1) ? agc_erase_cduyd() :
-                 (k == 2) ? agc_erase_cduzd() :
-                 0u;
+            *w = (k == 0) ? agc_erase_cduxd() : (k == 1) ? agc_erase_cduyd() : (k == 2) ? agc_erase_cduzd() : 0u;
             break;
         case AGC_DN_OMEGAP:
-            *w = (k == 0) ? sp_word(agc_erase_omegap()) :
-                 (k == 1) ? sp_word(agc_erase_omegaq()) :
-                 (k == 2) ? sp_word(agc_erase_omegar()) :
-                 0u;
+            *w = (k == 0) ? sp_word(agc_erase_omegap()) : (k == 1) ? sp_word(agc_erase_omegaq()) : (k == 2) ? sp_word(agc_erase_omegar()) : 0u;
             break;
         case AGC_DN_OMEGAPD:
-            *w = (k == 0) ? sp_word(agc_erase_omegapd()) :
-                 (k == 1) ? sp_word(agc_erase_omegaqd()) :
-                 (k == 2) ? sp_word(agc_erase_omegard()) :
-                 0u;
+            *w = (k == 0) ? sp_word(agc_erase_omegapd()) : (k == 1) ? sp_word(agc_erase_omegaqd()) : (k == 2) ? sp_word(agc_erase_omegard()) : 0u;
             break;
         case AGC_DN_ALPHAQ:
-            *w = (k == 0) ? sp_word(agc_erase_alphaq()) :
-                 (k == 1) ? sp_word(agc_erase_alphar()) :
-                 0u;
+            *w = (k == 0) ? sp_word(agc_erase_alphaq()) : (k == 1) ? sp_word(agc_erase_alphar()) : 0u;
             break;
         default:
             return (false);
@@ -359,8 +336,7 @@ static uint16_t item_word(agc_dn_item_t item, int k)
 
     uint16_t w = 0;
 
-    if (item == AGC_DN_R_OTHER || item == AGC_DN_V_OTHER ||
-        item == AGC_DN_T_OTHER)
+    if (item == AGC_DN_R_OTHER || item == AGC_DN_V_OTHER || item == AGC_DN_T_OTHER)
     {
         /* The other vehicle's state vector words (R-OTHER, V-OTHER, T-OTHER).     */
         agc_state_vector_t sv;
@@ -397,8 +373,7 @@ static uint16_t item_word(agc_dn_item_t item, int k)
         return (vec_word(m.row[k / 6], k % 6));
     }
 
-    if (item_word_state(item, k, &w) || item_word_block(item, k, &w) ||
-        item_word_lm_dap(item, k, &w))
+    if (item_word_state(item, k, &w) || item_word_block(item, k, &w) || item_word_lm_dap(item, k, &w))
     {
         return ((uint16_t) (w & WORD15));
     }
@@ -452,12 +427,10 @@ static agc_status_t list_lookup(bool sub, int ref, agc_dn_list_t *out)
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        return (sub ? agc_dnlist_lm_sublist(ref, out) :
-                agc_dnlist_lm_control(ref, out));
+        return (sub ? agc_dnlist_lm_sublist(ref, out) : agc_dnlist_lm_control(ref, out));
     }
 
-    return (sub ? agc_dnlist_csm_sublist(ref, out) :
-            agc_dnlist_csm_control(ref, out));
+    return (sub ? agc_dnlist_csm_sublist(ref, out) : agc_dnlist_csm_control(ref, out));
 }
 
 /* Take the next entry of a list (NEXTINCL / NEXTINSL): advance, and mark
@@ -508,8 +481,7 @@ static agc_status_t fetch2wd(void)
  * into DNTMBUFF and send the last one now.                                */
 static agc_status_t snapshot(const agc_dn_list_t *sub)
 {
-    if (!AGC_ASSERT(sub != NULL && sub->count >= 1) ||
-        !AGC_ASSERT(2 * (sub->count - 1) <= DNTMBUFF_WORDS))
+    if (!AGC_ASSERT(sub != NULL && sub->count >= 1) || !AGC_ASSERT(2 * (sub->count - 1) <= DNTMBUFF_WORDS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -532,8 +504,7 @@ static agc_status_t snapshot(const agc_dn_list_t *sub)
     sublist.active = false; /* SUBLIST, DNECADR = -1    */
     dn_left        = 0;
 
-    return (dntmexit(item_word((agc_dn_item_t) last.ref, last.offset),
-                     item_word((agc_dn_item_t) last.ref, last.offset + 1)));
+    return (dntmexit(item_word((agc_dn_item_t) last.ref, last.offset), item_word((agc_dn_item_t) last.ref, last.offset + 1)));
 }
 
 /* DODNPTR: start a sublist.                                               */
@@ -552,9 +523,9 @@ static agc_status_t dodnptr(int ref)
         return (snapshot(&sub));
     }
 
-    sublist.list   = sub;   /* DOSUBLST                 */
-    sublist.next   = 0;
-    sublist.active = true;
+    sublist.list     = sub; /* DOSUBLST                 */
+    sublist.next     = 0;
+    sublist.active   = true;
     agc_dn_entry_t e = cursor_take(&sublist);
 
     if (!AGC_ASSERT(e.op != AGC_DN_OP_PTR)) /* sublists do not nest     */
@@ -564,8 +535,7 @@ static agc_status_t dodnptr(int ref)
 
     if (e.op == AGC_DN_OP_CHAN)
     {
-        return (dntmexit(agc_chan_read((int) e.ref),
-                         agc_chan_read((int) e.ref + 1)));
+        return (dntmexit(agc_chan_read((int) e.ref), agc_chan_read((int) e.ref + 1)));
     }
 
     dn_item   = (agc_dn_item_t) e.ref;
@@ -595,14 +565,13 @@ static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
     }
 
     if (e.op == AGC_DN_OP_CHAN)
-    {                                   /* DODNCHAN: channels n,n+1 */
+    { /* DODNCHAN: channels n,n+1 */
         if (!AGC_ASSERT(e.ref != 0u)) /* 'DNCHAN 0' cannot be used */
         {
             return (AGC_STATUS_BAD_ARG);
         }
 
-        return (dntmexit(agc_chan_read((int) e.ref),
-                         agc_chan_read((int) e.ref + 1)));
+        return (dntmexit(agc_chan_read((int) e.ref), agc_chan_read((int) e.ref + 1)));
     }
 
     dn_item   = (agc_dn_item_t) e.ref;
@@ -674,7 +643,7 @@ static agc_status_t dnphase1(void)
 static agc_status_t dndump_id(void)
 {
     dntmgoto = TM_DUMP_LOC;
-    bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM);
+    bool lm  = (agc_state_vehicle() == AGC_VEHICLE_LM);
 
     if (!AGC_ASSERT((dumploc & LOW8) == 0u))
     {
@@ -782,8 +751,7 @@ agc_status_t agc_telem_restart(void)
 /* TS DNLSTCOD: select the list sent from the next NEWLIST on.            */
 void agc_telem_select_list(int code)
 {
-    int n = (agc_state_vehicle() == AGC_VEHICLE_LM) ? AGC_DNLIST_LM_COUNT :
-            AGC_DNLIST_CSM_COUNT;
+    int n = (agc_state_vehicle() == AGC_VEHICLE_LM) ? AGC_DNLIST_LM_COUNT : AGC_DNLIST_CSM_COUNT;
 
     if (!AGC_ASSERT(code >= 0 && code < n))
     {
@@ -914,9 +882,7 @@ agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words)
     {
         agc_dn_entry_t e = list.entry[i];
 
-        n += (e.op == AGC_DN_OP_PTR) ? sublist_words((int) e.ref) :
-             (e.op == AGC_DN_OP_CHAN) ? 1 :
-             (int) e.op;
+        n += (e.op == AGC_DN_OP_PTR) ? sublist_words((int) e.ref) : (e.op == AGC_DN_OP_CHAN) ? 1 : (int) e.op;
     }
 
     *words = n;

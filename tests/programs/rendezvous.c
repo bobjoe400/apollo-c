@@ -81,8 +81,7 @@ int main(void)
     test_orbit_parameters_eccentric();
     test_periapo_circular();
     test_csi_coplanar_circular();
-    (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks,
-                  g_failures);
+    (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks, g_failures);
 
     if (g_failures != 0)
     {
@@ -155,8 +154,7 @@ static void check(bool ok, int line, const char *text)
  **********************************************************************/
 static agc_vec_t pos(double x, double y, double z)
 {
-    return (agc_vec_make(agc_dp_from_double(x, 29), agc_dp_from_double(y, 29),
-                         agc_dp_from_double(z, 29)));
+    return (agc_vec_make(agc_dp_from_double(x, 29), agc_dp_from_double(y, 29), agc_dp_from_double(z, 29)));
 }
 
 /**********************************************************************
@@ -176,8 +174,7 @@ static agc_vec_t pos(double x, double y, double z)
  **********************************************************************/
 static agc_vec_t vel(double x, double y, double z)
 {
-    return (agc_vec_make(agc_dp_from_double(x, 7), agc_dp_from_double(y, 7),
-                         agc_dp_from_double(z, 7)));
+    return (agc_vec_make(agc_dp_from_double(x, 7), agc_dp_from_double(y, 7), agc_dp_from_double(z, 7)));
 }
 
 /**********************************************************************
@@ -226,9 +223,8 @@ static void test_orbit_parameters_eccentric(void)
     agc_interp_init(&ip);
     agc_orbit_params_in_t in; /* SR30.1 inputs */
 
-    in.rone = pos(R0, 0.0, 0.0);
-    CHECK(agc_orbit_params_select_body(false, agc_dp_from_double(RPAD, 29),
-                                       &in) == AGC_STATUS_OK);
+    in.rone         = pos(R0, 0.0, 0.0);
+    CHECK(agc_orbit_params_select_body(false, agc_dp_from_double(RPAD, 29), &in) == AGC_STATUS_OK);
     const double k2 = 1.0404;               /* (v / v circular)^2 */
     const double ra = R0 * k2 / (2.0 - k2); /* apogee radius, m   */
 
@@ -246,10 +242,11 @@ static void test_orbit_parameters_eccentric(void)
 
     CHECK(dp_absdiff(out.hperx, h) < 400);
     CHECK(out.neg_tper <= 0);
+
     /* MAXCHK: 20000 NM is shown as 9999.9 NM. */
     agc_dp_t big = agc_dp_from_double(20000.0 * 1852.0, 29); /* m 2^29 */
-    agc_dp_t lim = agc_orbit_params_maxchk(&ip, big);         /* m 2^29 */
-    agc_dp_t max = agc_dp_from_double(9999.9 * 1852.0, 29);   /* m 2^29 */
+    agc_dp_t lim = agc_orbit_params_maxchk(&ip, big);        /* m 2^29 */
+    agc_dp_t max = agc_dp_from_double(9999.9 * 1852.0, 29);  /* m 2^29 */
 
     CHECK(dp_absdiff(lim, max) < 2);
     CHECK(agc_orbit_params_maxchk(&ip, h) == h);
@@ -280,33 +277,33 @@ static agc_status_t csi_case(double th, agc_dp_t *delvcsi)
 
     agc_rendz_reset(rz);
     CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
-    double ra = R0;                  /* active radius, m  */
+    double ra = R0;                 /* active radius, m  */
     double rp = R0 + 15.0 * 1852.0; /* passive radius, m */
 
-    rz->ract1 = pos(ra, 0.0, 0.0);
-    rz->vact1 = vel(0.0, sqrt(MU / ra), 0.0);
+    rz->ract1      = pos(ra, 0.0, 0.0);
+    rz->vact1      = vel(0.0, sqrt(MU / ra), 0.0);
     double vp      = sqrt(MU / rp);          /* passive speed, m/cs */
     double ttpi_cs = 2.0 * 3600.0 * 100.0;   /* TPI two hours on   */
     double th3     = th + vp / rp * ttpi_cs; /* passive at TTPI     */
 
-    rz->rpass1 = pos(rp * cos(th), rp * sin(th), 0.0); /* passive at TCSI */
-    rz->vpass1 = vel(-vp * sin(th), vp * cos(th), 0.0);
-    rz->rpass2 = rz->rpass1;
-    rz->vpass2 = rz->vpass1;
-    rz->rpass3 = pos(rp * cos(th3), rp * sin(th3), 0.0); /* P32/P72B INTINT */
-    rz->vpass3 = vel(-vp * sin(th3), vp * cos(th3), 0.0);
-    rz->ract2  = rz->ract1;
-    rz->vact2  = rz->vact1;
-    rz->up1    = agc_vec_make(0, 0, AGC_DP_HALF); /* +z, 2^1     */
-    rz->tcsi   = 0;
-    rz->nn     = 1;
-    rz->elev   = agc_dp_from_double(26.6 / 360.0, 0);
+    rz->rpass1         = pos(rp * cos(th), rp * sin(th), 0.0);   /* passive at TCSI */
+    rz->vpass1         = vel(-vp * sin(th), vp * cos(th), 0.0);
+    rz->rpass2         = rz->rpass1;
+    rz->vpass2         = rz->vpass1;
+    rz->rpass3         = pos(rp * cos(th3), rp * sin(th3), 0.0); /* P32/P72B INTINT */
+    rz->vpass3         = vel(-vp * sin(th3), vp * cos(th3), 0.0);
+    rz->ract2          = rz->ract1;
+    rz->vact2          = rz->vact1;
+    rz->up1            = agc_vec_make(0, 0, AGC_DP_HALF);        /* +z, 2^1     */
+    rz->tcsi           = 0;
+    rz->nn             = 1;
+    rz->elev           = agc_dp_from_double(26.6 / 360.0, 0);
     agc_erase_set_tig(0);
     agc_erase_set_ttpi(agc_dp_from_double(ttpi_cs, 28));
-    agc_sp_t     alarm = 0;                 /* ALMXIT code, unscaled */
-    agc_status_t st;                        /* CSI/A                 */
+    agc_sp_t     alarm = 0;                                      /* ALMXIT code, unscaled */
+    agc_status_t st;                                             /* CSI/A                 */
 
-    st = agc_rendz_csi_a(&ip, rz, &alarm, AGC_JOB_CSI_COMPUTE);
+    st       = agc_rendz_csi_a(&ip, rz, &alarm, AGC_JOB_CSI_COMPUTE);
     (void) printf("CSI status %d alarm %o DELVCSI %.3f fps\n", (int) st,
                   (unsigned int) alarm,
                   (double) rz->delvcsi / 2147483648.0 * 128.0 * 100.0 / 0.3048);
@@ -327,8 +324,8 @@ static agc_status_t csi_case(double th, agc_dp_t *delvcsi)
  **********************************************************************/
 static void test_csi_coplanar_circular(void)
 {
-    agc_dp_t     dv = 0;                    /* DELVCSI, m/cs 2^7 */
-    agc_status_t st = csi_case(0.02, &dv);  /* small lead        */
+    agc_dp_t     dv = 0;                   /* DELVCSI, m/cs 2^7 */
+    agc_status_t st = csi_case(0.02, &dv); /* small lead        */
 
     CHECK(st == AGC_STATUS_OK);
     CHECK(dv > 0);
@@ -355,9 +352,9 @@ static void test_periapo_circular(void)
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
-    agc_rendz_periapo_t pa;                                  /* PERIAPO1 */
-    agc_vec_t           v = vel(0.0, sqrt(MU / R0), 0.0);    /* m/cs 2^7 */
-    agc_status_t        st;                                  /* PERIAPO1 */
+    agc_rendz_periapo_t pa;                               /* PERIAPO1 */
+    agc_vec_t           v = vel(0.0, sqrt(MU / R0), 0.0); /* m/cs 2^7 */
+    agc_status_t        st;                               /* PERIAPO1 */
 
     st = agc_rendz_periapo_body_scale(&ip, rz, pos(R0, 0.0, 0.0), v, &pa);
     CHECK(st == AGC_STATUS_OK);

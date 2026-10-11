@@ -69,15 +69,14 @@ agc_status_t pin_reqdat(int inrel, pin_reqret_t step)
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
     pin_state_t         *s       = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z) ||
-        !AGC_ASSERT(step > PIN_REQ_PASS0 && step < PIN_REQ_COUNT))
+    if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z) || !AGC_ASSERT(step > PIN_REQ_PASS0 && step < PIN_REQ_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     pin_set_dspcount(rnd1[inrel - PIN_INREL_X]);
-    s->reqret     = step;
-    s->reqret_neg = true;
+    s->reqret       = step;
+    s->reqret_neg   = true;
     agc_status_t st = pin_5blank(); /* status so far */
 
     pin_flashon();
@@ -150,8 +149,8 @@ agc_status_t agc_dsky_loadlv(void)
 
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->decbrnch = 0;
-    s->loadstat = PIN_LS_DATAIN; /* CS ZERO TS LOADSTAT      */
+    s->decbrnch     = 0;
+    s->loadstat     = PIN_LS_DATAIN;         /* CS ZERO TS LOADSTAT      */
     agc_status_t st = agc_dsky_releasedsp(); /* status so far */
 
     pin_block_dspcount(PIN_VD1);
@@ -190,14 +189,13 @@ static agc_status_t pin_putcom(int k, bool *finished)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t     *s = pin_st(); /* pinball erasables */
-    agc_scale_info_t info; /* scale of the component */
+    pin_state_t     *s  = pin_st();                 /* pinball erasables */
+    agc_scale_info_t info;                          /* scale of the component */
     agc_status_t     st = pin_comp_scale(k, &info); /* status so far */
 
     if (!AGC_ASSERT(finished != NULL) || st != AGC_STATUS_OK)
     {
-        return ((st != AGC_STATUS_OK) ? /* or BAD_ARG */
-                st : AGC_STATUS_BAD_ARG);
+        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG); /* or BAD_ARG */
     }
 
     *finished = false;
@@ -221,7 +219,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
             return (pin_almcycle());
         }
 
-        agc_status_t st_octal = AGC_STATUS_OK; /* status of the octal store */
+        agc_status_t st_octal = AGC_STATUS_OK;       /* status of the octal store */
         uint16_t     word     = s_octal->xyz_oct[k]; /* octal word */
 
         if (s_octal->nntype == PIN_NNTYPE_CHAN)
@@ -233,8 +231,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
                 st_octal = pin_comp_write(k, (agc_dp_t) word);
             }
 
-            return ((st_octal == AGC_STATUS_OK) ? /* if OK */
-                    agc_dsky_loadlv() : st_octal);
+            return ((st_octal == AGC_STATUS_OK) ? agc_dsky_loadlv() : st_octal); /* if OK */
         }
 
         agc_dp_t v_octal; /* octal word, unscaled */
@@ -264,8 +261,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        return ((st_octal == AGC_STATUS_OK) ? /* store if octal ok */
-                pin_comp_write(k, v_octal) : st_octal);
+        return ((st_octal == AGC_STATUS_OK) ? pin_comp_write(k, v_octal) : st_octal); /* store if octal ok */
     } /* end if (s->decbrnch == 0u) */
 
     if (info.routine == (uint8_t) PIN_SF_HMS)
@@ -316,7 +312,7 @@ static agc_status_t pin_alldc_oc(int ncomp)
     }
 
     uint16_t dec = (uint16_t) ((s->decbrnch >> 2) & 7u); /* dec comp bits */
-    uint16_t all = (ncomp == 3) ? 7u : 6u; /* DECBRNCH bits of all comps */
+    uint16_t all = (ncomp == 3) ? 7u : 6u;               /* DECBRNCH bits of all comps */
 
     if (dec == 0u || dec == all)
     {
@@ -342,19 +338,17 @@ static agc_status_t pin_alldc_oc(int ncomp)
  **********************************************************************/
 static agc_status_t pin_putn(int first, int ncomp)
 {
-    if (!AGC_ASSERT(first >= 0 && first < 3) ||
-        !AGC_ASSERT(ncomp >= 1 && first + ncomp <= 3))
+    if (!AGC_ASSERT(first >= 0 && first < 3) || !AGC_ASSERT(ncomp >= 1 && first + ncomp <= 3))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st; /* status so far */
 
-    st = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK; /* ALLDC/OC */
-    bool finished = false; /* load ended inside PUTCOM */
+    st            = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK; /* ALLDC/OC */
+    bool finished = false;                                             /* load ended inside PUTCOM */
 
-    for (int k = first; k < first + ncomp && st == AGC_STATUS_OK && !finished;
-         k++)
+    for (int k = first; k < first + ncomp && st == AGC_STATUS_OK && !finished; k++)
     {
         st = pin_putcom(k, &finished);
     }
@@ -374,10 +368,10 @@ static agc_status_t pin_putn(int first, int ncomp)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        const pin_state_t *s     = pin_st(); /* pinball erasables */
+        const pin_state_t *s     = pin_st();      /* pinball erasables */
         uint16_t           ecadr = s->xyz_oct[0]; /* flag word ECADR (XREG) */
         uint16_t           bits  = s->xyz_oct[1]; /* YREG bits */
-        uint16_t           word  = 0; /* octal word */
+        uint16_t           word  = 0;             /* octal word */
 
         if (!AGC_ASSERT(s->nounreg == 7u))
         {
@@ -455,9 +449,7 @@ agc_status_t pin_load_verb(uint8_t verb)
     {
         s->clpass = PIN_CLPASS_NOBACK; /* set CLPASS for pass0 only */
 
-        return ((verb == 22u) ? /* BLOAD / CLOAD */
-                pin_reqdat(PIN_INREL_Y, PIN_REQ_B_Y) :
-                pin_reqdat(PIN_INREL_Z, PIN_REQ_C_Z));
+        return ((verb == 22u) ? pin_reqdat(PIN_INREL_Y, PIN_REQ_B_Y) : pin_reqdat(PIN_INREL_Z, PIN_REQ_C_Z)); /* BLOAD / CLOAD */
     }
 
     if (!pin_nountest())
@@ -472,9 +464,7 @@ agc_status_t pin_load_verb(uint8_t verb)
         return (st);
     }
 
-    return (pin_reqdat(PIN_INREL_X,
-                       (verb == 24u) ? /* ABLOAD / ABCLOAD */
-                       PIN_REQ_AB_X : PIN_REQ_ABC_X));
+    return (pin_reqdat(PIN_INREL_X, (verb == 24u) ? PIN_REQ_AB_X : PIN_REQ_ABC_X)); /* ABLOAD / ABCLOAD */
 } /* pin_load_verb */
 
 /**********************************************************************

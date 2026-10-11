@@ -90,8 +90,7 @@ static bool chan_inverted(int chan)
         return (false);
     }
 
-    return ((chan >= AGC_CHAN_FIRST_INVERTED) &&
-            (chan <= AGC_CHAN_LAST_INVERTED));
+    return ((chan >= AGC_CHAN_FIRST_INVERTED) && (chan <= AGC_CHAN_LAST_INVERTED));
 }
 
 /**********************************************************************
@@ -244,8 +243,7 @@ static void reset_flipflops(void)
         return;
     }
 
-    g_chan[AGC_CHAN_CHAN33] =
-        (uint16_t) (g_chan[AGC_CHAN_CHAN33] | AGC_CH033_FLIPFLOP_MASK);
+    g_chan[AGC_CHAN_CHAN33] = (uint16_t) (g_chan[AGC_CHAN_CHAN33] | AGC_CH033_FLIPFLOP_MASK);
 }
 
 /**********************************************************************

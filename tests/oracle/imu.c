@@ -42,17 +42,16 @@
 
 /* Prototypes: main() comes first (STYLE 4.6). */
 static agc_mat_t mat_in(const char *t, const char *name);
-static void      cmp_mat(const char *t, const char *what, const agc_mat_t *m,
-                         const char *name, long int tol);
-static void     calcgta(const char *t, long int tol);
-static void     calcga(const char *t, long int tol);
-static void     axisgen(const char *t, long int tol);
-static void     pipa(const char *t);
-static void     cdus_in(const char *t, const char *name, uint16_t c[3]);
-static agc_dp_t arate(int rateindx);
-static void     kalc(const char *t, long int tol, long int tol_am);
-static void     delcomp(const char *t, long int tol);
-static void     dcmtocdu(const char *t, long int tol);
+static void      cmp_mat(const char *t, const char *what, const agc_mat_t *m, const char *name, long int tol);
+static void      calcgta(const char *t, long int tol);
+static void      calcga(const char *t, long int tol);
+static void      axisgen(const char *t, long int tol);
+static void      pipa(const char *t);
+static void      cdus_in(const char *t, const char *name, uint16_t c[3]);
+static agc_dp_t  arate(int rateindx);
+static void      kalc(const char *t, long int tol, long int tol_am);
+static void      delcomp(const char *t, long int tol);
+static void      dcmtocdu(const char *t, long int tol);
 
 /**********************************************************************
  * AGC: none (test) -- run every test
@@ -82,6 +81,7 @@ int main(void)
     pipa("pipa_burn");
     pipa("pipa_bypass");
     pipa("pipa_carry");
+
     /* F5 residuals (review-imu): DELCOMP's 1 - cos A is the word pair
      * (1, -16336) that DMPSUB truncates by its words, DCMTOCDU shifts the
      * TP COS result, CDUTODCM's BDSU keeps MPAC+2; agc_dp_t holds values. */
@@ -147,8 +147,7 @@ static agc_mat_t mat_in(const char *t, const char *name)
  *   name  const char *       I    oracle word name
  *   tol   long int           I    tolerance, LSB
  **********************************************************************/
-static void cmp_mat(const char *t, const char *what, const agc_mat_t *m,
-                    const char *name, long int tol)
+static void cmp_mat(const char *t, const char *what, const agc_mat_t *m, const char *name, long int tol)
 {
     for (int r = 0; r < 3; r++)
     {
@@ -157,8 +156,7 @@ static void cmp_mat(const char *t, const char *what, const agc_mat_t *m,
 
         (void) snprintf(n, sizeof (n), "%s+%d", name, 6 * r);
         (void) snprintf(w, sizeof (w), "%s[%d]", what, r);
-        oracle_cmp_vec(t, w, m->row[r], oracle_out_vec(t, (r == 0) ? name : n), /* row name */
-                       tol);
+        oracle_cmp_vec(t, w, m->row[r], oracle_out_vec(t, (r == 0) ? name : n), tol); /* row name */
     }
 }
 
@@ -171,8 +169,8 @@ static void cmp_mat(const char *t, const char *what, const agc_mat_t *m,
  **********************************************************************/
 static void calcgta(const char *t, long int tol)
 {
-    agc_interp_t    ip; /* interpreter state */
-    agc_dp_t        g[3]; /* gyro angles, rev 2^0 */
+    agc_interp_t    ip;                    /* interpreter state */
+    agc_dp_t        g[3];                  /* gyro angles, rev 2^0 */
     const agc_mat_t dc = mat_in(t, "XDC"); /* XDC..ZDC, B1 */
 
     agc_interp_init(&ip);
@@ -192,7 +190,7 @@ static void calcgta(const char *t, long int tol)
  **********************************************************************/
 static void calcga(const char *t, long int tol)
 {
-    agc_interp_t    ip; /* interpreter state */
+    agc_interp_t    ip;                       /* interpreter state */
     uint16_t        th[3] = {0, 0, 0};
     const agc_mat_t nb    = mat_in(t, "XNB"); /* XNB..ZNB, B1 */
     const agc_mat_t sm    = mat_in(t, "XSM"); /* XSM..ZSM, B1 */
@@ -207,15 +205,11 @@ static void calcga(const char *t, long int tol)
         char n[16]; /* oracle word name */
 
         (void) snprintf(n, sizeof (n), (k == 0) ? "THETAD" : "THETAD+%d", k); /* word name */
-        (void) oracle_cmp(t, n, (long int) th[k], (long int) oracle_out_raw(t,
-                                                                            n),
-                          tol);
+        (void) oracle_cmp(t, n, (long int) th[k], (long int) oracle_out_raw(t, n), tol);
     }
 
-    (void) oracle_cmp(t, "GLOKFAIL", agc_flag_test(AGC_FLAG_GLOKFAIL),
-                      (oracle_out_raw(t, "FLAGWRD3") & 020000) != 0, 0);
-    (void) oracle_cmp(t, "FAILREG", (long int) agc_erase_failreg(0),
-                      (long int) oracle_out_raw(t, "FAILREG"), 0);
+    (void) oracle_cmp(t, "GLOKFAIL", agc_flag_test(AGC_FLAG_GLOKFAIL), (oracle_out_raw(t, "FLAGWRD3") & 020000) != 0, 0);
+    (void) oracle_cmp(t, "FAILREG", (long int) agc_erase_failreg(0), (long int) oracle_out_raw(t, "FAILREG"), 0);
 }
 
 /**********************************************************************
@@ -227,10 +221,10 @@ static void calcga(const char *t, long int tol)
  **********************************************************************/
 static void axisgen(const char *t, long int tol)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;   /* interpreter state */
     agc_vec_t    a[2]; /* stars in frame A, B1 */
     agc_vec_t    b[2]; /* stars in frame B, B1 */
-    agc_mat_t    m; /* matrix, B1 */
+    agc_mat_t    m;    /* matrix, B1 */
 
     agc_interp_init(&ip);
     a[0] = oracle_in_vec_at(t, "STARAD", 0);
@@ -254,7 +248,7 @@ static void axisgen(const char *t, long int tol)
  **********************************************************************/
 static void pipa(const char *t)
 {
-    agc_imu_comp_params_t p; /* compensation coefficients */
+    agc_imu_comp_params_t p;    /* compensation coefficients */
     agc_vec_t             delv; /* DELV, PIPA pulses x 2^14 */
     agc_dp_t              g[3]; /* gyro angles, rev 2^0 */
 
@@ -273,11 +267,10 @@ static void pipa(const char *t)
     }
 
     (void) agc_imu_comp_load(&p);
-    agc_imu_set_pipa_interval((agc_sp_t) oracle_in(t, "1074",
-                                                   0) /* 1/PIPADT */);
+    agc_imu_set_pipa_interval((agc_sp_t) oracle_in(t, "1074", 0)); /* 1/PIPADT */
     agc_imu_set_gcompsw((agc_sp_t) oracle_in(t, "GCOMPSW", 0));
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, g);
-    delv = oracle_in_vec(t, "DELVX"); /* DELVX DELVY DELVZ contiguous */
+    delv = oracle_in_vec(t, "DELVX");                              /* DELVX DELVY DELVZ contiguous */
     (void) agc_imu_one_over_pipa(&delv);
     (void) agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g);
     oracle_require_ok(t, "SWRETURN");
@@ -287,15 +280,14 @@ static void pipa(const char *t)
     (void) oracle_cmp(t, "GCOMPX", g[0], oracle_out_dp(t, "GCOMP"), 0);
     (void) oracle_cmp(t, "GCOMPY", g[1], oracle_out_dp(t, "GCOMP+2"), 0);
     (void) oracle_cmp(t, "GCOMPZ", g[2], oracle_out_dp(t, "GCOMP+4"), 0);
+
     /* GCOMPSW = (|GCOMP hi| - 1) masked - 1 from the DAS-built pair, which
      * the AGC may leave sign-disagreeing ((49, -14827) for 48.09 pulses);
      * compensation.c keeps the words (F6 fixed), so it is exact.         */
     const int gsw = oracle_out_sp(t, "GCOMPSW"); /* GCOMPSW from the rope */
 
     (void) oracle_cmp(t, "GCOMPSW", agc_imu_gcompsw(), gsw, 0);
-    (void) oracle_cmp(t, "GCOMPSW sign",
-                      (agc_imu_gcompsw() > 0) - (agc_imu_gcompsw() < 0),
-                      (gsw > 0) - (gsw < 0), 0);
+    (void) oracle_cmp(t, "GCOMPSW sign", (agc_imu_gcompsw() > 0) - (agc_imu_gcompsw() < 0), (gsw > 0) - (gsw < 0), 0);
 } /* pipa */
 
 /**********************************************************************
@@ -342,18 +334,18 @@ static agc_dp_t arate(int rateindx)
  **********************************************************************/
 static void kalc(const char *t, long int tol, long int tol_am)
 {
-    agc_interp_t     ip; /* interpreter state */
-    agc_kalc_setup_t k; /* KALCMANU setup */
+    agc_interp_t     ip;   /* interpreter state */
+    agc_kalc_setup_t k;    /* KALCMANU setup */
     uint16_t         b[3]; /* initial CDUs */
     uint16_t         c[3]; /* final CDUs */
-    agc_mat_t        del; /* DEL, 2^0 */
+    agc_mat_t        del;  /* DEL, 2^0 */
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_interp_init(&ip);
     cdus_in(t, "CDUX", b);
     cdus_in(t, "CPHI", c);
     const agc_status_t st    = agc_kalc_compute(&ip, b, c, &k); /* status of the call */
-    const bool         small = oracle_ok(t, "NOGO"); /* AGC took NOGO */
+    const bool         small = oracle_ok(t, "NOGO");            /* AGC took NOGO */
 
     oracle_require_ok(t, NULL);
     (void) oracle_cmp(t, "small", k.kcase == AGC_KALC_SMALL, small, 0);
@@ -366,8 +358,7 @@ static void kalc(const char *t, long int tol, long int tol_am)
         cmp_mat(t, "MIS", &k.mis, "MIS", tol);
         cmp_mat(t, "MFI", &k.mfi, "MFI", tol);
         (void) oracle_cmp(t, "CAM", k.cam, oracle_out_dp(t, "CAM"), tol);
-        oracle_cmp_vec(t, "COFSKEW", k.cofskew, oracle_out_vec(t, "COFSKEW"),
-                       tol);
+        oracle_cmp_vec(t, "COFSKEW", k.cofskew, oracle_out_vec(t, "COFSKEW"), tol);
 
         return;
     }
@@ -391,12 +382,11 @@ static void kalc(const char *t, long int tol, long int tol_am)
  **********************************************************************/
 static void delcomp(const char *t, long int tol)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;  /* interpreter state */
     agc_mat_t    del; /* DEL, 2^0 */
 
     agc_interp_init(&ip);
-    (void) agc_kalc_delcomp(&ip, oracle_in_vec(t, "COF"),
-                            oracle_in_dp(t, "MPAC", 0), &del);
+    (void) agc_kalc_delcomp(&ip, oracle_in_vec(t, "COF"), oracle_in_dp(t, "MPAC", 0), &del);
     oracle_require_ok(t, "POODOO");
     cmp_mat(t, "DEL", &del, "DEL", tol);
 }
@@ -410,15 +400,14 @@ static void delcomp(const char *t, long int tol)
  **********************************************************************/
 static void dcmtocdu(const char *t, long int tol)
 {
-    agc_interp_t    ip; /* interpreter state */
-    agc_vec_t       ang; /* angles, rev 2^0 */
-    agc_dp_t        cmga = 0; /* COS(MGA), 2^0 */
+    agc_interp_t    ip;                      /* interpreter state */
+    agc_vec_t       ang;                     /* angles, rev 2^0 */
+    agc_dp_t        cmga = 0;                /* COS(MGA), 2^0 */
     const agc_mat_t m    = mat_in(t, "MIS"); /* matrix, B1 */
 
     agc_interp_init(&ip);
     (void) agc_kalc_dcmtocdu(&ip, &m, &ang, &cmga);
     oracle_require_ok(t, "POODOO");
     oracle_cmp_vec(t, "angles", ang, oracle_out_mpac_vec(t), tol);
-    (void) oracle_cmp(t, "S1 cos MGA", agc_dp_high(cmga),
-                      oracle_out_sp(t, "VAC1+40"), 0);
+    (void) oracle_cmp(t, "S1 cos MGA", agc_dp_high(cmga), oracle_out_sp(t, "VAC1+40"), 0);
 }

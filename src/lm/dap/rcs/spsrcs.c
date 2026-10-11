@@ -66,8 +66,7 @@ static agc_sp_t spsstart(const lm_dap_t *d)
 
     if (ez > 0)
     {
-        return (((int32_t) d->edot + SR_RATELIM2 <=
-                 0) ? 0 : (agc_sp_t) -SR_HALF);
+        return (((int32_t) d->edot + SR_RATELIM2 <= 0) ? 0 : (agc_sp_t) -SR_HALF);
     }
 
     if (!AGC_ASSERT(ez < 0))

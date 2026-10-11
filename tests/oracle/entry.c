@@ -47,10 +47,9 @@
 #include "agc/nav/auxiliary.h"
 #include "oracle_txt.h"
 
-static int  goto_word(agc_entry_goto_t g);
-static void avg_in(const char *t);
-static void cmp_flag(const char *t, const char *n, agc_flag_id_t f,
-                     const char *word, unsigned int bit);
+static int       goto_word(agc_entry_goto_t g);
+static void      avg_in(const char *t);
+static void      cmp_flag(const char *t, const char *n, agc_flag_id_t f, const char *word, unsigned int bit);
 static void      compare(const char *t, long int tol);
 static void      pass(const char *t, long int tol);
 static agc_mat_t mat_in(const char *t, const char *name);
@@ -187,10 +186,10 @@ static void avg_in(const char *t)
 {
     agc_state_vector_t sv; /* state vector RN VN PIPTIME (m B29, m/cs B7) */
 
-    sv.r    = oracle_in_vec(t, "RN");
-    sv.v    = oracle_in_vec(t, "VN");
-    sv.t    = oracle_in_dp(t, "PIPTIME", 0);
-    sv.moon = false;
+    sv.r                          = oracle_in_vec(t, "RN");
+    sv.v                          = oracle_in_vec(t, "VN");
+    sv.t                          = oracle_in_dp(t, "PIPTIME", 0);
+    sv.moon                       = false;
     (void) agc_sv_set(AGC_SV_THIS, &sv);
     agc_guid_state()->avg.unitr   = oracle_in_vec(t, "UNITR");
     agc_guid_state()->avg.delvref = oracle_in_vec(t, "DELVREF");
@@ -213,11 +212,9 @@ static void avg_in(const char *t)
  *
  * RETURNS: none
  **********************************************************************/
-static void cmp_flag(const char *t, const char *n, agc_flag_id_t f,
-                     const char *word, unsigned int bit)
+static void cmp_flag(const char *t, const char *n, agc_flag_id_t f, const char *word, unsigned int bit)
 {
-    (void) oracle_cmp(t, n, agc_flag_test(f),
-                      (oracle_out_raw(t, word) & bit) != 0, 0);
+    (void) oracle_cmp(t, n, agc_flag_test(f), (oracle_out_raw(t, word) & bit) != 0, 0);
 }
 
 /**********************************************************************
@@ -240,12 +237,11 @@ static void compare(const char *t, long int tol)
 
     (void) oracle_cmp(t, "D", e->d, oracle_out_dp(t, "D"), 256);
     (void) oracle_cmp(t, "V", e->v, oracle_out_dp(t, "V"), tol);
-    (void) oracle_cmp(t, "VSQUARE", e->vsquare, oracle_out_dp(t, "VSQUARE"),
-                      tol);
+    (void) oracle_cmp(t, "VSQUARE", e->vsquare, oracle_out_dp(t, "VSQUARE"), tol);
+
     /* PREDICT3 writes its table look-up over LEQ (= FX +1) and GAMMAL
      * (= GAMMAEI = PREDANG): compare those instead in the final phase.  */
-    const bool final = /* PREDICT3 table look-up pass */
-                       (oracle_out_raw(t, "GOTOADDR") == 053343);
+    const bool final = (oracle_out_raw(t, "GOTOADDR") == 053343); /* PREDICT3 table look-up pass */
 
     if (final)
     {
@@ -260,14 +256,12 @@ static void compare(const char *t, long int tol)
         /* BACK2 leaves JJ = table index + 6 x 13 (ADS JJ per column). */
         (void) oracle_cmp(t, "JJ", e->jj + 78, oracle_out_sp(t, "JJ"), 0);
         (void) oracle_cmp(t, "GRAD", e->grad, oracle_out_sp(t, "GRAD"), 1);
-        (void) oracle_cmp(t, "PREDANG", e->predang,
-                          oracle_out_sp(t, "PREDANG"), 1);
+        (void) oracle_cmp(t, "PREDANG", e->predang, oracle_out_sp(t, "PREDANG"), 1);
     }
     else
     {
         (void) oracle_cmp(t, "LEQ", e->leq, oracle_out_dp(t, "LEQ"), tol);
-        (void) oracle_cmp(t, "GAMMAL", e->gammal, oracle_out_dp(t, "GAMMAL"),
-                          tol);
+        (void) oracle_cmp(t, "GAMMAL", e->gammal, oracle_out_dp(t, "GAMMAL"), tol);
     }
 
     (void) oracle_cmp(t, "RDOT", e->rdot, oracle_out_dp(t, "RDOT"), tol);
@@ -277,17 +271,14 @@ static void compare(const char *t, long int tol)
     (void) oracle_cmp(t, "L/D", e->l_d, oracle_out_dp(t, "L/D"), 320);
     (void) oracle_cmp(t, "L/D1", e->l_d1, oracle_out_dp(t, "L/D1"), 320);
     (void) oracle_cmp(t, "K2ROLL", e->k2roll, oracle_out_dp(t, "K2ROLL"), 0);
-    (void) oracle_cmp(t, "GOTOADDR", goto_word(e->gotoaddr),
-                      (long int) oracle_out_raw(t, "GOTOADDR"), 0);
+    (void) oracle_cmp(t, "GOTOADDR", goto_word(e->gotoaddr), (long int) oracle_out_raw(t, "GOTOADDR"), 0);
     (void) oracle_cmp(t, "A1", e->a1, oracle_out_dp(t, "A1"), tol);
     (void) oracle_cmp(t, "VL", e->vl, oracle_out_dp(t, "VL"), 64);
     (void) oracle_cmp(t, "LEWD", e->lewd, oracle_out_dp(t, "LEWD"), tol);
     (void) oracle_cmp(t, "DIFF", e->diff, oracle_out_dp(t, "DIFF"), tol);
     (void) oracle_cmp(t, "Q7", e->q7, oracle_out_dp(t, "Q7"), tol);
-    (void) oracle_cmp(t, "DTEAROT", e->dtearot, oracle_out_dp(t, "DTEAROT"),
-                      tol);
-    (void) oracle_cmp(t, "L/DCALC", e->l_dcalc, oracle_out_dp(t, "L/DCALC"),
-                      tol);
+    (void) oracle_cmp(t, "DTEAROT", e->dtearot, oracle_out_dp(t, "DTEAROT"), tol);
+    (void) oracle_cmp(t, "L/DCALC", e->l_dcalc, oracle_out_dp(t, "L/DCALC"), tol);
     (void) oracle_cmp(t, "Q2", e->q2, oracle_out_dp(t, "Q2"), tol);
     (void) oracle_cmp(t, "KLAT", e->klat, oracle_out_dp(t, "KLAT"), tol);
     (void) oracle_cmp(t, "LAD", e->lad, oracle_out_dp(t, "LAD"), 0);
@@ -321,17 +312,14 @@ static void compare(const char *t, long int tol)
  **********************************************************************/
 static void pass(const char *t, long int tol)
 {
-    bool      display = false; /* ENDEXIT display wanted */
-    const int forced  = /* forced GOTOADDR word (0: none) */
-                        oracle_in(t, "GOTOADDR", 0);
+    bool      display = false;                       /* ENDEXIT display wanted */
+    const int forced  = oracle_in(t, "GOTOADDR", 0); /* forced GOTOADDR word (0: none) */
 
     avg_in(t);
 
-    for (size_t i = 0; forced != 0 && i < sizeof (GOTOS) / sizeof (GOTOS[0]);
-         i++)
+    for (size_t i = 0; forced != 0 && i < sizeof (GOTOS) / sizeof (GOTOS[0]); i++)
     {
-        if (GOTOS[i].word == (forced < 0 ? /* ones' comp */
-                              forced + 077777 : forced))
+        if (GOTOS[i].word == (forced < 0 ? forced + 077777 : forced)) /* ones' comp */
         {
             agc_entry_state()->gotoaddr = GOTOS[i].g; /* forced, as the AGC */
         }
@@ -382,8 +370,7 @@ static agc_mat_t mat_in(const char *t, const char *name)
  **********************************************************************/
 static agc_sp_t cdu2s(uint16_t w)
 {
-    return ((agc_sp_t) ((w >= 040000) ? /* 15-bit sign */
-                        (int) w - 0100000 : (int) w));
+    return ((agc_sp_t) ((w >= 040000) ? (int) w - 0100000 : (int) w)); /* 15-bit sign */
 }
 
 /**********************************************************************
@@ -403,23 +390,23 @@ static void cm_pose(const char *t, long int tol)
 {
     agc_dp_t           ang[4] = {0, 0, 0, 0};
     agc_entry_state_t *e      = agc_entry_state(); /* entry erasables */
-    agc_state_vector_t sv; /* state vector (VN), m/cs B7 */
+    agc_state_vector_t sv;                         /* state vector (VN), m/cs B7 */
 
     agc_state_init(AGC_VEHICLE_CSM);
     (void) agc_guid_init(AGC_VEHICLE_CSM);
     agc_entry_lexicon_reset();
-    sv.r    = agc_vec_zero();
-    sv.v    = oracle_in_vec(t, "VN");
-    sv.t    = 0;
-    sv.moon = false;
+    sv.r                        = agc_vec_zero();
+    sv.v                        = oracle_in_vec(t, "VN");
+    sv.t                        = 0;
+    sv.moon                     = false;
     (void) agc_sv_set(AGC_SV_THIS, &sv);
     agc_guid_state()->avg.unitr = oracle_in_vec(t, "UNITR");
     agc_guid_state()->avg.unitw = oracle_in_vec(t, "UNITW");
     agc_erase_set_refsmmat(mat_in(t, "REFSMMAT"));
-    e->olduya  = oracle_in_vec(t, "OLDUYA");
-    e->aog_pip = cdu2s(oracle_in_raw(t, "AOG/PIP", 0));
-    e->aig_pip = cdu2s(oracle_in_raw(t, "AOG/PIP", 1));
-    e->amg_pip = cdu2s(oracle_in_raw(t, "AOG/PIP", 2));
+    e->olduya                   = oracle_in_vec(t, "OLDUYA");
+    e->aog_pip                  = cdu2s(oracle_in_raw(t, "AOG/PIP", 0));
+    e->aig_pip                  = cdu2s(oracle_in_raw(t, "AOG/PIP", 1));
+    e->amg_pip                  = cdu2s(oracle_in_raw(t, "AOG/PIP", 2));
     (void) agc_entry_cm_pose_triad();
     (void) agc_entry_cm_trio(ang);
     oracle_require_ok(t, "CM/ATUP");
@@ -431,10 +418,8 @@ static void cm_pose(const char *t, long int tol)
     oracle_cmp_vec(t, "UBX/2", e->ubx, oracle_out_vec(t, "UBX/2"), tol);
     oracle_cmp_vec(t, "UBY/2", e->uby, oracle_out_vec(t, "UBY/2"), tol);
     oracle_cmp_vec(t, "UBZ/2", e->ubz, oracle_out_vec(t, "UBZ/2"), tol);
-    (void) oracle_cmp(t, "-ROLL", agc_dp_high(ang[0]),
-                      oracle_out_sp(t, "VAC1+6"), 1);
-    (void) oracle_cmp(t, "-BETA", agc_dp_high(ang[1]),
-                      oracle_out_sp(t, "VAC1+7"), 1);
+    (void) oracle_cmp(t, "-ROLL", agc_dp_high(ang[0]), oracle_out_sp(t, "VAC1+6"), 1);
+    (void) oracle_cmp(t, "-BETA", agc_dp_high(ang[1]), oracle_out_sp(t, "VAC1+7"), 1);
     (void) oracle_cmp(t, "-ALFA", ang[2], oracle_out_dp(t, "VAC1+8"), tol);
     (void) oracle_cmp(t, "-GAMA", ang[3], oracle_out_dp(t, "VAC1+10"), tol);
 }

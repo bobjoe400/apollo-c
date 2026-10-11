@@ -78,24 +78,23 @@
 #define INSERTION_2SECS    200                      /* 2SECS, cs           */
 #define INSERTION_100MST5  16374                    /* TIME5 for 100 ms    */
 
-#define INSERTION_ATERTASK_DELAY 25 /* OCT31: .25 s DELAYJOB              */
+#define INSERTION_ATERTASK_DELAY 25     /* OCT31: .25 s DELAYJOB              */
 #define INSERTION_STIKBITS       00077u /* STIKBITS: RHC rotation bits        */
 
 /* P11 erasables (P11 STORAGE, P11 SATURN I/F; module-private).          */
-static agc_earth_orbit_insertion_monitor_padload_t
-                insertion_pad;   /* pad loads, scales per member      */
-static agc_dp_t lifttemp;        /* LIFTTEMP TIME2,1 at liftoff, cs B28 */
-static bool     lifttemp_set;    /* LIFTTEMP != -0                    */
-static bool     tliftoff_set;    /* TLIFTOFF holds the time           */
-static agc_tp_t tephem1;         /* TEPHEM1 ephemeris time, cs B42    */
-static agc_dp_t ogc_lo[3];       /* OGC IGC MGC at liftoff, revs B0   */
-static agc_dp_t insertion_vmagi; /* N62 VI, m/cs B7                   */
-static agc_dp_t insertion_hdot;  /* N62 HDOT, m/cs B7                 */
-static agc_dp_t insertion_alti;  /* N62 H, m B29                      */
-static agc_sp_t satsw;           /* SATSW takeover status, unscaled   */
-static agc_sp_t biasak[3];       /* BIASAK stored AK bias, B0         */
-static agc_sp_t insertion_ak[3]; /* AK AK1 AK2 needle commands, B0    */
-static agc_sp_t spolyarg;        /* SPOLYARG TIME1 - RPSTART, cs B14  */
+static agc_earth_orbit_insertion_monitor_padload_t insertion_pad;   /* pad loads, scales per member      */
+static agc_dp_t                                    lifttemp;        /* LIFTTEMP TIME2,1 at liftoff, cs B28 */
+static bool                                        lifttemp_set;    /* LIFTTEMP != -0                    */
+static bool                                        tliftoff_set;    /* TLIFTOFF holds the time           */
+static agc_tp_t                                    tephem1;         /* TEPHEM1 ephemeris time, cs B42    */
+static agc_dp_t                                    ogc_lo[3];       /* OGC IGC MGC at liftoff, revs B0   */
+static agc_dp_t                                    insertion_vmagi; /* N62 VI, m/cs B7                   */
+static agc_dp_t                                    insertion_hdot;  /* N62 HDOT, m/cs B7                 */
+static agc_dp_t                                    insertion_alti;  /* N62 H, m B29                      */
+static agc_sp_t                                    satsw;           /* SATSW takeover status, unscaled   */
+static agc_sp_t                                    biasak[3];       /* BIASAK stored AK bias, B0         */
+static agc_sp_t                                    insertion_ak[3]; /* AK AK1 AK2 needle commands, B0    */
+static agc_sp_t                                    spolyarg;        /* SPOLYARG TIME1 - RPSTART, cs B14  */
 
 /**********************************************************************
  * AGC: none (pad loads used by P11.agc pp. 542-550) -- store the P11 pad
@@ -114,12 +113,9 @@ static agc_sp_t spolyarg;        /* SPOLYARG TIME1 - RPSTART, cs B14  */
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG when pad is
  *          NULL or polynum is out of range
  **********************************************************************/
-agc_status_t agc_earth_orbit_insertion_monitor_set_padload(
-    const agc_earth_orbit_insertion_monitor_padload_t *pad)
+agc_status_t agc_earth_orbit_insertion_monitor_set_padload(const agc_earth_orbit_insertion_monitor_padload_t *pad)
 {
-    if (!AGC_ASSERT(pad != NULL) ||
-        !AGC_ASSERT(pad->polynum >= 1 &&
-                    pad->polynum <= AGC_EARTH_ORBIT_INSERTION_MONITOR_POLY_MAX))
+    if (!AGC_ASSERT(pad != NULL) || !AGC_ASSERT(pad->polynum >= 1 && pad->polynum <= AGC_EARTH_ORBIT_INSERTION_MONITOR_POLY_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -156,16 +152,16 @@ agc_status_t agc_job_earth_orbit_insertion_monitor(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_change(3, 000113);          /* -PHASE3 = REP11S   */
-    lifttemp_set = false;                 /* CS ZERO TS LIFTTEMP */
-    agc_phase_kill(5);                    /* prelaunch group 5   */
-    tliftoff_set = false;                 /* REP11SA in TLIFTOFF */
+    agc_phase_change(3, 000113);                 /* -PHASE3 = REP11S   */
+    lifttemp_set = false;                        /* CS ZERO TS LIFTTEMP */
+    agc_phase_kill(5);                           /* prelaunch group 5   */
+    tliftoff_set = false;                        /* REP11SA in TLIFTOFF */
     lifttemp     = (agc_dp_t) agc_time_now_cs(); /* DCA TIME2           */
     lifttemp_set = true;
-    agc_time_set_cs(0u);     /* zero CMC clock      */
-    agc_erase_set_tevent(lifttemp); /* TLIFTOFF            */
+    agc_time_set_cs(0u);                         /* zero CMC clock      */
+    agc_erase_set_tevent(lifttemp);              /* TLIFTOFF            */
     tliftoff_set = true;
-    agc_phase_change(3, 000133); /* REP11A-1: 3.13      */
+    agc_phase_change(3, 000133);                 /* REP11A-1: 3.13      */
 
     if (!AGC_ASSERT(agc_time_now_cs() < 100u))
     {
@@ -206,7 +202,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_ephemeris(agc_job_ctx_t *ctx)
     agc_inhint();
     tephem1 = agc_erase_tephem() + (agc_tp_t) agc_erase_tevent(); /* DAS/ADS */
     agc_relint();
-    agc_phase_change_var(005023, &v); /* PRIO22         */
+    agc_phase_change_var(005023, &v);                             /* PRIO22         */
 
     return (agc_job_earth_orbit_insertion_monitor_preread(ctx));
 }
@@ -251,9 +247,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? /* go on if OK */
-            agc_job_earth_orbit_insertion_monitor_setup(ctx) :
-            st);
+    return ((st == AGC_STATUS_OK) ? agc_job_earth_orbit_insertion_monitor_setup(ctx) : st); /* go on if OK */
 }
 
 /**********************************************************************
@@ -298,15 +292,14 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx)
 
     agc_flag_set(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION);
     agc_telem_select_list(INSERTION_POWDNCOD);
-    const agc_status_t sd =
-        agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0, NULL); /* V75 case  */
+    const agc_status_t sd = agc_dsky_display(ctx, AGC_DSKY_CLEANDSP, 0, NULL); /* V75 case  */
 
     if (sd != AGC_STATUS_OK)
     {
         return (sd); /* PRIOBORT 01502 or exec overflow: job abandoned */
     }
 
-    agc_phase_change2(040514, 000073, NULL);           /* 4.51, 3.7 */
+    agc_phase_change2(040514, 000073, NULL); /* 4.51, 3.7 */
     st = agc_csm_prelaunch_earthr_at_liftoff(entry_ip(), agc_erase_tevent());
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION)))
@@ -314,8 +307,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? /* go on if OK */
-            agc_job_matrxjob(ctx) : st);
+    return ((st == AGC_STATUS_OK) ? agc_job_matrxjob(ctx) : st); /* go on if OK */
 } /* agc_job_earth_orbit_insertion_monitor_setup */
 
 /**********************************************************************
@@ -341,14 +333,13 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
     }
 
     if (agc_phase_get(5) != 0u)
-    {                         /* CCS PHASE5          */
+    { /* CCS PHASE5          */
         return (AGC_STATUS_OK); /* ENDOFJOB            */
     }
 
     if (!lifttemp_set)
     {
-        return (agc_job_earth_orbit_insertion_monitor(
-                    ctx)); /* P11+7 (clock first) */
+        return (agc_job_earth_orbit_insertion_monitor(ctx)); /* P11+7 (clock first) */
     }
 
     if (!tliftoff_set)
@@ -356,8 +347,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
         agc_dp_t liftoff = lifttemp; /* TLIFTOFF, cs B28 */
 
         if (agc_time_now_cs() >= 16384u)
-        { /* CCS TIME2 > 0: REP11A -5 zeroes the clock and the DXCH
-           * TIME2 hands the clock read now to TLIFTOFF.              */
+        { /* CCS TIME2 > 0: REP11A -5 zeroes the clock and the DXCH TIME2 hands the clock read now to TLIFTOFF. */
             liftoff = (agc_dp_t) agc_time_now_cs();
             agc_time_set_cs(0u);
         }
@@ -399,11 +389,10 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
 {
-    agc_navaux_padload_t pad; /* pad loads (earth radius) */
-    agc_dp_t             cl = /* COS LAT /2, B1 */
-                              agc_dp_cos(ip, insertion_pad.latitude);
-    agc_vec_t    rp;         /* unit RP, B2 */
-    agc_status_t st = agc_navaux_get_padload(&pad); /* status */
+    agc_navaux_padload_t pad;                                         /* pad loads (earth radius) */
+    agc_dp_t             cl = agc_dp_cos(ip, insertion_pad.latitude); /* COS LAT /2, B1 */
+    agc_vec_t            rp;                                          /* unit RP, B2 */
+    agc_status_t         st = agc_navaux_get_padload(&pad);           /* status */
 
     if (!AGC_ASSERT(down != NULL))
     {
@@ -416,10 +405,7 @@ static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
     }
 
     /* LALOTORV +5 multiplies with DMPR (rounded); GAMMA = DPHALF (1 B-1). */
-    rp = agc_vec_make(agc_dp_mul(ip, agc_dp_cos(ip, insertion_pad.padlong), cl),
-                      agc_dp_mul(ip, agc_dp_sin(ip, insertion_pad.padlong), cl),
-                      agc_dp_mul(ip, INSERTION_HALFREV,
-                                 agc_dp_sin(ip, insertion_pad.latitude)));
+    rp    = agc_vec_make(agc_dp_mul(ip, agc_dp_cos(ip, insertion_pad.padlong), cl), agc_dp_mul(ip, agc_dp_sin(ip, insertion_pad.padlong), cl), agc_dp_mul(ip, INSERTION_HALFREV, agc_dp_sin(ip, insertion_pad.latitude)));
     rp    = agc_vec_unit(ip, rp, NULL, NULL);
     st    = agc_planet_rp_to_r(ip, &pad, false, rp, 0, down);
     *down = agc_vec_neg(*down);
@@ -459,6 +445,7 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
     agc_guid_state()->avg.avgexit = AGC_JOB_VHHDOT; /* P11SCADR      */
     agc_imu_set_pipa_interval((agc_sp_t) 031000);   /* PRIO31: 2 s   */
     agc_inhint();
+
     /* CS ZERO / TS TBASE5: READACCS restarts relative to liftoff (no exec
      * API for TBASE5 alone; the 5.2 restart below uses the present TIME). */
     dt = INSERTION_2SECS - (int32_t) agc_erase_time1();
@@ -468,8 +455,7 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
         dt = 1; /* never negative */
     }
 
-    agc_status_t st = /* WAITLIST status */
-                      agc_waitlist_call((uint16_t) dt, AGC_TASK_READACCS);
+    agc_status_t st = agc_waitlist_call((uint16_t) dt, AGC_TASK_READACCS); /* WAITLIST status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -505,12 +491,11 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a
  *          failed assertion
  **********************************************************************/
-static agc_status_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down,
-                                    agc_mat_t *m)
+static agc_status_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down, agc_mat_t *m)
 {
     agc_vec_t unitw = agc_guid_state()->avg.unitw; /* UNITW polar axis, B0 */
-    agc_vec_t east;   /* EAST, B1   */
-    agc_vec_t msouth; /* -SOUTH, B1 */
+    agc_vec_t east;                                /* EAST, B1   */
+    agc_vec_t msouth;                              /* -SOUTH, B1 */
 
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(m != NULL))
     {
@@ -518,17 +503,11 @@ static agc_status_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down,
     }
 
     m->row[2] = agc_vec_unit(ip, down, NULL, NULL);
-    east      = agc_vec_unit(ip, agc_vec_cross(ip, m->row[2], unitw), NULL,
-                             NULL);
-    msouth =
-        agc_vec_unit(ip, agc_vec_cross(ip, east, m->row[2]), NULL, NULL);
-    m->row[0] = agc_vec_add(
-        ip, agc_vec_scale(ip, msouth, agc_dp_cos(ip, insertion_pad.launchaz)),
-        agc_vec_scale(ip, east, agc_dp_sin(ip, insertion_pad.launchaz)));
+    east      = agc_vec_unit(ip, agc_vec_cross(ip, m->row[2], unitw), NULL, NULL);
+    msouth    = agc_vec_unit(ip, agc_vec_cross(ip, east, m->row[2]), NULL, NULL);
+    m->row[0] = agc_vec_add(ip, agc_vec_scale(ip, msouth, agc_dp_cos(ip, insertion_pad.launchaz)), agc_vec_scale(ip, east, agc_dp_sin(ip, insertion_pad.launchaz)));
     m->row[0] = agc_vec_unit(ip, m->row[0], NULL, NULL);
-    m->row[1] = agc_vec_neg(agc_vec_unit(
-                                ip, agc_vec_cross(ip, m->row[0], m->row[2]),
-                                NULL, NULL));
+    m->row[1] = agc_vec_neg(agc_vec_unit(ip, agc_vec_cross(ip, m->row[0], m->row[2]), NULL, NULL));
 
     if (!AGC_ASSERT(m->row[2].c[0] >= AGC_DP_MIN))
     {
@@ -558,15 +537,14 @@ static agc_status_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down,
 agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
 {
     const agc_latlong_opt_t opt = {false, false};
-    agc_interp_t           *ip  = entry_ip(); /* entry job interpreter state */
-    agc_avg_g_t            *avg = /* average-G data (RN1, VN1, UNITW) */
-                                  &agc_guid_state()->avg;
-    agc_navaux_padload_t pad; /* pad loads (earth radius) */
-    agc_latlong_t        ll = {insertion_pad.latitude, insertion_pad.padlong,
-                               insertion_pad.pgncsalt, 0};
-    agc_vec_t            down; /* down at the pad, m B29 */
-    agc_mat_t            m;    /* REFSMMAT to store, half-unit */
-    agc_status_t         st;   /* status */
+    agc_interp_t           *ip  = entry_ip();             /* entry job interpreter state */
+    agc_avg_g_t            *avg = &agc_guid_state()->avg; /* average-G data (RN1, VN1, UNITW) */
+    agc_navaux_padload_t    pad;                          /* pad loads (earth radius) */
+    agc_latlong_t           ll  = {insertion_pad.latitude, insertion_pad.padlong,
+                                   insertion_pad.pgncsalt, 0};
+    agc_vec_t               down;                         /* down at the pad, m B29 */
+    agc_mat_t               m;                            /* REFSMMAT to store, half-unit */
+    agc_status_t            st;                           /* status */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -577,7 +555,7 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
     ogc_lo[1] = agc_guid_cdulogic(agc_erase_cduy());
     ogc_lo[2] = agc_guid_cdulogic(agc_erase_cduz());
     agc_flag_clear(AGC_FLAG_ERADFLAG);
-    st = agc_navaux_get_padload(&pad);
+    st        = agc_navaux_get_padload(&pad);
 
     if (st == AGC_STATUS_OK)
     {
@@ -601,17 +579,9 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    avg->vn1 =
-        agc_vec_shl(ip,
-                    agc_vec_scale(ip, agc_vec_cross(ip, avg->rn1, avg->unitw),
-                                  INSERTION_MERTHRAT),
-                    4); /* B7 */
+    avg->vn1              = agc_vec_shl(ip, agc_vec_scale(ip, agc_vec_cross(ip, avg->rn1, avg->unitw), INSERTION_MERTHRAT), 4); /* B7 */
     agc_erase_set_refsmmat(m);
-    insertion_pad.satrlrt = agc_dp_sign(
-        insertion_pad.satrlrt,
-        agc_dp_add(ip,
-                   agc_dp_sub(ip, INSERTION_HALFREV, insertion_pad.launchaz),
-                   insertion_pad.azimuth));
+    insertion_pad.satrlrt = agc_dp_sign(insertion_pad.satrlrt, agc_dp_add(ip, agc_dp_sub(ip, INSERTION_HALFREV, insertion_pad.launchaz), insertion_pad.azimuth));
     agc_flag_set(AGC_FLAG_REFSMFLG);
 
     return (matrx_tail(ctx));
@@ -636,10 +606,10 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
  **********************************************************************/
 void agc_csm_velocity_altitude_rate(agc_interp_t *ip)
 {
-    agc_vec_t rn = agc_erase_rn(); /* RN, m B29 */
-    agc_vec_t vn = agc_erase_vn(); /* VN, m/cs B7 */
-    agc_vec_t ur; /* UNIT(RN), B1 */
-    agc_dp_t  rmag = 0; /* |RN|, m B29 */
+    agc_vec_t rn   = agc_erase_rn(); /* RN, m B29 */
+    agc_vec_t vn   = agc_erase_vn(); /* VN, m/cs B7 */
+    agc_vec_t ur;                    /* UNIT(RN), B1 */
+    agc_dp_t  rmag = 0;              /* |RN|, m B29 */
     agc_dp_t  base = INSERTION_RPAD; /* pad or landing radius, m B29 */
 
     if (!AGC_ASSERT(ip != NULL))
@@ -742,19 +712,18 @@ agc_status_t agc_job_vhhdot(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_task_atertask(void)
 {
-    agc_status_t st = /* FINDVAC status */
-                      agc_exec_findvac(AGC_ENTRY_PRIO1, AGC_JOB_ATERJOB);
+    agc_status_t st = agc_exec_findvac(AGC_ENTRY_PRIO1, AGC_JOB_ATERJOB); /* FINDVAC status */
 
-    agc_status_t sw = agc_dap_needler(insertion_ak[0], insertion_ak[1],
+    agc_status_t sw = agc_dap_needler(insertion_ak[0], insertion_ak[1], /* RCSFLAGS BIT3 */
                                       insertion_ak[2],
-                                      true); /* RCSFLAGS BIT3 */
+                                      true);
 
     if (sw != AGC_STATUS_OK)
     {
         return (sw);
     }
 
-    satsw = 1;                             /* display      */
+    satsw = 1; /* display      */
 
     if (!AGC_ASSERT(satsw == 1))
     {
@@ -786,32 +755,28 @@ agc_status_t agc_task_atertask(void)
  *
  * RETURNS: none
  **********************************************************************/
-void agc_earth_orbit_insertion_monitor_attitude_errors(
-    const agc_dp_t desired[3], const uint16_t cdu[3], agc_sp_t ak_out[3])
+void agc_earth_orbit_insertion_monitor_attitude_errors(const agc_dp_t desired[3], const uint16_t cdu[3], agc_sp_t ak_out[3])
 {
     agc_interp_t *ip = entry_ip(); /* entry job interpreter state */
-    agc_dp_t      d[3]; /* DTHETA DPSI DPHI, revs B0 */
-    agc_dp_t      sx; /* SIN CDUX /2, B1 */
-    agc_dp_t      cx; /* COS CDUX /2, B1 */
-    agc_dp_t      sz; /* SIN CDUZ /2, B1 */
-    agc_dp_t      cz; /* COS CDUZ /2, B1 */
-    agc_dp_t      p; /* DMP PUSH: COS CDUZ DTHETA, B1 */
-    agc_dp_t      q; /* pushed product SL1, B1 */
-    agc_tp_t      t; /* TP MPAC, B1 */
-    int           i; /* loop index */
+    agc_dp_t      d[3];            /* DTHETA DPSI DPHI, revs B0 */
+    agc_dp_t      sx;              /* SIN CDUX /2, B1 */
+    agc_dp_t      cx;              /* COS CDUX /2, B1 */
+    agc_dp_t      sz;              /* SIN CDUZ /2, B1 */
+    agc_dp_t      cz;              /* COS CDUZ /2, B1 */
+    agc_dp_t      p;               /* DMP PUSH: COS CDUZ DTHETA, B1 */
+    agc_dp_t      q;               /* pushed product SL1, B1 */
+    agc_tp_t      t;               /* TP MPAC, B1 */
+    int           i;               /* loop index */
 
-    if (!AGC_ASSERT(desired != NULL && cdu != NULL) ||
-        !AGC_ASSERT(ak_out != NULL))
+    if (!AGC_ASSERT(desired != NULL && cdu != NULL) || !AGC_ASSERT(ak_out != NULL))
     {
         return;
     }
 
     for (i = 0; i < 3; i++)
-    {                            /* order Y Z X        */
-        int     k = (i + 1) % 3; /* desired/cdu: X Y Z */
-        int32_t w = /* desired - CDU (MSU), /180 */
-                    (int32_t) agc_rtb_1sto2s(desired[k]) -
-                    (int32_t) (cdu[k] & 077777u);
+    { /* order Y Z X        */
+        int     k = (i + 1) % 3;                                                         /* desired/cdu: X Y Z */
+        int32_t w = (int32_t) agc_rtb_1sto2s(desired[k]) - (int32_t) (cdu[k] & 077777u); /* desired - CDU (MSU), /180 */
 
         d[i] = agc_dp_from_sp(entry_angle_wrap(w)); /* DELSTOR (MSU)  */
     }
@@ -820,21 +785,22 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(
     cx = agc_dp_cos(ip, agc_guid_cdulogic(cdu[0]));
     sz = agc_dp_sin(ip, agc_guid_cdulogic(cdu[2]));
     cz = agc_dp_cos(ip, agc_guid_cdulogic(cdu[2]));
+
     /* NOPOLYM: .5(DPHI + DTHETA SIN(CDUZ)): DMP SL1, DAD, SR2 (truncating)
      * on the TP MPAC.                                                    */
     t         = agc_tp_shift(ip, agc_dp_mul_tp(sz, d[0]), 1);
     t         = agc_tp_add(ip, t, agc_tp_from_dp(d[2]));
     ak_out[0] = agc_dp_high(agc_tp_to_dp(agc_tp_shift(ip, t, -2)));
+
     /* ATTDISP2: COS(CDUZ) DTHETA is PUSHed (two words); each product with
      * COS/SIN(CDUX) is shifted on the TP and PUSHed; the DPSI product
      * keeps its MPAC+2 through the DAD / DSU and the last SL1.           */
-    p         = agc_dp_mul_trunc(cz, d[0]); /* DMP PUSH          */
+    p         = agc_dp_mul_trunc(cz, d[0]);          /* DMP PUSH          */
     q         = entry_tp_shl(ip, agc_dp_mul_tp(p, cx), 1);
     t         = agc_tp_add(ip, agc_dp_mul_tp(sx, d[1]), agc_tp_from_dp(q));
     ak_out[1] = agc_dp_high(entry_tp_shl(ip, t, 1)); /* 17D       */
     q         = entry_tp_shl(ip, agc_dp_mul_tp(p, sx), 1);
-    t         =
-        agc_tp_add(ip, agc_dp_mul_tp(cx, d[1]), agc_tp_from_dp(agc_dp_neg(q)));
+    t         = agc_tp_add(ip, agc_dp_mul_tp(cx, d[1]), agc_tp_from_dp(agc_dp_neg(q)));
     ak_out[2] = agc_dp_high(entry_tp_shl(ip, t, 1)); /* 18D       */
 
     if (!AGC_ASSERT(ak_out[0] >= AGC_SP_MIN))
@@ -862,12 +828,11 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(
  **********************************************************************/
 static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
 {
-    int32_t t = /* TIME1 - RPSTART, cs B14 */
-                (int32_t) agc_erase_time1() - insertion_pad.rpstart;
-    agc_dp_t  pitch; /* PITCH, revs B0 */
-    agc_dp_t  x1; /* A1 + A2 T + ..., 32 revs B5 */
-    agc_dp_t  roll; /* ROLL, revs B0 */
-    agc_mat_t dc; /* TSMV rows XDC YDC ZDC, B1 */
+    int32_t   t = (int32_t) agc_erase_time1() - insertion_pad.rpstart; /* TIME1 - RPSTART, cs B14 */
+    agc_dp_t  pitch;                                                   /* PITCH, revs B0 */
+    agc_dp_t  x1;                                                      /* A1 + A2 T + ..., 32 revs B5 */
+    agc_dp_t  roll;                                                    /* ROLL, revs B0 */
+    agc_mat_t dc;                                                      /* TSMV rows XDC YDC ZDC, B1 */
 
     desired[0] = ogc_lo[0]; /* NOPOLY    */
     desired[1] = ogc_lo[1];
@@ -879,23 +844,13 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
     }
 
     spolyarg = (agc_sp_t) t;
+
     /* POWRSERS leaves the last DMPSUB's MPAC+2 (the DAS of A0 adds to
      * MPAC, MPAC+1 only); SL 5 shifts it up. Horner to A1, then x, A0.   */
-    x1 = (insertion_pad.polynum > 1) ? /* degree 1: A1 */
-         agc_dp_poly(agc_dp_from_sp(spolyarg), &insertion_pad.poly[1],
-                     insertion_pad.polynum - 1) :
-         insertion_pad.poly[1];
-    pitch = entry_tp_shl(
-        ip, agc_tp_add(ip, agc_dp_mul_tp(x1, agc_dp_from_sp(spolyarg)),
-                       agc_tp_from_dp(insertion_pad.poly[0])),
-        5); /* SL 5: 32 revs -> revs */
-    roll = entry_tp_shl(
-        ip, agc_dp_mul_tp(agc_dp_from_sp(spolyarg), insertion_pad.satrlrt),
-        14); /* SLOAD DMP SL 14D: the TP low word moves up      */
-    roll = agc_dp_sub(ip,
-                      agc_dp_add(ip, agc_dp_sub(ip, roll, INSERTION_HALFREV),
-                                 insertion_pad.launchaz),
-                      insertion_pad.azimuth);
+    x1    = (insertion_pad.polynum > 1) ? agc_dp_poly(agc_dp_from_sp(spolyarg), &insertion_pad.poly[1], insertion_pad.polynum - 1) : insertion_pad.poly[1]; /* degree 1: A1 */
+    pitch = entry_tp_shl(ip, agc_tp_add(ip, agc_dp_mul_tp(x1, agc_dp_from_sp(spolyarg)), agc_tp_from_dp(insertion_pad.poly[0])), 5);                        /* SL 5: 32 revs -> revs */
+    roll  = entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_from_sp(spolyarg), insertion_pad.satrlrt), 14);                                                           /* SLOAD DMP SL 14D: the TP low word moves up      */
+    roll  = agc_dp_sub(ip, agc_dp_add(ip, agc_dp_sub(ip, roll, INSERTION_HALFREV), insertion_pad.launchaz), insertion_pad.azimuth);
 
     /* RLTST: CA MPAC, MP SATRLRT +1 (the low word), BZMF: rollout is
      * over only when the high word of that SP product is above +0.      */
@@ -904,20 +859,9 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
         roll = 0; /* rollout done: MBDYTCTL +2    */
     }
 
-    dc.row[0] = agc_vec_make(agc_dp_sin(ip, pitch), 0,
-                             agc_dp_neg(agc_dp_cos(ip, pitch)));
-    dc.row[1] = agc_vec_make(
-        agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(ip, roll),
-                                                  agc_dp_cos(ip, pitch)), 1)),
-        agc_dp_neg(agc_dp_cos(ip, roll)),
-        agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(ip, roll),
-                                                  agc_dp_sin(ip, pitch)), 1)));
-    dc.row[2] = agc_vec_make(
-        agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(ip, roll),
-                                                  agc_dp_cos(ip, pitch)), 1)),
-        agc_dp_sin(ip, roll),
-        agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(ip, roll),
-                                                  agc_dp_sin(ip, pitch)), 1)));
+    dc.row[0] = agc_vec_make(agc_dp_sin(ip, pitch), 0, agc_dp_neg(agc_dp_cos(ip, pitch)));
+    dc.row[1] = agc_vec_make(agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(ip, roll), agc_dp_cos(ip, pitch)), 1)), agc_dp_neg(agc_dp_cos(ip, roll)), agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(ip, roll), agc_dp_sin(ip, pitch)), 1)));
+    dc.row[2] = agc_vec_make(agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(ip, roll), agc_dp_cos(ip, pitch)), 1)), agc_dp_sin(ip, roll), agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(ip, roll), agc_dp_sin(ip, pitch)), 1)));
 
     for (t = 0; t < 3; t++)
     {
@@ -943,12 +887,10 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
  *
  * RETURNS: none
  **********************************************************************/
-static void insertion_tad(const agc_sp_t m[3], const agc_sp_t x[3],
-                          agc_sp_t out[3])
+static void insertion_tad(const agc_sp_t m[3], const agc_sp_t x[3], agc_sp_t out[3])
 {
-    int32_t sum   = (int32_t) m[2] + (int32_t) x[2]; /* word 2, 2^-28  */
-    int32_t carry = /* carry into the next word */
-                    (sum >= 16384) - (sum <= -16384);
+    int32_t sum   = (int32_t) m[2] + (int32_t) x[2];  /* word 2, 2^-28  */
+    int32_t carry = (sum >= 16384) - (sum <= -16384); /* carry into the next word */
 
     if (!AGC_ASSERT(m != NULL && x != NULL) || !AGC_ASSERT(out != NULL))
     {
@@ -956,11 +898,10 @@ static void insertion_tad(const agc_sp_t m[3], const agc_sp_t x[3],
     }
 
     out[2] = (agc_sp_t) (sum - carry * 16384);
-    sum    = (int32_t) m[1] + (int32_t) x[1] + carry; /* word 1, 2^-14  */
+    sum    = (int32_t) m[1] + (int32_t) x[1] + carry;                     /* word 1, 2^-14  */
     carry  = (sum >= 16384) - (sum <= -16384);
     out[1] = (agc_sp_t) (sum - carry * 16384);
-    out[0] = entry_sp_store_ovf((int32_t) m[0] + (int32_t) x[0] +
-                                carry); /* TS: OVFIND only  */
+    out[0] = entry_sp_store_ovf((int32_t) m[0] + (int32_t) x[0] + carry); /* TS: OVFIND only  */
 }
 
 /**********************************************************************
@@ -983,7 +924,7 @@ static void insertion_tad(const agc_sp_t m[3], const agc_sp_t x[3],
 static void insertion_rescales(agc_sp_t ak[3], agc_sp_t satscale)
 {
     int32_t a = ak[0]; /* A for the next RESCALES    */
-    int     i; /* word index */
+    int     i;         /* word index */
 
     if (!AGC_ASSERT(ak != NULL))
     {
@@ -992,8 +933,7 @@ static void insertion_rescales(agc_sp_t ak[3], agc_sp_t satscale)
 
     for (i = 0; i < 3; i++)
     {
-        int32_t h = /* A after MP, DDOUBL, DDOUBL, SP units */
-                    (int32_t) (((int64_t) 4 * a * satscale) / 16384);
+        int32_t h = (int32_t) (((int64_t) 4 * a * satscale) / 16384); /* A after MP, DDOUBL, DDOUBL, SP units */
 
         if (h > 32767)
         { /* DDOUBL past the 16-bit A: end-around */
@@ -1035,8 +975,7 @@ static void insertion_rescales(agc_sp_t ak[3], agc_sp_t satscale)
  **********************************************************************/
 static bool aterjob_needs_reset(void)
 {
-    bool switch_on = /* S/C control of Saturn switch on */
-                     (agc_chan_read(030) & AGC_CH030_SCCTLSATURN) == 0u;
+    bool switch_on = (agc_chan_read(030) & AGC_CH030_SCCTLSATURN) == 0u; /* S/C control of Saturn switch on */
 
     if (!AGC_ASSERT(satsw >= -1 && satsw <= 1))
     {
@@ -1066,8 +1005,8 @@ static bool aterjob_needs_reset(void)
 agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
 {
     agc_dp_t desired[3]; /* desired gimbal angles, revs B0 */
-    uint16_t cdu[3]; /* CDUX..CDUZ patterns */
-    agc_sp_t ak[3]; /* AK AK1 AK2, B0 */
+    uint16_t cdu[3];     /* CDUX..CDUZ patterns */
+    agc_sp_t ak[3];      /* AK AK1 AK2, B0 */
 
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1080,10 +1019,10 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
     }
 
     if (aterjob_needs_reset())
-    {   /* ATRESET: NEEDLER init, 60 ms        */
-        agc_status_t sw = agc_dap_needler(insertion_ak[0], insertion_ak[1],
+    { /* ATRESET: NEEDLER init, 60 ms        */
+        agc_status_t sw = agc_dap_needler(insertion_ak[0], insertion_ak[1], /* NEEDLER status */
                                           insertion_ak[2],
-                                          true); /* NEEDLER status */
+                                          true);
 
         if (sw != AGC_STATUS_OK)
         {
@@ -1100,7 +1039,7 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
     agc_earth_orbit_insertion_monitor_attitude_errors(desired, cdu, ak);
 
     if (satsw <= 0)
-    {   /* +0: AKLOAD, then STEERSAT        */
+    { /* +0: AKLOAD, then STEERSAT        */
         if (satsw == 0)
         {
             biasak[0] = (agc_sp_t) (-ak[0]);
@@ -1123,8 +1062,7 @@ agc_status_t agc_job_aterjob(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (agc_svc_delayjob(INSERTION_ATERTASK_DELAY,
-                             AGC_JOB_ATERJOB)); /* ATERSET  */
+    return (agc_svc_delayjob(INSERTION_ATERTASK_DELAY, AGC_JOB_ATERJOB)); /* ATERSET  */
 } /* agc_job_aterjob */
 
 /**********************************************************************
@@ -1167,9 +1105,7 @@ agc_status_t agc_job_atreset_after_delay(agc_job_ctx_t *ctx)
     }
 
     /* SATOUT: NEEDLER with the AK words as they stand.                  */
-    agc_status_t st = /* NEEDLER status */
-                      agc_dap_needler(insertion_ak[0], insertion_ak[1],
-                                      insertion_ak[2], false);
+    agc_status_t st = agc_dap_needler(insertion_ak[0], insertion_ak[1], insertion_ak[2], false); /* NEEDLER status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -1234,9 +1170,9 @@ agc_status_t agc_csm_satstkon(const agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_task_redosat(void)
 {
-    agc_status_t st = agc_dap_needler(insertion_ak[0], insertion_ak[1],
+    agc_status_t st = agc_dap_needler(insertion_ak[0], insertion_ak[1], /* NEEDLER status */
                                       insertion_ak[2],
-                                      true); /* NEEDLER status */
+                                      true);
 
     if (st != AGC_STATUS_OK)
     {
@@ -1277,15 +1213,14 @@ agc_status_t agc_task_redosat(void)
  **********************************************************************/
 agc_status_t agc_task_satstick(void)
 {
-    const agc_csm_rcs_t *r; /* RCS DAP data (MANNDX) */
+    const agc_csm_rcs_t *r;    /* RCS DAP data (MANNDX) */
     uint16_t             bits; /* RHC bits, inverted */
-    agc_status_t         st; /* STICKCHK status */
+    agc_status_t         st;   /* STICKCHK status */
 
     agc_rupt_set_t5_task(AGC_TASK_SATSTICK); /* 2SATSTCK */
     agc_rupt_set_time(5, INSERTION_100MST5); /* 100MST5  */
-    bits = (uint16_t) ((INSERTION_STIKBITS ^ agc_chan_read(031)) &
-                       INSERTION_STIKBITS);
-    st = agc_csm_dap_stickchk(bits);
+    bits = (uint16_t) ((INSERTION_STIKBITS ^ agc_chan_read(031)) & INSERTION_STIKBITS);
+    st   = agc_csm_dap_stickchk(bits);
 
     if (st != AGC_STATUS_OK)
     {
@@ -1294,9 +1229,7 @@ agc_status_t agc_task_satstick(void)
 
     r = agc_csm_dap_rcs();
 
-    if (!AGC_ASSERT(r->manndx[0] >= 0 && r->manndx[0] <= 3) ||
-        !AGC_ASSERT(r->manndx[1] >= 0 && r->manndx[1] <= 3) ||
-        !AGC_ASSERT(r->manndx[2] >= 0 && r->manndx[2] <= 3))
+    if (!AGC_ASSERT(r->manndx[0] >= 0 && r->manndx[0] <= 3) || !AGC_ASSERT(r->manndx[1] >= 0 && r->manndx[1] <= 3) || !AGC_ASSERT(r->manndx[2] >= 0 && r->manndx[2] <= 3))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1305,6 +1238,5 @@ agc_status_t agc_task_satstick(void)
     insertion_ak[1] = insertion_pad.satrate[r->manndx[1]]; /* AK1 pitch */
     insertion_ak[2] = insertion_pad.satrate[r->manndx[2]]; /* AK2 yaw   */
 
-    return (agc_dap_needler(insertion_ak[0], insertion_ak[1], insertion_ak[2],
-                            false));
+    return (agc_dap_needler(insertion_ak[0], insertion_ak[1], insertion_ak[2], false));
 }

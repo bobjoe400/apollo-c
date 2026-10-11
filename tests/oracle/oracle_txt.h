@@ -81,8 +81,7 @@ static inline int oracle_word(long w)
 }
 
 /* Start of line `key` (whole first token) in [p, end), or NULL. */
-static inline const char *oracle_find_line(const char *p, const char *end,
-                                           const char *key)
+static inline const char *oracle_find_line(const char *p, const char *end, const char *key)
 {
     const size_t n = strlen(key);
 
@@ -101,8 +100,7 @@ static inline const char *oracle_find_line(const char *p, const char *end,
 }
 
 /* Block of CASE tag in the dump: [*b, *e). */
-static inline bool oracle_case(const char *tag, const char **b,
-                               const char **e)
+static inline bool oracle_case(const char *tag, const char **b, const char **e)
 {
     char key[160];
 
@@ -147,9 +145,7 @@ static inline bool oracle_ok(const char *tag, const char *stop)
         return (false);
     }
 
-    return (stop == NULL ||
-            (t != NULL && strncmp(t + 5, stop, strlen(stop)) == 0 &&
-             t[5 + strlen(stop)] == '\n'));
+    return (stop == NULL || (t != NULL && strncmp(t + 5, stop, strlen(stop)) == 0 && t[5 + strlen(stop)] == '\n'));
 }
 
 /* Output word NAME of CASE tag (signed); *found = false if absent. */
@@ -213,8 +209,7 @@ static inline void oracle_next_name(const char *name, char *out, size_t cap)
     }
     else
     {
-        (void) snprintf(out, cap, "%.*s+%ld", (int) (plus - name) & 63, name,
-                        strtol(plus + 1, NULL, 10) + 1);
+        (void) snprintf(out, cap, "%.*s+%ld", (int) (plus - name) & 63, name, strtol(plus + 1, NULL, 10) + 1);
     }
 }
 
@@ -244,8 +239,7 @@ static inline agc_vec_t oracle_out_vec(const char *tag, const char *name)
     agc_vec_t   v;
     const char *plus = strrchr(name, '+');
     const long  base = (plus != NULL) ? strtol(plus + 1, NULL, 10) : 0;
-    const int   len  =
-        (plus != NULL) ? (int) (plus - name) : (int) strlen(name);
+    const int   len  = (plus != NULL) ? (int) (plus - name) : (int) strlen(name);
 
     for (int k = 0; k < 3; k++)
     {
@@ -276,10 +270,8 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
     /* the generator splits long set lines into 8-word chunks NAME+8k */
     const int   chunk = (idx / 8) * 8;
     const char *plus  = strrchr(name, '+');
-    const long  base  = (plus != NULL && plus != name) ?
-                        strtol(plus + 1, NULL, 10) : 0;
-    const int len = (plus != NULL && plus != name) ?
-                    (int) (plus - name) & 63 : (int) strlen(name) & 63;
+    const long  base  = (plus != NULL && plus != name) ? strtol(plus + 1, NULL, 10) : 0;
+    const int   len   = (plus != NULL && plus != name) ? (int) (plus - name) & 63 : (int) strlen(name) & 63;
 
     idx -= chunk;
     (void) snprintf(run, sizeof run, "run %s", tag);
@@ -290,8 +282,7 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
     }
     else
     {
-        (void) snprintf(key, sizeof key, "set %.*s+%ld=", len, name,
-                        base + chunk);
+        (void) snprintf(key, sizeof key, "set %.*s+%ld=", len, name, base + chunk);
     }
 
     const char *end = oracle_spec;
@@ -301,8 +292,7 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
     {
         const char c = p[strlen(run)];
 
-        if ((p == oracle_spec || p[-1] == '\n') &&
-            (c == '\n' || c == ' ' || c == '\0'))
+        if ((p == oracle_spec || p[-1] == '\n') && (c == '\n' || c == ' ' || c == '\0'))
         {
             end = p;
             break;
@@ -334,8 +324,7 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
 
     for (const char *q = start; q < end; q++)
     {
-        if ((q == oracle_spec || q[-1] == '\n') &&
-            strncmp(q, key, strlen(key)) == 0)
+        if ((q == oracle_spec || q[-1] == '\n') && strncmp(q, key, strlen(key)) == 0)
         {
             hit = q + strlen(key);
         }
@@ -382,11 +371,10 @@ static inline int oracle_in(const char *tag, const char *name, int idx)
 
 /* Raw 15-bit input word (CDU patterns, -0 kept): the signed value of
  * oracle_in() mapped back to ones' complement.                          */
-static inline uint16_t oracle_in_raw(const char *tag, const char *name,
-                                     int idx)
+static inline uint16_t oracle_in_raw(const char *tag, const char *name, int idx)
 {
     oracle_in_negzero = false;
-    const int w = oracle_in(tag, name, idx);
+    const int w       = oracle_in(tag, name, idx);
 
     if (w == 0 && oracle_in_negzero)
     {
@@ -398,8 +386,7 @@ static inline uint16_t oracle_in_raw(const char *tag, const char *name,
 
 static inline agc_dp_t oracle_in_dp(const char *tag, const char *name, int idx)
 {
-    return ((agc_dp_t) oracle_in(tag, name, idx) * 16384 +
-            (agc_dp_t) oracle_in(tag, name, idx + 1));
+    return ((agc_dp_t) oracle_in(tag, name, idx) * 16384 + (agc_dp_t) oracle_in(tag, name, idx + 1));
 }
 
 static inline agc_vec_t oracle_in_vec(const char *tag, const char *name)
@@ -417,14 +404,11 @@ static inline agc_vec_t oracle_in_vec(const char *tag, const char *name)
 /* Triple-precision input word triple at word idx (e.g. TEPHEM). */
 static inline agc_tp_t oracle_in_tp(const char *tag, const char *name, int idx)
 {
-    return (((agc_tp_t) oracle_in(tag, name, idx) * 16384 +
-             (agc_tp_t) oracle_in(tag, name, idx + 1)) * 16384 +
-            (agc_tp_t) oracle_in(tag, name, idx + 2));
+    return (((agc_tp_t) oracle_in(tag, name, idx) * 16384 + (agc_tp_t) oracle_in(tag, name, idx + 1)) * 16384 + (agc_tp_t) oracle_in(tag, name, idx + 2));
 }
 
 /* Vector input k (three DP words) of a longer set line (vector k*6). */
-static inline agc_vec_t oracle_in_vec_at(const char *tag, const char *name,
-                                         int k)
+static inline agc_vec_t oracle_in_vec_at(const char *tag, const char *name, int k)
 {
     agc_vec_t v;
 
@@ -449,8 +433,7 @@ static inline agc_vec_t oracle_out_mpac_vec(const char *tag)
 }
 
 /* |got - want| <= tol, counted and printed on failure. */
-static inline bool oracle_cmp(const char *tag, const char *what, long got,
-                              long want, long tol)
+static inline bool oracle_cmp(const char *tag, const char *what, long got, long want, long tol)
 {
     const long d = got - want;
 
@@ -458,15 +441,13 @@ static inline bool oracle_cmp(const char *tag, const char *what, long got,
 
     if (d != 0 && getenv("ORACLE_VERBOSE") != NULL)
     {
-        (void) printf("DIFF %s %s: C %ld AGC %ld (diff %ld, tol %ld)\n", tag,
-                      what, got, want, d, tol);
+        (void) printf("DIFF %s %s: C %ld AGC %ld (diff %ld, tol %ld)\n", tag, what, got, want, d, tol);
     }
 
     if (d > tol || d < -tol)
     {
         oracle_failures++;
-        (void) printf("FAIL %s %s: C %ld AGC %ld (diff %ld, tol %ld)\n", tag,
-                      what, got, want, d, tol);
+        (void) printf("FAIL %s %s: C %ld AGC %ld (diff %ld, tol %ld)\n", tag, what, got, want, d, tol);
 
         return (false);
     }
@@ -479,9 +460,7 @@ static inline bool oracle_cmp(const char *tag, const char *what, long got,
  * counted apart, so `make test` stays green until the review wave fixes
  * src/; when the summary shows 0 known the entry can be closed and the
  * call turned back into oracle_cmp().                                     */
-static inline void oracle_cmp_known(const char *tag, const char *what,
-                                    long got, long want, long tol,
-                                    const char *id)
+static inline void oracle_cmp_known(const char *tag, const char *what, long got, long want, long tol, const char *id)
 {
     const long d = got - want;
 
@@ -490,14 +469,11 @@ static inline void oracle_cmp_known(const char *tag, const char *what,
     if (d > tol || d < -tol)
     {
         oracle_known++;
-        (void) printf("KNOWN %s %s %s: C %ld AGC %ld (diff %ld)\n", id, tag,
-                      what, got, want, d);
+        (void) printf("KNOWN %s %s %s: C %ld AGC %ld (diff %ld)\n", id, tag, what, got, want, d);
     }
 }
 
-static inline void oracle_cmp_vec_known(const char *tag, const char *what,
-                                        agc_vec_t got, agc_vec_t want, long tol,
-                                        const char *id)
+static inline void oracle_cmp_vec_known(const char *tag, const char *what, agc_vec_t got, agc_vec_t want, long tol, const char *id)
 {
     static const char *const axis[3] = {"x", "y", "z"};
 
@@ -510,8 +486,7 @@ static inline void oracle_cmp_vec_known(const char *tag, const char *what,
     }
 }
 
-static inline void oracle_cmp_vec(const char *tag, const char *what,
-                                  agc_vec_t got, agc_vec_t want, long tol)
+static inline void oracle_cmp_vec(const char *tag, const char *what, agc_vec_t got, agc_vec_t want, long tol)
 {
     static const char *const axis[3] = {"x", "y", "z"};
 
@@ -531,20 +506,16 @@ static inline void oracle_require_ok(const char *tag, const char *stop)
     if (!oracle_ok(tag, stop))
     {
         oracle_failures++;
-        (void) printf("FAIL %s: AGC run did not reach %s\n", tag,
-                      (stop != NULL) ? stop : "its stop");
+        (void) printf("FAIL %s: AGC run did not reach %s\n", tag, (stop != NULL) ? stop : "its stop");
     }
 }
 
 /* Summary line; exit status for main(). */
 static inline int oracle_finish(const char *test)
 {
-    (void) printf("%s: %d checks, %d failures, %d missing, %d known "
-                  "(findings)\n", test, oracle_checks, oracle_failures,
-                  oracle_missing, oracle_known);
+    (void) printf("%s: %d checks, %d failures, %d missing, %d known " "(findings)\n", test, oracle_checks, oracle_failures, oracle_missing, oracle_known);
 
-    return ((oracle_failures == 0 && oracle_missing == 0 &&
-             oracle_checks > 0) ? 0 : 1);
+    return ((oracle_failures == 0 && oracle_missing == 0 && oracle_checks > 0) ? 0 : 1);
 }
 
 #endif /* ORACLE_TXT_H */

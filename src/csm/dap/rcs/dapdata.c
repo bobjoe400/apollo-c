@@ -37,8 +37,7 @@ void agc_csm_dap_setmindb(void)
     }
 
     r->adb = MINDB;
-    agc_erase_set_dapdatr1(
-        (uint16_t) (agc_erase_dapdatr1() & ~(unsigned) CSM_DAP_BIT4));
+    agc_erase_set_dapdatr1((uint16_t) (agc_erase_dapdatr1() & ~(unsigned) CSM_DAP_BIT4));
 
     if (!AGC_ASSERT((agc_erase_dapdatr1() & CSM_DAP_BIT4) == 0u))
     {
@@ -77,6 +76,7 @@ agc_status_t agc_csm_dap_decode_dap_data(void)
 
     r->ratindx = (agc_sp_t) (2u * (d1 & 3u)); /* MASK THREE; AD A     */
     agc_inhint();
+
     /* LEM attached: TOGETHER */
     agc_flag_put(AGC_FLAG_ATTCHFLG, (d1 & CONFIGBITS) == CSM_DAP_BIT14);
     agc_relint();
@@ -98,14 +98,13 @@ agc_status_t agc_csm_dap_decode_dap_data(void)
     }
 
     agc_status_t st = AGC_STATUS_OK;
+
     /* S41.2 (pp. 732-733), part 2: AC/BD roll and the quad failure flags.   */
     agc_csm_rcs_t *r_datr2 = agc_csm_dap_rcs();
     uint16_t       d2      = agc_erase_dapdatr2();
 
     /* minus for A-C (COM of BIT13), plus for B-D                         */
-    r_datr2->acorbd = ((d2 & CSM_DAP_BIT13) != 0u) ?
-                      (agc_sp_t) -(agc_sp_t) CSM_DAP_BIT13 :
-                      1;
+    r_datr2->acorbd = ((d2 & CSM_DAP_BIT13) != 0u) ? (agc_sp_t) -(agc_sp_t) CSM_DAP_BIT13 : 1;
 
     if ((d2 & CSM_DAP_BIT10) == 0u)
     {
@@ -117,7 +116,7 @@ agc_status_t agc_csm_dap_decode_dap_data(void)
     }
 
     if ((d2 & CSM_DAP_BIT7) == 0u)
-    {                   /* BDFAIL               */
+    { /* BDFAIL               */
         r_datr2->rbdfail = 1; /* B failed             */
     }
     else
@@ -186,9 +185,10 @@ agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
     }
 
     r->t5phase = AGC_CSM_T5P_INIT; /* TS T5PHASE (+)        */
+
     /* set BIT3 to reinitialise the FDAI error display, in case the S/C
      * control switch is in SCS, not GNC                                   */
-    c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
+    c->rcsflags     = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
     agc_status_t st = csm_dap_set_t5(AGC_TASK_RCSATT, time5_word);
 
     /* FLAGWRD6 bits 15,14 to 01: T5 takeover by the RCS DAP (kills

@@ -79,8 +79,8 @@
  * address in RRRET).                                                    */
 typedef enum rr_axis_client
 {
-    RR_AXIS_REPOSITION = 0,  /* DORREPOS                                  */
-    RR_AXIS_REMODE,          /* REMODE                                    */
+    RR_AXIS_REPOSITION = 0,      /* DORREPOS                                  */
+    RR_AXIS_REMODE,              /* REMODE                                    */
     RR_AXIS_PREPOSITION_POWERED, /* PREPOS29                                  */
     RR_AXIS_CLIENT_COUNT
 } rr_axis_client_t;
@@ -88,19 +88,15 @@ typedef enum rr_axis_client
 /* Designate erasables (P20-P25, EBANK= LOSCOUNT).                        */
 typedef struct rr_state
 {
-    agc_vec_t rrtarget;  /* RRTARGET: LOS half unit, SM (NB when RRNBSW),
-                          * scale 2^1 (R29: LOSSM, the non-unit LOS in SM
-                          * axes, m 2^24)                                 */
-    agc_dp_t mlosv;      /* MLOSV: |LOS|, m 2^20 in P20 (LPS20.1 shifts
-                          * the LOS 9 places)                             */
-    agc_vec_t losvel;    /* LOSVEL: relative velocity V(CSM) - V(LM) in SM
-                          * axes, m/cs 2^7 (R29: LOSVDT/4, m 2^24)       */
-    agc_sp_t loscount;   /* LOSCOUNT: passes to a new LOS, unscaled */
-    agc_sp_t descount;   /* DESCOUNT: designate passes left, unscaled    */
-    uint16_t tangnb[2];  /* TANGNB: RRDESNB trunnion, shaft CDU words     */
-    uint16_t modea[2];   /* MODEA: (T, S) CDU words for the present mode  */
-    uint16_t modeb[2];   /* MODEB: (T, S) for the other mode              */
-    agc_sp_t lastcmd[2]; /* LASTYCMD (T), LASTXCMD (S), pulses unscaled  */
+    agc_vec_t rrtarget;   /* RRTARGET: LOS half unit, SM (NB when RRNBSW), scale 2^1 (R29: LOSSM, the non-unit LOS in SM axes, m 2^24) */
+    agc_dp_t  mlosv;      /* MLOSV: |LOS|, m 2^20 in P20 (LPS20.1 shifts the LOS 9 places) */
+    agc_vec_t losvel;     /* LOSVEL: relative velocity V(CSM) - V(LM) in SM axes, m/cs 2^7 (R29: LOSVDT/4, m 2^24) */
+    agc_sp_t  loscount;   /* LOSCOUNT: passes to a new LOS, unscaled */
+    agc_sp_t  descount;   /* DESCOUNT: designate passes left, unscaled    */
+    uint16_t  tangnb[2];  /* TANGNB: RRDESNB trunnion, shaft CDU words     */
+    uint16_t  modea[2];   /* MODEA: (T, S) CDU words for the present mode  */
+    uint16_t  modeb[2];   /* MODEB: (T, S) for the other mode              */
+    agc_sp_t  lastcmd[2]; /* LASTYCMD (T), LASTXCMD (S), pulses unscaled  */
 } rr_state_t;
 
 rr_state_t *rr_state(void);
@@ -108,6 +104,7 @@ rr_state_t *rr_state(void);
 /* ---- word helpers (lm/radar/moding.c) ----------------------------------- */
 int      rr_ones(uint16_t w); /* 15-bit word as ones' complement  */
 uint16_t rr_word(int v);      /* ones' complement word of v       */
+
 /* MAGSUB: true ("L+3") when |a| <= -k, k a negative constant.           */
 bool rr_magsub(int a, int k);
 void rr_chan_clear(int chan, uint16_t bits);
@@ -121,13 +118,14 @@ void rr_mode_invert(void);            /* RMODINV                   */
 /* RRLIMCHK on (T, S) words, the present mode's limits.                  */
 void rr_setrrecr(void); /* SETRRECR      */
 void rr_rrout(void);    /* RROUT (TANG)  */
+
 /* RRTONLY / RRSONLY for a client and its step; runs RR1AX2 now.         */
-agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex,
-                           uint16_t rdes);
+agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex, uint16_t rdes);
 agc_status_t rr_remode_start(void); /* REMODE        */
 agc_status_t rr_endradar(void);     /* ENDRADAR      */
 agc_status_t rr_badend(void);       /* RDBADEND      */
 agc_status_t rr_radnoop(void);      /* RADNOOP       */
+
 /* Turn the lamp `lamp` (DSPTAB +11D bit) on or off (TRKFLON +1).       */
 void rr_lamp_put(uint16_t lamp, bool on);
 
@@ -136,6 +134,7 @@ agc_status_t rr_stdesig(void); /* STDESIG (task body)           */
 
 /* ---- radar read (lm/radar/read.c) ------------------------------------ */
 agc_dp_t rr_timehold(void); /* TIMEHOLD: reading mid time    */
+
 /* RADLITES: lamps after a read; ITEMP1 = the data-good bit (BIT4 RR,
  * BIT5 LR altitude, BIT8 LR velocity).                                  */
 void rr_radlites(uint16_t itemp1);
@@ -146,29 +145,33 @@ typedef struct lmnav_state
     /* LPS20.1 */
     agc_vec_t lmpos; /* LMPOS: LM position at TDEC1, m 2^29           */
     agc_vec_t lmvel; /* LMVEL: LM velocity, m/cs 2^7                  */
+
     /* LRS22.1 mark data */
-    agc_dp_t  rm;      /* RM: RR range, m 2^29                          */
-    agc_dp_t  rdotm;   /* RDOTM: RR range rate, m/cs 2^7                */
-    agc_dp_t  rrtrun;  /* RRTRUN: RR trunnion, revolutions 2^0           */
-    agc_dp_t  rrshaft; /* RRSHAFT: RR shaft, revolutions 2^0             */
-    agc_dp_t  mktime;   /* MKTIME: mark time (range-rate read), cs 2^28   */
-    agc_dp_t  cdutime;  /* 20D: time of the CDU readings, cs 2^28        */
-    uint16_t  aig;      /* AIG: IMU inner gimbal CDU word at the mark     */
-    uint16_t  amg;      /* AMG: IMU middle gimbal CDU word                */
-    uint16_t  aog;      /* AOG: IMU outer gimbal CDU word                 */
-    uint16_t  tang[2];  /* TANG: RR CDU words at the mark                */
-    agc_dp_t  rdotmsav; /* RDOTMSAV: raw range-rate count, unscaled      */
-    agc_vec_t rrborsit; /* RRBORSIT: RR boresight, NB, half unit 2^1     */
-    agc_dp_t  dtheta;   /* DSPTEM1: radar vs SV LOS, rev 2^0 (N05)       */
+    agc_dp_t  rm;          /* RM: RR range, m 2^29                          */
+    agc_dp_t  rdotm;       /* RDOTM: RR range rate, m/cs 2^7                */
+    agc_dp_t  rrtrun;      /* RRTRUN: RR trunnion, revolutions 2^0           */
+    agc_dp_t  rrshaft;     /* RRSHAFT: RR shaft, revolutions 2^0             */
+    agc_dp_t  mktime;      /* MKTIME: mark time (range-rate read), cs 2^28   */
+    agc_dp_t  cdutime;     /* 20D: time of the CDU readings, cs 2^28        */
+    uint16_t  aig;         /* AIG: IMU inner gimbal CDU word at the mark     */
+    uint16_t  amg;         /* AMG: IMU middle gimbal CDU word                */
+    uint16_t  aog;         /* AOG: IMU outer gimbal CDU word                 */
+    uint16_t  tang[2];     /* TANG: RR CDU words at the mark                */
+    agc_dp_t  rdotmsav;    /* RDOTMSAV: raw range-rate count, unscaled      */
+    agc_vec_t rrborsit;    /* RRBORSIT: RR boresight, NB, half unit 2^1     */
+    agc_dp_t  dtheta;      /* DSPTEM1: radar vs SV LOS, rev 2^0 (N05)       */
     uint16_t  rangrdot[2]; /* RANGRDOT: raw range, range rate (downlink)    */
+
     /* R22 */
     agc_dp_t r22disp[2]; /* R22DISP: |dR| m 2^29, |dV| m/cs 2^7 (noun 49) */
     agc_sp_t n49flag;    /* N49FLAG: 0 open, -1 PRO, + V32, unscaled  */
     agc_sp_t whchread;   /* WHCHREAD: 1 R, 2 RDOT, 3 S, 4 T, unscaled     */
     agc_sp_t r65cntr;    /* R65CNTR: R65 passes left, unscaled            */
+
     /* R21 */
     agc_sp_t reposcnt; /* REPOSCNT: 10 s retries left, unscaled         */
     agc_dp_t repostm;  /* REPOSTM: time of the LOS, cs 2^28             */
+
     /* R24 */
     agc_sp_t  nsrchpnt; /* NSRCHPNT: search pattern point 0..6, unscaled */
     agc_sp_t  datagood; /* DATAGOOD: 11111 lock-on (N80), unscaled  */
@@ -177,28 +180,33 @@ typedef struct lmnav_state
     agc_vec_t vxrcm;    /* VXRCM: unit(V(CSM) x R(CSM)), 2^1              */
     agc_vec_t uxvect;   /* UXVECT: search pattern X axis, 2^1            */
     agc_vec_t uyvect;   /* UYVECT: search pattern Y axis, 2^1            */
-    agc_vec_t savlemv; /* SAVLEMV: V(CSM) - V(LM), SM, m/cs 2^7         */
+    agc_vec_t savlemv;  /* SAVLEMV: V(CSM) - V(LM), SM, m/cs 2^7         */
+
     /* R61 / R65 */
     agc_job_id_t genret; /* GENRET: where R61LEM / R65LEM return          */
+
     /* P22 surface: assumed CSM orbit change (ORBCHG3)                     */
     agc_dp_t lnchtm; /* LNCHTM: estimated launch time, cs 2^28        */
 } lmnav_state_t;
 
 lmnav_state_t *lmnav_state(void);
+
 /* LPS20.1: LM and CSM to tdec1 (conic), RRTARGET (SM half unit), MLOSV,
  * LOSVEL; *too_far when the range exceeds the 9-place shift (526ALARM).
  * BUSY: INTSTALL put the job to sleep; it resumes as `resume`.          */
-agc_status_t lmnav_los(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t resume,
-                       bool *too_far);
-bool lmnav_range_ok(void); /* LPS20.2        */
+agc_status_t lmnav_los(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t resume, bool *too_far);
+bool         lmnav_range_ok(void); /* LPS20.2        */
+
 /* R61LEM (r61 = true) / R65LEM: preferred tracking attitude; the job
  * continues as ret_job when done.                                       */
-agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61,
-                                     agc_job_id_t ret_job);
+agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61, agc_job_id_t ret_job);
+
 /* P20LEMWT (+1 with the delay): wait, then R22 or the designate again.  */
 agc_status_t lmnav_wait(uint16_t delay_cs);
+
 /* R22LEM96: the noun 49 display job and the N49FLAG wait.             */
 agc_status_t lmnav_residuals_display(void);
+
 /* ASTOK after a noun 49 PROCEED (lm/navigation/measurement_update.c). */
 agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx);
 

@@ -61,11 +61,11 @@
  **********************************************************************/
 #include "../internal.h"
 
-#define EXRSTRT_DELAY ((uint16_t) 9)      /* NINE cs: before PITCHDAP   */
-#define T5_60MS       ((uint16_t) 037772) /* TVCEXADR: 60 ms (TIME5)    */
-#define T5_20MS       ((uint16_t) 037776) /* OCT37776: 20 ms (TIME5)    */
+#define EXRSTRT_DELAY ((uint16_t) 9)                         /* NINE cs: before PITCHDAP   */
+#define T5_60MS       ((uint16_t) 037772)                    /* TVCEXADR: 60 ms (TIME5)    */
+#define T5_20MS       ((uint16_t) 037776)                    /* OCT37776: 20 ms (TIME5)    */
 #define CH12_ENABL1 \
-    ((uint16_t) (AGC_CH012_TVCENABLE | CSM_DAP_BIT11)) /* BIT8 + BIT11 */
+    ((uint16_t) (AGC_CH012_TVCENABLE | CSM_DAP_BIT11))       /* BIT8 + BIT11 */
 #define CH14_RELEASE \
     ((uint16_t) (AGC_CH014_DRIVECDUS | AGC_CH014_DRIVECDUT)) /* PRIO6  */
 
@@ -81,11 +81,9 @@
 static agc_status_t tvcr_tvc_enable(void)
 {
     agc_chan_or(AGC_CHAN_CHAN12, CH12_ENABL1);
-    agc_status_t st =
-        csm_dap_set_t5(AGC_TASK_OPTICS_COUNTER_ENABLE, T5_60MS); /* T5   */
+    agc_status_t st = csm_dap_set_t5(AGC_TASK_OPTICS_COUNTER_ENABLE, T5_60MS); /* T5   */
 
-    (void) AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) &
-                       AGC_CH012_TVCENABLE) != 0u);
+    (void) AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u);
 
     return (st);
 }

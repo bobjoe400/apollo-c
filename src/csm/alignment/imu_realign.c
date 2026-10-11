@@ -14,12 +14,12 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
 
-#define PH_STAR_SELECT  ((uint16_t) 04024) /* P52C PHASCHNG: group 4.2      */
-#define CHK_ACQUIRE     ((uint16_t) 015)   /* ALRM15 = OCT15: V50N25 00015  */
-#define TSIGHT1_CS      ((agc_dp_t) 24000) /* TSIGHT1 2DEC 24000: 4 min     */
+#define PH_STAR_SELECT  ((uint16_t) 04024)        /* P52C PHASCHNG: group 4.2      */
+#define CHK_ACQUIRE     ((uint16_t) 015)          /* ALRM15 = OCT15: V50N25 00015  */
+#define TSIGHT1_CS      ((agc_dp_t) 24000)        /* TSIGHT1 2DEC 24000: 4 min     */
 #define ALM_NO_STARS    ((agc_alarm_code_t) 0405) /* OCT 405: no star pair     */
-#define VN_ALARM        ALIGN_VN(5, 9)  /* V05N09                        */
-#define VN_LANDING_SITE ALIGN_VN(6, 89) /* V06N89* VN 0689               */
+#define VN_ALARM        ALIGN_VN(5, 9)            /* V05N09                        */
+#define VN_LANDING_SITE ALIGN_VN(6, 89)           /* V06N89* VN 0689               */
 
 static bool is_csm(void)
 {
@@ -45,9 +45,7 @@ agc_status_t agc_job_csm_realign_star_selection(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_CSM_REALIGN_PICK_STARS,
-                        AGC_JOB_CSM_FINE_ALIGN));
+    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH, AGC_JOB_CSM_REALIGN_PICK_STARS, AGC_JOB_CSM_FINE_ALIGN));
 }
 
 /*
@@ -61,8 +59,7 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
     agc_interp_t     ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_align_locsam(
-        &ip, ram->tsight, AGC_JOB_CSM_REALIGN_STARS_LOCATED, &ram->locsam);
+    agc_status_t st = agc_align_locsam(&ip, ram->tsight, AGC_JOB_CSM_REALIGN_STARS_LOCATED, &ram->locsam);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -77,8 +74,7 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_align_picapar(&ip, &ram->locsam, &refsmmat, cdu, &ram->besti,
-                               &ram->bestj, &found);
+        st = agc_align_picapar(&ip, &ram->locsam, &refsmmat, cdu, &ram->besti, &ram->bestj, &found);
     }
 
     if (st != AGC_STATUS_OK)
@@ -93,9 +89,7 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
 
     agc_alarm(ALM_NO_STARS); /* P52I     */
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_CSM_FINE_ALIGN,
-                        AGC_JOB_CSM_REALIGN_STAR_SELECTION));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH, AGC_JOB_CSM_FINE_ALIGN, AGC_JOB_CSM_REALIGN_STAR_SELECTION));
 }
 
 /* P52C V33: TSIGHT = now + TSIGHT1 (4 min), CALL LOCSAM. */
@@ -149,8 +143,7 @@ static void landmark_data_from_latlong(const agc_latlong_t *ll)
     ram->landlong = agc_dp_shr(ll->lon, 1); /* SR1      */
     ram->landlat  = ll->lat;
 
-    if (!AGC_ASSERT((ram->landlat >= -AGC_DP_QUARTER) &&
-                    (ram->landlat <= AGC_DP_QUARTER)))
+    if (!AGC_ASSERT((ram->landlat >= -AGC_DP_QUARTER) && (ram->landlat <= AGC_DP_QUARTER)))
     {
         return;
     }
@@ -170,7 +163,7 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 
     agc_align_ram_t *ram = agc_align_ram();
 
-    ram->qmaj = AGC_JOB_REALIGN_GIMBAL_DISPLAY; /* QMAJ     */
+    ram->qmaj   = AGC_JOB_REALIGN_GIMBAL_DISPLAY; /* QMAJ     */
     agc_flag_set(AGC_FLAG_LUNAFLAG);
     agc_flag_set(AGC_FLAG_ERADFLAG);
     ram->tsight = align_dsptem1();
@@ -183,8 +176,7 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->tsight,
-                                &r);
+        st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->tsight, &r);
     }
 
     const agc_vec_t         alphav = agc_vec_shr(r, 2); /* VSR2     */
@@ -219,10 +211,7 @@ agc_status_t agc_job_csm_landing_site_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_LANDING_SITE,
-                        AGC_JOB_GOTOPOOH,
-                        AGC_JOB_CSM_LANDING_SITE_ACCEPTED,
-                        AGC_JOB_CSM_LANDING_SITE_DISPLAY));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_LANDING_SITE, AGC_JOB_GOTOPOOH, AGC_JOB_CSM_LANDING_SITE_ACCEPTED, AGC_JOB_CSM_LANDING_SITE_DISPLAY));
 }
 
 /*
@@ -236,8 +225,7 @@ static agc_status_t landing_site_axes(void)
 
     agc_interp_init(&ip);
     agc_integ_out_t o;
-    agc_status_t    st = align_integ(&ip, ALIGN_CSMPREC, ram->tsight,
-                                     AGC_JOB_CSM_LANDING_SITE_AXES, &o);
+    agc_status_t    st = align_integ(&ip, ALIGN_CSMPREC, ram->tsight, AGC_JOB_CSM_LANDING_SITE_AXES, &o);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -246,8 +234,7 @@ static agc_status_t landing_site_axes(void)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_align_lsorient(&ip, ram->xsmd.row[0], o.ratt, o.vatt,
-                                &ram->xsmd);
+        st = agc_align_lsorient(&ip, ram->xsmd.row[0], o.ratt, o.vatt, &ram->xsmd);
     }
 
     if (st != AGC_STATUS_OK)
@@ -275,12 +262,12 @@ agc_status_t agc_job_csm_landing_site_accepted(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_latlong_t ll;
 
-    ll.lat   = ram->landlat;
-    ll.lon   = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
-    ll.alt   = ram->landalt;
-    ll.eradm = 0;
-    const agc_latlong_opt_t opt = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG),
-                                   .erad  = agc_flag_test(AGC_FLAG_ERADFLAG)};
+    ll.lat                         = ram->landlat;
+    ll.lon                         = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
+    ll.alt                         = ram->landalt;
+    ll.eradm                       = 0;
+    const agc_latlong_opt_t opt    = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG),
+                                      .erad = agc_flag_test(AGC_FLAG_ERADFLAG)};
     agc_navaux_padload_t    pad;
     agc_status_t            st     = agc_navaux_get_padload(&pad);
     agc_vec_t               alphav = agc_vec_zero();

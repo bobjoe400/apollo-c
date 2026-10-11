@@ -58,44 +58,44 @@
 #define THETAD_WORDS   3       /* THETAD +0..+2               */
 
 /* ---- storage ------------------------------------------------------- */
-static agc_sp_t  g_modreg; /* MODREG, unscaled integer */
-static agc_dp_t  g_piptime; /* PIPTIME, cs, scale 2^28 */
-static agc_dp_t  g_tig; /* TIG, cs, scale 2^28 */
-static agc_dp_t  g_ttogo; /* TTOGO, cs, scale 2^28 */
-static agc_dp_t  g_tgo; /* TGO, cs, scale 2^28 */
-static agc_dp_t  g_ttpi; /* TTPI, cs, scale 2^28 */
-static agc_dp_t  g_tevent; /* TEVENT, cs, scale 2^28 */
-static agc_dp_t  g_tetcsm; /* TETCSM, cs, scale 2^28 */
-static agc_dp_t  g_tetlem; /* TETLEM, cs, scale 2^28 */
-static agc_vec_t g_rn; /* RN, m, scale 2^29 earth / 2^27 moon */
-static agc_vec_t g_vn; /* VN, m/cs, scale 2^7 earth / 2^5 moon */
-static agc_vec_t g_rrectcsm; /* RRECTCSM, m, scale 2^29 earth / 2^27 moon */
-static agc_vec_t g_vrectcsm; /* VRECTCSM, m/cs, scale 2^7 earth / 2^5 moon */
-static agc_vec_t g_rrectlem; /* RRECTLEM, m, scale 2^29 earth / 2^27 moon */
-static agc_vec_t g_vrectlem; /* VRECTLEM, m/cs, scale 2^7 earth / 2^5 moon */
-static agc_vec_t g_delv; /* DELV, PIPA pulses, scale 2^14 */
-static agc_vec_t g_vgtig; /* VGTIG, m/cs, scale 2^7 */
-static agc_vec_t g_rls; /* RLS, m, scale 2^27 */
-static agc_mat_t g_refsmmat; /* REFSMMAT, scale 2^1 */
-static agc_tp_t  g_tephem; /* TEPHEM, cs, TP scale 2^42 */
-static agc_sp_t  g_csmmass; /* CSMMASS, kg, scale 2^16 */
-static agc_sp_t  g_lemmass; /* LEMMASS, kg, scale 2^16 */
-static agc_sp_t  g_pipax; /* PIPAX, unscaled pulses */
-static agc_sp_t  g_pipay; /* PIPAY, unscaled pulses */
-static agc_sp_t  g_pipaz; /* PIPAZ, unscaled pulses */
-static uint16_t  g_cdux; /* CDUX, raw word, 2^15 = 1 rev */
-static uint16_t  g_cduy; /* CDUY, raw word, 2^15 = 1 rev */
-static uint16_t  g_cduz; /* CDUZ, raw word, 2^15 = 1 rev */
-static uint16_t  g_cdut; /* CDUT, raw word, 2^15 = 1 rev */
-static uint16_t  g_cdus; /* CDUS, raw word, 2^15 = 1 rev */
-static uint16_t  g_markstat; /* MARKSTAT, bit word */
-static uint16_t  g_imodes30; /* IMODES30, bit word */
-static uint16_t  g_imodes33; /* IMODES33, bit word */
-static uint16_t  g_dapdatr1; /* DAPDATR1, bit word */
-static uint16_t  g_dapdatr2; /* DAPDATR2, bit word */
-static uint16_t  g_dsptab[DSPTAB_WORDS]; /* DSPTAB, relay bit words */
+static agc_sp_t  g_modreg;                 /* MODREG, unscaled integer */
+static agc_dp_t  g_piptime;                /* PIPTIME, cs, scale 2^28 */
+static agc_dp_t  g_tig;                    /* TIG, cs, scale 2^28 */
+static agc_dp_t  g_ttogo;                  /* TTOGO, cs, scale 2^28 */
+static agc_dp_t  g_tgo;                    /* TGO, cs, scale 2^28 */
+static agc_dp_t  g_ttpi;                   /* TTPI, cs, scale 2^28 */
+static agc_dp_t  g_tevent;                 /* TEVENT, cs, scale 2^28 */
+static agc_dp_t  g_tetcsm;                 /* TETCSM, cs, scale 2^28 */
+static agc_dp_t  g_tetlem;                 /* TETLEM, cs, scale 2^28 */
+static agc_vec_t g_rn;                     /* RN, m, scale 2^29 earth / 2^27 moon */
+static agc_vec_t g_vn;                     /* VN, m/cs, scale 2^7 earth / 2^5 moon */
+static agc_vec_t g_rrectcsm;               /* RRECTCSM, m, scale 2^29 earth / 2^27 moon */
+static agc_vec_t g_vrectcsm;               /* VRECTCSM, m/cs, scale 2^7 earth / 2^5 moon */
+static agc_vec_t g_rrectlem;               /* RRECTLEM, m, scale 2^29 earth / 2^27 moon */
+static agc_vec_t g_vrectlem;               /* VRECTLEM, m/cs, scale 2^7 earth / 2^5 moon */
+static agc_vec_t g_delv;                   /* DELV, PIPA pulses, scale 2^14 */
+static agc_vec_t g_vgtig;                  /* VGTIG, m/cs, scale 2^7 */
+static agc_vec_t g_rls;                    /* RLS, m, scale 2^27 */
+static agc_mat_t g_refsmmat;               /* REFSMMAT, scale 2^1 */
+static agc_tp_t  g_tephem;                 /* TEPHEM, cs, TP scale 2^42 */
+static agc_sp_t  g_csmmass;                /* CSMMASS, kg, scale 2^16 */
+static agc_sp_t  g_lemmass;                /* LEMMASS, kg, scale 2^16 */
+static agc_sp_t  g_pipax;                  /* PIPAX, unscaled pulses */
+static agc_sp_t  g_pipay;                  /* PIPAY, unscaled pulses */
+static agc_sp_t  g_pipaz;                  /* PIPAZ, unscaled pulses */
+static uint16_t  g_cdux;                   /* CDUX, raw word, 2^15 = 1 rev */
+static uint16_t  g_cduy;                   /* CDUY, raw word, 2^15 = 1 rev */
+static uint16_t  g_cduz;                   /* CDUZ, raw word, 2^15 = 1 rev */
+static uint16_t  g_cdut;                   /* CDUT, raw word, 2^15 = 1 rev */
+static uint16_t  g_cdus;                   /* CDUS, raw word, 2^15 = 1 rev */
+static uint16_t  g_markstat;               /* MARKSTAT, bit word */
+static uint16_t  g_imodes30;               /* IMODES30, bit word */
+static uint16_t  g_imodes33;               /* IMODES33, bit word */
+static uint16_t  g_dapdatr1;               /* DAPDATR1, bit word */
+static uint16_t  g_dapdatr2;               /* DAPDATR2, bit word */
+static uint16_t  g_dsptab[DSPTAB_WORDS];   /* DSPTAB, relay bit words */
 static uint16_t  g_failreg[FAILREG_WORDS]; /* FAILREG, octal alarm codes */
-static uint16_t  g_thetad[THETAD_WORDS]; /* THETAD, raw words, 2^15 = 1 rev */
+static uint16_t  g_thetad[THETAD_WORDS];   /* THETAD, raw words, 2^15 = 1 rev */
 
 /**********************************************************************
  * AGC: none (helper) -- true when the vehicle selector holds a vehicle

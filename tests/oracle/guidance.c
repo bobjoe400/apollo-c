@@ -43,7 +43,7 @@ static agc_mat_t mat_in(const char *t, const char *name)
 static void calcrvg(const char *t, long tol)
 {
     agc_interp_t       ip;
-    agc_avg_g_t        a = {0};
+    agc_avg_g_t        a    = {0};
     agc_state_vector_t sv;
     const agc_mat_t    ref  = mat_in(t, "REFSMMAT");
     const bool         moon = oracle_in(t, "RTX2", 0) != 0;
@@ -56,8 +56,7 @@ static void calcrvg(const char *t, long tol)
     sv.moon = moon;
     a.gdt_2 = oracle_in_vec(t, "GDT/2");
     a.unitw = oracle_in_vec(t, "UNITW");
-    (void) agc_guid_calcrvg(&ip, AGC_VEHICLE_CSM, moon, &ref,
-                            oracle_in_vec(t, "DELV"), &sv, &a);
+    (void) agc_guid_calcrvg(&ip, AGC_VEHICLE_CSM, moon, &ref, oracle_in_vec(t, "DELV"), &sv, &a);
     oracle_require_ok(t, "POODOO");
     oracle_cmp_vec(t, "DELVREF", a.delvref, oracle_out_vec(t, "DELVREF"), tol);
     oracle_cmp_vec(t, "RN1", a.rn1, oracle_out_vec(t, "RN1"), tol);
@@ -66,8 +65,7 @@ static void calcrvg(const char *t, long tol)
     if (moon)
     {
         oracle_cmp_vec(t, "VN1", a.vn1, oracle_out_vec(t, "VN1"), tol);
-        oracle_cmp_vec(t, "GDT1/2", a.gdt1_2, oracle_out_vec(t, "GDT1/2"),
-                       tol);
+        oracle_cmp_vec(t, "GDT1/2", a.gdt1_2, oracle_out_vec(t, "GDT1/2"), tol);
 
         return;
     }
@@ -75,8 +73,7 @@ static void calcrvg(const char *t, long tol)
     /* F7 (fixed in review): the Comanche 20J / 2J words are B1.         */
     oracle_cmp_vec(t, "VN1", a.vn1, oracle_out_vec(t, "VN1"), tol);
     oracle_cmp_vec(t, "GDT1/2", a.gdt1_2, oracle_out_vec(t, "GDT1/2"), tol);
-    oracle_cmp_vec(t, "GOBL1/2", a.gobl1_2, oracle_out_vec(t, "GOBL1/2"),
-                   tol);
+    oracle_cmp_vec(t, "GOBL1/2", a.gobl1_2, oracle_out_vec(t, "GOBL1/2"), tol);
 }
 
 static void s40_1(const char *t, long tol)
@@ -97,17 +94,13 @@ static void s40_1(const char *t, long tol)
     agc_flag_put(AGC_FLAG_XDELVFLG, true);
     (void) agc_guid_initial_velocity_to_gain(&ip, AGC_VEHICLE_CSM);
     oracle_require_ok(t, "POODOO");
-    (void) oracle_cmp(t, "DELVSAB", rz->delvsab, oracle_out_dp(t, "DELVSAB"),
-                      tol);
+    (void) oracle_cmp(t, "DELVSAB", rz->delvsab, oracle_out_dp(t, "DELVSAB"), tol);
     oracle_cmp_vec(t, "UT", b->ut, oracle_out_vec(t, "UT"), tol);
-    oracle_cmp_vec(t, "VGTIG", agc_erase_vgtig(), oracle_out_vec(t, "VGTIG"),
-                   tol);
+    oracle_cmp_vec(t, "VGTIG", agc_erase_vgtig(), oracle_out_vec(t, "VGTIG"), tol);
     oracle_cmp_vec(t, "RINIT", rz->rinit, oracle_out_vec(t, "RINIT"), 0);
     oracle_cmp_vec(t, "VINIT", rz->vinit, oracle_out_vec(t, "VINIT"), 0);
-    oracle_cmp_vec(t, "DELVLVC", rz->delvlvc, oracle_out_vec(t, "DELVLVC"),
-                   tol);
-    (void) oracle_cmp(t, "AVFLAG", agc_flag_test(AGC_FLAG_AVFLAG),
-                      (oracle_out_raw(t, "FLAGWRD2") & 020) != 0, 0);
+    oracle_cmp_vec(t, "DELVLVC", rz->delvlvc, oracle_out_vec(t, "DELVLVC"), tol);
+    (void) oracle_cmp(t, "AVFLAG", agc_flag_test(AGC_FLAG_AVFLAG), (oracle_out_raw(t, "FLAGWRD2") & 020) != 0, 0);
 }
 
 static void s40_2(const char *t, long tol)
@@ -120,18 +113,15 @@ static void s40_2(const char *t, long tol)
     agc_rendz_t *rz = agc_rendz_erasable();
     agc_burn_t  *b  = &agc_guid_state()->burn;
 
-    b->ut    = oracle_in_vec(t, "UT");
-    rz->rtig = oracle_in_vec(t, "RTIG");
-    rz->vtig = oracle_in_vec(t, "VTIG");
+    b->ut          = oracle_in_vec(t, "UT");
+    rz->rtig       = oracle_in_vec(t, "RTIG");
+    rz->vtig       = oracle_in_vec(t, "VTIG");
     agc_erase_set_refsmmat(mat_in(t, "REFSMMAT"));
     const bool rcs = (oracle_in(t, "FLAGWRD1", 0) & 02000) != 0; /* ENG2FLAG */
 
-    (void) agc_guid_preferred_thrust_attitude_csm(
-        &ip, rcs, (agc_sp_t) oracle_in(t, "PACTOFF", 0),
-        (agc_sp_t) oracle_in(t, "YACTOFF", 0));
+    (void) agc_guid_preferred_thrust_attitude_csm(&ip, rcs, (agc_sp_t) oracle_in(t, "PACTOFF", 0), (agc_sp_t) oracle_in(t, "YACTOFF", 0));
     oracle_require_ok(t, "POODOO");
-    oracle_cmp_vec(t, "POINTVSM", b->pointvsm, oracle_out_vec(t, "POINTVSM"),
-                   tol);
+    oracle_cmp_vec(t, "POINTVSM", b->pointvsm, oracle_out_vec(t, "POINTVSM"), tol);
     oracle_cmp_vec(t, "SCAXIS", b->scaxis, oracle_out_vec(t, "SCAXIS"), tol);
     oracle_cmp_vec(t, "XSCREF", b->xscref, oracle_out_vec(t, "XSCREF"), tol);
     oracle_cmp_vec(t, "YSCREF", b->yscref, oracle_out_vec(t, "YSCREF"), tol);
@@ -156,8 +146,7 @@ static void deltime(const char *t, long tol)
     (void) agc_conic_deltime_(&ip, &c);
     oracle_require_ok(t, "POODOO");
     (void) oracle_cmp(t, "S(XI)", c.s_xi, oracle_out_dp(t, "VAC1+26"), tol);
-    (void) oracle_cmp(t, "XSQC(XI)", c.xsqc_xi, oracle_out_dp(t, "VAC1+28"),
-                      tol);
+    (void) oracle_cmp(t, "XSQC(XI)", c.xsqc_xi, oracle_out_dp(t, "VAC1+28"), tol);
     (void) oracle_cmp(t, "T", c.t, oracle_out_dp(t, "VAC1+30"), tol);
 }
 

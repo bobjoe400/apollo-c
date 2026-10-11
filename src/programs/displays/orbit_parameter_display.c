@@ -62,19 +62,24 @@
 /* 1/RTMUM 2DEC* .45162595 E-4 B14*, 1/RTMUE 2DEC* .50087529 E-5 B17*     */
 #define OPD_1_RTMUM ((agc_dp_t) 198627193) /* 1/RTMUM, B14 */
 #define OPD_1_RTMUE ((agc_dp_t) 176229826) /* 1/RTMUE, B17 */
+
 /* MINPERM 2DEC 10668 B-27 (35 kft), MINPERE 2DEC 91440 B-29 (300 kft)    */
 #define OPD_MINPERM ((agc_dp_t) 21336) /* 35 kft, m 2^27 */
 #define OPD_MINPERE ((agc_dp_t) 45720) /* 300 kft, m 2^29 */
+
 /* V82FLAGS bits: BIT1 tick -TPER, BIT2 tick TFF                          */
 #define OPD_TICK_TPER ((agc_sp_t) 1) /* tick -TPER */
 #define OPD_TICK_TFF  ((agc_sp_t) 2) /* tick TFF */
 #define OPD_TICK_MASK ((agc_sp_t) 3) /* both tick bits */
+
 /* EXTVBACT BIT5: the extended verb display is still wanted               */
 #define OPD_EXTVBACT_BIT5 ((uint16_t) 020) /* BIT5 */
+
 /* BIT4 (80 ms): first TICKTEST; PRIO7, PRIO25                            */
-#define OPD_BIT4_CS ((uint16_t) 8) /* 80 ms, cs */
-#define OPD_PRIO7   ((agc_prio_t) 07) /* PRIO7 */
+#define OPD_BIT4_CS ((uint16_t) 8)     /* 80 ms, cs */
+#define OPD_PRIO7   ((agc_prio_t) 07)  /* PRIO7 */
 #define OPD_PRIO25  ((agc_prio_t) 025) /* PRIO25 */
+
 /* CHECKMM DEC 11: P11 earth orbit insertion monitor                      */
 #define OPD_MODE_EARTH_ORBIT_INSERTION_MONITOR ((agc_sp_t) 11) /* P11 */
 
@@ -137,8 +142,7 @@ agc_dp_t agc_orbit_params_maxchk(agc_interp_t *ip, agc_dp_t h)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_orbit_params_select_body(bool moon, agc_dp_t rls_mag_or_rpad,
-                                          agc_orbit_params_in_t *in)
+agc_status_t agc_orbit_params_select_body(bool moon, agc_dp_t rls_mag_or_rpad, agc_orbit_params_in_t *in)
 {
     if (!AGC_ASSERT(in != NULL) || !AGC_ASSERT(rls_mag_or_rpad >= 0))
     {
@@ -201,22 +205,19 @@ static agc_tff_t opd_tff_debris; /* TFF erasables */
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the first failing TFF status
  **********************************************************************/
-static agc_status_t opd_compute(agc_interp_t *ip,
-                                const agc_orbit_params_in_t *in,
-                                agc_orbit_params_out_t *out, agc_tff_t *tff_out)
+static agc_status_t opd_compute(agc_interp_t *ip, const agc_orbit_params_in_t *in, agc_orbit_params_out_t *out, agc_tff_t *tff_out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL) ||
-        !AGC_ASSERT(out != NULL && tff_out != NULL))
+    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL && tff_out != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     agc_tff_t tff = {0};
 
-    tff.rone = in->moon ? agc_vec_shl(ip, in->rone, 2) : in->rone; /* VSL2 */
-    tff.vone = in->moon ? agc_vec_shl(ip, in->vone, 2) : in->vone; /* VSL2 */
-    tff.rtmu = in->tff_rtmu;
-    agc_status_t st = agc_tff_conic(ip, &tff); /* TFFCONMU      */
+    tff.rone        = in->moon ? agc_vec_shl(ip, in->rone, 2) : in->rone; /* VSL2 */
+    tff.vone        = in->moon ? agc_vec_shl(ip, in->vone, 2) : in->vone; /* VSL2 */
+    tff.rtmu        = in->tff_rtmu;
+    agc_status_t st = agc_tff_conic(ip, &tff);                            /* TFFCONMU      */
 
     if (st == AGC_STATUS_OK)
     {
@@ -228,11 +229,10 @@ static agc_status_t opd_compute(agc_interp_t *ip,
         return (st);
     }
 
-    out->rapo  = tff.rapo;
-    out->rper  = tff.rper;
-    out->hapox = opd_display_height(ip, agc_dp_sub(ip, tff.rapo, in->rpadtem),
-                                    in->moon);              /* STORHAPO      */
-    agc_dp_t hper = agc_dp_sub(ip, tff.rper, in->rpadtem); /* MPAC +4, m 2^29 */
+    out->rapo     = tff.rapo;
+    out->rper     = tff.rper;
+    out->hapox    = opd_display_height(ip, agc_dp_sub(ip, tff.rapo, in->rpadtem), in->moon); /* STORHAPO      */
+    agc_dp_t hper = agc_dp_sub(ip, tff.rper, in->rpadtem);                                   /* MPAC +4, m 2^29 */
 
     out->hperx    = opd_display_height(ip, hper, in->moon); /* STORHPER      */
     out->neg_tper = 0;                                      /* HI6ZEROS      */
@@ -245,11 +245,10 @@ static agc_status_t opd_compute(agc_interp_t *ip,
         out->neg_tper = agc_dp_neg(tper); /* DCOMP         */
     }
 
-    agc_dp_t     t = 0;   /* TFF, cs 2^28 */
-    agc_status_t st2; /* CALCTFF */
+    agc_dp_t     t = 0; /* TFF, cs 2^28 */
+    agc_status_t st2;   /* CALCTFF */
 
-    st2 =
-        agc_tff_calctff(ip, &tff, agc_dp_add(ip, in->hpermin, in->rpadtem), &t);
+    st2 = agc_tff_calctff(ip, &tff, agc_dp_add(ip, in->hpermin, in->rpadtem), &t);
 
     out->tff = agc_dp_neg(t); /* DCOMP, TFF    */
     *tff_out = tff;
@@ -309,10 +308,9 @@ agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
  * RETURNS: agc_status_t -- the SR30.1 status, AGC_STATUS_BAD_ARG for a
  *          positive -TPER
  **********************************************************************/
-static agc_status_t opd_orbit_params(agc_interp_t *ip, agc_rendz_t *rz,
-                                     const agc_orbit_params_in_t *in)
+static agc_status_t opd_orbit_params(agc_interp_t *ip, agc_rendz_t *rz, const agc_orbit_params_in_t *in)
 {
-    agc_orbit_params_out_t o; /* SR30.1 results */
+    agc_orbit_params_out_t o;  /* SR30.1 results */
     agc_status_t           st; /* SR30.1 */
 
     st = opd_compute(ip, in, &o, &opd_tff_debris);
@@ -350,13 +348,11 @@ static agc_status_t opd_orbit_params(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-static agc_status_t opd_input(agc_interp_t *ip, agc_rendz_t *rz, bool moon,
-                              agc_orbit_params_in_t *in)
+static agc_status_t opd_input(agc_interp_t *ip, agc_rendz_t *rz, bool moon, agc_orbit_params_in_t *in)
 {
-    in->rone = rz->rone;
-    in->vone = rz->vone;
-    agc_dp_t pad =
-        moon ? rz_abval(ip, agc_erase_rls()) : RZ_RPAD_B29; /* m 2^27 / 2^29 */
+    in->rone     = rz->rone;
+    in->vone     = rz->vone;
+    agc_dp_t pad = moon ? rz_abval(ip, agc_erase_rls()) : RZ_RPAD_B29; /* m 2^27 / 2^29 */
 
     return (agc_orbit_params_select_body(moon, pad, in));
 }
@@ -401,9 +397,7 @@ static agc_rendz_t *opd_begin(agc_interp_t *ip)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-static agc_status_t opd_flash(const agc_job_ctx_t *ctx, uint8_t verb,
-                              uint8_t noun, agc_job_id_t term,
-                              agc_job_id_t proceed, agc_job_id_t enter)
+static agc_status_t opd_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t term, agc_job_id_t proceed, agc_job_id_t enter)
 {
     return (rz_flash(ctx, AGC_DSKY_GOMARKF, verb, noun, term, proceed, enter));
 }
@@ -501,9 +495,7 @@ agc_status_t agc_job_orbit_display_vehicle_select(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (opd_flash(ctx, 4U, 12U, AGC_JOB_RENDZ_ENDEXT,
-                      AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECTED,
-                      AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT));
+    return (opd_flash(ctx, 4U, 12U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECTED, AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT));
 }
 
 /**********************************************************************
@@ -603,9 +595,7 @@ agc_status_t agc_job_orbit_display_stall(agc_job_ctx_t *ctx)
         return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_STALL));
     }
 
-    return (opd_flash(ctx, 16U, 44U, AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                      AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                      AGC_JOB_ORBIT_DISPLAY_RECYCLE));
+    return (opd_flash(ctx, 16U, 44U, AGC_JOB_RENDZ_DISPLAY_TERMINATE, AGC_JOB_RENDZ_DISPLAY_TERMINATE, AGC_JOB_ORBIT_DISPLAY_RECYCLE));
 }
 
 /**********************************************************************
@@ -632,8 +622,7 @@ static agc_status_t opd_start_ticking(agc_interp_t *ip, agc_rendz_t *rz)
 
     if (rz->neg_tper != 0)
     { /* TICKTPER      */
-        rz->neg_tper =
-            agc_dp_add(ip, rz->neg_tper, rz->tstart_orbit);
+        rz->neg_tper            = agc_dp_add(ip, rz->neg_tper, rz->tstart_orbit);
         rz->orbit_display_flags = OPD_TICK_TPER;
     }
     else
@@ -670,23 +659,21 @@ static agc_status_t opd_start_ticking(agc_interp_t *ip, agc_rendz_t *rz)
  **********************************************************************/
 agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
-    agc_rendz_t *rz  = opd_begin(&ip); /* rendezvous erasables */
+    agc_interp_t ip;                       /* interpreter state */
+    agc_rendz_t *rz  = opd_begin(&ip);     /* rendezvous erasables */
     agc_dp_t     now = agc_rtb_loadtime(); /* RTB LOADTIME, cs 2^28 */
 
-    rz->tstart_orbit = now;
-    rz_integ_kind_t kind =
-        (rz_option(2) == 1U) ? RZ_THISPREC : RZ_OTHPREC; /* R2 = 1: this */
-    agc_integ_out_t o; /* integration result */
-    agc_status_t    st =
-        rz_integ(&ip, kind, now, AGC_JOB_ORBIT_DISPLAY_UPDATE, &o); /* to now */
+    rz->tstart_orbit     = now;
+    rz_integ_kind_t kind = (rz_option(2) == 1U) ? RZ_THISPREC : RZ_OTHPREC;            /* R2 = 1: this */
+    agc_integ_out_t o;                                                                 /* integration result */
+    agc_status_t    st   = rz_integ(&ip, kind, now, AGC_JOB_ORBIT_DISPLAY_UPDATE, &o); /* to now */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    rz->rone = o.ratt; /* BOTHSHIP      */
+    rz->rone = o.ratt;        /* BOTHSHIP      */
     rz->vone = o.vatt;
     agc_orbit_params_in_t in; /* SR30.1 inputs */
 
@@ -730,19 +717,19 @@ agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_orbit_display_average_g(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = opd_begin(&ip); /* rendezvous erasables */
 
-    rz->rone = agc_erase_rn(); /* RN, VN at 2^29, 2^7 (R30 p.519) */
-    rz->vone = agc_erase_vn();
-    bool moon = rz_moonthis(); /* LM MOONTHIS */
+    rz->rone  = agc_erase_rn(); /* RN, VN at 2^29, 2^7 (R30 p.519) */
+    rz->vone  = agc_erase_vn();
+    bool moon = rz_moonthis();  /* LM MOONTHIS */
 
     if (rz_is_csm())
     {
         moon = rz_vflag_test(RZ_VF_AMOONFLG); /* CM AMOONFLG */
     }
 
-    agc_orbit_params_in_t in; /* SR30.1 inputs */
+    agc_orbit_params_in_t in;                                 /* SR30.1 inputs */
     agc_status_t          st = opd_input(&ip, rz, moon, &in); /* inputs */
 
     if (st != AGC_STATUS_OK)
@@ -757,8 +744,7 @@ agc_status_t agc_job_orbit_display_average_g(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (rz_is_csm() &&
-        agc_phase_checkmm(OPD_MODE_EARTH_ORBIT_INSERTION_MONITOR))
+    if (rz_is_csm() && agc_phase_checkmm(OPD_MODE_EARTH_ORBIT_INSERTION_MONITOR))
     {
         return (agc_job_orbit_display_splash(ctx));
     }
@@ -814,9 +800,9 @@ agc_status_t agc_job_orbit_display_repeat(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_orbit_display_splash(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = opd_begin(&ip); /* rendezvous erasables */
-    agc_status_t st; /* INTSTALL */
+    agc_status_t st;                  /* INTSTALL */
 
     st = agc_integ_install(0, AGC_JOB_ORBIT_DISPLAY_SPLASH);
 
@@ -867,9 +853,7 @@ agc_status_t agc_job_orbit_display_monitor(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (opd_flash(ctx, 16U, 44U, AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                      AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                      AGC_JOB_ORBIT_DISPLAY_MONITOR));
+    return (opd_flash(ctx, 16U, 44U, AGC_JOB_RENDZ_DISPLAY_TERMINATE, AGC_JOB_RENDZ_DISPLAY_TERMINATE, AGC_JOB_ORBIT_DISPLAY_MONITOR));
 }
 
 /**********************************************************************
@@ -895,9 +879,9 @@ agc_status_t agc_task_ticktest(void)
 
     agc_status_t st; /* next tick */
 
-    st = agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_TICKTEST);
+    st              = agc_waitlist_call(RZ_1SEC_CS, AGC_TASK_TICKTEST);
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
-    agc_sp_t     bits; /* V82FLAGS, unscaled */
+    agc_sp_t     bits;                      /* V82FLAGS, unscaled */
 
     bits = (agc_sp_t) (rz->orbit_display_flags & OPD_TICK_MASK);
 

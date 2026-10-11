@@ -34,7 +34,7 @@ bool agc_csm_tvc_on(void)
  * DOTVCON in 0.4 s.                                                        */
 agc_status_t agc_csm_preptvc(void)
 {
-    agc_flag_clear(AGC_FLAG_DAPBIT1); /* RESET T5 BITS          */
+    agc_flag_clear(AGC_FLAG_DAPBIT1);       /* RESET T5 BITS          */
     agc_flag_clear(AGC_FLAG_DAPBIT2);
     agc_rupt_set_t5_task(AGC_TASK_T5IDLOC); /* KILL RCS               */
     agc_phase_newphase(4, 3, true);         /* 4.3 = DOTVCON (40CS)   */
@@ -55,10 +55,10 @@ agc_status_t agc_task_ignition_csm(void)
     agc_csm_dap_com()->ogad = agc_erase_cdux(); /* ROLL DAP REF.    */
     agc_erase_set_tevent((agc_dp_t) agc_time_now_cs());
     agc_flag_set(AGC_FLAG_ENGONFLG);
-    agc_chan_or(011, AGC_CSM_SPSON); /* SPSON                  */
+    agc_chan_or(011, AGC_CSM_SPSON);            /* SPSON                  */
 
     if (agc_flag_test(AGC_FLAG_IMPULSW))
-    {                                             /* IMPULCHK               */
+    { /* IMPULCHK               */
         agc_flag_clear(AGC_FLAG_STRULLSW); /* IMPLBURN               */
         agc_erase_set_tig(agc_erase_tgo() + (agc_dp_t) agc_time_now_cs());
         agc_phase_var_t v = {
@@ -66,8 +66,7 @@ agc_status_t agc_task_ignition_csm(void)
         };
 
         agc_phase_change2((uint16_t) 040153, (uint16_t) 007014, &v);
-        agc_status_t st = agc_waitlist_call(
-            (uint16_t) agc_dp_low(agc_erase_tgo()), AGC_TASK_ENGINOFF);
+        agc_status_t st = agc_waitlist_call((uint16_t) agc_dp_low(agc_erase_tgo()), AGC_TASK_ENGINOFF);
 
         return ((st != AGC_STATUS_OK) ? st : agc_task_implcont());
     }
@@ -110,16 +109,16 @@ agc_status_t agc_task_dotvcon(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    tvc->tvcphase = -1; /* CS BIT1                */
-    tvc->tvcexphs = 0;
-    agc_flag_set(AGC_FLAG_DAPBIT1); /* BITS 15,14 = 10        */
+    tvc->tvcphase   = -1;                        /* CS BIT1                */
+    tvc->tvcexphs   = 0;
+    agc_flag_set(AGC_FLAG_DAPBIT1);              /* BITS 15,14 = 10        */
     agc_flag_clear(AGC_FLAG_DAPBIT2);
-    agc_phase_newphase(6, 3, false); /* 6.3 = CLOKTASK         */
+    agc_phase_newphase(6, 3, false);             /* 6.3 = CLOKTASK         */
     tvc->errbtmp.hi = (agc_sp_t) -rcs->error[1]; /* DCS ERRORY: each word */
     tvc->errbtmp.lo = (agc_sp_t) -rcs->error[2]; /* complemented as is    */
-    agc_phase_newphase(4, 5, true);          /* 4.5 = DOSTRULL         */
+    agc_phase_newphase(4, 5, true);              /* 4.5 = DOSTRULL         */
     agc_rupt_set_time(5, (uint16_t) AGC_SP_MAX); /* START RIGHT AWAY   */
-    agc_rupt_set_t5_task(AGC_TASK_TVCDAPON); /* KILLS RCS DAP          */
+    agc_rupt_set_t5_task(AGC_TASK_TVCDAPON);     /* KILLS RCS DAP          */
 
     if (!AGC_ASSERT(agc_csm_tvc_on()))
     {
@@ -214,12 +213,11 @@ agc_status_t agc_task_dotvcrcs(void)
  * word); the trims follow DELPBAR/DELYBAR once the TVC DAP is running.   */
 static void massback(void)
 {
-    agc_csm_tvc_t    *tvc = agc_csm_dap_tvc();
-    agc_csm_dapcom_t *com = agc_csm_dap_com();
-    int32_t           p   =
-        (int32_t) tvc->engine_fail_vcntr * (int32_t) com->emdot; /* MP EMDOT */
-    int32_t lo   = p % 16384;                                    /* LXCH A   */
-    int32_t corr = (lo * CS_PER_SEC) / 16384;                    /* MP 1SEC  */
+    agc_csm_tvc_t    *tvc  = agc_csm_dap_tvc();
+    agc_csm_dapcom_t *com  = agc_csm_dap_com();
+    int32_t           p    = (int32_t) tvc->engine_fail_vcntr * (int32_t) com->emdot; /* MP EMDOT */
+    int32_t           lo   = p % 16384;                                               /* LXCH A   */
+    int32_t           corr = (lo * CS_PER_SEC) / 16384;                               /* MP 1SEC  */
 
     agc_erase_set_csmmass((agc_sp_t) (tvc->masstmp + corr));
 
@@ -241,7 +239,7 @@ static void massback(void)
 void agc_csm_spsoff(void)
 {
     agc_erase_set_tevent((agc_dp_t) agc_time_now_cs());
-    agc_flag_clear(AGC_FLAG_ENGONFLG); /* RESTARTS WILL SHUT DOWN */
+    agc_flag_clear(AGC_FLAG_ENGONFLG);   /* RESTARTS WILL SHUT DOWN */
     agc_chan_and(011, (uint16_t) ~AGC_CSM_SPSON);
     agc_chan_or(012, AGC_CSM_SIVCUTOFF); /* SIV CUTOFF COMMAND     */
     massback();
@@ -269,9 +267,7 @@ void agc_csm_tvczap(void)
 }
 
 /* A flashing display: terminate -> POST41.                                 */
-static agc_status_t flash_post41(agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
-                                 uint8_t verb, uint8_t noun, agc_job_id_t pro,
-                                 agc_job_id_t enter)
+static agc_status_t flash_post41(agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint8_t verb, uint8_t noun, agc_job_id_t pro, agc_job_id_t enter)
 {
     agc_dsky_cont_t cont = {AGC_JOB_POST41, pro, enter};
 
@@ -296,8 +292,7 @@ agc_status_t agc_job_postburn_csm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (flash_post41(ctx, AGC_DSKY_REFLASH, 16, 40,
-                         AGC_JOB_SPS_BURN_RCS_TRIM, AGC_JOB_POSTBURN));
+    return (flash_post41(ctx, AGC_DSKY_REFLASH, 16, 40, AGC_JOB_SPS_BURN_RCS_TRIM, AGC_JOB_POSTBURN));
 }
 
 /* P40RCS (p.695): AVEGEXIT = CALCN85, wait 2 s for it, then P40MINDB.     */
@@ -308,8 +303,7 @@ agc_status_t agc_job_sps_burn_rcs_trim(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_guid_state()->avg.avgexit =
-        AGC_JOB_CALC_VG_BODY; /* ACADN85                */
+    agc_guid_state()->avg.avgexit = AGC_JOB_CALC_VG_BODY; /* ACADN85                */
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
@@ -352,8 +346,7 @@ agc_status_t agc_job_tignow_csm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (flash_post41(ctx, AGC_DSKY_REFLASH, 16, 85, AGC_JOB_POST41,
-                         AGC_JOB_TIGNOW));
+    return (flash_post41(ctx, AGC_DSKY_REFLASH, 16, 85, AGC_JOB_POST41, AGC_JOB_TIGNOW));
 }
 
 /* POST41 (p.696): AVEGEXIT = SERVEXIT, then P00.                           */
@@ -364,8 +357,7 @@ agc_status_t agc_job_post41(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_guid_state()->avg.avgexit =
-        AGC_JOB_SERVEXIT; /* SERVCADR               */
+    agc_guid_state()->avg.avgexit = AGC_JOB_SERVEXIT; /* SERVCADR               */
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
@@ -416,8 +408,7 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
     agc_interp_t            ip;
 
     agc_interp_init(&ip);
-    agc_status_t st =
-        agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo);
+    agc_status_t st = agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo);
 
     if (st != AGC_STATUS_OK)
     {
@@ -444,7 +435,7 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
 agc_status_t agc_task_tigon(void)
 {
     agc_guid_state()->avg.avgexit = AGC_JOB_CALC_DELTA_V_BODY;
-    agc_status_t st = agc_exec_novac(AGC_PRIO30, AGC_JOB_THRUST_MONITOR_RESET);
+    agc_status_t st               = agc_exec_novac(AGC_PRIO30, AGC_JOB_THRUST_MONITOR_RESET);
 
     if (st != AGC_STATUS_OK)
     {
@@ -494,6 +485,5 @@ agc_status_t agc_job_thrust_monitor_display_csm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(16, 83),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(16, 83), &cont));
 }

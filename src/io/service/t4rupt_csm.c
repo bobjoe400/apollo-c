@@ -71,31 +71,31 @@
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 
-#define BIT1         000001u    /* BIT1: ZERO OCDU / ZOPT task working     */
-#define BIT2         000002u    /* BIT2: OCDU error counters / fail inhib  */
-#define BIT5         000020u    /* BIT5: optics switch at CMC (inverted)   */
-#define BIT7         000100u    /* BIT7: OCDU fail (channel 30, inverted)  */
-#define BIT8         000200u    /* BIT8: OPTICS CDU FAIL lamp (DSPTAB+11D) */
-#define BIT9         000400u    /* BIT9: coarse optics since fresh start   */
-#define BIT10        001000u    /* BIT10: optics zeroed since fresh start  */
-#define BIT15        040000u    /* BIT15: sign / lamp word "send" bit      */
-#define POSMAX       037777u    /* POSMAX                                  */
-#define WORD15       077777u    /* one AGC word, 15 bits                   */
-#define OCTHIRTY     000030u    /* BITS4&5: optics mode switch bits        */
-#define OPT_SIX      000006u    /* SIX: ZOPT processing + OCDUFAIL inhibit */
-#define OPT_SEVEN    000007u    /* SEVEN: the three zero optics bits       */
-#define OCT11_12     006000u    /* 11,12 = PRIO6: drive CDU S and T        */
-#define OPTINITF     000130u    /* OPTINITF: fresh start OPTMODES          */
-#define OPTINITR     000430u    /* OPTINITR: OPTMODES bits kept on restart */
-#define ZOPT_SAMPLES 32         /* OCT40: 32-sample wait                   */
-#define WTOPT_RETURN 11         /* OCT13: 5 s return option (480 ms each)  */
-#define ZOPT_HOLD_CS 20u        /* 200MS = OCT24, cs                       */
-#define DEG20_CDU    7199       /* 20DEGS DEC 7199, 2^14 = pi              */
-#define MAXPLS       165        /* -MAXPLS (DEC -165, was -80), pulses     */
-#define DEG45_CDU    4096       /* -(13,14,15) + 1: 45 deg, 2^14 = pi      */
-#define DEG90_CDU    8192       /* -NEG1/2: 90 deg, 2^14 = pi              */
-#define CDU_SIGN     040000u    /* sign bit of a CDU counter               */
-#define LAMPWORD     11         /* DSPTAB +11D                             */
+#define BIT1         000001u /* BIT1: ZERO OCDU / ZOPT task working     */
+#define BIT2         000002u /* BIT2: OCDU error counters / fail inhib  */
+#define BIT5         000020u /* BIT5: optics switch at CMC (inverted)   */
+#define BIT7         000100u /* BIT7: OCDU fail (channel 30, inverted)  */
+#define BIT8         000200u /* BIT8: OPTICS CDU FAIL lamp (DSPTAB+11D) */
+#define BIT9         000400u /* BIT9: coarse optics since fresh start   */
+#define BIT10        001000u /* BIT10: optics zeroed since fresh start  */
+#define BIT15        040000u /* BIT15: sign / lamp word "send" bit      */
+#define POSMAX       037777u /* POSMAX                                  */
+#define WORD15       077777u /* one AGC word, 15 bits                   */
+#define OCTHIRTY     000030u /* BITS4&5: optics mode switch bits        */
+#define OPT_SIX      000006u /* SIX: ZOPT processing + OCDUFAIL inhibit */
+#define OPT_SEVEN    000007u /* SEVEN: the three zero optics bits       */
+#define OCT11_12     006000u /* 11,12 = PRIO6: drive CDU S and T        */
+#define OPTINITF     000130u /* OPTINITF: fresh start OPTMODES          */
+#define OPTINITR     000430u /* OPTINITR: OPTMODES bits kept on restart */
+#define ZOPT_SAMPLES 32      /* OCT40: 32-sample wait                   */
+#define WTOPT_RETURN 11      /* OCT13: 5 s return option (480 ms each)  */
+#define ZOPT_HOLD_CS 20u     /* 200MS = OCT24, cs                       */
+#define DEG20_CDU    7199    /* 20DEGS DEC 7199, 2^14 = pi              */
+#define MAXPLS       165     /* -MAXPLS (DEC -165, was -80), pulses     */
+#define DEG45_CDU    4096    /* -(13,14,15) + 1: 45 deg, 2^14 = pi      */
+#define DEG90_CDU    8192    /* -NEG1/2: 90 deg, 2^14 = pi              */
+#define CDU_SIGN     040000u /* sign bit of a CDU counter               */
+#define LAMPWORD     11      /* DSPTAB +11D                             */
 
 #define ALARM_ZOPT_SWITCH    ((agc_alarm_code_t) 00116) /* moved in ZOPT */
 #define ALARM_OPT_NOT_ZEROED ((agc_alarm_code_t) 00120) /* not zeroed    */
@@ -116,13 +116,7 @@ static int      commando[2];         /* COMMANDO T, S, CDU pulses         */
  **********************************************************************/
 static bool optics_ok(void)
 {
-    return ((optmodes <= WORD15) &&
-            (optind >= AGC_OPTIND_NEG0) && (optind <= 1) &&
-            (swsample >= -1) && (swsample <= 1) &&
-            (desopmod >= -1) && (desopmod <= 1) &&
-            (wtoption >= 0) && (wtoption <= WTOPT_RETURN) &&
-            (zoptcnt >= 0) && (zoptcnt <= ZOPT_SAMPLES) &&
-            (zone >= -(int) POSMAX) && (zone <= (int) POSMAX));
+    return ((optmodes <= WORD15) && (optind >= AGC_OPTIND_NEG0) && (optind <= 1) && (swsample >= -1) && (swsample <= 1) && (desopmod >= -1) && (desopmod <= 1) && (wtoption >= 0) && (wtoption <= WTOPT_RETURN) && (zoptcnt >= 0) && (zoptcnt <= ZOPT_SAMPLES) && (zone >= -(int) POSMAX) && (zone <= (int) POSMAX));
 }
 
 /**********************************************************************
@@ -303,8 +297,7 @@ static int cdu_ones(uint16_t cdu)
         return (0); /* no valid result */
     }
 
-    v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : /* negative */
-        (int) cdu;
+    v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu; /* negative */
 
     if (!AGC_ASSERT(v >= -(int) POSMAX && v <= (int) POSMAX))
     {
@@ -475,7 +468,7 @@ static agc_status_t t4_mantocsc(bool full)
  **********************************************************************/
 static agc_status_t t4_cancoars(void)
 {
-    optind = -1;
+    optind   = -1;
     ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT2);
     optmodes = (uint16_t) (optmodes | BIT9); /* CS / MASK BIT9 / ADS */
 
@@ -677,8 +670,8 @@ static agc_status_t t4_cscdes(void)
 static void t4_ocduftst(void)
 {
     uint16_t w       = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D      */
-    bool     lamp_on = (w & BIT8) != 0u;            /* lamp lit now     */
-    bool     want_on = false;                       /* desired state    */
+    bool     lamp_on = (w & BIT8) != 0u;           /* lamp lit now     */
+    bool     want_on = false;                      /* desired state    */
 
     if (!AGC_ASSERT(w <= WORD15))
     {
@@ -707,8 +700,7 @@ static void t4_ocduftst(void)
     if (want_on != lamp_on)
     {
         /* SETOFF: RXOR the bit, MASK POSMAX, AD BIT15 (send) */
-        agc_erase_set_dsptab(
-            LAMPWORD, (uint16_t) (((w ^ BIT8) & POSMAX) + BIT15));
+        agc_erase_set_dsptab(LAMPWORD, (uint16_t) (((w ^ BIT8) & POSMAX) + BIT15));
 
         if (!AGC_ASSERT((agc_erase_dsptab(LAMPWORD) & BIT15) != 0u))
         {
@@ -733,8 +725,7 @@ agc_status_t agc_t4_optics_monitor(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    chg = (uint16_t) ((optmodes ^ agc_chan_read((int) AGC_CHAN_CHAN30)) &
-                      BIT7);
+    chg = (uint16_t) ((optmodes ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & BIT7);
 
     if (chg != 0u)
     {
@@ -746,13 +737,11 @@ agc_status_t agc_t4_optics_monitor(void)
         return (AGC_STATUS_OK); /* 33OPTMON: bypass if TVC takeover */
     }
 
-    chg = (uint16_t) (chg + ((optmodes ^ agc_chan_read((int) AGC_CHAN_CHAN33)) &
-                             OCTHIRTY));
+    chg      = (uint16_t) (chg + ((optmodes ^ agc_chan_read((int) AGC_CHAN_CHAN33)) & OCTHIRTY));
     optmodes = (uint16_t) (optmodes ^ chg);
     present  = (uint16_t) (~(uint32_t) optmodes & OCTHIRTY);
 
-    if (!AGC_ASSERT(((optmodes ^ agc_chan_read((int) AGC_CHAN_CHAN33)) &
-                     OCTHIRTY) == 0u))
+    if (!AGC_ASSERT(((optmodes ^ agc_chan_read((int) AGC_CHAN_CHAN33)) & OCTHIRTY) == 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -797,7 +786,7 @@ agc_status_t agc_t4_optics_task(agc_task_id_t task)
 {
     if (task == AGC_TASK_ENDZOPT)
     {
-        agc_erase_set_cdus(0); /* ZEROPCDU */
+        agc_erase_set_cdus(0);                               /* ZEROPCDU */
         zone = 0;
         agc_erase_set_cdut((uint16_t) (WORD15 - DEG20_CDU)); /* CS 20DEGS */
         ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT1);
@@ -890,8 +879,8 @@ static int t4_getopcmd(uint16_t desired, uint16_t actual)
 static void t4_opt_commands(void)
 {
     const agc_align_ram_t *ar    = agc_align_ram(); /* DESOPTT, DESOPTS */
-    int                    tdiff = 0; /* DESOPTT - CDUT, ones', 2^14 = pi */
-    int                    cdus  = 0; /* CDUS, ones', 2^14 = pi           */
+    int                    tdiff = 0;               /* DESOPTT - CDUT, ones', 2^14 = pi */
+    int                    cdus  = 0;               /* CDUS, ones', 2^14 = pi           */
 
     if (!AGC_ASSERT(ar != NULL))
     {
@@ -981,8 +970,7 @@ static void t4_opt_send(void)
         return;
     }
 
-    if (!AGC_ASSERT(iabs(agc_erase_cdutcmd(0)) <= MAXPLS &&
-                    iabs(agc_erase_cdutcmd(1)) <= MAXPLS))
+    if (!AGC_ASSERT(iabs(agc_erase_cdutcmd(0)) <= MAXPLS && iabs(agc_erase_cdutcmd(1)) <= MAXPLS))
     {
         return;
     }

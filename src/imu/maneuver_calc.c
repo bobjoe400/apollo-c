@@ -63,15 +63,16 @@
  * MINANG with MAXANG as its low word and MAXANG with SD (DEC .433015):
  *   CM MINANG = 11, 7737  (.00069375, .472222)
  *   CM MAXANG = 7737, 7095 (.472222, .433015)                            */
-#define MINANG_LM ((agc_dp_t) 186227)    /* 2DEC 0.00069375               */
-#define MAXANG_LM ((agc_dp_t) 126761187) /* 2DEC 0.472222222              */
-#define MINANG_CM ((agc_dp_t) ((11L << 14) + 7737L))    /* rev 2^0  */
-#define MAXANG_CM ((agc_dp_t) ((7737L << 14) + 7095L))  /* rev 2^0  */
+#define MINANG_LM ((agc_dp_t) 186227)                  /* 2DEC 0.00069375               */
+#define MAXANG_LM ((agc_dp_t) 126761187)               /* 2DEC 0.472222222              */
+#define MINANG_CM ((agc_dp_t) ((11L << 14) + 7737L))   /* rev 2^0  */
+#define MAXANG_CM ((agc_dp_t) ((7737L << 14) + 7095L)) /* rev 2^0  */
+
 /* LOCKANGL DEC .388889 = 70 deg at half-revolution scale.  DSU reads two
  * words, so the low half is the next word in fixed memory: the READCDUK
  * instruction CA CDUZ (octal 30034).                                     */
 #define LOCKANGL ((agc_dp_t) ((6372L << 14) + 030034L)) /* half-rev 2^0 */
-#define CDU_MASK 077777u /* 15-bit CDU word */
+#define CDU_MASK 077777u                                /* 15-bit CDU word */
 
 /**********************************************************************
  * AGC: none (checker) -- every component a valid DP
@@ -138,8 +139,7 @@ static agc_dp_t bovb_signmpac(agc_interp_t *ip, agc_dp_t v)
  *
  * RETURNS: agc_dp_t -- the stored two words
  **********************************************************************/
-static agc_dp_t dmp_dad_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b,
-                            agc_dp_t add, int n)
+static agc_dp_t dmp_dad_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, agc_dp_t add, int n)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(n >= 0 && n <= 3))
     {
@@ -148,7 +148,7 @@ static agc_dp_t dmp_dad_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b,
 
     agc_tp_t m = agc_dp_mul_tp(a, b); /* DMP: TP MPAC, scales add */
 
-    m = agc_tp_add(ip, m, agc_tp_from_dp(add));    /* DAD: MPAC+2 kept  */
+    m = agc_tp_add(ip, m, agc_tp_from_dp(add)); /* DAD: MPAC+2 kept  */
 
     return (agc_tp_to_dp(agc_tp_shift(ip, m, n))); /* SLn, STORE        */
 }
@@ -167,8 +167,7 @@ static agc_dp_t dmp_dad_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b,
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on bad input
  **********************************************************************/
-agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3],
-                               agc_mat_t *m)
+agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_t *m)
 {
     if (!AGC_ASSERT(ip != NULL && cdu != NULL && m != NULL))
     {
@@ -197,33 +196,35 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3],
     const agc_dp_t cth = c[1]; /* PD6 COS(THETA) / 2, 2^0             */
     const agc_dp_t sps = s[2]; /* PD8 SIN(PSI) / 2, 2^0               */
     const agc_dp_t cps = c[2]; /* PD10 COS(PSI) / 2, 2^0              */
+
     /* PD12 = sin(th)sin(ph), PD14 = cos(ph)sin(th): DMP then PDDL keeps
      * two words; scale 4.                                                */
     const agc_dp_t pd12 = agc_dp_mul_trunc(sth, sph); /* PD6 sin(th)sin(ph),  2^0 */
     const agc_dp_t pd14 = agc_dp_mul_trunc(cph, sth); /* PD7 cos(ph)sin(th),  2^0 */
 
     m->row[0].c[0] = dmp_dad_shl(ip, cth, cps, 0, 1); /* C0: DMP SL1    */
+
     /* C1: cos(th) DMP sin(ps) DMP cos(ph) SL1, BDSU PD12, SL1.  The BDSU
      * leaves MPAC+2 of the product; its top bit is lost here (DEVIATION:
      * see docs/modules/review-imu.md F5).                               */
     agc_dp_t t = dmp_dad_shl(ip, agc_dp_mul_trunc(cth, sps), cph, 0, 1); /* product term, 2^0 */
 
     m->row[0].c[1] = agc_dp_shl(ip, agc_dp_sub(ip, pd12, t), 1);
+
     /* C2: cos(th) DMP sin(ps) DMP sin(ph) SL1, DAD PD14, SL1            */
-    agc_tp_t tp = agc_tp_shift(
-        ip, agc_dp_mul_tp(agc_dp_mul_trunc(cth, sps), sph), 1); /* TP MPAC, 2^0 */
+    agc_tp_t tp = agc_tp_shift(ip, agc_dp_mul_tp(agc_dp_mul_trunc(cth, sps), sph), 1); /* TP MPAC, 2^0 */
 
     tp             = agc_tp_add(ip, tp, agc_tp_from_dp(pd14));
     m->row[0].c[2] = agc_tp_to_dp(agc_tp_shift(ip, tp, 1));
-    m->row[1].c[0] = sps;                              /* C3: DLOAD 8D  */
-    m->row[1].c[1] = dmp_dad_shl(ip, cps, cph, 0, 1); /* C4: DMP SL1   */
-    m->row[1].c[2] =
-        agc_dp_neg(dmp_dad_shl(ip, cps, sph, 0, 1)); /* C5: DMP DCOMP SL1 */
-    m->row[2].c[0] =
-        agc_dp_neg(dmp_dad_shl(ip, sth, cps, 0, 1)); /* C6: DMP DCOMP SL1 */
+    m->row[1].c[0] = sps;                                         /* C3: DLOAD 8D  */
+    m->row[1].c[1] = dmp_dad_shl(ip, cps, cph, 0, 1);             /* C4: DMP SL1   */
+    m->row[1].c[2] = agc_dp_neg(dmp_dad_shl(ip, cps, sph, 0, 1)); /* C5: DMP DCOMP SL1 */
+    m->row[2].c[0] = agc_dp_neg(dmp_dad_shl(ip, sth, cps, 0, 1)); /* C6: DMP DCOMP SL1 */
+
     /* C7: (PD14 DMP sin(ps) SL1) pushed; cos(th) DMP sin(ph), DAD, SL1  */
     t              = dmp_dad_shl(ip, pd14, sps, 0, 1);
     m->row[2].c[1] = dmp_dad_shl(ip, cth, sph, t, 1);
+
     /* C8: (PD12 DMP sin(ps) SL1) pushed; cos(th) DMP cos(ph), DSU, SL1  */
     t              = dmp_dad_shl(ip, pd12, sps, 0, 1);
     m->row[2].c[2] = dmp_dad_shl(ip, cth, cph, agc_dp_neg(t), 1);
@@ -255,9 +256,8 @@ static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
         return (ang); /* OKTHETA / OKPHI    */
     }
 
-    agc_dp_t n = agc_dp_neg(ang); /* DCOMP, rev 2^0 */
-    agc_dp_t r = (n >= 0) ? agc_dp_sub(ip, n, AGC_DP_HALF) : /* BPL SUHALFA, rev 2^0 */
-                 agc_dp_add(ip, n, AGC_DP_HALF);
+    agc_dp_t n = agc_dp_neg(ang);                                                            /* DCOMP, rev 2^0 */
+    agc_dp_t r = (n >= 0) ? agc_dp_sub(ip, n, AGC_DP_HALF) : agc_dp_add(ip, n, AGC_DP_HALF); /* BPL SUHALFA, rev 2^0 */
 
     if (!AGC_ASSERT(r >= AGC_DP_MIN && r <= AGC_DP_MAX))
     {
@@ -282,11 +282,9 @@ static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on bad input
  **********************************************************************/
-agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m,
-                               agc_vec_t *angles, agc_dp_t *cos_mga)
+agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t *angles, agc_dp_t *cos_mga)
 {
-    if (!AGC_ASSERT(ip != NULL && m != NULL && angles != NULL &&
-                    cos_mga != NULL))
+    if (!AGC_ASSERT(ip != NULL && m != NULL && angles != NULL && cos_mga != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -296,17 +294,17 @@ agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t psi  = agc_dp_asin(ip, m->row[1].c[0]);  /* C3, rev 2^0 */
+    agc_dp_t psi  = agc_dp_asin(ip, m->row[1].c[0]);        /* C3, rev 2^0 */
     agc_dp_t cpsi = agc_dp_shl(ip, agc_dp_cos(ip, psi), 1); /* S1 = COS(MGA), 2^0 */
 
-    cpsi = bovb_signmpac(ip, cpsi); /* S1       */
-    agc_dp_t q     = agc_dp_div(ip, agc_dp_neg(m->row[2].c[0]), cpsi); /* -C6 / S1, 2^0 */
+    cpsi           = bovb_signmpac(ip, cpsi);                              /* S1       */
+    agc_dp_t q     = agc_dp_div(ip, agc_dp_neg(m->row[2].c[0]), cpsi);     /* -C6 / S1, 2^0 */
     agc_dp_t theta = dcm_quadrant(ip, agc_dp_asin(ip, q), m->row[0].c[0]); /* THETA, rev 2^0 */
 
-    q = agc_dp_div(ip, agc_dp_neg(m->row[1].c[2]), cpsi); /* -C5 */
+    q            = agc_dp_div(ip, agc_dp_neg(m->row[1].c[2]), cpsi);     /* -C5 */
     agc_dp_t phi = dcm_quadrant(ip, agc_dp_asin(ip, q), m->row[1].c[1]); /* PHI, rev 2^0 */
 
-    *angles  = agc_vec_make(phi, theta, psi);       /* VECOFANG */
+    *angles  = agc_vec_make(phi, theta, psi); /* VECOFANG */
     *cos_mga = cpsi;
 
     return (AGC_STATUS_OK);
@@ -325,8 +323,7 @@ agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m,
  *
  * RETURNS: agc_dp_t -- DEL element, 2^0
  **********************************************************************/
-static agc_dp_t del_diag(agc_interp_t *ip, agc_dp_t u, agc_dp_t omc2,
-                         agc_dp_t cos8)
+static agc_dp_t del_diag(agc_interp_t *ip, agc_dp_t u, agc_dp_t omc2, agc_dp_t cos8)
 {
     agc_dp_t uu = agc_tp_to_dp(agc_dp_sq_tp(u)); /* DSQ, then DMP reads 2 words, 2^0 */
 
@@ -348,12 +345,11 @@ static agc_dp_t del_diag(agc_interp_t *ip, agc_dp_t u, agc_dp_t omc2,
  *   sin2  agc_dp_t        I    sin A / 2, 2^0
  *   out   agc_dp_t [2]    O    the two DEL elements, 2^0
  **********************************************************************/
-static void del_pair(agc_interp_t *ip, agc_dp_t ui, agc_dp_t uj, agc_dp_t uk,
-                     agc_dp_t omc2, agc_dp_t sin2, agc_dp_t out[2])
+static void del_pair(agc_interp_t *ip, agc_dp_t ui, agc_dp_t uj, agc_dp_t uk, agc_dp_t omc2, agc_dp_t sin2, agc_dp_t out[2])
 {
-    agc_dp_t uij = agc_dp_mul_trunc(ui, uj); /* DMP, next DMP reads 2 words, 2^0 */
-    agc_dp_t pd6 = dmp_dad_shl(ip, uij, omc2, 0, 1);         /* SL1, PDDL: $4, 2^0 */
-    agc_dp_t pd8 = agc_dp_mul_trunc(uk, sin2);               /* PUSH: $4, 2^0  */
+    agc_dp_t uij = agc_dp_mul_trunc(ui, uj);         /* DMP, next DMP reads 2 words, 2^0 */
+    agc_dp_t pd6 = dmp_dad_shl(ip, uij, omc2, 0, 1); /* SL1, PDDL: $4, 2^0 */
+    agc_dp_t pd8 = agc_dp_mul_trunc(uk, sin2);       /* PUSH: $4, 2^0  */
 
     out[0] = bovb_signmpac(ip, dmp_dad_shl(ip, uk, sin2, pd6, 2));
     out[1] = bovb_signmpac(ip, agc_dp_shl(ip, agc_dp_sub(ip, pd6, pd8), 2));
@@ -380,8 +376,7 @@ static void del_pair(agc_interp_t *ip, agc_dp_t ui, agc_dp_t uj, agc_dp_t uk,
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on bad input
  **********************************************************************/
-agc_status_t agc_kalc_delcomp(agc_interp_t *ip, agc_vec_t u, agc_dp_t a,
-                              agc_mat_t *del)
+agc_status_t agc_kalc_delcomp(agc_interp_t *ip, agc_vec_t u, agc_dp_t a, agc_mat_t *del)
 {
     if (!AGC_ASSERT(ip != NULL && del != NULL))
     {
@@ -393,11 +388,10 @@ agc_status_t agc_kalc_delcomp(agc_interp_t *ip, agc_vec_t u, agc_dp_t a,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t sin2 = agc_dp_sin(ip, a); /* PD0 $2, 2^0 */
-    agc_dp_t cos2 = agc_dp_cos(ip, a); /* COS(A) / 2, 2^0 */
-    agc_dp_t cos8 = agc_dp_shr(cos2, 2); /* PD2 $8, 2^0 */
-    agc_dp_t omc2 =
-        bovb_signmpac(ip, agc_dp_sub(ip, AGC_DP_HALF, cos2)); /* PD4 (1-cos A)/2, $2 2^0 */
+    agc_dp_t sin2 = agc_dp_sin(ip, a);                                    /* PD0 $2, 2^0 */
+    agc_dp_t cos2 = agc_dp_cos(ip, a);                                    /* COS(A) / 2, 2^0 */
+    agc_dp_t cos8 = agc_dp_shr(cos2, 2);                                  /* PD2 $8, 2^0 */
+    agc_dp_t omc2 = bovb_signmpac(ip, agc_dp_sub(ip, AGC_DP_HALF, cos2)); /* PD4 (1-cos A)/2, $2 2^0 */
 
     del->row[0].c[0] = del_diag(ip, u.c[0], omc2, cos8);
     del->row[1].c[1] = del_diag(ip, u.c[1], omc2, cos8);
@@ -436,7 +430,7 @@ static agc_vec_t cofmaxgo(agc_vec_t cof, agc_vec_t skew, const agc_mat_t *sym)
     int mx; /* index of the largest COF component */
 
     if (cof.c[0] - cof.c[1] < 0)
-    {                                           /* components are positive  */
+    { /* components are positive  */
         mx = (cof.c[1] - cof.c[2] < 0) ? 2 : 1; /* COMP12   */
     }
     else
@@ -513,8 +507,7 @@ static agc_dp_t sload_cdu(uint16_t p)
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on bad input
  **********************************************************************/
-agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
-                              const uint16_t cphi[3], agc_kalc_setup_t *out)
+agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const uint16_t cphi[3], agc_kalc_setup_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && bcdu != NULL && cphi != NULL && out != NULL))
     {
@@ -524,8 +517,7 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
     out->kcase = AGC_KALC_NORMAL;
     out->cof   = agc_vec_zero();
 
-    if (agc_state_vehicle() == AGC_VEHICLE_LM &&
-        agc_dp_sub(ip, agc_dp_abs(sload_cdu(cphi[2])), LOCKANGL) >= 0)
+    if (agc_state_vehicle() == AGC_VEHICLE_LM && agc_dp_sub(ip, agc_dp_abs(sload_cdu(cphi[2])), LOCKANGL) >= 0)
     {
         out->kcase = AGC_KALC_TOOBAD; /* TOOBADF  */
 
@@ -545,10 +537,10 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
     }
 
     /* MFI, its transpose, COFSKEW and CAM (SECAD, p.399-400).                */
-    agc_mat_t tmis = agc_mat_transpose(&out->mis);      /* TRANSPOS */
+    agc_mat_t tmis = agc_mat_transpose(&out->mis); /* TRANSPOS */
 
-    out->mfi = agc_mat_mul(ip, &tmis, &out->mfs); /* MXM3 $4  */
-    const agc_mat_t *f = &out->mfi; /* MFI, 2^0 */
+    out->mfi           = agc_mat_mul(ip, &tmis, &out->mfs); /* MXM3 $4  */
+    const agc_mat_t *f = &out->mfi;                         /* MFI, 2^0 */
 
     out->cofskew = agc_vec_make(agc_dp_sub(ip, f->row[2].c[1], f->row[1].c[2]),
                                 agc_dp_sub(ip, f->row[0].c[2], f->row[2].c[0]),
@@ -557,7 +549,7 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
 
     cam      = agc_dp_sub(ip, cam, AGC_DP_QUARTER);
     out->cam = agc_dp_add(ip, cam, f->row[1].c[1]); /* (trace - 1)/4      */
-    out->am  = agc_dp_acos(ip, out->cam);                   /* revolutions        */
+    out->am  = agc_dp_acos(ip, out->cam);           /* revolutions        */
 
     if (!AGC_ASSERT(out->am >= 0))
     {
@@ -581,7 +573,8 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
     }
 
     out->kcase = AGC_KALC_LARGE; /* ALTCALC  */
-    agc_mat_t sym; /* MFISYM,  2^0 */
+    agc_mat_t sym;               /* MFISYM,  2^0 */
+
     /* ALTCALC (p.400-401): for AM > 170 deg the axis comes from the
      * symmetric part MFISYM = (MFI + TMFI)/2 (scale 4):
      *   COFi = SQRT((MFISYMii - CAM/2) / (1/2 - CAM)), then UNIT.            */
@@ -592,9 +585,9 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
         sym.row[i] = agc_vec_shr(agc_vec_add(ip, out->mfi.row[i], t.row[i]), 1);
     }
 
-    agc_dp_t pd0 = agc_dp_shr(out->cam, 1); /* CAM $4, 2^0 */
+    agc_dp_t pd0 = agc_dp_shr(out->cam, 1);                                  /* CAM $4, 2^0 */
     agc_dp_t pd2 = bovb_signmpac(ip, agc_dp_sub(ip, AGC_DP_HALF, out->cam)); /* 1 - CAM,  2^0 */
-    agc_dp_t cof_altcalc[3]; /* COF before UNIT, 2^0 */
+    agc_dp_t cof_altcalc[3];                                                 /* COF before UNIT, 2^0 */
 
     for (int i = 2; i >= 0; i--)
     { /* Z, Y, X  */
@@ -608,9 +601,7 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3],
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_vec_t cof =
-        agc_vec_unit(ip, agc_vec_make(cof_altcalc[0], cof_altcalc[1],
-                                      cof_altcalc[2]), NULL, NULL); /* COF, B1 */
+    agc_vec_t cof = agc_vec_unit(ip, agc_vec_make(cof_altcalc[0], cof_altcalc[1], cof_altcalc[2]), NULL, NULL); /* COF, B1 */
 
     out->cof = cofmaxgo(cof, out->cofskew, &sym);
 

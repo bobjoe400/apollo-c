@@ -146,9 +146,9 @@ static const agc_dn_entry_t cmpowe07[] = {
 
 /* ---------------- CSM COAST AND ALIGNMENT DOWNLIST (CMCSTADL), p.173 --- */
 static const agc_dn_entry_t cmcstadl[] = {
-    {PTR, false, CMPOWE01, 0}, /* CMCSTA01: COLLECT SNAPSHOT */
+    {PTR, false, CMPOWE01, 0},      /* CMCSTA01: COLLECT SNAPSHOT */
     {6, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE02, 0}, /* CMCSTA02                  */
+    {PTR, false, CMPOWE02, 0},      /* CMCSTA02                  */
     {4, false, AGC_DN_DNTMBUFF, 0},
     {PTR, false, CMPOWE03, 0},      /* CMCSTA03                  */
     {1, false, AGC_DN_TIG, 0},      /* TIG,+1                    */
@@ -197,7 +197,7 @@ static const agc_dn_entry_t cmrenddl[] = {
     {3, false, AGC_DN_DELVSLV, 0},  /* DELVSLV,+1...+4,+5        */
     {2, false, AGC_DN_RANGE, 0},    /* RANGE,+1,RRATE,+1         */
     {PTR, false, CMPOWE04, 0},
-    {1, false, AGC_DN_TIME2, 0}, /* TIME2,TIME1               */
+    {1, false, AGC_DN_TIME2, 0},    /* TIME2,TIME1               */
     {PTR, false, CMPOWE05, 0},
     {6, false, AGC_DN_DNTMBUFF, 0},
     {PTR, false, CMPOWE02, 0},
@@ -210,17 +210,17 @@ static const agc_dn_entry_t cmrenddl[] = {
     {3, false, AGC_DN_DELVEET3, 0}, /* DELVEET3,+1,...+4,+5      */
     {1, false, AGC_DN_OPTMODES, 0}, /* OPTMODES,HOLDFLAG         */
     {PTR, false, CMPOWE07, 0},
-    {1, false, AGC_DN_RTHETA, 0},  /* RTHETA,+1                 */
-    {2, false, AGC_DN_LAT_SPL, 0}, /* LAT(SPL),LNG(SPL),+1      */
-    {2, false, AGC_DN_VPRED, 0},   /* VPRED,+1,GAMMAEI,+1       */
-    {1, true, AGC_DN_STATE, 10}    /* FLAGWRDS 10 AND 11        */
+    {1, false, AGC_DN_RTHETA, 0},   /* RTHETA,+1                 */
+    {2, false, AGC_DN_LAT_SPL, 0},  /* LAT(SPL),LNG(SPL),+1      */
+    {2, false, AGC_DN_VPRED, 0},    /* VPRED,+1,GAMMAEI,+1       */
+    {1, true, AGC_DN_STATE, 10}     /* FLAGWRDS 10 AND 11        */
 };
 
 /* ---------------- CSM ENTRY AND UPDATE DOWNLIST (CMENTRDL), p.177 ------ */
 static const agc_dn_entry_t cmentrdl[] = {
-    {PTR, false, CMPOWE01, 0}, /* CMENTR01                  */
+    {PTR, false, CMPOWE01, 0},      /* CMENTR01                  */
     {6, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE02, 0}, /* CMENTR02                  */
+    {PTR, false, CMPOWE02, 0},      /* CMENTR02                  */
     {4, false, AGC_DN_DNTMBUFF, 0},
     {PTR, false, CMPOWE03, 0},      /* CMENTR03                  */
     {2, false, AGC_DN_CMDAPMOD, 0}, /* CMDAPMOD,PREL,QREL,RREL   */
@@ -271,44 +271,44 @@ static const agc_dn_entry_t cmentr05[] = {
 };
 
 /* ---------------- P22 DOWNLIST (CMPG22DL), p.179 ---------------------- */
-static const agc_dn_entry_t cmpg22dl[] = {
-    {PTR, false, CMPOWE01, 0}, /* CMPG2201                  */
-    {6, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE02, 0}, /* CMPG2202                  */
-    {4, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE03, 0},       /* CMPG2203                  */
-    {6, false, AGC_DN_SVMRKDAT, 0},  /* LANDING SITE MARK DATA    */
-    {6, false, AGC_DN_SVMRKDAT, 12}, /* SVMRKDAT+0...+34          */
-    {6, false, AGC_DN_SVMRKDAT, 24}, /* LANDING SITE MARK DATA    */
-    {1, false, AGC_DN_LANDMARK, 0},  /* LANDMARK,GARBAGE          */
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
+static const agc_dn_entry_t cmpg22dl[]              = {
+    {PTR, false, CMPOWE01, 0},              /* CMPG2201                  */
+                 {6, false, AGC_DN_DNTMBUFF, 0},
+    {PTR, false, CMPOWE02, 0},              /* CMPG2202                  */
+                 {4, false, AGC_DN_DNTMBUFF, 0},
+    {PTR, false, CMPOWE03, 0},              /* CMPG2203                  */
+    {6, false, AGC_DN_SVMRKDAT, 0},         /* LANDING SITE MARK DATA    */
+    {6, false, AGC_DN_SVMRKDAT, 12},        /* SVMRKDAT+0...+34          */
+    {6, false, AGC_DN_SVMRKDAT, 24},        /* LANDING SITE MARK DATA    */
+    {1, false, AGC_DN_LANDMARK, 0},         /* LANDMARK,GARBAGE          */
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, false, AGC_DN_SPARE, 0},
     {PTR, false, CMPOWE04, 0},              /* CMPG2204                  */
     {1, false, AGC_DN_TIME2, 0},            /* TIME2,TIME1               */
     {PTR, false, CM_ORBITAL_NAV_LIST05, 0}, /* COLLECT SNAPSHOT          */
     {2, false, AGC_DN_DNTMBUFF, 0},         /* SEND SNAPSHOT             */
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
-    {PTR, false, CMPOWE02, 0},
-    {4, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE03, 0},
-    {PTR, false, CMPOWE06, 0},    /* CMPG2206                  */
-    {1, false, AGC_DN_8NN, 0},    /* 8NN,GARBAGE               */
-    {1, false, AGC_DN_STATE, 10}, /* FLAGWRDS 10 AND 11        */
-    {3, false, AGC_DN_RLS, 0},    /* RLS,+1,...+4,+5           */
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_OPTMODES, 0}, /* OPTMODES,HOLDFLAG         */
-    {PTR, false, CMPOWE07, 0},      /* CMPG2207                  */
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
-    {1, true, AGC_DN_SPARE, 0}
-};
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, false, AGC_DN_SPARE, 0},
+                 {PTR, false, CMPOWE02, 0},
+                 {4, false, AGC_DN_DNTMBUFF, 0},
+                 {PTR, false, CMPOWE03, 0},
+    {PTR, false, CMPOWE06, 0},              /* CMPG2206                  */
+    {1, false, AGC_DN_8NN, 0},              /* 8NN,GARBAGE               */
+    {1, false, AGC_DN_STATE, 10},           /* FLAGWRDS 10 AND 11        */
+    {3, false, AGC_DN_RLS, 0},              /* RLS,+1,...+4,+5           */
+                 {1, false, AGC_DN_SPARE, 0},
+    {1, false, AGC_DN_OPTMODES, 0},         /* OPTMODES,HOLDFLAG         */
+    {PTR, false, CMPOWE07, 0},              /* CMPG2207                  */
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, false, AGC_DN_SPARE, 0},
+                 {1, true, AGC_DN_SPARE, 0}
+             };
 static const agc_dn_entry_t cm_orbital_nav_list05[] = {
     /* SNAPSHOT DATA, p.180       */
     {1, true, AGC_DN_LONG, 0}, /* LONG,+1                   */
@@ -330,7 +330,7 @@ static const agc_dn_list_t dntable[AGC_DNLIST_CSM_COUNT] = {
     {cmpowedl, (uint8_t) (sizeof cmpowedl / sizeof cmpowedl[0]),
      false}, /* 3          */
     {cmpg22dl, (uint8_t) (sizeof cmpg22dl / sizeof cmpg22dl[0]),
-     false} /* 4          */
+     false}  /* 4          */
 };
 
 static const agc_dn_list_t sublists[CM_SUB_COUNT] = {

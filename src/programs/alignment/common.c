@@ -144,18 +144,15 @@ agc_status_t agc_align_cdutrig(const uint16_t cdu_xyz[3], agc_cdutrig_t *t)
  * CALCSMSC (P51-P53.agc, Comanche p. 763) on the SINCDU/COSCDU left by
  * CDUTRIG: the routine is the imu lane's agc_imu_calcsmsc (X, Y, Z order).
  */
-agc_status_t agc_align_calcsmsc(agc_interp_t *ip, const agc_cdutrig_t *t,
-                                agc_mat_t *nb)
+agc_status_t agc_align_calcsmsc(agc_interp_t *ip, const agc_cdutrig_t *t, agc_mat_t *nb)
 {
     if (!AGC_ASSERT((ip != NULL) && (t != NULL)) || !AGC_ASSERT(nb != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_vec_t s = agc_vec_make(
-        t->sincdu[AGC_TRIG_X], t->sincdu[AGC_TRIG_Y], t->sincdu[AGC_TRIG_Z]);
-    const agc_vec_t c = agc_vec_make(
-        t->coscdu[AGC_TRIG_X], t->coscdu[AGC_TRIG_Y], t->coscdu[AGC_TRIG_Z]);
+    const agc_vec_t s = agc_vec_make(t->sincdu[AGC_TRIG_X], t->sincdu[AGC_TRIG_Y], t->sincdu[AGC_TRIG_Z]);
+    const agc_vec_t c = agc_vec_make(t->coscdu[AGC_TRIG_X], t->coscdu[AGC_TRIG_Y], t->coscdu[AGC_TRIG_Z]);
 
     return (agc_imu_calcsmsc(ip, s, c, nb));
 }
@@ -197,12 +194,9 @@ agc_status_t align_nb_present(agc_interp_t *ip, agc_cdutrig_t *t, agc_mat_t *nb)
 }
 
 /* CSMPREC / LEMPREC / CSMCONIC / LEMCONIC (INTEGRATION_INITIALIZATION). */
-agc_status_t align_integ(agc_interp_t *ip, align_integ_kind_t kind,
-                         agc_dp_t tdec1, agc_job_id_t resume_job,
-                         agc_integ_out_t *out)
+agc_status_t align_integ(agc_interp_t *ip, align_integ_kind_t kind, agc_dp_t tdec1, agc_job_id_t resume_job, agc_integ_out_t *out)
 {
-    if (!AGC_ASSERT((ip != NULL) && (out != NULL)) ||
-        !AGC_ASSERT(((int) kind >= 0) && (kind <= ALIGN_LEMCONIC)))
+    if (!AGC_ASSERT((ip != NULL) && (out != NULL)) || !AGC_ASSERT(((int) kind >= 0) && (kind <= ALIGN_LEMCONIC)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -237,12 +231,9 @@ agc_status_t align_integ(agc_interp_t *ip, align_integ_kind_t kind,
 }
 
 /* GOFLASH / GOFLASHR / GOMARK.. / GOPERF1 / GOPERF4R with the returns. */
-agc_status_t align_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
-                         uint16_t vn, agc_job_id_t term, agc_job_id_t proceed,
-                         agc_job_id_t enter)
+agc_status_t align_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn, agc_job_id_t term, agc_job_id_t proceed, agc_job_id_t enter)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(((int) kind >= 0) && (kind < AGC_DSKY_DISP_COUNT)))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(((int) kind >= 0) && (kind < AGC_DSKY_DISP_COUNT)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -257,11 +248,9 @@ agc_status_t align_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
 }
 
 /* GODSP / GODSPR / GODSPRET / CLEANDSP / KLEENEX (no astronaut return). */
-agc_status_t align_show(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
-                        uint16_t vn)
+agc_status_t align_show(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(((int) kind >= 0) && (kind < AGC_DSKY_DISP_COUNT)))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(((int) kind >= 0) && (kind < AGC_DSKY_DISP_COUNT)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -310,8 +299,7 @@ agc_status_t align_goto(agc_job_id_t next)
 /* IMUSTALL / OPTSTALL: TC CURTAINS on the bad return. */
 agc_status_t align_stall(agc_imu_device_t dev, agc_job_id_t wake_as, bool *done)
 {
-    if (!AGC_ASSERT(done != NULL) ||
-        !AGC_ASSERT(((int) dev >= 0) && (dev < AGC_IMU_DEV_COUNT)))
+    if (!AGC_ASSERT(done != NULL) || !AGC_ASSERT(((int) dev >= 0) && (dev < AGC_IMU_DEV_COUNT)))
     {
         return (AGC_STATUS_BAD_ARG);
     }

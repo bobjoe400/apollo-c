@@ -88,12 +88,12 @@ Language: C11, no extensions. Build flags (Makefile):
 
 ## Tooling
 
-* Uncrustify 0.72 (`uncrustify.cfg`) is the only formatter: `make format`
-  rewrites src include tests (NASA SEL-94-003 layout plus statement
-  paragraphing, docs/STYLE.md), `make format-check` fails on any
-  difference. It changes white space only. Put two or more spaces before a
-  trailing comment you want aligned with its neighbours; one space keeps it
-  out of the group.
+* `make format` (tools/format.sh) is the only formatter: tools/fix_comments.py
+  (comment placement, wraps, paragraphs), Uncrustify 0.72 twice
+  (`uncrustify.cfg`, NASA SEL-94-003 layout), tools/fix_comments.py again
+  (paragraph column alignment). It rewrites src include tests and changes
+  only white space, line breaks and comment positions; `make format-check`
+  runs it on copies and fails on any difference (docs/STYLE.md).
 * `spatch` (Coccinelle) for any tree-wide rename: generate a semantic patch,
   never sed identifiers.
 * `ctags -R --c-kinds=+px -x` for symbol inventories.
@@ -108,22 +108,41 @@ Language: C11, no extensions. Build flags (Makefile):
 
 * A comment never sits inside an expression: not between `=` and the
   initializer, not inside an argument list, not between operands. Scale and
-  meaning notes for a statement go on their own line ABOVE the statement
-  (block style, same indentation) or trailing after the `;` when the whole
-  statement fits on one line. `tools/fix_comments.py` enforces this.
+  meaning notes for a statement go trailing after the `;` (the statement
+  is on one line), or on their own line ABOVE the statement (block style,
+  same indentation) when they introduce a group. `tools/fix_comments.py`
+  merges every comment inside a statement of a function body into the
+  statement's one trailing comment, in source order, separated by `; `
+  (struct/enum bodies, initialiser tables, `#define` lines and `case`
+  labels are left alone). A trailing comment is one line.
 * **No column limit. One statement per line.** The NASA guide sets no line
   length; the 80-column limit is withdrawn. Nested-call chains stay on one
-  line; the formatter joins wrapped call arguments back onto the statement
-  line. (Reference: the user's hand-formatted agc_guid_calcut.)
-* Within a paragraph (consecutive non-blank lines) declarations line up as
-  columns: type, name, `=`, expression; trailing comments align to one
-  column just past the longest statement in the paragraph.
+  line; the formatter joins wrapped statements back onto one line.
+  (Reference: the user's hand-formatted agc_guid_calcut.)
+* Within a paragraph (consecutive non-blank lines), at one brace level,
+  one-line statements line up as columns: declaration type, name (the `*`
+  dangles left of the name), assignment operator, expression, trailing
+  comment; the comment column is one space past the longest code line of
+  the paragraph (not a fixed column). A comment after `{` is not aligned.
+* A standalone comment that introduces a group of statements or
+  declarations begins a paragraph: a blank line precedes it (after a line
+  ending in `;`, `}`, a table row's `,` or a preprocessor line; never after
+  `{`), at file scope and in functions alike. Consecutive comment lines
+  stay together. The declarations that open a function body are followed
+  by a blank line; later declarations may share a paragraph with the
+  statements that use them.
 * Wrapping is allowed in exactly one shape: the OUTERMOST call of a
   statement may have its arguments one per line, each aligned under the
   first argument, with the statement's trailing comment on the first line
   (the CALCGRAV call). A wrap is never placed inside a nested call: an
   inner call stays whole on whichever line it is on. The formatter keeps
-  outer-call wraps that already have this shape, joins every other wrap
-  back onto one line, and never introduces wraps itself.
+  outer-call wraps that already have this shape -- every break after a
+  comma of that call, at least two continuation lines, one argument on
+  each continuation line, at most two on the first line of a call (`ip`
+  and the first real argument) or one on the first line of a function
+  definition/prototype -- joins every other wrap back onto one line, and
+  never introduces wraps itself.
 * A statement that is unreadable on one line because of nesting is split
   with named temporaries (review item), not wrapped.
+  docs/overview/long_statements.tsv lists the candidates (wider than 120
+  columns or kept on more than three lines).

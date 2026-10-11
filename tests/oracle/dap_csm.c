@@ -48,12 +48,9 @@
 #include "agc/guidance/guidance.h"
 #include "oracle_txt.h"
 
-static void cmp_raw(const char *t, const char *what, unsigned int got,
-                    const char *n);
-static void cmp_sp(const char *t, const char *what, long int got,
-                   const char *n);
-static void cmp_pair(const char *t, const char *n,
-                     agc_csm_dp_pair_t got);
+static void              cmp_raw(const char *t, const char *what, unsigned int got, const char *n);
+static void              cmp_sp(const char *t, const char *what, long int got, const char *n);
+static void              cmp_pair(const char *t, const char *n, agc_csm_dp_pair_t got);
 static agc_csm_dp_pair_t pair_in(const char *t, const char *n, int idx);
 static void              fresh(void);
 static void              jets(const char *t);
@@ -126,11 +123,9 @@ bool agc_assert_report(const char *file, int line, const char *expr)
  *   got   unsigned int  I  C word
  *   n     const char *  I  AGC output name
  **********************************************************************/
-static void cmp_raw(const char *t, const char *what, unsigned int got,
-                    const char *n)
+static void cmp_raw(const char *t, const char *what, unsigned int got, const char *n)
 {
-    (void) oracle_cmp(t, what, (long int) got, (long int) oracle_out_raw(t, n),
-                      0);
+    (void) oracle_cmp(t, what, (long int) got, (long int) oracle_out_raw(t, n), 0);
 }
 
 /**********************************************************************
@@ -142,8 +137,7 @@ static void cmp_raw(const char *t, const char *what, unsigned int got,
  *   got   long int      I  C value (unscaled word)
  *   n     const char *  I  AGC output name
  **********************************************************************/
-static void cmp_sp(const char *t, const char *what, long int got,
-                   const char *n)
+static void cmp_sp(const char *t, const char *what, long int got, const char *n)
 {
     (void) oracle_cmp(t, what, got, oracle_out_sp(t, n), 0);
 }
@@ -213,8 +207,9 @@ static void fresh(void)
  **********************************************************************/
 static void jets(const char *t)
 {
-    agc_csm_jet_in_t         in;  /* TAUs (1/1600 s), failures, THC    */
-    agc_csm_jet_out_t        o;   /* jet words, BLASTs, DFTs           */
+    agc_csm_jet_in_t  in; /* TAUs (1/1600 s), failures, THC    */
+    agc_csm_jet_out_t o;  /* jet words, BLASTs, DFTs           */
+
     static const char *const bl[3] = {"BLAST", "BLAST1", "BLAST2"};
 
     in.chan31 = 077777; /* yaAGC power-up: no THC command               */
@@ -271,19 +266,16 @@ static void pitch(const char *t)
     agc_cdutrig_t *g;                     /* QUICTRIG trig, scale 2^1   */
 
     fresh();
-    g = &agc_guid_state()->trig;
+    g                     = &agc_guid_state()->trig;
     agc_erase_set_cduy(oracle_in_raw(t, "CDUY", 0));
     agc_erase_set_cduz(oracle_in_raw(t, "CDUY", 1));
     v->pcduypst           = oracle_in_raw(t, "PCDUYPST", 0);
     v->pcduzpst           = oracle_in_raw(t, "PCDUYPST", 1);
     v->perrb              = pair_in(t, "PERRB", 0);
     v->omegac[1]          = oracle_in_dp(t, "OMEGAYC", 0);
-    g->sincdu[AGC_TRIG_X] =
-        agc_dp_from_sp((agc_sp_t) oracle_in(t, "SINCDUX", 0));
-    g->coscdu[AGC_TRIG_X] =
-        agc_dp_from_sp((agc_sp_t) oracle_in(t, "COSCDUX", 0));
-    g->coscdu[AGC_TRIG_Z] =
-        agc_dp_from_sp((agc_sp_t) oracle_in(t, "COSCDUZ", 0));
+    g->sincdu[AGC_TRIG_X] = agc_dp_from_sp((agc_sp_t) oracle_in(t, "SINCDUX", 0));
+    g->coscdu[AGC_TRIG_X] = agc_dp_from_sp((agc_sp_t) oracle_in(t, "COSCDUX", 0));
+    g->coscdu[AGC_TRIG_Z] = agc_dp_from_sp((agc_sp_t) oracle_in(t, "COSCDUZ", 0));
 
     for (int k = 0; k < 6; k++)
     {
@@ -315,8 +307,7 @@ static void pitch(const char *t)
     {
         char n[16]; /* PTMP1, PTMP1+2 .. PTMP1+10                       */
 
-        (void) snprintf(n, sizeof (n), (k == 0) ? "PTMP1" : "PTMP1+%d", /* ?: */
-                        2 * k);
+        (void) snprintf(n, sizeof (n), (k == 0) ? "PTMP1" : "PTMP1+%d", 2 * k); /* ?: */
         cmp_pair(t, n, v->ptmp[k]);
     }
 

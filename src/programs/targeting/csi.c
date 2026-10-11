@@ -141,8 +141,7 @@ static void csi_set_cycle(bool first_cycle)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL
  *          pointer
  **********************************************************************/
-agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v,
-                              agc_vec_t *out)
+agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v, agc_vec_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && out != NULL))
     {
@@ -155,7 +154,7 @@ agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v,
     proj = agc_vec_scale(ip, up1, agc_vec_dot(ip, v, up1));
     agc_vec_t inplane; /* V's scale */
 
-    inplane = agc_vec_sub(ip, v, agc_vec_shl(ip, proj, 2));
+    inplane       = agc_vec_sub(ip, v, agc_vec_shl(ip, proj, 2));
     agc_vec_t u   = rz_unit(ip, inplane); /* unit, 2^1 */
     agc_dp_t  mag = rz_abval(ip, v);      /* |V|, V's scale */
 
@@ -188,8 +187,7 @@ agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the PRECSET status (INTSTALL sleep)
  **********************************************************************/
-agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz,
-                               agc_job_id_t resume)
+agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
@@ -208,12 +206,11 @@ agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz,
     rz->vpass1 = rz->vpass3;
     rz->rpass2 = rz->rpass3;
     rz->rpass1 = rz->rpass3;
-    rz->up1    =
-        rz_unit(ip, agc_vec_cross(ip, rz_unit(ip, rz->rpass1), rz->vpass1));
-    rz->rtig  = rz->ract3;
-    st        = agc_rendz_rotate(ip, rz->up1, rz->ract3, &rz->ract2);
-    rz->ract1 = rz->ract2;
-    rz->vtig  = rz->vact3;
+    rz->up1    = rz_unit(ip, agc_vec_cross(ip, rz_unit(ip, rz->rpass1), rz->vpass1));
+    rz->rtig   = rz->ract3;
+    st         = agc_rendz_rotate(ip, rz->up1, rz->ract3, &rz->ract2);
+    rz->ract1  = rz->ract2;
+    rz->vtig   = rz->vact3;
 
     if (st == AGC_STATUS_OK)
     {
@@ -242,23 +239,23 @@ agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz,
  **********************************************************************/
 static void csi_b(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    agc_dp_t ra1  = rz_abval(ip, rz->ract1); /* 0D B29     */
-    int      x2   = 0; /* NORM index, -(left shifts) */
-    agc_dp_t d2   = agc_dp_shr(rz_norm(ra1, &x2), 1); /* 2D, 2^(30+X2) */
-    int      x1   = 0; /* NORM index, -(left shifts) */
+    agc_dp_t ra1  = rz_abval(ip, rz->ract1);                /* 0D B29     */
+    int      x2   = 0;                                      /* NORM index, -(left shifts) */
+    agc_dp_t d2   = agc_dp_shr(rz_norm(ra1, &x2), 1);       /* 2D, 2^(30+X2) */
+    int      x1   = 0;                                      /* NORM index, -(left shifts) */
     agc_dp_t rp3n = rz_norm(rz_abval(ip, rz->rpass3), &x1); /* 2^(29+X1) */
-    agc_dp_t q    = agc_dp_div(ip, d2, rp3n); /* BDDV, B2 after SR* */
+    agc_dp_t q    = agc_dp_div(ip, d2, rp3n);               /* BDDV, B2 after SR* */
 
-    x2 = x2 - x1;                                 /* XSU,2 X1   */
-    q  = rz_sr_star(ip, q, 1, x2);                /* RA1/RP3 B2 */
+    x2 = x2 - x1;                                             /* XSU,2 X1   */
+    q  = rz_sr_star(ip, q, 1, x2);                            /* RA1/RP3 B2 */
     q  = agc_dp_mul_trunc(agc_dp_add(ip, q, CSI_1DPB2), ra1); /* B31        */
     q  = rz_norm(q, &x1);
-    agc_dp_t vr; /* 2MU/, B7 below */
+    agc_dp_t vr;                                              /* 2MU/, B7 below */
 
     vr = agc_dp_div(ip, agc_dp_shr(rz->body.rtmu, 1), q);
 
     vr = agc_dp_sqrt(ip, rz_sl_star(ip, vr, -7, x1)); /* B7  0D     */
-    agc_vec_t uh1; /* UH1, 2^1 */
+    agc_vec_t uh1;                                    /* UH1, 2^1 */
 
     uh1 = rz_unit(ip, agc_vec_cross(ip, rz->up1, rz_unit(ip, rz->ract1)));
     agc_dp_t vh; /* m/cs 2^7 */
@@ -372,10 +369,9 @@ static bool csi_limit_delta_v(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the TIMETHET status
  **********************************************************************/
-static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v,
-                                 agc_dp_t snth, agc_dp_t csth, agc_dp_t *t)
+static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v, agc_dp_t snth, agc_dp_t csth, agc_dp_t *t)
 {
-    agc_conic_time_out_t o; /* TIMETHET result */
+    agc_conic_time_out_t o;  /* TIMETHET result */
     agc_status_t         st; /* TIMETHET */
 
     st = rz_timethet_rv(ip, rz, rz->ract1, v, snth, csth, true, &o);
@@ -411,8 +407,7 @@ static agc_status_t csi_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t v,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the TIMETHET or PERIAPO1
  *          status
  **********************************************************************/
-static agc_status_t csi_post_csi_orbit(agc_interp_t *ip, agc_rendz_t *rz,
-                                       agc_rendz_periapo_t *pa, bool *ellipse)
+static agc_status_t csi_post_csi_orbit(agc_interp_t *ip, agc_rendz_t *rz, agc_rendz_periapo_t *pa, bool *ellipse)
 {
     agc_vec_t uh1; /* UH1, 2^1 */
 
@@ -427,8 +422,8 @@ static agc_status_t csi_post_csi_orbit(agc_interp_t *ip, agc_rendz_t *rz,
          * only resets the overflow indicator.                          */
     }
 
-    agc_dp_t     t = 0;  /* time, cs 2^28 */
-    agc_status_t st; /* 359.99 deg */
+    agc_dp_t     t = 0; /* time, cs 2^28 */
+    agc_status_t st;    /* 359.99 deg */
 
     st = csi_timethet(ip, rz, rz->vact4, RZ_SN359, RZ_CS359, &t);
 
@@ -446,8 +441,7 @@ static agc_status_t csi_post_csi_orbit(agc_interp_t *ip, agc_rendz_t *rz,
     }
 
     rz->postcsi = agc_rendz_scalar_from_body(rz, pa->hperi);
-    *ellipse    =
-        (rz->centang == 0) && (agc_dp_sub(ip, pa->ecc, CSI_ONETHTH) >= 0);
+    *ellipse    = (rz->centang == 0) && (agc_dp_sub(ip, pa->ecc, CSI_ONETHTH) >= 0);
 
     return (AGC_STATUS_OK);
 }
@@ -474,16 +468,14 @@ static agc_status_t csi_post_csi_orbit(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG for a failed
  *          invariant, else the TIMETHET status
  **********************************************************************/
-static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
-                              const agc_rendz_periapo_t *pa, bool *circl,
-                              agc_dp_t *pop)
+static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz, const agc_rendz_periapo_t *pa, bool *circl, agc_dp_t *pop)
 {
-    int      x1 = 0;  /* NORM index, -(left shifts) */
-    agc_dp_t r1n; /* 2D, 2^(29+X1) */
+    int      x1 = 0; /* NORM index, -(left shifts) */
+    agc_dp_t r1n;    /* 2D, 2^(29+X1) */
 
-    r1n = rz_norm(agc_rendz_scalar_from_body(rz, pa->r1), &x1);
+    r1n          = rz_norm(agc_rendz_scalar_from_body(rz, pa->r1), &x1);
     agc_dp_t rdv = agc_vec_dot(ip, rz->ract1, rz->vact4); /* R.V, 2^36 */
-    agc_dp_t q   = agc_dp_div(ip, agc_dp_abs(rdv), r1n); /* B7         */
+    agc_dp_t q   = agc_dp_div(ip, agc_dp_abs(rdv), r1n);  /* B7         */
 
     q      = agc_dp_sub(ip, rz_sl_star(ip, q, 0, x1), CSI_NICKELDP);
     *circl = (q < 0);
@@ -496,6 +488,7 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
     agc_dp_t d14; /* 14D, 2^2 */
 
     d14 = agc_dp_sub(ip, agc_dp_shl(ip, pa->p, 2), CSI_1DPB2);
+
     /* (P/MU)^.5 / R1 part of the apsis-angle computation (p.668), B-31 (moon
      * SL3 more).                                                             */
     agc_dp_t a; /* 2D, B-31 */
@@ -518,15 +511,16 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz->rdotv = agc_vec_dot(ip, rz->ract1, rz->vact4); /* CSI/B3     */
-    int      x2 = 0;  /* NORM index, -(left shifts) */
-    agc_dp_t d12; /* 12D, scale by SL* */
+    rz->rdotv   = agc_vec_dot(ip, rz->ract1, rz->vact4); /* CSI/B3     */
+    int      x2 = 0;                                     /* NORM index, -(left shifts) */
+    agc_dp_t d12;                                        /* 12D, scale by SL* */
 
     d12 = agc_dp_mul_trunc(rz_norm(agc_dp_abs(rz->rdotv), &x2), s);
 
-    x1  = x1 - x2;          /* XSU,1 X2   */
-    d12 = rz_sl_star(ip, d12, 3, x1);
+    x1           = x1 - x2;                                /* XSU,1 X2   */
+    d12          = rz_sl_star(ip, d12, 3, x1);
     agc_vec_t sc = rz_unit(ip, agc_vec_make(d12, d14, 0)); /* SNTH CSTH, 2^1 */
+
     /* SIGN on a vector: complement v when s is negative. */
     agc_vec_t v_vsign = rz->vact4; /* VACT4, m/cs 2^7 */
     agc_dp_t  s_vsign = rz->rdotv; /* RDOTV, 2^36 */
@@ -549,7 +543,7 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
     }
 
     agc_dp_t     t = 0; /* time, cs 2^28 */
-    agc_status_t st; /* TIMETHET */
+    agc_status_t st;    /* TIMETHET */
 
     st = csi_timethet(ip, rz, v, sc.c[0], sc.c[1], &t);
 
@@ -583,11 +577,10 @@ static agc_status_t csi_apsis(agc_interp_t *ip, agc_rendz_t *rz,
  *
  * RETURNS: bool -- true when TTPI - TCDH >= 0; false: SCNDSOL
  **********************************************************************/
-static bool csi_cdh_time(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t pop,
-                         csi_work_t *w)
+static bool csi_cdh_time(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t pop, csi_work_t *w)
 {
     agc_dp_t nn = agc_dp_from_sp(rz->nn); /* NN, B14 */
-    agc_dp_t t; /* cs 2^28 */
+    agc_dp_t t;                           /* cs 2^28 */
 
     t = agc_dp_shl(ip, agc_dp_mul_trunc(nn, rz->hafpa1), 14);
 
@@ -620,13 +613,11 @@ static bool csi_cdh_time(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t pop,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration, CDHMVR or
  *          PERIAPO1 status
  **********************************************************************/
-static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
-                                agc_job_id_t resume)
+static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
-    agc_vec_t    r; /* position, m 2^29 */
-    agc_vec_t    v; /* velocity, m/cs 2^7 */
-    agc_status_t st = rz_intint(ip, rz, rz->ract1, rz->vact4, rz->tcsi,
-                                rz->tcdh, true, resume, &r, &v); /* to CDH */
+    agc_vec_t    r;                                                                                      /* position, m 2^29 */
+    agc_vec_t    v;                                                                                      /* velocity, m/cs 2^7 */
+    agc_status_t st = rz_intint(ip, rz, rz->ract1, rz->vact4, rz->tcsi, rz->tcdh, true, resume, &r, &v); /* to CDH */
 
     if (st != AGC_STATUS_OK)
     {
@@ -635,9 +626,7 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
 
     rz->ract2 = r;
     rz->vact2 = v;
-    st        = rz_intint(ip, rz, rz->rpass1, rz->vpass1, rz->tcsi, rz->tcdh,
-                          true,
-                          resume, &r, &v);
+    st        = rz_intint(ip, rz, rz->rpass1, rz->vpass1, rz->tcsi, rz->tcdh, true, resume, &r, &v);
 
     if (st != AGC_STATUS_OK)
     {
@@ -660,9 +649,7 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
     }
 
     rz->postcdh = agc_rendz_scalar_from_body(rz, pa.hperi);
-    st          = rz_intint(ip, rz, rz->ract2, rz->vact3, rz->tcdh,
-                            agc_erase_ttpi(),
-                            true, resume, &r, &v);
+    st          = rz_intint(ip, rz, rz->ract2, rz->vact3, rz->tcdh, agc_erase_ttpi(), true, resume, &r, &v);
 
     if (st == AGC_STATUS_OK)
     {
@@ -693,15 +680,14 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: csi_label_t -- CSI_L_DONE with *k set, CSI_L_ALMXITA, or
  *          CSI_L_B1 (DELDV halved)
  **********************************************************************/
-static csi_label_t csi_k(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t u,
-                         agc_dp_t *k, csi_work_t *w)
+static csi_label_t csi_k(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t u, agc_dp_t *k, csi_work_t *w)
 {
     agc_dp_t temp1; /* 6D, m 2^29 */
 
-    temp1 = agc_dp_shl(ip, agc_vec_dot(ip, u, rz->ract3), 1);
-    agc_tp_t t2 = agc_dp_sq_tp(temp1); /* 8D, 2^58 */
+    temp1       = agc_dp_shl(ip, agc_vec_dot(ip, u, rz->ract3), 1);
+    agc_tp_t t2 = agc_dp_sq_tp(temp1);                       /* 8D, 2^58 */
     agc_tp_t ra = -agc_vec_dot_tp(ip, rz->ract3, rz->ract3); /* 11D, 2^58 */
-    agc_tp_t rp; /* RP3^2, 2^58 */
+    agc_tp_t rp;                                             /* RP3^2, 2^58 */
 
     rp = agc_vec_dot_tp(ip, rz->rpass3, rz->rpass3);
     agc_tp_t temp2; /* TEMP2, 2^58 */
@@ -725,8 +711,8 @@ static csi_label_t csi_k(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t u,
 
     agc_dp_t temp3 = agc_tp_sqrt(ip, temp2);                   /* K10RK2 B29 */
     agc_dp_t k2    = agc_dp_sub(ip, agc_dp_neg(temp3), temp1); /* 10D, m 2^29 */
-    agc_dp_t k1    = agc_dp_sub(ip, temp3, temp1); /* 12D, m 2^29 */
-    agc_dp_t d; /* m 2^29 */
+    agc_dp_t k1    = agc_dp_sub(ip, temp3, temp1);             /* 12D, m 2^29 */
+    agc_dp_t d;                                                /* m 2^29 */
 
     d = agc_dp_sub(ip, agc_dp_abs(k2), agc_dp_abs(k1));
 
@@ -751,22 +737,21 @@ static csi_label_t csi_k(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t u,
  *
  * RETURNS: agc_dp_t -- GAMMA, revolutions 2^1 (0 when the invariant fails)
  **********************************************************************/
-static agc_dp_t csi_gamma(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t u,
-                          agc_dp_t k)
+static agc_dp_t csi_gamma(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t u, agc_dp_t k)
 {
     agc_vec_t ku; /* K U, m 2^29 */
 
-    ku = agc_vec_shl(ip, agc_vec_scale(ip, u, k), 1);
+    ku             = agc_vec_shl(ip, agc_vec_scale(ip, u, k), 1);
     agc_vec_t uv   = rz_unit(ip, agc_vec_add(ip, ku, rz->ract3)); /* 0D, 2^1 */
-    agc_vec_t urp3 = rz_unit(ip, rz->rpass3); /* 6D, 2^1 */
-    agc_vec_t uvp3 = rz_unit(ip, rz->vpass3); /* UNIT VP3, 2^1 */
-    agc_vec_t a    = agc_vec_cross(ip, uvp3, urp3); /* 12D, 2^2 */
-    agc_dp_t  temp; /* sign, 2^4 */
+    agc_vec_t urp3 = rz_unit(ip, rz->rpass3);                     /* 6D, 2^1 */
+    agc_vec_t uvp3 = rz_unit(ip, rz->vpass3);                     /* UNIT VP3, 2^1 */
+    agc_vec_t a    = agc_vec_cross(ip, uvp3, urp3);               /* 12D, 2^2 */
+    agc_dp_t  temp;                                               /* sign, 2^4 */
 
     temp = agc_vec_dot(ip, agc_vec_cross(ip, urp3, uv), a);
     agc_dp_t c; /* cos, 2^1 */
 
-    c = agc_dp_shl(ip, agc_vec_dot(ip, urp3, uv), 1);
+    c          = agc_dp_shl(ip, agc_vec_dot(ip, urp3, uv), 1);
     agc_dp_t g = agc_dp_sign(agc_dp_acos(ip, c), temp); /* rev 2^0 */
 
     if (!AGC_ASSERT(g >= -AGC_DP_HALF && g <= AGC_DP_HALF))
@@ -793,8 +778,7 @@ static agc_dp_t csi_gamma(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t u,
  * RETURNS: csi_label_t -- CSI_L_B1, or CSI_L_ALMXIT when the F2 invariant
  *          fails
  **********************************************************************/
-static csi_label_t csi_frstpas(agc_interp_t *ip, agc_rendz_t *rz,
-                               const csi_work_t *w)
+static csi_label_t csi_frstpas(agc_interp_t *ip, agc_rendz_t *rz, const csi_work_t *w)
 {
     rz->gamprev = w->gamma;
     rz->dvprev  = rz->delvcsi;
@@ -825,8 +809,7 @@ static csi_label_t csi_frstpas(agc_interp_t *ip, agc_rendz_t *rz,
  *
  * RETURNS: csi_label_t -- CSI_L_B2
  **********************************************************************/
-static csi_label_t csi_fiftyfps(agc_interp_t *ip, agc_rendz_t *rz,
-                                const csi_work_t *w)
+static csi_label_t csi_fiftyfps(agc_interp_t *ip, agc_rendz_t *rz, const csi_work_t *w)
 {
     agc_dp_t d; /* m/cs 2^7 */
 
@@ -858,14 +841,13 @@ static csi_label_t csi_fiftyfps(agc_interp_t *ip, agc_rendz_t *rz,
  *
  * RETURNS: csi_label_t -- CSI_L_DONE (converged: CSI/SOL) or CSI_L_B1
  **********************************************************************/
-static csi_label_t csi_newton(agc_interp_t *ip, agc_rendz_t *rz,
-                              const csi_work_t *w, int x1)
+static csi_label_t csi_newton(agc_interp_t *ip, agc_rendz_t *rz, const csi_work_t *w, int x1)
 {
-    int      x2 = 0; /* NORM index, -(left shifts) */
-    agc_dp_t sn = rz_norm(w->slope, &x2); /* slope, 2^(-6+N1+X2) */
+    int      x2 = 0;                            /* NORM index, -(left shifts) */
+    agc_dp_t sn = rz_norm(w->slope, &x2);       /* slope, 2^(-6+N1+X2) */
     agc_dp_t d  = agc_dp_div(ip, w->gamma, sn); /* BDDV 00D, 2^7 after SR* */
 
-    x1          = x1 - x2;                      /* XSU,1 X2   */
+    x1          = x1 - x2;               /* XSU,1 X2   */
     rz->deldv   = rz_sr_star(ip, d, 0, x1);
     rz->gamprev = w->gamma;
     agc_dp_t ad = agc_dp_abs(rz->deldv); /* m/cs 2^7 */
@@ -910,15 +892,15 @@ static csi_label_t csi_iterate(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
     }
 
     agc_dp_t dg = agc_dp_sub(ip, w->gamma, rz->gamprev); /* 2D, rev 2^1 */
-    int      x1 = 0;  /* NORM index, -(left shifts) */
-    agc_dp_t ddv; /* 2^(7+X1) */
+    int      x1 = 0;                                     /* NORM index, -(left shifts) */
+    agc_dp_t ddv;                                        /* 2^(7+X1) */
 
     ddv = rz_norm(agc_dp_sub(ip, rz->delvcsi, rz->dvprev), &x1);
 
-    w->slope   = agc_dp_div(ip, dg, ddv);   /* 4D         */
+    w->slope   = agc_dp_div(ip, dg, ddv);      /* 4D         */
     rz->dvprev = rz->delvcsi;
-    bool f3a = rz_vflag_test(RZ_VF_CSI_F3A); /* stage flag F3A */
-    bool f3b = rz_vflag_test(RZ_VF_CSI_F3B); /* stage flag F3B */
+    bool f3a   = rz_vflag_test(RZ_VF_CSI_F3A); /* stage flag F3A */
+    bool f3b   = rz_vflag_test(RZ_VF_CSI_F3B); /* stage flag F3B */
 
     if (f3a && f3b)
     { /* "11": end of the 50 fps stage */
@@ -960,8 +942,7 @@ static csi_label_t csi_iterate(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
  **********************************************************************/
 static csi_label_t csi_sol(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 {
-    agc_dp_t pmin =
-        (rz->body.rtx1 == -10) ? CSI_PMINM : CSI_PMINE; /* moon? m 2^29 */
+    agc_dp_t pmin = (rz->body.rtx1 == -10) ? CSI_PMINM : CSI_PMINE; /* moon? m 2^29 */
 
     w->x2 = 2;
 
@@ -1021,7 +1002,7 @@ static csi_label_t csi_scndsol(agc_rendz_t *rz, const csi_work_t *w)
 
     rz->csialrm = (agc_sp_t) w->x2;
     csi_set_cycle(false);
-    rz->loopct = 0;
+    rz->loopct  = 0;
 
     if (!AGC_ASSERT(rz->csialrm >= 1 && rz->csialrm <= 7))
     {
@@ -1048,12 +1029,12 @@ static csi_label_t csi_scndsol(agc_rendz_t *rz, const csi_work_t *w)
  **********************************************************************/
 static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
 {
-    agc_rendz_periapo_t pa; /* PERIAPO1 results */
+    agc_rendz_periapo_t pa;              /* PERIAPO1 results */
     bool                ellipse = false; /* not circular */
 
-    w->st = csi_post_csi_orbit(ip, rz, &pa, &ellipse);
+    w->st          = csi_post_csi_orbit(ip, rz, &pa, &ellipse);
     bool     circl = !ellipse; /* CIRCL path */
-    agc_dp_t pop   = 0; /* CIRCL: 0D, cs 2^28 */
+    agc_dp_t pop   = 0;        /* CIRCL: 0D, cs 2^28 */
 
     if (w->st == AGC_STATUS_OK && ellipse)
     {
@@ -1083,9 +1064,9 @@ static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
     }
 
     /* U = sin(E) URA3 + cos(E) UH3 (B1): the desired line of sight at TPI. */
-    agc_dp_t  sine = agc_dp_sin(ip, rz->elev);     /* 6D, 2^1 */
-    agc_vec_t ura3 = rz_unit(ip, rz->ract3); /* 0D, 2^1 */
-    agc_vec_t uh3; /* UH3, 2^1 */
+    agc_dp_t  sine = agc_dp_sin(ip, rz->elev); /* 6D, 2^1 */
+    agc_vec_t ura3 = rz_unit(ip, rz->ract3);   /* 0D, 2^1 */
+    agc_vec_t uh3;                             /* UH3, 2^1 */
 
     uh3 = rz_unit(ip, agc_vec_cross(ip, rz->up1, ura3));
     agc_vec_t c; /* 18D, 2^2 */
@@ -1093,10 +1074,10 @@ static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
     c = agc_vec_scale(ip, uh3, agc_dp_cos(ip, rz->elev));
     agc_vec_t u_unit; /* 2^2 */
 
-    u_unit = agc_vec_add(ip, agc_vec_scale(ip, ura3, sine), c);
+    u_unit        = agc_vec_add(ip, agc_vec_scale(ip, ura3, sine), c);
     agc_vec_t   u = agc_vec_shl(ip, u_unit, 1); /* U, 2^1 */
     agc_dp_t    k = 0;                          /* K, m 2^29 */
-    csi_label_t l = csi_k(ip, rz, u, &k, w); /* next label */
+    csi_label_t l = csi_k(ip, rz, u, &k, w);    /* next label */
 
     if (l != CSI_L_DONE)
     {
@@ -1132,8 +1113,7 @@ static csi_label_t csi_trial(agc_interp_t *ip, agc_rendz_t *rz, csi_work_t *w)
  *          (ALMXIT), AGC_STATUS_NO_CONVERGE (pass bound),
  *          AGC_STATUS_BAD_ARG, else the integration status
  **********************************************************************/
-agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
-                             agc_job_id_t resume)
+agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm, agc_job_id_t resume)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(alarm != NULL))
     {
@@ -1143,9 +1123,9 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
     csi_work_t w = {0, 0, 0, resume, AGC_STATUS_OK};
 
     csi_set_cycle(true);
-    rz->loopct  = 0;
-    rz->csialrm = 0;
-    *alarm      = 0;
+    rz->loopct    = 0;
+    rz->csialrm   = 0;
+    *alarm        = 0;
     csi_label_t l = CSI_L_B; /* next label */
 
     for (int pass = 0; pass < CSI_MAX_PASSES; pass++)
@@ -1169,14 +1149,14 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
 
                 break;
             case CSI_L_SCNDSOL:
-                l = csi_scndsol(rz, &w);
+                l           = csi_scndsol(rz, &w);
                 break;
             case CSI_L_ALMXITA:
                 rz->csialrm = (agc_sp_t) w.x2;
                 l           = CSI_L_ALMXIT;
                 break;
             case CSI_L_ALMXIT:
-                *alarm = (agc_sp_t) (AGC_ALARM_CSI_00600 + rz->csialrm - 1);
+                *alarm      = (agc_sp_t) (AGC_ALARM_CSI_00600 + rz->csialrm - 1);
 
                 return (AGC_STATUS_ALARM);
             case CSI_L_DONE:
@@ -1214,20 +1194,18 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG for a failed
  *          invariant, else the TIMETHET status
  **********************************************************************/
-static agc_status_t cdh_passive(agc_interp_t *ip, agc_rendz_t *rz,
-                                agc_conic_time_out_t *o)
+static agc_status_t cdh_passive(agc_interp_t *ip, agc_rendz_t *rz, agc_conic_time_out_t *o)
 {
     rz->unvec = rz_unit(ip, rz->ract2); /* UNVEC      */
-    agc_dp_t c; /* 6D, 2^2 */
+    agc_dp_t c;                         /* 6D, 2^2 */
 
-    c = agc_vec_dot(ip, rz_unit(ip, rz->rpass2), rz->unvec);
+    c             = agc_vec_dot(ip, rz_unit(ip, rz->rpass2), rz->unvec);
     agc_dp_t csth = agc_dp_shl(ip, c, 1); /* CSTH, 2^1 */
-    agc_dp_t s2; /* 2^4 */
+    agc_dp_t s2;                          /* 2^4 */
 
-    s2 = agc_dp_sub(ip, agc_dp_shr(CSI_DP1_4, 2), agc_dp_sq(ip,
-                                                            c));
-    agc_dp_t  sn = agc_dp_shl(ip, agc_dp_sqrt(ip, s2), 1);      /* 0D, 2^1 */
-    agc_vec_t n; /* 2^58 */
+    s2           = agc_dp_sub(ip, agc_dp_shr(CSI_DP1_4, 2), agc_dp_sq(ip, c));
+    agc_dp_t  sn = agc_dp_shl(ip, agc_dp_sqrt(ip, s2), 1); /* 0D, 2^1 */
+    agc_vec_t n;                                           /* 2^58 */
 
     n = agc_vec_cross(ip, agc_vec_neg(rz->ract2), rz->rpass2);
     agc_dp_t snth; /* SNTH, 2^1 */
@@ -1269,7 +1247,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_conic_time_out_t o; /* TIMETHET result */
+    agc_conic_time_out_t o;                            /* TIMETHET result */
     agc_status_t         st = cdh_passive(ip, rz, &o); /* passive at CDH */
 
     if (st != AGC_STATUS_OK)
@@ -1277,52 +1255,51 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
         return (st);
     }
 
-    int       x2 = rz->body.rtx2;  /* X2 = RTX2 */
+    int       x2 = rz->body.rtx2;              /* X2 = RTX2 */
     agc_vec_t vp = rz_vshift(ip, o.vnew, -x2); /* m/cs 2^7 */
-    agc_dp_t  vpv; /* m/cs 2^7 */
+    agc_dp_t  vpv;                             /* m/cs 2^7 */
 
-    vpv = agc_dp_shl_round(ip, agc_vec_dot(ip, vp, rz->unvec), 1);
+    vpv         = agc_dp_shl_round(ip, agc_vec_dot(ip, vp, rz->unvec), 1);
     agc_dp_t rp = rz_shift(ip, rz_abval(ip, o.rnew), -x2); /* m 2^29 */
-    agc_dp_t ra = rz_abval(ip, rz->ract2); /* 2D, m 2^29 */
+    agc_dp_t ra = rz_abval(ip, rz->ract2);                 /* 2D, m 2^29 */
 
-    rz->diffalt = agc_dp_sub(ip, rp, ra);
-    int      x1   = 0; /* NORM index, -(left shifts) */
+    rz->diffalt   = agc_dp_sub(ip, rp, ra);
+    int      x1   = 0;                   /* NORM index, -(left shifts) */
     agc_dp_t r1an = rz_norm(o.r1a, &x1); /* 4D, 2^(6+X1) */
-    agc_dp_t r1; /* m 2^30 */
+    agc_dp_t r1;                         /* m 2^30 */
 
     r1 = agc_dp_shr_round(agc_rendz_scalar_from_body(rz, o.r1), 1);
     agc_dp_t a_p; /* m 2^29 */
 
-    a_p = rz_sl_star(ip, agc_dp_div(ip, r1, r1an), -5, x1);
+    a_p          = rz_sl_star(ip, agc_dp_div(ip, r1, r1an), -5, x1);
     agc_dp_t a_a = agc_dp_sub(ip, a_p, rz->diffalt); /* 4D A SUB A, m 2^29 */
-    agc_dp_t vav = 0; /* vertical, m/cs 2^7 */
-    agc_dp_t vah = 0; /* horizontal, m/cs 2^7 */
+    agc_dp_t vav = 0;                                /* vertical, m/cs 2^7 */
+    agc_dp_t vah = 0;                                /* horizontal, m/cs 2^7 */
 
     /* Vertical (B7) and horizontal (B7) velocity of the active vehicle. */
-    agc_dp_t q = agc_dp_div(ip, agc_dp_shr(a_p, 2), a_a);     /* 6D  B2     */
-    agc_dp_t p = agc_dp_mul(ip, agc_dp_sqrt(ip, q), q); /* DMPR, 2^3 */
+    agc_dp_t q = agc_dp_div(ip, agc_dp_shr(a_p, 2), a_a); /* 6D  B2     */
+    agc_dp_t p = agc_dp_mul(ip, agc_dp_sqrt(ip, q), q);   /* DMPR, 2^3 */
 
-    vav = agc_dp_shl_round(ip, agc_dp_mul_trunc(p, vpv), 3); /* 8D B7     */
-    int      x1_speeds = 0; /* NORM index of RA, -(shifts) */
-    agc_dp_t rn        = rz_norm(ra, &x1_speeds); /* 2^(29+X1) */
-    agc_dp_t t2mu; /* B14 after SL* */
+    vav                = agc_dp_shl_round(ip, agc_dp_mul_trunc(p, vpv), 3); /* 8D B7     */
+    int      x1_speeds = 0;                                                 /* NORM index of RA, -(shifts) */
+    agc_dp_t rn        = rz_norm(ra, &x1_speeds);                           /* 2^(29+X1) */
+    agc_dp_t t2mu;                                                          /* B14 after SL* */
 
     t2mu = agc_dp_div(ip, agc_dp_shr(rz->body.rtmu, 1), rn);
 
-    t2mu = rz_sl_star(ip, t2mu, -5, x1_speeds); /* 10D B14    */
-    int      x2_speeds = 0; /* NORM index of A, -(shifts) */
-    agc_dp_t an        = rz_norm(a_a, &x2_speeds); /* 2^(29+X2) */
-    agc_dp_t mua; /* B14 after SL* */
+    t2mu               = rz_sl_star(ip, t2mu, -5, x1_speeds); /* 10D B14    */
+    int      x2_speeds = 0;                                   /* NORM index of A, -(shifts) */
+    agc_dp_t an        = rz_norm(a_a, &x2_speeds);            /* 2^(29+X2) */
+    agc_dp_t mua;                                             /* B14 after SL* */
 
     mua = agc_dp_div(ip, agc_dp_shr(rz->body.rtmu, 1), an);
 
-    mua = rz_sl_star(ip, mua, -6, x2_speeds);
+    mua        = rz_sl_star(ip, mua, -6, x2_speeds);
     agc_dp_t e = agc_dp_sub(ip, t2mu, mua); /* BDSU, B14 */
 
-    vah = agc_dp_sqrt(ip, agc_dp_sub(ip, e, agc_dp_sq(ip, vav)));
-    agc_vec_t h = agc_vec_scale(
-        ip, rz_unit(ip, agc_vec_cross(ip, rz->up1, rz->unvec)), vah); /* 2^8 */
-    agc_vec_t v; /* 2^8 */
+    vah         = agc_dp_sqrt(ip, agc_dp_sub(ip, e, agc_dp_sq(ip, vav)));
+    agc_vec_t h = agc_vec_scale(ip, rz_unit(ip, agc_vec_cross(ip, rz->up1, rz->unvec)), vah); /* 2^8 */
+    agc_vec_t v;                                                                              /* 2^8 */
 
     v = agc_vec_add(ip, agc_vec_scale(ip, rz->unvec, vav), h);
 
@@ -1349,8 +1326,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL
  *          pointer
  **********************************************************************/
-agc_status_t agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip,
-                                         const agc_rendz_t *rz, agc_mat_t *m)
+agc_status_t agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(m != NULL))
     {
@@ -1391,7 +1367,7 @@ agc_status_t agc_rendz_csi_cdh_dv_to_reference(agc_interp_t *ip,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_mat_t    m; /* S32/33.X rows, 2^1 */
+    agc_mat_t    m;                                            /* S32/33.X rows, 2^1 */
     agc_status_t st = agc_rendz_csi_cdh_lv_matrix(ip, rz, &m); /* rows */
 
     rz->delvsin = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);

@@ -34,7 +34,7 @@
 
 #define VP_VERB_CHANGE_PROGRAM 37U
 #define VP_GO_IDLE_NOUN        99U
-#define VP_RAKE_WORDS          12 /* FLAGTABL: FLAGWRD0 .. FLAGWRD11       */
+#define VP_RAKE_WORDS          12      /* FLAGTABL: FLAGWRD0 .. FLAGWRD11       */
 #define VP_LM_F13_CLR          000440u /* LM FLAGWRD13: XOVINFLG bit 9, ULLAGFLG bit 6 */
 
 /* ---- up-calls used by fresh_start.c and alarm.c ---------------------- */
@@ -104,7 +104,7 @@ void exec_initsub_csm(void)
     static const uint16_t flagtabl[VP_RAKE_WORDS] = {
         0, 000040u, 006000u, 0, 0, 004140u, 010000u, 016000u, 0, 042000u, 0, 0
     };
-    agc_status_t          st = exec_up_stoprate();
+    agc_status_t          st                      = exec_up_stoprate();
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
@@ -154,10 +154,7 @@ static agc_status_t flash_program_request(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH,
-                             agc_dsky_vn((uint8_t) VP_VERB_CHANGE_PROGRAM,
-                                         (uint8_t) VP_GO_IDLE_NOUN),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn((uint8_t) VP_VERB_CHANGE_PROGRAM, (uint8_t) VP_GO_IDLE_NOUN), &cont));
 }
 
 /* GOP00FIX (C p.194 / L p.223): P00 has been requested by a restart

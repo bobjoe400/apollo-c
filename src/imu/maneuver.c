@@ -79,15 +79,15 @@
 #include "agc/lm/dap.h"
 #include "internal.h"
 
-#define PRIO26          ((agc_prio_t) 026) /* NEWDELHI                   */
+#define PRIO26          ((agc_prio_t) 026)         /* NEWDELHI                   */
 #define ALARM_GLOCK     ((agc_alarm_code_t) 00401) /* TOOBADF (LM) */
 #define ALARM_TWO_USERS ((agc_alarm_code_t) 01210) /* GOMANUR busy */
-#define ONESEC_CS       100         /* 1SEC / ONESEK +1           */
-#define TIME1_MOD       040000      /* TIME1 is 14 bits           */
-#define TIME_MOD        0x10000000L /* TIME2,TIME1 wrap at 2^28   */
-#define DT_TENTH        1638        /* QUADROT / DT/TAU: DEC .1   */
-#define CDU_MASK        077777u     /* 15-bit CDU word            */
-#define RATE_COUNT      4           /* ARATE entries (RATEINDX/2) */
+#define ONESEC_CS       100                        /* 1SEC / ONESEK +1           */
+#define TIME1_MOD       040000                     /* TIME1 is 14 bits           */
+#define TIME_MOD        0x10000000L                /* TIME2,TIME1 wrap at 2^28   */
+#define DT_TENTH        1638                       /* QUADROT / DT/TAU: DEC .1   */
+#define CDU_MASK        077777u                    /* 15-bit CDU word            */
+#define RATE_COUNT      4                          /* ARATE entries (RATEINDX/2) */
 
 /* ARATE (GLA p.412 / p.364): maneuver rates at 22.5 deg/s, by RATEINDX/2. */
 static const agc_dp_t arate_cm[RATE_COUNT] = {
@@ -105,11 +105,12 @@ static const agc_dp_t arate_lm[RATE_COUNT] = {
 #define ANGLTIME    ((agc_dp_t) 51200) /* 2DEC .000190735 = 100 B-19     */
 #define BIASCALE    ((agc_dp_t) 68267) /* 2DEC .0002543132 (CM)          */
 #define BIASCALE_LM ((agc_sp_t) -1024) /* OCT 75777 = -1/16 (LM)         */
+
 /* QUADROT (CM): S/C to control axes, X rotation -7.25 deg, scaled .1.    */
 static const agc_mat_t quadrot = {{
-                                      {{26843546, 0, 0}}, /* .1,      0,       0           */
+                                      {{26843546, 0, 0}},        /* .1,      0,       0           */
                                       {{0, 26628797, -3387655}}, /* 0,  .099200, -.012620         */
-                                      {{0, 3387655, 26628797}} /* 0,  .012620,  .099200         */
+                                      {{0, 3387655, 26628797}}   /* 0,  .012620,  .099200         */
                                   }};
 
 /* KALCMANU erasables (module-private; EBANK BCDU).                       */
@@ -222,8 +223,7 @@ static void set_cdud(int axis, uint16_t p)
             return;
         }
 
-        rcs->cdud[axis] =
-            (agc_dp_t) cdu_signed(p) * 16384 + agc_dp_low(rcs->cdud[axis]);
+        rcs->cdud[axis] = (agc_dp_t) cdu_signed(p) * 16384 + agc_dp_low(rcs->cdud[axis]);
     }
 } /* set_cdud */
 
@@ -398,8 +398,7 @@ agc_imu_stall_result_t agc_kalc_outcome(void)
 
     /* KALCMANU has no failure return: ENDMANU / GOODMANU always resume
      * the user (the AGC's "all returns are now made via GOODEND").       */
-    return (agc_kalc_active() ? AGC_IMU_STALL_SLEEPING : /* ATTCADR */
-            AGC_IMU_STALL_GOOD);
+    return (agc_kalc_active() ? AGC_IMU_STALL_SLEEPING : AGC_IMU_STALL_GOOD); /* ATTCADR */
 }
 
 /* ======================================================================= */
@@ -466,9 +465,7 @@ void agc_kalc_stoprate(void)
         return;
     }
 
-    com->rcsflags = (uint16_t) (com->rcsflags &
-                                (~(unsigned int) AGC_CSM_RCSF_HIRATE &
-                                 077777u));
+    com->rcsflags = (uint16_t) (com->rcsflags & (~(unsigned int) AGC_CSM_RCSF_HIRATE & 077777u));
     csm_stopyz(rcs);
 }
 
@@ -620,8 +617,8 @@ agc_status_t agc_task_manustop(void)
     agc_erase_set_delcduy(0); /* DELDCDU1        */
     agc_erase_set_omegaqd(0);
     agc_erase_set_delqeror(0);
-    loadcdud(1);          /* CDUZD, CDUYD    */
-    set_cdud(0, cphi(0)); /* ENDROLL         */
+    loadcdud(1);              /* CDUZD, CDUYD    */
+    set_cdud(0, cphi(0));     /* ENDROLL         */
     agc_erase_set_omegapd(0);
     agc_erase_set_delcdux(0); /* DELDCDU         */
     agc_erase_set_delperor(0);
@@ -685,16 +682,16 @@ static uint16_t timechk(void)
     /* DCS TIME2, DCA TM, DAS TTEMP: word by word from the TM words
      * MANUSTAT left (their signs may disagree), low-word carry included. */
     long int lo    = (long int) tm_lo - (now & 037777L); /* TTEMP +1, cs        */
-    long int carry = 0;                              /* DAS low-word carry  */
+    long int carry = 0;                                  /* DAS low-word carry  */
 
     if (lo < -037777L)
     {
-        lo   += 040000L;
+        lo    += 040000L;
         carry = -1;
     }
     else if (lo > 037777L)
     {
-        lo   -= 040000L;
+        lo    -= 040000L;
         carry = 1;
     }
 
@@ -743,7 +740,7 @@ static agc_status_t contmanu(void)
     }
 
     int diff = nextime - (int) agc_erase_time1(); /* NEXTIME - TIME1, cs */
-    int dt   = diff; /* CCS A, AD ONE / AD NEGMAX, COM: cs to NEXTIME */
+    int dt   = diff;                              /* CCS A, AD ONE / AD NEGMAX, COM: cs to NEXTIME */
 
     if (diff == 0)
     {
@@ -772,7 +769,7 @@ static agc_status_t contmanu(void)
     agc_relint();
     nextime = (nextime + ONESEC_CS) & (TIME1_MOD - 1); /* ADS NEXTIME    */
 
-    return (st);                                         /* ENDOFJOB       */
+    return (st); /* ENDOFJOB       */
 } /* contmanu */
 
 /**********************************************************************
@@ -802,7 +799,7 @@ static agc_status_t incrdcdu_tmanuchk(void)
         {
             int d = msu(bcdu[i], ncdu[i]); /* CDU difference, B0 */
 
-            d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d; /* -16384 */
+            d            = (d < AGC_SP_MIN) ? AGC_SP_MIN : d;               /* -16384 */
             agc_sp_t inc = agc_dp_high(agc_sp_mul((agc_sp_t) d, DT_TENTH)); /* DELDCDU, CDU B0 */
 
             /* CCS / AD ONE / COM: ones' to two's complement, same value.     */
@@ -823,13 +820,12 @@ static agc_status_t incrdcdu_tmanuchk(void)
         {
             int d = msu(ncdu[i], bcdu[i]); /* CDU difference, B0 */
 
-            d = (d < AGC_SP_MIN) ? AGC_SP_MIN : d; /* -16384 */
-            agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
+            d                  = (d < AGC_SP_MIN) ? AGC_SP_MIN : d; /* -16384 */
+            agc_csm_rcs_t *rcs = agc_csm_dap_rcs();                 /* CSM RCS DAP erasables */
 
             if (AGC_ASSERT(rcs != NULL))
             {
-                rcs->delcdu[i] =
-                    agc_sp_mul((agc_sp_t) d, DT_TENTH); /* MP QUADROT */
+                rcs->delcdu[i] = agc_sp_mul((agc_sp_t) d, DT_TENTH); /* MP QUADROT */
             }
         }
 
@@ -859,7 +855,7 @@ static agc_status_t incrdcdu_tmanuchk(void)
         return (contmanu());
     }
 
-    agc_inhint(); /* MANUSTAL         */
+    agc_inhint();                                      /* MANUSTAL         */
     agc_status_t st = waitlist(dt, AGC_TASK_MANUSTOP); /* status of the call */
 
     agc_relint();
@@ -881,7 +877,7 @@ static void manustat_lm(void)
     for (int i = 2; i >= 0; i--)
     {
         agc_sp_t w    = agc_dp_high(brate.c[i]); /* BRATE high word, B0 */
-        agc_sp_t jacc = agc_erase_1jaccr(); /* 1/JACC for this axis, B0 */
+        agc_sp_t jacc = agc_erase_1jaccr();      /* 1/JACC for this axis, B0 */
 
         if (i == 0)
         {
@@ -899,7 +895,7 @@ static void manustat_lm(void)
         agc_sp_t a   = (agc_sp_t) ((w > 0) ? -w : w);           /* -|W|, B0          */
         agc_sp_t q   = agc_dp_high(agc_sp_mul(a, BIASCALE_LM)); /* |W|/16, B0 */
         agc_dp_t p   = agc_sp_mul(q, w);                        /* MP BRATE: W|W|/16, B14 */
-        agc_dp_t lag = 0; /* DELxEROR, B0 */
+        agc_dp_t lag = 0;                                       /* DELxEROR, B0 */
 
         if (AGC_ASSERT(jacc != 0 && agc_dp_high(p) < (jacc < 0 ? -jacc : jacc))) /* DV no overflow */
         {
@@ -936,11 +932,11 @@ static void manustat(void)
     /* DCA TIME2, DAS TM; CS 1SEC, TS L, CS ZERO, DAS TM: the second DAS
      * adds -1SEC to the minor word only, so TM's words can disagree in
      * sign (e.g. 5, -30); TIMECHK reads them as they are.                */
-    long int now   = (long int) agc_time_now_cs() % TIME_MOD; /* TIME2,TIME1, cs */
+    long int now   = (long int) agc_time_now_cs() % TIME_MOD;     /* TIME2,TIME1, cs */
     long int lo    = ((long int) tm & 037777L) + (now & 037777L); /* cs B0      */
-    long int carry = (lo > 037777L) ? 1 : 0; /* low-word overflow           */
+    long int carry = (lo > 037777L) ? 1 : 0;                      /* low-word overflow           */
 
-    lo   -= carry * 040000L;
+    lo    -= carry * 040000L;
     tm_hi = (int) ((((long int) tm >> 14) + (now >> 14) + carry) & 037777L);
     tm_lo = (int) (lo - ONESEC_CS);
     tm    = (agc_dp_t) (((long int) tm_hi << 14) + tm_lo); /* the value      */
@@ -1016,9 +1012,9 @@ static agc_status_t steering_update(agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    mis = agc_mat_mul(ip, &mis, &del); /* MXM3             */
-    agc_vec_t    ang; /* PHI, THETA, PSI, rev 2^0 */
-    agc_dp_t     cmga; /* COS(MGA), 2^0 */
+    mis             = agc_mat_mul(ip, &mis, &del);              /* MXM3             */
+    agc_vec_t    ang;                                           /* PHI, THETA, PSI, rev 2^0 */
+    agc_dp_t     cmga;                                          /* COS(MGA), 2^0 */
     agc_status_t st = agc_kalc_dcmtocdu(ip, &mis, &ang, &cmga); /* status of the call */
 
     if (st == AGC_STATUS_OK)
@@ -1061,7 +1057,7 @@ static agc_status_t wcalc(agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool     lm = is_lm(); /* vehicle is the LM */
+    bool     lm = is_lm();                            /* vehicle is the LM */
     agc_dp_t ar = lm ? arate_lm[idx] : arate_cm[idx]; /* ARATE,1: rev 2^0 */
 
     if (lm)
@@ -1078,9 +1074,8 @@ static agc_status_t wcalc(agc_interp_t *ip)
 
     agc_vec_t b = agc_vec_scale(ip, cof, ar); /* BRATE in S/C axes, 2^0 */
 
-    brate = lm ? b : agc_mat_vec(ip, &quadrot, b); /* MXV QUADROT (CM) */
-    tm    = agc_dp_shr( /* AM DMP ANGLTIME (truncating), DDV* ARATE, SR 5 */
-        agc_dp_div(ip, agc_dp_mul_trunc(am, ANGLTIME), ar), 5);
+    brate = lm ? b : agc_mat_vec(ip, &quadrot, b);                             /* MXV QUADROT (CM) */
+    tm    = agc_dp_shr(agc_dp_div(ip, agc_dp_mul_trunc(am, ANGLTIME), ar), 5); /* AM DMP ANGLTIME (truncating), DDV* ARATE, SR 5 */
 
     if (!lm)
     {
@@ -1111,14 +1106,14 @@ static agc_status_t kalcmanu_start(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_inhint(); /* READCDUK         */
-    bcdu[0] = agc_erase_cdux();
-    bcdu[1] = agc_erase_cduy();
-    bcdu[2] = agc_erase_cduz();
+    agc_inhint();                                                   /* READCDUK         */
+    bcdu[0]                 = agc_erase_cdux();
+    bcdu[1]                 = agc_erase_cduy();
+    bcdu[2]                 = agc_erase_cduz();
     agc_relint();
     const uint16_t   fin[3] = {cphi(0), cphi(1), cphi(2)};
-    agc_kalc_setup_t k; /* KALCMAN3 results */
-    agc_status_t     st = agc_kalc_compute(&ip, bcdu, fin, &k); /* status of the call */
+    agc_kalc_setup_t k;                                             /* KALCMAN3 results */
+    agc_status_t     st     = agc_kalc_compute(&ip, bcdu, fin, &k); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {

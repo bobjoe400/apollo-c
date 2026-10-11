@@ -93,6 +93,7 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
     agc_guid_t zero = {0}; /* all cells +0 */
 
     g_guid = zero;
+
     /* Average-G defaults: AVGEXIT = SERVEXIT (normal exit), UNITW = earth's
      * rotation axis along reference Z as a full unit vector (CM pad load,
      * DPPOSMAX), PIPAGE = +1 (no reading in progress).                        */
@@ -123,8 +124,8 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
     else
     {
         g_guid.lm.outroute = AGC_JOB_ENDOFJOB; /* ENDJBCAD: SERVEXIT +2 */
-        g_guid.lm.dispdex  = 1; /* positive: CLOKTASK not running */
-        g_guid.lm.vselect  = 2; /* VSELECT: X beam first          */
+        g_guid.lm.dispdex  = 1;                /* positive: CLOKTASK not running */
+        g_guid.lm.vselect  = 2;                /* VSELECT: X beam first          */
         g_guid.lm.which    = (agc_sp_t) AGC_LM_WHICH_DPS_BURN;
     }
 

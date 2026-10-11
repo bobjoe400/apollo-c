@@ -17,7 +17,7 @@
 static agc_latlong_opt_t latlong_options(void)
 {
     const agc_latlong_opt_t opt = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG),
-                                   .erad  = agc_flag_test(AGC_FLAG_ERADFLAG)};
+                                   .erad = agc_flag_test(AGC_FLAG_ERADFLAG)};
 
     return (opt);
 }
@@ -28,8 +28,7 @@ static agc_latlong_opt_t latlong_options(void)
  * LSDISP.  ret is the job continued after V33 (QMAJ), with the new site
  * (LALOTORV, m B29) in agc_align_ram()->alphav.
  */
-agc_status_t agc_lm_landing_site_latlong(agc_job_ctx_t *ctx, agc_dp_t t,
-                                         agc_job_id_t ret)
+agc_status_t agc_lm_landing_site_latlong(agc_job_ctx_t *ctx, agc_dp_t t, agc_job_id_t ret)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret != AGC_JOB_NONE))
     {
@@ -49,8 +48,7 @@ agc_status_t agc_lm_landing_site_latlong(agc_job_ctx_t *ctx, agc_dp_t t,
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_latlong_from_r(&ip, &pad, latlong_options(), ram->alphav, t,
-                                &ll);
+        st = agc_latlong_from_r(&ip, &pad, latlong_options(), ram->alphav, t, &ll);
     }
 
     if (st != AGC_STATUS_OK)
@@ -79,10 +77,7 @@ agc_status_t agc_job_lm_landing_site_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_LANDING_SITE,
-                        AGC_JOB_GOTOPOOH,
-                        AGC_JOB_LM_LANDING_SITE_ACCEPTED,
-                        AGC_JOB_LM_LANDING_SITE_DISPLAY));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_LANDING_SITE, AGC_JOB_GOTOPOOH, AGC_JOB_LM_LANDING_SITE_ACCEPTED, AGC_JOB_LM_LANDING_SITE_DISPLAY));
 }
 
 /*
@@ -102,17 +97,16 @@ agc_status_t agc_job_lm_landing_site_accepted(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_latlong_t ll;
 
-    ll.lon   = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
-    ll.alt   = ram->landalt;
-    ll.lat   = ram->landlat;
-    ll.eradm = 0;
+    ll.lon                  = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
+    ll.alt                  = ram->landalt;
+    ll.lat                  = ram->landlat;
+    ll.eradm                = 0;
     agc_navaux_padload_t pad;
     agc_status_t         st = agc_navaux_get_padload(&pad);
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_latlong_to_r(&ip, &pad, latlong_options(), &ll,
-                              ram->landing_site_time, &ram->alphav, NULL);
+        st = agc_latlong_to_r(&ip, &pad, latlong_options(), &ll, ram->landing_site_time, &ram->alphav, NULL);
     }
 
     if (st != AGC_STATUS_OK)
@@ -130,8 +124,7 @@ agc_status_t agc_job_lm_landing_site_accepted(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_lm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -150,8 +143,7 @@ agc_status_t agc_job_lm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->talign,
-                                &r);
+        st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->talign, &r);
     }
 
     if (st != AGC_STATUS_OK)
@@ -161,8 +153,7 @@ agc_status_t agc_job_lm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 
     ram->alphav = agc_vec_shr(r, 2); /* VSR2     */
 
-    return (agc_lm_landing_site_latlong(ctx, ram->talign,
-                                        AGC_JOB_LM_REALIGN_SITE_ORIENTATION));
+    return (agc_lm_landing_site_latlong(ctx, ram->talign, AGC_JOB_LM_REALIGN_SITE_ORIENTATION));
 }
 
 /*
@@ -181,8 +172,7 @@ agc_status_t agc_job_lm_realign_site_orientation(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     const agc_vec_t    xsmd = agc_vec_unit(&ip, ram->alphav, NULL, NULL);
-    const agc_status_t st   = agc_align_lsorient(
-        &ip, xsmd, agc_erase_rrectcsm(), agc_erase_vrectcsm(), &ram->xsmd);
+    const agc_status_t st   = agc_align_lsorient(&ip, xsmd, agc_erase_rrectcsm(), agc_erase_vrectcsm(), &ram->xsmd);
 
     if (st != AGC_STATUS_OK)
     {

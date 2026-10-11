@@ -148,9 +148,8 @@ static void test_table_complete(agc_vehicle_t veh)
 
     for (uint8_t n = 0; n < AGC_NOUN_COUNT; n++)
     {
-        agc_noun_t         row; /* noun table row */
-        const agc_status_t st = /* lookup status */
-                                agc_noun_lookup_vehicle(veh, n, &row);
+        agc_noun_t         row;                                        /* noun table row */
+        const agc_status_t st = agc_noun_lookup_vehicle(veh, n, &row); /* lookup status */
 
         CHECK(row.noun == n);
         CHECK(row.ncomp <= AGC_NOUN_MAX_COMP);
@@ -160,8 +159,7 @@ static void test_table_complete(agc_vehicle_t veh)
         {
             spares++;
             CHECK(st == AGC_STATUS_NOT_FOUND);
-            CHECK(row.data_id[0] == AGC_DATA_NONE &&
-                  row.scale_type[0] == AGC_SCALE_NONE);
+            CHECK(row.data_id[0] == AGC_DATA_NONE && row.scale_type[0] == AGC_SCALE_NONE);
             continue;
         }
 
@@ -174,14 +172,12 @@ static void test_table_complete(agc_vehicle_t veh)
 
             if (k >= row.ncomp)
             {
-                CHECK(row.scale_type[k] == AGC_SCALE_NONE &&
-                      row.data_id[k] == AGC_DATA_NONE);
+                CHECK(row.scale_type[k] == AGC_SCALE_NONE && row.data_id[k] == AGC_DATA_NONE);
             }
             else
             {
                 CHECK(row.scale_type[k] != AGC_SCALE_NONE);
-                CHECK(row.data_id[k] != AGC_DATA_NONE ||
-                      row.scale_type[0] == AGC_SCALE_HMS);
+                CHECK(row.data_id[k] != AGC_DATA_NONE || row.scale_type[0] == AGC_SCALE_HMS);
             }
         }
     }
@@ -201,40 +197,25 @@ static void test_known_nouns(void)
 
     CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 36, &n) == AGC_STATUS_OK);
     CHECK(n.ncomp == 3 && n.dec_only && !n.no_load);
-    CHECK(n.scale_type[0] == AGC_SCALE_HMS &&
-          n.scale_type[1] == AGC_SCALE_HMS && n.scale_type[2] == AGC_SCALE_HMS);
+    CHECK(n.scale_type[0] == AGC_SCALE_HMS && n.scale_type[1] == AGC_SCALE_HMS && n.scale_type[2] == AGC_SCALE_HMS);
     CHECK(n.data_id[0] == AGC_DATA_TIME2 && n.data_id[1] == AGC_DATA_NONE);
     CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 36, &n) == AGC_STATUS_OK);
     CHECK(n.data_id[0] == AGC_DATA_TIME2);
 
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 40, &n) ==
-          AGC_STATUS_OK); /* mixed */
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 40, &n) == AGC_STATUS_OK); /* mixed */
     CHECK(n.ncomp == 3 && n.dec_only && n.no_load);
-    CHECK(n.scale_type[0] == AGC_SCALE_MIN_SEC &&
-          n.scale_type[1] == AGC_SCALE_VEL3 &&
-          n.scale_type[2] == AGC_SCALE_VEL3);
-    CHECK(n.data_id[0] == AGC_DATA_TTOGO && n.data_id[1] == AGC_DATA_VGDISP &&
-          n.data_id[2] == AGC_DATA_DVTOTAL);
+    CHECK(n.scale_type[0] == AGC_SCALE_MIN_SEC && n.scale_type[1] == AGC_SCALE_VEL3 && n.scale_type[2] == AGC_SCALE_VEL3);
+    CHECK(n.data_id[0] == AGC_DATA_TTOGO && n.data_id[1] == AGC_DATA_VGDISP && n.data_id[2] == AGC_DATA_DVTOTAL);
 
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 20, &n) ==
-          AGC_STATUS_OK); /* normal */
-    CHECK(n.data_id[0] == AGC_DATA_CDUX && n.data_id[1] == AGC_DATA_CDUY &&
-          n.data_id[2] == AGC_DATA_CDUZ &&
-          n.scale_type[2] == AGC_SCALE_CDU_DEG);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 20, &n) == AGC_STATUS_OK); /* normal */
+    CHECK(n.data_id[0] == AGC_DATA_CDUX && n.data_id[1] == AGC_DATA_CDUY && n.data_id[2] == AGC_DATA_CDUZ && n.scale_type[2] == AGC_SCALE_CDU_DEG);
 
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 46, &n) == AGC_STATUS_OK &&
-          n.ncomp == 2);
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 46, &n) == AGC_STATUS_OK &&
-          n.ncomp == 1);
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 87, &n) == AGC_STATUS_OK &&
-          n.scale_type[1] == AGC_SCALE_Y_OPTICS_DEG);
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 87, &n) == AGC_STATUS_OK &&
-          n.scale_type[1] == AGC_SCALE_CDU_DEG);
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 66, &n) == AGC_STATUS_OK &&
-          n.scale_type[1] == AGC_SCALE_LR_POSITION &&
-          n.data_id[1] == AGC_DATA_CHANNEL33);
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 10, &n) == AGC_STATUS_OK &&
-          n.data_id[0] == AGC_DATA_SPECIFY_CHANNEL);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 46, &n) == AGC_STATUS_OK && n.ncomp == 2);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 46, &n) == AGC_STATUS_OK && n.ncomp == 1);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 87, &n) == AGC_STATUS_OK && n.scale_type[1] == AGC_SCALE_Y_OPTICS_DEG);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 87, &n) == AGC_STATUS_OK && n.scale_type[1] == AGC_SCALE_CDU_DEG);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 66, &n) == AGC_STATUS_OK && n.scale_type[1] == AGC_SCALE_LR_POSITION && n.data_id[1] == AGC_DATA_CHANNEL33);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 10, &n) == AGC_STATUS_OK && n.data_id[0] == AGC_DATA_SPECIFY_CHANNEL);
 }
 
 /**********************************************************************
@@ -246,18 +227,12 @@ static void test_unknown(void)
 {
     agc_noun_t n; /* noun table row */
 
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 100, &n) ==
-          AGC_STATUS_BAD_ARG);
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 255, &n) ==
-          AGC_STATUS_BAD_ARG);
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 36, NULL) ==
-          AGC_STATUS_BAD_ARG);
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 4, &n) ==
-          AGC_STATUS_NOT_FOUND); /* spare */
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 0, &n) ==
-          AGC_STATUS_NOT_FOUND);
-    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 69, &n) ==
-          AGC_STATUS_NOT_FOUND);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 100, &n) == AGC_STATUS_BAD_ARG);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 255, &n) == AGC_STATUS_BAD_ARG);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 36, NULL) == AGC_STATUS_BAD_ARG);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 4, &n) == AGC_STATUS_NOT_FOUND); /* spare */
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 0, &n) == AGC_STATUS_NOT_FOUND);
+    CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_LM, 69, &n) == AGC_STATUS_NOT_FOUND);
 }
 
 /**********************************************************************
@@ -270,45 +245,32 @@ static void test_scales(void)
 {
     agc_scale_info_t si; /* scale-type row */
 
-    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_HMS, &si) ==
-          AGC_STATUS_OK);
-    CHECK(si.routine == AGC_SFR_HMS && si.sf_code == 0 && si.is_dp &&
-          !si.is_raw);
-    CHECK(si.sf_in == 100000); /* SFINTAB 00006 03240 */
-    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_POS9, &si) ==
-          AGC_STATUS_OK);
+    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_HMS, &si) == AGC_STATUS_OK);
+    CHECK(si.routine == AGC_SFR_HMS && si.sf_code == 0 && si.is_dp && !si.is_raw);
+    CHECK(si.sf_in == 100000);            /* SFINTAB 00006 03240 */
+    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_POS9, &si) == AGC_STATUS_OK);
     CHECK(si.sf_code == 18);
-    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_LM, AGC_SCALE_POS9, &si) ==
-          AGC_STATUS_OK);
+    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_LM, AGC_SCALE_POS9, &si) == AGC_STATUS_OK);
     CHECK(si.sf_code == 26);
-    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_LM, AGC_SCALE_LR_VELX, &si) ==
-          AGC_STATUS_OK);
+    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_LM, AGC_SCALE_LR_VELX, &si) == AGC_STATUS_OK);
     CHECK(si.sf_in < 0 && si.sf_out < 0); /* SFIN 77766 60557: negative */
-    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_LR_VELX, &si) ==
-          AGC_STATUS_NOT_FOUND);
-    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_LM, AGC_SCALE_Y_OPTICS_DEG, &si) ==
-          AGC_STATUS_NOT_FOUND);
-    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_CDU_DEG, &si) ==
-          AGC_STATUS_OK);
-    CHECK(si.is_raw && !si.is_dp && si.routine == AGC_SFR_CDU_DEG &&
-          si.sf_in == 0);
-    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_NONE, &si) ==
-          AGC_STATUS_BAD_ARG);
-    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_COUNT, &si) ==
-          AGC_STATUS_BAD_ARG);
+    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_LR_VELX, &si) == AGC_STATUS_NOT_FOUND);
+    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_LM, AGC_SCALE_Y_OPTICS_DEG, &si) == AGC_STATUS_NOT_FOUND);
+    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_CDU_DEG, &si) == AGC_STATUS_OK);
+    CHECK(si.is_raw && !si.is_dp && si.routine == AGC_SFR_CDU_DEG && si.sf_in == 0);
+    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_NONE, &si) == AGC_STATUS_BAD_ARG);
+    CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_COUNT, &si) == AGC_STATUS_BAD_ARG);
 
     agc_dp_t in  = 0; /* SFIN constant, unscaled */
     agc_dp_t out = 0; /* SFOUT constant, unscaled */
 
-    CHECK(agc_scale_sfconst(AGC_VEHICLE_CSM, 20, &in, &out) ==
-          AGC_STATUS_BAD_ARG);
+    CHECK(agc_scale_sfconst(AGC_VEHICLE_CSM, 20, &in, &out) == AGC_STATUS_BAD_ARG);
     CHECK(agc_scale_sfconst(AGC_VEHICLE_LM, 28, &in, &out) == AGC_STATUS_OK);
 
     /* every scale type a noun uses resolves for that vehicle */
     for (int veh = 0; veh < 2; veh++)
     {
-        const agc_vehicle_t v = (veh == 0) ? /* vehicle */
-                                AGC_VEHICLE_CSM : AGC_VEHICLE_LM;
+        const agc_vehicle_t v = (veh == 0) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM; /* vehicle */
 
         for (uint8_t n = 0; n < AGC_NOUN_COUNT; n++)
         {
@@ -318,8 +280,7 @@ static void test_scales(void)
 
             for (int k = 0; k < row.ncomp; k++)
             {
-                CHECK(agc_scale_info_vehicle(v, (agc_scale_t) row.scale_type[k],
-                                             &si) == AGC_STATUS_OK);
+                CHECK(agc_scale_info_vehicle(v, (agc_scale_t) row.scale_type[k], &si) == AGC_STATUS_OK);
             }
         }
     }
@@ -334,11 +295,10 @@ static void test_scales(void)
 static void test_data(void)
 {
     agc_dp_t   v = 0; /* datum read back, scale of the id */
-    agc_noun_t n; /* noun table row */
+    agc_noun_t n;     /* noun table row */
 
     agc_state_init(AGC_VEHICLE_LM);
-    CHECK(agc_noun_lookup(36, &n) == AGC_STATUS_OK &&
-          n.data_id[0] == AGC_DATA_TIME2);
+    CHECK(agc_noun_lookup(36, &n) == AGC_STATUS_OK && n.data_id[0] == AGC_DATA_TIME2);
     CHECK(agc_noun_lookup(46, &n) == AGC_STATUS_OK && n.ncomp == 1); /* LM */
     agc_state_init(AGC_VEHICLE_CSM);
     CHECK(agc_noun_lookup(46, &n) == AGC_STATUS_OK && n.ncomp == 2); /* CSM */
@@ -348,8 +308,7 @@ static void test_data(void)
     CHECK(agc_noun_write(AGC_DATA_TIG, 7000) == AGC_STATUS_OK);
     CHECK(agc_noun_read(AGC_DATA_TIG, &v) == AGC_STATUS_OK && v == 7000);
     CHECK(agc_noun_write(AGC_DATA_TIME2, -1) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_noun_write(AGC_DATA_CDUY, 0x7FFF) ==
-          AGC_STATUS_OK); /* raw word */
+    CHECK(agc_noun_write(AGC_DATA_CDUY, 0x7FFF) == AGC_STATUS_OK); /* raw word */
     CHECK(agc_noun_read(AGC_DATA_CDUY, &v) == AGC_STATUS_OK && v == 0x7FFF);
     CHECK(agc_noun_write(AGC_DATA_CDUY, 0x8000) == AGC_STATUS_BAD_ARG);
 
@@ -357,10 +316,11 @@ static void test_data(void)
     CHECK(agc_noun_read(AGC_DATA_NONE, &v) == AGC_STATUS_BAD_ARG);
     CHECK(agc_noun_read(AGC_DATA_COUNT, &v) == AGC_STATUS_BAD_ARG);
     CHECK(agc_noun_read(AGC_DATA_TIME2, NULL) == AGC_STATUS_BAD_ARG);
+
     /* HAPO lives in the guidance block: through agc_dispatch_noun.     */
     CHECK(agc_noun_write(AGC_DATA_HAPO, 123456789) == AGC_STATUS_OK);
-    CHECK(agc_noun_read(AGC_DATA_HAPO, &v) == AGC_STATUS_OK &&
-          v == 123456789 && agc_guid_state()->burn.hapo == 123456789);
+    CHECK(agc_noun_read(AGC_DATA_HAPO, &v) == AGC_STATUS_OK && v == 123456789 && agc_guid_state()->burn.hapo == 123456789);
+
     /* ALMCADR (the AGC alarm return address) has no owner in C.        */
     CHECK(agc_noun_read(AGC_DATA_ALMCADR, &v) == AGC_STATUS_NOT_FOUND);
 }

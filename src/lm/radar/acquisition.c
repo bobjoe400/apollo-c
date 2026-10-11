@@ -79,19 +79,20 @@
 #define ACQ_DELAY_HALF 50U                    /* .5SEC                      */
 #define ACQ_SIN60      ((agc_dp_t) 232473158) /* SIN60DEG 2DEC .86603     */
 #define ACQ_COS60      AGC_DP_HALF            /* COS60DEG = DPHALF          */
+
 /* OFFSTFAC 2DEC 0.05678: tangent of 3.25 degrees                       */
-#define ACQ_OFFSTFAC         ((agc_dp_t) 15241765) /* OFFSTFAC, 2^0     */
-#define ACQ_ALL1S            11111 /* ALL1S DEC 11111            */
-#define ACQ_PRIO25           ((agc_prio_t) 025) /* PRIO25 */
-#define ACQ_PRIO26           ((agc_prio_t) 026) /* PRIO26 */
-#define ACQ_CHECKLIST_MANUAL 0205U /* OCT205: manual acquisition */
+#define ACQ_OFFSTFAC         ((agc_dp_t) 15241765)      /* OFFSTFAC, 2^0     */
+#define ACQ_ALL1S            11111                      /* ALL1S DEC 11111            */
+#define ACQ_PRIO25           ((agc_prio_t) 025)         /* PRIO25 */
+#define ACQ_PRIO26           ((agc_prio_t) 026)         /* PRIO26 */
+#define ACQ_CHECKLIST_MANUAL 0205U                      /* OCT205: manual acquisition */
 #define ACQ_ALARM_NO_LOCK    ((agc_alarm_code_t) 00503) /* no lock-on */
 #define ACQ_ALARM_COVERAGE   ((agc_alarm_code_t) 00530) /* no coverage */
 #define ACQ_ALARM_LIMITS     ((agc_alarm_code_t) 00501) /* outside limits */
 #define ACQ_ALARM_SEARCH     ((agc_alarm_code_t) 00527) /* search point */
-#define ACQ_BIT7             000100u /* LINUS: priority display    */
-#define ACQ_W_M180           040000u /* BIT15: trunnion -180       */
-#define ACQ_W_M90            057777u /* CS HALF: shaft -90         */
+#define ACQ_BIT7             000100u                    /* LINUS: priority display    */
+#define ACQ_W_M180           040000u                    /* BIT15: trunnion -180       */
+#define ACQ_W_M90            057777u                    /* CS HALF: shaft -90         */
 
 /**********************************************************************
  * RADSTALL for the job: sleep, or (reading already over) continue at
@@ -111,9 +112,8 @@
  **********************************************************************/
 static agc_status_t acq_stall(agc_job_id_t wake_as)
 {
-    agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING; /* RADSTALL result */
-    agc_status_t           st  = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, wake_as,
-                                                   &res); /* RADSTALL */
+    agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;                              /* RADSTALL result */
+    agc_status_t           st  = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, wake_as, &res); /* RADSTALL */
 
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
@@ -181,7 +181,7 @@ agc_status_t agc_job_rendezvous_sighting_mark(agc_job_ctx_t *ctx)
     agc_erase_set_tang(0, (agc_sp_t) rr_ones(t));
     agc_erase_set_tang(1, (agc_sp_t) rr_ones(s));
     rz_flag_put(AGC_FLAG_LOKONSW, false); /* R21LEM6  */
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                      /* interpreter state */
 
     agc_interp_init(&ip);
     agc_rr_designate_result_t res; /* designate result */
@@ -288,7 +288,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_new_los(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     bool     too_far = false; /* range > 400 NM */
-    agc_dp_t t; /* now + .5 s, cs 2^28 */
+    agc_dp_t t;               /* now + .5 s, cs 2^28 */
 
     t = agc_dp_add(&ip, agc_rtb_loadtime(), ACQ_HALFSEC);
     agc_status_t st; /* LPS20.1 */
@@ -307,7 +307,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_new_los(agc_job_ctx_t *ctx)
 
     rz_flag_put(AGC_FLAG_LOKONSW, true); /* R21LEM3  */
     rz_flag_put(AGC_FLAG_NORRMON, false);
-    agc_rr_designate_result_t res; /* designate result */
+    agc_rr_designate_result_t res;       /* designate result */
 
     res = AGC_RR_DESIGNATE_END_JOB;
 
@@ -327,8 +327,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_new_los(agc_job_ctx_t *ctx)
             n->reposcnt = ACQ_MAXTRIES;
             rz_flag_put(AGC_FLAG_FSPASFLG, true);
             rz_flag_put(AGC_FLAG_LOSCMFLG, false);
-            n->repostm =
-                agc_dp_add(&ip, agc_rtb_loadtime(), ACQ_TENSEC); /* R21LEM12 */
+            n->repostm  = agc_dp_add(&ip, agc_rtb_loadtime(), ACQ_TENSEC); /* R21LEM12 */
 
             return (rz_continue(AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REPOSITION));
         }
@@ -399,10 +398,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_alarm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_prio_alarm(
-                ctx, ACQ_ALARM_NO_LOCK, AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
-                AGC_JOB_RADAR_SEARCH,
-                AGC_JOB_RENDEZVOUS_NAVIGATION_UPDATE_STATES));
+    return (rz_prio_alarm(ctx, ACQ_ALARM_NO_LOCK, AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE, AGC_JOB_RADAR_SEARCH, AGC_JOB_RENDEZVOUS_NAVIGATION_UPDATE_STATES));
 }
 
 /**********************************************************************
@@ -435,7 +431,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_verify(agc_job_ctx_t *ctx)
     cont.terminate = AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE;
     cont.proceed   = AGC_JOB_RENDEZVOUS_SIGHTING_MARK_WAIT;
     cont.enter     = AGC_JOB_RENDEZVOUS_SIGHTING_MARK_VERIFY; /* TC -5    */
-    agc_status_t st; /* V50N72 */
+    agc_status_t st;                                          /* V50N72 */
 
     st = agc_dsky_display(ctx, AGC_DSKY_GOPERF2R, agc_dsky_vn(6U, 72U), &cont);
 
@@ -498,13 +494,11 @@ agc_status_t agc_job_rendezvous_sighting_mark_reposition(agc_job_ctx_t *ctx)
     }
 
     lmnav_state_t *n = lmnav_state(); /* LM navigation erasables */
-    agc_interp_t   ip; /* interpreter state */
+    agc_interp_t   ip;                /* interpreter state */
 
     agc_interp_init(&ip);
-    bool         too_far = false; /* range > 400 NM */
-    agc_status_t st      =
-        lmnav_los(&ip, n->repostm, /* R21LEM12 */
-                  AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REPOSITION, &too_far);
+    bool         too_far = false;                                                                             /* range > 400 NM */
+    agc_status_t st      = lmnav_los(&ip, n->repostm, AGC_JOB_RENDEZVOUS_SIGHTING_MARK_REPOSITION, &too_far); /* R21LEM12 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -522,8 +516,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_reposition(agc_job_ctx_t *ctx)
 
     st = agc_rr_designate_sm(&ip, &res);
 
-    if (st != AGC_STATUS_OK || res == AGC_RR_DESIGNATE_MANEUVER ||
-        res == AGC_RR_DESIGNATE_END_JOB)
+    if (st != AGC_STATUS_OK || res == AGC_RR_DESIGNATE_MANEUVER || res == AGC_RR_DESIGNATE_END_JOB)
     {
         return (st); /* ENDOFJOB */
     }
@@ -542,7 +535,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_reposition(agc_job_ctx_t *ctx)
         rz_flag_put(AGC_FLAG_FSPASFLG, false); /* R21LEM7+1 */
     }
     else if (n->reposcnt > 0)
-    {                  /* R21LEM13 */
+    { /* R21LEM13 */
         n->reposcnt--; /* R21LEM7  */
     }
     else
@@ -589,15 +582,15 @@ agc_status_t agc_job_rendezvous_sighting_mark_ahead(agc_job_ctx_t *ctx)
     rr_radmodes_set(RR_CDESBIT); /* CDESFLAG (RADMODES) */
     rz_flag_put(AGC_FLAG_LOKONSW, false);
     rz_flag_put(AGC_FLAG_NORRMON, true);
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;             /* interpreter state */
 
     agc_interp_init(&ip);
     agc_rr_designate_result_t res; /* designate result */
 
-    res = AGC_RR_DESIGNATE_END_JOB;
-    uint16_t     t  = rr_word(agc_erase_tang(0));               /* MODEA */
-    uint16_t     sh = rr_word(agc_erase_tang(1));               /* shaft */
-    agc_status_t st; /* RRDESNB */
+    res             = AGC_RR_DESIGNATE_END_JOB;
+    uint16_t     t  = rr_word(agc_erase_tang(0)); /* MODEA */
+    uint16_t     sh = rr_word(agc_erase_tang(1)); /* shaft */
+    agc_status_t st;                              /* RRDESNB */
 
     st = agc_rr_designate_nb(&ip, t, sh, &res);
 
@@ -640,8 +633,7 @@ agc_status_t agc_task_rendezvous_sighting_mark_redesignate(void)
     agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP); /* STDESIG */
     agc_rendz_clradmod();
 
-    return (agc_exec_findvac(ACQ_PRIO26,
-                             AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DESIGNATE_LOS));
+    return (agc_exec_findvac(ACQ_PRIO26, AGC_JOB_RENDEZVOUS_SIGHTING_MARK_DESIGNATE_LOS));
 }
 
 /**********************************************************************
@@ -696,7 +688,7 @@ agc_status_t agc_job_manual_acquisition(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_flag_put(AGC_FLAG_NORRMON, true); /* no angle monitor  */
+    rz_flag_put(AGC_FLAG_NORRMON, true);     /* no angle monitor  */
     agc_inhint();
     agc_status_t st = agc_lm_dap_setmindb(); /* minimum deadband  */
 
@@ -740,8 +732,7 @@ agc_status_t agc_job_manual_acquisition_display(agc_job_ctx_t *ctx)
     cont.proceed   = AGC_JOB_MANUAL_ACQUISITION_CHECK;
     cont.enter     = AGC_JOB_MANUAL_ACQUISITION_MANEUVER;
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOPERF1, ACQ_CHECKLIST_MANUAL,
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOPERF1, ACQ_CHECKLIST_MANUAL, &cont));
 }
 
 /**********************************************************************
@@ -870,8 +861,7 @@ agc_status_t agc_job_manual_acquisition_maneuver(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (lmnav_tracking_attitude(ctx, true,
-                                    AGC_JOB_MANUAL_ACQUISITION_DISPLAY));
+    return (lmnav_tracking_attitude(ctx, true, AGC_JOB_MANUAL_ACQUISITION_DISPLAY));
 }
 
 /* ---- R24LEM search routine (pp.515-516) -------------------------------- */
@@ -898,7 +888,7 @@ agc_status_t agc_job_radar_search(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_change(2, 04022); /* R21SRCH  */
+    agc_phase_change(2, 04022);       /* R21SRCH  */
     rz_flag_put(AGC_FLAG_SRCHOPTN, true);
     rz_flag_put(AGC_FLAG_LOSCMFLG, false);
     lmnav_state_t *n = lmnav_state(); /* R24LEM1  */
@@ -1012,8 +1002,7 @@ agc_status_t agc_job_radar_search_maneuver(agc_job_ctx_t *ctx)
     agc_relint();
     agc_rendz_clradmod();
 
-    return (agc_svc_delayjob(ACQ_DELAY_HALF,
-                             AGC_JOB_RADAR_SEARCH_MANEUVER_DONE));
+    return (agc_svc_delayjob(ACQ_DELAY_HALF, AGC_JOB_RADAR_SEARCH_MANEUVER_DONE));
 }
 
 /**********************************************************************
@@ -1150,11 +1139,8 @@ agc_status_t agc_job_radar_search_point(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t acq_search_states(agc_interp_t *ip, lmnav_state_t *n)
 {
-    agc_integ_out_t o; /* integration result */
-    agc_status_t    st =
-        rz_integ(ip, RZ_LEMCONIC,
-                 agc_dp_add(ip, agc_rtb_loadtime(), ACQ_1_5SECS),
-                 AGC_JOB_RADAR_SEARCH_LOS, &o); /* LM */
+    agc_integ_out_t o;                                                                                                             /* integration result */
+    agc_status_t    st = rz_integ(ip, RZ_LEMCONIC, agc_dp_add(ip, agc_rtb_loadtime(), ACQ_1_5SECS), AGC_JOB_RADAR_SEARCH_LOS, &o); /* LM */
 
     if (st != AGC_STATUS_OK)
     {
@@ -1171,15 +1157,13 @@ static agc_status_t acq_search_states(agc_interp_t *ip, lmnav_state_t *n)
         return (st);
     }
 
-    n->losdesrd =
-        agc_vec_unit(ip, agc_vec_sub(ip, o.ratt, rlmsrch), NULL, NULL);
+    n->losdesrd  = agc_vec_unit(ip, agc_vec_sub(ip, o.ratt, rlmsrch), NULL, NULL);
     agc_vec_t uv = agc_vec_unit(ip, o.vatt, NULL, NULL); /* 2^1 */
 
-    n->vxrcm = agc_vec_unit(ip, agc_vec_cross(ip, uv, o.ratt), NULL, NULL);
+    n->vxrcm           = agc_vec_unit(ip, agc_vec_cross(ip, uv, o.ratt), NULL, NULL);
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
 
-    n->savlemv = agc_vec_shl(
-        ip, agc_mat_vec(ip, &refsmmat, agc_vec_sub(ip, o.vatt, vlm)), 1);
+    n->savlemv = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, agc_vec_sub(ip, o.vatt, vlm)), 1);
 
     return (AGC_STATUS_OK);
 }
@@ -1213,30 +1197,19 @@ static agc_vec_t acq_search_point(agc_interp_t *ip, lmnav_state_t *n)
 
     if (n->nsrchpnt == 1)
     {
-        n->uxvect = agc_vec_unit(ip, agc_vec_cross(ip, n->vxrcm, n->losdesrd),
-                                 NULL, NULL);
-        n->uyvect = agc_vec_unit(ip, agc_vec_cross(ip, n->losdesrd, n->uxvect),
-                                 NULL, NULL);
+        n->uxvect = agc_vec_unit(ip, agc_vec_cross(ip, n->vxrcm, n->losdesrd), NULL, NULL);
+        n->uyvect = agc_vec_unit(ip, agc_vec_cross(ip, n->losdesrd, n->uxvect), NULL, NULL);
     }
     else
     {
         agc_vec_t uxpr = n->uxvect; /* 2^1 */
         agc_vec_t uypr = n->uyvect; /* 2^1 */
 
-        n->uxvect =
-            agc_vec_unit(ip,
-                         agc_vec_add(ip, agc_vec_scale(ip, uxpr, ACQ_COS60),
-                                     agc_vec_scale(ip, uypr, ACQ_SIN60)),
-                         NULL, NULL);
-        n->uyvect =
-            agc_vec_unit(ip,
-                         agc_vec_sub(ip, agc_vec_scale(ip, uypr, ACQ_COS60),
-                                     agc_vec_scale(ip, uxpr, ACQ_SIN60)),
-                         NULL, NULL);
+        n->uxvect = agc_vec_unit(ip, agc_vec_add(ip, agc_vec_scale(ip, uxpr, ACQ_COS60), agc_vec_scale(ip, uypr, ACQ_SIN60)), NULL, NULL);
+        n->uyvect = agc_vec_unit(ip, agc_vec_sub(ip, agc_vec_scale(ip, uypr, ACQ_COS60), agc_vec_scale(ip, uxpr, ACQ_SIN60)), NULL, NULL);
     }
 
-    agc_vec_t p = agc_vec_add(ip, agc_vec_scale(ip, n->uyvect, ACQ_OFFSTFAC),
-                              n->losdesrd); /* 2^1 */
+    agc_vec_t p = agc_vec_add(ip, agc_vec_scale(ip, n->uyvect, ACQ_OFFSTFAC), n->losdesrd); /* 2^1 */
 
     p = agc_vec_unit(ip, p, NULL, NULL);
 
@@ -1268,8 +1241,8 @@ agc_status_t agc_job_radar_search_los(agc_job_ctx_t *ctx)
     }
 
     lmnav_state_t *n = lmnav_state(); /* LM navigation erasables */
-    rr_state_t    *s = rr_state(); /* radar erasables */
-    agc_interp_t   ip; /* interpreter state */
+    rr_state_t    *s = rr_state();    /* radar erasables */
+    agc_interp_t   ip;                /* interpreter state */
 
     agc_interp_init(&ip);
     agc_status_t st = acq_search_states(&ip, n); /* LRS24.11 */
@@ -1283,9 +1256,9 @@ agc_status_t agc_job_radar_search_los(agc_job_ctx_t *ctx)
     s->losvel   = n->savlemv;
     agc_inhint();
     agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP);
-    rr_radmodes_set(RR_CDESBIT); /* CONTDES2 */
+    rr_radmodes_set(RR_CDESBIT);            /* CONTDES2 */
     agc_relint();
-    agc_rr_designate_result_t res; /* designate result */
+    agc_rr_designate_result_t res;          /* designate result */
 
     res = AGC_RR_DESIGNATE_END_JOB;
 
@@ -1302,19 +1275,18 @@ agc_status_t agc_job_radar_search_los(agc_job_ctx_t *ctx)
          * boresight (RRNB of the RR CDUs) and the +Z axis, for R2 of
          * noun 80.                                                    */
         agc_inhint();
-        s->tangnb[0] = agc_erase_cdut();
-        s->tangnb[1] = agc_erase_cdus();
+        s->tangnb[0]          = agc_erase_cdut();
+        s->tangnb[1]          = agc_erase_cdus();
         agc_relint();
-        agc_vec_t    b        = agc_vec_zero(); /* boresight, 2^1 */
-        agc_status_t st_omega = agc_lm_rrnb(&ip, s->tangnb[0],
-                                            s->tangnb[1], &b); /* RRNB */
+        agc_vec_t    b        = agc_vec_zero();                                   /* boresight, 2^1 */
+        agc_status_t st_omega = agc_lm_rrnb(&ip, s->tangnb[0], s->tangnb[1], &b); /* RRNB */
 
         n->omegad = agc_dp_acos(&ip, b.c[2]);
 
         return (st_omega);
     }
 
-    agc_alarm(ACQ_ALARM_SEARCH); /* LIMALARM */
+    agc_alarm(ACQ_ALARM_SEARCH);                         /* LIMALARM */
     agc_inhint();
     agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT); /* pattern off */
     agc_relint();
@@ -1371,7 +1343,7 @@ agc_status_t agc_job_radar_search_data_check(agc_job_ctx_t *ctx)
 
     if ((agc_chan_read(AGC_CHAN_CHAN33) & RR_CH33_RR_DGOOD) == 0U)
     {
-        n->datagood = ACQ_ALL1S; /* STORE1S  */
+        n->datagood = ACQ_ALL1S;                       /* STORE1S  */
         agc_inhint();
         agc_waitlist_kill(AGC_TASK_RR_DESIGNATE_LOOP); /* designate off */
         agc_relint();

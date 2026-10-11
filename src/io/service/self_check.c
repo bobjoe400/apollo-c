@@ -39,7 +39,7 @@
 #define MAX_OPTION       8       /* options 1..10 octal                   */
 #define ALARM_SELF_CHECK ((agc_alarm_code_t) 01102)
 
-static const uint16_t *rope; /* the simulator's fixed memory       */
+static const uint16_t *rope;      /* the simulator's fixed memory       */
 static int             rope_banks;
 static uint16_t        smode;     /* SMODE, raw word (077777 = -0)      */
 static uint16_t        ercount;   /* ERCOUNT                            */
@@ -49,8 +49,7 @@ static int             show_bank; /* SKEEP4 bank during SHOW-BANKSUM    */
 
 agc_status_t agc_selfcheck_set_rope(const uint16_t *image, int nbanks)
 {
-    if (!AGC_ASSERT(nbanks >= 0 && nbanks <= AGC_ROPE_BANKS) ||
-        !AGC_ASSERT(image != NULL || nbanks == 0))
+    if (!AGC_ASSERT(nbanks >= 0 && nbanks <= AGC_ROPE_BANKS) || !AGC_ASSERT(image != NULL || nbanks == 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -140,8 +139,7 @@ static uint16_t adsum(uint16_t sum, uint16_t word)
  * word).                                                                   */
 agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger)
 {
-    if (!AGC_ASSERT(sum != NULL && bugger != NULL) ||
-        !AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
+    if (!AGC_ASSERT(sum != NULL && bugger != NULL) || !AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -166,11 +164,7 @@ agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        uint16_t addr =
-            (uint16_t) (((bank == 2) ? BANK2_ADDR : (bank ==
-                                                     3) ? BANK3_ADDR : BANK_ADDR)
-                        +
-                        (uint16_t) rel);
+        uint16_t addr = (uint16_t) (((bank == 2) ? BANK2_ADDR : (bank == 3) ? BANK3_ADDR : BANK_ADDR) + (uint16_t) rel);
 
         if (word == addr)
         { /* L = -0: a TC SELF   */
@@ -250,10 +244,7 @@ agc_status_t agc_selfcheck_idle_pass(void)
         return (AGC_STATUS_OK); /* backup idle loop    */
     }
 
-    int option =
-        (smode == NEG0) ?
-        0 :
-        (int) (((smode & SIGN15) != 0u) ? (WORD15 - smode) : smode);
+    int option = (smode == NEG0) ? 0 : (int) (((smode & SIGN15) != 0u) ? (WORD15 - smode) : smode);
 
     if (option > MAX_OPTION)
     {

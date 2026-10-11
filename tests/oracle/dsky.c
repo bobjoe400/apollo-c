@@ -46,15 +46,12 @@
 
 /* Prototypes: main() comes first (STYLE 4.6). */
 typedef struct dsky_noun dsky_noun_t;
-static void check(const char *t, const char *what, long int got,
-                  long int want);
+static void               check(const char *t, const char *what, long int got, long int want);
 static const dsky_noun_t *find_noun(bool lm, int noun);
-static agc_status_t       write_comp(const char *t, uint16_t id,
-                                     const agc_scale_info_t *si,
-                                     const char *name, int idx);
-static void compare(const char *t);
-static void one(const char *t, bool lm);
-static void all_runs(bool lm);
+static agc_status_t       write_comp(const char *t, uint16_t id, const agc_scale_info_t *si, const char *name, int idx);
+static void               compare(const char *t);
+static void               one(const char *t, bool lm);
+static void               all_runs(bool lm);
 
 /**********************************************************************
  * AGC: none (test driver) -- CSM then LM case files
@@ -153,8 +150,7 @@ static const dsky_noun_t k_lm[] = {
  *   got       long int       I    C value
  *   want      long int       I    AGC value
  **********************************************************************/
-static void check(const char *t, const char *what, long int got,
-                  long int want)
+static void check(const char *t, const char *what, long int got, long int want)
 {
     (void) oracle_cmp(t, what, got, want, 0);
 }
@@ -174,10 +170,8 @@ static void check(const char *t, const char *what, long int got,
  **********************************************************************/
 static const dsky_noun_t *find_noun(bool lm, int noun)
 {
-    const dsky_noun_t *t = lm ? k_lm : k_cm; /* table of the vehicle */
-    const size_t       n = lm ? /* its row count */
-                           sizeof (k_lm) / sizeof (k_lm[0]) :
-                           sizeof (k_cm) / sizeof (k_cm[0]);
+    const dsky_noun_t *t = lm ? k_lm : k_cm;                                                         /* table of the vehicle */
+    const size_t       n = lm ? sizeof (k_lm) / sizeof (k_lm[0]) : sizeof (k_cm) / sizeof (k_cm[0]); /* its row count */
 
     for (size_t i = 0; i < n; i++)
     {
@@ -206,9 +200,7 @@ static const dsky_noun_t *find_noun(bool lm, int noun)
  *
  * RETURNS: agc_status_t -- status of the noun write
  **********************************************************************/
-static agc_status_t write_comp(const char *t, uint16_t id,
-                               const agc_scale_info_t *si, const char *name,
-                               int idx)
+static agc_status_t write_comp(const char *t, uint16_t id, const agc_scale_info_t *si, const char *name, int idx)
 {
     agc_dp_t v; /* component value, scale of the noun */
 
@@ -264,8 +256,7 @@ static void compare(const char *t)
     for (int k = 0; k < PIN_DSPTAB_PANEL; k++)
     {
         (void) snprintf(name, sizeof (name), "DSPTAB+%d", k);
-        check(t, name, (long int) agc_erase_dsptab(k),
-              (long int) oracle_out_raw(t, name));
+        check(t, name, (long int) agc_erase_dsptab(k), (long int) oracle_out_raw(t, name));
     }
 
     check(t, "NOUT", pin_st()->nout, oracle_out_sp(t, "NOUT"));
@@ -287,10 +278,10 @@ static void compare(const char *t)
 static void one(const char *t, bool lm)
 {
     const int    vnw   = oracle_in(t, "NVTEMP", 0); /* NVTEMP verb/noun */
-    const int    verb  = (vnw >> 7) & 0177; /* verb of NVTEMP */
-    const int    noun  = vnw & 0177; /* noun of NVTEMP */
-    const bool   mctbs = noun >= 1 && noun <= 3; /* machine-address noun */
-    agc_status_t st    = AGC_STATUS_OK; /* status so far */
+    const int    verb  = (vnw >> 7) & 0177;         /* verb of NVTEMP */
+    const int    noun  = vnw & 0177;                /* noun of NVTEMP */
+    const bool   mctbs = noun >= 1 && noun <= 3;    /* machine-address noun */
+    agc_status_t st    = AGC_STATUS_OK;             /* status so far */
 
     oracle_require_ok(t, "ENDOFJOB");
     agc_state_init(lm ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM); /* vehicle */
@@ -306,20 +297,17 @@ static void one(const char *t, bool lm)
     {
         for (int k = 0; k < 3; k++)
         {
-            st = agc_erase_write_ecadr((uint16_t) (03700 + k),
-                                       oracle_in_raw(t, DSKY_MCTBS_NAME, k));
+            st = agc_erase_write_ecadr((uint16_t) (03700 + k), oracle_in_raw(t, DSKY_MCTBS_NAME, k));
         }
 
-        st = agc_dsky_nvsub_mctbs((uint8_t) verb, (uint8_t) noun,
-                                  (uint16_t) oracle_in(t, "MPAC+2", 0));
+        st = agc_dsky_nvsub_mctbs((uint8_t) verb, (uint8_t) noun, (uint16_t) oracle_in(t, "MPAC+2", 0));
     }
     else
     {
         const dsky_noun_t *dn = find_noun(lm, noun); /* its erasables */
-        agc_noun_t         row; /* noun table row */
+        agc_noun_t         row;                      /* noun table row */
 
-        if (dn == NULL ||
-            agc_noun_lookup((uint8_t) noun, &row) != AGC_STATUS_OK)
+        if (dn == NULL || agc_noun_lookup((uint8_t) noun, &row) != AGC_STATUS_OK)
         {
             (void) oracle_cmp(t, "noun table", 1, 0, 0);
 
@@ -339,8 +327,7 @@ static void one(const char *t, bool lm)
 
             if (st == AGC_STATUS_OK)
             {
-                st = write_comp(t, row.data_id[k], &si, dn->name[k],
-                                dn->idx[k]);
+                st = write_comp(t, row.data_id[k], &si, dn->name[k], dn->idx[k]);
             }
         }
 
@@ -368,7 +355,7 @@ static void all_runs(bool lm)
 
     while (p != NULL)
     {
-        char   tag[64]; /* run tag */
+        char   tag[64];                  /* run tag */
         size_t n = strcspn(p + 5, "\n"); /* tag length */
 
         if (n >= sizeof (tag))
@@ -379,6 +366,6 @@ static void all_runs(bool lm)
         (void) memcpy(tag, p + 5, n);
         tag[n] = '\0';
         one(tag, lm);
-        p = strstr(p + 5, "\nrun ");
+        p      = strstr(p + 5, "\nrun ");
     }
 }

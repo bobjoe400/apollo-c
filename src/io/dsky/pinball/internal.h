@@ -50,9 +50,9 @@
 #include "agc/io/service.h"
 
 #define PIN_STATUS_RECYCLE AGC_STATUS_ALARM /* ALMCYCLE: re-enter ENTER  */
-#define PIN_RECYCLE_MAX    3 /* ENTER passes per key (ALMCYCLE bound)  */
+#define PIN_RECYCLE_MAX    3                /* ENTER passes per key (ALMCYCLE bound)  */
 #define PIN_CLPASS_NOBACK \
-    ((int16_t) -16383) /* CAF BIT15 TS CLPASS (pass 0 only) */
+    ((int16_t) -16383)                      /* CAF BIT15 TS CLPASS (pass 0 only) */
 
 /* ---- DSPCOUNT numbers (PINBALL p. 313, octal) -------------------------- */
 #define PIN_MD1          025 /* MD1: major mode, left */
@@ -63,8 +63,8 @@
 #define PIN_R1D1         016 /* R1D1: R1, left */
 #define PIN_R2D1         011 /* R2D1: R2, left */
 #define PIN_R3D1         004 /* R3D1: R3, left */
-#define PIN_DSPTAB_LEN   12 /* DSPTAB +0..+10 panel, +11 C relays (core) */
-#define PIN_DSPTAB_PANEL 11 /* TABLNTH + 1                            */
+#define PIN_DSPTAB_LEN   12  /* DSPTAB +0..+10 panel, +11 C relays (core) */
+#define PIN_DSPTAB_PANEL 11  /* TABLNTH + 1                            */
 
 /* ---- INREL values (GETINREL, p. 318) ----------------------------------- */
 #define PIN_INREL_VERB 0 /* INREL 0: verb */
@@ -74,39 +74,39 @@
 #define PIN_INREL_Z    4 /* INREL 4: R3 (ZREG) */
 
 /* ---- AGC constants used across files ----------------------------------- */
-#define PIN_BIT1           000001u /* BIT1 */
-#define PIN_BIT3           000004u /* BIT3 */
-#define PIN_BIT4           000010u /* BIT4 */
-#define PIN_BIT5           000020u /* BIT5 */
-#define PIN_BIT6           000040u /* BIT6 */
-#define PIN_BIT7           000100u /* BIT7 */
-#define PIN_BIT10          001000u /* BIT10 */
-#define PIN_BIT11          002000u /* BIT11 */
-#define PIN_BIT12          004000u /* BIT12 */
-#define PIN_BIT13          010000u /* BIT13 */
-#define PIN_BIT14          020000u /* BIT14 */
-#define PIN_BIT15          040000u /* BIT15 */
-#define PIN_LOW5           000037u /* LOW5 */
-#define PIN_LOW7           000177u /* LOW7 */
-#define PIN_LOW9           000777u /* LOW9 */
-#define PIN_LOW11          003777u /* LOW11 */
-#define PIN_MID7           037600u /* MID7: bits 8-14 (a verb in a VN word) */
-#define PIN_POSMAX         037777u /* POSMAX, largest SP magnitude */
-#define PIN_WORD           077777u /* 15-bit word mask                      */
-#define PIN_NEGZERO        077777u /* ones' complement -0                   */
-#define PIN_CHRPRIO        ((agc_prio_t) 030) /* CHRPRIO OCT 30000 (>> 9) */
-#define PIN_PRIO15         ((agc_prio_t) 015) /* PRIO15 */
-#define PIN_PRIO32         ((agc_prio_t) 032) /* PRIO32 */
-#define PIN_PRIO33         ((agc_prio_t) 033) /* PRIO33 */
-#define PIN_MONDEL_CS      ((uint16_t) 0144) /* MONDEL OCT 144 = 100 cs = 1 s */
-#define PIN_SHOLTS_CS      ((uint16_t) 0764) /* SHOLTS OCT 764 = 500 cs = 5 s */
+#define PIN_BIT1           000001u                    /* BIT1 */
+#define PIN_BIT3           000004u                    /* BIT3 */
+#define PIN_BIT4           000010u                    /* BIT4 */
+#define PIN_BIT5           000020u                    /* BIT5 */
+#define PIN_BIT6           000040u                    /* BIT6 */
+#define PIN_BIT7           000100u                    /* BIT7 */
+#define PIN_BIT10          001000u                    /* BIT10 */
+#define PIN_BIT11          002000u                    /* BIT11 */
+#define PIN_BIT12          004000u                    /* BIT12 */
+#define PIN_BIT13          010000u                    /* BIT13 */
+#define PIN_BIT14          020000u                    /* BIT14 */
+#define PIN_BIT15          040000u                    /* BIT15 */
+#define PIN_LOW5           000037u                    /* LOW5 */
+#define PIN_LOW7           000177u                    /* LOW7 */
+#define PIN_LOW9           000777u                    /* LOW9 */
+#define PIN_LOW11          003777u                    /* LOW11 */
+#define PIN_MID7           037600u                    /* MID7: bits 8-14 (a verb in a VN word) */
+#define PIN_POSMAX         037777u                    /* POSMAX, largest SP magnitude */
+#define PIN_WORD           077777u                    /* 15-bit word mask                      */
+#define PIN_NEGZERO        077777u                    /* ones' complement -0                   */
+#define PIN_CHRPRIO        ((agc_prio_t) 030)         /* CHRPRIO OCT 30000 (>> 9) */
+#define PIN_PRIO15         ((agc_prio_t) 015)         /* PRIO15 */
+#define PIN_PRIO32         ((agc_prio_t) 032)         /* PRIO32 */
+#define PIN_PRIO33         ((agc_prio_t) 033)         /* PRIO33 */
+#define PIN_MONDEL_CS      ((uint16_t) 0144)          /* MONDEL OCT 144 = 100 cs = 1 s */
+#define PIN_SHOLTS_CS      ((uint16_t) 0764)          /* SHOLTS OCT 764 = 500 cs = 5 s */
 #define PIN_ALARM_DSPALARM ((agc_alarm_code_t) 01501) /* bad NVSUB V/N       */
 #define PIN_ALARM_DSPABORT ((agc_alarm_code_t) 01206) /* 2nd sleeper         */
 #define PIN_ALARM_PRIOBORT ((agc_alarm_code_t) 01502) /* display conflict    */
-#define PIN_MIXCON         40 /* MIXCON: first mixed noun = 40 decimal */
-#define PIN_LOWVERB        28 /* LOWVERB: verbs >= 28 skip noun test   */
-#define PIN_LST2CON        40 /* LST2CON: first extended verb          */
-#define PIN_LOWLOAD        22 /* LOWLOAD DEC 22 (V21..V23 test)        */
+#define PIN_MIXCON         40                         /* MIXCON: first mixed noun = 40 decimal */
+#define PIN_LOWVERB        28                         /* LOWVERB: verbs >= 28 skip noun test   */
+#define PIN_LST2CON        40                         /* LST2CON: first extended verb          */
+#define PIN_LOWLOAD        22                         /* LOWLOAD DEC 22 (V21..V23 test)        */
 
 /* ---- channel bits (agc_channels.h names) ------------------------------- */
 #define PIN_CH11_UPACT   ((uint16_t) AGC_CH011_UPACT)     /* bit 3            */
@@ -183,7 +183,7 @@ typedef enum pin_loadstat
  * RECAL2 reaches by adding 1 or 2 to LOC.                              */
 typedef struct pin_sleeper
 {
-    bool         used; /* a job waits here */
+    bool         used;    /* a job waits here */
     agc_job_id_t cont[3]; /* terminate, proceed, data in */
 } pin_sleeper_t;
 
@@ -246,10 +246,10 @@ void pin_reldspon(void); /* RELDSPON */
 void pin_lodsampt(void); /* LODSAMPT */
 
 /* ---- DSPCOUNT and DSPTAB (state.c) ----------------------------- */
-void         pin_set_dspcount(int16_t n);    /* TS DSPCOUNT (positive)       */
-void         pin_block_dspcount(int16_t n);  /* CS n; TS DSPCOUNT            */
-int          pin_getinrel(void);             /* GETINREL                     */
-int          pin_inrel_of(int16_t dspcount); /* INRELTAB lookup              */
+void         pin_set_dspcount(int16_t n);             /* TS DSPCOUNT (positive)       */
+void         pin_block_dspcount(int16_t n);           /* CS n; TS DSPCOUNT            */
+int          pin_getinrel(void);                      /* GETINREL                     */
+int          pin_inrel_of(int16_t dspcount);          /* INRELTAB lookup              */
 agc_status_t pin_dspin(int16_t count, uint16_t code); /* DSPIN            */
 agc_status_t pin_11dspin(int rel, bool on);           /* 11DSPIN          */
 agc_status_t pin_2blank(void);                        /* 2BLANK           */
@@ -289,6 +289,7 @@ agc_status_t pin_charalrm(void);        /* CHARALRM         */
 agc_status_t pin_reqadd_resume(void);   /* REQADD after Z   */
 agc_status_t pin_almcycle(void);        /* ALMCYCLE         */
 agc_status_t pin_noun_load(void);       /* LODNNTAB         */
+
 /* The component tests return true when the AGC routine would return to
  * its caller; on false the caller takes the alarm exit itself
  * (COMPTEST, DECTEST, NOUNTEST: DSPALARM; DCTSTCYC: ALMCYCLE).          */
@@ -315,29 +316,30 @@ pin_reqret_t pin_reqret_backup(pin_reqret_t step);     /* REQRET +3        */
 
 /* ---- scaling (scale.c) ----------------------------------------- */
 agc_status_t pin_comp_scale(int k, agc_scale_info_t *info);
-uint8_t      pin_comp_routine(int k);           /* SFRUTNOR/SFRUTMIX */
-bool         pin_sf_is_dp(uint8_t rout);        /* DPTEST           */
-agc_status_t pin_comp_read(int k, agc_dp_t *v); /* noun component   */
+uint8_t      pin_comp_routine(int k);               /* SFRUTNOR/SFRUTMIX */
+bool         pin_sf_is_dp(uint8_t rout);            /* DPTEST           */
+agc_status_t pin_comp_read(int k, agc_dp_t *v);     /* noun component   */
 agc_status_t pin_comp_write(int k, agc_dp_t v);
 agc_status_t pin_comp_octal(int k, uint16_t *word); /* word for V01-V05 */
 agc_status_t pin_decdsp(void);                      /* DECDSP (V06)     */
 agc_status_t pin_dspdpdec(void);                    /* DSPDPDEC (V07)   */
+
 /* PUTDECSF: the value to store for component k from the decimal fraction
  * entered; *exited when an alarm path ended the load instead.           */
-agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
-                          bool *exited);
+agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out, bool *exited);
 uint16_t     pin_360_cdu(uint16_t w); /* 360-CDU (LM)     */
 agc_dp_t     pin_value_of_word(const agc_scale_info_t *info, uint16_t w);
-agc_status_t pin_hmsin(void); /* HMSIN            */
+agc_status_t pin_hmsin(void);         /* HMSIN            */
 
 /* ---- NVSUB family (nvsub.c) ------------------------------------ */
-agc_status_t pin_recaltst(void); /* RECALTST         */
-agc_status_t pin_reldsp1(void);  /* RELDSP1          */
-void         pin_kilmonon(void); /* KILMONON         */
+agc_status_t pin_recaltst(void);                              /* RECALTST         */
+agc_status_t pin_reldsp1(void);                               /* RELDSP1          */
+void         pin_kilmonon(void);                              /* KILMONON         */
 agc_status_t pin_nvmonopt(uint16_t nvtemp, uint16_t options); /* NVMONOPT   */
-bool         pin_dsp_blocked(void);       /* MONSAVE1 EMB + DSPLOCK */
-bool         pin_cadrstor_full(void);     /* CCS CADRSTOR     */
-bool         pin_dsplist_full(void);      /* CCS DSPLIST      */
+bool         pin_dsp_blocked(void);                           /* MONSAVE1 EMB + DSPLOCK */
+bool         pin_cadrstor_full(void);                         /* CCS CADRSTOR     */
+bool         pin_dsplist_full(void);                          /* CCS DSPLIST      */
+
 /* WITCHONE's XCH CADRSTOR/DSPLIST: empty the slot, return its sleeper.   */
 pin_sleeper_t pin_take_sleeper(bool dsplist);
 

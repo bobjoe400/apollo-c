@@ -78,14 +78,13 @@
 #define CDU_MASK 077777u                 /* 15-bit CDU word          */
 #define PRIO14   ((agc_prio_t) 014)      /* CM RELINUS priority      */
 #define PRIO26   ((agc_prio_t) 026)      /* LM RELINUS priority      */
-#define BIT7     0100u /* LINUS (BLANKET) code          */
+#define BIT7     0100u                   /* LINUS (BLANKET) code          */
 
-static agc_vec_t scaxis;   /* SCAXIS: S/C axis to point, B1           */
-static agc_vec_t pointvsm; /* POINTVSM: direction in SM axes, B1      */
-static uint16_t  fdai[3];  /* FDAIX, FDAIY, FDAIZ (LM), CDU patterns   */
-static agc_job_id_t
-            attitude_maneuver_return; /* TEMPR60: where R60 returns               */
-static bool relinus_static;   /* last R60 display was the static V06N18   */
+static agc_vec_t    scaxis;                   /* SCAXIS: S/C axis to point, B1           */
+static agc_vec_t    pointvsm;                 /* POINTVSM: direction in SM axes, B1      */
+static uint16_t     fdai[3];                  /* FDAIX, FDAIY, FDAIZ (LM), CDU patterns   */
+static agc_job_id_t attitude_maneuver_return; /* TEMPR60: where R60 returns               */
+static bool         relinus_static;           /* last R60 display was the static V06N18   */
 
 /**********************************************************************
  * AGC: none (checker) -- every component a valid DP
@@ -198,11 +197,10 @@ uint16_t agc_erase_fdai(int axis)
  *
  * RETURNS: agc_status_t -- OK or BAD_ARG
  **********************************************************************/
-static agc_status_t findgimb(agc_interp_t *ip, const agc_mat_t *m,
-                             uint16_t gimbal[3])
+static agc_status_t findgimb(agc_interp_t *ip, const agc_mat_t *m, uint16_t gimbal[3])
 {
-    agc_vec_t    ang; /* PHI, THETA, PSI, rev 2^0 */
-    agc_dp_t     cmga; /* COS(MGA), 2^0 */
+    agc_vec_t    ang;                                        /* PHI, THETA, PSI, rev 2^0 */
+    agc_dp_t     cmga;                                       /* COS(MGA), 2^0 */
     agc_status_t st = agc_kalc_dcmtocdu(ip, m, &ang, &cmga); /* status of the call */
 
     if (st == AGC_STATUS_OK)
@@ -239,10 +237,9 @@ static agc_status_t findgimb(agc_interp_t *ip, const agc_mat_t *m,
  *
  * RETURNS: agc_status_t -- OK or BAD_ARG
  **********************************************************************/
-static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis,
-                             agc_vec_t cofv, agc_dp_t am, uint16_t gimbal[3])
+static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis, agc_vec_t cofv, agc_dp_t am, uint16_t gimbal[3])
 {
-    agc_mat_t    del; /* DEL, 2^0 */
+    agc_mat_t    del;                                       /* DEL, 2^0 */
     agc_status_t st = agc_kalc_delcomp(ip, cofv, am, &del); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -252,8 +249,7 @@ static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis,
 
     agc_mat_t mfs = agc_mat_mul(ip, mis, &del); /* MXM3     */
 
-    if (agc_dp_sub(ip, agc_dp_abs(mfs.row[1].c[0]), SINGIMLC) < 0 ||
-        agc_dp_sub(ip, agc_dp_abs(scaxis.c[0]), SINVEC1) >= 0)
+    if (agc_dp_sub(ip, agc_dp_abs(mfs.row[1].c[0]), SINGIMLC) < 0 || agc_dp_sub(ip, agc_dp_abs(scaxis.c[0]), SINVEC1) >= 0)
     {
         return (findgimb(ip, &mfs, gimbal)); /* no lock, or thrust axis */
     }
@@ -265,14 +261,8 @@ static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis,
         ig = agc_vec_neg(ig);
     }
 
-    agc_vec_t u = (agc_vec_cross(ip, ig, scaxis).c[0] < 0) /* IGSAMEX, B1 */
-                  ? /* BMN U=SCAXIS */
-                  scaxis :
-                  agc_vec_neg(scaxis);       /* U=SCAXIS */
-    agc_dp_t ang = /* CHEKAXIS: 50 or 35 deg, rev 2^0 */
-                   (agc_dp_sub(ip, agc_dp_abs(scaxis.c[0]), SINVEC2) >= 0) ? /* BPL PICKANG1 */
-                   VECANG1 :
-                   VECANG2;                             /* CHEKAXIS */
+    agc_vec_t u   = (agc_vec_cross(ip, ig, scaxis).c[0] < 0) ? scaxis : agc_vec_neg(scaxis);     /* IGSAMEX, B1; BMN U=SCAXIS; U=SCAXIS */
+    agc_dp_t  ang = (agc_dp_sub(ip, agc_dp_abs(scaxis.c[0]), SINVEC2) >= 0) ? VECANG1 : VECANG2; /* CHEKAXIS: 50 or 35 deg, rev 2^0; BPL PICKANG1; CHEKAXIS */
 
     st = agc_kalc_delcomp(ip, u, ang, &del); /* COMPMFSN */
 
@@ -323,12 +313,9 @@ static agc_dp_t dmp_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, int n)
  *
  * RETURNS: agc_status_t -- OK or BAD_ARG
  **********************************************************************/
-static agc_status_t pickaxis(agc_interp_t *ip, const agc_mat_t *mis,
-                             agc_vec_t vf, const uint16_t cdu0[3],
-                             uint16_t gimbal[3])
+static agc_status_t pickaxis(agc_interp_t *ip, const agc_mat_t *mis, agc_vec_t vf, const uint16_t cdu0[3], uint16_t gimbal[3])
 {
-    if (!AGC_ASSERT(ip != NULL && mis != NULL && cdu0 != NULL) ||
-        !AGC_ASSERT(gimbal != NULL))
+    if (!AGC_ASSERT(ip != NULL && mis != NULL && cdu0 != NULL) || !AGC_ASSERT(gimbal != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -343,10 +330,9 @@ static agc_status_t pickaxis(agc_interp_t *ip, const agc_mat_t *mis,
         return (AGC_STATUS_OK);
     }
 
-    const agc_vec_t hiunitx = agc_vec_make(AGC_DP_HALF, 0, 0); /* HIUNITX, B1 */
-    agc_dp_t        mag     = 0; /* |cross product|, B1 */
-    agc_vec_t       c       =
-        agc_vec_unit(ip, agc_vec_cross(ip, mis->row[1], hiunitx), NULL, NULL); /* cross product axis, B1 */
+    const agc_vec_t hiunitx = agc_vec_make(AGC_DP_HALF, 0, 0);                                       /* HIUNITX, B1 */
+    agc_dp_t        mag     = 0;                                                                     /* |cross product|, B1 */
+    agc_vec_t       c       = agc_vec_unit(ip, agc_vec_cross(ip, mis->row[1], hiunitx), NULL, NULL); /* cross product axis, B1 */
 
     c = agc_vec_unit(ip, agc_vec_cross(ip, c, scaxis), &mag, NULL);
 
@@ -369,11 +355,10 @@ static agc_status_t pickaxis(agc_interp_t *ip, const agc_mat_t *mis,
  *
  * RETURNS: agc_status_t -- OK or BAD_ARG
  **********************************************************************/
-static agc_status_t vecpoint_from(agc_interp_t *ip, const uint16_t cdu0[3],
-                                  uint16_t gimbal[3])
+static agc_status_t vecpoint_from(agc_interp_t *ip, const uint16_t cdu0[3], uint16_t gimbal[3])
 {
-    agc_interp_clear_ovf(ip); /* BOV VECLEAR: clear OVFIND */
-    agc_mat_t    mis; /* MIS, B1 */
+    agc_interp_clear_ovf(ip);                            /* BOV VECLEAR: clear OVFIND */
+    agc_mat_t    mis;                                    /* MIS, B1 */
     agc_status_t st = agc_kalc_cdutodcm(ip, cdu0, &mis); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -381,10 +366,9 @@ static agc_status_t vecpoint_from(agc_interp_t *ip, const uint16_t cdu0[3],
         return (st);
     }
 
-    agc_vec_t vf =
-        agc_vec_unit(ip, agc_vec_mat(ip, pointvsm, &mis), NULL, NULL); /* VF = UNIT(POINTVSM MIS), B1 */
-    agc_dp_t  mag = 0; /* |cross product|, B1 */
-    agc_vec_t c   = agc_vec_unit(ip, agc_vec_cross(ip, vf, scaxis), &mag, NULL); /* cross product axis, B1 */
+    agc_vec_t vf  = agc_vec_unit(ip, agc_vec_mat(ip, pointvsm, &mis), NULL, NULL); /* VF = UNIT(POINTVSM MIS), B1 */
+    agc_dp_t  mag = 0;                                                             /* |cross product|, B1 */
+    agc_vec_t c   = agc_vec_unit(ip, agc_vec_cross(ip, vf, scaxis), &mag, NULL);   /* cross product axis, B1 */
 
     if (agc_interp_test_ovf(ip) || agc_dp_sub(ip, mag, DPB14) < 0)
     {
@@ -396,9 +380,8 @@ static agc_status_t vecpoint_from(agc_interp_t *ip, const uint16_t cdu0[3],
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_vec_t cofv = agc_vec_neg(c); /* VCOMP: COF, B1 */
-    agc_dp_t  am   = agc_dp_acos( /* DOT SL1 (TP), ARCCOS: rev 2^0 */
-        ip, agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, scaxis, vf), 1)));
+    agc_vec_t cofv = agc_vec_neg(c);                                                                     /* VCOMP: COF, B1 */
+    agc_dp_t  am   = agc_dp_acos(ip, agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, scaxis, vf), 1))); /* DOT SL1 (TP), ARCCOS: rev 2^0 */
 
     return (compmatx(ip, &mis, cofv, am, gimbal));
 }
@@ -416,8 +399,7 @@ static agc_status_t vecpoint_from(agc_interp_t *ip, const uint16_t cdu0[3],
  *
  * RETURNS: agc_status_t -- OK or BAD_ARG
  **********************************************************************/
-agc_status_t agc_imu_vecpoint(agc_interp_t *ip, agc_vec_t pointvsm_in,
-                              agc_vec_t scaxis_in, uint16_t gimbal[3])
+agc_status_t agc_imu_vecpoint(agc_interp_t *ip, agc_vec_t pointvsm_in, agc_vec_t scaxis_in, uint16_t gimbal[3])
 {
     if (!AGC_ASSERT(ip != NULL && gimbal != NULL))
     {
@@ -496,8 +478,7 @@ agc_status_t agc_imu_vecpoint_from_cdus(agc_interp_t  *ip,
  *
  * RETURNS: agc_status_t -- status of V1STO2S
  **********************************************************************/
-agc_status_t agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3],
-                              uint16_t out[3])
+agc_status_t agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3], uint16_t out[3])
 {
     if (!AGC_ASSERT(ip != NULL && gimbal != NULL && out != NULL))
     {
@@ -505,27 +486,27 @@ agc_status_t agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3],
     }
 
     const uint16_t yzx[3] = {gimbal[1], gimbal[2], gimbal[0]}; /* CDUSPOT */
-    agc_cdutrig_t  t; /* sin/cos of the CDUs */
+    agc_cdutrig_t  t;                                          /* sin/cos of the CDUs */
 
-    agc_guid_cdtrigs(&t, yzx); /* CD*TR*G */
-    agc_status_t   st = AGC_STATUS_OK; /* status of the call */
+    agc_guid_cdtrigs(&t, yzx);                /* CD*TR*G */
+    agc_status_t   st = AGC_STATUS_OK;        /* status of the call */
     const agc_dp_t sx = t.sincdu[AGC_TRIG_X]; /* SINCDUX / 2, 2^0   */
     const agc_dp_t cx = t.coscdu[AGC_TRIG_X]; /* COSCDUX / 2, 2^0   */
     const agc_dp_t sy = t.sincdu[AGC_TRIG_Y]; /* SINCDUY / 2, 2^0   */
     const agc_dp_t cy = t.coscdu[AGC_TRIG_Y]; /* COSCDUY / 2, 2^0   */
     const agc_dp_t sz = t.sincdu[AGC_TRIG_Z]; /* SINCDUZ / 2, 2^0   */
     const agc_dp_t cz = t.coscdu[AGC_TRIG_Z]; /* COSCDUZ / 2, 2^0   */
+
     /* Every product is DMP; DMP SLn shifts the TP product before the
      * store truncates it (dmp_shl).                                     */
-    agc_dp_t yaw = /* YAW, rev 2^0 */
-                   agc_dp_asin(ip, agc_dp_neg(dmp_shl(ip, sx, cz, 1))); /* SL1 DCOMP */
-    agc_dp_t roll  = agc_latlong_arctan(ip, sz, dmp_shl(ip, cz, cx, 1)); /* ROLL, rev 2^0 */
-    agc_dp_t sxsz  = dmp_shl(ip, sz, sx, 2);           /* SL2 PUSH, 2^0 */
-    agc_dp_t pd4   = agc_dp_mul_trunc(sxsz, cy);       /* SXSZCY, 2^0   */
-    agc_dp_t pd6   = agc_dp_mul_trunc(sxsz, sy);       /* SXSZSY, 2^0   */
-    agc_dp_t costh = agc_dp_sub(ip, dmp_shl(ip, cx, cy, 1), pd6); /* DSU: cos/4, 2^0 */
-    agc_dp_t sinth = agc_dp_add(ip, dmp_shl(ip, sy, cx, 1), pd4); /* DAD: sin/4, 2^0 */
-    agc_dp_t pitch = agc_latlong_arctan(ip, sinth, costh); /* PITCH, rev 2^0 */
+    agc_dp_t yaw   = agc_dp_asin(ip, agc_dp_neg(dmp_shl(ip, sx, cz, 1))); /* YAW, rev 2^0; SL1 DCOMP */
+    agc_dp_t roll  = agc_latlong_arctan(ip, sz, dmp_shl(ip, cz, cx, 1));  /* ROLL, rev 2^0 */
+    agc_dp_t sxsz  = dmp_shl(ip, sz, sx, 2);                              /* SL2 PUSH, 2^0 */
+    agc_dp_t pd4   = agc_dp_mul_trunc(sxsz, cy);                          /* SXSZCY, 2^0   */
+    agc_dp_t pd6   = agc_dp_mul_trunc(sxsz, sy);                          /* SXSZSY, 2^0   */
+    agc_dp_t costh = agc_dp_sub(ip, dmp_shl(ip, cx, cy, 1), pd6);         /* DSU: cos/4, 2^0 */
+    agc_dp_t sinth = agc_dp_add(ip, dmp_shl(ip, sy, cx, 1), pd4);         /* DAD: sin/4, 2^0 */
+    agc_dp_t pitch = agc_latlong_arctan(ip, sinth, costh);                /* PITCH, rev 2^0 */
 
     st = agc_rtb_v1sto2s(agc_vec_make(roll, pitch, yaw), out); /* FDAIX..  */
 
@@ -600,7 +581,7 @@ static agc_status_t final_angles(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    uint16_t     g[3]; /* CPHI, CTHETA, CPSI */
+    uint16_t     g[3];                                            /* CPHI, CTHETA, CPSI */
     agc_status_t st = agc_imu_vecpoint(&ip, pointvsm, scaxis, g); /* status of the call */
 
     for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
@@ -632,8 +613,8 @@ static void lm_ballangs(void)
     agc_interp_init(&ip);
     const uint16_t g[3] = {agc_erase_thetad(0), agc_erase_thetad(1),
                            agc_erase_thetad(2)};
-    uint16_t       out[3]; /* FDAIX..Z */
-    agc_status_t   st = agc_imu_ballangs(&ip, g, out); /* status of the call */
+    uint16_t       out[3];                               /* FDAIX..Z */
+    agc_status_t   st   = agc_imu_ballangs(&ip, g, out); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -702,8 +683,7 @@ static agc_status_t toballa(const agc_job_ctx_t *ctx)
     const agc_dsky_cont_t cont = {AGC_JOB_ATTITUDE_MANEUVER_TERMINATE,
                                   AGC_JOB_REDOMANC,
                                   AGC_JOB_ATTITUDE_MANEUVER_ENTER};
-    agc_status_t          st =
-        agc_dsky_display(ctx, AGC_DSKY_GOPERF2R, agc_dsky_vn(6, 18), &cont); /* status of the call */
+    agc_status_t          st   = agc_dsky_display(ctx, AGC_DSKY_GOPERF2R, agc_dsky_vn(6, 18), &cont); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -728,8 +708,7 @@ static agc_status_t toballa(const agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t automanv(const agc_job_ctx_t *ctx)
 {
-    agc_status_t st =
-        agc_dsky_display(ctx, AGC_DSKY_GODSPR, agc_dsky_vn(6, 18), NULL); /* status of the call */
+    agc_status_t st = agc_dsky_display(ctx, AGC_DSKY_GODSPR, agc_dsky_vn(6, 18), NULL); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -756,8 +735,7 @@ static bool in_auto(void)
         return (agc_imu_gn_auto() == 0);
     }
 
-    uint16_t v =
-        (uint16_t) ((agc_chan_read(AGC_CHAN_CHAN31) ^ 030000u) & 070000u); /* channel bit */
+    uint16_t v = (uint16_t) ((agc_chan_read(AGC_CHAN_CHAN31) ^ 030000u) & 070000u); /* channel bit */
 
     if (!AGC_ASSERT(v <= 070000u))
     {
@@ -779,23 +757,22 @@ static bool in_auto(void)
  *
  * RETURNS: agc_status_t -- status of the display
  **********************************************************************/
-agc_status_t agc_imu_attitude_maneuver(const agc_job_ctx_t *ctx,
-                                       agc_job_id_t         ret_job)
+agc_status_t agc_imu_attitude_maneuver(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
 {
     if (!AGC_ASSERT(ctx != NULL && ret_job != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    attitude_maneuver_return = ret_job; /* MAKECADR      */
-    agc_status_t st = final_angles(); /* REDOMANN      */
+    attitude_maneuver_return = ret_job;        /* MAKECADR      */
+    agc_status_t st          = final_angles(); /* REDOMANN      */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    lm_ballangs();                      /* TOBALL (LM)   */
+    lm_ballangs(); /* TOBALL (LM)   */
 
     return (toballa(ctx));
 }
@@ -995,7 +972,7 @@ agc_status_t agc_job_relinus(agc_job_ctx_t *ctx)
     if (!lm)
     {
         imu_vflag_set(IMU_VF_TARG1FLG); /* for R52       */
-        agc_erase_set_optind(0); /* OPTIND was set to -1 by V37    */
+        agc_erase_set_optind(0);        /* OPTIND was set to -1 by V37    */
         agc_exec_prio_change(PRIO14);
     }
 
@@ -1027,8 +1004,7 @@ agc_status_t agc_job_crew_defined_maneuver_display(agc_job_ctx_t *ctx)
     const agc_dsky_cont_t cont = {AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE,
                                   AGC_JOB_CREW_DEFINED_MANEUVER_GOMOVE,
                                   AGC_JOB_CREW_DEFINED_MANEUVER_DISPLAY};
-    agc_status_t          st =
-        agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, 22), &cont); /* status of the call */
+    agc_status_t          st   = agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, 22), &cont); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -1055,8 +1031,7 @@ agc_status_t agc_job_crew_defined_maneuver_gomove(agc_job_ctx_t *ctx)
 
     agc_flag_set(AGC_FLAG_3AXISFLG);
 
-    return (agc_imu_attitude_maneuver(ctx,
-                                      AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE));
+    return (agc_imu_attitude_maneuver(ctx, AGC_JOB_CREW_DEFINED_MANEUVER_TERMINATE));
 }
 
 /**********************************************************************

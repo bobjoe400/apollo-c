@@ -17,13 +17,13 @@
 #include "agc/core/flags_common.h"
 #include "agc/programs/alignment.h"
 
-#define IMODES30_IMU_OFF       ((uint16_t) 0400) /* BIT9                           */
+#define IMODES30_IMU_OFF       ((uint16_t) 0400)  /* BIT9                           */
 #define ALM_IMU_OFF            ((agc_alarm_code_t) 0210)
-#define CHK_ACQUIRE            ((uint16_t) 015) /* OCT15                          */
+#define CHK_ACQUIRE            ((uint16_t) 015)   /* OCT15                          */
 #define PH_ORIENTATION         ((uint16_t) 04024) /* OCT 04024                      */
 #define PH_ORIENTATION_RESTART ((uint16_t) 00014) /* OCT 00014                      */
-#define VN_GIMBALS             ALIGN_VN(6, 22) /* V06N22                         */
-#define VN_COARSE_VERB         ALIGN_VN(41, 0) /* V41K VN 4100                   */
+#define VN_GIMBALS             ALIGN_VN(6, 22)    /* V06N22                         */
+#define VN_COARSE_VERB         ALIGN_VN(41, 0)    /* V41K VN 4100                   */
 
 static agc_status_t orientation_phase(void)
 {
@@ -66,8 +66,7 @@ agc_status_t agc_lm_imu_check(void)
 /* P51: IMUCHK, then P51 +2. */
 agc_status_t agc_job_lm_imu_orientation_determination(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -95,9 +94,7 @@ agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_LM_ORIENTATION_MARK_SETUP,
-                        AGC_JOB_LM_ORIENTATION_COARSE));
+    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH, AGC_JOB_LM_ORIENTATION_MARK_SETUP, AGC_JOB_LM_ORIENTATION_COARSE));
 }
 
 /* ENTER: PHASCHNG, THETAD = 0, GODSPRET V06N22. */
@@ -115,11 +112,7 @@ agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (align_flash(
-                ctx, AGC_DSKY_GODSPRET, VN_GIMBALS,
-                AGC_JOB_LM_ORIENTATION_COARSE_VERB,
-                AGC_JOB_LM_ORIENTATION_COARSE_VERB,
-                AGC_JOB_LM_ORIENTATION_COARSE_VERB));
+    return (align_flash(ctx, AGC_DSKY_GODSPRET, VN_GIMBALS, AGC_JOB_LM_ORIENTATION_COARSE_VERB, AGC_JOB_LM_ORIENTATION_COARSE_VERB, AGC_JOB_LM_ORIENTATION_COARSE_VERB));
 }
 
 /* GODSPRET V41, then CALL COARSE. */
@@ -135,10 +128,7 @@ agc_status_t agc_job_lm_orientation_coarse_verb(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GODSPRET, VN_COARSE_VERB,
-                        AGC_JOB_LM_ORIENTATION_COARSE_START,
-                        AGC_JOB_LM_ORIENTATION_COARSE_START,
-                        AGC_JOB_LM_ORIENTATION_COARSE_START));
+    return (align_flash(ctx, AGC_DSKY_GODSPRET, VN_COARSE_VERB, AGC_JOB_LM_ORIENTATION_COARSE_START, AGC_JOB_LM_ORIENTATION_COARSE_START, AGC_JOB_LM_ORIENTATION_COARSE_START));
 }
 
 /* COARSE (IMUCOARS, IMUFINE and their stalls), returning to P51 +2. */
@@ -259,8 +249,7 @@ agc_status_t agc_job_lm_orientation_marked(agc_job_ctx_t *ctx)
 
     if (ram->starind != 0)
     {
-        return (align_planet(ctx, ram->tsight,
-                             AGC_JOB_LM_ORIENTATION_SECOND_STAR));
+        return (align_planet(ctx, ram->tsight, AGC_JOB_LM_ORIENTATION_SECOND_STAR));
     }
 
     ram->starsav1 = ram->starad[1];
@@ -304,8 +293,7 @@ agc_status_t agc_job_lm_orientation_second_star(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_align_sighting_data_display(ctx,
-                                            AGC_JOB_LM_ORIENTATION_DATA_CHECKED));
+    return (agc_align_sighting_data_display(ctx, AGC_JOB_LM_ORIENTATION_DATA_CHECKED));
 }
 
 /*

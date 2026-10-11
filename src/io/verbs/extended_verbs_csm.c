@@ -40,22 +40,22 @@
 #define PRIO30BITS            030000u /* DAPDATR1 configuration bits 13,12         */
 #define PRIO7BITS             007000u
 #define PRIO5BITS             005000u
-#define NOUN_OCDU             91 /* N91 optics CDUs                            */
+#define NOUN_OCDU             91      /* N91 optics CDUs                            */
 #define ALARM_NO_REND_TRACK   ((agc_alarm_code_t) 00406)
 #define ALARM_NO_SYSTEMS_TEST ((agc_alarm_code_t) 01521)
 #define ALARM_OPTICS_SWITCH \
-    ((agc_alarm_code_t) 00115) /* optics not at computer */
+    ((agc_alarm_code_t) 00115)        /* optics not at computer */
 #define ALARM_OPTICS_RESERVED \
-    ((agc_alarm_code_t) 00117) /* OPTIND = -0          */
-#define MRKBUF_REJECT  077776u /* NEGONE                             */
-#define PHASE_R64      0112u   /* group 2: do R64                     */
-#define PHASE_AZIMUTH  0174u   /* group 4 phase 15                    */
+    ((agc_alarm_code_t) 00117)        /* OPTIND = -0          */
+#define MRKBUF_REJECT  077776u        /* NEGONE                             */
+#define PHASE_R64      0112u          /* group 2: do R64                     */
+#define PHASE_AZIMUTH  0174u          /* group 4 phase 15                    */
 #define PRIO5          ((agc_prio_t) 005)
 #define PRIO10         ((agc_prio_t) 010)
 #define PRIO16         ((agc_prio_t) 016)
 #define PRIO20         ((agc_prio_t) 020)
 #define PRIO30         ((agc_prio_t) 030)
-#define ATTCK_DELAY_CS 2u /* CAF TWO, WAITLIST                  */
+#define ATTCK_DELAY_CS 2u             /* CAF TWO, WAITLIST                  */
 
 /* FLAGWRD6 DAPBITS = 10: the TVC autopilot is on.                         */
 static bool tvc_on(void)
@@ -118,8 +118,7 @@ static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
                             AGC_JOB_ATTITUDE_ERROR_LOAD,
                             AGC_JOB_ATTITUDE_ERROR_LOAD};
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22), &cont));
 }
 
 /* TRMATTCK: after liftoff ENDEXT, before liftoff GOPIN.                   */
@@ -227,9 +226,7 @@ static agc_status_t verb_establish_dap(agc_job_ctx_t *ctx)
 /* ---- V48 load autopilot data (R03, DAPDISP pp.246-247) ----------------- */
 
 /* GOXDSPF of a V04/V06 display with proceed -> next, enter -> again.     */
-static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb,
-                                     uint8_t noun,
-                                     agc_job_id_t next, agc_job_id_t again)
+static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t next, agc_job_id_t again)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -238,8 +235,7 @@ static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb,
 
     agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END, next, again};
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(verb, noun),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(verb, noun), &cont));
 }
 
 /* DAPDISP: not with TVC; TESTXACT; priority 10; V04N46.                   */
@@ -267,8 +263,7 @@ static agc_status_t verb_dap_data_load(agc_job_ctx_t *ctx)
 /* DONOUN46: V04N46 DAPDATR1, DAPDATR2.                                     */
 agc_status_t agc_job_dap_data_load_noun46_csm(agc_job_ctx_t *ctx)
 {
-    return (dap_data_display(ctx, 4, 46, AGC_JOB_DAP_DATA_LOAD_CONFIG,
-                             AGC_JOB_DAP_DATA_LOAD_NOUN46));
+    return (dap_data_display(ctx, 4, 46, AGC_JOB_DAP_DATA_LOAD_CONFIG, AGC_JOB_DAP_DATA_LOAD_NOUN46));
 }
 
 /* N46 proceed: MAXDBFLG from DAPDATR1 bit 4, S41.2, then V06N47.          */
@@ -290,8 +285,7 @@ agc_status_t agc_job_dap_data_load_config_csm(agc_job_ctx_t *ctx)
 /* DONOUN47: V06N47 CSM and LM weights.                                     */
 agc_status_t agc_job_dap_data_load_noun47_csm(agc_job_ctx_t *ctx)
 {
-    return (dap_data_display(ctx, 6, 47, AGC_JOB_DAP_DATA_LOAD_MASS,
-                             AGC_JOB_DAP_DATA_LOAD_NOUN47));
+    return (dap_data_display(ctx, 6, 47, AGC_JOB_DAP_DATA_LOAD_MASS, AGC_JOB_DAP_DATA_LOAD_NOUN47));
 }
 
 /* N47 proceed: MASSPROP and S40.14 only for configurations 1, 2, 6
@@ -326,8 +320,7 @@ agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx)
 /* DONOUN48: V06N48 pitch and yaw trim; proceed or terminate end R03.      */
 agc_status_t agc_job_dap_data_load_noun48_csm(agc_job_ctx_t *ctx)
 {
-    return (dap_data_display(ctx, 6, 48, AGC_JOB_EXTENDED_VERB_END,
-                             AGC_JOB_DAP_DATA_LOAD_NOUN48));
+    return (dap_data_display(ctx, 6, 48, AGC_JOB_EXTENDED_VERB_END, AGC_JOB_DAP_DATA_LOAD_NOUN48));
 }
 
 /* ---- marking and tracking ---------------------------------------------- */
@@ -347,19 +340,14 @@ static agc_status_t verb_marking(bool backup)
         return (st);
     }
 
-    if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG) ||
-        !agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG))
+    if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG) || !agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG))
     {
         agc_alarm(ALARM_NO_REND_TRACK); /* R22ALARM           */
 
         return (agc_dsky_endmark());
     }
 
-    return (agc_extverb_schedule(
-                PRIO16,
-                backup ? AGC_JOB_BACKUP_SIGHTING_MARK :
-                AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CSM,
-                false));
+    return (agc_extverb_schedule(PRIO16, backup ? AGC_JOB_BACKUP_SIGHTING_MARK : AGC_JOB_RENDEZVOUS_SIGHTING_MARK_CSM, false));
 }
 
 /* TRACKTRM (V56, p.251): knock down the rendezvous, track, update and
@@ -367,8 +355,7 @@ static agc_status_t verb_marking(bool backup)
  * integration, kill groups 2 and 1 and restart (ENEMA).                    */
 static agc_status_t verb_terminate_tracking(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG))
+    if (!AGC_ASSERT(ctx != NULL) || !agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG))
     {
         return (agc_extverb_gopin());
     }
@@ -384,7 +371,7 @@ static agc_status_t verb_terminate_tracking(agc_job_ctx_t *ctx)
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_UPDATFLG);
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_IMUSE);
     agc_inhint();
-    agc_kalc_stoprate(); /* STOPRATE           */
+    agc_kalc_stoprate();      /* STOPRATE           */
     agc_erase_set_optind(-1); /* OPTIND = NEGONE    */
     agc_relint();
 
@@ -403,7 +390,7 @@ agc_status_t agc_job_tracking_terminate_csm(agc_job_ctx_t *ctx)
 
     agc_phase_change(2, 02); /* 2PHSCHNG OCT 2, 1  */
     agc_phase_change(1, 01);
-    agc_inhint(); /* CLEANOUT           */
+    agc_inhint();            /* CLEANOUT           */
 
     return (agc_exec_enema());
 }
@@ -419,10 +406,9 @@ static agc_status_t verb_landmark_offset(void)
         return (agc_extverb_alm_end());
     }
 
-    int lm   = (int) agc_erase_landmark() & ~(int) PRIO7BITS; /* CS PRIO7 MASK */
-    int mark =
-        (int) ((agc_erase_markstat() >> 1) & PRIO7BITS); /* TS SR, CA SR */
-    int v = lm + ((int) PRIO5BITS - mark); /* CS A, AD PRIO5, ADS */
+    int lm   = (int) agc_erase_landmark() & ~(int) PRIO7BITS;   /* CS PRIO7 MASK */
+    int mark = (int) ((agc_erase_markstat() >> 1) & PRIO7BITS); /* TS SR, CA SR */
+    int v    = lm + ((int) PRIO5BITS - mark);                   /* CS A, AD PRIO5, ADS */
 
     if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
@@ -469,9 +455,7 @@ static agc_status_t verb_prelaunch(bool azimuth)
         return (agc_extverb_alm_end());
     }
 
-    agc_status_t st = agc_extverb_schedule(
-        PRIO16, azimuth ? AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE : AGC_JOB_COMPVER,
-        true);
+    agc_status_t st = agc_extverb_schedule(PRIO16, azimuth ? AGC_JOB_GYROCOMPASS_AZIMUTH_CHANGE : AGC_JOB_COMPVER, true);
 
     if (st != AGC_STATUS_OK)
     {
@@ -514,8 +498,7 @@ static agc_status_t verb_rendezvous_display(bool r31)
 
     agc_flag_put(f, r31);
 
-    return (agc_extverb_schedule(PRIO5, AGC_JOB_RENDEZVOUS_PARAMETER_DISPLAY,
-                                 false));
+    return (agc_extverb_schedule(PRIO5, AGC_JOB_RENDEZVOUS_PARAMETER_DISPLAY, false));
 }
 
 /* V86PERF: R23 mark reject (MRKBUF1 = -1).                                 */
@@ -590,8 +573,7 @@ static agc_status_t verb_quit_integration(void)
  * (optics reserved) -> alarm 117, ENDEXT; else load V24N92.              */
 static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(agc_extverb_noun() == NOUN_OCDU))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_extverb_noun() == NOUN_OCDU))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -612,7 +594,7 @@ static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
     if (agc_erase_swsample() <= 0)
     { /* not at computer        */
         agc_dsky_falton();
-        st = AGC_STATUS_OK;
+        st              = AGC_STATUS_OK;
         agc_alarm(ALARM_OPTICS_SWITCH);
         agc_status_t sa = AGC_STATUS_ALARM;
 
@@ -629,8 +611,7 @@ static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
         return (agc_dsky_endmark());
     }
 
-    return (agc_extverb_flash(ctx, 24, 92, AGC_JOB_OPTICS_COARSE_DRIVE,
-                              AGC_JOB_OPTICS_COARSE_DRIVE)); /* OPTC1        */
+    return (agc_extverb_flash(ctx, 24, 92, AGC_JOB_OPTICS_COARSE_DRIVE, AGC_JOB_OPTICS_COARSE_DRIVE)); /* OPTC1        */
 }
 
 /* OPTC1 after the load (V33 or ENTER): DESOPTS = SAC, DESOPTT = PAC; show
@@ -677,9 +658,7 @@ static agc_status_t fan_40s(agc_job_ctx_t *ctx, int verb)
         case 40:
             return (agc_extverb_alm_end()); /* N91 "not in use yet"    */
         case 41:
-            return ((agc_extverb_noun() ==
-                     NOUN_OCDU) ? verb_optics_coarse(ctx) :
-                    agc_extverb_alm_end());
+            return ((agc_extverb_noun() == NOUN_OCDU) ? verb_optics_coarse(ctx) : agc_extverb_alm_end());
         case 43:
             return (verb_attitude_error(ctx));
         case 44:

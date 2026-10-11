@@ -24,9 +24,9 @@
 #include "agc/lm/dap.h"
 #include "internal.h"
 
-#define GT_BGIM     007400u /* BGIM: channel 12 bits 9-12              */
-#define GT_GIMQ     001400u /* GMBLBITA: bits 9,10 (Q drive)           */
-#define GT_GIMR     006000u /* GMBLBITB: bits 11,12 (R drive)          */
+#define GT_BGIM     007400u            /* BGIM: channel 12 bits 9-12              */
+#define GT_GIMQ     001400u            /* GMBLBITA: bits 9,10 (Q drive)           */
+#define GT_GIMR     006000u            /* GMBLBITB: bits 11,12 (R drive)          */
 #define GT_BIT9     0000400u
 #define GT_BIT10    0001000u
 #define GT_BIT11    0002000u
@@ -133,21 +133,17 @@ agc_status_t lm_dap_gimbal_drive_update(void)
 {
     lm_dap_t *d = lm_dap_state();
 
-    if (!AGC_ASSERT(d->neguq >= -1 && d->neguq <= 1) ||
-        !AGC_ASSERT(d->negur >= -1 && d->negur <= 1))
+    if (!AGC_ASSERT(d->neguq >= -1 && d->neguq <= 1) || !AGC_ASSERT(d->negur >= -1 && d->negur <= 1))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    d->qaccdot = lm_dap_mp((agc_sp_t) -d->neguq, d->accdotq).lo;
-    d->raccdot = lm_dap_mp((agc_sp_t) -d->negur, d->accdotr).lo;
+    d->qaccdot    = lm_dap_mp((agc_sp_t) -d->neguq, d->accdotq).lo;
+    d->raccdot    = lm_dap_mp((agc_sp_t) -d->negur, d->accdotr).lo;
     uint16_t bits = (d->neguq > 0) ? GT_BIT10 : ((d->neguq < 0) ? GT_BIT9 : 0u);
 
-    bits =
-        (uint16_t) (bits + ((d->negur > 0) ? GT_BIT12 :
-                            ((d->negur < 0) ? GT_BIT11 : 0u)));
-    uint16_t c12 =
-        (uint16_t) (agc_chan_read(012) & (uint16_t) ~GT_BGIM & 077777u);
+    bits         = (uint16_t) (bits + ((d->negur > 0) ? GT_BIT12 : ((d->negur < 0) ? GT_BIT11 : 0u)));
+    uint16_t c12 = (uint16_t) (agc_chan_read(012) & (uint16_t) ~GT_BGIM & 077777u);
 
     agc_chan_write(012, (uint16_t) (c12 + bits));
     d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_CALLGMBL);
@@ -176,7 +172,7 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
     }
 
     lm_dp_pair_t n = {halfarg, 0};
-    agc_sp_t     q = lm_dap_dv(n, x);         /* (ARG/X)/2      */
+    agc_sp_t     q = lm_dap_dv(n, x); /* (ARG/X)/2      */
 
     return (lm_dap_sat((int32_t) (x / 2) + q)); /* SR: X/2        */
 }
@@ -200,8 +196,7 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
  **********************************************************************/
 agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
 {
-    if (!AGC_ASSERT(fn != NULL && shftflag != NULL) ||
-        !AGC_ASSERT(inindex != NULL))
+    if (!AGC_ASSERT(fn != NULL && shftflag != NULL) || !AGC_ASSERT(inindex != NULL))
     {
         return (0);
     }
@@ -220,7 +215,7 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
         *shftflag = 7;
     }
 
-    *inindex = 12;     /* TWELVE         */
+    *inindex   = 12;     /* TWELVE         */
     agc_sp_t a = fn->hi; /* SCALSTRT       */
 
     for (int i = 0; i < 6; i++)
@@ -228,7 +223,7 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
         agc_sp_t ref = (agc_sp_t) (1 << (14 - *inindex));
 
         if ((int32_t) ref - fn->hi > 0)
-        {                            /* arg < reference */
+        { /* arg < reference */
             a = lm_dap_dv(*fn, ref); /* HALFARG        */
             break;
         }
@@ -328,9 +323,8 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
     lm_dp_pair_t ke   = lm_dap_mp(err, w->k);             /* at pi^2/2^8    */
     lm_dp_pair_t hi16 = lm_dap_mp(ke.hi, (agc_sp_t) 16);  /* MP BIT5        */
 
-    w->k2theta.hi = hi16.hi;
-    w->k2theta.lo =
-        lm_dap_wrap((int32_t) hi16.lo + lm_dap_mphi(ke.lo, (agc_sp_t) 16));
+    w->k2theta.hi     = hi16.hi;
+    w->k2theta.lo     = lm_dap_wrap((int32_t) hi16.lo + lm_dap_mphi(ke.lo, (agc_sp_t) 16));
     agc_sp_t     half = lm_dap_mphi((agc_sp_t) -w->alpha, (agc_sp_t) 8192);
     lm_dp_pair_t sq   = lm_dap_mp(half, w->alpha); /* -ALPHA^2/2     */
 
@@ -371,9 +365,8 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
  **********************************************************************/
 static void gts_middle_terms(gts_w_t *w)
 {
-    w->k2 = lm_dap_mp(w->omega, (agc_sp_t) 256); /* OMEGA at 16 pi */
-    lm_dp_pair_t f = (w->alpha > 0) ? lm_dap_das(w->k2, w->a2) :
-                     lm_dap_das(w->k2, dp_neg(w->a2));
+    w->k2          = lm_dap_mp(w->omega, (agc_sp_t) 256); /* OMEGA at 16 pi */
+    lm_dp_pair_t f = (w->alpha > 0) ? lm_dap_das(w->k2, w->a2) : lm_dap_das(w->k2, dp_neg(w->a2));
 
     w->del = dp_sign(f);
 
@@ -434,9 +427,8 @@ static void gts_root_term(gts_w_t *w)
     agc_sp_t inindex = 0;
     agc_sp_t root    = lm_dap_gtsqrt(&w->fn, &shft, &inindex);
 
-    w->k2 = dp_x_sp(w->k2, root); /* PRODUCT        */
-    shft  =
-        (agc_sp_t) (shft + lm_dap_mphi(inindex, (agc_sp_t) 8192)); /* DOSHIFT */
+    w->k2 = dp_x_sp(w->k2, root);                                      /* PRODUCT        */
+    shft  = (agc_sp_t) (shft + lm_dap_mphi(inindex, (agc_sp_t) 8192)); /* DOSHIFT */
 
     if (!AGC_ASSERT(shft >= 0 && shft <= 14))
     {
@@ -500,8 +492,7 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
             d->raccdot = 0;
         }
 
-        agc_chan_and(
-            012, (uint16_t) (~((i == 0) ? GT_GIMQ : GT_GIMR) & 077777u));
+        agc_chan_and(012, (uint16_t) (~((i == 0) ? GT_GIMQ : GT_GIMR) & 077777u));
     }
 
     d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_CALLGMBL); /* ZEROLOUP  */
@@ -537,6 +528,7 @@ agc_status_t lm_dap_gts(void)
     d->ingts    = GT_TWO;
     d->qgimtimr = GT_TWO;
     d->rgimtimr = GT_TWO;
+
     /* DEVIATION: SAVESR (the editing shift register) is not modelled.   */
     agc_status_t st = AGC_STATUS_OK;
 
@@ -596,16 +588,14 @@ static void timegmbl_axis(lm_dap_t *d, int i)
 
     if (accdot > 0 && negaos != 0)
     {
-        int32_t v = (int32_t) lm_dap_mphi(negaos, GT_POINT6) +
-                    negaos;                            /* -.4 AOS at pi/8 */
+        int32_t v = (int32_t) lm_dap_mphi(negaos, GT_POINT6) + negaos; /* -.4 AOS at pi/8 */
 
-        negu = (agc_sp_t) ((v > 0) ? -1 : 1); /* SGN(AOS)       */
+        negu          = (agc_sp_t) ((v > 0) ? -1 : 1); /* SGN(AOS)       */
         agc_sp_t absa = (agc_sp_t) ((v > 0) ? v : -v);
 
         set_timer = true;
 
-        if (lm_dap_ovf(v) ||
-            (int32_t) lm_dap_mphi(accdot, (agc_sp_t) 2048) - absa <= 0)
+        if (lm_dap_ovf(v) || (int32_t) lm_dap_mphi(accdot, (agc_sp_t) 2048) - absa <= 0)
         {
             timer       = GT_OCT31; /* NOTALLOW       */
             d->allowgts = 0;

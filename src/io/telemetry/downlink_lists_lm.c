@@ -224,14 +224,14 @@ static const agc_dn_entry_t lmrend07[] = {
 
 /* ---------------- LM DESCENT AND ASCENT LIST (LMDSASDL), p.200 --------- */
 static const agc_dn_entry_t lmdsasdl[] = {
-    {PTR, false, LMDSAS07, 0},    /* COLLECT SNAPSHOT          */
-    {PTR, false, LMDSAS08, 0},    /* SEND SNAPSHOT             */
-    {1, false, AGC_DN_TEVENT, 0}, /* TEVENT,+1                 */
-    {3, false, AGC_DN_UNFC_2, 0}, /* UNFC/2 +0...+5            */
-    {3, false, AGC_DN_VGVECT, 0}, /* VGVECT +0...+5            */
-    {1, false, AGC_DN_TTF_8, 0},  /* TTF/8,+1                  */
-    {1, false, AGC_DN_DELTAH, 0}, /* DELTAH,+1                 */
-    {3, false, AGC_DN_RLS, 0},    /* RLS +0...+5               */
+    {PTR, false, LMDSAS07, 0},      /* COLLECT SNAPSHOT          */
+    {PTR, false, LMDSAS08, 0},      /* SEND SNAPSHOT             */
+    {1, false, AGC_DN_TEVENT, 0},   /* TEVENT,+1                 */
+    {3, false, AGC_DN_UNFC_2, 0},   /* UNFC/2 +0...+5            */
+    {3, false, AGC_DN_VGVECT, 0},   /* VGVECT +0...+5            */
+    {1, false, AGC_DN_TTF_8, 0},    /* TTF/8,+1                  */
+    {1, false, AGC_DN_DELTAH, 0},   /* DELTAH,+1                 */
+    {3, false, AGC_DN_RLS, 0},      /* RLS +0...+5               */
     {1, false, AGC_DN_SPARE, 0},
     {PTR, false, LMCSTA06, 0},      /* LMDSAS09: COMMON DATA     */
     {PTR, false, LMORBM02, 0},      /* LMDSAS02: COMMON DATA     */
@@ -328,8 +328,8 @@ static const agc_dn_entry_t lmagsidl[] = {
     {1, false, AGC_DN_LEMMASS, 0},  /* LEMMASS,CSMMASS           */
     {1, false, AGC_DN_IMODES30, 0}, /* IMODES30,IMODES33         */
     {1, false, AGC_DN_SPARE, 0},
-    {PTR, false, LMORBM05, 0},  /* LMAGSI05: COMMON DATA     */
-    {6, true, AGC_DN_DSPTAB, 0} /* DSPTAB +0...+11D          */
+    {PTR, false, LMORBM05, 0},      /* LMAGSI05: COMMON DATA     */
+    {6, true, AGC_DN_DSPTAB, 0}     /* DSPTAB +0...+11D          */
 };
 
 #undef PTR
@@ -348,7 +348,7 @@ static const agc_dn_list_t dntable[AGC_DNLIST_LM_COUNT] = {
     {lmdsasdl, (uint8_t) (sizeof lmdsasdl / sizeof lmdsasdl[0]),
      false}, /* 4 DESCENT/ASCENT */
     {lmlsaldl, (uint8_t) (sizeof lmlsaldl / sizeof lmlsaldl[0]),
-     false} /* 5 SURFACE ALIGN */
+     false}  /* 5 SURFACE ALIGN */
 };
 
 static const agc_dn_list_t sublists[LM_SUB_COUNT] = {

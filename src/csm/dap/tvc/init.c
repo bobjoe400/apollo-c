@@ -60,16 +60,16 @@
  **********************************************************************/
 #include "../internal.h"
 
-#define NZERO        51               /* 00063: words to zero less one (odd) */
-#define NZEROJR      23               /* 00027: MCLEANJR words less one      */
-#define ATTLIM       ((agc_sp_t) 136) /* 00210 DEC 0.00833: 1.5 deg, B-1 rev */
-#define RECIP_ATTLIM ((agc_sp_t) 120) /* 00170 DEC 0.007325 (1/ATTLIM)       */
-#define FKPRIMDT     ((agc_sp_t) 167) /* 00247 DEC .0102: CSM/LM LB, pi/8    */
-#define FREPFRAC     ((agc_sp_t) 154) /* 00232 DEC .0375 B-2: CSM/LM LB, 2^2 */
-#define TWOPI_M      ((agc_sp_t) 13884) /* 33074 DEC .00331017 B+8: 2^-8/(N m)*/
-#define ONETHOU      ((agc_sp_t) 2000) /* 03720 DEC 1000 B-13: kg/cs -> kg/10 s*/
-#define NINETEEN     ((agc_sp_t) 19)   /* VD1 (OCT 23): 20 TVCEXEC passes = 10 s*/
-#define HALF_SEC_CS  ((uint16_t) 50)   /* .5SEC DEC 50, cs                    */
+#define NZERO        51                  /* 00063: words to zero less one (odd) */
+#define NZEROJR      23                  /* 00027: MCLEANJR words less one      */
+#define ATTLIM       ((agc_sp_t) 136)    /* 00210 DEC 0.00833: 1.5 deg, B-1 rev */
+#define RECIP_ATTLIM ((agc_sp_t) 120)    /* 00170 DEC 0.007325 (1/ATTLIM)       */
+#define FKPRIMDT     ((agc_sp_t) 167)    /* 00247 DEC .0102: CSM/LM LB, pi/8    */
+#define FREPFRAC     ((agc_sp_t) 154)    /* 00232 DEC .0375 B-2: CSM/LM LB, 2^2 */
+#define TWOPI_M      ((agc_sp_t) 13884)  /* 33074 DEC .00331017 B+8: 2^-8/(N m)*/
+#define ONETHOU      ((agc_sp_t) 2000)   /* 03720 DEC 1000 B-13: kg/cs -> kg/10 s*/
+#define NINETEEN     ((agc_sp_t) 19)     /* VD1 (OCT 23): 20 TVCEXEC passes = 10 s*/
+#define HALF_SEC_CS  ((uint16_t) 50)     /* .5SEC DEC 50, cs                    */
 #define T5_POSMAX    ((uint16_t) 037777) /* POSMAX: next T5RUPT in 10 ms     */
 #define NODES        6                   /* PTMP1..6, YTMP1..6               */
 
@@ -80,16 +80,16 @@ static const agc_sp_t tcorr[2] = {5, 0};
  * 15 words, so the last five (N30..D32) are the first five words of
  * LBN10 that follow CSMN10 in fixed memory; the CSM filter ignores them. */
 static const agc_sp_t csmn10[AGC_CSM_N10_WORDS] = {
-    16383,  /* N10    DEC .99999                                        */
-    -4176,  /* N11/2  DEC -.2549                                        */
-    963,    /* N12    DEC .0588                                         */
-    -12485, /* D11/2  DEC -.7620                                        */
-    12206,  /* D12    DEC .7450                                         */
-    16383,  /* N20    DEC .99999                                        */
-    -7950,  /* N21/2  DEC -.4852                                        */
-    0,      /* N22    DEC 0                                             */
-    -4411,  /* D21/2  DEC -.2692                                        */
-    0,      /* D22    DEC 0                                             */
+    16383,                             /* N10    DEC .99999                                        */
+    -4176,                             /* N11/2  DEC -.2549                                        */
+    963,                               /* N12    DEC .0588                                         */
+    -12485,                            /* D11/2  DEC -.7620                                        */
+    12206,                             /* D12    DEC .7450                                         */
+    16383,                             /* N20    DEC .99999                                        */
+    -7950,                             /* N21/2  DEC -.4852                                        */
+    0,                                 /* N22    DEC 0                                             */
+    -4411,                             /* D21/2  DEC -.2692                                        */
+    0,                                 /* D22    DEC 0                                             */
     16383, -5382, -5408, -14911, 13861 /* LBN10 .. LBD12 (overrun)       */
 };
 
@@ -133,8 +133,7 @@ static void tvc_loadcoef(tvc_coef_set_t set)
     agc_csm_tvc_t          *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* HBN10 pad load    */
 
-    if (!AGC_ASSERT((set == TVC_COEF_CSM) || (set == TVC_COEF_HB) ||
-                    (set == TVC_COEF_LB)))
+    if (!AGC_ASSERT((set == TVC_COEF_CSM) || (set == TVC_COEF_HB) || (set == TVC_COEF_LB)))
     {
         return;
     }
@@ -229,18 +228,18 @@ agc_status_t csm_tvc_mrclean(void)
         t->ytmp[i] = zero;
     }
 
-    t->rollfire = 0;
-    t->rollword = 0u;
-    t->temreg   = 0;
-    t->stroker  = 0;
-    t->perrb    = zero;
-    t->yerrb    = zero;
-    t->delpbar  = zero;
-    t->delybar  = zero;
-    t->pdeloff  = zero;
-    t->ydeloff  = zero;
-    t->ttmp1    = 0;
-    t->cntr     = 0; /* CNTR, the loop counter, ends at +0           */
+    t->rollfire     = 0;
+    t->rollword     = 0u;
+    t->temreg       = 0;
+    t->stroker      = 0;
+    t->perrb        = zero;
+    t->yerrb        = zero;
+    t->delpbar      = zero;
+    t->delybar      = zero;
+    t->pdeloff      = zero;
+    t->ydeloff      = zero;
+    t->ttmp1        = 0;
+    t->cntr         = 0; /* CNTR, the loop counter, ends at +0           */
     agc_status_t st = csm_dap_set_t5(AGC_TASK_TVC_INITIALIZE, T5_POSMAX);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -299,15 +298,14 @@ static agc_status_t tvc_init_filter_timing(int lem)
      * CSM 40 ms filter) or BIT3 (40 ms, CSM/LM 80 ms filter)            */
     agc_sp_t half_dt = (agc_sp_t) ((lem != 0) ? 4 : 2); /* ?: LM on/off */
 
-    t->t5tvcdt = (agc_sp_t) (AGC_SP_MAX - half_dt + 1); /* COM; AD POSMAX;
-                                                           AD BIT1       */
-    agc_flag_clear(AGC_FLAG_SWTOVER);          /* reset SWTOVER          */
+    t->t5tvcdt = (agc_sp_t) (AGC_SP_MAX - half_dt + 1); /* COM; AD POSMAX; AD BIT1 */
+    agc_flag_clear(AGC_FLAG_SWTOVER);                   /* reset SWTOVER          */
+
     /* KPRIMEDT = EKPRIME (100 pi/16) x TVCDT/2: LXCH A exchanges the
      * product words (14 places left); scaled pi/8                       */
-    agc_sp_t ek = c->ekprime[lem];             /* EKPRIME, (100 pi)/16   */
+    agc_sp_t ek = c->ekprime[lem]; /* EKPRIME, (100 pi)/16   */
 
-    t->kprimedt =
-        agc_dp_pack(csm_dap_mp_lo(ek, half_dt), csm_dap_mp_hi(ek, half_dt));
+    t->kprimedt          = agc_dp_pack(csm_dap_mp_lo(ek, half_dt), csm_dap_mp_hi(ek, half_dt));
     t->repfrac           = c->erepfrac[lem]; /* REPFRAC, 2^2             */
     t->cntr              = tcorr[lem];       /* one-shot correction time */
     t->strktime          = -1;               /* no stroke test until V68 */
@@ -369,7 +367,7 @@ static void tvc_attinit(void)
     w[1] = &t->errbtmp.lo;
 
     for (int k = 1; k >= 0; k--)
-    {                                           /* TTMP1 = 1, then 0   */
+    { /* TTMP1 = 1, then 0   */
         agc_sp_t q = csm_dap_mp_hi(*w[k], RECIP_ATTLIM); /* 0: < 1.5 deg */
 
         if (q > 0)
@@ -409,16 +407,17 @@ agc_status_t agc_task_tvc_initialize(void)
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* pad loads, RCSFLAGS     */
 
     agc_csm_dap_massprop(); /* IXX, IAVG/TLX for the DAP gains            */
+
     /* TENMDOT = EMDOT (kg/cs, B+3) x 1000: 10-s mass loss, kg B+16       */
     t->tenmdot = csm_dap_mp_hi(c->emdot, ONETHOU);
     t->masstmp = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot);
-    int lem = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? 1 : 0;
+    int lem    = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? 1 : 0;
 
     /* CNTR: ?: LM on (BIT1) or off (0)                                   */
 
     tvc_loadcoef((lem != 0) ? TVC_COEF_HB : TVC_COEF_CSM); /* ?: LM   */
-    t->ktlx_i = c->ektlx_i[lem];           /* 1/(8 ascrev) scale        */
-    agc_status_t st = csm_tvc_gains(true); /* 1/CONACC, VARK           */
+    t->ktlx_i       = c->ektlx_i[lem];                     /* 1/(8 ascrev) scale        */
+    agc_status_t st = csm_tvc_gains(true);                 /* 1/CONACC, VARK           */
 
     if (st == AGC_STATUS_OK)
     {
@@ -427,8 +426,9 @@ agc_status_t agc_task_tvc_initialize(void)
 
     tvc_init_trims();
     tvc_attinit();
+
     /* NEEDLEIN: set RCSFLAGS bit 3 for the initialisation pass          */
-    c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
+    c->rcsflags     = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
     agc_status_t s2 = csm_dap_needler(); /* NEEDLER                    */
 
     if (st == AGC_STATUS_OK)
@@ -502,23 +502,22 @@ agc_status_t csm_tvc_swichovr_body(void)
     _Static_assert(NZEROJR + 1 == 2 * NODES * 2, "AGC constant");
 
     for (int i = 0; i < NODES; i++)
-    {                      /* MCLEANJR: PTMP1 .. YTMP6                  */
+    { /* MCLEANJR: PTMP1 .. YTMP6                  */
         t->ptmp[i] = zero;
         t->ytmp[i] = zero;
     }
 
-    t->cntrtmp = 1; /* the zeroing loop's counter ends at 1           */
+    t->cntrtmp      = 1;                    /* the zeroing loop's counter ends at 1           */
     agc_flag_set(AGC_FLAG_SWTOVER);
-    t->ktlx_i = c->ektlx_i[2];              /* low-bandwidth DAP gain   */
+    t->ktlx_i       = c->ektlx_i[2];        /* low-bandwidth DAP gain   */
     agc_status_t st = csm_tvc_gains(false); /* S40.15 +7: VARK only     */
 
-    t->kprimedt =
-        agc_dp_pack(FKPRIMDT, agc_dp_low(t->kprimedt)); /* steering, pi/8 */
-    t->repfrac = FREPFRAC;   /* TMC loop, 2^2                        */
-    t->pdeloff = t->delpbar; /* update the trim estimates            */
-    t->ydeloff = t->delybar;
+    t->kprimedt = agc_dp_pack(FKPRIMDT, agc_dp_low(t->kprimedt)); /* steering, pi/8 */
+    t->repfrac  = FREPFRAC;                                       /* TMC loop, 2^2                        */
+    t->pdeloff  = t->delpbar;                                     /* update the trim estimates            */
+    t->ydeloff  = t->delybar;
     tvc_loadcoef(TVC_COEF_LB);
-    t->tvcphase = t->phasetmp; /* restore TVCPHASE                    */
+    t->tvcphase = t->phasetmp;                                    /* restore TVCPHASE                    */
 
     if (!AGC_ASSERT((t->tvcphase >= -2) && (t->tvcphase <= 3)))
     {
@@ -543,8 +542,8 @@ agc_status_t agc_csm_tvc_preswtch(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     agc_inhint();
-    t->phasetmp = t->tvcphase; /* save TVCPHASE                         */
-    t->tvcphase = -2;
+    t->phasetmp     = t->tvcphase;             /* save TVCPHASE                         */
+    t->tvcphase     = -2;
     agc_status_t st = csm_tvc_swichovr_body(); /* SWICHOVR +5          */
 
     agc_relint(); /* POSTJUMP PINBRNCH                                 */

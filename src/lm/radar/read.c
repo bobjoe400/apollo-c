@@ -66,27 +66,27 @@
 #include "agc/io/service.h"
 #include "radar.h"
 
-#define RD_RRRANGE          011u /* RR range */
-#define RD_RRRDOT           012u /* RR range rate */
-#define RD_LRVELX           014u /* LR velocity X */
-#define RD_LRVELY           015u /* LR velocity Y */
-#define RD_LRVELZ           016u /* LR velocity Z */
-#define RD_LRALT            017u /* LR altitude */
-#define RD_ALLREAD          017u    /* ALLREAD OCT 17: all radar bits      */
-#define RD_DGBITS           000230u /* DGBITS: chan 33 bits 4, 5, 8        */
-#define RD_BITS5_8          000220u /* BITS5,8: LR data good bits          */
-#define RD_ACTIVITY         000010u /* chan 13 bit 4: radar activity       */
-#define RD_LR_SELECT        000004u /* chan 13 bit 3: landing radar        */
-#define RD_POSMAX           037777u /* 14 bits */
-#define RD_LVELBIAS         (-12288) /* LVELBIAS DEC -12288 (153.6 kc)      */
-#define RD_RDOTBIAS         ((agc_dp_t) 17000) /* RDOTBIAS, counts       */
-#define RD_HISCALIM         460  /* HISCALIM DEC 460: 2481.7 ft         */
-#define RD_LR_POS2_WAIT     600U /* 6SECS DEC 600                       */
-#define RD_2SECS            200U /* 2 s, cs */
-#define RD_1SEC             100U /* 1 s, cs */
-#define RD_POS_TRIES        14      /* FOURTEEN: 15 samples                */
-#define RD_HLITE            000020u /* HLITE EQUALS BIT5                   */
-#define RD_VLITE            000004u /* VLITE EQUALS BIT3                   */
+#define RD_RRRANGE          011u                       /* RR range */
+#define RD_RRRDOT           012u                       /* RR range rate */
+#define RD_LRVELX           014u                       /* LR velocity X */
+#define RD_LRVELY           015u                       /* LR velocity Y */
+#define RD_LRVELZ           016u                       /* LR velocity Z */
+#define RD_LRALT            017u                       /* LR altitude */
+#define RD_ALLREAD          017u                       /* ALLREAD OCT 17: all radar bits      */
+#define RD_DGBITS           000230u                    /* DGBITS: chan 33 bits 4, 5, 8        */
+#define RD_BITS5_8          000220u                    /* BITS5,8: LR data good bits          */
+#define RD_ACTIVITY         000010u                    /* chan 13 bit 4: radar activity       */
+#define RD_LR_SELECT        000004u                    /* chan 13 bit 3: landing radar        */
+#define RD_POSMAX           037777u                    /* 14 bits */
+#define RD_LVELBIAS         (-12288)                   /* LVELBIAS DEC -12288 (153.6 kc)      */
+#define RD_RDOTBIAS         ((agc_dp_t) 17000)         /* RDOTBIAS, counts       */
+#define RD_HISCALIM         460                        /* HISCALIM DEC 460: 2481.7 ft         */
+#define RD_LR_POS2_WAIT     600U                       /* 6SECS DEC 600                       */
+#define RD_2SECS            200U                       /* 2 s, cs */
+#define RD_1SEC             100U                       /* 1 s, cs */
+#define RD_POS_TRIES        14                         /* FOURTEEN: 15 samples                */
+#define RD_HLITE            000020u                    /* HLITE EQUALS BIT5                   */
+#define RD_VLITE            000004u                    /* VLITE EQUALS BIT3                   */
 #define RD_ALARM_UNEXPECTED ((agc_alarm_code_t) 00520) /* rupt not wanted  */
 #define RD_ALARM_NO_DATA    ((agc_alarm_code_t) 00521) /* N samples failed */
 #define RD_ALARM_LR_POS     ((agc_alarm_code_t) 00522) /* LR position bad  */
@@ -98,8 +98,7 @@ typedef struct rd_state
     agc_dp_t samplsum;   /* SAMPLSUM: sum of good samples, unscaled  */
     agc_dp_t sample;     /* ITEMP3, ITEMP4: this sample, unscaled    */
     agc_sp_t nsamp;      /* NSAMP: good samples wanted - 1, unscaled */
-    agc_sp_t samplim;    /* SAMPLIM: tries left (-1 none expected;
-                          * also the LRPOS2 scan counter), unscaled */
+    agc_sp_t samplim;    /* SAMPLIM: tries left (-1 none expected; also the LRPOS2 scan counter), unscaled */
     uint16_t oldatagd;   /* OLDATAGD: data-good bits at the last sample   */
     uint16_t itemp1;     /* ITEMP1: this radar's data-good bit            */
     uint16_t dnindex;    /* DNINDEX: chan 13 select bits 1-3              */
@@ -189,8 +188,7 @@ uint16_t agc_erase_dnrrange(int index)
  **********************************************************************/
 static void rd_initread(uint16_t code, agc_sp_t n)
 {
-    if (!AGC_ASSERT(n >= 1 && n <= 5) ||
-        !AGC_ASSERT(code >= RD_RRRANGE && code <= RD_LRALT))
+    if (!AGC_ASSERT(n >= 1 && n <= 5) || !AGC_ASSERT(code >= RD_RRRANGE && code <= RD_LRALT))
     {
         return;
     }
@@ -202,10 +200,9 @@ static void rd_initread(uint16_t code, agc_sp_t n)
     rd.oldatagd = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & RD_DGBITS);
     rr_chan_clear(AGC_CHAN_CHAN13, RD_ALLREAD);
     agc_chan_or(AGC_CHAN_CHAN13, code);
-    rd.timehold = (agc_dp_t) (((uint32_t) rd.timehold + agc_time_now_cs()) &
-                              (uint32_t) AGC_DP_MAX);
+    rd.timehold = (agc_dp_t) (((uint32_t) rd.timehold + agc_time_now_cs()) & (uint32_t) AGC_DP_MAX);
     rd.samplsum = 0;
-    agc_relint(); /* ROADBACK */
+    agc_relint();                     /* ROADBACK */
 }
 
 /**********************************************************************
@@ -325,11 +322,9 @@ void agc_radar_lrvel(agc_sp_t beam2)
  **********************************************************************/
 static void rd_lr_lamp(bool velocity)
 {
-    uint16_t      lamp  = velocity ? RD_VLITE : RD_HLITE; /* V or H lamp */
-    agc_flag_id_t flash =
-        velocity ? AGC_FLAG_VFLSHFLG : AGC_FLAG_HFLSHFLG; /* flash flag */
-    bool fail =
-        rr_radmodes_test(velocity ? RR_LRVELBIT : RR_LRALTBIT); /* data fail */
+    uint16_t      lamp  = velocity ? RD_VLITE : RD_HLITE;                         /* V or H lamp */
+    agc_flag_id_t flash = velocity ? AGC_FLAG_VFLSHFLG : AGC_FLAG_HFLSHFLG;       /* flash flag */
+    bool          fail  = rr_radmodes_test(velocity ? RR_LRVELBIT : RR_LRALTBIT); /* data fail */
 
     if (!velocity && agc_flag_test(AGC_FLAG_SCALBAD))
     {
@@ -452,8 +447,7 @@ static agc_status_t rd_badrad(void)
  **********************************************************************/
 static agc_status_t rd_nomore(void)
 {
-    if (agc_flag_test(AGC_FLAG_LRBYPASS) &&
-        !agc_flag_test(AGC_FLAG_ALARM_521_SUPPRESSED))
+    if (agc_flag_test(AGC_FLAG_LRBYPASS) && !agc_flag_test(AGC_FLAG_ALARM_521_SUPPRESSED))
     {
         agc_alarm(RD_ALARM_NO_DATA);
     }
@@ -525,7 +519,7 @@ static bool rd_dgcheck(void)
 {
     uint16_t now; /* after */
 
-    now = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & rd.itemp1);
+    now             = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & rd.itemp1);
     uint16_t before = (uint16_t) (rd.oldatagd & rd.itemp1); /* before */
 
     rd.oldatagd = (uint16_t) ((rd.oldatagd & ~rd.itemp1) | now);
@@ -560,8 +554,8 @@ static bool rd_dgcheck(void)
 static agc_dp_t rd_count(int bias)
 {
     uint16_t w  = (uint16_t) (agc_erase_rnrad() & RR_WORD_MASK); /* RNRAD */
-    int      hi = (int) ((w >> 14) & 1U); /* bit 15 */
-    int      lo = (int) (w & RD_POSMAX) + bias; /* bits 1-14 + bias */
+    int      hi = (int) ((w >> 14) & 1U);                        /* bit 15 */
+    int      lo = (int) (w & RD_POSMAX) + bias;                  /* bits 1-14 + bias */
 
     if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
     {
@@ -585,8 +579,7 @@ static void rd_lr_scale(void)
 {
     bool low; /* SCALBAD */
 
-    low = (agc_dp_high(rd.sample) <= 0) &&
-          (agc_dp_low(rd.sample) < RD_HISCALIM);
+    low = (agc_dp_high(rd.sample) <= 0) && (agc_dp_low(rd.sample) < RD_HISCALIM);
 
     rz_flag_put(AGC_FLAG_SCALBAD, low);
     agc_interp_t ip; /* interpreter state */
@@ -631,10 +624,8 @@ static agc_status_t rd_scaled(uint16_t scale_bit, bool lr)
 
         if (now != before)
         { /* SCALCHNG */
-            agc_erase_set_radmodes(
-                (uint16_t) (agc_erase_radmodes() ^ scale_bit));
-            rd.oldatagd =
-                (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & RD_DGBITS);
+            agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() ^ scale_bit));
+            rd.oldatagd = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & RD_DGBITS);
             rz_flag_put(AGC_FLAG_RNGSCFLG, true);
 
             return (rd_badrad());
@@ -686,8 +677,7 @@ agc_status_t agc_rendz_radar_read(void)
 
     if (rd.dnindex != 0U)
     {
-        rd.dnradar[rd.dnindex - 1U] =
-            (uint16_t) (agc_erase_rnrad() & RR_WORD_MASK);
+        rd.dnradar[rd.dnindex - 1U] = (uint16_t) (agc_erase_rnrad() & RR_WORD_MASK);
     }
 
     if (rd.samplim < 0)
@@ -713,7 +703,7 @@ agc_status_t agc_rendz_radar_read(void)
             return (rd_badrad());
         }
 
-        rd.itemp1 = RR_RRDATABT;
+        rd.itemp1  = RR_RRDATABT;
         bool range = (agc_chan_read(AGC_CHAN_CHAN13) & 1U) != 0U; /* RR range */
 
         uint16_t scale_bit = 0U; /* range rate: no scale bit */
@@ -740,8 +730,7 @@ agc_status_t agc_rendz_radar_read(void)
         return (agc_task_rr_goodend());
     }
 
-    if (((agc_erase_radmodes() ^ agc_chan_read(AGC_CHAN_CHAN33)) &
-         RR_LRPOSBIT) != 0U)
+    if (((agc_erase_radmodes() ^ agc_chan_read(AGC_CHAN_CHAN33)) & RR_LRPOSBIT) != 0U)
     { /* LRPOSCHK */
         agc_alarm(RD_ALARM_LR_POS);
 

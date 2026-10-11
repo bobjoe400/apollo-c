@@ -24,16 +24,18 @@
 #define LAGSLIST        1                 /* LAGSLIST = ONE (AGS downlist) */
 #define DT_DOWNLIST     ((uint16_t) 2000) /* 20SEC DEC 2000                */
 #define DT_RETRY        ((uint16_t) 10)   /* TEN cs                        */
+
 /* RSCALE 2DEC 3.280839 B-3 (m -> ft) and VSCALE 2DEC 3.280839 E2 B-9
  * (m/cs -> ft/s): the words assembled in the Luminary 099 rope (15077 05041,
  * 24402 25724), 30 and 15 LSB from the exact decimal conversion.          */
 #define RSCALE ((agc_dp_t) 110086689) /* 3.280839 B-3, ft/m              */
 #define VSCALE ((agc_dp_t) 172010452) /* 328.0839 B-9, (ft/s)/(m/cs)     */
-#define TSCALE ((agc_dp_t) 26214400) /* TSCALE 2DEC 100 B-10          */
+#define TSCALE ((agc_dp_t) 26214400)  /* TSCALE 2DEC 100 B-10          */
+
 /* AGSRND1 (2OCT 0000060000) + AGSRND2 (2OCT 0000037777): half a high-word
  * LSB, added in two steps; here as one DP addend.                        */
 #define AGS_ROUND      ((agc_dp_t) 8192)
-#define AGSBUFF_TIME   12 /* AGSBUFF +12D: the DP time     */
+#define AGSBUFF_TIME   12                  /* AGSBUFF +12D: the DP time     */
 #define AGS_MINUS_ZERO ((uint16_t) 077777) /* -0 high word (AEA: -1)  */
 
 static uint16_t agsbuff[AGC_ALIGN_AGSBUFF_WORDS];
@@ -85,7 +87,7 @@ static void ags_words(agc_interp_t *ip, agc_vec_t v, uint16_t w[3])
     for (int i = 0; i < 3; i++)
     {
         const agc_dp_t r  = agc_dp_add(ip, v.c[i], AGS_ROUND); /* B as v */
-        const agc_sp_t hi = agc_dp_high(r); /* sign-agreed high word */
+        const agc_sp_t hi = agc_dp_high(r);                    /* sign-agreed high word */
 
         w[i] = align_sp_to_word(hi);
 
@@ -109,22 +111,17 @@ static void ags_words(agc_interp_t *ip, agc_vec_t v, uint16_t w[3])
  * out = RX, VX, RY, VY, RZ, VZ (the high words; VATT1's go into R's
  * low-word places).
  */
-agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1,
-                              agc_vec_t vatt1, const agc_mat_t *refsmmat,
-                              uint16_t out[6])
+agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1, agc_vec_t vatt1, const agc_mat_t *refsmmat, uint16_t out[6])
 {
-    if (!AGC_ASSERT((ip != NULL) && (refsmmat != NULL)) ||
-        !AGC_ASSERT(out != NULL))
+    if (!AGC_ASSERT((ip != NULL) && (refsmmat != NULL)) || !AGC_ASSERT(out != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_vec_t v = agc_vec_shl(
-        ip, agc_vec_scale(ip, agc_mat_vec(ip, refsmmat, vatt1), VSCALE), 2);
-    const agc_vec_t r = agc_vec_shl(
-        ip, agc_vec_scale(ip, agc_mat_vec(ip, refsmmat, ratt1), RSCALE), 8);
-    uint16_t rw[3];
-    uint16_t vw[3];
+    const agc_vec_t v = agc_vec_shl(ip, agc_vec_scale(ip, agc_mat_vec(ip, refsmmat, vatt1), VSCALE), 2);
+    const agc_vec_t r = agc_vec_shl(ip, agc_vec_scale(ip, agc_mat_vec(ip, refsmmat, ratt1), RSCALE), 8);
+    uint16_t        rw[3];
+    uint16_t        vw[3];
 
     ags_words(ip, v, vw);
     ags_words(ip, r, rw);
@@ -139,8 +136,7 @@ agc_status_t agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1,
 }
 
 /* AGSBUFF +12D: (TAT - AGSK) / TSCALE, seconds B18. */
-agc_status_t agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t k,
-                          agc_dp_t *out)
+agc_status_t agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t k, agc_dp_t *out)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(out != NULL))
     {
@@ -157,17 +153,13 @@ static agc_status_t show_agsk(agc_job_ctx_t *ctx)
 {
     agc_erase_set_dsptemx(agsk);
 
-    return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_AGS_TIME,
-                        AGC_JOB_AGS_INITIALIZATION_END,
-                        AGC_JOB_AGS_INITIALIZATION_COMPUTE,
-                        AGC_JOB_AGS_INITIALIZATION_NEW_ZERO));
+    return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_AGS_TIME, AGC_JOB_AGS_INITIALIZATION_END, AGC_JOB_AGS_INITIALIZATION_COMPUTE, AGC_JOB_AGS_INITIALIZATION_NEW_ZERO));
 }
 
 /* AGSINIT: alarm 220 and ENDEXT without a REFSMMAT; else REDSPTEM. */
 agc_status_t agc_job_ags_initialization(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -215,10 +207,7 @@ agc_status_t agc_job_ags_initialization_compute(agc_job_ctx_t *ctx)
     agc_flag_set(AGC_FLAG_NODOFLAG);
     agc_flag_set(AGC_FLAG_XDSPFLAG);
 
-    return (align_flash(ctx, AGC_DSKY_EXDSPRET, VN_AGS_TIME,
-                        AGC_JOB_AGS_INITIALIZATION_LM_STATE,
-                        AGC_JOB_AGS_INITIALIZATION_LM_STATE,
-                        AGC_JOB_AGS_INITIALIZATION_LM_STATE));
+    return (align_flash(ctx, AGC_DSKY_EXDSPRET, VN_AGS_TIME, AGC_JOB_AGS_INITIALIZATION_LM_STATE, AGC_JOB_AGS_INITIALIZATION_LM_STATE, AGC_JOB_AGS_INITIALIZATION_LM_STATE));
 }
 
 /* LEMPREC to now; SCALEVEC -> AGSBUFF; TAT kept for the CSM. */
@@ -235,8 +224,7 @@ agc_status_t agc_job_ags_initialization_lm_state(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_integ_out_t o;
-    agc_status_t    st = align_integ(&ip, ALIGN_LEMPREC, align_loadtime(),
-                                     AGC_JOB_AGS_INITIALIZATION_LM_STATE, &o);
+    agc_status_t    st = align_integ(&ip, ALIGN_LEMPREC, align_loadtime(), AGC_JOB_AGS_INITIALIZATION_LM_STATE, &o);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -275,8 +263,7 @@ agc_status_t agc_job_ags_initialization_csm_state(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_integ_out_t o;
-    agc_status_t    st = align_integ(&ip, ALIGN_CSMPREC, ags_tat,
-                                     AGC_JOB_AGS_INITIALIZATION_CSM_STATE, &o);
+    agc_status_t    st = align_integ(&ip, ALIGN_CSMPREC, ags_tat, AGC_JOB_AGS_INITIALIZATION_CSM_STATE, &o);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -316,11 +303,7 @@ static agc_status_t ags_end(const agc_job_ctx_t *ctx)
 {
     agc_flag_clear(AGC_FLAG_NODOFLAG);
 
-    return (align_flash(
-                ctx, AGC_DSKY_GOMARK3, VN_AGS_DONE,
-                AGC_JOB_AGS_INITIALIZATION_END,
-                AGC_JOB_AGS_INITIALIZATION_END,
-                AGC_JOB_AGS_INITIALIZATION_END));
+    return (align_flash(ctx, AGC_DSKY_GOMARK3, VN_AGS_DONE, AGC_JOB_AGS_INITIALIZATION_END, AGC_JOB_AGS_INITIALIZATION_END, AGC_JOB_AGS_INITIALIZATION_END));
 }
 
 /*
@@ -337,8 +320,7 @@ agc_status_t agc_job_ags_initialization_zero_imu(agc_job_ctx_t *ctx)
 
     if (agc_erase_imucadr() != 0)
     {
-        return (agc_svc_delayjob(DT_RETRY,
-                                 AGC_JOB_AGS_INITIALIZATION_ZERO_IMU));
+        return (agc_svc_delayjob(DT_RETRY, AGC_JOB_AGS_INITIALIZATION_ZERO_IMU));
     }
 
     agc_status_t st = agc_imu_zero(); /* IMUZERO  */
@@ -350,8 +332,7 @@ agc_status_t agc_job_ags_initialization_zero_imu(agc_job_ctx_t *ctx)
 
     agc_imu_stall_result_t r = AGC_IMU_STALL_BAD;
 
-    st = agc_imu_stall_dev(AGC_IMU_DEV_IMU,
-                           AGC_JOB_AGS_INITIALIZATION_IMU_ZEROED, &r);
+    st = agc_imu_stall_dev(AGC_IMU_DEV_IMU, AGC_JOB_AGS_INITIALIZATION_IMU_ZEROED, &r);
 
     if ((st != AGC_STATUS_OK) || (r == AGC_IMU_STALL_SLEEPING))
     {
@@ -387,8 +368,7 @@ agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(agc_imu_stall_outcome(AGC_IMU_DEV_IMU) !=
-                    AGC_IMU_STALL_SLEEPING))
+    if (!AGC_ASSERT(agc_imu_stall_outcome(AGC_IMU_DEV_IMU) != AGC_IMU_STALL_SLEEPING))
     {
         return (AGC_STATUS_BAD_ARG);
     }

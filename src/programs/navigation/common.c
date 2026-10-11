@@ -167,7 +167,7 @@ void agc_erase_set_vhfcnt(agc_sp_t v)
  * (time DP, CDUY, CDUS, CDUZ, CDUT, CDUX), raw words; word 0 = -1 (77776)
  * marks a buffer empty. SXTMARK fills MRKBUF1 (and moves it to MRKBUF2
  * for R21); R22, P76 and the verbs read and clear them.                */
-#define RZ_MRKBUF_WORDS 7 /* words per buffer */
+#define RZ_MRKBUF_WORDS 7                   /* words per buffer */
 static uint16_t mrkbuf[2][RZ_MRKBUF_WORDS]; /* MRKBUF1, MRKBUF2 */
 
 /**********************************************************************
@@ -186,8 +186,7 @@ static uint16_t mrkbuf[2][RZ_MRKBUF_WORDS]; /* MRKBUF1, MRKBUF2 */
  **********************************************************************/
 uint16_t agc_erase_mrkbuf(int buf, int index)
 {
-    if (!AGC_ASSERT(buf == 1 || buf == 2) ||
-        !AGC_ASSERT(index >= 0 && index < RZ_MRKBUF_WORDS))
+    if (!AGC_ASSERT(buf == 1 || buf == 2) || !AGC_ASSERT(index >= 0 && index < RZ_MRKBUF_WORDS))
     {
         return (0U);
     }
@@ -210,8 +209,7 @@ uint16_t agc_erase_mrkbuf(int buf, int index)
  **********************************************************************/
 void agc_erase_set_mrkbuf(int buf, int index, uint16_t v)
 {
-    if (!AGC_ASSERT(buf == 1 || buf == 2) ||
-        !AGC_ASSERT(index >= 0 && index < RZ_MRKBUF_WORDS))
+    if (!AGC_ASSERT(buf == 1 || buf == 2) || !AGC_ASSERT(index >= 0 && index < RZ_MRKBUF_WORDS))
     {
         return;
     }
@@ -256,8 +254,7 @@ void agc_erase_set_mrkbuf2(int index, agc_sp_t v)
         return;
     }
 
-    uint16_t w =
-        (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v); /* 1s compl. */
+    uint16_t w = (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v); /* 1s compl. */
 
     agc_erase_set_mrkbuf(2, index, w);
 }
@@ -267,9 +264,9 @@ void agc_erase_set_mrkbuf2(int index, agc_sp_t v)
  * RSTACK (LM, R04/R77 nouns 66, 67, 78): four DP radar samples, m or
  * m/cs at the radar scale. Owned here so the noun tables (this layer)
  * need not reach up into src/lm/radar; the radar code uses the accessors. */
-#define RZ_TANG_WORDS   2 /* TANG, TANG +1 */
-#define RZ_RSTACK_WORDS 4 /* four samples */
-static agc_sp_t tang[RZ_TANG_WORDS]; /* TANG, CDU words, unscaled */
+#define RZ_TANG_WORDS   2                /* TANG, TANG +1 */
+#define RZ_RSTACK_WORDS 4                /* four samples */
+static agc_sp_t tang[RZ_TANG_WORDS];     /* TANG, CDU words, unscaled */
 static agc_dp_t rstack[RZ_RSTACK_WORDS]; /* RSTACK, radar scale */
 
 /**********************************************************************
@@ -310,8 +307,7 @@ agc_sp_t agc_erase_tang(int index)
  **********************************************************************/
 void agc_erase_set_tang(int index, agc_sp_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index < RZ_TANG_WORDS) ||
-        !AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    if (!AGC_ASSERT(index >= 0 && index < RZ_TANG_WORDS) || !AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
         return;
     }
@@ -357,8 +353,7 @@ agc_dp_t agc_erase_rstack(int index)
  **********************************************************************/
 void agc_erase_set_rstack(int index, agc_dp_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index < RZ_RSTACK_WORDS) ||
-        !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(index >= 0 && index < RZ_RSTACK_WORDS) || !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
         return;
     }
@@ -370,8 +365,8 @@ void agc_erase_set_rstack(int index, agc_dp_t v)
  * the CM R63 results CPHIX (noun 96, X axis) and PRAXIS (noun 95,
  * preferred axis), CDU words. Owned here, with the noun tables, so this
  * layer does not reach up into src/csm/navigation.                     */
-static uint16_t landmark; /* LANDMARK code */
-static uint16_t horizon; /* HORIZON word */
+static uint16_t landmark;         /* LANDMARK code */
+static uint16_t horizon;          /* HORIZON word */
 static uint16_t trk_angles[2][3]; /* [0] CPHIX, [1] PRAXIS               */
 
 /**********************************************************************
@@ -412,8 +407,7 @@ void agc_erase_set_landmark(agc_sp_t v)
         return;
     }
 
-    landmark =
-        (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v); /* 1s compl. */
+    landmark = (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v); /* 1s compl. */
 }
 
 /**********************************************************************
@@ -683,8 +677,7 @@ void rz_vflag_set(rz_vflag_t f, bool on)
  **********************************************************************/
 bool rz_moonthis(void)
 {
-    agc_flag_id_t f =
-        rz_is_csm() ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG; /* MOONTHIS */
+    agc_flag_id_t f = rz_is_csm() ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG; /* MOONTHIS */
 
     if (!AGC_ASSERT(f != 0U))
     {
@@ -813,7 +806,7 @@ agc_dp_t rz_norm(agc_dp_t a, int *xreg)
         return (0);
     }
 
-    int      n = 0; /* left shifts */
+    int      n = 0;                  /* left shifts */
     agc_dp_t r = agc_dp_norm(a, &n); /* normalized, 2^(S-N) */
 
     if (!AGC_ASSERT(n >= 0 && n <= AGC_DP_BITS))
@@ -976,8 +969,7 @@ agc_vec_t rz_vshift(agc_interp_t *ip, agc_vec_t v, int k)
  *
  * RETURNS: agc_vec_t -- V at the body scale
  **********************************************************************/
-agc_vec_t agc_rendz_vec_to_body(agc_interp_t *ip, const agc_rendz_t *rz,
-                                agc_vec_t v)
+agc_vec_t agc_rendz_vec_to_body(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t v)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
@@ -1117,7 +1109,7 @@ agc_status_t agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg)
  **********************************************************************/
 void rz_avflag(bool this_active)
 {
-    bool csm       = rz_is_csm(); /* CM build */
+    bool csm       = rz_is_csm();                      /* CM build */
     bool lm_active = csm ? !this_active : this_active; /* AVFLAG */
 
     rz_flag_put(AGC_FLAG_AVFLAG, lm_active);
@@ -1236,8 +1228,7 @@ void rz_store_passive(agc_rendz_t *rz, agc_vec_t r, agc_vec_t v)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the integration status (INTSTALL sleep)
  **********************************************************************/
-agc_status_t rz_precset(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t tdec1,
-                        agc_job_id_t resume)
+agc_status_t rz_precset(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t tdec1, agc_job_id_t resume)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(tdec1 >= 0))
     {
@@ -1245,9 +1236,9 @@ agc_status_t rz_precset(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t tdec1,
     }
 
     bool            lm_active = agc_flag_test(AGC_FLAG_AVFLAG); /* AVFLAG */
-    agc_integ_out_t o; /* integration result */
+    agc_integ_out_t o;                                          /* integration result */
 
-    rz->tdec2 = tdec1; /* TDEC2   */
+    rz->tdec2       = tdec1;                                       /* TDEC2   */
     agc_status_t st = rz_integ(ip, RZ_LEMPREC, tdec1, resume, &o); /* LEMPREC */
 
     if (st != AGC_STATUS_OK)
@@ -1310,25 +1301,22 @@ agc_status_t rz_precset(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t tdec1,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the integration status
  **********************************************************************/
-agc_status_t rz_intint(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r,
-                       agc_vec_t v, agc_dp_t t1, agc_dp_t t2, bool conic,
-                       agc_job_id_t resume, agc_vec_t *ratt, agc_vec_t *vatt)
+agc_status_t rz_intint(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_dp_t t1, agc_dp_t t2, bool conic, agc_job_id_t resume, agc_vec_t *ratt, agc_vec_t *vatt)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
-        !AGC_ASSERT(ratt != NULL && vatt != NULL))
+    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(ratt != NULL && vatt != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     rz_integrvs_in_t in; /* INTEGRVS inputs */
 
-    in.conic = conic;
-    in.tdec1 = t2;
-    in.moon  = agc_flag_test(AGC_FLAG_CMOONFLG);
-    in.tet   = t1;
-    in.rcv   = agc_rendz_vec_to_body(ip, rz, r);
-    in.vcv   = agc_rendz_vec_to_body(ip, rz, v);
-    agc_integ_out_t o; /* integration result */
+    in.conic           = conic;
+    in.tdec1           = t2;
+    in.moon            = agc_flag_test(AGC_FLAG_CMOONFLG);
+    in.tet             = t1;
+    in.rcv             = agc_rendz_vec_to_body(ip, rz, r);
+    in.vcv             = agc_rendz_vec_to_body(ip, rz, v);
+    agc_integ_out_t o;                                     /* integration result */
     agc_status_t    st = rz_integrvs(ip, &in, resume, &o); /* INTEGRVS */
 
     if (st == AGC_STATUS_OK)
@@ -1361,9 +1349,7 @@ agc_status_t rz_intint(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the TIMETHET status
  **********************************************************************/
-agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz,
-                            agc_vec_t r, agc_vec_t v, agc_dp_t snth,
-                            agc_dp_t csth, bool rvsw, agc_conic_time_out_t *out)
+agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_dp_t snth, agc_dp_t csth, bool rvsw, agc_conic_time_out_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(out != NULL))
     {
@@ -1405,10 +1391,7 @@ agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the APSIDES status
  **********************************************************************/
-agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip,
-                                          const agc_rendz_t *rz,
-                                          agc_vec_t r, agc_vec_t v,
-                                          agc_rendz_periapo_t *out)
+agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(out != NULL))
     {
@@ -1439,9 +1422,7 @@ agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the APSIDES status
  **********************************************************************/
-agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz,
-                               agc_vec_t rvec, agc_vec_t vvec,
-                               agc_rendz_periapo_t *out)
+agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t rvec, agc_vec_t vvec, agc_rendz_periapo_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(out != NULL))
     {
@@ -1459,7 +1440,7 @@ agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz,
     }
 
     agc_apsides_out_t aps; /* APSIDES results */
-    agc_status_t      st; /* APSIDES */
+    agc_status_t      st;  /* APSIDES */
 
     st = agc_conic_apsides(ip, rvec, vvec, body, &aps);
 
@@ -1468,8 +1449,8 @@ agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz,
         return (st);
     }
 
-    out->rapo  = aps.rapo;  /* 2D */
-    out->rperi = aps.rperi; /* 6D */
+    out->rapo  = aps.rapo;                                /* 2D */
+    out->rperi = aps.rperi;                               /* 6D */
     out->ecc   = aps.ecc;
     out->r1    = aps.r1;
     out->p     = aps.p;
@@ -1529,8 +1510,7 @@ agc_status_t agc_rendz_los_and_normal(agc_interp_t *ip, agc_rendz_t *rz)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL
  *          pointer
  **********************************************************************/
-agc_status_t agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz,
-                             agc_mat_t *m)
+agc_status_t agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(m != NULL))
     {
@@ -1563,9 +1543,7 @@ agc_status_t agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit,
-                               agc_vec_t vinit, agc_vec_t dv,
-                               agc_vec_t *delvlvc)
+agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit, agc_vec_t vinit, agc_vec_t dv, agc_vec_t *delvlvc)
 {
     if (!AGC_ASSERT(ip != NULL && delvlvc != NULL))
     {
@@ -1606,8 +1584,7 @@ agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv,
-                               const agc_mat_t *refsmmat, agc_dp_t *mga)
+agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, const agc_mat_t *refsmmat, agc_dp_t *mga)
 {
     if (!AGC_ASSERT(ip != NULL && refsmmat != NULL) || !AGC_ASSERT(mga != NULL))
     {
@@ -1616,9 +1593,9 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv,
 
     /* HALFREV 2DEC 1 B-1 */
     static const agc_dp_t halfrev = AGC_DP_HALF; /* HALFREV, rev 2^0 */
-    agc_dp_t              s; /* sin, 2^1 */
+    agc_dp_t              s;                     /* sin, 2^1 */
 
-    s = agc_dp_shl(ip, agc_vec_dot(ip, rz_unit(ip, dv), refsmmat->row[1]), 1);
+    s          = agc_dp_shl(ip, agc_vec_dot(ip, rz_unit(ip, dv), refsmmat->row[1]), 1);
     agc_dp_t a = agc_dp_asin(ip, s); /* MGA, rev 2^0 */
 
     if (a < 0)
@@ -1707,9 +1684,8 @@ void agc_erase_set_x789(agc_vec_t v)
  **********************************************************************/
 int rz_word_value(uint16_t w)
 {
-    uint16_t v = (uint16_t) (w & 077777u); /* 15 bits */
-    int      r =
-        ((v & 040000u) != 0u) ? -(int) (077777u - v) : (int) v; /* signed */
+    uint16_t v = (uint16_t) (w & 077777u);                               /* 15 bits */
+    int      r = ((v & 040000u) != 0u) ? -(int) (077777u - v) : (int) v; /* signed */
 
     if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
     {
@@ -1739,19 +1715,17 @@ int rz_word_value(uint16_t w)
  *          argument, else the status of the W, state, RECTIFY or INTWAKE
  *          step
  **********************************************************************/
-agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc,
-                        bool moonthis)
+agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc, bool moonthis)
 {
     if (!AGC_ASSERT(ip != NULL && inc != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_integ_ctx_t *ctx = agc_integ_shared_ctx(); /* integration erasables */
-    bool             csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* VEHUPFLG */
-    agc_vehicle_t    veh =
-        csm ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM; /* corrected */
-    agc_status_t st = agc_incorp_update_w(ip, inc, &ctx->w); /* W update */
+    agc_integ_ctx_t *ctx = agc_integ_shared_ctx();                 /* integration erasables */
+    bool             csm = agc_flag_test(AGC_FLAG_VEHUPFLG);       /* VEHUPFLG */
+    agc_vehicle_t    veh = csm ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM; /* corrected */
+    agc_status_t     st  = agc_incorp_update_w(ip, inc, &ctx->w);  /* W update */
 
     agc_phase_change(2, 04022); /* FAZC     */
 
@@ -1790,8 +1764,7 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc,
 
     if (st == AGC_STATUS_OK)
     {
-        st = csm ? agc_integ_atopcsm(ip, ctx, ctx->pbody) : /* MOVEA.. */
-             agc_integ_atoplem(ip, ctx, ctx->pbody);
+        st = csm ? agc_integ_atopcsm(ip, ctx, ctx->pbody) : agc_integ_atoplem(ip, ctx, ctx->pbody); /* MOVEA.. */
     }
 
     if (inc->dim9)
@@ -1828,32 +1801,29 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc,
  *   ustar     agc_vec_t *     I/O  USTAR, half unit; B0 out
  *   inc       agc_incorp_t *  O    BVECTOR, DELTAQ
  **********************************************************************/
-void rz_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um,
-                 agc_vec_t *ustar, agc_incorp_t *inc)
+void rz_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um, agc_vec_t *ustar, agc_incorp_t *inc)
 {
     if (!AGC_ASSERT(ip != NULL && ustar != NULL) || !AGC_ASSERT(inc != NULL))
     {
         return;
     }
 
-    agc_dp_t  absr = 0; /* |RCLP|, body scale */
+    agc_dp_t  absr = 0;                                   /* |RCLP|, body scale */
     agc_vec_t u    = agc_vec_unit(ip, rclp, &absr, NULL); /* 26D, 2^1 */
 
-    inc->bvector[0] =
-        agc_vec_unit(ip, agc_vec_cross(ip, *ustar, u), NULL, NULL);
+    inc->bvector[0] = agc_vec_unit(ip, agc_vec_cross(ip, *ustar, u), NULL, NULL);
     agc_phase_change(2, 04022); /* GRP2PC   */
-    *ustar = inc->bvector[0];
-    agc_dp_t a; /* rev 2^0 */
+    *ustar          = inc->bvector[0];
+    agc_dp_t a;                 /* rev 2^0 */
 
-    a = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, *ustar, um), 1));
-    int      x1 = 0; /* NORM index, -(left shifts) */
+    a           = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, *ustar, um), 1));
+    int      x1 = 0;                                               /* NORM index, -(left shifts) */
     agc_dp_t n  = rz_norm(agc_dp_sub(ip, a, AGC_DP_QUARTER), &x1); /* 2^(X1) */
-    agc_tp_t t; /* TP, scale set by SRR* */
+    agc_tp_t t;                                                    /* TP, scale set by SRR* */
 
     t = agc_dp_mul_tp(agc_dp_mul_trunc(n, RZ_PI_4), absr);
 
-    inc->deltaq =
-        agc_tp_round(ip, agc_tp_shift(ip, t, -(-3 - x1))); /* SRR* 0-3,1 */
+    inc->deltaq     = agc_tp_round(ip, agc_tp_shift(ip, t, -(-3 - x1))); /* SRR* 0-3,1 */
     inc->bvector[1] = agc_vec_zero();
     inc->bvector[2] = agc_vec_zero();
 }
@@ -1938,17 +1908,15 @@ static rz_integ_kind_t rz_resolve_kind(rz_integ_kind_t kind)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the integration status (INTSTALL sleep)
  **********************************************************************/
-agc_status_t rz_integ(agc_interp_t *ip, rz_integ_kind_t kind, agc_dp_t tdec1,
-                      agc_job_id_t resume, agc_integ_out_t *out)
+agc_status_t rz_integ(agc_interp_t *ip, rz_integ_kind_t kind, agc_dp_t tdec1, agc_job_id_t resume, agc_integ_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && out != NULL) ||
-        !AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT))
+    if (!AGC_ASSERT(ip != NULL && out != NULL) || !AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx(); /* integration erasables */
-    agc_status_t     st; /* integration status */
+    agc_status_t     st;                           /* integration status */
 
     switch (rz_resolve_kind(kind))
     {
@@ -1997,8 +1965,7 @@ agc_status_t rz_integ(agc_interp_t *ip, rz_integ_kind_t kind, agc_dp_t tdec1,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the integration status (INTSTALL sleep)
  **********************************************************************/
-agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
-                         agc_job_id_t resume, agc_integ_out_t *out)
+agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in, agc_job_id_t resume, agc_integ_out_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
     {
@@ -2046,8 +2013,7 @@ agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in,
  *   job       agc_job_id_t  I    restart job
  *   prio      int16_t       I    its priority
  **********************************************************************/
-void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job,
-                  int16_t prio)
+void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job, int16_t prio)
 {
     if (!AGC_ASSERT(job != AGC_JOB_NONE) || !AGC_ASSERT(prio > 0))
     {

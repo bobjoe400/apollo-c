@@ -82,13 +82,13 @@ agc_status_t pin_noun_load(void)
     switch (s->noun.data_id[0])
     {
         case AGC_DATA_SPECIFY_ADDR:
-            s->nntype = PIN_NNTYPE_MCTBS;
+            s->nntype   = PIN_NNTYPE_MCTBS;
             break;
         case AGC_DATA_SPECIFY_CHANNEL:
-            s->nntype = PIN_NNTYPE_CHAN;
+            s->nntype   = PIN_NNTYPE_CHAN;
             break;
         case AGC_DATA_INCREMENT_ADDR:
-            s->nntype = PIN_NNTYPE_AUGMENT;
+            s->nntype   = PIN_NNTYPE_AUGMENT;
             break;
         default:
             s->nntype   = PIN_NNTYPE_NORMAL;
@@ -217,8 +217,8 @@ agc_status_t pin_almcycle(void)
     }
 
     agc_dsky_falton();
-    s->reqret     = PIN_REQ_PASS0;   /* set for ENTPAS0        */
-    s->reqret_neg = false;
+    s->reqret       = PIN_REQ_PASS0;            /* set for ENTPAS0        */
+    s->reqret_neg   = false;
     agc_status_t st = pin_updatvb(s->verbsave); /* status so far */
 
     return ((st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st); /* if OK */
@@ -276,8 +276,7 @@ bool pin_comptest(int verb_comp)
 {
     const pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(verb_comp >= 0 && verb_comp <= 2) ||
-        !AGC_ASSERT(s->noun.ncomp >= 1u))
+    if (!AGC_ASSERT(verb_comp >= 0 && verb_comp <= 2) || !AGC_ASSERT(s->noun.ncomp >= 1u))
     {
         return (false);
     }
@@ -299,8 +298,7 @@ bool pin_dectest(void)
 {
     const pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(s->noun.no_load ? /* no load => dec */
-                    s->noun.dec_only : true))
+    if (!AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true)) /* no load => dec */
     {
         return (false);
     }
@@ -331,8 +329,7 @@ bool pin_nountest(void)
         return (false);
     }
 
-    if (!AGC_ASSERT(s->noun.no_load ? /* no load => dec */
-                    s->noun.dec_only : true))
+    if (!AGC_ASSERT(s->noun.no_load ? s->noun.dec_only : true)) /* no load => dec */
     {
         return (false);
     }
@@ -428,7 +425,7 @@ agc_status_t pin_usead(uint16_t ecadr)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t     keep = ecadr; /* ECADR to keep in NOUNCADR */
+    uint16_t     keep = ecadr;           /* ECADR to keep in NOUNCADR */
     agc_status_t st   = pin_noun_load(); /* status so far */
 
     s->nouncadr = keep; /* SETNCADR               */
@@ -477,7 +474,7 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
 
     if (s->verbreg != 5u)
     {
-        pin_set_dspcount(PIN_R3D1); /* VB not = 05: display CADR */
+        pin_set_dspcount(PIN_R3D1);                  /* VB not = 05: display CADR */
         agc_status_t st = pin_dspoctwo(s->nouncadr); /* status so far */
 
         if (st != AGC_STATUS_OK)
@@ -511,8 +508,7 @@ static agc_status_t pin_reqadd(void)
 
     s->clpass = PIN_CLPASS_NOBACK; /* set CLPASS for pass0 only */
 
-    if (!AGC_ASSERT(s->nntype == PIN_NNTYPE_MCTBS ||
-                    s->nntype == PIN_NNTYPE_CHAN))
+    if (!AGC_ASSERT(s->nntype == PIN_NNTYPE_MCTBS || s->nntype == PIN_NNTYPE_CHAN))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -583,7 +579,7 @@ agc_status_t pin_testnn(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s  = pin_st(); /* pinball erasables */
+    pin_state_t *s  = pin_st();        /* pinball erasables */
     agc_status_t st = pin_noun_load(); /* status so far */
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
@@ -597,10 +593,9 @@ agc_status_t pin_testnn(void)
             return (pin_verbfan());
         case PIN_NNTYPE_MCTBS:
         case PIN_NNTYPE_CHAN:
-            return (pin_reqadd()); /* specify machine CADR if - */
+            return (pin_reqadd());                                    /* specify machine CADR if - */
         case PIN_NNTYPE_AUGMENT:
-            s->nouncadr =
-                (uint16_t) ((s->nouncadr + 1u) & PIN_WORD); /* INCR NOUNCADR */
+            s->nouncadr = (uint16_t) ((s->nouncadr + 1u) & PIN_WORD); /* INCR NOUNCADR */
 
             return (pin_intmctbs(false));
         case PIN_NNTYPE_SPARE:
@@ -690,9 +685,9 @@ static agc_status_t pin_vbfandir(uint8_t verb)
         case 5:
             return (pin_dsp_octal(verb)); /* DSPA..DSPABC           */
         case 6:
-            return (pin_decdsp()); /* decimal display        */
+            return (pin_decdsp());        /* decimal display        */
         case 7:
-            return (pin_dspdpdec()); /* DP decimal display     */
+            return (pin_dspdpdec());      /* DP decimal display     */
         case 11:
         case 12:
         case 13:
@@ -720,27 +715,27 @@ static agc_status_t pin_vbfandir(uint8_t verb)
             case 23:
             case 24:
             case 25:
-                return (pin_load_verb(verb)); /* ALOAD..ABCLOAD         */
+                return (pin_load_verb(verb));                 /* ALOAD..ABCLOAD         */
             case 27:
-                return (pin_dspfmem()); /* fixed memory display   */
+                return (pin_dspfmem());                       /* fixed memory display   */
             case 30:
-                return (pin_vbrqexec()); /* request executive      */
+                return (pin_vbrqexec());                      /* request executive      */
             case 31:
-                return (pin_vbrqwait()); /* request waitlist       */
+                return (pin_vbrqwait());                      /* request waitlist       */
             case 32:
-                return (pin_vbproc_common(PIN_LS_DATAIN)); /* VBRESEQ        */
+                return (pin_vbproc_common(PIN_LS_DATAIN));    /* VBRESEQ        */
             case 33:
-                return (pin_vbproc_common(PIN_LS_PROCEED)); /* VBPROC         */
+                return (pin_vbproc_common(PIN_LS_PROCEED));   /* VBPROC         */
             case 34:
                 return (pin_vbproc_common(PIN_LS_TERMINATE)); /* VBTERM */
             case 35:
-                return (pin_vbtstlts()); /* test lights            */
+                return (pin_vbtstlts());                      /* test lights            */
             case 36:
-                return (agc_fresh_start_slap1()); /* SLAP1 fresh start      */
+                return (agc_fresh_start_slap1());             /* SLAP1 fresh start      */
             case 37:
-                return (pin_reqmm()); /* MMCHANG: TC REQMM      */
+                return (pin_reqmm());                         /* MMCHANG: TC REQMM      */
             default:
-                return (pin_dspalarm()); /* spare                  */
+                return (pin_dspalarm());                      /* spare                  */
         }
     }
 
@@ -776,9 +771,7 @@ agc_status_t pin_verbfan(void)
     {
         agc_status_t st = agc_dsky_releasedsp(); /* release display syst   */
 
-        return ((st == AGC_STATUS_OK) ? /* if OK */
-                agc_extverb((int) s->verbreg, (int) s->nounreg) :
-                st);
+        return ((st == AGC_STATUS_OK) ? agc_extverb((int) s->verbreg, (int) s->nounreg) : st); /* if OK */
     }
 
     return (pin_vbfandir(s->verbreg));

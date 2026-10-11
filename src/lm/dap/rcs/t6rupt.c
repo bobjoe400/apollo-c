@@ -154,15 +154,12 @@ agc_status_t lm_dap_write_next(agc_sp_t index)
 {
     const lm_dap_t *d = lm_dap_state();
 
-    if (!AGC_ASSERT(index == T6_IDX_P || index == T6_IDX_U ||
-                    index == T6_IDX_V))
+    if (!AGC_ASSERT(index == T6_IDX_P || index == T6_IDX_U || index == T6_IDX_V))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t jets = (index == T6_IDX_P) ?
-                    d->nextp :
-                    ((index == T6_IDX_U) ? d->nextu : d->nextv);
+    uint16_t jets = (index == T6_IDX_P) ? d->nextp : ((index == T6_IDX_U) ? d->nextu : d->nextv);
 
     return (lm_dap_write(index, jets));
 }
@@ -193,11 +190,11 @@ agc_status_t lm_dap_jtlst(void)
 
     if ((int32_t) time6 - t > 0)
     { /* new first entry */
-        d->t6furtha[0] = d->t6next[0];
-        d->t6furtha[1] = d->t6next[1];
-        d->t6next[0]   = (agc_sp_t) (time6 - t);
-        d->t6next[1]   = d->nxt6adr;
-        d->nxt6adr     = idx;
+        d->t6furtha[0]  = d->t6next[0];
+        d->t6furtha[1]  = d->t6next[1];
+        d->t6next[0]    = (agc_sp_t) (time6 - t);
+        d->t6next[1]    = d->nxt6adr;
+        d->nxt6adr      = idx;
         agc_status_t st = set_time6(t);
 
         agc_chan_or(013, T6_ENABLE); /* TURNON         */
@@ -246,11 +243,11 @@ agc_status_t lm_dap_jtlst(void)
 static agc_status_t t6job(lm_dap_t *d)
 {
     agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */
-    agc_sp_t head = d->t6next[0];                    /* DXCH T6NEXT    */
-    agc_sp_t done = d->nxt6adr;                      /* LXCH NXT6ADR   */
+    agc_sp_t head = d->t6next[0];    /* DXCH T6NEXT    */
+    agc_sp_t done = d->nxt6adr;      /* LXCH NXT6ADR   */
 
     d->nxt6adr     = d->t6next[1];
-    d->t6next[0]   = d->t6furtha[0];    /* DXCH T6FURTHA  */
+    d->t6next[0]   = d->t6furtha[0]; /* DXCH T6FURTHA  */
     d->t6next[1]   = d->t6furtha[1];
     d->t6furtha[0] = LM_POSMAX;
     d->t6furtha[1] = 0;
@@ -360,14 +357,12 @@ void agc_lm_dap_time6_count(uint16_t counts)
 {
     uint16_t raw = agc_rupt_time(6);
 
-    if ((agc_chan_read(013) & T6_ENABLE) == 0u || raw > LM_T6_POSMAX ||
-        counts == 0u)
+    if ((agc_chan_read(013) & T6_ENABLE) == 0u || raw > LM_T6_POSMAX || counts == 0u)
     {
         return; /* idle, or rupt already due */
     }
 
-    uint16_t next =
-        (counts > raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts);
+    uint16_t next = (counts > raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts);
 
     agc_rupt_set_time(6, next);
 

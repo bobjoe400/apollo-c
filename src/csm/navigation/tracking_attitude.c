@@ -90,7 +90,7 @@ typedef struct ta_csm
     agc_vec_t    vlem;        /* DCDU (temp): LM velocity, m/cs 2^7       */
     agc_dp_t     abslos;      /* P21TIME (temp): |LOS|, m 2^29            */
     uint16_t     savedcdu[3]; /* SAVEDCDU: desired CDUs (THETAD)          */
-    agc_sp_t     r61cntr; /* R61CNTR: + passes to skip, - KALCMANU, unscaled */
+    agc_sp_t     r61cntr;     /* R61CNTR: + passes to skip, - KALCMANU, unscaled */
     agc_job_id_t genret;      /* GENRET                                   */
 } ta_csm_t;
 
@@ -156,10 +156,9 @@ void agc_erase_set_r61cntr(agc_sp_t v)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration or VECPOINT
  *          status
  **********************************************************************/
-static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
-                               agc_job_id_t resume)
+static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t, agc_job_id_t resume)
 {
-    agc_integ_out_t o; /* integration result */
+    agc_integ_out_t o;                                             /* integration result */
     agc_status_t    st = rz_integ(ip, RZ_CSMCONIC, t, resume, &o); /* CSM */
 
     if (st != AGC_STATUS_OK)
@@ -167,7 +166,7 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
         return (st);
     }
 
-    ta.savepos = o.ratt; /* HOLDATT  */
+    ta.savepos = o.ratt;                                   /* HOLDATT  */
     ta.savevel = o.vatt;
     st         = rz_integ(ip, RZ_LEMCONIC, t, resume, &o); /* CALCLEM  */
 
@@ -176,14 +175,13 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
         return (st);
     }
 
-    ta.vlem    = o.vatt;
-    ta.savepos =
-        agc_vec_unit(ip, agc_vec_sub(ip, o.ratt, ta.savepos), &ta.abslos, NULL);
+    ta.vlem            = o.vatt;
+    ta.savepos         = agc_vec_unit(ip, agc_vec_sub(ip, o.ratt, ta.savepos), &ta.abslos, NULL);
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
-    agc_vec_t pointvsm; /* SM, 2^1 */
+    agc_vec_t pointvsm;                        /* SM, 2^1 */
 
-    pointvsm = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, ta.savepos), 1);
-    agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0); /* +X, 2^1 */
+    pointvsm        = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, ta.savepos), 1);
+    agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0);     /* +X, 2^1 */
     agc_vec_t prf   = agc_vec_make(TA_PRF_X, 0, TA_PRF_Z); /* PRFUNIT, 2^1 */
 
     st = agc_imu_vecpoint(ip, pointvsm, unitx, rz_tracking_angles(false));
@@ -195,7 +193,7 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t,
 
     bool prftrk = agc_flag_test(AGC_FLAG_PRFTRKAT); /* PRFTRKAT */
 
-    agc_vec_t       axis = unitx; /* SCAXIS: +X, 2^1 */
+    agc_vec_t       axis = unitx;                     /* SCAXIS: +X, 2^1 */
     const uint16_t *cdus = rz_tracking_angles(false); /* CPHIX      */
 
     if (prftrk)
@@ -274,31 +272,28 @@ static bool ta_gross(void)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the SMCDURES status
  **********************************************************************/
-static agc_status_t ta_rates(agc_interp_t *ip, agc_vec_t *delcdu,
-                             agc_vec_t *wbody)
+static agc_status_t ta_rates(agc_interp_t *ip, agc_vec_t *delcdu, agc_vec_t *wbody)
 {
-    agc_dp_t  absdv = 0; /* |DV|, m/cs 2^7 */
-    agc_vec_t u     = agc_vec_neg( /* -UNIT DV, 2^1 */
-        agc_vec_unit(ip, agc_vec_sub(ip, ta.vlem, ta.savevel), &absdv, NULL));
-    agc_vec_t cross; /* 2^6 */
+    agc_dp_t  absdv = 0;                                                                                 /* |DV|, m/cs 2^7 */
+    agc_vec_t u     = agc_vec_neg(agc_vec_unit(ip, agc_vec_sub(ip, ta.vlem, ta.savevel), &absdv, NULL)); /* -UNIT DV, 2^1 */
+    agc_vec_t cross;                                                                                     /* 2^6 */
 
-    cross = agc_vec_scale(ip, agc_vec_cross(ip, u, ta.savepos), TA_RVCS_RDS);
-    int      x1  = 0; /* NORM index, -(left shifts) */
-    int      s1  = 0; /* NORM index of |DV| */
+    cross        = agc_vec_scale(ip, agc_vec_cross(ip, u, ta.savepos), TA_RVCS_RDS);
+    int      x1  = 0;                       /* NORM index, -(left shifts) */
+    int      s1  = 0;                       /* NORM index of |DV| */
     agc_dp_t den = rz_norm(ta.abslos, &x1); /* 2^(29+X1) */
-    agc_dp_t num = rz_norm(absdv, &s1); /* 2^(7+S1) */
+    agc_dp_t num = rz_norm(absdv, &s1);     /* 2^(7+S1) */
 
-    x1 -= s1; /* XSU,1 S1 */
+    x1 -= s1;      /* XSU,1 S1 */
     agc_dp_t quot; /* |DV|/|LOS|, scale by X1 */
 
-    quot = agc_dp_div(ip, agc_dp_shr(num, 1), den);
-    agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
-    agc_vec_t om       = agc_vec_shl( /* OMEGA, SM, scale by X1 */
-        ip, agc_mat_vec(ip, &refsmmat, agc_vec_scale(ip, cross, quot)), 1);
-    agc_cdutrig_t trig; /* CDUTRIG sines / cosines */
+    quot                   = agc_dp_div(ip, agc_dp_shr(num, 1), den);
+    agc_mat_t     refsmmat = agc_erase_refsmmat();                                                           /* REFSMMAT, 2^1 */
+    agc_vec_t     om       = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, agc_vec_scale(ip, cross, quot)), 1); /* OMEGA, SM, scale by X1 */
+    agc_cdutrig_t trig;                                                                                      /* CDUTRIG sines / cosines */
 
     agc_guid_cdutrig(&trig);
-    agc_vec_t    dcdu = agc_vec_zero(); /* SMCDURES result, CDU scale */
+    agc_vec_t    dcdu = agc_vec_zero();              /* SMCDURES result, CDU scale */
     agc_status_t st   = agc_guid_smcdures(ip, &trig, /* SMCDURES */
                                           agc_vec_scale(ip, om, TA_TENTH),
                                           &dcdu);
@@ -315,7 +310,7 @@ static agc_status_t ta_rates(agc_interp_t *ip, agc_vec_t *delcdu,
     m.row[0] = agc_vec_make(AGC_DP_HALF, 0, 0); /* MBDYTCTL */
     m.row[1] = agc_vec_make(0, TA_COS725, agc_dp_neg(TA_SIN725));
     m.row[2] = agc_vec_make(0, TA_SIN725, TA_COS725);
-    agc_vec_t w; /* control axes, scale by X1 */
+    agc_vec_t w;                                /* control axes, scale by X1 */
 
     w = agc_vec_scale(ip, agc_mat_vec(ip, &m, om), TA_POINT8);
 
@@ -376,10 +371,9 @@ static void ta_feed_dap(agc_vec_t delcdu, agc_vec_t wbody)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration or CRS61.2
  *          status
  **********************************************************************/
-static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
-                                       ta_result_t *res)
+static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta_result_t *res)
 {
-    *res = TA_FED_DAP;
+    *res            = TA_FED_DAP;
     agc_status_t st = ta_desired(ip, agc_rtb_loadtime(), resume); /* STORT    */
 
     if (st != AGC_STATUS_OK)
@@ -387,9 +381,8 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
         return (st);
     }
 
-    agc_chan_and(AGC_CHAN_DSALMOUT,
-                 (uint16_t) (077777u & ~TA_UPACTY));      /* UPACTOFF */
-    bool stick = agc_flag_test(AGC_FLAG_STIKFLAG); /* on the stick */
+    agc_chan_and(AGC_CHAN_DSALMOUT, (uint16_t) (077777u & ~TA_UPACTY)); /* UPACTOFF */
+    bool stick = agc_flag_test(AGC_FLAG_STIKFLAG);                      /* on the stick */
 
     if (ta_gross())
     { /* STKTEST  */
@@ -408,7 +401,7 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
     uint16_t c31 = agc_chan_read(AGC_CHAN_CHAN31); /* channel 31 */
 
     if (((c31 ^ TA_CH31_AUTO) & TA_FURST3) != 0U || stick)
-    {                         /* AUTOCK   */
+    { /* AUTOCK   */
         return (AGC_STATUS_OK); /* ASET     */
     }
 
@@ -443,8 +436,7 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx,
-                                             agc_job_id_t         ret_job)
+agc_status_t agc_rendz_tracking_attitude_csm(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE))
     {
@@ -493,9 +485,8 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    ta_result_t  res = TA_FED_DAP; /* CRS61.1 result */
-    agc_status_t st  = ta_point_at_target(&ip, AGC_JOB_TRACKING_ATTITUDE_CSM,
-                                          &res); /* CRS61.1 */
+    ta_result_t  res = TA_FED_DAP;                                                   /* CRS61.1 result */
+    agc_status_t st  = ta_point_at_target(&ip, AGC_JOB_TRACKING_ATTITUDE_CSM, &res); /* CRS61.1 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -617,9 +608,7 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_option(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 4U, 6U, AGC_JOB_RENDZ_ENDEXT,
-                     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_CHOSEN,
-                     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 4U, 6U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_CHOSEN, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION));
 }
 
 /**********************************************************************
@@ -684,9 +673,7 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_compute(agc_job_ctx_t *ctx)
         return (st); /* BUSY: asleep in INTSTALL  */
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 18U, AGC_JOB_RENDZ_ENDEXT,
-                     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_MANEUVER,
-                     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 18U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_MANEUVER, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE));
 }
 
 /**********************************************************************

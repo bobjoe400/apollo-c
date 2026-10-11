@@ -61,29 +61,30 @@
 
 /* ---- constants (SERVICER207 p.836 / SERVICER p.881, CONTROLLED_CONSTANTS) */
 /* -MUDT(E) 2DEC* -7.9720645 E+12 B-44*: -mu(earth) * 200 cs, m^3/cs.      */
-static const agc_dp_t MUDT_E =
-    -(agc_dp_t) 121644051; /* round(7.9720645e12 / 2^44 * 2^28) */
+static const agc_dp_t MUDT_E = -(agc_dp_t) 121644051; /* round(7.9720645e12 / 2^44 * 2^28) */
+
 /* -MUDT(M) / -MUDT1 2DEC* -9.805556 E+10 B-44*: -mu(moon) * 200 cs.       */
-static const agc_dp_t MUDT_M =
-    -(agc_dp_t) 1496209; /* round(9.805556e10 / 2^44 * 2^28) */
+static const agc_dp_t MUDT_M = -(agc_dp_t) 1496209; /* round(9.805556e10 / 2^44 * 2^28) */
+
 /* DP1/20 2DEC 0.05                                                        */
 static const agc_dp_t DP1_20 = (agc_dp_t) 13421773; /* 0.05 * 2^28 */
+
 /* RESQ: earth radius squared 40.6809913 E12 m^2; CM B-59, LM B-58.        */
-static const agc_dp_t RESQ_CM =
-    (agc_dp_t) 18944; /* 4.06809913e13 / 2^59 * 2^28 */
-static const agc_dp_t RESQ_LM =
-    (agc_dp_t) 37887; /* 4.06809913e13 / 2^58 * 2^28 */
+static const agc_dp_t RESQ_CM = (agc_dp_t) 18944; /* 4.06809913e13 / 2^59 * 2^28 */
+static const agc_dp_t RESQ_LM = (agc_dp_t) 37887; /* 4.06809913e13 / 2^58 * 2^28 */
+
 /* 20J, 2J (J = 1.5 J2 = 1.62346005e-3): CM 2DEC* ... B1* (stored as twice
  * the value: rope 37,3464 = 02047 36332, 37,3466 = 00152 14511), LM B0.   */
-static const agc_dp_t J20_CM =
-    (agc_dp_t) 17431770;                           /* 3.24692010e-2*2 * 2^28 */
-static const agc_dp_t J2_CM  = (agc_dp_t) 1743177; /* 3.24692010e-3*2 * 2^28 */
-static const agc_dp_t J20_LM = (agc_dp_t) 8715885; /* 3.24692010e-2 * 2^28 */
-static const agc_dp_t J2_LM  = (agc_dp_t) 871588;  /* 3.24692010e-3 * 2^28 */
+static const agc_dp_t J20_CM = (agc_dp_t) 17431770; /* 3.24692010e-2*2 * 2^28 */
+static const agc_dp_t J2_CM  = (agc_dp_t) 1743177;  /* 3.24692010e-3*2 * 2^28 */
+static const agc_dp_t J20_LM = (agc_dp_t) 8715885;  /* 3.24692010e-2 * 2^28 */
+static const agc_dp_t J2_LM  = (agc_dp_t) 871588;   /* 3.24692010e-3 * 2^28 */
+
 /* KPIP1: PIPA pulse to m/cs 2^7. CM 2DEC 0.074880 (1 pulse = 5.85 cm/s);
  * LM 2DEC .0128 (1 pulse = 1 cm/s, applied after the half-unit VXM).      */
 static const agc_dp_t KPIP1_CM = (agc_dp_t) 20100447; /* 0.074880 * 2^28 */
 static const agc_dp_t KPIP1_LM = (agc_dp_t) 3435974;  /* 0.0128 * 2^28 */
+
 /* 2SEC(22) 2DEC 200 B-22: the CM guidance period, cs 2^22.               */
 static const agc_dp_t TWOSEC_22 = (agc_dp_t) (200 * 64); /* cs 2^22 */
 
@@ -126,11 +127,10 @@ agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
 
     if (set_piptime1)
     {
-        a->piptime1 =
-            (agc_dp_t) agc_time_now_cs(); /* DCA TIME2 DXCH PIPTIME1 */
+        a->piptime1 = (agc_dp_t) agc_time_now_cs(); /* DCA TIME2 DXCH PIPTIME1 */
     }
 
-    a->pipage = 0;         /* reading in progress     */
+    a->pipage = 0;        /* reading in progress     */
     agc_pipasr_noscale(); /* PIPASR +3 (core)        */
     agc_relint();
 
@@ -172,8 +172,7 @@ agc_status_t agc_guid_rereadac_resume(agc_avg_g_t *a)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((a->pipage > 0) ? AGC_STATUS_NOT_FOUND : /* positive: READACCS */
-            AGC_STATUS_OK);                        /* +0: PIPSDONE      */
+    return ((a->pipage > 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK); /* positive: READACCS; +0: PIPSDONE */
 }
 
 /**********************************************************************
@@ -199,12 +198,11 @@ agc_status_t agc_guid_rereadac_resume(agc_avg_g_t *a)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (|R| = 0)
  **********************************************************************/
-static agc_status_t calcgrav_oblateness(agc_interp_t *ip, bool cm,
-                                        agc_avg_g_t *a)
+static agc_status_t calcgrav_oblateness(agc_interp_t *ip, bool cm, agc_avg_g_t *a)
 {
     const agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF); /* UNITZ, 2^1 */
-    agc_dp_t        s;   /* sin(latitude), scale 2^1                */
-    agc_vec_t       t2;  /* polar term of GOBL, scale 2^1           */
+    agc_dp_t        s;                                       /* sin(latitude), scale 2^1                */
+    agc_vec_t       t2;                                      /* polar term of GOBL, scale 2^1           */
 
     if (!AGC_ASSERT(ip != NULL && a != NULL) || !AGC_ASSERT(a->rmagsq > 0))
     {
@@ -220,19 +218,12 @@ static agc_status_t calcgrav_oblateness(agc_interp_t *ip, bool cm,
         s = agc_dp_shl(ip, agc_vec_dot(ip, unitz, a->unitr), 1); /* SL1 */
     }
 
-    agc_dp_t fact = /* 0.05 - s^2, scale 2^0 */
-                    agc_dp_sub(ip, DP1_20, agc_dp_sq(ip, s)); /* DSQ BDSU DP1/20 */
+    agc_dp_t fact = agc_dp_sub(ip, DP1_20, agc_dp_sq(ip, s)); /* 0.05 - s^2, scale 2^0; DSQ BDSU DP1/20 */
 
-    a->resq_rsq = agc_dp_div(ip, cm ? RESQ_CM : RESQ_LM, /* CM B-59, LM B-58 */
-                             a->rmagsq);                 /* DDV 34D -> 32D  */
-    agc_dp_t m = /* equatorial coefficient, scale of GOBL */
-                 agc_dp_mul_trunc(agc_dp_mul_trunc(a->resq_rsq,
-                                                   cm ? J20_CM : J20_LM), /* 20J */
-                                  fact);                 /* DMP DMP        */
-    agc_vec_t t1 = agc_vec_scale(ip, a->unitr, m); /* VXSC UNITR, 2^1 */
-    agc_dp_t  n  = /* polar coefficient, scale of GOBL */
-                   agc_dp_mul_trunc(agc_dp_mul_trunc(s, cm ? J2_CM : J2_LM), /* 2J */
-                                    a->resq_rsq);         /* DMP 32D */
+    a->resq_rsq  = agc_dp_div(ip, cm ? RESQ_CM : RESQ_LM, a->rmagsq);                           /* CM B-59, LM B-58; DDV 34D -> 32D */
+    agc_dp_t  m  = agc_dp_mul_trunc(agc_dp_mul_trunc(a->resq_rsq, cm ? J20_CM : J20_LM), fact); /* equatorial coefficient, scale of GOBL; 20J; DMP DMP */
+    agc_vec_t t1 = agc_vec_scale(ip, a->unitr, m);                                              /* VXSC UNITR, 2^1 */
+    agc_dp_t  n  = agc_dp_mul_trunc(agc_dp_mul_trunc(s, cm ? J2_CM : J2_LM), a->resq_rsq);      /* polar coefficient, scale of GOBL; 2J; DMP 32D */
 
     if (cm)
     {
@@ -275,8 +266,7 @@ static agc_status_t calcgrav_oblateness(agc_interp_t *ip, bool cm,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
  *          precondition failed)
  **********************************************************************/
-agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
-                               agc_vec_t r, agc_avg_g_t *a)
+agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon, agc_vec_t r, agc_avg_g_t *a)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(a != NULL))
     {
@@ -288,14 +278,12 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    a->unitr = agc_vec_unit(ip, r, &a->rmag, &a->rmagsq); /* UNIT PUSH */
-    agc_vec_t dir = /* gravity direction, scale 2^1 */
-                    a->unitr; /* gravity direction, half unit */
+    a->unitr      = agc_vec_unit(ip, r, &a->rmag, &a->rmagsq); /* UNIT PUSH */
+    agc_vec_t dir = a->unitr;                                  /* gravity direction, scale 2^1; gravity direction, half unit */
 
     if (!moon)
     { /* BMN ITISMOON not taken */
-        agc_status_t st = /* status of the oblateness term */
-                          calcgrav_oblateness(ip, veh == AGC_VEHICLE_CSM, a);
+        agc_status_t st = calcgrav_oblateness(ip, veh == AGC_VEHICLE_CSM, a); /* status of the oblateness term */
 
         if (st != AGC_STATUS_OK)
         {
@@ -305,7 +293,7 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
         dir = agc_vec_add(ip, a->gobl1_2, a->unitr); /* VAD PUSH UNITR */
     }
 
-    int      n = 0;                           /* NORM shift count (X2 = -n) */
+    int      n = 0;                          /* NORM shift count (X2 = -n) */
     agc_dp_t x = agc_dp_norm(a->rmagsq, &n); /* NORM 34D X2, 2^(58-n) m^2 */
 
     if (!AGC_ASSERT(x != 0))
@@ -313,8 +301,7 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t k = /* -mu dt / r^2, rescaled to 2^7 m/cs (half unit vector) */
-                 agc_dp_div(ip, moon ? MUDT_M : MUDT_E, x); /* BDDV* -MUDT,1 */
+    agc_dp_t k = agc_dp_div(ip, moon ? MUDT_M : MUDT_E, x); /* -mu dt / r^2, rescaled to 2^7 m/cs (half unit vector); BDDV* -MUDT,1 */
 
     k         = agc_dp_shl_round(ip, k, n - 21); /* SLR* 0-21D,2   */
     a->gdt1_2 = agc_vec_scale(ip, dir, k);       /* VXSC STORE     */
@@ -351,12 +338,9 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
  *          precondition failed); otherwise the status of the routine it
  *          continues in
  **********************************************************************/
-agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
-                              const agc_mat_t *refsmmat, agc_vec_t delv,
-                              const agc_state_vector_t *sv, agc_avg_g_t *a)
+agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon, const agc_mat_t *refsmmat, agc_vec_t delv, const agc_state_vector_t *sv, agc_avg_g_t *a)
 {
-    if (!AGC_ASSERT(ip != NULL && refsmmat != NULL) ||
-        !AGC_ASSERT(sv != NULL && a != NULL))
+    if (!AGC_ASSERT(ip != NULL && refsmmat != NULL) || !AGC_ASSERT(sv != NULL && a != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -365,44 +349,35 @@ agc_status_t agc_guid_calcrvg(agc_interp_t *ip, agc_vehicle_t veh, bool moon,
 
     if (veh == AGC_VEHICLE_CSM)
     {
-        agc_vec_t dv = /* PIPA delta-V, SM, m/cs 2^7 */
-                       agc_vec_scale(ip, delv, KPIP1_CM); /* VXSC KPIP1  */
+        agc_vec_t dv = agc_vec_scale(ip, delv, KPIP1_CM); /* PIPA delta-V, SM, m/cs 2^7; VXSC KPIP1 */
 
-        a->delvref =
-            agc_vec_shl(ip, agc_vec_mat(ip, dv, refsmmat), 1); /* VXM VSL1 */
-        dt22 = TWOSEC_22;
+        a->delvref = agc_vec_shl(ip, agc_vec_mat(ip, dv, refsmmat), 1); /* VXM VSL1 */
+        dt22       = TWOSEC_22;
     }
     else
     {
-        agc_vec_t dv = /* PIPA counts, reference frame, 2^14 pulses */
-                       agc_vec_mat(ip, delv, refsmmat); /* VXM REFSMMAT */
+        agc_vec_t dv = agc_vec_mat(ip, delv, refsmmat); /* PIPA counts, reference frame, 2^14 pulses; VXM REFSMMAT */
 
-        a->delvref =
-            agc_vec_shl(ip, agc_vec_scale(ip, dv, KPIP1_LM), 1); /* VXSC VSL1 */
-        dt22 = agc_dp_shl(ip, a->pguide, 6); /* PDDL PGUIDE SL 6 */
+        a->delvref = agc_vec_shl(ip, agc_vec_scale(ip, dv, KPIP1_LM), 1); /* VXSC VSL1 */
+        dt22       = agc_dp_shl(ip, a->pguide, 6);                        /* PDDL PGUIDE SL 6 */
     }
 
-    agc_vec_t half_dv = /* DELVREF/2, m/cs 2^7 */
-                        agc_vec_shr(a->delvref, 1); /* VSR1 PUSH   */
-    agc_vec_t avg_acc = /* DELVREF/2 + GDT/2, m/cs 2^7 */
-                        agc_vec_add(ip, half_dv, a->gdt_2); /* VAD PUSH GDT/2 */
-    agc_vec_t vdt = /* position change, m 2^29 */
-                    agc_vec_scale(ip, agc_vec_add(ip, avg_acc, sv->v), dt22); /* VAD VN, VXSC */
+    agc_vec_t half_dv = agc_vec_shr(a->delvref, 1);                               /* DELVREF/2, m/cs 2^7; VSR1 PUSH */
+    agc_vec_t avg_acc = agc_vec_add(ip, half_dv, a->gdt_2);                       /* DELVREF/2 + GDT/2, m/cs 2^7; VAD PUSH GDT/2 */
+    agc_vec_t vdt     = agc_vec_scale(ip, agc_vec_add(ip, avg_acc, sv->v), dt22); /* position change, m 2^29; VAD VN, VXSC */
 
-    a->rn1 = agc_vec_add(ip, vdt, sv->r); /* VAD RN; STORE RN1 */
-    agc_status_t st = /* status of CALCGRAV */
-                      agc_guid_calcgrav(ip, veh, moon, a->rn1, a);
+    a->rn1          = agc_vec_add(ip, vdt, sv->r);                 /* VAD RN; STORE RN1 */
+    agc_status_t st = agc_guid_calcgrav(ip, veh, moon, a->rn1, a); /* status of CALCGRAV */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    agc_vec_t v1 = /* VN + GDT1/2, m/cs 2^7 */
-                   agc_vec_add(ip, a->gdt1_2, sv->v); /* VAD VN      */
+    agc_vec_t v1 = agc_vec_add(ip, a->gdt1_2, sv->v); /* VN + GDT1/2, m/cs 2^7; VAD VN */
 
-    v1     = agc_vec_add(ip, v1, avg_acc);      /* VAD (pop)   */
-    a->vn1 = agc_vec_add(ip, v1, half_dv);      /* VAD (pop)   */
+    v1     = agc_vec_add(ip, v1, avg_acc); /* VAD (pop)   */
+    a->vn1 = agc_vec_add(ip, v1, half_dv); /* VAD (pop)   */
 
     return (AGC_STATUS_OK);
 } /* agc_guid_calcrvg */
@@ -431,8 +406,7 @@ void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind)
         return;
     }
 
-    if (!AGC_ASSERT(kind == AGC_COPY_RVT || kind == AGC_COPY_RVTG ||
-                    kind == AGC_COPY_ALL))
+    if (!AGC_ASSERT(kind == AGC_COPY_RVT || kind == AGC_COPY_RVTG || kind == AGC_COPY_ALL))
     {
         return;
     }
@@ -488,8 +462,7 @@ void agc_guid_store_midtoav(const agc_integ_midtoav_out_t *o)
     }
 
     agc_avg_g_t *a  = &agc_guid_state()->avg; /* average-G block */
-    agc_rendz_t *rz = /* rendezvous erasables (RTX1, RTX2) */
-                      agc_rendz_erasable();
+    agc_rendz_t *rz = agc_rendz_erasable();   /* rendezvous erasables (RTX1, RTX2) */
 
     a->rn1        = o->rn1;
     a->vn1        = o->vn1;

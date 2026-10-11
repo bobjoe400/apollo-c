@@ -25,22 +25,22 @@
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
 
-#define MS_VAC_MASK     ((uint16_t) 0777)   /* LOW9: VAC area               */
-#define MS_REJECT_OK    ((uint16_t) 01000)  /* BIT10                        */
-#define MS_WANTED_ONE   ((uint16_t) 04000)  /* BIT12: one mark wanted       */
-#define MS_WANTED_MASK  ((uint16_t) 034000) /* PRIO34: bits 12-14           */
-#define MS_WANTED_MAX   7                   /* three bits                   */
-#define EXTVB_MARKING   ((uint16_t) 02)     /* EXTVBACT BIT2: marks in use  */
-#define EXTVB_BUSY      ((uint16_t) 06)     /* SIX: marks or ext verb busy  */
-#define OPTM_COARSE_RET ((uint16_t) 0400)   /* OPTMODES BIT9                */
-#define OPT_NONE        ((agc_sp_t) -1)     /* OPTIND -1: no coarse optics  */
-#define VN_PLEASE_MARK  ALIGN_VN(51, 0)     /* VB51  VN 5100                */
-#define VN_MARKS_DONE   ALIGN_VN(50, 25)    /* V50N25 VN 5025               */
-#define CHK_MARKS_DONE  ((uint16_t) 016)    /* R1D1 OCT 16: checklist code  */
-#define MARK_WORDS      7                   /* SIX + 1 words per mark       */
-#define DIFCHK_MAX      3                   /* counts the CDU may move      */
-#define ENDMARKS_DT     ((uint16_t) 5)      /* FIVE cs                      */
-#define MARKDIF_MIN_DT  ((uint16_t) 1)      /* 10 ms if no check            */
+#define MS_VAC_MASK     ((uint16_t) 0777)          /* LOW9: VAC area               */
+#define MS_REJECT_OK    ((uint16_t) 01000)         /* BIT10                        */
+#define MS_WANTED_ONE   ((uint16_t) 04000)         /* BIT12: one mark wanted       */
+#define MS_WANTED_MASK  ((uint16_t) 034000)        /* PRIO34: bits 12-14           */
+#define MS_WANTED_MAX   7                          /* three bits                   */
+#define EXTVB_MARKING   ((uint16_t) 02)            /* EXTVBACT BIT2: marks in use  */
+#define EXTVB_BUSY      ((uint16_t) 06)            /* SIX: marks or ext verb busy  */
+#define OPTM_COARSE_RET ((uint16_t) 0400)          /* OPTMODES BIT9                */
+#define OPT_NONE        ((agc_sp_t) -1)            /* OPTIND -1: no coarse optics  */
+#define VN_PLEASE_MARK  ALIGN_VN(51, 0)            /* VB51  VN 5100                */
+#define VN_MARKS_DONE   ALIGN_VN(50, 25)           /* V50N25 VN 5025               */
+#define CHK_MARKS_DONE  ((uint16_t) 016)           /* R1D1 OCT 16: checklist code  */
+#define MARK_WORDS      7                          /* SIX + 1 words per mark       */
+#define DIFCHK_MAX      3                          /* counts the CDU may move      */
+#define ENDMARKS_DT     ((uint16_t) 5)             /* FIVE cs                      */
+#define MARKDIF_MIN_DT  ((uint16_t) 1)             /* 10 ms if no check            */
 #define ALM_BUSY        ((agc_alarm_code_t) 01211)
 #define ALM_NO_VAC      ((agc_alarm_code_t) 01207)
 #define ALM_REJECT2     ((agc_alarm_code_t) 00110) /* two rejects together    */
@@ -98,7 +98,7 @@ static agc_status_t markok(void)
 
     ram->mkvac_index = vac;
     agc_erase_set_markstat((uint16_t) (vac + 1));
-    ram->qpret = 0; /* next mark slot       */
+    ram->qpret       = 0; /* next mark slot       */
 
     return (AGC_STATUS_OK);
 }
@@ -124,11 +124,9 @@ static agc_status_t sxtmark_common(agc_sp_t nmarks, bool want)
     agc_erase_set_extvbact((uint16_t) (agc_erase_extvbact() | EXTVB_MARKING));
     agc_status_t st = markok();
 
-    if ((st == AGC_STATUS_OK) && want && !agc_phase_checkmm(53) &&
-        !agc_phase_checkmm(54))
+    if ((st == AGC_STATUS_OK) && want && !agc_phase_checkmm(53) && !agc_phase_checkmm(54))
     {
-        agc_erase_set_markstat((uint16_t) (agc_erase_markstat() +
-                                           (uint16_t) nmarks * MS_WANTED_ONE));
+        agc_erase_set_markstat((uint16_t) (agc_erase_markstat() + (uint16_t) nmarks * MS_WANTED_ONE));
         st = agc_exec_novac(ALIGN_PRIO32, AGC_JOB_MARK_REQUEST_DISPLAY);
     }
 
@@ -212,8 +210,7 @@ agc_status_t agc_sxtmark_mkreleas(void)
     }
 
     agc_inhint(); /* MKRLEES  */
-    agc_erase_set_optmodes(
-        (uint16_t) (agc_erase_optmodes() & ~OPTM_COARSE_RET));
+    agc_erase_set_optmodes((uint16_t) (agc_erase_optmodes() & ~OPTM_COARSE_RET));
     agc_erase_set_optind(OPT_NONE);
     agc_chan_and(012, (uint16_t) ~AGC_CH012_ENBOCDUERR);
     agc_relint();
@@ -229,12 +226,12 @@ agc_status_t agc_sxtmark_mkreleas(void)
  */
 agc_status_t agc_sxtmark_markrupt(void)
 {
-    mk.cdut = agc_erase_cdut();
-    mk.cdus = agc_erase_cdus();
-    mk.cduy = agc_erase_cduy();
-    mk.cduz = agc_erase_cduz();
-    mk.cdux = agc_erase_cdux();
-    mk.t    = align_loadtime();
+    mk.cdut           = agc_erase_cdut();
+    mk.cdus           = agc_erase_cdus();
+    mk.cduy           = agc_erase_cduy();
+    mk.cduz           = agc_erase_cduz();
+    mk.cdux           = agc_erase_cdux();
+    mk.t              = align_loadtime();
     agc_erase_set_samptime(mk.t);
     const uint16_t in = agc_chan_read(016);
 
@@ -269,8 +266,7 @@ agc_status_t agc_sxtmark_markrupt(void)
 /* DIFCHK: |mark CDU - present CDU| <= 3 counts (MSU, modular). */
 static bool difchk(uint16_t mark_cdu, uint16_t now_cdu)
 {
-    int32_t d =
-        (int32_t) (mark_cdu & CDU_MASK) - (int32_t) (now_cdu & CDU_MASK);
+    int32_t d = (int32_t) (mark_cdu & CDU_MASK) - (int32_t) (now_cdu & CDU_MASK);
 
     if (d >= CDU_MOD / 2)
     {
@@ -302,9 +298,7 @@ agc_status_t agc_task_markdif(void)
 {
     if (agc_erase_cduchkwd() > 0)
     {
-        const bool ok = difchk(mk.cdux, agc_erase_cdux()) &&
-                        difchk(mk.cduy, agc_erase_cduy()) &&
-                        difchk(mk.cduz, agc_erase_cduz());
+        const bool ok = difchk(mk.cdux, agc_erase_cdux()) && difchk(mk.cduy, agc_erase_cduy()) && difchk(mk.cduz, agc_erase_cduz());
 
         if (!ok)
         {
@@ -360,17 +354,15 @@ agc_status_t agc_sxtmark_markcont(void)
         return (agc_sxtmark_mark2());
     }
 
-    if (((agc_erase_extvbact() & EXTVB_MARKING) == 0u) ||
-        !agc_flag_test(AGC_FLAG_CALIBRATION_MARKING))
+    if (((agc_erase_extvbact() & EXTVB_MARKING) == 0u) || !agc_flag_test(AGC_FLAG_CALIBRATION_MARKING))
     {
         agc_alarm(ALM_UNCALLED); /* MARKET3  */
 
         return (AGC_STATUS_OK);
     }
 
-    const agc_status_t st = agc_exec_novac(ALIGN_PRIO5,
-                                           AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY);
-    uint16_t w[MARK_WORDS];
+    const agc_status_t st = agc_exec_novac(ALIGN_PRIO5, AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY);
+    uint16_t           w[MARK_WORDS];
 
     mark_words(&mk, w);
 
@@ -484,9 +476,7 @@ agc_status_t agc_job_mark_request_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_KLEENEX, 0, AGC_JOB_MARK_REQUEST_FLASH,
-                        AGC_JOB_MARK_REQUEST_FLASH,
-                        AGC_JOB_MARK_REQUEST_FLASH));
+    return (align_flash(ctx, AGC_DSKY_KLEENEX, 0, AGC_JOB_MARK_REQUEST_FLASH, AGC_JOB_MARK_REQUEST_FLASH, AGC_JOB_MARK_REQUEST_FLASH));
 }
 
 /* GOMARK4 with VB51 or V50N25: V34 TERMSXT, V33 ENTANSWR, ENTER MKVB5X. */
@@ -502,8 +492,7 @@ static agc_status_t mark_flash(const agc_job_ctx_t *ctx, uint16_t vn)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOMARK4, vn, AGC_JOB_TERMSXT,
-                        AGC_JOB_ENTANSWR, AGC_JOB_MARK_REDISPLAY));
+    return (align_flash(ctx, AGC_DSKY_GOMARK4, vn, AGC_JOB_TERMSXT, AGC_JOB_ENTANSWR, AGC_JOB_MARK_REDISPLAY));
 }
 
 /* MKVB51 +2: please mark (V51). */
@@ -642,8 +631,7 @@ agc_sp_t agc_sxtmark_marks_made(void)
 /* One stored mark (slot 0 = the first). */
 agc_status_t agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) ||
-        !AGC_ASSERT((mark >= 0) && (mark < AGC_ALIGN_SXT_MARKS)))
+    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT((mark >= 0) && (mark < AGC_ALIGN_SXT_MARKS)))
     {
         return (AGC_STATUS_BAD_ARG);
     }

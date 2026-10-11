@@ -76,6 +76,7 @@ const ign_table_t *ign_table(void);
 #define IGN_VB97DEX  035 /* OCT35: V97 engine-fail (COMFAIL)              */
 #define IGN_ASTNDEX  025 /* V06N61 (landing ASTNCLOK)                     */
 #define IGN_BLANKDEX 2   /* TWO: DSKY blank at TIG-35                     */
+
 /* "CA Z / TS DISPDEX": any positive DISPDEX kills CLOKTASK. The AGC stores
  * the (positive) address in Z; 1 is used here, as POSTBURN does.         */
 #define IGN_DISPDEX_KILL 1

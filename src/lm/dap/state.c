@@ -58,13 +58,12 @@ agc_status_t agc_lm_dap_restart(void)
 {
     lm_dap_t *d = lm_dap_state();
 
-    d->rcsflags =
-        (uint16_t) (d->rcsflags & ~LM_RCS_ACCSET); /* DAPIDLER calls 1/ACCS */
-    d->t6next[0] = (agc_sp_t) LM_T6_POSMAX; /* a pending T6RUPT is made     */
-    agc_chan_and(013, LM_T6_POSMAX); /* ineffectual        */
-    d->nxt6adr = 0;
-    d->nextp   = 0;
-    agc_flag_clear(AGC_FLAG_ACCOKFLG); /* ACCSOKAY = 0    */
+    d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_ACCSET); /* DAPIDLER calls 1/ACCS */
+    d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;                   /* a pending T6RUPT is made     */
+    agc_chan_and(013, LM_T6_POSMAX);                             /* ineffectual        */
+    d->nxt6adr      = 0;
+    d->nextp        = 0;
+    agc_flag_clear(AGC_FLAG_ACCOKFLG);                           /* ACCSOKAY = 0    */
     agc_status_t ts = lm_dap_set_t5adr(LM_T5_DAPIDLER);
 
     return (ts);
@@ -90,20 +89,20 @@ agc_status_t agc_lm_dap_fresh_start(void)
     d->ch5mask                  = 0;
     d->ch6mask                  = 0;
     d->pvalvest                 = 0; /* RCS failure monitor           */
-    agc_chan_write(005, 0); /* turn off RCS jets       */
+    agc_chan_write(005, 0);          /* turn off RCS jets       */
     agc_chan_write(006, 0);
-    d->db = FS_MAXDB;
+    d->db                       = FS_MAXDB;
     agc_flagword_set(DAPBOOLS_WORD, FS_BOOLSTRT);
-    d->stiksens   = FS_STIKSTRT;
-    d->neg_ratedb = FS_RATESTRT;
-    d->hiascent   = FS_FULLAPS;
-    d->dktrap     = FS_TRAP;
-    d->lmtrap     = FS_TRAP;
-    d->dkkaosn    = FS_KAOS;
-    d->lmkaosn    = FS_KAOS;
-    d->lmomegan   = 0;   /* unity gain                     */
-    d->dkomegan   = FS_DKOMEGAN;
-    d->dkdb       = FS_DKDB;
+    d->stiksens                 = FS_STIKSTRT;
+    d->neg_ratedb               = FS_RATESTRT;
+    d->hiascent                 = FS_FULLAPS;
+    d->dktrap                   = FS_TRAP;
+    d->lmtrap                   = FS_TRAP;
+    d->dkkaosn                  = FS_KAOS;
+    d->lmkaosn                  = FS_KAOS;
+    d->lmomegan                 = 0; /* unity gain                     */
+    d->dkomegan                 = FS_DKOMEGAN;
+    d->dkdb                     = FS_DKDB;
 
     return (agc_lm_dap_restart());
 }

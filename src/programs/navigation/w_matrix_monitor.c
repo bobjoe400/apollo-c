@@ -82,8 +82,7 @@ static agc_dp_t wm_saved[3]; /* N99 values shown (LM), N99 scales */
  * RETURNS: agc_dp_t -- the sum of the row squares, W scale squared (0 for a
  *          bad block)
  **********************************************************************/
-static agc_dp_t wm_sum(agc_interp_t *ip, const agc_incorp_w_t *w, int b,
-                       int rows)
+static agc_dp_t wm_sum(agc_interp_t *ip, const agc_incorp_w_t *w, int b, int rows)
 {
     agc_dp_t s = 0; /* sum, W scale squared */
 
@@ -125,12 +124,12 @@ static agc_status_t wm_compute(agc_interp_t *ip, agc_rendz_t *rz)
         return (st);
     }
 
-    agc_interp_clear_ovf(ip); /* BOV +1   */
+    agc_interp_clear_ovf(ip);                                /* BOV +1   */
     const agc_incorp_w_t *w    = &agc_integ_shared_ctx()->w; /* W matrix */
-    bool                  csm  = rz_is_csm();               /* CM listing */
-    int                   rows = csm ? 6 : 9;               /* X1 36/54 */
-    agc_dp_t              pos  = wm_sum(ip, w, 0, rows);    /* m^2 2^38 */
-    agc_dp_t              vel  = wm_sum(ip, w, 1, rows);    /* W scale^2 */
+    bool                  csm  = rz_is_csm();                /* CM listing */
+    int                   rows = csm ? 6 : 9;                /* X1 36/54 */
+    agc_dp_t              pos  = wm_sum(ip, w, 0, rows);     /* m^2 2^38 */
+    agc_dp_t              vel  = wm_sum(ip, w, 1, rows);     /* W scale^2 */
 
     rz->rtheta = 0; /* CM: WWOPT = 0 */
 
@@ -185,7 +184,7 @@ agc_status_t agc_job_w_matrix_monitor(agc_job_ctx_t *ctx)
     }
 
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;                        /* interpreter state */
 
     agc_interp_init(&ip);
 
@@ -231,10 +230,7 @@ agc_status_t agc_job_w_matrix_monitor_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash( /* GOXDSPF */
-                ctx, AGC_DSKY_GOMARKF, 6U, 99U, AGC_JOB_RENDZ_ENDEXT,
-                AGC_JOB_W_MATRIX_MONITOR_PROCEED,
-                AGC_JOB_W_MATRIX_MONITOR_DISPLAY));
+    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 99U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_W_MATRIX_MONITOR_PROCEED, AGC_JOB_W_MATRIX_MONITOR_DISPLAY)); /* GOXDSPF */
 }
 
 /**********************************************************************
@@ -253,8 +249,8 @@ agc_status_t agc_job_w_matrix_monitor_display(agc_job_ctx_t *ctx)
 static void wm_load_csm(const agc_rendz_t *rz, agc_rendz_nav_pad_t *p)
 {
     agc_sp_t opt = agc_dp_high(rz->rtheta); /* WWOPT, unscaled */
-    agc_sp_t x1  = agc_dp_high(rz->range); /* LXA,1, pad scale */
-    agc_sp_t x2  = agc_dp_high(rz->rrate); /* LXA,2, pad scale */
+    agc_sp_t x1  = agc_dp_high(rz->range);  /* LXA,1, pad scale */
+    agc_sp_t x2  = agc_dp_high(rz->rrate);  /* LXA,2, pad scale */
 
     if (opt == WM_DEC2)
     { /* V67WORB  */
@@ -289,14 +285,13 @@ static void wm_load_csm(const agc_rendz_t *rz, agc_rendz_nav_pad_t *p)
  *   rz        const agc_rendz_t *    I    rendezvous erasables
  *   p         agc_rendz_nav_pad_t *  O    WREND / WSURF pair, WTRUN, WSHAFT
  **********************************************************************/
-static void wm_load_lm(agc_interp_t *ip, const agc_rendz_t *rz,
-                       agc_rendz_nav_pad_t *p)
+static void wm_load_lm(agc_interp_t *ip, const agc_rendz_t *rz, agc_rendz_nav_pad_t *p)
 {
     agc_sp_t pos; /* SL5, pad scale */
 
-    pos = agc_dp_high(agc_dp_shl(ip, agc_dp_shl(ip, rz->range, 4), 1));
+    pos          = agc_dp_high(agc_dp_shl(ip, agc_dp_shl(ip, rz->range, 4), 1));
     agc_sp_t vel = agc_dp_high(rz->rrate); /* pad scale */
-    agc_sp_t bias; /* SL10, pad scale */
+    agc_sp_t bias;                         /* SL10, pad scale */
 
     bias = agc_dp_high(agc_dp_shl(ip, rz->rtheta, 10));
 
@@ -339,8 +334,8 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
     }
 
     agc_rendz_t         *rz = agc_rendz_erasable(); /* rendezvous erasables */
-    agc_rendz_nav_pad_t *p  = agc_rendz_nav_pad(); /* pad loads */
-    agc_interp_t         ip; /* interpreter state */
+    agc_rendz_nav_pad_t *p  = agc_rendz_nav_pad();  /* pad loads */
+    agc_interp_t         ip;                        /* interpreter state */
 
     agc_interp_init(&ip);
 
@@ -355,8 +350,7 @@ agc_status_t agc_job_w_matrix_monitor_proceed(agc_job_ctx_t *ctx)
     }
     else
     {
-        if (rz->range != wm_saved[0] || rz->rrate != wm_saved[1] ||
-            rz->rtheta != wm_saved[2])
+        if (rz->range != wm_saved[0] || rz->rrate != wm_saved[1] || rz->rtheta != wm_saved[2])
         {
             rz_flag_put(AGC_FLAG_W_MATRIX_OVERWRITE, true);
         }

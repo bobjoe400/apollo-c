@@ -48,17 +48,17 @@
 #include "agc/exec/exec.h"
 #include "agc/io/service.h"
 
-#define WORD15            077777u /* one AGC word, 15 bits */
-#define OCT7              000007u /* OCT7: flagword number (CSM) */
-#define OCT77770          077770u /* OCT77770: flag bits */
-#define OCT40200          040200u /* lamp word send bit + TRACKER (bit 8) */
-#define BIT5              000020u /* BIT5 */
-#define BIT7              000100u /* BIT7 */
-#define BIT8              000200u /* BIT8: TRACKER lamp */
-#define BIT15             040000u /* BIT15: lamp word send bit */
-#define LAMPWORD          11 /* DSPTAB +11D */
-#define DELAYNUM          4 /* DELAYLOC +0..+3                            */
-#define LM_ENT2_FLAGWORD  4 /* LM UPENT2/DOWNENT2 work on FLAGWRD4        */
+#define WORD15            077777u                    /* one AGC word, 15 bits */
+#define OCT7              000007u                    /* OCT7: flagword number (CSM) */
+#define OCT77770          077770u                    /* OCT77770: flag bits */
+#define OCT40200          040200u                    /* lamp word send bit + TRACKER (bit 8) */
+#define BIT5              000020u                    /* BIT5 */
+#define BIT7              000100u                    /* BIT7 */
+#define BIT8              000200u                    /* BIT8: TRACKER lamp */
+#define BIT15             040000u                    /* BIT15: lamp word send bit */
+#define LAMPWORD          11                         /* DSPTAB +11D */
+#define DELAYNUM          4                          /* DELAYLOC +0..+3                            */
+#define LM_ENT2_FLAGWORD  4                          /* LM UPENT2/DOWNENT2 work on FLAGWRD4        */
 #define ALARM_NO_DELAYLOC ((agc_alarm_code_t) 01104) /* no DELAYLOC free */
 
 /* DELAYLOC +0..+3: the job sleeping in each slot (AGC: its FCADR) and,
@@ -135,10 +135,8 @@ static int ent2_word(uint16_t arg, uint16_t *bits)
         return (-1);
     }
 
-    *bits = (uint16_t) (arg & OCT77770);
-    int word = (agc_state_vehicle() == AGC_VEHICLE_LM) ? /* LM: FLAGWRD4 */
-               LM_ENT2_FLAGWORD :
-               (int) (arg & OCT7);
+    *bits    = (uint16_t) (arg & OCT77770);
+    int word = (agc_state_vehicle() == AGC_VEHICLE_LM) ? LM_ENT2_FLAGWORD : (int) (arg & OCT7); /* LM: FLAGWRD4 */
 
     if (!AGC_ASSERT(word >= 0 && word < AGC_FLAGWORDS))
     {
@@ -160,7 +158,7 @@ static int ent2_word(uint16_t arg, uint16_t *bits)
  **********************************************************************/
 agc_status_t agc_svc_upent2(uint16_t arg)
 {
-    uint16_t bits = 0; /* bits 4-15 of the argument */
+    uint16_t bits = 0;                     /* bits 4-15 of the argument */
     int      word = ent2_word(arg, &bits); /* flagword index */
 
     if (!AGC_ASSERT(word >= 0))
@@ -191,7 +189,7 @@ agc_status_t agc_svc_upent2(uint16_t arg)
  **********************************************************************/
 agc_status_t agc_svc_downent2(uint16_t arg)
 {
-    uint16_t bits = 0; /* bits 4-15 of the argument */
+    uint16_t bits = 0;                     /* bits 4-15 of the argument */
     int      word = ent2_word(arg, &bits); /* flagword index */
 
     if (!AGC_ASSERT(word >= 0))
@@ -200,8 +198,7 @@ agc_status_t agc_svc_downent2(uint16_t arg)
     }
 
     agc_inhint();
-    agc_flagword_set(
-        word, (uint16_t) (agc_flagword_get(word) & ~(uint32_t) bits & WORD15));
+    agc_flagword_set(word, (uint16_t) (agc_flagword_get(word) & ~(uint32_t) bits & WORD15));
     agc_relint();
 
     if (!AGC_ASSERT((agc_flagword_get(word) & bits) == 0u))
@@ -220,8 +217,7 @@ agc_status_t agc_svc_downent2(uint16_t arg)
  **********************************************************************/
 agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
 {
-    if (!AGC_ASSERT(wake_as != AGC_JOB_NONE) ||
-        !AGC_ASSERT(delay_cs > 0u && delay_cs <= AGC_WAITLIST_MAX_DELAY))
+    if (!AGC_ASSERT(wake_as != AGC_JOB_NONE) || !AGC_ASSERT(delay_cs > 0u && delay_cs <= AGC_WAITLIST_MAX_DELAY))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -240,8 +236,7 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
     if (slot < 0)
     {
         agc_relint();
-        agc_status_t bst =
-            agc_bailout(ALARM_NO_DELAYLOC); /* restart requested */
+        agc_status_t bst = agc_bailout(ALARM_NO_DELAYLOC); /* restart requested */
 
         if (!AGC_ASSERT(bst == AGC_STATUS_BAILOUT))
         {
@@ -251,11 +246,9 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
         return (bst);
     }
 
-    delayloc[slot] = wake_as;
-    delaydue[slot] =
-        (agc_time_now_cs() + delay_cs) & (AGC_TIME_MODULUS_CS - 1u);
-    agc_status_t st =
-        agc_waitlist_call(delay_cs, AGC_TASK_WAKER); /* WAITLIST result */
+    delayloc[slot]  = wake_as;
+    delaydue[slot]  = (agc_time_now_cs() + delay_cs) & (AGC_TIME_MODULUS_CS - 1u);
+    agc_status_t st = agc_waitlist_call(delay_cs, AGC_TASK_WAKER); /* WAITLIST result */
 
     agc_relint();
 
@@ -289,11 +282,8 @@ static int32_t delay_lateness(int i, uint32_t now)
         return (0); /* no valid result */
     }
 
-    uint32_t d = /* cs since due, 2^28 wrap */
-                 (now - delaydue[i]) & (AGC_TIME_MODULUS_CS - 1u);
-    int32_t late = (d >= (AGC_TIME_MODULUS_CS >> 1)) ? /* signed lateness, cs */
-                   (int32_t) d - (int32_t) AGC_TIME_MODULUS_CS :
-                   (int32_t) d;
+    uint32_t d    = (now - delaydue[i]) & (AGC_TIME_MODULUS_CS - 1u);                                              /* cs since due, 2^28 wrap */
+    int32_t  late = (d >= (AGC_TIME_MODULUS_CS >> 1)) ? (int32_t) d - (int32_t) AGC_TIME_MODULUS_CS : (int32_t) d; /* signed lateness, cs */
 
     if (!AGC_ASSERT(late > -(int32_t) AGC_TIME_MODULUS_CS))
     {
@@ -335,8 +325,7 @@ agc_status_t agc_svc_delay_wake(int slot)
 
         for (int j = 0; j < DELAYNUM; j++)
         {
-            if (j != i && delayloc[j] != AGC_JOB_NONE &&
-                delay_lateness(j, now) > delay_lateness(i, now))
+            if (j != i && delayloc[j] != AGC_JOB_NONE && delay_lateness(j, now) > delay_lateness(i, now))
             {
                 earliest = false;
             }
@@ -398,8 +387,7 @@ agc_status_t agc_svc_startsub_reset(void)
  **********************************************************************/
 agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
 {
-    if (!AGC_ASSERT(from != NULL && to != NULL) ||
-        !AGC_ASSERT(n >= 1 && n <= 0400))
+    if (!AGC_ASSERT(from != NULL && to != NULL) || !AGC_ASSERT(n >= 1 && n <= 0400))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -461,8 +449,7 @@ agc_status_t agc_svc_trfailof(void)
     agc_inhint();
     uint16_t w = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D */
 
-    agc_erase_set_dsptab(
-        LAMPWORD, (uint16_t) ((w & ~(uint32_t) OCT40200) + BIT15));
+    agc_erase_set_dsptab(LAMPWORD, (uint16_t) ((w & ~(uint32_t) OCT40200) + BIT15));
     agc_erase_set_optmodes((uint16_t) (agc_erase_optmodes() | BIT7));
     agc_relint();
 

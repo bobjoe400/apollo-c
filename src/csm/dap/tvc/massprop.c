@@ -19,6 +19,7 @@
 #include "../internal.h"
 
 #define VARST_N AGC_CSM_VARST_WORDS
+
 /* 70364 DEC -15402.17 B-16: breakpoint weight 33956 lb (SPS 10000 lb) */
 #define NEGBPW   ((agc_sp_t) -3851)
 #define DXITFIX  ((agc_sp_t) -1263) /* 75420 DEC -1.88275 E-5 B+12      */
@@ -27,16 +28,17 @@
 /* NOLEMVAL (p. 954), LM not docked. MASSPROP indexes ten words but the
  * table has eight; words 8, 9 are INTVALUE 0, 1 (unused for this case). */
 static const agc_sp_t nolemval[VARST_N] = {
-    398,       /* DEC 25445 B-20        IXX breakpoint                      */
-    1366,      /* DEC 87450 B-20        IAVG breakpoint                     */
-    1258,      /* DEC .30715 B-2        IAVG/TLX breakpoint                 */
-    825,       /* DEC 1.22877 E-5 B+12  IAVG/TLX slope, CSMMASS > breakpoint */
-    412,       /* DEC 1.6096 B-6        IAVG slope, CSMMASS > breakpoint     */
-    394,       /* DEC 1.54 B-6          IXX slope                           */
-    1990,      /* DEC 7.77177 B-6       IAVG slope, CSMMASS < breakpoint     */
-    2325,      /* DEC 3.46458 E-5 B+12  IAVG/TLX slope, CSMMASS < breakpoint */
+    398,      /* DEC 25445 B-20        IXX breakpoint                      */
+    1366,     /* DEC 87450 B-20        IAVG breakpoint                     */
+    1258,     /* DEC .30715 B-2        IAVG/TLX breakpoint                 */
+    825,      /* DEC 1.22877 E-5 B+12  IAVG/TLX slope, CSMMASS > breakpoint */
+    412,      /* DEC 1.6096 B-6        IAVG slope, CSMMASS > breakpoint     */
+    394,      /* DEC 1.54 B-6          IXX slope                           */
+    1990,     /* DEC 7.77177 B-6       IAVG slope, CSMMASS < breakpoint     */
+    2325,     /* DEC 3.46458 E-5 B+12  IAVG/TLX slope, CSMMASS < breakpoint */
     420, 1992 /* (INTVALUE 0, 1: overrun)           */
 };
+
 /* INTVALUE (p. 954), LM docked: intercepts of VARST0..9.                */
 static const agc_sp_t intvalue[VARST_N] = {
     420,  /* DEC 26850 B-20       */
@@ -50,6 +52,7 @@ static const agc_sp_t intvalue[VARST_N] = {
     -425, /* DEC -27228 B-20      IAVG decrement, LM descent stage off  */
     -846  /* DEC -.206476 B-2     IAVG/TLX decrement, descent stage off */
 };
+
 /* SLOPEVAL (pp. 954-955), LM docked: d VARSTi / d LEMMASS.               */
 static const agc_sp_t slopeval[VARST_N] = {
     503,  /* DEC 1.96307 B-6      */
@@ -149,15 +152,13 @@ void agc_csm_dap_fixcw(void)
         agc_sp_t s = csm_dap_mp_hi(t->varst[5 + phi], temp333);
 
         out[psi] = csm_dap_ads(csm_dap_ads(s, s), t->varst[psi]);
-        phi     += (phi > 0) ? -1 : ((phi < 0) ? 1 : 0); /* DIM PHI333         */
+        phi      += (phi > 0) ? -1 : ((phi < 0) ? 1 : 0); /* DIM PHI333         */
     }
 
     c->ixx      = out[0];
     c->iavg     = out[1];
     c->iavg_tlx = out[2];
-    agc_sp_t lm = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ?
-                  agc_erase_lemmass() :
-                  0;
+    agc_sp_t lm = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? agc_erase_lemmass() : 0;
 
     c->weight_g = csm_dap_ads(lm, m); /* WEIGHT/G           */
 

@@ -71,7 +71,7 @@
 #define AL_OCT40400     040400u /* bit 15 (update) + bit 9 (PROG lamp) */
 #define AL_BIT15        040000u /* MULTFAIL marker in FAILREG +2       */
 #define AL_POSMAX       037777u /* POSMAX: the 15-bit alarm code field */
-#define AL_PHASE_4_35   035u /* OCT35: 4.35SPOT, GOPOODOO (LM)      */
+#define AL_PHASE_4_35   035u    /* OCT35: 4.35SPOT, GOPOODOO (LM)      */
 
 static agc_job_id_t almcadr;      /* ALMCADR: job that raised the alarm  */
 static agc_job_id_t localarm;     /* LOCALARM (CSM): LOC at the alarm    */
@@ -82,9 +82,9 @@ static uint16_t     restarts_run; /* software restarts serviced (debug)  */
  * table and NEWJOB, for post-flight analysis of a restart.            */
 static struct
 {
-    agc_exec_core_info_t core[AGC_EXEC_MAX_JOBS]; /* LOC, BANKSET, PRIORITY of each core set */
+    agc_exec_core_info_t core[AGC_EXEC_MAX_JOBS];   /* LOC, BANKSET, PRIORITY of each core set */
     uint16_t             phase[AGC_RESTART_GROUPS]; /* PHASE1 .. PHASE6 */
-    int                  newjob; /* NEWJOB */
+    int                  newjob;                    /* NEWJOB */
 } vac5;
 
 /**********************************************************************
@@ -369,13 +369,11 @@ agc_status_t agc_exec_service_restart(void)
         return (AGC_STATUS_OK);
     }
 
-    enema_wanted = false;
-    restarts_run = (uint16_t) (restarts_run + 1U);
+    enema_wanted    = false;
+    restarts_run    = (uint16_t) (restarts_run + 1U);
     agc_status_t st = fresh_enema(); /* ENEMA outcome */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT ||
-                    st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND ||
-                    st == AGC_STATUS_UNIMPLEMENTED))
+    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT || st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND || st == AGC_STATUS_UNIMPLEMENTED))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -460,6 +458,7 @@ static agc_status_t gopoodoo(void)
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {
         agc_relint();
+
         /* STRTIDLE: SERVICER to its "ground" state; SERVIDLE ends in
          * WHIMPER and the 4.33 restart (GOP00FIX) goes to P00.        */
         agc_status_t s1 = exec_up_servidle(); /* SERVIDLE outcome */
@@ -550,7 +549,7 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
         }
 
         if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
-        {                         /* average G on      */
+        { /* average G on      */
             exec_request_enema(); /* TC WHIMPER -1     */
 
             return (AGC_STATUS_BAILOUT);
@@ -597,8 +596,7 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
  **********************************************************************/
 agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != 0) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    if (!AGC_ASSERT(ctx != 0) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
     {
         return (AGC_STATUS_BAD_ARG);
     }

@@ -67,16 +67,16 @@
 
 /* RDOTCONV 2DEC -.0019135344 B7: RR rate count to m/cs 2^7;
  * RANGCONV 2DEC 2.859024 B-3: RR range count to m 2^29.                 */
-#define TD_RDOTCONV      ((agc_dp_t) -65748541) /* RDOTCONV, B7          */
-#define TD_RANGCONV      ((agc_dp_t) 95932926) /* RANGCONV, B-3         */
-#define TD_THREEDEG      ((agc_dp_t) 2236962)  /* THREEDEG 2DEC .008333333    */
-#define TD_30DEG         ((agc_dp_t) 22369621) /* 30DEG 2DEC .083333333       */
-#define TD_1500DEC       1500U /* 15 s, cs */
-#define TD_2SECS         200U /* 2 s, cs */
-#define TD_PRIO27        ((agc_prio_t) 027) /* PRIO27 */
+#define TD_RDOTCONV      ((agc_dp_t) -65748541)     /* RDOTCONV, B7          */
+#define TD_RANGCONV      ((agc_dp_t) 95932926)      /* RANGCONV, B-3         */
+#define TD_THREEDEG      ((agc_dp_t) 2236962)       /* THREEDEG 2DEC .008333333    */
+#define TD_30DEG         ((agc_dp_t) 22369621)      /* 30DEG 2DEC .083333333       */
+#define TD_1500DEC       1500U                      /* 15 s, cs */
+#define TD_2SECS         200U                       /* 2 s, cs */
+#define TD_PRIO27        ((agc_prio_t) 027)         /* PRIO27 */
 #define TD_ALARM_LOS     ((agc_alarm_code_t) 00525) /* LOS off by > 3 deg */
-#define TD_CH33_RR_AUTO  000002u /* chan 33 bit 2 (0 = auto) */
-#define TD_CH33_RR_SCALE 000004u /* chan 33 bit 3: RR range scale */
+#define TD_CH33_RR_AUTO  000002u                    /* chan 33 bit 2 (0 = auto) */
+#define TD_CH33_RR_SCALE 000004u                    /* chan 33 bit 3: RR range scale */
 
 /**********************************************************************
  * RADSTALL for the job: sleep, or (reading already over) continue at once
@@ -95,9 +95,8 @@
  **********************************************************************/
 static agc_status_t td_stall(agc_job_id_t wake_as)
 {
-    agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING; /* RADSTALL result */
-    agc_status_t           st  = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, wake_as,
-                                                   &res); /* RADSTALL */
+    agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;                              /* RADSTALL result */
+    agc_status_t           st  = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, wake_as, &res); /* RADSTALL */
 
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
@@ -198,15 +197,14 @@ agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx)
         return (agc_job_rendezvous_tracking_data_next(ctx)); /* R22LEM42 */
     }
 
-    agc_phase_change(2, 00152); /* a restart reads range rate again */
+    agc_phase_change(2, 00152);            /* a restart reads range rate again */
     rz_flag_put(AGC_FLAG_RNGSCFLG, false); /* LRS22.1  */
     agc_inhint();
-    uint16_t scale; /* range scale */
+    uint16_t scale;                        /* range scale */
 
     scale = (uint16_t) (agc_chan_read(AGC_CHAN_CHAN33) & TD_CH33_RR_SCALE);
 
-    agc_erase_set_radmodes(
-        (uint16_t) ((agc_erase_radmodes() & ~RR_RRRSBIT) | scale));
+    agc_erase_set_radmodes((uint16_t) ((agc_erase_radmodes() & ~RR_RRRSBIT) | scale));
     agc_relint();
 
     return (td_read_rdot());
@@ -244,14 +242,14 @@ agc_status_t agc_job_rendezvous_tracking_data_range(agc_job_ctx_t *ctx)
     lmnav_state_t *n = lmnav_state(); /* LM navigation erasables */
 
     agc_inhint();
-    n->mktime   = rr_timehold();
-    n->rdotmsav = agc_radar_samplsum();
-    n->aig      = agc_erase_cduy();
-    n->amg      = agc_erase_cduz();
-    n->aog      = agc_erase_cdux();
-    n->cdutime  = agc_rtb_loadtime();
-    n->tang[0]  = agc_erase_cdut();
-    n->tang[1]  = agc_erase_cdus();
+    n->mktime       = rr_timehold();
+    n->rdotmsav     = agc_radar_samplsum();
+    n->aig          = agc_erase_cduy();
+    n->amg          = agc_erase_cduz();
+    n->aog          = agc_erase_cdux();
+    n->cdutime      = agc_rtb_loadtime();
+    n->tang[0]      = agc_erase_cdut();
+    n->tang[1]      = agc_erase_cdus();
     agc_relint();
     agc_status_t st = agc_radar_rrrange(); /* RRRANGE */
 
@@ -289,11 +287,10 @@ static agc_status_t td_convert(agc_interp_t *ip, lmnav_state_t *n)
     s->tangnb[0]   = n->tang[0];
     s->tangnb[1]   = n->tang[1];
     agc_relint();
-    n->rdotm   = agc_dp_mul(ip, agc_dp_shl(ip, n->rdotmsav, 14), TD_RDOTCONV);
-    n->rrtrun  = agc_guid_cdulogic(n->tang[0]);
-    n->rrshaft = agc_guid_cdulogic(n->tang[1]);
-    n->rm      = agc_dp_shl_round(
-        ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
+    n->rdotm       = agc_dp_mul(ip, agc_dp_shl(ip, n->rdotmsav, 14), TD_RDOTCONV);
+    n->rrtrun      = agc_guid_cdulogic(n->tang[0]);
+    n->rrshaft     = agc_guid_cdulogic(n->tang[1]);
+    n->rm          = agc_dp_shl_round(ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
 
     return (agc_lm_rrnb(ip, n->tang[0], n->tang[1], &n->rrborsit));
 }
@@ -335,16 +332,15 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
     }
 
     lmnav_state_t *n = lmnav_state(); /* LM navigation erasables */
-    agc_interp_t   ip; /* interpreter state */
+    agc_interp_t   ip;                /* interpreter state */
 
     agc_interp_init(&ip);
     agc_status_t st      = td_convert(&ip, n); /* conversions */
-    bool         too_far = false; /* range > 400 NM */
+    bool         too_far = false;              /* range > 400 NM */
 
     if (st == AGC_STATUS_OK)
     {
-        st = lmnav_los(&ip, n->cdutime, AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK,
-                       &too_far);
+        st = lmnav_los(&ip, n->cdutime, AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK, &too_far);
     }
 
     if (st != AGC_STATUS_OK)
@@ -357,7 +353,7 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
         return (rz_continue(AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_ALARM));
     }
 
-    agc_cdutrig_t trig; /* CDUTRIG sines / cosines */
+    agc_cdutrig_t trig;                          /* CDUTRIG sines / cosines */
     uint16_t      yzx[3] = {n->aig, n->amg, n->aog};
     agc_vec_t     los    = rr_state()->rrtarget; /* SV LOS, 2^1 */
 
@@ -436,10 +432,7 @@ agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx)
 
     agc_phase_change(2, 04022);
 
-    return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 5U,
-                     AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
-                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_ACCEPT,
-                     AGC_JOB_RENDEZVOUS_NAVIGATION_DESIGNATE));
+    return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 5U, AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE, AGC_JOB_RENDEZVOUS_TRACKING_DATA_ACCEPT, AGC_JOB_RENDEZVOUS_NAVIGATION_DESIGNATE));
 }
 
 /**********************************************************************
@@ -481,16 +474,14 @@ agc_status_t agc_job_rendezvous_tracking_data_accept(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_dp_t phi =
-        agc_dp_acos(&ip, lmnav_state()->rrborsit.c[2]); /* rev 2^0 */
+    agc_dp_t phi = agc_dp_acos(&ip, lmnav_state()->rrborsit.c[2]); /* rev 2^0 */
 
     if (agc_dp_sub(&ip, phi, TD_30DEG) < 0)
     {
         return (agc_job_rendezvous_tracking_data_update(ctx));
     }
 
-    return (lmnav_tracking_attitude(ctx, true,
-                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA_WAIT));
+    return (lmnav_tracking_attitude(ctx, true, AGC_JOB_RENDEZVOUS_TRACKING_DATA_WAIT));
 }
 
 /**********************************************************************
@@ -579,8 +570,7 @@ agc_status_t agc_job_rendezvous_tracking_data_next(agc_job_ctx_t *ctx)
 
     lmnav_state()->r65cntr = 2;
 
-    return (lmnav_tracking_attitude(ctx, false,
-                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA));
+    return (lmnav_tracking_attitude(ctx, false, AGC_JOB_RENDEZVOUS_TRACKING_DATA));
 }
 
 /**********************************************************************
@@ -616,8 +606,7 @@ agc_status_t agc_job_rendezvous_tracking_data_done(agc_job_ctx_t *ctx)
 
     lmnav_state()->r65cntr = 5;
 
-    return (lmnav_tracking_attitude(ctx, false,
-                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA));
+    return (lmnav_tracking_attitude(ctx, false, AGC_JOB_RENDEZVOUS_TRACKING_DATA));
 }
 
 /* ---- noun 49 (R22LEM96 .. N49DSP) -------------------------------------- */
@@ -636,8 +625,8 @@ agc_status_t lmnav_residuals_display(void)
 {
     lmnav_state()->n49flag = 0;
     agc_phase_change(2, 04022);
-    agc_job_id_t j  = AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS; /* N49DSP */
-    agc_status_t st = agc_exec_novac(TD_PRIO27, j);               /* NOVAC */
+    agc_job_id_t j         = AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS; /* N49DSP */
+    agc_status_t st        = agc_exec_novac(TD_PRIO27, j);               /* NOVAC */
 
     if (st != AGC_STATUS_OK)
     {
@@ -670,10 +659,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U,
-                     AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
-                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_PROCEED,
-                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_RECYCLE));
+    return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U, AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_PROCEED, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_RECYCLE));
 }
 
 /**********************************************************************
@@ -691,8 +677,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals(agc_job_ctx_t *ctx)
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -719,8 +704,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_residuals_recycle(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_residuals_recycle(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -765,7 +749,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx)
 
     if (f < 0)
     {
-        agc_phase_change(2, 04022);                     /* GRP2PC   */
+        agc_phase_change(2, 04022); /* GRP2PC   */
 
         return (lmnav_incorporate_accepted(ctx)); /* ASTOK    */
     }
@@ -777,8 +761,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx)
 
     lmnav_state()->r65cntr = 0;
 
-    return (lmnav_tracking_attitude(ctx, false,
-                                    AGC_JOB_RENDEZVOUS_TRACKING_DATA));
+    return (lmnav_tracking_attitude(ctx, false, AGC_JOB_RENDEZVOUS_TRACKING_DATA));
 }
 
 /**********************************************************************

@@ -23,11 +23,11 @@
 #include "agc/programs/alignment.h"
 
 #define PH_SIGHTING       ((uint16_t) 05024) /* OCT 05024, OCT 13000: R52-R53  */
-#define VN_STAR_CODE      ALIGN_VN(1, 70)  /* V01N70 VN 0170                 */
-#define BLANK_R2_R3       ((uint16_t) 06)  /* CAF SIX, TC BLANKET            */
-#define CHK_FINE_RECHECK  ((uint16_t) 014) /* OCT14: V50N25 00014            */
-#define MM_BACKUP_REALIGN ((agc_sp_t) 54)  /* OCT66 = 54 decimal (P54)       */
-#define STAR_WORDS        ((agc_sp_t) 6)   /* 1/6TH: BESTI is star x 6       */
+#define VN_STAR_CODE      ALIGN_VN(1, 70)    /* V01N70 VN 0170                 */
+#define BLANK_R2_R3       ((uint16_t) 06)    /* CAF SIX, TC BLANKET            */
+#define CHK_FINE_RECHECK  ((uint16_t) 014)   /* OCT14: V50N25 00014            */
+#define MM_BACKUP_REALIGN ((agc_sp_t) 54)    /* OCT66 = 54 decimal (P54)       */
+#define STAR_WORDS        ((agc_sp_t) 6)     /* 1/6TH: BESTI is star x 6       */
 
 /*
  * R51 (restart 4.31 enters here): STARIND = MARKINDX = 1, then R51.3.
@@ -36,8 +36,7 @@
  */
 agc_status_t agc_job_csm_fine_align(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -62,8 +61,7 @@ agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx)
 
     agc_flag_clear(AGC_FLAG_TARG2FLG);
     agc_flag_clear(AGC_FLAG_TARG1FLG);
-    align_phase_job(
-        PH_SIGHTING, AGC_JOB_CSM_FINE_ALIGN_STAR_CODE, ALIGN_PRIO13);
+    align_phase_job(PH_SIGHTING, AGC_JOB_CSM_FINE_ALIGN_STAR_CODE, ALIGN_PRIO13);
 
     if (!AGC_ASSERT((ram->starind == 0) || (ram->starind == 1)))
     {
@@ -84,8 +82,7 @@ agc_status_t agc_job_csm_fine_align_star_code(agc_job_ctx_t *ctx)
     agc_align_ram_t *ram   = agc_align_ram();
     const agc_sp_t   star6 = (ram->starind == 0) ? ram->besti : ram->bestj;
 
-    if (!AGC_ASSERT((star6 >= 0) &&
-                    (star6 <= AGC_ALIGN_STAR_CODE_MAX * STAR_WORDS)))
+    if (!AGC_ASSERT((star6 >= 0) && (star6 <= AGC_ALIGN_STAR_CODE_MAX * STAR_WORDS)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -107,10 +104,7 @@ agc_status_t agc_job_csm_fine_align_star_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st =
-        align_flash(ctx, AGC_DSKY_GOFLASHR, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
-                    AGC_JOB_CSM_FINE_ALIGN_STAR_ACCEPTED,
-                    AGC_JOB_CSM_FINE_ALIGN_STAR_DISPLAY);
+    agc_status_t st = align_flash(ctx, AGC_DSKY_GOFLASHR, VN_STAR_CODE, AGC_JOB_GOTOPOOH, AGC_JOB_CSM_FINE_ALIGN_STAR_ACCEPTED, AGC_JOB_CSM_FINE_ALIGN_STAR_DISPLAY);
 
     if (st == AGC_STATUS_OK)
     {
@@ -138,8 +132,7 @@ agc_status_t agc_job_csm_fine_align_star_accepted(agc_job_ctx_t *ctx)
         return (agc_job_csm_fine_align_star_display(ctx));
     }
 
-    return (align_planet(ctx, align_loadtime(),
-                         AGC_JOB_CSM_FINE_ALIGN_STAR_LOCATED));
+    return (align_planet(ctx, align_loadtime(), AGC_JOB_CSM_FINE_ALIGN_STAR_LOCATED));
 }
 
 /*
@@ -167,12 +160,10 @@ agc_status_t agc_job_csm_fine_align_star_located(agc_job_ctx_t *ctx)
 
     if (agc_erase_modreg() == MM_BACKUP_REALIGN)
     { /* R51B     */
-        return (agc_csm_alternate_los_sighting_mark(
-                    ctx, AGC_JOB_CSM_FINE_ALIGN_MARKED));
+        return (agc_csm_alternate_los_sighting_mark(ctx, AGC_JOB_CSM_FINE_ALIGN_MARKED));
     }
 
-    return (agc_csm_auto_optics_positioning(ctx,
-                                            AGC_JOB_CSM_FINE_ALIGN_MARKED));
+    return (agc_csm_auto_optics_positioning(ctx, AGC_JOB_CSM_FINE_ALIGN_MARKED));
 }
 
 /* R51A: STARSAV2 = SXTSM (observed LOS, SM); MKRELEAS; PLANET at TSIGHT. */
@@ -199,8 +190,7 @@ agc_status_t agc_job_csm_fine_align_marked(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (align_planet(ctx, ram->tsight,
-                         AGC_JOB_CSM_FINE_ALIGN_STAR_AT_MARK));
+    return (align_planet(ctx, ram->tsight, AGC_JOB_CSM_FINE_ALIGN_STAR_AT_MARK));
 }
 
 /*
@@ -220,8 +210,7 @@ agc_status_t agc_job_csm_fine_align_star_at_mark(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     const agc_mat_t refsmmat = agc_erase_refsmmat();
-    const agc_vec_t cat      = agc_vec_unit(
-        &ip, agc_mat_vec(&ip, &refsmmat, ram->planet_los), NULL, NULL);
+    const agc_vec_t cat      = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, ram->planet_los), NULL, NULL);
 
     if (ram->starind != 0)
     { /* R51.4    */
@@ -237,8 +226,7 @@ agc_status_t agc_job_csm_fine_align_star_at_mark(agc_job_ctx_t *ctx)
     ram->vac12     = ram->starsav1;
     ram->starad[1] = ram->planvec;
 
-    return (agc_align_sighting_data_display(ctx,
-                                            AGC_JOB_CSM_FINE_ALIGN_DATA_CHECKED));
+    return (agc_align_sighting_data_display(ctx, AGC_JOB_CSM_FINE_ALIGN_DATA_CHECKED));
 }
 
 /*
@@ -263,16 +251,14 @@ agc_status_t agc_job_csm_fine_align_data_checked(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     const agc_vec_t    a[2] = {ram->starad[0], ram->starad[1]};
     const agc_vec_t    b[2] = {ram->vac6, ram->vac12};
-    const agc_status_t st   =
-        agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
+    const agc_status_t st   = agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    return (agc_align_gyro_torquing(ctx,
-                                    AGC_JOB_CSM_FINE_ALIGN_TORQUED)); /* R55 */
+    return (agc_align_gyro_torquing(ctx, AGC_JOB_CSM_FINE_ALIGN_TORQUED)); /* R55 */
 }
 
 /* After R55: CLEAR PFRATFLG, R51K. */
@@ -304,7 +290,5 @@ agc_status_t agc_job_csm_fine_align_recheck(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_FINE_RECHECK,
-                        AGC_JOB_GOTOPOOH, AGC_JOB_CSM_REALIGN_STAR_SELECTION,
-                        AGC_JOB_GOTOPOOH));
+    return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_FINE_RECHECK, AGC_JOB_GOTOPOOH, AGC_JOB_CSM_REALIGN_STAR_SELECTION, AGC_JOB_GOTOPOOH));
 }

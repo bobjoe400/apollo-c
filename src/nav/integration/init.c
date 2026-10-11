@@ -24,12 +24,16 @@
  * 2OCT 3777737777 (DPPOSMAX). Indexed RME - PBODY: [0] earth, [1] moon. */
 static const agc_dp_t RME_CSM[2] = {3589083, 5076180};
 static const agc_dp_t RME_LM[2]  = {AGC_DP_MAX, AGC_DP_MAX};
+
 /* .3D 2DEC .3 B-2 (oct 02314 31463).                                     */
 static const agc_dp_t K_P3D = 20132659;
+
 /* DT/2MIN 2DEC 3 B-20 (oct 00000 01400): 3 cs in DT/2 format.            */
 static const agc_dp_t K_DT2MIN = 768;
+
 /* DT/2MAX 2DEC 4000 E2 B-20 (oct 14152 00000): 4000 s in DT/2 format.    */
 static const agc_dp_t K_DT2MAX = 102400000;
+
 /* OMEGMOON 2DEC* 2.66169947 E-8 B+23* (oct 07112 06620): lunar rotation
  * rate, rad/cs, scale 2^-23.                                             */
 static const agc_dp_t K_OMEGMOON = 59936144;
@@ -53,7 +57,7 @@ static agc_integ_ctx_t shared_ctx;
 typedef struct perm_ext
 {
     agc_vec_t deltav, nuv, rcv, vcv;
-    agc_dp_t  tc, xkep;
+    agc_dp_t tc, xkep;
 } perm_ext_t;
 
 static perm_ext_t perm_ext[2];
@@ -80,11 +84,7 @@ agc_dp_t agc_integ_loadtime(void)
 
 bool agc_integ_valid_ctx(const agc_integ_ctx_t *ctx)
 {
-    return ((ctx != NULL) &&
-            ((ctx->pbody == INTEG_PBODY_EARTH) ||
-             (ctx->pbody == INTEG_PBODY_MOON)) &&
-            (ctx->stage >= 0) && (ctx->stage <= 2) && (ctx->colreg >= 0) &&
-            (ctx->colreg < AGC_INTEG_W_COLUMNS));
+    return ((ctx != NULL) && ((ctx->pbody == INTEG_PBODY_EARTH) || (ctx->pbody == INTEG_PBODY_MOON)) && (ctx->stage >= 0) && (ctx->stage <= 2) && (ctx->colreg >= 0) && (ctx->colreg < AGC_INTEG_W_COLUMNS));
 }
 
 agc_integ_ctx_t *agc_integ_shared_ctx(void)
@@ -158,8 +158,7 @@ void agc_integ_thisvint(void)
 
 agc_status_t agc_integ_perm_get(agc_vehicle_t veh, agc_integ_sv_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) ||
-        !AGC_ASSERT((veh == AGC_VEHICLE_CSM) || (veh == AGC_VEHICLE_LM)))
+    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT((veh == AGC_VEHICLE_CSM) || (veh == AGC_VEHICLE_LM)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -182,8 +181,7 @@ agc_status_t agc_integ_perm_get(agc_vehicle_t veh, agc_integ_sv_t *out)
 
 agc_status_t agc_integ_perm_set(agc_vehicle_t veh, const agc_integ_sv_t *in)
 {
-    if (!AGC_ASSERT(in != NULL) ||
-        !AGC_ASSERT((veh == AGC_VEHICLE_CSM) || (veh == AGC_VEHICLE_LM)))
+    if (!AGC_ASSERT(in != NULL) || !AGC_ASSERT((veh == AGC_VEHICLE_CSM) || (veh == AGC_VEHICLE_LM)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -259,7 +257,7 @@ agc_status_t agc_integ_install(int area, agc_job_id_t resume_job)
         if (AGC_ASSERT(n_sleepers[area] < INTEG_MAX_SLEEPERS))
         {
             sleepers[area][n_sleepers[area]] = resume_job;
-            n_sleepers[area]                += 1;
+            n_sleepers[area]                 += 1;
         }
 
         return (AGC_STATUS_BUSY);
@@ -275,8 +273,7 @@ agc_status_t agc_integ_install(int area, agc_job_id_t resume_job)
 /* WAKE / WAKE1 (p. 1325): wake every job asleep on the area, release it. */
 static agc_status_t wake(int area)
 {
-    if (!AGC_ASSERT((area >= 0) && (area < AGC_INTEG_AREAS_MAX)) ||
-        !AGC_ASSERT(n_sleepers[area] <= INTEG_MAX_SLEEPERS))
+    if (!AGC_ASSERT((area >= 0) && (area < AGC_INTEG_AREAS_MAX)) || !AGC_ASSERT(n_sleepers[area] <= INTEG_MAX_SLEEPERS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -288,11 +285,10 @@ static agc_status_t wake(int area)
         agc_exec_job_wake_if_asleep(sleepers[area][i]); /* JOBWAKE */
     }
 
-    n_sleepers[area] = 0;
+    n_sleepers[area]   = 0;
     const uint16_t ras = agc_flagword_get(INTEG_RASFLAG_WORD);
 
-    agc_flagword_set(
-        INTEG_RASFLAG_WORD, (uint16_t) (ras & (uint16_t) ~INTBITAB[area]));
+    agc_flagword_set(INTEG_RASFLAG_WORD, (uint16_t) (ras & (uint16_t) ~INTBITAB[area]));
     agc_relint();
 
     return (AGC_STATUS_OK);
@@ -333,8 +329,7 @@ agc_status_t agc_integ_intwake0(void)
 
 agc_status_t agc_integ_eraswake(int area)
 {
-    if (!AGC_ASSERT((area == 1) || (area == 2)) ||
-        !AGC_ASSERT(area < area_count()))
+    if (!AGC_ASSERT((area == 1) || (area == 2)) || !AGC_ASSERT(area < area_count()))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -349,31 +344,26 @@ agc_status_t agc_integ_eraswake(int area)
  * is the CSM in both programs (this vehicle in the CM, the other in the
  * LM).  x2: PBODY, or AGC_INTEG_X2_ORIGEX after an A-PCHK origin change
  * (ORIGCHNG leaves X2 = its return address; SVDWN then stores zeros).    */
-static agc_status_t atop(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2,
-                         agc_vehicle_t veh)
+static agc_status_t atop(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2, agc_vehicle_t veh)
 {
     if (!AGC_ASSERT((veh == AGC_VEHICLE_CSM) || (veh == AGC_VEHICLE_LM)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(ip != NULL) ||
-        !AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == AGC_INTEG_X2_ORIGEX)))
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == AGC_INTEG_X2_ORIGEX)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_flag_id_t mflag =
-        (veh == AGC_VEHICLE_CSM) ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG;
-    agc_status_t st = agc_integ_perm_set(veh, &ctx->sv);
+    const agc_flag_id_t mflag = (veh == AGC_VEHICLE_CSM) ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG;
+    agc_status_t        st    = agc_integ_perm_set(veh, &ctx->sv);
 
     agc_flag_put(mflag, true);
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_integ_svdwn(ip, agc_state_vehicle() == veh, x2, ctx->sv.rcv,
-                             ctx->sv.vcv, ctx->sv.deltav, ctx->sv.nuv,
-                             ctx->sv.tet);
+        st = agc_integ_svdwn(ip, agc_state_vehicle() == veh, x2, ctx->sv.rcv, ctx->sv.vcv, ctx->sv.deltav, ctx->sv.nuv, ctx->sv.tet);
     }
 
     if (!agc_flag_test(AGC_FLAG_MOONFLAG))
@@ -430,13 +420,12 @@ static agc_status_t usepios(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     agc_vec_t            pole  = agc_vec_zero();
     const agc_vec_t      zunit = agc_vec_make(0, 0, AGC_DP_HALF);
 
-    ctx->sv.tet = ctx->tdec1;
+    ctx->sv.tet     = ctx->tdec1;
     agc_status_t st = agc_navaux_get_padload(&pad);
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_planet_rp_to_r(ip, &pad, true, agc_erase_rls(), ctx->sv.tet,
-                                &ctx->sv.rcv); /* m 2^27     */
+        st = agc_planet_rp_to_r(ip, &pad, true, agc_erase_rls(), ctx->sv.tet, &ctx->sv.rcv); /* m 2^27     */
     }
 
     if (st == AGC_STATUS_OK)
@@ -450,8 +439,7 @@ static agc_status_t usepios(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     }
 
     agc_flag_put(AGC_FLAG_MOONFLAG, true);
-    ctx->sv.vcv = agc_vec_scale(ip, agc_vec_cross(ip, pole, ctx->sv.rcv),
-                                K_OMEGMOON);    /* m/cs 2^5   */
+    ctx->sv.vcv    = agc_vec_scale(ip, agc_vec_cross(ip, pole, ctx->sv.rcv), K_OMEGMOON); /* m/cs 2^5   */
     ctx->sv.deltav = agc_vec_zero();
     ctx->sv.nuv    = agc_vec_zero();
     ctx->pbody     = INTEG_PBODY_MOON;
@@ -466,8 +454,7 @@ static agc_status_t usepios(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
 /* PTOALEM (p. 1316): USEPIOS when SURFFLAG, else MOVEPLEM and
  * SETMOON / CLRMOON from LMOONFLG.                                       */
-agc_status_t agc_integ_ptoalem(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                               bool *surface)
+agc_status_t agc_integ_ptoalem(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool *surface)
 {
     if (!AGC_ASSERT(surface != NULL))
     {
@@ -505,8 +492,7 @@ agc_status_t agc_integ_ptoalem(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
 /* NORFINAL (p. 1323): DT = .3 sqrt(R^3 / MU) truncated to a multiple of
  * 128 cs, limited to DT/2MAX (4000 s); result in DT/2 format (12D).     */
-static agc_dp_t norfinal(agc_interp_t *ip, const agc_integ_ctx_t *ctx,
-                         agc_dp_t rsq)
+static agc_dp_t norfinal(agc_interp_t *ip, const agc_integ_ctx_t *ctx, agc_dp_t rsq)
 {
     if (!AGC_ASSERT(rsq >= 0))
     {
@@ -518,13 +504,11 @@ static agc_dp_t norfinal(agc_interp_t *ip, const agc_integ_ctx_t *ctx,
         return (0); /* no valid result */
     }
 
-    agc_dp_t x =
-        agc_dp_shr_round(agc_tp_round_dp(agc_dp_mul_tp(ctx->rc, rsq)), 1);
+    agc_dp_t x = agc_dp_shr_round(agc_tp_round_dp(agc_dp_mul_tp(ctx->rc, rsq)), 1);
 
     x = agc_dp_sqrt(ip, agc_dp_div(ip, x, agc_integ_mu(ctx->pbody)));
-    x = agc_dp_shr(agc_tp_to_dp(agc_dp_mul_tp(x, K_P3D)),
-                   7);         /* SR3 SR4, DLOAD MPAC */
-    x = agc_dp_shl(ip, x, 15); /* SL 15D      */
+    x = agc_dp_shr(agc_tp_to_dp(agc_dp_mul_tp(x, K_P3D)), 7); /* SR3 SR4, DLOAD MPAC */
+    x = agc_dp_shl(ip, x, 15);                                /* SL 15D      */
 
     if (agc_interp_test_ovf(ip))
     {
@@ -553,8 +537,7 @@ static void dt2comp(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         return;
     }
 
-    const agc_dp_t dt =
-        agc_dp_shl(ip, agc_dp_sub(ip, ctx->tdec, ctx->sv.tet), 8);
+    const agc_dp_t dt = agc_dp_shl(ip, agc_dp_sub(ip, ctx->tdec, ctx->sv.tet), 8);
 
     ctx->dt2 = dt; /* DT/2 B-19   */
 
@@ -616,8 +599,7 @@ static agc_integ_next_t poohchk(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         return (INTEG_NEXT_INTEXIT); /* no backward */
     }
 
-    const agc_dp_t dt4 =
-        agc_dp_shr_round(agc_dp_shr(ctx->dt2, 4), 2); /* 4 DT */
+    const agc_dp_t dt4 = agc_dp_shr_round(agc_dp_shr(ctx->dt2, 4), 2); /* 4 DT */
 
     if (agc_dp_sub(ip, d, dt4) < 0)
     {
@@ -643,10 +625,9 @@ static agc_integ_next_t testloop(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     }
 
     const int       b   = ctx->pbody / 2;
-    const agc_dp_t *rme =
-        (agc_state_vehicle() == AGC_VEHICLE_CSM) ? RME_CSM : RME_LM;
+    const agc_dp_t *rme = (agc_state_vehicle() == AGC_VEHICLE_CSM) ? RME_CSM : RME_LM;
 
-    ctx->rc = agc_vec_abval(ip, ctx->sv.rcv); /* 10D         */
+    ctx->rc            = agc_vec_abval(ip, ctx->sv.rcv); /* 10D         */
     const agc_dp_t rsq = agc_vec_sq(ip, ctx->sv.rcv);    /* 34D         */
 
     agc_flag_put(AGC_FLAG_MIDFLAG, false);
@@ -704,9 +685,7 @@ static agc_integ_next_t a_pchk(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
         agc_integ_grp2pc(); /* OCT 04022   */
         agc_flag_put(AGC_FLAG_REINTFLG, true);
-        st = agc_flag_test(AGC_FLAG_VINTFLAG) ?
-             agc_integ_atopcsm(ip, ctx, x2) :
-             agc_integ_atoplem(ip, ctx, x2);
+        st = agc_flag_test(AGC_FLAG_VINTFLAG) ? agc_integ_atopcsm(ip, ctx, x2) : agc_integ_atoplem(ip, ctx, x2);
         agc_integ_grp2pc(); /* PHEXIT      */
     }
 
@@ -793,9 +772,7 @@ static agc_integ_next_t rvcon(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     ctx->tau = agc_dp_sub(ip, ctx->tdec, ctx->sv.tet);
 
-    if ((agc_integ_rectify(ip,
-                           ctx) != AGC_STATUS_OK) ||
-        (agc_integ_kepprep(ip, ctx) != AGC_STATUS_OK))
+    if ((agc_integ_rectify(ip, ctx) != AGC_STATUS_OK) || (agc_integ_kepprep(ip, ctx) != AGC_STATUS_OK))
     {
         return (INTEG_NEXT_FAIL);
     }
@@ -820,14 +797,12 @@ static agc_integ_next_t aloaded(agc_integ_ctx_t *ctx)
         return (INTEG_NEXT_FAIL);
     }
 
-    return (agc_flag_test(AGC_FLAG_INTYPFLG) ? INTEG_NEXT_RVCON :
-            INTEG_NEXT_TESTLOOP);
+    return (agc_flag_test(AGC_FLAG_INTYPFLG) ? INTEG_NEXT_RVCON : INTEG_NEXT_TESTLOOP);
 }
 
 /* INTEGRV2 (p. 1320): load A-memory from the permanent state vector of the
  * vehicle chosen by VINTFLAG, then ALOADED (or A-PCHK after USEPIOS).   */
-static agc_integ_next_t load_permanent_state(agc_interp_t    *ip,
-                                             agc_integ_ctx_t *ctx)
+static agc_integ_next_t load_permanent_state(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     bool surface = false;
 
@@ -841,9 +816,7 @@ static agc_integ_next_t load_permanent_state(agc_interp_t    *ip,
         return (INTEG_NEXT_FAIL);
     }
 
-    const agc_status_t st = agc_flag_test(AGC_FLAG_VINTFLAG) ?
-                            agc_integ_ptoacsm(ctx) :
-                            agc_integ_ptoalem(ip, ctx, &surface);
+    const agc_status_t st = agc_flag_test(AGC_FLAG_VINTFLAG) ? agc_integ_ptoacsm(ctx) : agc_integ_ptoalem(ip, ctx, &surface);
 
     if (st != AGC_STATUS_OK)
     {
@@ -859,9 +832,7 @@ static agc_integ_next_t wmatrix(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     agc_integ_grp2pc();
     agc_flag_put(AGC_FLAG_REINTFLG, true);
-    const agc_status_t st = agc_flag_test(AGC_FLAG_VINTFLAG) ?
-                            agc_integ_atopcsm(ip, ctx, ctx->pbody) :
-                            agc_integ_atoplem(ip, ctx, ctx->pbody);
+    const agc_status_t st = agc_flag_test(AGC_FLAG_VINTFLAG) ? agc_integ_atopcsm(ip, ctx, ctx->pbody) : agc_integ_atoplem(ip, ctx, ctx->pbody);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -896,8 +867,7 @@ static agc_integ_next_t reload(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  * failure of a called routine (C only) releases the lock (DEVIATION);
  * INT-ABRT (POODOO 00430) leaves it held as the AGC does.
  */
-agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                           agc_integ_next_t first)
+agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_integ_next_t first)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
@@ -957,8 +927,7 @@ agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 /* ---- entrances (p. 1318-1320) ----------------------------------------- */
 
 /* INTEGRV1 (p. 1320): SET RPQFLAG NEWIFLG, then INTEGRV2 and on.        */
-agc_status_t agc_integ_integrate_permanent(agc_interp_t    *ip,
-                                           agc_integ_ctx_t *ctx)
+agc_status_t agc_integ_integrate_permanent(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
@@ -973,9 +942,7 @@ agc_status_t agc_integ_integrate_permanent(agc_interp_t    *ip,
 }
 
 /* CSMPREC LEMPREC (IFLAGP) / CSMCONIC LEMCONIC (IFLAGC), p. 1318-1319.   */
-static agc_status_t special_entry(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                                  agc_dp_t tdec1, agc_job_id_t resume_job,
-                                  bool csm, bool conic)
+static agc_status_t special_entry(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job, bool csm, bool conic)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
     {
@@ -1003,8 +970,7 @@ static agc_status_t special_entry(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     return (agc_integ_integrate_permanent(ip, ctx));
 }
 
-agc_status_t agc_integ_csmprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                               agc_dp_t tdec1, agc_job_id_t resume_job)
+agc_status_t agc_integ_csmprec(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job)
 {
     if (!AGC_ASSERT((tdec1 >= AGC_DP_MIN) && (tdec1 <= AGC_DP_MAX)))
     {
@@ -1016,8 +982,7 @@ agc_status_t agc_integ_csmprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 
 /* THISPREC (EQUALS CSMPREC in Comanche, LEMPREC in Luminary) and OTHPREC
  * (the other vehicle): the precision entrances named by vehicle.        */
-agc_status_t agc_integ_thisprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                                agc_dp_t tdec1, agc_job_id_t resume_job)
+agc_status_t agc_integ_thisprec(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job)
 {
     bool csm = agc_state_vehicle() == AGC_VEHICLE_CSM;
 
@@ -1029,8 +994,7 @@ agc_status_t agc_integ_thisprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     return (special_entry(ip, ctx, tdec1, resume_job, csm, false));
 }
 
-agc_status_t agc_integ_othprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                               agc_dp_t tdec1, agc_job_id_t resume_job)
+agc_status_t agc_integ_othprec(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job)
 {
     bool csm = agc_state_vehicle() == AGC_VEHICLE_CSM;
 
@@ -1042,8 +1006,7 @@ agc_status_t agc_integ_othprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     return (special_entry(ip, ctx, tdec1, resume_job, !csm, false));
 }
 
-agc_status_t agc_integ_lemprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                               agc_dp_t tdec1, agc_job_id_t resume_job)
+agc_status_t agc_integ_lemprec(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job)
 {
     if (!AGC_ASSERT((tdec1 >= AGC_DP_MIN) && (tdec1 <= AGC_DP_MAX)))
     {
@@ -1053,8 +1016,7 @@ agc_status_t agc_integ_lemprec(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     return (special_entry(ip, ctx, tdec1, resume_job, false, false));
 }
 
-agc_status_t agc_integ_csmconic(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                                agc_dp_t tdec1, agc_job_id_t resume_job)
+agc_status_t agc_integ_csmconic(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job)
 {
     if (!AGC_ASSERT((tdec1 >= AGC_DP_MIN) && (tdec1 <= AGC_DP_MAX)))
     {
@@ -1064,8 +1026,7 @@ agc_status_t agc_integ_csmconic(agc_interp_t *ip, agc_integ_ctx_t *ctx,
     return (special_entry(ip, ctx, tdec1, resume_job, true, true));
 }
 
-agc_status_t agc_integ_lemconic(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                                agc_dp_t tdec1, agc_job_id_t resume_job)
+agc_status_t agc_integ_lemconic(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job)
 {
     if (!AGC_ASSERT((tdec1 >= AGC_DP_MIN) && (tdec1 <= AGC_DP_MAX)))
     {
@@ -1076,21 +1037,18 @@ agc_status_t agc_integ_lemconic(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 }
 
 /* INTEGRVS (p. 1319): integrate the caller's RCV, VCV, TET.              */
-agc_status_t agc_integ_integrvs(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                                agc_dp_t tdec1)
+agc_status_t agc_integ_integrvs(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
-        !AGC_ASSERT(agc_integ_area_busy(0)))
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) || !AGC_ASSERT(agc_integ_area_busy(0)))
     { /* INTSTALL held  */
         return (AGC_STATUS_BAD_ARG);
     }
 
-    ctx->tdec1 = tdec1;
+    ctx->tdec1            = tdec1;
     agc_flag_put(AGC_FLAG_PRECIFLG, true);
-    ctx->pbody =
-        agc_flag_test(AGC_FLAG_MOONFLAG) ? INTEG_PBODY_MOON : INTEG_PBODY_EARTH;
-    ctx->sv.deltav = agc_vec_zero();
-    ctx->sv.nuv    = agc_vec_zero();
+    ctx->pbody            = agc_flag_test(AGC_FLAG_MOONFLAG) ? INTEG_PBODY_MOON : INTEG_PBODY_EARTH;
+    ctx->sv.deltav        = agc_vec_zero();
+    ctx->sv.nuv           = agc_vec_zero();
     const agc_status_t st = agc_integ_rectify(ip, ctx);
 
     if (st != AGC_STATUS_OK)
@@ -1107,11 +1065,9 @@ agc_status_t agc_integ_integrvs(agc_interp_t *ip, agc_integ_ctx_t *ctx,
 }
 
 /* INTEGRV (p. 1320): caller-set flags, permanent state of VINTFLAG.     */
-agc_status_t agc_integ_integrv(agc_interp_t *ip, agc_integ_ctx_t *ctx,
-                               agc_dp_t tdec1)
+agc_status_t agc_integ_integrv(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1)
 {
-    if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)) ||
-        !AGC_ASSERT(agc_integ_area_busy(0)))
+    if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)) || !AGC_ASSERT(agc_integ_area_busy(0)))
     { /* INTSTALL held  */
         return (AGC_STATUS_BAD_ARG);
     }

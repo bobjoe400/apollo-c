@@ -18,7 +18,7 @@
 #define RT_BIT10    ((agc_sp_t) 512)  /* rescale torque to 32 jet-s          */
 #define RT_1_40     ((agc_sp_t) 410)  /* 1/40 = DEC .025 (00632)             */
 #define RT_BIT14    ((agc_sp_t) 8192)
-#define RT_OCT630   408 /* -OCT630 = 77147                     */
+#define RT_OCT630   408               /* -OCT630 = 77147                     */
 #define RT_FIVE     ((agc_sp_t) 5)
 #define RT_CALLCODE ((agc_sp_t) 26)   /* 00032: .1 at 2^6                    */
 #define RT_200MS    ((agc_sp_t) 3277) /* 200MS = DEC .2 (06315)              */
@@ -51,8 +51,7 @@ agc_status_t lm_dap_rateloop(void)
         {
             if ((int32_t) lm_dap_ccs_dim(tj) - RT_100MST6 > 0)
             { /* > 100 ms */
-                tj =
-                    (agc_sp_t) ((tj > 0) ? tj - RT_100MST6 : tj + RT_100MST6);
+                tj       = (agc_sp_t) ((tj > 0) ? tj - RT_100MST6 : tj + RT_100MST6);
                 d->tj[i] = tj;
                 torque   = (tj > 0) ? RT_100MS : (agc_sp_t) -RT_100MS;
             }
@@ -63,9 +62,9 @@ agc_status_t lm_dap_rateloop(void)
             }
         }
 
-        torque       = lm_dap_mp(torque, d->nojets[i]).lo; /* LOOPRATE: x NO.xJETS */
-        d->torque[i] = torque;
-        agc_sp_t t32  = lm_dap_mphi(torque, RT_BIT10); /* 32 jet-s, ~2 jet-ms/bit */
+        torque        = lm_dap_mp(torque, d->nojets[i]).lo; /* LOOPRATE: x NO.xJETS */
+        d->torque[i]  = torque;
+        agc_sp_t t32  = lm_dap_mphi(torque, RT_BIT10);      /* 32 jet-s, ~2 jet-ms/bit */
         int      slot = 2 * i;
 
         if (t32 <= 0)
@@ -74,8 +73,7 @@ agc_status_t lm_dap_rateloop(void)
             slot++;
         }
 
-        d->downtork[slot] =
-            lm_dap_wrap((int32_t) d->downtork[slot] + t32); /* overflows */
+        d->downtork[slot] = lm_dap_wrap((int32_t) d->downtork[slot] + t32); /* overflows */
 
         if (!AGC_ASSERT(slot >= 0 && slot < 6))
         {
@@ -159,12 +157,11 @@ static agc_sp_t measured_increment(lm_dp_pair_t om)
  *
  * RETURNS: none
  **********************************************************************/
-static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped,
-                        agc_sp_t *err_hi, agc_sp_t *err_lo, agc_sp_t last)
+static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped, agc_sp_t *err_hi, agc_sp_t *err_lo, agc_sp_t last)
 {
     agc_sp_t rate = measured_increment(inc);
 
-    *traped = lm_dap_sat((int32_t) *traped + rate - omega);
+    *traped        = lm_dap_sat((int32_t) *traped + rate - omega);
     lm_dp_pair_t e = {*err_hi, *err_lo};
 
     e       = lm_dap_das(e, inc);
@@ -203,9 +200,7 @@ static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped,
  *
  * RETURNS: bool -- true when a trap correction was made
  **********************************************************************/
-static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega,
-                      agc_sp_t omegan, agc_sp_t trap, agc_sp_t *corr,
-                      agc_sp_t *oldn)
+static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega, agc_sp_t omegan, agc_sp_t trap, agc_sp_t *corr, agc_sp_t *oldn)
 {
     bool big = (*traped != 0) && ((int32_t) lm_dap_ccs_dim(*traped) + trap > 0);
 
@@ -251,8 +246,7 @@ static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega,
  *
  * RETURNS: agc_sp_t -- new AOS major word, scaled pi/2 rad/s^2
  **********************************************************************/
-static agc_sp_t aos_update(agc_sp_t aos, agc_sp_t corr, agc_sp_t oldn,
-                           agc_sp_t kaosn)
+static agc_sp_t aos_update(agc_sp_t aos, agc_sp_t corr, agc_sp_t oldn, agc_sp_t kaosn)
 {
     agc_sp_t div = lm_dap_wrap((int32_t) oldn + kaosn);
 
@@ -292,34 +286,26 @@ agc_status_t lm_dap_backp(void)
     agc_sp_t xdif = lm_dap_msu(d->dapcdu[0], d->oldxforp); /* at pi   */
 
     d->oldxforp = d->dapcdu[0];
-    d->trapedp  = lm_dap_wrap((int32_t) d->trapedp +
-                              lm_dap_mphi((agc_sp_t) -d->jetrate[0], RT_BIT14));
+    d->trapedp  = lm_dap_wrap((int32_t) d->trapedp + lm_dap_mphi((agc_sp_t) -d->jetrate[0], RT_BIT14));
     agc_sp_t jq = lm_dap_sat((int32_t) d->jetrate[1] + d->aosqterm);
     agc_sp_t jr = lm_dap_sat((int32_t) d->jetrate[2] + d->aosrterm);
 
-    d->trapedq = lm_dap_wrap((int32_t) d->trapedq +
-                             lm_dap_mphi(jq, (agc_sp_t) -RT_BIT14));
-    d->trapedr = lm_dap_wrap((int32_t) d->trapedr +
-                             lm_dap_mphi(jr, (agc_sp_t) -RT_BIT14));
+    d->trapedq    = lm_dap_wrap((int32_t) d->trapedq + lm_dap_mphi(jq, (agc_sp_t) -RT_BIT14));
+    d->trapedr    = lm_dap_wrap((int32_t) d->trapedr + lm_dap_mphi(jr, (agc_sp_t) -RT_BIT14));
     agc_sp_t ydif = lm_dap_msu(d->dapcdu[1], d->oldyforp);
 
-    d->oldyforp = d->dapcdu[1];
+    d->oldyforp      = d->dapcdu[1];
     lm_dp_pair_t inc = lm_dap_mp(ydif, agc_erase_m11());
 
-    inc.hi = lm_dap_wrap((int32_t) inc.hi + xdif); /* M13 = 1 */
-    derive_axis(inc, d->omegap, &d->trapedp, &d->dxerror, &d->dxerror_lo,
-                d->plast);
+    inc.hi        = lm_dap_wrap((int32_t) inc.hi + xdif); /* M13 = 1 */
+    derive_axis(inc, d->omegap, &d->trapedp, &d->dxerror, &d->dxerror_lo, d->plast);
     agc_sp_t zdif = lm_dap_msu(d->dapcdu[2], d->oldzforq);
 
     d->oldzforq = d->dapcdu[2];
-    inc         = lm_dap_das(lm_dap_mp(agc_erase_m21(), ydif),
-                             lm_dap_mp(agc_erase_m22(), zdif));
-    derive_axis(inc, d->omegaq, &d->trapedq, &d->qerror, &d->dyerror_lo,
-                d->qlast);
-    inc = lm_dap_das(lm_dap_mp(agc_erase_m31(), ydif),
-                     lm_dap_mp(agc_erase_m32(), zdif));
-    derive_axis(inc, d->omegar, &d->trapedr, &d->rerror, &d->dzerror_lo,
-                d->rlast);
+    inc         = lm_dap_das(lm_dap_mp(agc_erase_m21(), ydif), lm_dap_mp(agc_erase_m22(), zdif));
+    derive_axis(inc, d->omegaq, &d->trapedq, &d->qerror, &d->dyerror_lo, d->qlast);
+    inc         = lm_dap_das(lm_dap_mp(agc_erase_m31(), ydif), lm_dap_mp(agc_erase_m32(), zdif));
+    derive_axis(inc, d->omegar, &d->trapedr, &d->rerror, &d->dzerror_lo, d->rlast);
 
     if (!AGC_ASSERT(d->oldxforp <= 077777u && d->oldzforq <= 077777u))
     {
@@ -337,9 +323,7 @@ agc_status_t lm_dap_backp(void)
     agc_sp_t trap   = docked ? d->dktrap : d->lmtrap;     /* DAPTREG6     */
     agc_sp_t corr   = 0;
     agc_sp_t oldn   = 0;
-    bool     ptrap  = trap_axis(&d->trapedp, &d->nptraps, &d->omegap, omegan,
-                                trap,
-                                &corr, &oldn);
+    bool     ptrap  = trap_axis(&d->trapedp, &d->nptraps, &d->omegap, omegan, trap, &corr, &oldn);
 
     if (!AGC_ASSERT(!ptrap || d->trapedp == 0)) /* no P offset   */
     {
@@ -348,16 +332,14 @@ agc_status_t lm_dap_backp(void)
 
     d->omegap = lm_dap_sat((int32_t) d->omegap + d->jetrate[0]); /* P-RATE */
 
-    if (trap_axis(&d->trapedq, &d->nqtraps, &d->omegaq, omegan, trap, &corr,
-                  &oldn))
+    if (trap_axis(&d->trapedq, &d->nqtraps, &d->omegaq, omegan, trap, &corr, &oldn))
     {
         d->aosq = aos_update(d->aosq, corr, oldn, kaosn);
     }
 
     d->omegaq = lm_dap_sat((int32_t) d->omegaq + d->jetrate[1] + d->aosqterm);
 
-    if (trap_axis(&d->trapedr, &d->nrtraps, &d->omegar, omegan, trap, &corr,
-                  &oldn))
+    if (trap_axis(&d->trapedr, &d->nrtraps, &d->omegar, omegan, trap, &corr, &oldn))
     {
         d->aosr = aos_update(d->aosr, corr, oldn, kaosn);
     }
@@ -408,11 +390,11 @@ agc_status_t lm_dap_offset_est(void)
 
     lm_dp_pair_t q = {d->aosq, d->aosq_lo}; /* WORKTIME */
 
-    q           = lm_dap_das(q, lm_dap_mp(d->qaccdot, RT_CALLCODE));
-    d->aosq     = q.hi;
-    d->aosq_lo  = q.lo;
-    d->alphaq   = q.hi;
-    d->aosqterm = lm_dap_mphi(q.hi, RT_200MS);
+    q              = lm_dap_das(q, lm_dap_mp(d->qaccdot, RT_CALLCODE));
+    d->aosq        = q.hi;
+    d->aosq_lo     = q.lo;
+    d->alphaq      = q.hi;
+    d->aosqterm    = lm_dap_mphi(q.hi, RT_200MS);
     lm_dp_pair_t r = {d->aosr, d->aosr_lo};
 
     r           = lm_dap_das(r, lm_dap_mp(d->raccdot, RT_CALLCODE));

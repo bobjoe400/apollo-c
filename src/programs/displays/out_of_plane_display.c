@@ -79,9 +79,7 @@ static oop_work_t oop_work = {{{0, 0, 0}}, 1U};
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz,
-                                            agc_vec_t rp, agc_vec_t vp,
-                                            agc_vec_t ra, agc_vec_t va)
+agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rp, agc_vec_t vp, agc_vec_t ra, agc_vec_t va)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
@@ -92,21 +90,20 @@ agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz,
      * push-down order: VATT x UNIT RATT).                               */
     agc_vec_t u; /* UNP36, 2^1 */
 
-    u = rz_unit(ip, agc_vec_cross(ip, vp, rz_unit(ip, rp)));
+    u             = rz_unit(ip, agc_vec_cross(ip, vp, rz_unit(ip, rp)));
     agc_vec_t los = agc_vec_sub(ip, rp, ra); /* 12D LOS, m 2^29 */
 
-    rz->range = agc_dp_shl(ip, agc_vec_dot(ip, ra, u), 1); /* Y         */
-    rz->rrate = agc_dp_shl(ip, agc_vec_dot(ip, va, u), 1); /* YDOT      */
-    agc_vec_t ura = rz_unit(ip, ra); /* 18D, 2^1 */
-    agc_vec_t ua; /* (URA x VA) x URA, 2^9 */
+    rz->range     = agc_dp_shl(ip, agc_vec_dot(ip, ra, u), 1); /* Y         */
+    rz->rrate     = agc_dp_shl(ip, agc_vec_dot(ip, va, u), 1); /* YDOT      */
+    agc_vec_t ura = rz_unit(ip, ra);                           /* 18D, 2^1 */
+    agc_vec_t ua;                                              /* (URA x VA) x URA, 2^9 */
 
     ua = agc_vec_cross(ip, agc_vec_cross(ip, ura, va), ura);
 
     ua = rz_unit(ip, rz_unit(ip, agc_vec_shl(ip, ua, 2))); /* 00D       */
-    agc_vec_t proj; /* m 2^29 */
+    agc_vec_t proj;                                        /* m 2^29 */
 
-    proj =
-        agc_vec_shl(ip, agc_vec_scale(ip, ura, agc_vec_dot(ip, ura, los)), 2);
+    proj = agc_vec_shl(ip, agc_vec_scale(ip, ura, agc_vec_dot(ip, ura, los)), 2);
     agc_vec_t ul; /* 2^1 */
 
     ul = rz_unit(ip, rz_unit(ip, agc_vec_sub(ip, los, proj)));
@@ -114,7 +111,7 @@ agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz,
 
     c = agc_dp_shl(ip, agc_vec_dot(ip, ul, ua), 1);
 
-    rz->rtheta = agc_dp_acos(ip, c);                         /* PSI       */
+    rz->rtheta = agc_dp_acos(ip, c); /* PSI       */
 
     if (agc_vec_dot(ip, agc_vec_cross(ip, ul, ua), ra) < 0)
     { /* BPL       */
@@ -194,8 +191,7 @@ agc_status_t agc_job_out_of_plane_vehicle(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 4U, 12U, AGC_JOB_RENDZ_ENDEXT,
-                     AGC_JOB_OUT_OF_PLANE_START, AGC_JOB_OUT_OF_PLANE_VEHICLE));
+    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 4U, 12U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_OUT_OF_PLANE_START, AGC_JOB_OUT_OF_PLANE_VEHICLE));
 }
 
 /**********************************************************************
@@ -259,8 +255,7 @@ agc_status_t agc_job_out_of_plane_time(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 16U, AGC_JOB_RENDZ_ENDEXT,
-                     AGC_JOB_OUT_OF_PLANE_COMPUTE, AGC_JOB_OUT_OF_PLANE_TIME));
+    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 16U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_OUT_OF_PLANE_COMPUTE, AGC_JOB_OUT_OF_PLANE_TIME));
 }
 
 /**********************************************************************
@@ -282,7 +277,7 @@ static rz_integ_kind_t oop_kind(bool passive)
 {
     bool reverse; /* CM option 2 */
 
-    reverse = rz_is_csm() && ((oop_work.optiony >> 1) != 0U);
+    reverse    = rz_is_csm() && ((oop_work.optiony >> 1) != 0U);
     bool other = (passive != reverse); /* OTHPREC */
 
     return (other ? RZ_OTHPREC : RZ_THISPREC); /* other or this vehicle */
@@ -317,7 +312,7 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
+    agc_rendz_t *rz = agc_rendz_erasable();     /* rendezvous erasables */
     agc_dp_t     t  = rz_dsptem_dp(RZ_DSPTEMX); /* event time, cs 2^28 */
 
     if (t == 0)
@@ -325,7 +320,7 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
         t = agc_rtb_loadtime(); /* ENTTIM2        */
     }
 
-    agc_integ_out_t o; /* integration result */
+    agc_integ_out_t o;  /* integration result */
     agc_status_t    st; /* passive */
 
     st = rz_integ(&ip, oop_kind(true), t, AGC_JOB_OUT_OF_PLANE_COMPUTE, &o);
@@ -336,18 +331,16 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
     }
 
     oop_work.rpass36 = o.ratt;
-    agc_vec_t vp = o.vatt; /* VPASS, m/cs 2^7 */
+    agc_vec_t vp     = o.vatt; /* VPASS, m/cs 2^7 */
 
-    st =
-        rz_integ(&ip, oop_kind(false), o.tat, AGC_JOB_OUT_OF_PLANE_COMPUTE, &o);
+    st = rz_integ(&ip, oop_kind(false), o.tat, AGC_JOB_OUT_OF_PLANE_COMPUTE, &o);
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    st = agc_rendz_out_of_plane_compute(&ip, rz, oop_work.rpass36, vp, o.ratt,
-                                        o.vatt);
+    st = agc_rendz_out_of_plane_compute(&ip, rz, oop_work.rpass36, vp, o.ratt, o.vatt);
 
     if (st == AGC_STATUS_OK)
     {
@@ -359,6 +352,5 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 90U, AGC_JOB_RENDZ_ENDEXT,
-                     AGC_JOB_RENDZ_ENDEXT, AGC_JOB_OUT_OF_PLANE_TIME));
+    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 90U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_OUT_OF_PLANE_TIME));
 } /* agc_job_out_of_plane_compute */

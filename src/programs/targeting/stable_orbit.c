@@ -61,6 +61,7 @@
 
 /* NN = 2 offsets (SSP NN 2 / DECTWO). */
 #define SO_NN_OFFSETS ((agc_sp_t) 2) /* SSP NN 2 */
+
 /* BLANKET bits after a GOFLASHR: R1 R2 = 3, R3 = BIT3, R2 R3 = 6.       */
 #define SO_BLANK_R1R2 ((uint16_t) 3) /* R1 R2 blanked */
 #define SO_BLANK_R3   ((uint16_t) 4) /* R3 blanked */
@@ -86,14 +87,11 @@
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-static agc_status_t so_flashr(const agc_job_ctx_t *ctx, uint8_t verb,
-                              uint8_t noun, uint16_t blank,
-                              agc_job_id_t proceed, agc_job_id_t recycle)
+static agc_status_t so_flashr(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, uint16_t blank, agc_job_id_t proceed, agc_job_id_t recycle)
 {
     agc_status_t st; /* GOFLASHR */
 
-    st = rz_flash(ctx, AGC_DSKY_GOFLASHR, verb, noun,
-                  AGC_JOB_GOTOPOOH, proceed, recycle);
+    st = rz_flash(ctx, AGC_DSKY_GOFLASHR, verb, noun, AGC_JOB_GOTOPOOH, proceed, recycle);
 
     if (st != AGC_STATUS_OK)
     {
@@ -129,8 +127,7 @@ static agc_status_t so_flashr(const agc_job_ctx_t *ctx, uint8_t verb,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the PRECSET, TIMETHET or
  *          S34/35.1 status
  **********************************************************************/
-static agc_status_t so_prec_tt(agc_interp_t *ip, agc_rendz_t *rz,
-                               agc_job_id_t resume, agc_dp_t *t)
+static agc_status_t so_prec_tt(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume, agc_dp_t *t)
 {
     agc_status_t st = rz_precset(ip, rz, agc_erase_tig(), resume); /* PRECSET */
 
@@ -141,9 +138,7 @@ static agc_status_t so_prec_tt(agc_interp_t *ip, agc_rendz_t *rz,
 
     agc_conic_time_out_t o; /* conic result */
 
-    st = rz_timethet_rv(ip, rz, rz->rpass3, rz->vpass3,
-                        agc_dp_sin(ip, rz->centang),
-                        agc_dp_cos(ip, rz->centang), true, &o);
+    st = rz_timethet_rv(ip, rz, rz->rpass3, rz->vpass3, agc_dp_sin(ip, rz->centang), agc_dp_cos(ip, rz->centang), true, &o);
 
     if (st != AGC_STATUS_OK)
     {
@@ -173,11 +168,9 @@ static agc_status_t so_prec_tt(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration status
  *          (INTSTALL sleep)
  **********************************************************************/
-static agc_status_t so_intrpvp(agc_interp_t *ip, agc_dp_t tdec1,
-                               agc_job_id_t resume, agc_integ_out_t *o)
+static agc_status_t so_intrpvp(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t resume, agc_integ_out_t *o)
 {
-    rz_integ_kind_t k =
-        agc_flag_test(AGC_FLAG_AVFLAG) ? RZ_CSMPREC : RZ_LEMPREC; /* passive */
+    rz_integ_kind_t k = agc_flag_test(AGC_FLAG_AVFLAG) ? RZ_CSMPREC : RZ_LEMPREC; /* passive */
 
     return (rz_integ(ip, k, tdec1, resume, o));
 }
@@ -199,8 +192,7 @@ static agc_status_t so_intrpvp(agc_interp_t *ip, agc_dp_t tdec1,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz,
-                                          agc_vec_t ratt, agc_vec_t vatt)
+agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t ratt, agc_vec_t vatt)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
@@ -208,14 +200,14 @@ agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz,
     }
 
     agc_vec_t ur = rz_unit(ip, ratt); /* RP/(RP) 0D, 2^1 */
-    agc_dp_t  h; /* |V x UR|, m/cs 2^8 */
+    agc_dp_t  h;                      /* |V x UR|, m/cs 2^8 */
 
-    h = rz_abval(ip, agc_vec_cross(ip, vatt, ur));
-    int      x1 = 0;  /* NORM index, -(left shifts) */
-    agc_dp_t hn = rz_norm(h, &x1); /* NORM X1, 2^(8+X1) */
-    agc_dp_t d  = agc_dp_div(ip, rz->deltar, hn);  /* DDV, cs 2^28 after SL* */
+    h           = rz_abval(ip, agc_vec_cross(ip, vatt, ur));
+    int      x1 = 0;                              /* NORM index, -(left shifts) */
+    agc_dp_t hn = rz_norm(h, &x1);                /* NORM X1, 2^(8+X1) */
+    agc_dp_t d  = agc_dp_div(ip, rz->deltar, hn); /* DDV, cs 2^28 after SL* */
 
-    rz->delttime = rz_sl_star(ip, d, -7, x1);      /* SL* 0 -7,1     */
+    rz->delttime = rz_sl_star(ip, d, -7, x1); /* SL* 0 -7,1     */
 
     if (!AGC_ASSERT(hn >= 0))
     {
@@ -349,8 +341,7 @@ agc_status_t agc_job_stable_orbit_centang(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (so_flashr(ctx, 6U, 55U, SO_BLANK_R1R2, AGC_JOB_STABLE_ORBIT_OPTION,
-                      AGC_JOB_STABLE_ORBIT_CENTANG));
+    return (so_flashr(ctx, 6U, 55U, SO_BLANK_R1R2, AGC_JOB_STABLE_ORBIT_OPTION, AGC_JOB_STABLE_ORBIT_CENTANG));
 }
 
 /**********************************************************************
@@ -413,9 +404,7 @@ agc_status_t agc_job_stable_orbit_option_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (so_flashr(ctx, 4U, 6U, SO_BLANK_R3,
-                      AGC_JOB_STABLE_ORBIT_OPTION_CHOSEN,
-                      AGC_JOB_STABLE_ORBIT_OPTION_DISPLAY));
+    return (so_flashr(ctx, 4U, 6U, SO_BLANK_R3, AGC_JOB_STABLE_ORBIT_OPTION_CHOSEN, AGC_JOB_STABLE_ORBIT_OPTION_DISPLAY));
 }
 
 /**********************************************************************
@@ -454,7 +443,7 @@ agc_status_t agc_job_stable_orbit_option_chosen(agc_job_ctx_t *ctx)
     }
 
     if ((rz_option(2) >> 1) != 0U)
-    {                            /* SR1 BHIZ: SOR  */
+    { /* SR1 BHIZ: SOR  */
         rz->deltar = rz->tpass4; /* TINTSOI = TINT */
         rz_flag_put(AGC_FLAG_OPTNSW, false);
 
@@ -463,8 +452,8 @@ agc_status_t agc_job_stable_orbit_option_chosen(agc_job_ctx_t *ctx)
 
     rz_flag_put(AGC_FLAG_OPTNSW, true); /* OPTN1          */
     rz_flag_put(AGC_FLAG_UPDATFLG, false);
-    agc_dp_t     t = 0;  /* transfer time, cs 2^28 */
-    agc_status_t st; /* PREC/TT */
+    agc_dp_t     t = 0;                 /* transfer time, cs 2^28 */
+    agc_status_t st;                    /* PREC/TT */
 
     st = so_prec_tt(&ip, rz, AGC_JOB_STABLE_ORBIT_OPTION_CHOSEN, &t);
 
@@ -511,9 +500,7 @@ agc_status_t agc_job_stable_orbit_deltar(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (so_flashr(ctx, 6U, 57U, SO_BLANK_R2R3,
-                      AGC_JOB_STABLE_ORBIT_INTERCEPT_TIME,
-                      AGC_JOB_STABLE_ORBIT_DELTAR));
+    return (so_flashr(ctx, 6U, 57U, SO_BLANK_R2R3, AGC_JOB_STABLE_ORBIT_INTERCEPT_TIME, AGC_JOB_STABLE_ORBIT_DELTAR));
 }
 
 /**********************************************************************
@@ -624,8 +611,8 @@ agc_status_t agc_job_stable_orbit_recycle(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
-    agc_dp_t     t  = 0; /* transfer time, cs 2^28 */
-    agc_status_t st; /* PREC/TT */
+    agc_dp_t     t  = 0;                    /* transfer time, cs 2^28 */
+    agc_status_t st;                        /* PREC/TT */
 
     st = so_prec_tt(&ip, rz, AGC_JOB_STABLE_ORBIT_RECYCLE, &t);
 
@@ -690,8 +677,8 @@ agc_status_t agc_job_stable_orbit_target(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_rendz_t    *rz = agc_rendz_erasable(); /* rendezvous erasables */
-    agc_integ_out_t o; /* integration result */
-    agc_status_t    st; /* INTRPVP */
+    agc_integ_out_t o;                         /* integration result */
+    agc_status_t    st;                        /* INTRPVP */
 
     st = so_intrpvp(&ip, rz->targtime, AGC_JOB_STABLE_ORBIT_TARGET, &o);
 
@@ -701,8 +688,7 @@ agc_status_t agc_job_stable_orbit_target(agc_job_ctx_t *ctx)
     }
 
     rz->intime = agc_erase_tig();
-    st         = agc_rendz_intercept_velocity(&ip, rz, o.ratt, o.vatt,
-                                              AGC_JOB_STABLE_ORBIT_TARGET);
+    st         = agc_rendz_intercept_velocity(&ip, rz, o.ratt, o.vatt, AGC_JOB_STABLE_ORBIT_TARGET);
 
     if (st != AGC_STATUS_OK)
     {
@@ -723,7 +709,7 @@ agc_status_t agc_job_stable_orbit_target(agc_job_ctx_t *ctx)
 
     rz->delvtpi = rz_abval(&ip, rz->delveet3); /* MAINRTN1       */
     rz->delvtpf = rz_abval(&ip, agc_vec_sub(&ip, rz->vpass4, rz->vtprime));
-    agc_rendz_periapo_t pa; /* PERIAPO1 results */
+    agc_rendz_periapo_t pa;                    /* PERIAPO1 results */
 
     st = agc_rendz_periapo_body_scale(&ip, rz, rz->ract3, rz->viprime, &pa);
 
@@ -791,7 +777,7 @@ agc_status_t agc_job_stable_orbit_dv_accepted(agc_job_ctx_t *ctx)
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     rz_flag_put(AGC_FLAG_XDELVFLG, false);
-    rz->delvsin = rz->delveet3;
+    rz->delvsin       = rz->delveet3;
     agc_job_id_t next = AGC_JOB_STABLE_ORBIT_RECYCLE; /* P38: RECYCLE */
 
     if (agc_flag_test(AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE))
@@ -829,7 +815,7 @@ static agc_status_t som_start(agc_job_ctx_t *ctx, bool this_active)
     rz->kt = this_active ? rz->atiginc : rz->ptiginc; /* ATIGINC / PTIGINC */
     rz_tracking_flags_on();
     rz_flag_put(AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE, true);
-    agc_status_t st; /* SELECTMU */
+    agc_status_t st;                                  /* SELECTMU */
 
     st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
 
@@ -840,8 +826,7 @@ static agc_status_t som_start(agc_job_ctx_t *ctx, bool this_active)
 
     rz_flag_put(AGC_FLAG_FINALFLG, false);
 
-    return (rz_ttogo_display(ctx, &ip, rz,
-                             AGC_JOB_STABLE_ORBIT_MIDCOURSE_COMPUTE));
+    return (rz_ttogo_display(ctx, &ip, rz, AGC_JOB_STABLE_ORBIT_MIDCOURSE_COMPUTE));
 }
 
 /**********************************************************************
@@ -951,9 +936,8 @@ agc_status_t agc_job_stable_orbit_midcourse_advance(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
-    agc_status_t st = rz_precset(&ip, rz, agc_erase_tig(), /* PRECSET */
-                                 AGC_JOB_STABLE_ORBIT_MIDCOURSE_ADVANCE);
+    agc_rendz_t *rz = agc_rendz_erasable();                                                         /* rendezvous erasables */
+    agc_status_t st = rz_precset(&ip, rz, agc_erase_tig(), AGC_JOB_STABLE_ORBIT_MIDCOURSE_ADVANCE); /* PRECSET */
 
     if (st != AGC_STATUS_OK)
     {

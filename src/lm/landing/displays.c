@@ -51,13 +51,13 @@
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
 
-#define LD_ARCONV   10498 /* OCT 24402: 656.1679798 B-10, rate to bits */
-#define LD_ARTOA    873   /* DEC .1066098 B-1: .25/2.345, 4x/s cycle   */
-#define LD_ARTOA2   8943  /* DEC .0021322 B8: .5/(2.345)(100)          */
-#define LD_VELCONV  9422  /* OCT 22316: 588.914 B-10, vel to bits      */
-#define LD_KPIP1_5  839   /* KPIP1(5) DEC .0512: DELV to m/cs 2^5      */
-#define LD_MAXVBITS 359   /* OCT 00547: 199.9989 ft/s                  */
-#define LD_1SEC     100 /* 1SEC: 100 cs (DV divisor, 2^14 cs) */
+#define LD_ARCONV   10498   /* OCT 24402: 656.1679798 B-10, rate to bits */
+#define LD_ARTOA    873     /* DEC .1066098 B-1: .25/2.345, 4x/s cycle   */
+#define LD_ARTOA2   8943    /* DEC .0021322 B8: .5/(2.345)(100)          */
+#define LD_VELCONV  9422    /* OCT 22316: 588.914 B-10, vel to bits      */
+#define LD_KPIP1_5  839     /* KPIP1(5) DEC .0512: DELV to m/cs 2^5      */
+#define LD_MAXVBITS 359     /* OCT 00547: 199.9989 ft/s                  */
+#define LD_1SEC     100     /* 1SEC: 100 cs (DV divisor, 2^14 cs) */
 #define LD_BIT7     0100u   /* IMODES33: 0 do ALTRATE, 1 do ALTITUDE     */
 #define LD_BIT8     0200u   /* IMODES33: inertial data flag              */
 #define LD_BITS8_7  0300u   /* BITS8/7: inertial data, interleave flags  */
@@ -76,11 +76,11 @@ static agc_sp_t  ld_dt;       /* DT  time since PIPTIME, cs (2^14 wrap)   */
 static agc_sp_t  ld_vvect[3]; /* VVECT velocity now, m/cs 2^5 (high words) */
 static agc_sp_t  ld_vhy;      /* VHY cross-range velocity, m/cs 2^5       */
 static agc_sp_t  ld_vhz;      /* VHZ down-range velocity, m/cs 2^5        */
-static agc_sp_t  ld_altrate; /* ALTRATE, bits of .5 ft/s, 2^14            */
-static agc_dp_t  ld_altsave; /* ALTSAVE, +1: altitude, bit units, 2^28 */
-static agc_sp_t  ld_vel[2]; /* LATVEL, FORVEL, bit units (.5571 ft/s), 2^14 */
-static agc_sp_t  ld_metr[2]; /* LATVMETR, FORVMETR meter positions, bits 2^14 */
-static agc_sp_t  ld_trak[2]; /* TRAKLATV, TRAKFWDV stop, -1/0/+1, 2^14    */
+static agc_sp_t  ld_altrate;  /* ALTRATE, bits of .5 ft/s, 2^14            */
+static agc_dp_t  ld_altsave;  /* ALTSAVE, +1: altitude, bit units, 2^28 */
+static agc_sp_t  ld_vel[2];   /* LATVEL, FORVEL, bit units (.5571 ft/s), 2^14 */
+static agc_sp_t  ld_metr[2];  /* LATVMETR, FORVMETR meter positions, bits 2^14 */
+static agc_sp_t  ld_trak[2];  /* TRAKLATV, TRAKFWDV stop, -1/0/+1, 2^14    */
 
 /**********************************************************************
  * AGC: none (CS/MASK/ADS idiom on IMODES33, LANDING_ANALOG_DISPLAYS.agc
@@ -97,9 +97,7 @@ static void ld_imodes33_bits(uint16_t set, uint16_t clear)
         return;
     }
 
-    uint16_t w = /* new IMODES33 */
-                 (uint16_t) ((agc_erase_imodes33() | set) &
-                             ~(unsigned int) clear);
+    uint16_t w = (uint16_t) ((agc_erase_imodes33() | set) & ~(unsigned int) clear); /* new IMODES33 */
 
     agc_erase_set_imodes33(w);
 
@@ -159,8 +157,7 @@ static agc_sp_t ld_mp_dbl(agc_sp_t a, agc_sp_t b, int n)
         return (0); /* no valid result */
     }
 
-    int32_t p = /* MP product times 2^n, 2^-28 units */
-                (int32_t) a * (int32_t) b * (1 << n);
+    int32_t p = (int32_t) a * (int32_t) b * (1 << n); /* MP product times 2^n, 2^-28 units */
 
     return (ld_wrap(p / 16384));
 }
@@ -178,7 +175,7 @@ static agc_sp_t ld_mp_dbl(agc_sp_t a, agc_sp_t b, int n)
  **********************************************************************/
 static agc_sp_t ld_quadruple_high(agc_dp_t x)
 {
-    agc_ovf_t ovf = 0; /* overflow of the doubling (wrapped) */
+    agc_ovf_t ovf = 0;                          /* overflow of the doubling (wrapped) */
     agc_dp_t  d   = agc_dp_shl_raw(x, 2, &ovf); /* 4x, DP, 2^(S-2) */
 
     if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
@@ -273,23 +270,20 @@ static agc_status_t ld_dataout(uint16_t word)
  **********************************************************************/
 static agc_status_t ld_altrout(void)
 {
-    ld_imodes33_bits(LD_BIT7, 0u); /* altitude next time         */
+    ld_imodes33_bits(LD_BIT7, 0u);                  /* altitude next time         */
     agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_ALTRATESEL);
     const agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
-    int32_t              r = 0; /* RUNIT . VVECT accumulator, m/cs 2^6 */
+    int32_t              r = 0;                     /* RUNIT . VVECT accumulator, m/cs 2^6 */
 
     for (int i = 0; i < 3; i++)
     {
         r += agc_lm_mp_hi(g->runit[i], ld_vvect[i]); /* m/cs 2^6       */
     }
 
-    agc_sp_t rate = /* altitude rate, bit units 2^14 */
-                    ld_mp_dbl(LD_ARCONV, ld_wrap(r), 2);
+    agc_sp_t rate = ld_mp_dbl(LD_ARCONV, ld_wrap(r), 2); /* altitude rate, bit units 2^14 */
 
     ld_altrate = agc_lm_ad(agc_lm_mp_hi(g->daltrate, ld_dt), rate);
-    uint16_t w = (ld_altrate < 0) ? /* ALTM: -rate, or rate | bit 15  */
-                 (uint16_t) (-ld_altrate) :
-                 (uint16_t) ((uint16_t) ld_altrate | LD_BIT15W); /* not +0 */
+    uint16_t w = (ld_altrate < 0) ? (uint16_t) (-ld_altrate) : (uint16_t) ((uint16_t) ld_altrate | LD_BIT15W); /* ALTM: -rate, or rate | bit 15; not +0 */
 
     if (!AGC_ASSERT(w != 0u || ld_altrate < 0)) /* never +0       */
     {
@@ -318,9 +312,8 @@ static agc_status_t ld_altrout(void)
  **********************************************************************/
 static agc_status_t ld_extrapolate(agc_sp_t factor)
 {
-    int32_t inc = /* ALTRATE x factor, bit units 2^28 */
-                  ld_mp_dbl(factor, ld_altrate, 1);
-    int32_t total = ld_altsave + inc; /* AD, carry      */
+    int32_t inc   = ld_mp_dbl(factor, ld_altrate, 1); /* ALTRATE x factor, bit units 2^28 */
+    int32_t total = ld_altsave + inc;                 /* AD, carry      */
 
     if (total < 0)
     {
@@ -336,7 +329,7 @@ static agc_status_t ld_extrapolate(agc_sp_t factor)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t top = (hi > 0) ? LD_BIT15W : 0u; /* bit 15 = high word (+1/+0) */
+    uint16_t top = (hi > 0) ? LD_BIT15W : 0u;        /* bit 15 = high word (+1/+0) */
     uint16_t w   = (uint16_t) (top + (uint16_t) lo); /* 15-bit unsigned ALTM */
 
     if (!AGC_ASSERT(lo >= 0))
@@ -357,9 +350,8 @@ static agc_status_t ld_extrapolate(agc_sp_t factor)
  **********************************************************************/
 static agc_status_t ld_altout(void)
 {
-    ld_imodes33_bits(0u, LD_BIT7); /* altitude rate next time    */
-    agc_chan_and(AGC_CHAN_CHAN14,
-                 (uint16_t) (077777u & ~(unsigned int) AGC_CH014_ALTRATESEL));
+    ld_imodes33_bits(0u, LD_BIT7);            /* altitude rate next time    */
+    agc_chan_and(AGC_CHAN_CHAN14, (uint16_t) (077777u & ~(unsigned int) AGC_CH014_ALTRATESEL));
     agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
 
     if (!AGC_ASSERT((agc_erase_imodes33() & LD_BIT7) == 0u)) /* rate next */
@@ -379,9 +371,8 @@ static agc_status_t ld_altout(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    g->altbits = agc_dp_from_sp(-1); /* -1: extrapolate next pass     */
-    agc_sp_t dt9 = /* DT rescaled to 2^9 cs */
-                   agc_lm_dv((agc_dp_t) ld_dt * 16384, 512);
+    g->altbits   = agc_dp_from_sp(-1);                       /* -1: extrapolate next pass     */
+    agc_sp_t dt9 = agc_lm_dv((agc_dp_t) ld_dt * 16384, 512); /* DT rescaled to 2^9 cs */
 
     return (ld_extrapolate(agc_lm_mp_hi(dt9, LD_ARTOA2)));
 }
@@ -426,30 +417,24 @@ static agc_status_t ld_continue(void)
  **********************************************************************/
 static agc_status_t ld_speedrun(void)
 {
-    const agc_guid_t *g = agc_guid_state(); /* guidance state */
-    int32_t           d = (int32_t) agc_lm_time1() - agc_dp_low(
-        agc_erase_piptime()); /* TIME1 - PIPTIME +1, cs (TIME1 may wrap) */
+    const agc_guid_t *g = agc_guid_state();                                           /* guidance state */
+    int32_t           d = (int32_t) agc_lm_time1() - agc_dp_low(agc_erase_piptime()); /* TIME1 - PIPTIME +1, cs (TIME1 may wrap) */
 
-    ld_dt = (agc_sp_t) (d & 0x3FFF); /* AD HALF, HALF  */
+    ld_dt                  = (agc_sp_t) (d & 0x3FFF); /* AD HALF, HALF  */
     const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(),
                               agc_erase_pipaz()};
 
     for (int i = 0; i < 3; i++)
     {
-        agc_sp_t g4 = /* high word of 4 GDT/2, m/cs 2^5 */
-                      ld_quadruple_high(g->avg.gdt_2.c[i]);
-        agc_sp_t gt = /* G (T - TN), m/cs 2^5 */
-                      agc_lm_dv(agc_sp_mul(g4, ld_dt), LD_1SEC);
-        agc_sp_t v4 = ld_quadruple_high(g->lm.v.c[i]); /* m/cs 2^5       */
-        agc_sp_t dv = /* DELV now, m/cs 2^5 */
-                      agc_lm_mp_hi(agc_lm_ad(pipa[i], g->avg.pipatmp[i]),
-                                   LD_KPIP1_5);
+        agc_sp_t g4 = ld_quadruple_high(g->avg.gdt_2.c[i]);                            /* high word of 4 GDT/2, m/cs 2^5 */
+        agc_sp_t gt = agc_lm_dv(agc_sp_mul(g4, ld_dt), LD_1SEC);                       /* G (T - TN), m/cs 2^5 */
+        agc_sp_t v4 = ld_quadruple_high(g->lm.v.c[i]);                                 /* m/cs 2^5       */
+        agc_sp_t dv = agc_lm_mp_hi(agc_lm_ad(pipa[i], g->avg.pipatmp[i]), LD_KPIP1_5); /* DELV now, m/cs 2^5 */
 
         ld_vvect[i] = agc_lm_ad(agc_lm_ad(gt, v4), dv);
     }
 
-    agc_status_t st = /* VARDELAY */
-                      agc_waitlist_call(4, AGC_TASK_SPEEDRUN_RESUME);
+    agc_status_t st = agc_waitlist_call(4, AGC_TASK_SPEEDRUN_RESUME); /* VARDELAY */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -523,6 +508,7 @@ agc_status_t agc_lm_landisp(void)
     }
 
     agc_guid_state()->avg.pipctr = agc_lm_pipctr1(); /* PHSPRDT2       */
+
     /* DEVIATION: TBASE2 = TIME1 via NEWPHASE of the current group 2 phase */
     agc_phase_newphase(2, agc_phase_get(2), true);
 
@@ -531,10 +517,8 @@ agc_status_t agc_lm_landisp(void)
         return (ld_disprset());
     }
 
-    ld_altpath =
-        ((agc_erase_imodes33() & LD_BIT7) != 0u) ? /* bit 7: altitude */
-        LD_ALTOUT : LD_ALTROUT;
-    agc_status_t st = ld_disindat(); /* step status */
+    ld_altpath      = ((agc_erase_imodes33() & LD_BIT7) != 0u) ? LD_ALTOUT : LD_ALTROUT; /* bit 7: altitude */
+    agc_status_t st = ld_disindat();                                                     /* step status */
 
     if (st != AGC_STATUS_OK || ld_altpath == LD_NONE)
     {
@@ -566,8 +550,7 @@ agc_status_t agc_lm_task_intlze(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) &
-                     AGC_CH012_ENBRRCDUERR) != 0u))
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ENBRRCDUERR) != 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -589,8 +572,7 @@ agc_status_t agc_lm_task_intlze(void)
  *
  * RETURNS: agc_sp_t -- meter increment for CDUTCMD/CDUSCMD, bit units
  **********************************************************************/
-static agc_sp_t ld_vmon_delta(agc_sp_t vel, agc_sp_t metr, agc_sp_t trak,
-                              agc_sp_t *trak_new)
+static agc_sp_t ld_vmon_delta(agc_sp_t vel, agc_sp_t metr, agc_sp_t trak, agc_sp_t *trak_new)
 {
     const int32_t mx = LD_MAXVBITS; /* MAXVBITS meter stop, bits */
 
@@ -620,20 +602,17 @@ static agc_sp_t ld_vmon_delta(agc_sp_t vel, agc_sp_t metr, agc_sp_t trak,
 
         *trak_new = (vel <= 0) ? -1 : 1; /* NEG/POSVMAXY  */
 
-        return ((vel <= 0) ? /* NEGVMAXY : POSVMAXY, meter to the stop */
-                (agc_sp_t) (-(metr + mx)) : (agc_sp_t) (mx - metr));
+        return ((vel <= 0) ? (agc_sp_t) (-(metr + mx)) : (agc_sp_t) (mx - metr)); /* NEGVMAXY : POSVMAXY, meter to the stop */
     }
 
     if (trak > 0)
     { /* LATVPOS       */
-        return ((vel >= 0) ? /* follow the velocity, or back to zero */
-                (agc_sp_t) (vel - metr) : (agc_sp_t) -metr);
+        return ((vel >= 0) ? (agc_sp_t) (vel - metr) : (agc_sp_t) -metr); /* follow the velocity, or back to zero */
     }
 
     if (trak < 0)
     { /* LATVNEG       */
-        return ((vel <= 0) ? /* follow the velocity, or back to zero */
-                (agc_sp_t) (vel - metr) : (agc_sp_t) -metr);
+        return ((vel <= 0) ? (agc_sp_t) (vel - metr) : (agc_sp_t) -metr); /* follow the velocity, or back to zero */
     }
 
     if (metr >= 0)
@@ -665,19 +644,18 @@ agc_status_t agc_lm_vmonitor(void)
 {
     for (int i = 1; i >= 0; i--)
     { /* ITEMP5 1, 0   */
-        agc_sp_t tn = 0; /* new TRAK value, -1/0/+1, 2^14       */
-        agc_sp_t d  = /* meter increment, bits 2^14          */
-                      ld_vmon_delta(ld_vel[i], ld_metr[i], ld_trak[i], &tn);
+        agc_sp_t tn = 0;                                                     /* new TRAK value, -1/0/+1, 2^14       */
+        agc_sp_t d  = ld_vmon_delta(ld_vel[i], ld_metr[i], ld_trak[i], &tn); /* meter increment, bits 2^14 */
 
         ld_trak[i] = tn;
+
         /* DEVIATION: AD NEG0 turns +0 into -0 for the DINC hardware;
          * there is no -0 here.                                         */
         agc_erase_set_cdutcmd(i, d);
         ld_metr[i] = agc_lm_ad(ld_metr[i], d);
     }
 
-    agc_chan_or(AGC_CHAN_CHAN14,
-                (uint16_t) (AGC_CH014_DRIVECDUS | AGC_CH014_DRIVECDUT));
+    agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) (AGC_CH014_DRIVECDUS | AGC_CH014_DRIVECDUT));
 
     if (!AGC_ASSERT(ld_trak[0] >= -1 && ld_trak[0] <= 1))
     {
@@ -714,26 +692,23 @@ agc_status_t agc_lm_task_speedrun_resume(void)
 
     for (int i = 0; i < 3; i++)
     {
-        agc_sp_t v = /* VVECT - DELVS component, m/cs 2^5 */
-                     agc_lm_ad(agc_dp_high(g->delvs.c[i]), ld_vvect[i]);
+        agc_sp_t v = agc_lm_ad(agc_dp_high(g->delvs.c[i]), ld_vvect[i]); /* VVECT - DELVS component, m/cs 2^5 */
 
         hy += agc_lm_mp_hi(v, agc_dp_high(g->uhyp.c[i]));
         hz += agc_lm_mp_hi(v, agc_dp_high(g->uhzp.c[i]));
     }
 
-    ld_vhy = ld_wrap(2 * (int32_t) ld_wrap(hy)); /* DOUBLE        */
-    ld_vhz = ld_wrap(2 * (int32_t) ld_wrap(hz));
-    agc_sp_t s   = agc_erase_m22(); /* M22 = sin AOG, 2^0 */
-    agc_sp_t c   = agc_erase_m32(); /* M32 = cos AOG, 2^0 */
-    int32_t  lat = /* lateral velocity, m/cs 2^5 */
-                   (int32_t) agc_lm_mp_hi(c, ld_vhy) + agc_lm_mp_hi(s, ld_vhz);
+    ld_vhy       = ld_wrap(2 * (int32_t) ld_wrap(hy));                          /* DOUBLE        */
+    ld_vhz       = ld_wrap(2 * (int32_t) ld_wrap(hz));
+    agc_sp_t s   = agc_erase_m22();                                             /* M22 = sin AOG, 2^0 */
+    agc_sp_t c   = agc_erase_m32();                                             /* M32 = cos AOG, 2^0 */
+    int32_t  lat = (int32_t) agc_lm_mp_hi(c, ld_vhy) + agc_lm_mp_hi(s, ld_vhz); /* lateral velocity, m/cs 2^5 */
 
-    ld_vel[0] = ld_mp_dbl(LD_VELCONV, ld_wrap(lat), 1); /* LATVEL        */
-    int32_t fwd = /* forward velocity, m/cs 2^5 */
-                  (int32_t) agc_lm_mp_hi(c, ld_vhz) - agc_lm_mp_hi(s, ld_vhy);
+    ld_vel[0]   = ld_mp_dbl(LD_VELCONV, ld_wrap(lat), 1);                      /* LATVEL        */
+    int32_t fwd = (int32_t) agc_lm_mp_hi(c, ld_vhz) - agc_lm_mp_hi(s, ld_vhy); /* forward velocity, m/cs 2^5 */
 
-    ld_vel[1] = ld_mp_dbl(LD_VELCONV, ld_wrap(fwd), 1); /* FORVEL        */
-    agc_status_t st = agc_lm_vmonitor(); /* step status */
+    ld_vel[1]       = ld_mp_dbl(LD_VELCONV, ld_wrap(fwd), 1); /* FORVEL        */
+    agc_status_t st = agc_lm_vmonitor();                      /* step status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {

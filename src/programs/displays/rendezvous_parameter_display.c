@@ -89,10 +89,7 @@
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_rendezvous_parameter_display_compdisp(
-    agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rone, agc_vec_t vone,
-    agc_vec_t ratt, agc_vec_t vatt, agc_vec_t axis_sm,
-    const agc_mat_t *refsmmat)
+agc_status_t agc_rendezvous_parameter_display_compdisp(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rone, agc_vec_t vone, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t axis_sm, const agc_mat_t *refsmmat)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(refsmmat != NULL))
     {
@@ -101,19 +98,17 @@ agc_status_t agc_rendezvous_parameter_display_compdisp(
 
     agc_vec_t los = agc_vec_sub(ip, ratt, rone); /* 0D LOS, m 2^29 */
 
-    rz->range = rz_abval(ip, los);           /* B-29      */
-    agc_vec_t ulos = rz_unit(ip, los); /* 2^1 */
+    rz->range      = rz_abval(ip, los); /* B-29      */
+    agc_vec_t ulos = rz_unit(ip, los);  /* 2^1 */
 
-    rz->rrate =
-        agc_dp_shl(ip, agc_vec_dot(ip, agc_vec_sub(ip, vatt, vone), ulos),
-                   1);                                 /* SL1 B-7   */
-    agc_vec_t ur = rz_unit(ip, rone); /* 0D, 2^1 */
-    agc_vec_t ux = agc_vec_mat(ip, axis_sm, refsmmat); /* 6D, 2^2 */
-    agc_vec_t p  = agc_vec_shl(ip, agc_vec_proj(ip, ux, ur), 2); /* 2^2 */
-    agc_vec_t up = rz_unit(ip, agc_vec_sub(ip, ux, p)); /* 12D, 2^1 */
-    agc_vec_t h  = agc_vec_cross(ip, agc_vec_cross(ip, ur, vone), ur); /* 2^9 */
-    agc_dp_t  s  = agc_vec_dot(ip, h, up); /* SIGN, 2^10 */
-    agc_dp_t  c; /* cos(RTHETA), 2^1 */
+    rz->rrate    = agc_dp_shl(ip, agc_vec_dot(ip, agc_vec_sub(ip, vatt, vone), ulos), 1); /* SL1 B-7   */
+    agc_vec_t ur = rz_unit(ip, rone);                                                     /* 0D, 2^1 */
+    agc_vec_t ux = agc_vec_mat(ip, axis_sm, refsmmat);                                    /* 6D, 2^2 */
+    agc_vec_t p  = agc_vec_shl(ip, agc_vec_proj(ip, ux, ur), 2);                          /* 2^2 */
+    agc_vec_t up = rz_unit(ip, agc_vec_sub(ip, ux, p));                                   /* 12D, 2^1 */
+    agc_vec_t h  = agc_vec_cross(ip, agc_vec_cross(ip, ur, vone), ur);                    /* 2^9 */
+    agc_dp_t  s  = agc_vec_dot(ip, h, up);                                                /* SIGN, 2^10 */
+    agc_dp_t  c;                                                                          /* cos(RTHETA), 2^1 */
 
     if (rz_is_csm())
     { /* VSL1 DOT  */
@@ -176,7 +171,7 @@ static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
         }
     }
 
-    agc_cdutrig_t t; /* CDUTRIG sines/cosines */
+    agc_cdutrig_t t;                              /* CDUTRIG sines/cosines */
     agc_status_t  st = agc_guid_cdu_nbsm(&t, &a); /* CDU*NBSM  */
 
     *axis_sm = a;
@@ -202,10 +197,9 @@ static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
  * RETURNS: agc_status_t -- AGC_STATUS_OK (next pass queued or display
  *          ended), else the status of the call that failed
  **********************************************************************/
-static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
-                                 agc_vec_t ratt, agc_vec_t vatt)
+static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t ratt, agc_vec_t vatt)
 {
-    agc_vec_t    axis; /* SM axis, 2^1 */
+    agc_vec_t    axis;                     /* SM axis, 2^1 */
     agc_status_t st = rpd_axis(ip, &axis); /* axis */
 
     if (st != AGC_STATUS_OK)
@@ -215,8 +209,7 @@ static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
 
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
 
-    st = agc_rendezvous_parameter_display_compdisp(ip, rz, rz->rone, rz->vone,
-                                                   ratt, vatt, axis, &refsmmat);
+    st = agc_rendezvous_parameter_display_compdisp(ip, rz, rz->rone, rz->vone, ratt, vatt, axis, &refsmmat);
 
     if (st != AGC_STATUS_OK)
     {
@@ -258,9 +251,7 @@ static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration status
  *          (INTSTALL sleep)
  **********************************************************************/
-static agc_status_t rpd_from_base(agc_interp_t *ip, const agc_rendz_t *rz,
-                                  bool this_base, agc_dp_t tdec1, bool conic,
-                                  agc_integ_out_t *o)
+static agc_status_t rpd_from_base(agc_interp_t *ip, const agc_rendz_t *rz, bool this_base, agc_dp_t tdec1, bool conic, agc_integ_out_t *o)
 {
     rz_integrvs_in_t in; /* INTEGRVS inputs */
 
@@ -289,8 +280,8 @@ static agc_status_t rpd_from_base(agc_interp_t *ip, const agc_rendz_t *rz,
  **********************************************************************/
 static agc_dp_t rpd_getrvn(agc_rendz_t *rz)
 {
-    rz->rone = agc_erase_rn();
-    rz->vone = agc_erase_vn();
+    rz->rone   = agc_erase_rn();
+    rz->vone   = agc_erase_vn();
     agc_dp_t t = agc_erase_piptime(); /* PIPTIME, cs 2^28 */
 
     if (!AGC_ASSERT(t >= 0))
@@ -323,11 +314,11 @@ static agc_dp_t rpd_getrvn(agc_rendz_t *rz)
  **********************************************************************/
 static agc_status_t rpd_csm_havebase(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    bool            surf = agc_flag_test(AGC_FLAG_SURFFLAG); /* LM landed */
-    agc_integ_out_t o; /* integration result */
-    agc_dp_t        t; /* time of RONE, cs 2^28 */
-    bool            conic = !surf; /* conic unless landed */
-    agc_status_t    st; /* integration status */
+    bool            surf  = agc_flag_test(AGC_FLAG_SURFFLAG); /* LM landed */
+    agc_integ_out_t o;                                        /* integration result */
+    agc_dp_t        t;                                        /* time of RONE, cs 2^28 */
+    bool            conic = !surf;                            /* conic unless landed */
+    agc_status_t    st;                                       /* integration status */
 
     if (rz_vflag_test(RZ_VF_CHANGE_PROGRAM))
     { /* GETRVN5       */
@@ -385,11 +376,11 @@ static agc_status_t rpd_csm_havebase(agc_interp_t *ip, agc_rendz_t *rz)
  **********************************************************************/
 static agc_status_t rpd_csm_statextp(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    bool     aveg = rz_vflag_test(RZ_VF_CHANGE_PROGRAM); /* V37FLAG       */
+    bool     aveg = rz_vflag_test(RZ_VF_CHANGE_PROGRAM);        /* V37FLAG       */
     agc_dp_t t    = aveg ? rpd_getrvn(rz) : agc_rtb_loadtime(); /* cs 2^28 */
 
     rz->basetime = t;
-    agc_integ_out_t o; /* integration result */
+    agc_integ_out_t o;  /* integration result */
     agc_status_t    st; /* LM */
 
     st = rz_integ(ip, RZ_LEMPREC, t, AGC_JOB_RENDEZVOUS_PARAMS_START, &o);
@@ -448,19 +439,18 @@ static agc_status_t rpd_lm_getrvn(agc_interp_t *ip, agc_rendz_t *rz)
     if (rz_vflag_test(RZ_VF_MUNFLAG))
     {
         const agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM servicer */
-        agc_mat_t            m = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
-        agc_vec_t            r; /* m 2^29 */
+        agc_mat_t            m = agc_erase_refsmmat();  /* REFSMMAT, 2^1 */
+        agc_vec_t            r;                         /* m 2^29 */
 
         r = agc_vec_shr(agc_vec_mat(ip, g->r_csm, &m), 4);
         agc_vec_t v; /* m/cs 2^7 */
 
-        v = agc_vec_shl(ip, agc_vec_mat(ip, g->v_csm,
-                                        &m), 1);
+        v = agc_vec_shl(ip, agc_vec_mat(ip, g->v_csm, &m), 1);
 
         return (rpd_compdisp(ip, rz, r, v));
     }
 
-    agc_integ_out_t o; /* integration result */
+    agc_integ_out_t o;  /* integration result */
     agc_status_t    st; /* GETRVN2: CSM base to PIPTIME */
 
     st = rpd_from_base(ip, rz, false, t, false, &o);
@@ -498,13 +488,12 @@ static agc_status_t rpd_lm_update_states(agc_interp_t *ip, agc_rendz_t *rz)
         return (rpd_lm_getrvn(ip, rz));
     }
 
-    agc_integ_out_t o; /* integration result */
+    agc_integ_out_t o;  /* integration result */
     agc_status_t    st; /* integration status */
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     { /* R31SURF       */
-        st = rz_integ(ip, RZ_LEMPREC, agc_rtb_loadtime(),
-                      AGC_JOB_RENDEZVOUS_PARAMS_UPDATE, &o);
+        st = rz_integ(ip, RZ_LEMPREC, agc_rtb_loadtime(), AGC_JOB_RENDEZVOUS_PARAMS_UPDATE, &o);
     }
     else
     {
@@ -516,7 +505,7 @@ static agc_status_t rpd_lm_update_states(agc_interp_t *ip, agc_rendz_t *rz)
         return (st);
     }
 
-    rz->rone = o.ratt; /* OTHCONIC      */
+    rz->rone = o.ratt;                                        /* OTHCONIC      */
     rz->vone = o.vatt;
     st       = rpd_from_base(ip, rz, false, o.tat, true, &o); /* OTHINT */
 
@@ -556,8 +545,8 @@ static agc_status_t rpd_lm_compute(agc_interp_t *ip, agc_rendz_t *rz)
         return (rpd_lm_getrvn(ip, rz));
     }
 
-    agc_integ_out_t o; /* integration result */
-    agc_status_t    st; /* integration status */
+    agc_integ_out_t o;                      /* integration result */
+    agc_status_t    st;                     /* integration status */
     agc_dp_t        t = agc_rtb_loadtime(); /* now, cs 2^28 */
 
     if (!aveg && !agc_flag_test(AGC_FLAG_SURFFLAG))
@@ -575,8 +564,7 @@ static agc_status_t rpd_lm_compute(agc_interp_t *ip, agc_rendz_t *rz)
     }
 
     rz->basetime = t; /* DOCMBASE      */
-    st           = rz_integ(ip, RZ_CSMPREC, t, AGC_JOB_RENDEZVOUS_PARAMS_START,
-                            &o);
+    st           = rz_integ(ip, RZ_CSMPREC, t, AGC_JOB_RENDEZVOUS_PARAMS_START, &o);
 
     if (st != AGC_STATUS_OK)
     {
@@ -751,11 +739,7 @@ agc_status_t agc_job_rendezvous_params_monitor(agc_job_ctx_t *ctx)
         noun = 53U; /* R34           */
     }
 
-    return (rz_flash(
-                ctx, AGC_DSKY_GOMARKF, 16U, noun,
-                AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                AGC_JOB_RENDZ_DISPLAY_TERMINATE,
-                AGC_JOB_RENDEZVOUS_PARAMS_MONITOR));
+    return (rz_flash(ctx, AGC_DSKY_GOMARKF, 16U, noun, AGC_JOB_RENDZ_DISPLAY_TERMINATE, AGC_JOB_RENDZ_DISPLAY_TERMINATE, AGC_JOB_RENDEZVOUS_PARAMS_MONITOR));
 }
 
 /**********************************************************************

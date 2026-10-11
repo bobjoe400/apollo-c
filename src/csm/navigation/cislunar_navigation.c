@@ -77,36 +77,37 @@
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
 
-#define CN_ONE_C   ((agc_dp_t) 187779866) /* ONE/C 2DEC* .333564049 E-6 B+21* */
-#define CN_AEARTH  ((agc_dp_t) 3189083)   /* AEARTH 2DEC 6378166 B-29     */
-#define CN_RADMOON ((agc_dp_t) 869045)    /* RADMOON 2DEC 1738090 B-29    */
+#define CN_ONE_C   ((agc_dp_t) 187779866)       /* ONE/C 2DEC* .333564049 E-6 B+21* */
+#define CN_AEARTH  ((agc_dp_t) 3189083)         /* AEARTH 2DEC 6378166 B-29     */
+#define CN_RADMOON ((agc_dp_t) 869045)          /* RADMOON 2DEC 1738090 B-29    */
 #define CN_TRUN19  ((agc_dp_t) (01604 * 16384)) /* TRUN19 OCT 01604, 00000  */
-#define CN_1_0B18  ((agc_dp_t) 1024) /* 1.0B18 2DEC 1.0 B-18         */
+#define CN_1_0B18  ((agc_dp_t) 1024)            /* 1.0B18 2DEC 1.0 B-18         */
+
 /* VARSUBL3 2DEC* 3.4299040 E+6 B-26*                                  */
-#define CN_VARSUBL3   ((agc_dp_t) 13719616)  /* VARSUBL3, B-26            */
-#define CN_TRUNVAR    ((agc_dp_t) 175922)    /* TRUNVAR 2DEC 2.5 E-9 B+18    */
-#define CN_PI_4       ((agc_dp_t) 210828714) /* PI/4.0                       */
-#define CN_JC_X       ((agc_dp_t) 72160567)  /* JCAXIS 1/2 sin 32.523 deg    */
-#define CN_JC_Z       ((agc_dp_t) 113169126) /* JCAXIS 1/2 cos 32.523 deg    */
-#define CN_1_SQR3     ((agc_dp_t) 154981267) /* 1/SQR3 2DEC .57735021        */
-#define CN_19_77DEG   061740u                /* 19.77DEG OCT 61740           */
-#define CN_V50N25P    0202U                  /* V50N25P OCT 00202 (GOPERF1)  */
-#define CN_BITS7_9    0700u /* C digit */
-#define CN_BITS4_6    0070u /* D digit */
-#define CN_PRIO14     ((agc_prio_t) 014) /* PRIO14 */
+#define CN_VARSUBL3   ((agc_dp_t) 13719616)      /* VARSUBL3, B-26            */
+#define CN_TRUNVAR    ((agc_dp_t) 175922)        /* TRUNVAR 2DEC 2.5 E-9 B+18    */
+#define CN_PI_4       ((agc_dp_t) 210828714)     /* PI/4.0                       */
+#define CN_JC_X       ((agc_dp_t) 72160567)      /* JCAXIS 1/2 sin 32.523 deg    */
+#define CN_JC_Z       ((agc_dp_t) 113169126)     /* JCAXIS 1/2 cos 32.523 deg    */
+#define CN_1_SQR3     ((agc_dp_t) 154981267)     /* 1/SQR3 2DEC .57735021        */
+#define CN_19_77DEG   061740u                    /* 19.77DEG OCT 61740           */
+#define CN_V50N25P    0202U                      /* V50N25P OCT 00202 (GOPERF1)  */
+#define CN_BITS7_9    0700u                      /* C digit */
+#define CN_BITS4_6    0070u                      /* D digit */
+#define CN_PRIO14     ((agc_prio_t) 014)         /* PRIO14 */
 #define CN_ALARM_BUSY ((agc_alarm_code_t) 01211) /* marking system busy    */
 
 /* P23 erasables.                                                         */
 typedef struct cn_state
 {
-    agc_sp_t     trunbias; /* TRUNBIAS: R57 bias, CDU units, unscaled   */
-    uint16_t     trunion;  /* TRUNION: trunnion CDU of the mark         */
-    agc_dp_t     marktime; /* MARKTIME, cs 2^28 */
-    agc_vec_t    rzc;      /* RZC: CSM position, m 2^29                 */
-    agc_vec_t    vzc;      /* VZC: CSM velocity, m/cs 2^7               */
-    agc_mat_t    ubar;     /* UBAR0 UBAR1 UBAR2: horizon frame          */
-    agc_vec_t    rcll;     /* RCLL: CSM to landmark/horizon, m 2^29     */
-    agc_incorp_t inc;      /* BVECTOR DELTAQ VARIANCE .. DELTAX         */
+    agc_sp_t     trunbias;        /* TRUNBIAS: R57 bias, CDU units, unscaled   */
+    uint16_t     trunion;         /* TRUNION: trunnion CDU of the mark         */
+    agc_dp_t     marktime;        /* MARKTIME, cs 2^28 */
+    agc_vec_t    rzc;             /* RZC: CSM position, m 2^29                 */
+    agc_vec_t    vzc;             /* VZC: CSM velocity, m/cs 2^7               */
+    agc_mat_t    ubar;            /* UBAR0 UBAR1 UBAR2: horizon frame          */
+    agc_vec_t    rcll;            /* RCLL: CSM to landmark/horizon, m 2^29     */
+    agc_incorp_t inc;             /* BVECTOR DELTAQ VARIANCE .. DELTAX         */
     agc_job_id_t calibration_ret; /* EGRESS of R57                      */
 } cn_state_t;
 
@@ -158,7 +159,7 @@ agc_status_t rz_optics_calibration(const agc_job_ctx_t *ctx, agc_job_id_t ret)
     }
 
     cn.calibration_ret = ret;
-    uint16_t x = agc_erase_extvbact(); /* EXTVBACT */
+    uint16_t x         = agc_erase_extvbact(); /* EXTVBACT */
 
     if ((x & 6U) != 0U)
     { /* P23ABRT  */
@@ -200,10 +201,8 @@ agc_status_t agc_job_optics_calibration(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz_flag_put(AGC_FLAG_CALIBRATION_MARKING, true); /* V59FLAG  */
-    agc_status_t st = rz_flash(ctx, AGC_DSKY_GOMARKFR, 59U, 0U,
-                               AGC_JOB_GOTOPOOH, AGC_JOB_OPTICS_CALIBRATION_END,
-                               AGC_JOB_OPTICS_CALIBRATION_END); /* V59 */
+    rz_flag_put(AGC_FLAG_CALIBRATION_MARKING, true);                                                                                               /* V59FLAG  */
+    agc_status_t st = rz_flash(ctx, AGC_DSKY_GOMARKFR, 59U, 0U, AGC_JOB_GOTOPOOH, AGC_JOB_OPTICS_CALIBRATION_END, AGC_JOB_OPTICS_CALIBRATION_END); /* V59 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -236,9 +235,7 @@ agc_status_t agc_job_optics_calibration_mark_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st =
-        rz_flash(ctx, AGC_DSKY_GOMARKFR, 6U, 87U, AGC_JOB_GOTOPOOH, /* V06N87 */
-                 AGC_JOB_OPTICS_CALIBRATION_BIAS, AGC_JOB_OPTICS_CALIBRATION);
+    agc_status_t st = rz_flash(ctx, AGC_DSKY_GOMARKFR, 6U, 87U, AGC_JOB_GOTOPOOH, AGC_JOB_OPTICS_CALIBRATION_BIAS, AGC_JOB_OPTICS_CALIBRATION); /* V06N87 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -369,7 +366,7 @@ agc_status_t agc_job_optics_calibration_end_mark(agc_job_ctx_t *ctx)
 static agc_status_t cn_rect(agc_interp_t *ip)
 {
     bool moon = agc_flag_test(AGC_FLAG_CMOONFLG); /* moon sphere */
-    int  x2   = 0; /* X2: earth */
+    int  x2   = 0;                                /* X2: earth */
 
     if (moon)
     {
@@ -377,14 +374,14 @@ static agc_status_t cn_rect(agc_interp_t *ip)
     }
 
     rz_flag_put(AGC_FLAG_ZMEASURE, moon != agc_flag_test(AGC_FLAG_LUNAFLAG));
-    agc_integ_sv_t sv; /* permanent state */
+    agc_integ_sv_t sv;                                            /* permanent state */
     agc_status_t   st = agc_integ_perm_get(AGC_VEHICLE_CSM, &sv); /* CSM */
-    agc_vec_t      r; /* body scale */
+    agc_vec_t      r;                                             /* body scale */
 
     r = agc_vec_add(ip, rz_vshift(ip, agc_vec_shr(sv.deltav, 7), x2), sv.rcv);
 
     cn.rzc = rz_vshift(ip, r, x2); /* B29      */
-    agc_vec_t v; /* body scale */
+    agc_vec_t v;                   /* body scale */
 
     v = agc_vec_add(ip, rz_vshift(ip, agc_vec_shr(sv.nuv, 4), x2), sv.vcv);
 
@@ -413,10 +410,10 @@ static agc_status_t cn_rect(agc_interp_t *ip)
  **********************************************************************/
 static agc_dp_t cn_divide(agc_interp_t *ip, agc_dp_t b, agc_dp_t a, int *x1)
 {
-    int      nb = 0; /* NORM index of b */
-    int      na = 0; /* NORM index of a */
+    int      nb = 0;                              /* NORM index of b */
+    int      na = 0;                              /* NORM index of a */
     agc_dp_t bn = agc_dp_shr(rz_norm(b, &nb), 1); /* SR1, 2^(S+NB+1) */
-    agc_dp_t an = rz_norm(a, &na); /* 2^(S+NA) */
+    agc_dp_t an = rz_norm(a, &na);                /* 2^(S+NA) */
 
     *x1 = nb - na; /* XSU,1 S1 */
 
@@ -446,7 +443,7 @@ static agc_dp_t cn_divide(agc_interp_t *ip, agc_dp_t b, agc_dp_t a, int *x1)
  **********************************************************************/
 static agc_dp_t cn_div_sr(agc_interp_t *ip, agc_dp_t b, agc_dp_t a, int k)
 {
-    int      x1 = 0; /* NORM index, -(left shifts) */
+    int      x1 = 0;                        /* NORM index, -(left shifts) */
     agc_dp_t q  = cn_divide(ip, b, a, &x1); /* scale by X1 */
 
     return (rz_sr_star(ip, q, k, x1));
@@ -469,30 +466,25 @@ static agc_dp_t cn_div_sr(agc_interp_t *ip, agc_dp_t b, agc_dp_t a, int k)
  *   bh        agc_dp_t        I    BH, semi-minor axis, m 2^29
  *   t         agc_vec_t       O    the two tangent points, m 2^29
  **********************************************************************/
-static void cn_tangents(agc_interp_t *ip, agc_vec_t rh, agc_dp_t ah,
-                        agc_dp_t bh, agc_vec_t t[2])
+static void cn_tangents(agc_interp_t *ip, agc_vec_t rh, agc_dp_t ah, agc_dp_t bh, agc_vec_t t[2])
 {
     agc_dp_t xa = cn_div_sr(ip, rh.c[0], ah, 8); /* B9       */
     agc_dp_t yb = cn_div_sr(ip, rh.c[1], bh, 8); /* YH/BH, B9 */
-    agc_dp_t a; /* A, B18 */
+    agc_dp_t a;                                  /* A, B18 */
 
-    a = agc_dp_add(ip, agc_dp_mul_trunc(yb, yb), agc_dp_mul_trunc(xa, xa));
-    agc_dp_t sq    = agc_dp_sqrt(ip, agc_dp_sub(ip, a, CN_1_0B18)); /* B9 */
-    agc_dp_t xha   = cn_div_sr(ip, rh.c[0], a, 17); /* B29      */
-    agc_dp_t yha   = cn_div_sr(ip, rh.c[1], a, 17); /* YH/A, B29 */
-    agc_dp_t s28   = cn_div_sr(ip, sq, a, 8); /* 28D SQRT(A-1)/A, B1 */
-    agc_dp_t alpha = agc_dp_mul_trunc(
-        agc_dp_mul_trunc(cn_div_sr(ip, ah, bh, 0), s28), rh.c[1]); /* B30 */
+    a              = agc_dp_add(ip, agc_dp_mul_trunc(yb, yb), agc_dp_mul_trunc(xa, xa));
+    agc_dp_t sq    = agc_dp_sqrt(ip, agc_dp_sub(ip, a, CN_1_0B18));                              /* B9 */
+    agc_dp_t xha   = cn_div_sr(ip, rh.c[0], a, 17);                                              /* B29      */
+    agc_dp_t yha   = cn_div_sr(ip, rh.c[1], a, 17);                                              /* YH/A, B29 */
+    agc_dp_t s28   = cn_div_sr(ip, sq, a, 8);                                                    /* 28D SQRT(A-1)/A, B1 */
+    agc_dp_t alpha = agc_dp_mul_trunc(agc_dp_mul_trunc(cn_div_sr(ip, ah, bh, 0), s28), rh.c[1]); /* B30 */
 
-    alpha = agc_dp_shl(ip, alpha, 1);
-    agc_dp_t beta = agc_dp_mul_trunc(
-        agc_dp_mul_trunc(cn_div_sr(ip, bh, ah, 0), s28), rh.c[0]); /* B30 */
+    alpha         = agc_dp_shl(ip, alpha, 1);
+    agc_dp_t beta = agc_dp_mul_trunc(agc_dp_mul_trunc(cn_div_sr(ip, bh, ah, 0), s28), rh.c[0]); /* B30 */
 
     beta = agc_dp_shl(ip, beta, 1);
-    t[0] =
-        agc_vec_make(agc_dp_add(ip, xha, alpha), agc_dp_sub(ip, yha, beta), 0);
-    t[1] =
-        agc_vec_make(agc_dp_sub(ip, xha, alpha), agc_dp_add(ip, yha, beta), 0);
+    t[0] = agc_vec_make(agc_dp_add(ip, xha, alpha), agc_dp_sub(ip, yha, beta), 0);
+    t[1] = agc_vec_make(agc_dp_sub(ip, xha, alpha), agc_dp_add(ip, yha, beta), 0);
 }
 
 /**********************************************************************
@@ -514,26 +506,23 @@ static void cn_tangents(agc_interp_t *ip, agc_vec_t rh, agc_dp_t ah,
  **********************************************************************/
 static agc_status_t cn_horiz(agc_interp_t *ip, agc_vec_t *out)
 {
-    agc_navaux_padload_t pad; /* pad loads */
+    agc_navaux_padload_t pad;                               /* pad loads */
     agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
-    agc_vec_t            us = agc_align_ram()->starsav2; /* US, 2^1 */
-    agc_vec_t            uz; /* UZ, B0 */
+    agc_vec_t            us = agc_align_ram()->starsav2;    /* US, 2^1 */
+    agc_vec_t            uz;                                /* UZ, B0 */
 
     uz = agc_vec_make(pad.neg_ayo, pad.axo, AGC_DP_MAX);
 
-    cn.ubar.row[2] =
-        agc_vec_unit(ip, agc_vec_cross(ip, us, cn.rzc), NULL, NULL);
-    cn.ubar.row[0] =
-        agc_vec_unit(ip, agc_vec_cross(ip, uz, cn.ubar.row[2]), NULL, NULL);
-    cn.ubar.row[1] = agc_vec_unit(
-        ip, agc_vec_cross(ip, cn.ubar.row[2], cn.ubar.row[0]), NULL, NULL);
-    agc_dp_t bh = CN_RADMOON; /* BH, m 2^29 */
-    agc_dp_t ah = CN_RADMOON; /* AH, m 2^29 */
+    cn.ubar.row[2] = agc_vec_unit(ip, agc_vec_cross(ip, us, cn.rzc), NULL, NULL);
+    cn.ubar.row[0] = agc_vec_unit(ip, agc_vec_cross(ip, uz, cn.ubar.row[2]), NULL, NULL);
+    cn.ubar.row[1] = agc_vec_unit(ip, agc_vec_cross(ip, cn.ubar.row[2], cn.ubar.row[0]), NULL, NULL);
+    agc_dp_t bh    = CN_RADMOON; /* BH, m 2^29 */
+    agc_dp_t ah    = CN_RADMOON; /* AH, m 2^29 */
 
     if (!agc_flag_test(AGC_FLAG_LUNAFLAG))
     {
         agc_dp_t halt = agc_rendz_nav_pad()->horizalt; /* HORIZALT, m 2^29 */
-        agc_dp_t s; /* ALPHAV +4, 2^1 */
+        agc_dp_t s;                                    /* ALPHAV +4, 2^1 */
 
         s = agc_vec_dot(ip, cn.ubar.row[1], uz);
 
@@ -541,20 +530,17 @@ static agc_status_t cn_horiz(agc_interp_t *ip, agc_vec_t *out)
         ah = agc_dp_add(ip, CN_AEARTH, halt);
     }
 
-    agc_vec_t rh =
-        agc_vec_shl(ip, agc_mat_vec(ip, &cn.ubar, cn.rzc), 1); /* RH, m 2^29 */
-    agc_vec_t ush; /* USH, 2^1 */
+    agc_vec_t rh = agc_vec_shl(ip, agc_mat_vec(ip, &cn.ubar, cn.rzc), 1); /* RH, m 2^29 */
+    agc_vec_t ush;                                                        /* USH, 2^1 */
 
     ush = agc_vec_shl(ip, agc_mat_vec(ip, &cn.ubar, us), 1);
     agc_vec_t t[2]; /* T0, T1, m 2^29 */
 
     cn_tangents(ip, rh, ah, bh, t);
-    agc_dp_t a0 = agc_vec_dot( /* A-SUB-ZERO, 2^2 */
-        ip, agc_vec_unit(ip, agc_vec_sub(ip, t[0], rh), NULL, NULL), ush);
-    agc_dp_t a1 = agc_vec_dot( /* A-SUB-ONE, 2^2 */
-        ip, agc_vec_unit(ip, agc_vec_sub(ip, t[1], rh), NULL, NULL), ush);
-    bool far    = agc_flag_test(AGC_FLAG_NORFHOR); /* far horizon */
-    bool use_t1 = far; /* HORIZ.3  */
+    agc_dp_t a0     = agc_vec_dot(ip, agc_vec_unit(ip, agc_vec_sub(ip, t[0], rh), NULL, NULL), ush); /* A-SUB-ZERO, 2^2 */
+    agc_dp_t a1     = agc_vec_dot(ip, agc_vec_unit(ip, agc_vec_sub(ip, t[1], rh), NULL, NULL), ush); /* A-SUB-ONE, 2^2 */
+    bool     far    = agc_flag_test(AGC_FLAG_NORFHOR);                                               /* far horizon */
+    bool     use_t1 = far;                                                                           /* HORIZ.3  */
 
     if (agc_dp_sub(ip, a0, a1) < 0)
     {
@@ -591,8 +577,8 @@ static agc_status_t cn_horiz(agc_interp_t *ip, agc_vec_t *out)
 static agc_status_t cn_landmark(agc_interp_t *ip, agc_vec_t *r)
 {
     rz_flag_put(AGC_FLAG_ERADFLAG, true);
-    agc_navaux_padload_t pad; /* pad loads */
-    agc_latlong_t        ll; /* LAT LONG ALT */
+    agc_navaux_padload_t pad;                               /* pad loads */
+    agc_latlong_t        ll;                                /* LAT LONG ALT */
     agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
 
     if (st == AGC_STATUS_OK)
@@ -633,7 +619,7 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
     if (!agc_flag_test(AGC_FLAG_ORBWFLAG))
     { /* R23.05   */
         const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
-        agc_incorp_w_t            *w; /* W matrix */
+        agc_incorp_w_t            *w;                       /* W matrix */
 
         w = &agc_integ_shared_ctx()->w;
 
@@ -673,8 +659,8 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
         /* ZMEASURE (p.624): RZC from the primary to the measured body:
          * + the moon (LUNPOS) with the moon primary, - the moon with the
          * earth.                                                         */
-        agc_ephem_csm_t      eph; /* ephemeris */
-        agc_navaux_padload_t pad; /* pad loads */
+        agc_ephem_csm_t      eph;      /* ephemeris */
+        agc_navaux_padload_t pad;      /* pad loads */
         agc_status_t         st_shift; /* ephemeris */
 
         st_shift = agc_ephem_get_csm_data(&eph);
@@ -688,8 +674,7 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
 
         if (st_shift == AGC_STATUS_OK)
         {
-            st_shift = agc_ephem_csm_lunpos(ip, &eph, pad.tephem, cn.marktime,
-                                            &moon);
+            st_shift = agc_ephem_csm_lunpos(ip, &eph, pad.tephem, cn.marktime, &moon);
         }
 
         if (!agc_flag_test(AGC_FLAG_CMOONFLG))
@@ -742,14 +727,14 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
  **********************************************************************/
 static agc_status_t cn_measure(agc_interp_t *ip)
 {
-    agc_dp_t  r2 = 0;       /* 32D |RCLL|^2, m^2 2^58 */
-    agc_dp_t  r1 = 0;       /* 30D |RCLL|, m 2^29 */
-    agc_vec_t u; /* UNIT RCLL, 2^1 */
+    agc_dp_t  r2 = 0; /* 32D |RCLL|^2, m^2 2^58 */
+    agc_dp_t  r1 = 0; /* 30D |RCLL|, m 2^29 */
+    agc_vec_t u;      /* UNIT RCLL, 2^1 */
 
-    u = agc_vec_unit(ip, cn.rcll, &r1, &r2);
-    agc_ephem_csm_t eph; /* ephemeris */
-    agc_status_t    st = agc_ephem_get_csm_data(&eph);  /* ephemeris */
-    agc_vec_t       a; /* VZC/c, 2^1 */
+    u                  = agc_vec_unit(ip, cn.rcll, &r1, &r2);
+    agc_ephem_csm_t eph;                               /* ephemeris */
+    agc_status_t    st = agc_ephem_get_csm_data(&eph); /* ephemeris */
+    agc_vec_t       a;                                 /* VZC/c, 2^1 */
 
     a = agc_vec_shr(agc_vec_scale(ip, cn.vzc, CN_ONE_C), 15);
     agc_vec_t ucl; /* UCLSTAR, 2^1 */
@@ -760,22 +745,20 @@ static agc_status_t cn_measure(agc_interp_t *ip)
     dv = agc_vec_sub(ip, agc_vec_shr(cn.vzc, 2), eph.veso);
     agc_vec_t b; /* 2^1 */
 
-    b = agc_vec_shr(agc_vec_scale(ip, dv, CN_ONE_C), 13);
-    agc_vec_t uss = agc_vec_unit( /* USSTAR, 2^1 */
-        ip, agc_vec_add(ip, b, agc_align_ram()->starsav2), NULL, NULL);
-    agc_dp_t cosq; /* cos Q, 2^1 */
+    b             = agc_vec_shr(agc_vec_scale(ip, dv, CN_ONE_C), 13);
+    agc_vec_t uss = agc_vec_unit(ip, agc_vec_add(ip, b, agc_align_ram()->starsav2), NULL, NULL); /* USSTAR, 2^1 */
+    agc_dp_t  cosq;                                                                              /* cos Q, 2^1 */
 
     cosq = agc_dp_shl(ip, agc_vec_dot(ip, uss, ucl), 1);
     agc_vec_t c; /* 2^1 */
 
-    c = agc_vec_shl(ip, agc_vec_neg(agc_vec_scale(ip, ucl,
-                                                  cosq)), 1);
+    c = agc_vec_shl(ip, agc_vec_neg(agc_vec_scale(ip, ucl, cosq)), 1);
 
     cn.inc.bvector[0] = agc_vec_unit(ip, agc_vec_add(ip, c, uss), NULL, NULL);
     cn.inc.bvector[1] = agc_vec_zero();
     cn.inc.bvector[2] = agc_vec_zero();
-    agc_dp_t q  = agc_dp_neg(agc_dp_acos(ip, cosq)); /* -Q, rev 2^0 */
-    int      tv = (int) cn.trunion; /* MSU 0, CDU units */
+    agc_dp_t q        = agc_dp_neg(agc_dp_acos(ip, cosq)); /* -Q, rev 2^0 */
+    int      tv       = (int) cn.trunion;                  /* MSU 0, CDU units */
 
     if ((cn.trunion & 040000u) != 0U)
     {
@@ -789,11 +772,9 @@ static agc_status_t cn_measure(agc_interp_t *ip)
 
     agc_dp_t t = agc_dp_from_sp((agc_sp_t) tv); /* trunnion, rev 2^-1 */
 
-    t = agc_dp_shr(agc_dp_sub(ip, t, agc_dp_from_sp(
-                                  cn.trunbias)), 3);
-    t = agc_dp_add(ip, agc_dp_add(ip, t, CN_TRUN19), q);
-    t =
-        agc_dp_shl(ip, agc_dp_mul_trunc(agc_dp_mul_trunc(t, r1), CN_PI_4), 3);
+    t             = agc_dp_shr(agc_dp_sub(ip, t, agc_dp_from_sp(cn.trunbias)), 3);
+    t             = agc_dp_add(ip, agc_dp_add(ip, t, CN_TRUN19), q);
+    t             = agc_dp_shl(ip, agc_dp_mul_trunc(agc_dp_mul_trunc(t, r1), CN_PI_4), 3);
     cn.inc.deltaq = t; /* earth, m 2^29 */
 
     if (agc_flag_test(AGC_FLAG_CMOONFLG))
@@ -803,12 +784,11 @@ static agc_status_t cn_measure(agc_interp_t *ip)
 
     cn.inc.variance = agc_dp_mul_tp(r2, CN_TRUNVAR) + (agc_tp_t) CN_VARSUBL3;
     rz_flag_put(AGC_FLAG_DMENFLG, false);
-    cn.inc.dim9 = false;
+    cn.inc.dim9     = false;
 
     if (st == AGC_STATUS_OK)
     {
-        st =
-            agc_incorp_state_deviation(ip, &agc_integ_shared_ctx()->w, &cn.inc);
+        st = agc_incorp_state_deviation(ip, &agc_integ_shared_ctx()->w, &cn.inc);
     }
 
     agc_phase_change(2, 04022);
@@ -819,10 +799,8 @@ static agc_status_t cn_measure(agc_interp_t *ip)
         k = -2; /* moon: SR2 */
     }
 
-    rz_set_csm_residuals(1,
-                         rz_shift(ip, agc_vec_abval(ip, cn.inc.deltax[1]), k));
-    rz_set_csm_residuals(0,
-                         rz_shift(ip, agc_vec_abval(ip, cn.inc.deltax[0]), k));
+    rz_set_csm_residuals(1, rz_shift(ip, agc_vec_abval(ip, cn.inc.deltax[1]), k));
+    rz_set_csm_residuals(0, rz_shift(ip, agc_vec_abval(ip, cn.inc.deltax[0]), k));
 
     return (st);
 } /* cn_measure */
@@ -855,15 +833,15 @@ agc_status_t agc_job_cislunar_midcourse_navigation(agc_job_ctx_t *ctx)
     }
 
     rz_flag_put(AGC_FLAG_RNDVZFLG, false);
-    agc_phase_change(4, 00004); /* 2PHSCHNG: leave group 4 */
-    agc_phase_change(2, 00012); /* enter group 2           */
+    agc_phase_change(4, 00004);           /* 2PHSCHNG: leave group 4 */
+    agc_phase_change(2, 00012);           /* enter group 2           */
     agc_align_ram_t *a = agc_align_ram(); /* alignment RAM */
 
     a->markindx = 1;
     rz_flag_put(AGC_FLAG_TARG2FLG, false);
     rz_flag_put(AGC_FLAG_TARG1FLG, false);
-    a->starind = 0;
-    a->besti   = 0;
+    a->starind  = 0;
+    a->besti    = 0;
     rz_flag_put(AGC_FLAG_TRUNNION_BIAS_KNOWN, false);   /* R57FLAG  */
     rz_flag_put(AGC_FLAG_ALTERNATE_LOS_ALLOWED, false); /* V94FLAG  */
 
@@ -874,8 +852,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation(agc_job_ctx_t *ctx)
         return (agc_job_cislunar_midcourse_navigation_ident(ctx));
     }
 
-    return (rz_optics_calibration(ctx,
-                                  AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SIGHT));
+    return (rz_optics_calibration(ctx, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SIGHT));
 }
 
 /**********************************************************************
@@ -927,9 +904,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_ident(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 70U, AGC_JOB_GOTOPOOH,
-                     AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT_CHECK,
-                     AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 70U, AGC_JOB_GOTOPOOH, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT_CHECK, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_IDENT));
 }
 
 /**********************************************************************
@@ -971,8 +946,7 @@ static agc_status_t cn_ident_error(agc_job_ctx_t *ctx)
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1001,8 +975,8 @@ agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(
     }
 
     rz_flag_put(AGC_FLAG_LUNAFLAG, c == 0200U); /* P23.16   */
-    agc_align_ram_t *a    = agc_align_ram(); /* alignment RAM */
-    agc_sp_t         star = a->starcode; /* star code, unscaled */
+    agc_align_ram_t *a    = agc_align_ram();    /* alignment RAM */
+    agc_sp_t         star = a->starcode;        /* star code, unscaled */
 
     if (star < 0 || star > 37)
     {
@@ -1011,7 +985,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(
 
     if (star != 0)
     { /* P23.17   */
-        a->besti = (agc_sp_t) (6 * star);
+        a->besti        = (agc_sp_t) (6 * star);
         agc_status_t st = agc_star_vector(star, &a->starsav2); /* LOWMEMRY */
 
         if (st != AGC_STATUS_OK)
@@ -1022,8 +996,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(
 
     if (agc_erase_horizon() == 0U)
     { /* P23.20   */
-        return (rz_landing_site_display(
-                    ctx, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_STAR));
+        return (rz_landing_site_display(ctx, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_STAR));
     }
 
     uint16_t d = (uint16_t) (agc_erase_horizon() & CN_BITS4_6); /* D digit */
@@ -1064,9 +1037,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_star(agc_job_ctx_t *ctx)
 
     if (agc_align_ram()->starcode == 0)
     { /* LDPLANET */
-        return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 88U, AGC_JOB_GOTOPOOH,
-                         AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET,
-                         AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_STAR));
+        return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 88U, AGC_JOB_GOTOPOOH, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_PLANET, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_STAR));
     }
 
     return (agc_job_cislunar_midcourse_navigation_checklist(ctx));
@@ -1099,8 +1070,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_planet(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_align_ram_t *a = agc_align_ram(); /* alignment RAM */
 
-    a->starsav2 = agc_vec_unit(&ip, agc_vec_scale(&ip, a->starsav3, CN_1_SQR3),
-                               NULL, NULL);
+    a->starsav2 = agc_vec_unit(&ip, agc_vec_scale(&ip, a->starsav3, CN_1_SQR3), NULL, NULL);
 
     return (agc_job_cislunar_midcourse_navigation_checklist(ctx));
 }
@@ -1130,8 +1100,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_checklist(agc_job_ctx_t *ctx)
 
     if (agc_flag_test(AGC_FLAG_SAVECFLG))
     {
-        return (agc_job_cislunar_midcourse_navigation_incorporate(
-                    ctx)); /* P23.85 */
+        return (agc_job_cislunar_midcourse_navigation_incorporate(ctx)); /* P23.85 */
     }
 
     agc_dsky_cont_t cont; /* astronaut returns */
@@ -1215,8 +1184,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_point(agc_job_ctx_t *ctx)
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1237,8 +1205,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(
 
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
 
-    agc_imu_set_pointvsm(
-        agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, cn.rcll), NULL, NULL));
+    agc_imu_set_pointvsm(agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, cn.rcll), NULL, NULL));
     agc_vec_t jc = agc_vec_zero(); /* JCAXIS, 2^1 */
 
     jc.c[0] = CN_JC_X;
@@ -1253,8 +1220,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(
     rz_flag_put(AGC_FLAG_3AXISFLG, false);
     agc_phase_change(2, 00012);
 
-    return (agc_imu_attitude_maneuver(
-                ctx, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MANEUVERED));
+    return (agc_imu_attitude_maneuver(ctx, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MANEUVERED));
 }
 
 /**********************************************************************
@@ -1272,8 +1238,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_cislunar_midcourse_navigation_maneuvered(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_cislunar_midcourse_navigation_maneuvered(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1315,8 +1280,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_optics(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_ALTERNATE_LOS_ALLOWED, true); /* V94FLAG  */
     rz_flag_put(AGC_FLAG_TRUNNION_BIAS_KNOWN, true);   /* R57FLAG  */
 
-    return (agc_csm_auto_optics_positioning(
-                ctx, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS_DONE));
+    return (agc_csm_auto_optics_positioning(ctx, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_OPTICS_DONE));
 }
 
 /**********************************************************************
@@ -1334,8 +1298,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_optics(agc_job_ctx_t *ctx)
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_cislunar_midcourse_navigation_optics_done(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_cislunar_midcourse_navigation_optics_done(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1371,7 +1334,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_marked(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_align_sxt_mark_t m; /* the mark */
+    agc_align_sxt_mark_t m;                            /* the mark */
     agc_status_t         st = agc_sxtmark_mark(0, &m); /* the mark */
 
     if (st != AGC_STATUS_OK)
@@ -1407,17 +1370,14 @@ agc_status_t agc_job_cislunar_midcourse_navigation_marked(agc_job_ctx_t *ctx)
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_cislunar_midcourse_navigation_mark_display(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_cislunar_midcourse_navigation_mark_display(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 71U, AGC_JOB_GOTOPOOH,
-                     AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SAVE,
-                     AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARK_DISPLAY));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 71U, AGC_JOB_GOTOPOOH, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SAVE, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARK_DISPLAY));
 }
 
 /**********************************************************************
@@ -1464,8 +1424,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_save(agc_job_ctx_t *ctx)
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1492,9 +1451,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(
         return (st);
     }
 
-    st = rz_flash(ctx, AGC_DSKY_GOFLASHR, 6U, 49U, AGC_JOB_GOTOPOOH,
-                  AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_UPDATE,
-                  AGC_JOB_GOTOPOOH);
+    st = rz_flash(ctx, AGC_DSKY_GOFLASHR, 6U, 49U, AGC_JOB_GOTOPOOH, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_UPDATE, AGC_JOB_GOTOPOOH);
 
     if (st != AGC_STATUS_OK)
     {

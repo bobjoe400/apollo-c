@@ -65,8 +65,8 @@
 #define FLAG_BIT_MAX    15      /* AGC bit numbers run 1..15            */
 
 static agc_vehicle_t g_vehicle = AGC_VEHICLE_CSM; /* selected program */
-static uint32_t      g_time_cs; /* C(TIME2,TIME1), cs, 28 bits        */
-static uint16_t      g_flagword[AGC_FLAGWORDS]; /* FLAGWRD0..FLGWRD13 */
+static uint32_t      g_time_cs;                   /* C(TIME2,TIME1), cs, 28 bits        */
+static uint16_t      g_flagword[AGC_FLAGWORDS];   /* FLAGWRD0..FLGWRD13 */
 
 /**********************************************************************
  * AGC: none (helper) -- true when g_vehicle names a vehicle
@@ -317,8 +317,7 @@ bool agc_flag_valid(agc_flag_id_t f)
         return (false); /* storage smaller than the vehicle's words */
     }
 
-    return ((word < words_for_vehicle()) && (bit >= 1) &&
-            (bit <= FLAG_BIT_MAX));
+    return ((word < words_for_vehicle()) && (bit >= 1) && (bit <= FLAG_BIT_MAX));
 }
 
 /**********************************************************************

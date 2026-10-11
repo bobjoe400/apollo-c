@@ -86,11 +86,11 @@ typedef struct lgyro_word
 } lgyro_word_t;
 
 static agc_dp_t     gbuf[AGC_IMU_GBUF_COUNT][3]; /* OGC, GCOMP, ERCOMP: rev 2^0 */
-static lgyro_word_t lgyro; /* LGYRO                                  */
-static uint16_t     gyrocmd;       /* GYROCMD hardware counter, pulses    */
-static int          aug_left;      /* 8192 augments still to come         */
-static agc_job_id_t gyro_waiter;   /* job sleeping in GYROBUSY            */
-static bool         gwake_pending; /* GWAKE: waking job restarts torquing */
+static lgyro_word_t lgyro;                       /* LGYRO                                  */
+static uint16_t     gyrocmd;                     /* GYROCMD hardware counter, pulses    */
+static int          aug_left;                    /* 8192 augments still to come         */
+static agc_job_id_t gyro_waiter;                 /* job sleeping in GYROBUSY            */
+static bool         gwake_pending;               /* GWAKE: waking job restarts torquing */
 
 /**********************************************************************
  * AGC: none (helper) -- a valid gyro command buffer id
@@ -111,8 +111,7 @@ static bool buf_ok(agc_imu_gyro_buf_t b)
         return (false);
     }
 
-    if (!AGC_ASSERT(!lgyro.busy || ((int) lgyro.buf >= 0 &&
-                                    lgyro.buf < AGC_IMU_GBUF_COUNT)))
+    if (!AGC_ASSERT(!lgyro.busy || ((int) lgyro.buf >= 0 && lgyro.buf < AGC_IMU_GBUF_COUNT)))
     {
         return (false);
     }
@@ -140,12 +139,10 @@ static void chan14(uint16_t bits, bool on)
     }
     else
     {
-        agc_chan_and(AGC_CHAN_CHAN14,
-                     (uint16_t) (~(unsigned int) bits & GYROCMD_MAX));
+        agc_chan_and(AGC_CHAN_CHAN14, (uint16_t) (~(unsigned int) bits & GYROCMD_MAX));
     }
 
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) & bits) ==
-                    (on ? bits : 0u))) /* set or cleared */
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) & bits) == (on ? bits : 0u))) /* set or cleared */
     {
         return;
     }
@@ -362,9 +359,10 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
         return (st);
     }
 
-    lgyro.busy  = true;                     /* TS LGYRO         */
+    lgyro.busy  = true; /* TS LGYRO         */
     lgyro.buf   = buf;
     lgyro.phase = 0;
+
     /* GYROAGRE: force sign agreement on the inputs; an agc_dp_t always
      * agrees in sign, so there is nothing to do.                         */
     imu_modeexit();
@@ -482,22 +480,20 @@ static agc_status_t torque(int axis, uint16_t select, agc_dp_t cmd)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool     neg   = (cmd < 0); /* MAJ- / MIN- path             */
-    agc_dp_t total = /* DAS +-GYROFRAC, rev 2^0              */
-                     neg ? cmd - GYROFRAC : cmd + GYROFRAC; /* toward larger magnitude */
+    bool     neg   = (cmd < 0);                             /* MAJ- / MIN- path             */
+    agc_dp_t total = neg ? cmd - GYROFRAC : cmd + GYROFRAC; /* DAS +-GYROFRAC, rev 2^0; toward larger magnitude */
 
     if (!AGC_ASSERT(total >= AGC_DP_MIN && total <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    chan14((uint16_t) (neg ? (select | AGC_CH014_GYRONEG) : select), /* AD BIT9 */
-           true);
-    uint32_t mag    = (uint32_t) (neg ? -total : total); /* |cmd|, 2^-28 rev */
-    agc_dp_t frac   = (agc_dp_t) (mag & 0177u); /* LOW7, rev 2^0   */
-    uint32_t pulses = mag >> PULSE_SHIFT; /* whole pulses (2^-21 rev) */
-    uint32_t naug   = pulses >> 13;                  /* major / 64       */
-    uint16_t itemp2 = (uint16_t) (pulses & 017777u); /* pulses mod 8192  */
+    chan14((uint16_t) (neg ? (select | AGC_CH014_GYRONEG) : select), true); /* AD BIT9 */
+    uint32_t mag    = (uint32_t) (neg ? -total : total);                    /* |cmd|, 2^-28 rev */
+    agc_dp_t frac   = (agc_dp_t) (mag & 0177u);                             /* LOW7, rev 2^0   */
+    uint32_t pulses = mag >> PULSE_SHIFT;                                   /* whole pulses (2^-21 rev) */
+    uint32_t naug   = pulses >> 13;                                         /* major / 64       */
+    uint16_t itemp2 = (uint16_t) (pulses & 017777u);                        /* pulses mod 8192  */
 
     gbuf[lgyro.buf][axis] = neg ? -frac : frac; /* COM for MAJ- */
 
@@ -540,11 +536,10 @@ static bool gselect(int axis, uint16_t select, agc_status_t *st)
         return (false);
     }
 
-    agc_dp_t cmd   = gbuf[lgyro.buf][axis]; /* DCA 1400, rev 2^0 */
-    agc_sp_t major = agc_dp_high(cmd); /* RUPTREG1, 128 pulses B0 */
-    agc_sp_t minor = agc_dp_low(cmd);  /* RUPTREG2, pulse/128 B0  */
-    bool     send  = (major != 0) || /* MAJ+ / MAJ-      */
-                     (minor > GYROMIN_LSB) || (minor < -GYROMIN_LSB); /* MIN+/- */
+    agc_dp_t cmd   = gbuf[lgyro.buf][axis];                                           /* DCA 1400, rev 2^0 */
+    agc_sp_t major = agc_dp_high(cmd);                                                /* RUPTREG1, 128 pulses B0 */
+    agc_sp_t minor = agc_dp_low(cmd);                                                 /* RUPTREG2, pulse/128 B0  */
+    bool     send  = (major != 0) || (minor > GYROMIN_LSB) || (minor < -GYROMIN_LSB); /* MAJ+ / MAJ-; MIN+/- */
 
     if (!send)
     {
@@ -588,7 +583,7 @@ static agc_status_t gyro_next(void)
             { /* JOBWAKE LGWAKE   */
                 gwake_pending = true;
                 agc_exec_job_wake_if_asleep(gyro_waiter);
-                gyro_waiter = AGC_JOB_NONE;
+                gyro_waiter   = AGC_JOB_NONE;
             }
 
             return (agc_task_imufined()); /* NORESET          */
@@ -599,7 +594,7 @@ static agc_status_t gyro_next(void)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        lgyro.phase = p + 1; /* AD BIT13 ADS LGYRO */
+        lgyro.phase     = p + 1;         /* AD BIT13 ADS LGYRO */
         agc_status_t st = AGC_STATUS_OK; /* status of the call */
 
         if (gselect(axis_of[p], sel_of[p], &st))

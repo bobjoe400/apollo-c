@@ -34,8 +34,8 @@
 #define AC_07071    ((agc_sp_t) 11585) /* DEC .70711                       */
 #define AC_EPSMAX   ((agc_sp_t) 6925)  /* -(-EPSMAX) DEC .42265            */
 #define AC_BIT14    ((agc_sp_t) 8192)
-#define AC_1JACCCON ((agc_sp_t) 0167) /* pi/4 x 2^16 rad/s^2 kg           */
-#define AC_TORQ_LO  ((agc_sp_t) 8428) /* TORQCONS 2DEC .51443 B-14: 500 lb-ft */
+#define AC_1JACCCON ((agc_sp_t) 0167)  /* pi/4 x 2^16 rad/s^2 kg           */
+#define AC_TORQ_LO  ((agc_sp_t) 8428)  /* TORQCONS 2DEC .51443 B-14: 500 lb-ft */
 #define AC_PRIO27   ((agc_prio_t) 027)
 
 /* Inertia fit tables (pp.1493-1494), row k = 0 L,PVT-CG descent,
@@ -44,10 +44,13 @@
 static const agc_sp_t inercona_hi[7] = {672, 97, 24, 17, 107, 58, 93};
 static const agc_sp_t inercona_lo[7] = {9547, 3854, 8881, 2038,
                                         3657, 10307, 4937};
+
 /* .0410511917 .0059347674 .0014979264 .0010451889 .0065443852 .0035784354 .0056946631 */
 static const agc_sp_t inerconb[7] = {2540, 49, 308, 350, 1, 2668, 153};
+
 /* .155044 .002989 .018791 .021345 .000032 .162862 .009312                 */
 static const agc_sp_t inerconc[7] = {-413, 143, -1117, -1082, -113, 42, -387};
+
 /* -.025233 .008721 -.068163 -.066027 -.006923 .002588 -.023608           */
 
 /* COEFF (p.1496): docked inertia (0..5) and CG (6..11) fits, in the order
@@ -55,7 +58,7 @@ static const agc_sp_t inerconc[7] = {-413, 143, -1117, -1082, -113, 42, -387};
  *   value = C X Y + F + (A X + D) X + (B Y + E) Y.                        */
 static const agc_sp_t coeff[12] = {
     3198, -87, -2895,
-    -608, 1143, 421, /* .19518 -.00529 -.17670 -.03709 .06974 .02569 */
+    -608, 1143, 421,    /* .19518 -.00529 -.17670 -.03709 .06974 .02569 */
     3293, 2222, 12403,
     -6085, -10341, 6747 /* .20096 .13564 .75704 -.37142 -.63117 .41179  */
 };
@@ -111,8 +114,7 @@ static bool lem_mass(lm_dap_t *d, bool docked)
     agc_sp_t lem    = (agc_sp_t) (mass_hi() - csm);
     bool     ascent = agc_flag_test(AGC_FLAG_APSFLAG);
     agc_sp_t hi     = ascent ? d->hiascent : AC_HIDESCNT;
-    agc_sp_t lo     =
-        ascent ? AC_LOASCENT : (agc_sp_t) (AC_LODESCNT + d->hiascent);
+    agc_sp_t lo     = ascent ? AC_LOASCENT : (agc_sp_t) (AC_LODESCNT + d->hiascent);
 
     d->neg_2jetlim = ascent ? LM_NEGMAX : (agc_sp_t) -AC_BIT10;
 
@@ -199,21 +201,16 @@ static void commeqs(lm_dap_t *d, agc_sp_t rem)
         agc_sp_t eps = lm_dap_dv(diff, d->jacc[1]);
 
         eps       = ((int32_t) eps - AC_EPSMAX > 0) ? AC_EPSMAX : eps; /* GOODEPS1 */
-        d->coeffr =
-            lm_dap_wrap((int32_t) lm_dap_mphi(eps, AC_035356) + AC_07071);
-        d->coeffq = lm_dap_mphi(lm_dap_wrap(
-                                    (int32_t) eps - LM_POSMAX), d->coeffr);
+        d->coeffr = lm_dap_wrap((int32_t) lm_dap_mphi(eps, AC_035356) + AC_07071);
+        d->coeffq = lm_dap_mphi(lm_dap_wrap((int32_t) eps - LM_POSMAX), d->coeffr);
     }
     else
     { /* BIGIQ    */
         agc_sp_t neps = lm_dap_dv(diff, d->jacc[2]);
 
-        neps =
-            ((int32_t) -neps - AC_EPSMAX > 0) ? (agc_sp_t) -AC_EPSMAX : neps;
-        d->coeffq =
-            lm_dap_wrap((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
-        d->coeffr = lm_dap_mphi(lm_dap_wrap(
-                                    (int32_t) -neps + LM_NEGMAX), d->coeffq);
+        neps      = ((int32_t) -neps - AC_EPSMAX > 0) ? (agc_sp_t) -AC_EPSMAX : neps;
+        d->coeffq = lm_dap_wrap((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
+        d->coeffr = lm_dap_mphi(lm_dap_wrap((int32_t) -neps + LM_NEGMAX), d->coeffq);
     }
 
     if (!AGC_ASSERT(d->coeffq <= 0))
@@ -279,9 +276,9 @@ static void jaccuv(lm_dap_t *d)
  **********************************************************************/
 static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
 {
-    d->accdotq = accdotq;
-    d->kq      = lm_dap_mphi(d->accdotq, AC_DGBF);
-    d->krdap   = lm_dap_mphi(d->accdotr, AC_DGBF);
+    d->accdotq   = accdotq;
+    d->kq        = lm_dap_mphi(d->accdotq, AC_DGBF);
+    d->krdap     = lm_dap_mphi(d->accdotr, AC_DGBF);
     uint16_t c12 = agc_chan_read(012);
 
     for (int i = 1; i >= 0; i--)
@@ -388,17 +385,14 @@ static agc_sp_t docked_fit(int base)
         return (0);
     }
 
-    agc_sp_t        x = agc_erase_csmmass();
-    agc_sp_t        y = agc_erase_lemmass();
-    const agc_sp_t *c = &coeff[base];
-    agc_sp_t        m =
-        lm_dap_sat((int32_t) lm_dap_mphi(lm_dap_mphi(c[0], y), x) + c[1]);
-    agc_sp_t lx =
-        lm_dap_sat((int32_t) lm_dap_mphi(c[3], x) + c[5]); /* A X + D */
+    agc_sp_t        x  = agc_erase_csmmass();
+    agc_sp_t        y  = agc_erase_lemmass();
+    const agc_sp_t *c  = &coeff[base];
+    agc_sp_t        m  = lm_dap_sat((int32_t) lm_dap_mphi(lm_dap_mphi(c[0], y), x) + c[1]);
+    agc_sp_t        lx = lm_dap_sat((int32_t) lm_dap_mphi(c[3], x) + c[5]); /* A X + D */
 
-    m = lm_dap_wrap((int32_t) m + lm_dap_mphi(lx, x));     /* ADS     */
-    agc_sp_t ly =
-        lm_dap_sat((int32_t) lm_dap_mphi(c[2], y) + c[4]); /* B Y + E */
+    m           = lm_dap_wrap((int32_t) m + lm_dap_mphi(lx, x));     /* ADS     */
+    agc_sp_t ly = lm_dap_sat((int32_t) lm_dap_mphi(c[2], y) + c[4]); /* B Y + E */
 
     m = lm_dap_wrap((int32_t) m + lm_dap_mphi(ly, y));
 
@@ -443,7 +437,7 @@ static agc_status_t docked(lm_dap_t *d)
     d->block[LM_BLK_U + 3]  = LM_POSMAX;
     d->block[LM_BLK_U + 18] = LM_POSMAX; /* +17D, +18D     */
     d->block[LM_BLK_U + 19] = LM_POSMAX;
-    lm_dp_pair_t torq = {0, AC_TORQ_LO};
+    lm_dp_pair_t torq       = {0, AC_TORQ_LO};
 
     if (!AGC_ASSERT(inertia > 0))
     {
@@ -462,8 +456,7 @@ static agc_status_t docked(lm_dap_t *d)
 
     agc_sp_t mc = lm_dap_mphi(mass_hi(), cg);
 
-    d->accdotr =
-        lm_dap_dvovsub(lm_dap_mp(mc, agc_guid_state()->lm.abdelv), inertia);
+    d->accdotr = lm_dap_dvovsub(lm_dap_mp(mc, agc_guid_state()->lm.abdelv), inertia);
 
     return (spscont(d, d->accdotr)); /* TCF SPSCONT    */
 }
@@ -557,7 +550,7 @@ agc_status_t agc_lm_dap_jet_accel_update(void)
         st = (st != AGC_STATUS_OK) ? st : sc;
     }
 
-    agc_inhint();                                      /* 1/ACCRET       */
+    agc_inhint();                    /* 1/ACCRET       */
     agc_flag_set(AGC_FLAG_ACCOKFLG); /* data good      */
     agc_relint();
 

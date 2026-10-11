@@ -46,23 +46,22 @@ static int g_asserts;  /* AGC_ASSERT failures reported      */
 static void             check(bool ok, int line, const char *text);
 static void             fresh(agc_vehicle_t veh);
 static agc_dsky_state_t state(void);
-static bool             reg_is(const agc_dsky_state_t *s, int r, long int n,
-                               int sgn);
-static bool reg_blank(const agc_dsky_state_t *s, int r);
-static void test_display_clock_time(agc_vehicle_t veh);
-static void test_relay_words(void);
-static void test_quikdsp_without_dskyflag(void);
-static void test_load_component_one(void);
-static void test_load_three_components(void);
-static void test_clear(void);
-static void test_alarm(void);
-static void test_monitor(void);
-static void test_nvsub(void);
-static void test_uprupt(void);
-static void test_hmsin(void);
-static void test_mctbs(void);
-static void test_lights(void);
-static void test_cleandsp_no_continuation(void);
+static bool             reg_is(const agc_dsky_state_t *s, int r, long int n, int sgn);
+static bool             reg_blank(const agc_dsky_state_t *s, int r);
+static void             test_display_clock_time(agc_vehicle_t veh);
+static void             test_relay_words(void);
+static void             test_quikdsp_without_dskyflag(void);
+static void             test_load_component_one(void);
+static void             test_load_three_components(void);
+static void             test_clear(void);
+static void             test_alarm(void);
+static void             test_monitor(void);
+static void             test_nvsub(void);
+static void             test_uprupt(void);
+static void             test_hmsin(void);
+static void             test_mctbs(void);
+static void             test_lights(void);
+static void             test_cleandsp_no_continuation(void);
 
 /**********************************************************************
  * AGC: none (test driver) -- run every test of this file
@@ -88,8 +87,7 @@ int main(void)
     test_mctbs();
     test_lights();
     test_cleandsp_no_continuation();
-    (void) printf("test_dsky: %d checks, %d failures, %d assertion reports\n",
-                  g_checks, g_failures, g_asserts);
+    (void) printf("test_dsky: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_asserts);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
 }
@@ -248,7 +246,7 @@ static bool reg_blank(const agc_dsky_state_t *s, int r)
 static void test_display_clock_time(agc_vehicle_t veh)
 {
     fresh(veh);
-    agc_time_set_cs(372345u); /* 1 h 2 min 3.45 s */
+    agc_time_set_cs(372345u);     /* 1 h 2 min 3.45 s */
     CHECK(agc_dsky_keys("V06N36E") == AGC_STATUS_OK);
     agc_dsky_state_t s = state(); /* DSKY readout */
 
@@ -275,17 +273,14 @@ static void test_relay_words(void)
     CHECK(agc_dsky_keys("V06N36E") == AGC_STATUS_OK);
     bool     saw_decimal_display = false; /* V06 relay word seen */
     bool     noun_clock_time     = false; /* N36 relay word seen */
-    int      sent                = 0; /* relay words sent */
-    uint16_t w                   = 0; /* channel 10 word */
+    int      sent                = 0;     /* relay words sent */
+    uint16_t w                   = 0;     /* channel 10 word */
 
     for (int i = 0; i < 40 && agc_dsky_dspout(&w) == AGC_STATUS_OK; i++)
     {
         sent++;
-        saw_decimal_display =
-            saw_decimal_display ||
-            w == (uint16_t) ((10u << 11) | (025u << 5) | 034u);
-        noun_clock_time = noun_clock_time ||
-                          w == (uint16_t) ((9u << 11) | (033u << 5) | 034u);
+        saw_decimal_display = saw_decimal_display || w == (uint16_t) ((10u << 11) | (025u << 5) | 034u);
+        noun_clock_time     = noun_clock_time || w == (uint16_t) ((9u << 11) | (033u << 5) | 034u);
         CHECK(agc_chan_read((int) AGC_CHAN_OUT0) == w);
     }
 
@@ -333,17 +328,16 @@ static void test_load_component_one(void)
     CHECK(agc_dsky_keys("V21N01E") == AGC_STATUS_OK);
     agc_dsky_state_t s = state(); /* DSKY readout */
 
-    CHECK(s.flash && reg_blank(&s, 2)); /* REQDATZ  */
+    CHECK(s.flash && reg_blank(&s, 2));            /* REQDATZ  */
     CHECK(agc_dsky_keys("12345E") == AGC_STATUS_OK);
-    s = state();
-    CHECK(reg_is(&s, 2, 12345, 0));     /* address  */
-    CHECK(s.flash && reg_blank(&s, 0)); /* REQDATX  */
+    s             = state();
+    CHECK(reg_is(&s, 2, 12345, 0));                /* address  */
+    CHECK(s.flash && reg_blank(&s, 0));            /* REQDATX  */
     CHECK(s.verb[0] == 2 && s.verb[1] == 1);
     CHECK(agc_dsky_keys("777E") == AGC_STATUS_OK); /* octal    */
-    uint16_t word = 0; /* erasable read back */
+    uint16_t word = 0;                             /* erasable read back */
 
-    CHECK(agc_erase_read_ecadr(012345u, &word) == AGC_STATUS_OK &&
-          word == 0777u);
+    CHECK(agc_erase_read_ecadr(012345u, &word) == AGC_STATUS_OK && word == 0777u);
     s = state();
     CHECK(!s.flash && !s.opr_err);
 }
@@ -362,11 +356,12 @@ static void test_load_three_components(void)
     CHECK(agc_erase_thetad(1) == 020000u); /*  90 deg  */
     CHECK(agc_erase_thetad(2) == 070000u); /* -45 deg  */
     CHECK(agc_dsky_keys("V06N22E") == AGC_STATUS_OK);
-    agc_dsky_state_t s = state(); /* DSKY readout */
+    agc_dsky_state_t s = state();          /* DSKY readout */
 
     CHECK(reg_is(&s, 0, 18000, 1));
     CHECK(reg_is(&s, 1, 9000, 1));
     CHECK(reg_is(&s, 2, 31500, 1));
+
     /* 360.00 overflows and alarms; the load is recycled (V25 again).    */
     CHECK(agc_dsky_keys("V25N22E+36000E+00000E+00000E") == AGC_STATUS_OK);
     s = state();
@@ -389,7 +384,7 @@ static void test_clear(void)
     CHECK(agc_dsky_keys("C") == AGC_STATUS_OK);
     s = state();
     CHECK(reg_blank(&s, 1) && s.verbreg == 22u);
-    CHECK(agc_dsky_keys("C") == AGC_STATUS_OK); /* CLPASHI  */
+    CHECK(agc_dsky_keys("C") == AGC_STATUS_OK);       /* CLPASHI  */
     s = state();
     CHECK(reg_blank(&s, 0) && s.verbreg == 21u && s.flash);
     CHECK(agc_dsky_keys("+00001E") == AGC_STATUS_OK); /* R1 again */
@@ -406,14 +401,14 @@ static void test_clear(void)
 static void test_alarm(void)
 {
     fresh(AGC_VEHICLE_CSM);
-    CHECK(agc_dsky_keys("V08E") == AGC_STATUS_OK); /* spare    */
+    CHECK(agc_dsky_keys("V08E") == AGC_STATUS_OK);         /* spare    */
     CHECK(state().opr_err);
-    CHECK(agc_dsky_keys("R") == AGC_STATUS_OK); /* RSET     */
+    CHECK(agc_dsky_keys("R") == AGC_STATUS_OK);            /* RSET     */
     CHECK(!state().opr_err);
     CHECK(agc_dsky_keys("V21N22E+123E") == AGC_STATUS_OK); /* 3 digits */
-    agc_dsky_state_t s = state(); /* DSKY readout */
+    agc_dsky_state_t s = state();                          /* DSKY readout */
 
-    CHECK(s.opr_err && s.flash); /* REQRET kept */
+    CHECK(s.opr_err && s.flash);                /* REQRET kept */
     CHECK(agc_dsky_keys("45E") == AGC_STATUS_OK);
     CHECK(agc_erase_thetad(0) != 0u);
     CHECK(!state().flash);
@@ -441,6 +436,7 @@ static void test_monitor(void)
 
     CHECK(s.verb[0] == 1 && s.verb[1] == 6 && s.verbreg == 16u);
     CHECK(reg_is(&s, 1, 1, 1) && reg_is(&s, 0, 0, 1));
+
     /* A keyed monitor blocks NVSUB (external monitor bit) until KEY REL. */
     CHECK(agc_dsky_nvsub(6, 36) == AGC_STATUS_BUSY);
     CHECK(agc_dsky_keys("K") == AGC_STATUS_OK);
@@ -478,7 +474,7 @@ static void test_nvsub(void)
 static void test_uprupt(void)
 {
     fresh(AGC_VEHICLE_CSM);
-    uint16_t c    = 021u; /* VERB key code */
+    uint16_t c    = 021u;                                            /* VERB key code */
     uint16_t good = (uint16_t) (c | ((~c & 037u) << 5) | (c << 10)); /* CNC */
 
     CHECK(agc_dsky_uprupt(good) == AGC_STATUS_OK);
@@ -488,8 +484,7 @@ static void test_uprupt(void)
     CHECK(agc_flag_test((agc_flag_id_t) AGC_FLAG_UPLOCKFL));
     uint16_t e = 022u; /* ERROR RESET */
 
-    CHECK(agc_dsky_uprupt((uint16_t) (e | ((~e & 037u) << 5) | (e << 10))) ==
-          AGC_STATUS_OK);
+    CHECK(agc_dsky_uprupt((uint16_t) (e | ((~e & 037u) << 5) | (e << 10))) == AGC_STATUS_OK);
     CHECK(!agc_flag_test((agc_flag_id_t) AGC_FLAG_UPLOCKFL));
 }
 
@@ -528,10 +523,9 @@ static void test_mctbs(void)
     agc_dsky_state_t s = state(); /* DSKY readout */
 
     CHECK(reg_is(&s, 0, 12345, 0));
-    CHECK(s.r[2][0] == 1 && s.r[2][3] == 0 &&
-          s.r[2][4] == AGC_DSKY_BLANK);                         /* as keyed */
-    CHECK(agc_dsky_keys("V25N07E1000E70E1E") == AGC_STATUS_OK); /* set   */
-    uint16_t w = 0; /* flag word read back */
+    CHECK(s.r[2][0] == 1 && s.r[2][3] == 0 && s.r[2][4] == AGC_DSKY_BLANK); /* as keyed */
+    CHECK(agc_dsky_keys("V25N07E1000E70E1E") == AGC_STATUS_OK);             /* set   */
+    uint16_t w = 0;                                                         /* flag word read back */
 
     CHECK(agc_erase_read_ecadr(01000u, &w) == AGC_STATUS_OK && w == 012375u);
     CHECK(agc_dsky_keys("V25N07E1000E5E0E") == AGC_STATUS_OK); /* reset */
@@ -550,10 +544,8 @@ static void test_lights(void)
     CHECK(agc_dsky_keys("V35E") == AGC_STATUS_OK);
     agc_dsky_state_t s = state(); /* DSKY readout */
 
-    CHECK(reg_is(&s, 0, 88888, 1) && reg_is(&s, 1, 88888, 1) &&
-          reg_is(&s, 2, 88888, 1));
-    CHECK(s.prog[0] == 8 && s.verb[1] == 8 && s.flash && s.opr_err &&
-          s.key_rel);
+    CHECK(reg_is(&s, 0, 88888, 1) && reg_is(&s, 1, 88888, 1) && reg_is(&s, 2, 88888, 1));
+    CHECK(s.prog[0] == 8 && s.verb[1] == 8 && s.flash && s.opr_err && s.key_rel);
     agc_job_ctx_t ctx = {AGC_JOB_CHARIN, 030, false, -1, 0};
 
     CHECK(agc_job_tstlts3(&ctx) == AGC_STATUS_OK);
@@ -573,8 +565,7 @@ static void test_cleandsp_no_continuation(void)
     fresh(AGC_VEHICLE_LM);
     agc_job_ctx_t ctx = {AGC_JOB_CHARIN, 020, false, -1, 0};
 
-    CHECK(agc_dsky_display(&ctx, AGC_DSKY_CLEANDSP, 0u, NULL) ==
-          AGC_STATUS_OK);
+    CHECK(agc_dsky_display(&ctx, AGC_DSKY_CLEANDSP, 0u, NULL) == AGC_STATUS_OK);
     int makeplay = 0; /* MAKEPLAY jobs found */
 
     for (int c = 0; c < agc_exec_core_sets(); c++)
@@ -583,8 +574,7 @@ static void test_cleandsp_no_continuation(void)
 
         CHECK(agc_exec_core_info(c, &ci) == AGC_STATUS_OK);
         CHECK(ci.state != AGC_CORE_SLEEPING);
-        makeplay += (ci.state == AGC_CORE_ACTIVE &&
-                     ci.loc == AGC_JOB_MAKEPLAY) ? 1 : 0; /* count jobs */
+        makeplay += (ci.state == AGC_CORE_ACTIVE && ci.loc == AGC_JOB_MAKEPLAY) ? 1 : 0; /* count jobs */
     }
 
     CHECK(makeplay == 1);

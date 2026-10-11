@@ -64,11 +64,9 @@
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
  *          NOT_FOUND
  **********************************************************************/
-agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
-                                     agc_noun_t *out)
+agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun, agc_noun_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) ||
-        !AGC_ASSERT(noun < AGC_NOUN_COUNT))
+    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(noun < AGC_NOUN_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -78,21 +76,16 @@ agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_noun_t *row = (veh == AGC_VEHICLE_CSM) ? /* vehicle */
-                            &agc_noun_table_csm[noun] :
-                            /* the vehicle's table row */
-                            &agc_noun_table_lm[noun];
+    const agc_noun_t *row = (veh == AGC_VEHICLE_CSM) ? &agc_noun_table_csm[noun] : &agc_noun_table_lm[noun]; /* vehicle; the vehicle's table row */
 
-    if (!AGC_ASSERT(row->noun == noun) ||
-        !AGC_ASSERT(row->ncomp <= AGC_NOUN_MAX_COMP))
+    if (!AGC_ASSERT(row->noun == noun) || !AGC_ASSERT(row->ncomp <= AGC_NOUN_MAX_COMP))
     {
         return (AGC_STATUS_BAD_ARG); /* table corrupted */
     }
 
     *out = *row;
 
-    return ((row->ncomp == 0) ? /* spare noun */
-            AGC_STATUS_NOT_FOUND : AGC_STATUS_OK);
+    return ((row->ncomp == 0) ? AGC_STATUS_NOT_FOUND : AGC_STATUS_OK); /* spare noun */
 }
 
 /**********************************************************************
@@ -111,8 +104,7 @@ agc_status_t agc_noun_lookup_vehicle(agc_vehicle_t veh, uint8_t noun,
  **********************************************************************/
 agc_status_t agc_noun_lookup(uint8_t noun, agc_noun_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) ||
-        !AGC_ASSERT(noun < AGC_NOUN_COUNT))
+    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(noun < AGC_NOUN_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -139,12 +131,9 @@ agc_status_t agc_noun_lookup(uint8_t noun, agc_noun_t *out)
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t noun_access_time(uint16_t data_id, bool write,
-                                     agc_dp_t *value)
+static agc_status_t noun_access_time(uint16_t data_id, bool write, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT) ||
-        !AGC_ASSERT(!write || data_id != AGC_DATA_TIME2 ||
-                    (*value >= 0 && *value < (agc_dp_t) AGC_TIME_MODULUS_CS)))
+    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT) || !AGC_ASSERT(!write || data_id != AGC_DATA_TIME2 || (*value >= 0 && *value < (agc_dp_t) AGC_TIME_MODULUS_CS)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -221,17 +210,15 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write,
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
  **********************************************************************/
-static agc_status_t noun_access_sp(uint16_t data_id, bool write,
-                                   agc_dp_t *value)
+static agc_status_t noun_access_sp(uint16_t data_id, bool write, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(value != NULL) ||
-        !AGC_ASSERT(data_id < AGC_DATA_COUNT))
+    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_sp_t w = write ? agc_dp_high(*value) : 0; /* SP scale */
-    agc_sp_t       r = 0; /* SP word read, SP scale */
+    agc_sp_t       r = 0;                               /* SP word read, SP scale */
 
     switch (data_id)
     {
@@ -331,8 +318,7 @@ static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
 {
     uint16_t w = 0; /* word to store, unscaled */
 
-    if (!AGC_ASSERT(value != NULL) ||
-        !AGC_ASSERT(data_id < AGC_DATA_COUNT))
+    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -408,8 +394,7 @@ static agc_status_t noun_raw_read(uint16_t data_id, agc_dp_t *value)
  **********************************************************************/
 static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
 {
-    if (!AGC_ASSERT(value >= 0 && value <= 077777) ||
-        !AGC_ASSERT(data_id < AGC_DATA_COUNT))
+    if (!AGC_ASSERT(value >= 0 && value <= 077777) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -488,8 +473,7 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
  **********************************************************************/
 static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
 {
-    if (!AGC_ASSERT(v != NULL) ||
-        !AGC_ASSERT(id < AGC_DATA_COUNT))
+    if (!AGC_ASSERT(v != NULL) || !AGC_ASSERT(id < AGC_DATA_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -567,11 +551,9 @@ static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
  *          NOT_FOUND; else the status of the routine it calls
  **********************************************************************/
-static agc_status_t noun_data_access(uint16_t data_id, bool write,
-                                     agc_dp_t *value)
+static agc_status_t noun_data_access(uint16_t data_id, bool write, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT) ||
-        !AGC_ASSERT(data_id != AGC_DATA_NONE))
+    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT) || !AGC_ASSERT(data_id != AGC_DATA_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -587,14 +569,12 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
              * load. The 15-bit image is passed raw (the LR position routine
              * tests bits 6 and 7). */
         {
-            if (!AGC_ASSERT(value != NULL) ||
-                !AGC_ASSERT(!write))
+            if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(!write))
             {
                 return (AGC_STATUS_BAD_ARG);
             }
 
-            *value =
-                (agc_dp_t) (agc_chan_read((int) AGC_CHAN_CHAN33) & 077777u);
+            *value = (agc_dp_t) (agc_chan_read((int) AGC_CHAN_CHAN33) & 077777u);
 
             return (AGC_STATUS_OK);
         }
@@ -622,17 +602,13 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
         case AGC_DATA_THETAD:
         case AGC_DATA_THETAD_P1:
         case AGC_DATA_THETAD_P2:
-            return (write ? /* store / fetch */
-                    noun_raw_write(data_id, *value) :
-                    noun_raw_read(data_id, value));
+            return (write ? noun_raw_write(data_id, *value) : noun_raw_read(data_id, value)); /* store / fetch */
         case AGC_DATA_OPTION1:
         case AGC_DATA_OPTION2:
         case AGC_DATA_OPTION3:
             /* OPTION1-3 (noun 06, raw octal words; OPTION1 +k). */
         {
-            if (!AGC_ASSERT(value != NULL) ||
-                !AGC_ASSERT(data_id >= AGC_DATA_OPTION1 &&
-                            data_id <= AGC_DATA_OPTION3))
+            if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id >= AGC_DATA_OPTION1 && data_id <= AGC_DATA_OPTION3))
             {
                 return (AGC_STATUS_BAD_ARG);
             }
@@ -677,8 +653,7 @@ static agc_status_t noun_data_access(uint16_t data_id, bool write,
  **********************************************************************/
 agc_status_t agc_noun_read(uint16_t data_id, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(value != NULL) ||
-        !AGC_ASSERT(data_id < AGC_DATA_COUNT))
+    if (!AGC_ASSERT(value != NULL) || !AGC_ASSERT(data_id < AGC_DATA_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -704,8 +679,7 @@ agc_status_t agc_noun_write(uint16_t data_id, agc_dp_t value)
 {
     agc_dp_t v = value; /* value, scale of the id */
 
-    if (!AGC_ASSERT(data_id < AGC_DATA_COUNT) ||
-        !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(data_id < AGC_DATA_COUNT) || !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }

@@ -28,14 +28,9 @@
  *   xnb      XNB.. output     half-unit, reference
  *   thetad   THETAD +0..+2    cdu (outer, inner, middle)
  */
-agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd,
-                                     const agc_mat_t *refsmmat,
-                                     const uint16_t cdu[3], agc_mat_t *xsm,
-                                     agc_mat_t *xnb, uint16_t thetad[3])
+agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, const uint16_t cdu[3], agc_mat_t *xsm, agc_mat_t *xnb, uint16_t thetad[3])
 {
-    if (!AGC_ASSERT((ip != NULL) && (smd != NULL) && (refsmmat != NULL)) ||
-        !AGC_ASSERT((cdu != NULL) && (xsm != NULL) && (xnb != NULL) &&
-                    (thetad != NULL)))
+    if (!AGC_ASSERT((ip != NULL) && (smd != NULL) && (refsmmat != NULL)) || !AGC_ASSERT((cdu != NULL) && (xsm != NULL) && (xnb != NULL) && (thetad != NULL)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -56,11 +51,10 @@ agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd,
     /* S52.2A: X1 = 18, 12, 6 selects XNB, YNB, ZNB in turn (TIX,1 by 6). */
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        xnb->row[i] = agc_vec_unit(ip, agc_vec_mat(ip, xnb->row[i], refsmmat),
-                                   NULL, NULL);
+        xnb->row[i] = agc_vec_unit(ip, agc_vec_mat(ip, xnb->row[i], refsmmat), NULL, NULL);
     }
 
-    *xsm = *smd;                                 /* S52.2.1 MATMOVE        */
+    *xsm = *smd; /* S52.2.1 MATMOVE        */
 
     return (agc_imu_calcga(ip, xnb, xsm, thetad)); /* CALCGA -> THETAD       */
 }
@@ -71,8 +65,7 @@ agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd,
  *   CSM:  ZSMD = UNIT(-R), YSMD = UNIT(V x R), XSMD = UNIT(YSMD x ZSMD)
  *   LM:   XSMD = UNIT(R),  YSMD = UNIT(V x R), ZSMD = UNIT(XSMD x YSMD)
  */
-agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r,
-                                                agc_vec_t v, agc_mat_t *smd)
+agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v, agc_mat_t *smd)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
     {
@@ -83,15 +76,13 @@ agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r,
     {
         smd->row[2] = agc_vec_unit(ip, agc_vec_neg(r), NULL, NULL);
         smd->row[1] = agc_vec_unit(ip, agc_vec_cross(ip, v, r), NULL, NULL);
-        smd->row[0] = agc_vec_unit(
-            ip, agc_vec_cross(ip, smd->row[1], smd->row[2]), NULL, NULL);
+        smd->row[0] = agc_vec_unit(ip, agc_vec_cross(ip, smd->row[1], smd->row[2]), NULL, NULL);
     }
     else
     {
         smd->row[0] = agc_vec_unit(ip, r, NULL, NULL);
         smd->row[1] = agc_vec_unit(ip, agc_vec_cross(ip, v, r), NULL, NULL);
-        smd->row[2] = agc_vec_unit(
-            ip, agc_vec_cross(ip, smd->row[0], smd->row[1]), NULL, NULL);
+        smd->row[2] = agc_vec_unit(ip, agc_vec_cross(ip, smd->row[0], smd->row[1]), NULL, NULL);
     }
 
     return (AGC_STATUS_OK);
@@ -102,9 +93,7 @@ agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r,
  * nominal IMU orientation at time TALIGN (cs B28): CSMPREC (CM) or
  * LEMCONIC (LM) to TALIGN, then the axes from RATT, VATT.
  */
-agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign,
-                                           agc_job_id_t resume_job,
-                                           agc_mat_t *smd)
+agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign, agc_job_id_t resume_job, agc_mat_t *smd)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
     {
@@ -113,8 +102,7 @@ agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign,
 
     agc_integ_out_t    o;
     const bool         csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
-    const agc_status_t st  = align_integ(
-        ip, csm ? ALIGN_CSMPREC : ALIGN_LEMCONIC, talign, resume_job, &o);
+    const agc_status_t st  = align_integ(ip, csm ? ALIGN_CSMPREC : ALIGN_LEMCONIC, talign, resume_job, &o);
 
     if (st != AGC_STATUS_OK)
     {
@@ -130,8 +118,7 @@ agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign,
  * and the CSM state:  ZSMD = UNIT((R x V) x XSMD), YSMD = UNIT(ZSMD x XSMD).
  * The LM passes RRECTCSM/VRECTCSM, the CSM its CSMPREC RATT/VATT.
  */
-agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd,
-                                agc_vec_t rcsm, agc_vec_t vcsm, agc_mat_t *smd)
+agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd, agc_vec_t rcsm, agc_vec_t vcsm, agc_mat_t *smd)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(smd != NULL))
     {
@@ -142,8 +129,7 @@ agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd,
 
     smd->row[0] = xsmd;
     smd->row[2] = agc_vec_unit(ip, agc_vec_cross(ip, h, xsmd), NULL, NULL);
-    smd->row[1] =
-        agc_vec_unit(ip, agc_vec_cross(ip, smd->row[2], xsmd), NULL, NULL);
+    smd->row[1] = agc_vec_unit(ip, agc_vec_cross(ip, smd->row[2], xsmd), NULL, NULL);
 
     return (AGC_STATUS_OK);
 }
@@ -210,19 +196,16 @@ bool agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3])
  * referred to the present SM for gyro-torque coarse alignment:
  *   XDC = UNIT(REFSMMAT XSMD), YDC = UNIT(REFSMMAT YSMD), ZDC = UNIT(REFSMMAT ZSMD)
  */
-agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd,
-                                      const agc_mat_t *refsmmat, agc_mat_t *xdc)
+agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, agc_mat_t *xdc)
 {
-    if (!AGC_ASSERT((ip != NULL) && (smd != NULL)) ||
-        !AGC_ASSERT((refsmmat != NULL) && (xdc != NULL)))
+    if (!AGC_ASSERT((ip != NULL) && (smd != NULL)) || !AGC_ASSERT((refsmmat != NULL) && (xdc != NULL)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        xdc->row[i] = agc_vec_unit(ip, agc_mat_vec(ip, refsmmat, smd->row[i]),
-                                   NULL, NULL);
+        xdc->row[i] = agc_vec_unit(ip, agc_mat_vec(ip, refsmmat, smd->row[i]), NULL, NULL);
     }
 
     return (AGC_STATUS_OK);

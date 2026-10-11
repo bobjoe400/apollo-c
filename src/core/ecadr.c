@@ -21,15 +21,14 @@
 #include "agc/core/state.h"
 
 #define EC_WORDS    0100000u /* address 00000 .. 77777                  */
-#define EC_STATE    0074u  /* STATE = FLAGWRD0 (both ropes, unswitched)   */
+#define EC_STATE    0074u    /* STATE = FLAGWRD0 (both ropes, unswitched)   */
 #define EC_WORD_MAX 077777u
 
 static uint16_t g_image[EC_WORDS];
 
 static bool is_flagword(uint16_t ecadr)
 {
-    uint16_t n = (agc_state_vehicle() == AGC_VEHICLE_LM) ?
-                 (uint16_t) AGC_FLAGWORDS_LM : (uint16_t) AGC_FLAGWORDS_CSM;
+    uint16_t n = (agc_state_vehicle() == AGC_VEHICLE_LM) ? (uint16_t) AGC_FLAGWORDS_LM : (uint16_t) AGC_FLAGWORDS_CSM;
 
     return ((ecadr >= EC_STATE) && (ecadr < EC_STATE + n));
 }
@@ -62,8 +61,7 @@ agc_status_t agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
 
     if (is_flagword(ecadr))
     {
-        *word = (uint16_t) (agc_flagword_get((int) (ecadr - EC_STATE)) &
-                            EC_WORD_MAX);
+        *word = (uint16_t) (agc_flagword_get((int) (ecadr - EC_STATE)) & EC_WORD_MAX);
 
         return (AGC_STATUS_OK);
     }

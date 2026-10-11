@@ -93,10 +93,8 @@ agc_status_t agc_job_lambert_aimpoint_guidance_lm(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
 {
-    agc_rendz_periapo_t pa; /* PERIAPO1 apsides, body scale */
-    agc_status_t        st = agc_rendz_periapo_body_scale(ip, rz, rz->rtig,
-                                                          rz->viprime,
-                                                          &pa); /* status */
+    agc_rendz_periapo_t pa;                                                                    /* PERIAPO1 apsides, body scale */
+    agc_status_t        st = agc_rendz_periapo_body_scale(ip, rz, rz->rtig, rz->viprime, &pa); /* status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -105,10 +103,8 @@ static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
 
     agc_burn_t *b = &agc_guid_state()->burn; /* HAPO, HPER, VGDISP */
 
-    b->hper =
-        agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hperi));
-    b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz,
-                                                                     pa.hapo));
+    b->hper = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hperi));
+    b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hapo));
 
     if (!AGC_ASSERT(b->hper <= RZ_MAXNM))
     {
@@ -150,8 +146,8 @@ agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
 
     agc_flag_clear(AGC_FLAG_UPDATFLG);
     agc_dp_t        tig = agc_erase_tig(); /* TIG, cs 2^28 */
-    agc_integ_out_t o; /* LEMPREC result at TIG */
-    agc_status_t    st; /* integration status */
+    agc_integ_out_t o;                     /* LEMPREC result at TIG */
+    agc_status_t    st;                    /* integration status */
 
     st = rz_integ(&ip, RZ_LEMPREC, tig, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE, &o);
 
@@ -180,8 +176,7 @@ agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
     rz->delvsin                   = rz->delveet3;
     agc_guid_state()->burn.vgdisp = rz_abval(&ip, rz->delveet3);
     agc_flag_clear(AGC_FLAG_XDELVFLG);
-    st = agc_rendz_get_lvc(&ip, rz->rinit, rz->vinit, rz->delveet3,
-                           &rz->delvlvc);
+    st                            = agc_rendz_get_lvc(&ip, rz->rinit, rz->vinit, rz->delveet3, &rz->delvlvc);
 
     if (st == AGC_STATUS_OK)
     {
@@ -249,6 +244,5 @@ agc_status_t agc_job_marks_tfi_mga_monitor(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_flag_set(AGC_FLAG_FINALFLG);
 
-    return (rz_ttogo_display(ctx, &ip, agc_rendz_erasable(),
-                             AGC_JOB_MARKS_TFI_MGA_MONITOR));
+    return (rz_ttogo_display(ctx, &ip, agc_rendz_erasable(), AGC_JOB_MARKS_TFI_MGA_MONITOR));
 }

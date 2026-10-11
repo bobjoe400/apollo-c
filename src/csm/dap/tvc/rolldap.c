@@ -69,21 +69,21 @@
  **********************************************************************/
 #include "../internal.h"
 
-#define DB          ((agc_sp_t) 228)  /* 00344 DEC .01388889: 5 deg, B+0 rev */
-#define NEG_SLOPE   ((agc_sp_t) 3277) /* 06315 DEC 0.2: -switch slope, B+0/s */
-#define LMCRATE     ((agc_sp_t) 73)   /* 00111 .00027778 B+4: 0.1 deg/s, B-4  */
-#define INTERCEP    ((agc_sp_t) 328)  /* 00510 .0025 B+3: DB(-SLOPE)-LMCRATE  */
-#define MINLIM      ((agc_sp_t) 728)  /* 01330 .00277778 B+4: 1 deg/s, B-4    */
-#define MAXLIM      ((agc_sp_t) 3641) /* 07071 .01388889 B+4: 5 deg/s, B-4    */
-#define TMINFIRE    ((agc_sp_t) 24)   /* 00030 DEC 1.5 B+4: 15 ms, 16 bits/cs */
-#define TMAXFIRE    ((agc_sp_t) 4000) /* 07640 DEC 250 B+4: 2.5 s, 16 bits/cs */
-#define RECIP_TMX   ((agc_sp_t) 4)    /* 1/TMXFIR = BIT3 (allows 2.56 s)     */
-#define T6SCALE     ((agc_sp_t) 12800) /* PRIO31 31000: (B+3)(16/cs)(100 cs/s) */
-#define BIT5_SP     ((agc_sp_t) 16)    /* BIT5: OGA difference to B-4 rev/s  */
-#define BIT11_SP    ((agc_sp_t) 1024)  /* BIT11, unscaled                    */
-#define BIT14_SP    ((agc_sp_t) 8192)  /* BIT14: B-4 -> B-3 rev/s            */
-#define A16_MAX     32767              /* 16-bit accumulator, 2^-14 units     */
-#define A16_MOD     65535              /* its ones' complement modulus        */
+#define DB          ((agc_sp_t) 228)    /* 00344 DEC .01388889: 5 deg, B+0 rev */
+#define NEG_SLOPE   ((agc_sp_t) 3277)   /* 06315 DEC 0.2: -switch slope, B+0/s */
+#define LMCRATE     ((agc_sp_t) 73)     /* 00111 .00027778 B+4: 0.1 deg/s, B-4  */
+#define INTERCEP    ((agc_sp_t) 328)    /* 00510 .0025 B+3: DB(-SLOPE)-LMCRATE  */
+#define MINLIM      ((agc_sp_t) 728)    /* 01330 .00277778 B+4: 1 deg/s, B-4    */
+#define MAXLIM      ((agc_sp_t) 3641)   /* 07071 .01388889 B+4: 5 deg/s, B-4    */
+#define TMINFIRE    ((agc_sp_t) 24)     /* 00030 DEC 1.5 B+4: 15 ms, 16 bits/cs */
+#define TMAXFIRE    ((agc_sp_t) 4000)   /* 07640 DEC 250 B+4: 2.5 s, 16 bits/cs */
+#define RECIP_TMX   ((agc_sp_t) 4)      /* 1/TMXFIR = BIT3 (allows 2.56 s)     */
+#define T6SCALE     ((agc_sp_t) 12800)  /* PRIO31 31000: (B+3)(16/cs)(100 cs/s) */
+#define BIT5_SP     ((agc_sp_t) 16)     /* BIT5: OGA difference to B-4 rev/s  */
+#define BIT11_SP    ((agc_sp_t) 1024)   /* BIT11, unscaled                    */
+#define BIT14_SP    ((agc_sp_t) 8192)   /* BIT14: B-4 -> B-3 rev/s            */
+#define A16_MAX     32767               /* 16-bit accumulator, 2^-14 units     */
+#define A16_MOD     65535               /* its ones' complement modulus        */
 #define PLUS_ROLL1  ((uint16_t) 000005) /* FIVE: jets 9 and 11               */
 #define PLUS_ROLL2  ((uint16_t) 000120) /* OCT120: jets 13 and 15            */
 #define MINUS_ROLL1 ((uint16_t) 000012) /* TEN: jets 12 and 10               */
@@ -147,10 +147,10 @@ static agc_sp_t roll_desired_rate(agc_sp_t deloga, agc_sp_t delogart, int i)
     /* MP 1/CONACC; DOUBLE; MP -SLOPE: TEMREG = 2(-SLOPE)RATE/CONACC      */
     agc_sp_t a   = csm_dap_mp_hi(delogart, t->one_conacc); /* B+5 rev^-1 s */
     agc_sp_t den = csm_dap_mp_hi(csm_dap_ads(a, a), NEG_SLOPE);
-    agc_sp_t num = csm_dap_mp_hi(den, delogart); /* 2(-S)(RATE^2)/CONACC */
+    agc_sp_t num = csm_dap_mp_hi(den, delogart);           /* 2(-S)(RATE^2)/CONACC */
 
-    den = csm_dap_ads(den, sgn_mul(i, (agc_sp_t) -BIT11_SP)); /* RATEDEN */
-    agc_sp_t e = csm_dap_ads(sgn_mul(i, deloga), (agc_sp_t) -DB); /* rev */
+    den        = csm_dap_ads(den, sgn_mul(i, (agc_sp_t) -BIT11_SP)); /* RATEDEN */
+    agc_sp_t e = csm_dap_ads(sgn_mul(i, deloga), (agc_sp_t) -DB);    /* rev */
 
     num         = csm_dap_ads(num, csm_dap_mp_hi(e, NEG_SLOPE)); /* ADS  */
     t->temreg   = den;
@@ -204,8 +204,9 @@ static agc_sp_t roll_fire_time(agc_sp_t desired)
     }
 
     agc_sp_t d = csm_dap_ad_sat(desired, (agc_sp_t) -t->ogarate); /* B-4 */
-    agc_sp_t a = csm_dap_mp_hi(d, T6SCALE); /* MP T6SCALE              */
-    agc_dp_t p = agc_sp_mul(a, t->one_conacc); /* MP 1/CONACC: A,L     */
+    agc_sp_t a = csm_dap_mp_hi(d, T6SCALE);                       /* MP T6SCALE              */
+    agc_dp_t p = agc_sp_mul(a, t->one_conacc);                    /* MP 1/CONACC: A,L     */
+
     /* The low word's carries keep the doubled pair sign-agreed, so the
      * accumulator after DDOUBL; DDOUBL is the upper part of 4 p.         */
     int32_t acc = (int32_t) ((4 * (int64_t) p) / 16384); /* A, 2^-14     */
@@ -261,16 +262,12 @@ static bool roll_coast_region(int i)
     }
 
     /* (-SLOPE) OGA x 8 (B-3 rev/s) + OGARATE x BIT14 (B-4 -> B-3)        */
-    agc_dp_t s = csm_dap_ddoubl(
-        csm_dap_ddoubl(csm_dap_ddoubl(agc_sp_mul(t->ogaerr, NEG_SLOPE))));
-    agc_sp_t x =
-        csm_dap_ads(agc_dp_high(s), csm_dap_mp_hi(t->ogarate, BIT14_SP));
-    bool coast =
-        (csm_dap_ads(sgn_mul(i, x), (agc_sp_t) -INTERCEP) <= 0); /* REG2 */
+    agc_dp_t s     = csm_dap_ddoubl(csm_dap_ddoubl(csm_dap_ddoubl(agc_sp_mul(t->ogaerr, NEG_SLOPE))));
+    agc_sp_t x     = csm_dap_ads(agc_dp_high(s), csm_dap_mp_hi(t->ogarate, BIT14_SP));
+    bool     coast = (csm_dap_ads(sgn_mul(i, x), (agc_sp_t) -INTERCEP) <= 0); /* REG2 */
 
-    coast = coast || (csm_dap_ads(t->iogarate, MINLIM) <= 0);    /* REG4 */
-    coast = coast ||
-            (csm_dap_ads(sgn_mul(i, t->ogaerr), (agc_sp_t) -DB) <= 0); /* 5 */
+    coast = coast || (csm_dap_ads(t->iogarate, MINLIM) <= 0);                   /* REG4 */
+    coast = coast || (csm_dap_ads(sgn_mul(i, t->ogaerr), (agc_sp_t) -DB) <= 0); /* 5 */
 
     return (coast);
 }
@@ -296,19 +293,21 @@ static bool roll_regions(agc_sp_t *desired)
     }
 
     r = t->ogarate;
+
     /* TEMREG = DB - (1/2 CONACC) OGARATE^2, the 1/2 in the scaling       */
     agc_sp_t q = csm_dap_mp_hi(csm_dap_mp_hi((agc_sp_t) -r, t->one_conacc), r);
 
     t->temreg = csm_dap_ads(q, DB);
     t->sgnrt  = (agc_sp_t) ((r > 0) ? 1 : -1); /* ?: sgn(0) negative     */
+
     /* DELOGA: distance from the switch parabola, + to its right          */
     t->deloga = csm_dap_ads(t->ogaerr, (agc_sp_t) -(t->sgnrt * t->temreg));
-    int i = (t->deloga > 0) ? 1 : -1; /* ?: CA (PRIO30) or CS (BIT15)  */
+    int i     = (t->deloga > 0) ? 1 : -1; /* ?: CA (PRIO30) or CS (BIT15)  */
 
     t->i_sign = i;
 
     if (sgn_mul(i, t->sgnrt) > 0)
-    {                                    /* REG1TST: region 1, ROLLON */
+    { /* REG1TST: region 1, ROLLON */
         t->deloga   = csm_dap_ads(t->deloga, sgn_mul(i, DB));
         t->delogart = sgn_mul(i, (agc_sp_t) -LMCRATE); /* dummy point    */
         *desired    = roll_desired_rate(t->deloga, t->delogart, i);
@@ -319,7 +318,7 @@ static bool roll_regions(agc_sp_t *desired)
     t->iogarate = sgn_mul(i, r);
 
     if (csm_dap_ads(t->iogarate, MAXLIM) <= 0)
-    {                                              /* REG3TST: too fast */
+    { /* REG3TST: too fast */
         *desired = sgn_mul(i, (agc_sp_t) -MAXLIM); /* RATELIM           */
 
         return (true);
@@ -360,12 +359,12 @@ static agc_status_t roll_jets_on(bool plus)
     }
 
     if ((t->rollword & bit) == 0u)
-    {                                                  /* NO.9-11, 12-10 */
+    { /* NO.9-11, 12-10 */
         t->rollword = (uint16_t) (t->rollword | bit);  /* ADS ROLLWORD   */
         jets        = plus ? PLUS_ROLL1 : MINUS_ROLL1; /* ?: torque sign */
     }
     else
-    {                                            /* NO.13-15, NO.16-14 */
+    { /* NO.13-15, NO.16-14 */
         t->rollword = (uint16_t) (t->rollword & ~(unsigned int) bit);
         jets        = plus ? PLUS_ROLL2 : MINUS_ROLL2; /* ?: torque sign */
     }
@@ -395,8 +394,7 @@ static agc_status_t roll_jetroll(uint16_t time6)
     agc_csm_tvc_t *t  = agc_csm_dap_tvc(); /* TVC DAP erasables         */
     agc_status_t   st = AGC_STATUS_OK;     /* jet selection status      */
 
-    if (!AGC_ASSERT(time6 <= CSM_DAP_NEG0) ||
-        !AGC_ASSERT((t->i_sign >= -1) && (t->i_sign <= 1)))
+    if (!AGC_ASSERT(time6 <= CSM_DAP_NEG0) || !AGC_ASSERT((t->i_sign >= -1) && (t->i_sign <= 1)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -490,7 +488,7 @@ static agc_status_t roll_fire(agc_sp_t tf)
     }
 
     if (csm_dap_mp_hi(f, RECIP_TMX) != 0)
-    {                                                   /* MAXTST       */
+    { /* MAXTST       */
         f = (agc_sp_t) ((f > 0) ? TMAXFIRE : -TMAXFIRE); /* ?: CCS sign  */
     }
 
@@ -498,7 +496,7 @@ static agc_status_t roll_fire(agc_sp_t tf)
     t->temreg   = (agc_sp_t) ((f < 0) ? -f : f);     /* ?: MAG(T6FIRE) */
 
     if (t->i_sign == 0)
-    {                       /* FIREPLUG: no extension of a firing       */
+    { /* FIREPLUG: no extension of a firing       */
         agc_sp_t left = csm_dap_word_sp(agc_rupt_time(CSM_DAP_TIME6));
 
         if (left - t->temreg <= 0)
@@ -526,16 +524,13 @@ agc_status_t agc_task_rolldap(void)
     agc_csm_tvc_t *t       = agc_csm_dap_tvc(); /* TVC DAP erasables    */
     agc_sp_t       desired = 0;                 /* desired rate, B-4    */
 
-    if (!AGC_ASSERT(t->one_conacc >= 0) ||
-        !AGC_ASSERT((t->rollfire == 0) || (t->rollfire == AGC_SP_MAX) ||
-                    (t->rollfire == AGC_SP_MIN)))
+    if (!AGC_ASSERT(t->one_conacc >= 0) || !AGC_ASSERT((t->rollfire == 0) || (t->rollfire == AGC_SP_MAX) || (t->rollfire == AGC_SP_MIN)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     /* MSU OGAPAST; MP BIT5; LXCH A; TS OGARATE                          */
-    t->ogarate =
-        csm_dap_mp_lo(csm_dap_msu(t->oganow, t->ogapast), BIT5_SP);
+    t->ogarate = csm_dap_mp_lo(csm_dap_msu(t->oganow, t->ogapast), BIT5_SP);
 
     if ((t->rollfire == 0) && (t->temreg != 0))
     {
@@ -549,7 +544,7 @@ agc_status_t agc_task_rolldap(void)
         return (roll_noroll());
     }
 
-    t->temreg = desired;                 /* ROLLSET: TS TEMREG        */
+    t->temreg   = desired;                 /* ROLLSET: TS TEMREG        */
     agc_sp_t tf = roll_fire_time(desired); /* 625 us/bit              */
 
     t->temreg = tf;

@@ -29,29 +29,23 @@ typedef struct agc_mpac_tp
     agc_sp_t w[3];
 } agc_mpac_tp_t;
 
-agc_dp_t     agc_rtb_loadtime(void);                 /* LOADTIME, cs 2^28 */
-agc_dp_t     agc_rtb_cdulogic(uint16_t cdu_pattern); /* CDULOGIC, revs    */
-int          agc_rtb_sgnagree(agc_mpac_tp_t *mpac);  /* SGNAGREE/TPAGREE  */
+agc_dp_t     agc_rtb_loadtime(void);                                                                      /* LOADTIME, cs 2^28 */
+agc_dp_t     agc_rtb_cdulogic(uint16_t cdu_pattern);                                                      /* CDULOGIC, revs    */
+int          agc_rtb_sgnagree(agc_mpac_tp_t *mpac);                                                       /* SGNAGREE/TPAGREE  */
 agc_dp_t     agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo);
-uint16_t     agc_rtb_1sto2s(agc_dp_t angle_rev); /* 1STO2S            */
-agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev,
-                             uint16_t  out[3]); /* V1STO2S  */
+uint16_t     agc_rtb_1sto2s(agc_dp_t angle_rev);                                                          /* 1STO2S            */
+agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3]);                                      /* V1STO2S  */
 agc_status_t agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2]);
-uint16_t     agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc); /* CDUINC   */
-agc_status_t agc_rtb_incrcdus(uint16_t  thetad[3],
-                              agc_vec_t incr);      /* INCRCDUS */
-agc_vec_t    agc_rtb_readpips(void);                /* READPIPS */
-agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds); /* PULSEIMU */
-agc_status_t agc_rtb_transp(agc_mat_t *m);          /* TRANSP1/TRANSP2  */
-agc_dp_t     agc_rtb_signmpac(agc_dp_t mpac);       /* SIGNMPAC         */
-agc_vec_t    agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift,
-                              agc_dp_t *abval,
-                              agc_dp_t *vsq); /* NORMUNIT/NORMUNX1 */
-agc_vec_t agc_rtb_vecsgnag(agc_vec_t v);      /* VECSGNAG         */
-agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv,
-                           agc_sp_t e3j22r2m);
-agc_status_t agc_rtb_quality1(agc_interp_t *ip, agc_vec_t urpv, bool moonflag,
-                              agc_sp_t e3j22r2m, agc_vec_t *out);
+uint16_t     agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc);                                        /* CDUINC   */
+agc_status_t agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr);                                        /* INCRCDUS */
+agc_vec_t    agc_rtb_readpips(void);                                                                      /* READPIPS */
+agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds);                                                       /* PULSEIMU */
+agc_status_t agc_rtb_transp(agc_mat_t *m);                                                                /* TRANSP1/TRANSP2  */
+agc_dp_t     agc_rtb_signmpac(agc_dp_t mpac);                                                             /* SIGNMPAC         */
+agc_vec_t    agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift, agc_dp_t *abval, agc_dp_t *vsq); /* NORMUNIT/NORMUNX1 */
+agc_vec_t    agc_rtb_vecsgnag(agc_vec_t v);                                                               /* VECSGNAG         */
+agc_vec_t    agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m);
+agc_status_t agc_rtb_quality1(agc_interp_t *ip, agc_vec_t urpv, bool moonflag, agc_sp_t e3j22r2m, agc_vec_t *out);
 
 /* ======================================================================
  * Downlink lists (src/io/downlink_lists_csm.c, src/io/downlink_lists_lm.c)
@@ -74,15 +68,15 @@ typedef enum agc_dn_item
     AGC_DN_T_OTHER,
     AGC_DN_TIG,
     AGC_DN_REFSMMAT,
-    AGC_DN_CDUX,     /* CDUX,CDUY,CDUZ,CDUT (LM order)                */
-    AGC_DN_CDUZ,     /* CDUZ,CDUT (CM order)                          */
-    AGC_DN_CDUS,     /* CDUS,PIPAX,PIPAY,PIPAZ                        */
-    AGC_DN_IMODES30, /* IMODES30,IMODES33                             */
-    AGC_DN_OPTMODES, /* OPTMODES,HOLDFLAG (CM)                        */
-    AGC_DN_RADMODES, /* RADMODES,DAPBOOLS (LM)                        */
-    AGC_DN_COMPNUMB, /* COMPNUMB,UPOLDMOD,UPVERB,UPCOUNT,UPBUFF...    */
-    AGC_DN_UPBUFF,   /* UPBUFF +0..+19D                               */
-    AGC_DN_CADRFLSH, /* CADRFLSH,+1,+2,FAILREG,+1,+2                  */
+    AGC_DN_CDUX,      /* CDUX,CDUY,CDUZ,CDUT (LM order)                */
+    AGC_DN_CDUZ,      /* CDUZ,CDUT (CM order)                          */
+    AGC_DN_CDUS,      /* CDUS,PIPAX,PIPAY,PIPAZ                        */
+    AGC_DN_IMODES30,  /* IMODES30,IMODES33                             */
+    AGC_DN_OPTMODES,  /* OPTMODES,HOLDFLAG (CM)                        */
+    AGC_DN_RADMODES,  /* RADMODES,DAPBOOLS (LM)                        */
+    AGC_DN_COMPNUMB,  /* COMPNUMB,UPOLDMOD,UPVERB,UPCOUNT,UPBUFF...    */
+    AGC_DN_UPBUFF,    /* UPBUFF +0..+19D                               */
+    AGC_DN_CADRFLSH,  /* CADRFLSH,+1,+2,FAILREG,+1,+2                  */
     AGC_DN_REDOCTR,
     AGC_DN_RSBBQ,
     AGC_DN_LEMMASS,
@@ -212,9 +206,9 @@ typedef struct agc_dn_list
 } agc_dn_list_t;
 
 #define AGC_DNLIST_CSM_COUNT \
-    5 /* DNTABLE: COAST, ENTRY/UPDATE, REND, POWERED, P22 */
+    5                            /* DNTABLE: COAST, ENTRY/UPDATE, REND, POWERED, P22 */
 #define AGC_DNLIST_LM_COUNT \
-    6 /* DNTABLE: COAST, AGS, REND, ORBMAN, DESC/ASC, SURF */
+    6                            /* DNTABLE: COAST, AGS, REND, ORBMAN, DESC/ASC, SURF */
 #define AGC_DNLIST_WORDS 100     /* DP words per downlist (2 s at 50 words/s) */
 #define AGC_DN_LOWIDCOD  077340u /* LOWIDCOD, the sync word             */
 
@@ -222,39 +216,38 @@ agc_status_t agc_dnlist_csm_control(int code, agc_dn_list_t *out);
 agc_status_t agc_dnlist_csm_sublist(int sub, agc_dn_list_t *out);
 agc_status_t agc_dnlist_lm_control(int code, agc_dn_list_t *out);
 agc_status_t agc_dnlist_lm_sublist(int sub, agc_dn_list_t *out);
+
 /* Number of DP downlink words a control list produces, ID word included.  */
 agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words);
 
 /* ======================================================================
  * Down-telemetry program (telemetry.c; DOWN_TELEMETRY_PROGRAM.agc pp.988-997)
  * ==================================================================== */
-agc_status_t agc_telem_fresh_start(int dnlstcod); /* DNLSTCOD, DNTMGOTO init */
-agc_status_t agc_telem_restart(void);             /* STARTSUB: restart list  */
-void         agc_telem_select_list(int dnlstcod); /* TS DNLSTCOD             */
-int          agc_telem_list_code(void);           /* C(DNLSTCOD)             */
-agc_status_t agc_telem_downrupt(void);            /* DODOWNTM, every 20 ms   */
-agc_status_t agc_telem_start_dump(void);          /* V74: DNTMGOTO = DNDUMPI */
+agc_status_t agc_telem_fresh_start(int dnlstcod);     /* DNLSTCOD, DNTMGOTO init */
+agc_status_t agc_telem_restart(void);                 /* STARTSUB: restart list  */
+void         agc_telem_select_list(int dnlstcod);     /* TS DNLSTCOD             */
+int          agc_telem_list_code(void);               /* C(DNLSTCOD)             */
+agc_status_t agc_telem_downrupt(void);                /* DODOWNTM, every 20 ms   */
+agc_status_t agc_telem_start_dump(void);              /* V74: DNTMGOTO = DNDUMPI */
 agc_status_t agc_telem_set_dumpcnt(uint16_t dumpcnt); /* DUMPCNT (V21N01)      */
 uint16_t     agc_telem_dumpcnt(void);
-uint16_t     agc_erase_agsword(void); /* AGSWORD (LM): saved list */
+uint16_t     agc_erase_agsword(void);                 /* AGSWORD (LM): saved list */
 void         agc_erase_set_agsword(uint16_t v);
 
 /* ======================================================================
  * Service routines (service.c; SERVICE_ROUTINES.agc C pp.1485-1492)
  * ==================================================================== */
-uint16_t     agc_svc_upflag(agc_flag_id_t f);   /* UPFLAG: returns flagword */
-uint16_t     agc_svc_downflag(agc_flag_id_t f); /* DOWNFLAG                 */
-agc_status_t agc_svc_upent2(uint16_t arg);      /* UPENT2 (FLAGWRD4 on LM)  */
-agc_status_t agc_svc_downent2(uint16_t arg);    /* DOWNENT2                 */
-agc_status_t agc_svc_delayjob(uint16_t     delay_cs,
-                              agc_job_id_t wake_as); /* DELAYJOB */
-agc_status_t agc_svc_delay_wake(int slot); /* WAKER task body (-1)     */
-agc_status_t agc_svc_startsub_reset(void); /* DELAYLOC = 0             */
-agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to,
-                             int n); /* GENTRAN */
-agc_status_t agc_svc_b5off(void);    /* B5OFF                    */
-agc_status_t agc_svc_trfailof(void); /* TRFAILOF (CM)            */
-agc_status_t agc_svc_trfailon(void); /* TRFAILON (CM)            */
+uint16_t     agc_svc_upflag(agc_flag_id_t f);                            /* UPFLAG: returns flagword */
+uint16_t     agc_svc_downflag(agc_flag_id_t f);                          /* DOWNFLAG                 */
+agc_status_t agc_svc_upent2(uint16_t arg);                               /* UPENT2 (FLAGWRD4 on LM)  */
+agc_status_t agc_svc_downent2(uint16_t arg);                             /* DOWNENT2                 */
+agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as);  /* DELAYJOB */
+agc_status_t agc_svc_delay_wake(int slot);                               /* WAKER task body (-1)     */
+agc_status_t agc_svc_startsub_reset(void);                               /* DELAYLOC = 0             */
+agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n); /* GENTRAN */
+agc_status_t agc_svc_b5off(void);                                        /* B5OFF                    */
+agc_status_t agc_svc_trfailof(void);                                     /* TRFAILOF (CM)            */
+agc_status_t agc_svc_trfailon(void);                                     /* TRFAILON (CM)            */
 
 /* ======================================================================
  * T4RUPT (t4rupt.c + src/io/service/t4rupt_csm.c + src/io/service/t4rupt_lm.c)
@@ -274,28 +267,30 @@ agc_status_t agc_t4_imumon(void);             /* IMUMON .. GLOCKMON       */
 agc_status_t agc_t4_tnontest(void);           /* TNONTEST                 */
 agc_status_t agc_t4_c33test(void);            /* C33TEST                  */
 agc_status_t agc_t4_glockmon(void);           /* GLOCKMON                 */
+
 /* CSM optics (src/io/service/t4rupt_csm.c). OPTIND -0 is AGC_OPTIND_NEG0.      */
 #define AGC_OPTIND_NEG0 ((agc_sp_t) -2)
-agc_status_t agc_t4_optics_monitor(void); /* OPTMON                   */
-agc_status_t agc_t4_optics_drive(void);   /* OPTDRIVE                 */
+agc_status_t agc_t4_optics_monitor(void);            /* OPTMON                   */
+agc_status_t agc_t4_optics_drive(void);              /* OPTDRIVE                 */
 agc_status_t agc_t4_optics_task(agc_task_id_t task); /* ENDZOPT              */
-agc_status_t agc_t4_optics_reset(bool fresh); /* OPTIND/OPTMODES init     */
-uint16_t     agc_erase_optmodes(void);        /* OPTMODES (CM)            */
+agc_status_t agc_t4_optics_reset(bool fresh);        /* OPTIND/OPTMODES init     */
+uint16_t     agc_erase_optmodes(void);               /* OPTMODES (CM)            */
 void         agc_erase_set_optmodes(uint16_t v);
-agc_sp_t     agc_erase_optind(void); /* OPTIND (CM)              */
+agc_sp_t     agc_erase_optind(void);                 /* OPTIND (CM)              */
 void         agc_erase_set_optind(agc_sp_t v);
-agc_sp_t     agc_erase_swsample(void); /* SWSAMPLE (CM) +1 CSC, 0 manual, -1 zero optics */
+agc_sp_t     agc_erase_swsample(void);               /* SWSAMPLE (CM) +1 CSC, 0 manual, -1 zero optics */
+
 /* LM radar monitor and DAP matrix (src/io/service/t4rupt_lm.c).                 */
 agc_status_t agc_t4_rr_monitor(void);    /* RRAUTCHK..RRGIMON+GPMATRIX */
 agc_status_t agc_t4_gimbal_matrix(void); /* GPMATRIX / DAPT4S        */
 uint16_t     agc_erase_radmodes(void);   /* RADMODES (LM)            */
 void         agc_erase_set_radmodes(uint16_t v);
-agc_sp_t     agc_erase_m11(void);   /* SIN(MG), scaled at 1     */
-agc_sp_t     agc_erase_m21(void);   /* COS(OG)COS(MG)           */
-agc_sp_t     agc_erase_m22(void);   /* SIN(OG)                  */
-agc_sp_t     agc_erase_m31(void);   /* -SIN(OG)COS(MG)          */
-agc_sp_t     agc_erase_m32(void);   /* COS(OG)                  */
-agc_sp_t     agc_erase_cosmg(void); /* COS(MG)                  */
+agc_sp_t     agc_erase_m11(void);        /* SIN(MG), scaled at 1     */
+agc_sp_t     agc_erase_m21(void);        /* COS(OG)COS(MG)           */
+agc_sp_t     agc_erase_m22(void);        /* SIN(OG)                  */
+agc_sp_t     agc_erase_m31(void);        /* -SIN(OG)COS(MG)          */
+agc_sp_t     agc_erase_m32(void);        /* COS(OG)                  */
+agc_sp_t     agc_erase_cosmg(void);      /* COS(MG)                  */
 
 /* ======================================================================
  * Extended verbs (src/io/verbs/extended_verbs{,_csm,_lm}.c) and the update
@@ -307,22 +302,21 @@ agc_status_t agc_extverb(int verb, int noun); /* GOEXTVB (pinball) */
 /* The verb and noun GOEXTVB was entered with (VERBREG, NOUNREG).          */
 int          agc_extverb_verb(void);
 int          agc_extverb_noun(void);
-agc_status_t agc_extverb_testxact(bool *ok); /* TESTXACT: false = ALM/END done */
-agc_status_t agc_extverb_alm_end(void);      /* ALM/END: FALTON, PINBRNCH     */
-agc_status_t agc_extverb_gopin(void);        /* GOPIN: PINBRNCH               */
-bool         agc_extverb_chkpooh(void);      /* CHKPOOH: P00 (ALM/END if not) */
-bool         agc_extverb_ckmodcad(void); /* CKMODCAD: no IMU mode user     */
-agc_status_t agc_extverb_goloadlv(void); /* GOLOADLV: please-perform done */
-agc_status_t agc_extverb_upflag(agc_flag_id_t f); /* TC UPFLAG, TC GOPIN       */
+agc_status_t agc_extverb_testxact(bool *ok);        /* TESTXACT: false = ALM/END done */
+agc_status_t agc_extverb_alm_end(void);             /* ALM/END: FALTON, PINBRNCH     */
+agc_status_t agc_extverb_gopin(void);               /* GOPIN: PINBRNCH               */
+bool         agc_extverb_chkpooh(void);             /* CHKPOOH: P00 (ALM/END if not) */
+bool         agc_extverb_ckmodcad(void);            /* CKMODCAD: no IMU mode user     */
+agc_status_t agc_extverb_goloadlv(void);            /* GOLOADLV: please-perform done */
+agc_status_t agc_extverb_upflag(agc_flag_id_t f);   /* TC UPFLAG, TC GOPIN       */
 agc_status_t agc_extverb_downflag(agc_flag_id_t f); /* TC DOWNFLAG, TC GOPIN     */
 agc_status_t agc_extverb_schedule(agc_prio_t prio, agc_job_id_t job, bool vac);
+
 /* Request a flashing display for the running verb (GOXDSPF = GOMARKF).    */
-agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb,
-                               uint8_t noun, agc_job_id_t on_proceed,
-                               agc_job_id_t on_enter);
+agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t on_proceed, agc_job_id_t on_enter);
+
 /* EXDSPRET: show our verb again and continue at next.                     */
-agc_status_t agc_extverb_redisplay(const agc_job_ctx_t *ctx, uint8_t verb,
-                                   agc_job_id_t next);
+agc_status_t agc_extverb_redisplay(const agc_job_ctx_t *ctx, uint8_t verb, agc_job_id_t next);
 
 /* LM radar verb entries (extended_verbs_lm_radar.c)                       */
 agc_status_t agc_extverb_rr_zero(agc_job_ctx_t *ctx);              /* V40 N72 */
@@ -335,7 +329,7 @@ agc_status_t agc_extverb_lr_spurious_test_end(agc_job_ctx_t *ctx); /* V79    */
 agc_status_t agc_extverb_rr_los_display(agc_job_ctx_t *ctx);       /* V85     */
 
 agc_status_t agc_extverb_state_vector_copy(bool from_other); /* V66 / CSM V47 */
-agc_status_t agc_extverb_lm_attck2(void); /* LM V43 ATTCK2 (task body)  */
+agc_status_t agc_extverb_lm_attck2(void);                    /* LM V43 ATTCK2 (task body)  */
 
 /* vehicle halves of the jobs whose AGC code differs (wrappers in
  * extended_verbs.c pick one by vehicle)                                   */
@@ -358,70 +352,74 @@ agc_status_t agc_job_dap_data_load_noun48_lm(agc_job_ctx_t *ctx);
 agc_status_t agc_extverb_csm(agc_job_ctx_t *ctx, int verb);
 agc_status_t agc_extverb_lm(agc_job_ctx_t *ctx, int verb);
 
-bool agc_extverb_busy(void);          /* EXTVBACT != 0   */
+bool agc_extverb_busy(void); /* EXTVBACT != 0   */
+
 /* EXTVBACT: extended-verb / marking-system activity word (bit 2 marking
  * system in use, bit 5 an extended verb is active, bit 14 P61 lock-out). */
 uint16_t agc_erase_extvbact(void);
 void     agc_erase_set_extvbact(uint16_t v);
 void     agc_svc_set_extvbact(uint16_t v); /* TS EXTVBACT     */
+
 /* jobs and tasks (ids in src/io/verbs/pending.h until integration)       */
-agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx);         /* LST2FAN   */
-agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx);     /* ENDEXT    */
-agc_status_t agc_job_extended_verb_gopin(agc_job_ctx_t *ctx);   /* GOPIN     */
-agc_status_t agc_job_keyboard_coarse_align(agc_job_ctx_t *ctx); /* V41 ICORK2 */
-agc_status_t agc_job_keyboard_coarse_drive(agc_job_ctx_t *ctx);            /* V41 IMUCOARS */
-agc_status_t agc_job_keyboard_fine_align(agc_job_ctx_t *ctx); /* V42       */
-agc_status_t agc_job_keyboard_fine_mode(agc_job_ctx_t *ctx);  /* V42 IMUFINE */
-agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx); /* V42 FINEK2 */
-agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx); /* V55 UPDATIME */
-agc_status_t agc_job_show_banksum_display(agc_job_ctx_t *ctx); /* V91 NOKILL */
-agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx);    /* V91 NXTBNK */
-agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx);     /* V91 V34   */
-agc_status_t agc_job_attitude_error_load(agc_job_ctx_t *ctx);  /* V43       */
+agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx);            /* LST2FAN   */
+agc_status_t agc_job_extended_verb_end(agc_job_ctx_t *ctx);        /* ENDEXT    */
+agc_status_t agc_job_extended_verb_gopin(agc_job_ctx_t *ctx);      /* GOPIN     */
+agc_status_t agc_job_keyboard_coarse_align(agc_job_ctx_t *ctx);    /* V41 ICORK2 */
+agc_status_t agc_job_keyboard_coarse_drive(agc_job_ctx_t *ctx);    /* V41 IMUCOARS */
+agc_status_t agc_job_keyboard_fine_align(agc_job_ctx_t *ctx);      /* V42       */
+agc_status_t agc_job_keyboard_fine_mode(agc_job_ctx_t *ctx);       /* V42 IMUFINE */
+agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx);     /* V42 FINEK2 */
+agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx);       /* V55 UPDATIME */
+agc_status_t agc_job_show_banksum_display(agc_job_ctx_t *ctx);     /* V91 NOKILL */
+agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx);        /* V91 NXTBNK */
+agc_status_t agc_job_show_banksum_end(agc_job_ctx_t *ctx);         /* V91 V34   */
+agc_status_t agc_job_attitude_error_load(agc_job_ctx_t *ctx);      /* V43       */
 agc_status_t agc_job_attitude_error_terminate(agc_job_ctx_t *ctx); /* V43 CSM TRMATTCK */
-agc_status_t agc_task_attitude_error_output(void);    /* V43 ATTCK1/2 */
-agc_status_t agc_job_dap_data_load_noun46(agc_job_ctx_t *ctx); /* R03 N46   */
-agc_status_t agc_job_dap_data_load_config(agc_job_ctx_t *ctx); /* R03 N46 done */
-agc_status_t agc_job_dap_data_load_noun47(agc_job_ctx_t *ctx); /* R03 N47   */
-agc_status_t agc_job_dap_data_load_mass(agc_job_ctx_t *ctx); /* R03 N47 done */
-agc_status_t agc_job_dap_data_load_noun48(agc_job_ctx_t *ctx); /* R03 N48   */
-agc_status_t agc_job_dap_data_load_trim(agc_job_ctx_t *ctx); /* LM DPDAT3 */
-agc_status_t agc_job_dap_data_load_end(agc_job_ctx_t *ctx);  /* LM ENDR03 */
-agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx);           /* LM TRIMDONE */
-agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx);  /* V66 / CSM V47 */
-agc_status_t agc_job_tracking_terminate(agc_job_ctx_t *ctx); /* CSM V56 */
-agc_status_t agc_job_attitude_error_enable(agc_job_ctx_t *ctx); /* LM V43 */
-agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx); /* CSM V41 N91 OPTC1 */
-agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx); /* CSM V41 N91 OPTIND */
+agc_status_t agc_task_attitude_error_output(void);                 /* V43 ATTCK1/2 */
+agc_status_t agc_job_dap_data_load_noun46(agc_job_ctx_t *ctx);     /* R03 N46   */
+agc_status_t agc_job_dap_data_load_config(agc_job_ctx_t *ctx);     /* R03 N46 done */
+agc_status_t agc_job_dap_data_load_noun47(agc_job_ctx_t *ctx);     /* R03 N47   */
+agc_status_t agc_job_dap_data_load_mass(agc_job_ctx_t *ctx);       /* R03 N47 done */
+agc_status_t agc_job_dap_data_load_noun48(agc_job_ctx_t *ctx);     /* R03 N48   */
+agc_status_t agc_job_dap_data_load_trim(agc_job_ctx_t *ctx);       /* LM DPDAT3 */
+agc_status_t agc_job_dap_data_load_end(agc_job_ctx_t *ctx);        /* LM ENDR03 */
+agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx);                 /* LM TRIMDONE */
+agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx);        /* V66 / CSM V47 */
+agc_status_t agc_job_tracking_terminate(agc_job_ctx_t *ctx);       /* CSM V56 */
+agc_status_t agc_job_attitude_error_enable(agc_job_ctx_t *ctx);    /* LM V43 */
+agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx);      /* CSM V41 N91 OPTC1 */
+agc_status_t agc_job_optics_coarse_start(agc_job_ctx_t *ctx);      /* CSM V41 N91 OPTIND */
+
 /* LM radar verbs (src/io/verbs/extended_verbs_lm_radar.c)                */
-agc_status_t agc_job_lr_position_two_check(agc_job_ctx_t *ctx);          /* V60 LRP2ALM */
-agc_status_t agc_job_rr_designate_load(agc_job_ctx_t *ctx); /* V41N72 V24N73 */
-agc_status_t agc_job_rr_lockon_query(agc_job_ctx_t *ctx);   /* AURLOKON  */
-agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx); /* AURLOKON V04N12 */
-agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx); /* AURLOKON +5 */
-agc_status_t agc_job_rr_designate_schedule(agc_job_ctx_t *ctx);           /* RRDESNBK end */
-agc_status_t agc_job_rr_designate_drive(agc_job_ctx_t *ctx); /* RRDESK2   */
-agc_status_t agc_job_rr_designate_result(agc_job_ctx_t *ctx); /* RRDESK2 alarm 503 */
+agc_status_t agc_job_lr_position_two_check(agc_job_ctx_t *ctx);       /* V60 LRP2ALM */
+agc_status_t agc_job_rr_designate_load(agc_job_ctx_t *ctx);           /* V41N72 V24N73 */
+agc_status_t agc_job_rr_lockon_query(agc_job_ctx_t *ctx);             /* AURLOKON  */
+agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx);           /* AURLOKON V04N12 */
+agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx);            /* AURLOKON +5 */
+agc_status_t agc_job_rr_designate_schedule(agc_job_ctx_t *ctx);       /* RRDESNBK end */
+agc_status_t agc_job_rr_designate_drive(agc_job_ctx_t *ctx);          /* RRDESK2   */
+agc_status_t agc_job_rr_designate_result(agc_job_ctx_t *ctx);         /* RRDESK2 alarm 503 */
 agc_status_t agc_job_rr_designate_end_monitor(agc_job_ctx_t *ctx);    /* V44 NORRMON */
-agc_status_t agc_job_rr_los_display(agc_job_ctx_t *ctx); /* V85 RRLOSDSP */
-agc_status_t agc_job_rr_los_display_next(agc_job_ctx_t *ctx); /* RRLOSDSP loop */
-agc_status_t agc_job_rr_los_display_stop(agc_job_ctx_t *ctx); /* V85 B5OFF */
-agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx);      /* R04A V04N12 */
-agc_status_t agc_job_radar_test_select(agc_job_ctx_t *ctx); /* R04 RTSTDEX */
-agc_status_t agc_job_radar_test_auto_check(agc_job_ctx_t *ctx); /* R04B      */
-agc_status_t agc_job_radar_test_auto_request(agc_job_ctx_t *ctx); /* R04B V50N25 */
-agc_status_t agc_job_radar_test_first_display(agc_job_ctx_t *ctx); /* R04RR/R04LR */
-agc_status_t agc_job_radar_test_second_display(agc_job_ctx_t *ctx);      /* N78/N67 */
-agc_status_t agc_job_radar_test_switch(agc_job_ctx_t *ctx); /* R04Y      */
+agc_status_t agc_job_rr_los_display(agc_job_ctx_t *ctx);              /* V85 RRLOSDSP */
+agc_status_t agc_job_rr_los_display_next(agc_job_ctx_t *ctx);         /* RRLOSDSP loop */
+agc_status_t agc_job_rr_los_display_stop(agc_job_ctx_t *ctx);         /* V85 B5OFF */
+agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx);   /* R04A V04N12 */
+agc_status_t agc_job_radar_test_select(agc_job_ctx_t *ctx);           /* R04 RTSTDEX */
+agc_status_t agc_job_radar_test_auto_check(agc_job_ctx_t *ctx);       /* R04B      */
+agc_status_t agc_job_radar_test_auto_request(agc_job_ctx_t *ctx);     /* R04B V50N25 */
+agc_status_t agc_job_radar_test_first_display(agc_job_ctx_t *ctx);    /* R04RR/R04LR */
+agc_status_t agc_job_radar_test_second_display(agc_job_ctx_t *ctx);   /* N78/N67 */
+agc_status_t agc_job_radar_test_switch(agc_job_ctx_t *ctx);           /* R04Y      */
 agc_status_t agc_job_radar_test_switch_resume(agc_job_ctx_t *ctx);    /* R04Y +2 s */
-agc_status_t agc_job_radar_test_end(agc_job_ctx_t *ctx); /* R04END    */
-agc_status_t agc_job_radar_test_end_resume(agc_job_ctx_t *ctx); /* R04END +1.28 s */
+agc_status_t agc_job_radar_test_end(agc_job_ctx_t *ctx);              /* R04END    */
+agc_status_t agc_job_radar_test_end_resume(agc_job_ctx_t *ctx);       /* R04END +1.28 s */
 agc_status_t agc_job_lr_spurious_test_end_resume(agc_job_ctx_t *ctx); /* R77END */
+
 /* R04/R77 radar test storage (owned here; RADSAMP/DORSAMP read and write
  * them).  SP integers.                                                    */
-agc_sp_t agc_erase_rsampdt(void); /* RSAMPDT: interval + 1, cs; 0 stops */
+agc_sp_t agc_erase_rsampdt(void);  /* RSAMPDT: interval + 1, cs; 0 stops */
 void     agc_erase_set_rsampdt(agc_sp_t v);
-agc_sp_t agc_erase_rtstdex(void); /* RTSTDEX: sample index           */
+agc_sp_t agc_erase_rtstdex(void);  /* RTSTDEX: sample index           */
 void     agc_erase_set_rtstdex(agc_sp_t v);
 agc_sp_t agc_erase_rtstbase(void); /* RTSTBASE: 0 RR, 2 LR            */
 agc_sp_t agc_erase_rtstmax(void);  /* RTSTMAX: 2 RR, 6 LR             */
@@ -432,22 +430,22 @@ void     agc_erase_set_rfailcnt(agc_sp_t v);
 
 /* P27 (V70-V73).  The uplinked words are UPBUFF; COMPNUMB, UPOLDMOD,
  * UPVERB, UPCOUNT, UPBUFF +0..+19D are downlinked (index 0..23).          */
-agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx,
-                                     int            verb); /* V70..V73 */
+agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb); /* V70..V73 */
 uint16_t     agc_uplink_update_dnword(int idx);
-agc_status_t agc_uplink_update_fresh_start(void); /* UPSVFLAG etc.   */
+agc_status_t agc_uplink_update_fresh_start(void);                   /* UPSVFLAG etc.   */
+
 /* The word an ECADR load/write puts into COMPNUMB..UPBUFF +19D (0..23) or
  * UPTEMP (24); agc_uplink_update_target() = the index the V21N01/N02 on
  * the DSKY loads (the AGC's MPAC+2).                                      */
 agc_status_t agc_uplink_update_write(int idx, uint16_t word);
 int          agc_uplink_update_target(void);
-agc_sp_t     agc_erase_upsvflag(void); /* UPSVFLAG: 0, +-1 earth, +-2 moon (+CSM -LM) */
+agc_sp_t     agc_erase_upsvflag(void);                            /* UPSVFLAG: 0, +-1 earth, +-2 moon (+CSM -LM) */
 void         agc_erase_set_upsvflag(agc_sp_t v);
-agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx); /* after V21N01 */
+agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx);      /* after V21N01 */
 agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx);   /* UPJOB  */
 agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx); /* UPOUT +1 */
-agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx); /* V33 on a load */
-agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx); /* restart 6.5 */
+agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx);   /* V33 on a load */
+agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx);                /* restart 6.5 */
 
 /* ======================================================================
  * Self-check and show-banksum (src/io/service/self_check.c;
@@ -455,30 +453,32 @@ agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx); /* restart 6.5 */
  * ==================================================================== */
 #define AGC_ROPE_BANK_WORDS 02000 /* 1024 words per fixed bank          */
 #define AGC_ROPE_BANKS      044   /* banks 0..43 octal                  */
+
 /* The sim's fixed-memory image: nbanks banks of 1024 words, bank b at
  * rope[b * 1024], 15-bit words.  NULL = no rope (all words zero).         */
 agc_status_t agc_selfcheck_set_rope(const uint16_t *rope, int nbanks);
+
 /* Sum one bank as ROPECHK / SHOWSUM do: sum = the ones'-complement sum
  * with end-around carry up to the two TC SELF words and the bugger word. */
 agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger);
-bool         agc_selfcheck_bank_ok(int bank); /* |sum| = bank    */
+bool         agc_selfcheck_bank_ok(int bank);        /* |sum| = bank    */
 agc_status_t agc_selfcheck_set_smode(uint16_t word); /* N27 load (SMODE, raw; 077777 = -0) */
 uint16_t     agc_selfcheck_smode(void);
-agc_status_t agc_selfcheck_idle_pass(void); /* SMODECHK, one pass */
-agc_status_t agc_selfcheck_fresh_start(bool slap1); /* SMODE = 0; SLAP1: ERCOUNT = 0 */
-agc_status_t agc_selfcheck_showsum_start(void); /* V91 STSHOSUM    */
-agc_status_t agc_selfcheck_showsum_next(void);  /* V33 NXTBNK      */
-agc_status_t agc_selfcheck_showsum_end(void);   /* V34             */
-uint16_t     agc_selfcheck_skeep(int i);        /* SKEEP1..3 (N01) */
-uint16_t     agc_selfcheck_error_count(void);   /* ERCOUNT         */
+agc_status_t agc_selfcheck_idle_pass(void);          /* SMODECHK, one pass */
+agc_status_t agc_selfcheck_fresh_start(bool slap1);  /* SMODE = 0; SLAP1: ERCOUNT = 0 */
+agc_status_t agc_selfcheck_showsum_start(void);      /* V91 STSHOSUM    */
+agc_status_t agc_selfcheck_showsum_next(void);       /* V33 NXTBNK      */
+agc_status_t agc_selfcheck_showsum_end(void);        /* V34             */
+uint16_t     agc_selfcheck_skeep(int i);             /* SKEEP1..3 (N01) */
+uint16_t     agc_selfcheck_error_count(void);        /* ERCOUNT         */
 
 /* ======================================================================
  * P07 IMU performance tests (src/lm/systems_test.c; Luminary099
  * SYSTEM_TEST_STANDARD_LEAD_INS, IMU_PERFORMANCE_TEST_2, _TESTS_4)
  * ==================================================================== */
-agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);    /* ZEROING  */
-agc_status_t agc_systems_test_finetime(agc_dp_t *t);              /* FINETIME */
+agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);        /* ZEROING  */
+agc_status_t agc_systems_test_finetime(agc_dp_t *t);                  /* FINETIME */
 agc_dp_t     agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a); /* OVERFFIX */
-agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx); /* REDO (V92) */
+agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx);                /* REDO (V92) */
 
 #endif /* AGC_SYSMISC_H */

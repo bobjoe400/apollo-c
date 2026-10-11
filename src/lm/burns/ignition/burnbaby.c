@@ -30,18 +30,23 @@ static const ign_table_t IGN_TABLES[AGC_LM_WHICH_COUNT] = {
     /* P12TABLE */
     {74, false, true, IGN_ENTER_GOCUTOFF, true, 0, AGC_JOB_SERVEXIT,
      IGN_TIG5_DISPCHNG, false, IGN_KIND_ASCENT, AGC_JOB_NONE},
+
     /* P40TABLE */
     {40, false, false, IGN_ENTER_GOPOST, true, 2240, AGC_JOB_STEERING,
      IGN_TIG5_TIMEBURN, false, IGN_KIND_DPS, AGC_JOB_STAGE_ALARM_DISPLAY},
+
     /* P41TABLE */
     {0, false, false, IGN_ENTER_GOPOST, false, -1, AGC_JOB_CALC_VG_BODY,
      IGN_TIG5_COMMON, true, IGN_KIND_NONE, AGC_JOB_NONE},
+
     /* P42TABLE */
     {40, true, false, IGN_ENTER_GOPOST, true, 2640, AGC_JOB_STEERING,
      IGN_TIG5_TIMEBURN, false, IGN_KIND_APS, AGC_JOB_APS_BURN_STAGE_CHECKED},
+
     /* P63TABLE */
     {62, false, true, IGN_ENTER_RECYCLE, false, 2240, AGC_JOB_SERVEXIT,
      IGN_TIG5_DISPCHNG, false, IGN_KIND_BRAKING, AGC_JOB_NONE},
+
     /* ABRTABLE (P70/P71, which do not enter BURNBABY): (5)-(7) are NOOPs. */
     {63, false, true, IGN_ENTER_GOCUTOFF, true, 0, AGC_JOB_NONE,
      IGN_TIG5_DISPCHNG, false, IGN_KIND_ABORT, AGC_JOB_NONE}
@@ -129,7 +134,7 @@ agc_status_t agc_lm_burnbaby_countdown(const agc_job_ctx_t *ctx)
     if (ign_table()->start_clock)
     { /* P40SPOT: STCLOK2       */
         agc_guid_state()->lm.dispdex = (agc_sp_t) -IGN_CNTDNDEX;
-        agc_status_t st = ign_start_clock(AGC_JOB_PREBURN_STATE_VECTOR);
+        agc_status_t st              = ign_start_clock(AGC_JOB_PREBURN_STATE_VECTOR);
 
         if (st != AGC_STATUS_OK)
         {
@@ -137,8 +142,7 @@ agc_status_t agc_lm_burnbaby_countdown(const agc_job_ctx_t *ctx)
         }
     }
 
-    return (agc_exec_job_yield(
-                AGC_JOB_PREBURN_STATE_VECTOR)); /* P41SPOT         */
+    return (agc_exec_job_yield(AGC_JOB_PREBURN_STATE_VECTOR)); /* P41SPOT         */
 }
 
 agc_status_t agc_job_burnbaby_countdown(agc_job_ctx_t *ctx)
@@ -154,8 +158,7 @@ agc_status_t agc_job_burnbaby_countdown(agc_job_ctx_t *ctx)
 /* P41SPOT, CSM part (p.736): with MUNFLAG the CSM state at TDEC1 in SM
  * coordinates for MUNRVG: V(CSM) = REFSMMAT VATT1 VSR1 (2^7), R(CSM) =
  * REFSMMAT RATT1 VSL4 (2^24), G(CSM) = MUNGRAV; TDEC1 = TAT.              */
-static agc_status_t csm_state_for_munrvg(agc_interp_t *ip, agc_job_id_t self,
-                                         agc_dp_t *tdec1)
+static agc_status_t csm_state_for_munrvg(agc_interp_t *ip, agc_job_id_t self, agc_dp_t *tdec1)
 {
     agc_guid_lm_t   *lm = &agc_guid_state()->lm;
     agc_integ_ctx_t *ic = agc_integ_shared_ctx();
@@ -216,8 +219,7 @@ agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_integ_midtoav1(&ip, agc_integ_shared_ctx(), tdec1, ctx->id,
-                                &mo); /* GOMIDAV */
+        st = agc_integ_midtoav1(&ip, agc_integ_shared_ctx(), tdec1, ctx->id, &mo); /* GOMIDAV */
     }
 
     if (st != AGC_STATUS_OK)
@@ -239,9 +241,7 @@ agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t sw = agc_waitlist_longcall(
-        (uint32_t) ((agc_erase_savet_30() > 0) ? agc_erase_savet_30() : 1),
-        AGC_TASK_TIG_35);
+    agc_status_t sw = agc_waitlist_longcall((uint32_t) ((agc_erase_savet_30() > 0) ? agc_erase_savet_30() : 1), AGC_TASK_TIG_35);
 
     if (sw != AGC_STATUS_OK)
     {
@@ -371,8 +371,7 @@ agc_status_t agc_task_tig_30(void)
     if (t->ullage_cs > 0)
     {
         agc_erase_set_savet_30((agc_dp_t) t->ullage_cs); /* FOR RESTART */
-        agc_status_t st = agc_waitlist_call((uint16_t) t->ullage_cs,
-                                            AGC_TASK_ULLGTASK);
+        agc_status_t st = agc_waitlist_call((uint16_t) t->ullage_cs, AGC_TASK_ULLGTASK);
 
         if (st != AGC_STATUS_OK)
         {
@@ -437,8 +436,7 @@ agc_status_t agc_task_tig_5_lm(void)
 
     if (t->tig5 != IGN_TIG5_COMMON)
     {
-        agc_guid_state()->lm.dispdex =
-            (agc_sp_t) -IGN_VB99DEX; /* DISPCHNG    */
+        agc_guid_state()->lm.dispdex = (agc_sp_t) -IGN_VB99DEX; /* DISPCHNG    */
     }
 
     agc_phase_change(4, (uint16_t) 040074);
@@ -485,8 +483,7 @@ agc_status_t agc_task_tig_0_lm(void)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        agc_status_t st = agc_waitlist_call((uint16_t) zoom,
-                                            AGC_TASK_BRAKING_PHASE_ZOOM);
+        agc_status_t st = agc_waitlist_call((uint16_t) zoom, AGC_TASK_BRAKING_PHASE_ZOOM);
 
         if (st != AGC_STATUS_OK)
         {
@@ -514,13 +511,12 @@ static void braking_phase_ignition(void)
 {
     agc_guid_t *g = agc_guid_state();
 
-    g->avg.avgexit = AGC_JOB_BRAKING_PHASE_DISPLAY; /* DSP2CADR               */
-    g->lm.dispdex  = IGN_DISPDEX_KILL;              /* ASSASSINATE CLOKTASK   */
+    g->avg.avgexit    = AGC_JOB_BRAKING_PHASE_DISPLAY; /* DSP2CADR               */
+    g->lm.dispdex     = IGN_DISPDEX_KILL;              /* ASSASSINATE CLOKTASK   */
     agc_flag_set(AGC_FLAG_LETABORT);
     agc_flag_set(AGC_FLAG_SWANDISP);
     agc_flag_clear(AGC_FLAG_PULSEFLG);
-    agc_erase_set_tig(
-        (agc_dp_t) agc_time_now_cs()); /* TIG FOR P70 AND P71    */
+    agc_erase_set_tig((agc_dp_t) agc_time_now_cs());   /* TIG FOR P70 AND P71    */
     agc_lm_ldg_t *ldg = agc_lm_ldg();
 
     ldg->wchphase = 0;
@@ -542,15 +538,13 @@ static void ascent_ignition(bool load_bias)
 
     if (load_bias)
     {
-        agc_erase_set_aosq(
-            agc_dp_pack(g->lm.ignaosq, agc_dp_low(agc_erase_aosq())));
-        agc_erase_set_aosr(
-            agc_dp_pack(g->lm.ignaosr, agc_dp_low(agc_erase_aosr())));
+        agc_erase_set_aosq(agc_dp_pack(g->lm.ignaosq, agc_dp_low(agc_erase_aosq())));
+        agc_erase_set_aosr(agc_dp_pack(g->lm.ignaosr, agc_dp_low(agc_erase_aosr())));
     }
 
-    g->lm.dispdex  = IGN_DISPDEX_KILL;      /* ABRTIGN: KILL CLOKTASK */
-    g->avg.avgexit = AGC_JOB_ATMAG;         /* ATMAGADR               */
-    agc_flag_set(AGC_FLAG_SWANDISP); /* ENABLE R10             */
+    g->lm.dispdex  = IGN_DISPDEX_KILL; /* ABRTIGN: KILL CLOKTASK */
+    g->avg.avgexit = AGC_JOB_ATMAG;    /* ATMAGADR               */
+    agc_flag_set(AGC_FLAG_SWANDISP);   /* ENABLE R10             */
 
     if (!AGC_ASSERT(g->lm.dispdex > 0))
     {
@@ -575,8 +569,7 @@ static agc_status_t dps_ignition(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st =
-        agc_waitlist_call((uint16_t) zoom, AGC_TASK_DPS_BURN_ZOOM);
+    agc_status_t st = agc_waitlist_call((uint16_t) zoom, AGC_TASK_DPS_BURN_ZOOM);
 
     if (st != AGC_STATUS_OK)
     {
@@ -629,9 +622,7 @@ agc_status_t agc_task_ignition_lm(void)
     agc_flag_set(AGC_FLAG_ENGONFLG); /* INSURE ENGONFLG IS SET */
     uint16_t ch11 = agc_chan_read(011);
 
-    ch11 = (uint16_t) ((ch11 & ~(uint16_t) (AGC_CH011_ENGINEON |
-                                            AGC_CH011_ENGINEOFF)) |
-                       (uint16_t) AGC_CH011_ENGINEON);
+    ch11         = (uint16_t) ((ch11 & ~(uint16_t) (AGC_CH011_ENGINEON | AGC_CH011_ENGINEOFF)) | (uint16_t) AGC_CH011_ENGINEON);
     agc_chan_write(011, ch11); /* TURN ON THE ENGINE     */
     agc_dp_t now = (agc_dp_t) agc_time_now_cs();
 
@@ -662,7 +653,7 @@ agc_status_t agc_task_ignition_finish(void)
         return (agc_task_implburn_lm());
     }
 
-    agc_flag_clear(AGC_FLAG_IGNFLAG); /* CONNECT DVMON          */
+    agc_flag_clear(AGC_FLAG_IGNFLAG);       /* CONNECT DVMON          */
     agc_flag_clear(AGC_FLAG_ASTNFLAG);
     agc_flag_clear(AGC_FLAG_IDLEFLAG);
     agc_phase_change(4, (uint16_t) 040054); /* 4.5SPOT                */
@@ -713,9 +704,8 @@ agc_status_t agc_task_tigtask(void)
 /* P63ZOOM (p.741): AVEGEXIT = LUNLAND, FLATOUT (full thrust), ZOOM.       */
 agc_status_t agc_task_braking_phase_zoom(void)
 {
-    agc_guid_state()->avg.avgexit =
-        AGC_JOB_LUNLAND; /* LUNLANAD               */
-    agc_status_t st = agc_lm_throttle_flatout();
+    agc_guid_state()->avg.avgexit = AGC_JOB_LUNLAND; /* LUNLANAD               */
+    agc_status_t st               = agc_lm_throttle_flatout();
 
     if (st != AGC_STATUS_OK)
     {

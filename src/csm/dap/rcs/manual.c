@@ -54,13 +54,14 @@ agc_status_t csm_rcs_manual(void)
     agc_csm_rcs_t    *r = agc_csm_dap_rcs();
     agc_csm_dapcom_t *c = agc_csm_dap_com();
 
-    c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned) FORCEDBITS);
+    c->rcsflags   = (uint16_t) (c->rcsflags & ~(unsigned) FORCEDBITS);
     uint16_t ch31 = agc_chan_read(AGC_CHAN_CHAN31);
     uint16_t chg  = (uint16_t) ((r->ch31temp ^ ch31) & MANROT); /* RXOR LCHAN */
 
     if (chg != 0u)
     {
         r->ch31temp = ch31; /* save channel 31 in CH31TEMP       */
+
         /* MP BIT5: bits 6-1 into bits 10-5: 10,9 roll, 8,7 yaw, 6,5 pitch */
         c->rcsflags = (uint16_t) (c->rcsflags + (unsigned) (chg << 4));
         c->rcsflags = (uint16_t) (c->rcsflags | DAMPBITS); /* rate damping */
@@ -73,7 +74,7 @@ agc_status_t csm_rcs_manual(void)
         return (csm_rcs_ahfnorot()); /* no manual commands                */
     }
 
-    r->holdflag = (agc_sp_t) cmd; /* set HOLDFLAG +                    */
+    r->holdflag     = (agc_sp_t) cmd; /* set HOLDFLAG +                    */
     agc_status_t st = csm_rcs_stickchk(cmd);
 
     if (st == AGC_STATUS_OK)
@@ -193,10 +194,10 @@ agc_status_t csm_rcs_stickchk(uint16_t bits)
     }
 
     r->manndx[1] = (agc_sp_t) (bits & 3u); /* PMANNDX: bits 1,2   */
-    unsigned t = (unsigned) bits >> 2;   /* MP QUARTER          */
+    unsigned t   = (unsigned) bits >> 2;   /* MP QUARTER          */
 
-    r->manndx[2] = (agc_sp_t) (t & 3u);    /* YMANNDX: bits 3,4   */
-    r->manndx[0] = (agc_sp_t) (t >> 2);    /* RMANNDX: bits 5,6   */
+    r->manndx[2] = (agc_sp_t) (t & 3u); /* YMANNDX: bits 3,4   */
+    r->manndx[0] = (agc_sp_t) (t >> 2); /* RMANNDX: bits 5,6   */
 
     if (!AGC_ASSERT(r->manndx[0] <= 3))
     {

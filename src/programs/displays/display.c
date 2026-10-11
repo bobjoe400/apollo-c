@@ -67,6 +67,7 @@
 
 /* PHASCHNG OCT 04024 (VN1645 p.482): group 4, phase 2, type A.          */
 #define RZ_PHASE_04024 ((uint16_t) 04024) /* group 4 phase 2 */
+
 /* HIGH9 (P3XORP7X): MODREG >= 64 decimal is a P7x program.             */
 #define RZ_HIGH9_MODES 64 /* MODREG of P70 */
 
@@ -155,8 +156,7 @@ agc_status_t rz_continue(agc_job_id_t next)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t rz_vnpooh(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
-                       agc_job_id_t next)
+agc_status_t rz_vnpooh(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t next)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(next != AGC_JOB_NONE))
     {
@@ -167,8 +167,7 @@ agc_status_t rz_vnpooh(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun,
     vnpooh_slot.noun = noun;
     vnpooh_slot.next = next;
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, verb, noun, AGC_JOB_GOTOPOOH, next,
-                     AGC_JOB_RENDZ_VNPOOH));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, verb, noun, AGC_JOB_GOTOPOOH, next, AGC_JOB_RENDZ_VNPOOH));
 }
 
 /**********************************************************************
@@ -198,8 +197,7 @@ agc_status_t agc_job_rendz_vnpooh(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_vnpooh(ctx, vnpooh_slot.verb, vnpooh_slot.noun,
-                      vnpooh_slot.next));
+    return (rz_vnpooh(ctx, vnpooh_slot.verb, vnpooh_slot.noun, vnpooh_slot.next));
 }
 
 /**********************************************************************
@@ -252,8 +250,7 @@ agc_status_t rz_displaye(const agc_job_ctx_t *ctx, agc_job_id_t next)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t rz_alarm_flash(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
-                            agc_job_id_t proceed, agc_job_id_t recycle)
+agc_status_t rz_alarm_flash(const agc_job_ctx_t *ctx, agc_alarm_code_t code, agc_job_id_t proceed, agc_job_id_t recycle)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(code != 0U))
     {
@@ -262,8 +259,7 @@ agc_status_t rz_alarm_flash(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
 
     agc_alarm(code);
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U, AGC_JOB_GOTOPOOH, proceed,
-                     recycle));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 5U, 9U, AGC_JOB_GOTOPOOH, proceed, recycle));
 }
 
 /**********************************************************************
@@ -286,11 +282,9 @@ agc_status_t rz_alarm_flash(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
-                              agc_rendz_t *rz, agc_job_id_t resume_as)
+agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume_as)
 {
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL) ||
-        !AGC_ASSERT(resume_as != AGC_JOB_NONE))
+    if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL) || !AGC_ASSERT(resume_as != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -304,7 +298,7 @@ agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
         if (agc_flag_test(AGC_FLAG_REFSMFLG) && rz_active_vehicle_program())
         {
             agc_mat_t    refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
-            agc_status_t st; /* GET+MGA */
+            agc_status_t st;                              /* GET+MGA */
 
             st = agc_rendz_get_mga(ip, rz->delvsin, &refsmmat, &rz->plus_mga);
 
@@ -315,8 +309,7 @@ agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip,
         }
     }
 
-    agc_status_t st =
-        rz_comptgo(AGC_JOB_RENDZ_TTOGO_DISPLAY); /* GET45: COMPTGO */
+    agc_status_t st = rz_comptgo(AGC_JOB_RENDZ_TTOGO_DISPLAY); /* GET45: COMPTGO */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
     {
@@ -356,8 +349,7 @@ agc_status_t agc_job_rendz_ttogo_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 16U, 45U, AGC_JOB_RENDZ_KILCLOCK,
-                     AGC_JOB_RENDZ_TTOGO_PROCEED, AGC_JOB_RENDZ_CLUPDATE));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 16U, 45U, AGC_JOB_RENDZ_KILCLOCK, AGC_JOB_RENDZ_TTOGO_PROCEED, AGC_JOB_RENDZ_CLUPDATE));
 }
 
 /**********************************************************************
@@ -479,18 +471,15 @@ agc_status_t agc_job_rendz_ttogo_proceed(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip,
-                         agc_rendz_t *rz, agc_vec_t dv, uint8_t noun,
-                         agc_job_id_t next)
+agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t dv, uint8_t noun, agc_job_id_t next)
 {
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL) ||
-        !AGC_ASSERT(noun == 81U || noun == 82U))
+    if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL) || !AGC_ASSERT(noun == 81U || noun == 82U))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz->delvlvc = dv; /* STORE      */
-    agc_mat_t    m; /* matrix rows, unit 2^1 */
+    rz->delvlvc     = dv;                                      /* STORE      */
+    agc_mat_t    m;                                            /* matrix rows, unit 2^1 */
     agc_status_t st = agc_rendz_csi_cdh_lv_matrix(ip, rz, &m); /* S32/33.X */
 
     if (st != AGC_STATUS_OK)
@@ -523,11 +512,9 @@ agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip,
-                                   agc_rendz_t *rz, agc_job_id_t resume_as)
+agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume_as)
 {
-    if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL) ||
-        !AGC_ASSERT(resume_as != AGC_JOB_NONE))
+    if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL) || !AGC_ASSERT(resume_as != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -576,10 +563,8 @@ static bool rz_ntargchk(const agc_rendz_t *rz)
 
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        sum += (int32_t) agc_dp_high(rz->gdt_2.c[i]) -
-               (int32_t) agc_dp_high(rz->delvlvc.c[i]);
-        sum += (int32_t) agc_dp_low(rz->gdt_2.c[i]) -
-               (int32_t) agc_dp_low(rz->delvlvc.c[i]);
+        sum += (int32_t) agc_dp_high(rz->gdt_2.c[i]) - (int32_t) agc_dp_high(rz->delvlvc.c[i]);
+        sum += (int32_t) agc_dp_low(rz->gdt_2.c[i]) - (int32_t) agc_dp_low(rz->delvlvc.c[i]);
     }
 
     if (!AGC_ASSERT(sum >= -(6 * 2 * 0x4000) && sum <= 6 * 2 * 0x4000))
@@ -619,12 +604,11 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
-    bool         overwrite; /* crew changed DELVLVC */
+    bool         overwrite;                 /* crew changed DELVLVC */
 
     if (rz_is_csm())
     {
-        overwrite =
-            rz_abval(&ip, agc_vec_sub(&ip, rz->delvlvc, rz->dvlos)) != 0;
+        overwrite = rz_abval(&ip, agc_vec_sub(&ip, rz->delvlvc, rz->dvlos)) != 0;
     }
     else
     {
@@ -638,8 +622,7 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
 
     if (overwrite)
     {
-        agc_status_t st = agc_rendz_tpi_crew_overwrite(
-            &ip, rz, AGC_JOB_RENDZ_FINAL_DV_CHECKED); /* S34/35.3 */
+        agc_status_t st = agc_rendz_tpi_crew_overwrite(&ip, rz, AGC_JOB_RENDZ_FINAL_DV_CHECKED); /* S34/35.3 */
 
         if (st != AGC_STATUS_OK)
         {
@@ -669,8 +652,7 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t rz_tpi_flagoff(const agc_job_ctx_t *ctx, agc_interp_t *ip,
-                            agc_rendz_t *rz)
+agc_status_t rz_tpi_flagoff(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz)
 {
     if (!AGC_ASSERT(ctx != NULL && ip != NULL) || !AGC_ASSERT(rz != NULL))
     {
@@ -738,12 +720,9 @@ agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
-                      uint8_t verb, uint8_t noun, agc_job_id_t term,
-                      agc_job_id_t proceed, agc_job_id_t enter)
+agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint8_t verb, uint8_t noun, agc_job_id_t term, agc_job_id_t proceed, agc_job_id_t enter)
 {
-    if (!AGC_ASSERT(verb < 100U && noun < 100U) ||
-        !AGC_ASSERT((int) kind >= 0 && kind < AGC_DSKY_DISP_COUNT))
+    if (!AGC_ASSERT(verb < 100U && noun < 100U) || !AGC_ASSERT((int) kind >= 0 && kind < AGC_DSKY_DISP_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -776,9 +755,7 @@ agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code,
-                           agc_job_id_t term, agc_job_id_t proceed,
-                           agc_job_id_t enter)
+agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code, agc_job_id_t term, agc_job_id_t proceed, agc_job_id_t enter)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(code != 0U))
     {
@@ -1025,8 +1002,7 @@ agc_dp_t rz_dsptem_dp(int index)
  **********************************************************************/
 agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v)
 {
-    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX) ||
-        !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(index == RZ_DSPTEM1 || index == RZ_DSPTEMX) || !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }

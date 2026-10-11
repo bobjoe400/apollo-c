@@ -84,9 +84,9 @@ static const agc_dp_t acos_coef[ACOS_DEGREE + 1] = {
  **********************************************************************/
 static agc_w2_t sqrt_words(agc_w3_t m, bool *abort)
 {
-    int      shift = 0; /* MPTEMP: right shifts owed */
+    int      shift = 0;                               /* MPTEMP: right shifts owed */
     agc_w2_t r     = agc_w_sqrtsub(m, &shift, abort); /* normalised root */
-    agc_w3_t t; /* root as a TP for GENSCR */
+    agc_w3_t t;                                       /* root as a TP for GENSCR */
 
     if (!AGC_ASSERT(abort != 0))
     {
@@ -181,7 +181,7 @@ uint16_t agc_interp_take_alarm(void)
 agc_status_t agc_dp_sqrt_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 {
     bool     abort = false; /* SQRTABRT taken */
-    agc_w2_t r; /* root words */
+    agc_w2_t r;             /* root words */
 
     if (!AGC_ASSERT(ip != 0) || !AGC_ASSERT(out != 0))
     {
@@ -253,7 +253,7 @@ agc_dp_t agc_dp_sqrt(agc_interp_t *ip, agc_dp_t a)
 agc_dp_t agc_tp_sqrt(agc_interp_t *ip, agc_tp_t a)
 {
     bool     abort = false; /* SQRTABRT taken */
-    agc_w2_t r; /* root words */
+    agc_w2_t r;             /* root words */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -303,8 +303,8 @@ static agc_w2_t sn1_words(agc_w2_t x)
     sq = agc_w_dsqsub(x);                                  /* TC DSQSUB */
     p  = agc_w_poly(agc_w3_top(sq), sin_coef, SIN_DEGREE); /* POLY      */
     r  = agc_w_dmpsub(agc_w3_top(p), x);                   /* DMPSUB by BUF2 */
-    r  = agc_w_tp_shl1(r, &o); /* "NEITHER SHIFT   */
-    r  = agc_w_tp_shl1(r, &o); /*  OVERFLOWS"      */
+    r  = agc_w_tp_shl1(r, &o);                             /* "NEITHER SHIFT   */
+    r  = agc_w_tp_shl1(r, &o);                             /*  OVERFLOWS"      */
 
     if (!AGC_ASSERT(o == 0))
     {
@@ -331,11 +331,11 @@ static agc_w2_t sn1_words(agc_w2_t x)
  **********************************************************************/
 static agc_w2_t sine_words(agc_w2_t m)
 {
-    int      carry = 0; /* minor-word carry of DDOUBL */
-    int      s     = 0; /* overflow of TS / DOUBLE, +-1 or 0 */
+    int      carry = 0;                          /* minor-word carry of DDOUBL */
+    int      s     = 0;                          /* overflow of TS / DOUBLE, +-1 or 0 */
     int32_t  lo    = agc_w_ts(2 * m.lo, &carry); /* DDOUBL: L        */
     int32_t  a16   = 2 * m.hi + carry;           /* DDOUBL: A        */
-    agc_w2_t x; /* reduced argument, scaled at pi */
+    agc_w2_t x;                                  /* reduced argument, scaled at pi */
 
     if (!AGC_ASSERT(agc_w_ok(m.hi) && agc_w_ok(m.lo)))
     {
@@ -343,17 +343,17 @@ static agc_w2_t sine_words(agc_w2_t m)
     }
 
     if ((a16 >= AGC_W_ONE) || (a16 <= -AGC_W_ONE))
-    {               /* OVSK: lost pi    */
+    { /* OVSK: lost pi    */
         a16 = -a16; /* DCOM             */
         lo  = -lo;
     }
 
-    x.hi = agc_w_ts(a16, &s); /* DXCH MPAC        */
+    x.hi = agc_w_ts(a16, &s);   /* DXCH MPAC        */
     x.lo = lo;
     s    = agc_w_ovf(2 * x.hi); /* CA; DOUBLE; TS L */
 
     if (s != 0)
-    {                                /* |x| > pi/2       */
+    { /* |x| > pi/2       */
         x.hi = s * AGC_W_ONE - x.hi; /* +-pi - x         */
         x.lo = -x.lo;                /* CS MPAC +1       */
     }
@@ -439,11 +439,11 @@ agc_dp_t agc_dp_cos(agc_interp_t *ip, agc_dp_t a)
  **********************************************************************/
 static agc_w2_t acos_words(agc_w2_t m, bool *alarm)
 {
-    agc_w2_t zero = {0, 0};
-    agc_w2_t s; /* 1/2 - m, scaled at 2 */
-    agc_w2_t root; /* sqrt(1/2 - m), normalised then shifted */
-    agc_w3_t p; /* P(m) (POLY) */
-    int      shift = 0; /* MPTEMP: right shifts owed */
+    agc_w2_t zero  = {0, 0};
+    agc_w2_t s;             /* 1/2 - m, scaled at 2 */
+    agc_w2_t root;          /* sqrt(1/2 - m), normalised then shifted */
+    agc_w3_t p;             /* P(m) (POLY) */
+    int      shift = 0;     /* MPTEMP: right shifts owed */
     bool     abort = false; /* SQRTABRT (cannot happen: 1/2 - m >= 0) */
 
     if (!AGC_ASSERT((m.hi >= 0) && (m.lo >= 0)))
@@ -452,10 +452,10 @@ static agc_w2_t acos_words(agc_w2_t m, bool *alarm)
     }
 
     if (m.hi > AGC_W_HALF)
-    {                                      /* ACOSOVF          */
+    { /* ACOSOVF          */
         *alarm = (m.hi != AGC_W_HALF + 1); /* ACOSABRT 01301   */
 
-        return (zero);                       /* ACOS=0           */
+        return (zero); /* ACOS=0           */
     }
 
     if ((m.hi == AGC_W_HALF) && (m.lo >= 0))
@@ -501,7 +501,7 @@ static agc_w2_t acos_words(agc_w2_t m, bool *alarm)
 static agc_w2_t arc_words(agc_dp_t a, bool asin, bool *alarm)
 {
     agc_w2_t m = agc_w_split(a); /* MPAC words of a */
-    agc_w2_t r; /* angle words, revolutions */
+    agc_w2_t r;                  /* angle words, revolutions */
 
     if (!AGC_ASSERT(alarm != 0))
     {

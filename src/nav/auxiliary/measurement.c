@@ -62,11 +62,13 @@
 
 /* DP1/4TH 2DEC .25 (oct 10000 00000): 1/4, the GAMMA numerator.           */
 #define INCORP_DP_QUARTER AGC_DP_QUARTER /* 1/4, scale 2^0 */
+
 /* INCOR1B shifts VARIANCE two places at a time while it fits: at most
  * 42/2 passes of the TP.                                                  */
 #define INCORP_MAX_SL2 21 /* SL2 passes   */
+
 /* Rows of W updated by INCORP2: 9 (DMENFLG set) or 6.                     */
-#define INCORP_ROWS6 6    /* 6-dim rows   */
+#define INCORP_ROWS6 6 /* 6-dim rows   */
 
 /**********************************************************************
  * AGC: none (addressing of W, MEASUREMENT_INCORPORATION.agc p. 1253)
@@ -122,8 +124,7 @@ static agc_mat_t incorp_part(const agc_incorp_w_t *w, int b, int a)
  *
  * RETURNS: void
  **********************************************************************/
-static void incorp_z(agc_interp_t *ip, const agc_incorp_w_t *w,
-                     agc_incorp_t *inc)
+static void incorp_z(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t *inc)
 {
     if (!AGC_ASSERT((ip != NULL) && (w != NULL) && (inc != NULL)))
     {
@@ -224,7 +225,7 @@ static void incorp_gamma(agc_interp_t *ip, agc_incorp_t *inc, agc_tp_t tripa)
         return;
     }
 
-    agc_interp_clear_ovf(ip); /* TLOAD BOV: clear  */
+    agc_interp_clear_ovf(ip);          /* TLOAD BOV: clear  */
     agc_tp_t tempvar = inc->variance;  /* scale of VARIANCE 4^k */
     int      k       = 0;              /* X2 = 0            */
     bool     ovf     = (tempvar == 0); /* BZE INCOR1C       */
@@ -245,19 +246,16 @@ static void incorp_gamma(agc_interp_t *ip, agc_incorp_t *inc, agc_tp_t tripa)
     /* TLOAD ROUND TRIPA, DMP TEMPVAR (its top two words): the TP product
      * goes to SQRT whole; SL* 0,2 shifts the root right k places into
      * MPAC+2 and TAD adds the TP TRIPA.                                    */
-    agc_tp_t prod = /* TRIPA TEMPVAR, scale of A^2 4^k */
-                    agc_dp_mul_tp(agc_tp_round(ip, tripa),
-                                  agc_tp_to_dp(tempvar));
-    agc_tp_t root = agc_tp_from_dp(agc_tp_sqrt(ip, prod)); /* scale A 2^k */
-    agc_tp_t den  = agc_tp_shift(ip, root, -k); /* SL* 0,2: scale of A */
-    int      n    = 0;                          /* NORM count        */
+    agc_tp_t prod = agc_dp_mul_tp(agc_tp_round(ip, tripa), agc_tp_to_dp(tempvar)); /* TRIPA TEMPVAR, scale of A^2 4^k */
+    agc_tp_t root = agc_tp_from_dp(agc_tp_sqrt(ip, prod));                         /* scale A 2^k */
+    agc_tp_t den  = agc_tp_shift(ip, root, -k);                                    /* SL* 0,2: scale of A */
+    int      n    = 0;                                                             /* NORM count        */
 
     den = agc_tp_add(ip, den, tripa); /* TAD TRIPA        */
 
-    den          = agc_tp_norm(den, &n); /* NORM X2           */
-    inc->normgam = -n - 2;                      /* INCR,2 -2; SXA,2  */
-    inc->gamma   = /* BDDV: GAMMA, scale 2^0 */
-                   agc_dp_div(ip, INCORP_DP_QUARTER, agc_tp_to_dp(den));
+    den          = agc_tp_norm(den, &n);                                 /* NORM X2           */
+    inc->normgam = -n - 2;                                               /* INCR,2 -2; SXA,2  */
+    inc->gamma   = agc_dp_div(ip, INCORP_DP_QUARTER, agc_tp_to_dp(den)); /* BDDV: GAMMA, scale 2^0 */
 } /* incorp_gamma */
 
 /**********************************************************************
@@ -277,8 +275,7 @@ static void incorp_gamma(agc_interp_t *ip, agc_incorp_t *inc, agc_tp_t tripa)
  * RETURNS: agc_dp_t -- DELTAQ/A scaled 2^(q-m-1) relative to the true
  *          quotient; 0 on bad input
  **********************************************************************/
-static agc_dp_t incorp_dq_over_a(agc_interp_t *ip, const agc_incorp_t *inc,
-                                 agc_tp_t tripa, int *x1)
+static agc_dp_t incorp_dq_over_a(agc_interp_t *ip, const agc_incorp_t *inc, agc_tp_t tripa, int *x1)
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (x1 != NULL)))
     {
@@ -292,12 +289,12 @@ static agc_dp_t incorp_dq_over_a(agc_interp_t *ip, const agc_incorp_t *inc,
         return (0);
     }
 
-    int      m  = 0;                                      /* NORM X1 count */
-    agc_dp_t a  = agc_tp_to_dp(agc_tp_norm(tripa, &m));   /* A 2^m, DLOAD  */
-    int      q  = 0;                                      /* NORM S1 count */
-    agc_dp_t dq = agc_dp_norm(inc->deltaq, &q);           /* DELTAQ 2^q    */
+    int      m  = 0;                                    /* NORM X1 count */
+    agc_dp_t a  = agc_tp_to_dp(agc_tp_norm(tripa, &m)); /* A 2^m, DLOAD  */
+    int      q  = 0;                                    /* NORM S1 count */
+    agc_dp_t dq = agc_dp_norm(inc->deltaq, &q);         /* DELTAQ 2^q    */
 
-    *x1 = -m + q;                        /* XSU,1 S1 */
+    *x1 = -m + q; /* XSU,1 S1 */
 
     return (agc_dp_div(ip, agc_dp_shr(dq, 1), a)); /* SR1 DDV  */
 }
@@ -325,8 +322,7 @@ static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
         return (0);
     }
 
-    if (!AGC_ASSERT((x1_dq <= NAVAUX_MAX_SHIFT) &&
-                    (x1_dq >= -NAVAUX_MAX_SHIFT)))
+    if (!AGC_ASSERT((x1_dq <= NAVAUX_MAX_SHIFT) && (x1_dq >= -NAVAUX_MAX_SHIFT)))
     {
         return (0);
     }
@@ -344,7 +340,7 @@ static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
     }
 
     int p     = agc_dp_norm_count(normzi); /* NORM X1         */
-    int shift = p - 2;              /* INCR,1 2        */
+    int shift = p - 2;                     /* INCR,1 2        */
 
     for (int a = 0; a < 3; a++)
     {
@@ -353,7 +349,7 @@ static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
 
     inc->normgam = inc->normgam + (2 * shift); /* XSU,1 twice     */
 
-    return (shift + x1_dq);                      /* LXC,1 XAD,1     */
+    return (shift + x1_dq); /* LXC,1 XAD,1     */
 }
 
 /**********************************************************************
@@ -372,8 +368,7 @@ static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
  *
  * RETURNS: void
  **********************************************************************/
-static void incorp_omega(agc_interp_t *ip, const agc_incorp_w_t *w,
-                         agc_incorp_t *inc)
+static void incorp_omega(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t *inc)
 {
     if (!AGC_ASSERT((ip != NULL) && (w != NULL) && (inc != NULL)))
     {
@@ -423,8 +418,7 @@ static void incorp_omega(agc_interp_t *ip, const agc_incorp_w_t *w,
  *
  * RETURNS: void
  **********************************************************************/
-static void incorp_deltax(agc_interp_t *ip, agc_incorp_t *inc, agc_dp_t dqa,
-                          int x1)
+static void incorp_deltax(agc_interp_t *ip, agc_incorp_t *inc, agc_dp_t dqa, int x1)
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL)))
     {
@@ -440,7 +434,7 @@ static void incorp_deltax(agc_interp_t *ip, agc_incorp_t *inc, agc_dp_t dqa,
     { /* TIX,2 INCOR3    */
         agc_vec_t d = agc_vec_scale(ip, inc->omega[b], dqa); /* scale 2^X1 */
 
-        inc->deltax[b] = agc_navaux_vec_shift(ip, d, -x1);      /* VSL* 0,1 */
+        inc->deltax[b] = agc_navaux_vec_shift(ip, d, -x1); /* VSL* 0,1 */
     }
 
     inc->deltax[1] = agc_vec_shl(ip, inc->deltax[1], 3); /* VSL3   */
@@ -474,8 +468,7 @@ agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(agc_navaux_tp_ok(inc->variance) && (inc->variance >= 0) &&
-                    agc_navaux_dp_ok(inc->deltaq)))
+    if (!AGC_ASSERT(agc_navaux_tp_ok(inc->variance) && (inc->variance >= 0) && agc_navaux_dp_ok(inc->deltaq)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -489,7 +482,7 @@ agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
     }
 
     incorp_gamma(ip, inc, tripa);
-    int      x1  = 0;                                      /* AGC X1     */
+    int      x1  = 0;                                     /* AGC X1     */
     agc_dp_t dqa = incorp_dq_over_a(ip, inc, tripa, &x1); /* 2^(q-m-1) */
 
     x1 = incorp_newzcomp(ip, inc, x1);
@@ -519,16 +512,14 @@ agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
  * blocks 0..2 or 0..1.  The AGC stages each row in HOLDW under restart
  * protection; the C update of a row is atomic so HOLDW is not needed.
  **********************************************************************/
-agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc,
-                                 agc_incorp_w_t *w)
+agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_w_t *w)
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (w != NULL)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT((inc->normgam <= NAVAUX_MAX_SHIFT) &&
-                    (inc->normgam >= -NAVAUX_MAX_SHIFT)))
+    if (!AGC_ASSERT((inc->normgam <= NAVAUX_MAX_SHIFT) && (inc->normgam >= -NAVAUX_MAX_SHIFT)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -550,7 +541,7 @@ agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc,
     }
 
     for (int m = 0; m < rows; m++)
-    {                                           /* TIX,1 / BHIZ   */
+    { /* TIX,1 / BHIZ   */
         agc_dp_t zim = inc->zi[m / 3].c[m % 3]; /* DLOAD* ZI,2, ZI scale */
 
         for (int b = 0; b < blks; b++)
@@ -562,9 +553,7 @@ agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc,
             agc_vec_t omegam_wrow = omegam[b];    /* scale of W          */
             int       normgam     = inc->normgam; /* AGC index value     */
 
-            if (!AGC_ASSERT(agc_navaux_dp_ok(zim) &&
-                            (normgam <= NAVAUX_MAX_SHIFT) &&
-                            (normgam >= -NAVAUX_MAX_SHIFT)))
+            if (!AGC_ASSERT(agc_navaux_dp_ok(zim) && (normgam <= NAVAUX_MAX_SHIFT) && (normgam >= -NAVAUX_MAX_SHIFT)))
             {
                 return (AGC_STATUS_BAD_ARG);
             }
@@ -614,16 +603,14 @@ agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc,
  *          and sv->rectify asks the caller to CALL RECTIFY with PBODY = 0
  *          (earth) or 2 (moon).  X789 += DELTAX[2] if DMENFLG.
  **********************************************************************/
-agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc,
-                                     agc_incorp_sv_t *sv)
+agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_sv_t *sv)
 {
     if (!AGC_ASSERT((ip != NULL) && (inc != NULL) && (sv != NULL)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(agc_navaux_vec_ok(sv->tdeltav) &&
-                    agc_navaux_vec_ok(sv->tnuv)))
+    if (!AGC_ASSERT(agc_navaux_vec_ok(sv->tdeltav) && agc_navaux_vec_ok(sv->tnuv)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -640,9 +627,8 @@ agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc,
         x2 = 2;
     }
 
-    sv->rectify = false;
-    agc_vec_t dv = /* VSR* 0-7,2: TDELTAV scale, 2^22 / 2^18 m */
-                   agc_navaux_vec_shift(ip, inc->deltax[0], 7 + x2);
+    sv->rectify  = false;
+    agc_vec_t dv = agc_navaux_vec_shift(ip, inc->deltax[0], 7 + x2); /* VSR* 0-7,2: TDELTAV scale, 2^22 / 2^18 m */
 
     dv = agc_vec_add(ip, dv, sv->tdeltav);
 
@@ -654,9 +640,8 @@ agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc,
     }
     else
     {
-        sv->tdeltav = dv; /* STOVL TDELTAV  */
-        agc_vec_t nu = /* VSR* 0-4,2: TNUV scale, 2^3 / 2^-1 m/cs */
-                       agc_navaux_vec_shift(ip, inc->deltax[1], 4 + x2);
+        sv->tdeltav  = dv;                                               /* STOVL TDELTAV  */
+        agc_vec_t nu = agc_navaux_vec_shift(ip, inc->deltax[1], 4 + x2); /* VSR* 0-4,2: TNUV scale, 2^3 / 2^-1 m/cs */
 
         nu = agc_vec_add(ip, nu, sv->tnuv);
 

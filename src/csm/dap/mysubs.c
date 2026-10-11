@@ -260,7 +260,7 @@ agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a)
     agc_sp_t ay = csm_dap_mp_hi(a, agc_dp_low(kmpac)); /* AY (KMPAC +1) */
     agc_dp_t ax = agc_sp_mul(a, agc_dp_high(kmpac));   /* AX            */
 
-    return (csm_dap_das(ax, (agc_dp_t) ay));             /* AX + AY       */
+    return (csm_dap_das(ax, (agc_dp_t) ay)); /* AX + AY       */
 }
 
 /* DPADD (MYSUBS pp. 999-1000): add the DP angle A,L (scaled 180 deg) to
@@ -367,12 +367,12 @@ agc_sp_t csm_dap_pair_das(agc_csm_dp_pair_t *k, agc_csm_dp_pair_t al)
 
         if (lo > AGC_SP_MAX)
         {
-            lo   -= W_ONE;
+            lo    -= W_ONE;
             carry = 1;
         }
         else if (lo < AGC_SP_MIN)
         {
-            lo   += W_ONE;
+            lo    += W_ONE;
             carry = -1;
         }
         else
@@ -384,12 +384,12 @@ agc_sp_t csm_dap_pair_das(agc_csm_dp_pair_t *k, agc_csm_dp_pair_t al)
 
         if (hi > AGC_SP_MAX)
         {
-            hi -= W_ONE;
+            hi  -= W_ONE;
             ovf = 1;
         }
         else if (hi < AGC_SP_MIN)
         {
-            hi += W_ONE;
+            hi  += W_ONE;
             ovf = -1;
         }
         else
@@ -454,8 +454,7 @@ uint16_t csm_dap_cdu(int axis)
 /* EXTEND; DCA xxxLOC; DXCH T5LOC; CAF delay; TS TIME5.                   */
 agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE) ||
-        !AGC_ASSERT(time5_word <= CSM_DAP_NEG0))
+    if (!AGC_ASSERT(task != AGC_TASK_NONE) || !AGC_ASSERT(time5_word <= CSM_DAP_NEG0))
     {
         return (AGC_STATUS_BAD_ARG);
     }

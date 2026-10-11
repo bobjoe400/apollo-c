@@ -55,14 +55,13 @@
  *
  * RETURNS: bool -- false on DVOVF (|c| >= |s|), true otherwise
  **********************************************************************/
-static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k,
-                   bool sneg, bool *dvsign)
+static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k, bool sneg, bool *dvsign)
 {
-    bool     neg = sneg; /* DVSIGN = VBUF+5  */
-    agc_dp_t a   = *c; /* |c| after /MPAC-, scaled as v */
-    agc_w2_t w; /* |c| as MPAC words */
-    agc_w2_t d = agc_w_split(s_abs); /* BUF2 words */
-    agc_dp_t q; /* |quotient|, scaled 2^0 */
+    bool     neg = sneg;               /* DVSIGN = VBUF+5  */
+    agc_dp_t a   = *c;                 /* |c| after /MPAC-, scaled as v */
+    agc_w2_t w;                        /* |c| as MPAC words */
+    agc_w2_t d   = agc_w_split(s_abs); /* BUF2 words */
+    agc_dp_t q;                        /* |quotient|, scaled 2^0 */
 
     if (!AGC_ASSERT((k >= 0) && (k < VDIV_NORM_MAX)))
     {
@@ -166,8 +165,7 @@ static agc_vec_t vsc_result(agc_dp_t m0, agc_dp_t m3, agc_dp_t m5)
         return (agc_vec_zero()); /* no valid result */
     }
 
-    if (!AGC_ASSERT((m3 >= AGC_DP_MIN) && (m3 <= AGC_DP_MAX) &&
-                    (m5 >= AGC_DP_MIN) && (m5 <= AGC_DP_MAX)))
+    if (!AGC_ASSERT((m3 >= AGC_DP_MIN) && (m3 <= AGC_DP_MAX) && (m5 >= AGC_DP_MIN) && (m5 <= AGC_DP_MAX)))
     {
         return (agc_vec_zero()); /* no valid result */
     }
@@ -190,10 +188,10 @@ static agc_vec_t vsc_result(agc_dp_t m0, agc_dp_t m3, agc_dp_t m5)
 agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 {
     agc_dp_t m[AGC_VEC_N] = {v.c[0], v.c[1], v.c[2]}; /* MPAC, +3, +5 */
-    agc_dp_t s_norm; /* BUF: |s| 2^k, scaled as s */
-    bool     sneg = false; /* VBUF+5 = -0: scalar negative */
-    int      k    = 0; /* DVNORMCT: divisor doublings */
-    int      bad; /* slot that overflowed in V/SC2, or -1 */
+    agc_dp_t s_norm;                                  /* BUF: |s| 2^k, scaled as s */
+    bool     sneg         = false;                    /* VBUF+5 = -0: scalar negative */
+    int      k            = 0;                        /* DVNORMCT: divisor doublings */
+    int      bad;                                     /* slot that overflowed in V/SC2, or -1 */
 
     if (!AGC_ASSERT(ip != 0))
     {
@@ -210,8 +208,7 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 
             /* DVOVF before any V/SCDV: the sign is the DVSIGN left by the
              * previous divide, DOT or ARCSIN/ARCCOS (FINALDV +3).          */
-            return (vsc_result(ip->dvsign_neg ? AGC_DP_MIN : AGC_DP_MAX, m[1], /* stale DVSIGN */
-                               m[2]));
+            return (vsc_result(ip->dvsign_neg ? AGC_DP_MIN : AGC_DP_MAX, m[1], m[2])); /* stale DVSIGN */
         }
     }
 
@@ -271,17 +268,16 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
 {
     agc_ovf_t o = 0; /* overflow of the x^2 + y^2 accumulation */
-    agc_w3_t  acc; /* BUF: x^2 + y^2 (TP) */
-    int32_t   a; /* A at the DVOVF: major word or the overflow */
+    agc_w3_t  acc;   /* BUF: x^2 + y^2 (TP) */
+    int32_t   a;     /* A at the DVOVF: major word or the overflow */
 
     if (!AGC_ASSERT(ip != 0))
     {
         return (agc_vec_zero()); /* no valid result */
     }
 
-    acc = agc_w_dot_acc(agc_w_dsqsub(agc_w_split(v.c[0])),
-                        agc_w_dsqsub(agc_w_split(v.c[1])), &o);
-    a = (o != 0) ? (int32_t) o : acc.m0; /* TS BUF / TS OVFIND */ /* A */
+    acc = agc_w_dot_acc(agc_w_dsqsub(agc_w_split(v.c[0])), agc_w_dsqsub(agc_w_split(v.c[1])), &o);
+    a   = (o != 0) ? (int32_t) o : acc.m0; /* TS BUF / TS OVFIND */ /* A */
 
     if (!AGC_ASSERT(agc_w_ok(a)))
     {
@@ -292,8 +288,7 @@ static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
 
     /* DVOVF before any UNITDV: the sign is the DVSIGN left by the previous
      * divide, DOT or ARCSIN/ARCCOS (FINALDV +3).                          */
-    return (vsc_result(ip->dvsign_neg ? AGC_DP_MIN : AGC_DP_MAX, 0, /* stale DVSIGN */
-                       (agc_dp_t) (a * AGC_W_ONE)));
+    return (vsc_result(ip->dvsign_neg ? AGC_DP_MIN : AGC_DP_MAX, 0, (agc_dp_t) (a * AGC_W_ONE))); /* stale DVSIGN */
 }
 
 /**********************************************************************
@@ -313,7 +308,7 @@ static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
 static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root, bool *dvsign)
 {
     agc_dp_t a = (c < 0) ? -c : c; /* |c|, scaled as v */
-    agc_dp_t q; /* |quotient|, scaled 2^0 */
+    agc_dp_t q;                    /* |quotient|, scaled 2^0 */
 
     if (!AGC_ASSERT((kdiv >= -1) && (kdiv <= 13)))
     {
@@ -330,9 +325,9 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root, bool *dvsign)
         return (0); /* exit on zero     */
     }
 
-    *dvsign = (c < 0); /* UMPAC- / UMPAC+  */
+    *dvsign = (c < 0);                                             /* UMPAC- / UMPAC+  */
     a       = (kdiv < 0) ? (a / 2) : (a * ((agc_dp_t) 1 << kdiv)); /* SRDDV / left kdiv */
-    q       = agc_w_genddv(a, root, false); /* MAXDVSW = -1     */
+    q       = agc_w_genddv(a, root, false);                        /* MAXDVSW = -1     */
 
     return ((c < 0) ? -q : q); /* UMPAC-: complement */
 }
@@ -352,17 +347,16 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root, bool *dvsign)
  * RETURNS: agc_vec_t -- the half-unit vector, scaled 2^1; the DVOVF
  *          arrangement for |v|^2 >= 1 or v = 0
  **********************************************************************/
-agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval,
-                       agc_dp_t *vsq)
+agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *vsq)
 {
-    agc_ovf_t o = 0; /* OVFIND of VSQSUB (saved OVFIND restored) */
-    agc_w3_t  sq; /* |v|^2 (TP MPAC) */
-    agc_w2_t  root; /* SQRTSUB: normalised root */
+    agc_ovf_t o     = 0;         /* OVFIND of VSQSUB (saved OVFIND restored) */
+    agc_w3_t  sq;                /* |v|^2 (TP MPAC) */
+    agc_w2_t  root;              /* SQRTSUB: normalised root */
     agc_w3_t  lv    = {0, 0, 0}; /* LV words, unnormalised root */
-    int       shift = 0; /* MPTEMP: SQRTSUB right-shift count */
-    int       kdiv; /* pre-divide shift, -1..13 */
-    int       k; /* component index */
-    bool      abort = false; /* SQRTABRT (cannot happen: |v|^2 >= 0) */
+    int       shift = 0;         /* MPTEMP: SQRTSUB right-shift count */
+    int       kdiv;              /* pre-divide shift, -1..13 */
+    int       k;                 /* component index */
+    bool      abort = false;     /* SQRTABRT (cannot happen: |v|^2 >= 0) */
 
     if (!AGC_ASSERT(ip != 0))
     {

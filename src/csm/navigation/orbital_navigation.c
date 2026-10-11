@@ -65,8 +65,8 @@
 #define ON_DE_MASK     000077u /* CS HIGH9                   */
 #define ON_D_MASK      000070u /* BIT5 + OCT50               */
 #define ON_D_ADV_ORBIT 000050u /* DE = 50-57                 */
-#define ON_BLANK_R1R2  3U /* R1 R2 blanked */
-#define ON_BLANK_R1R3  5U /* R1 R3 blanked */
+#define ON_BLANK_R1R2  3U      /* R1 R2 blanked */
+#define ON_BLANK_R1R3  5U      /* R1 R3 blanked */
 
 /* P22 working cells: 8KK (the VN of S22N7071), 8KK +1 (noun 70), the
  * S22TOFF return of S22N7071 / P22SUBRB.                                 */
@@ -115,9 +115,7 @@ agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_integ_out_t o; /* integration result */
 
-    st = rz_integ(&ip, RZ_CSMCONIC, agc_rtb_loadtime(),
-                  AGC_JOB_ORBITAL_NAVIGATION,
-                  &o);
+    st = rz_integ(&ip, RZ_CSMCONIC, agc_rtb_loadtime(), AGC_JOB_ORBITAL_NAVIGATION, &o);
 
     if (st != AGC_STATUS_OK)
     {
@@ -125,9 +123,9 @@ agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx)
     }
 
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
-    agc_vec_t n; /* 2^1 */
+    agc_vec_t n;                               /* 2^1 */
 
-    n = agc_vec_unit(&ip, agc_vec_cross(&ip, o.vatt, o.ratt), NULL, NULL);
+    n          = agc_vec_unit(&ip, agc_vec_cross(&ip, o.vatt, o.ratt), NULL, NULL);
     agc_dp_t c = agc_dp_abs(agc_vec_dot(&ip, n, refsmmat.row[1])); /* 2^2 */
 
     agc_rendz_erasable()->plus_mga = agc_dp_acos(&ip, agc_dp_shl(&ip, c, 1));
@@ -158,10 +156,7 @@ agc_status_t agc_job_orbital_navigation_orbit_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st =
-        rz_flash(ctx, AGC_DSKY_GOFLASHR, 6U, 45U, AGC_JOB_GOTOPOOH,
-                 AGC_JOB_ORBITAL_NAVIGATION_LANDMARK,
-                 AGC_JOB_ORBITAL_NAVIGATION_ORBIT_DISPLAY); /* V06N45 */
+    agc_status_t st = rz_flash(ctx, AGC_DSKY_GOFLASHR, 6U, 45U, AGC_JOB_GOTOPOOH, AGC_JOB_ORBITAL_NAVIGATION_LANDMARK, AGC_JOB_ORBITAL_NAVIGATION_ORBIT_DISPLAY); /* V06N45 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -197,8 +192,7 @@ agc_status_t agc_job_orbital_navigation_landmark(agc_job_ctx_t *ctx)
 
     agc_sp_t lm = agc_erase_landmark(); /* ABCDE, unscaled octal */
 
-    agc_erase_set_landmark(
-        (agc_sp_t) rz_word_value((uint16_t) (rz_word_of(lm) & ~ON_PRIO7)));
+    agc_erase_set_landmark((agc_sp_t) rz_word_value((uint16_t) (rz_word_of(lm) & ~ON_PRIO7)));
     rz_flag_put(AGC_FLAG_ORBITAL_NAVIGATION_MARK_TAKEN, false); /* P22MKFLG */
     rz_flag_put(AGC_FLAG_ERADFLAG, true);
     on.ret = AGC_JOB_ORBITAL_NAVIGATION_OPTICS;
@@ -240,9 +234,7 @@ agc_status_t agc_job_orbital_navigation_code(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = rz_flash(
-        ctx, AGC_DSKY_GOFLASHR, 5U, on.noun, AGC_JOB_GOTOPOOH, /* V05N70/71 */
-        AGC_JOB_ORBITAL_NAVIGATION_CODE_CHECK, AGC_JOB_ORBITAL_NAVIGATION_CODE);
+    agc_status_t st = rz_flash(ctx, AGC_DSKY_GOFLASHR, 5U, on.noun, AGC_JOB_GOTOPOOH, AGC_JOB_ORBITAL_NAVIGATION_CODE_CHECK, AGC_JOB_ORBITAL_NAVIGATION_CODE); /* V05N70/71 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -290,10 +282,10 @@ static agc_status_t on_site_from_rls(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_navaux_padload_t pad; /* pad loads */
+    agc_navaux_padload_t pad;                               /* pad loads */
     agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
-    agc_dp_t             t  = agc_rtb_loadtime(); /* now, cs 2^28 */
-    agc_vec_t            r  = agc_vec_zero(); /* RLS reference, 2^27 */
+    agc_dp_t             t  = agc_rtb_loadtime();           /* now, cs 2^28 */
+    agc_vec_t            r  = agc_vec_zero();               /* RLS reference, 2^27 */
 
     if (st == AGC_STATUS_OK)
     {
@@ -381,7 +373,7 @@ agc_status_t agc_job_orbital_navigation_code_check(agc_job_ctx_t *ctx)
     }
 
     uint16_t lm    = rz_word_of(agc_erase_landmark()); /* ABCDE word */
-    uint16_t cxoff = (uint16_t) (lm & ON_PRIO7); /* B (offset) */
+    uint16_t cxoff = (uint16_t) (lm & ON_PRIO7);       /* B (offset) */
 
     rz_landmark_set_offset((agc_sp_t) cxoff);
 
@@ -441,9 +433,7 @@ agc_status_t agc_job_orbital_navigation_landing_site(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 89U, AGC_JOB_GOTOPOOH,
-                     AGC_JOB_ORBITAL_NAVIGATION_SITE_CHECK,
-                     AGC_JOB_ORBITAL_NAVIGATION_LANDING_SITE));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 89U, AGC_JOB_GOTOPOOH, AGC_JOB_ORBITAL_NAVIGATION_SITE_CHECK, AGC_JOB_ORBITAL_NAVIGATION_LANDING_SITE));
 }
 
 /**********************************************************************
@@ -471,8 +461,7 @@ agc_status_t agc_job_orbital_navigation_site_check(agc_job_ctx_t *ctx)
 
     const agc_align_ram_t *a = agc_align_ram(); /* LANDLAT .. */
 
-    if (agc_dp_abs(a->landlat) > AGC_DP_QUARTER ||
-        agc_dp_abs(a->landlong) > AGC_DP_QUARTER)
+    if (agc_dp_abs(a->landlat) > AGC_DP_QUARTER || agc_dp_abs(a->landlong) > AGC_DP_QUARTER)
     {
         agc_dsky_falton(); /* N89ERRX */
 
@@ -521,12 +510,10 @@ static agc_status_t on_optics(const agc_job_ctx_t *ctx, bool advanced)
 
     if (advanced)
     {
-        return (agc_csm_auto_optics_advanced_orbit(
-                    ctx, AGC_JOB_ORBITAL_NAVIGATION_MARKED));
+        return (agc_csm_auto_optics_advanced_orbit(ctx, AGC_JOB_ORBITAL_NAVIGATION_MARKED));
     }
 
-    return (agc_csm_auto_optics_positioning(ctx,
-                                            AGC_JOB_ORBITAL_NAVIGATION_MARKED));
+    return (agc_csm_auto_optics_positioning(ctx, AGC_JOB_ORBITAL_NAVIGATION_MARKED));
 }
 
 /**********************************************************************
@@ -629,8 +616,7 @@ agc_status_t agc_job_orbital_navigation_process(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_landmark_marks_start(agc_sxtmark_marks_made(),
-                                    AGC_JOB_ORBITAL_NAVIGATION_OVER));
+    return (rz_landmark_marks_start(agc_sxtmark_marks_made(), AGC_JOB_ORBITAL_NAVIGATION_OVER));
 }
 
 /**********************************************************************

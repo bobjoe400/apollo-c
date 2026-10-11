@@ -60,8 +60,8 @@
 #define TA_3SECONDS ((agc_dp_t) 300)       /* 3SECONDS 2DEC 300         */
 #define TA_COS15DEG ((agc_dp_t) 129644930) /* COS15DEG 2DEC 0.96593 B-1 */
 #define TA_06SEC    600U                   /* 06SEC DEC 600             */
-#define TA_250DEC   250U /* R65WAIT delay, 2.5 s */
-#define TA_PRIO26   ((agc_prio_t) 026) /* R61C+L2 job priority */
+#define TA_250DEC   250U                   /* R65WAIT delay, 2.5 s */
+#define TA_PRIO26   ((agc_prio_t) 026)     /* R61C+L2 job priority */
 
 /**********************************************************************
  * R61LEM / R65LEM entry: GENRET, R61FLAG, then R61C+L01.
@@ -81,8 +81,7 @@
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61,
-                                     agc_job_id_t ret_job)
+agc_status_t lmnav_tracking_attitude(const agc_job_ctx_t *ctx, bool r61, agc_job_id_t ret_job)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ret_job != AGC_JOB_NONE))
     {
@@ -141,9 +140,9 @@ static agc_status_t ta_angles(agc_interp_t *ip, uint16_t gimbal[3])
 {
     agc_vec_t z; /* HIUNITZ, unit 2^1 */
 
-    z = agc_vec_make(0, 0, AGC_DP_HALF); /* HIUNITZ  */
-    agc_status_t st       = agc_imu_set_scaxis(z); /* status */
-    agc_vec_t    pointvsm = rr_state()->rrtarget; /* RRTARGET, unit 2^1 */
+    z                     = agc_vec_make(0, 0, AGC_DP_HALF); /* HIUNITZ  */
+    agc_status_t st       = agc_imu_set_scaxis(z);           /* status */
+    agc_vec_t    pointvsm = rr_state()->rrtarget;            /* RRTARGET, unit 2^1 */
 
     if (st == AGC_STATUS_OK)
     {
@@ -201,10 +200,8 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    bool         too_far = false; /* LOS over 400 NM */
-    agc_status_t st      =
-        lmnav_los(&ip, agc_dp_add(&ip, agc_rtb_loadtime(), TA_3SECONDS),
-                  AGC_JOB_TRACKING_ATTITUDE_COMPUTE, &too_far); /* status */
+    bool         too_far = false;                                                                                                         /* LOS over 400 NM */
+    agc_status_t st      = lmnav_los(&ip, agc_dp_add(&ip, agc_rtb_loadtime(), TA_3SECONDS), AGC_JOB_TRACKING_ATTITUDE_COMPUTE, &too_far); /* status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -243,7 +240,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
 
     /* R61 in auto: phi (the LOS from +Z, CDU*SMNB) over 15 degrees: R60
      * maneuver at minimum deadband; else the desired CDUs directly.        */
-    agc_cdutrig_t trig; /* CDU sines and cosines */
+    agc_cdutrig_t trig;                     /* CDU sines and cosines */
     agc_vec_t     v = rr_state()->rrtarget; /* LOS, then in NB axes, 2^1 */
 
     agc_guid_cdu_smnb(&trig, &v);
@@ -259,7 +256,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
         return (ta_next());
     }
 
-    agc_inhint(); /* R61C+L05 */
+    agc_inhint();                         /* R61C+L05 */
     agc_lm_dap_zatteror();
     agc_status_t st_auto = AGC_STATUS_OK; /* SETMINDB status */
 
@@ -274,8 +271,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_3AXISFLG, false);
     rz_flag_put(AGC_FLAG_PDSPFLAG, true);
 
-    return (agc_imu_attitude_maneuver(ctx,
-                                      AGC_JOB_TRACKING_ATTITUDE_MANEUVERED));
+    return (agc_imu_attitude_maneuver(ctx, AGC_JOB_TRACKING_ATTITUDE_MANEUVERED));
 } /* agc_job_tracking_attitude_compute */
 
 /**********************************************************************

@@ -69,12 +69,12 @@
 #include "../internal.h"
 #include "agc/guidance/guidance.h"
 
-#define ACTSAT       ((agc_sp_t) 253) /* 00375 DEC 253: 6 deg, 1 ascrev      */
-#define RECIP_ACTSAT ((agc_sp_t) 65)  /* 00101 DEC .0039525692 (1/253)        */
-#define ERRLIM       ((agc_sp_t) 4096) /* BIT13: 45 deg filter input, B-1 rev */
-#define RECIP_ERRLIM ((agc_sp_t) 4)    /* BIT3: 1/ERRLIM                      */
-#define RECIP_RTLIM  ((agc_sp_t) 77)   /* 00115 DEC 0.004715: 2.33 deg test   */
-#define ONE_M_EAT    ((agc_sp_t) 163)  /* 00243 1-E(-AT), AT = .01, scale 1  */
+#define ACTSAT       ((agc_sp_t) 253)   /* 00375 DEC 253: 6 deg, 1 ascrev      */
+#define RECIP_ACTSAT ((agc_sp_t) 65)    /* 00101 DEC .0039525692 (1/253)        */
+#define ERRLIM       ((agc_sp_t) 4096)  /* BIT13: 45 deg filter input, B-1 rev */
+#define RECIP_ERRLIM ((agc_sp_t) 4)     /* BIT3: 1/ERRLIM                      */
+#define RECIP_RTLIM  ((agc_sp_t) 77)    /* 00115 DEC 0.004715: 2.33 deg test   */
+#define ONE_M_EAT    ((agc_sp_t) 163)   /* 00243 1-E(-AT), AT = .01, scale 1  */
 #define E_AT         ((agc_sp_t) 16221) /* 37535 E(-AT), scale 1             */
 #define ROUND_HALF   ((agc_sp_t) 8192)  /* DOUBLE overflows: low word >= 1/2 */
 #define NODES        6                  /* TMP1..TMP6 filter nodes           */
@@ -221,8 +221,7 @@ static void tvcd_actlim(void)
  *
  * RETURNS: agc_csm_dp_pair_t -- the cascade output, B-1 rev
  **********************************************************************/
-static agc_csm_dp_pair_t tvcd_cascade_out(agc_csm_dp_pair_t in, agc_sp_t n,
-                                          int k)
+static agc_csm_dp_pair_t tvcd_cascade_out(agc_csm_dp_pair_t in, agc_sp_t n, int k)
 {
     agc_csm_tvc_t    *t   = agc_csm_dap_tvc(); /* TVC DAP erasables     */
     agc_csm_dp_pair_t out = {0, 0};            /* DAPn, B-1 rev         */
@@ -232,8 +231,8 @@ static agc_csm_dp_pair_t tvcd_cascade_out(agc_csm_dp_pair_t in, agc_sp_t n,
         return (out);
     }
 
-    out = csm_dap_pair_smallmp(in, n); /* TS DAPn +1; MP; DAS DAPn   */
-    agc_csm_dp_pair_t node = t->tmp[k]; /* DXCH TMP(2k-1), B-1 rev    */
+    out                    = csm_dap_pair_smallmp(in, n); /* TS DAPn +1; MP; DAS DAPn   */
+    agc_csm_dp_pair_t node = t->tmp[k];                   /* DXCH TMP(2k-1), B-1 rev    */
 
     t->tmp[k].hi = 0;
     t->tmp[k].lo = 0;
@@ -256,14 +255,14 @@ static void tvcd_fwdfltr(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
-    t->cmdtmp.hi   = 0; /* CAF ZERO; TS DAP1..3 (rewritten), CMDTMP */
-    t->delbrtmp.hi = 0; /* TS DELBRTMP                              */
+    t->cmdtmp.hi   = 0;                                          /* CAF ZERO; TS DAP1..3 (rewritten), CMDTMP */
+    t->delbrtmp.hi = 0;                                          /* TS DELBRTMP                              */
     t->dap1        = tvcd_cascade_out(t->errbtmp, t->n10[0], 0); /* N10  */
     t->dap2        = tvcd_cascade_out(t->dap1, t->n10[5], 2);    /* N20  */
 
     if ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u)
-    {                                                        /* LM on */
-        t->dap3 = tvcd_cascade_out(t->dap2, t->n10[10], 4);  /* N30   */
+    { /* LM on */
+        t->dap3 = tvcd_cascade_out(t->dap2, t->n10[10], 4); /* N30   */
     }
     else
     {
@@ -271,8 +270,7 @@ static void tvcd_fwdfltr(void)
     }
 
     /* CS DAP3 +1; MP VARK; TS CMDTMP +1; CS DAP3; MP VARK; DAS CMDTMP   */
-    agc_csm_dp_pair_t c = csm_dap_pair_smallmp(csm_dap_pair_neg(t->dap3),
-                                               t->vark); /* B+3 ascrev */
+    agc_csm_dp_pair_t c = csm_dap_pair_smallmp(csm_dap_pair_neg(t->dap3), t->vark); /* B+3 ascrev */
 
     t->cmdtmp = csm_dap_pair_ddoubl(csm_dap_pair_ddoubl(c)); /* B+1     */
 
@@ -297,14 +295,12 @@ static void tvcd_fwdfltr(void)
  *   j    int                I  N10 index of N_1/2 (1, 6, 11)
  *   k    int                I  TMP index of the first node (0, 2, 4)
  **********************************************************************/
-static void tvcd_cascade_pre(agc_csm_dp_pair_t in, agc_csm_dp_pair_t out,
-                             int j, int k)
+static void tvcd_cascade_pre(agc_csm_dp_pair_t in, agc_csm_dp_pair_t out, int j, int k)
 {
-    agc_csm_tvc_t    *t    = agc_csm_dap_tvc(); /* TVC DAP erasables    */
+    agc_csm_tvc_t    *t    = agc_csm_dap_tvc();     /* TVC DAP erasables    */
     agc_csm_dp_pair_t nout = csm_dap_pair_neg(out); /* CS DAPn, B-1 rev */
 
-    if (!AGC_ASSERT(((j == 1) || (j == 6) || (j == 11)) && (k >= 0) &&
-                    (k <= 4)))
+    if (!AGC_ASSERT(((j == 1) || (j == 6) || (j == 11)) && (k >= 0) && (k <= 4)))
     {
         return;
     }
@@ -313,15 +309,16 @@ static void tvcd_cascade_pre(agc_csm_dp_pair_t in, agc_csm_dp_pair_t out,
     agc_csm_dp_pair_t sum = csm_dap_pair_smallmp(in, t->n10[j]); /* B-1  */
 
     (void) csm_dap_pair_das(&sum, csm_dap_pair_smallmp(nout, t->n10[j + 2]));
+
     /* DDOUBL; DAS TMP(k+1); DXCH TMP(k+1); DXCH TMP(k)                   */
     agc_csm_dp_pair_t node = t->tmp[k + 1]; /* TMP(k+1), B-1 rev        */
 
     (void) csm_dap_pair_das(&node, csm_dap_pair_ddoubl(sum));
     t->tmp[k] = node;
+
     /* TMP(k+1) = -D_2 out (TS TMP(k+1) +1 after TS of zero); DAS N_2 in  */
     t->tmp[k + 1] = csm_dap_pair_smallmp(nout, t->n10[j + 3]);
-    (void) csm_dap_pair_das(&t->tmp[k + 1],
-                            csm_dap_pair_smallmp(in, t->n10[j + 1]));
+    (void) csm_dap_pair_das(&t->tmp[k + 1], csm_dap_pair_smallmp(in, t->n10[j + 1]));
 
     (void) AGC_ASSERT(t->tmp[k].hi >= AGC_SP_MIN);
 }
@@ -371,8 +368,7 @@ static void tvcd_delbar(agc_csm_dp_pair_t delbar)
      * FWDFLTR); CAE DELxBAR; MP E(-AT); DAS DELBRTMP                      */
     t->delbrtmp.lo = csm_dap_mp_hi(delbar.lo, E_AT);
     (void) csm_dap_pair_das(&t->delbrtmp, csm_dap_pair_mp(delbar.hi, E_AT));
-    (void) csm_dap_pair_das(&t->delbrtmp,
-                            csm_dap_pair_mp(t->cmdtmp.hi, ONE_M_EAT));
+    (void) csm_dap_pair_das(&t->delbrtmp, csm_dap_pair_mp(t->cmdtmp.hi, ONE_M_EAT));
 
     (void) AGC_ASSERT(t->delbrtmp.hi >= AGC_SP_MIN);
 }
@@ -407,10 +403,10 @@ agc_status_t csm_tvc_pcopy(bool restart)
         t->ptmp[i] = t->tmp[i]; /* DCA TMPn; DXCH PTMPn          */
     }
 
-    agc_csm_dap_com()->ak[1] = t->errbtmp.hi; /* TS AK1, B-1 rev      */
-    t->perrb                 = t->errbtmp;    /* rate-error integrator */
-    t->pcmd                  = t->cmdtmp.hi;  /* actuator command     */
-    t->delpbar               = t->delbrtmp;   /* offset tracker       */
+    agc_csm_dap_com()->ak[1] = t->errbtmp.hi;                /* TS AK1, B-1 rev      */
+    t->perrb                 = t->errbtmp;                   /* rate-error integrator */
+    t->pcmd                  = t->cmdtmp.hi;                 /* actuator command     */
+    t->delpbar               = t->delbrtmp;                  /* offset tracker       */
     t->tvcphase              = (agc_sp_t) (t->tvcphase + 1); /* (2)   */
 
     if (!AGC_ASSERT(t->pcmd == t->cmdtmp.hi))
@@ -454,7 +450,7 @@ agc_status_t csm_tvc_ycopy(bool restart)
     t->yerrb                 = t->errbtmp;
     t->ycmd                  = t->cmdtmp.hi;
     t->delybar               = t->delbrtmp;
-    t->tvcphase              = 0; /* reset TVCPHASE                   */
+    t->tvcphase              = 0;             /* reset TVCPHASE                   */
 
     if (!AGC_ASSERT(t->ycmd == t->cmdtmp.hi))
     {
@@ -475,10 +471,10 @@ agc_status_t csm_tvc_ycopy(bool restart)
  **********************************************************************/
 static void tvcd_integrate(tvcd_axis_t ax)
 {
-    agc_csm_tvc_t       *t    = agc_csm_dap_tvc(); /* TVC DAP erasables */
-    const agc_cdutrig_t *g    = &agc_guid_state()->trig; /* QUICTRIG     */
-    bool                 p    = (ax == TVCD_PITCH); /* pitch pass        */
-    int                  a    = p ? 1 : 2;          /* OMEGAYx / OMEGAZx */
+    agc_csm_tvc_t       *t    = agc_csm_dap_tvc();                  /* TVC DAP erasables */
+    const agc_cdutrig_t *g    = &agc_guid_state()->trig;            /* QUICTRIG     */
+    bool                 p    = (ax == TVCD_PITCH);                 /* pitch pass        */
+    int                  a    = p ? 1 : 2;                          /* OMEGAYx / OMEGAZx */
     agc_sp_t             cosz = agc_dp_high(g->coscdu[AGC_TRIG_Z]); /* 2^1 */
     agc_sp_t             cosx = agc_dp_high(g->coscdu[AGC_TRIG_X]); /* 2^1 */
     agc_sp_t             sinx = agc_dp_high(g->sincdu[AGC_TRIG_X]); /* 2^1 */
@@ -495,15 +491,10 @@ static void tvcd_integrate(tvcd_axis_t ax)
     /* pitch: CS COSCDUZ; MP COSCDUX; DDOUBL; MP MCDUYDOT; DDOUBL;
      *        CS MCDUZDOT; MP SINCDUX; DDOUBL; DAS OMEGAYB
      * yaw:   CAE COSCDUZ; MP SINCDUX; ...;   MP COSCDUX ... OMEGAZB      */
-    agc_sp_t k = csm_dap_pair_ddoubl(
-        csm_dap_pair_mp(p ? (agc_sp_t) -cosz : cosz, p ? cosx : sinx)).hi;
+    agc_sp_t k = csm_dap_pair_ddoubl(csm_dap_pair_mp(p ? (agc_sp_t) -cosz : cosz, p ? cosx : sinx)).hi;
 
-    t->omegab[a] =
-        csm_dap_pair_ddoubl(csm_dap_pair_mp(k, t->mcduydot)); /* revs/s  */
-    (void) csm_dap_pair_das(
-        &t->omegab[a],
-        csm_dap_pair_ddoubl(csm_dap_pair_mp((agc_sp_t) -t->mcduzdot,
-                                            p ? sinx : cosx))); /* ?: axis */
+    t->omegab[a] = csm_dap_pair_ddoubl(csm_dap_pair_mp(k, t->mcduydot));                                                    /* revs/s  */
+    (void) csm_dap_pair_das(&t->omegab[a], csm_dap_pair_ddoubl(csm_dap_pair_mp((agc_sp_t) -t->mcduzdot, p ? sinx : cosx))); /* ?: axis */
 
     /* DCS OMEGAxB; DAS ERRBTMP                                           */
     (void) csm_dap_pair_das(&t->errbtmp, csm_dap_pair_neg(t->omegab[a]));
@@ -521,7 +512,7 @@ static void tvcd_integrate(tvcd_axis_t ax)
  **********************************************************************/
 static void tvcd_output(tvcd_axis_t ax)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc();  /* TVC DAP erasables          */
     bool           p = (ax == TVCD_PITCH); /* pitch pass                 */
 
     /* DCA xDELOFF; DAS CMDTMP: now scaled B+0 ascrev                     */
@@ -529,8 +520,7 @@ static void tvcd_output(tvcd_axis_t ax)
     tvcd_actlim();
 
     /* CS xCMD; AD CMDTMP: the increment, 85.41 arcsec/bit                */
-    agc_sp_t inc =
-        csm_dap_ads((agc_sp_t) -(p ? t->pcmd : t->ycmd), t->cmdtmp.hi);
+    agc_sp_t inc = csm_dap_ads((agc_sp_t) -(p ? t->pcmd : t->ycmd), t->cmdtmp.hi);
 
     if (p)
     {
@@ -562,7 +552,7 @@ static void tvcd_output(tvcd_axis_t ax)
  **********************************************************************/
 static agc_status_t tvcd_dap(tvcd_axis_t ax)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc();  /* TVC DAP erasables          */
     bool           p = (ax == TVCD_PITCH); /* pitch pass                 */
 
     if (!AGC_ASSERT((ax == TVCD_PITCH) || (ax == TVCD_YAW)))
@@ -574,7 +564,7 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     tvcd_errorlim(); /* xERORLIM                                        */
 
     for (int i = 0; i < NODES; i += 2)
-    {                                            /* xFORWARD: TMP1,3,5  */
+    { /* xFORWARD: TMP1,3,5  */
         t->tmp[i] = p ? t->ptmp[i] : t->ytmp[i]; /* ?: axis             */
     }
 
@@ -582,7 +572,7 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
     tvcd_output(ax);
 
     for (int i = 1; i < NODES; i += 2)
-    {                                            /* xPRECOMP: TMP2,4,6  */
+    { /* xPRECOMP: TMP2,4,6  */
         t->tmp[i] = p ? t->ptmp[i] : t->ytmp[i]; /* ?: axis             */
     }
 
@@ -623,7 +613,7 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
     agc_status_t st = csm_dap_set_t5(next, (uint16_t) t->t5tvcdt);
 
     if ((st == AGC_STATUS_OK) && (t->stroker != 0))
-    {                       /* (STRKFLG)                                */
+    { /* (STRKFLG)                                */
         st = csm_tvc_hack();
     }
 
@@ -693,9 +683,8 @@ agc_status_t agc_task_yawdap(void)
  **********************************************************************/
 agc_status_t agc_task_dapinit(void)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
-    int            w = -1 + (int) t->t5tvcdt + (int) AGC_SP_MIN +
-                       (int) t->t5tvcdt; /* TIME5 word, 10 ms counts    */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc();                                           /* TVC DAP erasables          */
+    int            w = -1 + (int) t->t5tvcdt + (int) AGC_SP_MIN + (int) t->t5tvcdt; /* TIME5 word, 10 ms counts    */
 
     if (!AGC_ASSERT((w > 0) && (w <= AGC_SP_MAX)))
     {

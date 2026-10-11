@@ -187,8 +187,7 @@ static uint16_t arith_reg16(int32_t v)
  **********************************************************************/
 static agc_sp_t arith_val16(uint16_t w)
 {
-    agc_sp_t r = ((w & 0x8000u) != 0u) ? (agc_sp_t) -(int32_t) (~w & 037777u) :
-                 (agc_sp_t) (w & 037777u);
+    agc_sp_t r = ((w & 0x8000u) != 0u) ? (agc_sp_t) -(int32_t) (~w & 037777u) : (agc_sp_t) (w & 037777u);
 
     if (!AGC_ASSERT(r >= -ARITH_MAXMAG && r <= ARITH_MAXMAG))
     {
@@ -256,12 +255,12 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
 
     if (dvdsign == 0u)
     {
-        a = (uint16_t) ~a;              /* -|A|                        */
+        a = (uint16_t) ~a; /* -|A|                        */
     }
 
     if (a == 0xFFFFu)
     {
-        dvdsign = l & 0x8000u;          /* A was 0: sign from L        */
+        dvdsign = l & 0x8000u; /* A was 0: sign from L        */
     }
 
     if (dvdsign != 0u)
@@ -273,7 +272,7 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
 
     if ((l & 0140000u) != 040000u)
     {
-        a = arith_add16(a, 1u);         /* no positive overflow in L   */
+        a = arith_add16(a, 1u); /* no positive overflow in L   */
     }
 
     uint16_t rem     = a;
@@ -281,7 +280,7 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
 
     if (divsign != 0u)
     {
-        div = (uint16_t) ~div;          /* |divisor|                   */
+        div = (uint16_t) ~div; /* |divisor|                   */
     }
 
     uint16_t qsign = l & 0x8000u;
@@ -289,7 +288,7 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
 
     for (int i = 0; i < 14; i++)
     {
-        q = (uint16_t) (q << 1);
+        q              = (uint16_t) (q << 1);
         uint16_t rsign = rem & 0x8000u;
 
         rem = (uint16_t) (rsign | ((rem & 037777u) << 1));
@@ -303,7 +302,7 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
 
         if ((sum & 0x8000u) != 0u)
         {
-            q  |= 1u;
+            q   |= 1u;
             rem = sum;
         }
     }
@@ -534,12 +533,12 @@ lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y)
 
     if (lo > ARITH_MAXMAG)
     {
-        lo   -= ARITH_WORD;
+        lo    -= ARITH_WORD;
         carry = 1;
     }
     else if (lo < -ARITH_MAXMAG)
     {
-        lo   += ARITH_WORD;
+        lo    += ARITH_WORD;
         carry = -1;
     }
 
@@ -681,8 +680,7 @@ agc_sp_t lm_dap_ccs_dim(agc_sp_t v)
         return (0); /* no valid result */
     }
 
-    agc_sp_t r =
-        (v > 0) ? (agc_sp_t) (v - 1) : ((v < 0) ? (agc_sp_t) (-v - 1) : 0);
+    agc_sp_t r = (v > 0) ? (agc_sp_t) (v - 1) : ((v < 0) ? (agc_sp_t) (-v - 1) : 0);
 
     if (!AGC_ASSERT(r >= 0))
     {
@@ -712,8 +710,7 @@ agc_sp_t lm_dap_dim(agc_sp_t v)
         return (0); /* no valid result */
     }
 
-    agc_sp_t r =
-        (v > 0) ? (agc_sp_t) (v - 1) : ((v < 0) ? (agc_sp_t) (v + 1) : 0);
+    agc_sp_t r = (v > 0) ? (agc_sp_t) (v - 1) : ((v < 0) ? (agc_sp_t) (v + 1) : 0);
 
     if (!AGC_ASSERT(r >= -ARITH_MAXMAG + 1 || r == 0))
     {

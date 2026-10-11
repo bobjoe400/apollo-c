@@ -49,15 +49,16 @@
 
 /* DEGCON1 2DEC 5.555555555 B-3 (26161 30707): 1/.18 for CDU degrees. */
 #define PIN_DEGCON1 ((int64_t) 186413511) /* 5.555555555 B-3 at 2^-28 */
+
 /* DEGCON2 2DEC 2.222222222 B-2 (21616 07071): 100/45 for optics (CM). */
-#define PIN_DEGCON2  ((int64_t) 149130809) /* 2.222222222 B-2 at 2^-28 */
-#define PIN_NEG_2    3240 /* NEG.2 OCT -06250: the 19.775 deg bias */
-#define PIN_WHOLECON ((int64_t) 100000) /* (10EXP5/2EXP14)2EXP14          */
-#define PIN_CS_HOUR  ((int64_t) 360000) /* HRCON: 1 hour in centi-sec     */
-#define PIN_CS_MIN   ((int64_t) 6000)   /* MINCON: 1 minute in centi-sec  */
-#define PIN_59MIN    59                 /* 59MIN                          */
-#define PIN_5999CS   5999               /* 59.99SEC: 5999 centi-sec       */
-#define PIN_DEC345   034u               /* DECBRNCH bits 3,4,5: R3,R2,R1  */
+#define PIN_DEGCON2  ((int64_t) 149130809)        /* 2.222222222 B-2 at 2^-28 */
+#define PIN_NEG_2    3240                         /* NEG.2 OCT -06250: the 19.775 deg bias */
+#define PIN_WHOLECON ((int64_t) 100000)           /* (10EXP5/2EXP14)2EXP14          */
+#define PIN_CS_HOUR  ((int64_t) 360000)           /* HRCON: 1 hour in centi-sec     */
+#define PIN_CS_MIN   ((int64_t) 6000)             /* MINCON: 1 minute in centi-sec  */
+#define PIN_59MIN    59                           /* 59MIN                          */
+#define PIN_5999CS   5999                         /* 59.99SEC: 5999 centi-sec       */
+#define PIN_DEC345   034u                         /* DECBRNCH bits 3,4,5: R3,R2,R1  */
 #define PIN_DP_LIM   ((int64_t) 1 << AGC_DP_BITS) /* 2^28: DP magnitude limit */
 #define PIN_SP_LIM   ((int64_t) 1 << AGC_SP_BITS) /* 2^14: SP magnitude limit */
 
@@ -125,17 +126,15 @@ static int64_t pin_dmp_tp(agc_dp_t f, int64_t c)
  **********************************************************************/
 static agc_status_t pin_binround(int64_t dp, agc_dp_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) ||
-        !AGC_ASSERT(pin_abs64(dp) < PIN_DP_LIM))
+    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(pin_abs64(dp) < PIN_DP_LIM))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     int64_t mag = pin_abs64(dp); /* magnitude, unscaled */
-    int64_t hi; /* MPAC after rounding MPAC+1 */
+    int64_t hi;                  /* MPAC after rounding MPAC+1 */
 
-    hi = (mag >> AGC_SP_BITS) + (((mag & 037777) >= 020000) ? /* round */
-                                 1 : 0);
+    hi = (mag >> AGC_SP_BITS) + (((mag & 037777) >= 020000) ? 1 : 0); /* round */
 
     if (hi >= PIN_SP_LIM)
     {
@@ -239,17 +238,15 @@ static agc_status_t pin_artin1sf(agc_dp_t f, agc_dp_t sfin, agc_dp_t *out)
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-static agc_status_t pin_dpinsf(agc_dp_t f, agc_dp_t sfin, int shift,
-                               agc_dp_t *out)
+static agc_status_t pin_dpinsf(agc_dp_t f, agc_dp_t sfin, int shift, agc_dp_t *out)
 {
-    if (!AGC_ASSERT(shift == 0 || shift == 3 || shift == 7) ||
-        !AGC_ASSERT(out != NULL))
+    if (!AGC_ASSERT(shift == 0 || shift == 3 || shift == 7) || !AGC_ASSERT(out != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     int64_t tp = pin_dmp_tp(f, sfin) << shift; /* TPLEFTN    */
-    int64_t dp; /* DP part, 2^-28 units */
+    int64_t dp;                                /* DP part, 2^-28 units */
 
     dp = (tp >> AGC_SP_BITS) + (((tp & 037777) >= 020000) ? 1 : 0); /* round */
 
@@ -389,10 +386,10 @@ static agc_status_t pin_optdegin(agc_dp_t f, bool negzero, agc_dp_t *out)
         return (pin_almcycle()); /* reject - input         */
     }
 
-    agc_dp_t fb = f - (agc_dp_t) (PIN_NEG_2 * PIN_SP_LIM); /* ADS MPAC, 2^-28 */
+    agc_dp_t fb = f - (agc_dp_t) (PIN_NEG_2 * PIN_SP_LIM);    /* ADS MPAC, 2^-28 */
     int64_t  d  = pin_dmp_tp(fb, PIN_DEGCON2) >> AGC_SP_BITS; /* 2^-14 */
-    int64_t  v  = ((fb < 0) ? -d : d) + 04000; /* + BIT12    */
-    int64_t  m  = pin_abs64(v); /* magnitude */
+    int64_t  v  = ((fb < 0) ? -d : d) + 04000;                /* + BIT12    */
+    int64_t  m  = pin_abs64(v);                               /* magnitude */
 
     if ((m >> 13) >= PIN_SP_LIM)
     {
@@ -425,8 +422,7 @@ static agc_status_t pin_optdegin(agc_dp_t f, bool negzero, agc_dp_t *out)
  * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-static agc_status_t pin_sfin_const(uint8_t rout, const agc_scale_info_t *info,
-                                   agc_dp_t f, agc_dp_t *out)
+static agc_status_t pin_sfin_const(uint8_t rout, const agc_scale_info_t *info, agc_dp_t f, agc_dp_t *out)
 {
     switch (rout)
     {
@@ -473,21 +469,19 @@ static agc_status_t pin_sfin_const(uint8_t rout, const agc_scale_info_t *info,
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
-                          bool *exited)
+agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out, bool *exited)
 {
     if (!AGC_ASSERT(pin_invariants()))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_scale_info_t info; /* scale of the component */
+    agc_scale_info_t info;                          /* scale of the component */
     agc_status_t     st = pin_comp_scale(k, &info); /* status so far */
 
     if (!AGC_ASSERT(out != NULL && exited != NULL) || st != AGC_STATUS_OK)
     {
-        return ((st != AGC_STATUS_OK) ? /* or BAD_ARG */
-                st : AGC_STATUS_BAD_ARG);
+        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG); /* or BAD_ARG */
     }
 
     bool lm = agc_state_vehicle() == AGC_VEHICLE_LM; /* true on the LM */
@@ -499,9 +493,9 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
         case PIN_SF_OCTAL:
             /* alarm and recycle if dec load with octal-only noun */
             return (pin_almcycle());
-        case PIN_SF_MS:            /* min/sec can't be loaded            */
-        case PIN_SF_2INT: /* 2INTOUT can't be loaded            */
-        case PIN_SF_HMS:  /* (HMSIN is entered by the caller)   */
+        case PIN_SF_MS:    /* min/sec can't be loaded            */
+        case PIN_SF_2INT:  /* 2INTOUT can't be loaded            */
+        case PIN_SF_HMS:   /* (HMSIN is entered by the caller)   */
             return (pin_dspalarm());
         case PIN_SF_OPDEG: /* LM: LRPOSOUT can't be loaded       */
 
@@ -518,9 +512,8 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
         case PIN_SF_DEG:
             st = pin_deginsf(frac, false, out);
             break;
-        case PIN_SF_DPFRAC: /* CM: DPFRACIN.  LM: DEGINSF (360-CDU) */
-            st = lm ? /* LM 360-CDU */
-                 pin_deginsf(frac, true, out) : AGC_STATUS_OK;
+        case PIN_SF_DPFRAC:                                         /* CM: DPFRACIN.  LM: DEGINSF (360-CDU) */
+            st = lm ? pin_deginsf(frac, true, out) : AGC_STATUS_OK; /* LM 360-CDU */
 
             if (!lm)
             {
@@ -538,14 +531,10 @@ agc_status_t pin_putdecsf(int k, agc_dp_t frac, bool negzero, agc_dp_t *out,
     if (st == AGC_STATUS_OK && !pin_sf_is_dp(info.routine))
     {
         /* the SP result (MPAC) in the value convention of the data id */
-        bool angle = info.routine == (uint8_t) PIN_SF_DEG ||
-                     info.routine == (uint8_t) PIN_SF_OPDEG ||
-                     /* a CDU angle routine */
-                     info.routine == (uint8_t) PIN_SF_DPFRAC;
-        uint16_t w; /* angle word, two's complement */
+        bool     angle = info.routine == (uint8_t) PIN_SF_DEG || info.routine == (uint8_t) PIN_SF_OPDEG || info.routine == (uint8_t) PIN_SF_DPFRAC; /* a CDU angle routine */
+        uint16_t w;                                                                                                                                 /* angle word, two's complement */
 
-        w = angle ? /* raw angle word */
-            (uint16_t) *out : pin_ones_from_sp(agc_dp_high(*out));
+        w = angle ? (uint16_t) *out : pin_ones_from_sp(agc_dp_high(*out)); /* raw angle word */
 
         if (lm || info.routine != (uint8_t) PIN_SF_DPFRAC)
         { /* all but CM DPFRACIN: the value of the word */
@@ -615,26 +604,22 @@ agc_status_t pin_hmsin(void)
     pin_state_t *s = pin_st(); /* pinball erasables */
 
     if ((s->decbrnch & PIN_DEC345) != PIN_DEC345)
-    {                     /* ALL3DEC    */
+    { /* ALL3DEC    */
         s->verbsave = 25; /* FORCEV25: force verb 25 by recycle */
 
         return (pin_almcycle());
     }
 
-    int64_t h   = 0; /* hours keyed */
-    int64_t m   = 0; /* minutes keyed */
-    int64_t sec = 0; /* seconds keyed, cs */
-    bool    ok  =
-        pin_whole(s->xyz_frac[0], &h) && pin_whole(s->xyz_frac[1], &m) &&
-        pin_whole(s->xyz_frac[2], &sec); /* all three fit */
+    int64_t h   = 0;                                                                                                 /* hours keyed */
+    int64_t m   = 0;                                                                                                 /* minutes keyed */
+    int64_t sec = 0;                                                                                                 /* seconds keyed, cs */
+    bool    ok  = pin_whole(s->xyz_frac[0], &h) && pin_whole(s->xyz_frac[1], &m) && pin_whole(s->xyz_frac[2], &sec); /* all three fit */
 
-    ok = ok && pin_abs64(h) * PIN_CS_HOUR < PIN_DP_LIM && /* MPACTST: G/ 745 */
-         pin_abs64(m) <= PIN_59MIN &&                  /* SIZETST         */
-         pin_abs64(sec) <= PIN_5999CS;
-    int64_t t = h * PIN_CS_HOUR + m * PIN_CS_MIN; /* DAS HITEMIN     */
+    ok        = ok && pin_abs64(h) * PIN_CS_HOUR < PIN_DP_LIM && pin_abs64(m) <= PIN_59MIN && pin_abs64(sec) <= PIN_5999CS; /* MPACTST: G/ 745; SIZETST */
+    int64_t t = h * PIN_CS_HOUR + m * PIN_CS_MIN;                                                                           /* DAS HITEMIN     */
 
     ok = ok && pin_abs64(t) < PIN_DP_LIM;
-    t += sec;
+    t  += sec;
     ok = ok && pin_abs64(t) < PIN_DP_LIM;
 
     if (!ok)

@@ -26,12 +26,16 @@ static bool sp_ok(agc_sp_t v)
  * elevation, CDU words (2^15 = 1 revolution).                             */
 static uint16_t g_aotaz[6];
 static uint16_t g_aotel[6];
+
 /* CDUCHKWD (CSM, B(1)PL): CDU check delay for R60 / IMU checks, cs.       */
 static agc_sp_t g_cduchkwd;
+
 /* RTED1 (CSM, I(2)PL): VGAMMA polynomial coefficient D1 of P37, B-3.      */
 static agc_dp_t g_rted1;
+
 /* P37RANGE (= R61CNTR +1, CSM I(1)PL): entry range override, revs.       */
 static agc_sp_t g_p37range;
+
 /* TLAND (= W, LM I(2)): nominal time of landing, cs 2^28.                 */
 static agc_dp_t g_tland;
 

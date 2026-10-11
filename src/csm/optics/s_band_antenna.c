@@ -62,33 +62,30 @@ agc_dp_t agc_sband_gammasb(void)
  *   yaw = ACOS(URP.UX), 360 - yaw when URP.UY < 0 (0 if URP is null)
  *   pitch = ACOS(UR.UZ) - 90 deg
  */
-agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb,
-                                 agc_dp_t *pitch, agc_dp_t *yaw)
+agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb, agc_dp_t *pitch, agc_dp_t *yaw)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pitch != NULL)) ||
-        !AGC_ASSERT(yaw != NULL))
+    if (!AGC_ASSERT((ip != NULL) && (pitch != NULL)) || !AGC_ASSERT(yaw != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_mat_t hiunit = agc_mat_identity_half(); /* HIUNITX,Y,Z  */
 
-    *yaw = 0;                       /* HI6ZEROS     */
-    const agc_vec_t ur = agc_vec_unit(ip, r_nb, NULL, NULL); /* 8D */
-    const agc_vec_t pz =
-        agc_vec_shl(ip, agc_vec_proj(ip, r_nb, hiunit.row[2]), 2);
-    agc_vec_t urp = agc_vec_sub(ip, r_nb, pz); /* BVSU R       */
+    *yaw                = 0;                                  /* HI6ZEROS     */
+    const agc_vec_t ur  = agc_vec_unit(ip, r_nb, NULL, NULL); /* 8D */
+    const agc_vec_t pz  = agc_vec_shl(ip, agc_vec_proj(ip, r_nb, hiunit.row[2]), 2);
+    agc_vec_t       urp = agc_vec_sub(ip, r_nb, pz);          /* BVSU R       */
 
-    align_clear_ovf(ip);                       /* BOV COVCNV   */
-    urp = agc_vec_unit(ip, urp, NULL, NULL);   /* COVCNV UNIT  */
+    align_clear_ovf(ip);                     /* BOV COVCNV   */
+    urp = agc_vec_unit(ip, urp, NULL, NULL); /* COVCNV UNIT  */
 
     if (!agc_interp_test_ovf(ip))
     { /* BOV NOADJUST */
-        *yaw = agc_dp_acos(ip, align_dot_shl(ip, urp, hiunit.row[0], 1));
+        *yaw              = agc_dp_acos(ip, align_dot_shl(ip, urp, hiunit.row[0], 1));
         const agc_dp_t uy = align_dot_shl(ip, urp, hiunit.row[1], 1); /* B0 */
 
         if (uy < 0)
-        {                                            /* BPL NOADJUST */
+        { /* BPL NOADJUST */
             *yaw = agc_dp_sub(ip, AGC_DP_MAX, *yaw); /* DPPOSMAX - yaw */
         }
     }
@@ -101,8 +98,7 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb,
 }
 
 /* The CSM-to-earth vector in SM: -RATT (earth sphere) or -(REM + RATT). */
-static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o,
-                                    agc_vec_t *r_sm)
+static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o, agc_vec_t *r_sm)
 {
     if (!AGC_ASSERT(o != NULL))
     {
@@ -167,10 +163,8 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     const agc_dp_t  now = align_loadtime();
 
     agc_guid_cdutrig(&trig); /* CDUTRIG      */
-    agc_status_t st = align_integ(&ip, ALIGN_CSMCONIC, now,
-                                  AGC_JOB_SBANDANT_CM_RECYCLE,
-                                  &o);
-    agc_vec_t r;
+    agc_status_t st = align_integ(&ip, ALIGN_CSMCONIC, now, AGC_JOB_SBANDANT_CM_RECYCLE, &o);
+    agc_vec_t    r;
 
     if (st == AGC_STATUS_OK)
     {
@@ -198,9 +192,7 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
         return (agc_dsky_endmark()); /* BZF ENDEXT   */
     }
 
-    agc_status_t st_angles =
-        align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES,
-                    AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF, AGC_JOB_ENDOFJOB);
+    agc_status_t st_angles = align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES, AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF, AGC_JOB_ENDOFJOB);
 
     if (st_angles != AGC_STATUS_OK)
     {

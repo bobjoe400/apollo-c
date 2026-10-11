@@ -42,36 +42,36 @@
 #include "agc/programs/rendezvous.h"
 
 #define WORD15        077777u
-#define BIT2          000002u /* CHAN33: RR auto-mode discrete (inverted)   */
-#define BIT3          000004u /* BLANKET R3                                 */
-#define BIT5          000020u /* EXTVBACT: extended verb active             */
-#define BIT14         020000u /* CHAN12: enable RR auto tracker             */
-#define RADMODES_CDES 040000u /* RADMODES bit 15: continuous designate      */
-#define OCT41000      041000u /* RADMODES bits 15, 10: designate bits       */
-#define LRPOSCAL      000444u /* RADMODES/CHAN33 bits 9, 6, 3 (scales, pos) */
-#define SIX           000006u /* RTSTDEX: LR when nonzero under this mask   */
-#define LOCKON_OPTION ((agc_sp_t) 6) /* OPTIONX: V04N12 option code 6        */
-#define LOCKON_NONE   ((agc_sp_t) 2) /* OPTIONX +1: 2 = no lock-on           */
-#define RADAR_OPTION  ((agc_sp_t) 4) /* OPTIONX: option code (BIT3)          */
-#define RADAR_RR      ((agc_sp_t) 1) /* OPTIONX +1 / RTSTDEX: RR             */
-#define RADAR_LR      ((agc_sp_t) 2) /* OPTIONX +1 / RTSTDEX: LR             */
+#define BIT2          000002u                 /* CHAN33: RR auto-mode discrete (inverted)   */
+#define BIT3          000004u                 /* BLANKET R3                                 */
+#define BIT5          000020u                 /* EXTVBACT: extended verb active             */
+#define BIT14         020000u                 /* CHAN12: enable RR auto tracker             */
+#define RADMODES_CDES 040000u                 /* RADMODES bit 15: continuous designate      */
+#define OCT41000      041000u                 /* RADMODES bits 15, 10: designate bits       */
+#define LRPOSCAL      000444u                 /* RADMODES/CHAN33 bits 9, 6, 3 (scales, pos) */
+#define SIX           000006u                 /* RTSTDEX: LR when nonzero under this mask   */
+#define LOCKON_OPTION ((agc_sp_t) 6)          /* OPTIONX: V04N12 option code 6        */
+#define LOCKON_NONE   ((agc_sp_t) 2)          /* OPTIONX +1: 2 = no lock-on           */
+#define RADAR_OPTION  ((agc_sp_t) 4)          /* OPTIONX: option code (BIT3)          */
+#define RADAR_RR      ((agc_sp_t) 1)          /* OPTIONX +1 / RTSTDEX: RR             */
+#define RADAR_LR      ((agc_sp_t) 2)          /* OPTIONX +1 / RTSTDEX: LR             */
 #define RR_AUTO_CHECKLIST \
-    ((agc_sp_t) 00201) /* 201R04: select RR auto mode    */
+    ((agc_sp_t) 00201)                        /* 201R04: select RR auto mode    */
 #define RSAMP_1SEC           ((agc_sp_t) 101) /* 1SEC+1: sample once a second        */
 #define RSAMP_250MS          ((agc_sp_t) 032) /* 250MS+1 = CALLCODE: 4 per second    */
-#define RR_SAMPLE_MAX        2 /* RTSTMAX for the RR (and first delay, cs)   */
-#define LR_SAMPLE_MAX        6 /* RTSTMAX for the LR (and first delay, cs)   */
-#define LR_BASE              ((agc_sp_t) 2) /* RTSTBASE for the LR                  */
+#define RR_SAMPLE_MAX        2                /* RTSTMAX for the RR (and first delay, cs)   */
+#define LR_SAMPLE_MAX        6                /* RTSTMAX for the LR (and first delay, cs)   */
+#define LR_BASE              ((agc_sp_t) 2)   /* RTSTBASE for the LR                  */
 #define DELAY_1SEC           100u
 #define DELAY_2SECS          200u
-#define DELAY_BIT8           0200u /* 1.28 s: a pending radar RUPT               */
-#define DELAY_BIT6           040u /* 320 ms                                     */
+#define DELAY_BIT8           0200u            /* 1.28 s: a pending radar RUPT               */
+#define DELAY_BIT6           040u             /* 320 ms                                     */
 #define PRIO4                ((agc_prio_t) 004)
 #define PRIO5                ((agc_prio_t) 005)
 #define PRIO20               ((agc_prio_t) 020)
 #define ALARM_DESIGNATE_FAIL ((agc_alarm_code_t) 00503)
 #define ALARM_LR_POSITION    ((agc_alarm_code_t) 00523)
-#define LM_SURFACE_NAV_MODE  22 /* DEC22: P22 lunar surface navigation        */
+#define LM_SURFACE_NAV_MODE  22               /* DEC22: P22 lunar surface navigation        */
 
 /* R04 / R77 test storage (EBANK4).                                        */
 static agc_sp_t rsampdt;  /* sampling interval + 1 (cs); 0 stops it     */
@@ -143,14 +143,7 @@ static agc_status_t radar_in_use_check(bool *ok)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool busy =
-        !agc_flag_test((agc_flag_id_t) AGC_FLAG_NO_POWERED_DESIGNATE) ||
-        agc_flag_test((agc_flag_id_t) AGC_FLAG_RADAR_ALARMS_SUPPRESSED) ||
-        (agc_flag_test((agc_flag_id_t) AGC_FLAG_SERVICER_RUNNING) &&
-         !agc_flag_test((agc_flag_id_t) AGC_FLAG_LRBYPASS)) ||
-        (agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG) &&
-         agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG)) ||
-        (agc_erase_modreg() == (agc_sp_t) LM_SURFACE_NAV_MODE);
+    bool busy = !agc_flag_test((agc_flag_id_t) AGC_FLAG_NO_POWERED_DESIGNATE) || agc_flag_test((agc_flag_id_t) AGC_FLAG_RADAR_ALARMS_SUPPRESSED) || (agc_flag_test((agc_flag_id_t) AGC_FLAG_SERVICER_RUNNING) && !agc_flag_test((agc_flag_id_t) AGC_FLAG_LRBYPASS)) || (agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG) && agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG)) || (agc_erase_modreg() == (agc_sp_t) LM_SURFACE_NAV_MODE);
 
     *ok = !busy;
 
@@ -181,8 +174,7 @@ static bool radar_stall(agc_job_id_t wake, agc_status_t *st)
 static void clear_designate_bits(void)
 {
     agc_inhint();
-    agc_erase_set_radmodes(
-        (uint16_t) (agc_erase_radmodes() & ~(uint32_t) OCT41000));
+    agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() & ~(uint32_t) OCT41000));
     agc_relint();
 
     if (!AGC_ASSERT((agc_erase_radmodes() & OCT41000) == 0u))
@@ -306,8 +298,7 @@ agc_status_t agc_job_rr_designate_load(agc_job_ctx_t *ctx)
     agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END,
                             AGC_JOB_RR_DESIGNATE_LOAD, AGC_JOB_RR_LOCKON_QUERY};
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(24, 73),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(24, 73), &cont));
 }
 
 /* AURLOKON (p.271): option code 6, default answer 2 (no lock-on).       */
@@ -335,8 +326,7 @@ agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx)
 
     agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END, AGC_JOB_RR_LOCKON_ANSWER,
                             AGC_JOB_RR_LOCKON_DISPLAY};
-    agc_status_t    st =
-        agc_dsky_display(ctx, AGC_DSKY_GOMARKFR, agc_dsky_vn(4, 12), &cont);
+    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOMARKFR, agc_dsky_vn(4, 12), &cont);
 
     if (st != AGC_STATUS_OK)
     {
@@ -351,8 +341,7 @@ agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx)
  * the rest of RRDESNBK: show V41 again and schedule RRDESK2.             */
 agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx)
 {
-    bool no_lockon =
-        ((uint16_t) agc_erase_optionx(1) & (uint16_t) LOCKON_NONE) != 0u;
+    bool no_lockon = ((uint16_t) agc_erase_optionx(1) & (uint16_t) LOCKON_NONE) != 0u;
 
     agc_flag_put((agc_flag_id_t) AGC_FLAG_LOKONSW, !no_lockon);
     agc_status_t st = AGC_STATUS_OK;
@@ -380,8 +369,7 @@ agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx)
 /* RRDESNBK after EXDSPRET: FINDVAC RRDESK2 at priority 20, TERMEXTV.     */
 agc_status_t agc_job_rr_designate_schedule(agc_job_ctx_t *ctx)
 {
-    agc_status_t st =
-        agc_extverb_schedule(PRIO20, AGC_JOB_RR_DESIGNATE_DRIVE, true);
+    agc_status_t st = agc_extverb_schedule(PRIO20, AGC_JOB_RR_DESIGNATE_DRIVE, true);
 
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
     {
@@ -533,8 +521,7 @@ agc_status_t agc_job_rr_los_display(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_vec_t    los = agc_vec_zero();
-    agc_status_t st  =
-        agc_lm_rrnb(&ip, agc_erase_cdut(), agc_erase_cdus(), &los);
+    agc_status_t st  = agc_lm_rrnb(&ip, agc_erase_cdut(), agc_erase_cdus(), &los);
 
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
     {
@@ -543,15 +530,13 @@ agc_status_t agc_job_rr_los_display(agc_job_ctx_t *ctx)
 
     agc_vec_t xz = los;
 
-    xz.c[1] = 0; /* HI6ZEROS into 8D       */
-    xz      = agc_vec_unit(&ip, xz, NULL, NULL);
+    xz.c[1]               = 0; /* HI6ZEROS into 8D       */
+    xz                    = agc_vec_unit(&ip, xz, NULL, NULL);
     const agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0);
     const agc_vec_t unity = agc_vec_make(0, AGC_DP_HALF, 0);
     const agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF);
-    agc_dp_t        elev  = angle_0_360(&ip, agc_vec_dot(&ip, unitx, xz),
-                                        agc_vec_dot(&ip, xz, unitz));
-    agc_dp_t az = angle_0_360(&ip, agc_vec_dot(&ip, los, unity),
-                              agc_vec_dot(&ip, los, xz));
+    agc_dp_t        elev  = angle_0_360(&ip, agc_vec_dot(&ip, unitx, xz), agc_vec_dot(&ip, xz, unitz));
+    agc_dp_t        az    = angle_0_360(&ip, agc_vec_dot(&ip, los, unity), agc_vec_dot(&ip, los, xz));
 
     agc_erase_set_rr_elev(elev);
     agc_erase_set_rr_az(az);
@@ -590,8 +575,7 @@ agc_status_t agc_job_rr_los_display_stop(agc_job_ctx_t *ctx)
 
 static bool radar_test_is_self_test(void)
 {
-    return (agc_flag_test(
-                (agc_flag_id_t) AGC_FLAG_ALARM_521_SUPPRESSED)); /* R04FLAG */
+    return (agc_flag_test((agc_flag_id_t) AGC_FLAG_ALARM_521_SUPPRESSED)); /* R04FLAG */
 }
 
 /* R04C / R04C+4: (RR) enable the auto tracker; RTSTMAX; RADSAMP in
@@ -613,7 +597,7 @@ static agc_status_t radar_test_start(agc_job_ctx_t *ctx, bool rr, int max)
 
     rtstmax = (agc_sp_t) max;
     agc_inhint();
-    st = agc_waitlist_call((uint16_t) max, AGC_TASK_RADSAMP);
+    st      = agc_waitlist_call((uint16_t) max, AGC_TASK_RADSAMP);
     agc_relint();
 
     if (st != AGC_STATUS_OK)
@@ -650,9 +634,9 @@ static agc_status_t radar_test_choose(agc_job_ctx_t *ctx)
  * which radar (V04N12 option 4, default 1 = RR).                         */
 static agc_status_t radar_test_setup(agc_job_ctx_t *ctx)
 {
-    rsampdt  = RSAMP_1SEC;
-    rtstloc  = 0;
-    rfailcnt = 0;
+    rsampdt     = RSAMP_1SEC;
+    rtstloc     = 0;
+    rfailcnt    = 0;
     agc_inhint();
     uint16_t rm = (uint16_t) (agc_erase_radmodes() & ~(uint32_t) LRPOSCAL);
 
@@ -734,8 +718,7 @@ agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx)
 
     agc_dsky_cont_t cont = {AGC_JOB_RADAR_TEST_END, AGC_JOB_RADAR_TEST_SELECT,
                             AGC_JOB_RADAR_TEST_OPTION_DISPLAY};
-    agc_status_t    st =
-        agc_dsky_display(ctx, AGC_DSKY_GOMARKFR, agc_dsky_vn(4, 12), &cont);
+    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOMARKFR, agc_dsky_vn(4, 12), &cont);
 
     if (st != AGC_STATUS_OK)
     {
@@ -794,8 +777,7 @@ agc_status_t agc_job_radar_test_auto_request(agc_job_ctx_t *ctx)
                             AGC_JOB_RADAR_TEST_AUTO_CHECK,
                             AGC_JOB_RADAR_TEST_AUTO_REQUEST};
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARK4, agc_dsky_vn(50, 25),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOMARK4, agc_dsky_vn(50, 25), &cont));
 }
 
 /* R04RR / R04LR (p.278): V16N72 RR CDU angles or V16N66 LR range and
@@ -812,8 +794,7 @@ agc_status_t agc_job_radar_test_first_display(agc_job_ctx_t *ctx)
                             AGC_JOB_RADAR_TEST_SECOND_DISPLAY,
                             AGC_JOB_RADAR_TEST_FIRST_DISPLAY};
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF,
-                             agc_dsky_vn(16, lr ? 66 : 72), &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(16, lr ? 66 : 72), &cont));
 }
 
 /* V16N78 RR range and range rate or V16N67 LR velocities; V33 -> R04Y.   */
@@ -828,8 +809,7 @@ agc_status_t agc_job_radar_test_second_display(agc_job_ctx_t *ctx)
     agc_dsky_cont_t cont = {AGC_JOB_RADAR_TEST_END, AGC_JOB_RADAR_TEST_SWITCH,
                             AGC_JOB_RADAR_TEST_FIRST_DISPLAY};
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF,
-                             agc_dsky_vn(16, lr ? 67 : 78), &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(16, lr ? 67 : 78), &cont));
 }
 
 /* R04Y (p.278): stop sampling and wait 2 s for the last RADARUPT.        */

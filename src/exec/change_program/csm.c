@@ -22,13 +22,13 @@
 
 #define CP_PRIO13           ((agc_prio_t) 013)
 #define CP_PRIO20           ((agc_prio_t) 020)
-#define CP_COSTALIN         0 /* downlist codes (DNLADMM1)            */
+#define CP_COSTALIN         0                   /* downlist codes (DNLADMM1)            */
 #define CP_ENTRYUPD         1
 #define CP_RENDEZVU         2
 #define CP_POWERED          3
 #define CP_ORBNAV_DNLIST    4
-#define CP_BIT13            010000u /* DSALMOUT bit 13: engine on       */
-#define CP_F6_DAPBITS       060000u /* FLAGWRD6 bits 15, 14: DAP type   */
+#define CP_BIT13            010000u             /* DSALMOUT bit 13: engine on       */
+#define CP_F6_DAPBITS       060000u             /* FLAGWRD6 bits 15, 14: DAP type   */
 #define CP_F6_TVC           040000u
 #define CP_T5_3_1SEC        ((uint16_t) 037312) /* 3.1SEC: 2.5 + 0.6 s     */
 #define CP_ENGINE_OFF_DELAY 5U                  /* DELAYJOB 5 cs           */
@@ -113,8 +113,7 @@ agc_status_t exec_cp_engine_off_to_idle(void)
         return (st);
     }
 
-    return (agc_svc_delayjob(CP_ENGINE_OFF_DELAY,
-                             AGC_JOB_CHANGE_PROGRAM_JETS_OFF));
+    return (agc_svc_delayjob(CP_ENGINE_OFF_DELAY, AGC_JOB_CHANGE_PROGRAM_JETS_OFF));
 }
 
 /* R00TOP00 after DELAYJOB: WRITE 5, WRITE 6 = 0 (all jets off), then
@@ -131,7 +130,7 @@ agc_status_t agc_job_change_program_jets_off(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_chan_write((int) AGC_CHAN_PYJETS, 0); /* WRITE 5 */
+    agc_chan_write((int) AGC_CHAN_PYJETS, 0);   /* WRITE 5 */
     agc_chan_write((int) AGC_CHAN_ROLLJETS, 0); /* WRITE 6 */
 
     return (exec_cp_after_engine_off());
@@ -154,16 +153,13 @@ void exec_cp_stop_servicer_csm(void)
  * down; the uplink activity light off (UPACTOFF).                       */
 void exec_cp_cleanup_csm(void)
 {
-    agc_chan_and((int) AGC_CHAN_DSALMOUT,
-                 (uint16_t) (CP_WORD15 & ~CP_CH11_CLEAR));
+    agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (CP_WORD15 & ~CP_CH11_CLEAR));
     agc_chan_and((int) AGC_CHAN_CHAN12, CP_CH12_KEEP);
-    agc_chan_and((int) AGC_CHAN_CHAN13,
-                 (uint16_t) (CP_WORD15 & ~CP_CH13_CLEAR));
+    agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (CP_WORD15 & ~CP_CH13_CLEAR));
     exec_initsub_csm();
     agc_dsky_clearmrk();
     agc_flag_clear(AGC_FLAG_STIKFLAG);
-    agc_chan_and((int) AGC_CHAN_DSALMOUT,
-                 (uint16_t) (CP_WORD15 & ~(uint16_t) AGC_CH011_UPACT));
+    agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (CP_WORD15 & ~(uint16_t) AGC_CH011_UPACT));
     agc_flag_clear(AGC_FLAG_VHFRFLAG);
     agc_flag_clear(AGC_FLAG_MARKRUPT_OPTION_ONE); /* R21MARK */
 

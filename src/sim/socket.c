@@ -36,21 +36,20 @@
 
 typedef struct sock_client
 {
-    int      fd;                     /* -1: slot free                 */
-    int      size;                   /* bytes of the packet so far    */
+    int      fd;                  /* -1: slot free                 */
+    int      size;                /* bytes of the packet so far    */
     uint8_t  pkt[SIM_PACKET_BYTES];
-    uint16_t mask[SOCK_CHANNELS];    /* u-bit masks (yaAGC ChannelMasks) */
+    uint16_t mask[SOCK_CHANNELS]; /* u-bit masks (yaAGC ChannelMasks) */
 } sock_client_t;
 
 static int           g_listen[SOCK_SLOTS];
 static sock_client_t g_client[SOCK_SLOTS];
 static bool          g_open;
-static uint32_t      g_steps;         /* lockstep credit, centiseconds   */
-static int           g_step_client;   /* slot that asked for it, or -1   */
-static bool          g_step_lost;     /* that client disconnected        */
+static uint32_t      g_steps;       /* lockstep credit, centiseconds   */
+static int           g_step_client; /* slot that asked for it, or -1   */
+static bool          g_step_lost;   /* that client disconnected        */
 
-void sim_packet_form(uint16_t chan, uint16_t value,
-                     uint8_t pkt[SIM_PACKET_BYTES])
+void sim_packet_form(uint16_t chan, uint16_t value, uint8_t pkt[SIM_PACKET_BYTES])
 {
     if (!AGC_ASSERT(chan <= 0777u) || !AGC_ASSERT(value <= SIM_WORD_MASK))
     {
@@ -58,31 +57,26 @@ void sim_packet_form(uint16_t chan, uint16_t value,
     }
 
     pkt[0] = (uint8_t) (chan >> 3);
-    pkt[1] =
-        (uint8_t) (0x40u | ((chan << 3) & 0x38u) | ((value >> 12) & 0x07u));
+    pkt[1] = (uint8_t) (0x40u | ((chan << 3) & 0x38u) | ((value >> 12) & 0x07u));
     pkt[2] = (uint8_t) (0x80u | ((value >> 6) & 0x3Fu));
     pkt[3] = (uint8_t) (0xC0u | (value & 0x3Fu));
 }
 
-bool sim_packet_parse(const uint8_t pkt[SIM_PACKET_BYTES], uint16_t *chan,
-                      uint16_t *value, bool *ubit)
+bool sim_packet_parse(const uint8_t pkt[SIM_PACKET_BYTES], uint16_t *chan, uint16_t *value, bool *ubit)
 {
     if (!AGC_ASSERT(chan != NULL && value != NULL) || !AGC_ASSERT(ubit != NULL))
     {
         return (false);
     }
 
-    if ((pkt[0] & 0xC0u) != 0u || (pkt[1] & 0xC0u) != 0x40u ||
-        (pkt[2] & 0xC0u) != 0x80u || (pkt[3] & 0xC0u) != 0xC0u)
+    if ((pkt[0] & 0xC0u) != 0u || (pkt[1] & 0xC0u) != 0x40u || (pkt[2] & 0xC0u) != 0x80u || (pkt[3] & 0xC0u) != 0xC0u)
     {
         return (false);
     }
 
     *chan  = (uint16_t) (((pkt[0] & 0x1Fu) << 3) | ((pkt[1] >> 3) & 7u));
-    *value =
-        (uint16_t) (((pkt[1] << 12) & 0x7000u) | ((pkt[2] << 6) & 0x0FC0u) |
-                    (pkt[3] & 0x3Fu));
-    *ubit = (pkt[0] & 0x20u) != 0u;
+    *value = (uint16_t) (((pkt[1] << 12) & 0x7000u) | ((pkt[2] << 6) & 0x0FC0u) | (pkt[3] & 0x3Fu));
+    *ubit  = (pkt[0] & 0x20u) != 0u;
 
     return (true);
 }
@@ -138,9 +132,7 @@ static int listen_on(int port)
     a.sin_port        = htons((uint16_t) port);
     a.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof (one)) != 0 ||
-        bind(fd, (const struct sockaddr *) &a, sizeof (a)) != 0 ||
-        listen(fd, 3) != 0 || !set_nonblocking(fd))
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof (one)) != 0 || bind(fd, (const struct sockaddr *) &a, sizeof (a)) != 0 || listen(fd, 3) != 0 || !set_nonblocking(fd))
     {
         if (close(fd) != 0)
         {
@@ -167,7 +159,7 @@ agc_status_t sim_socket_open(int base_port)
         g_client[i].fd   = -1;
         g_client[i].size = 0;
         g_listen[i]      = listen_on(base_port + i);
-        opened          += (g_listen[i] >= 0) ? 1 : 0;
+        opened           += (g_listen[i] >= 0) ? 1 : 0;
     }
 
     g_open        = (opened > 0);
@@ -291,7 +283,7 @@ static bool act_on_packet(int i)
 
     if (chan == SIM_CH_STEP)
     {
-        g_steps      += value;
+        g_steps       += value;
         g_step_client = i;
 
         return (true);
@@ -299,8 +291,7 @@ static bool act_on_packet(int i)
 
     if ((chan & SIM_CH_COUNTER) != 0u)
     {
-        return (sim_counter_increment((uint16_t) (chan & 0177u), value) ==
-                AGC_STATUS_BAD_ARG);
+        return (sim_counter_increment((uint16_t) (chan & 0177u), value) == AGC_STATUS_BAD_ARG);
     }
 
     return (sim_input(chan, value, g_client[i].mask[chan]));

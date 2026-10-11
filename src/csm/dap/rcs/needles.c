@@ -52,16 +52,13 @@ agc_status_t csm_dap_needler(void)
     {
         /* first pass: disable IMU error counter to zero the DACs; must
          * wait at least 60 ms before enabling counters.                  */
-        agc_chan_and(
-            AGC_CHAN_CHAN12,
-            (uint16_t) (077777u & ~(unsigned) AGC_CH012_ENBIMUERR));
+        agc_chan_and(AGC_CHAN_CHAN12, (uint16_t) (077777u & ~(unsigned) AGC_CH012_ENBIMUERR));
 
         return (needle11());
     }
 
     agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBIMUERR);
-    c->rcsflags =
-        (uint16_t) (c->rcsflags & ~(unsigned) FLAGS_23); /* NEEDLER2 */
+    c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned) FLAGS_23); /* NEEDLER2 */
 
     if (!AGC_ASSERT((c->rcsflags & FLAGS_23) == 0u))
     {
@@ -80,15 +77,14 @@ static agc_status_t needle11(void)
 
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
-        c->ak[i]     = 0;   /* CS ZERO: -0            */
-        c->edrive[i] = 0;
+        c->ak[i]       = 0;                           /* CS ZERO: -0            */
+        c->edrive[i]   = 0;
         agc_status_t s = agc_imu_hw_set_cducmd(i, 0); /* CDUXCMD..CDUZCMD */
 
         st = (st == AGC_STATUS_OK) ? s : st;
     }
 
-    c->rcsflags = (uint16_t) ((c->rcsflags & ~(unsigned) FLAGS_23) |
-                              AGC_CSM_RCSF_NEEDLE2);
+    c->rcsflags = (uint16_t) ((c->rcsflags & ~(unsigned) FLAGS_23) | AGC_CSM_RCSF_NEEDLE2);
 
     if (!AGC_ASSERT((c->rcsflags & AGC_CSM_RCSF_NEEDLE2) != 0u))
     {
@@ -143,7 +139,7 @@ static agc_status_t needles(void)
             /* within the DAC range */
         }
 
-        agc_sp_t     inc = (agc_sp_t) (l - c->edrive[i]); /* CS EDRIVEX; AD L */
+        agc_sp_t     inc = (agc_sp_t) (l - c->edrive[i]);       /* CS EDRIVEX; AD L */
         agc_sp_t     cmd = csm_dap_ads(agc_imu_cducmd(i), inc); /* ADS CDUXCMD */
         agc_status_t s   = agc_imu_hw_set_cducmd(i, cmd);
 
@@ -170,8 +166,7 @@ agc_status_t agc_dap_needler(agc_sp_t ak, agc_sp_t ak1, agc_sp_t ak2, bool init)
 {
     agc_csm_dapcom_t *c = agc_csm_dap_com();
 
-    if (!AGC_ASSERT((ak >= AGC_SP_MIN) && (ak1 >= AGC_SP_MIN) &&
-                    (ak2 >= AGC_SP_MIN)))
+    if (!AGC_ASSERT((ak >= AGC_SP_MIN) && (ak1 >= AGC_SP_MIN) && (ak2 >= AGC_SP_MIN)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -181,9 +176,9 @@ agc_status_t agc_dap_needler(agc_sp_t ak, agc_sp_t ak1, agc_sp_t ak2, bool init)
         c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
     }
 
-    c->ak[0] = ak;
-    c->ak[1] = ak1;
-    c->ak[2] = ak2;
+    c->ak[0]        = ak;
+    c->ak[1]        = ak1;
+    c->ak[2]        = ak2;
     agc_inhint();
     agc_status_t st = csm_dap_needler();
 

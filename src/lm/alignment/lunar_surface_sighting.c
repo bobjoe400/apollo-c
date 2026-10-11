@@ -15,20 +15,20 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
 
-#define PH_SURFACE_ALIGN ((uint16_t) 04024) /* OCT 04024                      */
-#define VN_STAR_CODE     ALIGN_VN(1, 70)  /* V01N70* VN 170                 */
-#define VN_CURSOR        ALIGN_VN(6, 79)  /* V06N79 VN 679                  */
-#define VN_ALARM         ALIGN_VN(5, 9)   /* VB05N09                        */
+#define PH_SURFACE_ALIGN ((uint16_t) 04024)     /* OCT 04024                      */
+#define VN_STAR_CODE     ALIGN_VN(1, 70)        /* V01N70* VN 170                 */
+#define VN_CURSOR        ALIGN_VN(6, 79)        /* V06N79 VN 679                  */
+#define VN_ALARM         ALIGN_VN(5, 9)         /* VB05N09                        */
 #define ALM_NOT_IN_AOT   ((agc_alarm_code_t) 0404)
-#define STAR_BITS        ((agc_sp_t) 077) /* CS HIGH9: star bits 1-6        */
-#define REVCNT           ((agc_sp_t) 6) /* REVCNT: just 6                 */
-#define DEC227           ((agc_sp_t) 227) /* 228 and up: sun, earth, moon   */
-#define POSITIONS        6              /* AOT detents 1..6               */
-#define POS_SHIFT        6              /* MP BIT7: detent to bits 7-9    */
+#define STAR_BITS        ((agc_sp_t) 077)       /* CS HIGH9: star bits 1-6        */
+#define REVCNT           ((agc_sp_t) 6)         /* REVCNT: just 6                 */
+#define DEC227           ((agc_sp_t) 227)       /* 228 and up: sun, earth, moon   */
+#define POSITIONS        6                      /* AOT detents 1..6               */
+#define POS_SHIFT        6                      /* MP BIT7: detent to bits 7-9    */
 #define POS_MASK         ((agc_sp_t) 07)
-#define ELEVATION_45     ((uint16_t) 010000) /* BIT13: 45 degrees              */
-#define DEG30            ((agc_dp_t) 22369621) /* DEG30 2DEC .083333333 revs    */
-#define DEG_HALF         ((agc_dp_t) 372825) /* DEG.5 2DEC .00138888 revs     */
+#define ELEVATION_45     ((uint16_t) 010000)    /* BIT13: 45 degrees              */
+#define DEG30            ((agc_dp_t) 22369621)  /* DEG30 2DEC .083333333 revs    */
+#define DEG_HALF         ((agc_dp_t) 372825)    /* DEG.5 2DEC .00138888 revs     */
 #define THREE_QUARTERS   ((agc_dp_t) 201326592) /* 3/4                          */
 #define ABOUTONE         ((agc_dp_t) 268435453) /* ABOUTONE 2DEC .99999999      */
 
@@ -48,7 +48,7 @@ static agc_status_t surface_align_phase(void)
 static agc_status_t star_sighting(agc_job_ctx_t *ctx, agc_sp_t starind)
 {
     agc_align_ram()->starind = starind;
-    const agc_status_t st = surface_align_phase();
+    const agc_status_t st    = surface_align_phase();
 
     if (st != AGC_STATUS_OK)
     {
@@ -96,9 +96,7 @@ agc_status_t agc_job_lunar_surface_star_acquisition(agc_job_ctx_t *ctx)
         return (agc_job_lunar_surface_star_mark(ctx));
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_LUNAR_SURFACE_STAR_CHOSEN,
-                        AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_CODE, AGC_JOB_GOTOPOOH, AGC_JOB_LUNAR_SURFACE_STAR_CHOSEN, AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION));
 }
 
 /*
@@ -112,14 +110,12 @@ static bool star_in_position(agc_interp_t *ip, agc_vec_t star, uint16_t az)
 {
     agc_align_ram_t *ram = agc_align_ram();
 
-    if (agc_aot_oanb(ip, az, ELEVATION_45, &ram->scaxis, &ram->uxp,
-                     &ram->uyp) != AGC_STATUS_OK)
+    if (agc_aot_oanb(ip, az, ELEVATION_45, &ram->scaxis, &ram->uxp, &ram->uyp) != AGC_STATUS_OK)
     {
         return (false);
     }
 
-    const agc_dp_t sep =
-        agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, star, ram->scaxis), 1));
+    const agc_dp_t sep = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, star, ram->scaxis), 1));
 
     if ((sep - DEG30) >= 0)
     {
@@ -134,25 +130,19 @@ static bool star_in_position(agc_interp_t *ip, agc_vec_t star, uint16_t az)
         return (true);
     }
 
-    const agc_dp_t spiral12 =
-        agc_dp_shl(ip, agc_dp_mul(ip, sep, THREE_QUARTERS), 4);
-    const agc_vec_t ux   = agc_vec_make(AGC_DP_HALF, 0, 0);
-    const agc_vec_t oaux =
-        agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, ux), NULL, NULL);
-    const agc_vec_t c2 = agc_vec_unit(
-        ip, agc_vec_neg(agc_vec_cross(ip, oaux, ram->scaxis)), NULL, NULL);
-    const agc_vec_t oas =
-        agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, star), NULL, NULL);
-    agc_dp_t thet =
-        agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, oas, oaux), 1));
+    const agc_dp_t  spiral12 = agc_dp_shl(ip, agc_dp_mul(ip, sep, THREE_QUARTERS), 4);
+    const agc_vec_t ux       = agc_vec_make(AGC_DP_HALF, 0, 0);
+    const agc_vec_t oaux     = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, ux), NULL, NULL);
+    const agc_vec_t c2       = agc_vec_unit(ip, agc_vec_neg(agc_vec_cross(ip, oaux, ram->scaxis)), NULL, NULL);
+    const agc_vec_t oas      = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, star), NULL, NULL);
+    agc_dp_t        thet     = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, oas, oaux), 1));
 
     if (agc_vec_dot(ip, oas, c2) < 0)
     {
         thet = agc_dp_sub(ip, ABOUTONE, thet); /* 360-THET */
     }
 
-    const agc_dp_t yrot = agc_dp_add(
-        ip, agc_dp_shr(agc_dp_pack(align_word_to_sp(az), 0), 1), thet);
+    const agc_dp_t yrot = agc_dp_add(ip, agc_dp_shr(agc_dp_pack(align_word_to_sp(az), 0), 1), thet);
 
     ram->cursor = agc_align_ones_to_twos(yrot); /* 1STO2S   */
     ram->spiral = agc_align_ones_to_twos(agc_dp_add(ip, spiral12, yrot));
@@ -195,7 +185,7 @@ agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
     agc_vec_t       star;
     const agc_mat_t refsmmat = agc_erase_refsmmat();
     agc_cdutrig_t   t;
-    agc_status_t    st = agc_star_vector(star6 / REVCNT, &star); /* CATLOG,1 */
+    agc_status_t    st       = agc_star_vector(star6 / REVCNT, &star); /* CATLOG,1 */
 
     if (st == AGC_STATUS_OK)
     {
@@ -222,9 +212,7 @@ agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
 
     agc_alarm(ALM_NOT_IN_AOT); /* R59ALM   */
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_LUNAR_SURFACE_STAR_MARK,
-                        AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_ALARM, AGC_JOB_GOTOPOOH, AGC_JOB_LUNAR_SURFACE_STAR_MARK, AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION));
 }
 
 /* 79DISP: flash V06N79 (CURSOR, SPIRAL, POSCODE); V32 back to R59. */
@@ -235,15 +223,12 @@ agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT((agc_align_ram()->poscode >= 1) &&
-                    (agc_align_ram()->poscode <= POSITIONS)))
+    if (!AGC_ASSERT((agc_align_ram()->poscode >= 1) && (agc_align_ram()->poscode <= POSITIONS)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_CURSOR, AGC_JOB_GOTOPOOH,
-                        AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED,
-                        AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_CURSOR, AGC_JOB_GOTOPOOH, AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED, AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION));
 }
 
 /* R59E: AOTCODE detent bits 7-9 = POSCODE; R59OUT. */
@@ -279,8 +264,7 @@ agc_status_t agc_job_lunar_surface_star_mark(agc_job_ctx_t *ctx)
 
     bool done = false;
 
-    st = align_stall(AGC_IMU_DEV_OPTICS, AGC_JOB_LUNAR_SURFACE_STAR_MARKED,
-                     &done);
+    st = align_stall(AGC_IMU_DEV_OPTICS, AGC_JOB_LUNAR_SURFACE_STAR_MARKED, &done);
 
     if ((st != AGC_STATUS_OK) || !done)
     {
@@ -312,8 +296,7 @@ agc_status_t agc_job_lunar_surface_star_marked(agc_job_ctx_t *ctx)
     {
         ram->starsav1 = ram->starad[1]; /* ASTAR    */
 
-        return (align_planet(ctx, ram->tsight,
-                             AGC_JOB_LUNAR_SURFACE_FIRST_STAR));
+        return (align_planet(ctx, ram->tsight, AGC_JOB_LUNAR_SURFACE_FIRST_STAR));
     }
 
     const agc_status_t st = surface_align_phase();

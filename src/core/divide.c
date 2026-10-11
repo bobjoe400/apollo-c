@@ -89,8 +89,8 @@ static int32_t finaldv(int32_t a, int32_t c)
 agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv)
 {
     agc_w2_t ab = agc_w_split(dividend); /* (A, B) */
-    agc_w2_t cd = agc_w_split(divisor); /* (C, D) */
-    int32_t  acc; /* MAXDV minor dividend C + B - D */
+    agc_w2_t cd = agc_w_split(divisor);  /* (C, D) */
+    int32_t  acc;                        /* MAXDV minor dividend C + B - D */
 
     /* The divisor is normally >= .5; UNIT's SQRTSUB root can be one LSB
      * below .5 (BUF 17777), which the AGC divides by all the same.        */
@@ -109,8 +109,8 @@ agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv)
     { /* MAXDV: BZF +2   */
         /* GENDDV (p.1167-1168): (A + sB)/(C + sD) = Q + s(R - QD)/C, s = 2^-14.
          * Dividend (A,B) positive with A < C; divisor (C,D) positive, C >= HALF.  */
-        agc_w2_t qr        = agc_w_dv(ab.hi, ab.lo, cd.hi); /* DV BUF          */
-        int32_t  q         = qr.hi; /* Q, major quotient word */
+        agc_w2_t qr        = agc_w_dv(ab.hi, ab.lo, cd.hi);  /* DV BUF          */
+        int32_t  q         = qr.hi;                          /* Q, major quotient word */
         int32_t  acc_words = qr.lo + agc_w_mp(-q, cd.lo).hi; /* CS; MP; AD      */
 
         if (!AGC_ASSERT(ab.hi < cd.hi))
@@ -119,9 +119,9 @@ agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv)
         }
 
         if (acc_words >= AGC_W_ONE)
-        {                 /* OVSK: + overflow */
+        { /* OVSK: + overflow */
             acc_words -= cd.hi; /* SU BUF          */
-            q         += 1; /* INCR MPAC       */
+            q         += 1;     /* INCR MPAC       */
         }
         else if (acc_words <= 0)
         { /* BZMF -UP        */
@@ -130,7 +130,7 @@ agc_dp_t agc_w_genddv(agc_dp_t dividend, agc_dp_t divisor, bool maxdv)
                 return ((agc_dp_t) (q * AGC_W_ONE)); /* FINALDV +3      */
             }
 
-            q         -= 1; /* DIM MPAC        */
+            q         -= 1;     /* DIM MPAC        */
             acc_words += cd.hi; /* ENDMAXDV AD BUF */
 
             return ((agc_dp_t) (q * AGC_W_ONE + finaldv(acc_words, cd.hi)));
@@ -179,7 +179,7 @@ static agc_dp_t ddv_overflow(bool negative, int *ovf)
         return (AGC_DP_MAX);
     }
 
-    *ovf = 1;                                  /* CAF ONE; TS OVFIND */
+    *ovf = 1; /* CAF ONE; TS OVFIND */
 
     return (negative ? AGC_DP_MIN : AGC_DP_MAX); /* DVOVF: DPPOSMAX */
 }
@@ -345,27 +345,27 @@ static agc_w2_t sqrt_half(agc_w2_t p)
 static agc_w2_t sqrt_newton(agc_w2_t m, int32_t x0h)
 {
     int32_t  buf = x0h; /* BUF: X0/2, then X1 */
-    int32_t  q; /* (MPAC/2)/(X0/2), SP */
-    agc_w2_t x1h; /* X1/2 as DP, then X2 */
-    agc_w2_t qr; /* DP quotient major word, remainder */
-    agc_w2_t add; /* (MPAC/2)/X1 as a DP pair */
-    int      o = 0; /* DAS overflow (argument near POSMAX) */
+    int32_t  q;         /* (MPAC/2)/(X0/2), SP */
+    agc_w2_t x1h;       /* X1/2 as DP, then X2 */
+    agc_w2_t qr;        /* DP quotient major word, remainder */
+    agc_w2_t add;       /* (MPAC/2)/X1 as a DP pair */
+    int      o   = 0;   /* DAS overflow (argument near POSMAX) */
 
     if (!AGC_ASSERT((m.hi > 0) && (m.hi < buf)))
     {
         return ((agc_w2_t){0}); /* no valid result */
     }
 
-    q      = agc_w_dv(m.hi, 0, buf).hi;  /* (MPAC/2)/(X0/2)  */
-    buf   += agc_w_mp(q, AGC_W_HALF).hi; /* X1 = ...         */
-    x1h    = agc_w_mp(buf, AGC_W_HALF); /* X1/2 as DP       */
-    qr     = agc_w_dv(m.hi, m.lo, buf); /* DV BUF           */
+    q      = agc_w_dv(m.hi, 0, buf).hi;   /* (MPAC/2)/(X0/2)  */
+    buf    += agc_w_mp(q, AGC_W_HALF).hi; /* X1 = ...         */
+    x1h    = agc_w_mp(buf, AGC_W_HALF);   /* X1/2 as DP       */
+    qr     = agc_w_dv(m.hi, m.lo, buf);   /* DV BUF           */
     add.hi = qr.hi;
-    add.lo = agc_w_dv(qr.lo, 0, buf).hi; /* minor quotient   */
-    x1h    = agc_w_das(x1h, add, &o);    /* X2 = X1/2 + ..   */
+    add.lo = agc_w_dv(qr.lo, 0, buf).hi;  /* minor quotient   */
+    x1h    = agc_w_das(x1h, add, &o);     /* X2 = X1/2 + ..   */
 
     if (o != 0)
-    {                          /* near POSMAX      */
+    { /* near POSMAX      */
         x1h.hi = AGC_W_POSMAX; /* FIXROOT          */
         x1h.lo = AGC_W_POSMAX;
     }
@@ -439,7 +439,7 @@ static agc_w2_t sqrt_arglo(agc_w2_t m)
  **********************************************************************/
 static agc_w2_t sqrt_positive(agc_w3_t m, int *shift)
 {
-    int pass; /* NORMTEST passes (two places each) */
+    int pass;  /* NORMTEST passes (two places each) */
     int o = 0; /* TP shift overflow (never: |m0| < 1/4) */
 
     if (!AGC_ASSERT((m.m0 > 0) && (shift != 0)))
@@ -458,7 +458,7 @@ static agc_w2_t sqrt_positive(agc_w3_t m, int *shift)
     }
 
     *shift += 1; /* SQRTNORM         */
-    m       = agc_w_tp_shl1(m, &o);
+    m      = agc_w_tp_shl1(m, &o);
 
     for (pass = 0; pass < SQ_NORM_MAX; pass++)
     { /* NORMTEST (CYL)   */
@@ -472,9 +472,9 @@ static agc_w2_t sqrt_positive(agc_w3_t m, int *shift)
             return (sqrt_arglo(agc_w3_top(m)));
         }
 
-        m       = agc_w_tp_shl1(m, &o); /* SQRTNM2          */
+        m      = agc_w_tp_shl1(m, &o); /* SQRTNM2          */
         *shift += 1;
-        m       = agc_w_tp_shl1(m, &o);
+        m      = agc_w_tp_shl1(m, &o);
     }
 
     if (!AGC_ASSERT(o == 0))
@@ -512,17 +512,17 @@ agc_w2_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
     *abort = false;
 
     if (m.m0 < 0)
-    {                                       /* SQRTNEG          */
+    { /* SQRTNEG          */
         *abort = (m.m0 < -1) || (m.m1 < 0); /* POODOO 01302     */
 
-        return (zero);                        /* ZEROANS          */
+        return (zero); /* ZEROANS          */
     }
 
     for (k = 0; (k < 2) && (m.m0 == 0); k++)
     { /* shift left 14    */
-        m.m0    = m.m1;
-        m.m1    = m.m2;
-        m.m2    = 0;
+        m.m0   = m.m1;
+        m.m1   = m.m2;
+        m.m2   = 0;
         *shift += 7; /* CAF SEVEN        */
 
         if (m.m0 < 0)

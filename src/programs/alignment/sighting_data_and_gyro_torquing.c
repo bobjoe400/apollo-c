@@ -20,9 +20,9 @@
 #include "agc/programs/alignment.h"
 
 #define VN_STAR_ANGLE_DIFF \
-    ALIGN_VN(6, 5) /* VB6N5  VN 605: star angle difference  */
+    ALIGN_VN(6, 5)     /* VB6N5  VN 605: star angle difference  */
 #define VN_GYRO_TORQUE_ANGLES \
-    ALIGN_VN(6, 93) /* VN_GYRO_TORQUE_ANGLES VN 0693: gyro torque angles     */
+    ALIGN_VN(6, 93)    /* VN_GYRO_TORQUE_ANGLES VN 0693: gyro torque angles     */
 #define PH_TORQUE_CSM \
     ((uint16_t) 00314) /* R55.2 PHASCHNG, CM: group 4 phase 31 */
 #define PH_TORQUE_LM \
@@ -41,9 +41,7 @@ static agc_status_t chksdata_flash(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_ANGLE_DIFF,
-                        AGC_JOB_GOTOPOOH, AGC_JOB_CHKSDATA_PROCEED,
-                        AGC_JOB_CHKSDATA_ENTER));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_STAR_ANGLE_DIFF, AGC_JOB_GOTOPOOH, AGC_JOB_CHKSDATA_PROCEED, AGC_JOB_CHKSDATA_ENTER));
 }
 
 /* R55.1 flash. */
@@ -59,9 +57,7 @@ static agc_status_t gyro_angles_flash(const agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_GYRO_TORQUE_ANGLES,
-                        AGC_JOB_GOTOPOOH, AGC_JOB_GYRO_TORQUING_PULSE,
-                        AGC_JOB_GYRO_TORQUING_RETURN));
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_GYRO_TORQUE_ANGLES, AGC_JOB_GOTOPOOH, AGC_JOB_GYRO_TORQUING_PULSE, AGC_JOB_GYRO_TORQUING_RETURN));
 }
 
 /* After the IMUSTALL of R55.2: PHASCHNG 05024 (CM) / 04024 (LM), then
@@ -70,8 +66,7 @@ static agc_status_t gyro_torquing_done(void)
 {
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
-        align_phase_job(ALIGN_PH_05024, AGC_JOB_GYRO_TORQUING_RETURN,
-                        ALIGN_PRIO13);
+        align_phase_job(ALIGN_PH_05024, AGC_JOB_GYRO_TORQUING_RETURN, ALIGN_PRIO13);
     }
     else
     {
@@ -89,8 +84,7 @@ static agc_status_t gyro_torquing_done(void)
  * PROCEED (CHKSDA) returns with FREEFLAG set = accept the data; ENTER
  * (V32) clears FREEFLAG = reject; V34 terminates.
  */
-agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx,
-                                             agc_job_id_t         qmin_return)
+agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(qmin_return != AGC_JOB_NONE))
     {
@@ -99,7 +93,7 @@ agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx,
 
     agc_align_ram_t *ram = agc_align_ram();
 
-    ram->qmin = qmin_return; /* STQ QMIN  */
+    ram->qmin       = qmin_return; /* STQ QMIN  */
     agc_flag_set(AGC_FLAG_FREEFLAG);
     agc_status_t st = AGC_STATUS_OK;
     agc_interp_t ip;
@@ -124,8 +118,7 @@ agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx,
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         /* CAF ZERO, CLEANDSP: the job continues at the VN_STAR_ANGLE_DIFF flash.     */
-        return (align_flash(ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_CHKSDATA_FLASH,
-                            AGC_JOB_CHKSDATA_FLASH, AGC_JOB_CHKSDATA_FLASH));
+        return (align_flash(ctx, AGC_DSKY_CLEANDSP, 0, AGC_JOB_CHKSDATA_FLASH, AGC_JOB_CHKSDATA_FLASH, AGC_JOB_CHKSDATA_FLASH));
     }
 
     return (chksdata_flash(ctx));
@@ -178,8 +171,7 @@ agc_status_t agc_job_chksdata_enter(agc_job_ctx_t *ctx)
  * XDC.. (desired SM wrt present SM, half-unit) into OGC, IGC, MGC (revs,
  * also loaded into the OGC pulse buffer); PULSEM / R55.1 flash VN_GYRO_TORQUE_ANGLES.
  */
-agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx,
-                                     agc_job_id_t         qmin_return)
+agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return)
 {
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(qmin_return != AGC_JOB_NONE))
     {
@@ -222,8 +214,7 @@ agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx)
     const bool csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
 
     agc_phase_change(4, csm ? PH_TORQUE_CSM : PH_TORQUE_LM);
-    agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC,
-                                        AGC_JOB_GYRO_TORQUING_PULSE); /* IMUPULSE  */
+    agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_GYRO_TORQUING_PULSE); /* IMUPULSE  */
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -237,8 +228,7 @@ agc_status_t agc_job_gyro_torquing_pulse(agc_job_ctx_t *ctx)
 
     bool done = false;
 
-    st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_GYRO_TORQUING_PULSED,
-                     &done);        /* IMUSTALL */
+    st = align_stall(AGC_IMU_DEV_IMU, AGC_JOB_GYRO_TORQUING_PULSED, &done); /* IMUSTALL */
 
     if ((st != AGC_STATUS_OK) || !done)
     {

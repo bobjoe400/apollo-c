@@ -11,11 +11,11 @@
 #include "agc/core/channels.h"
 #include "agc/lm/dap.h"
 
-#define CH31_MODE_OFF  030000u /* BIT13-14: mode select switch OFF  */
-#define IMODES33_NOIMU 000040u /* BIT6: IMU not usable              */
-#define CH30_NOPGNCS   001000u /* BIT10 of 30 (inverted): not PGNCS */
-#define MANFLAG        03021u  /* RCSFLAGS bits cleared by STARTDAP */
-#define BGIM23         07400u  /* trim gimbal drive bits 9-12, ch 12*/
+#define CH31_MODE_OFF  030000u        /* BIT13-14: mode select switch OFF  */
+#define IMODES33_NOIMU 000040u        /* BIT6: IMU not usable              */
+#define CH30_NOPGNCS   001000u        /* BIT10 of 30 (inverted): not PGNCS */
+#define MANFLAG        03021u         /* RCSFLAGS bits cleared by STARTDAP */
+#define BGIM23         07400u         /* trim gimbal drive bits 9-12, ch 12*/
 #define PRIO27         ((agc_prio_t) 027)
 #define STARTDAP_SKIP  ((agc_sp_t) 4) /* FOUR: SKIPU/SKIPV not skipping    */
 #define STARTDAP_TRAPS ((agc_sp_t) 2) /* TWO: NPTRAPS, NQTRAPS, NRTRAPS    */
@@ -60,9 +60,9 @@ agc_status_t lm_dap_shutdown(void)
     lm_dap_t    *d  = lm_dap_state();
     agc_status_t st = lm_dap_set_t5adr(LM_T5_DAPIDLER);
 
-    d->nextp = 0;
-    d->nextu = 0;
-    d->nextv = 0;
+    d->nextp        = 0;
+    d->nextu        = 0;
+    d->nextv        = 0;
     agc_chan_write(005, 0); /* command jets off        */
     agc_chan_write(006, 0);
     agc_chan_and(012, (uint16_t) ~BGIM23 & 077777u);
@@ -127,7 +127,7 @@ agc_status_t lm_dap_chekbits(bool *on)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    *on = false;
+    *on           = false;
     uint16_t ch31 = agc_chan_read(031);
 
     if (((uint16_t) ~ch31 & CH31_MODE_OFF) == 0u)
@@ -137,8 +137,7 @@ agc_status_t lm_dap_chekbits(bool *on)
 
     if ((agc_erase_imodes33() & IMODES33_NOIMU) != 0u)
     {
-        d->rcsflags =
-            (uint16_t) (d->rcsflags | LM_RCS_NEEDLE3); /* IMU not usable */
+        d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_NEEDLE3); /* IMU not usable */
 
         return (lm_dap_shutdown());
     }
@@ -226,26 +225,26 @@ agc_status_t lm_dap_startdap(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    d->rcsflags = (uint16_t) (d->rcsflags & ~MANFLAG);
-    d->oldxforp = agc_erase_cdux();
-    d->oldyforp = agc_erase_cduy();
-    d->oldzforq = agc_erase_cduz();
-    d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_PSKIP);
-    d->skip[0]  = STARTDAP_SKIP;
-    d->skip[1]  = STARTDAP_SKIP;
+    d->rcsflags     = (uint16_t) (d->rcsflags & ~MANFLAG);
+    d->oldxforp     = agc_erase_cdux();
+    d->oldyforp     = agc_erase_cduy();
+    d->oldzforq     = agc_erase_cduz();
+    d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_PSKIP);
+    d->skip[0]      = STARTDAP_SKIP;
+    d->skip[1]      = STARTDAP_SKIP;
     agc_rupt_set_time(6, LM_T6_POSMAX);
-    d->t6next[0]   = (agc_sp_t) LM_T6_POSMAX;
-    d->t6furtha[0] = (agc_sp_t) LM_T6_POSMAX;
-    d->t6next[1]   = 0;
-    d->t6furtha[1] = 0;
-    d->nxt6adr     = 0;
-    d->nextp       = 0;
-    d->nextu       = 0;
-    d->nextv       = 0;
-    d->dapzrupt    = LM_DAPZ_NEG;  /* jask not in progress               */
-    d->nptraps     = STARTDAP_TRAPS;
-    d->nqtraps     = STARTDAP_TRAPS;
-    d->nrtraps     = STARTDAP_TRAPS;
+    d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;
+    d->t6furtha[0]  = (agc_sp_t) LM_T6_POSMAX;
+    d->t6next[1]    = 0;
+    d->t6furtha[1]  = 0;
+    d->nxt6adr      = 0;
+    d->nextp        = 0;
+    d->nextu        = 0;
+    d->nextv        = 0;
+    d->dapzrupt     = LM_DAPZ_NEG; /* jask not in progress               */
+    d->nptraps      = STARTDAP_TRAPS;
+    d->nqtraps      = STARTDAP_TRAPS;
+    d->nrtraps      = STARTDAP_TRAPS;
     agc_status_t s5 = lm_dap_set_t5adr(LM_T5_PAXIS);
 
     if (!AGC_ASSERT(s5 == AGC_STATUS_OK))
@@ -278,7 +277,7 @@ agc_status_t agc_task_dapidler(void)
 
     if ((d->rcsflags & LM_RCS_ACCSET) == 0u)
     { /* 1/ACCSET since restart? */
-        d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_ACCSET);
+        d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_ACCSET);
         agc_status_t sj = agc_exec_novac(PRIO27, AGC_JOB_JET_ACCEL_RESET);
 
         if (sj != AGC_STATUS_OK)

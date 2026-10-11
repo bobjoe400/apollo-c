@@ -48,20 +48,20 @@
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
 
-#define AB_OCT31   25     /* OCT31: R10,R11 period, cs                */
-#define AB_OCTAL27 027    /* 4.27 (P70A) / 4.31 (P71A) restart phase  */
-#define AB_THRESH2 308    /* THRESH2: DVMON threshold, ascent         */
-#define AB_HLITE   020    /* HLITE = BIT5                             */
-#define AB_VLITE   004    /* VLITE = BIT3                             */
-#define AB_PRIO30  030000 /* PRIO30: channel 11 bits 13 and 14        */
-#define AB_BIT13   010000 /* BIT13 of channel 11: engine on */
-#define AB_LRBYBIT 040000 /* LRBYBIT = BIT15 of FLGWRD11              */
-#define AB_T5_40MS 037774 /* OCT37774: T5RUPT in 40 ms (DAPIDLER)     */
+#define AB_OCT31   25                     /* OCT31: R10,R11 period, cs                */
+#define AB_OCTAL27 027                    /* 4.27 (P70A) / 4.31 (P71A) restart phase  */
+#define AB_THRESH2 308                    /* THRESH2: DVMON threshold, ascent         */
+#define AB_HLITE   020                    /* HLITE = BIT5                             */
+#define AB_VLITE   004                    /* VLITE = BIT3                             */
+#define AB_PRIO30  030000                 /* PRIO30: channel 11 bits 13 and 14        */
+#define AB_BIT13   010000                 /* BIT13 of channel 11: engine on */
+#define AB_LRBYBIT 040000                 /* LRBYBIT = BIT15 of FLGWRD11              */
+#define AB_T5_40MS 037774                 /* OCT37774: T5RUPT in 40 ms (DAPIDLER)     */
 #define AB_MDOTDPS ((agc_dp_t) 4966056)   /* 2DEC 0.1480 B-3 kg/cs       */
 #define AB_K1DV    ((agc_dp_t) 228956570) /* K(1/DV) 2DEC 436.70 B-9     */
 #define AB_KAT     ((agc_dp_t) 5368709)   /* K(AT) 2DEC .02              */
 #define AB_DTDECAY ((agc_dp_t) -38)       /* DTDECAY 2DEC -38 (cs)       */
-#define AB_DPSVEX  (-15134) /* DPSVEX DEC* -2.95588868E+1 B-5 m/cs     */
+#define AB_DPSVEX  (-15134)               /* DPSVEX DEC* -2.95588868E+1 B-5 m/cs     */
 
 /* PIPCTR1 (= LADQSAVE): the R10,R11 pass count handed to LANDISP. */
 static agc_sp_t ab_pipctr1; /* PIPCTR1 (= LADQSAVE), passes, unscaled */
@@ -124,8 +124,7 @@ agc_status_t agc_lm_task_abort_monitor(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st =
-        agc_waitlist_call(AB_OCT31, AGC_TASK_ABORT_MONITOR); /* step status */
+    agc_status_t st = agc_waitlist_call(AB_OCT31, AGC_TASK_ABORT_MONITOR); /* step status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -146,7 +145,7 @@ agc_status_t agc_lm_task_abort_monitor(void)
  **********************************************************************/
 static agc_status_t ab_abrtjask(bool aps_abort)
 {
-    agc_sp_t mm    = 70;             /* MODE70 (Q = -0), unscaled      */
+    agc_sp_t mm    = 70;         /* MODE70 (Q = -0), unscaled      */
     uint16_t phase = AB_OCTAL27; /* 4.27, OCTAL27 + Q              */
 
     if (aps_abort)
@@ -169,24 +168,23 @@ static agc_status_t ab_abrtjask(bool aps_abort)
         agc_flag_set(AGC_FLAG_APSFLAG); /* prior to the ENEMA      */
     }
 
-    agc_flag_clear(AGC_FLAG_ULLAGFLG); /* DAPBITS: ullage, drift, */
-    agc_flag_clear(AGC_FLAG_DRIFTDFL); /* and XOVINHIB off        */
+    agc_flag_clear(AGC_FLAG_ULLAGFLG);               /* DAPBITS: ullage, drift, */
+    agc_flag_clear(AGC_FLAG_DRIFTDFL);               /* and XOVINHIB off        */
     agc_flag_clear(AGC_FLAG_XOVINFLG);
     agc_flag_set(AGC_FLAG_ENGONFLG);
     uint16_t c11 = agc_chan_read(AGC_CHAN_DSALMOUT); /* engine on if armed */
 
-    agc_chan_write(AGC_CHAN_DSALMOUT,
-                   (uint16_t) ((c11 & ~(unsigned int) AB_PRIO30) | AB_BIT13));
-    agc_flagword_set(11, AB_LRBYBIT); /* terminate R12           */
+    agc_chan_write(AGC_CHAN_DSALMOUT, (uint16_t) ((c11 & ~(unsigned int) AB_PRIO30) | AB_BIT13));
+    agc_flagword_set(11, AB_LRBYBIT);            /* terminate R12           */
     agc_flag_set(AGC_FLAG_ALTITUDE_METERS_ONLY); /* no cross-pointer outputs */
-    agc_rendz_clradmod();        /* RADMODES for R29        */
+    agc_rendz_clradmod();                        /* RADMODES for R29        */
     agc_erase_set_tevent((agc_dp_t) agc_time_now_cs());
     agc_guid_state()->avg.avgexit = AGC_JOB_SERVEXIT;
     agc_phase_kill(1);
     agc_phase_kill(3);
     agc_phase_kill(6);
-    agc_phase_newphase(4, 3, false);  /* 4.3SPOT for GOABORT     */
-    agc_rupt_set_time(5, AB_T5_40MS); /* DAPIDLER in 40 ms       */
+    agc_phase_newphase(4, 3, false);             /* 4.3SPOT for GOABORT     */
+    agc_rupt_set_time(5, AB_T5_40MS);            /* DAPIDLER in 40 ms       */
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_ENGONFLG))) /* engine armed on */
     {
@@ -271,8 +269,7 @@ static bool ab_legal(agc_sp_t mm)
         return (false);
     }
 
-    return (agc_erase_modreg() != mm && agc_flag_test(AGC_FLAG_LETABORT) &&
-            agc_flag_test(AGC_FLAG_AVEGFLAG));
+    return (agc_erase_modreg() != mm && agc_flag_test(AGC_FLAG_LETABORT) && agc_flag_test(AGC_FLAG_AVEGFLAG));
 }
 
 /**********************************************************************
@@ -292,8 +289,7 @@ static agc_status_t ab_abortalm(void)
     agc_dsky_falton();
     agc_dsky_state_t dsky; /* DSKY lamps after FALTON */
 
-    if (!AGC_ASSERT(agc_dsky_get_state(&dsky) == AGC_STATUS_OK &&
-                    dsky.opr_err)) /* OPR ERR lit         */
+    if (!AGC_ASSERT(agc_dsky_get_state(&dsky) == AGC_STATUS_OK && dsky.opr_err)) /* OPR ERR lit         */
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -450,8 +446,7 @@ void agc_lm_tgocomp(agc_interp_t *ip)
         return;
     }
 
-    agc_dp_t t = /* TIME - TIG, 2^28 cs */
-                 agc_dp_sub(ip, agc_rtb_loadtime(), agc_erase_tig());
+    agc_dp_t t = agc_dp_sub(ip, agc_rtb_loadtime(), agc_erase_tig()); /* TIME - TIG, 2^28 cs */
 
     agc_lm_asc()->tgo = agc_dp_shl(ip, t, 11);
 
@@ -474,8 +469,7 @@ void agc_lm_throtup(void)
         return;
     }
 
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) &
-                     AGC_CH014_THRUSTACT) != 0u))
+    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) & AGC_CH014_THRUSTACT) != 0u))
     {
         return;
     }
@@ -492,11 +486,10 @@ void agc_lm_throtup(void)
  **********************************************************************/
 static void ab_bothpoly(agc_interp_t *ip, bool aps)
 {
-    agc_lm_asc_t       *a = agc_lm_asc(); /* ascent erasables */
-    const agc_lm_pad_t *p = agc_lm_pad(); /* pad loads */
-    int                 b = aps ? 4 : 0; /* AXC,1 8D / 0D */
-    agc_dp_t            z = /* ZDOTD partial sum, 2^7 m/cs */
-                            agc_dp_mul_trunc(p->abtcof[b], a->tgo);
+    agc_lm_asc_t       *a = agc_lm_asc();                           /* ascent erasables */
+    const agc_lm_pad_t *p = agc_lm_pad();                           /* pad loads */
+    int                 b = aps ? 4 : 0;                            /* AXC,1 8D / 0D */
+    agc_dp_t            z = agc_dp_mul_trunc(p->abtcof[b], a->tgo); /* ZDOTD partial sum, 2^7 m/cs */
 
     z        = agc_dp_mul_trunc(agc_dp_add(ip, z, p->abtcof[b + 1]), a->tgo);
     z        = agc_dp_mul_trunc(agc_dp_add(ip, z, p->abtcof[b + 2]), a->tgo);
@@ -512,10 +505,9 @@ static void ab_bothpoly(agc_interp_t *ip, bool aps)
         return;
     }
 
-    a->rdotd = p->abtrdot; /* UPRATE       */
-    a->y     = agc_lm_ycomp(ip);
-    agc_dp_t dy = /* |Y| - YLIM, 2^24 m */
-                  agc_dp_sub(ip, agc_dp_abs(a->y), p->ylim);
+    a->rdotd    = p->abtrdot;                                /* UPRATE       */
+    a->y        = agc_lm_ycomp(ip);
+    agc_dp_t dy = agc_dp_sub(ip, agc_dp_abs(a->y), p->ylim); /* |Y| - YLIM, 2^24 m */
 
     if (dy >= 0)
     {
@@ -582,8 +574,7 @@ agc_status_t agc_lm_job_abort_auto_control_check(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR) || agc_flag_test(
-                        AGC_FLAG_FLAP)))
+    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR) || agc_flag_test(AGC_FLAG_FLAP)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -632,7 +623,7 @@ agc_status_t agc_lm_job_abort_to_ascent_guidance(agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t ab_dps_abort_init(agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    agc_lm_asc_t *a    = agc_lm_asc(); /* ascent erasables */
+    agc_lm_asc_t *a    = agc_lm_asc();              /* ascent erasables */
     agc_dp_t      mass = agc_guid_state()->lm.mass; /* MASS, 2^16 kg */
 
     if (!AGC_ASSERT(mass > 0))
@@ -641,9 +632,8 @@ static agc_status_t ab_dps_abort_init(agc_job_ctx_t *ctx, agc_interp_t *ip)
     }
 
     agc_lm_tgocomp(ip);
-    a->tbup = agc_dp_div(ip, mass, agc_dp_shl(ip, AB_MDOTDPS, 4));
-    agc_dp_t dv = /* 1/DV1 = MASS / K(1/DV), SR1, 2^8 */
-                  agc_dp_shr(agc_dp_div(ip, mass, AB_K1DV), 1);
+    a->tbup     = agc_dp_div(ip, mass, agc_dp_shl(ip, AB_MDOTDPS, 4));
+    agc_dp_t dv = agc_dp_shr(agc_dp_div(ip, mass, AB_K1DV), 1); /* 1/DV1 = MASS / K(1/DV), SR1, 2^8 */
 
     a->dv[1] = dv;
     a->dv[2] = dv;
@@ -721,7 +711,7 @@ static agc_status_t ab_aps_abort_return(agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (agc_flag_test(AGC_FLAG_FLAP))
     {
-        a->tgo1 = agc_dp_shl(ip, a->tgo, 1); /* OLDTIME      */
+        a->tgo1                 = agc_dp_shl(ip, a->tgo, 1); /* OLDTIME      */
         agc_lm_powered_ascent_init(ip);
         const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_ABORT_OLDTIME,
                                    AGC_TASK_NONE, 0,

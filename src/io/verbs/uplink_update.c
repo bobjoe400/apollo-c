@@ -41,21 +41,21 @@
 #define BIT3           000004u
 #define BIT8           000200u
 #define BIT9           000400u
-#define UP_BLOCK       24 /* COMPNUMB, UPOLDMOD, UPVERB, UPCOUNT, UPBUFF 20D */
-#define UP_UPBUFF      4  /* index of UPBUFF +0 in the block           */
-#define UP_UPTEMP      24 /* agc_uplink_update_write index of UPTEMP   */
-#define UP_MAX_COMP    20 /* II .LE. 20D                               */
-#define UP_MIN_COMP    3  /* II .GE. 3                                 */
-#define UP_GROUP       6  /* restart group 6                           */
-#define UP_PHASE_EXIT  07026u /* restart: restore the old mode and exit   */
-#define UP_PHASE_STORE 04026u /* restart: redo the store                   */
-#define UP_PHASE_CLOCK 5u     /* UPDTPHAS: restart at TIMEDIDR (6.5)       */
-#define UP_DNLIST      1      /* UPDNLIST: P27 downlist code               */
-#define UP_MODE        27     /* NEWMODEX 27                               */
+#define UP_BLOCK       24                 /* COMPNUMB, UPOLDMOD, UPVERB, UPCOUNT, UPBUFF 20D */
+#define UP_UPBUFF      4                  /* index of UPBUFF +0 in the block           */
+#define UP_UPTEMP      24                 /* agc_uplink_update_write index of UPTEMP   */
+#define UP_MAX_COMP    20                 /* II .LE. 20D                               */
+#define UP_MIN_COMP    3                  /* II .GE. 3                                 */
+#define UP_GROUP       6                  /* restart group 6                           */
+#define UP_PHASE_EXIT  07026u             /* restart: restore the old mode and exit   */
+#define UP_PHASE_STORE 04026u             /* restart: redo the store                   */
+#define UP_PHASE_CLOCK 5u                 /* UPDTPHAS: restart at TIMEDIDR (6.5)       */
+#define UP_DNLIST      1                  /* UPDNLIST: P27 downlist code               */
+#define UP_MODE        27                 /* NEWMODEX 27                               */
 #define UP_PRIO        ((agc_prio_t) 030) /* CHRPRIO                          */
-#define MODREG_NEG0    (-1) /* exec's -0 MODREG (fresh start)            */
+#define MODREG_NEG0    (-1)               /* exec's -0 MODREG (fresh start)            */
 #define RECYCLE_VERB   32
-#define INSTALL_AREA   0 /* INTSTALL                                  */
+#define INSTALL_AREA   0                  /* INTSTALL                                  */
 
 /* COMPNUMB .. UPBUFF +19D, in the AGC's erasable order.                    */
 enum
@@ -98,8 +98,7 @@ uint16_t agc_uplink_update_dnword(int idx)
  * UPTEMP (24).                                                            */
 agc_status_t agc_uplink_update_write(int idx, uint16_t word)
 {
-    if (!AGC_ASSERT(idx >= 0 && idx <= UP_UPTEMP) ||
-        !AGC_ASSERT(word <= WORD15))
+    if (!AGC_ASSERT(idx >= 0 && idx <= UP_UPTEMP) || !AGC_ASSERT(word <= WORD15))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -177,8 +176,7 @@ static int32_t upbuff_dp(int k)
         return (0); /* no valid result */
     }
 
-    return (ones_value(up[UP_UPBUFF + k]) * 040000 +
-            ones_value(up[UP_UPBUFF + k + 1]));
+    return (ones_value(up[UP_UPBUFF + k]) * 040000 + ones_value(up[UP_UPBUFF + k + 1]));
 }
 
 /* Store a DP value into UPBUFF +k, +k+1 (both words take its sign).      */
@@ -212,8 +210,7 @@ static agc_status_t up_display(agc_job_ctx_t *ctx)
                             AGC_JOB_UPLINK_UPDATE_LOAD};
     uint8_t         noun = (stage == UP_VERIFY) ? 2u : 1u; /* UPVRFYNV / UPLOADNV */
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(21, noun),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(21, noun), &cont));
 }
 
 /* OHWELL2: request component UPCOUNT (UPBUFF +UPCOUNT-1).                 */
@@ -294,7 +291,7 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    upverbsv = (uint16_t) (verb - 70);
+    upverbsv        = (uint16_t) (verb - 70);
     bool         ok = false;
     agc_status_t st = agc_extverb_testxact(&ok);
 
@@ -310,10 +307,9 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
 
     agc_sp_t mm = agc_erase_modreg();
 
-    up[UP_UPOLDMOD] =
-        (uint16_t) ((mm < 0) ? WORD15 : (uint16_t) mm); /* -0 kept as -0 */
-    up[UP_UPVERB]  = upverbsv;
-    up[UP_UPCOUNT] = 1;
+    up[UP_UPOLDMOD] = (uint16_t) ((mm < 0) ? WORD15 : (uint16_t) mm); /* -0 kept as -0 */
+    up[UP_UPVERB]   = upverbsv;
+    up[UP_UPCOUNT]  = 1;
 
     /* UPPART2: protect group 6 (a restart restores the old mode and exits),
      * select the P27 downlist, MM 27, then ask for II or the first word.     */
@@ -375,8 +371,7 @@ agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
         return (agc_job_timedidr(ctx));
     }
 
-    return (agc_extverb_schedule(UP_PRIO, AGC_JOB_UPLINK_UPDATE_EXECUTE,
-                                 true)); /* UPFNDVAC */
+    return (agc_extverb_schedule(UP_PRIO, AGC_JOB_UPLINK_UPDATE_EXECUTE, true)); /* UPFNDVAC */
 }
 
 /* Data or V32 on a load (CK4V32 and the branch after it).                */
@@ -449,8 +444,7 @@ agc_status_t agc_job_uplink_update_terminate(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_sp_t mm = (up[UP_UPOLDMOD] == WORD15) ? (agc_sp_t) MODREG_NEG0 :
-                  (agc_sp_t) up[UP_UPOLDMOD];
+    agc_sp_t     mm = (up[UP_UPOLDMOD] == WORD15) ? (agc_sp_t) MODREG_NEG0 : (agc_sp_t) up[UP_UPOLDMOD];
     agc_status_t st = agc_phase_newmode(mm); /* NEWMODEX +3         */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -472,8 +466,7 @@ static agc_status_t upout(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_status_t st =
-        agc_integ_intwakeu(&ip, agc_integ_shared_ctx(), &upsvflag);
+    agc_status_t st = agc_integ_intwakeu(&ip, agc_integ_shared_ctx(), &upsvflag);
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -500,8 +493,7 @@ static bool timedidr(void)
 
     set_upbuff_dp(8, 0);
     int64_t t  = (int64_t) agc_time_now_cs() + (int64_t) inc;
-    bool    ok = (t > -(int64_t) AGC_TIME_MODULUS_CS &&
-                  t < (int64_t) AGC_TIME_MODULUS_CS);
+    bool    ok = (t > -(int64_t) AGC_TIME_MODULUS_CS && t < (int64_t) AGC_TIME_MODULUS_CS);
 
     if (ok)
     { /* DELTATOK, TPAGREE   */
@@ -537,8 +529,8 @@ static agc_status_t v70_tail(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_erase_set_tetcsm((agc_dp_t) (tc - delta)); /* DAS TETCSM          */
-    agc_erase_set_tetlem((agc_dp_t) (tl - delta)); /* DAS TETLEM          */
+    agc_erase_set_tetcsm((agc_dp_t) (tc - delta));               /* DAS TETCSM          */
+    agc_erase_set_tetlem((agc_dp_t) (tl - delta));               /* DAS TETLEM          */
     agc_erase_set_tephem(agc_erase_tephem() + (agc_tp_t) delta); /* TEPHEM +1 */
     set_upbuff_dp(0, 0);
     agc_phase_change(UP_GROUP, UP_PHASE_STORE);
@@ -550,8 +542,7 @@ static agc_status_t v70_tail(agc_job_ctx_t *ctx)
  * verb (V73 exits, V70 updates the state vector times).                  */
 agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !AGC_ASSERT(up[UP_UPVERB] == 0u || up[UP_UPVERB] == 3u))
+    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(up[UP_UPVERB] == 0u || up[UP_UPVERB] == 3u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -590,8 +581,7 @@ static agc_status_t upend71(agc_job_ctx_t *ctx)
 
     for (int i = n - 1; i >= 0; i--)
     { /* STORLP71            */
-        agc_status_t st = agc_erase_write_ecadr(
-            (uint16_t) (ecadr + (uint16_t) i), up[UP_UPBUFF + 2 + i]);
+        agc_status_t st = agc_erase_write_ecadr((uint16_t) (ecadr + (uint16_t) i), up[UP_UPBUFF + 2 + i]);
 
         if (st != AGC_STATUS_OK)
         {
@@ -619,8 +609,7 @@ static agc_status_t upend72(agc_job_ctx_t *ctx)
 
     for (int j = pairs - 1; j >= 0; j--)
     { /* LDLOOP72            */
-        agc_status_t st = agc_erase_write_ecadr(up[UP_UPBUFF + 1 + 2 * j],
-                                                up[UP_UPBUFF + 2 + 2 * j]);
+        agc_status_t st = agc_erase_write_ecadr(up[UP_UPBUFF + 1 + 2 * j], up[UP_UPBUFF + 2 + 2 * j]);
 
         if (st != AGC_STATUS_OK)
         {
@@ -645,8 +634,7 @@ agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx)
         return (agc_job_timedidr(ctx));
     }
 
-    agc_status_t st =
-        agc_integ_install(INSTALL_AREA, AGC_JOB_UPLINK_UPDATE_EXECUTE);
+    agc_status_t st = agc_integ_install(INSTALL_AREA, AGC_JOB_UPLINK_UPDATE_EXECUTE);
 
     if (st == AGC_STATUS_BUSY)
     {

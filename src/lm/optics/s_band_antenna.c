@@ -19,8 +19,8 @@
 
 #define REMDIST           ((agc_dp_t) 192201000) /* mean earth-moon distance B-29 m */
 #define ONEOVSQRT2        ((agc_dp_t) 189812531) /* 1OVSQRT2 .7071067815            */
-#define VN_ANTENNA_ANGLES ALIGN_VN(6, 51) /* VN 0651                         */
-#define BLANK_R3          ((uint16_t) 04) /* BIT3                            */
+#define VN_ANTENNA_ANGLES ALIGN_VN(6, 51)        /* VN 0651                         */
+#define BLANK_R3          ((uint16_t) 04)        /* BIT3                            */
 #define EXTVB_BIT5        ((uint16_t) 020)
 #define PRIO5             ((agc_prio_t) 05)
 #define PRIO4             ((agc_prio_t) 04)
@@ -80,27 +80,25 @@ static agc_dp_t signed_asin(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
  * The angles for r_nb, the unit LM-to-earth vector in NB axes (half-unit,
  * the *SMNB* output stored in RLM).  Outputs revs.
  */
-agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb,
-                                 agc_dp_t *pitch, agc_dp_t *yaw)
+agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb, agc_dp_t *pitch, agc_dp_t *yaw)
 {
-    if (!AGC_ASSERT((ip != NULL) && (pitch != NULL)) ||
-        !AGC_ASSERT(yaw != NULL))
+    if (!AGC_ASSERT((ip != NULL) && (pitch != NULL)) || !AGC_ASSERT(yaw != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     const agc_mat_t u = agc_mat_identity_half(); /* HIUNITX,Y,Z  */
 
-    *pitch = 0;                       /* HI6ZEROS     */
-    *yaw   = 0;
+    *pitch            = 0; /* HI6ZEROS     */
+    *yaw              = 0;
     agc_vec_t      r  = r_nb;
     const agc_dp_t y0 = r.c[1];
 
-    r.c[1] = agc_dp_mul_trunc(agc_dp_sub(ip, y0, r.c[0]), ONEOVSQRT2); /* DMP */
-    r.c[0] = agc_dp_mul_trunc(agc_dp_add(ip, y0, r.c[0]), ONEOVSQRT2);
-    const agc_vec_t ur  = agc_vec_unit(ip, r, NULL, NULL); /* 0D */
+    r.c[1]              = agc_dp_mul_trunc(agc_dp_sub(ip, y0, r.c[0]), ONEOVSQRT2); /* DMP */
+    r.c[0]              = agc_dp_mul_trunc(agc_dp_add(ip, y0, r.c[0]), ONEOVSQRT2);
+    const agc_vec_t ur  = agc_vec_unit(ip, r, NULL, NULL);                          /* 0D */
     const agc_vec_t py  = agc_vec_shl(ip, agc_vec_proj(ip, r, u.row[1]), 2);
-    agc_vec_t       urp = agc_vec_sub(ip, r, py); /* BVSU RLM     */
+    agc_vec_t       urp = agc_vec_sub(ip, r, py);                                   /* BVSU RLM     */
 
     align_clear_ovf(ip);
     urp = agc_vec_unit(ip, urp, NULL, NULL); /* COVCNV       */
@@ -110,13 +108,12 @@ agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb,
         return (AGC_STATUS_OK); /* BOV SBANDEX  */
     }
 
-    const agc_vec_t x =
-        agc_vec_neg(agc_vec_shl(ip, agc_vec_cross(ip, urp, u.row[2]), 1));
+    const agc_vec_t x = agc_vec_neg(agc_vec_shl(ip, agc_vec_cross(ip, urp, u.row[2]), 1));
 
     *pitch = signed_asin(ip, x, agc_vec_dot(ip, x, u.row[1]));
 
     if (agc_vec_dot(ip, urp, u.row[2]) < 0)
-    {                                                 /* BPL NOADJUST */
+    { /* BPL NOADJUST */
         *pitch = agc_dp_sub(ip, AGC_DP_HALF, *pitch); /* HIDPHALF - p */
     }
 
@@ -131,8 +128,7 @@ agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb,
 }
 
 /* UE = -UNIT(RATT) (earth sphere) or -UNIT(REMDIST VMOON SL1 + RATT). */
-static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o,
-                               agc_vec_t *ue)
+static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o, agc_vec_t *ue)
 {
     if (!AGC_ASSERT(o != NULL))
     {
@@ -157,8 +153,7 @@ static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o,
             return (st);
         }
 
-        r = agc_vec_add(
-            ip, agc_vec_shl(ip, agc_vec_scale(ip, vmoon, REMDIST), 1), o->ratt);
+        r = agc_vec_add(ip, agc_vec_shl(ip, agc_vec_scale(ip, vmoon, REMDIST), 1), o->ratt);
     }
 
     *ue = agc_vec_neg(agc_vec_unit(ip, r, NULL, NULL)); /* CONV5        */
@@ -180,9 +175,7 @@ static agc_status_t sbandex(const agc_job_ctx_t *ctx)
     }
 
     agc_exec_prio_change(PRIO5); /* PRIOCHNG       */
-    agc_status_t st =
-        align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES,
-                    AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF, AGC_JOB_ENDOFJOB);
+    agc_status_t st = align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES, AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF, AGC_JOB_ENDOFJOB);
 
     if (st != AGC_STATUS_OK)
     {
@@ -215,8 +208,7 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
     agc_integ_out_t o;
     agc_vec_t       ue = agc_vec_zero();
     agc_cdutrig_t   trig;
-    agc_status_t    st = align_integ(&ip, ALIGN_LEMCONIC, align_loadtime(),
-                                     AGC_JOB_SBANDANT_LM_RECYCLE, &o);
+    agc_status_t    st = align_integ(&ip, ALIGN_LEMCONIC, align_loadtime(), AGC_JOB_SBANDANT_LM_RECYCLE, &o);
 
     if (st == AGC_STATUS_OK)
     {

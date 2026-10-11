@@ -26,7 +26,7 @@
 #define PX_TRANSBITS 007400u            /* 07400OCT: chan 31 bits 9-12        */
 #define PX_BADINDEX  ((agc_sp_t) 07776) /* INDXYZ: no translation policy    */
 #define PX_NTAB      14
-#define PX_TYPEP     7 /* TYPEP = JETSALL +7                 */
+#define PX_TYPEP     7                  /* TYPEP = JETSALL +7                 */
 
 /* JETSALL (indexed by ROTINDEX) followed by TYPEP (indexed by NUMBERT),
  * contiguous as in the AGC (p.1440): channel 6 jet codes.               */
@@ -34,8 +34,9 @@ static const uint16_t jettab[PX_NTAB] = {
     00252, 00125, 00140, 00006,
     00220, 00011, 00151, /* -P +P -Y -Z +Y +Z */
     00146, 00226, 00231, 00151,
-    00132, 00245, 00377 /* -U -V +U +V 1-3 2-4 ALL */
+    00132, 00245, 00377  /* -U -V +U +V 1-3 2-4 ALL */
 };
+
 /* INDXYZ (pp.1440-1441): ROTINDEX for channel 31 bits 9-12 (>> 8).        */
 static const agc_sp_t indxyz[16] = {
     -218, 4, 2, PX_BADINDEX, 5, 9,
@@ -60,14 +61,12 @@ static bool selectp(lm_dap_t *d)
 {
     for (int tempnum = 6; tempnum >= -1; tempnum--)
     { /* <= 8 tries     */
-        if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 6) ||
-            !AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 10))
+        if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 6) || !AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 10))
         {
             return (false);
         }
 
-        d->polytemp =
-            (agc_sp_t) (jettab[PX_TYPEP + d->numbert] & jettab[d->rotindex]);
+        d->polytemp = (agc_sp_t) (jettab[PX_TYPEP + d->numbert] & jettab[d->rotindex]);
 
         if (((uint16_t) d->polytemp & d->ch6mask) == 0u)
         {
@@ -183,7 +182,7 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
         return (lm_dap_jetsoff());
     }
 
-    d->nojets[0] = (d->numbert == 6) ? 4 : 2;
+    d->nojets[0]    = (d->numbert == 6) ? 4 : 2;
     agc_status_t st = lm_dap_write(0, (uint16_t) d->polytemp);
 
     if (PX_150MST6 - d->abstj <= 0)
@@ -197,11 +196,11 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
         d->tj[0] = (agc_sp_t) ((d->rotindex != 0) ? PX_MINT6 : -PX_MINT6);
     }
 
-    d->t6furtha[0] = d->abstj;
-    d->t6furtha[1] = 0; /* P-axis index   */
+    d->t6furtha[0]  = d->abstj;
+    d->t6furtha[1]  = 0; /* P-axis index   */
     agc_status_t sj = lm_dap_jtlst();
 
-    d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_PSKIP); /* skip next P   */
+    d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_PSKIP); /* skip next P   */
     agc_status_t sa = altsyst();
 
     if (!AGC_ASSERT(sj == AGC_STATUS_OK && sa == AGC_STATUS_OK))
@@ -259,9 +258,8 @@ agc_status_t lm_dap_pjetslec_pair(void)
 agc_status_t lm_dap_calcperr(void)
 {
     lm_dap_t *d = lm_dap_state();
-    agc_sp_t  e =
-        lm_dap_mphi(lm_dap_msu(agc_erase_cduy(), d->cduyd), agc_erase_m11());
-    int32_t x = (int32_t) lm_dap_msu(agc_erase_cdux(), d->cduxd) + d->delperor;
+    agc_sp_t  e = lm_dap_mphi(lm_dap_msu(agc_erase_cduy(), d->cduyd), agc_erase_m11());
+    int32_t   x = (int32_t) lm_dap_msu(agc_erase_cdux(), d->cduxd) + d->delperor;
 
     d->e      = lm_dap_wrap((int32_t) e + x); /* ADS E: may wrap */
     d->perror = d->e;                         /* eight-ball     */
@@ -317,7 +315,7 @@ agc_status_t lm_dap_purgency_law(void)
         return (lm_dap_pjetslec_pair());
     }
 
-    d->sensetyp = 0; /* HEADTJET       */
+    d->sensetyp     = 0; /* HEADTJET       */
     agc_status_t st = lm_dap_tjetlaw();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -389,8 +387,7 @@ agc_status_t lm_dap_purgency(void)
 static void alteryz(lm_dap_t *d)
 {
     d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1);
-    d->rotindex =
-        (agc_sp_t) (d->rotindex + 4 + (int) (d->rcsflags & LM_RCS_ZEROOR1));
+    d->rotindex = (agc_sp_t) (d->rotindex + 4 + (int) (d->rcsflags & LM_RCS_ZEROOR1));
 
     if (!AGC_ASSERT(d->rotindex >= 6 && d->rotindex <= 10))
     {
@@ -428,7 +425,7 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    *policy = true;
+    *policy       = true;
     uint16_t bits = (uint16_t) (~agc_chan_read(031) & PX_TRANSBITS);
 
     if (bits == 0u)
@@ -444,9 +441,8 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
     { /* TRYUORV        */
         if (d->rotindex == PX_BADINDEX)
         { /* TC JETSALL -1  */
-            d->rcsflags =
-                (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1); /* ABORTYZ +2 */
-            d->nextp = 0;
+            d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1); /* ABORTYZ +2 */
+            d->nextp    = 0;
 
             return (AGC_STATUS_OK);
         }
@@ -517,8 +513,8 @@ agc_status_t lm_dap_pretimck(void)
     }
     else if (d->qgimtimr == 0)
     { /* TURNOFFQ       */
-        d->neguq   = 0;
-        d->qaccdot = 0;
+        d->neguq    = 0;
+        d->qaccdot  = 0;
         agc_chan_and(012, (uint16_t) ~PX_GIMQ & 077777u);
         d->qgimtimr = LM_NEGMAX;
     }
@@ -529,8 +525,8 @@ agc_status_t lm_dap_pretimck(void)
     }
     else if (d->rgimtimr == 0)
     { /* TURNOFFR       */
-        d->negur   = 0;
-        d->raccdot = 0;
+        d->negur    = 0;
+        d->raccdot  = 0;
         agc_chan_and(012, (uint16_t) ~PX_GIMR & 077777u);
         d->rgimtimr = LM_NEGMAX;
     }
@@ -540,8 +536,7 @@ agc_status_t lm_dap_pretimck(void)
         d->jetctr[i] = lm_dap_dim(d->jetctr[i]); /* DIM PJETCTR..  */
     }
 
-    if (!AGC_ASSERT(d->jetctr[0] >= 0 && d->jetctr[1] >= 0 &&
-                    d->jetctr[2] >= 0))
+    if (!AGC_ASSERT(d->jetctr[0] >= 0 && d->jetctr[1] >= 0 && d->jetctr[2] >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -565,8 +560,7 @@ agc_status_t agc_task_paxis(void)
     lm_dap_t *d  = lm_dap_state();
     uint16_t  t5 = agc_rupt_time(5);
 
-    agc_rupt_set_time(
-        5, (uint16_t) ((t5 + LM_MS100) & 077777u)); /* ADS TIME5 */
+    agc_rupt_set_time(5, (uint16_t) ((t5 + LM_MS100) & 077777u)); /* ADS TIME5 */
 
     if (d->dapzrupt > 0)
     { /* previous jask unfinished */
@@ -584,16 +578,14 @@ agc_status_t agc_task_paxis(void)
     d->dapcdu[0] = agc_erase_cdux(); /* DAPTREG4..6              */
     d->dapcdu[1] = agc_erase_cduy();
     d->dapcdu[2] = agc_erase_cduz();
+
     /* KALCMANU interface (pp.1421-1422): CDUxD = CDUxD - DELCDUx (modular, 2's
      * complement); then count down the direct-rate timers TCP, TCQR.         */
-    d->cduxd = lm_dap_ones_to_twos(
-        lm_dap_msu(d->cduxd, (uint16_t) ((uint16_t) d->delcdux & 077777u)));
-    d->cduyd = lm_dap_ones_to_twos(
-        lm_dap_msu(d->cduyd, (uint16_t) ((uint16_t) d->delcduy & 077777u)));
-    d->cduzd = lm_dap_ones_to_twos(
-        lm_dap_msu(d->cduzd, (uint16_t) ((uint16_t) d->delcduz & 077777u)));
-    d->tcp  = lm_dap_dim(d->tcp);
-    d->tcqr = lm_dap_dim(d->tcqr);
+    d->cduxd = lm_dap_ones_to_twos(lm_dap_msu(d->cduxd, (uint16_t) ((uint16_t) d->delcdux & 077777u)));
+    d->cduyd = lm_dap_ones_to_twos(lm_dap_msu(d->cduyd, (uint16_t) ((uint16_t) d->delcduy & 077777u)));
+    d->cduzd = lm_dap_ones_to_twos(lm_dap_msu(d->cduzd, (uint16_t) ((uint16_t) d->delcduz & 077777u)));
+    d->tcp   = lm_dap_dim(d->tcp);
+    d->tcqr  = lm_dap_dim(d->tcqr);
 
     if (!AGC_ASSERT(d->cduxd <= 077777u && d->cduyd <= 077777u))
     {

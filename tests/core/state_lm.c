@@ -54,8 +54,7 @@ int main(void)
     test_lm_flag_ids();
     test_lm_flag_ops();
     test_lm_state();
-    (void) printf("test_state_lm: %d checks, %d failures\n", g_checks,
-                  g_failures);
+    (void) printf("test_state_lm: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
 }
@@ -137,23 +136,21 @@ static void test_lm_flag_ids(void)
     /* Numbers from Luminary099/FLAGWORD_ASSIGNMENTS.agc */
     agc_state_init(AGC_VEHICLE_LM);
     CHECK(agc_dnum(AGC_FLAG_MOONFLAG) == 3);
-    CHECK(agc_dnum(AGC_FLAG_GROUND_TRACK_BASE_VECTORS) ==
-          4);                                  /* differs from CSM (033) */
-    CHECK(agc_dnum(AGC_FLAG_NEEDLFLG) == 11);  /* differs from CSM (006) */
-    CHECK(agc_dnum(AGC_FLAG_AVEGFLAG) == 115); /* differs from CSM (029) */
-    CHECK(agc_dnum(AGC_FLAG_ITSWICH) == 105);  /* differs from CSM (106) */
-    CHECK(agc_dnum(AGC_FLAG_ORBIT_DISPLAY_MOON) ==
-          118); /* differs from CSM (137) */
+    CHECK(agc_dnum(AGC_FLAG_GROUND_TRACK_BASE_VECTORS) == 4); /* differs from CSM (033) */
+    CHECK(agc_dnum(AGC_FLAG_NEEDLFLG) == 11);                 /* differs from CSM (006) */
+    CHECK(agc_dnum(AGC_FLAG_AVEGFLAG) == 115);                /* differs from CSM (029) */
+    CHECK(agc_dnum(AGC_FLAG_ITSWICH) == 105);                 /* differs from CSM (106) */
+    CHECK(agc_dnum(AGC_FLAG_ORBIT_DISPLAY_MOON) == 118);      /* differs from CSM (137) */
     CHECK(agc_dnum(AGC_FLAG_IDLEFLAG) == 113);
     CHECK(agc_dnum(AGC_FLAG_APSFLAG) == 152);
     CHECK(agc_dnum(AGC_FLAG_LRBYPASS) == 165);
-    CHECK(agc_dnum(AGC_FLAG_CDESFLAG) == 180); /* FLGWRD12 (was RADMODES) */
-    CHECK(agc_dnum(AGC_FLAG_PULSEFLG) == 195); /* FLGWRD13 (was DAPBOOLS) */
+    CHECK(agc_dnum(AGC_FLAG_CDESFLAG) == 180);                /* FLGWRD12 (was RADMODES) */
+    CHECK(agc_dnum(AGC_FLAG_PULSEFLG) == 195);                /* FLGWRD13 (was DAPBOOLS) */
     CHECK(agc_dnum(AGC_FLAG_AUTR1FLG) == 209);
     CHECK((int) AGC_FLAG_PULSEFLG == 0xDF);
     CHECK((int) AGC_FLAG_ETPIFLAG == (int) AGC_FLAG_OPTNSW);
     CHECK((int) AGC_FLAG_ALARM_521_SUPPRESSED == (int) AGC_FLAG_READRFLG);
-    CHECK((int) AGC_FLAG_CMOONFLG == 0x8C); /* common header, FLAGWRD8 bit 12 */
+    CHECK((int) AGC_FLAG_CMOONFLG == 0x8C);                   /* common header, FLAGWRD8 bit 12 */
 }
 
 /**********************************************************************
@@ -166,7 +163,7 @@ static void test_lm_flag_ops(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
     CHECK(agc_state_vehicle() == AGC_VEHICLE_LM);
-    agc_flag_set(AGC_FLAG_PULSEFLG); /* word 13 exists on LM */
+    agc_flag_set(AGC_FLAG_PULSEFLG);                  /* word 13 exists on LM */
     CHECK(agc_flag_test(AGC_FLAG_PULSEFLG));
     CHECK(agc_flagword_get(13) == 0x4000u);
     agc_flag_invert(AGC_FLAG_PULSEFLG);
@@ -180,9 +177,9 @@ static void test_lm_flag_ops(void)
     agc_flagword_set(AGC_FLAGWORD_RADMODES, 000002u); /* one storage word */
     CHECK(agc_flagword_get(12) == 000002u);
     CHECK(agc_flag_valid(AGC_FLAG_AUTR1FLG));
-    agc_state_init(AGC_VEHICLE_CSM); /* same id invalid on CSM */
+    agc_state_init(AGC_VEHICLE_CSM);                  /* same id invalid on CSM */
     CHECK(!agc_flag_valid(AGC_FLAG_AUTR1FLG));
-    agc_flag_set(AGC_FLAG_AUTR1FLG); /* rejected (assertion; flag word 12 has no AUTR1 on CSM) */
+    agc_flag_set(AGC_FLAG_AUTR1FLG);                  /* rejected (assertion; flag word 12 has no AUTR1 on CSM) */
 }
 
 /**********************************************************************
@@ -205,6 +202,7 @@ static void test_lm_state(void)
     in.v.c[2] = -3;
     in.t      = 4242;
     in.moon   = true;
+
     /* LM build: the OTHER vehicle is the CSM */
     CHECK(agc_sv_set(AGC_SV_OTHER, &in) == AGC_STATUS_OK);
     CHECK(agc_erase_rrectcsm().c[2] == 33);
@@ -224,7 +222,6 @@ static void test_lm_state(void)
     CHECK(AGC_CH031_ATTOUTDETENT == 040000);
     CHECK(AGC_CH033_RRDATAGOOD == 000010);
     CHECK(AGC_CH012_TRIMPITCHM == 000400);
-    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN30, AGC_CH030_ABORTDPS, true) ==
-          AGC_STATUS_OK);
+    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN30, AGC_CH030_ABORTDPS, true) == AGC_STATUS_OK);
     CHECK((agc_chan_read(AGC_CHAN_CHAN30) & AGC_CH030_ABORTDPS) == 0u);
 } /* test_lm_state */

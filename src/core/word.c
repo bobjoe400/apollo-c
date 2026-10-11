@@ -382,7 +382,7 @@ agc_dp_t agc_tp_to_dp(agc_tp_t v)
  **********************************************************************/
 agc_dp_t agc_tp_round_dp(agc_tp_t v)
 {
-    agc_ovf_t ovf = 0; /* ROUNDSUB carry out of MPAC */
+    agc_ovf_t ovf = 0;                                       /* ROUNDSUB carry out of MPAC */
     agc_w3_t  m   = agc_w_roundsub(agc_w3_from_tp(v), &ovf); /* rounded TP MPAC */
 
     if (!AGC_ASSERT((v >= AGC_TP_MIN) && (v <= AGC_TP_MAX)))
@@ -609,7 +609,7 @@ agc_tp_t agc_dp_mul_tp(agc_dp_t a, agc_dp_t b)
  **********************************************************************/
 agc_dp_t agc_dp_mul_raw(agc_dp_t a, agc_dp_t b)
 {
-    agc_ovf_t ovf = 0; /* ROUNDSUB carry (none: |a b| < 1) */
+    agc_ovf_t ovf = 0;                                            /* ROUNDSUB carry (none: |a b| < 1) */
     agc_w3_t  m   = agc_w_dmpsub(agc_w_split(a), agc_w_split(b)); /* DMPSUB TP product */
 
     m = agc_w_roundsub(m, &ovf);
@@ -674,7 +674,7 @@ agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 agc_dp_t agc_dp_shl_raw(agc_dp_t a, int n, agc_ovf_t *ovf)
 {
     int64_t v = a; /* a 2^k, exact */
-    int     k; /* doublings done */
+    int     k;     /* doublings done */
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
@@ -818,14 +818,14 @@ agc_dp_t agc_dp_abs(agc_dp_t a)
 agc_dp_t agc_dp_round(agc_dp_t a)
 {
     agc_w2_t p = agc_w_split(a); /* MPAC, MPAC+1 of a */
-    int      o = 0; /* rounding carry, +-1 or 0 */
+    int      o = 0;              /* rounding carry, +-1 or 0 */
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))
     {
         return (0); /* no valid result */
     }
 
-    o     = agc_w_ovf(2 * p.lo); /* DOUBLE; TS L     */
+    o    = agc_w_ovf(2 * p.lo); /* DOUBLE; TS L     */
     p.hi += o;
 
     if (!AGC_ASSERT((p.hi >= -AGC_W_ONE) && (p.hi <= AGC_W_ONE)))
@@ -886,7 +886,7 @@ agc_dp_t agc_dp_sign(agc_dp_t a, agc_dp_t sign_of)
  **********************************************************************/
 agc_dp_t agc_dp_norm(agc_dp_t a, int *shift)
 {
-    int      count = 0; /* left shifts done */
+    int      count = 0;                                 /* left shifts done */
     agc_w3_t m     = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
 
     if (!AGC_ASSERT((a >= AGC_DP_MIN) && (a <= AGC_DP_MAX)))

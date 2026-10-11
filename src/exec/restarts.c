@@ -23,12 +23,12 @@
 #include "agc/exec/exec.h"
 #include "internal.h"
 
-#define RS_VARBITS 01400u /* OCT1400: type B (01000) or C (0400)    */
+#define RS_VARBITS 01400u  /* OCT1400: type B (01000) or C (0400)    */
 #define RS_TYPEB   01000u
 #define RS_LOW7    0177u   /* OCT177 = LOW7: table phase of type B   */
 #define RS_TIME1   037777u /* TIME1 wraps at 2^14 cs                 */
 #define RS_PRIO14  ((agc_prio_t) 014)
-#define RS_SOON_CS 1 /* IMEDIATE: AD ONE -> 1 cs               */
+#define RS_SOON_CS 1       /* IMEDIATE: AD ONE -> 1 cs               */
 
 /* FINDTIME / IMEDIATE (C pp.1415-1416): a task due dt cs after TBASEn
  * is called max(1, dt - (TIME1 - TBASEn)) cs from now (TIME1 elapsed
@@ -79,15 +79,13 @@ static agc_status_t start_job(int16_t prdt, agc_job_id_t job)
  * is overdue and is put on the waitlist in 1 cs.                      */
 static agc_status_t start_long(uint32_t dt_cs, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE) ||
-        !AGC_ASSERT(dt_cs < AGC_TIME_MODULUS_CS))
+    if (!AGC_ASSERT(task != AGC_TASK_NONE) || !AGC_ASSERT(dt_cs < AGC_TIME_MODULUS_CS))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint32_t elapsed =
-        (agc_time_now_cs() - phase_longbase()) & (AGC_TIME_MODULUS_CS - 1U);
-    int64_t left = (int64_t) dt_cs - (int64_t) elapsed;
+    uint32_t elapsed = (agc_time_now_cs() - phase_longbase()) & (AGC_TIME_MODULUS_CS - 1U);
+    int64_t  left    = (int64_t) dt_cs - (int64_t) elapsed;
 
     if (left > 0)
     {
@@ -153,7 +151,7 @@ static agc_status_t restart_entry(int group, const rst_entry_t *e)
         case AGC_RESTART_TASK:
             st = start_table_task(group, e);
             break;
-        case AGC_RESTART_LONGCALL: /* ITSLGCL1          */
+        case AGC_RESTART_LONGCALL:           /* ITSLGCL1          */
             st = rst_read_dp(e->src, &dt);
 
             if (st == AGC_STATUS_OK)
@@ -217,8 +215,7 @@ static agc_status_t restart_table(int group, int phase, bool first_only)
 }
 
 /* ITSAVAR (C p.1414): type C -- job, task or LONGCALL from PHSNAMEn.   */
-static agc_status_t restart_type_c(int group, uint16_t tempphs,
-                                   const phase_var_store_t *s)
+static agc_status_t restart_type_c(int group, uint16_t tempphs, const phase_var_store_t *s)
 {
     if (!AGC_ASSERT(s != 0) || !AGC_ASSERT((tempphs & RS_TYPEB) == 0U))
     {
@@ -280,7 +277,7 @@ agc_status_t agc_restart_group(int group)
         return (restart_type_c(group, tempphs, &s));
     }
 
-    st = start_job(s.prdt, s.job); /* ITSLIKEB          */
+    st               = start_job(s.prdt, s.job); /* ITSLIKEB          */
     agc_status_t st2 = restart_table(group, (int) (tempphs & RS_LOW7), true);
 
     return ((st == AGC_STATUS_OK) ? st2 : st);
@@ -297,8 +294,8 @@ agc_status_t agc_phase_restart_all(void)
     for (int g = AGC_RESTART_GROUPS; g >= 1; g--)
     {
         if (agc_phase_get(g) != 0U)
-        {                           /* CCS PHASEn: PNZ   */
-            any = true; /* INCR MPAC +6      */
+        { /* CCS PHASEn: PNZ   */
+            any             = true; /* INCR MPAC +6      */
             agc_status_t st = agc_restart_group(g);
 
             if (st != AGC_STATUS_OK && result == AGC_STATUS_OK)

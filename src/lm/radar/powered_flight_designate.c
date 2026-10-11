@@ -74,16 +74,16 @@
 
 #define PFD_GAIN        (-8786)             /* RR29GAIN DEC -.53624   */
 #define PFD_HALFSEC_B17 ((agc_dp_t) 102400) /* .5SECB17 2DEC 50 B-17  */
-#define PFD_HALFSEC     50U /* .5 s, cs */
-#define PFD_2SECS       200U /* 2 s, cs */
-#define PFD_SUPER110    96 /* SUPER110 OCT 140       */
-#define PFD_1SEC        100 /* 1 s, cs */
-#define PFD_PRIO21      ((agc_prio_t) 021) /* PRIO21 */
-#define PFD_PRIO26      ((agc_prio_t) 026) /* PRIO26 */
+#define PFD_HALFSEC     50U                 /* .5 s, cs */
+#define PFD_2SECS       200U                /* 2 s, cs */
+#define PFD_SUPER110    96                  /* SUPER110 OCT 140       */
+#define PFD_1SEC        100                 /* 1 s, cs */
+#define PFD_PRIO21      ((agc_prio_t) 021)  /* PRIO21 */
+#define PFD_PRIO26      ((agc_prio_t) 026)  /* PRIO26 */
 
 /* The R29 downlink set (RM RDOTM MKTIME TANGNB AIG AMG AOG) and the
  * readings kept between the two RADSTALLs of R29RDJOB.                  */
-static agc_rr_downlink_t pfd_down; /* R29 downlink set */
+static agc_rr_downlink_t pfd_down;   /* R29 downlink set */
 static agc_dp_t          pfd_mktime; /* MPAC: time of the RR reading, cs 2^28 */
 static uint16_t          pfd_cdu[5]; /* MPAC +2..+6: CDUT CDUS CDUY CDUZ CDUX */
 
@@ -115,7 +115,7 @@ const agc_rr_downlink_t *agc_rendz_rr_downlink(void)
  **********************************************************************/
 static uint16_t pfd_offset(void)
 {
-    agc_sp_t c  = agc_guid_state()->avg.pipctr; /* PIPCTR, unscaled */
+    agc_sp_t c  = agc_guid_state()->avg.pipctr;             /* PIPCTR, unscaled */
     int      dt = ((c > 0) ? -PFD_SUPER110 : 0) + PFD_1SEC; /* CCS PIPCTR */
 
     if (!AGC_ASSERT(dt == 4 || dt == PFD_1SEC))
@@ -140,19 +140,16 @@ static uint16_t pfd_offset(void)
  **********************************************************************/
 static agc_status_t pfd_los(void)
 {
-    agc_guid_t *g  = agc_guid_state(); /* servicer erasables */
-    uint32_t    dt = (agc_time_now_cs() - (uint32_t) agc_erase_piptime()) &
-                     (uint32_t) AGC_DP_MAX; /* cs */
-    agc_dp_t dt17; /* MP BIT12, cs 2^17 */
+    agc_guid_t *g  = agc_guid_state();                                                             /* servicer erasables */
+    uint32_t    dt = (agc_time_now_cs() - (uint32_t) agc_erase_piptime()) & (uint32_t) AGC_DP_MAX; /* cs */
+    agc_dp_t    dt17;                                                                              /* MP BIT12, cs 2^17 */
 
     dt17 = (agc_dp_t) ((dt & 037777u) << 11);
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_vec_t losvel = agc_vec_sub(&ip, g->lm.v_csm, g->lm.v); /* m/cs 2^7 */
-    agc_vec_t los    = agc_vec_sub(
-        &ip, agc_vec_add(&ip, agc_vec_scale(&ip, losvel, dt17), g->lm.r_csm),
-        g->lm.r); /* m 2^24 */
+    agc_vec_t losvel = agc_vec_sub(&ip, g->lm.v_csm, g->lm.v);                                                     /* m/cs 2^7 */
+    agc_vec_t los    = agc_vec_sub(&ip, agc_vec_add(&ip, agc_vec_scale(&ip, losvel, dt17), g->lm.r_csm), g->lm.r); /* m 2^24 */
 
     agc_inhint();
 
@@ -317,8 +314,7 @@ agc_status_t agc_task_powered_flight_designate(void)
         return (st);
     }
 
-    return (agc_waitlist_vardelay(PFD_HALFSEC,
-                                  AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP));
+    return (agc_waitlist_vardelay(PFD_HALFSEC, AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP));
 }
 
 /**********************************************************************
@@ -344,8 +340,7 @@ agc_status_t agc_task_powered_flight_designate_loop(void)
 
     if (agc_flag_test(AGC_FLAG_LOSCMFLG))
     {
-        return (agc_waitlist_vardelay(1U,
-                                      AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP));
+        return (agc_waitlist_vardelay(1U, AGC_TASK_POWERED_FLIGHT_DESIGNATE_LOOP));
     }
 
     rz_flag_put(AGC_FLAG_LOSCMFLG, true);
@@ -381,8 +376,7 @@ typedef struct pfd_trig
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK
  **********************************************************************/
-static agc_status_t pfd_ulosnb(agc_interp_t *ip, agc_vec_t los,
-                               const agc_cdutrig_t *trig, agc_sp_t u[3])
+static agc_status_t pfd_ulosnb(agc_interp_t *ip, agc_vec_t los, const agc_cdutrig_t *trig, agc_sp_t u[3])
 {
     agc_vec_t v = agc_vec_unit(ip, los, NULL, NULL); /* UNIT LOS, 2^1 */
 
@@ -441,8 +435,7 @@ static agc_dp_t pfd_mp_chain(agc_sp_t a, agc_sp_t b, agc_sp_t c)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK
  **********************************************************************/
-static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los,
-                                   agc_cdutrig_t *trig, pfd_trig_t *t)
+static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los, agc_cdutrig_t *trig, pfd_trig_t *t)
 {
     agc_inhint();
     uint16_t cdut   = agc_erase_cdut(); /* SAVECDUT */
@@ -464,13 +457,11 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los,
     agc_sp_t tv = (agc_sp_t) rr_ones(cdut); /* trunnion, rev 2^0 */
     agc_sp_t sv = (agc_sp_t) rr_ones(cdus); /* shaft, rev 2^0 */
 
-    t->cos_t = agc_sp_cos(tv);                         /* PUSHLOC  */
-    t->sin_t = (agc_sp_t) -agc_sp_sin((agc_sp_t) -tv); /* -MODE    */
-    t->sin_s = agc_sp_sin(sv);
-    t->cos_s = agc_sp_cos(sv);
-    int64_t c = (int64_t) agc_sp_mul((agc_sp_t) -t->sin_t, u[1]) +
-                pfd_mp_chain(t->sin_s, t->cos_t, u[0]) +
-                pfd_mp_chain(t->cos_s, t->cos_t, u[2]); /* cos, 2^2 */
+    t->cos_t  = agc_sp_cos(tv);                                                                                                                     /* PUSHLOC  */
+    t->sin_t  = (agc_sp_t) -agc_sp_sin((agc_sp_t) -tv);                                                                                             /* -MODE    */
+    t->sin_s  = agc_sp_sin(sv);
+    t->cos_s  = agc_sp_cos(sv);
+    int64_t c = (int64_t) agc_sp_mul((agc_sp_t) -t->sin_t, u[1]) + pfd_mp_chain(t->sin_s, t->cos_t, u[0]) + pfd_mp_chain(t->cos_s, t->cos_t, u[2]); /* cos, 2^2 */
 
     if (2 * c > (int64_t) AGC_DP_MAX)
     { /* TESTCOS  */
@@ -499,10 +490,8 @@ static void pfd_commands(const pfd_trig_t *t, const agc_sp_t u[3])
 {
     agc_dp_t shaft; /* 2^2 */
 
-    shaft = agc_sp_mul(t->cos_s, u[0]) + agc_sp_mul((agc_sp_t) -t->sin_s, u[2]);
-    agc_dp_t trun = pfd_mp_chain(t->sin_t, t->sin_s, u[0]) +
-                    agc_sp_mul(t->cos_t, u[1]) +
-                    pfd_mp_chain(t->sin_t, t->cos_s, u[2]); /* 2^2 */
+    shaft         = agc_sp_mul(t->cos_s, u[0]) + agc_sp_mul((agc_sp_t) -t->sin_s, u[2]);
+    agc_dp_t trun = pfd_mp_chain(t->sin_t, t->sin_s, u[0]) + agc_sp_mul(t->cos_t, u[1]) + pfd_mp_chain(t->sin_t, t->cos_s, u[2]); /* 2^2 */
 
     if (!AGC_ASSERT(shaft >= AGC_DP_MIN && shaft <= AGC_DP_MAX))
     {
@@ -515,8 +504,7 @@ static void pfd_commands(const pfd_trig_t *t, const agc_sp_t u[3])
     }
 
     agc_erase_set_tang(0, agc_dp_high(agc_sp_mul(agc_dp_high(trun), PFD_GAIN)));
-    agc_erase_set_tang(1,
-                       agc_dp_high(agc_sp_mul(agc_dp_high(shaft), PFD_GAIN)));
+    agc_erase_set_tang(1, agc_dp_high(agc_sp_mul(agc_dp_high(shaft), PFD_GAIN)));
 }
 
 /**********************************************************************
@@ -578,12 +566,12 @@ agc_status_t agc_job_powered_flight_designate(agc_job_ctx_t *ctx)
     }
 
     rr_state_t  *s = rr_state(); /* radar erasables */
-    agc_interp_t ip; /* interpreter state */
+    agc_interp_t ip;             /* interpreter state */
 
     agc_interp_init(&ip);
     agc_cdutrig_t trig; /* CDUTRIG sines / cosines */
-    pfd_trig_t    t; /* RR CDU sines / cosines */
-    agc_status_t  st; /* first pass */
+    pfd_trig_t    t;    /* RR CDU sines / cosines */
+    agc_status_t  st;   /* first pass */
 
     st = pfd_first_pass(&ip, s->rrtarget, &trig, &t);
 
@@ -592,7 +580,7 @@ agc_status_t agc_job_powered_flight_designate(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    s->rrtarget = agc_vec_add(&ip, s->rrtarget, s->losvel); /* DAS LOSSM */
+    s->rrtarget   = agc_vec_add(&ip, s->rrtarget, s->losvel); /* DAS LOSSM */
     agc_sp_t u[3] = {0, 0, 0};
 
     st = pfd_ulosnb(&ip, agc_vec_add(&ip, s->rrtarget, s->losvel), &trig, u);
@@ -631,8 +619,7 @@ agc_status_t agc_task_powered_flight_read(void)
         return (st);
     }
 
-    return (agc_waitlist_vardelay(PFD_2SECS,
-                                  AGC_TASK_POWERED_FLIGHT_READ_LOOP));
+    return (agc_waitlist_vardelay(PFD_2SECS, AGC_TASK_POWERED_FLIGHT_READ_LOOP));
 }
 
 /**********************************************************************
@@ -700,9 +687,8 @@ static agc_status_t pfd_read_end(void)
  **********************************************************************/
 static agc_status_t pfd_stall(agc_job_id_t wake_as)
 {
-    agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING; /* RADSTALL result */
-    agc_status_t           st  = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, wake_as,
-                                                   &res); /* RADSTALL */
+    agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING;                              /* RADSTALL result */
+    agc_status_t           st  = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, wake_as, &res); /* RADSTALL */
 
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
@@ -750,8 +736,7 @@ agc_status_t agc_job_powered_flight_read(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE) ||
-        rr_radmodes_test(RR_AUTOMBIT))
+    if (agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE) || rr_radmodes_test(RR_AUTOMBIT))
     {
         return (pfd_read_end());
     }
@@ -794,13 +779,13 @@ agc_status_t agc_job_powered_flight_read_range(agc_job_ctx_t *ctx)
         return (pfd_read_end());
     }
 
-    pfd_mktime = rr_timehold();
+    pfd_mktime      = rr_timehold();
     agc_inhint();
-    pfd_cdu[0] = agc_erase_cdut();
-    pfd_cdu[1] = agc_erase_cdus();
-    pfd_cdu[2] = agc_erase_cduy();
-    pfd_cdu[3] = agc_erase_cduz();
-    pfd_cdu[4] = agc_erase_cdux();
+    pfd_cdu[0]      = agc_erase_cdut();
+    pfd_cdu[1]      = agc_erase_cdus();
+    pfd_cdu[2]      = agc_erase_cduy();
+    pfd_cdu[3]      = agc_erase_cduz();
+    pfd_cdu[4]      = agc_erase_cdux();
     agc_relint();
     agc_status_t st = agc_radar_rrrange(); /* RRRANGE */
 

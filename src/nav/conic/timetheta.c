@@ -52,8 +52,7 @@
  *   out       agc_conic_time_out_t *  O    T 2^28 cs, flags, P, R1A,
  *                                          COGA, CSTH, SNTH, UR1, U2, UN
  *********************************************************************/
-void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx,
-                              agc_conic_time_out_t  *out)
+void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *out)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -125,8 +124,7 @@ void agc_conic_time_out_clear_(agc_conic_time_out_t *out)
  * RETURNS: agc_status_t -- AGC_STATUS_POODOO (ABTCONIC), or
  *          AGC_STATUS_BAD_ARG for a NULL pointer
  *********************************************************************/
-agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t      *ctx,
-                                 agc_conic_time_out_t *out)
+agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t *ctx, agc_conic_time_out_t *out)
 {
     if (!AGC_ASSERT(ctx != NULL && out != NULL))
     {
@@ -159,8 +157,7 @@ agc_status_t agc_conic_cogaovfl_(agc_conic_ctx_t      *ctx,
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_POODOO (INFINFLG,
  *          ABTCONIC), or the status of DELTIME / NEWSTATE
  *********************************************************************/
-agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
-                                 bool rvsw, agc_conic_time_out_t *out)
+agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx, bool rvsw, agc_conic_time_out_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && ctx != NULL))
     {
@@ -179,9 +176,9 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
         return (agc_conic_abtconic_());
     }
 
-    ctx->cogaflag = false; /* CLEAR COGAFLAG */
+    ctx->cogaflag   = false;                                /* CLEAR COGAFLAG */
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_COGAFLAG, false); /* mirror only */
-    agc_status_t st = agc_conic_deltime_(ip, ctx); /* CALL DELTIME */
+    agc_status_t st = agc_conic_deltime_(ip, ctx);          /* CALL DELTIME */
 
     if (st != AGC_STATUS_OK)
     {
@@ -222,8 +219,7 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx,
  *          (COGAFLAG or INFINFLG set in *out); AGC_STATUS_BAD_ARG for a
  *          NULL pointer or an unknown body
  *********************************************************************/
-agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
-                                agc_conic_time_out_t *out)
+agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in, agc_conic_time_out_t *out)
 {
     if (!AGC_ASSERT(ip != NULL && in != NULL))
     {
@@ -236,9 +232,8 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
     }
 
     agc_conic_time_out_clear_(out);
-    agc_conic_ctx_t ctx; /* conic erasables */
-    agc_status_t    st = agc_conic_ctx_init_(&ctx,
-                                             in->body); /* MUTABLE,1 */
+    agc_conic_ctx_t ctx;                                      /* conic erasables */
+    agc_status_t    st = agc_conic_ctx_init_(&ctx, in->body); /* MUTABLE,1 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -246,11 +241,10 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in,
     }
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
-    ctx.vvec = in->vvec;
-    agc_dp_t sngamma = 0; /* 36D sin(gamma), 2^1 (unused) */
+    ctx.vvec         = in->vvec;
+    agc_dp_t sngamma = 0;     /* 36D sin(gamma), 2^1 (unused) */
 
-    st = agc_conic_param_(ip, &ctx, in->rvec, in->vvec,
-                          &sngamma);               /* CALL PARAM */
+    st = agc_conic_param_(ip, &ctx, in->rvec, in->vvec, &sngamma); /* CALL PARAM */
 
     if (st != AGC_STATUS_OK)
     {

@@ -68,8 +68,10 @@
 /* ---------------- CM constants and uplinked data ----------------------- */
 /* NINEB4 2DEC 9.0 B-4 (oct 22000 00000): 9 scale 2^4.                    */
 static const agc_dp_t NINEB4 = 150994944; /* 9, scale 2^4 */
+
 /* ONEB4 2DEC 1.0 B-4 (oct 02000 00000): 1 scale 2^4.                     */
-static const agc_dp_t ONEB4 = 16777216;   /* 1, scale 2^4 */
+static const agc_dp_t ONEB4 = 16777216; /* 1, scale 2^4 */
+
 /* LSTIME's SL 16 takes the TP time (2^42 cs) to 2^26 cs: the CM
  * ephemeris is valid for |T + TEPHEM - TIMEMO| < 2^26 cs (7.77 days).    */
 #define EPHEM_CSM_TSPAN ((agc_tp_t) 1 << 26) /* 2^26 cs, at 2^42 */
@@ -99,9 +101,7 @@ agc_status_t agc_ephem_set_csm_data(const agc_ephem_csm_t *eph)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(agc_navaux_tp_ok(eph->timemo) &&
-                    agc_navaux_vec_ok(eph->reso) &&
-                    agc_navaux_vec_ok(eph->veso)))
+    if (!AGC_ASSERT(agc_navaux_tp_ok(eph->timemo) && agc_navaux_vec_ok(eph->reso) && agc_navaux_vec_ok(eph->veso)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -159,8 +159,7 @@ agc_status_t agc_ephem_get_csm_data(agc_ephem_csm_t *out)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_OVERFLOW outside the
  *          fit span, AGC_STATUS_BAD_ARG on NULL or bad input
  **********************************************************************/
-static agc_status_t ephem_lstime(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                                 agc_tp_t tephem, agc_dp_t t_cs, agc_dp_t *t26)
+static agc_status_t ephem_lstime(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_dp_t *t26)
 {
     if (!AGC_ASSERT((ip != NULL) && (eph != NULL) && (t26 != NULL)))
     {
@@ -174,7 +173,7 @@ static agc_status_t ephem_lstime(agc_interp_t *ip, const agc_ephem_csm_t *eph,
 
     agc_tp_t t = agc_tp_shift(ip, agc_tp_from_dp(t_cs), -14); /* 2^42 cs */
 
-    t = agc_tp_add(ip, t, tephem);       /* TAD TEPHEM     */
+    t = agc_tp_add(ip, t, tephem); /* TAD TEPHEM     */
 
     t = agc_tp_add(ip, eph->timemo, -t); /* DCOMP TAD      */
     t = -t;                              /* DCOMP          */
@@ -205,8 +204,7 @@ static agc_status_t ephem_lstime(agc_interp_t *ip, const agc_ephem_csm_t *eph,
  *
  * RETURNS: agc_vec_t -- moon position, earth-centred, scale 2^29 m
  **********************************************************************/
-static agc_vec_t ephem_rem(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                           agc_dp_t t26)
+static agc_vec_t ephem_rem(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_dp_t t26)
 {
     if (!AGC_ASSERT((ip != NULL) && (eph != NULL)))
     {
@@ -245,8 +243,7 @@ static agc_vec_t ephem_rem(agc_interp_t *ip, const agc_ephem_csm_t *eph,
  *
  * RETURNS: agc_vec_t -- moon velocity, earth-centred, scale 2^7 m/cs
  **********************************************************************/
-static agc_vec_t ephem_vem(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                           agc_dp_t t26)
+static agc_vec_t ephem_vem(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_dp_t t26)
 {
     if (!AGC_ASSERT((ip != NULL) && (eph != NULL)))
     {
@@ -258,14 +255,14 @@ static agc_vec_t ephem_vem(agc_interp_t *ip, const agc_ephem_csm_t *eph,
         return (agc_vec_zero());
     }
 
-    agc_dp_t  n = NINEB4;                                /* n, scale 2^4 */
+    agc_dp_t  n = NINEB4;                               /* n, scale 2^4 */
     agc_vec_t v = agc_vec_scale(ip, eph->vecoem[0], n); /* sum, 2^9 m/cs */
 
     for (int i = 1; i < (AGC_EPHEM_NCOEF - 1); i++)
-    {                                              /* TIX,1 VEMA     */
+    { /* TIX,1 VEMA     */
         agc_vec_t acc = agc_vec_scale(ip, v, t26); /* VXSC 0D, scale of sum */
 
-        n = agc_dp_sub(ip, n, ONEB4);  /* DSU ONEB4      */
+        n = agc_dp_sub(ip, n, ONEB4); /* DSU ONEB4      */
         v = agc_vec_add(ip, agc_vec_scale(ip, eph->vecoem[i], n), acc);
     }
 
@@ -289,8 +286,7 @@ static agc_vec_t ephem_vem(agc_interp_t *ip, const agc_ephem_csm_t *eph,
  *
  * RETURNS: agc_vec_t -- sun position, earth-centred, scale 2^38 m
  **********************************************************************/
-static agc_vec_t ephem_res(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                           agc_dp_t t26)
+static agc_vec_t ephem_res(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_dp_t t26)
 {
     if (!AGC_ASSERT((ip != NULL) && (eph != NULL)))
     {
@@ -303,17 +299,16 @@ static agc_vec_t ephem_res(agc_interp_t *ip, const agc_ephem_csm_t *eph,
     }
 
     /* PUSH DMP OMEGAES / PUSH COS: the angle is used as its top words.  */
-    agc_dp_t  ang = agc_dp_mul_trunc(t26, eph->omegaes); /* revs 2^0    */
+    agc_dp_t  ang = agc_dp_mul_trunc(t26, eph->omegaes);     /* revs 2^0    */
     agc_dp_t  cw  = agc_dp_cos(ip, ang);                     /* scale 2^1  */
     agc_vec_t c   = agc_vec_scale(ip, eph->reso, cw);        /* 2^39 m     */
     agc_dp_t  s   = agc_dp_sin(ip, ang);                     /* scale 2^1  */
     agc_vec_t u   = agc_vec_unit(ip, eph->reso, NULL, NULL); /* scale 2^1  */
     agc_vec_t nrm = agc_vec_cross(ip, u, eph->veso);         /* 2^10 m/cs */
 
-    nrm = agc_vec_unit(ip, nrm, NULL, NULL); /* N, scale 2^1 */
-    agc_vec_t ns = /* VXV VSL1: N x RESO, 2^38 m */
-                   agc_vec_shl(ip, agc_vec_cross(ip, nrm, eph->reso), 1);
-    agc_vec_t r = agc_vec_add(ip, agc_vec_scale(ip, ns, s), c); /* 2^39 m */
+    nrm          = agc_vec_unit(ip, nrm, NULL, NULL);                     /* N, scale 2^1 */
+    agc_vec_t ns = agc_vec_shl(ip, agc_vec_cross(ip, nrm, eph->reso), 1); /* VXV VSL1: N x RESO, 2^38 m */
+    agc_vec_t r  = agc_vec_add(ip, agc_vec_scale(ip, ns, s), c);          /* 2^39 m */
 
     return (agc_vec_shl(ip, r, 1)); /* VSL1: 2^38 m   */
 }
@@ -335,9 +330,7 @@ static agc_vec_t ephem_res(agc_interp_t *ip, const agc_ephem_csm_t *eph,
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the LSTIME status
  **********************************************************************/
-agc_status_t agc_ephem_csm_lunpos(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                                  agc_tp_t tephem, agc_dp_t t_cs,
-                                  agc_vec_t *moon)
+agc_status_t agc_ephem_csm_lunpos(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *moon)
 {
     if (!AGC_ASSERT((ip != NULL) && (eph != NULL) && (moon != NULL)))
     {
@@ -374,9 +367,7 @@ agc_status_t agc_ephem_csm_lunpos(agc_interp_t *ip, const agc_ephem_csm_t *eph,
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the LSTIME status
  **********************************************************************/
-agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                                  agc_tp_t tephem, agc_dp_t t_cs,
-                                  agc_vec_t *vmoon)
+agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *vmoon)
 {
     if (!AGC_ASSERT((ip != NULL) && (eph != NULL) && (vmoon != NULL)))
     {
@@ -413,9 +404,7 @@ agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph,
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the LSTIME status
  **********************************************************************/
-agc_status_t agc_ephem_csm_solpos(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                                  agc_tp_t tephem, agc_dp_t t_cs,
-                                  agc_vec_t *sun)
+agc_status_t agc_ephem_csm_solpos(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *sun)
 {
     if (!AGC_ASSERT((ip != NULL) && (eph != NULL) && (sun != NULL)))
     {
@@ -453,9 +442,7 @@ agc_status_t agc_ephem_csm_solpos(agc_interp_t *ip, const agc_ephem_csm_t *eph,
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the LSTIME status
  **********************************************************************/
-agc_status_t agc_ephem_csm_lspos(agc_interp_t *ip, const agc_ephem_csm_t *eph,
-                                 agc_tp_t tephem, agc_dp_t t_cs,
-                                 agc_vec_t *moon, agc_vec_t *sun)
+agc_status_t agc_ephem_csm_lspos(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *moon, agc_vec_t *sun)
 {
     if (!AGC_ASSERT((ip != NULL) && (eph != NULL)))
     {
@@ -488,24 +475,30 @@ agc_status_t agc_ephem_csm_lspos(agc_interp_t *ip, const agc_ephem_csm_t *eph,
  *                           | 0  K3  K4 |                                  */
 /* K1 2DEC .91745 B-1, oct 16533 30007: cos(OBL).                          */
 #define LM_K1 ((agc_dp_t) 123138055) /* cos OBL, 2^1 */
+
 /* K2 2DEC -.03571 B-1, oct 77333 56654: -sin(OBL) sin(IM).                */
-#define LM_K2 ((agc_dp_t) -4792915)  /* 2^1         */
+#define LM_K2 ((agc_dp_t) -4792915) /* 2^1         */
+
 /* K3 2DEC .39784 B-1, oct 06273 03275: sin(OBL).                          */
-#define LM_K3 ((agc_dp_t) 53397181)  /* sin OBL, 2^1 */
+#define LM_K3 ((agc_dp_t) 53397181) /* sin OBL, 2^1 */
+
 /* K4 2DEC .082354 B-1, oct 01242 24467: cos(OBL) sin(IM).                 */
-#define LM_K4 ((agc_dp_t) 11053367)  /* 2^1         */
+#define LM_K4 ((agc_dp_t) 11053367) /* 2^1         */
+
 /* CSTODAY 2DEC 8640000 B-33, oct 00020 17260: cs per day, scale 2^33.     */
 static const agc_dp_t CSTODAY = 270000; /* cs/day, scale 2^33 */
 
 /* RATESP / VAL67 rows for the three angles, in the AGC's X2 / X1 order. */
 #define LM_NANGLE 3 /* LOM, LOS, LON (STMP, STMP+2, STMP+4)      */
 #define LM_NTERM  3 /* A (moon), B (moon), C (sun) corrections   */
+
 /* Rates, 2DEC x B+4: rev/day scale 2^-4.                                  */
 static const agc_dp_t LM_RATE[LM_NANGLE] = { /* rev/day, scale 2^-4 */
     157200012, /* LOMR .03660098 rev/day,   oct 22572 27214 */
     11758719,  /* LOSR .00273779 rev/day,   oct 01315 26177 */
     -632176,   /* LONR -.00014719 rev/day,  oct 77731 55217 */
 };
+
 /* Epoch values at TEPHEM, revs scale 2^0.                                 */
 static const agc_dp_t LM_ANGLE0[LM_NANGLE] = { /* rev, scale 2^0 */
     218850686, /* LOMO .815282336 rev, oct 32055 22576 */
@@ -526,9 +519,11 @@ static const lm_term_t LM_TERM[LM_NTERM] = { /* A, B, C; scales above */
     /* AMOD .01726666666 B+1* (oct 01065 31323), AARG .530784445
      * (oct 20770 13725), 1/27 .036291712 B+1 (oct 02245 06475) = 1/27.5545 */
     {9269971, 142481365, 19483965},
+
     /* BMOD .003505277 B+1 (oct 00162 33431), BARG .585365625
      * (oct 22566 24130), 1/32 .03125 B+1 (oct 02000 00000)                 */
     {1881881, 157132888, 16777216},
+
     /* CMOD .005325277 B+1 (oct 00256 17752), CARG -.01106341036
      * (oct 77512 67453), 1/365 .002737925 B+1 (oct 00131 26730)            */
     {2858986, -2969812, 1469912},
@@ -590,8 +585,7 @@ static agc_dp_t ephem_lm_term(agc_interp_t *ip, agc_dp_t timep, int k)
  * RETURNS: agc_dp_t -- the angle, revs scale 2^0: DMP*, SL 5 on the TP,
  *          DAD* and DSU on its top two words (all wrap mod 1 rev)
  **********************************************************************/
-static agc_dp_t ephem_lm_angle(agc_interp_t *ip, agc_dp_t timep, int j,
-                               agc_dp_t gtmp)
+static agc_dp_t ephem_lm_angle(agc_interp_t *ip, agc_dp_t timep, int j, agc_dp_t gtmp)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
@@ -609,9 +603,9 @@ static agc_dp_t ephem_lm_angle(agc_interp_t *ip, agc_dp_t timep, int j,
     }
 
     agc_tp_t xt = agc_dp_mul_tp(timep, LM_RATE[j]); /* rev, 2^5 */
-    agc_dp_t x  = 0;                               /* rev, 2^0 */
+    agc_dp_t x  = 0;                                /* rev, 2^0 */
 
-    xt = agc_tp_shift(ip, xt, 5);                         /* SL 5 */
+    xt = agc_tp_shift(ip, xt, 5);                        /* SL 5 */
     x  = agc_dp_add(ip, agc_tp_to_dp(xt), LM_ANGLE0[j]); /* DAD* */
 
     return (agc_dp_sub(ip, x, gtmp)); /* DSU GTMP       */
@@ -636,26 +630,24 @@ static agc_dp_t ephem_lm_angle(agc_interp_t *ip, agc_dp_t timep, int j,
  *
  * RETURNS: agc_vec_t -- unit vector, scale 2^1
  **********************************************************************/
-static agc_vec_t ephem_lm_konmat(agc_interp_t *ip, agc_dp_t x, agc_dp_t y,
-                                 agc_dp_t z)
+static agc_vec_t ephem_lm_konmat(agc_interp_t *ip, agc_dp_t x, agc_dp_t y, agc_dp_t z)
 {
     if (!AGC_ASSERT(ip != NULL))
     {
         return (agc_vec_zero());
     }
 
-    if (!AGC_ASSERT(agc_navaux_dp_ok(x) && agc_navaux_dp_ok(y) &&
-                    agc_navaux_dp_ok(z)))
+    if (!AGC_ASSERT(agc_navaux_dp_ok(x) && agc_navaux_dp_ok(y) && agc_navaux_dp_ok(z)))
     {
         return (agc_vec_zero());
     }
 
     agc_mat_t konmat; /* KONMAT, scale 2^1 */
 
-    konmat.row[0] = agc_vec_make(AGC_DP_HALF, 0, 0); /* 1.0 B-1, 0, 0  */
+    konmat.row[0] = agc_vec_make(AGC_DP_HALF, 0, 0);                 /* 1.0 B-1, 0, 0  */
     konmat.row[1] = agc_vec_make(0, LM_K1, LM_K2);
     konmat.row[2] = agc_vec_make(0, LM_K3, LM_K4);
-    agc_vec_t v = agc_mat_vec(ip, &konmat, agc_vec_make(x, y, z)); /* 2^1 */
+    agc_vec_t v   = agc_mat_vec(ip, &konmat, agc_vec_make(x, y, z)); /* 2^1 */
 
     return (agc_vec_unit(ip, v, NULL, NULL));
 }
@@ -684,9 +676,7 @@ static agc_vec_t ephem_lm_konmat(agc_interp_t *ip, agc_dp_t x, agc_dp_t y,
  * AGC's loop over FREEFLAG / X1 / X2 (moon: terms A and B; sun: term C;
  * node: no term) is written out as straight-line calls.
  **********************************************************************/
-agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem,
-                                agc_dp_t t_cs, agc_vec_t *vmoon,
-                                agc_vec_t *vsun)
+agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *vmoon, agc_vec_t *vsun)
 {
     if (!AGC_ASSERT((ip != NULL) && (vmoon != NULL) && (vsun != NULL)))
     {
@@ -700,24 +690,26 @@ agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem,
 
     agc_tp_t t = agc_tp_shift(ip, agc_tp_from_dp(t_cs), -14); /* 2^42 cs */
 
-    t = agc_tp_add(ip, t, tephem); /* TAD TEPHEM */
+    t              = agc_tp_add(ip, t, tephem);                /* TAD TEPHEM */
     agc_dp_t timep = agc_dp_div(ip, agc_tp_to_dp(t), CSTODAY); /* 2^9 day */
-    /* 1st pass (X2 = 0): LOM with the A and B terms (FREEFLAG loop).      */
-    agc_dp_t g = ephem_lm_term(ip, timep, 0);           /* GTMP, 2^0 rev */
 
-    g = agc_dp_add(ip, ephem_lm_term(ip, timep, 1), g); /* DAD GTMP: + B    */
-    agc_dp_t lom = ephem_lm_angle(ip, timep, 0, g);     /* LOM, 2^0 rev */
+    /* 1st pass (X2 = 0): LOM with the A and B terms (FREEFLAG loop).      */
+    agc_dp_t g = ephem_lm_term(ip, timep, 0); /* GTMP, 2^0 rev */
+
+    g            = agc_dp_add(ip, ephem_lm_term(ip, timep, 1), g); /* DAD GTMP: + B    */
+    agc_dp_t lom = ephem_lm_angle(ip, timep, 0, g);                /* LOM, 2^0 rev */
+
     /* 2nd pass (X2 = -2): LOS with the C term.                            */
-    agc_dp_t los = /* LOS, 2^0 rev */
-                   ephem_lm_angle(ip, timep, 1, ephem_lm_term(ip, timep, 2));
+    agc_dp_t los = ephem_lm_angle(ip, timep, 1, ephem_lm_term(ip, timep, 2)); /* LOS, 2^0 rev */
+
     /* 3rd pass (X2 = -4, POSITE): LON, no periodic term.                 */
     agc_dp_t lon = ephem_lm_angle(ip, timep, 2, 0); /* LON, 2^0 rev */
+
     /* POSITF: moon then sun.                                              */
     agc_dp_t dl = agc_dp_sub(ip, lom, lon); /* DLOAD DSU, wraps, 2^0 rev */
 
-    *vmoon = ephem_lm_konmat(ip, agc_dp_cos(ip, lom), agc_dp_sin(ip, lom),
-                             agc_dp_sin(ip, dl));
-    *vsun = ephem_lm_konmat(ip, agc_dp_cos(ip, los), agc_dp_sin(ip, los), 0);
+    *vmoon = ephem_lm_konmat(ip, agc_dp_cos(ip, lom), agc_dp_sin(ip, lom), agc_dp_sin(ip, dl));
+    *vsun  = ephem_lm_konmat(ip, agc_dp_cos(ip, los), agc_dp_sin(ip, los), 0);
 
     return (AGC_STATUS_OK);
 }
@@ -741,8 +733,7 @@ agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem,
  *          from the shared erasable (agc_erase_tephem, set by P11 or
  *          agc_navaux_set_padload).
  **********************************************************************/
-agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs,
-                            agc_vec_t *moon_pos, agc_vec_t *sun_pos)
+agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs, agc_vec_t *moon_pos, agc_vec_t *sun_pos)
 {
     if (!AGC_ASSERT((ip != NULL) && (moon_pos != NULL) && (sun_pos != NULL)))
     {
@@ -761,6 +752,5 @@ agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs,
         return (agc_ephem_lm_lspos(ip, tephem, time_cs, moon_pos, sun_pos));
     }
 
-    return (agc_ephem_csm_lspos(ip, &csm_data, tephem, time_cs, moon_pos,
-                                sun_pos));
+    return (agc_ephem_csm_lspos(ip, &csm_data, tephem, time_cs, moon_pos, sun_pos));
 }

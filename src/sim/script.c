@@ -50,19 +50,15 @@ static bool script_read(void)
 
         g_line++;
         g_next.repeat = 1;
-        int n = sscanf(buf, "%lu %lo %lo %lu", &g_next.cs, &g_next.chan,
-                       &g_next.value, &g_next.repeat);
+        int n         = sscanf(buf, "%lu %lo %lo %lu", &g_next.cs, &g_next.chan, &g_next.value, &g_next.repeat);
 
         if (n >= 3)
         {
-            g_next.valid = g_next.chan <= 0377ul &&
-                           g_next.value <= SIM_WORD_MASK &&
-                           g_next.repeat <= SCRIPT_REPEAT;
+            g_next.valid = g_next.chan <= 0377ul && g_next.value <= SIM_WORD_MASK && g_next.repeat <= SCRIPT_REPEAT;
 
             if (!g_next.valid)
             {
-                (void) fprintf(stderr, "agc_sim: script line %lu ignored\n",
-                               g_line); /* diagnostic only */
+                (void) fprintf(stderr, "agc_sim: script line %lu ignored\n", g_line); /* diagnostic only */
             }
 
             return (g_next.valid);
@@ -115,8 +111,7 @@ static bool script_apply(const script_event_t *e)
 
     for (unsigned long k = 0; k < e->repeat && k <= SCRIPT_REPEAT; k++)
     {
-        if (sim_counter_increment((uint16_t) (chan & 0177u), value) !=
-            AGC_STATUS_OK)
+        if (sim_counter_increment((uint16_t) (chan & 0177u), value) != AGC_STATUS_OK)
         {
             return (false);
         }

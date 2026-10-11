@@ -73,6 +73,7 @@
 #define TPS_DFTMOON  ((agc_dp_t) 76)        /* .1524 E3 B-29: 500 ft      */
 #define TPS_DP002    ((agc_dp_t) 536871)    /* 2DEC 0.002                 */
 #define TPS_EPSFOUR  ((agc_dp_t) 11184811)  /* EPSFOUR .0416666666        */
+
 /* TRANSANG (CONIC_SUBROUTINES MUTABLE, D1/32, 2PISC) */
 #define TPS_SQRT_MUE ((agc_dp_t) 204442107) /* 1.99650495 E5 B-18*        */
 #define TPS_SQRT_MUM ((agc_dp_t) 181389047) /* 2.21422176 E4 B-15*        */
@@ -84,14 +85,14 @@
 /* S17.2 work cells (TPI_SEARCH erasables). */
 typedef struct tps_work
 {
-    agc_dp_t tfo;         /* TFO: search start time, cs 2^28            */
-    agc_dp_t tfi;         /* TFI: search end time, cs 2^28              */
-    agc_dp_t it; /* IT: end angle, half revolutions 2^0 */
-    agc_dp_t thetl; /* THETL: transfer angle limit, rev 2^0 */
-    agc_dp_t hpo;         /* HPO: previous HP, m 2^29                   */
-    agc_dp_t delveo;      /* DELVEO: previous DELVEE, m/cs 2^7          */
-    agc_dp_t deltee;      /* DELTEE: time step, cs 2^28                 */
-    int      xrs[2];      /* XRS: X1 X2 of the conic integration        */
+    agc_dp_t tfo;    /* TFO: search start time, cs 2^28            */
+    agc_dp_t tfi;    /* TFI: search end time, cs 2^28              */
+    agc_dp_t it;     /* IT: end angle, half revolutions 2^0 */
+    agc_dp_t thetl;  /* THETL: transfer angle limit, rev 2^0 */
+    agc_dp_t hpo;    /* HPO: previous HP, m 2^29                   */
+    agc_dp_t delveo; /* DELVEO: previous DELVEE, m/cs 2^7          */
+    agc_dp_t deltee; /* DELTEE: time step, cs 2^28                 */
+    int      xrs[2]; /* XRS: X1 X2 of the conic integration        */
 } tps_work_t;
 
 static tps_work_t tps_work; /* S17.2 work cells */
@@ -143,17 +144,15 @@ static void tps_store(agc_rendz_t *rz, bool lm, const agc_integ_out_t *o)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the integration or SELECTMU status
  **********************************************************************/
-agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz,
-                                        agc_job_id_t resume)
+agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_integ_out_t o; /* integration result */
-    agc_status_t    st =
-        rz_integ(ip, RZ_LEMCONIC, agc_erase_ttpi(), resume, &o); /* LM */
+    agc_integ_out_t o;                                                            /* integration result */
+    agc_status_t    st = rz_integ(ip, RZ_LEMCONIC, agc_erase_ttpi(), resume, &o); /* LM */
 
     if (st != AGC_STATUS_OK)
     {
@@ -169,17 +168,17 @@ agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz,
     }
 
     tps_store(rz, false, &o);
-    agc_dp_t  rp  = 0; /* |RP|, m 2^29 */
+    agc_dp_t  rp  = 0;                                       /* |RP|, m 2^29 */
     agc_vec_t urp = agc_vec_unit(ip, rz->rpass3, &rp, NULL); /* 0D, 2^1 */
 
     rz->delhite = agc_dp_sub(ip, rp, rz_abval(ip, rz->ract3)); /* RP - RA */
-    rz_flag_put(AGC_FLAG_KFLAG, rz->delhite < 0);                /* ON = -  */
-    rz->e2 = rz_unit(ip, agc_vec_cross(ip, urp, rz->vpass3));
-    agc_vec_t p; /* m 2^29 */
+    rz_flag_put(AGC_FLAG_KFLAG, rz->delhite < 0);              /* ON = -  */
+    rz->e2      = rz_unit(ip, agc_vec_cross(ip, urp, rz->vpass3));
+    agc_vec_t p;                                               /* m 2^29 */
 
-    p = agc_vec_shl(ip, agc_vec_proj(ip, rz->ract3, rz->e2), 2);
+    p             = agc_vec_shl(ip, agc_vec_proj(ip, rz->ract3, rz->e2), 2);
     agc_vec_t rpa = rz_unit(ip, agc_vec_sub(ip, rz->ract3, p)); /* RPA, 2^1 */
-    agc_dp_t  a; /* rev 2^0 */
+    agc_dp_t  a;                                                /* rev 2^0 */
 
     a = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, rpa, urp), 1));
     agc_dp_t s; /* sign, 2^31 */
@@ -210,8 +209,7 @@ agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz,
  *
  * RETURNS: agc_status_t -- the TIMETHET status
  **********************************************************************/
-static agc_status_t tps_timethet(agc_interp_t *ip, agc_rendz_t *rz,
-                                 agc_dp_t angle, agc_dp_t *t)
+static agc_status_t tps_timethet(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t angle, agc_dp_t *t)
 {
     agc_dp_t snth = agc_dp_sin(ip, angle); /* SNTH, 2^1 */
     agc_dp_t csth = agc_dp_cos(ip, angle); /* CSTH, 2^1 */
@@ -221,7 +219,7 @@ static agc_status_t tps_timethet(agc_interp_t *ip, agc_rendz_t *rz,
         csth = agc_dp_neg(csth);
     }
 
-    agc_conic_time_out_t o; /* conic result */
+    agc_conic_time_out_t o;  /* conic result */
     agc_status_t         st; /* TIMETHET */
 
     st = rz_timethet_rv(ip, rz, rz->rpass3, rz->vpass3, snth, csth, true, &o);
@@ -261,12 +259,11 @@ static agc_status_t tps_limits(agc_interp_t *ip, agc_rendz_t *rz)
         x = agc_dp_neg(x); /* BON DCOMP KFLAG    */
     }
 
-    x           = agc_dp_mul_trunc(x, TPS_PIINVERS); /* 0D     */
-    tps_work.it = agc_dp_sub(ip, x, rz->thetzero);   /* PHI(I) */
-    agc_dp_t phi0 = agc_dp_add(ip, agc_dp_add(ip, agc_dp_shr(x, 1), x),
-                               tps_work.it); /* PHI(0), rev 2^0 */
-    agc_dp_t     t  = 0; /* time, cs 2^28 */
-    agc_status_t st = tps_timethet(ip, rz, phi0, &t); /* TFO */
+    x                 = agc_dp_mul_trunc(x, TPS_PIINVERS);                                /* 0D     */
+    tps_work.it       = agc_dp_sub(ip, x, rz->thetzero);                                  /* PHI(I) */
+    agc_dp_t     phi0 = agc_dp_add(ip, agc_dp_add(ip, agc_dp_shr(x, 1), x), tps_work.it); /* PHI(0), rev 2^0 */
+    agc_dp_t     t    = 0;                                                                /* time, cs 2^28 */
+    agc_status_t st   = tps_timethet(ip, rz, phi0, &t);                                   /* TFO */
 
     if (st != AGC_STATUS_OK)
     {
@@ -282,7 +279,7 @@ static agc_status_t tps_limits(agc_interp_t *ip, agc_rendz_t *rz)
         return (st);
     }
 
-    tps_work.tfi = t;
+    tps_work.tfi   = t;
     rz_flag_put(AGC_FLAG_ITSWICH, false);
     rz->delvee     = RZ_DPPOSMAX;
     rz->hp         = TPS_MANYFEET;
@@ -314,8 +311,7 @@ static agc_status_t tps_limits(agc_interp_t *ip, agc_rendz_t *rz)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration, INITVEL or
  *          PERIAPO1 status
  **********************************************************************/
-static agc_status_t tps_trial(agc_interp_t *ip, agc_rendz_t *rz,
-                              agc_job_id_t resume)
+static agc_status_t tps_trial(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
     rz_integ_kind_t k = RZ_LEMCONIC; /* the passive vehicle */
 
@@ -324,11 +320,10 @@ static agc_status_t tps_trial(agc_interp_t *ip, agc_rendz_t *rz,
         k = RZ_CSMCONIC; /* the LM is active */
     }
 
-    agc_integ_out_t o; /* integration result */
+    agc_integ_out_t o;  /* integration result */
     agc_status_t    st; /* passive */
 
-    st = rz_integ(ip, k, agc_dp_add(ip, agc_erase_ttpi(), rz->tf), resume,
-                  &o);
+    st = rz_integ(ip, k, agc_dp_add(ip, agc_erase_ttpi(), rz->tf), resume, &o);
 
     if (st != AGC_STATUS_OK)
     {
@@ -389,8 +384,7 @@ typedef enum tps_label
  *
  * RETURNS: tps_label_t -- TPS_L_BIS
  **********************************************************************/
-static tps_label_t tps_step(agc_interp_t *ip, agc_rendz_t *rz, bool set,
-                            agc_dp_t step)
+static tps_label_t tps_step(agc_interp_t *ip, agc_rendz_t *rz, bool set, agc_dp_t step)
 {
     if (set)
     { /* JUNCT1 */
@@ -427,15 +421,15 @@ static tps_label_t tps_interp(agc_interp_t *ip, agc_rendz_t *rz)
 {
     rz_flag_put(AGC_FLAG_ITSWICH, true);
     int      x1 = 0; /* NORM index, -(left shifts) */
-    agc_dp_t a; /* 2^(29+X1) */
+    agc_dp_t a;      /* 2^(29+X1) */
 
-    a = rz_norm(agc_dp_sub(ip, rz->hp, tps_work.hpo), &x1);
-    int      x2 = 0; /* NORM index, -(left shifts) */
+    a           = rz_norm(agc_dp_sub(ip, rz->hp, tps_work.hpo), &x1);
+    int      x2 = 0;                                        /* NORM index, -(left shifts) */
     agc_dp_t b  = agc_dp_add(ip, TPS_DFTMOON, rz->hpermin); /* m 2^29 */
 
     b  = agc_dp_shr(rz_norm(agc_dp_sub(ip, b, rz->hp), &x2), 1); /* SR1   */
     x2 = x2 - x1;                                                /* XSU,2 X1 */
-    agc_dp_t q; /* cs, scale fixed by the SR* */
+    agc_dp_t q;                                                  /* cs, scale fixed by the SR* */
 
     q = agc_dp_mul_trunc(agc_dp_div(ip, b, a), tps_work.deltee);
 
@@ -544,7 +538,7 @@ static tps_label_t tps_bis(agc_interp_t *ip, const agc_rendz_t *rz)
     }
 
     agc_dp_t lim = agc_dp_sub(ip, tps_work.thetl, th); /* rev 2^0 */
-    agc_dp_t d; /* cs 2^28 */
+    agc_dp_t d;                                        /* cs 2^28 */
 
     d = agc_dp_sign(agc_dp_sub(ip, rz->tf, tps_work.tfi), lim);
 
@@ -607,11 +601,11 @@ agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int       x2     = tps_work.xrs[1];                    /* X2: 0 or 2 */
+    int       x2     = tps_work.xrs[1];               /* X2: 0 or 2 */
     agc_vec_t v      = rz_vshift(ip, rz->vpass4, x2); /* VSR* 0,2, m/cs 2^7 */
-    agc_dp_t  sqrtmu = TPS_SQRT_MUE; /* 00D, B-18 / B-15 */
-    agc_dp_t  invmu  = TPS_INV_MUE; /* 04D, 1/MU 2^34 / 2^28 */
-    agc_dp_t  r; /* 02D, m 2^29 */
+    agc_dp_t  sqrtmu = TPS_SQRT_MUE;                  /* 00D, B-18 / B-15 */
+    agc_dp_t  invmu  = TPS_INV_MUE;                   /* 04D, 1/MU 2^34 / 2^28 */
+    agc_dp_t  r;                                      /* 02D, m 2^29 */
 
     r = rz_abval(ip, rz_vshift(ip, rz->rpass4, x2));
 
@@ -621,10 +615,10 @@ agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
         invmu  = TPS_INV_MUM;
     }
 
-    int      x1 = 0;    /* NORM index, -(left shifts) */
-    agc_dp_t q; /* DMPR, 2^(6+X1) */
+    int      x1 = 0; /* NORM index, -(left shifts) */
+    agc_dp_t q;      /* DMPR, 2^(6+X1) */
 
-    q = agc_dp_mul(ip, rz_norm(agc_vec_sq(ip, v), &x1), invmu);
+    q              = agc_dp_mul(ip, rz_norm(agc_vec_sq(ip, v), &x1), invmu);
     agc_dp_t rv    = agc_dp_mul_trunc(q, r); /* DMP 02D, 2^(35+X1) */
     int      count = -3 - x1;                /* SRR* 0-3,1 */
 
@@ -640,19 +634,19 @@ agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
         q = agc_dp_shr_round(rv, count); /* RV2/MU, rounded */
     }
 
-    q = rz_norm(agc_dp_sub(ip, TPS_D1_32, q), &x1);        /* 2-RV2/MU */
-    agc_dp_t a = agc_dp_div(ip, agc_dp_shr_round(r, 1), q); /* A, 2^(24+X1) */
+    q          = rz_norm(agc_dp_sub(ip, TPS_D1_32, q), &x1); /* 2-RV2/MU */
+    agc_dp_t a = agc_dp_div(ip, agc_dp_shr_round(r, 1), q);  /* A, 2^(24+X1) */
 
     a = rz_sl_star(ip, a, -5, x1); /* A  02D   */
-    agc_dp_t a3; /* A^1.5, 2^43 / 2^40 */
+    agc_dp_t a3;                   /* A^1.5, 2^43 / 2^40 */
 
     a3 = agc_dp_mul_trunc(agc_dp_sqrt(ip, agc_dp_shr(a, 1)), a);
 
-    a3 = rz_norm(a3, &x1); /* 00D      */
+    a3         = rz_norm(a3, &x1);                          /* 00D      */
     agc_dp_t n = agc_dp_div(ip, agc_dp_shr(sqrtmu, 1), a3); /* n, scale by X1 */
 
-    n = rz_sl_star(ip, agc_dp_mul_trunc(n, rz->tf), 0, x1); /* x TF     */
-    agc_dp_t twopi = rz_norm(TPS_2PISC, &x1); /* 2PI, B-6 normalized */
+    n              = rz_sl_star(ip, agc_dp_mul_trunc(n, rz->tf), 0, x1); /* x TF     */
+    agc_dp_t twopi = rz_norm(TPS_2PISC, &x1);                            /* 2PI, B-6 normalized */
 
     rz->centang = rz_sl_star(ip, agc_dp_div(ip, n, twopi), -3, x1);
 
@@ -682,14 +676,12 @@ agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
  **********************************************************************/
 static agc_status_t tps_enden(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    rz->reldelv =
-        agc_dp_sign(rz->reldelv, agc_vec_dot(ip, rz->vtprime, rz->rpass4));
+    rz->reldelv     = agc_dp_sign(rz->reldelv, agc_vec_dot(ip, rz->vtprime, rz->rpass4));
     agc_status_t st = agc_rendz_transang(ip, rz); /* TRANSANG */
-    agc_dp_t     sg1; /* sign only, unscaled */
+    agc_dp_t     sg1;                             /* sign only, unscaled */
 
-    sg1 = agc_dp_sign(agc_vec_dot(ip, rz->ract3,
-                                  /* sign only */ rz->viprime), rz->reldelv);
-    agc_sp_t nn1; /* NN1, 1 or 2, unscaled */
+    sg1 = agc_dp_sign(agc_vec_dot(ip, rz->ract3, rz->viprime), rz->reldelv); /* sign only */
+    agc_sp_t nn1;                                                            /* NN1, 1 or 2, unscaled */
 
     bool two = (rz->reldelv < 0); /* NN1 = 2 */
 
@@ -731,17 +723,15 @@ static agc_status_t tps_enden(agc_interp_t *ip, agc_rendz_t *rz)
  *          (ALARUMS), AGC_STATUS_NO_CONVERGE (bound), AGC_STATUS_BAD_ARG,
  *          else the integration status
  **********************************************************************/
-agc_status_t agc_rendz_tpi_search_sector(agc_interp_t *ip, agc_rendz_t *rz,
-                                         agc_job_id_t resume)
+agc_status_t agc_rendz_tpi_search_sector(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL) ||
-        !AGC_ASSERT(resume != AGC_JOB_NONE))
+    if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     agc_status_t st = tps_limits(ip, rz); /* limits */
-    tps_label_t  l  = TPS_L_CONCAUL; /* next label */
+    tps_label_t  l  = TPS_L_CONCAUL;      /* next label */
 
     for (int i = 0; i < AGC_RENDZ_TPISRCH_MAXITER && st == AGC_STATUS_OK; i++)
     {
@@ -808,8 +798,7 @@ static tps_display_t tps_display = {6U, 72U, AGC_JOB_TPI_SEARCH_COMPUTE};
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the call that failed
  **********************************************************************/
-static agc_status_t tps_compute_display(const agc_job_ctx_t *ctx, uint8_t verb,
-                                        uint8_t noun, agc_job_id_t proceed)
+static agc_status_t tps_compute_display(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t proceed)
 {
     if (!AGC_ASSERT(proceed != AGC_JOB_NONE))
     {
@@ -820,9 +809,7 @@ static agc_status_t tps_compute_display(const agc_job_ctx_t *ctx, uint8_t verb,
     tps_display.noun    = noun;
     tps_display.proceed = proceed;
 
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, verb, noun,
-                     AGC_JOB_TPI_SEARCH_DISPLAY, proceed,
-                     AGC_JOB_TPI_SEARCH_RESPONSE));
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, verb, noun, AGC_JOB_TPI_SEARCH_DISPLAY, proceed, AGC_JOB_TPI_SEARCH_RESPONSE));
 }
 
 /**********************************************************************
@@ -847,8 +834,7 @@ agc_status_t agc_job_tpi_search_display(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (tps_compute_display(ctx, tps_display.verb, tps_display.noun,
-                                tps_display.proceed));
+    return (tps_compute_display(ctx, tps_display.verb, tps_display.noun, tps_display.proceed));
 }
 
 /**********************************************************************
@@ -874,8 +860,8 @@ agc_status_t agc_job_tpi_search_response(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint8_t      verb = 0U; /* verb keyed in */
-    uint8_t      noun = 0U; /* noun keyed in */
+    uint8_t      verb = 0U;                              /* verb keyed in */
+    uint8_t      noun = 0U;                              /* noun keyed in */
     agc_status_t st   = agc_dsky_response(&verb, &noun); /* keyed in */
 
     if (st != AGC_STATUS_OK)
@@ -1111,9 +1097,7 @@ agc_status_t agc_job_tpi_search_results(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st =
-        rz_flash(ctx, AGC_DSKY_GOFLASHR, 6U, 55U, AGC_JOB_GOTOPOOH,
-                 AGC_JOB_GOTOPOOH, AGC_JOB_TPI_SEARCH_INPUT); /* V06N55 */
+    agc_status_t st = rz_flash(ctx, AGC_DSKY_GOFLASHR, 6U, 55U, AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_TPI_SEARCH_INPUT); /* V06N55 */
 
     if (st != AGC_STATUS_OK)
     {

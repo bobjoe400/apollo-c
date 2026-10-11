@@ -199,9 +199,7 @@ static void latlong(const char *t, long int tol)
 
     agc_interp_init(&ip);
     (void) agc_navaux_set_padload(&pad);
-    (void) agc_latlong_from_r(&ip, &pad, opt_of(t),
-                              oracle_in_vec(t, "ALPHAV"),
-                              oracle_in_dp(t, "MPAC", 0), &o);
+    (void) agc_latlong_from_r(&ip, &pad, opt_of(t), oracle_in_vec(t, "ALPHAV"), oracle_in_dp(t, "MPAC", 0), &o);
     oracle_require_ok(t, "POODOO");
     (void) oracle_cmp(t, "LAT", o.lat, oracle_out_dp(t, "LAT"), tol);
     (void) oracle_cmp(t, "LONG", o.lon, oracle_out_dp(t, "LONG"), tol);
@@ -236,8 +234,7 @@ static void lalotorv(const char *t, long int tol)
     in.lon   = oracle_in_dp(t, "LONG", 0);
     in.alt   = oracle_in_dp(t, "ALT", 0);
     in.eradm = 0;
-    (void) agc_latlong_to_r(&ip, &pad, opt_of(t), &in,
-                            oracle_in_dp(t, "MPAC", 0), &r, &eradm);
+    (void) agc_latlong_to_r(&ip, &pad, opt_of(t), &in, oracle_in_dp(t, "MPAC", 0), &r, &eradm);
     oracle_require_ok(t, "POODOO");
     oracle_cmp_vec(t, "ALPHAV", r, oracle_out_vec(t, "ALPHAV"), tol);
     (void) oracle_cmp(t, "ERADM", eradm, oracle_out_dp(t, "ERADM"), tol);
@@ -265,7 +262,7 @@ static void rp_r(const char *t, bool to_r, long int tol)
     const agc_navaux_padload_t pad  = pad_of(t); /* case pad load     */
     bool                       moon = false;     /* MPAC != 0: moon   */
     agc_vec_t                  in;               /* R or RP, 2^29 m   */
-    agc_dp_t                   tt = 0;           /* T, scale 2^28 cs  */
+    agc_dp_t                   tt   = 0;         /* T, scale 2^28 cs  */
 
     moon = (oracle_in(t, "MPAC", 0) != 0);
     in   = oracle_in_vec(t, "VAC1");
@@ -302,8 +299,7 @@ static void rp_r(const char *t, bool to_r, long int tol)
  *
  * RETURNS: void
  **********************************************************************/
-static void tff_conic_of(const char *conic_tag, agc_interp_t *ip,
-                         agc_tff_t *tff)
+static void tff_conic_of(const char *conic_tag, agc_interp_t *ip, agc_tff_t *tff)
 {
     tff->rone = oracle_in_vec(conic_tag, "RONE");
     tff->vone = oracle_in_vec(conic_tag, "VONE");
@@ -326,12 +322,12 @@ static void tff_conic_of(const char *conic_tag, agc_interp_t *ip,
  **********************************************************************/
 static void tff(const char *base, long int tol)
 {
-    char      tc[96];   /* TFFCONIC case tag   */
-    char      tr[96];   /* TFFRP/RA case tag   */
-    char      tt[96];   /* CALCTFF case tag    */
-    agc_tff_t f = {0};  /* TFFCONIC result     */
-    agc_tff_t g;        /* copy per routine    */
-    agc_dp_t  tffv = 0; /* TFF, scale 2^28 cs  */
+    char      tc[96];     /* TFFCONIC case tag   */
+    char      tr[96];     /* TFFRP/RA case tag   */
+    char      tt[96];     /* CALCTFF case tag    */
+    agc_tff_t f    = {0}; /* TFFCONIC result     */
+    agc_tff_t g;          /* copy per routine    */
+    agc_dp_t  tffv = 0;   /* TFF, scale 2^28 cs  */
 
     (void) snprintf(tc, sizeof (tc), "%s_conic", base);
     (void) snprintf(tr, sizeof (tr), "%s_rpra", base);
@@ -342,14 +338,10 @@ static void tff(const char *base, long int tol)
     tff_conic_of(tc, &ip, &f);
     oracle_require_ok(tc, "POODOO");
     (void) oracle_cmp(tc, "RMAG1", f.rmag1, oracle_out_dp(tc, "VAC1+12"), tol);
-    (void) oracle_cmp(tc, "TFFVSQ", f.tffvsq, oracle_out_dp(tc, "VAC1+20"),
-                      tol);
-    (void) oracle_cmp(tc, "TFF1/ALF", f.tff1_alf,
-                      oracle_out_dp(tc, "VAC1+22"), tol);
-    (void) oracle_cmp(tc, "TFFRTALF", f.tffrtalf,
-                      oracle_out_dp(tc, "VAC1+24"), tol);
-    (void) oracle_cmp(tc, "TFFALFA", f.tffalfa, oracle_out_dp(tc, "VAC1+26"),
-                      tol);
+    (void) oracle_cmp(tc, "TFFVSQ", f.tffvsq, oracle_out_dp(tc, "VAC1+20"), tol);
+    (void) oracle_cmp(tc, "TFF1/ALF", f.tff1_alf, oracle_out_dp(tc, "VAC1+22"), tol);
+    (void) oracle_cmp(tc, "TFFRTALF", f.tffrtalf, oracle_out_dp(tc, "VAC1+24"), tol);
+    (void) oracle_cmp(tc, "TFFALFA", f.tffalfa, oracle_out_dp(tc, "VAC1+26"), tol);
     (void) oracle_cmp(tc, "TFFNP", f.tffnp, oracle_out_dp(tc, "VAC1+28"), tol);
     (void) oracle_cmp(tc, "TFF/RTMU", f.rtmu, oracle_out_dp(tc, "VAC1+30"), 0);
     (void) oracle_cmp(tc, "NRMAG", f.nrmag, oracle_out_dp(tc, "VAC1+32"), tol);
@@ -367,12 +359,11 @@ static void tff(const char *base, long int tol)
     (void) agc_tff_calctff(&ip, &g, oracle_in_dp(tt, "MPAC", 0), &tffv);
     oracle_require_ok(tt, "POODOO");
     (void) oracle_cmp(tt, "TFF", tffv, oracle_out_dp(tt, "MPAC"), 4);
-    (void) oracle_cmp(tt, "TFFDELQ", g.tffdelq, oracle_out_dp(tt, "VAC1+10"),
-                      tol);
+    (void) oracle_cmp(tt, "TFFDELQ", g.tffdelq, oracle_out_dp(tt, "VAC1+10"), tol);
     (void) oracle_cmp(tt, "TFFQ1", g.tffq1, oracle_out_dp(tt, "VAC1+14"), tol);
-    (void) oracle_cmp(tt, "NRTERM", g.nrterm, oracle_out_dp(tt, "VAC1+16"),
-                      tol);
+    (void) oracle_cmp(tt, "NRTERM", g.nrterm, oracle_out_dp(tt, "VAC1+16"), tol);
     (void) oracle_cmp(tt, "RTERM", g.rterm, oracle_out_dp(tt, "VAC1+18"), 0);
+
     /* TFFX / TFFTEM are only written on the Z-series paths; elsewhere the
      * AGC leaves the push list as it was (the UNIT debris TFFCONIC left
      * there) and C leaves 0: compare only when the AGC wrote them.       */
@@ -442,8 +433,7 @@ static void lspos_cm(const char *t, long int tol)
     const agc_ephem_csm_t e = eph_of(t); /* case uplink       */
 
     agc_interp_init(&ip);
-    (void) agc_ephem_csm_lspos(&ip, &e, oracle_in_tp(t, "TEPHEM", 0),
-                               oracle_in_dp(t, "MPAC", 0), &moon, &sun);
+    (void) agc_ephem_csm_lspos(&ip, &e, oracle_in_tp(t, "TEPHEM", 0), oracle_in_dp(t, "MPAC", 0), &moon, &sun);
     oracle_require_ok(t, "POODOO");
     oracle_cmp_vec(t, "moon", moon, oracle_out_mpac_vec(t), tol);
     oracle_cmp_vec(t, "sun", sun, oracle_out_vec(t, "VAC1+2"), tol);
@@ -469,8 +459,7 @@ static void lunvel_cm(const char *t, long int tol)
     const agc_ephem_csm_t e = eph_of(t); /* case uplink       */
 
     agc_interp_init(&ip);
-    (void) agc_ephem_csm_lunvel(&ip, &e, oracle_in_tp(t, "TEPHEM", 0),
-                                oracle_in_dp(t, "MPAC", 0), &v);
+    (void) agc_ephem_csm_lunvel(&ip, &e, oracle_in_tp(t, "TEPHEM", 0), oracle_in_dp(t, "MPAC", 0), &v);
     oracle_require_ok(t, "POODOO");
     oracle_cmp_vec(t, "vmoon", v, oracle_out_mpac_vec(t), tol);
 }
@@ -495,8 +484,7 @@ static void lspos_lm(const char *t, long int tol)
     agc_vec_t    vs; /* VSUN, scale 2^1    */
 
     agc_interp_init(&ip);
-    (void) agc_ephem_lm_lspos(&ip, oracle_in_tp(t, "TEPHEM", 0),
-                              oracle_in_dp(t, "MPAC", 0), &vm, &vs);
+    (void) agc_ephem_lm_lspos(&ip, oracle_in_tp(t, "TEPHEM", 0), oracle_in_dp(t, "MPAC", 0), &vm, &vs);
     oracle_require_ok(t, "POODOO");
     oracle_cmp_vec(t, "VMOON", vm, oracle_out_vec(t, "VMOON"), tol);
     oracle_cmp_vec(t, "VSUN", vs, oracle_out_vec(t, "VSUN"), tol);
@@ -564,12 +552,10 @@ static void incorp2(const char *t, long int tol_w, long int tol_s)
             (void) snprintf(n, sizeof (n), "W"); /* first row: bare name */
         }
 
-        oracle_cmp_vec(t, what, w.blk[k / 9][k % 9], oracle_out_vec(t, n),
-                       tol_w);
+        oracle_cmp_vec(t, what, w.blk[k / 9][k % 9], oracle_out_vec(t, n), tol_w);
     }
 
-    oracle_cmp_vec(t, "TDELTAV", sv.tdeltav, oracle_out_vec(t, "TDELTAV"),
-                   tol_s);
+    oracle_cmp_vec(t, "TDELTAV", sv.tdeltav, oracle_out_vec(t, "TDELTAV"), tol_s);
     oracle_cmp_vec(t, "TNUV", sv.tnuv, oracle_out_vec(t, "TNUV"), tol_s);
     oracle_cmp_vec(t, "RCV", sv.rcv, oracle_out_vec(t, "RCV"), 0);
     oracle_cmp_vec(t, "VCV", sv.vcv, oracle_out_vec(t, "VCV"), 0);

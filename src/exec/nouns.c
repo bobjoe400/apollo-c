@@ -106,7 +106,7 @@ static agc_dp_t *noun_dp_entry(uint16_t id)
             return (&e->range_to_target);
         case AGC_DATA_RANGE_TO_SPLASH: /* RTGON64 EQUALS RTGO          */
             return (&e->rtgo);
-        case AGC_DATA_XRNGERR: /* XRNGERR = LATANG                     */
+        case AGC_DATA_XRNGERR:         /* XRNGERR = LATANG                     */
             return (&e->latang);
         case AGC_DATA_TTE:
             return (&e->tte);
@@ -275,8 +275,7 @@ static uint16_t *noun_word(uint16_t id)
  * TREDES, LOOKANGL.                                                       */
 static agc_status_t noun_two_int_write(uint16_t id, agc_dp_t v)
 {
-    if (!AGC_ASSERT(id == AGC_DATA_VHFCNT || id == AGC_DATA_FUNNYDSP) ||
-        !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(id == AGC_DATA_VHFCNT || id == AGC_DATA_FUNNYDSP) || !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -352,9 +351,8 @@ static agc_sp_t noun_signed_word(agc_dp_t raw)
  */
 static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
 {
-    agc_sp_t *code  = &agc_align_ram()->starcode; /* STARCODE/AOTCODE */
-    agc_dp_t *sin_y =
-        &agc_guid_state()->trig.sincdu[AGC_TRIG_Y]; /* SINCDUY, 2^1 */
+    agc_sp_t *code  = &agc_align_ram()->starcode;                 /* STARCODE/AOTCODE */
+    agc_dp_t *sin_y = &agc_guid_state()->trig.sincdu[AGC_TRIG_Y]; /* SINCDUY, 2^1 */
 
     if (!AGC_ASSERT(value != NULL))
     {
@@ -370,14 +368,12 @@ static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
 
             return (AGC_STATUS_OK);
         case AGC_DATA_AOTCODE_P1: /* AOTCODE +1: SINCDUY high word     */
-            *sin_y = write ? agc_dp_pack(noun_signed_word(*value),
-                                         agc_dp_low(*sin_y)) : *sin_y;
+            *sin_y = write ? agc_dp_pack(noun_signed_word(*value), agc_dp_low(*sin_y)) : *sin_y;
             *value = noun_raw_word(agc_dp_high(*sin_y));
 
             return (AGC_STATUS_OK);
         case AGC_DATA_AOTCODE_P2: /* AOTCODE +2: SINCDUY low word      */
-            *sin_y = write ? agc_dp_pack(agc_dp_high(*sin_y),
-                                         noun_signed_word(*value)) : *sin_y;
+            *sin_y = write ? agc_dp_pack(agc_dp_high(*sin_y), noun_signed_word(*value)) : *sin_y;
             *value = noun_raw_word(agc_dp_low(*sin_y));
 
             return (AGC_STATUS_OK);
@@ -401,8 +397,7 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
     }
 
     bool      lm = agc_state_vehicle() == AGC_VEHICLE_LM;
-    agc_dp_t *dp = (data_id == AGC_DATA_VMAGI && !lm &&
-                    agc_erase_modreg() == 11) ? NULL : noun_dp(data_id, lm);
+    agc_dp_t *dp = (data_id == AGC_DATA_VMAGI && !lm && agc_erase_modreg() == 11) ? NULL : noun_dp(data_id, lm);
     agc_sp_t *sp = noun_sp(data_id);
     uint16_t *w  = noun_word(data_id);
 
@@ -427,8 +422,7 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
          * the rendezvous programs.                                              */
         bool p11 = !lm && agc_erase_modreg() == 11;
 
-        if ((data_id == AGC_DATA_HDOT || data_id == AGC_DATA_ALTI ||
-             (data_id == AGC_DATA_VMAGI && p11)) && !write)
+        if ((data_id == AGC_DATA_HDOT || data_id == AGC_DATA_ALTI || (data_id == AGC_DATA_VMAGI && p11)) && !write)
         {
             /* VMAGI, HDOT, ALTI of the P11 monitor (N62).                           */
             {
@@ -436,24 +430,20 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
                 agc_dp_t hdot  = 0;
                 agc_dp_t alti  = 0;
 
-                agc_status_t st =
-                    agc_earth_orbit_insertion_monitor_readout(&vmagi, &hdot,
-                                                              &alti);
+                agc_status_t st = agc_earth_orbit_insertion_monitor_readout(&vmagi, &hdot, &alti);
 
                 if (st != AGC_STATUS_OK)
                 {
                     return (st);
                 }
 
-                *value = (data_id == AGC_DATA_HDOT) ? hdot :
-                         (data_id == AGC_DATA_ALTI) ? alti : vmagi;
+                *value = (data_id == AGC_DATA_HDOT) ? hdot : (data_id == AGC_DATA_ALTI) ? alti : vmagi;
 
                 return (AGC_STATUS_OK);
             }
         }
 
-        if (data_id == AGC_DATA_LAT || data_id == AGC_DATA_LONG ||
-            data_id == AGC_DATA_ALT)
+        if (data_id == AGC_DATA_LAT || data_id == AGC_DATA_LONG || data_id == AGC_DATA_ALT)
         {
             /* LAT, LONG, ALT (noun 43): the nav-aux store.                          */
             {
@@ -465,8 +455,7 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
                     return (st);
                 }
 
-                agc_dp_t *f = (data_id == AGC_DATA_LAT) ? &ll.lat :
-                              (data_id == AGC_DATA_LONG) ? &ll.lon : &ll.alt;
+                agc_dp_t *f = (data_id == AGC_DATA_LAT) ? &ll.lat : (data_id == AGC_DATA_LONG) ? &ll.lon : &ll.alt;
 
                 if (!write)
                 {
@@ -488,33 +477,24 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
             return (st);
         }
 
-        st = lm ? AGC_STATUS_NOT_FOUND :
-             agc_return_to_earth_noun(data_id, write, value);
+        st = lm ? AGC_STATUS_NOT_FOUND : agc_return_to_earth_noun(data_id, write, value);
 
         if (st == AGC_STATUS_NOT_FOUND)
         {
-            st =
-                write ? agc_rendz_noun_write(data_id,
-                                             *value) : agc_rendz_noun_read(
-                    data_id, value);
+            st = write ? agc_rendz_noun_write(data_id, *value) : agc_rendz_noun_read(data_id, value);
         }
 
         if (st == AGC_STATUS_NOT_FOUND && !write)
         {
-            st =
-                lm ? agc_lm_rendz_noun_read(data_id,
-                                            value) : agc_csm_rendz_noun_read(
-                    data_id, value);
+            st = lm ? agc_lm_rendz_noun_read(data_id, value) : agc_csm_rendz_noun_read(data_id, value);
         }
 
-        if (st == AGC_STATUS_NOT_FOUND && write &&
-            (data_id == AGC_DATA_VHFCNT || data_id == AGC_DATA_FUNNYDSP))
+        if (st == AGC_STATUS_NOT_FOUND && write && (data_id == AGC_DATA_VHFCNT || data_id == AGC_DATA_FUNNYDSP))
         {
             st = noun_two_int_write(data_id, *value);
         }
 
-        return ((st == AGC_STATUS_NOT_FOUND && !write) ?
-                noun_derived(data_id, lm, value) : st);
+        return ((st == AGC_STATUS_NOT_FOUND && !write) ? noun_derived(data_id, lm, value) : st);
     }
 
     return (AGC_STATUS_OK);

@@ -15,9 +15,9 @@
 #define TAILOFF_DELAY     250
 #define ENGINE_FAIL_DELAY 200
 #define QUICKIGN_DELAY    30
-#define GIMBAL_STEP       200 /* 2 s per gimbal drive step (GPI check)      */
-#define GIMTRIM_DELAY     400 /* 4 s before the trim                       */
-#define ACT_P2DEG         84  /* +2ACTDEG DEC +84: 2 deg at 85.41"/bit      */
+#define GIMBAL_STEP       200    /* 2 s per gimbal drive step (GPI check)      */
+#define GIMTRIM_DELAY     400    /* 4 s before the trim                       */
+#define ACT_P2DEG         84     /* +2ACTDEG DEC +84: 2 deg at 85.41"/bit      */
 #define ACT_M4DEG         (-168) /* -4ACTDEG                                   */
 
 /* CLOKTASK (p.704-705): with TIMRFLAG, TTOGO = TIME - TIG every second and
@@ -34,10 +34,8 @@ agc_status_t agc_task_cloktask_csm(void)
         return (AGC_STATUS_OK); /* KILL RESTART           */
     }
 
-    agc_erase_set_ttogo((agc_dp_t) agc_time_now_cs() -
-                        agc_erase_tig()); /* CLOCKON */
-    agc_status_t st =
-        agc_waitlist_call(ONE_SEC, AGC_TASK_CLOKTASK); /* SETCLOCK */
+    agc_erase_set_ttogo((agc_dp_t) agc_time_now_cs() - agc_erase_tig()); /* CLOCKON */
+    agc_status_t st = agc_waitlist_call(ONE_SEC, AGC_TASK_CLOKTASK);     /* SETCLOCK */
 
     if (st != AGC_STATUS_OK)
     {
@@ -46,8 +44,7 @@ agc_status_t agc_task_cloktask_csm(void)
 
     if (g->csm.nvword1 == agc_csm_vn(6, 85))
     {
-        agc_status_t sj = agc_exec_findvac(AGC_PRIO27,
-                                           AGC_JOB_DYNDISP); /* SETUPDYN      */
+        agc_status_t sj = agc_exec_findvac(AGC_PRIO27, AGC_JOB_DYNDISP); /* SETUPDYN      */
 
         if (sj != AGC_STATUS_OK)
         {
@@ -87,8 +84,7 @@ static agc_status_t cknvwrd1(agc_job_ctx_t *ctx)
 
     if (nv > 0)
     {
-        return (agc_dsky_display(ctx, AGC_DSKY_REGODSP, (uint16_t) nv,
-                                 NULL)); /* NOFLASH */
+        return (agc_dsky_display(ctx, AGC_DSKY_REGODSP, (uint16_t) nv, NULL)); /* NOFLASH */
     }
 
     if (nv == 0)
@@ -102,8 +98,7 @@ static agc_status_t cknvwrd1(agc_job_ctx_t *ctx)
                                AGC_JOB_ENGINE_FAIL_PROCEED,
                                AGC_JOB_ENGINE_FAIL_REIGNITE};
 
-        return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(97, 40),
-                                 &c97));
+        return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(97, 40), &c97));
     }
 
     agc_dsky_cont_t c99 = {AGC_JOB_ENGINE_ENABLE_TERMINATE,
@@ -115,8 +110,7 @@ static agc_status_t cknvwrd1(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(99, 40),
-                             &c99));
+    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(99, 40), &c99));
 }
 
 /* CLOCKJOB (p.705): fresh CDU trig for the displays, then CKNVWRD1.       */
@@ -233,8 +227,7 @@ agc_status_t agc_job_engine_enable_proceed(agc_job_ctx_t *ctx)
         }
     }
 
-    agc_guid_state()->csm.nvword1 =
-        agc_csm_vn(6, 40); /* V99P/TIG             */
+    agc_guid_state()->csm.nvword1 = agc_csm_vn(6, 40); /* V99P/TIG             */
     agc_relint();
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_ASTNFLAG)))
@@ -260,8 +253,7 @@ agc_status_t agc_job_engine_fail_terminate(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_waitlist_call(
-                1, AGC_TASK_ENGINE_FAIL_SHUTDOWN)); /* TWIDDLE                */
+    return (agc_waitlist_call(1, AGC_TASK_ENGINE_FAIL_SHUTDOWN)); /* TWIDDLE                */
 }
 
 /* V97TTASK (p.707): CLOCKJOB off, MASSTMP = CSMMASS + 3 s of flow (not lost
@@ -269,14 +261,13 @@ agc_status_t agc_job_engine_fail_terminate(agc_job_ctx_t *ctx)
 agc_status_t agc_task_engine_fail_shutdown(void)
 {
     agc_guid_state()->csm.nvword1 = 0; /* DISABLE CLOCKJOB       */
-    agc_csm_dap_tvc()->masstmp    =
-        (agc_sp_t) (AGC_CSM_3MDOT + agc_erase_csmmass());
-    agc_phase_var_t v = {AGC_RESTART_TASK,
-                         AGC_JOB_NONE,
-                         AGC_TASK_ENGINE_FAIL_SHUTDOWN_RESTART,
-                         0,
-                         true,
-                         0U};
+    agc_csm_dap_tvc()->masstmp    = (agc_sp_t) (AGC_CSM_3MDOT + agc_erase_csmmass());
+    agc_phase_var_t v             = {AGC_RESTART_TASK,
+                                     AGC_JOB_NONE,
+                                     AGC_TASK_ENGINE_FAIL_SHUTDOWN_RESTART,
+                                     0,
+                                     true,
+                                     0U};
 
     agc_phase_change_var((uint16_t) 005014, &v);
 
@@ -359,8 +350,7 @@ agc_status_t agc_task_engine_fail_resume(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_waitlist_fixdelay(ENGINE_FAIL_DELAY,
-                                  AGC_TASK_ENGINE_FAIL_REENABLE));
+    return (agc_waitlist_fixdelay(ENGINE_FAIL_DELAY, AGC_TASK_ENGINE_FAIL_REENABLE));
 }
 
 /* R40ENABL (p.708): IDLEFAIL reset (R40 enabled again), group 4 off.      */
@@ -402,9 +392,8 @@ agc_status_t agc_task_engine_fail_reignite_prep(void)
 {
     agc_erase_set_tig(agc_dp_pack((agc_sp_t) -024, 0)); /* CS OCT24 TS TIG   */
     agc_guid_state()->csm.nvword1 = agc_csm_vn(6, 40);
-    agc_csm_dap_tvc()->masstmp    =
-        (agc_sp_t) (AGC_CSM_3MDOT + agc_erase_csmmass());
-    agc_phase_change(4, (uint16_t) 000754); /* 4.75 = SPSOFF97        */
+    agc_csm_dap_tvc()->masstmp    = (agc_sp_t) (AGC_CSM_3MDOT + agc_erase_csmmass());
+    agc_phase_change(4, (uint16_t) 000754);             /* 4.75 = SPSOFF97        */
 
     if (!AGC_ASSERT(agc_erase_tig() < 0))
     {
@@ -424,8 +413,7 @@ agc_status_t agc_task_spsoff97(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_waitlist_fixdelay(TAILOFF_DELAY,
-                                  AGC_TASK_ENGINE_FAIL_REIGNITE_TRIM));
+    return (agc_waitlist_fixdelay(TAILOFF_DELAY, AGC_TASK_ENGINE_FAIL_REIGNITE_TRIM));
 }
 
 /* V97E40.6 / QUICKIGN (p.708-709): PRE40.6 (trim) now, RCS DAP on with the
@@ -475,8 +463,7 @@ agc_status_t agc_task_quickign(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_waitlist_fixdelay(QUICKIGN_DELAY,
-                                  AGC_TASK_ENGINE_ENABLE_FLASH));
+    return (agc_waitlist_fixdelay(QUICKIGN_DELAY, AGC_TASK_ENGINE_ENABLE_FLASH));
 }
 
 /* V99FLASH (p.709): V99 flash, 4.77 (TIG-0 now) and 3.3, S40.13 job.      */
@@ -518,12 +505,11 @@ agc_status_t agc_task_gimbal_trim_restart(void)
  * latching.                                                               */
 agc_status_t agc_task_gimbal_test_trim(void)
 {
-    agc_erase_set_optind(-1); /* CS ZERO (-0 modelled -1) */
+    agc_erase_set_optind(-1);                     /* CS ZERO (-0 modelled -1) */
     agc_chan_and(012, (uint16_t) ~(uint16_t) 02); /* WAND CHAN12 ~BIT2      */
-    agc_chan_or(012, AGC_CSM_TVCOPTEN);      /* OCT02200               */
+    agc_chan_or(012, AGC_CSM_TVCOPTEN);           /* OCT02200               */
 
-    if (!AGC_ASSERT((agc_chan_read(012) & AGC_CSM_TVCOPTEN) ==
-                    AGC_CSM_TVCOPTEN))
+    if (!AGC_ASSERT((agc_chan_read(012) & AGC_CSM_TVCOPTEN) == AGC_CSM_TVCOPTEN))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -590,8 +576,7 @@ agc_status_t agc_task_gimbal_test_rstrtst(void)
     {
         g->csm.gimbal_test_step = 7; /* GIMTRIM: WAIT 4 S      */
 
-        return (agc_waitlist_fixdelay(GIMTRIM_DELAY,
-                                      AGC_TASK_GIMBAL_TEST_STEP));
+        return (agc_waitlist_fixdelay(GIMTRIM_DELAY, AGC_TASK_GIMBAL_TEST_STEP));
     }
 
     g->csm.gimbal_test_step = 0; /* GDTSETUP: PITCH        */
@@ -622,8 +607,7 @@ agc_status_t agc_task_gimbal_test_step(void)
     {
         g->csm.gimbal_test_step = 7; /* GIMTRIM                */
 
-        return (agc_waitlist_fixdelay(GIMTRIM_DELAY,
-                                      AGC_TASK_GIMBAL_TEST_STEP));
+        return (agc_waitlist_fixdelay(GIMTRIM_DELAY, AGC_TASK_GIMBAL_TEST_STEP));
     }
 
     const agc_csm_dapcom_t *com = agc_csm_dap_com();
@@ -653,8 +637,7 @@ agc_status_t agc_job_dapfig(agc_job_ctx_t *ctx)
     }
 
     agc_chan_and(012, (uint16_t) ~(uint16_t) AGC_CH012_SIVBTAKEOVER);
-    unsigned cfg =
-        ((unsigned) agc_erase_dapdatr1() >> 12) & 3U; /* MP BIT3     */
+    unsigned cfg = ((unsigned) agc_erase_dapdatr1() >> 12) & 3U; /* MP BIT3     */
 
     if (cfg == 3U)
     {

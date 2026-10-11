@@ -78,32 +78,33 @@
 
 #define TD_SXTVAR ((agc_dp_t) 703687) /* SXTVAR 2DEC 0.04 E-6 B+16  */
 #define TD_IMUVAR ((agc_dp_t) 703687) /* IMUVAR 2DEC 0.04 E-6 B+16  */
+
 /* CONVRNGE 2DEC 18.52 B-13: .01 NM to m 2^27                          */
 #define TD_CONVRNGE      ((agc_dp_t) 606863) /* CONVRNGE, B-13            */
 #define TD_RANGEB14      ((agc_dp_t) 606863) /* RANGEB14 2DEC 303431.7 B-27 */
 #define TD_60SECDP       ((agc_dp_t) 6000)   /* 60SECDP                    */
-#define TD_PRIO26        ((agc_prio_t) 026) /* PRIO26 */
-#define TD_PRIO27        ((agc_prio_t) 027) /* PRIO27 */
-#define TD_NEG3          ((agc_sp_t) -3) /* MRKBUF2 = -3: data used    */
-#define TD_EMPTY         077776u         /* -1                         */
-#define TD_CH13_READ     000011u         /* OCT11: VHF range read bits */
-#define TD_CH33_VHF_GOOD 000002u         /* chan 33 bit 2 (0 = good)   */
-#define TD_POSMAX        037777u /* 14 bits */
-#define TD_PASSES        4 /* REND7 passes in one job    */
+#define TD_PRIO26        ((agc_prio_t) 026)  /* PRIO26 */
+#define TD_PRIO27        ((agc_prio_t) 027)  /* PRIO27 */
+#define TD_NEG3          ((agc_sp_t) -3)     /* MRKBUF2 = -3: data used    */
+#define TD_EMPTY         077776u             /* -1                         */
+#define TD_CH13_READ     000011u             /* OCT11: VHF range read bits */
+#define TD_CH33_VHF_GOOD 000002u             /* chan 33 bit 2 (0 = good)   */
+#define TD_POSMAX        037777u             /* 14 bits */
+#define TD_PASSES        4                   /* REND7 passes in one job    */
 
 /* R22 erasables (EBANK= MRKBUF1).                                       */
 typedef struct td_csm
 {
-    agc_dp_t     vhftime;  /* VHFTIME: last VHF reading, cs 2^28        */
-    agc_dp_t     vhfrange; /* VHFRANGE: m 2^27                          */
-    uint16_t     rm;       /* RM: raw VHF range (.01 NM), 15 bits       */
-    uint16_t     mark[7];  /* MARKTIME, VTEMP: the mark being used      */
-    agc_vec_t    csmpos;   /* CSMPOS: body scale                        */
-    agc_vec_t    lempos;   /* LEMPOS: body scale                        */
-    agc_vec_t    rclp;     /* RCLP: LM - CSM, body scale                */
-    agc_vec_t    ucl;      /* UCL: unit RCLP, 2^1                       */
-    agc_vec_t    um;       /* UM: optics LOS, reference, 2^1            */
-    agc_vec_t    ustar;    /* USTAR: star direction, 2^1                */
+    agc_dp_t     vhftime;    /* VHFTIME: last VHF reading, cs 2^28        */
+    agc_dp_t     vhfrange;   /* VHFRANGE: m 2^27                          */
+    uint16_t     rm;         /* RM: raw VHF range (.01 NM), 15 bits       */
+    uint16_t     mark[7];    /* MARKTIME, VTEMP: the mark being used      */
+    agc_vec_t    csmpos;     /* CSMPOS: body scale                        */
+    agc_vec_t    lempos;     /* LEMPOS: body scale                        */
+    agc_vec_t    rclp;       /* RCLP: LM - CSM, body scale                */
+    agc_vec_t    ucl;        /* UCL: unit RCLP, 2^1                       */
+    agc_vec_t    um;         /* UM: optics LOS, reference, 2^1            */
+    agc_vec_t    ustar;      /* USTAR: star direction, 2^1                */
     agc_dp_t     n49disp[3]; /* N49DISP: |dR| 2^29, |dV| 2^7, source 1/2 */
     agc_sp_t     tempor1;    /* TEMPOR1: 0 open, -1 PRO, + V32, unscaled  */
     int          x2;         /* SHIFTNDX: 0 earth, -2 moon                */
@@ -162,7 +163,7 @@ static int td_shiftndx(void)
  **********************************************************************/
 static agc_status_t td_pos(agc_interp_t *ip, agc_vehicle_t v, agc_vec_t *pos)
 {
-    agc_integ_sv_t sv; /* permanent state */
+    agc_integ_sv_t sv;                              /* permanent state */
     agc_status_t   st = agc_integ_perm_get(v, &sv); /* state */
 
     *pos = agc_vec_add(ip, rz_vshift(ip, sv.deltav, -(7 - td.x2)), sv.rcv);
@@ -238,9 +239,9 @@ static agc_status_t td_getum(agc_interp_t *ip, agc_vec_t *um)
         agc_erase_set_markdown(i, td.mark[i]);
     }
 
-    agc_vec_t    los      = agc_vec_zero(); /* SM LOS, 2^1 */
+    agc_vec_t    los      = agc_vec_zero();              /* SM LOS, 2^1 */
     agc_status_t st       = agc_csm_sxtsm(ip, &m, &los); /* SXTNB, NBSM */
-    agc_mat_t    refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
+    agc_mat_t    refsmmat = agc_erase_refsmmat();        /* REFSMMAT, 2^1 */
 
     *um = agc_vec_shl(ip, agc_vec_mat(ip, los, &refsmmat), 1);
 
@@ -281,27 +282,26 @@ static void td_bvectors(agc_interp_t *ip)
 static void td_variance(agc_interp_t *ip, agc_dp_t base)
 {
     const agc_rendz_nav_pad_t *p  = agc_rendz_nav_pad(); /* pad loads */
-    int                        x1 = 0; /* NORM index, -(left shifts) */
-    agc_dp_t                   n; /* 2^(S+X1) */
+    int                        x1 = 0;                   /* NORM index, -(left shifts) */
+    agc_dp_t                   n;                        /* 2^(S+X1) */
 
     n = rz_norm(agc_vec_abval(ip, td.rclp), &x1);
     agc_tp_t v; /* TP, B-40 after the SR* */
 
     v = agc_dp_mul_tp(agc_dp_sq(ip, n), base);
 
-    x1 = 2 * x1 + 2 * td_shiftndx(); /* XAD,1    */
-    v  = agc_tp_shift(ip, v, -(-2 - x1));                       /* SR* 0-2,1 */
-    agc_tp_t intvar = (agc_tp_t) p->intvar * 8; /* SR 25, B-40 */
+    x1              = 2 * x1 + 2 * td_shiftndx();      /* XAD,1    */
+    v               = agc_tp_shift(ip, v, -(-2 - x1)); /* SR* 0-2,1 */
+    agc_tp_t intvar = (agc_tp_t) p->intvar * 8;        /* SR 25, B-40 */
 
     v = agc_tp_add(ip, intvar, v);
 
     if (agc_flag_test(AGC_FLAG_SOURCFLG))
     {
-        agc_tp_t vmin = (agc_tp_t) p->rvarmin_cm[0] * 268435456 + /* TP, B-40 */
-                        (agc_tp_t) p->rvarmin_cm[1] * 16384 + p->rvarmin_cm[2];
+        agc_tp_t vmin = (agc_tp_t) p->rvarmin_cm[0] * 268435456 + (agc_tp_t) p->rvarmin_cm[1] * 16384 + p->rvarmin_cm[2]; /* TP, B-40 */
 
         if (v + vmin < 0)
-        {                                    /* BPL      */
+        { /* BPL      */
             v = (vmin < 0) ? -vmin : vmin; /* ABS of RVARMIN */
         }
     }
@@ -333,7 +333,7 @@ static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
 
     if (agc_flag_test(AGC_FLAG_INCORFLG))
     {
-        *st = td_getum(ip, &td.um);
+        *st         = td_getum(ip, &td.um);
         agc_interp_clear_ovf(ip);
         agc_vec_t c = agc_vec_cross(ip, td.ucl, td.um); /* REND8, 2^2 */
 
@@ -352,7 +352,7 @@ static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
         td.inc.bvector[0] = agc_vec_neg(td.inc.bvector[0]);
     }
 
-    agc_phase_change(2, 04022); /* REND9A   */
+    agc_phase_change(2, 04022);                         /* REND9A   */
     const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
 
     if (agc_flag_test(AGC_FLAG_BACKUP_MARKING))
@@ -381,7 +381,7 @@ static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
  **********************************************************************/
 static void td_vhf_mark(agc_interp_t *ip)
 {
-    agc_dp_t  absr = 0; /* |RCLP|, body scale */
+    agc_dp_t  absr = 0;                                      /* |RCLP|, body scale */
     agc_vec_t u    = agc_vec_unit(ip, td.rclp, &absr, NULL); /* 2^1 */
 
     td.inc.bvector[0] = u;
@@ -436,13 +436,12 @@ static bool td_incorp1(agc_interp_t *ip, agc_status_t *st)
     }
 
     const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
-    int                        k = 0 - td_shiftndx(); /* SR* 0,2  */
+    int                        k = 0 - td_shiftndx();   /* SR* 0,2  */
 
     td.n49disp[1] = rz_shift(ip, agc_vec_abval(ip, td.inc.deltax[1]), -k);
     td.n49disp[0] = rz_shift(ip, agc_vec_abval(ip, td.inc.deltax[0]), -k);
 
-    if (agc_dp_sub(ip, agc_dp_shr(agc_dp_from_sp(p->rmax), 10), td.n49disp[0]) <
-        0)
+    if (agc_dp_sub(ip, agc_dp_shr(agc_dp_from_sp(p->rmax), 10), td.n49disp[0]) < 0)
     {
         return (true);
     }
@@ -588,9 +587,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_dp_t d =
-        agc_dp_sub(&ip, agc_dp_sub(&ip, agc_rtb_loadtime(), TD_60SECDP),
-                   td.vhftime); /* cs 2^28 */
+    agc_dp_t d = agc_dp_sub(&ip, agc_dp_sub(&ip, agc_rtb_loadtime(), TD_60SECDP), td.vhftime); /* cs 2^28 */
 
     if (!agc_flag_test(AGC_FLAG_VHFRFLAG) || d < 0)
     {
@@ -604,11 +601,10 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(agc_job_ctx_t *ctx)
     rz_set_marktime(agc_rtb_loadtime());
     rz_flag_put(AGC_FLAG_SKIPVHF, false);
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING; /* RADSTALL result */
-    agc_job_id_t           next; /* RANGERD */
+    agc_job_id_t           next;                         /* RANGERD */
 
-    next = AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE;
-    agc_status_t st = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, next,
-                                        &res);             /* RADSTALL */
+    next            = AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE;
+    agc_status_t st = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, next, &res); /* RADSTALL */
 
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
     {
@@ -679,8 +675,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_dp_t r = agc_dp_mul_trunc( /* m 2^27 */
-        agc_dp_from_sp((agc_sp_t) (td.rm & TD_POSMAX)), TD_CONVRNGE);
+    agc_dp_t r = agc_dp_mul_trunc(agc_dp_from_sp((agc_sp_t) (td.rm & TD_POSMAX)), TD_CONVRNGE); /* m 2^27 */
 
     if ((td.rm & 040000u) != 0U)
     {
@@ -689,7 +684,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(agc_job_ctx_t *ctx)
 
     td.vhfrange = r;
     rz_flag_put(AGC_FLAG_SOURCFLG, true);
-    td.vhftime = rz_marktime();
+    td.vhftime  = rz_marktime();
 
     return (agc_job_rendezvous_tracking_data_csm_incorporate(ctx)); /* REND4 */
 } /* agc_job_rendezvous_tracking_data_csm_range */
@@ -760,7 +755,7 @@ static agc_status_t td_integrate(agc_interp_t *ip)
 {
     agc_job_id_t resume; /* INTSTALL */
 
-    resume = AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_INCORPORATE;
+    resume           = AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_INCORPORATE;
     bool         csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* CSM corrected */
     agc_status_t st  = rz_setintg(resume);               /* SETINTG */
 
@@ -784,8 +779,7 @@ static agc_status_t td_integrate(agc_interp_t *ip)
     }
 
     rz_flag_put(AGC_FLAG_VINTFLAG, csm);
-    rz_flag_put(AGC_FLAG_DIM0FLAG,
-                agc_flag_test(AGC_FLAG_RENDWFLG)); /* REND5 */
+    rz_flag_put(AGC_FLAG_DIM0FLAG, agc_flag_test(AGC_FLAG_RENDWFLG)); /* REND5 */
     st    = agc_integ_integrv(ip, agc_integ_shared_ctx(), rz_marktime());
     td.x2 = td_shiftndx();
 
@@ -823,8 +817,7 @@ static agc_status_t td_integrate(agc_interp_t *ip)
  * RETURNS: agc_status_t -- the status of the next look (WAITONE), the
  *          display, or the step that failed
  **********************************************************************/
-static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
-                              bool at_incorp2)
+static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip, bool at_incorp2)
 {
     for (int i = 0; i < TD_PASSES; i++)
     {
@@ -865,8 +858,7 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
         }
 
         at_incorp2 = false;
-        st         = rz_incorp2(ip, &td.inc,
-                                agc_flag_test(AGC_FLAG_CMOONFLG)); /* REND12 */
+        st         = rz_incorp2(ip, &td.inc, agc_flag_test(AGC_FLAG_CMOONFLG)); /* REND12 */
 
         if (st != AGC_STATUS_OK)
         {
@@ -898,7 +890,7 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
             st = td_pos(ip, AGC_VEHICLE_LM, &td.lempos);
         }
 
-        agc_phase_change(2, 04022);                               /* REND13   */
+        agc_phase_change(2, 04022); /* REND13   */
         td.rclp = agc_vec_sub(ip, td.lempos, td.csmpos);
         rz_flag_put(AGC_FLAG_INCORFLG, false);
 
@@ -926,8 +918,7 @@ static agc_status_t td_passes(agc_job_ctx_t *ctx, agc_interp_t *ip,
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -991,11 +982,9 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_display(agc_job_ctx_t *ctx)
         td.n49disp[2] = 2; /* VHF */
     }
 
-    td.tempor1 = 0;
+    td.tempor1      = 0;
     agc_phase_change(2, 04022);
-    agc_status_t st =
-        agc_exec_novac(TD_PRIO27, /* RENDISP2 */
-                       AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS);
+    agc_status_t st = agc_exec_novac(TD_PRIO27, AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS); /* RENDISP2 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -1028,10 +1017,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U,
-                     AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE,
-                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_PROCEED,
-                     AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_RECYCLE));
+    return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 49U, AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE, AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_PROCEED, AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_RECYCLE));
 }
 
 /**********************************************************************
@@ -1049,8 +1035,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals(agc_job_ctx_t *ctx)
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1077,8 +1062,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -1107,8 +1091,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(
  *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
  *          the executive, display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(
-    agc_job_ctx_t *ctx)
+agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {

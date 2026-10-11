@@ -76,6 +76,7 @@
 #define RR_20_5DEGS 1866     /* 20.5DEGS DEC .11389                   */
 #define RR_LIM_90   (-8192)  /* DEC -.5: 90 degrees (mode test)       */
 #define RR_1DEG     (-91)    /* DEC -.00555: 1 degree                 */
+
 /* RRSPGAIN DEC .59062: null .7 of the error in .5 s                   */
 #define RR_SPGAIN    9677    /* RRSPGAIN, 2^0                          */
 #define RR_LIMIT     (-384)  /* -RRLIMIT DEC -384 pulses               */
@@ -83,22 +84,25 @@
 #define RR_BIT11_1   002001u /* BIT11+1: reposition, turn-on          */
 #define RR_BIT10_15  041000u /* BIT10+15: designate, continuous des.  */
 #define RR_TRKF_LAMP 000200u /* DSPTAB +11D BIT8: tracker fail lamp   */
-#define RR_DSPTAB_11 11 /* DSPTAB +11D */
+#define RR_DSPTAB_11 11      /* DSPTAB +11D */
+
 /* Single-axis targets, CDU words: BIT15 / NEGMAX = 180 degrees, CS HALF
  * = -90, -45DEGSR = 13,14,15 (octal 70000), -50DEGSR DEC -.27778,
  * -50DEGSR + -80DEGSR = -130 degrees.                                   */
-#define RR_W_180  040000u /* 180 deg (NEGMAX) */
-#define RR_W_M90  057777u /* -90 deg (CS HALF) */
-#define RR_W_M45  070000u /* -45 deg */
-#define RR_W_M50  ((uint16_t) (077777 - 4551)) /* -50 deg */
+#define RR_W_180  040000u                       /* 180 deg (NEGMAX) */
+#define RR_W_M90  057777u                       /* -90 deg (CS HALF) */
+#define RR_W_M45  070000u                       /* -45 deg */
+#define RR_W_M50  ((uint16_t) (077777 - 4551))  /* -50 deg */
 #define RR_W_M130 ((uint16_t) (077777 - 11833)) /* -130 deg */
+
 /* Waits, centiseconds.                                                  */
-#define RR_DT_20MS    2U /* 20 ms, cs */
-#define RR_DT_HALFSEC 50U /* .5 s, cs */
-#define RR_DT_1SEC    100U /* 1 s, cs */
+#define RR_DT_20MS    2U    /* 20 ms, cs */
+#define RR_DT_HALFSEC 50U   /* .5 s, cs */
+#define RR_DT_1SEC    100U  /* 1 s, cs */
 #define RR_DT_10SEC   1000U /* 10 s, cs */
+
 /* Bound on the RR1AXIS steps run in one task (REMODE has five).         */
-#define RR_AXIS_MAX_STEPS 12 /* drives per task */
+#define RR_AXIS_MAX_STEPS 12                         /* drives per task */
 #define RR_ALARM_NOT_AUTO ((agc_alarm_code_t) 00510) /* RR not in auto */
 
 /* Where RRZEROSB returns (RRRET): RRTURNON or RRZ2 (RRZERO).            */
@@ -111,13 +115,13 @@ typedef enum rr_zero_return
 /* RR1AXIS state: RDES, RRINDEX and the client step (RRRET).             */
 typedef struct rr_axis
 {
-    rr_axis_client_t client; /* RRRET: the caller */
-    int              step; /* the caller's step */
+    rr_axis_client_t client;  /* RRRET: the caller */
+    int              step;    /* the caller's step */
     int              rrindex; /* 0 trunnion (CDUT), 1 shaft (CDUS)      */
     uint16_t         rdes;    /* RDES: desired angle, CDU word          */
 } rr_axis_t;
 
-static rr_state_t       rr_designate_state; /* radar erasables */
+static rr_state_t       rr_designate_state;               /* radar erasables */
 static rr_axis_t        rr_axis     = {RR_AXIS_REPOSITION, 0, 0, 0U};
 static rr_zero_return_t rr_zero_ret = RR_ZERO_FOR_TURNON; /* RRRET */
 
@@ -154,7 +158,7 @@ rr_state_t *rr_state(void)
 int rr_ones(uint16_t w)
 {
     uint16_t v = (uint16_t) (w & RR_WORD_MASK); /* 15 bits */
-    int      r = (int) v; /* signed value */
+    int      r = (int) v;                       /* signed value */
 
     if ((v & 040000u) != 0u)
     {
@@ -348,8 +352,7 @@ void rr_radmodes_clear(uint16_t bits)
         return;
     }
 
-    agc_erase_set_radmodes(
-        (uint16_t) (agc_erase_radmodes() & ~bits & RR_WORD_MASK));
+    agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() & ~bits & RR_WORD_MASK));
 }
 
 /**********************************************************************
@@ -439,8 +442,7 @@ bool agc_rr_limchk(uint16_t t, uint16_t s)
 
     if (!rr_mode2())
     {
-        return (rr_magsub(tv, RR_LIM_T1) &&
-                rr_magsub(sv + RR_5_5DEGS, RR_LIM_S1));
+        return (rr_magsub(tv, RR_LIM_T1) && rr_magsub(sv + RR_5_5DEGS, RR_LIM_S1));
     }
 
     if (!rr_magsub(sv + RR_82DEGS, RR_LIM_S2))
@@ -515,7 +517,7 @@ void rr_lamp_put(uint16_t lamp, bool on)
 static void rr_trkf(void)
 {
     uint16_t m = agc_erase_radmodes(); /* RADMODES */
-    bool     on; /* lamp wanted */
+    bool     on;                       /* lamp wanted */
 
     on = ((m & RR_13_7_2) == 0U) || ((m & RR_RRDATABT) != 0U);
 
@@ -778,8 +780,7 @@ agc_status_t agc_task_rr_zero_counters(void)
     agc_erase_set_cdut(0U);
     agc_erase_set_cdus(0U);
     rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ZERO_CDU);
-    agc_status_t st =
-        agc_waitlist_fixdelay(RR_DT_10SEC, AGC_TASK_RR_ZERO_SETTLED); /* 10 s */
+    agc_status_t st = agc_waitlist_fixdelay(RR_DT_10SEC, AGC_TASK_RR_ZERO_SETTLED); /* 10 s */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
     {
@@ -959,16 +960,16 @@ agc_status_t agc_rr_zero(void)
  *
  * RETURNS: bool -- true while the client has a target at this step
  **********************************************************************/
-static bool rr_axis_target(rr_axis_client_t c, int step, int *rrindex,
-                           uint16_t *rdes)
+static bool rr_axis_target(rr_axis_client_t c, int step, int *rrindex, uint16_t *rdes)
 {
     /* REMODE: T 0 (180), S -45, T -130 (-50), T -180 (0), S -90 (0);
      * the targets of the present mode 1 (mode 2) and their axes.        */
     static const int      remode_axis[5] = {0, 1, 0, 0, 1};
     static const uint16_t remode_m1[5]   = {
-        0U, RR_W_M45, RR_W_M130, RR_W_180, RR_W_M90
-    };
-    static const uint16_t remode_m2[5] = {RR_W_180, RR_W_M45, RR_W_M50, 0U, 0U};
+          0U, RR_W_M45, RR_W_M130, RR_W_180, RR_W_M90
+      };
+    static const uint16_t remode_m2[5]   = {RR_W_180, RR_W_M45, RR_W_M50, 0U, 0U};
+
     /* DORREPOS: T to 0 (180), S to 0 (-90) in mode 1 (mode 2).           */
     static const uint16_t repos_m2[2] = {RR_W_180, RR_W_M90};
     bool                  m2          = rr_mode2(); /* mode 2 now */
@@ -1034,7 +1035,7 @@ typedef enum rr_axis_outcome
  **********************************************************************/
 static rr_axis_outcome_t rr_axis_pass(agc_status_t *st)
 {
-    *st = AGC_STATUS_OK;
+    *st        = AGC_STATUS_OK;
     uint16_t m = agc_erase_radmodes(); /* RADMODES */
 
     if ((~m & (RR_REMODBIT | RR_REPOSBIT)) == 0U)
@@ -1125,8 +1126,7 @@ static bool rr_axis_advance(agc_status_t *st)
     *st = AGC_STATUS_OK;
     rr_axis.step++;
 
-    if (rr_axis_target(rr_axis.client, rr_axis.step, &rr_axis.rrindex,
-                       &rr_axis.rdes))
+    if (rr_axis_target(rr_axis.client, rr_axis.step, &rr_axis.rrindex, &rr_axis.rdes))
     {
         return (true);
     }
@@ -1180,7 +1180,7 @@ static agc_status_t rr_axis_run(void)
     for (int i = 0; i < RR_AXIS_MAX_STEPS; i++)
     {
         rr_axis_outcome_t o    = rr_axis_pass(&st); /* RR1AX2 */
-        bool              more = false; /* another axis */
+        bool              more = false;             /* another axis */
 
         if (o == RR_AXIS_WAITING)
         {
@@ -1223,11 +1223,9 @@ static agc_status_t rr_axis_run(void)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the status of the last step
  **********************************************************************/
-agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex,
-                           uint16_t rdes)
+agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex, uint16_t rdes)
 {
-    if (!AGC_ASSERT((int) client >= 0 && client < RR_AXIS_CLIENT_COUNT) ||
-        !AGC_ASSERT(rrindex == 0 || rrindex == 1))
+    if (!AGC_ASSERT((int) client >= 0 && client < RR_AXIS_CLIENT_COUNT) || !AGC_ASSERT(rrindex == 0 || rrindex == 1))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1305,9 +1303,9 @@ agc_status_t agc_task_dorrepos(void)
  **********************************************************************/
 agc_status_t agc_task_rr_reposition_drive(void)
 {
-    int      idx  = 0; /* RRINDEX */
+    int      idx  = 0;  /* RRINDEX */
     uint16_t rdes = 0U; /* RDES */
-    bool     ok; /* first target */
+    bool     ok;        /* first target */
 
     ok = rr_axis_target(RR_AXIS_REPOSITION, 0, &idx, &rdes);
 
@@ -1333,9 +1331,9 @@ agc_status_t agc_task_rr_reposition_drive(void)
  **********************************************************************/
 agc_status_t rr_remode_start(void)
 {
-    int      idx  = 0; /* RRINDEX */
+    int      idx  = 0;  /* RRINDEX */
     uint16_t rdes = 0U; /* RDES */
-    bool     ok; /* first target */
+    bool     ok;        /* first target */
 
     ok = rr_axis_target(RR_AXIS_REMODE, 0, &idx, &rdes);
 

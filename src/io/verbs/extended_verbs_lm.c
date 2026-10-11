@@ -33,34 +33,34 @@
 #define BIT6                        000040u
 #define BIT13                       010000u
 #define BIT14                       020000u
-#define OCT24                       000024u /* BLANKET bits 3, 5                          */
-#define OCT30                       000030u /* CHAN12 bits 4,5: coarse align, zero ICDU   */
+#define OCT24                       000024u            /* BLANKET bits 3, 5                          */
+#define OCT30                       000030u            /* CHAN12 bits 4,5: coarse align, zero ICDU   */
 #define BIT13_14                    030000u
-#define OCT70000                    070000u /* CHAN14 bits 13,14,15: drive the CDUs        */
-#define BOOLSMSK                    013113u /* DAPBOOLS bits shown in DAPDATR1            */
-#define DSPLYMSK                    033113u /* legal DAPDATR1 bits                         */
-#define REVCNT                      000006u /* BLANKET bits 2, 3                           */
-#define DAPBOOLS_WORD               13 /* DAPBOOLS = FLGWRD13                         */
-#define CSMDOCKD                    010000u /* DAPBOOLS bit 13 (CSMDKFLG)                  */
-#define ACC4OR2X                    002000u /* DAPBOOLS bit 11 (ACC4-2FL): 4-jet X         */
-#define RHCSCALE                    000100u /* DAPBOOLS bit 7 (RHCSCFLG): normal stick     */
-#define PULSES                      040000u /* DAPBOOLS bit 15 (PULSEFLG): minimum impulse */
-#define RATE_BITS                   000003u /* DAPBOOLS bits 1,2: KALCMANU rate           */
+#define OCT70000                    070000u            /* CHAN14 bits 13,14,15: drive the CDUs        */
+#define BOOLSMSK                    013113u            /* DAPBOOLS bits shown in DAPDATR1            */
+#define DSPLYMSK                    033113u            /* legal DAPDATR1 bits                         */
+#define REVCNT                      000006u            /* BLANKET bits 2, 3                           */
+#define DAPBOOLS_WORD               13                 /* DAPBOOLS = FLGWRD13                         */
+#define CSMDOCKD                    010000u            /* DAPBOOLS bit 13 (CSMDKFLG)                  */
+#define ACC4OR2X                    002000u            /* DAPBOOLS bit 11 (ACC4-2FL): 4-jet X         */
+#define RHCSCALE                    000100u            /* DAPBOOLS bit 7 (RHCSCFLG): normal stick     */
+#define PULSES                      040000u            /* DAPBOOLS bit 15 (PULSEFLG): minimum impulse */
+#define RATE_BITS                   000003u            /* DAPBOOLS bits 1,2: KALCMANU rate           */
 #define NORMAL_SENS                 ((agc_sp_t) 10817) /* NORMAL DEC .660214              */
-#define FINE_SENS                   ((agc_sp_t) 2704) /* FINE DEC .165054 (4 d/s)         */
-#define ONE_TENTH                   ((agc_sp_t) 1638) /* 1/10 DEC .1                      */
-#define ATTSCALE                    ((agc_sp_t) 1638) /* ATTSCALE DEC 0.1                 */
-#define RATEDB_LM                   ((agc_sp_t) -218) /* -0.6D/S, scaled at 45 d/s        */
-#define RATEDB_CSM                  ((agc_sp_t) -109) /* -0.3D/S                          */
-#define MINLMD                      ((int32_t) -2850) /* min descent stage mass, kg B16   */
-#define MINMINLM                    ((int32_t) -2200) /* min ascent stage mass, kg B16    */
-#define MINCSM                      ((int32_t) 02000) /* BIT11: min CSM mass (9050 lb)    */
+#define FINE_SENS                   ((agc_sp_t) 2704)  /* FINE DEC .165054 (4 d/s)         */
+#define ONE_TENTH                   ((agc_sp_t) 1638)  /* 1/10 DEC .1                      */
+#define ATTSCALE                    ((agc_sp_t) 1638)  /* ATTSCALE DEC 0.1                 */
+#define RATEDB_LM                   ((agc_sp_t) -218)  /* -0.6D/S, scaled at 45 d/s        */
+#define RATEDB_CSM                  ((agc_sp_t) -109)  /* -0.3D/S                          */
+#define MINLMD                      ((int32_t) -2850)  /* min descent stage mass, kg B16   */
+#define MINMINLM                    ((int32_t) -2200)  /* min ascent stage mass, kg B16    */
+#define MINCSM                      ((int32_t) 02000)  /* BIT11: min CSM mass (9050 lb)    */
 #define PRIO4                       ((agc_prio_t) 004)
 #define PRIO7                       ((agc_prio_t) 007)
 #define PRIO22                      ((agc_prio_t) 022)
-#define ATTCK_DELAY_CS              2u /* CAF TWO: .32 s comment, 20 ms count */
-#define RENDEZVOUS_DISPLAY_DELAY_CS 2u /* CAF BIT2, WAITLIST                  */
-#define TRIM_DELAY_CS               1u /* CAF BIT1, WAITLIST TRIMGIMB         */
+#define ATTCK_DELAY_CS              2u                 /* CAF TWO: .32 s comment, 20 ms count */
+#define RENDEZVOUS_DISPLAY_DELAY_CS 2u                 /* CAF BIT2, WAITLIST                  */
+#define TRIM_DELAY_CS               1u                 /* CAF BIT1, WAITLIST TRIMGIMB         */
 
 /* ---- V43 ------------------------------------------------------------------ */
 
@@ -73,8 +73,7 @@ static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK);
     }
 
-    if ((agc_chan_read((int) AGC_CHAN_CHAN12) & OCT30) != 0u ||
-        ((agc_chan_read((int) AGC_CHAN_CHAN31) ^ BIT13_14) & BIT13_14) != 0u)
+    if ((agc_chan_read((int) AGC_CHAN_CHAN12) & OCT30) != 0u || ((agc_chan_read((int) AGC_CHAN_CHAN31) ^ BIT13_14) & BIT13_14) != 0u)
     {
         return (agc_extverb_alm_end());
     }
@@ -91,8 +90,7 @@ static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
                             AGC_JOB_ATTITUDE_ERROR_LOAD,
                             AGC_JOB_ATTITUDE_ERROR_LOAD};
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22),
-                             &cont));
+    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22), &cont));
 }
 
 /* V43 after the load: show V43 again (EXDSPRET).                          */
@@ -110,8 +108,7 @@ agc_status_t agc_job_attitude_error_load_lm(agc_job_ctx_t *ctx)
 agc_status_t agc_job_attitude_error_enable(agc_job_ctx_t *ctx)
 {
     agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT6);
-    agc_status_t st = agc_waitlist_call(ATTCK_DELAY_CS,
-                                        AGC_TASK_ATTITUDE_ERROR_OUTPUT);
+    agc_status_t st = agc_waitlist_call(ATTCK_DELAY_CS, AGC_TASK_ATTITUDE_ERROR_OUTPUT);
 
     if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
     {
@@ -136,8 +133,7 @@ agc_status_t agc_extverb_lm_attck2(void)
         }
 
         agc_sp_t     th = (agc_sp_t) ((v < AGC_SP_MIN) ? AGC_SP_MIN : v);
-        agc_status_t st =
-            agc_imu_hw_set_cducmd(i, agc_dp_high(agc_sp_mul(th, ATTSCALE)));
+        agc_status_t st = agc_imu_hw_set_cducmd(i, agc_dp_high(agc_sp_mul(th, ATTSCALE)));
 
         if (st != AGC_STATUS_OK)
         {
@@ -153,10 +149,7 @@ agc_status_t agc_extverb_lm_attck2(void)
 /* ---- V48 R03 ---------------------------------------------------------------- */
 
 /* GOXDSPFR display: proceed -> next, enter -> again, then BLANKET.       */
-static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb,
-                                     uint8_t noun,
-                                     agc_job_id_t term, agc_job_id_t next,
-                                     agc_job_id_t again, uint16_t blank)
+static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t term, agc_job_id_t next, agc_job_id_t again, uint16_t blank)
 {
     if (!AGC_ASSERT(ctx != NULL))
     {
@@ -164,8 +157,7 @@ static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb,
     }
 
     agc_dsky_cont_t cont = {term, next, again};
-    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOMARKFR,
-                                            agc_dsky_vn(verb, noun), &cont);
+    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOMARKFR, agc_dsky_vn(verb, noun), &cont);
 
     if (st != AGC_STATUS_OK)
     {
@@ -213,18 +205,14 @@ agc_status_t agc_job_dap_data_load_noun46_lm(agc_job_ctx_t *ctx)
 
     agc_erase_set_dapdatr1((uint16_t) (d & DSPLYMSK));
 
-    return (dap_data_display(ctx, 1, 46, AGC_JOB_EXTENDED_VERB_END,
-                             AGC_JOB_DAP_DATA_LOAD_CONFIG,
-                             AGC_JOB_DAP_DATA_LOAD_NOUN46, REVCNT));
+    return (dap_data_display(ctx, 1, 46, AGC_JOB_EXTENDED_VERB_END, AGC_JOB_DAP_DATA_LOAD_CONFIG, AGC_JOB_DAP_DATA_LOAD_NOUN46, REVCNT));
 }
 
 /* STIKLOAD: stick sensitivity and rate deadband (divided by 10 / halved
  * when the CSM is docked).                                                */
 static void stikload(uint16_t dapbools)
 {
-    agc_sp_t sens = ((dapbools & RHCSCALE) != 0u) ?
-                    (agc_sp_t) (NORMAL_SENS + FINE_SENS) :
-                    FINE_SENS;
+    agc_sp_t sens   = ((dapbools & RHCSCALE) != 0u) ? (agc_sp_t) (NORMAL_SENS + FINE_SENS) : FINE_SENS;
     agc_sp_t ratedb = RATEDB_LM;
 
     if ((dapbools & CSMDOCKD) != 0u)
@@ -253,20 +241,14 @@ agc_status_t agc_job_dap_data_load_config_lm(agc_job_ctx_t *ctx)
     agc_flag_id_t aps = (agc_flag_id_t) AGC_FLAG_APSFLAG;
 
     agc_flag_put(aps, (d & BIT14) == 0u);
-    uint16_t mask = ((d & BIT13_14) == BIT13_14) ?
-                    BOOLSMSK :
-                    (uint16_t) (BOOLSMSK - CSMDOCKD);
-    uint16_t b =
-        (uint16_t) ((agc_flagword_get(DAPBOOLS_WORD) & ~(uint32_t) BOOLSMSK) |
-                    (d & mask));
+    uint16_t mask = ((d & BIT13_14) == BIT13_14) ? BOOLSMSK : (uint16_t) (BOOLSMSK - CSMDOCKD);
+    uint16_t b    = (uint16_t) ((agc_flagword_get(DAPBOOLS_WORD) & ~(uint32_t) BOOLSMSK) | (d & mask));
 
     agc_flagword_set(DAPBOOLS_WORD, b);
     agc_guid_lm_t *g  = &agc_guid_state()->lm;
-    int32_t        hi = (int32_t) agc_erase_lemmass() +
-                        (((b & CSMDOCKD) !=
-                          0u) ? (int32_t) agc_erase_csmmass() : 0);
+    int32_t        hi = (int32_t) agc_erase_lemmass() + (((b & CSMDOCKD) != 0u) ? (int32_t) agc_erase_csmmass() : 0);
 
-    g->mass = agc_dp_pack((agc_sp_t) hi, agc_dp_low(g->mass)); /* TS MASS */
+    g->mass          = agc_dp_pack((agc_sp_t) hi, agc_dp_low(g->mass)); /* TS MASS */
     agc_flag_id_t nj = (agc_flag_id_t) AGC_FLAG_NJETSFLG;
 
     agc_flag_put(nj, (b & ACC4OR2X) == 0u);
@@ -286,10 +268,7 @@ agc_status_t agc_job_dap_data_load_config_lm(agc_job_ctx_t *ctx)
 /* DAPDATA2: V06N47 LM and CSM mass; V34 ends R03 via ENDR03.             */
 agc_status_t agc_job_dap_data_load_noun47_lm(agc_job_ctx_t *ctx)
 {
-    return (dap_data_display(ctx, 6, 47, AGC_JOB_DAP_DATA_LOAD_END,
-                             AGC_JOB_DAP_DATA_LOAD_MASS,
-                             AGC_JOB_DAP_DATA_LOAD_NOUN47,
-                             BIT3));
+    return (dap_data_display(ctx, 6, 47, AGC_JOB_DAP_DATA_LOAD_END, AGC_JOB_DAP_DATA_LOAD_MASS, AGC_JOB_DAP_DATA_LOAD_NOUN47, BIT3));
 }
 
 /* ENDR03: RESTORDB, ENDEXT.                                                */
@@ -323,8 +302,7 @@ agc_status_t agc_job_dap_data_load_mass_lm(agc_job_ctx_t *ctx)
     int32_t lem    = (int32_t) agc_erase_lemmass();
     int32_t csm    = (int32_t) agc_erase_csmmass();
 
-    if ((staged ? MINMINLM : MINLMD + MINMINLM) + lem <= 0 ||
-        (docked && csm - MINCSM <= 0))
+    if ((staged ? MINMINLM : MINLMD + MINMINLM) + lem <= 0 || (docked && csm - MINCSM <= 0))
     {
         return (agc_job_dap_data_load_noun47_lm(ctx)); /* ask for new masses   */
     }
@@ -338,7 +316,7 @@ agc_status_t agc_job_dap_data_load_mass_lm(agc_job_ctx_t *ctx)
 
     agc_guid_state()->lm.mass = agc_dp_from_sp((agc_sp_t) m); /* ZL, DXCH */
     agc_inhint();
-    agc_status_t st = agc_lm_dap_restordb(); /* deadband, inertias      */
+    agc_status_t st           = agc_lm_dap_restordb();        /* deadband, inertias      */
 
     agc_relint();
 
@@ -358,10 +336,7 @@ agc_status_t agc_job_dap_data_load_mass_lm(agc_job_ctx_t *ctx)
 /* DAPDATA3: V06N48 trim angles; proceed trims the gimbal.                  */
 agc_status_t agc_job_dap_data_load_noun48_lm(agc_job_ctx_t *ctx)
 {
-    return (dap_data_display(ctx, 6, 48, AGC_JOB_EXTENDED_VERB_END,
-                             AGC_JOB_DAP_DATA_LOAD_TRIM,
-                             AGC_JOB_DAP_DATA_LOAD_NOUN48,
-                             BIT3));
+    return (dap_data_display(ctx, 6, 48, AGC_JOB_EXTENDED_VERB_END, AGC_JOB_DAP_DATA_LOAD_TRIM, AGC_JOB_DAP_DATA_LOAD_NOUN48, BIT3));
 }
 
 /* DPDAT3: TRIMGIMB by WAITLIST (it uses FIXDELAY / VARDELAY), ENDOFJOB.   */
@@ -391,8 +366,7 @@ agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx)
     agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END,
                             AGC_JOB_EXTENDED_VERB_END,
                             AGC_JOB_EXTENDED_VERB_END};
-    agc_status_t    st =
-        agc_dsky_display(ctx, AGC_DSKY_GOMARK3R, agc_dsky_vn(50, 48), &cont);
+    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOMARK3R, agc_dsky_vn(50, 48), &cont);
 
     if (st != AGC_STATUS_OK)
     {
@@ -408,20 +382,16 @@ agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx)
  * the search option; if TRACK was on as well, stop P20 (TRMTRAK1).       */
 static agc_status_t verb_terminate_tracking(agc_job_ctx_t *ctx)
 {
-    if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG) &&
-        !agc_flag_test(
-            (agc_flag_id_t) AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE))
+    if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG) && !agc_flag_test((agc_flag_id_t) AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE))
     {
         return (agc_extverb_gopin());
     }
 
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_RNDVZFLG);
-    agc_flag_clear(
-        (agc_flag_id_t) AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE);
+    agc_flag_clear((agc_flag_id_t) AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE);
     agc_flag_clear((agc_flag_id_t) AGC_FLAG_SRCHOPTN);
 
-    if (!AGC_ASSERT(ctx != NULL) ||
-        !agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG))
+    if (!AGC_ASSERT(ctx != NULL) || !agc_flag_test((agc_flag_id_t) AGC_FLAG_TRACKFLG))
     {
         return (agc_extverb_gopin());
     }
@@ -469,7 +439,7 @@ static agc_status_t verb_minimum_impulse(bool on)
     agc_inhint();
     uint16_t b = agc_flagword_get(DAPBOOLS_WORD);
 
-    b = on ? (uint16_t) (b | PULSES) : (uint16_t) (b & ~(uint32_t) PULSES);
+    b               = on ? (uint16_t) (b | PULSES) : (uint16_t) (b & ~(uint32_t) PULSES);
     agc_flagword_set(DAPBOOLS_WORD, b);
     agc_status_t st = AGC_STATUS_OK;
 
@@ -511,8 +481,7 @@ static agc_status_t verb_rendezvous_display(void)
     }
 
     agc_inhint();
-    st = agc_waitlist_call(RENDEZVOUS_DISPLAY_DELAY_CS,
-                           AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY);
+    st = agc_waitlist_call(RENDEZVOUS_DISPLAY_DELAY_CS, AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY);
     agc_relint();
 
     return (st);
@@ -567,11 +536,9 @@ static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
     switch (verb)
     {
         case 40:
-            return ((agc_extverb_noun() == 72) ? agc_extverb_rr_zero(ctx) :
-                    agc_extverb_alm_end());
+            return ((agc_extverb_noun() == 72) ? agc_extverb_rr_zero(ctx) : agc_extverb_alm_end());
         case 41:
-            return ((agc_extverb_noun() == 72) ? agc_extverb_rr_designate(ctx) :
-                    agc_extverb_alm_end());
+            return ((agc_extverb_noun() == 72) ? agc_extverb_rr_designate(ctx) : agc_extverb_alm_end());
         case 43:
             return (verb_attitude_error(ctx));
         case 44:
