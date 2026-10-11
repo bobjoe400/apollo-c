@@ -874,7 +874,9 @@ job	AGC_JOB_CHANGE_PROGRAM_START	agc_job_change_program_start	agc_job_change_pro
 job	AGC_JOB_SPS_BURN	agc_job_sps_burn	-	csm/burns	P40CSM (V37)
 job	AGC_JOB_IMU_ORIENTATION_DETERMINATION	agc_job_csm_imu_orientation_determination	agc_job_lm_imu_orientation_determination	csm/alignment	P51 / P53 (V37)
 job	AGC_JOB_LUNAR_SURFACE_ALIGN	-	agc_job_lunar_surface_align	lm/alignment	P57 (V37)
-job	AGC_JOB_STANDBY	agc_imu_standby	agc_imu_standby	imu	P06 (V37)
+job	AGC_JOB_STANDBY	agc_job_standby	agc_job_standby	imu	P06 (V37)
+job	AGC_JOB_STANDBY_REQUEST	agc_job_standby_request	agc_job_standby_request	imu	P06 GOPERF1 V50N25 R1=00062
+job	AGC_JOB_STANDBY_RECOVERY	agc_job_standby_recovery	agc_job_standby_recovery	imu	POSTAND (group 4 restart, PRIO20)
 job	AGC_JOB_PRELAUNCH_INITIALIZATION	agc_csm_prelaunch_imutest	-	csm	P01 GTSCPSS1 (V37)
 job	AGC_JOB_CHANGE_PROGRAM_JETS_OFF	agc_job_change_program_jets_off	-	exec	R00TOP00 after DELAYJOB 5: jets off, P00
 job	AGC_JOB_CHANGE_PROGRAM_RETURN	-	agc_job_change_program_return	exec	V37RET (LM OUTROUTE after AVGEND)

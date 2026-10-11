@@ -359,3 +359,6 @@
 2026-10-10  Usage-limit cutoff killed all 16 review agents + sim. Checkpoint
             committed. Lane-specific review items now in
             docs/agents/review_items.md. Relaunching all 17 with resume.
+2026-10-10  review-guid-powered survived the cutoff; the relaunched duplicate
+            was stopped (it had F7/F8/F9-TDISPSET/DELRSPL done already).
+            Rule: ListAgents before relaunch.

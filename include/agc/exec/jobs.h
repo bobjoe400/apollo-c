@@ -113,11 +113,13 @@ typedef enum agc_job_id
     AGC_JOB_GYRO_COMMAND_RETRY, /* 1/GYRO after GYROBUSY */
     AGC_JOB_KALCMAN3,           /* KALCMAN3 */
     AGC_JOB_LASTBIAS,
-    AGC_JOB_NBDONLY,  /* IMU bias drift comp (imu) */
-    AGC_JOB_NEWDELHI, /* NEWDELHI */
-    AGC_JOB_REDOMANC, /* R60 V50N18 PROCEED */
-    AGC_JOB_RELINUS,  /* CSM 1.7, LM 2.13 */
-    AGC_JOB_STANDBY,  /* P06 (V37) */
+    AGC_JOB_NBDONLY,          /* IMU bias drift comp (imu) */
+    AGC_JOB_NEWDELHI,         /* NEWDELHI */
+    AGC_JOB_REDOMANC,         /* R60 V50N18 PROCEED */
+    AGC_JOB_RELINUS,          /* CSM 1.7, LM 2.13 */
+    AGC_JOB_STANDBY,          /* P06 (V37) */
+    AGC_JOB_STANDBY_RECOVERY, /* POSTAND (group 4 restart, PRIO20) */
+    AGC_JOB_STANDBY_REQUEST,  /* P06 GOPERF1 V50N25 R1=00062 */
 
     /* ---- src/nav/integration */
     AGC_JOB_STATEUP_STALL,

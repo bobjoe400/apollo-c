@@ -89,7 +89,8 @@ static int run_prefix(agc_interp_t *ip, const ocase_t *c, char *last,
 
         if (len == 3 && !strncmp(p, "DDV", len))
         {
-            q     = agc_dp_div(ip, (agc_dp_t) in[used], (agc_dp_t) in[used + 1]);
+            q =
+                agc_dp_div(ip, (agc_dp_t) in[used], (agc_dp_t) in[used + 1]);
             used += 2;
         }
         else if (len == 3 && !strncmp(p, "DOT", len))

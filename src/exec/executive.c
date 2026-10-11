@@ -146,10 +146,11 @@ static int32_t prio_word(int i)
 static void activity_light(bool on)
 {
     /* CAF TWO / WOR DSALMOUT (NUDIRECT, NUCHANG2) and CS TWO / WAND
-     * DSALMOUT (DUMMYJOB): the COMP ACTY lamp, channel 11 bit 2.        */
-    agc_status_t st;
-
+     * DSALMOUT (DUMMYJOB): the COMP ACTY lamp, channel 11 bit 2. The
+     * WAND mask is the 15-bit complement of bit 2 (077775).             */
     _Static_assert(AGC_CH011_COMPACT == 000002, "AGC constant");
+    _Static_assert((AGC_CHAN_MASK & ~(unsigned) AGC_CH011_COMPACT) == 077775u,
+                   "CS TWO");
 
     if (on)
     {
@@ -160,12 +161,12 @@ static void activity_light(bool on)
         agc_chan_and(
             AGC_CHAN_DSALMOUT,
             (uint16_t) (AGC_CHAN_MASK & ~(unsigned) AGC_CH011_COMPACT));
-        st = AGC_STATUS_OK;
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (!AGC_ASSERT(((agc_chan_read(AGC_CHAN_DSALMOUT) &
+                      (uint16_t) AGC_CH011_COMPACT) != 0U) == on))
     {
-        return;
+        return; /* the output latch did not take the bit */
     }
 }
 

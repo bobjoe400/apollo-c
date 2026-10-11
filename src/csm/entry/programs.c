@@ -889,7 +889,8 @@ agc_status_t agc_job_entry_imu_check_return(agc_job_ctx_t *ctx)
 
 /* TFF/TRIG (p. 815): .5 COS(THETA) = .5 - |ARG/(RN RTERM (1 + X))|,
  * returns .5 SIN(THETA) with the sign of ARG.                            */
-static agc_dp_t tfftrig(agc_interp_t *ip, const agc_tff_t *t, agc_dp_t *cdelf2)
+agc_dp_t agc_entry_tff_trig(agc_interp_t *ip, const agc_tff_t *t,
+                            agc_dp_t *cdelf2)
 {
     agc_dp_t m;
 
@@ -970,8 +971,8 @@ static agc_dp_t disptarg(agc_interp_t *ip, agc_entry_state_t *es, agc_dp_t rtgo)
 
 /* PREVGAM / VGAMCALC (pp. 813-814): vis-viva speed VGAM (m/cs B7) and
  * positive flight path angle (revs) at RTERM (B29).                      */
-static agc_dp_t vgamcalc(agc_interp_t *ip, agc_tff_t *t, agc_dp_t rterm,
-                         agc_dp_t *vgam)
+agc_dp_t agc_entry_vgamcalc(agc_interp_t *ip, agc_tff_t *t, agc_dp_t rterm,
+                            agc_dp_t *vgam)
 {
     agc_dp_t prod;
     agc_dp_t d;
@@ -1056,7 +1057,7 @@ static agc_status_t ems_altitude_range(agc_interp_t *ip, agc_entry_state_t *es,
         return (st);
     }
 
-    a      = tfftrig(ip, &entry_preparation_tff, &c);
+    a      = agc_entry_tff_trig(ip, &entry_preparation_tff, &c);
     *eradm = fishcalc(ip, a, c);
     st     = agc_tff_calctff(ip, &entry_preparation_tff,
                              agc_dp_add(ip, *eradm, es->emsalt), &t);
@@ -1068,7 +1069,7 @@ static agc_status_t ems_altitude_range(agc_interp_t *ip, agc_entry_state_t *es,
 
     es->tte1 = agc_dp_neg(t); /* countdown     */
     es->tte  = es->tte1;
-    a        = tfftrig(ip, &entry_preparation_tff, &c);
+    a        = agc_entry_tff_trig(ip, &entry_preparation_tff, &c);
     *eradm   = fishcalc(ip, a, c);
     a        = agc_entry_vrcalc(urh, es->rt);
     a        = disptarg(ip, es, a);
@@ -1099,12 +1100,13 @@ agc_status_t agc_entry_ems_data(void)
         return (st);
     }
 
-    g = vgamcalc(ip, &entry_preparation_tff, entry_preparation_tff.rterm,
-                 &vgam);       /* VIO */
+    g = agc_entry_vgamcalc(ip, &entry_preparation_tff,
+                           entry_preparation_tff.rterm,
+                           &vgam); /* VIO */
     es->vio = agc_dp_add(
         ip, agc_dp_div(ip, AGC_ENTRY_VEMSCON, agc_dp_mul(ip, g, vgam)), vgam);
-    g = vgamcalc(ip, &entry_preparation_tff,
-                 agc_dp_add(ip, eradm, AGC_ENTRY_KFT300), &vgam);
+    g = agc_entry_vgamcalc(ip, &entry_preparation_tff,
+                           agc_dp_add(ip, eradm, AGC_ENTRY_KFT300), &vgam);
     st = agc_entry_gmaxcalc(vgam, g, &es->gmax);
 
     if (st == AGC_STATUS_OK)
@@ -1118,10 +1120,10 @@ agc_status_t agc_entry_ems_data(void)
         return (st);
     }
 
-    g     = tfftrig(ip, &entry_preparation_tff, &c);
+    g     = agc_entry_tff_trig(ip, &entry_preparation_tff, &c);
     eradm = fishcalc(ip, g, c);
-    g     = vgamcalc(ip, &entry_preparation_tff,
-                     agc_dp_add(ip, eradm, AGC_ENTRY_KFT400), &vgam);
+    g     = agc_entry_vgamcalc(ip, &entry_preparation_tff,
+                               agc_dp_add(ip, eradm, AGC_ENTRY_KFT400), &vgam);
     es->gammaei =
         agc_dp_pack(agc_dp_high(agc_dp_neg(g)), agc_dp_high(es->rtgo));
     es->vpred = vgam;

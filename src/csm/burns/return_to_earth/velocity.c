@@ -81,7 +81,7 @@ agc_interp_t *rte_ip(void)
  * terms, so that word carries most of their precision (finding F14).     */
 static agc_tp_t rte_tp_dsu(agc_interp_t *ip, agc_tp_t m, agc_dp_t x)
 {
-    const agc_dp_t hi = agc_tp_to_dp(m);
+    const agc_dp_t hi  = agc_tp_to_dp(m);
     const agc_tp_t lo  = m - agc_tp_from_dp(hi); /* MPAC+2         */
     const agc_tp_t one = (agc_tp_t) 1 << AGC_SP_BITS;
 
@@ -223,7 +223,12 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
     num = agc_dp_shr(num, 1);                  /* DPMODE SR1    */
     agc_dp_t q = agc_dp_div(ip, num, den);     /* XSU,2 X1; DDV */
 
-    rs->pcon = agc_dp_shl(ip, q, -(6 - (n1 - n2))); /* SR* 6,2: B28  */
+    /* SR* 6,2 truncates into MPAC+2; STORE PCON keeps the top two words
+     * but SQRT reads the whole TP MPAC.                                  */
+    agc_tp_t pcon_tp =
+        agc_tp_shift(ip, agc_tp_from_dp(q), -(6 - (n1 - n2))); /* B28 */
+
+    rs->pcon = agc_tp_to_dp(pcon_tp); /* STORE PCON    */
 
     if (agc_dp_sqrt_chk(ip, rs->pcon, &root) != AGC_STATUS_OK)
     {
@@ -231,6 +236,8 @@ agc_status_t rte_dv_calc(agc_interp_t *ip, rte_erasable_t *rs,
 
         return (agc_poodoo(RTE_POODOO_SQRT));
     }
+
+    root = agc_tp_sqrt(ip, pcon_tp); /* SQRT          */
 
     agc_dp_t k =
         agc_tp_to_dp(agc_tp_norm(agc_dp_mul_tp(root, pl->theta3), &n1));

@@ -342,7 +342,7 @@ static agc_status_t job_io(agc_job_ctx_t *ctx)
     return (job_io_3(ctx));
 }
 
-/* AGC_JOB_ATTITUDE_MANEUVER_ENTER .. AGC_JOB_STANDBY */
+/* AGC_JOB_ATTITUDE_MANEUVER_ENTER .. AGC_JOB_STANDBY_REQUEST */
 static agc_status_t job_imu_0(agc_job_ctx_t *ctx)
 {
     if (!AGC_ASSERT(ctx != NULL))
@@ -351,7 +351,7 @@ static agc_status_t job_imu_0(agc_job_ctx_t *ctx)
     }
 
     if (!AGC_ASSERT(ctx->id >= AGC_JOB_ATTITUDE_MANEUVER_ENTER &&
-                    ctx->id <= AGC_JOB_STANDBY))
+                    ctx->id <= AGC_JOB_STANDBY_REQUEST))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -389,7 +389,11 @@ static agc_status_t job_imu_0(agc_job_ctx_t *ctx)
         case AGC_JOB_RELINUS:
             return (agc_job_relinus(ctx));
         case AGC_JOB_STANDBY:
-            return (agc_imu_standby(ctx));
+            return (agc_job_standby(ctx));
+        case AGC_JOB_STANDBY_RECOVERY:
+            return (agc_job_standby_recovery(ctx));
+        case AGC_JOB_STANDBY_REQUEST:
+            return (agc_job_standby_request(ctx));
         default:
             break;
     }

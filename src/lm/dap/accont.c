@@ -94,12 +94,12 @@ static bool mp_negzero(agc_sp_t a, agc_sp_t k)
  * takes as a negative offset (CCS fourth branch: SIGNAOS = 1).           */
 static void aos_negzero(const lm_dap_t *d, acc_work_t *w)
 {
-    agc_sp_t tq  = lm_dap_mphi(d->aosq, d->coeffq);
-    agc_sp_t tr  = lm_dap_mphi(d->aosr, d->coeffr);
-    bool     nq  = (tq == 0) && mp_negzero(d->aosq, d->coeffq);
-    bool     nr  = (tr == 0) && mp_negzero(d->aosr, d->coeffr);
-    bool     pq  = (tq == 0) && !nq;                 /* COEFFQ AOSQ = +0  */
-    bool     pr  = (tr == 0) && !nr;                 /* COEFFR AOSR = +0  */
+    agc_sp_t tq = lm_dap_mphi(d->aosq, d->coeffq);
+    agc_sp_t tr = lm_dap_mphi(d->aosr, d->coeffr);
+    bool     nq = (tq == 0) && mp_negzero(d->aosq, d->coeffq);
+    bool     nr = (tr == 0) && mp_negzero(d->aosr, d->coeffr);
+    bool     pq = (tq == 0) && !nq;                  /* COEFFQ AOSQ = +0  */
+    bool     pr = (tr == 0) && !nr;                  /* COEFFR AOSR = +0  */
 
     w->negzero[0] = (d->aosu == 0) && !(nq && pr);   /* -(-0) + +0 = +0   */
     w->negzero[1] = (d->aosv == 0) && !(pq && pr);
@@ -502,8 +502,8 @@ agc_status_t lm_dap_switch_curves(void)
 
     if (w.drifter != 0)
     {
-        d->aosu = 0; /* just to be sure (+0) */
-        d->aosv = 0;
+        d->aosu      = 0; /* just to be sure (+0) */
+        d->aosv      = 0;
         w.negzero[0] = false;
         w.negzero[1] = false;
     }

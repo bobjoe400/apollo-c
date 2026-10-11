@@ -159,6 +159,7 @@ static agc_dp_t ldg_das(agc_dp_t a, agc_sp_t *a_hi, agc_dp_t b)
     if (!AGC_ASSERT(h >= AGC_SP_MIN && h <= -AGC_SP_MIN))
     {
         *a_hi = agc_dp_high((agc_dp_t) (a + b));
+
         return ((agc_dp_t) (a + b));
     }
 
@@ -236,7 +237,7 @@ agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
     agc_lm_fastchng();
     l->ttf_8    = l->ttf_8tmp;
     l->ttf_8_hi = l->ttf_8tmp_hi;
-    l->land  = l->landtemp;
+    l->land     = l->landtemp;
     agc_lm_tdispset();
     agc_lm_fastchng(); /* since REDESIG may change LANDTEMP */
 
@@ -965,7 +966,7 @@ static agc_status_t ldg_front(agc_interp_t *ip)
 
     l->tpipold = l->tpip;
     agc_lm_fastchng();
-    l->tpip     = agc_guid_state()->avg.piptime1;
+    l->tpip        = agc_guid_state()->avg.piptime1;
     l->ttf_8tmp    = l->ttf_8; /* DCA TTF/8, DXCH TTF/8TMP */
     l->ttf_8tmp_hi = l->ttf_8_hi;
     agc_status_t st = AGC_STATUS_OK;

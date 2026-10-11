@@ -38,6 +38,7 @@
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/exec/jobs.h"
+#include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 
 /* ======================================================================
@@ -304,8 +305,11 @@ agc_status_t agc_guid_init(agc_vehicle_t veh); /* fresh start: zero + pad loads 
 agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip,
                                                agc_vehicle_t veh); /* S30.1 */
 agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip); /* S31.1 (CM) */
-agc_status_t agc_guid_delrspl(agc_interp_t *ip,
-                              agc_dp_t      hdist);                /* DELRSPL (CM) */
+/* DELRSPL (CM): tff = the TFF debris of the last SR30.1, tff_cs = TFF
+ * (cs 2^28, negative); sets RSP-RREC and does INTWAKE0.                  */
+agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff,
+                              agc_dp_t tff_cs);
+
 agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv); /* MIDGIM (CM) */
 
 /* ---- shared steering math (p40.c) ------------------------------------- */

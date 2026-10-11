@@ -7,7 +7,8 @@ INFLIGHT_ALIGNMENT_ROUTINES, GIMBAL_LOCK_AVOIDANCE, KALCMANU_STEERING,
 ANGLFIND / ATTITUDE_MANEUVER_ROUTINE, R60_62, IMU_CALIBRATION_AND_ALIGNMENT.
 
 ## Progress
-* [ ] P06 / PRESTAND / SCALPREP / POSTAND translated (mode.c)
+* [x] P06 / PRESTAND / SCALPREP / POSTAND translated (mode.c: agc_job_standby,
+  agc_job_standby_request, agc_job_standby_recovery; registry rows added; compiles)
 * [ ] MODECADR -0 encoding resolved
 * [ ] prelaunch gyrocompass (P01/P02/P03, V65, V78) translated
 * [ ] oracle findings F5 / F6

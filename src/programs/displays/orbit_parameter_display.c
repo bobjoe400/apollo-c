@@ -96,17 +96,22 @@ static agc_dp_t opd_display_height(agc_interp_t *ip, agc_dp_t h, bool moon)
     return (agc_orbit_params_maxchk(ip, x));
 }
 
+/* The TFF erasables (NRMAG, NRTERM, TFFNP, TFFVSQ, TFFX, TFFTEM...) the
+ * last SR30.1 left; CM DELRSPL (CANDEL) works on them.                  */
+static agc_tff_t opd_tff_debris;
+
 /* ---- SR30.1 (pp.522-523) ----------------------------------------------- */
-agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
-                                      const agc_orbit_params_in_t *in,
-                                      agc_orbit_params_out_t      *out)
+static agc_status_t opd_compute(agc_interp_t *ip,
+                                const agc_orbit_params_in_t *in,
+                                agc_orbit_params_out_t *out, agc_tff_t *tff_out)
 {
-    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
+    if (!AGC_ASSERT(ip != NULL && in != NULL) ||
+        !AGC_ASSERT(out != NULL && tff_out != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_tff_t tff;
+    agc_tff_t tff = {0};
 
     tff.rone = in->moon ? agc_vec_shl(ip, in->rone, 2) : in->rone; /* VSL2 */
     tff.vone = in->moon ? agc_vec_shl(ip, in->vone, 2) : in->vone;
@@ -145,8 +150,23 @@ agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
         agc_tff_calctff(ip, &tff, agc_dp_add(ip, in->hpermin, in->rpadtem), &t);
 
     out->tff = agc_dp_neg(t); /* DCOMP, TFF    */
+    *tff_out = tff;
 
     return ((st != AGC_STATUS_OK) ? st : st2);
+}
+
+agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
+                                      const agc_orbit_params_in_t *in,
+                                      agc_orbit_params_out_t      *out)
+{
+    agc_tff_t tff;
+
+    if (!AGC_ASSERT(ip != NULL && in != NULL) || !AGC_ASSERT(out != NULL))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (opd_compute(ip, in, out, &tff));
 }
 
 /* SR30.1 on the rendezvous erasables (RONE VONE TFF/RTMU HPERMIN RPADTEM
@@ -155,7 +175,7 @@ static agc_status_t opd_sr30_1(agc_interp_t *ip, agc_rendz_t *rz,
                                const agc_orbit_params_in_t *in)
 {
     agc_orbit_params_out_t o;
-    agc_status_t           st = agc_orbit_params_compute(ip, in, &o);
+    agc_status_t           st = opd_compute(ip, in, &o, &opd_tff_debris);
 
     rz->tff_rtmu                        = in->tff_rtmu;
     rz->orbit_parameter_display_hpermin = in->hpermin;
@@ -449,9 +469,8 @@ agc_status_t agc_job_orbit_display_repeat(agc_job_ctx_t *ctx)
 }
 
 /* CANDEL / SPLRET (CM p.520): INTSTALL, DELRSPL with TFF (it does the
- * INTWAKE); in P00 -> SPLRET1 (tick set-up), otherwise V82GON3.
- * DEVIATION: when DELRSPL fails (not yet translated by its lane) this
- * job does the INTWAKE itself so the integration area is released.    */
+ * INTWAKE0); in P00 -> SPLRET1 (tick set-up), otherwise V82GON3.
+ * Should DELRSPL fail before its INTWAKE0, this job releases the area. */
 agc_status_t agc_job_orbit_display_splash(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;
@@ -463,7 +482,7 @@ agc_status_t agc_job_orbit_display_splash(agc_job_ctx_t *ctx)
         return (st); /* asleep        */
     }
 
-    st = agc_guid_delrspl(&ip, rz->tff);
+    st = agc_guid_delrspl(&ip, &opd_tff_debris, rz->tff);
 
     if (st != AGC_STATUS_OK)
     {

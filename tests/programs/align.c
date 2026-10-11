@@ -10,7 +10,8 @@
  *   * S-band antenna angles for the earth directly along the +X body axis:
  *     CM pitch 0, yaw 0; LM pitch 90 deg, yaw -45 deg (antenna base is the
  *     NB rotated 45 deg about Z).
- * Also: SXTNB / SXTANG round trip, RRNB / RRANGLES round trip, LOG,
+ * Also: P52 fine align with a realistic sub-degree drift and a
+ * non-identity REFSMMAT, SXTNB / SXTANG round trip, RRNB / RRANGLES round trip, LOG,
  * SVDWN shifts, S52.3 axes, CHKSCODE, 1STO2S, R47 SCALEVEC rounding and
  * AGS time, R63 line of sight.
  */
@@ -160,6 +161,136 @@ static void test_realign_refsmmat_option_identity(void)
     CHECK(agc_align_gyro_coarse_dc(&ip, &smd, &refsmmat, &xdc) ==
           AGC_STATUS_OK);
     CHECK(mat_is_identity_half(&xdc, 1e-6));
+}
+
+/* Rotation matrices about X, Y, Z (row i = image of axis i). */
+static void rot_axis(int axis, double ang, double m[3][3])
+{
+    const double c = cos(ang);
+    const double s = sin(ang);
+    const int    j = (axis + 1) % 3;
+    const int    k = (axis + 2) % 3;
+
+    for (int i = 0; i < 3; i++)
+    {
+        for (int n = 0; n < 3; n++)
+        {
+            m[i][n] = (i == n) ? 1.0 : 0.0;
+        }
+    }
+
+    m[j][j] = c;
+    m[j][k] = s;
+    m[k][j] = -s;
+    m[k][k] = c;
+}
+
+static void mat_mul_d(double a[3][3], double b[3][3],
+                      double out[3][3])
+{
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            out[i][j] = a[i][0] * b[0][j] + a[i][1] * b[1][j] +
+                        a[i][2] * b[2][j];
+        }
+    }
+}
+
+/*
+ * P52 fine align at realistic magnitudes: REFSMMAT a 30 deg rotation about
+ * Z, the platform drifted by (0.5, -0.3, 0.2) deg about X, Y, Z, two stars
+ * 52 deg apart.  XDC must reproduce the drift matrix to 1e-7 (0.02 arcsec)
+ * and CALCGTA's three torquing angles must equal the same formulae in double
+ * to within one fine-align gyro pulse (2^-21 rev, 0.62 arcsec).
+ */
+static void test_realign_realistic_drift(void)
+{
+    agc_interp_t ip;
+    double       rz[3][3];
+    double       rx[3][3];
+    double       ry[3][3];
+    double       t[3][3];
+    double       d[3][3]; /* desired SM axes referred to the present SM */
+    double       r30[3][3];
+    agc_mat_t    refsmmat;
+
+    agc_interp_init(&ip);
+    rot_axis(0, 0.5 * PI_D / 180.0, rx);
+    rot_axis(1, -0.3 * PI_D / 180.0, ry);
+    rot_axis(2, 0.2 * PI_D / 180.0, rz);
+    mat_mul_d(rx, ry, t);
+    mat_mul_d(t, rz, d);
+    rot_axis(2, PI_D / 6.0, r30);
+
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            refsmmat.row[i].c[j] = agc_dp_from_double(r30[i][j], 1);
+        }
+    }
+
+    const double star[2][3] = {{0.6, 0.48, 0.64}, {-0.2, 0.9, 0.3873}};
+    agc_vec_t    a[2]; /* STARAD, STARAD +6: catalogue in desired SM     */
+    agc_vec_t    b[2]; /* 6D, 12D: observed in the present SM            */
+
+    for (int s = 0; s < 2; s++)
+    {
+        const agc_vec_t ref = half_unit(star[s][0], star[s][1], star[s][2]);
+        double          ad[3];
+        double          bd[3];
+
+        a[s] = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, ref), NULL, NULL);
+
+        for (int i = 0; i < 3; i++)
+        {
+            ad[i] = agc_dp_to_double(a[s].c[i], 1);
+        }
+
+        for (int j = 0; j < 3; j++)
+        {
+            bd[j] = d[0][j] * ad[0] + d[1][j] * ad[1] + d[2][j] * ad[2];
+        }
+
+        b[s] = half_unit(bd[0], bd[1], bd[2]);
+    }
+
+    agc_dp_t diff = -1;
+
+    CHECK(agc_align_chksdata_angle(&ip, a, b, &diff) == AGC_STATUS_OK);
+    CHECK(near(rev(diff), 0.0, 1e-6));
+    agc_mat_t xdc;
+
+    CHECK(agc_align_fine_solve(&ip, a, b, &xdc) == AGC_STATUS_OK);
+
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            CHECK(near(agc_dp_to_double(xdc.row[i].c[j], 1), d[i][j], 1e-7));
+        }
+    }
+
+    /* CALCGTA in double (INFLIGHT_ALIGNMENT_ROUTINES p.1355). */
+    const double n       = hypot(d[0][2], d[0][0]);
+    const double zp[3]   = {-d[0][2] / n, 0.0, d[0][0] / n};
+    const double want[3] = {
+        atan2(zp[0] * d[1][0] + zp[2] * d[1][2],
+              zp[0] * d[2][0] + zp[2] * d[2][2]),
+        atan2(zp[0], zp[2]),
+        atan2(d[0][1], zp[2] * d[0][0] - zp[0] * d[0][2])
+    };
+    agc_dp_t     gyro[3] = {0, 0, 0};
+
+    agc_imu_calcgta(&ip, &xdc, gyro);
+
+    for (int k = 0; k < 3; k++)
+    {
+        CHECK(near(rev(gyro[k]), want[k] / (2.0 * PI_D), 0x1p-21));
+        CHECK(fabs(want[k]) < 0.6 * PI_D / 180.0); /* sub-degree drift */
+    }
 }
 
 /* R05: the earth along +X body. */
@@ -425,6 +556,7 @@ int main(void)
     agc_state_init(AGC_VEHICLE_CSM);
     agc_align_ram_reset();
     test_realign_refsmmat_option_identity();
+    test_realign_realistic_drift();
     test_sband_plus_x();
     test_sextant_round_trip();
     test_misc();

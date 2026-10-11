@@ -292,7 +292,10 @@ static agc_dp_t dmp_sl1(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
 
     agc_dp_t r = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, b), 1));
 
-    AGC_ASSERT(r == 0 || ((r < 0) == ((a < 0) != (b < 0))));
+    if (!AGC_ASSERT(r == 0 || ((r < 0) == ((a < 0) != (b < 0)))))
+    {
+        return (0); /* SL1 overflowed: callers keep |a b| < 1/2      */
+    }
 
     return (r);
 }

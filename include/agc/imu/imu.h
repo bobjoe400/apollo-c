@@ -103,8 +103,13 @@ agc_status_t agc_imu_endimu(void);                  /* ENDIMU         */
 agc_status_t agc_imu_imubad(void);                /* IMUBAD         */
 agc_status_t agc_imu_status_check(void);          /* R02BOTH        */
 agc_status_t agc_imu_set_in_use(void);            /* R02ZERO        */
-agc_status_t agc_imu_standby(agc_job_ctx_t *ctx); /* P06 (stub)     */
-agc_status_t agc_imu_postand(agc_job_ctx_t *ctx); /* POSTAND (stub) */
+
+/* P06 standby (V37 06): PRESTAND, then GOPERF1 V50N25 R1 = 00062 until
+ * the crew switches the computer to standby; POSTAND is the group 4
+ * restart that recovers TIME2,TIME1 from the scaler afterwards.          */
+agc_status_t agc_job_standby(agc_job_ctx_t *ctx);          /* P06/PRESTAND */
+agc_status_t agc_job_standby_request(agc_job_ctx_t *ctx);  /* GOPERF1 loop */
+agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx); /* POSTAND      */
 
 /* Subroutines also used by T4RUPT (sys-misc).                             */
 void         agc_imu_zeroicdu(void); /* ZEROICDU: CDUX/Y/Z = 0         */

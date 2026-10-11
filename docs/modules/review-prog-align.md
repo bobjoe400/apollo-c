@@ -13,8 +13,8 @@ include/agc/programs/alignment.h, tests/programs/align.c.
 |---|---|
 | R63 UNIT precision (open question) | DONE: AGC uses RTB NORMUNIT; C fixed |
 | N70/N71 AOTCODE orphan components | DONE |
-| realistic-range tests | IN PROGRESS |
-| fidelity pass per AGC file | TODO |
+| realistic-range tests | DONE: R63 300 m..50 km; P52 fine align with 0.5 deg drift, non-identity REFSMMAT (test_realign_realistic_drift) |
+| fidelity pass per AGC file | IN PROGRESS (order: R63, R47, LEM_GEOMETRY, CSM_GEOMETRY, S-band, P51-P53, SXTMARK, AOTMARK) |
 | style findings to zero | TODO |
 | rule-5 density | TODO |
 

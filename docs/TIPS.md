@@ -129,3 +129,6 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
 * **"Duplicate" assertions are only duplicates when adjacent.** A re-check
   of the same condition after intervening statements is a postcondition.
   A blunt dedup rule deleted four real checks before it was narrowed.
+* **After a cutoff, list live agents before relaunching.** One reviewer
+  survived a usage-limit kill; a blind relaunch put two agents on the same
+  files. The surviving agent caught it; the lead should have.

@@ -1,11 +1,11 @@
 /*
- * p30.c -- P30-P37.agc (Comanche055 pp. 635-648) and P30_P37.agc
+ * external_delta_v.c -- P30-P37.agc (Comanche055 pp. 635-648) and P30_P37.agc
  * (Luminary099 pp. 614-617): P30 external delta-V targeting (both), P31
  * general Lambert aimpoint targeting (Comanche; the Luminary P31 is in the
  * rendezvous programs), the subroutines S30.1 and S31.1, MIDGIM and the
  * display sequence P30/P31, CNTNUP30, PARAM30 (the Comanche-only REFTEST,
  * DISP45, END45 and COMPTGO, which use Comanche flags, are in
- * src/csm/burns/external_delta_v.c). DELRSPL (the V82 splash-error continuation) is a stub.
+ * src/csm/burns/external_delta_v.c, with DELRSPL, the V82 splash error).
  *
  * The targeting results go to the rendezvous erasables (agc_rendz_t,
  * agc_programs.h): RTIG VTIG m 2^29 / m/cs 2^7, DELVSIN DELVLVC m/cs 2^7,
@@ -275,18 +275,6 @@ agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
         agc_dp_add(ip, rz->dellt4, agc_erase_tig()); /* FOR S40.1     */
 
     return (AGC_STATUS_OK);
-}
-
-/* DELRSPL (Comanche p.643-647): splash-down error for V82 during P11.
- * Needs VGAMCALC, TFF/TRIG and LALOTORV of other lanes.                   */
-agc_status_t agc_guid_delrspl(agc_interp_t *ip, agc_dp_t hdist)
-{
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(hdist >= AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_UNIMPLEMENTED);
 }
 
 /* ---------------------------------------------------------------------- */

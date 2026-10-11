@@ -24,6 +24,7 @@
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
+#include "agc/nav/auxiliary.h"
 
 /* GOTOADDR: the entry phase sequencer (REENTRY_CONTROL p. 847).          */
 typedef enum agc_entry_goto
@@ -249,6 +250,11 @@ agc_status_t agc_entry_final_phase_latlong(void);   /* P67.2 LAT LONG ALT  */
 agc_dp_t     agc_entry_vrcalc(agc_vec_t urh, agc_vec_t rt); /* VRCALC, revs */
 agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam,
                                 agc_dp_t *gmax); /* GMAX 100g B-14      */
+/* TFF subroutines on the debris CALCTFF leaves in *t (also DELRSPL's).  */
+agc_dp_t agc_entry_tff_trig(agc_interp_t *ip, const agc_tff_t *t,
+                            agc_dp_t *cdelf2); /* TFF/TRIG: .5 sin   */
+agc_dp_t agc_entry_vgamcalc(agc_interp_t *ip, agc_tff_t *t, agc_dp_t rterm,
+                            agc_dp_t *vgam); /* PREVGAM: gamma, revs */
 
 /* ---- entry DAP (dap.c) -------------------------------------------- */
 agc_status_t agc_task_readgymb(void); /* READGYMB  .1 s task             */

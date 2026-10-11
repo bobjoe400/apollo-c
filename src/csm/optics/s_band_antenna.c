@@ -169,8 +169,9 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     const agc_dp_t  now = align_loadtime();
 
     agc_guid_cdutrig(&trig); /* CDUTRIG      */
-    agc_status_t st = align_integ(&ip, ALIGN_CSMCONIC, now, AGC_JOB_SBANDANT_CM_RECYCLE,
-                     &o);
+    agc_status_t st = align_integ(&ip, ALIGN_CSMCONIC, now,
+                                  AGC_JOB_SBANDANT_CM_RECYCLE,
+                                  &o);
     agc_vec_t r;
 
     if (st == AGC_STATUS_OK)

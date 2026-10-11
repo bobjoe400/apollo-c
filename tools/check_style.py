@@ -686,7 +686,12 @@ def check_side_effects(src):
             report(src.path, src.line_of(m.start()), 'side-effect-condition',
                    'assignment or ++/-- inside the `%s` test' % m.group(1))
     nofor = blank_for_headers(code)
+    prev = ('', ';')  # (text, terminator) of the chunk before this one
     for text, begin, end, term in statements(src, nofor):
+        in_enum = prev[1] == '{' and re.search(r'\benum\b', prev[0])
+        prev = (text, term)
+        if in_enum:
+            continue  # enumerator list: `NAME = value` is not a side effect
         toks = tokens(text)
         n = 0
         for k, t in enumerate(toks):
