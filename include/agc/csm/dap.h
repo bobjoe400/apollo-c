@@ -82,10 +82,10 @@ typedef struct agc_csm_rcs
     agc_sp_t          t5time;                   /* T5TIME, TIME5 counts (10 ms)             */
     agc_sp_t          holdflag;                 /* HOLDFLAG: + grab, +0 hold, - auto steer  */
     agc_dp_t          wbody[AGC_CSM_AXES];      /* WBODY commanded rate, 450 deg/s      */
-    agc_dp_t          adot[AGC_CSM_AXES];       /* ADOT estimated rate, 450 deg/s       */
-    agc_dp_t          merror[AGC_CSM_AXES];     /* MERRORX manual att. error, 180 deg   */
+    agc_dp_words_t    adot[AGC_CSM_AXES];       /* ADOT estimated rate, 450 deg/s (words as stored) */
+    agc_dp_words_t    merror[AGC_CSM_AXES];     /* MERRORX manual att. error, 180 deg (words) */
     agc_sp_t          dft[AGC_CSM_AXES];        /* DFT expected 1-jet firing, 1/1600 s  */
-    agc_dp_t          drho[AGC_CSM_AXES];       /* DRHO filter residual, 180 deg        */
+    agc_dp_words_t    drho[AGC_CSM_AXES];       /* DRHO filter residual, 180 deg (words) */
     agc_sp_t          attsec;                   /* ATTSEC 0.1 s pass counter            */
     agc_sp_t          tau[AGC_CSM_AXES];        /* TAU rotation command, 1/1600 s       */
     agc_sp_t          bias[AGC_CSM_AXES];       /* BIAS KALCMANU lead, 180 deg          */
@@ -135,38 +135,34 @@ typedef struct agc_csm_dapcom
     uint16_t cphix[AGC_CSM_AXES];      /* CPHIX N17 attitude (V60/V25N17), raw */
 } agc_csm_dapcom_t;
 
-/* An AGC double-precision erasable B(2) as its two words are stored.
- * DAS adds the low words (carrying into the high word) but never makes
- * the two signs agree, and the TVC DAP later reads or overwrites the high
- * word alone (ERRORLIM, ACTLIM, PCMD, AK1): the split, not just the
- * value hi * 2^14 + lo, decides the result (oracle finding F9).          */
-typedef struct agc_csm_dp_pair
-{
-    agc_sp_t hi; /* upper word (the DP's scale)                   */
-    agc_sp_t lo; /* lower word, 2^-14 of the upper word's scale   */
-} agc_csm_dp_pair_t;
+/* The TVC filter's double-precision erasables are agc_dp_words_t (the
+ * two words as stored, agc/core/word.h): DAS adds the low words (carrying
+ * into the high word) but never makes the two signs agree, and the TVC
+ * DAP later reads or overwrites the high word alone (ERRORLIM, ACTLIM,
+ * PCMD, AK1): the split, not just the value hi 2^14 + lo, decides the
+ * result (oracle finding F9).                                            */
 
 /* ---- TVC DAP erasables ------------------------------------------------ */
 typedef struct agc_csm_tvc
 {
     agc_dp_t          omegac[AGC_CSM_AXES];       /* OMEGAXC.. steering rate cmd (S40.8)  */
-    agc_csm_dp_pair_t omegab[AGC_CSM_AXES];       /* OMEGAXB.. body rate (Y,Z), 1/2 TVCDT revs */
-    agc_csm_dp_pair_t ptmp[6];                    /* PTMP1-6 pitch filter nodes, scale 1    */
-    agc_csm_dp_pair_t ytmp[6];                    /* YTMP1-6 yaw filter nodes, scale 1      */
+    agc_dp_words_t omegab[AGC_CSM_AXES];       /* OMEGAXB.. body rate (Y,Z), 1/2 TVCDT revs */
+    agc_dp_words_t ptmp[6];                    /* PTMP1-6 pitch filter nodes, scale 1    */
+    agc_dp_words_t ytmp[6];                    /* YTMP1-6 yaw filter nodes, scale 1      */
     agc_sp_t          rollfire;                   /* ROLLFIRE: +-POSMAX on, 0 off         */
     uint16_t          rollword;                   /* ROLLWORD alternation bits 1,2        */
     agc_sp_t          temreg;                     /* TEMREG roll firing time (1/1600 s)   */
     agc_sp_t          stroker;                    /* STROKER stroke burst, 0 = no test    */
-    agc_csm_dp_pair_t perrb;                      /* PERRB pitch error integrator, B-1 rev */
-    agc_csm_dp_pair_t yerrb;                      /* YERRB yaw error integrator, B-1 rev   */
-    agc_csm_dp_pair_t delpbar;                    /* DELPBAR pitch offset tracker, 1 ascrev */
-    agc_csm_dp_pair_t delybar;                    /* DELYBAR yaw offset tracker, 1 ascrev  */
-    agc_csm_dp_pair_t pdeloff;                    /* PDELOFF pitch trim estimate, 1 ascrev */
-    agc_csm_dp_pair_t ydeloff;                    /* YDELOFF yaw trim estimate, 1 ascrev   */
+    agc_dp_words_t perrb;                      /* PERRB pitch error integrator, B-1 rev */
+    agc_dp_words_t yerrb;                      /* YERRB yaw error integrator, B-1 rev   */
+    agc_dp_words_t delpbar;                    /* DELPBAR pitch offset tracker, 1 ascrev */
+    agc_dp_words_t delybar;                    /* DELYBAR yaw offset tracker, 1 ascrev  */
+    agc_dp_words_t pdeloff;                    /* PDELOFF pitch trim estimate, 1 ascrev */
+    agc_dp_words_t ydeloff;                    /* YDELOFF yaw trim estimate, 1 ascrev   */
     agc_dp_t ttmp1, ttmp2;                        /* TTMP1/TTMP2 (PHASETMP / RTRNLOC)     */
-    agc_csm_dp_pair_t dap1;                       /* DAP1 first cascade output, B-1 rev    */
-    agc_csm_dp_pair_t dap2;                       /* DAP2 second cascade output, B-1 rev   */
-    agc_csm_dp_pair_t dap3;                       /* DAP3 third cascade output, B-1 rev    */
+    agc_dp_words_t dap1;                       /* DAP1 first cascade output, B-1 rev    */
+    agc_dp_words_t dap2;                       /* DAP2 second cascade output, B-1 rev   */
+    agc_dp_words_t dap3;                       /* DAP3 third cascade output, B-1 rev    */
     agc_sp_t pcmd, ycmd;                          /* PCMD/YCMD last actuator commands     */
     agc_sp_t          t5tvcdt;                    /* T5TVCDT TIME5 word for TVCDT/2       */
     agc_dp_t          kprimedt;                   /* KPRIMEDT steering gain, pi/8         */
@@ -188,13 +184,13 @@ typedef struct agc_csm_tvc
     agc_sp_t          ogarate;                    /* OGARATE rev/s, scale 2^-4            */
     agc_sp_t delogart, sgnrt, deloga, iogarate;   /* roll logic temporaries   */
     int               i_sign;                     /* I: +1 (CA), -1 (CS), 0 (MOREROLL)    */
-    agc_csm_dp_pair_t pacttmp;                    /* PACTTMP pitch trim (CG.CORR), 1 ascrev */
-    agc_csm_dp_pair_t yacttmp;                    /* YACTTMP yaw trim (CG.CORR), 1 ascrev  */
+    agc_dp_words_t pacttmp;                    /* PACTTMP pitch trim (CG.CORR), 1 ascrev */
+    agc_dp_words_t yacttmp;                    /* YACTTMP yaw trim (CG.CORR), 1 ascrev  */
     agc_sp_t cntr, cntrtmp;                       /* CNTR/CNTRTMP one-shot counter        */
-    agc_csm_dp_pair_t delbrtmp;                   /* DELBRTMP offset tracker, 1 ascrev   */
-    agc_csm_dp_pair_t errbtmp;                    /* ERRBTMP body error, B-1 rev; before ATTINIT the two words hold -ERRORY, -ERRORZ (180 deg) from P40 DOTVCON */
-    agc_csm_dp_pair_t cmdtmp;                     /* CMDTMP actuator command, 1 ascrev    */
-    agc_csm_dp_pair_t tmp[6];                     /* TMP1..TMP6 working filter nodes      */
+    agc_dp_words_t delbrtmp;                   /* DELBRTMP offset tracker, 1 ascrev   */
+    agc_dp_words_t errbtmp;                    /* ERRBTMP body error, B-1 rev; before ATTINIT the two words hold -ERRORY, -ERRORZ (180 deg) from P40 DOTVCON */
+    agc_dp_words_t cmdtmp;                     /* CMDTMP actuator command, 1 ascrev    */
+    agc_dp_words_t tmp[6];                     /* TMP1..TMP6 working filter nodes      */
     agc_sp_t          n10[AGC_CSM_N10_WORDS];     /* N10..D32 active filter coefficients  */
     agc_sp_t          tempdap[2];                 /* TEMPDAP, TEMPDAP+1 correction fraction*/
     agc_sp_t          phasetmp;                   /* PHASETMP (V46 switch-over)           */

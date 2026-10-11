@@ -20,7 +20,7 @@
 
 #define FLAGS_23 ((uint16_t) 000006) /* SIX: RCSFLAGS bits 3, 2              */
 #define DACLIMIT ((agc_sp_t) 384)    /* DACLIMIT +-1: DEC 384 (00600)        */
-#define MQUARTER ((agc_sp_t) -8192)  /* CS QUARTER                           */
+#define MQUARTER ((agc_sp_t) -4096)  /* CS QUARTER (BIT13 = 1/4)             */
 #define DAC_BITS ((uint16_t) 070000) /* 13,14,15: DAC activity, channel 14   */
 
 static agc_status_t needle11(void);

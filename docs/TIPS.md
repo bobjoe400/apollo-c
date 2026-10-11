@@ -143,3 +143,7 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
 * **Never align continuation lines to the open paren** when the code is
   chains of nested calls; use a fixed continuation indent, and split
   statements with more than two continuation lines into named temporaries.
+* **Lint the pattern, not the prefix.** The void-cast check matched `agc_`
+  names and `AGC_ASSERT`; the next lane-local helper (`csm_dap_words_das`)
+  reintroduced 31 casts. Match `(void) identifier(` and allowlist the few
+  stdlib calls instead.

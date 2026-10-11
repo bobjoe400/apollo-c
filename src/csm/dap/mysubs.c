@@ -14,6 +14,8 @@
  */
 #include "internal.h"
 
+#include "agc/core/interp_words.h"
+
 #define W_ONE    16384      /* 2^14: 1.0 in SP units                     */
 #define W_DP_ONE (1L << 28) /* 1.0 in DP units                          */
 
@@ -281,7 +283,11 @@ agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al)
 
     int64_t s = (int64_t) kmpac + (int64_t) al;
 
-    if (s > AGC_DP_MAX)
+    if ((s == W_DP_ONE) || (s == -W_DP_ONE))
+    {
+        s = AGC_DP_MAX; /* DAS left +-0, +-0: COM/AD POSMAX path, POSMAX POSMAX */
+    }
+    else if (s > AGC_DP_MAX)
     {
         s -= 2 * W_DP_ONE; /* + overflow: subtract 360 deg       */
     }
@@ -297,37 +303,10 @@ agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al)
     return ((agc_dp_t) s);
 }
 
-/* Split a value into the sign-agreed word pair a DCA of it would load.  */
-agc_csm_dp_pair_t csm_dap_pair(agc_dp_t v)
-{
-    agc_csm_dp_pair_t p = {0, 0}; /* returned pair             */
-
-    if (AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX)))
-    {
-        p.hi = agc_dp_high(v);
-        p.lo = agc_dp_low(v);
-    }
-
-    return (p);
-}
-
-/* The value of a stored pair, hi 2^14 + lo, in the pair's scale.        */
-agc_dp_t csm_dap_pair_value(agc_csm_dp_pair_t p)
-{
-    agc_dp_t v = 0; /* value, upper word's scale                          */
-
-    if (AGC_ASSERT((p.hi >= AGC_SP_MIN) && (p.lo >= AGC_SP_MIN)))
-    {
-        v = (agc_dp_t) p.hi * W_ONE + (agc_dp_t) p.lo;
-    }
-
-    return (v);
-}
-
 /* DCS: each word complemented (the signs stay as they were).            */
-agc_csm_dp_pair_t csm_dap_pair_neg(agc_csm_dp_pair_t p)
+agc_dp_words_t csm_dap_words_neg(agc_dp_words_t p)
 {
-    agc_csm_dp_pair_t n = {0, 0}; /* complemented pair                    */
+    agc_dp_words_t n = {0, 0}; /* complemented pair                    */
 
     if (AGC_ASSERT((p.hi >= AGC_SP_MIN) && (p.lo >= AGC_SP_MIN)))
     {
@@ -340,76 +319,42 @@ agc_csm_dp_pair_t csm_dap_pair_neg(agc_csm_dp_pair_t p)
 
 /* MP: the product of two SP words in A,L (signs agree, as the hardware's
  * sign-magnitude multiply leaves them).                                  */
-agc_csm_dp_pair_t csm_dap_pair_mp(agc_sp_t a, agc_sp_t b)
+agc_dp_words_t csm_dap_words_mp(agc_sp_t a, agc_sp_t b)
 {
-    agc_csm_dp_pair_t p = {0, 0}; /* A (upper) and L (lower)             */
+    agc_dp_words_t p = {0, 0}; /* A (upper) and L (lower)             */
 
     if (AGC_ASSERT((a >= AGC_SP_MIN) && (b >= AGC_SP_MIN)))
     {
-        p = csm_dap_pair(agc_sp_mul(a, b));
+        p = agc_dp_to_words(agc_sp_mul(a, b));
     }
 
     return (p);
 }
 
-/* DAS K: K,K+1 += A,L. The low words add first; an overflow there
- * carries +-1 into the high sum. Each word keeps its overflow-corrected
- * value and the signs are not made to agree. Returns the overflow of
- * the high sum (+1, -1 or 0), which the AGC leaves in A.                */
-agc_sp_t csm_dap_pair_das(agc_csm_dp_pair_t *k, agc_csm_dp_pair_t al)
+/* DAS K: K,K+1 += A,L on the stored words (agc_dp_words_das: the low
+ * words add first and carry into the high sum; each word keeps its
+ * overflow-corrected value, the signs are not made to agree). Returns
+ * the overflow of the high sum (+1, -1 or 0), which the AGC leaves in A. */
+agc_sp_t csm_dap_words_das(agc_dp_words_t *k, agc_dp_words_t al)
 {
-    agc_sp_t ovf = 0; /* overflow indicator left in A                     */
+    int ovf = 0; /* overflow indicator left in A                          */
 
-    if (AGC_ASSERT(k != NULL) && AGC_ASSERT(al.lo >= AGC_SP_MIN))
+    if (!AGC_ASSERT(k != NULL))
     {
-        int lo    = (int) k->lo + (int) al.lo; /* low sum, |lo| < 2^15     */
-        int carry = 0;                         /* carry into the high sum */
-
-        if (lo > AGC_SP_MAX)
-        {
-            lo    -= W_ONE;
-            carry = 1;
-        }
-        else if (lo < AGC_SP_MIN)
-        {
-            lo    += W_ONE;
-            carry = -1;
-        }
-        else
-        {
-            /* no low-word overflow */
-        }
-
-        int hi = (int) k->hi + (int) al.hi + carry; /* high sum            */
-
-        if (hi > AGC_SP_MAX)
-        {
-            hi  -= W_ONE;
-            ovf = 1;
-        }
-        else if (hi < AGC_SP_MIN)
-        {
-            hi  += W_ONE;
-            ovf = -1;
-        }
-        else
-        {
-            /* no high-word overflow */
-        }
-
-        k->hi = (agc_sp_t) hi;
-        k->lo = (agc_sp_t) lo;
+        return (0); /* no valid result */
     }
 
-    return (ovf);
+    *k = agc_dp_words_das(*k, al, &ovf);
+
+    return ((agc_sp_t) ovf);
 }
 
 /* DDOUBL: A,L added to itself (DAS A), overflow-corrected.              */
-agc_csm_dp_pair_t csm_dap_pair_ddoubl(agc_csm_dp_pair_t p)
+agc_dp_words_t csm_dap_words_ddoubl(agc_dp_words_t p)
 {
-    agc_csm_dp_pair_t d = p; /* doubled pair                           */
+    agc_dp_words_t d = p; /* doubled pair                           */
 
-    (void) csm_dap_pair_das(&d, p);
+    (void) csm_dap_words_das(&d, p);
 
     return (d);
 }
@@ -417,14 +362,14 @@ agc_csm_dp_pair_t csm_dap_pair_ddoubl(agc_csm_dp_pair_t p)
 /* One-and-a-half precision multiply as the TVC filter codes it: TS of
  * the high word of (lower word x n) into the lower word of a zeroed pair,
  * then DAS of (upper word x n).                                          */
-agc_csm_dp_pair_t csm_dap_pair_smallmp(agc_csm_dp_pair_t in, agc_sp_t n)
+agc_dp_words_t csm_dap_words_smallmp(agc_dp_words_t in, agc_sp_t n)
 {
-    agc_csm_dp_pair_t r = {0, 0}; /* (0, hi(in.lo n)) + in.hi n          */
+    agc_dp_words_t r = {0, 0}; /* (0, hi(in.lo n)) + in.hi n          */
 
     if (AGC_ASSERT((in.lo >= AGC_SP_MIN) && (n >= AGC_SP_MIN)))
     {
         r.lo = csm_dap_mp_hi(in.lo, n);
-        (void) csm_dap_pair_das(&r, csm_dap_pair_mp(in.hi, n));
+        (void) csm_dap_words_das(&r, csm_dap_words_mp(in.hi, n));
     }
 
     return (r);

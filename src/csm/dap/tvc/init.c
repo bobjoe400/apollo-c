@@ -212,7 +212,7 @@ agc_status_t csm_tvc_gains(bool full)
 agc_status_t csm_tvc_mrclean(void)
 {
     agc_csm_tvc_t          *t    = agc_csm_dap_tvc(); /* TVC erasables  */
-    const agc_csm_dp_pair_t zero = {0, 0};            /* +0, +0         */
+    const agc_dp_words_t zero = {0, 0};            /* +0, +0         */
 
     _Static_assert(NZERO % 2 == 1, "AGC constant");
     t->omegac[1] = 0;
@@ -320,7 +320,7 @@ static agc_status_t tvc_init_filter_timing(int lem)
 
     if (!AGC_ASSERT(t->t5tvcdt > 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return (AGC_STATUS_OK);
@@ -512,7 +512,7 @@ agc_status_t csm_tvc_swichovr_body(void)
 {
     agc_csm_tvc_t          *t    = agc_csm_dap_tvc(); /* TVC erasables  */
     const agc_csm_dapcom_t *c    = agc_csm_dap_com(); /* EKTLX/I +2     */
-    const agc_csm_dp_pair_t zero = {0, 0};            /* +0, +0         */
+    const agc_dp_words_t zero = {0, 0};            /* +0, +0         */
 
     _Static_assert(NZEROJR + 1 == 2 * NODES * 2, "AGC constant");
 
@@ -565,7 +565,7 @@ agc_status_t agc_csm_tvc_preswtch(void)
 
     if (!AGC_ASSERT(t->tvcphase != -2))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);

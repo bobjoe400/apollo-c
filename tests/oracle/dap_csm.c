@@ -46,16 +46,19 @@
 #include "agc/csm/dap.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
+#include "agc/imu/imu.h"
 #include "oracle_txt.h"
 
 static void              cmp_raw(const char *t, const char *what, unsigned int got, const char *n);
 static void              cmp_sp(const char *t, const char *what, long int got, const char *n);
-static void              cmp_pair(const char *t, const char *n, agc_csm_dp_pair_t got);
-static agc_csm_dp_pair_t pair_in(const char *t, const char *n, int idx);
+static void              cmp_pair(const char *t, const char *n, agc_dp_words_t got);
+static agc_dp_words_t pair_in(const char *t, const char *n, int idx);
 static void              fresh(void);
 static void              jets(const char *t);
 static void              pitch(const char *t);
 static void              roll(const char *t);
+static void              rate(const char *t);
+static void              needles(const char *t);
 
 /**********************************************************************
  * AGC: none -- run every case; the exit status reports failures.
@@ -93,6 +96,15 @@ int main(void)
     roll("roll_ratelim");
     roll("roll_wrap");
     roll("roll_wrap_neg");
+    rate("rate_quiet");
+    rate("rate_moving");
+    rate("rate_kalman");
+    rate("rate_disagree");
+    rate("rate_big");
+    needles("needles_small");
+    needles("needles_edge");
+    needles("needles_limit");
+    needles("needles_track");
 
     return (oracle_finish("oracle_dap_csm"));
 }
@@ -149,9 +161,9 @@ static void cmp_sp(const char *t, const char *what, long int got, const char *n)
  * ARGUMENTS:
  *   t    const char *       I  case tag
  *   n    const char *       I  AGC output name of the upper word
- *   got  agc_csm_dp_pair_t  I  C pair
+ *   got  agc_dp_words_t  I  C pair
  **********************************************************************/
-static void cmp_pair(const char *t, const char *n, agc_csm_dp_pair_t got)
+static void cmp_pair(const char *t, const char *n, agc_dp_words_t got)
 {
     char lo[96]; /* NAME+1 or NAME+(k+1)                               */
 
@@ -168,11 +180,11 @@ static void cmp_pair(const char *t, const char *n, agc_csm_dp_pair_t got)
  *   n    const char *  I  input name
  *   idx  int           I  index of the upper word in the input list
  *
- * RETURNS: agc_csm_dp_pair_t -- the two words (scale of the quantity)
+ * RETURNS: agc_dp_words_t -- the two words (scale of the quantity)
  **********************************************************************/
-static agc_csm_dp_pair_t pair_in(const char *t, const char *n, int idx)
+static agc_dp_words_t pair_in(const char *t, const char *n, int idx)
 {
-    agc_csm_dp_pair_t p; /* upper, lower word                           */
+    agc_dp_words_t p; /* upper, lower word                           */
 
     p.hi = (agc_sp_t) oracle_in(t, n, idx);
     p.lo = (agc_sp_t) oracle_in(t, n, idx + 1);
@@ -351,4 +363,93 @@ static void roll(const char *t)
     cmp_sp(t, "SGNRT", v->sgnrt, "SGNRT");
     cmp_sp(t, "IOGARATE", v->iogarate, "IOGARATE");
     cmp_raw(t, "TIME6", agc_rupt_time(CSM_DAP_TIME6), "TIME6");
+}
+
+/**********************************************************************
+ * RATEFILT 21,2210 -> KMATRIX (RCS-CSM_DIGITAL_AUTOPILOT.agc pp.
+ * 1004-1006): one pass of the rate filter; DRHO, ADOT, MERRORX and
+ * DELTEMPX..Z compared word by word.
+ *
+ * ARGUMENTS:
+ *   t  const char *  I  case tag
+ **********************************************************************/
+static void rate(const char *t)
+{
+    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
+
+    fresh();
+    agc_erase_set_cdux(oracle_in_raw(t, "CDUX", 0));
+    agc_erase_set_cduy(oracle_in_raw(t, "CDUX", 1));
+    agc_erase_set_cduz(oracle_in_raw(t, "CDUX", 2));
+
+    for (int k = 0; k < AGC_CSM_AXES; k++)
+    {
+        r->drho[k]   = pair_in(t, "DRHO", 2 * k);
+        r->adot[k]   = pair_in(t, "ADOT", 2 * k);
+        r->merror[k] = pair_in(t, "MERRORX", 2 * k);
+        r->rho[k]    = oracle_in_raw(t, "RHO", k);
+        r->kmj[k]    = (agc_sp_t) oracle_in(t, "KMJ", k);
+        r->dft[k]    = (agc_sp_t) oracle_in(t, "DFT", k);
+    }
+
+    r->amgb1    = (agc_sp_t) oracle_in(t, "AMGB1", 0);
+    r->amgb4    = (agc_sp_t) oracle_in(t, "AMGB1", 1);
+    r->amgb5    = (agc_sp_t) oracle_in(t, "AMGB1", 2);
+    r->amgb7    = (agc_sp_t) oracle_in(t, "AMGB1", 3);
+    r->amgb8    = (agc_sp_t) oracle_in(t, "AMGB1", 4);
+    r->attkalmn = (agc_sp_t) oracle_in(t, "ATTKALMN", 0);
+    (void) csm_rcs_ratefilt();
+    oracle_require_ok(t, "KMATRIX");
+
+    for (int k = 0; k < AGC_CSM_AXES; k++)
+    {
+        char n[24]; /* NAME or NAME+2k                                   */
+
+        (void) snprintf(n, sizeof (n), (k == 0) ? "DRHO" : "DRHO+%d", 2 * k); /* ?: */
+        cmp_pair(t, n, r->drho[k]);
+        (void) snprintf(n, sizeof (n), (k == 0) ? "ADOT" : "ADOT+%d", 2 * k); /* ?: */
+        cmp_pair(t, n, r->adot[k]);
+        (void) snprintf(n, sizeof (n), (k == 0) ? "MERRORX" : "MERRORX+%d", 2 * k); /* ?: */
+        cmp_pair(t, n, r->merror[k]);
+        (void) snprintf(n, sizeof (n), (k == 0) ? "RHO" : "RHO+%d", k); /* ?: */
+        cmp_raw(t, n, r->rho[k], n);
+    }
+}
+
+/**********************************************************************
+ * NEEDLES 21,2476 -> TC Q (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1012):
+ * EDRIVE = -AK/4 limited to +-384 and the increment added to CDUXCMD;
+ * reached here through NEEDLER with RCSFLAGS bits 3, 2 clear and the
+ * IMU error counter enabled (NEEDLES3).
+ *
+ * ARGUMENTS:
+ *   t  const char *  I  case tag
+ **********************************************************************/
+static void needles(const char *t)
+{
+    agc_csm_dapcom_t *c = agc_csm_dap_com(); /* AK, EDRIVE, RCSFLAGS    */
+
+    fresh();
+    agc_chan_write(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBIMUERR);
+
+    for (int k = 0; k < AGC_CSM_AXES; k++)
+    {
+        c->ak[k]     = (agc_sp_t) oracle_in(t, "AK", k);
+        c->edrive[k] = (agc_sp_t) oracle_in(t, "EDRIVEX", k);
+        (void) agc_imu_hw_set_cducmd(k, (agc_sp_t) oracle_in(t, "CDUXCMD", k));
+    }
+
+    c->rcsflags = 0;
+    (void) csm_dap_needler();
+    oracle_require_ok(t, "ENDOFJOB");
+
+    for (int k = 0; k < AGC_CSM_AXES; k++)
+    {
+        char n[24]; /* NAME or NAME+k                                    */
+
+        (void) snprintf(n, sizeof (n), (k == 0) ? "EDRIVEX" : "EDRIVEX+%d", k); /* ?: */
+        cmp_sp(t, n, c->edrive[k], n);
+        (void) snprintf(n, sizeof (n), (k == 0) ? "CDUXCMD" : "CDUXCMD+%d", k); /* ?: */
+        cmp_sp(t, n, agc_imu_cducmd(k), n);
+    }
 }

@@ -136,16 +136,16 @@ static agc_status_t rcs_setwbody(void)
             { /* MERUPDAT    */
                 agc_sp_t neg = (agc_sp_t) -mantable[q];
 
-                r->merror[i] = csm_dap_das(r->merror[i], agc_sp_mul(neg, BIT7));
+                (void) csm_dap_words_das(&r->merror[i], csm_dap_words_mp(neg, BIT7)); /* DAS MERRORX */
             }
         }
 
         if (!damped)
         {
-            r->merror[i] = 0; /* ZEROER                            */
+            r->merror[i] = (agc_dp_words_t){0, 0}; /* ZEROER: CA ZERO; ZL; DXCH */
         }
 
-        r->error[i] = agc_dp_high(r->merror[i]); /* SPNDXCHK    */
+        r->error[i] = r->merror[i].hi; /* SPNDXCHK: high order word of MERRORX */
     }
 
     if (!AGC_ASSERT(r->ratindx >= 0))

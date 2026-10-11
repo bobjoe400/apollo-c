@@ -60,14 +60,12 @@ agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den);      /* DV, limited to +-POSMAX
 agc_dp_t csm_dap_smallmp(agc_dp_t kmpac, agc_sp_t a); /* SMALLMP            */
 agc_dp_t csm_dap_dpadd(agc_dp_t kmpac, agc_dp_t al);  /* DPADD (mod 360 deg) */
 
-/* ---- DP word pairs as stored (TVC filter; mysubs.c) -------------------- */
-agc_csm_dp_pair_t csm_dap_pair(agc_dp_t v);                 /* sign-agreed split */
-agc_dp_t          csm_dap_pair_value(agc_csm_dp_pair_t p);  /* hi 2^14 + lo   */
-agc_csm_dp_pair_t csm_dap_pair_neg(agc_csm_dp_pair_t p);    /* DCS          */
-agc_csm_dp_pair_t csm_dap_pair_mp(agc_sp_t a, agc_sp_t b);  /* MP -> A,L  */
-agc_sp_t          csm_dap_pair_das(agc_csm_dp_pair_t *k, agc_csm_dp_pair_t al);
-agc_csm_dp_pair_t csm_dap_pair_ddoubl(agc_csm_dp_pair_t p); /* DDOUBL    */
-agc_csm_dp_pair_t csm_dap_pair_smallmp(agc_csm_dp_pair_t in, agc_sp_t n);
+/* ---- DP erasables as their stored words (agc_dp_words_t; mysubs.c) ---- */
+agc_dp_words_t csm_dap_words_neg(agc_dp_words_t p);    /* DCS          */
+agc_dp_words_t csm_dap_words_mp(agc_sp_t a, agc_sp_t b);  /* MP -> A,L  */
+agc_sp_t          csm_dap_words_das(agc_dp_words_t *k, agc_dp_words_t al);
+agc_dp_words_t csm_dap_words_ddoubl(agc_dp_words_t p); /* DDOUBL    */
+agc_dp_words_t csm_dap_words_smallmp(agc_dp_words_t in, agc_sp_t n);
 uint16_t          csm_dap_cdu(int axis);                    /* CDUX, CDUY, CDUZ raw    */
 agc_status_t      csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word);
 agc_status_t      csm_dap_set_time5(uint16_t time5_word);

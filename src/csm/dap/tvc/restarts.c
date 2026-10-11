@@ -85,7 +85,7 @@ static agc_status_t tvcr_tvc_enable(void)
 
     if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);
@@ -201,7 +201,7 @@ static agc_status_t tvcr_chkstrk(void)
 
     if (!AGC_ASSERT(t->tvcphase == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);
@@ -242,7 +242,7 @@ agc_status_t agc_task_cmdsout(void)
 
     if (!AGC_ASSERT(t->tvcphase >= 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return ((st != AGC_STATUS_OK) ? st : s2); /* first failure          */

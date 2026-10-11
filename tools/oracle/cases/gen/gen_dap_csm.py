@@ -37,7 +37,13 @@ def main():
         '  TVCPHASE PCDUYPST PCDUZPST.',
         'ROLLDAP 16,3272 -> stop TASKOVER: OGANOW OGAPAST ROLLFIRE TEMREG',
         '  1/CONACC (= E6,1640) OGA ROLLWORD TIME6 -> OGARATE TEMREG ROLLFIRE',
-        '  ROLLWORD DELOGA DELOGART SGNRT IOGARATE TIME6.'])
+        '  ROLLWORD DELOGA DELOGART SGNRT IOGARATE TIME6.',
+        'RATEFILT 21,2210 -> stop KMATRIX (DRHOLOOP, measured body rates,',
+        '  ADOTLOOP): DRHO ADOT MERRORX (word pairs, signs may disagree)',
+        '  CDUX..Z RHO..RHO2 AMGB1..AMGB8 KMJ DFT ATTKALMN -> DRHO ADOT',
+        '  MERRORX DELTEMPX RHO.',
+        'NEEDLES 21,2476 -> TC Q (DACLOOP): AK EDRIVEX CDUXCMD -> EDRIVEX',
+        '  CDUXCMD.'])
     jg = (['RWORD1', 'RWORD2', 'PWORD1', 'PWORD2', 'YWORD1', 'YWORD2',
            'BLAST:dp', 'BLAST1:dp', 'BLAST2:dp', 'DFT', 'DFT1', 'DFT2',
            'TAU', 'TAU1', 'TAU2', 'ATTKALMN'])
@@ -95,6 +101,57 @@ def main():
               [('OGANOW', w([now, past])), ('ROLLFIRE', w([fire, word, temreg])),
                ('E6,1640', sp(conacc)), ('OGA', _w(oga)), ('TIME6', _w(25))],
               rg, ebank=6, entry='ROLLDAP')
+
+    # RATEFILT: DP inputs as raw word pairs (hi, lo) so that DAS without
+    # sign agreement is exercised; CDU words raw two's complement counts.
+    fg = (['DRHO:dp', 'DRHO+2:dp', 'DRHO+4:dp', 'ADOT:dp', 'ADOT+2:dp',
+           'ADOT+4:dp', 'MERRORX:dp', 'MERRORX+2:dp', 'MERRORX+4:dp',
+           'DELTEMPX:dp', 'DELTEMPX+2:dp', 'DELTEMPX+4:dp', 'RHO', 'RHO+1',
+           'RHO+2'])
+    def pairs(xs):
+        return ','.join(_w(x) for x in xs)
+    for tag, drho, adot, merr, cdu3, rho3, amgb, kmj, dft, kal in (
+            ('rate_quiet', [0] * 6, [0] * 6, [0] * 6, [0, 0, 0], [0, 0, 0],
+             [0, 16383, 0, 0, 16383], [0, 0, 0], [0, 0, 0], 0),
+            ('rate_moving', [3, 200, -2, -150, 0, 40], [50, 1000, -30, -500,
+             10, 0], [1, 2, -1, -2, 0, 0], [0o00030, 0o77750, 0o00004],
+             [0o00010, 0o00000, 0o77777], [-3000, 15000, 4000, -5000, 14000],
+             [12000, 9000, 9000], [40, -25, 0], 0),
+            ('rate_kalman', [-7, 9000, 4, -8000, -1, 16000], [-200, 3, 150,
+             -16000, 90, 12000], [100, -16000, -50, 7000, 3, -3],
+             [0o01000, 0o76000, 0o00200], [0o00700, 0o76200, 0o00177],
+             [5000, 14000, -6000, 2000, 15000], [16000, 10000, 11000],
+             [-80, 60, 100], 5),
+            ('rate_disagree', [1, -16000, -1, 16000, 2, -1], [1, -9000, -1,
+             9000, 0, -5], [1, -16383, -1, 16383, 0, 0],
+             [0o77770, 0o00010, 0o40000], [0o00020, 0o77760, 0o37777],
+             [16383, 16383, -16383, -16383, 16383], [16383, 16383, 16383],
+             [200, -200, 7], -3),
+            ('rate_big', [4000, 0, -4000, 0, 3000, 3000], [9000, 1, -9000,
+             -1, 8000, 100], [0, 0, 0, 0, 0, 0], [0o20000, 0o60000, 0o10000],
+             [0o00000, 0o00000, 0o00000], [8000, 12000, 8000, -12000, 9000],
+             [16383, 16383, 16383], [800, -800, 800], 10)):
+        s.run(tag, None, 0o21, 'KMATRIX',
+              [('RCSFLAGS', '00000'), ('DRHO', pairs(drho)),
+               ('ADOT', pairs(adot)), ('MERRORX', pairs(merr)),
+               ('AMGB1', pairs(amgb)), ('KMJ', pairs(kmj)),
+               ('DFT', pairs(dft)), ('ATTKALMN', _w(kal))] +
+              [('CDUX', ','.join('%05o' % c for c in cdu3)),
+               ('RHO', ','.join('%05o' % c for c in rho3))],
+              fg, ebank=6, entry='RATEFILT')
+    # NEEDLES: EDRIVE = -AK/4 limited to +-384 (CS QUARTER; MP AK), the
+    # increment added to CDUXCMD.
+    ng = ['EDRIVEX', 'EDRIVEX+1', 'EDRIVEX+2', 'CDUXCMD', 'CDUXCMD+1',
+          'CDUXCMD+2']
+    for tag, ak, ed, cmd in (
+            ('needles_small', [100, -100, 7], [0, 0, 0], [0, 0, 0]),
+            ('needles_edge', [1532, -1532, 1536], [10, -10, 0], [5, -5, 0]),
+            ('needles_limit', [-1536, 16000, -16383], [-384, 384, 0],
+             [-100, 100, 0]),
+            ('needles_track', [-40, 4000, -3], [3, -200, 1], [12, -300, 1])):
+        s.run(tag, 'ENDOFJOB', 0o21, 'ENDOFJOB',
+              [('AK', pairs(ak)), ('EDRIVEX', pairs(ed)),
+               ('CDUXCMD', pairs(cmd))], ng, ebank=6, entry='NEEDLES')
     s.write(os.path.join(OUT, 'dap_csm.spec'))
 
 if __name__ == '__main__':

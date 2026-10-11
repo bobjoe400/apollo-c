@@ -64,15 +64,15 @@ void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *
         return;
     }
 
-    out->t        = ctx->t;
+    out->t        = agc_conic_value_(ctx->t);
     out->infinflg = ctx->infinflg;
     out->cogaflag = ctx->cogaflag;
-    out->r1       = ctx->r1;
-    out->r1a      = ctx->r1a;
-    out->p        = ctx->p;
-    out->coga     = ctx->coga;
-    out->csth     = ctx->csth;
-    out->snth     = ctx->snth;
+    out->r1       = agc_conic_value_(ctx->r1);
+    out->r1a      = agc_conic_value_(ctx->r1a);
+    out->p        = agc_conic_value_(ctx->p);
+    out->coga     = agc_conic_value_(ctx->coga);
+    out->csth     = agc_conic_value_(ctx->csth);
+    out->snth     = agc_conic_value_(ctx->snth);
     out->ur1      = ctx->ur1;
     out->u2       = ctx->u2;
     out->un       = ctx->un;
@@ -242,9 +242,10 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in, 
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
     ctx.vvec         = in->vvec;
-    agc_dp_t sngamma = 0;     /* 36D sin(gamma), 2^1 (unused) */
+    agc_dp_words_t sngamma;   /* 36D sin(gamma), 2^1 (unused) */
+    agc_tp_words_t m;         /* MPAC: P as PARAM leaves it */
 
-    st = agc_conic_param_(ip, &ctx, in->rvec, in->vvec, &sngamma); /* CALL PARAM */
+    st = agc_conic_param_(ip, &ctx, in->rvec, in->vvec, &sngamma, &m); /* CALL PARAM */
 
     if (st != AGC_STATUS_OK)
     {
@@ -256,9 +257,9 @@ agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in, 
         return (agc_conic_cogaovfl_(&ctx, out));
     }
 
-    ctx.snth = in->snth;
-    ctx.csth = in->csth;
-    st       = agc_conic_getx_(ip, &ctx); /* CALL GETX      */
+    ctx.snth = agc_dp_to_words(in->snth);
+    ctx.csth = agc_dp_to_words(in->csth);
+    st       = agc_conic_getx_(ip, &ctx, m); /* CALL GETX      */
 
     if (st != AGC_STATUS_OK)
     {

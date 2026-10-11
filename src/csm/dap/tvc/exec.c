@@ -154,7 +154,10 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
 
     t->tvcexphs = (agc_sp_t) (t->tvcexphs + 1); /* EXECCOPY: INCR (1)  */
 
-    (void) AGC_ASSERT(t->vcntrtmp >= 0);
+    if (!AGC_ASSERT(t->vcntrtmp >= 0))
+    {
+        return (TVCX_FIN);
+    }
 
     return (TVCX_EXEC_COPY);
 }
@@ -181,7 +184,10 @@ static tvcx_step_t tvcx_exec_copy(void)
     t->engine_fail_vcntr = t->vcntrtmp; /* V97VCNTR (R41 at SPSOFF)    */
     t->tvcexphs          = 2;           /* INCR: copycycle over (2)    */
 
-    (void) AGC_ASSERT(t->vcntr >= 0);
+    if (!AGC_ASSERT(t->vcntr >= 0))
+    {
+        return (TVCX_FIN);
+    }
 
     return (TVCX_ONE_SHOT_CHECK);
 }
@@ -243,7 +249,10 @@ static tvcx_step_t tvcx_repchek(void)
     t->tempdap[1] = t->repfrac; /* correction fraction, 2^2           */
     t->tvcexphs   = 4;          /* entry at CORSETUP                  */
 
-    (void) AGC_ASSERT(t->tempdap[1] > 0);
+    if (!AGC_ASSERT(t->tempdap[1] > 0))
+    {
+        return (TVCX_FIN);
+    }
 
     return (TVCX_CORSETUP);
 }
@@ -280,15 +289,15 @@ static void tvcx_corsetup(void)
  * 4 (DELBAR - DELOFF)). TTMP1 is formed by DAS without sign agreement.
  *
  * ARGUMENTS:
- *   deloff  agc_csm_dp_pair_t  I  PDELOFF or YDELOFF, 1 ascrev
- *   delbar  agc_csm_dp_pair_t  I  DELPBAR or DELYBAR, 1 ascrev
+ *   deloff  agc_dp_words_t  I  PDELOFF or YDELOFF, 1 ascrev
+ *   delbar  agc_dp_words_t  I  DELPBAR or DELYBAR, 1 ascrev
  *   frac    agc_sp_t           I  TEMPDAP, correction fraction, 2^2
  *
- * RETURNS: agc_csm_dp_pair_t -- PACTTMP or YACTTMP, 1 ascrev
+ * RETURNS: agc_dp_words_t -- PACTTMP or YACTTMP, 1 ascrev
  **********************************************************************/
-static agc_csm_dp_pair_t tvcx_cgcorr(agc_csm_dp_pair_t deloff, agc_csm_dp_pair_t delbar, agc_sp_t frac)
+static agc_dp_words_t tvcx_cgcorr(agc_dp_words_t deloff, agc_dp_words_t delbar, agc_sp_t frac)
 {
-    agc_csm_dp_pair_t act = deloff; /* DCA xDELOFF; DXCH xACTTMP       */
+    agc_dp_words_t act = deloff; /* DCA xDELOFF; DXCH xACTTMP       */
 
     if (!AGC_ASSERT(frac >= 0))
     {
@@ -296,15 +305,19 @@ static agc_csm_dp_pair_t tvcx_cgcorr(agc_csm_dp_pair_t deloff, agc_csm_dp_pair_t
     }
 
     /* DCS xDELOFF; DDOUBL; DDOUBL; DXCH TTMP1 (4 ascrev scale)          */
-    agc_csm_dp_pair_t ttmp1 = csm_dap_pair_ddoubl(csm_dap_pair_ddoubl(csm_dap_pair_neg(deloff))); /* B+2 ascrev  */
+    agc_dp_words_t ttmp1 = csm_dap_words_ddoubl(csm_dap_words_ddoubl(csm_dap_words_neg(deloff))); /* B+2 ascrev  */
 
     /* DCA DELxBAR; DDOUBL; DDOUBL; DAS TTMP1                             */
-    (void) csm_dap_pair_das(&ttmp1, csm_dap_pair_ddoubl(csm_dap_pair_ddoubl(delbar)));
+    (void) csm_dap_words_das(&ttmp1, csm_dap_words_ddoubl(csm_dap_words_ddoubl(delbar)));
 
     /* DCA TTMP1; MP TEMPDAP (upper word only); DAS xACTTMP               */
-    (void) csm_dap_pair_das(&act, csm_dap_pair_mp(ttmp1.hi, frac));
+    (void) csm_dap_words_das(&act, csm_dap_words_mp(ttmp1.hi, frac));
 
-    (void) AGC_ASSERT(act.hi >= AGC_SP_MIN);
+    /* a word out of range: leave the trim estimate uncorrected         */
+    if (!AGC_ASSERT(act.hi >= AGC_SP_MIN))
+    {
+        return (deloff);
+    }
 
     return (act);
 }
@@ -458,7 +471,7 @@ agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs)
 
     if (!AGC_ASSERT(agc_csm_dap_tvc()->tvcexphs == 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);

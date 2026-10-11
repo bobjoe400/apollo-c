@@ -46,7 +46,7 @@
  *
  * NOTES:
  *   Every DP filter quantity is held as the AGC stores it, a pair of
- *   words whose signs may disagree (agc_csm_dp_pair_t), and every DAS,
+ *   words whose signs may disagree (agc_dp_words_t), and every DAS,
  *   DDOUBL and MP is done on the words in the AGC's order. ERRORLIM,
  *   ACTLIM, POUT, DELBARP and the copycycle read the upper word alone,
  *   so the pair, not just its value, decides the actuator command
@@ -224,30 +224,35 @@ static void tvcd_actlim(void)
  * which PRECOMP then rewrites.
  *
  * ARGUMENTS:
- *   in  agc_csm_dp_pair_t  I  cascade input (ERRBTMP, DAP1, DAP2), B-1 rev
+ *   in  agc_dp_words_t  I  cascade input (ERRBTMP, DAP1, DAP2), B-1 rev
  *   n   agc_sp_t           I  N10, N20 or N30, scale 1
  *   k   int                I  index of TMP1, TMP3 or TMP5 (0, 2, 4)
  *
- * RETURNS: agc_csm_dp_pair_t -- the cascade output, B-1 rev
+ * RETURNS: agc_dp_words_t -- the cascade output, B-1 rev
  **********************************************************************/
-static agc_csm_dp_pair_t tvcd_cascade_out(agc_csm_dp_pair_t in, agc_sp_t n, int k)
+static agc_dp_words_t tvcd_cascade_out(agc_dp_words_t in, agc_sp_t n, int k)
 {
     agc_csm_tvc_t    *t   = agc_csm_dap_tvc(); /* TVC DAP erasables     */
-    agc_csm_dp_pair_t out = {0, 0};            /* DAPn, B-1 rev         */
+    agc_dp_words_t out = {0, 0};            /* DAPn, B-1 rev         */
 
     if (!AGC_ASSERT((k == 0) || (k == 2) || (k == 4)))
     {
         return (out);
     }
 
-    out                    = csm_dap_pair_smallmp(in, n); /* TS DAPn +1; MP; DAS DAPn   */
-    agc_csm_dp_pair_t node = t->tmp[k];                   /* DXCH TMP(2k-1), B-1 rev    */
+    out                    = csm_dap_words_smallmp(in, n); /* TS DAPn +1; MP; DAS DAPn   */
+    agc_dp_words_t node = t->tmp[k];                   /* DXCH TMP(2k-1), B-1 rev    */
 
     t->tmp[k].hi = 0;
     t->tmp[k].lo = 0;
-    (void) csm_dap_pair_das(&out, node);
+    (void) csm_dap_words_das(&out, node);
 
-    (void) AGC_ASSERT(t->tmp[k].hi == 0);
+    /* a word out of range: the cascade contributes nothing             */
+    if (!AGC_ASSERT((out.hi >= AGC_SP_MIN) && (out.lo >= AGC_SP_MIN)))
+    {
+        out.hi = 0;
+        out.lo = 0;
+    }
 
     return (out);
 }
@@ -279,9 +284,9 @@ static void tvcd_fwdfltr(void)
     }
 
     /* CS DAP3 +1; MP VARK; TS CMDTMP +1; CS DAP3; MP VARK; DAS CMDTMP   */
-    agc_csm_dp_pair_t c = csm_dap_pair_smallmp(csm_dap_pair_neg(t->dap3), t->vark); /* B+3 ascrev */
+    agc_dp_words_t c = csm_dap_words_smallmp(csm_dap_words_neg(t->dap3), t->vark); /* B+3 ascrev */
 
-    t->cmdtmp = csm_dap_pair_ddoubl(csm_dap_pair_ddoubl(c)); /* B+1     */
+    t->cmdtmp = csm_dap_words_ddoubl(csm_dap_words_ddoubl(c)); /* B+1     */
 
     if (!AGC_ASSERT(t->vark >= 0))
     {
@@ -302,15 +307,15 @@ static void tvcd_fwdfltr(void)
  *   TMP(k+1) = (- D_2 out) + N_2 in
  *
  * ARGUMENTS:
- *   in   agc_csm_dp_pair_t  I  cascade input, B-1 rev
- *   out  agc_csm_dp_pair_t  I  cascade output, B-1 rev
+ *   in   agc_dp_words_t  I  cascade input, B-1 rev
+ *   out  agc_dp_words_t  I  cascade output, B-1 rev
  *   j    int                I  N10 index of N_1/2 (1, 6, 11)
  *   k    int                I  TMP index of the first node (0, 2, 4)
  **********************************************************************/
-static void tvcd_cascade_pre(agc_csm_dp_pair_t in, agc_csm_dp_pair_t out, int j, int k)
+static void tvcd_cascade_pre(agc_dp_words_t in, agc_dp_words_t out, int j, int k)
 {
     agc_csm_tvc_t    *t    = agc_csm_dap_tvc();     /* TVC DAP erasables    */
-    agc_csm_dp_pair_t nout = csm_dap_pair_neg(out); /* CS DAPn, B-1 rev */
+    agc_dp_words_t nout = csm_dap_words_neg(out); /* CS DAPn, B-1 rev */
 
     if (!AGC_ASSERT(((j == 1) || (j == 6) || (j == 11)) && (k >= 0) && (k <= 4)))
     {
@@ -318,19 +323,19 @@ static void tvcd_cascade_pre(agc_csm_dp_pair_t in, agc_csm_dp_pair_t out, int j,
     }
 
     /* TTMP1 = N_1/2 in, TTMP2 = -D_1/2 out; DAS TTMP1                    */
-    agc_csm_dp_pair_t sum = csm_dap_pair_smallmp(in, t->n10[j]); /* B-1  */
+    agc_dp_words_t sum = csm_dap_words_smallmp(in, t->n10[j]); /* B-1  */
 
-    (void) csm_dap_pair_das(&sum, csm_dap_pair_smallmp(nout, t->n10[j + 2]));
+    (void) csm_dap_words_das(&sum, csm_dap_words_smallmp(nout, t->n10[j + 2]));
 
     /* DDOUBL; DAS TMP(k+1); DXCH TMP(k+1); DXCH TMP(k)                   */
-    agc_csm_dp_pair_t node = t->tmp[k + 1]; /* TMP(k+1), B-1 rev        */
+    agc_dp_words_t node = t->tmp[k + 1]; /* TMP(k+1), B-1 rev        */
 
-    (void) csm_dap_pair_das(&node, csm_dap_pair_ddoubl(sum));
+    (void) csm_dap_words_das(&node, csm_dap_words_ddoubl(sum));
     t->tmp[k] = node;
 
     /* TMP(k+1) = -D_2 out (TS TMP(k+1) +1 after TS of zero); DAS N_2 in  */
-    t->tmp[k + 1] = csm_dap_pair_smallmp(nout, t->n10[j + 3]);
-    (void) csm_dap_pair_das(&t->tmp[k + 1], csm_dap_pair_smallmp(in, t->n10[j + 1]));
+    t->tmp[k + 1] = csm_dap_words_smallmp(nout, t->n10[j + 3]);
+    (void) csm_dap_words_das(&t->tmp[k + 1], csm_dap_words_smallmp(in, t->n10[j + 1]));
 
     if (!AGC_ASSERT(t->tmp[k].hi >= AGC_SP_MIN))
     {
@@ -374,9 +379,9 @@ static void tvcd_precomp(void)
  * of DELBAR and the upper word of CMDTMP each multiplied alone.
  *
  * ARGUMENTS:
- *   delbar  agc_csm_dp_pair_t  I  DELPBAR or DELYBAR, 1 ascrev
+ *   delbar  agc_dp_words_t  I  DELPBAR or DELYBAR, 1 ascrev
  **********************************************************************/
-static void tvcd_delbar(agc_csm_dp_pair_t delbar)
+static void tvcd_delbar(agc_dp_words_t delbar)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
@@ -385,8 +390,8 @@ static void tvcd_delbar(agc_csm_dp_pair_t delbar)
     /* CAE DELxBAR +1; MP E(-AT); TS DELBRTMP +1 (upper word zeroed by
      * FWDFLTR); CAE DELxBAR; MP E(-AT); DAS DELBRTMP                      */
     t->delbrtmp.lo = csm_dap_mp_hi(delbar.lo, E_AT);
-    (void) csm_dap_pair_das(&t->delbrtmp, csm_dap_pair_mp(delbar.hi, E_AT));
-    (void) csm_dap_pair_das(&t->delbrtmp, csm_dap_pair_mp(t->cmdtmp.hi, ONE_M_EAT));
+    (void) csm_dap_words_das(&t->delbrtmp, csm_dap_words_mp(delbar.hi, E_AT));
+    (void) csm_dap_words_das(&t->delbrtmp, csm_dap_words_mp(t->cmdtmp.hi, ONE_M_EAT));
 
     if (!AGC_ASSERT(t->delbrtmp.hi >= AGC_SP_MIN))
     {
@@ -507,18 +512,18 @@ static void tvcd_integrate(tvcd_axis_t ax)
 
     /* DCA xERRB; DXCH ERRBTMP; DCA OMEGAxC; DAS ERRBTMP (B-1 rev)        */
     t->errbtmp = p ? t->perrb : t->yerrb; /* pitch or yaw integrator   */
-    (void) csm_dap_pair_das(&t->errbtmp, csm_dap_pair(t->omegac[a]));
+    (void) csm_dap_words_das(&t->errbtmp, agc_dp_to_words(t->omegac[a]));
 
     /* pitch: CS COSCDUZ; MP COSCDUX; DDOUBL; MP MCDUYDOT; DDOUBL;
      *        CS MCDUZDOT; MP SINCDUX; DDOUBL; DAS OMEGAYB
      * yaw:   CAE COSCDUZ; MP SINCDUX; ...;   MP COSCDUX ... OMEGAZB      */
-    agc_sp_t k = csm_dap_pair_ddoubl(csm_dap_pair_mp(p ? (agc_sp_t) -cosz : cosz, p ? cosx : sinx)).hi;
+    agc_sp_t k = csm_dap_words_ddoubl(csm_dap_words_mp(p ? (agc_sp_t) -cosz : cosz, p ? cosx : sinx)).hi;
 
-    t->omegab[a] = csm_dap_pair_ddoubl(csm_dap_pair_mp(k, t->mcduydot));                                                    /* revs/s  */
-    (void) csm_dap_pair_das(&t->omegab[a], csm_dap_pair_ddoubl(csm_dap_pair_mp((agc_sp_t) -t->mcduzdot, p ? sinx : cosx))); /* ?: axis */
+    t->omegab[a] = csm_dap_words_ddoubl(csm_dap_words_mp(k, t->mcduydot));                                                    /* revs/s  */
+    (void) csm_dap_words_das(&t->omegab[a], csm_dap_words_ddoubl(csm_dap_words_mp((agc_sp_t) -t->mcduzdot, p ? sinx : cosx))); /* ?: axis */
 
     /* DCS OMEGAxB; DAS ERRBTMP                                           */
-    (void) csm_dap_pair_das(&t->errbtmp, csm_dap_pair_neg(t->omegab[a]));
+    (void) csm_dap_words_das(&t->errbtmp, csm_dap_words_neg(t->omegab[a]));
 
     if (!AGC_ASSERT(t->errbtmp.hi >= AGC_SP_MIN))
     {
@@ -540,7 +545,7 @@ static void tvcd_output(tvcd_axis_t ax)
     bool           p = (ax == TVCD_PITCH); /* pitch pass                 */
 
     /* DCA xDELOFF; DAS CMDTMP: now scaled B+0 ascrev                     */
-    (void) csm_dap_pair_das(&t->cmdtmp, p ? t->pdeloff : t->ydeloff);
+    (void) csm_dap_words_das(&t->cmdtmp, p ? t->pdeloff : t->ydeloff);
     tvcd_actlim();
 
     /* CS xCMD; AD CMDTMP: the increment, 85.41 arcsec/bit                */

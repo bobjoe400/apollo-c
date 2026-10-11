@@ -442,7 +442,7 @@ static agc_status_t roll_noroll(void)
 
     if (!AGC_ASSERT(t->i_sign != 0))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return (roll_jetroll(CSM_DAP_NEG0));
@@ -577,7 +577,7 @@ agc_status_t agc_task_roll_jets_off(void)
 
     if (!AGC_ASSERT(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u))
     {
-        return AGC_STATUS_BAD_ARG;
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return (AGC_STATUS_OK);

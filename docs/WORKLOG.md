@@ -460,3 +460,8 @@
             adoption items routed. Resuming review-nav-conic.
 2026-10-11  format3 DONE (brace initializers). Core files formatted by lead
             after the core review finished. Launching review-dap-csm (#7).
+2026-10-11  User found `(void) csm_dap_words_das(...)` (31 sites, dap-csm's
+            new word-level helper). check_rules now flags ANY (void)-cast
+            call outside a stdlib allowlist (and those need a comment).
+            58 hard now: dap-csm (running) + prog-align word_forms.c +
+            csm/optics/geometry.c (queued lanes).

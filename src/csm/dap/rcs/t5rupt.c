@@ -260,10 +260,10 @@ static agc_status_t rcs_zerot5(void)
     for (int i = 0; i < AGC_CSM_AXES; i++)
     { /* NO.T5VAR + 1 = 37 words */
         r->wbody[i]  = 0;
-        r->adot[i]   = 0;
-        r->merror[i] = 0;
+        r->adot[i]   = (agc_dp_words_t){0, 0};
+        r->merror[i] = (agc_dp_words_t){0, 0};
         r->dft[i]    = 0;
-        r->drho[i]   = 0;
+        r->drho[i]   = (agc_dp_words_t){0, 0};
         r->tau[i]    = 0;
         r->bias[i]   = 0;
         r->error[i]  = 0;
