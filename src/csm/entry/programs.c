@@ -900,7 +900,7 @@ agc_dp_t agc_entry_tff_trig(agc_interp_t *ip, const agc_tff_t *t,
     }
 
     m       = agc_dp_add(ip, agc_dp_shr(t->tffx, 1), AGC_DP_HALF);
-    m       = agc_dp_mul(ip, agc_dp_mul(ip, m, t->nrmag), t->nrterm);
+    m       = agc_dp_mul_trunc(agc_dp_mul_trunc(m, t->nrmag), t->nrterm);
     m       = agc_dp_div(ip, t->tfftem, m);
     *cdelf2 = agc_dp_sub(ip, AGC_DP_HALF, agc_dp_abs(m));
     m       =
@@ -924,10 +924,9 @@ static agc_dp_t fishcalc(agc_interp_t *ip, agc_dp_t sdelf2, agc_dp_t cdelf2)
     urh = agc_vec_add(ip, h, agc_vec_scale(ip, urone, cdelf2));
 
     return (agc_latlong_geterad(
-                ip,
-                agc_dp_shl(ip,
-                           agc_vec_dot(ip, urh,
-                                       agc_guid_state()->avg.unitw), 1)));
+                ip, entry_tp_shl(ip, agc_vec_dot_tp(ip, urh,
+                                                    agc_guid_state()->avg.unitw),
+                                 1))); /* DOT SL1: .5 SIN(LAT) */
 }
 
 /* VRCALC (p. 816): ACOS(URH.RT) in revs.                                 */
@@ -945,7 +944,7 @@ agc_dp_t agc_entry_vrcalc(agc_vec_t u, agc_vec_t rt)
         return (0); /* no valid result */
     }
 
-    return (agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, u, rt), 2)));
+    return (agc_dp_acos(ip, entry_tp_shl(ip, agc_vec_dot_tp(ip, u, rt), 2)));
 }
 
 /* DISPTARG (p. 816): target rotated through the time to go
@@ -958,7 +957,7 @@ static agc_dp_t disptarg(agc_interp_t *ip, agc_entry_state_t *es, agc_dp_t rtgo)
     }
 
     es->dtearot =
-        agc_dp_sub(ip, agc_dp_mul(ip, rtgo, AGC_ENTRY_KTETA1), es->tte1);
+        agc_dp_sub(ip, agc_dp_mul_trunc(rtgo, AGC_ENTRY_KTETA1), es->tte1);
     entry_earrot(ip, es, false); /* EARROT2       */
 
     if (!AGC_ASSERT(es->dtearot >= AGC_DP_MIN))
@@ -986,14 +985,14 @@ agc_dp_t agc_entry_vgamcalc(agc_interp_t *ip, agc_tff_t *t, agc_dp_t rterm,
 
     t->rterm  = rterm;
     t->nrterm = agc_dp_shl(ip, rterm, t->nr); /* SL* 0,1       */
-    prod      = agc_dp_mul(ip, t->nrmag, t->nrterm);
+    prod      = agc_dp_mul_trunc(t->nrmag, t->nrterm);
     d         = agc_dp_sub(ip, t->nrmag, t->nrterm);
     d         = (sh >= 0) ? agc_dp_shl(ip, d, sh) : agc_dp_shr_round(d, -sh);
     s         =
         agc_dp_sqrt(ip, agc_dp_sub(ip, agc_dp_div(ip, d, prod), t->tffvsq));
     *vgam = agc_dp_div(ip, s, t->rtmu);
     d     =
-        agc_dp_div(ip, agc_dp_sqrt(ip, t->tffnp), agc_dp_mul(ip, s, t->nrterm));
+        agc_dp_div(ip, agc_dp_sqrt(ip, t->tffnp), agc_dp_mul_trunc(s, t->nrterm));
 
     if (!AGC_ASSERT(s >= 0))
     {
@@ -1021,9 +1020,9 @@ agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam, agc_dp_t *gmax)
     vb = agc_dp_sq(ip,
                    agc_dp_div(ip, agc_dp_sub(ip, vgam, AGC_ENTRY_KFT36_PER_S),
                               AGC_ENTRY_KFT20_PER_S));  /* B-2 */
-    num = agc_dp_add(ip, agc_dp_add(ip, agc_dp_mul(ip, vb, AGC_ENTRY_KR1), gam),
+    num = agc_dp_add(ip, agc_dp_add(ip, agc_dp_mul_trunc(vb, AGC_ENTRY_KR1), gam),
                      AGC_ENTRY_M6_05DEG);
-    num = agc_dp_mul(ip, num, AGC_ENTRY_KR2);
+    num = agc_dp_mul_trunc(num, AGC_ENTRY_KR2);
     g   =
         agc_dp_add(ip, agc_dp_div(ip, vb, AGC_ENTRY_KR4), AGC_ENTRY_ONE_16TH);
     g     = agc_dp_add(ip, agc_dp_div(ip, num, g), AGC_ENTRY_KR3);
@@ -1104,7 +1103,7 @@ agc_status_t agc_entry_ems_data(void)
                            entry_preparation_tff.rterm,
                            &vgam); /* VIO */
     es->vio = agc_dp_add(
-        ip, agc_dp_div(ip, AGC_ENTRY_VEMSCON, agc_dp_mul(ip, g, vgam)), vgam);
+        ip, agc_dp_div(ip, AGC_ENTRY_VEMSCON, agc_dp_mul_trunc(g, vgam)), vgam);
     g = agc_entry_vgamcalc(ip, &entry_preparation_tff,
                            agc_dp_add(ip, eradm, AGC_ENTRY_KFT300), &vgam);
     st = agc_entry_gmaxcalc(vgam, g, &es->gmax);

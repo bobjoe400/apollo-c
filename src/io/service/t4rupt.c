@@ -27,6 +27,7 @@
  *   Name                  Description
  *   --------------------  -------------------------------------------
  *   agc_dsky_dspout       DSPOUT / DSPOUTSB (io-pinball)
+ *   agc_dsky_dspoutsb     QUIKDSP: CCS NOUT / DSPOUTSB (io-pinball)
  *   agc_t4_optics_*       OPTDRIVE / OPTMON (t4rupt_csm.c)
  *   agc_t4_rr_monitor     RRAUTCHK (t4rupt_lm.c); agc_lm_dap_rcsmon
  *   agc_imu_*             NOATTOFF, ZEROICDU, SETCOARS, RNDREFDR, IMUBAD
@@ -364,11 +365,8 @@ static uint16_t t4_quikdsp(void)
         return (T4_20MS_CS);
     }
 
-    uint16_t relay = 0; /* relay word written (unused) */
-    /* DEVIATION: QUIKDSP goes to DSPOUTSB on NOUT alone; the pinball
-     * entry also requires DSKYFLAG, so a quick sequence stops early if
-     * DSKYFLAG drops in the 100 ms it lasts (DSPOUTSB is pinball's).     */
-    agc_status_t st = agc_dsky_dspout(&relay); /* CCS NOUT / DSPOUTSB */
+    uint16_t     relay = 0; /* relay word written (unused) */
+    agc_status_t st    = agc_dsky_dspoutsb(&relay); /* CCS NOUT / DSPOUTSB */
 
     if (st == AGC_STATUS_OK)
     {

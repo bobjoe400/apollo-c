@@ -373,7 +373,8 @@ agc_status_t pin_vbrqwait(void)
     agc_task_id_t task  = (agc_task_id_t) s->dsptem[1]; /* task */
     agc_status_t  st    = agc_dsky_releasedsp(); /* status so far */
 
-    if (!AGC_ASSERT(delay >= 1u) || !AGC_ASSERT(task != AGC_TASK_NONE))
+    if (!AGC_ASSERT(delay >= 1u) ||
+        !AGC_ASSERT(task != AGC_TASK_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
     }

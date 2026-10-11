@@ -1,20 +1,35 @@
-/*
- * agc_navaux.h -- auxiliary navigation subroutines (agent nav-aux).
+/**********************************************************************
+ * FILE NAME: auxiliary.h
  *
- * Translated from (Comanche055 page numbers; Luminary099 code is identical
- * unless noted):
- *   LATITUDE_LONGITUDE_SUBROUTINES.agc        pp. 1236-1242  src/nav/auxiliary/latlong.c
- *   PLANETARY_INERTIAL_ORIENTATION.agc        pp. 1243-1251  src/nav/auxiliary/planetary.c
- *   MEASUREMENT_INCORPORATION.agc             pp. 1252-1261  src/nav/auxiliary/measurement.c
- *   TIME_OF_FREE_FALL.agc                     pp. 1373-1388  src/nav/auxiliary/free_fall.c
- *   LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES   CM pp. 785-788, LM pp. 984-987
- *                                                            src/nav/auxiliary/ephemerides.c
- *   STAR_TABLES.agc (LM: CONTROLLED_CONSTANTS) pp. 1389-1393 src/nav/auxiliary/star_tables.c
+ * PURPOSE:
+ *   Auxiliary navigation subroutines (nav-aux lane): latitude/longitude,
+ *   planetary inertial orientation, measurement incorporation, time of
+ *   free fall, lunar and solar ephemerides, star table.  Used by the
+ *   navigation programs, nav-integ (agc_lsposition) and guid-entry.
+ *
+ * AGC SOURCE:  (Comanche055 pages; Luminary099 identical unless noted)
+ *   LATITUDE_LONGITUDE_SUBROUTINES.agc  pp. 1236-1242  latlong.c
+ *   PLANETARY_INERTIAL_ORIENTATION.agc  pp. 1243-1251  planetary.c
+ *   MEASUREMENT_INCORPORATION.agc       pp. 1252-1261  measurement.c
+ *   TIME_OF_FREE_FALL.agc               pp. 1373-1388  free_fall.c
+ *   LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc CM pp. 785-788,
+ *                                       LM pp. 984-987 ephemerides.c
+ *   STAR_TABLES.agc (LM: CONTROLLED_CONSTANTS) pp. 1389-1393
+ *                                                      star_tables.c
+ *   (all under src/nav/auxiliary/)
+ *
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   none (pad load, LAT/LONG/ALT and the CM ephemeris uplink are reached
+ *   through the set/get functions below; struct members carry their
+ *   scale in a short comment)
  *
  * Scale notation: "scale 2^N u" means value = fraction * 2^N in unit u
  * (the AGC comment "B-N").  cs = centiseconds, revs = revolutions.
  * Angles in revolutions use scale 2^0 (0.5 = pi rad).
- */
+ **********************************************************************/
 #ifndef AGC_NAVAUX_H
 #define AGC_NAVAUX_H
 
@@ -35,10 +50,10 @@
 typedef struct agc_navaux_padload
 {
     agc_tp_t tephem;  /* TEPHEM (= TIMSUBO): cs from midnight 1 July
-                           preceding launch to AGC clock zero, TP scale 2^42 cs */
+                           preceding launch to AGC clock zero, 2^42 cs */
     agc_dp_t  azo;    /* AZO: earth rotation angle at TEPHEM, scale 2^0 revs  */
     agc_dp_t  axo;    /* AXO: earth precession angle about X, scale 2^0 rad   */
-    agc_dp_t  neg_ayo; /* -AYO: minus the angle about Y, scale 2^0 rad         */
+    agc_dp_t  neg_ayo; /* -AYO: minus the angle about Y, scale 2^0 rad   */
     agc_vec_t lm504;  /* 504LM: lunar libration vector, moon-fixed, 2^0 rad   */
     agc_vec_t rls;    /* RLS: landing site, moon-fixed, scale 2^27 m          */
 } agc_navaux_padload_t;
@@ -132,24 +147,24 @@ agc_status_t agc_latlong_setre(agc_interp_t *ip,
  * integration (nav-integ); INCORP1/INCORP2 do not depend on the scale.    */
 typedef struct agc_incorp_w
 {
-    agc_vec_t blk[AGC_INCORP_BLKS][AGC_INCORP_ROWS];
+    agc_vec_t blk[AGC_INCORP_BLKS][AGC_INCORP_ROWS]; /* W, scale of W */
 } agc_incorp_w_t;
 
 typedef struct agc_incorp
 {
     /* inputs to INCORP1 */
     bool      dim9;                     /* DMENFLG: true = 9-dim      */
-    agc_vec_t bvector[AGC_INCORP_BLKS]; /* BVECTOR (6 or 9 dim)       */
-    agc_dp_t  deltaq;                   /* DELTAQ measured deviation  */
-    agc_tp_t  variance;                 /* VARIANCE, TP               */
+    agc_vec_t bvector[AGC_INCORP_BLKS]; /* BVECTOR, per-measurement scale */
+    agc_dp_t  deltaq;                   /* DELTAQ, measurement scale  */
+    agc_tp_t  variance;                 /* VARIANCE, scale of ZI^2    */
     /* outputs of INCORP1 (inputs of INCORP2) */
-    agc_vec_t zi[AGC_INCORP_BLKS];     /* ZI, normalized by NEWZCOMP */
-    agc_vec_t omega[AGC_INCORP_BLKS];  /* OMEGA weighting vector     */
+    agc_vec_t zi[AGC_INCORP_BLKS];     /* ZI, scale set by NEWZCOMP  */
+    agc_vec_t omega[AGC_INCORP_BLKS];  /* OMEGA, scale of W ZI       */
     agc_vec_t deltax[AGC_INCORP_BLKS]; /* DELTAX state deviations:
                                                [0] pos 2^29/2^27 m,
                                                [1] vel 2^7/2^5 m/cs,
                                                [2] bias                   */
-    agc_dp_t gamma;                   /* GAMMA (normalized)         */
+    agc_dp_t gamma;                   /* GAMMA, scale 2^-NORMGAM    */
     int      normgam;                 /* NORMGAM, AGC index value   */
 } agc_incorp_t;
 
@@ -161,16 +176,20 @@ typedef struct agc_incorp_sv
     agc_vec_t vcv;     /* VCV  conic velocity, 2^7 / 2^5 m/cs             */
     agc_vec_t tdeltav; /* TDELTAV position deviation, 2^22 / 2^18 m       */
     agc_vec_t tnuv;    /* TNUV velocity deviation, 2^3 / 2^-1 m/cs        */
-    agc_vec_t x789;    /* X789 bias states (radar/landmark)               */
+    agc_vec_t x789;    /* X789 bias states, scale of DELTAX[2]           */
     bool      rectify; /* out: caller must CALL RECTIFY (PBODY = moon)    */
 } agc_incorp_sv_t;
 
-agc_status_t agc_incorp_state_deviation(agc_interp_t *ip, const agc_incorp_w_t *w,
-                         agc_incorp_t *inc); /* INCORP1 */
+/* INCORP1 */
+agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
+                                        const agc_incorp_w_t *w,
+                                        agc_incorp_t         *inc);
+/* INCORP2 FAZA-FAZB5 */
 agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc,
-                                 agc_incorp_w_t *w); /* INCORP2 FAZA-B */
+                                 agc_incorp_w_t *w);
+/* INCORP2 FAZC-FAZAB5 */
 agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc,
-                               agc_incorp_sv_t *sv); /* INCORP2 FAZC-  */
+                                     agc_incorp_sv_t *sv);
 
 /* ======================================================================
  * Time of free fall (free_fall.c).  E = earth scale, M = moon scale.
@@ -196,7 +215,7 @@ typedef struct agc_tff
     agc_dp_t  tff1_alf; /* TFF1/ALF 1/alfa m E 2^(22+2NA), M 2^(20+2NA)    */
     /* TFFRP/RA outputs */
     agc_dp_t rper; /* RPER perigee radius E 2^29, M 2^27 m            */
-    agc_dp_t rapo; /* RAPO apogee radius (NEARONE if invalid)         */
+    agc_dp_t rapo; /* RAPO apogee E 2^29, M 2^27 m (NEARONE: none) */
     /* CALCTFF/CALCTPER debris left for the entry displays */
     agc_dp_t rterm;   /* RTERM  E 2^29, M 2^27 m                         */
     agc_dp_t nrterm;  /* NRTERM E 2^(29-NR) m                            */
@@ -272,7 +291,7 @@ agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs,
  * Star table (star_tables.c): 37 navigation stars, unit vectors in the
  * basic reference frame, scale 2^1 (2DEC ... B-1).
  * ==================================================================== */
-#define AGC_STAR_COUNT  37
+#define AGC_STAR_COUNT  37   /* navigation stars, 1..37                  */
 #define AGC_STAR_CATLOG 6970 /* CATLOG DEC 6970 (oct 15472)                */
 
 agc_status_t agc_star_vector(int star, agc_vec_t *out); /* star 1..37      */

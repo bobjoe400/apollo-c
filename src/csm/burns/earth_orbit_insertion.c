@@ -225,12 +225,16 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
 
     if (!tliftoff_set)
     {
+        agc_dp_t liftoff = lifttemp; /* clock zeroed: DCA LIFTTEMP */
+
         if (agc_time_now_cs() >= 16384u)
-        {                               /* CCS TIME2: not yet  */
-            agc_time_set_cs(0u); /* zeroed: REP11A -5   */
+        { /* CCS TIME2 > 0: REP11A -5 zeroes the clock and the DXCH
+           * TIME2 hands the clock read now to TLIFTOFF.              */
+            liftoff = (agc_dp_t) agc_time_now_cs();
+            agc_time_set_cs(0u);
         }
 
-        agc_erase_set_tevent(lifttemp); /* REP11A -2           */
+        agc_erase_set_tevent(liftoff); /* REP11A -2           */
         tliftoff_set = true;
     }
 
@@ -267,9 +271,11 @@ static agc_status_t getdown(agc_interp_t *ip, agc_vec_t *down)
         return (st);
     }
 
+    /* LALOTORV +5 multiplies with DMPR (rounded); GAMMA = DPHALF (1 B-1). */
     rp = agc_vec_make(agc_dp_mul(ip, agc_dp_cos(ip, insertion_pad.padlong), cl),
                       agc_dp_mul(ip, agc_dp_sin(ip, insertion_pad.padlong), cl),
-                      agc_dp_shr(agc_dp_sin(ip, insertion_pad.latitude), 1));
+                      agc_dp_mul(ip, INSERTION_HALFREV,
+                                 agc_dp_sin(ip, insertion_pad.latitude)));
     rp    = agc_vec_unit(ip, rp, NULL, NULL);
     st    = agc_planet_rp_to_r(ip, &pad, false, rp, 0, down);
     *down = agc_vec_neg(*down);
@@ -435,7 +441,7 @@ void agc_csm_velocity_altitude_rate(agc_interp_t *ip)
 
     insertion_vmagi = agc_vec_abval(ip, vn); /* 2^7 m/cs    */
     ur              = agc_vec_unit(ip, rn, &rmag, NULL);
-    insertion_hdot  = agc_dp_shl(ip, agc_vec_dot(ip, ur, vn), 1);
+    insertion_hdot  = entry_tp_shl(ip, agc_vec_dot_tp(ip, ur, vn), 1);
 
     if (agc_flag_test(AGC_FLAG_AMOONFLG))
     {
@@ -543,22 +549,20 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(
     cx        = agc_dp_cos(ip, agc_guid_cdulogic(cdu[0]));
     sz        = agc_dp_sin(ip, agc_guid_cdulogic(cdu[2]));
     cz        = agc_dp_cos(ip, agc_guid_cdulogic(cdu[2]));
-    ak_out[0] = agc_dp_high(agc_dp_shr_round(
-                                agc_dp_add(ip,
-                                           agc_dp_shl(ip,
-                                                      agc_dp_mul(ip, sz, d[0]),
-                                                      1), d[2]), 2));
-    p         = agc_dp_mul(ip, cz, d[0]);
-    ak_out[1] = agc_dp_high(
-        agc_dp_shl(ip,
-                   agc_dp_add(ip, agc_dp_mul(ip, sx, d[1]),
-                              agc_dp_shl(ip, agc_dp_mul(ip, p, cx), 1)),
-                   1));
-    ak_out[2] = agc_dp_high(
-        agc_dp_shl(ip,
-                   agc_dp_sub(ip, agc_dp_mul(ip, cx, d[1]),
-                              agc_dp_shl(ip, agc_dp_mul(ip, p, sx), 1)),
-                   1));
+    /* DMP SL1, DAD, SR2 (truncating) on the TP MPAC; the PUSHes and the
+     * stores keep two words.                                             */
+    ak_out[0] = agc_dp_high(agc_tp_to_dp(agc_tp_shift(
+        ip, agc_tp_add(ip, agc_tp_shift(ip, agc_dp_mul_tp(sz, d[0]), 1),
+                       agc_tp_from_dp(d[2])), -2)));
+    p         = agc_dp_mul_trunc(cz, d[0]); /* DMP PUSH          */
+    ak_out[1] = agc_dp_high(entry_tp_shl(
+        ip, agc_tp_add(ip, agc_dp_mul_tp(sx, d[1]),
+                       agc_tp_from_dp(entry_tp_shl(
+                           ip, agc_dp_mul_tp(p, cx), 1))), 1));
+    ak_out[2] = agc_dp_high(entry_tp_shl(
+        ip, agc_tp_add(ip, agc_dp_mul_tp(cx, d[1]),
+                       agc_tp_from_dp(agc_dp_neg(entry_tp_shl(
+                           ip, agc_dp_mul_tp(p, sx), 1)))), 1));
 
     if (!AGC_ASSERT(ak_out[0] >= AGC_SP_MIN))
     {
@@ -591,45 +595,35 @@ static void desired_attitude(agc_interp_t *ip, agc_dp_t desired[3])
                                       insertion_pad.poly,
                                       insertion_pad.polynum),
                           5); /* revs  */
-    roll = agc_dp_shl(
-        ip, agc_dp_mul(ip, agc_dp_from_sp(spolyarg), insertion_pad.satrlrt),
-        14);
+    roll = entry_tp_shl(
+        ip, agc_dp_mul_tp(agc_dp_from_sp(spolyarg), insertion_pad.satrlrt),
+        14); /* SLOAD DMP SL 14D: the TP low word moves up      */
     roll = agc_dp_sub(ip,
                       agc_dp_add(ip, agc_dp_sub(ip, roll, INSERTION_HALFREV),
                                  insertion_pad.launchaz),
                       insertion_pad.azimuth);
 
-    if (agc_dp_sgn(roll) * agc_dp_sgn(insertion_pad.satrlrt) > 0)
-    {             /* RLTST */
+    /* RLTST: CA MPAC, MP SATRLRT +1 (the low word), BZMF: rollout is
+     * over only when the high word of that SP product is above +0.      */
+    if (entry_sp_mp(agc_dp_high(roll), agc_dp_low(insertion_pad.satrlrt)) > 0)
+    {
         roll = 0; /* rollout done: MBDYTCTL +2    */
     }
 
     dc.row[0] = agc_vec_make(agc_dp_sin(ip, pitch), 0,
                              agc_dp_neg(agc_dp_cos(ip, pitch)));
     dc.row[1] = agc_vec_make(
-        agc_dp_neg(agc_dp_shl(
-                       ip,
-                       agc_dp_mul(ip, agc_dp_sin(ip, roll),
-                                  agc_dp_cos(ip, pitch)),
-                       1)),
+        agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(ip, roll),
+                                                  agc_dp_cos(ip, pitch)), 1)),
         agc_dp_neg(agc_dp_cos(ip, roll)),
-        agc_dp_neg(agc_dp_shl(
-                       ip,
-                       agc_dp_mul(ip, agc_dp_sin(ip, roll),
-                                  agc_dp_sin(ip, pitch)),
-                       1)));
+        agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_sin(ip, roll),
+                                                  agc_dp_sin(ip, pitch)), 1)));
     dc.row[2] = agc_vec_make(
-        agc_dp_neg(agc_dp_shl(
-                       ip,
-                       agc_dp_mul(ip, agc_dp_cos(ip, roll),
-                                  agc_dp_cos(ip, pitch)),
-                       1)),
+        agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(ip, roll),
+                                                  agc_dp_cos(ip, pitch)), 1)),
         agc_dp_sin(ip, roll),
-        agc_dp_neg(agc_dp_shl(
-                       ip,
-                       agc_dp_mul(ip, agc_dp_cos(ip, roll),
-                                  agc_dp_sin(ip, pitch)),
-                       1)));
+        agc_dp_neg(entry_tp_shl(ip, agc_dp_mul_tp(agc_dp_cos(ip, roll),
+                                                  agc_dp_sin(ip, pitch)), 1)));
 
     for (t = 0; t < 3; t++)
     {

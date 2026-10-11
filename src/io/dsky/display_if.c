@@ -201,7 +201,8 @@ static uint16_t f4(void)
  **********************************************************************/
 static void f4_up(uint16_t bits)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(bits <= PIN_WORD))
     {
         return;
     }
@@ -210,6 +211,11 @@ static void f4_up(uint16_t bits)
     /* cannot fail for word 4 */
     agc_flagword_set(DIF_F4, (uint16_t) (f4() | bits));
     agc_relint();
+
+    if (!AGC_ASSERT((f4() & bits) == bits))
+    {
+        return; /* flag bits did not stick */
+    }
 }
 
 /**********************************************************************
@@ -224,7 +230,8 @@ static void f4_up(uint16_t bits)
  **********************************************************************/
 static void f4_down(uint16_t bits)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(bits <= PIN_WORD))
     {
         return;
     }
@@ -232,6 +239,11 @@ static void f4_down(uint16_t bits)
     agc_inhint();
     agc_flagword_set(DIF_F4, (uint16_t) (f4() & ~bits));
     agc_relint();
+
+    if (!AGC_ASSERT((f4() & bits) == 0u))
+    {
+        return; /* flag bits still set */
+    }
 }
 
 /**********************************************************************
@@ -249,6 +261,11 @@ static void f4_down(uint16_t bits)
  **********************************************************************/
 static bool dif_cont_valid(const agc_dsky_cont_t *c)
 {
+    if (!AGC_ASSERT(c != NULL))
+    {
+        return (false);
+    }
+
     return (c->terminate != AGC_JOB_NONE && c->proceed != AGC_JOB_NONE &&
             c->enter != AGC_JOB_NONE);
 }
@@ -742,7 +759,8 @@ static void dif_linuschr(int c, const dif_req_t *rq, bool *linus, bool *end)
  **********************************************************************/
 static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(rq != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -794,7 +812,8 @@ static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
  **********************************************************************/
 static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(rq != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -846,7 +865,8 @@ static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
  **********************************************************************/
 static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(rq != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1151,7 +1171,8 @@ static uint16_t dif_second_vn(const dif_job_t *j)
  **********************************************************************/
 static uint16_t dif_first_vn(int c)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(c >= DIF_PRIOC && c <= DIF_NORMC))
     {
         return (0); /* no valid result */
     }
@@ -1612,6 +1633,11 @@ agc_status_t agc_dsky_pinbrnch(void)
         agc_relint(); /* RELINT (for GOPIN users; a no-op when enabled) */
     }
 
+    if (!AGC_ASSERT(!agc_interrupts_inhibited()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (pin_pinbrnch());
 }
 
@@ -1658,6 +1684,12 @@ agc_status_t agc_dsky_endmark(void)
     }
 
     agc_dsky_clearmrk();
+
+    /* CLEARMRK: no extended verb active and the mark display released    */
+    if (!AGC_ASSERT(agc_erase_extvbact() == 0u))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if ((f4() & DIF_PRIO30) != 0u)
     { /* normal or prio in ENDIDLE */
@@ -1860,7 +1892,8 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
         }
     }
 
-    if (!AGC_ASSERT(slot >= 0) || !AGC_ASSERT(prio >= 1u && prio <= 037u))
+    if (!AGC_ASSERT(slot >= 0) ||
+        !AGC_ASSERT(prio >= 1u && prio <= 037u))
     {
         return (AGC_STATUS_FULL);
     }

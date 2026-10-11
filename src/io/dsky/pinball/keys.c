@@ -164,7 +164,8 @@ static agc_status_t pin_num(void)
 
     int inrel = pin_getinrel(); /* INREL of DSPCOUNT */
 
-    if (!AGC_ASSERT(inrel >= 0) || !AGC_ASSERT(s->chr <= 9))
+    if (!AGC_ASSERT(inrel >= 0) ||
+        !AGC_ASSERT(s->chr <= 9))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -393,7 +394,8 @@ static agc_status_t pin_sign_key(bool minus)
 
     int inrel = pin_getinrel(); /* INREL of DSPCOUNT */
 
-    if (!AGC_ASSERT(inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z))
+    if (!AGC_ASSERT(inrel >= PIN_INREL_X) ||
+        !AGC_ASSERT(inrel <= PIN_INREL_Z))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -431,6 +433,12 @@ static agc_status_t pin_sign_key(bool minus)
  **********************************************************************/
 static bool pin_legaltst(int inrel)
 {
+    if (!AGC_ASSERT(inrel >= 0) ||
+        !AGC_ASSERT(inrel <= PIN_INREL_Z))
+    {
+        return (false); /* no register: not clearable */
+    }
+
     return (inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z);
 }
 
@@ -1138,7 +1146,8 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
  **********************************************************************/
 agc_status_t agc_dsky_key(uint8_t code)
 {
-    if (!AGC_ASSERT(code <= PIN_LOW5) || !AGC_ASSERT(code != 0u))
+    if (!AGC_ASSERT(code <= PIN_LOW5) ||
+        !AGC_ASSERT(code != 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }

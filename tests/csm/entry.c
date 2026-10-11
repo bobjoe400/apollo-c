@@ -9,6 +9,8 @@
  *    jets (JNDX = -1) for a positive roll error and the negative ones for
  *    a negative error, with no rate; a tiny error falls in the dead zone.
  * 3. XT1LIM (P37, p. 930) gives sqrt(BETA10) for a simple case.
+ * 4. READGYM1 / EXDAP2 MSU wraps an angle/180 sum through 180 deg (not
+ *    a saturation), and an "OVFL OK" store (CM/FDAI PAXERR1) drops 1.0.
  *
  * Scales: /2VS = /51532.3946 fps, /805 = /25 g, range revs = /21600 NM.
  */
@@ -188,12 +190,28 @@ static void test_xt1lim(void)
     CHECK(fabs(agc_dp_to_double(x, 5) - 2.0) < 1e-4);
 }
 
+static void test_angle_wrap(void)
+{
+    /* 170 deg + 20 deg = 190 deg = -170 deg (angle/180: 1.0 = 16384).   */
+    agc_sp_t a170 = (agc_sp_t) (170.0 / 180.0 * 16384.0);
+    agc_sp_t a20  = (agc_sp_t) (20.0 / 180.0 * 16384.0);
+    agc_sp_t w    = entry_angle_wrap((int32_t) a170 + (int32_t) a20);
+
+    CHECK(w < 0);
+    CHECK(w == (agc_sp_t) ((int32_t) a170 + (int32_t) a20 - 32768));
+    CHECK(entry_angle_wrap(-(int32_t) a170 - (int32_t) a20) == -w);
+    CHECK(entry_angle_wrap(1000) == 1000);       /* in range: unchanged  */
+    CHECK(entry_sp_store_ovf(16384 + 100) == 100);   /* OVFL OK store    */
+    CHECK(entry_sp_store_ovf(-16384 - 100) == -100);
+}
+
 int main(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
     test_huntest_range();
     test_roll_phase_plane();
     test_xt1lim();
+    test_angle_wrap();
     (void) printf("test_entry: %d checks, %d failures, %d assert reports\n",
                   g_checks, g_failures, g_assert_reports);
 

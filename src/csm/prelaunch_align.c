@@ -541,7 +541,7 @@ agc_status_t prelaunch_endtest1(void)
         return (st);
     }
 
-    return (agc_dsky_endext());
+    return (agc_dsky_endmark());
 }
 
 /**********************************************************************

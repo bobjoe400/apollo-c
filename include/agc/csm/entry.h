@@ -409,6 +409,10 @@ agc_status_t entry_ballistic(agc_entry_state_t *es);
 agc_status_t entry_final_phase(agc_entry_state_t *es);
 agc_status_t entry_killgrp4(void);
 
+/* reentry.c: SL n on the TP MPAC a DMP or DOT leaves (MPAC+2 bits move
+ * up into MPAC+1), stored as DP: the AGC "DMP ... SL1" / "DOT SL1".     */
+agc_dp_t entry_tp_shl(agc_interp_t *ip, agc_tp_t m, int n);
+
 /* dap.c */
 /* ANGOVCOR / CORANGOV: an SP angle/180 sum (at most one overflow) wrapped
  * back into [-1, 1) (i.e. modulo 360 deg).                               */

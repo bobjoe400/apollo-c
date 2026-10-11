@@ -1,11 +1,22 @@
-/*
- * internal.h -- helpers private to the nav-aux translation units
- * (latlong.c, planetary.c, measurement.c, free_fall.c, ephemerides.c).
+/**********************************************************************
+ * FILE NAME: internal.h
  *
- * They model interpretive behaviour that agc_interp.h does not expose:
- * shifts by a signed (indexed) count, TP shifts and normalization, and
- * the overflow wrap-around that angle arithmetic in revolutions relies on.
- */
+ * PURPOSE:
+ *   Helpers private to the nav-aux translation units (latlong.c,
+ *   planetary.c, measurement.c, free_fall.c, ephemerides.c), defined in
+ *   util.c.  They model interpretive behaviour that interp.h does not
+ *   expose: range predicates, shifts by a signed (indexed) count, and
+ *   the low words of a TP.
+ *
+ * AGC SOURCE:
+ *   INTERPRETER.agc (SL*, SR*, VSL*, VSR*; DLOAD X+1)
+ *
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   none
+ **********************************************************************/
 #ifndef NAVAUX_INTERNAL_H
 #define NAVAUX_INTERNAL_H
 
@@ -15,7 +26,7 @@
 #include "agc/core/word.h"
 
 /* Largest shift count the AGC encodes in a shift address (7 bits).       */
-#define NAVAUX_MAX_SHIFT 60
+#define NAVAUX_MAX_SHIFT 60 /* shift count limit */
 
 bool agc_navaux_dp_ok(agc_dp_t a);   /* |a| <= DPPOSMAX              */
 bool agc_navaux_vec_ok(agc_vec_t v); /* every component in range      */

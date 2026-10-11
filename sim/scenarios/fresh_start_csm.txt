@@ -21,8 +21,8 @@ keys V05N09E                    # alarm codes
 until VERB 05 within 100
 keys V36E                       # fresh start
 run 100
-xexpect B1 VERB blank           # DSPOFF blanks flushed by QUIKDSP
-xexpect B1 PROG blank
+expect VERB blank           # DSPOFF blanks flushed by QUIKDSP
+expect PROG blank
 expect FLASH off
 expect LAMP KEYREL off
 expect LAMP OPRERR off

@@ -59,20 +59,29 @@ LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES (CM and LM), STAR_TABLES.
       fixed (auxiliary.h pad-load block, agc_lsposition).
 * [x] fidelity pass: latlong, planetary, free_fall, measurement (INCORP1;
       INCORP2 oracle bit-exact), ephemerides CM+LM, star_tables (rope-
-      verified by nav-aux). Findings table: TODO write below.
+      verified by nav-aux). Findings table below.
 * [x] oracle tolerances tightened in tests/oracle/nav_aux.c: LM LSPOS
       8 -> 2, TFF 16 -> 12, TFFX 256 -> 32 (484/0). No KNOWN entries exist
       for this lane (F2-F4 were tolerances).
-* [ ] style debt: TODO, ~600 check_style findings in lane files (prologs,
-      decl comments, scale comments, long-block comments); none started.
+* [x] style debt: 588 check_style findings -> 0 in all 11 lane files
+      (src/nav/auxiliary/*.c, internal.h, include/agc/nav/auxiliary.h,
+      tests/nav/navaux.c, tests/oracle/nav_aux.c): template file and
+      function prologs (AGC label + pages, argument tables with scales,
+      RETURNS), decl/scale comments, ternaries rewritten as if/else,
+      closing-brace comments on blocks > 40 lines, main() first in the
+      tests, `long int`, `sizeof (x)`, all lines <= 80 columns.
+      check_rules: 0 hard, 0 warnings (util.c density 1.33 -> 2.17 with
+      real pre/postconditions: input ranges, SR/VSR never grows a
+      magnitude, the TP low words carry the sign of v).  Vacuous
+      `st = OK; if (!AGC_ASSERT(st == OK))` in MOONMX removed.
+      Forwarding wrappers: tools/unwrap.py --list finds none in the lane.
 * [x] note: Findings table, Requests, Lessons (below).
 
-State of files: all lane files and the five renamed callers
-(src/lm/navigation/measurement_update.c, src/csm/navigation/{landmark_
-navigation,tracking_data,cislunar_navigation}.c, src/programs/navigation/
-common.c) compile with -Werror; test_navaux 143/0, oracle_nav_aux 484/0
-(private build: full `make` is blocked by other lanes' in-progress files).
-No file is mid-edit.
+State of files: all lane files and every includer of auxiliary.h
+compile with -Werror; test_navaux 143/0, oracle_nav_aux 484/0 (private
+build: full `make` is blocked by src/csm/prelaunch_align.c, another
+lane's in-progress job/task ids).  check_style 0, check_rules 0/0,
+uncrustify --check clean on the lane.  No file is mid-edit.  REVIEW DONE.
 
 ## Findings
 
@@ -89,6 +98,8 @@ No file is mid-edit.
 | 9 | ephemerides.c CM RES | PUSH DMP OMEGAES | angle rounded, AGC truncates | fixed (oracle was already exact) |
 | 10 | measurement.c INCORP1 | VSQ RTB TPMODE, INCOR1C | own exact VSQ (deviation) and DMPR/DP SQRT | fixed with agc_vec_sq_tp, TP SQRT/shift |
 | 11 | measurement.c | INCORP1/INCORP2 | digit-suffixed names | renamed (incorp_state_deviation, incorp_update_w, incorp_update_state) |
+| 12 | planetary.c MOONMX | -- | dead `st = OK; if (!AGC_ASSERT(st == OK))` check | removed |
+| 13 | lane (11 files) | -- | 588 check_style findings, util.c rule-5 density 1.33 | 0 findings, density >= 2.0 everywhere |
 
 Open questions from docs/modules/nav-aux.md: VGAMCALC / TFF/TRIG belong
 to guid-entry (P61-P67.agc) -- unchanged; the pad-load duplication is
@@ -106,6 +117,11 @@ resolved (one TEPHEM/RLS store).
 
 ## Lessons
 
+* check_rules rule 7 rejects `(void) AGC_ASSERT(...)`: a pre/post-
+  condition must be the guard form `if (!AGC_ASSERT(c)) { return ...; }`.
+  A range predicate itself carries no assertion (core/mpac.c agc_w_ok).
+* A comment like `SL*/SR*` ends the block comment early; write `SL* and
+  SR*` in prologs.
 * Before trusting a "<= n LSB" tolerance, probe the intermediates: the
   agc_probe "stop <basic label>" trick (stop DVXSC / ARCSIN inside an
   interpretive routine) dumps the push list mid-routine.

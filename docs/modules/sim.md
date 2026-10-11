@@ -44,7 +44,8 @@ the same protocol.
 
 ## Bugs found (flight code; not fixed here -- the collapse lane owns src/)
 Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
-- B1 src/io/service/t4rupt.c t4_quikdsp() calls agc_dsky_dspout(), which
+- B1 FIXED (review-io-dsky: QUIKDSP calls agc_dsky_dspoutsb; scenarios
+  flipped to expect). src/io/service/t4rupt.c t4_quikdsp() called agc_dsky_dspout(), which
   tests DSKYFLAG (src/io/dsky/pinball/state.c agc_dsky_dspout). The AGC's
   QUIKDSP (T4RUPT_PROGRAM C p.137 / L p.160) is `CCS NOUT / TC DSPOUTSB`
   with no FLAGWRD5 test; only the slow path DSPOUT (C p.135) tests it.

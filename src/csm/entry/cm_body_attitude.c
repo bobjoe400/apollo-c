@@ -144,9 +144,9 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
         agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), ci), 1), cm,
         agc_dp_shl(ip, agc_dp_mul(ip, agc_dp_neg(sm), agc_dp_neg(si)), 1));
     uby      = agc_vec_scale(ip, uby, co); /* x CO/2 -> /4 */
-    uby.c[0] = agc_dp_add(ip, agc_dp_neg(agc_dp_mul(ip, so, agc_dp_neg(si))),
+    uby.c[0] = agc_dp_add(ip, agc_dp_neg(agc_dp_mul_trunc(so, agc_dp_neg(si))),
                           uby.c[0]);
-    uby.c[2] = agc_dp_add(ip, agc_dp_mul(ip, so, ci), uby.c[2]);
+    uby.c[2] = agc_dp_add(ip, agc_dp_mul_trunc(so, ci), uby.c[2]);
     es->uby  = uby;
     es->uby  =
         agc_vec_shl(ip, agc_vec_mat(ip, es->uby, &refsmmat), 2); /* VXM VSL2 */
@@ -167,14 +167,13 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     c         = agc_vec_dot(ip, ul, es->uza); /* COS(ROLL)/4  */
     s         = agc_vec_dot(ip, ul, es->uya); /* -SIN(ROLL)/4 */
     angles[0] = agc_imu_arctrig(ip, s, c);
-    s         = agc_dp_shl(ip, agc_vec_dot(ip, es->uby, es->uxa), 1);
+    s = entry_tp_shl(ip, agc_vec_dot_tp(ip, es->uby, es->uxa), 1); /* DOT SL1 */
     angles[1] = agc_dp_asin(ip, s);
     s         = agc_vec_dot(ip, ul, es->ubx); /* -SIN(ALFA)/4 */
     c         = agc_vec_dot(ip, ul, es->ubz); /* COS(ALFA)/4  */
     angles[2] = agc_imu_arctrig(ip, s, c);
-    c         =
-        agc_dp_shl(ip, agc_vec_dot(ip, agc_guid_state()->avg.unitr, es->uza),
-                   1);
+    c = entry_tp_shl(
+        ip, agc_vec_dot_tp(ip, agc_guid_state()->avg.unitr, es->uza), 1);
     angles[3] = agc_dp_acos(ip, c);
 
     return (AGC_STATUS_OK);

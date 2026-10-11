@@ -129,6 +129,11 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 - INITDSP re-issues the saved normal request (NVSAVE/EBANKTEM/TEMPFLSH) through
   MAKEPLAY instead of jumping back to the user's TC BANKCALL (TEMPFLSH -3).
 - MPAC+2 of display-interface users (MARK2PAC) is not carried (always 0).
+- CLEANDSP / KLEENEX called without a continuation (P40BLNKR, P41BLANK,
+  BLANKDEX, P11, P61-P67 STARTENT) run in a MAKEPLAY job of their own; the
+  caller's job goes on at once instead of after the clean-out. Exact for
+  callers that end their job next; P11 and P61-P67 do their next steps
+  before the clean-out (review-io-dsky).
 - KEYRUPT1 via agc_dsky_key()/agc_dsky_keys() runs CHARIN at once (sim
   convenience); agc_dsky_keyrupt1/2 and agc_dsky_uprupt NOVAC CHARIN like the AGC.
 - CHANDSP/CHANLOAD for components 2, 3 of noun 10 use channel NOUNCADR+k.
@@ -136,7 +141,8 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 ## Stubs
 
 - DSPFMEM (V27 fixed memory display): pin_dspfmem returns
-  AGC_STATUS_UNIMPLEMENTED (the rope is not modelled).
+  AGC_STATUS_UNIMPLEMENTED (the rope is not modelled; justification in
+  docs/modules/review-io-dsky.md).
 
 ## Requested core additions
 

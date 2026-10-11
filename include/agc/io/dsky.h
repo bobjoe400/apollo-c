@@ -127,6 +127,8 @@ void         agc_dsky_falton(void);  /* FALTON: OPR ERR lamp on */
  * in *relay_word. AGC_STATUS_NOT_FOUND when nothing is pending (the
  * caller then turns the relays off as NODSPOUT does).                  */
 agc_status_t agc_dsky_dspout(uint16_t *relay_word);
+/* CCS NOUT / TC DSPOUTSB without the DSKYFLAG test (QUIKDSP, p. 137).  */
+agc_status_t agc_dsky_dspoutsb(uint16_t *relay_word);
 /* DSPTAB itself is the shared erasable agc_erase_dsptab(0..11) in
  * agc_state.h (+11D = C/S lamp relays, written by T4RUPT/IMU/alarms).  */
 int16_t      agc_dsky_nout(void); /* NOUT                        */

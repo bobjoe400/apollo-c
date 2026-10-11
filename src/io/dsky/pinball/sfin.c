@@ -125,7 +125,8 @@ static int64_t pin_dmp_tp(agc_dp_t f, int64_t c)
  **********************************************************************/
 static agc_status_t pin_binround(int64_t dp, agc_dp_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(pin_abs64(dp) < PIN_DP_LIM))
+    if (!AGC_ASSERT(out != NULL) ||
+        !AGC_ASSERT(pin_abs64(dp) < PIN_DP_LIM))
     {
         return (AGC_STATUS_BAD_ARG);
     }

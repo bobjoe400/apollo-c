@@ -651,7 +651,8 @@ static agc_dp_t sf_pair_value(const sf_pair_t *p)
 agc_status_t agc_scale_sfconst(agc_vehicle_t veh, uint8_t sf_code,
                                agc_dp_t *sf_in, agc_dp_t *sf_out)
 {
-    if (!AGC_ASSERT(sf_in != NULL) || !AGC_ASSERT(sf_out != NULL))
+    if (!AGC_ASSERT(sf_in != NULL) ||
+        !AGC_ASSERT(sf_out != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -756,7 +757,8 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale,
  **********************************************************************/
 agc_status_t agc_scale_info(agc_scale_t scale, agc_scale_info_t *out)
 {
-    if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(scale < AGC_SCALE_COUNT))
+    if (!AGC_ASSERT(out != NULL) ||
+        !AGC_ASSERT(scale < AGC_SCALE_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }

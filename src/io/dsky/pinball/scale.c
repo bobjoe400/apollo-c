@@ -88,9 +88,10 @@ static const int16_t k_rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
  **********************************************************************/
 static int pin_own_id(uint16_t id, int *kind)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(kind != NULL))
     {
-        return (0); /* no valid result */
+        return (-1); /* no valid result */
     }
 
     switch (id)
@@ -357,7 +358,8 @@ agc_status_t pin_comp_scale(int k, agc_scale_info_t *info)
 {
     const pin_state_t *s = pin_st(); /* pinball erasables */
 
-    if (!AGC_ASSERT(k >= 0 && k < 3) || !AGC_ASSERT(info != NULL))
+    if (!AGC_ASSERT(k >= 0 && k < 3) ||
+        !AGC_ASSERT(info != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -473,7 +475,8 @@ bool pin_sf_is_dp(uint8_t rout)
  **********************************************************************/
 agc_dp_t pin_value_of_word(const agc_scale_info_t *info, uint16_t w)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(info != NULL))
     {
         return (0); /* no valid result */
     }
@@ -504,17 +507,22 @@ agc_dp_t pin_value_of_word(const agc_scale_info_t *info, uint16_t w)
  **********************************************************************/
 static uint16_t pin_word_of_value(const agc_scale_info_t *info, agc_dp_t v)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(info != NULL))
     {
         return (0); /* no valid result */
     }
 
-    if (info->is_raw)
+    uint16_t w = info->is_raw ? /* raw word, or the high SP word */
+                 (uint16_t) ((uint32_t) v & PIN_WORD) :
+                 pin_ones_from_sp(agc_dp_high(v));
+
+    if (!AGC_ASSERT(w <= PIN_WORD))
     {
-        return ((uint16_t) ((uint32_t) v & PIN_WORD));
+        return (0); /* not a 15-bit word */
     }
 
-    return (pin_ones_from_sp(agc_dp_high(v)));
+    return (w);
 }
 
 /**********************************************************************
@@ -532,9 +540,10 @@ static uint16_t pin_word_of_value(const agc_scale_info_t *info, agc_dp_t v)
  **********************************************************************/
 static int pin_chan_of(int k)
 {
-    if (!AGC_ASSERT(pin_invariants()))
+    if (!AGC_ASSERT(pin_invariants()) ||
+        !AGC_ASSERT(k >= 0 && k < 3))
     {
-        return (0); /* no valid result */
+        return (-1); /* no valid result */
     }
 
     int ch; /* channel number */
@@ -742,6 +751,11 @@ agc_status_t pin_comp_octal(int k, uint16_t *word)
  **********************************************************************/
 static int64_t pin_mag(int64_t a)
 {
+    if (!AGC_ASSERT(a > INT64_MIN))
+    {
+        return (INT64_MAX); /* |a| not representable */
+    }
+
     return ((a < 0) ? -a : a); /* magnitude */
 }
 
@@ -1207,7 +1221,8 @@ static agc_status_t pin_2intout(int k, agc_dp_t v)
     agc_sp_t hi = agc_dp_high(v); /* first integer XX, unscaled */
     agc_sp_t lo = agc_dp_low(v); /* second integer YY, unscaled */
 
-    if (!AGC_ASSERT(hi >= 0 && lo >= 0) || !AGC_ASSERT(k >= 0 && k < 3))
+    if (!AGC_ASSERT(hi >= 0 && lo >= 0) ||
+        !AGC_ASSERT(k >= 0 && k < 3))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1311,14 +1326,18 @@ static agc_status_t pin_sfout_dspdcend(const agc_scale_info_t *info,
  **********************************************************************/
 static agc_status_t pin_dspdcput(int k, agc_dp_t v, bool *exited)
 {
+    if (!AGC_ASSERT(exited != NULL) ||
+        !AGC_ASSERT(k >= 0 && k < 3))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     agc_scale_info_t info; /* scale of the component */
     agc_status_t     st = pin_comp_scale(k, &info); /* status so far */
 
-    if (!AGC_ASSERT(exited != NULL) || !AGC_ASSERT(k >= 0 && k < 3) ||
-        st != AGC_STATUS_OK)
+    if (st != AGC_STATUS_OK)
     {
-        return ((st != AGC_STATUS_OK) ? /* or BAD_ARG */
-                st : AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     pin_set_dspcount(k_rnd1[k]);

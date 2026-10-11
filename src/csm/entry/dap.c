@@ -48,7 +48,7 @@ static agc_sp_t jetag;                  /* JETAG: +1 roll due, 0, -1 mode+1 */
 static agc_sp_t paxerr1;                /* PAXERR1 integrated roll err/360 */
 static agc_sp_t ak, ak1, ak2;           /* AK (= PAXERR) AK1 AK2 needles */
 static agc_sp_t qaxerr, raxerr;         /* QAXERR RAXERR errors /180     */
-static agc_sp_t tused;                  /* TUSED: -TIME1 at SETJTAG      */
+static agc_sp_t tused;                  /* TUSED: +TIME1 at SETJTAG      */
 static agc_sp_t errorz;                 /* ERRORZ initial roll error (TM)*/
 static agc_sp_t mvt_180e;               /* -VT/180E (edit)               */
 static agc_sp_t vdt_180;                /* VDT/180 drift velocity        */
@@ -722,8 +722,11 @@ static agc_status_t dap_fdai(bool integrate)
 /* SETJTAG (p. 1081): 2 s task 1.2 s after PIPA time: roll update due.   */
 agc_status_t agc_task_setjtag(void)
 {
-    tused = agc_erase_time1(); /* CS TIME1 / TS TUSED (sign kept
-                                           positive here, see TIMETST)   */
+    /* DEVIATION: AGC stores -TIME1 (CS TIME1); C keeps +TIME1 and
+     * TIMETST forms (TIME1 - TUSED) mod 2^14, the same value the AGC gets
+     * from -OLDTIME1 + TIME1 + 2 POS1/2 with overflow (exhaustive model:
+     * review-guid-entry note). TUSED is DAP-private, not downlinked.     */
+    tused = agc_erase_time1(); /* SETJTAG: TUSED       */
     jetag = 1;
 
     if (!AGC_ASSERT(tused >= 0))

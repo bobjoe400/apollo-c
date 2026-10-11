@@ -68,7 +68,8 @@ static agc_status_t pin_sign_on(bool plus)
 {
     int inrel = pin_getinrel(); /* INREL of DSPCOUNT */
 
-    if (!AGC_ASSERT(inrel >= PIN_INREL_X) || !AGC_ASSERT(inrel <= PIN_INREL_Z))
+    if (!AGC_ASSERT(inrel >= PIN_INREL_X) ||
+        !AGC_ASSERT(inrel <= PIN_INREL_Z))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -81,6 +82,13 @@ static agc_status_t pin_sign_on(bool plus)
     if (st == AGC_STATUS_OK)
     {
         st = pin_11dspin(on, true);
+    }
+
+    /* SGNON word now has its sign relay (bit 11) lit                    */
+    if (st == AGC_STATUS_OK &&
+        !AGC_ASSERT((pin_ones_mag(agc_erase_dsptab(on)) & PIN_BIT11) != 0u))
+    {
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);
@@ -97,6 +105,11 @@ static agc_status_t pin_sign_on(bool plus)
  **********************************************************************/
 agc_status_t pin_plus_on(void)
 {
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (pin_sign_on(true));
 }
 
@@ -111,6 +124,11 @@ agc_status_t pin_plus_on(void)
  **********************************************************************/
 agc_status_t pin_minus_on(void)
 {
+    if (!AGC_ASSERT(pin_invariants()))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (pin_sign_on(false));
 }
 
@@ -173,6 +191,11 @@ static agc_dp_t pin_dsprnd(agc_dp_t v)
         return (AGC_DP_MAX);
     }
 
+    if (!AGC_ASSERT(s >= (int64_t) v))
+    {
+        return (0); /* rounding only ever adds */
+    }
+
     return ((agc_dp_t) s);
 }
 
@@ -191,7 +214,8 @@ static agc_dp_t pin_dsprnd(agc_dp_t v)
  **********************************************************************/
 static agc_status_t pin_dspdcwd1(agc_dp_t v, int ndig)
 {
-    if (!AGC_ASSERT(v >= 0) || !AGC_ASSERT(ndig >= 1 && ndig <= 10))
+    if (!AGC_ASSERT(v >= 0) ||
+        !AGC_ASSERT(ndig >= 1 && ndig <= 10))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -215,6 +239,12 @@ static agc_status_t pin_dspdcwd1(agc_dp_t v, int ndig)
 
     pin_block_dspcount(PIN_VD1);
 
+    /* DSPLV: DSPCOUNT left blocked at VD1                               */
+    if (!AGC_ASSERT(s->dspcount == PIN_VD1 && s->dspcount_neg))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (st);
 }
 
@@ -232,7 +262,8 @@ static agc_status_t pin_dspdcwd1(agc_dp_t v, int ndig)
  **********************************************************************/
 agc_status_t pin_dspdecwd(agc_dp_t v, bool negzero)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN) || !AGC_ASSERT(v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(v >= AGC_DP_MIN) ||
+        !AGC_ASSERT(v <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -261,7 +292,8 @@ agc_status_t pin_dspdecwd(agc_dp_t v, bool negzero)
  **********************************************************************/
 agc_status_t pin_dspdecnr(agc_dp_t v, bool negzero)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN) || !AGC_ASSERT(v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(v >= AGC_DP_MIN) ||
+        !AGC_ASSERT(v <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -285,7 +317,8 @@ agc_status_t pin_dspdecnr(agc_dp_t v, bool negzero)
  **********************************************************************/
 agc_status_t pin_dspdc2nr(agc_dp_t v, bool negzero)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN) || !AGC_ASSERT(v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(v >= AGC_DP_MIN) ||
+        !AGC_ASSERT(v <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -308,7 +341,8 @@ agc_status_t pin_dspdc2nr(agc_dp_t v, bool negzero)
  **********************************************************************/
 agc_status_t pin_dsp2dec(agc_dp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_DP_MIN) || !AGC_ASSERT(v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(v >= AGC_DP_MIN) ||
+        !AGC_ASSERT(v <= AGC_DP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -342,7 +376,8 @@ agc_status_t pin_dsp2dec(agc_dp_t v)
  **********************************************************************/
 agc_status_t pin_dspdecvn(int n)
 {
-    if (!AGC_ASSERT(n >= 0) || !AGC_ASSERT(n <= (int) AGC_SP_MAX))
+    if (!AGC_ASSERT(n >= 0) ||
+        !AGC_ASSERT(n <= (int) AGC_SP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -392,6 +427,12 @@ agc_status_t pin_dspoctwo(uint16_t w)
 
     pin_block_dspcount(PIN_VD1); /* DSPLV        */
 
+    /* DSPLV: DSPCOUNT left blocked at VD1                               */
+    if (!AGC_ASSERT(s->dspcount == PIN_VD1 && s->dspcount_neg))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (st);
 }
 
@@ -429,6 +470,12 @@ agc_status_t pin_dsp2bit(uint16_t w)
 
     pin_block_dspcount(PIN_VD1);
 
+    /* DSPLV: DSPCOUNT left blocked at VD1                               */
+    if (!AGC_ASSERT(s->dspcount == PIN_VD1 && s->dspcount_neg))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
     return (st);
 }
 
@@ -445,7 +492,8 @@ agc_status_t pin_dsp2bit(uint16_t w)
  **********************************************************************/
 agc_status_t pin_updatvb(uint8_t verb)
 {
-    if (!AGC_ASSERT(verb <= 99) || !AGC_ASSERT(pin_st()->dspcount <= PIN_MD1))
+    if (!AGC_ASSERT(verb <= 99) ||
+        !AGC_ASSERT(pin_st()->dspcount <= PIN_MD1))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -470,7 +518,8 @@ agc_status_t pin_updatvb(uint8_t verb)
  **********************************************************************/
 agc_status_t pin_updatnn(uint8_t noun)
 {
-    if (!AGC_ASSERT(noun <= 99) || !AGC_ASSERT(pin_st()->dspcount <= PIN_MD1))
+    if (!AGC_ASSERT(noun <= 99) ||
+        !AGC_ASSERT(pin_st()->dspcount <= PIN_MD1))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -504,7 +553,8 @@ agc_status_t pin_updatnn(uint8_t noun)
  **********************************************************************/
 agc_status_t agc_job_dspmmjb(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(pin_st()->dspcount <= PIN_MD1))
+    if (!AGC_ASSERT(ctx != NULL) ||
+        !AGC_ASSERT(pin_st()->dspcount <= PIN_MD1))
     {
         return (AGC_STATUS_BAD_ARG);
     }

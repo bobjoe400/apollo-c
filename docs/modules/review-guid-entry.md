@@ -14,6 +14,9 @@ from a case; rt.sh builds a test against fresh lane objects + a private
 snapshot library (mylib.sh) because the shared tree is mid-edit.
 
 ## Progress
+(resume 2026-10-11: velocity.c F14 fix verified complete -- compiles
+-Werror, oracle return_to_earth 144 checks/0 fail/45 KNOWN; stale scratch
+stubs.c dropped from the private lib.)
 (state at checkpoint: every touched file compiles with -Werror; oracle
 return_to_earth 0 failures / 45 KNOWN (was 58), oracle entry 521/0,
 tests/csm/entry 23/0, tests/csm/return_to_earth 21/0. Shared `make` is
@@ -42,11 +45,35 @@ red from other lanes' mid-edits (imu/mode.c, burn_steering.c) - not mine.)
   (c) phase plane SR: CA SR re-edits SR, so SR = -VT/360 (was -VT/180)
   for the DZ2 test; (d) CM/FDAI ADS PAXERR1 "OVFL OK" wraps by 1.0 (new
   entry_sp_store_ovf in dap.c, declared in include/agc/csm/entry.h).
-* PARTIAL dap.c fidelity: READGYMB, DOBRATE?, BODYRATE, ATTRATES, EXDAP*,
+* DONE dap.c fidelity: READGYMB, DOBRATE?, BODYRATE, ATTRATES, EXDAP*,
   BIASEDZ/3DDZ/4D/SDZ/2D/SDZ, CM/RCS..COMPAT, WHICHALF..TIMSCAL, TIMETST,
-  JETCALL*, DZCALL, CM/FDAI(R) confirmed. TODO: CM/DUMPR/CMTMFILE index,
-  CM/DAPON, CM/DAPIC, SETJTAG sign; add a tests/csm test for gimbal wrap.
-* TODO programs.c (P61-P67, S61.x) and earth_orbit_insertion.c (P11) read.
+  JETCALL*, DZCALL, CM/FDAI(R), CM/DUMPR/CMTMFILE/SAVENDX index (-13..-1
+  step 3 -> ENDBUF-14..ENDBUF), CM/DAPON (+NOTYET), CM/DAPIC/CM/DAP2C
+  (JETEM: POS1/2 = BIT14 = 020000, so 2 POS1/2 = 1.0; Python model of the
+  ones'-complement ADS over all TIME1/PIPTIME pairs = C's mod-2^14
+  difference; CCS loop incl. -0 -> 1), CM/SWIC1 016017 / SWIC2 012 bits.
+  SETJTAG: TUSED sign flipped vs AGC -> now a DEVIATION comment (TIMETST
+  consistent). Gimbal-wrap / OVFL-OK test added (tests/csm/entry.c, 29/0).
+* DONE DMP fidelity (new finding F-E1): REENTRY_CONTROL, CM_BODY_ATTITUDE,
+  P61-P67 and P11 contain no DMPR, yet the C used agc_dp_mul (DMPR,
+  rounded) at 92 sites. Now agc_dp_mul_trunc (DMP); the 4 CM/TRIG VXSC
+  sites stay rounded. TP MPAC modelled where the AGC shifts or roots it:
+  new entry_tp_shl (entry.h/reentry.c) for DOT SL1 / DMP SL1 (RDOT, D,
+  L/DCALC, STARTENT THETAH, CM/TRIG BETA/GAMA, FISHCALC, VRCALC);
+  agc_tp_sqrt/agc_tp_add for HUNTEST1 VL, CONT3 VREF, RANGER E; TP SL 8D
+  in CONSTD1. LOG uses agc_dp_poly (POLY). Oracle entry residuals:
+  DTEAROT/RT/THETAH 1 -> exact/<=3 (RT.y was 98: one cs of DTEAROT);
+  ROLLC 2159 -> 1 (PREDICT3; was blamed on yaAGC DV); L/D 373 -> <=9
+  except entry_pass_next 256 (VL -38 carried); RDOT +-1 (DOT TP low word,
+  core class). Remaining D 84/156 (initroll/kep2) unchanged.
+* DONE S61.1 / S61.1A-C / RETRN1-3, P61..P67 / P61.1-.4 / P62.1-.3 /
+  P63.1 / P65.1 / P66END / KILLGRP4 / P67.1-.3 / WAKEP62 read vs C:
+  display returns (GOFLASH/GOFLASHR/GOPERF1R L+2..L+5), PHASCHNG words,
+  CMDAPMOD test (+1 -> P63.1), CS THREE (GYMDIFSW+CM/DSTBY), OCT41=33DEC
+  all match. S61.2 / FISHCALC / VGAMCALC / TFF/TRIG / DISPTARG / VRCALC /
+  GMAXCALC / S62.3 order of operations match (GMAX lo word = VPRED hi in
+  the AGC overlay; C keeps a separate DP - display/downlink use SP only).
+* TODO programs.c (rest) and earth_orbit_insertion.c (P11) read.
   NOTE another agent has uncommitted edits in programs.c / entry.h
   (agc_entry_tff_trig, agc_entry_vgamcalc exports) - edit around them.
 * TODO naming / style debt (1599 check_style findings in lane files) /

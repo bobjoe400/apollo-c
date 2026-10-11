@@ -1,9 +1,30 @@
-/*
- * nouns.c -- io-nouns unit tests: noun tables, scale types, data ids.
+/**********************************************************************
+ * FILE NAME: nouns.c
  *
- * AGC_ASSERT failures are expected in the negative tests; this file supplies
- * its own agc_assert_report() that counts them instead of printing.
- */
+ * PURPOSE:
+ *   io-nouns unit tests: both noun tables complete and consistent (00-99),
+ *   selected nouns against the AGC tables, out-of-range lookups, the
+ *   scale-type table (SFINTAB / SFOUTAB constants) and the noun data-id
+ *   read/write path against the core state.
+ *
+ * AGC SOURCE:
+ *   Comanche055 PINBALL_NOUN_TABLES.agc pp. 263-289 (NNADTAB, NNTYPTAB,
+ *   SFINTAB, SFOUTAB, IDADDTAB, RUTMXTAB); Luminary099 pp. 302-321
+ *
+ * EXTERNAL VARIABLES:
+ *   none (test counters are file-static)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                     Description
+ *   -----------------------  ---------------------------------------
+ *   agc_noun_lookup_vehicle  noun table row of either vehicle
+ *   agc_scale_info_vehicle   scale-type row of either vehicle
+ *   agc_noun_read / _write   noun data ids against the core state
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Exit status 1 when any check fails. AGC_ASSERT failures are expected
+ *   in the negative tests; agc_assert_report() here swallows them.
+ **********************************************************************/
 #include <stdio.h>
 
 #include <stdint.h>
@@ -13,9 +34,52 @@
 #include "agc/guidance/guidance.h"
 #include "agc/io/nouns.h"
 
-static int g_checks;
-static int g_failures;
+static int g_checks;   /* checks run                        */
+static int g_failures; /* checks failed                     */
 
+/* Prototypes: main() comes first (STYLE 4.6). */
+static void check(bool ok, int line, const char *text);
+static bool is_spare(const agc_noun_t *n);
+static void test_table_complete(agc_vehicle_t veh);
+static void test_known_nouns(void);
+static void test_unknown(void);
+static void test_scales(void);
+static void test_data(void);
+
+/**********************************************************************
+ * AGC: none (test driver) -- run every test of this file
+ *
+ * FUNCTION NAME: main
+ *
+ * RETURNS: int -- 0 when all checks pass, 1 otherwise
+ **********************************************************************/
+int main(void)
+{
+    test_table_complete(AGC_VEHICLE_CSM);
+    test_table_complete(AGC_VEHICLE_LM);
+    test_known_nouns();
+    test_unknown();
+    test_scales();
+    test_data();
+    (void) printf("test_nouns: %d checks, %d failures\n", g_checks, g_failures);
+
+    return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
+}
+
+/**********************************************************************
+ * AGC: none (test hook replacing core/assert.c)
+ *
+ * FUNCTION NAME: agc_assert_report
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description
+ *   --------  -------------  ---  ---------------------------------
+ *   file      const char *   I    source file of the failed assertion
+ *   line      int            I    source line
+ *   expr      const char *   I    assertion text
+ *
+ * RETURNS: bool -- false (the assertion stays failed)
+ **********************************************************************/
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) file;
@@ -27,6 +91,18 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 
 #define CHECK(c) check((c), __LINE__, #c)
 
+/**********************************************************************
+ * AGC: none (test helper) -- count one check, print a failure
+ *
+ * FUNCTION NAME: check
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description
+ *   --------  -------------  ---  ---------------------------------
+ *   ok        bool           I    check result
+ *   line      int            I    source line of the check
+ *   text      const char *   I    check expression text
+ **********************************************************************/
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
@@ -38,24 +114,47 @@ static void check(bool ok, int line, const char *text)
     }
 }
 
+/**********************************************************************
+ * AGC: none (test helper) -- a spare noun has no components
+ *
+ * FUNCTION NAME: is_spare
+ *
+ * ARGUMENTS:
+ *   Argument  Type                I/O  Description
+ *   --------  ------------------  ---  ----------------------------
+ *   n         const agc_noun_t *  I    noun table row
+ *
+ * RETURNS: bool -- true for a spare noun
+ **********************************************************************/
 static bool is_spare(const agc_noun_t *n)
 {
     return (n->ncomp == 0);
 }
 
-/* Every noun 00-99 present, in order, internally consistent. */
+/**********************************************************************
+ * AGC: none (test) -- every noun 00-99 present, in order, internally
+ *      consistent (NNADTAB, NNTYPTAB)
+ *
+ * FUNCTION NAME: test_table_complete
+ *
+ * ARGUMENTS:
+ *   Argument  Type           I/O  Description
+ *   --------  -------------  ---  ---------------------------------
+ *   veh       agc_vehicle_t  I    vehicle whose table is checked
+ **********************************************************************/
 static void test_table_complete(agc_vehicle_t veh)
 {
-    int spares = 0;
+    int spares = 0; /* spare rows seen */
 
     for (uint8_t n = 0; n < AGC_NOUN_COUNT; n++)
     {
-        agc_noun_t         row;
-        const agc_status_t st = agc_noun_lookup_vehicle(veh, n, &row);
+        agc_noun_t         row; /* noun table row */
+        const agc_status_t st = /* lookup status */
+                                agc_noun_lookup_vehicle(veh, n, &row);
 
         CHECK(row.noun == n);
         CHECK(row.ncomp <= AGC_NOUN_MAX_COMP);
-        CHECK(row.no_load ? row.dec_only : true);
+        CHECK(row.no_load ? row.dec_only : true); /* no-load: dec only */
 
         if (is_spare(&row))
         {
@@ -87,13 +186,18 @@ static void test_table_complete(agc_vehicle_t veh)
         }
     }
 
-    CHECK(spares == ((veh == AGC_VEHICLE_CSM) ? 9 : 16));
-}
+    CHECK(spares == ((veh == AGC_VEHICLE_CSM) ? 9 : 16)); /* per vehicle */
+} /* test_table_complete */
 
-/* Noun 36 and a few mixed / vehicle-specific nouns. */
+/**********************************************************************
+ * AGC: none (test) -- noun 36 and a few mixed / vehicle-specific nouns
+ *      (PINBALL_NOUN_TABLES.agc C pp. 263-289, L pp. 302-321)
+ *
+ * FUNCTION NAME: test_known_nouns
+ **********************************************************************/
 static void test_known_nouns(void)
 {
-    agc_noun_t n;
+    agc_noun_t n; /* noun table row */
 
     CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 36, &n) == AGC_STATUS_OK);
     CHECK(n.ncomp == 3 && n.dec_only && !n.no_load);
@@ -133,9 +237,14 @@ static void test_known_nouns(void)
           n.data_id[0] == AGC_DATA_SPECIFY_CHANNEL);
 }
 
+/**********************************************************************
+ * AGC: none (test) -- out-of-range and spare noun lookups
+ *
+ * FUNCTION NAME: test_unknown
+ **********************************************************************/
 static void test_unknown(void)
 {
-    agc_noun_t n;
+    agc_noun_t n; /* noun table row */
 
     CHECK(agc_noun_lookup_vehicle(AGC_VEHICLE_CSM, 100, &n) ==
           AGC_STATUS_BAD_ARG);
@@ -151,9 +260,15 @@ static void test_unknown(void)
           AGC_STATUS_NOT_FOUND);
 }
 
+/**********************************************************************
+ * AGC: none (test) -- scale-type table and SF constants (SFINTAB,
+ *      SFOUTAB)
+ *
+ * FUNCTION NAME: test_scales
+ **********************************************************************/
 static void test_scales(void)
 {
-    agc_scale_info_t si;
+    agc_scale_info_t si; /* scale-type row */
 
     CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_HMS, &si) ==
           AGC_STATUS_OK);
@@ -182,8 +297,8 @@ static void test_scales(void)
     CHECK(agc_scale_info_vehicle(AGC_VEHICLE_CSM, AGC_SCALE_COUNT, &si) ==
           AGC_STATUS_BAD_ARG);
 
-    agc_dp_t in  = 0;
-    agc_dp_t out = 0;
+    agc_dp_t in  = 0; /* SFIN constant, unscaled */
+    agc_dp_t out = 0; /* SFOUT constant, unscaled */
 
     CHECK(agc_scale_sfconst(AGC_VEHICLE_CSM, 20, &in, &out) ==
           AGC_STATUS_BAD_ARG);
@@ -192,11 +307,12 @@ static void test_scales(void)
     /* every scale type a noun uses resolves for that vehicle */
     for (int veh = 0; veh < 2; veh++)
     {
-        const agc_vehicle_t v = (veh == 0) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM;
+        const agc_vehicle_t v = (veh == 0) ? /* vehicle */
+                                AGC_VEHICLE_CSM : AGC_VEHICLE_LM;
 
         for (uint8_t n = 0; n < AGC_NOUN_COUNT; n++)
         {
-            agc_noun_t row;
+            agc_noun_t row; /* noun table row */
 
             (void) agc_noun_lookup_vehicle(v, n, &row);
 
@@ -207,13 +323,18 @@ static void test_scales(void)
             }
         }
     }
-}
+} /* test_scales */
 
-/* agc_noun_lookup / read / write against the core state. */
+/**********************************************************************
+ * AGC: none (test) -- agc_noun_lookup / read / write against the core
+ *      state
+ *
+ * FUNCTION NAME: test_data
+ **********************************************************************/
 static void test_data(void)
 {
-    agc_dp_t   v = 0;
-    agc_noun_t n;
+    agc_dp_t   v = 0; /* datum read back, scale of the id */
+    agc_noun_t n; /* noun table row */
 
     agc_state_init(AGC_VEHICLE_LM);
     CHECK(agc_noun_lookup(36, &n) == AGC_STATUS_OK &&
@@ -242,17 +363,4 @@ static void test_data(void)
           v == 123456789 && agc_guid_state()->burn.hapo == 123456789);
     /* ALMCADR (the AGC alarm return address) has no owner in C.        */
     CHECK(agc_noun_read(AGC_DATA_ALMCADR, &v) == AGC_STATUS_NOT_FOUND);
-}
-
-int main(void)
-{
-    test_table_complete(AGC_VEHICLE_CSM);
-    test_table_complete(AGC_VEHICLE_LM);
-    test_known_nouns();
-    test_unknown();
-    test_scales();
-    test_data();
-    (void) printf("test_nouns: %d checks, %d failures\n", g_checks, g_failures);
-
-    return ((g_failures == 0) ? 0 : 1);
 }
