@@ -434,3 +434,12 @@
             in-expression comments above the statement), uncrustify.cfg
             fixed 8-space continuation, tree-wide run, long-statement
             inventory for the review wave. All other work waits.
+2026-10-11  format2 DONE: tools/format.sh = fix_comments.py + uncrustify x2 +
+            fix_comments.py; code_width 0; outer-call wraps kept (50),
+            ~620 in-expression comments merged into trailing comments, 1253
+            paragraph blank lines; paragraph-scoped column alignment done by
+            the script (Uncrustify 0.72 aligns across blank lines). Token-
+            identical on 270/270. docs/overview/long_statements.tsv: 777
+            statements >120 cols for the review wave to split with
+            temporaries. Launching dispatch (4 flat switches) + review-core-
+            numeric.
