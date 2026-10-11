@@ -1,22 +1,55 @@
-/*
- * gts.c -- the descent-engine trim gimbal control system
- * (TRIM_GIMBAL_CONTROL_SYSTEM.agc, Luminary 099 pp.1472-1484): the GTS
- * attitude/rate/acceleration control law, GTSQRT / ROOTCYCL (Craig Work),
- * ACDT+C12 and TIMEGMBL.
+/**********************************************************************
+ * FILE NAME: gts.c
  *
- * Drive-setting algorithm, per axis (Q, R), from the AGC comments:
- *     DEL     = SGN(OMEGA + ALPHA ABS(ALPHA) / (2K))
- *     NEGUSUM = ERROR K^2 + ALPHA (DEL OMEGA + ALPHA^2/(3K))
- *               + DEL K^(1/2) (DEL OMEGA + ALPHA^2/(2K))^(3/2)
- *     DRIVE   = -SGN(NEGUSUM);  NEGU = SGN(NEGUSUM)
- * ERROR (QDIFF = QERROR) at pi, OMEGA (EDOTQ) at pi/4 rad/s, ALPHA (AOS)
- * at pi/4 rad/s^2 here, K (KQ, KRDAP) at pi/2^8 rad/s^3; NEGUSUM DP at
- * 4 pi^2.
+ * PURPOSE:
+ *   The descent-engine trim gimbal control system
+ *   (TRIM_GIMBAL_CONTROL_SYSTEM.agc, Luminary 099 pp.1472-1484): the GTS
+ *   attitude/rate/acceleration control law, GTSQRT / ROOTCYCL (Craig
+ *   Work), ACDT+C12 and TIMEGMBL.
  *
- * The GTS temporaries overlay DAPTEMP1.. (KCENTRAL = SHFTFLAG, ACENTRAL =
- * ININDEX, A2CNTRAL = SCRATCH/HALFARG); each is dead before its overlay
- * is written, so they are separate locals here.
- */
+ * AGC SOURCE:
+ *   Luminary099 TRIM_GIMBAL_CONTROL_SYSTEM.agc pp. 1472-1484
+ *     (GTS, GTSQRT, ROOTCYCL, GTSGO+DN, ACDT+C12, TIMEGMBL, DRIVEON)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_chan_and                WAND channel
+ *   agc_chan_read               READ channel
+ *   agc_chan_write              WRITE channel
+ *   lm_dap_closeout             CLOSEOUT / ENDJASK (qrjets.c)
+ *   lm_dap_das                  DAS (arith.c)
+ *   lm_dap_dv                   DV quotient (arith.c)
+ *   lm_dap_dvqr                 DV quotient and remainder (arith.c)
+ *   lm_dap_mp                   MP: A,L product (arith.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_ovf                  TS overflow-skip test (arith.c)
+ *   lm_dap_sat                  OVERSUB / LIMITS (arith.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   Drive-setting algorithm, per axis (Q, R), from the AGC comments:
+ *       DEL     = SGN(OMEGA + ALPHA ABS(ALPHA) / (2K))
+ *       NEGUSUM = ERROR K^2 + ALPHA (DEL OMEGA + ALPHA^2/(3K))
+ *                 + DEL K^(1/2) (DEL OMEGA + ALPHA^2/(2K))^(3/2)
+ *       DRIVE   = -SGN(NEGUSUM);  NEGU = SGN(NEGUSUM)
+ *   ERROR (QDIFF = QERROR) at pi, OMEGA (EDOTQ) at pi/4 rad/s, ALPHA (AOS)
+ *   at pi/4 rad/s^2 here, K (KQ, KRDAP) at pi/2^8 rad/s^3; NEGUSUM DP at
+ *   4 pi^2.
+ *
+ *   The GTS temporaries overlay DAPTEMP1.. (KCENTRAL = SHFTFLAG, ACENTRAL =
+ *   ININDEX, A2CNTRAL = SCRATCH/HALFARG); each is dead before its overlay
+ *   is written, so they are separate locals here.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -250,7 +283,7 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
     }
 
     return (x);
-}
+} /* lm_dap_gtsqrt */
 
 /* GTS working cells for one axis (GTSTEMPS).                             */
 typedef struct gts_w
@@ -503,7 +536,7 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* gts_drive */
 
 /**********************************************************************
  * GTS (pp.1472-1484): trim gimbal control of Q and R this pass. The next
@@ -560,7 +593,7 @@ agc_status_t lm_dap_gts(void)
     agc_status_t sc = lm_dap_closeout();
 
     return ((st != AGC_STATUS_OK) ? st : sc);
-}
+} /* lm_dap_gts */
 
 /**********************************************************************
  * TIMEGMBL, one axis (pp.1478-1480): drive time ABS(.4 AOS / ACCDOT) in
@@ -632,7 +665,7 @@ static void timegmbl_axis(lm_dap_t *d, int i)
     {
         return;
     }
-}
+} /* timegmbl_axis */
 
 /**********************************************************************
  * TIMEGMBL (Craig Work, pp.1478-1480): null the offset acceleration with

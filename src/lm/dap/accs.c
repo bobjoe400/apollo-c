@@ -1,20 +1,60 @@
-/*
- * accs.c -- 1/ACCS, the interface between the guidance programs and the
- * DAP (AOSTASK_AND_AOSJOB.agc, Luminary 099 pp.1485-1496; written by Bob
- * Covelli and Mike Houston, last modified Feb. 14 1969 by G. Kalan).
+/**********************************************************************
+ * FILE NAME: accs.c
  *
- * Whenever the mass, deadband, configuration (ascent / descent / docked)
- * or jet masks change, and at fresh start / restart, 1/ACCS computes the
- * one-jet accelerations 1JACC, 1JACCQ, 1JACCR as functions of mass, the
- * U,V resolution coefficients COEFFQ, COEFFR and 1JACCU, 1JACCV; in the
- * descent case also the engine moment arm L,PVT-CG and the gimbal jerk
- * terms ACCDOTQ/R, KQ, KRDAP, QACCDOT/RACCDOT; then 1/ACCONT (accont.c)
- * repositions the TJETLAW switch curves and ACCSOKAY is set.
+ * PURPOSE:
+ *   1/ACCS, the interface between the guidance programs and the DAP
+ *   (AOSTASK_AND_AOSJOB.agc, Luminary 099 pp.1485-1496; written by Bob
+ *   Covelli and Mike Houston, last modified Feb. 14 1969 by G. Kalan).
  *
- * Scales: MASS DP B16 kg (high word used), LEMMASS / CSMMASS B16 kg,
- * ABDELV B13 cm/s^2, 1JACC.. pi/4 rad/s^2, 1JACCU,V pi/2 rad/s^2,
- * L,PVT-CG 8 ft, ACCDOTQ/R pi/2^7 rad/s^3, KQ / KRDAP pi/2^8 rad/s^3.
- */
+ * AGC SOURCE:
+ *   Luminary099 AOSTASK_AND_AOSJOB.agc pp. 1485-1496
+ *     (1/ACCS, 1/ACCSET, 1/ACCFIX, 1/ACCJOB, MASSFIX, COMMEQS, DOCKED,
+ *     SPSLOOP1/2, LM alone ascent/descent fits, GTS gimbal terms)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *   CSMMASS       agc_sp_t  I    B16 kg         CSM mass (agc_erase_csmmass())
+ *   LEMMASS       agc_sp_t  I/O  B16 kg         LM mass (agc_erase_lemmass())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_chan_read               READ channel
+ *   agc_exec_novac              NOVAC: schedule a job
+ *   agc_flag_set                set a flag bit (flags.h)
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_guid_state              guidance erasables (MASS, ABDELV ...)
+ *   agc_inhint                  INHINT
+ *   agc_lm_dap_timegmbl         TIMEGMBL: trim-gimbal null drive (gts.c)
+ *   agc_relint                  RELINT
+ *   lm_dap_dv                   DV quotient (arith.c)
+ *   lm_dap_dvovsub              DVOVSUB: limited divide (arith.c)
+ *   lm_dap_dvqr                 DV quotient and remainder (arith.c)
+ *   lm_dap_mp                   MP: A,L product (arith.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_switch_curves        1/ACCONT (accont.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails;
+ *   the status of NOVAC / 1/ACCONT is passed through.
+ *
+ * NOTES:
+ *   Whenever the mass, deadband, configuration (ascent / descent / docked)
+ *   or jet masks change, and at fresh start / restart, 1/ACCS computes the
+ *   one-jet accelerations 1JACC, 1JACCQ, 1JACCR as functions of mass, the
+ *   U,V resolution coefficients COEFFQ, COEFFR and 1JACCU, 1JACCV; in the
+ *   descent case also the engine moment arm L,PVT-CG and the gimbal jerk
+ *   terms ACCDOTQ/R, KQ, KRDAP, QACCDOT/RACCDOT; then 1/ACCONT (accont.c)
+ *   repositions the TJETLAW switch curves and ACCSOKAY is set.
+ *
+ *   Scales: MASS DP B16 kg (high word used), LEMMASS / CSMMASS B16 kg,
+ *   ABDELV B13 cm/s^2, 1JACC.. pi/4 rad/s^2, 1JACCU,V pi/2 rad/s^2,
+ *   L,PVT-CG 8 ft, ACCDOTQ/R pi/2^7 rad/s^3, KQ / KRDAP pi/2^8 rad/s^3.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -324,7 +364,7 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
     }
 
     return (st);
-}
+} /* spscont */
 
 /**********************************************************************
  * LRESC (pp.1489-1490): descent jerk ACCDOTx = (ABDELV MASS / GFACTM)
@@ -519,7 +559,7 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
     }
 
     return (lresc(d));
-}
+} /* lm_alone */
 
 /**********************************************************************
  * 1/ACCS (pp.1486-1491), called by BANKCALL or from the NOVAC jobs.

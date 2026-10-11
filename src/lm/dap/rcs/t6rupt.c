@@ -1,18 +1,50 @@
-/*
- * t6rupt.c -- the LM DAP jet-timing interrupt (T6-RUPT_PROGRAMS.agc,
- * Luminary 099 pp.1403-1405, Lowell G. Hull) and the jet list JTLST
- * (Q_R-AXIS_RCS_AUTOPILOT.agc pp.1456-1457).
+/**********************************************************************
+ * FILE NAME: t6rupt.c
  *
- * TIME6 counts down at 1600 per second (0.625 ms, "scaled at 10.24 s");
- * when it passes +0 to -0 a T6RUPT ends a jet firing. The DAP owns TIME6:
- * it is POSMAX when inactive, 1..240 when counting, -0 when a T6RUPT is
- * due. The list is exactly three long: TIME6 (first), T6NEXT (delta to the
- * second), T6FURTHA (delta to the third), each with an axis index
- * 0 = P (channel 6), 4 = U, 13 = V (channel 5 halves).
+ * PURPOSE:
+ *   The LM DAP jet-timing interrupt (T6-RUPT_PROGRAMS.agc, Luminary 099
+ *   pp.1403-1405, Lowell G. Hull) and the jet list JTLST (Q_R-
+ *   AXIS_RCS_AUTOPILOT.agc pp.1456-1457).
  *
- * TIME6 itself is kept by the executive (agc_rupt_time(6)); the DINC
- * pulses are applied by the sim through agc_lm_dap_time6_count().
- */
+ * AGC SOURCE:
+ *   Luminary099 T6-RUPT_PROGRAMS.agc pp. 1403-1405 (T6JOB, T6JOBCHK,
+ *     DOT6RUPT), Q_R-AXIS_RCS_AUTOPILOT.agc pp. 1456-1457 (JTLST, MIDORLST,
+ *     LASTCHG)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_ccshole                 CCSHOLE: impossible CCS branch
+ *   agc_chan_and                WAND channel
+ *   agc_chan_or                 WOR channel
+ *   agc_chan_read               READ channel
+ *   agc_chan_write              WRITE channel
+ *   agc_rupt_set_time           set TIME5 / TIME6
+ *   agc_rupt_time               read TIME5 / TIME6
+ *   lm_dap_sat                  OVERSUB / LIMITS (arith.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   CCSHOLE (POODOO 01103) on an impossible axis index.
+ *   AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   TIME6 counts down at 1600 per second (0.625 ms, "scaled at 10.24 s");
+ *   when it passes +0 to -0 a T6RUPT ends a jet firing. The DAP owns TIME6:
+ *   it is POSMAX when inactive, 1..240 when counting, -0 when a T6RUPT is
+ *   due. The list is exactly three long: TIME6 (first), T6NEXT (delta to the
+ *   second), T6FURTHA (delta to the third), each with an axis index
+ *   0 = P (channel 6), 4 = U, 13 = V (channel 5 halves).
+ *
+ *   TIME6 itself is kept by the executive (agc_rupt_time(6)); the DINC
+ *   pulses are applied by the sim through agc_lm_dap_time6_count().
+ **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
@@ -222,7 +254,7 @@ agc_status_t lm_dap_jtlst(void)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_jtlst */
 
 /**********************************************************************
  * T6JOB (p.1404): a T6RUPT is due. Shift the list up one, restart TIME6

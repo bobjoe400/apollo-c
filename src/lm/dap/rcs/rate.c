@@ -1,14 +1,49 @@
-/*
- * rate.c -- LM DAP state estimation: jet-torque feedback (KALMAN_FILTER.agc
- * pp.1470-1471, RATELOOP/ROTORQUE), the rate derivation from CDU
- * differences (P-AXIS_RCS_AUTOPILOT.agc pp.1422-1427, BACKP/SUBDIVDE) and
- * the offset-acceleration estimator (p.1427, WORKTIME).
+/**********************************************************************
+ * FILE NAME: rate.c
  *
- * OMEGA = OMEGA + JETRATE + AOSTERM (+ TRAPED/NTRAPS when TRAPED is big):
- * the predicted rate is propagated with the commanded jet torque and the
- * offset acceleration, and corrected by the accumulated difference between
- * the CDU-measured and predicted rates once it exceeds the trap size.
- */
+ * PURPOSE:
+ *   LM DAP state estimation: jet-torque feedback (KALMAN_FILTER.agc
+ *   pp.1470-1471, RATELOOP/ROTORQUE), the rate derivation from CDU
+ *   differences (P-AXIS_RCS_AUTOPILOT.agc pp.1422-1427, BACKP/SUBDIVDE)
+ *   and the offset-acceleration estimator (p.1427, WORKTIME).
+ *
+ * AGC SOURCE:
+ *   Luminary099 KALMAN_FILTER.agc pp. 1470-1471 (RATELOOP, ROTORQUE),
+ *     P-AXIS_RCS_AUTOPILOT.agc pp. 1422-1427 (BACKP, SUBDIVDE, WORKTIME)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *   M11           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m11())
+ *   M21           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m21())
+ *   M22           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m22())
+ *   M31           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m31())
+ *   M32           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m32())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   lm_dap_ccs_dim              CCS diminished magnitude (arith.c)
+ *   lm_dap_das                  DAS (arith.c)
+ *   lm_dap_dv                   DV quotient (arith.c)
+ *   lm_dap_mp                   MP: A,L product (arith.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_msu                  MSU (arith.c)
+ *   lm_dap_sat                  OVERSUB / LIMITS (arith.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   OMEGA = OMEGA + JETRATE + AOSTERM (+ TRAPED/NTRAPS when TRAPED is big):
+ *   the predicted rate is propagated with the commanded jet torque and the
+ *   offset acceleration, and corrected by the accumulated difference between
+ *   the CDU-measured and predicted rates once it exceeds the trap size.
+ **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assert.h"
 
@@ -91,7 +126,7 @@ agc_status_t lm_dap_rateloop(void)
         {
             return (st);
         }
-    }
+    } /* end DAPTEMP6 = 2, 1, 0 */
 
     int32_t usum = (int32_t) d->torque[1] + d->torque[2];
     int32_t udif = (int32_t) d->torque[1] - d->torque[2];
@@ -105,7 +140,7 @@ agc_status_t lm_dap_rateloop(void)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_rateloop */
 
 /**********************************************************************
  * SUBDIVDE +3 (p.1422): measured angle increment (DP at pi, also left in
@@ -357,7 +392,7 @@ agc_status_t lm_dap_backp(void)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_backp */
 
 /**********************************************************************
  * Offset estimator (p.1427). Drifting flight: zero the offsets (major
@@ -414,4 +449,4 @@ agc_status_t lm_dap_offset_est(void)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_offset_est */

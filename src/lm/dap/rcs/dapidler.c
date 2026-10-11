@@ -1,9 +1,46 @@
-/*
- * dapidler.c -- DAPIDLER_PROGRAM.agc (Luminary 099 pp.1410-1413): the
- * T5RUPT program that idles at 10 per second until the crew wants the DAP
- * and the IMU and CDUs are usable, initialises the DAP (STARTDAP) and then
- * hands T5ADR to PAXIS; and the T5RUPT dispatch through T5ADR.
- */
+/**********************************************************************
+ * FILE NAME: dapidler.c
+ *
+ * PURPOSE:
+ *   DAPIDLER_PROGRAM.agc (Luminary 099 pp.1410-1413): the T5RUPT program
+ *   that idles at 10 per second until the crew wants the DAP and the IMU
+ *   and CDUs are usable, initialises the DAP (STARTDAP) and then hands
+ *   T5ADR to PAXIS; and the T5RUPT dispatch through T5ADR.
+ *
+ * AGC SOURCE:
+ *   Luminary099 DAPIDLER_PROGRAM.agc pp. 1410-1413
+ *     (DAPIDLER, STARTDAP, SETTIME5, SHUTDOWN, MOREIDLE, T5RUPT dispatch)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *   CDUX          uint16_t  I    2^0 rev        CDU X angle (agc_erase_cdux())
+ *   CDUY          uint16_t  I    2^0 rev        CDU Y angle (agc_erase_cduy())
+ *   CDUZ          uint16_t  I    2^0 rev        CDU Z angle (agc_erase_cduz())
+ *   IMODES33      uint16_t  I    bits           IMU mode bits (agc_erase_imodes33())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_chan_and                WAND channel
+ *   agc_chan_read               READ channel
+ *   agc_chan_write              WRITE channel
+ *   agc_exec_novac              NOVAC: schedule a job
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_lm_dap_zatteror         ZATTEROR: CDUxD = CDUx, STOPRATE (dapif.c)
+ *   agc_rupt_set_time           set TIME5 / TIME6
+ *   agc_rupt_time               read TIME5 / TIME6
+ *   agc_task_paxis              PAXIS T5RUPT (paxis.c)
+ *   lm_dap_altdsply             ALTDSPLY (needles.c)
+ *   lm_dap_calcperr             CALCPERR (paxis.c)
+ *   lm_dap_qerrcalc             QERRCALC + RERRCALC (qraxis.c)
+ *   lm_dap_set_t5adr            DXCH T5ADR (dapif.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "../internal.h"
@@ -162,7 +199,7 @@ agc_status_t lm_dap_chekbits(bool *on)
     *on = true;
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_chekbits */
 
 /**********************************************************************
  * STARTDAP (pp.1411-1413): zero the attitude errors, rates, offset
@@ -253,7 +290,7 @@ agc_status_t lm_dap_startdap(void)
     }
 
     return (settime5());
-}
+} /* lm_dap_startdap */
 
 /**********************************************************************
  * DAPIDLER (p.1411): T5RUPT entry while the DAP is idling.

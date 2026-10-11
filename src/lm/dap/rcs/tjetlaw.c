@@ -1,20 +1,51 @@
-/*
- * tjetlaw.c -- TJETLAW (TJET_LAW.agc, Luminary 099 pp.1460-1469), designed
- * by R. D. Goss and P. S. Weissman: the jet-firing time for one axis
- * (AXISCTR -1 = P, 0 = U, 1 = V) from the attitude error E and error rate
- * EDOT, using the phase-plane switch curves that 1/ACCONT stores in the
- * 48-word BLOCKTOP table.
+/**********************************************************************
+ * FILE NAME: tjetlaw.c
  *
- * Negative EDOT is reflected into the upper half plane (E, EDOT negated,
- * ROTSENSE negative, indexers moved by one). Small errors use FINELAW
- * (zones 1-5); errors beyond pi/16 or rates beyond pi/32 rad/s use the
- * rough laws RUFLAW1-3. The result, scaled at 4 s inside the law, is
- * multiplied by ROTSENSE (+-.390625 = 4/10.24) to give TJP/TJU/TJV in
- * TIME6 counts with the rotation sign.
+ * PURPOSE:
+ *   TJETLAW (TJET_LAW.agc, Luminary 099 pp.1460-1469), designed by R. D.
+ *   Goss and P. S. Weissman: the jet-firing time for one axis (AXISCTR
+ *   -1 = P, 0 = U, 1 = V) from the attitude error E and error rate EDOT,
+ *   using the phase-plane switch curves that 1/ACCONT stores in the
+ *   48-word BLOCKTOP table.
  *
- * Inputs : E (at pi), EDOT (at pi/4 rad/s), AXISCTR, SENSETYP, TJx.
- * Outputs: TJx (T6 counts), NUMBERT (U,V jet policy), FIREFCT (at pi/4).
- */
+ * AGC SOURCE:
+ *   Luminary099 TJET_LAW.agc pp. 1460-1469
+ *     (TJETLAW, FINELAW zones 1-5, FORMULA1-3, CHKMINTJ, RUFLAW1-3)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   lm_dap_ccs_dim              CCS diminished magnitude (arith.c)
+ *   lm_dap_das                  DAS (arith.c)
+ *   lm_dap_ddoubl               DDOUBL (arith.c)
+ *   lm_dap_dpval                DP pair value (arith.c)
+ *   lm_dap_dv                   DV quotient (arith.c)
+ *   lm_dap_mp                   MP: A,L product (arith.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_ovf                  TS overflow-skip test (arith.c)
+ *   lm_dap_sat                  OVERSUB / LIMITS (arith.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   Negative EDOT is reflected into the upper half plane (E, EDOT negated,
+ *   ROTSENSE negative, indexers moved by one). Small errors use FINELAW
+ *   (zones 1-5); errors beyond pi/16 or rates beyond pi/32 rad/s use the
+ *   rough laws RUFLAW1-3. The result, scaled at 4 s inside the law, is
+ *   multiplied by ROTSENSE (+-.390625 = 4/10.24) to give TJP/TJU/TJV in
+ *   TIME6 counts with the rotation sign.
+ *
+ *   Inputs : E (at pi), EDOT (at pi/4 rad/s), AXISCTR, SENSETYP, TJx.
+ *   Outputs: TJx (T6 counts), NUMBERT (U,V jet policy), FIREFCT (at pi/4).
+ **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assert.h"
 
@@ -420,7 +451,7 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
     /* ZONE5: TS L of an overflowed A would store the wrapped word and skip;
      * unreachable (rough law takes large E, EDOT), so sat = wrap here.     */
     return (zone_between_curves(d, w, lm_dap_sat(g)));
-}
+} /* finelaw */
 
 /**********************************************************************
  * RUFSETUP (p.1469): optionally reverse ROTSENSE; require max jets.
@@ -668,4 +699,4 @@ agc_status_t lm_dap_tjetlaw(void)
     returntj(d, &w, a);
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_tjetlaw */

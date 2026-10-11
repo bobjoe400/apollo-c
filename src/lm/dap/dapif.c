@@ -1,9 +1,39 @@
-/*
- * dapif.c -- DAP_INTERFACE_SUBROUTINES.agc (Luminary 099 pp.1406-1409):
- * the subroutines through which mission programs set the DAP deadband and
- * zero its commanded attitude and rates. All are called with interrupts
- * inhibited (INHINT / TC IBNKCALL / RELINT in the AGC).
- */
+/**********************************************************************
+ * FILE NAME: dapif.c
+ *
+ * PURPOSE:
+ *   DAP_INTERFACE_SUBROUTINES.agc (Luminary 099 pp.1406-1409): the
+ *   subroutines through which mission programs set the DAP deadband and
+ *   zero its commanded attitude and rates. All are called with
+ *   interrupts inhibited (INHINT / TC IBNKCALL / RELINT in the AGC).
+ *
+ * AGC SOURCE:
+ *   Luminary099 DAP_INTERFACE_SUBROUTINES.agc pp. 1406-1409
+ *     (CALLACCS, SETMAXDB, SETMINDB, RESTORDB, PFLITEDB, ZATTEROR,
+ *     STOPRATE, ALLCOAST)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *   CDUX          uint16_t  I    2^0 rev        CDU X angle (agc_erase_cdux())
+ *   CDUY          uint16_t  I    2^0 rev        CDU Y angle (agc_erase_cduy())
+ *   CDUZ          uint16_t  I    2^0 rev        CDU Z angle (agc_erase_cduz())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_exec_novac              NOVAC: schedule a job
+ *   agc_flag_set                set a flag bit (flags.h)
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_flag_valid              flag id range check (flags.h)
+ *   agc_rupt_set_t5_task        T5ADR: next T5RUPT entry
+ *   lm_dap_state                DAP erasables (state.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG on an invalid flag id or a failed
+ *   assertion; NOVAC status passed through.
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/lm/dap.h"
 #include "internal.h"

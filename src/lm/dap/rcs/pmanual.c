@@ -1,17 +1,64 @@
-/*
- * pmanual.c -- P-axis state logic, minimum-impulse mode and the manual
- * rate-command mode (P-AXIS_RCS_AUTOPILOT.agc, Luminary 099 pp.1430-1436,
- * "MANUAL RATE COMMAND MODE" by Robert F. Stengel).
+/**********************************************************************
+ * FILE NAME: pmanual.c
  *
- * Rate command has two laws: direct rate (jets fired at once when the stick
- * command changes by more than the breakout level; rate error nulled to the
- * target deadband) and pseudo-auto (body-fixed attitude and rate errors fed
- * to TJETLAW). Control moves from direct rate to pseudo-auto when the target
- * deadband is reached or after 4 s (TCP counts 40 DAP passes).
+ * PURPOSE:
+ *   P-axis state logic, minimum-impulse mode and the manual rate-command
+ *   mode (P-AXIS_RCS_AUTOPILOT.agc, Luminary 099 pp.1430-1436, "MANUAL
+ *   RATE COMMAND MODE" by Robert F. Stengel).
  *
- * Every path ends in a jet decision (PJETSLEC, JETSOFF or PURGENCY); the
- * caller (PAXIS) then runs QRAXIS.
- */
+ * AGC SOURCE:
+ *   Luminary099 P-AXIS_RCS_AUTOPILOT.agc pp. 1430-1436
+ *     (P state logic, minimum impulse, manual rate command: DIRECT RATE,
+ *     PSEUDO-AUTO, DETENTCK, JETSOFF)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *   CDUX          uint16_t  I    2^0 rev        CDU X angle (agc_erase_cdux())
+ *   P_RHCCTR      agc_sp_t  I/O  counts         RHC P counter (agc_erase_p_rhcctr())
+ *   Q_RHCCTR      agc_sp_t  I/O  counts         RHC Q counter (agc_erase_q_rhcctr())
+ *   R_RHCCTR      agc_sp_t  I/O  counts         RHC R counter (agc_erase_r_rhcctr())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_chan_or                 WOR channel
+ *   agc_chan_read               READ channel
+ *   agc_flag_clear              clear a flag bit (flags.h)
+ *   agc_flag_set                set a flag bit (flags.h)
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_flag_valid              flag id range check (flags.h)
+ *   agc_inhint                  INHINT
+ *   agc_lm_dap_zatteror         ZATTEROR: CDUxD = CDUx, STOPRATE (dapif.c)
+ *   agc_relint                  RELINT
+ *   agc_state_vehicle           CSM or LM rope
+ *   lm_dap_ccs_dim              CCS diminished magnitude (arith.c)
+ *   lm_dap_dpval                DP pair value (arith.c)
+ *   lm_dap_jetsoff              JETSOFF (paxis.c)
+ *   lm_dap_mp                   MP: A,L product (arith.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_pjetslec             PJETSLEC -1 (paxis.c)
+ *   lm_dap_pjetslec_pair        PJETSLEC -6 (paxis.c)
+ *   lm_dap_purgency             PURGENCY (paxis.c)
+ *   lm_dap_purgency_law         PURGENCY +4 (paxis.c)
+ *   lm_dap_sat                  OVERSUB / LIMITS (arith.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   Rate command has two laws: direct rate (jets fired at once when the stick
+ *   command changes by more than the breakout level; rate error nulled to the
+ *   target deadband) and pseudo-auto (body-fixed attitude and rate errors fed
+ *   to TJETLAW). Control moves from direct rate to pseudo-auto when the target
+ *   deadband is reached or after 4 s (TCP counts 40 DAP passes).
+ *
+ *   Every path ends in a jet decision (PJETSLEC, JETSOFF or PURGENCY); the
+ *   caller (PAXIS) then runs QRAXIS.
+ **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
@@ -149,10 +196,10 @@ agc_status_t lm_dap_pstate(void)
         }
 
         return (lm_dap_pjetslec_pair());
-    }
+    } /* end MANMODE */
 
     return (lm_dap_detentck());
-}
+} /* lm_dap_pstate */
 
 /**********************************************************************
  * JUSTOUT -1 / JUSTOUT (pp.1433-1434): first manual pass. Rate command on
@@ -318,7 +365,7 @@ static agc_status_t pegi(lm_dap_t *d)
     d->tj[0] = lm_dap_wrap(2 * (int32_t) d->tj[0]); /* ADS TJP        */
 
     return (lm_dap_pjetslec_pair());
-}
+} /* pegi */
 
 /**********************************************************************
  * RATERROR (pp.1434-1435): linear/quadratic stick scaling of P-RHCCTR to
@@ -435,4 +482,4 @@ agc_status_t lm_dap_detentck(void)
     }
 
     return (raterror(d));
-}
+} /* lm_dap_detentck */

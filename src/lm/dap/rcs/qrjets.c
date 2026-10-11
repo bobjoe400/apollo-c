@@ -1,14 +1,52 @@
-/*
- * qrjets.c -- the U,V jet loop of the Q,R-axis RCS autopilot
- * (Q_R-AXIS_RCS_AUTOPILOT.agc, Luminary 099 pp.1445-1458): the three
- * "RETJADR" bodies (TJLAW +3 attitude control, BACKHAND direct rate,
- * MINRTN minimum impulse), the jet selection AFTERTJ / DOROTAT / DOSKIP /
- * FEEDBACK, SELCTSUB, XTRANS, ROT-TOUV and CLOSEOUT.
+/**********************************************************************
+ * FILE NAME: qrjets.c
  *
- * The AGC runs a body for the V axis (AXISCTR = 1) and then for U
- * (AXISCTR = 0); LOOPER returns through RETJADR. Here that is a bounded
- * loop over the axis in lm_dap_uvloop().
- */
+ * PURPOSE:
+ *   The U,V jet loop of the Q,R-axis RCS autopilot (Q_R-
+ *   AXIS_RCS_AUTOPILOT.agc, Luminary 099 pp.1445-1458): the three
+ *   "RETJADR" bodies (TJLAW +3 attitude control, BACKHAND direct rate,
+ *   MINRTN minimum impulse), the jet selection AFTERTJ / DOROTAT /
+ *   DOSKIP / FEEDBACK, SELCTSUB, XTRANS, ROT-TOUV and CLOSEOUT.
+ *
+ * AGC SOURCE:
+ *   Luminary099 Q_R-AXIS_RCS_AUTOPILOT.agc pp. 1445-1458
+ *     (TJLAW, BACKHAND, MINRTN, AFTERTJ, DOROTAT, DOSKIP, FEEDBACK,
+ *     SELCTSUB, ROT-TOUV, CLOSEOUT)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_alarm                   ALARM: record an alarm code
+ *   agc_chan_read               READ channel
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_inhint                  INHINT
+ *   agc_relint                  RELINT
+ *   lm_dap_dpval                DP pair value (arith.c)
+ *   lm_dap_jtlst                JTLST (t6rupt.c)
+ *   lm_dap_mp                   MP: A,L product (arith.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_ovf                  TS overflow-skip test (arith.c)
+ *   lm_dap_sat                  OVERSUB / LIMITS (arith.c)
+ *   lm_dap_spsrcs               SPSRCS (spsrcs.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_tjetlaw              TJETLAW (tjetlaw.c)
+ *   lm_dap_write                WRITEP/U/V (t6rupt.c)
+ *   lm_dap_write_next           WRITEx -1 (t6rupt.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Alarm 02004 when no U/V rotation jets are available (the pass
+ *   goes on). AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   The AGC runs a body for the V axis (AXISCTR = 1) and then for U
+ *   (AXISCTR = 0); LOOPER returns through RETJADR. Here that is a bounded
+ *   loop over the axis in lm_dap_uvloop().
+ **********************************************************************/
 #include <stddef.h>
 
 #include "../internal.h"
@@ -434,7 +472,7 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
     }
 
     return (st);
-}
+} /* aftertj */
 
 /**********************************************************************
  * Skip logic (TJLAW, BACKHAND): SKIPx = 0 means a short firing of the

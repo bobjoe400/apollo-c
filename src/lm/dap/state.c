@@ -1,11 +1,40 @@
-/*
- * state.c -- LM DAP erasables, their shared accessors, and the DAP parts of
- * fresh start and restart.
+/**********************************************************************
+ * FILE NAME: state.c
  *
- * Sources: ERASABLE_ASSIGNMENTS.agc pp.105-136 (layout and scales),
- * FRESH_START_AND_RESTART.agc pp.211-213 (DOFSTRT1, DAP pad-load defaults)
- * and pp.220-221 (STARTSB1).
- */
+ * PURPOSE:
+ *   LM DAP erasables, their shared accessors, and the DAP parts of fresh
+ *   start and restart.
+ *
+ * AGC SOURCE:
+ *   Luminary099 ERASABLE_ASSIGNMENTS.agc pp. 105-136 (layout, scales),
+ *     FRESH_START_AND_RESTART.agc pp. 211-213 (DOFSTRT1, DAP pad loads),
+ *     pp. 220-221 (STARTSB1)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   none
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_chan_and                WAND channel
+ *   agc_chan_write              WRITE channel
+ *   agc_flag_clear              clear a flag bit (flags.h)
+ *   agc_flagword_set            store a whole flagword (flags.h)
+ *   agc_guid_state              guidance erasables (MASS, ABDELV ...)
+ *   lm_dap_dpmake               sign-agreeing DP pair (arith.c)
+ *   lm_dap_dpval                DP pair value (arith.c)
+ *   lm_dap_set_t5adr            DXCH T5ADR (dapif.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   None.
+ *
+ * NOTES:
+ *   Sources: ERASABLE_ASSIGNMENTS.agc pp.105-136 (layout and scales),
+ *   FRESH_START_AND_RESTART.agc pp.211-213 (DOFSTRT1, DAP pad-load defaults)
+ *   and pp.220-221 (STARTSB1).
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/guidance/guidance.h"

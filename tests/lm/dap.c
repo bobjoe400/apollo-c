@@ -1,35 +1,73 @@
-/*
- * dap.c -- dap-lm unit tests (Luminary 099 LM digital autopilot).
+/**********************************************************************
+ * FILE NAME: dap.c
  *
- *  1. 1/ACCS (AOSTASK_AND_AOSJOB pp.1485-1506), LM alone in descent at
- *     15000 kg: LEMMASS = MASS, positive one-jet accelerations, U,V
- *     coefficients of opposite sign, -2JETLIM = -BIT10, ACCSOKAY set,
- *     and the switch-curve block filled (1/ANETP > 0, deadbands = DB).
- *     A mass above HIDESCNT (15300 kg) is limited and MASS corrected.
- *  2. TJETLAW (TJET_LAW pp.1460-1469): zero error and zero rate is no
- *     firing (TJU = 0) on each axis.
- *  3. TJETLAW phase plane: a large positive error (+10 deg) at zero rate
- *     commands negative jets (TJ < 0, the correcting polarity); a large
- *     negative error commands positive jets.
- *  4. Rate estimator (BACKP / RATELOOP, the LM's "Kalman filter",
- *     pp.1423-1427, 1470-1471): with no jets and a constant P rate of
- *     10 CDU counts per 100 ms (OMEGAP = 400 at pi/4, 1.1 deg/s) the
- *     estimate converges to within 2 % in 30 DAP passes.
- *  5. RCSMON (RCS_FAILURE_MONITOR pp.190-192): closing the isolation
- *     valve of channel 32 bit 1 inhibits jets ch5 bit 2 and ch6 bit 7
- *     (5FAILTAB/6FAILTAB), reopening it clears them.
- *  6. SPSRCS (SPS_BACK-UP_RCS_CONTROL pp.1507-1510): a rate above
- *     1.73 deg/s commands -HALF, kept until the rate passes the
- *     -0.10 deg/s target; the stop sets the inhibition counter (UTIME =
- *     10 passes for U), which then inhibits a new firing.
- *  7. ROT-TOUV: with the docked orthogonal coefficients a pure +Q
- *     quantity gives +U and -V.
- *  8. 1/ACCS on the zero erasable of power-on (sim finding B2) runs to
- *     the end (status OK, ACCSOKAY set, no assertion), LEMMASS limited to
- *     LODESCNT + HIASCENT; an improper DV gives the hardware's result
- *     (the rope's BIGIQ divide in that run: 77470,00000 / 77652 ->
- *     A = 37777, L = 77652).
- */
+ * PURPOSE:
+ *   Dap-lm unit tests (Luminary 099 LM digital autopilot).
+ *
+ * AGC SOURCE:
+ *   Luminary099 AOSTASK_AND_AOSJOB, TJET_LAW, KALMAN_FILTER,
+ *     P-AXIS_RCS_AUTOPILOT, RCS_FAILURE_MONITOR (pages per test below)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *   CSMMASS       agc_sp_t  I    B16 kg         CSM mass (agc_erase_csmmass())
+ *   LEMMASS       agc_sp_t  I/O  B16 kg         LM mass (agc_erase_lemmass())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_chan_set_input          test: drive an input channel
+ *   agc_flag_clear              clear a flag bit (flags.h)
+ *   agc_flag_set                set a flag bit (flags.h)
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_guid_state              guidance erasables (MASS, ABDELV ...)
+ *   agc_lm_dap_fresh_start      DAP part of fresh start (state.c)
+ *   agc_lm_dap_jet_accel_update  1/ACCS job (accs.c)
+ *   agc_lm_dap_rcsmon           RCS failure monitor (rcsmon.c)
+ *   agc_state_init              power-on erasable state
+ *   lm_dap_backp                BACKP rate derivation (rate.c)
+ *   lm_dap_dvqr                 DV quotient and remainder (arith.c)
+ *   lm_dap_rateloop             RATELOOP + ROTORQUE (rate.c)
+ *   lm_dap_rot_touv             ROT-TOUV: Q,R to U,V (qrjets.c)
+ *   lm_dap_spsrcs               SPSRCS (spsrcs.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_tjetlaw              TJETLAW (tjetlaw.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Exit status 1 when a check fails.
+ *
+ * NOTES:
+ *    1. 1/ACCS (AOSTASK_AND_AOSJOB pp.1485-1506), LM alone in descent at
+ *       15000 kg: LEMMASS = MASS, positive one-jet accelerations, U,V
+ *       coefficients of opposite sign, -2JETLIM = -BIT10, ACCSOKAY set,
+ *       and the switch-curve block filled (1/ANETP > 0, deadbands = DB).
+ *       A mass above HIDESCNT (15300 kg) is limited and MASS corrected.
+ *    2. TJETLAW (TJET_LAW pp.1460-1469): zero error and zero rate is no
+ *       firing (TJU = 0) on each axis.
+ *    3. TJETLAW phase plane: a large positive error (+10 deg) at zero rate
+ *       commands negative jets (TJ < 0, the correcting polarity); a large
+ *       negative error commands positive jets.
+ *    4. Rate estimator (BACKP / RATELOOP, the LM's "Kalman filter",
+ *       pp.1423-1427, 1470-1471): with no jets and a constant P rate of
+ *       10 CDU counts per 100 ms (OMEGAP = 400 at pi/4, 1.1 deg/s) the
+ *       estimate converges to within 2 % in 30 DAP passes.
+ *    5. RCSMON (RCS_FAILURE_MONITOR pp.190-192): closing the isolation
+ *       valve of channel 32 bit 1 inhibits jets ch5 bit 2 and ch6 bit 7
+ *       (5FAILTAB/6FAILTAB), reopening it clears them.
+ *    6. SPSRCS (SPS_BACK-UP_RCS_CONTROL pp.1507-1510): a rate above
+ *       1.73 deg/s commands -HALF, kept until the rate passes the
+ *       -0.10 deg/s target; the stop sets the inhibition counter (UTIME =
+ *       10 passes for U), which then inhibits a new firing.
+ *    7. ROT-TOUV: with the docked orthogonal coefficients a pure +Q
+ *       quantity gives +U and -V.
+ *    8. 1/ACCS on the zero erasable of power-on (sim finding B2) runs to
+ *       the end (status OK, ACCSOKAY set, no assertion), LEMMASS limited to
+ *       LODESCNT + HIASCENT; an improper DV gives the hardware's result
+ *       (the rope's BIGIQ divide in that run: 77470,00000 / 77652 ->
+ *       A = 37777, L = 77652).
+ **********************************************************************/
 #include <stdio.h>
 
 #include <stdint.h>

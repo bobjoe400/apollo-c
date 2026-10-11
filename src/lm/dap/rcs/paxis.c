@@ -1,15 +1,72 @@
-/*
- * paxis.c -- P-AXIS_RCS_AUTOPILOT.agc (Luminary 099 pp.1421-1441): the
- * PAXIS T5RUPT program (every 100 ms while the DAP is on), the gimbal-drive
- * timers, Y,Z translation (CHKVISFZ), the P-axis jet selection (PJETSLEC,
- * SELECTP), CALCPERR and PURGENCY. The manual-mode state logic is in
- * pmanual.c; every P-axis path ends at QRAXIS (qraxis.c).
+/**********************************************************************
+ * FILE NAME: paxis.c
  *
- * The AGC turns the rest of the pass into a "jask" (SUPERJOB at interrupt
- * level with interrupts enabled; DAPZRUPT > 0 while it runs). In C the
- * pass runs to completion in this call; DAPZRUPT is kept so that a pass
- * that did not reach CLOSEOUT is detected (BAILOUT 02000) as on the AGC.
- */
+ * PURPOSE:
+ *   P-AXIS_RCS_AUTOPILOT.agc (Luminary 099 pp.1421-1441): the PAXIS
+ *   T5RUPT program (every 100 ms while the DAP is on), the gimbal-drive
+ *   timers, Y,Z translation (CHKVISFZ), the P-axis jet selection
+ *   (PJETSLEC, SELECTP), CALCPERR and PURGENCY. The manual-mode state
+ *   logic is in pmanual.c; every P-axis path ends at QRAXIS (qraxis.c).
+ *
+ * AGC SOURCE:
+ *   Luminary099 P-AXIS_RCS_AUTOPILOT.agc pp. 1421-1441
+ *     (PAXIS, CHEKBITS, gimbal-drive timers, CHKVISFZ, PJETSLEC, SELECTP,
+ *     CALCPERR, PURGENCY)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *   CDUX          uint16_t  I    2^0 rev        CDU X angle (agc_erase_cdux())
+ *   CDUY          uint16_t  I    2^0 rev        CDU Y angle (agc_erase_cduy())
+ *   CDUZ          uint16_t  I    2^0 rev        CDU Z angle (agc_erase_cduz())
+ *   M11           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m11())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_alarm                   ALARM: record an alarm code
+ *   agc_bailout                 BAILOUT: abort with restart
+ *   agc_chan_and                WAND channel
+ *   agc_chan_read               READ channel
+ *   agc_flag_invert             complement a flag bit (flags.h)
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_flag_valid              flag id range check (flags.h)
+ *   agc_rupt_set_time           set TIME5 / TIME6
+ *   agc_rupt_time               read TIME5 / TIME6
+ *   agc_state_vehicle           CSM or LM rope
+ *   lm_dap_backp                BACKP rate derivation (rate.c)
+ *   lm_dap_ccs_dim              CCS diminished magnitude (arith.c)
+ *   lm_dap_chekbits             CHEKBITS (dapidler.c)
+ *   lm_dap_dim                  DIM (arith.c)
+ *   lm_dap_gimbal_drive_update  ACDT+C12 (gts.c)
+ *   lm_dap_jtlst                JTLST (t6rupt.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_msu                  MSU (arith.c)
+ *   lm_dap_offset_est           offset estimator (rate.c)
+ *   lm_dap_ones_to_twos         MSU + 1STOTWOS (arith.c)
+ *   lm_dap_pstate               P state logic (pmanual.c)
+ *   lm_dap_qraxis               QRAXIS .. CLOSEOUT (qraxis.c)
+ *   lm_dap_rateloop             RATELOOP + ROTORQUE (rate.c)
+ *   lm_dap_spsrcs               SPSRCS (spsrcs.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_tjetlaw              TJETLAW (tjetlaw.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *   lm_dap_write                WRITEP/U/V (t6rupt.c)
+ *   lm_dap_write_next           WRITEx -1 (t6rupt.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   BAILOUT 02000 when a T5RUPT finds the previous jask unfinished
+ *   (DAPZRUPT > 0); alarm 02001 when no P/Y/Z jet policy is found;
+ *   alarm 02003 when SELECTP finds no jets (ALARMJET).
+ *   AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   The AGC turns the rest of the pass into a "jask" (SUPERJOB at interrupt
+ *   level with interrupts enabled; DAPZRUPT > 0 while it runs). In C the
+ *   pass runs to completion in this call; DAPZRUPT is kept so that a pass
+ *   that did not reach CLOSEOUT is detected (BAILOUT 02000) as on the AGC.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "../internal.h"
@@ -214,7 +271,7 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
     }
 
     return (st);
-}
+} /* lm_dap_pjetslec */
 
 /**********************************************************************
  * PJETSLEC -6 (p.1436): two jets of the system named by AORBSYST.
@@ -339,7 +396,7 @@ agc_status_t lm_dap_purgency_law(void)
     }
 
     return (lm_dap_pjetslec(6)); /* four jets      */
-}
+} /* lm_dap_purgency_law */
 
 /**********************************************************************
  * PURGENCY (p.1438): P error and rate error, then the control law.
@@ -483,7 +540,7 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_chkvisfz */
 
 /**********************************************************************
  * PRETIMCK .. CHKRTIMR (pp.1428-1429): count the trim-gimbal drive timers
@@ -542,7 +599,7 @@ agc_status_t lm_dap_pretimck(void)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_pretimck */
 
 /**********************************************************************
  * PAXIS (pp.1421-1428): the T5RUPT program of the running DAP.
@@ -636,4 +693,4 @@ agc_status_t agc_task_paxis(void)
     }
 
     return (lm_dap_qraxis());
-}
+} /* agc_task_paxis */

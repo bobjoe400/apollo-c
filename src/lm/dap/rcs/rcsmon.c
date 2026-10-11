@@ -1,16 +1,38 @@
-/*
- * rcsmon.c -- RCSMON / RCSMONIT, the RCS failure monitor
- * (RCS_FAILURE_MONITOR.agc, Luminary 099 pp.190-192), run by T4RUPT every
- * 480 ms.
+/**********************************************************************
+ * FILE NAME: rcsmon.c
  *
- * Channel 32 bits 1-8 (inverted) report the crew's jet-pair isolation
- * valve switches. When a switch has changed since the last pass
- * (PVALVEST), the highest-numbered changed bit is acted on: a closed
- * valve sets the inhibit bits of its jets in CH5MASK / CH6MASK, an opened
- * valve clears them, PVALVEST records the action, and 1/ACCJOB is set up
- * so the TJETLAW switch curves reflect the new jet masks. One change is
- * handled per pass; further changes are found on later passes.
- */
+ * PURPOSE:
+ *   RCSMON / RCSMONIT, the RCS failure monitor (RCS_FAILURE_MONITOR.agc,
+ *   Luminary 099 pp.190-192), run by T4RUPT every 480 ms.
+ *
+ * AGC SOURCE:
+ *   Luminary099 RCS_FAILURE_MONITOR.agc pp. 190-192 (RCSMON, RCSMONIT)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_chan_read               READ channel
+ *   lm_dap_accfix               1/ACCFIX (accs.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails;
+ *   1/ACCFIX status passed through.
+ *
+ * NOTES:
+ *   Channel 32 bits 1-8 (inverted) report the crew's jet-pair isolation
+ *   valve switches. When a switch has changed since the last pass
+ *   (PVALVEST), the highest-numbered changed bit is acted on: a closed
+ *   valve sets the inhibit bits of its jets in CH5MASK / CH6MASK, an opened
+ *   valve clears them, PVALVEST records the action, and 1/ACCJOB is set up
+ *   so the TJETLAW switch curves reflect the new jet masks. One change is
+ *   handled per pass; further changes are found on later passes.
+ **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
@@ -98,4 +120,4 @@ agc_status_t agc_lm_dap_rcsmon(void)
     }
 
     return (lm_dap_accfix()); /* 1/ACCFIX           */
-}
+} /* agc_lm_dap_rcsmon */

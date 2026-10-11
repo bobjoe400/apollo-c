@@ -1,24 +1,39 @@
-/*
- * lm_dap_internal.h -- private state and helpers of the Luminary 099 LM DAP.
+/**********************************************************************
+ * FILE NAME: internal.h
  *
- * The AGC keeps the DAP in EBANK 6 erasables (ERASABLE_ASSIGNMENTS.agc
- * pp. 105-136); here they are one struct, lm_dap_t, reached through
- * lm_dap_state() (single dereference). Field names are the AGC labels in
- * lower case; each carries the AGC scale.
+ * PURPOSE:
+ *   Private state and helpers of the Luminary 099 LM DAP, shared by the
+ *   files of src/lm/dap only.
  *
- * Overlays that matter for behaviour are kept as the AGC has them:
- *   QERROR = DYERROR (high word), RERROR = DZERROR (high word): the RCS
- *   attitude errors and the manual-mode DP attitude errors share cells.
- * Overlays that are only storage sharing inside one DAP pass (DAPTEMPn,
- * DAPTREGn, E/EDOT = DAPTREG6/OMEGAV, URATEDIF = OMEGAU, ...) are separate
- * fields or locals; every pass writes them before reading them, so the
- * behaviour is the same.
+ * AGC SOURCE:
+ *   Luminary099 ERASABLE_ASSIGNMENTS.agc pp. 105-136 (DAP erasables, EBANK 6)
  *
- * Arithmetic follows the AGC word by word: MP, DV, DAS, MSU, CCS, the
- * OVERSUB limiter and DVOVSUB are modelled in arith.c on ones'-complement
- * values held in agc_sp_t (-0 is not represented; see Deviations in
- * docs/modules/dap-lm.md).
- */
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   none (the DAP erasables are one static lm_dap_t in state.c, reached
+ *   through lm_dap_state(); each field below carries its AGC scale)
+ *
+ * NOTES:
+ *   The AGC keeps the DAP in EBANK 6 erasables (ERASABLE_ASSIGNMENTS.agc
+ *   pp. 105-136); here they are one struct, lm_dap_t, reached through
+ *   lm_dap_state() (single dereference). Field names are the AGC labels in
+ *   lower case; each carries the AGC scale.
+ *
+ *   Overlays that matter for behaviour are kept as the AGC has them:
+ *     QERROR = DYERROR (high word), RERROR = DZERROR (high word): the RCS
+ *     attitude errors and the manual-mode DP attitude errors share cells.
+ *   Overlays that are only storage sharing inside one DAP pass (DAPTEMPn,
+ *   DAPTREGn, E/EDOT = DAPTREG6/OMEGAV, URATEDIF = OMEGAU, ...) are separate
+ *   fields or locals; every pass writes them before reading them, so the
+ *   behaviour is the same.
+ *
+ *   Arithmetic follows the AGC word by word: MP, DV, DAS, MSU, CCS, the
+ *   OVERSUB limiter and DVOVSUB are modelled in arith.c on ones'-complement
+ *   values held in agc_sp_t (-0 is not represented; see Deviations in
+ *   docs/modules/dap-lm.md).
+ **********************************************************************/
 #ifndef LM_DAP_INTERNAL_H
 #define LM_DAP_INTERNAL_H
 

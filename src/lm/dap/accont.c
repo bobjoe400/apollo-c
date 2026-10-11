@@ -1,24 +1,55 @@
-/*
- * accont.c -- 1/ACCONT (AOSTASK_AND_AOSJOB.agc, Luminary 099 pp.1497-1506):
- * the TJETLAW switch-curve parameters in the 48-word BLOCKTOP table.
+/**********************************************************************
+ * FILE NAME: accont.c
  *
- * For the P axis (2 jets, no offset) and for each of U and V (1 and 2
- * jets, each rotation sense, with the offset acceleration AOSU/AOSV from
- * ROT-TOUV of AOSQ/AOSR) it stores the reciprocal net accelerations 1/ANET,
- * the reciprocal coast accelerations 1/ACOAST, the acceleration functions
- * ACCFUN = -1/(ANET + ANET^2/ACOAST), the fire and coast deadbands and
- * AXISDIST, FLAT and ZONE3LIM (width and height of the minimum-impulse
- * zone), and ACCSWU/ACCSWV (max jets needed because one jet cannot beat
- * the offset). Jet-pair failures (CH5MASK) substitute one-jet values.
+ * PURPOSE:
+ *   1/ACCONT (AOSTASK_AND_AOSJOB.agc, Luminary 099 pp.1497-1506): the
+ *   TJETLAW switch-curve parameters in the 48-word BLOCKTOP table.
  *
- * Scales: AOS, ANET, 1JACCU at pi/2 rad/s^2; 1/ANET, 1/ACOAST, ACCFUN at
- * 2^7/pi; deadbands at pi/4 rad; ZONE3LIM at 4 s. AMIN = .03 rad/s^2 is
- * -.03R/S2 = OCT 77377 (-pi/2^7 at pi/2).
+ * AGC SOURCE:
+ *   Luminary099 AOSTASK_AND_AOSJOB.agc pp. 1497-1506
+ *     (1/ACCONT, DOPAXIS, BOTHAXES, BIGAOS, NOTMUCH, SKIPDB2, 1/ANET-,
+ *     DO1/NET+, FIXMIN, STMIN-, DBFUN, STORV, DRFDB, INVERT)
  *
- * The executive temporaries 1/ATEM1 .. Z3TEM (VBUF) are modelled by the
- * 24-word array t[], with the AGC offsets (T_* below), so that the
- * BLOCKTOP stores are the AGC's GENTRAN / DXCH copies.
- */
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_inhint                  INHINT
+ *   agc_relint                  RELINT
+ *   lm_dap_dv                   DV quotient (arith.c)
+ *   lm_dap_mp                   MP: A,L product (arith.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_ovf                  TS overflow-skip test (arith.c)
+ *   lm_dap_rot_touv             ROT-TOUV: Q,R to U,V (qrjets.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   For the P axis (2 jets, no offset) and for each of U and V (1 and 2
+ *   jets, each rotation sense, with the offset acceleration AOSU/AOSV from
+ *   ROT-TOUV of AOSQ/AOSR) it stores the reciprocal net accelerations 1/ANET,
+ *   the reciprocal coast accelerations 1/ACOAST, the acceleration functions
+ *   ACCFUN = -1/(ANET + ANET^2/ACOAST), the fire and coast deadbands and
+ *   AXISDIST, FLAT and ZONE3LIM (width and height of the minimum-impulse
+ *   zone), and ACCSWU/ACCSWV (max jets needed because one jet cannot beat
+ *   the offset). Jet-pair failures (CH5MASK) substitute one-jet values.
+ *
+ *   Scales: AOS, ANET, 1JACCU at pi/2 rad/s^2; 1/ANET, 1/ACOAST, ACCFUN at
+ *   2^7/pi; deadbands at pi/4 rad; ZONE3LIM at 4 s. AMIN = .03 rad/s^2 is
+ *   -.03R/S2 = OCT 77377 (-pi/2^7 at pi/2).
+ *
+ *   The executive temporaries 1/ATEM1 .. Z3TEM (VBUF) are modelled by the
+ *   24-word array t[], with the AGC offsets (T_* below), so that the
+ *   BLOCKTOP stores are the AGC's GENTRAN / DXCH copies.
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/lm/dap.h"
 #include "internal.h"
@@ -30,20 +61,20 @@
 #define T_Z5     7  /* Z5TEM (+2): ACCFUN (ACCFCTZ5)                   */
 #define T_UDB    10 /* UDB1, UDB2, UDB4, UDB3, UAXDIST (+1)            */
 #define T_DBB1   16 /* DBB1, DBB2, DBB4, DBB3, AXDSTEM (+1)            */
-#define T_DBB2   17
-#define T_DBB4   18
-#define T_DBB3   19
-#define T_AXD    20
+#define T_DBB2   17 /* DBB2 (DB2) */
+#define T_DBB4   18 /* DBB4 (DB4) */
+#define T_DBB3   19 /* DBB3 (DB3) */
+#define T_AXD    20 /* AXDSTEM, +1: AXISDIST for the U (V) axis */
 #define T_FLAT   22 /* FLATEMP                                         */
 #define T_Z3     23 /* Z3TEM (must follow FLATEMP)                     */
-#define T_N      24
+#define T_N      24 /* number of temporaries */
 #define T_XFER   10 /* GENTRAN: ten words to 1/ANET1 (+16D)            */
 
 #define AA_BIT8     ((agc_sp_t) 128)   /* .0125RS: AMIN/2; 1 at 2^7        */
 #define AA_BIT9     ((agc_sp_t) 256)   /* 1 at 2^6; -(-.03R/S2) = AMIN     */
-#define AA_BIT12    ((agc_sp_t) 2048)
-#define AA_BIT13    ((agc_sp_t) 4096)
-#define AA_BIT14    ((agc_sp_t) 8192)
+#define AA_BIT12    ((agc_sp_t) 2048)  /* 1 at 2^3; 9/8 = 1 + BIT12 (9/8 |AOS|) */
+#define AA_BIT13    ((agc_sp_t) 4096)  /* .25 at 2^0 (.25 DB) */
+#define AA_BIT14    ((agc_sp_t) 8192)  /* .5: MP BIT14 halves (rescales pi/2 -> pi) */
 #define AA_M1875    ((agc_sp_t) -3072) /* -.1875 pi/2 rad/s^2 at pi/2      */
 #define AA_FLATVAL  ((agc_sp_t) 291)   /* DEC .01778: .8 deg at pi/4       */
 #define AA_ZONE3MAX ((agc_sp_t) 72)    /* DEC .004375: 17.5 ms at 4 s      */
@@ -55,16 +86,18 @@ static const uint16_t uvmask[4] = {000110u, 000022u, 000204u, 000041u};
 
 typedef struct acc_work
 {
-    agc_sp_t t[T_N];         /* VBUF temporaries, AGC offsets              */
-    agc_sp_t dbval2, dbval3; /* -.75 DB, .5 DB                             */
-    agc_sp_t drifter;        /* 1 in drifting flight                       */
-    int      uv;             /* 0 U axis, 1 V axis                         */
-    int s, ns;               /* SIGNAOS (1: AOS < 0), -SIGNAOS index       */
-    agc_sp_t absaos;         /* ABSAOS at pi/2                             */
-    agc_sp_t anet;           /* ANET / FUNTEM                              */
-    agc_sp_t inv;            /* 1/ANET at 2^7/pi                           */
-    agc_sp_t accsw;          /* ACCSW                                      */
-    bool     negzero[2];     /* AOSU, AOSV are -0 in the AGC (value 0 here) */
+    agc_sp_t t[T_N];     /* VBUF temporaries at the AGC offsets, scales per T_* above (1/ANET 2^7/pi, deadbands pi/4 rad) */
+    agc_sp_t dbval2;     /* DBVAL2 = -.75 DB, scaled pi/4 rad */
+    agc_sp_t dbval3;     /* DBVAL3 = .5 DB, scaled pi/4 rad */
+    agc_sp_t drifter;    /* 1 in drifting flight, else 0 (unscaled) */
+    int      uv;         /* 0 U axis, 1 V axis                         */
+    int      s;          /* SIGNAOS: 1 when AOS < 0, else 0 (index) */
+    int      ns;         /* -SIGNAOS (index) */
+    agc_sp_t absaos;     /* ABSAOS, scaled pi/2 rad/s^2 */
+    agc_sp_t anet;       /* ANET scaled pi/2 rad/s^2, then FUNTEM scaled 2^6 */
+    agc_sp_t inv;        /* 1/ANET at 2^7/pi                           */
+    agc_sp_t accsw;      /* ACCSW: -1, 0, +1 max-jet request (unscaled) */
+    bool     negzero[2]; /* AOSU, AOSV are -0 in the AGC (value 0 here) */
 } acc_work_t;
 
 /**********************************************************************
@@ -85,7 +118,7 @@ typedef struct acc_work
  **********************************************************************/
 static bool mp_negzero(agc_sp_t a, agc_sp_t k)
 {
-    int32_t p = (int32_t) a * k;
+    int32_t p = (int32_t) a * k; /* product a k, scaled 2^-14 (sign of the MP major word) */
 
     if (!AGC_ASSERT(a >= LM_NEGMAX && a <= LM_POSMAX))
     {
@@ -97,7 +130,7 @@ static bool mp_negzero(agc_sp_t a, agc_sp_t k)
         return (false);
     }
 
-    return ((k != 0) && ((a == 0) ? (k < 0) : ((p < 0) && (p > -16384))));
+    return ((k != 0) && ((a == 0) ? (k < 0) : ((p < 0) && (p > -16384)))); /* A = +0: sign of k */
 }
 
 /**********************************************************************
@@ -119,12 +152,12 @@ static bool mp_negzero(agc_sp_t a, agc_sp_t k)
  **********************************************************************/
 static void aos_negzero(const lm_dap_t *d, acc_work_t *w)
 {
-    agc_sp_t tq = lm_dap_mphi(d->aosq, d->coeffq);
-    agc_sp_t tr = lm_dap_mphi(d->aosr, d->coeffr);
-    bool     nq = (tq == 0) && mp_negzero(d->aosq, d->coeffq);
-    bool     nr = (tr == 0) && mp_negzero(d->aosr, d->coeffr);
-    bool     pq = (tq == 0) && !nq; /* COEFFQ AOSQ = +0  */
-    bool     pr = (tr == 0) && !nr; /* COEFFR AOSR = +0  */
+    agc_sp_t tq = lm_dap_mphi(d->aosq, d->coeffq);             /* COEFFQ AOSQ, scaled pi/2 rad/s^2 */
+    agc_sp_t tr = lm_dap_mphi(d->aosr, d->coeffr);             /* COEFFR AOSR, scaled pi/2 rad/s^2 */
+    bool     nq = (tq == 0) && mp_negzero(d->aosq, d->coeffq); /* that product is -0 */
+    bool     nr = (tr == 0) && mp_negzero(d->aosr, d->coeffr); /* that product is -0 */
+    bool     pq = (tq == 0) && !nq;                            /* COEFFQ AOSQ = +0  */
+    bool     pr = (tr == 0) && !nr;                            /* COEFFR AOSR = +0  */
 
     w->negzero[0] = (d->aosu == 0) && !(nq && pr); /* -(-0) + +0 = +0   */
     w->negzero[1] = (d->aosv == 0) && !(pq && pr);
@@ -159,12 +192,12 @@ static void aos_negzero(const lm_dap_t *d, acc_work_t *w)
 static agc_sp_t invert(int32_t x)
 {
     lm_dp_pair_t one = {AA_BIT9, 0};
-    agc_sp_t     hold;
+    agc_sp_t     hold; /* HOLD: the divisor word, scaled pi/2 rad/s^2 */
 
     if (lm_dap_ovf(x))
     {
         hold   = lm_dap_wrap(x);
-        one.hi = (agc_sp_t) ((x > 0) ? 1 : -1);
+        one.hi = (agc_sp_t) ((x > 0) ? 1 : -1); /* the TS overflow indicator +-1 */
     }
     else
     {
@@ -176,7 +209,7 @@ static agc_sp_t invert(int32_t x)
         return (0); /* no valid result */
     }
 
-    agc_sp_t r = lm_dap_dv(one, hold);
+    agc_sp_t r = lm_dap_dv(one, hold); /* 1/x, scaled 2^7/pi */
 
     if (!AGC_ASSERT(r >= LM_NEGMAX))
     {
@@ -203,7 +236,7 @@ static agc_sp_t invert(int32_t x)
  **********************************************************************/
 static agc_sp_t net_accel_function(acc_work_t *w, agc_sp_t a)
 {
-    agc_sp_t funtem = lm_dap_wrap((int32_t) a + AA_BIT9); /* XCH ANET      */
+    agc_sp_t funtem = lm_dap_wrap((int32_t) a + AA_BIT9); /* FUNTEM = 1 + ANET/ACOAST, scaled 2^6 (XCH ANET) */
 
     w->inv  = invert(w->anet);
     w->anet = funtem;
@@ -236,7 +269,7 @@ static agc_sp_t net_accel_function(acc_work_t *w, agc_sp_t a)
  **********************************************************************/
 static agc_sp_t net_min(acc_work_t *w)
 {
-    agc_sp_t a = lm_dap_mphi(w->anet, w->t[T_ACOSTT + 1 + w->ns]);
+    agc_sp_t a = lm_dap_mphi(w->anet, w->t[T_ACOSTT + 1 + w->ns]); /* ANET/ACOAST, scaled 2^6 */
 
     if (!AGC_ASSERT(w->ns == 0 || w->ns == -1))
     {
@@ -260,13 +293,13 @@ static agc_sp_t net_min(acc_work_t *w)
  **********************************************************************/
 static void p_axis(lm_dap_t *d)
 {
-    agc_sp_t funtem = lm_dap_wrap((int32_t) d->jacc[0] + AA_BIT9);
-    agc_sp_t inv    = invert(d->jacc[0]);
+    agc_sp_t funtem = lm_dap_wrap((int32_t) d->jacc[0] + AA_BIT9); /* FUNTEM = 1 + ANET/ACOAST, scaled 2^6 */
+    agc_sp_t inv    = invert(d->jacc[0]);                          /* 1/ANETP, scaled 2^7/pi */
 
-    agc_inhint();      /* consistent     */
-    d->block[2] = inv; /* 1/ANETP        */
+    agc_inhint();                                                         /* consistent     */
+    d->block[2] = inv;                                                    /* 1/ANETP        */
     d->block[3] = inv;
-    agc_sp_t f  = lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT9, inv), funtem);
+    agc_sp_t f  = lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT9, inv), funtem); /* PACCFUN, scaled 2^7/pi */
 
     d->block[8] = f;         /* PACCFUN        */
     d->block[9] = f;
@@ -348,7 +381,7 @@ static void db_smallaos(const lm_dap_t *d, acc_work_t *w)
  **********************************************************************/
 static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
 {
-    agc_sp_t aos = (w->uv == 0) ? d->aosu : d->aosv;
+    agc_sp_t aos = (w->uv == 0) ? d->aosu : d->aosv; /* AOSU or AOSV, scaled pi/2 rad/s^2 */
 
     if (!AGC_ASSERT(w->uv == 0 || w->uv == 1))
     {
@@ -360,13 +393,13 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
         return;
     }
 
-    w->s           = ((aos < 0) || w->negzero[w->uv]) ? 1 : 0;
+    w->s           = ((aos < 0) || w->negzero[w->uv]) ? 1 : 0; /* SIGNAOS: 1 for AOS < 0 or -0 */
     w->ns          = -w->s;
-    w->absaos      = (agc_sp_t) ((aos < 0) ? -aos : aos);
+    w->absaos      = (agc_sp_t) ((aos < 0) ? -aos : aos);      /* ABS(AOS) */
     w->t[T_DBB1]   = d->db;
     w->t[T_DBB2]   = d->db;
-    agc_sp_t jaccu = d->jacc[3];
-    agc_sp_t acc;
+    agc_sp_t jaccu = d->jacc[3];                               /* 1JACCU, scaled pi/2 rad/s^2 */
+    agc_sp_t acc;                                              /* ACCFUN, scaled 2^7/pi */
 
     if ((int32_t) w->absaos - AA_BIT9 <= 0)
     {
@@ -377,13 +410,13 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
         if (w->t[T_FLAT] == 0)
         {
             /* BIGAOS (pp.1498-1499): |AOS| > AMIN, powered: deadbands */
-            agc_sp_t db = d->db;
+            agc_sp_t db = d->db; /* DBVAL1 = DB, scaled pi/4 rad */
 
             /* ADS leaves the sum in A, so DB4(3) gets 2 DB, not the 1 DB
              * of the listing's comment (rope: accs_aos_big COASTDB).    */
             w->t[T_DBB2 + w->ns] = lm_dap_wrap((int32_t) w->t[T_DBB2 + w->ns] + db);
             w->t[T_DBB4 + w->s]  = w->t[T_DBB2 + w->ns];
-            agc_sp_t db1;
+            agc_sp_t db1; /* DB1(2), scaled pi/4 rad */
 
             if ((int32_t) AA_M1875 + w->absaos > 0)
             {
@@ -410,18 +443,18 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
             }
         }
 
-        int32_t nine8 = (int32_t) lm_dap_mphi(w->absaos, AA_BIT12) + w->absaos;
+        int32_t nine8 = (int32_t) lm_dap_mphi(w->absaos, AA_BIT12) + w->absaos; /* 9/8 |AOS| in A, scaled pi/2 rad/s^2 */
 
         w->t[T_ACOSTT + 1 + w->ns] = invert(nine8); /* 1/(9/8 |AOS|)  */
         w->t[T_ACOSTT + w->s]      = LM_POSMAX;     /* 1/AMIN         */
-    }
+    } /* end BIGAOS: |AOS| > AMIN */
 
-    int32_t top = (int32_t) w->absaos + 2 * (int32_t) jaccu + AA_BIT9;
+    int32_t top = (int32_t) w->absaos + 2 * (int32_t) jaccu + AA_BIT9; /* |AOS| + 2 JACC + 1 at 2^6: overflow test, scale pi/2 */
 
     if (w->absaos > AA_BIT9 && lm_dap_ovf(top))
     {
         /* SKIPDB1 overflow branch (p.1500): ANET rescaled to pi.                 */
-        agc_sp_t anet_pi = lm_dap_wrap((int32_t) lm_dap_mphi(w->absaos, AA_BIT14) + jaccu);
+        agc_sp_t anet_pi = lm_dap_wrap((int32_t) lm_dap_mphi(w->absaos, AA_BIT14) + jaccu); /* ANET at pi: |AOS|/2 + JACC, scaled pi rad/s^2 */
 
         w->anet = lm_dap_wrap((int32_t) anet_pi + AA_BIT8); /* 1 + .. at 2^7  */
         w->inv  = lm_dap_mphi(invert(anet_pi), AA_BIT14);   /* at 2^7/pi      */
@@ -444,15 +477,15 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
         acc     = net_accel_function(w, w->anet);
     }
 
-    w->t[T_Z5 + 2 + w->ns]    = acc; /* ACCTHERE       */
+    w->t[T_Z5 + 2 + w->ns]    = acc;                                   /* ACCTHERE       */
     w->t[T_ATEM2 + 2 + w->ns] = w->inv;
-    int32_t m                 = (int32_t) w->absaos + jaccu + AA_BIT9;
+    int32_t m                 = (int32_t) w->absaos + jaccu + AA_BIT9; /* |AOS| + JACC + 1 at 2^6, scaled pi/2 (overflow test) */
 
-    w->anet               = (agc_sp_t) ((lm_dap_ovf(m) ? LM_POSMAX : m) - AA_BIT9);
+    w->anet               = (agc_sp_t) ((lm_dap_ovf(m) ? LM_POSMAX : m) - AA_BIT9); /* overflow: truncate to pi/2 */
     acc                   = net_accel_function(w, w->anet);
     w->t[T_Z5 + w->ns]    = acc;
     w->t[T_ATEM2 + w->ns] = w->inv;
-}
+} /* axis_with_aos */
 
 /**********************************************************************
  * FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
@@ -514,8 +547,8 @@ static void axis_fail_dist(const lm_dap_t *d, acc_work_t *w)
 static void store_axis(lm_dap_t *d, acc_work_t *w)
 {
     agc_inhint();
-    d->block[w->uv] = w->accsw; /* ACCSWU / ACCSWV */
-    int base        = LM_BLK_U + 16 * w->uv;
+    d->block[w->uv] = w->accsw;              /* ACCSWU / ACCSWV */
+    int base        = LM_BLK_U + 16 * w->uv; /* first word of the U or V BLOCKTOP group (index) */
 
     for (int i = 0; i < T_XFER; i++)
     {
@@ -561,7 +594,7 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
 {
     d->block[AA_BLK_FLAT] = w->t[T_FLAT];
     d->block[AA_BLK_Z3]   = w->t[T_Z3];
-    agc_sp_t coast        = lm_dap_wrap((int32_t) d->db + w->t[T_FLAT]);
+    agc_sp_t coast        = lm_dap_wrap((int32_t) d->db + w->t[T_FLAT]); /* PDB3/4 = DB + FLAT, scaled pi/4 rad */
 
     d->block[10] = d->db; /* PDB1, PDB2     */
     d->block[11] = d->db;
@@ -572,15 +605,24 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
 
     for (int a = 0; a < 2; a++)
     {
-        int b = LM_BLK_U + 16 * a;
+        int b = LM_BLK_U + 16 * a; /* first word of the U or V group (index) */
 
         for (int i = 0; i < 6; i++)
         {
-            agc_sp_t v = w->t[((a == 0) ? T_UDB : T_DBB1) + i];
+            agc_sp_t v = w->t[((a == 0) ? T_UDB : T_DBB1) + i]; /* U words come from UDB1.., V from DBB1.., scaled pi/4 rad */
 
             if (w->t[T_FLAT] > 0)
             { /* DRFDB          */
-                v = (i < 2) ? d->db : ((i < 4) ? coast : 0);
+                v = 0; /* AXISDIST: 0 */
+
+                if (i < 2)
+                {
+                    v = d->db; /* FIREDB = DB */
+                }
+                else if (i < 4)
+                {
+                    v = coast; /* COASTDB = DB + FLAT */
+                }
             }
 
             d->block[b + LM_BK_FIREDB + i] = v;
@@ -596,7 +638,7 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
     {
         return;
     }
-}
+} /* store_deadbands */
 
 /**********************************************************************
  * NEG(POS) cases, 1/ANET-, NETNEG, FIXMIN, STMIN- (pp.1501-1502,
@@ -618,11 +660,11 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
  **********************************************************************/
 static agc_status_t axis_against_aos(const lm_dap_t *d, acc_work_t *w)
 {
-    agc_sp_t jaccu = d->jacc[3];
+    agc_sp_t jaccu = d->jacc[3]; /* 1JACCU, scaled pi/2 rad/s^2 */
 
     /* 1/ANET- (p.1504): ACCSW = 0; an ANET below AMIN is raised to AMIN
      * (NETNEG); then 1/NETMIN.                                                */
-    agc_sp_t a = lm_dap_wrap(2 * (int32_t) jaccu - w->absaos);
+    agc_sp_t a = lm_dap_wrap(2 * (int32_t) jaccu - w->absaos); /* ANETNEG(POS) MAX = 2 JACC - |AOS|, scaled pi/2 rad/s^2 */
 
     w->accsw = 0;
     w->anet  = a;
@@ -637,8 +679,8 @@ static agc_status_t axis_against_aos(const lm_dap_t *d, acc_work_t *w)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_sp_t acc   = net_min(w);
-    agc_sp_t lsave = acc; /* TS L           */
+    agc_sp_t acc   = net_min(w); /* ACCFUN, scaled 2^7/pi */
+    agc_sp_t lsave = acc;        /* TS L: ACCFUN saved, scaled 2^7/pi */
 
     if (!AGC_ASSERT(w->s == -w->ns))
     {
@@ -655,7 +697,7 @@ static agc_status_t axis_against_aos(const lm_dap_t *d, acc_work_t *w)
     }
     else
     { /* FIXMIN         */
-        w->accsw = (agc_sp_t) ((w->s != 0) ? 1 : -1);
+        w->accsw = (agc_sp_t) ((w->s != 0) ? 1 : -1); /* AOS neg: +1, pos: -1 */
 
         if ((uvmask[w->accsw + 1 + w->uv] & d->ch5mask) != 0u)
         {
@@ -677,7 +719,7 @@ static agc_status_t axis_against_aos(const lm_dap_t *d, acc_work_t *w)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* axis_against_aos */
 
 /**********************************************************************
  * 1/ACCONT (p.1497): deadband values, AOSU/V, FLAT and ZONE3LIM, then
@@ -693,18 +735,18 @@ static agc_status_t axis_against_aos(const lm_dap_t *d, acc_work_t *w)
  **********************************************************************/
 agc_status_t lm_dap_switch_curves(void)
 {
-    lm_dap_t  *d       = lm_dap_state();
+    lm_dap_t  *d       = lm_dap_state();               /* DAP erasables */
     acc_work_t w       = {{0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {false, false}};
-    agc_sp_t   quarter = lm_dap_mphi(d->db, AA_BIT13); /* .25 DB         */
+    agc_sp_t   quarter = lm_dap_mphi(d->db, AA_BIT13); /* .25 DB, scaled pi/4 rad */
 
-    w.dbval3    = lm_dap_wrap(2 * (int32_t) quarter);     /* .50 DB         */
-    w.dbval2    = lm_dap_wrap((int32_t) quarter - d->db); /* -.75 DB        */
-    agc_inhint();                                         /* GETAOSUV       */
+    w.dbval3    = lm_dap_wrap(2 * (int32_t) quarter);                       /* .50 DB         */
+    w.dbval2    = lm_dap_wrap((int32_t) quarter - d->db);                   /* -.75 DB        */
+    agc_inhint();                                                           /* GETAOSUV       */
     lm_dap_rot_touv(d->aosq, d->aosr, &d->aosu, &d->aosv);
     agc_relint();
     aos_negzero(d, &w);
-    w.drifter   = agc_flag_test(AGC_FLAG_DRIFTDFL) ? 1 : 0;
-    w.t[T_FLAT] = ((int32_t) w.drifter + d->allowgts > 0) ? AA_FLATVAL : 0;
+    w.drifter   = agc_flag_test(AGC_FLAG_DRIFTDFL) ? 1 : 0;                 /* DRIFTER */
+    w.t[T_FLAT] = ((int32_t) w.drifter + d->allowgts > 0) ? AA_FLATVAL : 0; /* FLATEMP: .8 deg in drift or GTS */
 
     /* DEVIATION: in powered flight without GTS the AGC leaves Z3TEM (a
      * VBUF word) as it was and copies it to ZONE3LIM; here ZONE3LIM
@@ -713,7 +755,7 @@ agc_status_t lm_dap_switch_curves(void)
 
     if (w.t[T_FLAT] != 0)
     {
-        w.t[T_Z3] = (w.drifter != 0) ? AA_ZONE3MAX : 0;
+        w.t[T_Z3] = (w.drifter != 0) ? AA_ZONE3MAX : 0; /* ZONE3LIM: 17.5 ms drifting, 0 in GTS */
     }
 
     p_axis(d);
@@ -731,7 +773,7 @@ agc_status_t lm_dap_switch_curves(void)
         w.uv = uv;
         axis_with_aos(d, &w);
 
-        agc_status_t st = axis_against_aos(d, &w);
+        agc_status_t st = axis_against_aos(d, &w); /* status of the NEG(POS) cases */
 
         if (st != AGC_STATUS_OK)
         {
@@ -755,4 +797,4 @@ agc_status_t lm_dap_switch_curves(void)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_switch_curves */

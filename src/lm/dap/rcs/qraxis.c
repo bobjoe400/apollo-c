@@ -1,13 +1,59 @@
-/*
- * qraxis.c -- Q,R-axis control choice and attitude errors
- * (P-AXIS_RCS_AUTOPILOT.agc p.1441 QRAXIS; Q_R-AXIS_RCS_AUTOPILOT.agc,
- * Luminary 099 pp.1442-1452): CALLQERR, Q,RORGTS, TRYGTS / CHKINGTS,
- * RCS, SENSEGET (X translation), QRCONTRL, QERRCALC/RERRCALC, STILLRCS.
+/**********************************************************************
+ * FILE NAME: qraxis.c
  *
- * Each 100 ms pass the Q,R axes are controlled either by the descent
- * engine trim gimbal (GTS, gts.c) or by the RCS jets about the
- * non-orthogonal U,V axes (qrjets.c).
- */
+ * PURPOSE:
+ *   Q,R-axis control choice and attitude errors
+ *   (P-AXIS_RCS_AUTOPILOT.agc p.1441 QRAXIS; Q_R-AXIS_RCS_AUTOPILOT.agc,
+ *   Luminary 099 pp.1442-1452): CALLQERR, Q,RORGTS, TRYGTS / CHKINGTS,
+ *   RCS, SENSEGET (X translation), QRCONTRL, QERRCALC/RERRCALC,
+ *   STILLRCS.
+ *
+ * AGC SOURCE:
+ *   Luminary099 P-AXIS_RCS_AUTOPILOT.agc p. 1441 (QRAXIS),
+ *     Q_R-AXIS_RCS_AUTOPILOT.agc pp. 1442-1452 (CALLQERR, Q,RORGTS,
+ *     TRYGTS, CHKINGTS, RCS, SENSEGET, QRCONTRL, QERRCALC, STILLRCS)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *   CDUY          uint16_t  I    2^0 rev        CDU Y angle (agc_erase_cduy())
+ *   CDUZ          uint16_t  I    2^0 rev        CDU Z angle (agc_erase_cduz())
+ *   M21           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m21())
+ *   M22           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m22())
+ *   M31           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m31())
+ *   M32           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m32())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_alarm                   ALARM: record an alarm code
+ *   agc_chan_read               READ channel
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_inhint                  INHINT
+ *   agc_lm_dap_timegmbl         TIMEGMBL: trim-gimbal null drive (gts.c)
+ *   agc_relint                  RELINT
+ *   lm_dap_chekstik             CHEKSTIK .. BACKHAND (qrmanual.c)
+ *   lm_dap_gts                  GTS .. CLOSEOUT (gts.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_msu                  MSU (arith.c)
+ *   lm_dap_qrminimp             Q,R minimum impulse (qrmanual.c)
+ *   lm_dap_rot_touv             ROT-TOUV: Q,R to U,V (qrjets.c)
+ *   lm_dap_sat                  OVERSUB / LIMITS (arith.c)
+ *   lm_dap_selctsub             SELCTSUB (qrjets.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_uvloop               U,V axis loop (qrjets.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Alarm 02002 when SENSEGET finds no usable translation policy.
+ *   AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   Each 100 ms pass the Q,R axes are controlled either by the descent
+ *   engine trim gimbal (GTS, gts.c) or by the RCS jets about the
+ *   non-orthogonal U,V axes (qrjets.c).
+ **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
@@ -148,7 +194,7 @@ static agc_status_t senseget(lm_dap_t *d)
     d->nextv = (uint16_t) ((uint16_t) d->polytemp & (uint16_t) ~QR_UBITS & 0377u);
 
     return (AGC_STATUS_OK);
-}
+} /* senseget */
 
 /**********************************************************************
  * RCS + SENSEGET + QRCONTRL (pp.1442-1444): Q,R by jets this pass. U,V

@@ -1,11 +1,52 @@
-/*
- * needles.c -- the FDAI attitude-error display of the LM DAP
- * (DAPIDLER_PROGRAM.agc pp.1414-1420): ALTDSPLY, DSPLYTOT, NEEDLER.
+/**********************************************************************
+ * FILE NAME: needles.c
  *
- * ALTDSPLY alternates every 100 ms between computing the errors (DAP
- * following errors, or total errors when NEEDLFLG is set) and driving the
- * needles through the IMU error counters (CDUXCMD..CDUZCMD) via NEEDLER.
- */
+ * PURPOSE:
+ *   The FDAI attitude-error display of the LM DAP (DAPIDLER_PROGRAM.agc
+ *   pp.1414-1420): ALTDSPLY, DSPLYTOT, NEEDLER.
+ *
+ * AGC SOURCE:
+ *   Luminary099 DAPIDLER_PROGRAM.agc pp. 1414-1420
+ *     (ALTDSPLY, DSPLYTOT, NEEDLER)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *   CDUX          uint16_t  I    2^0 rev        CDU X angle (agc_erase_cdux())
+ *   CDUY          uint16_t  I    2^0 rev        CDU Y angle (agc_erase_cduy())
+ *   CDUZ          uint16_t  I    2^0 rev        CDU Z angle (agc_erase_cduz())
+ *   M11           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m11())
+ *   M21           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m21())
+ *   M22           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m22())
+ *   M31           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m31())
+ *   M32           agc_sp_t  I    2^0            gimbal matrix (agc_erase_m32())
+ *   THETAD        uint16_t  I    2^0 rev        desired CDU angles (agc_erase_thetad())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_chan_and                WAND channel
+ *   agc_chan_or                 WOR channel
+ *   agc_chan_read               READ channel
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_imu_cducmd              CDUXCMD.. command counters (imu)
+ *   agc_imu_hw_set_cducmd       CDU error-counter drive (imu)
+ *   agc_state_vehicle           CSM or LM rope
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_msu                  MSU (arith.c)
+ *   lm_dap_sat                  OVERSUB / LIMITS (arith.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   ALTDSPLY alternates every 100 ms between computing the errors (DAP
+ *   following errors, or total errors when NEEDLFLG is set) and driving the
+ *   needles through the IMU error counters (CDUXCMD..CDUZCMD) via NEEDLER.
+ **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
@@ -199,7 +240,7 @@ static agc_status_t needles(lm_dap_t *d)
     }
 
     return (st);
-}
+} /* needles */
 
 /**********************************************************************
  * NEEDLER (pp.1418-1419): relay sequencing, then the DAC loop.

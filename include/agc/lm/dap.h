@@ -1,21 +1,34 @@
-/*
- * agc_lm_dap.h -- Luminary 099 LM digital autopilot (owner: dap-lm agent).
+/**********************************************************************
+ * FILE NAME: dap.h
  *
- * The RCS reaction-jet autopilot, the descent-engine trim gimbal control,
- * the 1/ACCS control-authority computation, the TIME6 jet-timing list and
- * the RCS failure monitor. Sources: DAPIDLER_PROGRAM, P-AXIS_RCS_AUTOPILOT,
- * Q_R-AXIS_RCS_AUTOPILOT, TJET_LAW, KALMAN_FILTER, TRIM_GIMBAL_CONTROL_SYSTEM,
- * AOSTASK_AND_AOSJOB, DAP_INTERFACE_SUBROUTINES, T6-RUPT_PROGRAMS,
- * RCS_FAILURE_MONITOR, SPS_BACK-UP_RCS_CONTROL (Luminary 099 pp. 1403-1506,
- * 191-192).
+ * PURPOSE:
+ *   Public interface of the Luminary 099 LM digital autopilot: the RCS
+ *   reaction-jet autopilot, the descent-engine trim gimbal control, the
+ *   1/ACCS control-authority computation, the TIME6 jet-timing list and
+ *   the RCS failure monitor. Used by the executive (T5RUPT, T6RUPT,
+ *   T4RUPT), fresh start / restart, the programs (deadband and attitude
+ *   interface) and the tests.
  *
- * Scale conventions (as in the AGC):
+ * AGC SOURCE:
+ *   Luminary099 DAPIDLER_PROGRAM, P-AXIS_RCS_AUTOPILOT,
+ *   Q_R-AXIS_RCS_AUTOPILOT, TJET_LAW, KALMAN_FILTER,
+ *   TRIM_GIMBAL_CONTROL_SYSTEM, AOSTASK_AND_AOSJOB,
+ *   DAP_INTERFACE_SUBROUTINES, T6-RUPT_PROGRAMS, RCS_FAILURE_MONITOR,
+ *   SPS_BACK-UP_RCS_CONTROL (pp. 1403-1510, 190-192)
+ *
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   none (the DAP erasables are private to src/lm/dap, see internal.h)
+ *
+ *   Scale conventions (as in the AGC):
  *   CDU angles             uint16_t, 15-bit two's complement, scaled at pi rad
  *   attitude errors        agc_sp_t scaled at pi rad
  *   body rates             agc_sp_t scaled at pi/4 rad/s
  *   offset accelerations   agc_dp_t scaled at pi/2 rad/s^2 (AOSQ, AOSR)
  *   deadband DB            agc_sp_t scaled at 45 degrees (pi/4 rad)
- */
+ **********************************************************************/
 #ifndef AGC_LM_DAP_H
 #define AGC_LM_DAP_H
 

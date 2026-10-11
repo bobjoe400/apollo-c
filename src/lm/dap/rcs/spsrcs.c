@@ -1,19 +1,42 @@
-/*
- * spsrcs.c -- SPSRCS, the RCS control law used when the CSM is docked
- * (SPS_BACK-UP_RCS_CONTROL.agc, Luminary 099 pp.1507-1510), called from
- * PURGENCY (P axis) and TJLAW (U, V axes) instead of TJETLAW.
+/**********************************************************************
+ * FILE NAME: spsrcs.c
  *
- * Per axis (AXISCTR -1 = P, 0 = U, 1 = V), from E (at pi) and EDOT (at
- * pi/4 rad/s): fire against rates beyond 1.73 deg/s; outside the pad-loaded
- * deadband (pi/DKDB, 1.4 deg at fresh start) fire toward zero error unless
- * already returning faster than 1.125 deg/s; keep firing until the rate
- * passes the 0.10 deg/s target (zero target in drifting flight). A jet
- * shut-off or reversal starts the jet inhibition counter (UTIME: 4 DAP
- * passes for P, 10 for U and V) during which new firings are inhibited,
- * so the docked structure is not excited.
+ * PURPOSE:
+ *   SPSRCS, the RCS control law used when the CSM is docked (SPS_BACK-
+ *   UP_RCS_CONTROL.agc, Luminary 099 pp.1507-1510), called from PURGENCY
+ *   (P axis) and TJLAW (U, V axes) instead of TJETLAW.
  *
- * TJx is not a time here: +HALF / -HALF fire for the whole pass, 0 is off.
- */
+ * AGC SOURCE:
+ *   Luminary099 SPS_BACK-UP_RCS_CONTROL.agc pp. 1507-1510 (SPSRCS)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   Per axis (AXISCTR -1 = P, 0 = U, 1 = V), from E (at pi) and EDOT (at
+ *   pi/4 rad/s): fire against rates beyond 1.73 deg/s; outside the pad-loaded
+ *   deadband (pi/DKDB, 1.4 deg at fresh start) fire toward zero error unless
+ *   already returning faster than 1.125 deg/s; keep firing until the rate
+ *   passes the 0.10 deg/s target (zero target in drifting flight). A jet
+ *   shut-off or reversal starts the jet inhibition counter (UTIME: 4 DAP
+ *   passes for P, 10 for U and V) during which new firings are inhibited,
+ *   so the docked structure is not excited.
+ *
+ *   TJx is not a time here: +HALF / -HALF fire for the whole pass, 0 is off.
+ **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assert.h"
 #include "agc/lm/dap.h"

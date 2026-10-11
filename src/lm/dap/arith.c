@@ -1,16 +1,38 @@
-/*
- * arith.c -- word-level AGC arithmetic used by the LM DAP.
+/**********************************************************************
+ * FILE NAME: arith.c
  *
- * The DAP is basic (machine) code, not interpretive: its results depend on
- * MP leaving a sign-agreeing A,L pair, DV truncating, DAS carrying between
- * words and ADS/TS storing the overflow-corrected word. These helpers model
- * those instructions on ones'-complement values held in agc_sp_t (the
- * value, not the bit pattern; -0 is folded into +0).
+ * PURPOSE:
+ *   Word-level AGC arithmetic used by the LM DAP.
  *
- * Sources: the instruction descriptions used throughout Luminary099
- * (P-AXIS_RCS_AUTOPILOT.agc p.1422 1STOTWOS / OVERSUB, AOSTASK_AND_AOSJOB.agc
- * p.1492-1493 DVOVSUB, FIXED_FIXED_CONSTANT_POOL LIMITS).
- */
+ * AGC SOURCE:
+ *   none (instruction models); the instructions as used in Luminary099
+ *     P-AXIS_RCS_AUTOPILOT.agc p. 1422 (1STOTWOS, OVERSUB),
+ *     AOSTASK_AND_AOSJOB.agc pp. 1492-1493 (DVOVSUB)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   none
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   none
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   None. Out-of-range arguments fail an assertion and return 0.
+ *
+ * NOTES:
+ *   The DAP is basic (machine) code, not interpretive: its results depend on
+ *   MP leaving a sign-agreeing A,L pair, DV truncating, DAS carrying between
+ *   words and ADS/TS storing the overflow-corrected word. These helpers model
+ *   those instructions on ones'-complement values held in agc_sp_t (the
+ *   value, not the bit pattern; -0 is folded into +0).
+ *
+ *   Sources: the instruction descriptions used throughout Luminary099
+ *   (P-AXIS_RCS_AUTOPILOT.agc p.1422 1STOTWOS / OVERSUB, AOSTASK_AND_AOSJOB.agc
+ *   p.1492-1493 DVOVSUB, FIXED_FIXED_CONSTANT_POOL LIMITS).
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "internal.h"
 
@@ -319,7 +341,7 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
     }
 
     return (r);
-}
+} /* dv_improper */
 
 /**********************************************************************
  * DV: (A,L) / d -> quotient in A, remainder (dividend sign) in L. The AGC

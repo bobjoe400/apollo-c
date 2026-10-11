@@ -1,14 +1,49 @@
-/*
- * qrmanual.c -- Q,R-axis manual modes (Q_R-AXIS_RCS_AUTOPILOT.agc,
- * Luminary 099 pp.1444-1449): minimum impulse (QRCONTRL, FIREQR, MINQR)
- * and rate command (CHEKSTIK, RHCACTIV, ENTERQR, ENTERUV, QRTIME).
+/**********************************************************************
+ * FILE NAME: qrmanual.c
  *
- * Q,R manual control law (p.1446): WC = A (B + |D|) D, with WC the
- * commanded rate (at 45 deg/s), A the quadratic sensitivity STIKSENS,
- * B = LINRAT the linear/quadratic sensitivity and D the hand-controller
- * deflection in counts. Q and R are coupled through U,V control and must
- * use the same law (direct rate or pseudo-auto).
- */
+ * PURPOSE:
+ *   Q,R-axis manual modes (Q_R-AXIS_RCS_AUTOPILOT.agc, Luminary 099
+ *   pp.1444-1449): minimum impulse (QRCONTRL, FIREQR, MINQR) and rate
+ *   command (CHEKSTIK, RHCACTIV, ENTERQR, ENTERUV, QRTIME).
+ *
+ * AGC SOURCE:
+ *   Luminary099 Q_R-AXIS_RCS_AUTOPILOT.agc pp. 1444-1449
+ *     (QRCONTRL, FIREQR, MINQR, CHEKSTIK, RHCACTIV, ENTERQR, ENTERUV, QRTIME)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables)
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   DAP block     lm_dap_t  I/O  per field      EBANK 6 DAP erasables (lm_dap_state())
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                        Description
+ *   --------------------------  ------------------------------------
+ *   agc_chan_read               READ channel
+ *   agc_flag_test               test a flag bit (flags.h)
+ *   agc_inhint                  INHINT
+ *   agc_lm_dap_zatteror         ZATTEROR: CDUxD = CDUx, STOPRATE (dapif.c)
+ *   agc_relint                  RELINT
+ *   lm_dap_ccs_dim              CCS diminished magnitude (arith.c)
+ *   lm_dap_mp                   MP: A,L product (arith.c)
+ *   lm_dap_mphi                 A after MP (arith.c)
+ *   lm_dap_rot_touv             ROT-TOUV: Q,R to U,V (qrjets.c)
+ *   lm_dap_sat                  OVERSUB / LIMITS (arith.c)
+ *   lm_dap_state                DAP erasables (state.c)
+ *   lm_dap_stillrcs             STILLRCS / ATTSTEER (qraxis.c)
+ *   lm_dap_uvloop               U,V axis loop (qrjets.c)
+ *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
+ *   lm_dap_xtrans               XTRANS (qrjets.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *
+ * NOTES:
+ *   Q,R manual control law (p.1446): WC = A (B + |D|) D, with WC the
+ *   commanded rate (at 45 deg/s), A the quadratic sensitivity STIKSENS,
+ *   B = LINRAT the linear/quadratic sensitivity and D the hand-controller
+ *   deflection in counts. Q and R are coupled through U,V control and must
+ *   use the same law (direct rate or pseudo-auto).
+ **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
@@ -88,7 +123,7 @@ agc_status_t lm_dap_qrminimp(void)
     }
 
     return (lm_dap_uvloop(LM_UV_MINRTN, 1));
-}
+} /* lm_dap_qrminimp */
 
 /**********************************************************************
  * Stick scaling (RHCACTIV, p.1446): commanded rate at 45 deg/s from
@@ -211,7 +246,7 @@ static agc_status_t enteruv(lm_dap_t *d)
     }
 
     return (lm_dap_uvloop(LM_UV_BACKHAND, 1));
-}
+} /* enteruv */
 
 /**********************************************************************
  * RHCACTIV / ENTERQR (pp.1446-1447): commanded Q,R rates from SAVEHAND,
