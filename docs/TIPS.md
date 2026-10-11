@@ -156,3 +156,7 @@ the lead folds them in here. Final consolidation is wave 6 (PLAN.md item 9).
   silent-return dodges. State where assertions belong (boundary inputs,
   loop bounds, scale ranges, overflow consistency, each with recovery) and
   only report the density.
+* **Static analysis is a classifier, not a gate.** Run Frama-C EVA per
+  translation unit with a short timeout and low precision; take the VALID
+  verdicts and let a cheap dataflow pass handle the rest. Whole-program
+  runs ate 11 GB and 40-minute timeouts for marginal extra proof.

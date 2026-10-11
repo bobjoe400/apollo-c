@@ -29,3 +29,5 @@ reported as information only.
 - TODO conversion of fallible guards
 - TODO one-liners
 - TODO make prove, docs
+- TODO step 7: refined collapse protection (label entered from >= 2 places) + inline
+- TODO step 8: trailing returns removed; short-tail early returns -> if/else

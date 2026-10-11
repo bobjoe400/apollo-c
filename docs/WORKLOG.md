@@ -499,3 +499,7 @@
             TAUCHCK 1, NOACY 3. Refined rule: a label protects a helper only
             if entered from >= 2 places in the rope. Added as step 7 of
             status-handling-2.
+2026-10-11  EVA runs were whole-program (3 x 3.8 GB, 40-min timeouts, 11/15 GB
+            used). Lead killed frama-c processes; agent told: EVA is a
+            classifier not a gate -- per-TU, low precision, 120 s/run,
+            <= 20 min total, libclang dataflow for the rest.
