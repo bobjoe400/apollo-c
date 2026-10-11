@@ -15,11 +15,11 @@ from 3f9ede8 (lane files unchanged since) with the lane files overlaid.
 
 ## Progress
 
-State at checkpoint: every touched file compiles and the lane tests pass
-in the scratch tree (SCRATCH/review-nav-integ/tree = 3f9ede8 + lane files
-+ current src/nav/conic; script SCRATCH/review-nav-integ/sync.sh copies
-the lane files over, builds, runs both tests): unit 158 checks 0 fail,
-oracle 439 checks 0 fail.  No file is mid-edit.
+State at checkpoint (2026-10-11, paused by coordinator): HEAD 0917504
+(after format2) builds; lane files are committed and unchanged since;
+unit 158 checks 0 fail, oracle 439 checks 0 fail in the real tree
+(build/tests/nav/integration, build/tests/oracle/nav_integ).  The scratch
+tree is no longer needed.  No file is mid-edit.
 
 | item | status |
 |---|---|
@@ -36,10 +36,12 @@ oracle 439 checks 0 fail.  No file is mid-edit.
 | N4 KEPPREP 1-LSB (nav-conic code) | reported, not fixed (request) |
 | naming: lane-internal digit-suffixed names | DONE: fbr3->advance_conic_half_step, quality2/3->lunar_j22_term/lunar_c31_term, dow1->body_gravity_gradient, difeq0/01/2->nystrom_start/stage/end, entmid1->midtoav_integrate, integrv2->load_permanent_state, agc_integ_integrv1->agc_integ_integrate_permanent, agc_integ_ckmid2->agc_integ_midtoav_check, statint1_grab/tdec1->state_integration_*, stateup_grab_lm->stateup_lm_state |
 | naming: public names (agc_integ_midtoav1/2, agc_integ_intwake0, agc_job_statint1*, AGC_JOB_STATINT1*) | TODO: request only (callers / registry in other lanes) |
-| style debt (860 findings) | TODO: prolog tool SCRATCH/review-nav-integ/pro.py written (draft/apply); draft specs *.spec generated, not yet edited/applied |
+| DMP vs DMPR audit (review_items "ALL remaining lanes") | TODO: next item. Inventory: 23 agc_dp_mul (DMPR rounded), 9 agc_dp_mul_tp, 6 agc_dp_sq, 18 agc_vec_scale (VXSC), 2 agc_vec_dot, 1 agc_vec_sq; check each against the listing (DMP -> agc_dp_mul_trunc / _tp), re-tighten oracle tolerances, report count changed |
+| shift rounding audit (SR/SRR/VSR, overflow wrap vs saturate) | TODO: 11 agc_integ_vshift, 2 agc_integ_dshift, 5 agc_dp_shr_round, 1 agc_dp_shl_round |
+| style debt (856 findings after format2: 349 decl-comment, 106 function-separator, 196 prolog fields, 46 ternary-comment, 19 qualifier-base, 18 long-block-comment, 14 one-declaration, 13 define-comment) | TODO: prolog tool SCRATCH/review-nav-integ/pro.py (draft/apply) and draft *.spec exist but predate format2: regenerate drafts from HEAD before editing/applying; run make format on edited files |
 | rule-5 density orbital_integration.c 1.91 | TODO |
 | nav-integ.md deviation list update (X2 deviation gone) | DONE |
-| make / make test / make check in the real tree | TODO (HEAD broken by other lanes; verify at end) |
+| make / make test / make check in the real tree | TODO at end (HEAD builds now; lane tests pass) |
 
 ## Findings
 
