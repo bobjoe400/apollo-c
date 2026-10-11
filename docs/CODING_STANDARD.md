@@ -96,3 +96,16 @@ Language: C11, no extensions. Build flags (Makefile):
   (nodes carry static/extern; edges carry call-site line:col); `cflow` for
   cross-TU edges; `python3-clang` (libclang) for function extents and AST
   comparisons. Never derive a call graph by reading or grepping.
+
+## Comment placement and wrapping (user direction, 2026-10-11)
+
+* A comment never sits inside an expression: not between `=` and the
+  initializer, not inside an argument list, not between operands. Scale and
+  meaning notes for a statement go on their own line ABOVE the statement
+  (block style, same indentation) or trailing after the `;` when the whole
+  statement fits on one line. `tools/fix_comments.py` enforces this.
+* Continuation lines indent by a fixed 8 spaces; they are never aligned to
+  an opening parenthesis (no staircases from nested calls).
+* A statement that needs more than two continuation lines because of
+  nested calls should be split with named temporaries (review item, not a
+  formatter job).
