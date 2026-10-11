@@ -400,3 +400,11 @@
             R1A as the AGC word pair; core-numeric: SQRT keeping MPAC+2;
             exec: agc_phase_set_prdt. Launching review-nav-conic (#8 moved
             up: it now owns P1/P6 and the -0 modelling).
+2026-10-11  review-imu DONE: build restored (gen_registry re-run); 12 of 13
+            stubs translated (P06, POSTAND, P01/P02/ESTIMS/V78/IMU test, P03
+            in prelaunch_verify.c); only the erasable-memory drift part
+            remains stubbed. 36 DMP sites; F5/F6 fixed; bugs: KALCMANU TM
+            storage, PIPFREE inhibit leak, LASTBIAS PIPUSE1->PIPUSE, NBDONLY.
+            Recurring request now from 4 lanes: core word-level MPAC API
+            (ones'-complement word pairs) -> review-core-numeric must do it.
+            Launching review-dap-lm (#6).
