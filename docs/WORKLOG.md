@@ -718,3 +718,8 @@
             (`make always-ok-report`): 94 functions (77 public, 24 job/task
             entries). User: a lane does the sweep, not the lead -> queued
             always-ok for the next free slot; added to the freeze gate.
+2026-10-12  prolog-consistency DONE and committed (95ddc59): 90 prologs
+            rewritten, 0 body fixes, checker tightened. Side findings
+            routed (LM GET+MGA double unitize -> loose-ends; leadin.c
+            silent skip and returns-extra -> always-ok). Launched
+            always-ok (Opus) alongside loose-ends.

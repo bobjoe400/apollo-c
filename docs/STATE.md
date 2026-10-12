@@ -7,14 +7,12 @@ Updated: 2026-10-12
   DOWNCNTL words, waitlist delay bound, pad keyword for the impulsive burn,
   the 64-jobs limit rationale, prog-align note row). Note:
   docs/modules/loose-ends.md.
-- prolog-consistency (Opus): the 118 `make prolog-report` findings (stale
-  RETURNS/ARGUMENTS/calls/flags in prologs after the rewrite passes), all
-  directories except src/exec, src/csm/entry, src/sim while loose-ends is
-  in them. Note: docs/modules/prolog-consistency.md.
-- QUEUED always-ok (Opus, next free slot): the 94 agc_status_t functions
-  that can only return OK (`make always-ok-report`; 77 public, 24 job/task
-  entries) made void with callers' status plumbing removed. User
-  2026-10-12: a lane does this, not the lead.
+- always-ok (Opus): the 94 always-OK status functions made void with
+  callers' plumbing removed (`make always-ok-report` to 0), the leadin.c
+  silent skip + check_rules pattern, returns-extra in prolog_check.py;
+  everything except loose-ends' directories. Note: docs/modules/always-ok.md.
+- prolog-consistency: DONE (95ddc59); 6 findings left in loose-ends'
+  directories, handed to loose-ends.
 - document: STOPPED (launched too early, user 2026-10-12); resumes from
   docs/modules/document.md Progress AFTER the EVA pass.
 - EVA: STOPPED (same reason). Runs ONLY when every open item is closed and
