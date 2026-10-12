@@ -804,3 +804,9 @@
             is the full-mission baseline for PLAN 10c. nassp-study
             launches in the next free slot (lm-simulator and document
             hold both).
+2026-10-12  User: host toolchain installed (VS 2022 Build Tools 17.14 /
+            MSVC 14.44, MSBuild, CMake, Git; verified via interop).
+            document paused at a checkpoint (a, b, d done: overview,
+            10 flowcharts, xref 3,067 labels) to free the slot; launched
+            nassp-integration (Opus) alongside lm-simulator. Document
+            wave's five code/comment findings filed in review_items.md.
