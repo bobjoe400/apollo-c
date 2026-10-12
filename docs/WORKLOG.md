@@ -579,3 +579,6 @@
             renamed, style 1917 -> 0. Requests routed in review_items.md.
             Launched review-sys-misc (resume, Opus) alongside
             review-prog-align.
+2026-10-11  User: usage limit approaching, pause one lane. review-sys-misc
+            (the newer of the two) told to checkpoint and stop;
+            review-prog-align keeps running. One lane running.

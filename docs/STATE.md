@@ -3,9 +3,9 @@
 Updated: 2026-10-11
 
 ## Running agents (max 2)
-- review-sys-misc (Opus, resume): self_check, interbank, telemetry,
-  extended verbs, uplink, P07 fidelity; collapse-diff check; test hygiene;
-  style debt. Note: docs/modules/review-sys-misc.md.
+- review-sys-misc: PAUSED at a checkpoint (usage limit, user 2026-10-11);
+  resume from the Progress section of docs/modules/review-sys-misc.md
+  when a slot is free.
 - review-prog-align (Opus, resume): align_dot_shl sites, DMP/DMPR audit,
   P51-P53/SXTMARK/AOTMARK/P57 fidelity with oracle cases, collapse-diff
   check, style debt. Note: docs/modules/review-prog-align.md.
