@@ -380,7 +380,8 @@ static void ascent(const char *t)
     a->dv[2]       = oracle_in_dp(t, "E7,1636", 0);
     a->dv[3]       = oracle_in_dp(t, "E7,1640", 0);
     a->ve          = oracle_in_dp(t, "VE", 0);
-    a->tbup        = oracle_in_dp(t, "TBUP", 0);
+    a->tbup.hi     = (agc_sp_t) oracle_in(t, "TBUP", 0);
+    a->tbup.lo     = (agc_sp_t) oracle_in(t, "TBUP", 1);
     a->tto         = oracle_in_dp(t, "TTO", 0);
     g->lm.r        = oracle_in_vec(t, "R");
     g->lm.v        = oracle_in_vec(t, "V");
@@ -390,7 +391,8 @@ static void ascent(const char *t)
     a->zaxis1      = oracle_in_vec(t, "ZAXIS1");
     a->rco         = oracle_in_dp(t, "RCO", 0);
     a->yco         = oracle_in_dp(t, "YCO", 0);
-    a->tgo         = oracle_in_dp(t, "TGO", 0);
+    a->tgo.hi      = (agc_sp_t) oracle_in(t, "TGO", 0);
+    a->tgo.lo      = (agc_sp_t) oracle_in(t, "TGO", 1);
     a->zdotd       = oracle_in_dp(t, "ZDOTD", 0);
     a->ydotd       = oracle_in_dp(t, "YDOTD", 0);
     a->rdotd       = oracle_in_dp(t, "RDOTD", 0);
@@ -402,27 +404,30 @@ static void ascent(const char *t)
     oracle_require_ok(t, "PHASCHNG");
 
     /* ATMAG's DSU 6SEC(18) and MAINENG's DSU TTO leave TBUP and TGO
-     * sign-disagreeing (F9 class); AT (DDV by TBUP), TTOGO (SR 11D of
-     * TGO) and every later DDV by TBUP or TGO see those words, which an
-     * agc_dp_t cannot hold (ascent.c DEVIATION). Run from T2TEST with
-     * the same values in canonical words, the rope gives exactly the C
-     * PRATE..ATY; the tolerances cover the representation only.       */
+     * sign-disagreeing; AT (DDV by TBUP), TTOGO (SR 11D of TGO) and every
+     * later DDV by TBUP or TGO read those words. The C keeps them as
+     * stored (agc_dp_words_t): values and the high words are exact.     */
     const struct
     {
         const char *name; /* erasable name in the case */
         agc_dp_t    got;  /* C value, scale 2^S of the word pair */
         long int    tol;  /* tolerance, LSB */
-    } dps[] = { {"TBUP", a->tbup, 0}, {"AT", a->at, 4}, {"MASS1", g->lm.mass1, 0}, {"E7,1634", a->dv[1], 0}, {"E7,1636", a->dv[2], 0}, {"E7,1640", a->dv[3], 0}, {"/R/MAG", a->r_mag, 0}, {"ZDOT", a->zdot, 0}, {"YDOT", a->ydot, 0}, {"Y", a->y, 0}, {"GEFF", a->geff, 0}, {"DZDOT", a->dzdot, 0}, {"DYDOT", a->dydot, 0}, {"DRDOT", a->drdot, 0}, {"TGO", a->tgo, 0}, {"TTOGO", agc_erase_ttogo(), 1}, {"PRATE", a->prate, 32}, {"YRATE", a->yrate, 32}, {"PCONS", a->pcons, 4}, {"YCONS", a->ycons, 4}, {"ATR", a->atr, 8}, {"ATY", a->aty, 8}, {"ATP", a->atp, 8}, {"YAW", a->yaw, 8}, {"PITCH", a->pitch, 8} };
+    } dps[] = { {"TBUP", agc_dp_from_words(a->tbup), 0}, {"AT", a->at, 0}, {"MASS1", g->lm.mass1, 0}, {"E7,1634", a->dv[1], 0}, {"E7,1636", a->dv[2], 0}, {"E7,1640", a->dv[3], 0}, {"/R/MAG", a->r_mag, 0}, {"ZDOT", a->zdot, 0}, {"YDOT", a->ydot, 0}, {"Y", a->y, 0}, {"GEFF", agc_dp_from_words(a->geff), 0}, {"DZDOT", agc_dp_from_words(a->dzdot), 0}, {"DYDOT", agc_dp_from_words(a->dydot), 0}, {"DRDOT", agc_dp_from_words(a->drdot), 0}, {"TGO", agc_dp_from_words(a->tgo), 0}, {"TTOGO", agc_erase_ttogo(), 0}, {"PRATE", a->prate, 0}, {"YRATE", a->yrate, 0}, {"PCONS", agc_dp_from_words(a->pcons), 0}, {"YCONS", agc_dp_from_words(a->ycons), 0}, {"ATR", a->atr, 0}, {"ATY", a->aty, 0}, {"ATP", a->atp, 0}, {"YAW", a->yaw, 0}, {"PITCH", a->pitch, 0} };
 
     for (size_t k = 0; k < sizeof (dps) / sizeof (dps[0]); k++)
     {
         (void) oracle_cmp(t, dps[k].name, dps[k].got, oracle_out_dp(t, dps[k].name), dps[k].tol);
     }
 
+    /* The stored words, not only their value.                            */
+    (void) oracle_cmp(t, "TBUP hi", a->tbup.hi, oracle_out_sp(t, "TBUP"), 0);
+    (void) oracle_cmp(t, "TGO hi", a->tgo.hi, oracle_out_sp(t, "TGO"), 0);
+    (void) oracle_cmp(t, "PCONS hi", a->pcons.hi, oracle_out_sp(t, "PCONS"), 0);
+    (void) oracle_cmp(t, "YCONS hi", a->ycons.hi, oracle_out_sp(t, "YCONS"), 0);
     oracle_cmp_vec(t, "LAXIS", a->laxis, oracle_out_vec(t, "LAXIS"), 0);
     oracle_cmp_vec(t, "VGVECT", a->vgvect, oracle_out_vec(t, "VGVECT"), 0);
     oracle_cmp_vec(t, "VGBODY", a->vgbody, oracle_out_vec(t, "VGBODY"), 0);
-    oracle_cmp_vec(t, "UNFC/2", agc_lm_ldg()->unfc_2, oracle_out_vec(t, "UNFC/2"), 8);
+    oracle_cmp_vec(t, "UNFC/2", agc_lm_ldg()->unfc_2, oracle_out_vec(t, "UNFC/2"), 0);
     long int flpc = agc_flag_test(AGC_FLAG_FLPC) ? 1 : 0; /* C FLPC  */
     int      w9   = oracle_out_sp(t, "FLAGWRD9");         /* FLPC = bit 12 */
     long int want = ((w9 & 04000) != 0) ? 1 : 0;          /* rope's FLPC */

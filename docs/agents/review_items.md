@@ -18,26 +18,12 @@
 - sys-misc: LM P07 REDO stub (document what the rope lacks, translate the fixed-memory part fully); N08 ALMCADR orphans; RADMODES one word; sysmisc test free of scratch stand-ins.
 
 ## ALL remaining lanes (added 2026-10-11 after review-guid-entry finding E1)
-- **DMP vs DMPR audit.** The original translation guide mapped DMP to the
-  rounded multiply; core-numeric corrected it later (DMP = agc_dp_mul_trunc
-  / TP product, DMPR = agc_dp_mul). Entry had 92 wrong sites and the error
-  had been blamed on yaAGC. For every multiply in your lane, check the AGC
-  listing: DMP -> truncating (keep the TP accumulator where the AGC shifts,
-  square-roots or arc-cosines the product), DMPR -> rounded. Fix and
-  re-tighten your oracle tolerances. Report the count changed.
-- **Shift rounding.** Same check for SR/SRR and VSR (truncate vs round) and
-  for overflow stores: wrap modulo 1 where the AGC does, do not saturate.
+- DONE DMP vs DMPR and shift-rounding audit: the closed lanes in docs/modules/follow-up-done-lanes.md item 3.1 (and their reviews); nav-integ in review-nav-integ.
 
 - sim: nothing calls agc_lm_dap_time6_count / agc_lm_dap_t6_pending, so TIME6 never counts and no T6RUPT ends a jet firing in scenarios (review-dap-lm request); wire TIME6 into the clock driver.
 
 ## Word-level API adoption (review-core-numeric, 2026-10-11)
-Lanes with documented word-split residuals move those sites onto
-agc_dp_words_t / agc_mpac_* (docs/TRANSLATION_GUIDE.md section 1) and
-tighten the oracle tolerance to 0: nav-conic (R1A in GETX/PARAM/LAMBERT,
-COGA, X, KEPC2), imu (DELCOMP 1-cos A; replace word_pair_t), guid-landing
-(TBUP/TGO; replace agc_lm_words_t), guid-entry (A0/V1/LEWD words -> L/D),
-nav-aux (NODI COS, SR1 ASIN), prog-align (word_forms.c), dap-csm / dap-lm
-(their pair types). Lanes already reviewed get this in the follow-up pass.
+- DONE imu, guid-landing (TBUP/TGO), guid-entry (RDOT, HUNTEST1, CONSTD), nav-aux (ARCTAN ASIN, GETERAD, TFF, LSPOS, MOONMX/NEWANGLE), pair types unified: docs/modules/follow-up-done-lanes.md items 3.2, 5.1; nav-conic, prog-align, dap-csm, dap-lm closed in their reviews.
 
 - DONE agc_imu_hw_set_cducmd widened to the SP range + test; docs/modules/follow-up-done-lanes.md item 2.4.
 
@@ -74,11 +60,11 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 
 ## From review-prog-align checkpoint (2026-10-11; note docs/modules/review-prog-align.md)
 - DONE agc_csm_sxtnb / agc_lm_rrnb / agc_lm_rrangles void (and SXTSM, SXTSM marks, GETUM after them); docs/modules/follow-up-done-lanes.md item 2.1.
-- guid-powered: give TRG*NBSM / *NBSM* a word-level form (agc_dp_words_t out) so a component can stay as sign-disagreeing words; clears oracle KNOWN PA-W4 (AVEIT VSR3 rounding of an exact half).
+- DONE *NBSM* word-level form: review-guid-powered R11 (docs/modules/review-guid-powered.md); KNOWN PA-W4 closed.
 
 ## From review-prog-align final (2026-10-11; note docs/modules/review-prog-align.md, findings A1-A15, C1-C10)
 - DONE entry uses agc_csm_earrot1/2 (one EARROT); docs/modules/follow-up-done-lanes.md item 4.2.
-- prog-align residual: AOTMARK's job and button-handling flow was not re-read line by line (arithmetic is oracle-verified); a later pass or the document wave should read it against the listing.
+- DONE prog-align residual: AOTMARK job and button flow read line by line, no discrepancy; docs/modules/follow-up-done-lanes.md item 6.1.
 
 ## From review-sys-misc final (2026-10-12; note docs/modules/review-sys-misc.md, findings S10-S18)
 - DONE S40.6 OPTIND = -0 (AGC_OPTIND_NEG0) + test; docs/modules/follow-up-done-lanes.md item 1.5.
@@ -88,7 +74,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 
 ## From review-guid-powered final (2026-10-12; note docs/modules/review-guid-powered.md, R10-R15)
 - DONE agc_vec_words_t in word.h, DOT/VXM/MXV/VXV/VXSC/VAD/VSL/VSR on stored words; s40_2 sps 0 LSB; radial 10 LSB remain (word-level UNIT not built); docs/modules/follow-up-done-lanes.md item 2.3.
-- prog-align: KNOWN PA-W4 closed (oracle_align 570/0 hard at tolerance 0).
+- DONE prog-align KNOWN PA-W4 closed (oracle_align 570/0 at tolerance 0; review-guid-powered R11).
 
 ## From review-nav-integ final (2026-10-12; note docs/modules/review-nav-integ.md, N8-N12)
 - DONE RP-TO-R / R-TO-RP / MOONMX / NEWANGLE word-level, word-input entry points; latlong_moon exact; docs/modules/follow-up-done-lanes.md item 5.1.

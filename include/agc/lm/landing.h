@@ -168,48 +168,52 @@ typedef struct agc_lm_thr
 } agc_lm_thr_t;
 
 /* ---- ascent / abort guidance erasables (ASCENT_GUIDANCE, P12, P70) ------ */
+/* TGO, TBUP and the DSU/DAD results the ascent equations then multiply
+ * or divide (GEFF, DZDOT, DYDOT, DRDOT, PCONS, YCONS) are kept as the two
+ * words the AGC stores (agc_dp_words_t, signs may disagree), as are the
+ * throttle erasables below.                                            */
 typedef struct agc_lm_asc
 {
-    agc_dp_t  tgo;      /* TGO time to go, 2^17 cs                        */
-    agc_dp_t  tgo1;     /* TGO1 (=VGBODY) TGO for P71 after P70, 2^17 cs */
-    agc_dp_t  rco;      /* RCO injection radius, 2^24 m                   */
-    agc_dp_t  txo;      /* TXO end of vertical rise, 2^28 cs              */
-    agc_dp_t  yco;      /* YCO desired cross range, 2^24 m                */
-    agc_dp_t  rdotd;    /* RDOTD desired radial rate, 2^7 m/cs            */
-    agc_dp_t  ydotd;    /* YDOTD desired cross-range rate, 2^7 m/cs       */
-    agc_dp_t  zdotd;    /* ZDOTD desired downrange rate, 2^7 m/cs         */
-    agc_vec_t qaxis;    /* QAXIS unit normal to CSM orbit, half unit 2^1 */
-    agc_vec_t zaxis1;   /* ZAXIS1 downrange axis, half unit 2^1          */
-    agc_vec_t laxis;    /* LAXIS cross-range axis, 2^1                    */
-    agc_dp_t  y;        /* Y cross range, 2^24 m                          */
-    agc_dp_t  ydot;     /* YDOT 2^7 m/cs                                  */
-    agc_dp_t  zdot;     /* ZDOT 2^7 m/cs                                  */
-    agc_dp_t  rdot;     /* RDOT 2^7 m/cs (AGC: = HDOTDISP; unused here) */
-    agc_dp_t  r_mag;    /* /R/MAG 2^24 m                                  */
-    agc_dp_t  geff;     /* GEFF effective gravity, 2^-10 m/cs^2           */
-    agc_dp_t  dzdot;    /* DZDOT 2^7 m/cs                                 */
-    agc_dp_t  dydot;    /* DYDOT 2^7 m/cs                                 */
-    agc_dp_t  drdot;    /* DRDOT 2^7 m/cs                                 */
-    agc_vec_t vgvect;   /* VGVECT velocity to be gained, 2^7 m/cs         */
-    agc_vec_t vgbody;   /* VGBODY body-frame VG for N85, 2^7 m/cs         */
-    agc_dp_t  ttogo;    /* TTOGO 2^28 cs (negative)                       */
-    agc_dp_t  prate;    /* PRATE B, 2^-8 (derived)                        */
-    agc_dp_t  yrate;    /* YRATE D, 2^-8                                  */
-    agc_dp_t  pcons;    /* PCONS A, 2^9                                   */
-    agc_dp_t  ycons;    /* YCONS C, 2^9                                   */
-    agc_dp_t  atr;      /* ATR radial thrust accel, 2^-9 m/cs^2           */
-    agc_dp_t  aty;      /* ATY cross-range thrust accel, 2^-9 m/cs^2      */
-    agc_dp_t  atp;      /* ATP downrange thrust accel, 2^-9 m/cs^2        */
-    agc_dp_t  at;       /* AT thrust acceleration, 2^-9 m/cs^2            */
-    agc_dp_t  tbup;     /* TBUP burn-up time, 2^17 cs                     */
-    agc_dp_t  ve;       /* VE exhaust velocity, 2^7 m/cs                  */
-    agc_dp_t  tto;      /* TTO tail-off time, 2^17 cs                     */
-    agc_dp_t  dv[4];    /* 1/DV1..1/DV3 (1/DV0 = MASS1), 2^7 cs/m */
-    agc_dp_t  xrange;   /* XRANGE cross range for N76, 2^29 m             */
-    agc_vec_t v1s;      /* V1S velocity at TIG, 2^7 m/cs                  */
-    agc_dp_t  yaw;      /* YAW revolutions, scale 2^0                    */
-    agc_dp_t  pitch;    /* PITCH revolutions, scale 2^0                  */
-    agc_sp_t  engoffdt; /* ENGOFFDT delay to engine cut-off, cs 2^14     */
+    agc_dp_words_t tgo;      /* TGO time to go, 2^17 cs, as stored (DSU words) */
+    agc_dp_words_t tgo1;     /* TGO1 (=VGBODY) TGO for P71 after P70, 2^17 cs, as stored */
+    agc_dp_t       rco;      /* RCO injection radius, 2^24 m                   */
+    agc_dp_t       txo;      /* TXO end of vertical rise, 2^28 cs              */
+    agc_dp_t       yco;      /* YCO desired cross range, 2^24 m                */
+    agc_dp_t       rdotd;    /* RDOTD desired radial rate, 2^7 m/cs            */
+    agc_dp_t       ydotd;    /* YDOTD desired cross-range rate, 2^7 m/cs       */
+    agc_dp_t       zdotd;    /* ZDOTD desired downrange rate, 2^7 m/cs         */
+    agc_vec_t      qaxis;    /* QAXIS unit normal to CSM orbit, half unit 2^1 */
+    agc_vec_t      zaxis1;   /* ZAXIS1 downrange axis, half unit 2^1          */
+    agc_vec_t      laxis;    /* LAXIS cross-range axis, 2^1                    */
+    agc_dp_t       y;        /* Y cross range, 2^24 m                          */
+    agc_dp_t       ydot;     /* YDOT 2^7 m/cs                                  */
+    agc_dp_t       zdot;     /* ZDOT 2^7 m/cs                                  */
+    agc_dp_t       rdot;     /* RDOT 2^7 m/cs (AGC: = HDOTDISP; unused here) */
+    agc_dp_t       r_mag;    /* /R/MAG 2^24 m                                  */
+    agc_dp_words_t geff;     /* GEFF effective gravity, 2^-10 m/cs^2           */
+    agc_dp_words_t dzdot;    /* DZDOT 2^7 m/cs                                 */
+    agc_dp_words_t dydot;    /* DYDOT 2^7 m/cs                                 */
+    agc_dp_words_t drdot;    /* DRDOT 2^7 m/cs                                 */
+    agc_vec_t      vgvect;   /* VGVECT velocity to be gained, 2^7 m/cs         */
+    agc_vec_t      vgbody;   /* VGBODY body-frame VG for N85, 2^7 m/cs         */
+    agc_dp_t       ttogo;    /* TTOGO 2^28 cs (negative)                       */
+    agc_dp_t       prate;    /* PRATE B, 2^-8 (derived)                        */
+    agc_dp_t       yrate;    /* YRATE D, 2^-8                                  */
+    agc_dp_words_t pcons;    /* PCONS A, 2^9                                   */
+    agc_dp_words_t ycons;    /* YCONS C, 2^9                                   */
+    agc_dp_t       atr;      /* ATR radial thrust accel, 2^-9 m/cs^2           */
+    agc_dp_t       aty;      /* ATY cross-range thrust accel, 2^-9 m/cs^2      */
+    agc_dp_t       atp;      /* ATP downrange thrust accel, 2^-9 m/cs^2        */
+    agc_dp_t       at;       /* AT thrust acceleration, 2^-9 m/cs^2            */
+    agc_dp_words_t tbup;     /* TBUP burn-up time, 2^17 cs                     */
+    agc_dp_t       ve;       /* VE exhaust velocity, 2^7 m/cs                  */
+    agc_dp_t       tto;      /* TTO tail-off time, 2^17 cs                     */
+    agc_dp_t       dv[4];    /* 1/DV1..1/DV3 (1/DV0 = MASS1), 2^7 cs/m */
+    agc_dp_t       xrange;   /* XRANGE cross range for N76, 2^29 m             */
+    agc_vec_t      v1s;      /* V1S velocity at TIG, 2^7 m/cs                  */
+    agc_dp_t       yaw;      /* YAW revolutions, scale 2^0                    */
+    agc_dp_t       pitch;    /* PITCH revolutions, scale 2^0                  */
+    agc_sp_t       engoffdt; /* ENGOFFDT delay to engine cut-off, cs 2^14     */
 } agc_lm_asc_t;
 
 /* ---- lane state accessors (state.c) ----------------------------- */

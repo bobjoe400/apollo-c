@@ -69,22 +69,22 @@ int main(void)
     }
 
     agc_state_init(AGC_VEHICLE_CSM);
-    latlong("latlong_earth_fixed", 2);
-    latlong("latlong_earth_ellip", 2);
-    latlong("latlong_earth_south", 2);
+    latlong("latlong_earth_fixed", 0);
+    latlong("latlong_earth_ellip", 0);
+    latlong("latlong_earth_south", 0);
     latlong("latlong_moon_rm", 0);
     latlong("latlong_moon_rls", 0);
-    lalotorv("lalotorv_earth", 4);
-    lalotorv("lalotorv_earth_fixed", 4);
-    lalotorv("lalotorv_moon", 4);
+    lalotorv("lalotorv_earth", 0);
+    lalotorv("lalotorv_earth_fixed", 0);
+    lalotorv("lalotorv_moon", 0);
     rp_r("rptor_earth", true, 0);
     rp_r("rptor_moon", true, 0);
     rp_r("rtorp_earth", false, 0);
     rp_r("rtorp_moon", false, 0);
-    tff("tff_earth_entry", 12);
-    tff("tff_earth_high", 12);
-    tff("tff_earth_hyp", 12);
-    tff("tff_moon", 12);
+    tff("tff_earth_entry", 0);
+    tff("tff_earth_high", 0);
+    tff("tff_earth_hyp", 0);
+    tff("tff_moon", 0);
     lspos_cm("lspos_cm_t0", 0);
     lspos_cm("lspos_cm_t1", 0);
     lspos_cm("lspos_cm_t2", 0);
@@ -101,9 +101,9 @@ int main(void)
     }
 
     agc_state_init(AGC_VEHICLE_LM);
-    lspos_lm("lspos_lm_t0", 2);
-    lspos_lm("lspos_lm_t1", 2);
-    lspos_lm("lspos_lm_t2", 2);
+    lspos_lm("lspos_lm_t0", 0);
+    lspos_lm("lspos_lm_t1", 0);
+    lspos_lm("lspos_lm_t2", 0);
 
     return (oracle_finish("oracle_nav_aux"));
 } /* main */
@@ -341,7 +341,7 @@ static void tff(const char *base, long int tol)
     (void) oracle_cmp(tc, "TFFVSQ", f.tffvsq, oracle_out_dp(tc, "VAC1+20"), tol);
     (void) oracle_cmp(tc, "TFF1/ALF", f.tff1_alf, oracle_out_dp(tc, "VAC1+22"), tol);
     (void) oracle_cmp(tc, "TFFRTALF", f.tffrtalf, oracle_out_dp(tc, "VAC1+24"), tol);
-    (void) oracle_cmp(tc, "TFFALFA", f.tffalfa, oracle_out_dp(tc, "VAC1+26"), tol);
+    (void) oracle_cmp(tc, "TFFALFA", agc_dp_from_words(f.tffalfa), oracle_out_dp(tc, "VAC1+26"), tol);
     (void) oracle_cmp(tc, "TFFNP", f.tffnp, oracle_out_dp(tc, "VAC1+28"), tol);
     (void) oracle_cmp(tc, "TFF/RTMU", f.rtmu, oracle_out_dp(tc, "VAC1+30"), 0);
     (void) oracle_cmp(tc, "NRMAG", f.nrmag, oracle_out_dp(tc, "VAC1+32"), tol);
@@ -358,7 +358,7 @@ static void tff(const char *base, long int tol)
     g = f;
     (void) agc_tff_calctff(&ip, &g, oracle_in_dp(tt, "MPAC", 0), &tffv);
     oracle_require_ok(tt, "POODOO");
-    (void) oracle_cmp(tt, "TFF", tffv, oracle_out_dp(tt, "MPAC"), 4);
+    (void) oracle_cmp(tt, "TFF", tffv, oracle_out_dp(tt, "MPAC"), tol);
     (void) oracle_cmp(tt, "TFFDELQ", g.tffdelq, oracle_out_dp(tt, "VAC1+10"), tol);
     (void) oracle_cmp(tt, "TFFQ1", g.tffq1, oracle_out_dp(tt, "VAC1+14"), tol);
     (void) oracle_cmp(tt, "NRTERM", g.nrterm, oracle_out_dp(tt, "VAC1+16"), tol);
@@ -372,7 +372,7 @@ static void tff(const char *base, long int tol)
 
     if (x_out != oracle_in_dp(tt, "VAC1", 34))
     {
-        (void) oracle_cmp(tt, "TFFX", g.tffx, x_out, 32);
+        (void) oracle_cmp(tt, "TFFX", g.tffx, x_out, tol);
     }
 
     if (m_out != oracle_in_dp(tt, "VAC1", 36))

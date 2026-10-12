@@ -75,16 +75,16 @@ EXIT / TC POODOO); stop POODOO.
 
 | case | entry, inputs -> outputs | tolerance (observed max) |
 |---|---|---|
-| latlong_earth_fixed/_ellip/_south | LAT-LONG 13,2370; ALPHAV, MPAC time, ERADFLAG -> LAT LONG ALT ERADM | 2 (1) |
-| latlong_moon_rm/_rls | LUNAFLAG, ERADFLAG on (504RM) / off (abs RLS) | 256 (LAT 23, LONG 202): R-TO-RP moon at the 2^29 input scale has ~19 significant bits, UNIT/ARCTAN amplify its 2-LSB difference (F2) |
-| lalotorv_earth/_fixed/_moon | LALOTORV 13,2441; LAT LONG ALT time -> ALPHAV ERADM | 4 (2) |
+| latlong_earth_fixed/_ellip/_south | LAT-LONG 13,2370; ALPHAV, MPAC time, ERADFLAG -> LAT LONG ALT ERADM | 0 (ARCTAN SR1 ASIN on the MPAC words, follow-up-done-lanes) |
+| latlong_moon_rm/_rls | LUNAFLAG, ERADFLAG on (504RM) / off (abs RLS) | 0 (R-TO-RP / MOONMX / NEWANGLE on the push-down words, follow-up-done-lanes; was 256, F2) |
+| lalotorv_earth/_fixed/_moon | LALOTORV 13,2441; LAT LONG ALT time -> ALPHAV ERADM | 0 (GETERAD on the MPAC words) |
 | rptor_earth/_moon, rtorp_earth/_moon | RP-TO-R 26,3344 / R-TO-RP 26,3371; push list 0D vector, 6D time, MPAC body -> MPAC vector | earth 0, moon 4 (2) |
-| tff_*_conic | TFFCONIC 27,2757; MPAC 1/sqrt(mu), RONE VONE -> push list 12D-32D, X1 X2, VONE' | 16 (TFF1/ALF 11, TFFRTALF 3); X1/X2 and TFF/RTMU exact |
-| tff_*_rpra | TFFRP/RA 27,3026 on the AGC's TFFCONIC push list -> RPER RAPO | 16 (9) |
-| tff_*_calc | CALCTFF 27,3067, MPAC = RTERM -> MPAC (cs 2^28), TFFDELQ TFFQ1 NRTERM RTERM TFFX TFFTEM | TFF 4 (1), TFFX 256 (144), others 16 (9); TFFX/TFFTEM compared only when that path writes them |
+| tff_*_conic | TFFCONIC 27,2757; MPAC 1/sqrt(mu), RONE VONE -> push list 12D-32D, X1 X2, VONE' | 0 (TFFCONIC on the MPAC words, F3 closed) |
+| tff_*_rpra | TFFRP/RA 27,3026 on the AGC's TFFCONIC push list -> RPER RAPO | 0 |
+| tff_*_calc | CALCTFF 27,3067, MPAC = RTERM -> MPAC (cs 2^28), TFFDELQ TFFQ1 NRTERM RTERM TFFX TFFTEM | 0 (CALCTFF / TFFXTEST on the MPAC words); TFFX/TFFTEM compared only when that path writes them |
 | lspos_cm_t0/t1/t2, lunvel_cm | LSPOS 26,2110 / LUNVEL 26,2120; MPAC time, TIMEMO VECOEM RESO VESO OMEGAES -> MPAC moon, 2D sun | bit-exact |
 | incorp2_6d_earth/_9d_earth/_6d_moon | INCORP2 36,3466 (stop INTWAKE); ZI OMEGA GAMMA NORMGAM W DELTAX X789, perm CSM state, VEHUPFLG DMENFLG CMOONFLG -> W, TDELTAV TNUV RCV VCV X789 | bit-exact |
-| lspos_lm_t0/t1/t2 (LM) | LSPOS 15,3664; MPAC time, TEPHEM -> VMOON VSUN | 8 (5) |
+| lspos_lm_t0/t1/t2 (LM) | LSPOS 15,3664; MPAC time, TEPHEM -> VMOON VSUN | 0 (GTMP/STMP words into SIN, COS, MXV) |
 
 TFFRP/RA and CALCTFF read the push list TFFCONIC leaves; the generator
 runs TFFCONIC in the probe first and pokes that push list (42 words) and
@@ -175,10 +175,11 @@ CPU. The C test carries its own agc_entry_state() from pass to pass.
 Compared each pass: D V VSQUARE LEQ RDOT THETAH LATANG ROLLC L/D L/D1
 K2ROLL GOTOADDR A1 VL GAMMAL LEWD DIFF Q7 DTEAROT L/DCALC Q2 KLAT LAD LOD
 UNI RT RTINIT and the flags .05GSW INRLSW HIND NOSWITCH EGSW RELVELSW
-GONEPAST GONEBY. Tolerances: 4 LSB in general (observed <= 3); D 256 (156;
-the INITROLL and KEP2 passes hit yaAGC's DV bug, dvcheck.sh); ROLLC 16
-(6); L/D, L/D1 320 (256 in entry_pass_next, from the HUNTEST1 DDV chain);
-VL 64 (38); RT, THETAH 8 (3); body attitude 8 (7). The former ROLLC
+GONEPAST GONEBY. Tolerances: 0 in general (RDOT DOT SL1, HUNTEST1 and
+CONSTD on the MPAC words, follow-up-done-lanes); D 160 (156; the INITROLL
+and KEP2 passes hit yaAGC's DV bug, dvcheck.sh); ROLLC 6; L/D 9, L/D1 8
+(DOWNCNTL: DREF words depend on D as stored); VL 0; THETAH 3; RT 8;
+body attitude 8 (7). The former ROLLC
 2159 / RT 99 / THETAH 32 were C rounding (DMPR for DMP), fixed by
 review-guid-entry (finding E1).
 
@@ -314,9 +315,9 @@ oracle_cmp_known calls for that id turn back into oracle_cmp.
 | id | where (C) | AGC label | values | status |
 |---|---|---|---|---|
 | F1 | yaAGC (tools/oracle) | DV (SpToDecent, -0 minor word) | precision integrations: velocities up to 5889 LSB over 5 steps; with the patched emulator (gen/dvcheck.sh) <= 1280, residual in the final partial step | oracle defect, not C; tolerances in nav_integ / targeting / entry |
-| F2 | src/nav (R-TO-RP moon, 2^29 scale) | MOONMX, LAT-LONG | MOONMX <= 2 LSB -> LAT 23, LONG 202 LSB | minor, within tolerance |
-| F3 | src/nav/aux TFF | TFFCONIC TFFRP/RA CALCTFF | TFF1/ALF 11, TFFX 144 LSB | minor |
-| F4 | src/nav LSPOS (LM) | LSPOS | <= 5 LSB | minor |
+| F2 | src/nav (R-TO-RP moon, 2^29 scale) | MOONMX, LAT-LONG | MOONMX <= 2 LSB -> LAT 23, LONG 202 LSB | fixed (follow-up-done-lanes: push-down words), 0 |
+| F3 | src/nav/aux TFF | TFFCONIC TFFRP/RA CALCTFF | TFF1/ALF 11, TFFX 144 LSB | fixed (follow-up-done-lanes: MPAC words, TFFALFA kept as words), 0 |
+| F4 | src/nav LSPOS (LM) | LSPOS | <= 5 LSB | fixed (follow-up-done-lanes: GTMP/STMP words), 0 |
 | F5 | src/imu | CDUTODCM DELCOMP DCMTOCDU (kalc_small) | <= 5 LSB; AM 323 via ARCCOS | partly fixed (review-imu: DMP truncation; AM 5); residual <= 4 LSB is the ones'-complement word-split class (F9): BDSU leaves 1-cos A = (00001, 40057), DMPSUB truncates by words |
 | F6 | src/imu/compensation.c (IRIGCOMP) | IRIGCOMP / GCOMP | GCOMP kept as a sign-disagreeing pair (49, -14827) -> GCOMPSW 45 vs 47 (same sign) | fixed (review-imu): GCOMP/DELV kept as word pairs; exact |
 | F7 | src/guidance/servicer_common.c:47-49 | CALCGRAV (J2REQSQ) | J20_CM = 4357942 and J2_CM = 435794 are 1/4 of the assembled Comanche words (2DEC* ... B1*: 17431770, 1743177) -> CM GOBL1/2 4x too small, GDT1/2, VN1 up to 208 LSB | bug; 27 KNOWN in guidance.c |

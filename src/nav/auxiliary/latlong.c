@@ -38,9 +38,10 @@
  *   1960 ellipsoid).
  *
  * NOTES:
- *   ARCTAN's SR1 ASIN takes a stale MPAC+2 into ARCSIN's SQRTSUB; the C
- *   ASIN takes a DP, so earth LAT can differ by 1 LSB (see
- *   docs/modules/review-nav-aux.md finding 5).
+ *   ARCTAN's SR1 ASIN takes the shifted-out bit in MPAC+2 into ARCSIN's
+ *   SQRTSUB, and GETERAD's BDSU leaves words that may disagree in sign:
+ *   both run on the MPAC words (interp_words.h), bit-exact
+ *   (review-nav-aux finding 5).
  *
  * ALGORITHM:
  *   LAT-LONG: RP = R-TO-RP(R), unit RP; LAT = atan(z / (GAMMA |xy|)),
@@ -49,6 +50,7 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/interp_words.h"
 #include "agc/nav/auxiliary.h"
 #include "internal.h"
 
@@ -140,14 +142,19 @@ agc_dp_t agc_latlong_setgamma(bool lunar)
  **********************************************************************/
 agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
 {
-    /* DSQ leaves the TP square in MPAC; SL1 shifts all three words and
-     * BDSU then uses the top two (truncation after the shift).            */
-    agc_dp_t sin2 = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_sq_tp(half_sin_lat), 1)); /* sin^2/2, 2^0 */
-    agc_dp_t cos2 = agc_dp_sub(ip, AGC_DP_HALF, sin2);                             /* BDSU, 2^0  */
-    agc_dp_t den  = agc_dp_sub(ip, AGC_DP_HALF, agc_dp_mul(ip, cos2, EE));         /* scale 2^0 */
-    agc_dp_t q    = agc_dp_div(ip, B2XSC, den);                                    /* BDDV, 2^51 m^2 */
+    /* On the MPAC words: DSQ leaves the TP square, SL1 shifts all three
+     * words, the BDSUs leave words that may disagree in sign and DMPR,
+     * BDDV and SQRT read them as stored.                                  */
+    const agc_dp_words_t half = agc_dp_to_words(AGC_DP_HALF);                                /* DP1/2 */
+    agc_tp_words_t       m    = agc_mpac_dsq(agc_mpac_dload(agc_dp_to_words(half_sin_lat))); /* DSQ: sin^2/4, 2^2 */
 
-    return (agc_dp_shr_round(agc_dp_sqrt(q), 4)); /* SQRT, SR4R     */
+    m = agc_mpac_bdsu(ip, agc_mpac_shift(ip, m, 1), half); /* SL1 BDSU DP1/2: cos^2/2, 2^0 */
+    m = agc_mpac_dmpr(ip, m, agc_dp_to_words(EE));         /* DMPR EE           */
+    m = agc_mpac_bdsu(ip, m, half);                        /* BDSU DP1/2, 2^0   */
+    m = agc_mpac_bddv(ip, m, agc_dp_to_words(B2XSC));      /* BDDV B2XSC, 2^51 m^2 */
+    m = agc_mpac_shift_round(ip, agc_mpac_sqrt(m), -4);    /* SQRT SR4R, 2^29 m */
+
+    return (agc_dp_from_words(agc_mpac_store(m)));
 }
 
 /**********************************************************************
@@ -217,14 +224,22 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
         return (0); /* ARCTANXX: 0/0  */
     }
 
-    agc_dp_t q = agc_dp_div(ip, sinth, agc_tp_sqrt(r2)); /* sin, 2^0  */
+    /* SQRT BDDV SINTH: the quotient leaves MPAC+2; SR1 shifts the low bit
+     * of MPAC+1 into MPAC+2 and ASIN (ACOSST2: DCS, AD HALF, SQRTSUB)
+     * takes that word into its square root, so the steps run on the
+     * MPAC words.                                                        */
+    agc_tp_words_t m = agc_mpac_dload(agc_dp_to_words(agc_tp_sqrt(r2))); /* SQRT, 2^1 */
+
+    m = agc_mpac_bddv(ip, m, agc_dp_to_words(sinth)); /* BDDV SINTH: sin, 2^0 */
 
     if (agc_interp_test_ovf(ip))
     {
         return (agc_dp_sign(AGC_DP_QUARTER, sinth)); /* ATAN=90        */
     }
 
-    agc_dp_t theta = agc_dp_asin(ip, agc_dp_shr(q, 1)); /* SR1 ASIN, 2^0 rev */
+    m = agc_mpac_asin(ip, agc_mpac_shift(ip, m, -1)); /* SR1 ASIN, 2^0 rev */
+
+    agc_dp_t theta = agc_dp_from_words(agc_mpac_store(m)); /* STORE THETA, 2^0 rev */
 
     if (costh >= 0)
     {

@@ -35,6 +35,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
@@ -395,9 +396,9 @@ agc_status_t agc_lm_job_aps_abort_commanded(void)
  **********************************************************************/
 void agc_lm_tgocomp(agc_interp_t *ip)
 {
-    agc_dp_t t = agc_dp_sub(ip, agc_rtb_loadtime(), agc_erase_tig()); /* TIME - TIG, 2^28 cs */
+    agc_tp_words_t m = agc_mpac_dsu(ip, agc_mpac_dload(agc_dp_to_words(agc_rtb_loadtime())), agc_dp_to_words(agc_erase_tig())); /* TIME - TIG, 2^28 cs */
 
-    agc_lm_asc()->tgo = agc_dp_shl(ip, t, 11);
+    agc_lm_asc()->tgo = agc_mpac_store(agc_mpac_shift(ip, m, 11)); /* SL 11D, as stored */
 }
 
 /**********************************************************************
@@ -420,14 +421,15 @@ void agc_lm_throtup(void)
  **********************************************************************/
 static void ab_bothpoly(agc_interp_t *ip, bool aps)
 {
-    agc_lm_asc_t       *a = agc_lm_asc();                           /* ascent erasables */
-    const agc_lm_pad_t *p = agc_lm_pad();                           /* pad loads */
-    int                 b = aps ? 4 : 0;                            /* AXC,1 8D / 0D */
-    agc_dp_t            z = agc_dp_mul_trunc(p->abtcof[b], a->tgo); /* ZDOTD partial sum, 2^7 m/cs */
+    agc_lm_asc_t       *a = agc_lm_asc();                                                        /* ascent erasables */
+    const agc_lm_pad_t *p = agc_lm_pad();                                                        /* pad loads */
+    int                 b = aps ? 4 : 0;                                                         /* AXC,1 8D / 0D */
+    agc_tp_words_t      z = agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(p->abtcof[b])), a->tgo); /* ZDOTD partial sum, 2^7 m/cs */
 
-    z        = agc_dp_mul_trunc(agc_dp_add(ip, z, p->abtcof[b + 1]), a->tgo);
-    z        = agc_dp_mul_trunc(agc_dp_add(ip, z, p->abtcof[b + 2]), a->tgo);
-    a->zdotd = agc_dp_add(ip, z, p->abtcof[b + 3]);
+    /* DAD* DMP TGO on the MPAC words (TGO as stored).                     */
+    z        = agc_mpac_dmp(agc_mpac_dad(ip, z, agc_dp_to_words(p->abtcof[b + 1])), a->tgo);
+    z        = agc_mpac_dmp(agc_mpac_dad(ip, z, agc_dp_to_words(p->abtcof[b + 2])), a->tgo);
+    a->zdotd = agc_dp_from_words(agc_mpac_store(agc_mpac_dad(ip, z, agc_dp_to_words(p->abtcof[b + 3]))));
 
     if (agc_dp_sub(ip, a->zdotd, p->vmin) < 0)
     {
@@ -598,7 +600,7 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
 
         if (agc_flag_test(AGC_FLAG_FLAP))
         {
-            a->tgo1                 = agc_dp_shl(&ip, a->tgo, 1); /* OLDTIME      */
+            a->tgo1                 = agc_mpac_store(agc_mpac_shift(&ip, agc_mpac_dload(a->tgo), 1)); /* OLDTIME: DLOAD TGO SL1 */
             agc_lm_powered_ascent_init(&ip);
             const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_ABORT_OLDTIME, AGC_TASK_NONE, 0, false, 0U};
 
@@ -634,7 +636,7 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
         }
 
         agc_lm_tgocomp(&ip);
-        a->tbup     = agc_dp_div(&ip, mass, agc_dp_shl(&ip, AB_MDOTDPS, 4));
+        a->tbup     = agc_dp_to_words(agc_dp_div(&ip, mass, agc_dp_shl(&ip, AB_MDOTDPS, 4)));
         agc_dp_t dv = agc_dp_shr(agc_dp_div(&ip, mass, AB_K1DV), 1); /* 1/DV1 = MASS / K(1/DV), SR1, 2^8 */
 
         a->dv[1] = dv;
@@ -644,7 +646,7 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
         a->tto   = agc_dp_shl(&ip, agc_dp_neg(AB_DTDECAY), 11);
         a->ve    = agc_dp_shr(agc_dp_from_sp((agc_sp_t) -AB_DPSVEX), 2);
 
-        if (!AGC_ASSERT(dv > 0 && a->tbup > 0)) /* positive mass terms */
+        if (!AGC_ASSERT(dv > 0 && agc_dp_from_words(a->tbup) > 0)) /* positive mass terms */
         {
             return (AGC_STATUS_BAD_ARG);
         }

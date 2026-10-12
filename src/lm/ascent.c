@@ -15,7 +15,11 @@
  *
  *   Scales: R 2^24 m, V 2^7 m/cs, TGO TBUP TTO 2^17 cs, accelerations
  *   2^-9 m/cs^2 unless stated; the push-down list holds -L (0D), D12 (2D),
- *   D21 (4D) and E (6D) in the AGC and C locals here.
+ *   D21 (4D) and E (6D) in the AGC and C locals here.  ATMAG, MAINENG,
+ *   T2TEST .. AIMER run on the MPAC words (interp_words.h): DSU and DAD
+ *   leave TBUP, TGO, GEFF, the DZDOT..DRDOT and the steering constants
+ *   with words that may disagree in sign, and the DDVs, DMPs, VXSCs and
+ *   SR 11D that follow read them as stored.
  *
  * AGC SOURCE:
  *   Luminary099 P12.agc, pp. 838-842; ASCENT_GUIDANCE.agc, pp. 843-856
@@ -38,6 +42,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
@@ -166,7 +171,7 @@ void agc_lm_powered_ascent_init(agc_interp_t *ip)
     a->dv[2] = AS_1DVA;
     a->dv[1] = AS_1DVA;
     a->at    = AS_ATA;
-    a->tbup  = AS_TBUPA;
+    a->tbup  = agc_dp_to_words(AS_TBUPA);
     a->tto   = agc_dp_shl(ip, agc_dp_neg(AS_ATDECAY), 11);
     a->ve    = agc_dp_shr(agc_dp_from_sp((agc_sp_t) -AS_APSVEX), 2);
 
@@ -224,51 +229,59 @@ agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
 /**********************************************************************
  * RATES .. PROK (pp. 846-848): PRATE (B) and YRATE (D) from the radius
  * and cross-range errors at TGO; B > 0 is not permitted and B/TBUP is
- * limited to PRLIMIT.
+ * limited to PRLIMIT. On the MPAC words: TGO, DRDOT, DYDOT and the
+ * push-list D12, D21, E, -DR, -DY are kept as the AGC stores them.
  *
  * ARGUMENTS:
  *   ip   agc_interp_t *  I/O  interpreter state (OVFIND)
- *   d12  agc_dp_t        I    D12 = TBUP + TGO/L (PDL 2D), 2^17 cs
+ *   d12  agc_dp_words_t  I    D12 = TBUP + TGO/L (PDL 2D), 2^17 cs
  **********************************************************************/
-static void as_rates(agc_interp_t *ip, agc_dp_t d12)
+static void as_rates(agc_interp_t *ip, agc_dp_words_t d12)
 {
     agc_lm_asc_t *a = agc_lm_asc();     /* ascent erasables */
     agc_guid_t   *g = agc_guid_state(); /* guidance state   */
 
-    agc_dp_t d21 = agc_dp_sub(ip, a->tgo, d12);                                       /* PDL 4D, 2^17 cs  */
-    agc_dp_t e   = agc_dp_shl(ip, agc_dp_sub(ip, a->tgo, agc_dp_shl(ip, d21, 1)), 3); /* E = TGO - 2 D21, SL3 (PDL 6D), 2^14 cs */
-    agc_dp_t mdr = agc_dp_mul_trunc(a->tgo, g->lm.hdotdisp);                          /* -DR = R + RDOT TGO - RCO, 2^24 m */
+    /* DLOAD TGO DSU 02D PUSH SL1 BDSU TGO SL3: D21 (PDL 4D), E (PDL 6D).  */
+    agc_tp_words_t       m   = agc_mpac_dsu(ip, agc_mpac_dload(a->tgo), d12);                                              /* D21, 2^17 cs */
+    const agc_dp_words_t d21 = agc_mpac_store(m);                                                                          /* PDL 4D */
+    const agc_dp_words_t e   = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_bdsu(ip, agc_mpac_shift(ip, m, 1), a->tgo), 3)); /* E = TGO - 2 D21, 2^14 cs */
 
-    mdr = agc_dp_sub(ip, agc_dp_add(ip, mdr, a->r_mag), a->rco);
+    /* DLOAD TGO DMP RDOT DAD /R/MAG DSU RCO: -DR (PDL 8D), 2^24 m.        */
+    m                        = agc_mpac_dmp(agc_mpac_dload(a->tgo), agc_dp_to_words(g->lm.hdotdisp));
+    m                        = agc_mpac_dsu(ip, agc_mpac_dad(ip, m, agc_dp_to_words(a->r_mag)), agc_dp_to_words(a->rco));
+    const agc_dp_words_t mdr = agc_mpac_store(m); /* -DR, PDL 8D, 2^24 m */
 
-    /* DMP, DAD, SL2: DAD leaves the DMP's MPAC+2, which SL2 takes in. */
-    agc_tp_t tb = agc_tp_add(ip, agc_dp_mul_tp(a->drdot, d21), agc_tp_from_dp(mdr)); /* 2^24 m */
-    agc_dp_t b  = agc_tp_to_dp(agc_tp_shift(ip, tb, 2));                             /* D21 DRDOT - DR, SL2, 2^22 m */
+    /* DLOAD DRDOT DMP 04D DAD SL2 DDV 06D DDV TGO: B.                     */
+    m = agc_mpac_shift(ip, agc_mpac_dad(ip, agc_mpac_dmp(agc_mpac_dload(a->drdot), d21), mdr), 2); /* D21 DRDOT - DR, 2^22 m */
+    m = agc_mpac_ddv(ip, agc_mpac_ddv(ip, m, e), a->tgo);                                          /* B, 2^-8 */
 
-    a->prate = agc_dp_div(ip, agc_dp_div(ip, b, e), a->tgo);
+    a->prate = agc_dp_from_words(agc_mpac_store(m));
 
     if (a->prate >= 0)
     {
         a->prate = 0; /* B > 0 not allowed */
     }
-    else if (agc_dp_sub(ip, agc_dp_div(ip, agc_dp_shr(a->prate, 4), a->tbup), AS_PRLIMIT) < 0)
-    { /* PRLIMIT TBUP, SL4 */
-        a->prate = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(AS_PRLIMIT, a->tbup), 4));
+    else if (agc_tp_from_words(agc_mpac_dsu(ip, agc_mpac_ddv(ip, agc_mpac_shift(ip, m, -4), a->tbup), agc_dp_to_words(AS_PRLIMIT))) < 0)
+    { /* CHKBMAG: SR4 DDV TBUP DSU PRLIMIT; DLOAD PRLIMIT DMP TBUP SL4  */
+        a->prate = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(AS_PRLIMIT)), a->tbup), 4)));
     }
 
-    agc_dp_t mdy = agc_dp_add(ip, agc_dp_mul_trunc(a->tgo, a->ydot), a->y); /* -DY = Y + YDOT TGO - YCO, 2^24 m */
+    /* PROK: DLOAD TGO DMP YDOT DAD Y DSU YCO: -DY (PDL 8D), 2^24 m.       */
+    m                        = agc_mpac_dmp(agc_mpac_dload(a->tgo), agc_dp_to_words(a->ydot));
+    m                        = agc_mpac_dsu(ip, agc_mpac_dad(ip, m, agc_dp_to_words(a->y)), agc_dp_to_words(a->yco));
+    const agc_dp_words_t mdy = agc_mpac_store(m); /* -DY, PDL 8D, 2^24 m */
 
-    mdy         = agc_dp_sub(ip, mdy, a->yco);
-    agc_tp_t td = agc_tp_add(ip, agc_dp_mul_tp(a->dydot, d21), agc_tp_from_dp(mdy)); /* 2^24 m */
-    agc_dp_t d  = agc_tp_to_dp(agc_tp_shift(ip, td, 2));                             /* D21 DYDOT - DY, SL2, 2^22 m */
-
-    a->yrate = agc_dp_div(ip, agc_dp_div(ip, d, e), a->tgo);
+    /* DLOAD DYDOT DMP 04D DAD SL2 DDV DDV TGO: D.                         */
+    m        = agc_mpac_shift(ip, agc_mpac_dad(ip, agc_mpac_dmp(agc_mpac_dload(a->dydot), d21), mdy), 2); /* D21 DYDOT - DY, 2^22 m */
+    a->yrate = agc_dp_from_words(agc_mpac_store(agc_mpac_ddv(ip, agc_mpac_ddv(ip, m, e), a->tgo)));
 } /* as_rates */
 
 /**********************************************************************
  * T2TEST .. CONST (pp. 846-848): with more than 2 s to go, the steering
  * constants A (PCONS) and C (YCONS); B and D are updated only until
- * TGO reaches T3 (FLPC).
+ * TGO reaches T3 (FLPC). TBUP, TGO, D12 and the constants are the
+ * words the AGC's DSU and BDSU leave (signs may disagree), which the
+ * DDVs and DMPs then read.
  *
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
@@ -277,17 +290,20 @@ static void as_t2test(agc_interp_t *ip)
 {
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
-    if (agc_dp_sub(ip, a->tgo, AS_T2A) < 0)
+    if (agc_tp_from_words(agc_mpac_dsu(ip, agc_mpac_dload(a->tgo), agc_dp_to_words(AS_T2A))) < 0)
     {
         return; /* CMPONENT     */
     }
 
-    agc_dp_t x       = agc_dp_div(ip, agc_dp_sub(ip, a->tbup, a->tgo), a->tbup); /* 1 - TGO/TBUP, scale 2^0 */
-    agc_dp_t negl    = agc_dp_shl(ip, agc_lm_logsub(ip, x), 5);                  /* -L in PDL(0), scale 2^0 */
-    agc_dp_t d12     = agc_dp_sub(ip, a->tbup, agc_dp_div(ip, a->tgo, negl));    /* D12 = TBUP + TGO/L in PDL(2), 2^17 cs */
-    bool     norates = agc_flag_test(AGC_FLAG_FLPC);                             /* FLPC: no position control (B, D frozen) */
+    /* DLOAD TBUP DSU TGO DDV TBUP CALL LOGSUB SL 5 PUSH: -L (PDL 0).      */
+    agc_dp_t             x    = agc_dp_from_words(agc_mpac_store(agc_mpac_ddv(ip, agc_mpac_dsu(ip, agc_mpac_dload(a->tbup), a->tgo), a->tbup))); /* 1 - TGO/TBUP, 2^0 */
+    const agc_dp_words_t negl = agc_dp_to_words(agc_dp_shl(ip, agc_lm_logsub(ip, x), 5));                                                        /* -L, scale 2^0 */
 
-    if (!norates && agc_dp_sub(ip, a->tgo, AS_T3) < 0)
+    /* BDDV TGO BDSU TBUP PUSH: D12 = TBUP + TGO/L (PDL 2), 2^17 cs.       */
+    const agc_dp_words_t d12     = agc_mpac_store(agc_mpac_bdsu(ip, agc_mpac_bddv(ip, agc_mpac_dload(negl), a->tgo), a->tbup)); /* D12, PDL 2, 2^17 cs */
+    bool                 norates = agc_flag_test(AGC_FLAG_FLPC);                                                                /* FLPC: no position control (B, D frozen) */
+
+    if (!norates && (agc_tp_from_words(agc_mpac_dsu(ip, agc_mpac_dload(a->tgo), agc_dp_to_words(AS_T3))) < 0))
     {
         agc_flag_set(AGC_FLAG_FLPC);
         norates = true;
@@ -303,54 +319,70 @@ static void as_t2test(agc_interp_t *ip)
         as_rates(ip, d12);
     }
 
-    agc_dp_t bd = agc_dp_mul_trunc(a->prate, d12); /* CONST: B D12, scale 2^-9 */
+    /* CONST: DLOAD PRATE DMP 02D PDDL DDV DRDOT 00D SR2 DSU STADR: A.     */
+    agc_dp_words_t bd = agc_mpac_store(agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(a->prate)), d12)); /* B D12, scale 2^-9 */
 
-    a->pcons    = agc_dp_sub(ip, agc_dp_shr(agc_dp_div(ip, a->drdot, negl), 2), bd);
-    agc_dp_t dd = agc_dp_mul_trunc(a->yrate, d12); /* D D12, scale 2^-9 */
+    a->pcons = agc_mpac_store(agc_mpac_dsu(ip, agc_mpac_shift(ip, agc_mpac_ddv(ip, agc_mpac_dload(a->drdot), negl), -2), bd));
 
-    a->ycons = agc_dp_sub(ip, agc_dp_shr(agc_dp_div(ip, a->dydot, negl), 2), dd);
+    /* DLOAD YRATE DMP 02D PDDL (-L) BDDV DYDOT SR2 DSU 00D: C.             */
+    bd       = agc_mpac_store(agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(a->yrate)), d12)); /* D D12, scale 2^-9 */
+    a->ycons = agc_mpac_store(agc_mpac_dsu(ip, agc_mpac_shift(ip, agc_mpac_bddv(ip, agc_mpac_dload(negl), a->dydot), -2), bd));
 } /* as_t2test */
 
 /**********************************************************************
  * CMPONENT .. AIMER (pp. 848-849): thrust acceleration components one
  * second (100 cs) ahead; ATP takes what is left of AT, with the sign of
- * DZDOT; UNFC/2 = AH + ATP ZAXIS1.
+ * DZDOT; UNFC/2 = AH + ATP ZAXIS1. ATR, ATY, AH and ATP stay as the MPAC
+ * words through the VXSCs.
  *
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
  **********************************************************************/
 static void as_cmponent(agc_interp_t *ip)
 {
-    agc_lm_asc_t   *a  = agc_lm_asc();                                                   /* ascent erasables */
-    const agc_vec_t ur = agc_guid_state()->avg.unitr;                                    /* UNIT/R/, half unit 2^1 */
-    agc_dp_t        t  = agc_dp_add(ip, agc_dp_mul_trunc(AS_100CS, a->prate), a->pcons); /* A + B (T - T0), scale 2^-9 */
+    agc_lm_asc_t         *a   = agc_lm_asc();                                                 /* ascent erasables */
+    const agc_vec_words_t ur  = agc_vec_to_words(agc_guid_state()->avg.unitr);                /* UNIT/R/, half unit 2^1 */
+    const agc_dp_words_t  sec = agc_dp_to_words(AS_100CS);                                    /* 100CS, 2^18 cs */
+    agc_tp_words_t        m   = agc_mpac_dmp(agc_mpac_dload(sec), agc_dp_to_words(a->prate)); /* B (T - T0), 2^-9 */
 
-    a->atr       = agc_dp_sub(ip, agc_dp_shl(ip, agc_dp_div(ip, t, a->tbup), 1), a->geff);
-    t            = agc_dp_add(ip, agc_dp_mul_trunc(AS_100CS, a->yrate), a->ycons);
-    a->aty       = agc_dp_shl(ip, agc_dp_div(ip, t, a->tbup), 1);
-    agc_vec_t ah = agc_vec_add(ip, agc_vec_scale(ip, ur, a->atr), agc_vec_scale(ip, a->laxis, a->aty)); /* AH = ATR UNIT/R/ + ATY LAXIS, 2^8 */
+    /* DAD PCONS DDV TBUP SL1 DSU GEFF: ATR; DMP YRATE DAD YCONS DDV TBUP SL1: ATY. */
+    const agc_tp_words_t atr = agc_mpac_dsu(ip, agc_mpac_shift(ip, agc_mpac_ddv(ip, agc_mpac_dad(ip, m, a->pcons), a->tbup), 1), a->geff); /* ATR, 2^-9 m/cs^2 */
 
-    ah             = agc_vec_shl(ip, ah, 1);
-    agc_dp_t ahsq  = 0;                     /* |AH|^2 (34D), scale 2^18 */
-    agc_dp_t ahmag = agc_vec_abval(ip, ah); /* |AH| (PDL 6), scale 2^9 */
+    m                        = agc_mpac_dmp(agc_mpac_dload(sec), agc_dp_to_words(a->yrate));
+    const agc_tp_words_t aty = agc_mpac_shift(ip, agc_mpac_ddv(ip, agc_mpac_dad(ip, m, a->ycons), a->tbup), 1); /* ATY, 2^-9 m/cs^2 */
 
-    ahsq          = agc_vec_sq(ip, ah);                     /* 34D */
-    agc_dp_t atp2 = agc_dp_sub(ip, agc_dp_sq(a->at), ahsq); /* AT^2 - AH^2 = ATP^2, scale 2^18 */
-    agc_dp_t atp  = 0;                                      /* ATP before SIGN, scale 2^-9 m/cs^2 */
+    a->atr = agc_dp_from_words(agc_mpac_store(atr));
+    a->aty = agc_dp_from_words(agc_mpac_store(aty));
 
-    if (atp2 >= 0)
+    /* VXSC LAXIS PDDL ATR VXSC UNIT/R/ VAD VSL1 PUSH: AH, 2^9.             */
+    agc_vec_words_t ah = agc_mpac_vxsc(ip, aty, agc_vec_to_words(a->laxis)); /* ATY LAXIS, then AH, 2^8 */
+
+    ah                    = agc_mpac_vshift(ip, agc_mpac_vad(ip, agc_mpac_vxsc(ip, atr, ur), ah), 1);
+    const agc_vec_t ahv   = agc_vec_from_words(ah); /* AH, scale 2^9 */
+    agc_dp_t        ahsq  = 0;                      /* |AH|^2 (34D), scale 2^18 */
+    agc_dp_t        ahmag = agc_vec_abval(ip, ahv); /* |AH| (PDL 6), scale 2^9 */
+
+    ahsq = agc_vec_sq(ip, ahv); /* 34D */
+
+    /* AT DSQ DSU 34D: ATP^2, 2^18; BMN NO-ATP, else SQRT.                 */
+    const agc_dp_words_t atp2 = agc_mpac_store(agc_mpac_dsu(ip, agc_mpac_dsq(agc_mpac_dload(agc_dp_to_words(a->at))), agc_dp_to_words(ahsq))); /* ATP^2, PDL 8D, 2^18 */
+
+    m = agc_mpac_dload(agc_dp_to_words(0)); /* HI6ZEROS (NO-ATP)      */
+
+    if (agc_dp_from_words(atp2) >= 0)
     {
-        atp = agc_dp_sqrt(atp2);
+        m = agc_mpac_sqrt(agc_mpac_dload(atp2)); /* ATP, 2^9          */
     }
     else
-    { /* NO-ATP */
-        ah = agc_vec_scale(ip, ah, agc_dp_div(ip, a->at, ahmag));
+    { /* NO-ATP: DLOAD 6D BDDV AT VXSC 00D                                 */
+        ah = agc_mpac_vxsc(ip, agc_mpac_bddv(ip, agc_mpac_dload(agc_dp_to_words(ahmag)), agc_dp_to_words(a->at)), ah);
     }
 
-    a->atp      = agc_dp_sign(atp, a->dzdot);                               /* AIMER */
-    agc_vec_t f = agc_vec_shl(ip, agc_vec_scale(ip, a->zaxis1, a->atp), 1); /* ATP ZAXIS1, scale 2^-9 m/cs^2 */
+    m      = agc_mpac_sign(m, a->dzdot); /* AIMER: SIGN DZDOT, STORE ATP */
+    a->atp = agc_dp_from_words(agc_mpac_store(m));
 
-    agc_lm_ldg()->unfc_2 = agc_vec_add(ip, f, ah);
+    /* VXSC ZAXIS1 VSL1 VAD 00D: UNFC/2, scale 2^-9 m/cs^2.               */
+    agc_lm_ldg()->unfc_2 = agc_vec_from_words(agc_mpac_vad(ip, agc_mpac_vshift(ip, agc_mpac_vxsc(ip, m, agc_vec_to_words(a->zaxis1)), 1), ah));
 } /* as_cmponent */
 
 /**********************************************************************
@@ -525,6 +557,74 @@ static agc_status_t as_engoff(agc_interp_t *ip)
 }
 
 /**********************************************************************
+ * ASCENT first part (pp. 845-846): the state in the ascent frame, GEFF,
+ * the velocity to be gained (compensated for GEFF over TGO) and VGBODY
+ * for N85, on the MPAC words (DOT SL1, DSU, VXSC, DMP keep the words as
+ * the AGC stores them).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
+ *
+ * RETURNS: agc_dp_t -- |VGVECT|, 2^7 m/cs
+ **********************************************************************/
+static agc_dp_t as_vgvect(agc_interp_t *ip)
+{
+    agc_lm_asc_t   *a  = agc_lm_asc();     /* ascent erasables */
+    agc_guid_t     *g  = agc_guid_state(); /* guidance state */
+    const agc_vec_t ur = g->avg.unitr;     /* UNIT/R/, half unit 2^1 */
+
+    a->r_mag = agc_vec_abval(ip, g->lm.r);
+
+    /* DOT SL1 (twice below): the shift takes in MPAC+2 of the TP; ZDOT
+     * and YDOT are stored as the top two words, which the DSUs read.    */
+    const agc_dp_words_t zdot = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dot(ip, a->zaxis1, g->lm.v), 1)); /* ZDOT, 2^7 m/cs */
+
+    a->zdot  = agc_dp_from_words(zdot);
+    a->laxis = agc_vec_shl(ip, agc_vec_cross(ip, a->zaxis1, ur), 1);
+
+    const agc_dp_words_t ydot = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dot(ip, a->laxis, g->lm.v), 1)); /* YDOT, 2^7 m/cs */
+
+    a->ydot = agc_dp_from_words(ydot);
+    a->y    = agc_lm_ycomp(ip); /* YCOMP: Y */
+
+    /* V/SC DOT UNIT/R/ PDVL VXV VSQ DDV /R/MAG SL1 DAD STADR: GEFF.       */
+    const agc_dp_words_t gr = agc_mpac_store(agc_mpac_dot(ip, agc_vec_div(ip, g->avg.gdt1_2, AS_2SEC18), ur));               /* G . UR = GR, scale 2^9 m/cs^2 */
+    agc_tp_words_t       m  = agc_mpac_ddv(ip, agc_mpac_vsq(ip, agc_vec_cross(ip, ur, g->lm.v)), agc_dp_to_words(a->r_mag)); /* H^2/R^3, scale 2^9 */
+
+    a->geff  = agc_mpac_store(agc_mpac_dad(ip, agc_mpac_shift(ip, m, 1), gr));
+    a->dzdot = agc_mpac_store(agc_mpac_dsu(ip, agc_mpac_dload(agc_dp_to_words(a->zdotd)), zdot));
+    a->dydot = agc_mpac_store(agc_mpac_dsu(ip, agc_mpac_dload(agc_dp_to_words(a->ydotd)), ydot));
+    a->drdot = agc_mpac_store(agc_mpac_dsu(ip, agc_mpac_dload(agc_dp_to_words(a->rdotd)), agc_dp_to_words(g->lm.hdotdisp))); /* RDOT */
+
+    /* DZDOT VXSC ZAXIS1, DYDOT VXSC LAXIS, DRDOT VXSC UNIT/R/, VAD VAD VSL1. */
+    const agc_vec_words_t urw = agc_vec_to_words(ur);                             /* UNIT/R/ */
+    agc_vec_words_t       vg  = agc_mpac_vxsc(ip, agc_mpac_dload(a->drdot), urw); /* 2^7 m/cs */
+
+    vg = agc_mpac_vad(ip, vg, agc_mpac_vxsc(ip, agc_mpac_dload(a->dydot), agc_vec_to_words(a->laxis)));
+    vg = agc_mpac_vshift(ip, agc_mpac_vad(ip, vg, agc_mpac_vxsc(ip, agc_mpac_dload(a->dzdot), agc_vec_to_words(a->zaxis1))), 1);
+
+    /* DLOAD TGO DMP GEFF VXSC UNIT/R/ VSL1 BVSU VGVECT.                   */
+    const agc_vec_words_t tg = agc_mpac_vshift(ip, agc_mpac_vxsc(ip, agc_mpac_dmp(agc_mpac_dload(a->tgo), a->geff), urw), 1); /* TGO GEFF UR, 2^7 m/cs */
+
+    for (int i = 0; i < 3; i++)
+    {
+        vg.c[i] = agc_mpac_store(agc_mpac_bdsu(ip, agc_mpac_dload(tg.c[i]), vg.c[i]));
+    }
+
+    agc_vec_words_t xnb[3]; /* XNBPIP rows as stored */
+
+    for (int i = 0; i < 3; i++)
+    {
+        xnb[i] = agc_vec_to_words(g->lm.xnbpip.row[i]);
+    }
+
+    a->vgvect = agc_vec_from_words(vg);
+    a->vgbody = agc_vec_from_words(agc_mpac_vshift(ip, agc_mpac_mxv(ip, xnb, vg), 1)); /* MXV VSL1 XNBPIP */
+
+    return (agc_vec_abval(ip, a->vgvect)); /* ABVAL */
+} /* as_vgvect */
+
+/**********************************************************************
  * ASCENT (pp. 845-850). Ends the job (ASCTERM), or for P12 (FLPI) goes
  * on to P12RET and the ignition sequence.
  *
@@ -539,65 +639,30 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
-    /* ASCENT first part (pp. 845-846): the state in the ascent frame, GEFF,
-     * the velocity to be gained (compensated for GEFF over TGO) and VGBODY
-     * for N85. Returns |VGVECT|.                                        */
-    agc_lm_asc_t   *a_vgvect = agc_lm_asc();     /* ascent erasables */
-    agc_guid_t     *g        = agc_guid_state(); /* guidance state */
-    const agc_vec_t ur       = g->avg.unitr;     /* UNIT/R/, half unit 2^1 */
-
-    a_vgvect->r_mag = agc_vec_abval(ip, g->lm.r);
-
-    /* DOT SL1 (twice below): the shift takes in MPAC+2 of the TP.    */
-    a_vgvect->zdot  = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, a_vgvect->zaxis1, g->lm.v), 1));
-    a_vgvect->laxis = agc_vec_shl(ip, agc_vec_cross(ip, a_vgvect->zaxis1, ur), 1);
-    a_vgvect->ydot  = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, a_vgvect->laxis, g->lm.v), 1));
-    a_vgvect->y     = agc_lm_ycomp(ip);                                                                /* YCOMP: Y */
-    agc_dp_t gr     = agc_vec_dot(ip, agc_vec_div(ip, g->avg.gdt1_2, AS_2SEC18), ur);                  /* G . UR = GR, scale 2^9 m/cs^2 */
-    agc_dp_t h2     = agc_dp_div(ip, agc_vec_sq(ip, agc_vec_cross(ip, ur, g->lm.v)), a_vgvect->r_mag); /* H^2/R^3, scale 2^9 */
-
-    a_vgvect->geff  = agc_dp_add(ip, agc_dp_shl(ip, h2, 1), gr);
-    a_vgvect->dzdot = agc_dp_sub(ip, a_vgvect->zdotd, a_vgvect->zdot);
-    a_vgvect->dydot = agc_dp_sub(ip, a_vgvect->ydotd, a_vgvect->ydot);
-    a_vgvect->drdot = agc_dp_sub(ip, a_vgvect->rdotd, g->lm.hdotdisp);                                                              /* RDOT */
-    agc_vec_t vg    = agc_vec_add(ip, agc_vec_scale(ip, ur, a_vgvect->drdot), agc_vec_scale(ip, a_vgvect->laxis, a_vgvect->dydot)); /* DRDOT UR + DYDOT LAXIS, 2^7 m/cs */
-
-    vg          = agc_vec_shl(ip, agc_vec_add(ip, vg, agc_vec_scale(ip, a_vgvect->zaxis1, a_vgvect->dzdot)), 1);
-    agc_dp_t tg = agc_dp_mul_trunc(a_vgvect->tgo, a_vgvect->geff); /* TGO GEFF, 2^7 m/cs */
-
-    a_vgvect->vgvect = agc_vec_sub(ip, vg, agc_vec_shl(ip, agc_vec_scale(ip, ur, tg), 1));
-    a_vgvect->vgbody = agc_vec_shl(ip, agc_mat_vec(ip, &g->lm.xnbpip, a_vgvect->vgvect), 1);
-    agc_dp_t vgmag   = agc_vec_abval(ip, a_vgvect->vgvect); /* |VGVECT|, 2^7 m/cs */
+    agc_dp_t       vgmag = as_vgvect(ip); /* |VGVECT|, 2^7 m/cs */
+    agc_tp_words_t m;                     /* MPAC (MAINENG) */
 
     if (agc_flag_test(AGC_FLAG_FLRCS))
     {
-        a->tgo = agc_dp_div(ip, vgmag, AS_ATRCS); /* TGO = VG/AT   */
+        a->tgo = agc_mpac_store(agc_mpac_ddv(ip, agc_mpac_dload(agc_dp_to_words(vgmag)), agc_dp_to_words(AS_ATRCS))); /* TGO = VG/AT */
 
         return (AGC_STATUS_OK); /* ASCTERM2      */
     }
 
-    /**********************************************************************
-     * MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO.
-     * DEVIATION: the AGC's DSU TTO (and ATMAG's DSU 6SEC(18) for TBUP)
-     * can leave the two words sign-disagreeing; SR 11D shifts each word
-     * on its own and every later DDV by TGO or TBUP divides those words.
-     * An agc_dp_t holds the value only, so TTOGO may differ by 1 cs and
-     * AT, PRATE..YCONS, ATR..ATP, YAW, PITCH by a few LSB (oracle
-     * ascent_a/b; the rope run on canonical words matches the C).
-     *
-     * ARGUMENTS:
-     *   ip     agc_interp_t *  I/O  interpreter state (OVFIND)
-     *   vgmag  agc_dp_t        I    |VGVECT|, 2^7 m/cs
-     **********************************************************************/
-    agc_lm_asc_t *a_maineng = agc_lm_asc();                                            /* ascent erasables */
-    agc_dp_t      r         = agc_dp_div(ip, vgmag, a_maineng->ve);                    /* VG/VE, scale 2^0 */
-    agc_dp_t      t         = agc_dp_sub(ip, AS_NEARONE, agc_dp_mul_trunc(r, AS_KT1)); /* 1 - KT VG/VE, scale 2^0 */
+    /* MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO.
+     * DDV PUSH VE, DMP BDSU KT1 NEARONE, DMP DMP (PDL 0) TBUP, DSU TTO:
+     * DSU TTO (and ATMAG's DSU 6SEC(18) for TBUP) can leave the two words
+     * sign-disagreeing; SR 11D shifts each word and every later DDV by TGO
+     * or TBUP divides those words, so TGO and TBUP are kept as stored.  */
+    agc_lm_asc_t        *a_maineng = agc_lm_asc();                                                                                             /* ascent erasables */
+    const agc_dp_words_t r         = agc_mpac_store(agc_mpac_ddv(ip, agc_mpac_dload(agc_dp_to_words(vgmag)), agc_dp_to_words(a_maineng->ve))); /* VG/VE, PDL 0, 2^0 */
 
-    t              = agc_dp_mul_trunc(agc_dp_mul_trunc(t, r), a_maineng->tbup);
-    a_maineng->tgo = agc_dp_sub(ip, t, a_maineng->tto);
-    agc_erase_set_ttogo(agc_dp_neg(agc_dp_shr(a_maineng->tgo, 11))); /* 2^28  */
+    m              = agc_mpac_bdsu(ip, agc_mpac_dmp(agc_mpac_dload(r), agc_dp_to_words(AS_KT1)), agc_dp_to_words(AS_NEARONE)); /* 1 - KT VG/VE */
+    m              = agc_mpac_dsu(ip, agc_mpac_dmp(agc_mpac_dmp(m, r), a_maineng->tbup), agc_dp_to_words(a_maineng->tto));
+    a_maineng->tgo = agc_mpac_store(m);
+    agc_erase_set_ttogo(agc_dp_from_words(agc_mpac_store(agc_mpac_dcomp(agc_mpac_shift(ip, m, -11)))));                        /* SR 11D DCOMP, 2^28 */
 
-    if (!agc_flag_test(AGC_FLAG_IDLEFLAG) && agc_dp_sub(ip, a->tgo, AS_4SEC17) < 0)
+    if (!agc_flag_test(AGC_FLAG_IDLEFLAG) && (agc_tp_from_words(agc_mpac_dsu(ip, agc_mpac_dload(a->tgo), agc_dp_to_words(AS_4SEC17))) < 0))
     {
         agc_status_t st_engoff = as_engoff(ip);
 
@@ -699,16 +764,21 @@ agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx)
         agc_flag_clear(AGC_FLAG_RENDWFLG);
         agc_dp_t n = agc_dp_div(&ip, agc_dp_from_sp(AS_BIT3H), g->abdvconv); /* BIT3H / ABDVCONV: new 1/DV, 2^7 cs/m */
 
-        g->mass1   = a->dv[1];                                                                                  /* 1/DV0 = MASS1 */
-        a->dv[1]   = a->dv[2];
-        a->dv[2]   = a->dv[3];
-        a->dv[3]   = n;
-        agc_dp_t s = agc_dp_add(&ip, agc_dp_add(&ip, agc_dp_add(&ip, g->mass1, a->dv[1]), a->dv[2]), a->dv[3]); /* 1/DV0 + .. + 1/DV3, scale 2^9 */
+        g->mass1         = a->dv[1];                                  /* 1/DV0 = MASS1 */
+        a->dv[1]         = a->dv[2];
+        a->dv[2]         = a->dv[3];
+        a->dv[3]         = n;
+        agc_tp_words_t m = agc_mpac_dload(agc_dp_to_words(g->mass1)); /* DLOAD 1/DV0 DAD 1/DV1 DAD DAD: sum, scale 2^9 */
 
-        /* DMP DMP SL3: the second product's MPAC+2 enters the shift.    */
-        s       = agc_tp_to_dp(agc_tp_shift(&ip, agc_dp_mul_tp(agc_dp_mul_trunc(s, a->ve), AS_2SEC9), 3));
-        a->tbup = agc_dp_sub(&ip, agc_dp_add(&ip, agc_dp_shr(a->tbup, 1), s), AS_6SEC18);
-        a->at   = agc_dp_div(&ip, agc_dp_shr(a->ve, 1), a->tbup);
+        m = agc_mpac_dad(&ip, agc_mpac_dad(&ip, agc_mpac_dad(&ip, m, agc_dp_to_words(a->dv[1])), agc_dp_to_words(a->dv[2])), agc_dp_to_words(a->dv[3]));
+
+        /* DMP DMP SL3 PDDL TBUP SR1 DAD DSU 6SEC(18): the second product's
+         * MPAC+2 enters the shift; TBUP is stored as the DSU leaves it.  */
+        m       = agc_mpac_dmp(m, agc_dp_to_words(a->ve));
+        m       = agc_mpac_shift(&ip, agc_mpac_dmp(m, agc_dp_to_words(AS_2SEC9)), 3);
+        m       = agc_mpac_dad(&ip, agc_mpac_shift(&ip, agc_mpac_dload(a->tbup), -1), agc_mpac_store(m));
+        a->tbup = agc_mpac_store(agc_mpac_dsu(&ip, m, agc_dp_to_words(AS_6SEC18)));
+        a->at   = agc_dp_from_words(agc_mpac_store(agc_mpac_ddv(&ip, agc_mpac_shift(&ip, agc_mpac_dload(agc_dp_to_words(a->ve)), -1), a->tbup))); /* VE SR1 DDV TBUP */
     }
 
     return (agc_lm_ascent(ctx, &ip));
@@ -1012,7 +1082,7 @@ agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx)
 
     agc_flag_set(AGC_FLAG_FLPI);
     agc_lm_powered_ascent_init(&ip);
-    agc_lm_asc()->tgo = AS_TGOA; /* initial nominal TGO         */
+    agc_lm_asc()->tgo = agc_dp_to_words(AS_TGOA); /* initial nominal TGO         */
 
     return (agc_lm_job_powered_ascent_at_ignition(ctx));
 }

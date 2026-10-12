@@ -52,8 +52,9 @@
  *   tables "contain constants for 1969 - 1970".
  *
  * NOTES:
- *   LM VSUN can differ <= 2 LSB: sign-disagreeing LOS words into SIN
- *   (docs/modules/review-nav-aux.md finding 8).
+ *   LM LSPOS keeps GTMP, LOM, LOS, LON as the words DAD / DSU leave
+ *   (signs may disagree); SIN, COS and MXV read those words, so VMOON
+ *   and VSUN are bit-exact (review-nav-aux finding 8).
  *
  * ALGORITHM:
  *   See PURPOSE; each function prolog gives its AGC step.
@@ -61,6 +62,7 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/nav/auxiliary.h"
 #include "internal.h"
@@ -446,8 +448,8 @@ static const lm_term_t LM_TERM[LM_NTERM] = { /* A, B, C; scales above */
 
 /**********************************************************************
  * POSITB (Luminary099 LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc
- *   pp. 985-986, label POSITB) -- one periodic correction
- *   MOD sin(2 pi (T FREQ) + ARG)
+ *   pp. 985-986, label POSITB) -- one periodic correction added to GTMP:
+ *   GTMP + MOD sin(2 pi (T FREQ) + ARG)
  *
  * FUNCTION NAME: ephem_lm_term
  *
@@ -455,22 +457,22 @@ static const lm_term_t LM_TERM[LM_NTERM] = { /* A, B, C; scales above */
  *   Argument  Type            I/O  Description (scale)
  *   --------  --------------  ---  ------------------------------------
  *   ip        agc_interp_t *  I/O  interpreter state
- *   timep     agc_dp_t        I    T, days scale 2^9
+ *   timep     agc_dp_words_t  I    TIMEP, days scale 2^9
  *   k         int             I    term: 0 = A, 1 = B, 2 = C
+ *   gtmp      agc_dp_words_t  I    GTMP before the term, rev 2^0
  *
- * RETURNS: agc_dp_t -- the correction, revs scale 2^0.  DMP*, SL 8 on
- *          the TP (wraps mod 1 rev), DAD* onto its top two words, SIN,
- *          DMP* (the caller's DAD uses the top two words: truncated).
+ * RETURNS: agc_dp_words_t -- GTMP as stored, revs scale 2^0.  DMP*, SL 8
+ *          on the TP (wraps mod 1 rev), DAD* onto its top two words, SIN
+ *          of those words, DMP*, DAD GTMP: the words may disagree in sign.
  **********************************************************************/
-static agc_dp_t ephem_lm_term(agc_interp_t *ip, agc_dp_t timep, int k)
+static agc_dp_words_t ephem_lm_term(agc_interp_t *ip, agc_dp_words_t timep, int k, agc_dp_words_t gtmp)
 {
-    agc_tp_t xt = agc_dp_mul_tp(timep, LM_TERM[k].freq); /* rev, 2^8 */
-    agc_dp_t x  = 0;                                     /* rev, 2^0 */
+    agc_tp_words_t m = agc_mpac_dmp(agc_mpac_dload(timep), agc_dp_to_words(LM_TERM[k].freq)); /* rev, 2^8 */
 
-    xt = agc_tp_shift(ip, xt, 8); /* SL 8, wraps */
-    x  = agc_dp_add(ip, agc_tp_to_dp(xt), LM_TERM[k].arg);
+    m = agc_mpac_dad(ip, agc_mpac_shift(ip, m, 8), agc_dp_to_words(LM_TERM[k].arg)); /* SL 8 DAD*, wraps */
+    m = agc_mpac_dmp(agc_mpac_sin(m), agc_dp_to_words(LM_TERM[k].mod));              /* SIN DMP* */
 
-    return (agc_dp_mul_trunc(agc_dp_sin(x), LM_TERM[k].mod));
+    return (agc_mpac_store(agc_mpac_dad(ip, m, gtmp))); /* DAD GTMP, STORE GTMP */
 }
 
 /**********************************************************************
@@ -483,27 +485,27 @@ static agc_dp_t ephem_lm_term(agc_interp_t *ip, agc_dp_t timep, int k)
  *   Argument  Type            I/O  Description (scale)
  *   --------  --------------  ---  ------------------------------------
  *   ip        agc_interp_t *  I/O  interpreter state
- *   timep     agc_dp_t        I    T, days scale 2^9
+ *   timep     agc_dp_words_t  I    TIMEP, days scale 2^9
  *   j         int             I    angle: 0 = LOM, 1 = LOS, 2 = LON
- *   gtmp      agc_dp_t        I    GTMP periodic terms, rev 2^0
+ *   gtmp      agc_dp_words_t  I    GTMP periodic terms, rev 2^0
  *
- * RETURNS: agc_dp_t -- the angle, revs scale 2^0: DMP*, SL 5 on the TP,
- *          DAD* and DSU on its top two words (all wrap mod 1 rev)
+ * RETURNS: agc_dp_words_t -- STMP as stored, revs scale 2^0: DMP*, SL 5
+ *          on the TP, DAD* and DSU on its top two words (all wrap mod
+ *          1 rev)
  **********************************************************************/
-static agc_dp_t ephem_lm_angle(agc_interp_t *ip, agc_dp_t timep, int j, agc_dp_t gtmp)
+static agc_dp_words_t ephem_lm_angle(agc_interp_t *ip, agc_dp_words_t timep, int j, agc_dp_words_t gtmp)
 {
-    agc_tp_t xt = agc_dp_mul_tp(timep, LM_RATE[j]); /* rev, 2^5 */
-    agc_dp_t x  = 0;                                /* rev, 2^0 */
+    agc_tp_words_t m = agc_mpac_dmp(agc_mpac_dload(timep), agc_dp_to_words(LM_RATE[j])); /* rev, 2^5 */
 
-    xt = agc_tp_shift(ip, xt, 5);                        /* SL 5 */
-    x  = agc_dp_add(ip, agc_tp_to_dp(xt), LM_ANGLE0[j]); /* DAD* */
+    m = agc_mpac_dad(ip, agc_mpac_shift(ip, m, 5), agc_dp_to_words(LM_ANGLE0[j])); /* SL 5 DAD* */
 
-    return (agc_dp_sub(ip, x, gtmp)); /* DSU GTMP       */
+    return (agc_mpac_store(agc_mpac_dsu(ip, m, gtmp))); /* DSU GTMP, STORE STMP */
 }
 
 /**********************************************************************
  * POSITF (Luminary099 LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc
- *   p. 986, VDEF MXV KONMAT UNIT) -- rotate by the obliquity matrix
+ *   p. 986, SIN/COS PDDL, VDEF MXV KONMAT UNIT) -- rotate by the
+ *   obliquity matrix
  *     KONMAT rows (scale 2^1):  | 1  0   0  |
  *                               | 0  K1  K2 |
  *                               | 0  K3  K4 |
@@ -514,22 +516,23 @@ static agc_dp_t ephem_lm_angle(agc_interp_t *ip, agc_dp_t timep, int j, agc_dp_t
  *   Argument  Type            I/O  Description (scale)
  *   --------  --------------  ---  ------------------------------------
  *   ip        agc_interp_t *  I/O  interpreter state
- *   x         agc_dp_t        I    cos L, scale 2^1
- *   y         agc_dp_t        I    sin L, scale 2^1
- *   z         agc_dp_t        I    sin(LOM-LON) or 0, scale 2^1
+ *   l         agc_dp_words_t  I    LOM or LOS as stored, rev 2^0
+ *   z         agc_dp_words_t  I    sin(LOM-LON) or 0 as pushed, 2^1
  *
- * RETURNS: agc_vec_t -- unit vector, scale 2^1
+ * RETURNS: agc_vec_t -- unit vector, scale 2^1 (UNIT of the MXV words)
  **********************************************************************/
-static agc_vec_t ephem_lm_konmat(agc_interp_t *ip, agc_dp_t x, agc_dp_t y, agc_dp_t z)
+static agc_vec_t ephem_lm_konmat(agc_interp_t *ip, agc_dp_words_t l, agc_dp_words_t z)
 {
-    agc_mat_t konmat; /* KONMAT, scale 2^1 */
+    const agc_vec_words_t konmat[3] = {{{agc_dp_to_words(AGC_DP_HALF), agc_dp_to_words(0), agc_dp_to_words(0)}}, /* 1.0 B-1, 0, 0 */
+                                       {{agc_dp_to_words(0), agc_dp_to_words(LM_K1), agc_dp_to_words(LM_K2)}},
+                                       {{agc_dp_to_words(0), agc_dp_to_words(LM_K3), agc_dp_to_words(LM_K4)}}};
+    agc_vec_words_t       v; /* VDEF: COS L, SIN L, z; 2^1 */
 
-    konmat.row[0] = agc_vec_make(AGC_DP_HALF, 0, 0);                 /* 1.0 B-1, 0, 0  */
-    konmat.row[1] = agc_vec_make(0, LM_K1, LM_K2);
-    konmat.row[2] = agc_vec_make(0, LM_K3, LM_K4);
-    agc_vec_t v   = agc_mat_vec(ip, &konmat, agc_vec_make(x, y, z)); /* 2^1 */
+    v.c[0] = agc_mpac_store(agc_mpac_cos(agc_mpac_dload(l)));
+    v.c[1] = agc_mpac_store(agc_mpac_sin(agc_mpac_dload(l)));
+    v.c[2] = z;
 
-    return (agc_vec_unit(ip, v, NULL, NULL));
+    return (agc_vec_unit(ip, agc_vec_from_words(agc_mpac_mxv(ip, konmat, v)), NULL, NULL));
 }
 
 /**********************************************************************
@@ -548,38 +551,40 @@ static agc_vec_t ephem_lm_konmat(agc_interp_t *ip, agc_dp_t x, agc_dp_t y, agc_d
  *   vmoon     agc_vec_t *     O    VMOON, unit vector scale 2^1
  *   vsun      agc_vec_t *     O    VSUN, unit vector scale 2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL or
- *          out-of-range input
+ * RETURNS: agc_status_t -- AGC_STATUS_OK
  *
  * TIMEP = (T + TEPHEM) / CSTODAY, days scale 2^9 (DDV takes only the DP
  * part of the TP dividend, so T + TEPHEM is truncated to 2^14 cs).  The
  * AGC's loop over FREEFLAG / X1 / X2 (moon: terms A and B; sun: term C;
- * node: no term) is written out as straight-line calls.
+ * node: no term) is written out as straight-line calls.  GTMP and STMP
+ * are kept as the words the AGC stores (DAD / DSU leave them free to
+ * disagree in sign), which SIN and COS then read.
  **********************************************************************/
 agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *vmoon, agc_vec_t *vsun)
 {
-    agc_tp_t t = agc_tp_shift(ip, agc_tp_from_dp(t_cs), -14); /* 2^42 cs */
+    const agc_dp_words_t zero = agc_dp_to_words(0);                                             /* KONMAT +2: ZEROS */
+    agc_tp_words_t       t    = agc_mpac_shift(ip, agc_mpac_dload(agc_dp_to_words(t_cs)), -14); /* SR 14D, 2^42 cs */
 
-    t              = agc_tp_add(ip, t, tephem);                /* TAD TEPHEM */
-    agc_dp_t timep = agc_dp_div(ip, agc_tp_to_dp(t), CSTODAY); /* 2^9 day */
+    t = agc_mpac_tad(ip, t, agc_tp_to_words(tephem)); /* TAD TEPHEM */
+
+    const agc_dp_words_t timep = agc_mpac_store(agc_mpac_ddv(ip, t, agc_dp_to_words(CSTODAY))); /* DDV CSTODAY, 2^9 day */
 
     /* 1st pass (X2 = 0): LOM with the A and B terms (FREEFLAG loop).      */
-    agc_dp_t g = ephem_lm_term(ip, timep, 0); /* GTMP, 2^0 rev */
-
-    g            = agc_dp_add(ip, ephem_lm_term(ip, timep, 1), g); /* DAD GTMP: + B    */
-    agc_dp_t lom = ephem_lm_angle(ip, timep, 0, g);                /* LOM, 2^0 rev */
+    agc_dp_words_t       g   = ephem_lm_term(ip, timep, 1, ephem_lm_term(ip, timep, 0, zero)); /* GTMP, 2^0 rev */
+    const agc_dp_words_t lom = ephem_lm_angle(ip, timep, 0, g);                                /* LOM, 2^0 rev */
 
     /* 2nd pass (X2 = -2): LOS with the C term.                            */
-    agc_dp_t los = ephem_lm_angle(ip, timep, 1, ephem_lm_term(ip, timep, 2)); /* LOS, 2^0 rev */
+    g                        = ephem_lm_term(ip, timep, 2, zero);
+    const agc_dp_words_t los = ephem_lm_angle(ip, timep, 1, g); /* LOS, 2^0 rev */
 
     /* 3rd pass (X2 = -4, POSITE): LON, no periodic term.                 */
-    agc_dp_t lon = ephem_lm_angle(ip, timep, 2, 0); /* LON, 2^0 rev */
+    const agc_dp_words_t lon = ephem_lm_angle(ip, timep, 2, zero); /* LON, 2^0 rev */
 
-    /* POSITF: moon then sun.                                              */
-    agc_dp_t dl = agc_dp_sub(ip, lom, lon); /* DLOAD DSU, wraps, 2^0 rev */
+    /* POSITF: DLOAD DSU SIN PDDL (sin(LOM - LON)), moon then sun.         */
+    const agc_dp_words_t sdl = agc_mpac_store(agc_mpac_sin(agc_mpac_dsu(ip, agc_mpac_dload(lom), lon))); /* 2^1 */
 
-    *vmoon = ephem_lm_konmat(ip, agc_dp_cos(lom), agc_dp_sin(lom), agc_dp_sin(dl));
-    *vsun  = ephem_lm_konmat(ip, agc_dp_cos(los), agc_dp_sin(los), 0);
+    *vmoon = ephem_lm_konmat(ip, lom, sdl);
+    *vsun  = ephem_lm_konmat(ip, los, zero);
 
     return (AGC_STATUS_OK);
 }

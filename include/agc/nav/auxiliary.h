@@ -191,16 +191,16 @@ typedef struct agc_tff
     agc_dp_t  rtmu; /* TFF/RTMU 1/sqrt(mu) E 2^-17, M 2^-14            */
 
     /* TFFCONIC outputs */
-    agc_vec_t vone_p;   /* VONE' = VN/sqrt(mu)  E 2^-10, M 2^-9            */
-    agc_dp_t  rmag1;    /* RMAG1 |RN|            E 2^29, M 2^27 m          */
-    agc_dp_t  nrmag;    /* NRMAG |RN| normalized E 2^(29-NR) m             */
-    int       nr;       /* NR (AGC X1 = -NR)                               */
-    agc_dp_t  tffnp;    /* TFFNP semi latus rectum E 2^(38-2NR), M 2^(36-2NR) */
-    agc_dp_t  tffvsq;   /* TFFVSQ -(v^2/mu) 1/m E 2^-20, M 2^-18           */
-    agc_dp_t  tffalfa;  /* TFFALFA alfa 1/m E 2^-(26-NR), M 2^-(24-NR)     */
-    agc_dp_t  tffrtalf; /* TFFRTALF sqrt|alfa| E 2^-(10+NA), M 2^-(9+NA)   */
-    int       na;       /* NA (AGC X2 = -NA)                               */
-    agc_dp_t  tff1_alf; /* TFF1/ALF 1/alfa m E 2^(22+2NA), M 2^(20+2NA)    */
+    agc_vec_t      vone_p;   /* VONE' = VN/sqrt(mu)  E 2^-10, M 2^-9            */
+    agc_dp_t       rmag1;    /* RMAG1 |RN|            E 2^29, M 2^27 m          */
+    agc_dp_t       nrmag;    /* NRMAG |RN| normalized E 2^(29-NR) m             */
+    int            nr;       /* NR (AGC X1 = -NR)                               */
+    agc_dp_t       tffnp;    /* TFFNP semi latus rectum E 2^(38-2NR), M 2^(36-2NR) */
+    agc_dp_t       tffvsq;   /* TFFVSQ -(v^2/mu) 1/m E 2^-20, M 2^-18           */
+    agc_dp_words_t tffalfa;  /* TFFALFA alfa 1/m E 2^-(26-NR), M 2^-(24-NR), as stored (DAD words) */
+    agc_dp_t       tffrtalf; /* TFFRTALF sqrt|alfa| E 2^-(10+NA), M 2^-(9+NA)   */
+    int            na;       /* NA (AGC X2 = -NA)                               */
+    agc_dp_t       tff1_alf; /* TFF1/ALF 1/alfa m E 2^(22+2NA), M 2^(20+2NA)    */
 
     /* TFFRP/RA outputs */
     agc_dp_t rper; /* RPER perigee radius E 2^29, M 2^27 m            */
