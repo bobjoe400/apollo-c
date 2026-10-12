@@ -28,7 +28,7 @@
  * ALGORITHM:
  *   Table lookup.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "internal.h"
 

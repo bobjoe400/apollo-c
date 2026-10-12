@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 #include "agc/io/nouns.h"

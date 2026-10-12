@@ -43,7 +43,7 @@
  *   Scales: r m 2^29, v m/cs 2^7, t cs 2^28.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/guidance/guidance.h"
 

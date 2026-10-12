@@ -53,8 +53,8 @@ aliasing, no E-bank overlay layout (TIG EQUALS DELVSLV +6 etc.).
 * assert.h rename (guide 3.4): not done during the review wave because it
   rewrites the include line of ~237 files that 16 agents are editing. After
   the wave: `git mv include/agc/core/assert.h include/agc/core/assertion.h`,
-  `grep -rl '"agc/core/assert.h"' src tests include docs tools | xargs sed -i
-  's|"agc/core/assert.h"|"agc/core/assertion.h"|'`, and change
+  `grep -rl '"agc/core/assertion.h"' src tests include docs tools | xargs sed -i
+  's|"agc/core/assertion.h"|"agc/core/assertion.h"|'`, and change
   tools/check_rules.py:82 `agc_assert.h` -> `core/assertion.h`.
 * lm/burns/servicer/landing_radar.c:280, src/lm/dap/state.c:27,
   src/io/verbs/extended_verbs_lm.c:43 use literal 12/13: switch to

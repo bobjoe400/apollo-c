@@ -37,7 +37,7 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/io/nouns.h"
 
 #define SF_COUNT_CSM 20 /* SF constants in Comanche */

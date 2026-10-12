@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 

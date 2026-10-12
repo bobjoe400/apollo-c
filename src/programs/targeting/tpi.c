@@ -55,7 +55,7 @@
  *   unit vectors 2^1.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 
 /* ---- constants (P34-35 p.485) ------------------------------------------- */

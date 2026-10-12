@@ -80,7 +80,7 @@
  * at a sleep/yield, so a job that continues later stores what it needs in
  * module erasables) -- the VAC area is only accounted for, not used.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"

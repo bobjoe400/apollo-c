@@ -111,7 +111,7 @@ def check_file(path):
                 if code_lines > MAX_FUNC_LINES and not rule4_exempt:
                     HARD.append(f'{path}:{start}: rule 4: {in_func} has {code_lines} code lines (> {MAX_FUNC_LINES})')
                 in_func = None
-    if ifs > 1 + (1 if path.endswith('agc_assert.h') else 0):
+    if ifs > 1 + (1 if path.endswith('core/assertion.h') else 0):
         WARN.append(f'{path}: rule 8: {ifs} conditional-compilation directives')
     global TOTAL_FUNCS, TOTAL_ASSERTS
     TOTAL_FUNCS += n_funcs

@@ -34,7 +34,7 @@
  *   handled per pass; further changes are found on later passes.
  **********************************************************************/
 #include "../internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/lm/dap.h"
 

@@ -53,7 +53,7 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"

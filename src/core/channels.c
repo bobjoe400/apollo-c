@@ -48,7 +48,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 
 static uint16_t g_chan[AGC_CHAN_COUNT]; /* channel image, 15-bit words */

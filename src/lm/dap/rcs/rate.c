@@ -45,7 +45,7 @@
  *   the CDU-measured and predicted rates once it exceeds the trap size.
  **********************************************************************/
 #include "../internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 
 #define RT_100MST6  160               /* -100MST6 = -160: 100 ms in T6 counts */
 #define RT_100MS    ((agc_sp_t) 1638) /* -100MS = DEC -.1 (74631)            */

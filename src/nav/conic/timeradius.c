@@ -38,7 +38,7 @@
  *   See PURPOSE; the conic is then solved by GETX, DELTIME and (unless
  *   RVSW) NEWSTATE through COMMNOUT.
  *********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "internal.h"
 
 /**********************************************************************

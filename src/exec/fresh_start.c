@@ -59,7 +59,7 @@
  *   The erasable self-test restore at GOPROG (ERESTORE / SKEEP4-7) is not
  *   modelled: ERASCHK does not exist in C, so ERESTORE is always +0.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"

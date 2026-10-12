@@ -49,7 +49,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 
 #define AGC_WORD15_MAX 077777u /* largest raw 15-bit AGC word */

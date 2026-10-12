@@ -17,7 +17,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 
 #define EC_WORDS    0100000u /* address 00000 .. 77777                  */

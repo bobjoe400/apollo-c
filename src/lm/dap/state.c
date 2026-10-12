@@ -35,7 +35,7 @@
  *   FRESH_START_AND_RESTART.agc pp.211-213 (DOFSTRT1, DAP pad-load defaults)
  *   and pp.220-221 (STARTSB1).
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/guidance/guidance.h"
 #include "agc/lm/dap.h"

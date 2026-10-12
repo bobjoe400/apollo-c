@@ -48,7 +48,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 

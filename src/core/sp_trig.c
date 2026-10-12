@@ -36,7 +36,7 @@
  *   sin(pi/2 x) ~ 2 x (C1/2 + C3/2 x^2 + C5/2 x^4) is evaluated with SP
  *   MP keeping only the major word of each product, exactly as the AGC.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/constants.h"
 #include "mpac.h"
 

@@ -25,7 +25,7 @@
  *   SVCT3 (waitlist.c) tests IMUCADR before starting drift compensation,
  *   and STARTSB2 (fresh_start.c) zeroes all three.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/exec/exec.h"
 #include "internal.h"
 

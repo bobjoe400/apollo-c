@@ -46,7 +46,7 @@
  *   pulses are applied by the sim through agc_lm_dap_time6_count().
  **********************************************************************/
 #include "../internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/lm/dap.h"
 

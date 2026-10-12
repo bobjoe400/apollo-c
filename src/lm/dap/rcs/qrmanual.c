@@ -45,7 +45,7 @@
  *   use the same law (direct rate or pseudo-auto).
  **********************************************************************/
 #include "../internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/lm/dap.h"
 

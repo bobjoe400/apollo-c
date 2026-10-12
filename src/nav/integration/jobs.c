@@ -46,7 +46,7 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/exec/exec.h"
 #include "agc/nav/integration.h"

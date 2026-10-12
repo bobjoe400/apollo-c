@@ -1,6 +1,6 @@
 /*
  * eva_assert.h -- force-included by `make prove` (Frama-C EVA only, never
- * by the build).  It takes the place of include/agc/core/assert.h: each
+ * by the build).  It takes the place of include/agc/core/assertion.h: each
  * AGC_ASSERT(e) becomes a call of agc_eva_check whose ACSL precondition is
  * the asserted condition, so EVA reports one property per assertion site
  * (VALID: the condition holds on every path EVA explores; UNKNOWN /

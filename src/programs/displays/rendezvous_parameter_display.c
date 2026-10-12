@@ -57,7 +57,7 @@
  *   revolutions, base vectors body scale, times cs 2^28.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/guidance/guidance.h"
 #include "agc/io/service.h"

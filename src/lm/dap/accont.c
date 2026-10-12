@@ -50,7 +50,7 @@
  *   24-word array t[], with the AGC offsets (T_* below), so that the
  *   BLOCKTOP stores are the AGC's GENTRAN / DXCH copies.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/lm/dap.h"
 #include "internal.h"
 

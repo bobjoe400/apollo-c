@@ -44,7 +44,7 @@
  *   down), RATT m 2^29, VATT m/cs 2^7, RCV VCV body scale.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 
 /* PHASCHNG OCT 04024: group 4, phase 2, type A. */

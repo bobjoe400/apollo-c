@@ -56,7 +56,7 @@
  *   Scales: r m 2^29, v m/cs 2^7, t cs 2^28, CENTANG revolutions.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 
 /* NN = 2 offsets (SSP NN 2 / DECTWO). */

@@ -38,7 +38,7 @@
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   none (no alarms; the job ends at ASCTERM or in P00 after TERMASC)
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"

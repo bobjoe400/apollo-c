@@ -50,7 +50,7 @@
  *   Scales: r m 2^29, v m/cs 2^7, t cs 2^28, angles revolutions 2^0.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 
 /* 130DEG 2DEC .3611111111 (LM P34-35 p.684): 130 degrees in revolutions */

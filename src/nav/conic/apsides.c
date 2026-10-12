@@ -27,7 +27,7 @@
  * ALGORITHM:
  *   ECC = sqrt(1 - P R1A), RP = R1 P / (1 + ECC), RA = 2 R1/R1A - RP.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "internal.h"
 
 /**********************************************************************

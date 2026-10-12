@@ -38,7 +38,7 @@
 #include <stdint.h>
 
 #define PI_D 3.14159265358979323846 /* pi */
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"

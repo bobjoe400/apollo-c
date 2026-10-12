@@ -41,7 +41,7 @@
 #include <string.h>
 
 #include "../../src/csm/burns/return_to_earth/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"

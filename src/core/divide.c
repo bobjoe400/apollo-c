@@ -35,7 +35,7 @@
  *   Places where the AGC computes x + (-x) give -0 in the machine; they
  *   are commented where the following CCS/BZMF branch depends on it.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "mpac.h"
 
 /* SQRT linear first-guess constants (INTERPRETER.agc p.1159-1174).          */

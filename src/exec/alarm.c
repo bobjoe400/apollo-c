@@ -60,7 +60,7 @@
  *   runs inside the job or task that failed and the call graph has no
  *   cycle (ENEMA -> RESTARTS -> NOVAC -> BAILOUT).
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"

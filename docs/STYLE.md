@@ -87,13 +87,13 @@ the full warning set).
 | 3.1 | `main` grouped with related functions in a program file; other functions in module files. | review | Library has no `main`; tests and the sim harness do. |
 | 3.1 | Header files encapsulate related definitions and declarations. | review | |
 | 3.1 | Write a Makefile. | review | Makefile exists. |
-| 3.2 | README lists all conditional-compilation flags, machine-dependent files, paths to reused components. | review | **Finding:** README.md does not list `AGC_HOST_DEBUG` (agc/core/assert.h) or the reused yaAGC/yaYUL tree under tools/oracle. |
+| 3.2 | README lists all conditional-compilation flags, machine-dependent files, paths to reused components. | review | **Finding:** README.md does not list `AGC_HOST_DEBUG` (agc/core/assertion.h) or the reused yaAGC/yaYUL tree under tools/oracle. |
 | 3.3 | Include only the standard libraries a file needs. | review | CS: no `<stdio.h>` in library code. |
 | 3.4 | `#include <...>` for system headers, `#include "..."` for project headers. | uncrustify `mod_sort_incl_import_prioritize_angle_over_quotes` (`<...>` before `"..."` within a block); review for the choice of form | |
 | 3.4 | Headers hold the data definitions, declarations, typedefs and enums shared by more than one file. | review | |
 | 3.4 | Organise headers by function; one subsystem per header. | review | include/agc/<subsystem>/. |
 | 3.4 | Platform-dependent declarations in a separate header. | review | agc/core/word.h holds the fixed-width numeric model. |
-| 3.4 | No private header named like a library header. | check_rules [header-name] | **Finding:** include/agc/core/assert.h shares its basename with `<assert.h>` (harmless here because it is always included as "agc/core/assert.h", but the guide forbids it). |
+| 3.4 | No private header named like a library header. | check_rules [header-name] | **Resolved 2026-10-12:** the header is include/agc/core/assertion.h (renamed from assert.h after the review wave). |
 | 3.4 | Include the declaring header in the file that defines the function/variable. | compiler `-Wmissing-prototypes` (a definition without a visible prototype fails) | |
 | 3.4 | Do not nest headers; each program file includes every header it needs. | n/a -- overridden | Project headers are self-contained (include what they use, include guards per CS rule 8); nesting is required for that. |
 | 3.4 | A header's prolog says which other headers must be included first. | check_rules [file-prolog-fields] (`REQUIRES` field) | |

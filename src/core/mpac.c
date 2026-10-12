@@ -28,7 +28,7 @@
  *   is allowed only where the AGC holds one in A. Negative zero is not
  *   modelled (mpac.h). Representation: see mpac.h.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "mpac.h"
 
 /* ---- representation ----------------------------------------------------- */

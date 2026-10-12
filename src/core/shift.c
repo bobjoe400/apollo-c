@@ -35,7 +35,7 @@
  *   word is truncated toward zero separately. Counts of 14 and more first
  *   move whole words (losing MPAC+2), as GENSCR does.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "mpac.h"
 
 #define SHIFT_MAX_LEFT  43 /* 42 TP bits: further shifts leave 0     */

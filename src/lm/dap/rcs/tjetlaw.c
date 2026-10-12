@@ -47,7 +47,7 @@
  *   Outputs: TJx (T6 counts), NUMBERT (U,V jet policy), FIREFCT (at pi/4).
  **********************************************************************/
 #include "../internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 
 #define TJ_SENSOR   6400              /* SENSOR 14400: 4 s / 10.24 s               */
 #define TJ_M3DEG    (-1092)           /* -3DEG  DEC -.06667 at 45 deg              */

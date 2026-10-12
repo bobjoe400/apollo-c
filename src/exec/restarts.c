@@ -51,7 +51,7 @@
  *   measured from TBASEn (FINDTIME), and if that time has passed it starts
  *   in 1 cs. A LONGCALL is measured from LONGBASE the same way.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "internal.h"

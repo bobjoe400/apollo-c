@@ -34,7 +34,7 @@
  *   No alarms. AGC_STATUS_BAD_ARG on an invalid flag id or a failed
  *   assertion; NOVAC status passed through.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/lm/dap.h"
 #include "internal.h"
 

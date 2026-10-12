@@ -32,7 +32,7 @@
  *   against yaAGC by tests/oracle/core_words.c.
  **********************************************************************/
 #include "../mpac.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/interp_words.h"
 
 #define SHIFT_COUNT_MAX 127 /* 7-bit shift count of SL/SR/SLR/SRR */

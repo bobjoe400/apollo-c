@@ -31,7 +31,7 @@
  *   ABORTALM: OPR ERR (FALTON) and back to pinball when a V37 P70/P71
  *   request is illegal; no program alarms
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"

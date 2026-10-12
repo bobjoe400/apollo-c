@@ -57,7 +57,7 @@
  *   outermost RELINT. In a single-threaded host they only document intent
  *   and let services check that they run in interrupt context.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"

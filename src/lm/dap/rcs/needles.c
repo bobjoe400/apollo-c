@@ -48,7 +48,7 @@
  *   needles through the IMU error counters (CDUXCMD..CDUZCMD) via NEEDLER.
  **********************************************************************/
 #include "../internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/imu/imu.h"
 #include "agc/lm/dap.h"

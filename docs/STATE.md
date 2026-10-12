@@ -6,8 +6,10 @@ Updated: 2026-10-12
 - sim (Opus, acceptance pass): rope image + scaler channels, scenario e,
   f decision, yaAGC command-line drop-in, GUI verification last; records
   flight bugs, does not edit flight code. Note: docs/modules/sim.md.
-- (slot free: nothing left to launch until sim finishes; the assert.h
-  rename touches src/sim includes and the EVA run needs the frozen tree)
+- fix-b6 (Opus): flight bug B6, CLOCPLAY two-part V06N40 + flashing
+  V99/V97 (sps/clock.c:156,163); clears the 5 xfail scenario lines.
+- review-sim (Opus): the sim harness was never reviewed: clock/interrupt
+  driver and peripheral protocol against yaAGC, rules, style (524 findings).
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md

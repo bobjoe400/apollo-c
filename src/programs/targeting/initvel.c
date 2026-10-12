@@ -57,7 +57,7 @@
  *   Scales: r m 2^29 (moon 2^27), v m/cs 2^7 (moon 2^5), t cs 2^28.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 
 /* Work cells of one INITVEL call (AGC erasables RTARG1 R1VEC R2VEC UN

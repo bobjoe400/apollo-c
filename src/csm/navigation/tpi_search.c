@@ -55,7 +55,7 @@
  *   (THETZERO, IT: half revolutions after PIINVERS), heights m 2^29.
  **********************************************************************/
 #include "../../programs/navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
 #include "agc/imu/imu.h"

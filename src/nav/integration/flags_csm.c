@@ -28,7 +28,7 @@
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   CSM only: the callers test the vehicle first.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_csm.h"
 #include "internal.h"
 

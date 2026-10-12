@@ -37,7 +37,7 @@
 #include <string.h>
 
 #include "../../src/io/dsky/pinball/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"

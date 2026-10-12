@@ -66,7 +66,7 @@ Tool-imposed: `sizeof(x)` has no space (clang-format 14 has no option for it).
 
 ## Requested core additions
 None. Findings for the lead:
-include/agc/core/assert.h shares its name with <assert.h> (3.4).
+include/agc/core/assertion.h shares its name with <assert.h> (3.4).
 README.md does not list AGC_HOST_DEBUG or the reused yaAGC tree (3.2).
 
 ## Open questions

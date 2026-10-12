@@ -53,7 +53,7 @@
 #include <stddef.h>
 
 #include "../internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"

@@ -37,7 +37,7 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/nav/auxiliary.h"
 #include "internal.h"
 

@@ -39,7 +39,7 @@
  **********************************************************************/
 #include <math.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "mpac.h"
 
 #define WORD_SCALE   16384.0 /* 2^14                                */

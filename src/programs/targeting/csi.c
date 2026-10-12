@@ -59,7 +59,7 @@
  *   nav-conic: docs/modules/review-prog-rendz.md P1.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 
 /* ---- constants (P32-P33 p.663, values as 2^28 fractions) --------------- */

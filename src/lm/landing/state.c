@@ -25,7 +25,7 @@
  **********************************************************************/
 #include <string.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/interp_words.h"
 #include "agc/core/state.h"

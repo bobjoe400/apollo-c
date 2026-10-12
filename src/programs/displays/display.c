@@ -61,7 +61,7 @@
  *   (overflow wraps); here the sum is exact.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/guidance/guidance.h"
 

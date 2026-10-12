@@ -52,7 +52,7 @@
  *   TIME3 is a 14-bit counter that overflows at 16384 cs; the overflow is
  *   T3RUPT. TIME1/TIME2 are not advanced here (the sim harness owns them).
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"

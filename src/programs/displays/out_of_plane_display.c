@@ -48,7 +48,7 @@
  *   t cs 2^28.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 
 /* State between the jobs of R36 (the AGC's RPASS36, UNP36, OPTIONY). */

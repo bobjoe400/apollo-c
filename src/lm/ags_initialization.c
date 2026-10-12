@@ -49,7 +49,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/io/service.h"

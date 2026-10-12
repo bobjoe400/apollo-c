@@ -25,7 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/io/service.h"
 #include "internal.h"
 

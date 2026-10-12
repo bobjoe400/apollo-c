@@ -62,7 +62,7 @@
  *   or ITERCTR runs out (then SUFFCHEK decides). INITV then gives VVEC
  *   and TARGETV (LAMENTER) the terminal velocity.
  *********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "internal.h"

@@ -44,7 +44,7 @@
  *   |TAU - T| <= EPSILONT = |TAU| 2^-22. Elliptic TAU beyond one period
  *   is first reduced modulo the period.
  *********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "internal.h"

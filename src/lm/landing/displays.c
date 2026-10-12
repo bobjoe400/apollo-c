@@ -34,7 +34,7 @@
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   none (TASKOVER on every path)
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"

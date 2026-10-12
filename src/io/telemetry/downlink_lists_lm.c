@@ -36,7 +36,7 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/io/service.h"
 
 /* Sublist ids (the AGC labels that are not EQUALS aliases).              */

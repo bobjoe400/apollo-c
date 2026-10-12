@@ -44,7 +44,7 @@ Language: C11, no extensions. Build flags (Makefile):
    `tools/check_rules.py` REPORTS the project density and never fails or
    warns on it. The quota reading of this rule produced 3,233 void-cast
    assertions and thousands of redundant guards in this project; do not
-   repeat it. Use `AGC_ASSERT(cond)` from `include/agc/core/assert.h`: it
+   repeat it. Use `AGC_ASSERT(cond)` from `include/agc/core/assertion.h`: it
    is side-effect free, evaluates to a `bool`, and callers recover by
    returning `AGC_STATUS_*` error codes. Never use `<assert.h>`.
 6. **Smallest scope.** Declare variables where used. Module-private state is

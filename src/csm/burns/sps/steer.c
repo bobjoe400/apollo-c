@@ -48,7 +48,7 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/guidance/guidance.h"
 #include "internal.h"
 

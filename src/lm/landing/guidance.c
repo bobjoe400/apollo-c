@@ -40,7 +40,7 @@
  *   ROOTPSRS gives up after eight passes (NO_CONVERGE: outputs not to
  *   be trusted, as in the AGC); no alarms raised here
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"

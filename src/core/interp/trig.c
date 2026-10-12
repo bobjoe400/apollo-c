@@ -43,7 +43,7 @@
  *   checked against the assembled words of both ropes.
  **********************************************************************/
 #include "../mpac.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/interp_words.h"
 
 #define SIN_DEGREE  4 /* SN1 polynomial degree (5 coefficients) */

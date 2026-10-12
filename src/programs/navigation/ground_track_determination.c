@@ -49,7 +49,7 @@
  *   Scales: RATT m 2^29, VATT m/cs 2^7, base vectors body scale, times
  *   cs 2^28, LAT LONG revolutions, P21ALT m 2^29 (altitude / 100).
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/nav/auxiliary.h"
 #include "internal.h"

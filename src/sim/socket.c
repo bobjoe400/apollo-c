@@ -27,7 +27,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "internal.h"
 
 #define SOCK_SLOTS    10   /* yaAGC DEFAULT_MAX_CLIENTS              */

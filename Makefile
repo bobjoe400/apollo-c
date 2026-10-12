@@ -68,7 +68,7 @@ $(BUILD)/tests/%: tests/%.c $(BUILD)/libagc_debug.a $(wildcard tests/oracle/*.h)
 	@mkdir -p $(dir $@)
 	$(CC) $(CSTD) $(WARN) $(CFLAGS) $(CPPFLAGS) -DAGC_HOST_DEBUG -o $@ $< $(BUILD)/libagc_debug.a -lm
 
-test: $(TEST_BINS)
+test: $(TEST_BINS) scenarios
 	@for t in $(TEST_BINS); do echo "== $$t"; $$t || exit 1; done
 
 # Power of Ten rules, Uncrustify layout, then the SEL-94-003 text checks.

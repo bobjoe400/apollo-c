@@ -62,7 +62,7 @@
 #include <stddef.h>
 
 #include "../../programs/navigation/internal.h"
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"

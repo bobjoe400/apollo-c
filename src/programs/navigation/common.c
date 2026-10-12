@@ -63,7 +63,7 @@
  *   2^5 when RTX2 = 2 (moon). NORM leaves -(left shifts) in the index
  *   register, so a normalized value of scale 2^S is at 2^(S + X).
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/guidance/guidance.h"
 #include "internal.h"

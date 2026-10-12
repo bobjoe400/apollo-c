@@ -35,7 +35,7 @@
  *   none; out-of-range inputs are reported by AGC_ASSERT and refused
  *   with AGC_STATUS_BAD_ARG
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"

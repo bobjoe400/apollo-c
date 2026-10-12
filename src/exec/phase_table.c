@@ -55,7 +55,7 @@
  *     type A  phase 0..127, type B  01000 + D 0400 + A 0200 + phase,
  *     type C  0400 + A 0200 + D 0100 + XXX 070 + CJW.
  **********************************************************************/
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "internal.h"

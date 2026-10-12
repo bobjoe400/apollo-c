@@ -36,7 +36,7 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assert.h"
+#include "agc/core/assertion.h"
 #include "agc/io/nouns.h"
 #include "internal.h"
 

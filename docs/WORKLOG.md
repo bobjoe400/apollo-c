@@ -663,3 +663,10 @@
             DOWNCNTL on values (F3). Every routed review item is closed.
             Only sim (GUI step) running; then lead assert.h rename, ONE
             EVA run, document wave.
+2026-10-12  sim acceptance DONE and committed (625fc5f): stock VirtualAGC
+            launcher + yaDSKY2 + yaTelemetry on build/agc_sim, both
+            vehicles, fresh start/V35/V16N36/P52/P30+P40; 13 headless
+            scenarios; LM P63 skipped (closed loop needs a vehicle model:
+            NASSP, stretch). Open flight bug B6. Lead: assert.h ->
+            assertion.h (guide 3.4), make test now runs the scenarios.
+            Launched fix-b6 and review-sim (Opus).
