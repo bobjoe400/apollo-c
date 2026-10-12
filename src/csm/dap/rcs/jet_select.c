@@ -513,14 +513,9 @@ agc_status_t agc_csm_jet_select(const agc_csm_jet_in_t *in, agc_csm_jet_out_t *o
     js_roll(in, &w, out);
     js_times(in, &w, out);
 
-    /**********************************************************************
-     * T6SETUP, DXCHT12, CHECKT23, DXCHT23, CALCDT6 (JET_SELECTION_LOGIC.agc
+    /* T6SETUP, DXCHT12, CHECKT23, DXCHT23, CALCDT6 (JET_SELECTION_LOGIC.agc
      * pp. 1059-1060) -- sort the on-times with their branch indices and turn
-     * them into successive T6 intervals.
-     *
-     * ARGUMENTS:
-     *   b  agc_csm_blast_t *  IO  BLAST, BLAST1, BLAST2
-     **********************************************************************/
+     * them into successive T6 intervals. */
     agc_csm_blast_t *b = out->blast;
 
     b[0].axis = AGC_CSM_JET_ROLL; /* branch indices                    */

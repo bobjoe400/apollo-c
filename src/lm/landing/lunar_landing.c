@@ -244,19 +244,12 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
                 return (st);
             }
 
-            /**********************************************************************
-             * DDUMCALC (pp. 786-787): the ignition time correction
+            /* DDUMCALC (pp. 786-787): the ignition time correction
              *          (RIGNZ - RGU2)/16 + 16 RGU1^2 KIGNY/B8 + (RGU0 - RIGNX) KIGNX/B4
              *          + (|VGU| - VIGN) KIGNV/B4
              *   DDUM = ----------------------------------------------------------
              *                     2^10 (VGU2 - 16 VGU0 KIGNX/B4)
-             * numerator 2^28 m, denominator 2^10 m/cs, quotient rescaled to 2^28 cs.
-             *
-             * ARGUMENTS:
-             *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
-             *
-             * RETURNS: agc_dp_t -- DDUM, the ignition time correction, cs 2^28
-             **********************************************************************/
+             * numerator 2^28 m, denominator 2^10 m/cs, quotient rescaled to 2^28 cs. */
             const agc_lm_ldg_t *l_ddum = agc_lm_ldg();                                                             /* landing erasables */
             const agc_lm_pad_t *p      = agc_lm_pad();                                                             /* pad loads */
             agc_dp_t            den    = agc_dp_shl_round(&ip, agc_dp_mul(&ip, l_ddum->vgu.c[0], p->kignx_b4), 4); /* VGU2 - 16 VGU0 KIGNX/B4, 2^10 m/cs */
@@ -275,15 +268,9 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
 
             if (agc_dp_abs(ddum) < LL_DDUMCRIT)
             {
-                /**********************************************************************
-                 * DDUMGOOD and R60INIT (p. 788): TIG = TDEC1 - ZOOMTIME; the landing
+                /* DDUMGOOD and R60INIT (p. 788): TIG = TDEC1 - ZOOMTIME; the landing
                  * site's distance out of the orbital plane (+ right/north); UNFC/2 kept
-                 * in R60VSAVE for the attitude maneuver.
-                 *
-                 * ARGUMENTS:
-                 *   ip     agc_interp_t *  I/O  interpreter state (OVFIND)
-                 *   tdec1  agc_dp_t        I    converged TDEC1, cs 2^28
-                 **********************************************************************/
+                 * in R60VSAVE for the attitude maneuver. */
                 agc_dp_t tdec1 = ic->tdec1;
 
                 agc_lm_ldg_t        *l  = agc_lm_ldg();                    /* landing erasables */
@@ -665,11 +652,7 @@ agc_status_t agc_lm_guildenstern(int *entry)
     if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN30, AGC_CH030_AUTOTHROT))
     {
         /* un-auto-throttle present  */
-        /**********************************************************************
-         * STARTP67 (p. 801): no harm in "starting" P67 over and over.
-         *
-         * RETURNS: agc_status_t -- OK, or the NEWMODE (MMDSPLAY NOVAC) status
-         **********************************************************************/
+        /* STARTP67 (p. 801): no harm in "starting" P67 over and over. */
         agc_status_t st = agc_phase_newmode(67); /* NEWMODE: MMDSPLAY (NOVAC) */
 
         if (st != AGC_STATUS_OK)
@@ -759,17 +742,8 @@ agc_status_t agc_lm_redesig(agc_interp_t *ip)
         w.c[0] = LL_DEPRCRIT; /* not too close to horizon  */
     }
 
-    /**********************************************************************
-     * REDES1 (p. 805): the new site where the perturbed line of sight W
-     * (half size) meets the plane of the old site's X coordinate.
-     *
-     * ARGUMENTS:
-     *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
-     *   w   agc_vec_t       I    perturbed line of sight, half size
-     *                            (2^1), x component limited by DEPRCRIT
-     *
-     * RETURNS: agc_vec_t -- LANDTEMP, the new site, SM 2^24 m
-     **********************************************************************/
+    /* REDES1 (p. 805): the new site where the perturbed line of sight W
+     * (half size) meets the plane of the old site's X coordinate. */
     agc_lm_ldg_t   *l_site = agc_lm_ldg();                                                      /* landing erasables */
     const agc_vec_t r      = agc_guid_state()->lm.r;                                            /* R, SM, 2^24 m */
     agc_dp_t        q      = agc_dp_div(ip, agc_dp_sub(ip, l_site->land.c[0], r.c[0]), w.c[0]); /* 2^24 m */

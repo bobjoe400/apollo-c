@@ -83,15 +83,9 @@ agc_status_t csm_dap_needler(void)
 
     if (f == 0u)
     {
-        /**********************************************************************
-         * NEEDLES3 (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1012) -- if the IMU error
+        /* NEEDLES3 (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1012) -- if the IMU error
          * counter is not enabled, recycle the needles (NEEDLER +5: set BIT3);
-         * otherwise NEEDLES.
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK or the NEEDLES status
-         **********************************************************************/
+         * otherwise NEEDLES. */
         agc_csm_dapcom_t *c_needles3    = agc_csm_dap_com();              /* RCSFLAGS          */
         uint16_t          ch12_needles3 = agc_chan_read(AGC_CHAN_CHAN12); /* CAF BIT6; RAND    */
 
@@ -102,16 +96,10 @@ agc_status_t csm_dap_needler(void)
             return (AGC_STATUS_OK);
         }
 
-        /**********************************************************************
-         * NEEDLES, DACLOOP (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1012) -- for Z, Y,
+        /* NEEDLES, DACLOOP (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1012) -- for Z, Y,
          * X: L = -AK/4; DACLIMIT (16000) +- L overflows when |L| >= 384, and the
          * output is then limited to +-384; the change over EDRIVE is added to
-         * CDUXCMD and L becomes the new EDRIVE. Then the DAC activity bits.
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- the first CDUXCMD write failure, else OK
-         **********************************************************************/
+         * CDUXCMD and L becomes the new EDRIVE. Then the DAC activity bits. */
         agc_csm_dapcom_t *c_needles  = agc_csm_dap_com(); /* AK, EDRIVE             */
         agc_status_t      st_needles = AGC_STATUS_OK;     /* first write failure    */
 
@@ -151,15 +139,9 @@ agc_status_t csm_dap_needler(void)
          * wait at least 60 ms before enabling the counters               */
         agc_chan_and(AGC_CHAN_CHAN12, (uint16_t) (077777u & ~(unsigned int) AGC_CH012_ENBIMUERR));
 
-        /**********************************************************************
-         * NEEDLE11 (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1011) -- first pass: zero
+        /* NEEDLE11 (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1011) -- first pass: zero
          * the inputs, the display registers and the out counters; reset RCSFLAGS
-         * for pass 2 (bit 2).
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- the first CDUXCMD write failure, else OK
-         **********************************************************************/
+         * for pass 2 (bit 2). */
         agc_csm_dapcom_t *c_needle11 = agc_csm_dap_com(); /* AK, EDRIVE, RCSFLAGS   */
         agc_status_t      st         = AGC_STATUS_OK;     /* first write failure    */
 

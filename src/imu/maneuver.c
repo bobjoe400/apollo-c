@@ -664,15 +664,10 @@ static agc_status_t incrdcdu_tmanuchk(void)
 
     if (dt == 0u)
     {
-        /**********************************************************************
-         * CONTMANU / MANUCALL (KALCMANU_STEERING.agc p.416 CM; LM p.367) --
+        /* CONTMANU / MANUCALL (KALCMANU_STEERING.agc p.416 CM; LM p.367) --
          * UPDTCALL at NEXTIME
-         *
          * DEVIATION: NEXTIME == TIME1 would give the AGC a zero WAITLIST delay;
-         * 1 cs is used instead.
-         *
-         * RETURNS: agc_status_t -- waitlist status (ENDOFJOB)
-         **********************************************************************/
+         * 1 cs is used instead. */
         agc_inhint();
 
         int diff        = nextime - (int) agc_erase_time1(); /* NEXTIME - TIME1, cs */
@@ -745,13 +740,10 @@ static agc_status_t steering_update(agc_interp_t *ip)
     { /* BONCLR CALCMAN2  */
         agc_flag_clear(AGC_FLAG_CALCMAN2);
 
-        /**********************************************************************
-         * MANUSTAT (KALCMANU_STEERING.agc p.416 CM; LM p.367) -- start the
+        /* MANUSTAT (KALCMANU_STEERING.agc p.416 CM; LM p.367) -- start the
          * maneuver
-         *
          * TM = TM + TIME2,TIME1 then (-0, -1SEC) by DAS (the words are kept for
-         * TIMECHK), the vehicle part, NEXTIME = TIME1 + 1 s.
-         **********************************************************************/
+         * TIMECHK), the vehicle part, NEXTIME = TIME1 + 1 s. */
         /* DCA TIME2, DAS TM; CS 1SEC, TS L, CS ZERO, DAS TM: the second DAS
          * adds -1SEC to the minor word only, so TM's words can disagree in
          * sign (e.g. 5, -30); TIMECHK reads them as they are.                */
@@ -767,10 +759,8 @@ static agc_status_t steering_update(agc_interp_t *ip)
 
         if (is_lm())
         {
-            /**********************************************************************
-             * RATEBIAS (KALCMANU_STEERING.agc p.367 LM) -- OMEGAxD = BRATE,
-             * DELxEROR = -|w| w / 16 / 1JACC
-             **********************************************************************/
+            /* RATEBIAS (KALCMANU_STEERING.agc p.367 LM) -- OMEGAxD = BRATE,
+             * DELxEROR = -|w| w / 16 / 1JACC */
             {
                 for (int i = 2; i >= 0; i--)
                 {
@@ -922,18 +912,10 @@ static agc_status_t kalcmanu_start(void)
         case AGC_KALC_NORMAL:
         case AGC_KALC_LARGE:
             /* LOCSKIRT         */
-            /**********************************************************************
-             * WCALC = LOCSKIRT (GIMBAL_LOCK_AVOIDANCE.agc p.412 CM; LM NOGIMLOC
+            /* WCALC = LOCSKIRT (GIMBAL_LOCK_AVOIDANCE.agc p.412 CM; LM NOGIMLOC
              * p.364)
-             *
              * DEL for one second at the selected rate (ARATE SR4), BRATE, TM = AM
-             * DMP ANGLTIME DDV ARATE SR 5, (CM) BIASTEMP; SETGO CALCMAN2 NEWANGL +1.
-             *
-             * ARGUMENTS:
-             *   ip  agc_interp_t *  I/O  interpreter state
-             *
-             * RETURNS: agc_status_t -- status of NEWANGL
-             **********************************************************************/
+             * DMP ANGLTIME DDV ARATE SR 5, (CM) BIASTEMP; SETGO CALCMAN2 NEWANGL +1. */
         {
             int idx = agc_kalc_rateindx() / 2; /* ARATE index */
 

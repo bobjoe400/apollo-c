@@ -297,13 +297,9 @@ static tvcx_step_t tvcx_step(tvcx_step_t s)
             next          = TVCX_CORRECTION_COPY;
             break;
         case TVCX_CORRECTION_COPY:
-            /**********************************************************************
-             * CORCOPY +1 (TVCEXECUTIVE.agc p. 949) -- copy the new trim estimates
+            /* CORCOPY +1 (TVCEXECUTIVE.agc p. 949) -- copy the new trim estimates
              * and trims (restart-protected): xACTOFF = upper word of xACTTMP,
-             * xDELOFF = xACTTMP.
-             *
-             * ARGUMENTS: none
-             **********************************************************************/
+             * xDELOFF = xACTTMP. */
         {
             agc_csm_tvc_t    *t_copy = agc_csm_dap_tvc(); /* TVC DAP erasables       */
             agc_csm_dapcom_t *c      = agc_csm_dap_com(); /* PACTOFF, YACTOFF        */
@@ -408,16 +404,10 @@ agc_status_t agc_task_tvcexec(void)
 
     agc_status_t st = agc_waitlist_call(HALF_SEC_CS, AGC_TASK_TVCEXEC); /* WAITLIST status */
 
-    /**********************************************************************
-     * ROLLPREP (TVCEXECUTIVE.agc p. 946) -- roll ladders (no restart
+    /* ROLLPREP (TVCEXECUTIVE.agc p. 946) -- roll ladders (no restart
      * protection needed, the roll DAP restarts itself), the roll FDAI
      * needle AK (fly-to OGA error, command - measured, B-1 rev), the
-     * phase-plane OGAERR (fly-from, B+0 rev) and the ROLLDAP task in 3 cs.
-     *
-     * ARGUMENTS: none
-     *
-     * RETURNS: agc_status_t -- the WAITLIST status
-     **********************************************************************/
+     * phase-plane OGAERR (fly-from, B+0 rev) and the ROLLDAP task in 3 cs. */
     agc_csm_tvc_t    *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* AK, OGAD                */
 

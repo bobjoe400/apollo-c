@@ -134,15 +134,9 @@ agc_status_t csm_rcs_manual(void)
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_FREE) == 0u)
     {
         /* CAF BIT14; RAND CHAN31; BZMF        */
-        /**********************************************************************
-         * FREEFUNC (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1019-1020) --
+        /* FREEFUNC (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1019-1020) --
          * acceleration commands in free mode: TAU = FREETAU by the STICKCHK
-         * indices; T6PROGM.
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- the T6PROGM status
-         **********************************************************************/
+         * indices; T6PROGM. */
         agc_csm_rcs_t *r_freefunc = agc_csm_dap_rcs(); /* MANNDX, TAU                */
 
         for (int i = 0; i < AGC_CSM_AXES; i++)
@@ -163,19 +157,12 @@ agc_status_t csm_rcs_manual(void)
         r->attkalmn = -1; /* CS FIVE; AD RATEINDX: high-rate maneuver    */
     }
 
-    /**********************************************************************
-     * SETWBODY, ZEROER, NORATE, MERUPDAT, SPNDXCHK
+    /* SETWBODY, ZEROER, NORATE, MERUPDAT, SPNDXCHK
      * (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1018-1019) -- auto-hold manual
      * rotation, axes Z, Y, X: WBODY = MANTABLE x 2^-6 (0 with no rotation);
      * once rate damping is completed MERRORX -= MANTABLE x 2^-8 (the
      * commanded change in .1 s), else MERRORX = 0 for a commanded axis or
-     * while damping; ERRORX = upper word of MERRORX; then JETS.
-     *
-     * ARGUMENTS: none
-     *
-     * RETURNS: agc_status_t -- the JETS status; AGC_STATUS_BAD_ARG for a
-     *          MANTABLE index outside the table
-     **********************************************************************/
+     * while damping; ERRORX = upper word of MERRORX; then JETS. */
     agc_csm_rcs_t          *r_setwbody = agc_csm_dap_rcs();                       /* RCS DAP erasables      */
     const agc_csm_dapcom_t *c_setwbody = agc_csm_dap_com();                       /* RCSFLAGS               */
     bool                    damped     = (c_setwbody->rcsflags & DAMPBITS) == 0u; /* rate damping completed */

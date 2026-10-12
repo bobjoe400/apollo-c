@@ -1069,16 +1069,8 @@ static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     if (ex == AGC_LM_PHASE_IGNALG)
     {
         /* back to IGNALG   */
-        /**********************************************************************
-         * EXGSUB (pp. 811-812): IGNALG exit. Trim velocity correction term
-         * UNFC/2 = UNIT(UNFC/2) ZOOMTIME TRIMACCL (2^7 m/cs), used by CALCRGVG.
-         *
-         * ARGUMENTS:
-         *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
-         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
-         **********************************************************************/
+        /* EXGSUB (pp. 811-812): IGNALG exit. Trim velocity correction term
+         * UNFC/2 = UNIT(UNFC/2) ZOOMTIME TRIMACCL (2^7 m/cs), used by CALCRGVG. */
         agc_lm_ldg_t *l_exgsub = agc_lm_ldg();                                            /* landing erasables */
         int           sh       = 0;                                                       /* NORMUNIT shift count (unused) */
         agc_vec_t     u        = agc_rtb_normunit(ip, l_exgsub->unfc_2, &sh, NULL, NULL); /* UNIT(UNFC/2), half unit 2^1 */
@@ -1107,15 +1099,10 @@ static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     }
     else
     {
-        /**********************************************************************
-         * EXNORM (pp. 812-813): window vector between UNIT(LAND - R) and CG row 2
+        /* EXNORM (pp. 812-813): window vector between UNIT(LAND - R) and CG row 2
          * according to PROJ = (UNIT(LAND - R) x XNBPIP) . CG row 1, 1/8 size:
          *   UNWC/2 = max(PROJMAX - PROJ, 0) CG row 2
-         *          + max(PROJ - PROJMIN, 0) UNIT(LAND - R).
-         *
-         * ARGUMENTS:
-         *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
-         **********************************************************************/
+         *          + max(PROJ - PROJMIN, 0) UNIT(LAND - R). */
         agc_lm_ldg_t        *l_exnorm  = agc_lm_ldg();          /* landing erasables */
         const agc_guid_lm_t *g         = &agc_guid_state()->lm; /* LM guidance state */
         int                  sh_exnorm = 0;                     /* NORMUNIT shift count (unused) */

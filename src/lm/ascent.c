@@ -682,18 +682,9 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (agc_flag_test(AGC_FLAG_FLVR))
     {
-        /**********************************************************************
-         * CHECKALT / CHECKYAW / KEEPVR (pp. 850-852): below 25,000 ft keep the
+        /* CHECKALT / CHECKYAW / KEEPVR (pp. 850-852): below 25,000 ft keep the
          * vertical rise until the line of sight is within 5 degrees of the
-         * YZ plane or RDOT exceeds 40 ft/s.
-         *
-         * ARGUMENTS:
-         *   ctx  const agc_job_ctx_t *  I    executive job context
-         *   ip   agc_interp_t *         I/O  interpreter state (OVFIND)
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
-         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
-         **********************************************************************/
+         * YZ plane or RDOT exceeds 40 ft/s. */
         if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR))) /* in the vertical rise */
         {
             return (AGC_STATUS_BAD_ARG);

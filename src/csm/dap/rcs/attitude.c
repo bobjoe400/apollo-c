@@ -150,15 +150,9 @@ agc_status_t csm_rcs_ahfnorot(void)
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_FREE) == 0u)
     {
         /* READ CHAN31; MASK BIT14; BZMF        */
-        /**********************************************************************
-         * FREECONT (AUTOMATIC_MANEUVERS.agc pp. 1025-1026) -- minimum impulse
+        /* FREECONT (AUTOMATIC_MANEUVERS.agc pp. 1025-1026) -- minimum impulse
          * control from channel 32, firing only on a new deflection (CHANTEMP
-         * holds the last image): TAU = MINTAU by the STICKCHK indices.
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- the STICKCHK or T6PROGM status
-         **********************************************************************/
+         * holds the last image): TAU = MINTAU by the STICKCHK indices. */
         agc_csm_rcs_t *r_freecont = agc_csm_dap_rcs(); /* RCS DAP erasables          */
 
         r_freecont->holdflag = 1;                                                                 /* CAF ONE; TS HOLDFLAG: inhibit steering        */
@@ -196,14 +190,8 @@ agc_status_t csm_rcs_ahfnorot(void)
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_ATTHOLD) == 0u)
     {
         /* MASK BIT13; BZMF HOLDFUNC            */
-        /**********************************************************************
-         * HOLDFUNC (AUTOMATIC_MANEUVERS.agc p. 1028) -- attitude hold: HOLDFLAG
-         * +0 holds the references; anything else grabs new ones.
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- the ATTHOLD or GRABANG status
-         **********************************************************************/
+        /* HOLDFUNC (AUTOMATIC_MANEUVERS.agc p. 1028) -- attitude hold: HOLDFLAG
+         * +0 holds the references; anything else grabs new ones. */
         const agc_csm_rcs_t *r_holdfunc = agc_csm_dap_rcs(); /* RCS DAP erasables    */
 
         if (r_holdfunc->holdflag == 0)

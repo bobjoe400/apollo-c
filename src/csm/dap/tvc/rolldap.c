@@ -454,18 +454,10 @@ agc_status_t agc_task_rolldap(void)
         return (roll_noroll());
     }
 
-    /**********************************************************************
-     * MOREROLL / NEWROLL .. MINTST, MAXTFIRE, NOMXFIRE, FIRELOOK, FIREPLUG
+    /* MOREROLL / NEWROLL .. MINTST, MAXTFIRE, NOMXFIRE, FIRELOOK, FIREPLUG
      * (TVCROLLDAP.agc pp. 994-996) -- fire for the signed firing time: keep
      * firing with the present polarity (shorten only), stop for a new sign,
-     * or start a new firing of at least TMINFIRE, at most TMAXFIRE.
-     *
-     * ARGUMENTS:
-     *   tf  agc_sp_t  I  firing time, 625 us/bit, non-zero (+ positive
-     *                    roll torque)
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of JETROLL
-     **********************************************************************/
+     * or start a new firing of at least TMINFIRE, at most TMAXFIRE. */
     agc_csm_tvc_t *t_fire = agc_csm_dap_tvc(); /* TVC DAP erasables          */
     agc_sp_t       f      = tf;                /* TEMREG, unscaled 625 us/bit */
 

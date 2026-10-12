@@ -249,15 +249,8 @@ static agc_w3_t sine_words(agc_w2_t m)
         x.lo = -x.lo;                /* CS MPAC +1       */
     }
 
-    /**********************************************************************
-     * SN1 (INTERPRETER.agc p.1188) -- x (scaled at pi, |x| <= pi/2) times
-     * the Hastings polynomial in x^2, shifted left 2: (1/2) sin(x).
-     *
-     * ARGUMENTS:
-     *   x  agc_w2_t  I  reduced argument (BUF2), signs may disagree
-     *
-     * RETURNS: agc_w3_t -- sin(x)/2 (scaled at 2) as the TP MPAC
-     **********************************************************************/
+    /* SN1 (INTERPRETER.agc p.1188) -- x (scaled at pi, |x| <= pi/2) times
+     * the Hastings polynomial in x^2, shifted left 2: (1/2) sin(x). */
     agc_w3_t sq;    /* x^2 (DSQSUB), scaled at pi^2             */
     agc_w3_t p;     /* Hastings polynomial in x^2, scaled at 1  */
     agc_w3_t r;     /* x P(x^2), then 4 x P = sin(x)/2          */

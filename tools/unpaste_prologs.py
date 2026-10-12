@@ -24,11 +24,11 @@ def rewrite(path):
             while j < len(lines) and not CLOSE.match(lines[j]):
                 j += 1
             block = lines[i + 1:j]
-            if j < len(lines) and any('FUNCTION NAME:' in b for b in block):
+            if j < len(lines):
                 ind = m.group(1)
                 desc = []
                 for b in block:
-                    if 'FUNCTION NAME:' in b:
+                    if any(k in b for k in ('FUNCTION NAME:', 'ARGUMENTS:', 'RETURNS:')):
                         break
                     t = re.sub(r'^\s*\*\s?', '', b).rstrip()
                     if t:

@@ -199,16 +199,10 @@ agc_status_t csm_rcs_rate_filter_phase(void)
     if ((agc_erase_imodes33() & CSM_DAP_BIT6) != 0u)
     {
         /* BIT6 = 1: no IMU                     */
-        /**********************************************************************
-         * FREECHK (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1004) -- no attitude
+        /* FREECHK (RCS-CSM_DIGITAL_AUTOPILOT.agc p. 1004) -- no attitude
          * reference: set NORATE and HOLDFLAG (BIT14) to stop any automatic
          * steering and pick up the CDU angles on resumption of attitude hold;
-         * in free mode provide free control only (KRESUME1), else REINIT.
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK or the REINIT status
-         **********************************************************************/
+         * in free mode provide free control only (KRESUME1), else REINIT. */
         agc_csm_rcs_t    *r_freechk = agc_csm_dap_rcs(); /* HOLDFLAG                */
         agc_csm_dapcom_t *c         = agc_csm_dap_com(); /* RCSFLAGS                */
 

@@ -756,18 +756,10 @@ agc_status_t agc_task_coarse_align_commands(void)
 
     for (int cduind = 2; cduind >= 0; cduind--)
     { /* CDUIND 2, 1, 0  */
-        /**********************************************************************
-         * COARS1 (IMU_MODE_SWITCHING_ROUTINES.agc p.1423) -- COMMAND for one
+        /* COARS1 (IMU_MODE_SWITCHING_ROUTINES.agc p.1423) -- COMMAND for one
          * CDU
-         *
          * (THETAD - CDU) MP BIT13 (shift right 2) and rounded: pulses at 4 per
-         * CDU count.
-         *
-         * ARGUMENTS:
-         *   axis  int  I    CDUIND 0..2
-         *
-         * RETURNS: agc_sp_t -- COMMAND, pulses B0
-         **********************************************************************/
+         * CDU count. */
         int diff = cdu_msu(agc_erase_thetad(cduind), cdu_read(cduind)); /* CDU */
         int mag  = (diff < 0) ? -diff : diff;                           /* |THETAD - CDU|, CDU    */
         int cmd  = (mag >> 2) + (((mag & 3) >= 2) ? 1 : 0);             /* MP BIT13, round */

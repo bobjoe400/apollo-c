@@ -67,14 +67,8 @@ static const agc_sp_t fcard_bursts[3] = {6, 5, 4};
  **********************************************************************/
 agc_status_t agc_job_strktsti(void)
 {
-    /**********************************************************************
-     * TSTINIT (TVCSTROKETEST.agc p. 982) -- CADDY = N = -FCADDY, REVS =
-     * FREVS, CARD = -FCARD (sign changes + to -).
-     *
-     * ARGUMENTS: none
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK (TC Q)
-     **********************************************************************/
+    /* TSTINIT (TVCSTROKETEST.agc p. 982) -- CADDY = N = -FCADDY, REVS =
+     * FREVS, CARD = -FCARD (sign changes + to -). */
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     t->caddy        = (agc_sp_t) -FCADDY; /* CS FCADDY; TS CADDY             */
@@ -127,13 +121,9 @@ static void stroke_burst(void)
         else
         {
             /* exit, end of set                           */
-            /**********************************************************************
-             * HACKWLST +12 .. STROKILL (TVCSTROKETEST.agc pp. 982-983) -- end of a
+            /* HACKWLST +12 .. STROKILL (TVCSTROKETEST.agc pp. 982-983) -- end of a
              * stroke set (CCS REVS negative): INCR CARD; with all sets completed
-             * STROKER = +0 (STROKILL), otherwise REVS, N, CADDY for the next set.
-             *
-             * ARGUMENTS: none
-             **********************************************************************/
+             * STROKER = +0 (STROKILL), otherwise REVS, N, CADDY for the next set. */
             agc_csm_tvc_t *t_set = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
             t_set->card = (agc_sp_t) (t_set->card + 1); /* INCR CARD                    */

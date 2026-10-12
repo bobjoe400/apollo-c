@@ -739,14 +739,7 @@ static agc_status_t pin_charin2(uint8_t code)
         case 011:
             s->chr = (uint8_t) (code - 010u + 8u);
 
-            /**********************************************************************
-             * 89TEST (p. 316): 8 or 9 is accepted only in decimal.
-             *
-             * ARGUMENTS: none
-             *
-             * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
-             *          status of the routine it calls
-             **********************************************************************/
+            /* 89TEST (p. 316): 8 or 9 is accepted only in decimal. */
             if (!AGC_ASSERT(pin_invariants()))
             {
                 return (AGC_STATUS_BAD_ARG);

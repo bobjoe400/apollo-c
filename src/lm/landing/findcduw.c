@@ -754,18 +754,9 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
         return (st);
     }
 
-    /**********************************************************************
-     * DCMCL (p. 913): the required direction cosine matrix. The filtered
+    /* DCMCL (p. 913): the required direction cosine matrix. The filtered
      * thrust offsets (UNFVY/2, UNFVZ/2) tilt X so that the estimated thrust,
-     * not the X axis, lies along the command.
-     *
-     * ARGUMENTS:
-     *   ip   agc_interp_t *  I/O  interpreter state (OVFIND)
-     *   unx  agc_vec_t       I    thrust command, half unit 2^1
-     *   unz  agc_vec_t       I    window vector, half unit 2^1
-     *
-     * RETURNS: agc_mat_t -- required nav base rows in SM axes, 2^1
-     **********************************************************************/
+     * not the X axis, lies along the command. */
     agc_vec_t unz_dcmcl = fc_window(ip, unx, unz);
 
     agc_vec_t uny1    = agc_vec_unit(ip, agc_vec_cross(ip, unz_dcmcl, unx), NULL, NULL); /* UNIT(UNZ x UNX), half unit 2^1 */

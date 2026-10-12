@@ -428,12 +428,8 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
     if (ax == TVCD_PITCH)
     {
         /* the yaw DAP uses the pitch pass's rates     */
-        /**********************************************************************
-         * PCDUDOTS (TVCDAPS.agc p. 964) -- minus CDU rates for pitch and yaw
-         * (past - present), used by both DAPs; updates the past values.
-         *
-         * ARGUMENTS: none
-         **********************************************************************/
+        /* PCDUDOTS (TVCDAPS.agc p. 964) -- minus CDU rates for pitch and yaw
+         * (past - present), used by both DAPs; updates the past values. */
         agc_csm_tvc_t *t_pcdudots = agc_csm_dap_tvc(); /* TVC DAP erasables          */
         uint16_t       y          = agc_erase_cduy();  /* CDUY, raw counter word     */
         uint16_t       z          = agc_erase_cduz();  /* CDUZ, raw counter word     */
@@ -444,15 +440,8 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
         t_pcdudots->pcduzpst = z;
     }
 
-    /**********************************************************************
-     * PINTEGRL .. PDAPEND / YINTEGRL .. YDAPEND (TVCDAPS.agc pp. 964-969)
-     * -- the body of one DAP pass after the T5 set-up and stroke check.
-     *
-     * ARGUMENTS:
-     *   ax  tvcd_axis_t  I  TVCD_PITCH or TVCD_YAW
-     *
-     * RETURNS: agc_status_t -- the copycycle's status (AGC_STATUS_OK)
-     **********************************************************************/
+    /* PINTEGRL .. PDAPEND / YINTEGRL .. YDAPEND (TVCDAPS.agc pp. 964-969)
+     * -- the body of one DAP pass after the T5 set-up and stroke check. */
     agc_csm_tvc_t *t_dap = agc_csm_dap_tvc();  /* TVC DAP erasables          */
     bool           p     = (ax == TVCD_PITCH); /* pitch pass                 */
 
@@ -466,14 +455,9 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
 
     tvcd_fwdfltr();
 
-    /**********************************************************************
-     * POFFSET .. POUT / YOFFSET .. YOUT (TVCDAPS.agc pp. 965, 968) -- add
+    /* POFFSET .. POUT / YOFFSET .. YOUT (TVCDAPS.agc pp. 965, 968) -- add
      * the trim estimate, round and limit, and send the increment over the
-     * last command to the optics error counter with its count release.
-     *
-     * ARGUMENTS:
-     *   ax  tvcd_axis_t  I  TVCD_PITCH or TVCD_YAW
-     **********************************************************************/
+     * last command to the optics error counter with its count release. */
     agc_csm_tvc_t *t_output = agc_csm_dap_tvc();  /* TVC DAP erasables          */
     bool           p_output = (ax == TVCD_PITCH); /* pitch pass                 */
 
@@ -503,14 +487,9 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
     tvcd_precomp();
 
     /* DELBARx: ?: axis      */
-    /**********************************************************************
-     * DELBARP / DELBARY (TVCDAPS.agc pp. 966, 969) -- the offset-tracker
+    /* DELBARP / DELBARY (TVCDAPS.agc pp. 966, 969) -- the offset-tracker
      * filter DELBRTMP = E(-AT) DELBAR + (1 - E(-AT)) CMDTMP, the lower word
-     * of DELBAR and the upper word of CMDTMP each multiplied alone.
-     *
-     * ARGUMENTS:
-     *   delbar  agc_dp_words_t  I  DELPBAR or DELYBAR, 1 ascrev
-     **********************************************************************/
+     * of DELBAR and the upper word of CMDTMP each multiplied alone. */
     agc_dp_words_t delbar = p ? t_dap->delpbar : t_dap->delybar;
 
     agc_csm_tvc_t *t_delbar = agc_csm_dap_tvc(); /* TVC DAP erasables          */

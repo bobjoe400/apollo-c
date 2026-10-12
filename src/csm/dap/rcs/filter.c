@@ -238,16 +238,9 @@ agc_status_t csm_rcs_kmatrix(void)
 
     if (r->holdflag < 0)
     { /* CS HOLDFLAG; BZMF DACNDLS: automatic steering only */
-        /**********************************************************************
-         * DCDUINCR, DELOOP (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1007-1008) --
+        /* DCDUINCR, DELOOP (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1007-1008) --
          * CDUXD = CDUXD + DELCDUX (DP, modulo 360 deg via DPADD), THETADX =
-         * upper word of CDUXD; axes Z, Y, X.
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when
-         *          HOLDFLAG is not negative
-         **********************************************************************/
+         * upper word of CDUXD; axes Z, Y, X. */
         agc_csm_rcs_t *r_dcduincr = agc_csm_dap_rcs(); /* RCS DAP erasables          */
 
         if (!AGC_ASSERT(r_dcduincr->holdflag < 0))
@@ -271,17 +264,11 @@ agc_status_t csm_rcs_kmatrix(void)
         return (st);
     }
 
-    /**********************************************************************
-     * DACNDLS, FDAIDSP1, KRESUME1, FDAIDSP2 (RCS-CSM_DIGITAL_AUTOPILOT.agc
+    /* DACNDLS, FDAIDSP1, KRESUME1, FDAIDSP2 (RCS-CSM_DIGITAL_AUTOPILOT.agc
      * pp. 1009, 1022) -- alternate between driving the needles (FDAIDSP1:
      * NEEDLER) and preparing AK..AK2 (FDAIDSP2). With NEEDLFLG off (V61)
      * the needles show the autopilot following errors -ERRORX..Z; with it
-     * on, the total attitude errors (FDAITOTL).
-     *
-     * ARGUMENTS: none
-     *
-     * RETURNS: agc_status_t -- the NEEDLER status, or AGC_STATUS_OK
-     **********************************************************************/
+     * on, the total attitude errors (FDAITOTL). */
     const agc_csm_rcs_t *r_dacndls = agc_csm_dap_rcs(); /* RCS DAP erasables    */
     agc_csm_dapcom_t    *c         = agc_csm_dap_com(); /* AK, RCSFLAGS         */
 
@@ -297,16 +284,10 @@ agc_status_t csm_rcs_kmatrix(void)
     if (agc_flag_test(AGC_FLAG_NEEDLFLG))
     {
         /* total attitude errors   */
-        /**********************************************************************
-         * FDAITOTL, WRTN22, WRTN17, GETAKS (RCS-CSM_DIGITAL_AUTOPILOT.agc
+        /* FDAITOTL, WRTN22, WRTN17, GETAKS (RCS-CSM_DIGITAL_AUTOPILOT.agc
          * pp. 1022-1023) -- total attitude error with respect to N22 (THETAD,
          * N22ORN17 set: V62) or N17 (CPHIX, V63), resolved into S/C control
-         * axes as a fly-to indicator: AK = AMGB (THETA - CDU), 180 deg.
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK (end phase 1)
-         **********************************************************************/
+         * axes as a fly-to indicator: AK = AMGB (THETA - CDU), 180 deg. */
         const agc_csm_rcs_t *r_fdaitotl         = agc_csm_dap_rcs();                                     /* AMGB                     */
         agc_csm_dapcom_t    *c_fdaitotl         = agc_csm_dap_com();                                     /* AK, CPHIX                */
         bool                 use_desired_angles = agc_flag_test(AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES); /* N22ORN17 */

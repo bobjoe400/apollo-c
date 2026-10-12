@@ -576,18 +576,9 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
 
     if (!agc_phase_checkmm(70))
     {
-        /**********************************************************************
-         * P71RET (p. 835): ascent threshold; after P70 (FLAP) the remaining TGO
+        /* P71RET (p. 835): ascent threshold; after P70 (FLAP) the remaining TGO
          * is doubled (OLDTIME) and the targets kept; otherwise TGO from TIG and
-         * the APS injection targets (INJTARG).
-         *
-         * ARGUMENTS:
-         *   ctx  agc_job_ctx_t *  I    executive job context
-         *   ip   agc_interp_t *   I/O  interpreter state (OVFIND)
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
-         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
-         **********************************************************************/
+         * the APS injection targets (INJTARG). */
         agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
         agc_flag_clear(AGC_FLAG_LETABORT);
@@ -616,16 +607,7 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
         return (ab_upthrot(ctx));
     }
 
-    /**********************************************************************
-     * P70INIT (p. 833): DPS engine data and targets for P70.
-     *
-     * ARGUMENTS:
-     *   ctx  agc_job_ctx_t *  I    executive job context
-     *   ip   agc_interp_t *   I/O  interpreter state (OVFIND)
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
-     *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
-     **********************************************************************/
+    /* P70INIT (p. 833): DPS engine data and targets for P70. */
     {
         agc_lm_asc_t *a    = agc_lm_asc();              /* ascent erasables */
         agc_dp_t      mass = agc_guid_state()->lm.mass; /* MASS, 2^16 kg */

@@ -272,14 +272,9 @@ static agc_status_t ld_continue(void)
 {
     if (ld_altpath == LD_ALTROUT)
     {
-        /**********************************************************************
-         * ALTROUT +1 / ARCOMP (p. 898): altitude rate = RUNIT . VVECT in bit
+        /* ALTROUT +1 / ARCOMP (p. 898): altitude rate = RUNIT . VVECT in bit
          * units plus the DALTRATE compensation; positive rates go out with the
-         * sign bit set (never +0).
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
-         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
-         **********************************************************************/
+         * sign bit set (never +0). */
         {
             ld_imodes33_bits(LD_BIT7, 0u);                  /* altitude next time         */
             agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_ALTRATESEL);
@@ -312,14 +307,9 @@ static agc_status_t ld_continue(void)
 
     if (ld_altpath == LD_ALTOUT)
     {
-        /**********************************************************************
-         * ALTOUT +1 (p. 899): altitude. New data from SERVICER (ALTBITS not
+        /* ALTOUT +1 (p. 899): altitude. New data from SERVICER (ALTBITS not
          * negative) restarts the extrapolation over DT; otherwise the old value
-         * is carried on by half a second of ALTRATE.
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
-         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
-         **********************************************************************/
+         * is carried on by half a second of ALTRATE. */
         ld_imodes33_bits(0u, LD_BIT7);            /* altitude rate next time    */
         agc_chan_and(AGC_CHAN_CHAN14, (uint16_t) (077777u & ~(unsigned int) AGC_CH014_ALTRATESEL));
         agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
@@ -372,13 +362,8 @@ static agc_status_t ld_disindat(void)
 
     if (agc_flag_test(AGC_FLAG_DIDFLAG))
     {
-        /**********************************************************************
-         * SPEEDRUN (pp. 901-902): VVECT = V + G (T - TN) + DELV now, m/cs 2^5;
-         * then a 40 ms pause to let other rupts in.
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
-         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
-         **********************************************************************/
+        /* SPEEDRUN (pp. 901-902): VVECT = V + G (T - TN) + DELV now, m/cs 2^5;
+         * then a 40 ms pause to let other rupts in. */
         {
             const agc_guid_t *g = agc_guid_state();                                           /* guidance state */
             int32_t           d = (int32_t) agc_lm_time1() - agc_dp_low(agc_erase_piptime()); /* TIME1 - PIPTIME +1, cs (TIME1 may wrap) */

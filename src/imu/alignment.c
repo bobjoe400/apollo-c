@@ -204,12 +204,9 @@ agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb, const agc_mat
 
     if (agc_dp_sub(ip, agc_dp_abs(mgc), SIXTY_DEG_REV) >= 0)
     {
-        /**********************************************************************
-         * GIMLOCK1 (INFLIGHT_ALIGNMENT_ROUTINES.agc p.1360) -- middle gimbal
+        /* GIMLOCK1 (INFLIGHT_ALIGNMENT_ROUTINES.agc p.1360) -- middle gimbal
          * beyond 60 deg
-         *
-         * ALARM 00401, UPFLAG GLOKFAIL, then CALCGA1 goes on.
-         **********************************************************************/
+         * ALARM 00401, UPFLAG GLOKFAIL, then CALCGA1 goes on. */
         agc_alarm(ALARM_GIMBAL_LOCK); /* ALARM 00401  */
 
         agc_flag_set(AGC_FLAG_GLOKFAIL); /* UPFLAG       */
