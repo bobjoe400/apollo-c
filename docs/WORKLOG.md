@@ -713,3 +713,8 @@
             findings (lm/dap 46, csm/burns 14, nav/aux 11, ...), `make
             prolog-report`. Launched prolog-consistency (Opus) on them,
             excluding loose-ends' directories; those follow after it.
+2026-10-12  User: functions that always return OK must be void (rule 7);
+            EVA does not report that. Lead wrote tools/always_ok.py
+            (`make always-ok-report`): 94 functions (77 public, 24 job/task
+            entries). User: a lane does the sweep, not the lead -> queued
+            always-ok for the next free slot; added to the freeze gate.

@@ -23,7 +23,7 @@ UNCRUSTIFY     ?= uncrustify
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report clean
+.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report always-ok-report clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -165,3 +165,8 @@ compile_commands:
 # text, flags or calls a prolog names that the body no longer has.
 prolog-report:
 	@python3 -I tools/prolog_check.py --tsv $(BUILD)/prolog_findings.tsv | tail -1
+
+# Rule 7: agc_status_t functions whose every return is AGC_STATUS_OK
+# (report only; the fix is to make them void and drop callers' plumbing).
+always-ok-report:
+	@python3 -I tools/always_ok.py --tsv $(BUILD)/always_ok.tsv | tail -1
