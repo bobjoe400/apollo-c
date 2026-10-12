@@ -101,6 +101,8 @@
 #define SIM_CFG_LINES  1000         /* bound on --cfg lines read               */
 #define SIM_CFG_LINE   130          /* longest --cfg line                      */
 #define SIM_EXIT_USAGE 2            /* exit status: start-up refused           */
+#define SIM_PATH_MAX   512          /* longest executable path                 */
+#define SIM_ROPE_NAME  64           /* longest rope file name                  */
 
 typedef enum sim_mode
 {
@@ -153,6 +155,7 @@ static const char *const k_value_names[SIM_OPT_COUNT] = {"-vehicle", "-port", "-
 static const char *const k_ignored[] = {"-debug", "-nodebug", "-directory", "-symtab", "-symbols", "-fullname", "-interlace", "-dump-time", "-cdu-log", "-debug-dsky", "-debug-deda", "-deda-quiet", "-inhibit-alarms", "-show-alarms", "-initialize-sunburst-37", "-no-resume", "-command", "-interpreter", "-nx", "-args"};
 
 static bool         parse_args(int argc, char *argv[], sim_opts_t *o);
+static agc_status_t rope_load_default(agc_vehicle_t vehicle, const char *argv0);
 static agc_status_t start(const sim_opts_t *o, const char *argv0);
 static void         run(const sim_opts_t *o);
 static void         print_summary(const sim_opts_t *o);
@@ -544,6 +547,54 @@ static bool parse_args(int argc, char *argv[], sim_opts_t *o)
 } /* parse_args */
 
 /**********************************************************************
+ * AGC: none -- without --core: the vehicle's rope from
+ * tools/oracle/ropes, looked up from the working directory, then next
+ * to the executable (build/..). Not finding it is not an error for the
+ * run: ROPECHK then passes every bank (self_check.c DEVIATION); the
+ * caller logs it.
+ *
+ * ARGUMENTS:
+ *   vehicle  agc_vehicle_t  I  the vehicle
+ *   argv0    const char *   I  argv[0], used when /proc is missing
+ *
+ * RETURNS: agc_status_t -- as sim_rope_load; NOT_FOUND when neither
+ *          place has the rope
+ **********************************************************************/
+static agc_status_t rope_load_default(agc_vehicle_t vehicle, const char *argv0)
+{
+    const char *name = (vehicle == AGC_VEHICLE_LM) ? "Luminary099" : "Comanche055"; /* rope of the vehicle */
+    char        path[SIM_PATH_MAX + SIM_ROPE_NAME];                                        /* candidate path */
+    char        exe[SIM_PATH_MAX];                                                     /* executable path */
+    ssize_t     n    = readlink("/proc/self/exe", exe, sizeof (exe) - 1u);          /* its length, -1 without /proc */
+
+    (void) snprintf(path, sizeof (path), "tools/oracle/ropes/%s.bin", name); /* stdlib: fits */
+    agc_status_t st = sim_rope_load(path);                                   /* from the working directory */
+
+    if (st == AGC_STATUS_NOT_FOUND)
+    {
+        if (n > 0)
+        {
+            exe[n] = '\0';
+        }
+        else
+        {
+            (void) snprintf(exe, sizeof (exe), "%s", argv0); /* stdlib: no /proc, argv[0] */
+        }
+
+        char *slash = strrchr(exe, '/'); /* end of the directory */
+
+        if (slash != NULL)
+        {
+            *slash = '\0';
+            (void) snprintf(path, sizeof (path), "%s/../tools/oracle/ropes/%s.bin", exe, name); /* stdlib: truncation only fails the open */
+            st     = sim_rope_load(path);
+        }
+    }
+
+    return (st);
+}
+
+/**********************************************************************
  * AGC: none -- fixed memory: the --core rope, else the vehicle's rope
  * from tools/oracle/ropes; without one ROPECHK passes every bank
  * (logged). Prints the banner.
@@ -558,7 +609,7 @@ static bool parse_args(int argc, char *argv[], sim_opts_t *o)
 static agc_status_t load_rope(const sim_opts_t *o, const char *argv0)
 {
     const char  *name = (o->vehicle == AGC_VEHICLE_LM) ? "LM, Luminary099" : "CSM, Comanche055";               /* banner */
-    agc_status_t st   = (o->core != NULL) ? sim_rope_load(o->core) : sim_rope_load_default(o->vehicle, argv0); /* given or default */
+    agc_status_t st   = (o->core != NULL) ? sim_rope_load(o->core) : rope_load_default(o->vehicle, argv0); /* given or default */
 
     if (st == AGC_STATUS_NOT_FOUND && o->core == NULL)
     {

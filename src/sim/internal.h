@@ -82,6 +82,10 @@ uint32_t     sim_socket_take_steps(void);                    /* lockstep credit 
 void         sim_socket_ack(uint32_t done);                  /* lockstep: N cs run    */
 bool         sim_socket_lost_lockstep(void);                 /* stepping client gone  */
 
+/* ---- host hooks: socket.c for agc_sim, src/nassp for NASSP -------------- */
+bool sim_host_downrupt_external(void); /* DOWNRUPT requested by the host, not the clock */
+void sim_host_radar_read(void);        /* radar cycle complete: host stores RNRAD       */
+
 /* ---- channels and counters (channels.c, counters.c) ------------------- */
 agc_status_t sim_channels_init(void);
 void         sim_channels_sync(void);           /* broadcast changes     */
@@ -103,7 +107,9 @@ typedef struct sim_stats
 } sim_stats_t;
 
 void     sim_clock_init(void);
-void     sim_clock_tick(void);
+void     sim_clock_tick(void);  /* one centisecond = 32 counts */
+void     sim_clock_count(void); /* one scaler count, 1/3200 s  */
+bool     sim_irq_pending(sim_irq_t irq);
 void     sim_irq_request(sim_irq_t irq);
 uint32_t sim_clock_cs(void);
 bool     sim_clock_standby(void);   /* SBY: only the scaler runs */
@@ -117,7 +123,6 @@ bool         sim_pad_is_pad(const char *path);
 /* ---- rope image as fixed memory (rope.c) ------------------------------ */
 agc_status_t sim_rope_vehicle(const char *path, agc_vehicle_t *vehicle);
 agc_status_t sim_rope_load(const char *path);
-agc_status_t sim_rope_load_default(agc_vehicle_t vehicle, const char *argv0);
 
 /* ---- timed input script (script.c) ------------------------------------ */
 agc_status_t sim_script_open(const char *path);

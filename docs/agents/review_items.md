@@ -112,3 +112,12 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - all: about six assertions repeat the statement just above them and cannot fail: delete (list in document.md Findings).
 - prog-align: two P52 function prologs name the label "CALL" instead of S52.3 / S52.2.
 - exec: agc_exec_vac_claim's prolog describes an output pointer as an input index.
+
+## From lm-simulator (2026-10-12; closed loop vs yaAGC; docs/modules/lm-simulator.md "Bugs found" and Findings) -- closed-loop-fixes lane
+- L1 (io-dsky/exec): a V37 refused with alarm 1520 also lights OPR ERR: cp_refuse returns AGC_STATUS_ALARM, which PIN_STATUS_RECYCLE aliases (src/io/dsky/pinball/internal.h:52), so ENTER runs again (change_program/sequence.c:117, pinball/keys.c:448). AGC CANTROD/V37BAD, Luminary p.227.
+- L2 (imu/verbs): extended_verbs.c:828 FINEK2 pulses gyro.c's private OGC buffer but the V25N93 load writes agc_align_ram()->ogc (nouns.c:235): V42 fine align never torques. EXTENDED_VERBS Luminary p.273.
+- L3 (dap-lm): t6rupt.c:252 MIDORLST computes +0 where the AGC's SU TIME6 gives -0; T6JOBCHK then hits CCSHOLE and POODOO 01103 during jet firings. Q_R-AXIS Luminary p.1457.
+- PROG display after a POODOO restart: yaAGC blank, ours 00 (not root-caused).
+- S-L1 (sim): channels.c:200 broadcasts ch5/6 only on change; yaAGC sends a packet on every write and the LM Simulator applies jets one packet late: match yaAGC.
+- S-L2 (sim): CDU counts applied at once where yaAGC paces them at 400/6400 per second (review-sim paced the drive; check the LM Simulator path).
+- S-L3 (alignment): coarse-align alarm 00211 raised by yaAGC, not by ours (finding in the note).

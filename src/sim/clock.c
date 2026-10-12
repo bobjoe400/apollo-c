@@ -123,6 +123,7 @@
 #define SIM_SBY_DECIDE    04000u      /* 0.64 s later: standby in or out        */
 
 static uint32_t    g_cs;                 /* centiseconds since power-on            */
+static uint32_t    g_count;              /* scaler counts into this centisecond    */
 static bool        g_irq[SIM_IRQ_COUNT]; /* interrupt requests                     */
 static int         g_radar_gate;         /* radar gate counter, TIME5 phases       */
 static bool        g_trap[SIM_TRAPS];    /* HANDRUPT traps 31A 31B 32 armed        */
@@ -141,6 +142,7 @@ static bool        g_sby_still;          /* yaAGC SbyStillPressed               
 void sim_clock_init(void)
 {
     g_cs          = 0;
+    g_count       = 0;
     g_radar_gate  = 0;
     g_scaler      = SIM_PHASE_TIME1; /* the first count is a TIME1 phase */
     g_standby     = false;
@@ -422,7 +424,7 @@ static void time1_phase(void)
         g_stats.errors += (agc_waitlist_tick(1) == AGC_STATUS_OK) ? 0u : 1u; /* PINC TIME3, no overflow */
     }
 
-    if ((g_cs % SIM_DOWN_CS) == 0u)
+    if ((g_cs % SIM_DOWN_CS) == 0u && !sim_host_downrupt_external())
     {
         sim_irq_request(SIM_IRQ_DOWNLINK);
     }
@@ -469,6 +471,7 @@ static void clock_counters(uint32_t scaler)
     { /* radar cycle complete: RNRAD holds what the radar shifted in */
         g_radar_gate = 0;
         agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_RADAR & SIM_WORD_MASK));
+        sim_host_radar_read(); /* the host shifts the radar's reading into RNRAD */
         sim_irq_request(SIM_IRQ_RADAR);
     }
 }
@@ -704,6 +707,50 @@ static void clock_step(uint32_t scaler)
 }
 
 /**********************************************************************
+ * AGC: none -- whether an interrupt request is still waiting to be taken
+ * (yaAGC InterruptRequests[n] != 0).
+ *
+ * ARGUMENTS:
+ *   irq  sim_irq_t  I  the request
+ *
+ * RETURNS: bool -- requested and not yet taken
+ **********************************************************************/
+bool sim_irq_pending(sim_irq_t irq)
+{
+    return (g_irq[irq]);
+}
+
+/**********************************************************************
+ * AGC: none -- one scaler count (1/3200 s); the 32nd count of a
+ * centisecond also runs the executive's idle pass and the peripheral
+ * outputs (channels.c). Hosts that step the AGC finer than a centisecond
+ * (src/nassp) call this; sim_clock_tick is 32 of them.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+void sim_clock_count(void)
+{
+    clock_step(g_scaler);
+    g_scaler = (g_scaler + 1u) % SIM_SCALER_MOD;
+    g_count++;
+
+    if (g_count == SIM_SCALER_CS)
+    {
+        g_count = 0;
+
+        if (!g_standby)
+        {
+            clock_exec(true);
+        }
+
+        g_stats.errors += (sim_channels_tick(g_cs) == AGC_STATUS_OK) ? 0u : 1u; /* a CDU drive count the IMU refused */
+        sim_channels_sync();
+        g_cs++;
+        g_stats.cs     = g_cs;
+    }
+}
+
+/**********************************************************************
  * AGC: none -- one centisecond: 32 scaler counts, the executive, the
  * peripheral outputs (channels.c).
  *
@@ -713,17 +760,6 @@ void sim_clock_tick(void)
 {
     for (uint32_t k = 0; k < SIM_SCALER_CS; k++)
     {
-        clock_step(g_scaler);
-        g_scaler = (g_scaler + 1u) % SIM_SCALER_MOD;
+        sim_clock_count();
     }
-
-    if (!g_standby)
-    {
-        clock_exec(true);
-    }
-
-    g_stats.errors += (sim_channels_tick(g_cs) == AGC_STATUS_OK) ? 0u : 1u; /* a CDU drive count the IMU refused */
-    sim_channels_sync();
-    g_cs++;
-    g_stats.cs     = g_cs;
 }

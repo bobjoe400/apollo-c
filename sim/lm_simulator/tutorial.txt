@@ -1,0 +1,156 @@
+# LM Simulator tutorial (virtualagc/Contributed/LM_Simulator, readme.html
+# section 4) flown by tools/lm_sim.py on build/agc_sim and on yaAGC with the
+# Luminary099 rope.  Crew actions go through the simulator's own controls;
+# `snap` checkpoints are compared across the two AGCs (docs/modules/
+# lm-simulator.md).  Times are wall-clock seconds: both AGCs run real time.
+
+# ---- 0.1 AGC initialisation -------------------------------------------
+wait 3
+snap power_on display=skip         # power-on state differs by design (see note)
+keys R                             # RSET: clear the power-on RESTART / PROG lamps
+keys V35E                          # lights test
+wait 2
+snap lights_test
+shot lights_test                   # --gui only
+wait 6
+snap lights_test_end display=skip  # restores the power-on display (differs)
+keys V36E                          # fresh start (DOFSTART, L p.214)
+wait 3
+snap fresh_start
+
+# ---- 1.1 IMU start: ISS turn-on, 90 s delay, NO ATT off ---------------
+crew ISS
+until LAMP NOATT on within 20
+until LAMP NOATT off within 150
+snap iss_up
+keys R
+keys V37E00E
+until PROG 00 within 10
+snap p00
+
+# ---- 1.3 coarse align V41N20 to 10 / 20 / 30 deg ----------------------
+keys V41N20E
+wait 2
+snap coarse_load reg=skip
+keys +01000E
+keys +02000E
+keys +03000E
+wait 30
+snap coarse_done deg=0.2
+keys V16N20E
+wait 3
+snap coarse_n20 reg=2 deg=0.2
+shot coarse_n20                   # --gui only
+keys V05N09E
+wait 2
+snap coarse_alarms
+keys R
+
+# ---- 1.4 fine align V42: torque +1.000 / +2.000 / -1.500 deg ----------
+keys V42E
+wait 2
+snap fine_load reg=skip
+keys +01000E
+keys +02000E
+keys -01500E
+wait 25
+snap fine_done deg=0.2
+keys V16N20E
+wait 3
+snap fine_n20 reg=2 deg=0.2
+shot fine_n20                   # --gui only
+
+# ---- 1.5 zero IMU V40N20 ----------------------------------------------
+keys V40N20E
+wait 10
+snap zero reg=2 deg=0.2
+
+# ---- 2.0 DAP data load V48 (R03): N46, N47, N48, V50N48 ---------------
+keys V48E
+wait 2
+snap dap_n46
+pro
+wait 2
+snap dap_n47
+pro
+wait 2
+snap dap_n48
+pro                                # trim (TRIMGIMB): V50N48 never comes here,
+wait 5                             # in either AGC (no trim feedback in the model)
+snap dap_trim reg=skip
+keys V34E                          # terminate R03 (else V49 is refused)
+wait 2
+
+# ---- 2.1 DAP attitude hold / rate command, RHC deflections ------------
+crew ATTHOLD
+wait 1
+keys V77E
+wait 2
+jets reset
+wait 5
+snap hold jets=skip
+jets reset
+rhc PITCH 30
+wait 3
+snap rhc_pitch rate=1.5 deg=3 jets=0.6
+shot rhc_pitch                   # --gui only
+rhc DETENT
+wait 10
+snap pitch_detent rate=0.4 deg=4 jets=0.6
+jets reset
+rhc YAW 30
+wait 3
+snap rhc_yaw rate=1.5 deg=4 jets=0.6
+rhc DETENT
+wait 10
+snap yaw_detent rate=0.4 deg=5 jets=0.6
+keys V05N09E
+wait 2
+snap dap_alarms reg=skip deg=5 jets=skip
+keys R
+
+# ---- 2.2 V49 crew defined manoeuvre (R62, KALCMANU) in AUTO -----------
+crew AUTO
+wait 1
+keys V37E00E
+wait 2
+keys V49E
+wait 3
+snap v49 reg=skip deg=5 jets=skip
+keys V25E
+keys +03000E
+keys +03000E
+keys +00000E
+wait 2
+snap v49_loaded deg=5 jets=skip
+pro
+wait 3
+snap v50n18 reg=skip deg=5 jets=skip
+jets reset
+pro
+wait 15
+snap man_15s reg=skip deg=5 rate=1 jets=0.6 needle=80
+wait 30
+snap man_45s reg=skip deg=2 rate=0.3 jets=0.6 needle=80
+keys V16N20E
+wait 3
+snap man_n20 reg=200 deg=2 jets=skip needle=80
+shot man_n20                   # --gui only
+keys V05N09E
+wait 2
+snap man_alarms jets=skip deg=2 needle=80
+keys R
+
+# ---- 2.1 minimum impulse V76 ------------------------------------------
+crew ATTHOLD
+wait 1
+keys V76E
+wait 2
+jets reset
+rhc PITCH 30
+wait 1
+rhc DETENT
+wait 3
+snap min_impulse reg=skip deg=2 rate=0.2 jets=0.6 needle=80
+keys V77E
+wait 1

@@ -43,11 +43,9 @@
  * ALGORITHM:
  *   none (file read)
  **********************************************************************/
-#define _POSIX_C_SOURCE 200809L /* POSIX.1-2008: readlink */
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "agc/core/assertion.h"
 #include "agc/io/service.h"
@@ -55,7 +53,6 @@
 
 #define ROPE_WORDS       (AGC_ROPE_BANKS * AGC_ROPE_BANK_WORDS) /* words in the image          */
 #define ROPE_BANK_BYTES  (2 * AGC_ROPE_BANK_WORDS)              /* bytes per bank in the file  */
-#define ROPE_PATH        512                                    /* longest executable path     */
 #define ROPE_NAME        64                                     /* longest rope name           */
 #define ROPE_FIXED_FIXED 4                                      /* banks 0-3, stored 2, 3, 0, 1 */
 
@@ -180,52 +177,4 @@ agc_status_t sim_rope_load(const char *path)
     agc_selfcheck_set_rope(g_rope, AGC_ROPE_BANKS);
 
     return (AGC_STATUS_OK);
-}
-
-/**********************************************************************
- * AGC: none -- without --core: the vehicle's rope from
- * tools/oracle/ropes, looked up from the working directory, then next
- * to the executable (build/..). Not finding it is not an error for the
- * run: ROPECHK then passes every bank (self_check.c DEVIATION); the
- * caller logs it.
- *
- * ARGUMENTS:
- *   vehicle  agc_vehicle_t  I  the vehicle
- *   argv0    const char *   I  argv[0], used when /proc is missing
- *
- * RETURNS: agc_status_t -- as sim_rope_load; NOT_FOUND when neither
- *          place has the rope
- **********************************************************************/
-agc_status_t sim_rope_load_default(agc_vehicle_t vehicle, const char *argv0)
-{
-    const char *name = (vehicle == AGC_VEHICLE_LM) ? "Luminary099" : "Comanche055"; /* rope of the vehicle */
-    char        path[ROPE_PATH + ROPE_NAME];                                        /* candidate path */
-    char        exe[ROPE_PATH];                                                     /* executable path */
-    ssize_t     n    = readlink("/proc/self/exe", exe, sizeof (exe) - 1u);          /* its length, -1 without /proc */
-
-    (void) snprintf(path, sizeof (path), "tools/oracle/ropes/%s.bin", name); /* stdlib: fits */
-    agc_status_t st = sim_rope_load(path);                                   /* from the working directory */
-
-    if (st == AGC_STATUS_NOT_FOUND)
-    {
-        if (n > 0)
-        {
-            exe[n] = '\0';
-        }
-        else
-        {
-            (void) snprintf(exe, sizeof (exe), "%s", argv0); /* stdlib: no /proc, argv[0] */
-        }
-
-        char *slash = strrchr(exe, '/'); /* end of the directory */
-
-        if (slash != NULL)
-        {
-            *slash = '\0';
-            (void) snprintf(path, sizeof (path), "%s/../tools/oracle/ropes/%s.bin", exe, name); /* stdlib: truncation only fails the open */
-            st     = sim_rope_load(path);
-        }
-    }
-
-    return (st);
 }

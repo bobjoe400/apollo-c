@@ -23,7 +23,7 @@ UNCRUSTIFY     ?= uncrustify
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report always-ok-report clean
+.PHONY: all lib lib-debug sim sim-debug scenarios lm-sim test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report always-ok-report clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -55,6 +55,18 @@ SCENARIOS := $(sort $(wildcard sim/scenarios/*.txt))
 scenarios: $(BUILD)/agc_sim
 	@for s in $(SCENARIOS); do echo "== $$s"; \
 	  python3 -I tools/sim_client.py --sim $(BUILD)/agc_sim --scenario $$s || exit 1; done
+
+# Virtual AGC's LM Simulator (virtualagc/Contributed/LM_Simulator, Tcl/Tk,
+# unmodified) flown on build/agc_sim and on yaAGC with the same crew
+# sequence; the checkpoints are compared (docs/modules/lm-simulator.md).
+# Real time, about 11 minutes; runs under tclsh (no windows).  LMSIM_ARGS:
+# --gui (wish, screenshots with --xshot DIR), --repeat-jets (diagnostic
+# relay), --agc ours|yaagc.  Not part of `make test`.
+LMSIM_DIR  ?=
+LMSIM_ARGS ?=
+lm-sim: $(BUILD)/agc_sim
+	@test -n "$(LMSIM_DIR)" || { echo "lm-sim: set LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator"; exit 2; }
+	python3 -I tools/lm_sim.py --lmsim $(LMSIM_DIR) --sim $(BUILD)/agc_sim --sequence sim/lm_simulator/tutorial.txt --out $(BUILD)/lm_sim $(LMSIM_ARGS)
 
 $(BUILD)/debug/%.o: %.c
 	@mkdir -p $(dir $@)

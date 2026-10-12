@@ -577,3 +577,29 @@ bool sim_socket_lost_lockstep(void)
 {
     return (g_step_lost);
 }
+
+/**********************************************************************
+ * AGC: none -- host hook (internal.h): under agc_sim the clock requests
+ * DOWNRUPT itself every 20 ms (clock.c DEVIATION); the NASSP host
+ * (src/nassp) answers true because its telemetry raises DOWNRUPT.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- false: the clock times DOWNRUPT
+ **********************************************************************/
+bool sim_host_downrupt_external(void)
+{
+    return (false);
+}
+
+/**********************************************************************
+ * AGC: none -- host hook (internal.h): a radar cycle has completed.
+ * Under agc_sim a peripheral has already stored RNRAD with a counter
+ * packet (0200 | 046), so there is nothing to fetch.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+void sim_host_radar_read(void)
+{
+    /* RNRAD arrives by packet before the cycle completes */
+}

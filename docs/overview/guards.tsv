@@ -1,0 +1,843 @@
+file:line	function	kind	condition	eva	class	why
+src/core/ecadr.c:60	agc_erase_write_ecadr	status	word <= EC_WORD_MAX	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/pinball/load.c:378,src/io/dsky/pinball/scale.c:592,src/io/verbs/extended_verbs.c:556...
+src/core/interp/trig.c:159	agc_dp_sqrt_chk	status	!abort || (*out == 0)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/core/interp/trig.c:434	agc_dp_acos_chk	status	(*out >= 0) && (*out <= AGC_DP_HALF)	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/core/interp/trig.c:484,tests/core/numeric.c:320,tests/oracle/core_numeric.c:396; param fact not shown at src/core/interp/trig.c:484,tests/core/numeric.c:320,tests/oracle/core_numeric.c:396
+src/core/interp/trig.c:462	agc_dp_asin_chk	status	(*out >= -AGC_DP_QUARTER) && (*out <= AGC_DP_QUARTER)	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/core/interp/trig.c:508,tests/core/numeric.c:322,tests/oracle/core_numeric.c:396; param fact not shown at src/core/interp/trig.c:508,tests/core/numeric.c:322,tests/oracle/core_numeric.c:396
+src/core/state.c:508	agc_sv_set	status	agc_flag_test(moon_flag) == in->moon	VALID	GUARANTEED	EVA VALID (core_state,core_state_lm,oracle_entry); state/local fact
+src/csm/burns/earth_orbit_insertion.c:118	agc_earth_orbit_insertion_monitor_set_padload	status	pad != NULL && pad->polynum >= 1 && pad->polynum <= AGC_EARTH_ORBIT_INSERTION_MONITOR_POLY_MAX	DEAD	UNCALLED	EVA DEAD; param fact not shown at any site (no caller); param fact not shown at any site (no caller); param fact not shown at any site (no caller)
+src/csm/burns/earth_orbit_insertion.c:161	agc_job_earth_orbit_insertion_monitor	status	agc_time_now_cs() < 100u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/earth_orbit_insertion.c:188	agc_job_earth_orbit_insertion_monitor_ephemeris	status	ctx != NULL && tliftoff_set	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/burns/earth_orbit_insertion.c:226	agc_job_earth_orbit_insertion_monitor_preread	status	agc_erase_tephem() == tephem1	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/earth_orbit_insertion.c:281	agc_job_earth_orbit_insertion_monitor_setup	status	agc_flag_test(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/earth_orbit_insertion.c:332	agc_job_earth_orbit_insertion_monitor_restart	status	tliftoff_set	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/earth_orbit_insertion.c:389	matrx_tail	status	dt > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/earth_orbit_insertion.c:419	launch_refsmmat	status	ip != NULL && m != NULL	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/earth_orbit_insertion.c:488; param fact at every call site (addr)
+src/csm/burns/earth_orbit_insertion.c:920	agc_job_atreset_after_delay	status	satsw == 0 || satsw == 1	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/earth_orbit_insertion.c:962	agc_csm_satstkon	status	agc_flag_test(AGC_FLAG_DAPBIT1)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/earth_orbit_insertion.c:995	agc_task_redosat	status	agc_rupt_t5_task() == AGC_TASK_SATSTICK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/earth_orbit_insertion.c:1000	agc_task_redosat	status	(agc_chan_read(012) & AGC_CH012_SIVBTAKEOVER) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/earth_orbit_insertion.c:1042	agc_task_satstick	status	r->manndx[0] >= 0 && r->manndx[0] <= 3 && r->manndx[1] >= 0 && r->manndx[1] <= 3 && r->manndx[2] >= 0 && r->manndx[2] <= 3	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact; state/local fact; state/local fact; state/local fact; state/local fact
+src/csm/burns/external_delta_v.c:421	agc_guid_delrspl	status	below < tff_cs || tffuse == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/return_to_earth/conic.c:149	rte_initial_vectors	status	(ip != NULL) && (rs != NULL) && (x2 == 0) || (x2 == 2)	VALID	eva-valid-deferred	EVA VALID (csm_return_to_earth,oracle_return_to_earth), lane not reviewed; param fact not shown at src/csm/burns/return_to_earth/program.c:427,tests/csm/return_to_earth.c:259,tests/oracle/return_to_earth.c:131; param fact not shown at src/csm/burns/return_to_earth/program.c:427,tests/csm/return_to_earth.c:259,tests/oracle/return_to_earth.c:131; param fact not shown at src/csm/burns/return_to_earth/program.c:427
+src/csm/burns/return_to_earth/conic.c:189	rte_initial_vectors	status	rs->r_t1 > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/csm/burns/return_to_earth/program.c:427,tests/csm/return_to_earth.c:259,tests/oracle/return_to_earth.c:131
+src/csm/burns/return_to_earth/conic.c:217	rte_conic_setup	status	(ip != NULL) && (rs != NULL) && rs->r_t1 > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/csm/burns/return_to_earth/program.c:432,tests/csm/return_to_earth.c:260,tests/oracle/return_to_earth.c:135; param fact not shown at src/csm/burns/return_to_earth/program.c:432,tests/csm/return_to_earth.c:260,tests/oracle/return_to_earth.c:135; param fact not shown at src/csm/burns/return_to_earth/program.c:432,tests/csm/return_to_earth.c:260,tests/oracle/return_to_earth.c:135
+src/csm/burns/return_to_earth/conic.c:265	rte_time_radius	status	(ip != NULL) && (rs != NULL) && rdesired > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (est); param fact at every call site (est); param fact not shown at src/csm/burns/return_to_earth/conic.c:428,src/csm/burns/return_to_earth/conic.c:648
+src/csm/burns/return_to_earth/conic.c:317	conic_correct	status	(ip != NULL) && (rs != NULL) && rs->nn1a < 0	VALID	eva-valid-deferred	EVA VALID (csm_return_to_earth,oracle_return_to_earth), lane not reviewed; param fact at every call site (est); param fact at every call site (est); param fact not shown at src/csm/burns/return_to_earth/conic.c:446
+src/csm/burns/return_to_earth/conic.c:388	rte_conic_search	status	ip != NULL && rs != NULL	VALID	eva-valid-deferred	EVA VALID (csm_return_to_earth,oracle_return_to_earth), lane not reviewed; param fact not shown at src/csm/burns/return_to_earth/program.c:437,tests/csm/return_to_earth.c:261,tests/oracle/return_to_earth.c:140; param fact not shown at src/csm/burns/return_to_earth/program.c:437,tests/csm/return_to_earth.c:261,tests/oracle/return_to_earth.c:140
+src/csm/burns/return_to_earth/conic.c:396	rte_conic_search	status	(ip != NULL) && (rs != NULL) && rs->r_t1 > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/csm/burns/return_to_earth/program.c:437,tests/csm/return_to_earth.c:261,tests/oracle/return_to_earth.c:140; param fact not shown at src/csm/burns/return_to_earth/program.c:437,tests/csm/return_to_earth.c:261,tests/oracle/return_to_earth.c:140; param fact not shown at src/csm/burns/return_to_earth/program.c:437,tests/csm/return_to_earth.c:261,tests/oracle/return_to_earth.c:140
+src/csm/burns/return_to_earth/conic.c:482	rte_entry_side	status	(ip != NULL) && (rs != NULL) && rs->rcon > 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/csm/burns/return_to_earth/program.c:549; param fact at every call site (est)
+src/csm/burns/return_to_earth/conic.c:527	rte_augekugl	status	(ip != NULL) && (phie != NULL) && (te != NULL) && v > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at tests/csm/return_to_earth.c:388; param fact at every call site (addr); param fact at every call site (addr); param fact not shown at src/csm/burns/return_to_earth/conic.c:659,tests/csm/return_to_earth.c:388
+src/csm/burns/return_to_earth/conic.c:604	rte_display_values	status	(ip != NULL) && (rs != NULL) && out != NULL	VALID	eva-valid-deferred	EVA VALID (oracle_return_to_earth), lane not reviewed; param fact not shown at tests/oracle/return_to_earth.c:145; param fact not shown at tests/oracle/return_to_earth.c:145; param fact at every call site (addr)
+src/csm/burns/return_to_earth/precision.c:110	rte_integrate	status	(ip != NULL) && (rs != NULL) && (ic != NULL) && (resume != AGC_JOB_NONE)	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/program.c:780; param fact not shown at src/csm/burns/return_to_earth/program.c:780; state/local fact; param fact at every call site (const+est)
+src/csm/burns/return_to_earth/precision.c:115	rte_integrate	status	tdec1 != tet	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/precision.c:571,src/csm/burns/return_to_earth/precision.c:577,src/csm/burns/return_to_earth/program.c:780
+src/csm/burns/return_to_earth/precision.c:196	rte_precision_start	status	rs != NULL && rs->rcon > 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/program.c:553; param fact not shown at src/csm/burns/return_to_earth/program.c:553
+src/csm/burns/return_to_earth/precision.c:283	prec_angle_not_met	status	(ip != NULL) && (rs != NULL) && rs->rpre > 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact at every call site (caller); param fact not shown at src/csm/burns/return_to_earth/precision.c:524
+src/csm/burns/return_to_earth/precision.c:320	prec_angle_not_met	status	(ip != NULL) && (rs != NULL) && rf_step > 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact at every call site (caller); state/local fact
+src/csm/burns/return_to_earth/precision.c:342	prec_angle_not_met	status	rs->dt21pr != 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/precision.c:524
+src/csm/burns/return_to_earth/precision.c:437	prec_radius_check	status	(ip != NULL) && (rs != NULL) && rs->rd > 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact at every call site (caller); param fact not shown at src/csm/burns/return_to_earth/precision.c:532
+src/csm/burns/return_to_earth/precision.c:465	prec_radius_check	status	rs->nn1a <= RTE_PREC_OUTER	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/precision.c:532
+src/csm/burns/return_to_earth/precision.c:509	prec_after_integration	status	po.r1 > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/return_to_earth/precision.c:560	rte_precision_run	status	(ip != NULL) && (rs != NULL) && resume != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/program.c:592; param fact not shown at src/csm/burns/return_to_earth/program.c:592; param fact not shown at src/csm/burns/return_to_earth/program.c:592
+src/csm/burns/return_to_earth/program.c:184	rte_alarm	status	(ctx != NULL) && (rs != NULL) && rs->alarm_code != 0U	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact at every call site (est); param fact not shown at src/csm/burns/return_to_earth/program.c:221
+src/csm/burns/return_to_earth/program.c:216	rte_failed	status	rs != NULL	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/program.c:442,src/csm/burns/return_to_earth/program.c:601
+src/csm/burns/return_to_earth/program.c:242	agc_job_return_to_earth_alarm_display	status	rte_state()->alarm_code != 0U	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/return_to_earth/program.c:271	agc_job_return_to_earth	status	ctx != NULL && (g != NULL) && (es != NULL)	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact; state/local fact
+src/csm/burns/return_to_earth/program.c:301	agc_job_return_to_earth_tig_display	status	ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/program.c:281,src/exec/dispatch.c:309
+src/csm/burns/return_to_earth/program.c:327	agc_job_return_to_earth_entry_display	status	ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:293
+src/csm/burns/return_to_earth/program.c:361	rte_show_solution	status	(ctx != NULL) && (ip != NULL) && rs != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (est); param fact not shown at src/csm/burns/return_to_earth/program.c:445,src/csm/burns/return_to_earth/program.c:605; param fact not shown at src/csm/burns/return_to_earth/program.c:445,src/csm/burns/return_to_earth/program.c:605
+src/csm/burns/return_to_earth/program.c:410	agc_job_return_to_earth_conic_search	status	ctx != NULL && ic != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/burns/return_to_earth/program.c:465	agc_job_return_to_earth_transit_display	status	ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:311
+src/csm/burns/return_to_earth/program.c:490	agc_job_return_to_earth_entry_conditions_display	status	ctx != NULL && ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/exec/dispatch.c:291
+src/csm/burns/return_to_earth/program.c:517	agc_job_return_to_earth_delta_v_display	status	rs->vnstore != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/return_to_earth/program.c:544	agc_job_return_to_earth_precision	status	ctx != NULL && rs->rcon > 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/burns/return_to_earth/program.c:586	agc_job_return_to_earth_precision_resume	status	ctx != NULL && rs->nn1a >= 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller+est); state/local fact
+src/csm/burns/return_to_earth/program.c:625	agc_job_return_to_earth_propulsion_option	status	ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:303
+src/csm/burns/return_to_earth/program.c:653	agc_job_return_to_earth_option_display	status	ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/program.c:633,src/exec/dispatch.c:297
+src/csm/burns/return_to_earth/program.c:688	agc_job_return_to_earth_ignition_time	status	ctx != NULL && dc != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/burns/return_to_earth/program.c:706	agc_job_return_to_earth_ignition_time	status	mdot != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/return_to_earth/program.c:711	agc_job_return_to_earth_ignition_time	status	rs->dv >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/return_to_earth/program.c:742	agc_job_return_to_earth_biased_tig_display	status	ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/return_to_earth/program.c:722,src/exec/dispatch.c:285
+src/csm/burns/return_to_earth/program.c:773	agc_job_return_to_earth_targeting	status	ctx != NULL && rs->t2 != rs->t1	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/burns/return_to_earth/program.c:855	agc_job_return_to_earth_target_store	status	ctx != NULL && rz != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller+est); state/local fact
+src/csm/burns/return_to_earth/program.c:864	agc_job_return_to_earth_target_store	status	rs->conic_t != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/return_to_earth/velocity.c:239	rte_xt1lim	status	den != 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/csm/burns/return_to_earth/velocity.c:269	rte_xt1lim	status	*xt1lim >= 0	VALID	eva-valid-deferred	EVA VALID (csm_entry,csm_return_to_earth,oracle_return_to_earth), lane not reviewed; param fact not shown at src/csm/burns/return_to_earth/velocity.c:312,src/csm/burns/return_to_earth/velocity.c:651,src/csm/burns/return_to_earth/velocity.c:658
+src/csm/burns/return_to_earth/velocity.c:301	agc_return_to_earth_xt1lim	status	xt1lim != NULL && rcon > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (addr); param fact not shown at tests/csm/entry.c:333,tests/csm/return_to_earth.c:408
+src/csm/burns/return_to_earth/velocity.c:382	rte_dv_calc	status	rs->dv >= 0	VALID	eva-valid-deferred	EVA VALID (csm_return_to_earth,oracle_return_to_earth), lane not reviewed; param fact not shown at src/csm/burns/return_to_earth/velocity.c:413,src/csm/burns/return_to_earth/velocity.c:574,src/csm/burns/return_to_earth/velocity.c:769
+src/csm/burns/servicer.c:481	agc_task_onmnitor	status	agc_guid_state()->avg.pipctr >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/servicer.c:686	agc_csm_avgexit	status	exit_job != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/burns/servicer.c:775	agc_job_servexit	status	agc_guid_state()->avg.avgexit != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/mysubs.c:474	csm_dap_set_time5	status	time5_word <= CSM_DAP_NEG0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/dap/rcs/jet_select.c:564,src/csm/dap/rcs/t5rupt.c:419
+src/csm/dap/rcs/attitude.c:175	csm_rcs_ahfnorot	status	(m >= 0) && (m <= 3)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/dap/rcs/filter.c:234	csm_rcs_kmatrix	status	(r->attsec >= 0) && (r->attsec <= NINE)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/dap/rcs/filter.c:246	csm_rcs_kmatrix	status	r_dcduincr->holdflag < 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/rcs/jet_select.c:499	agc_csm_jet_select	status	(in->racfail >= -1) && (in->racfail <= 1) && (in->rbdfail >= -1) && (in->rbdfail <= 1)	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/csm/dap/rcs/jet_select.c:585,tests/csm/dap.c:177,tests/csm/dap.c:189...; param fact not shown at src/csm/dap/rcs/jet_select.c:585,tests/csm/dap.c:177,tests/csm/dap.c:189...; param fact not shown at src/csm/dap/rcs/jet_select.c:585,tests/csm/dap.c:177,tests/csm/dap.c:189...; param fact not shown at src/csm/dap/rcs/jet_select.c:585,tests/csm/dap.c:177,tests/csm/dap.c:189...
+src/csm/dap/rcs/manual.c:185	csm_rcs_manual	status	(q >= 0) && (q < MANTAB_N)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/dap/rcs/manual.c:228	agc_csm_dap_stickchk	status	bits <= MANROT	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/earth_orbit_insertion.c:1033,src/csm/dap/rcs/attitude.c:164,src/csm/dap/rcs/manual.c:126
+src/csm/dap/tvc/daps.c:311	csm_tvc_pcopy	status	t->pcmd == t->cmdtmp.hi	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/csm/dap/tvc/daps.c:338	csm_tvc_ycopy	status	t->tvcphase == 3	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/daps.c:354	csm_tvc_ycopy	status	t->ycmd == t->cmdtmp.hi	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/daps.c:523	agc_task_pitchdap	status	agc_csm_dap_tvc()->t5tvcdt > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/csm/dap/tvc/daps.c:548	agc_task_yawdap	status	agc_csm_dap_tvc()->t5tvcdt > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/daps.c:578	agc_task_dapinit	status	(w > 0) && (w <= AGC_SP_MAX)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/dap/tvc/exec.c:346	tvcx_run	status	s == TVCX_FIN	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/exec.c:370	csm_tvc_exec_restart	status	agc_csm_dap_tvc()->tvcexphs == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/exec.c:394	agc_task_tvcexec	status	agc_flag_valid(AGC_FLAG_DAPBIT1)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/exec.c:418	agc_task_tvcexec	status	t->oganow <= CSM_DAP_NEG0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/init.c:241	agc_task_tvcdapon	status	agc_csm_dap_tvc()->tvcphase == -1	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/init.c:267	tvc_init_filter_timing	status	(lem == 0) || (lem == 1)	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/dap/tvc/init.c:388
+src/csm/dap/tvc/init.c:290	tvc_init_filter_timing	status	t->t5tvcdt > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/init.c:438	csm_tvc_init_complete	status	t->t5tvcdt > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/restarts.c:87	tvcr_tvc_enable	status	(agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/restarts.c:111	agc_task_redotvc	status	(t->tvcphase >= -2) && (t->tvcphase <= 3)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/dap/tvc/restarts.c:166	agc_task_optics_counter_enable	status	agc_rupt_t5_task() == AGC_TASK_CMDSOUT	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/restarts.c:195	tvcr_chkstrk	status	t->stroker == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/restarts.c:200	tvcr_chkstrk	status	t->tvcphase == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/restarts.c:242	agc_task_cmdsout	status	t->tvcphase >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/dap/tvc/restarts.c:263	agc_task_exrstrt	status	(phs >= 1) && (phs <= 6)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/dap/tvc/rolldap.c:342	roll_jets_on	status	t->rollword <= 3u	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/csm/dap/tvc/rolldap.c:427	agc_task_rolldap	status	t->one_conacc >= 0 && (t->rollfire == 0) || (t->rollfire == AGC_SP_MAX) || (t->rollfire == AGC_SP_MIN)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/csm/dap/tvc/rolldap.c:464	agc_task_rolldap	status	tf != 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/csm/dap/tvc/rolldap.c:526	agc_task_roll_jets_off	status	agc_chan_read(AGC_CHAN_ROLLJETS) == 0u	VALID	GUARANTEED	EVA VALID (csm_dap); state/local fact
+src/csm/dap/tvc/stroke.c:165	csm_tvc_hack	status	t->stroker != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/cm_body_attitude.c:170	agc_entry_cm_trio	status	agc_dp_abs(co) <= AGC_DP_HALF	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/csm/entry/cm_body_attitude.c:188	agc_entry_cm_trio	status	agc_dp_abs(sm) <= AGC_DP_HALF	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/csm/entry/cm_body_attitude.c:270	entry_servnout	status	nj <= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/cm_body_attitude.c:315	entry_posexit	status	es->posexit == AGC_ENTRY_POSEXIT_ENDEXIT	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/cm_body_attitude.c:359	entry_redopose_tail	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/entry/cm_body_attitude.c:443	agc_job_cm_pose	status	agc_entry_state()->posexit < AGC_ENTRY_POSEXIT_COUNT	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/cm_body_attitude.c:468	agc_job_redopose	status	agc_entry_state() != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/cm_body_attitude.c:503	agc_job_reestablish_entry_sequencer	status	agc_entry_state()->gotoaddr < AGC_ENTRY_GOTO_COUNT	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:607	agc_task_readgymb	status	agc_entry_state() != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:643	agc_task_readgymb	status	sel <= 3u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:697	agc_task_readgymb	status	agc_flag_test(AGC_FLAG_CMDAPARM)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:878	dap_fdai	status	sw_ndx >= -13 && sw_ndx <= -1	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/entry/dap.c:910	agc_task_setjtag	status	tused >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:915	agc_task_setjtag	status	jetag == 1	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1159	dap_jetlist	status	nujet <= 0377u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1193	dap_timetst	status	used < 16384	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1198	dap_timetst	status	o->jndx >= -1 && o->jndx <= 1	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/entry/dap.c:1388; param fact not shown at src/csm/entry/dap.c:1388
+src/csm/entry/dap.c:1247	agc_task_jetcall	status	jet_time[0] <= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1252	agc_task_jetcall	status	agc_flag_test(AGC_FLAG_CM_DSTBY)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1334	dap_cm_rcs	status	calfa != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1352	dap_cm_rcs	status	lcx_getlcx > -32768 && lcx_getlcx < 32768	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/entry/dap.c:1395	dap_cm_rcs	status	jetag == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1419	agc_task_attrates	status	es != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1459	agc_task_attrates	status	bits_yaw <= 0377u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1506	agc_job_cm_dapon_wait	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/entry/dap.c:1557	agc_job_cm_dapon	status	(agc_erase_dapdatr1() & 070000u) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/dap.c:1628	agc_entry_dap_ic	status	agc_flag_test(AGC_FLAG_CM_DSTBY)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:114	entry_flash	status	ctx != NULL && verb < 100 && noun < 100	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller+est); param fact not shown at src/csm/entry/programs.c:222,src/csm/entry/programs.c:374,src/csm/entry/programs.c:586; param fact not shown at src/csm/entry/programs.c:222,src/csm/entry/programs.c:374,src/csm/entry/programs.c:586
+src/csm/entry/programs.c:192	agc_job_entry_preparation	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/entry/programs.c:224	agc_job_entry_preparation_target_display	status	imu_check_return_job != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:245	agc_job_entry_display_protect	status	agc_entry_state() != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:276	entry_preparation_newrnvn	status	ip != NULL	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/entry/programs.c:334
+src/csm/entry/programs.c:294	entry_preparation_newrnvn	status	entry_preparation_mm == agc_erase_piptime()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:325	agc_job_entry_preparation_compute	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/entry/programs.c:369	agc_job_entry_preparation_prediction_display	status	agc_entry_state() != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:398	agc_job_entry_preparation_ems_display	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/entry/programs.c:437	agc_job_cm_sm_separation_newmode	status	agc_erase_modreg() == 62 || st != AGC_STATUS_OK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:464	agc_job_cm_sm_separation	status	imu_check_return_job == AGC_JOB_CM_SM_SEPARATION_AFTER_CHECK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:492	agc_job_cm_sm_separation_after_check	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/entry/programs.c:531	agc_job_cm_sm_separation_request	status	agc_guid_state()->avg.avgexit == AGC_JOB_CM_POSE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:556	agc_job_cm_sm_separation_proceed	status	agc_entry_state() != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:581	agc_job_cm_sm_separation_target_display	status	agc_entry_state() != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:611	agc_job_cm_sm_separation_end_hold	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/entry/programs.c:648	agc_task_wake_cm_sm_separation	status	agc_entry_state() != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:655	agc_task_wake_cm_sm_separation	status	agc_entry_state()->posexit < AGC_ENTRY_POSEXIT_COUNT	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:688	agc_job_entry_initialization	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller+est); state/local fact
+src/csm/entry/programs.c:726	entry_post_0_05g	status	agc_flag_test(AGC_FLAG__05GSW)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/csm/entry/programs.c:788	agc_job_entry_upcontrol_display	status	!agc_flag_test(AGC_FLAG_ENTRYDSP)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:811	agc_job_entry_upcontrol_proceed	status	agc_flag_test(AGC_FLAG_ENTRYDSP)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:837	entry_disable_restart_group	status	agc_phase_get(4) == 0u	VALID	GUARANTEED	EVA VALID (csm_entry,oracle_entry); state/local fact
+src/csm/entry/programs.c:866	entry_ballistic	status	es->entry_noun == 22	VALID	GUARANTEED	EVA VALID (csm_entry,oracle_entry); param fact not shown at src/csm/entry/reentry.c:2050
+src/csm/entry/programs.c:895	entry_final_phase	status	es->entry_noun == 66	VALID	GUARANTEED	EVA VALID (csm_entry,oracle_entry); param fact not shown at src/csm/entry/reentry.c:1291
+src/csm/entry/programs.c:920	agc_job_entry_final_phase_display	status	agc_entry_state() != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:948	agc_job_entry_final_phase_end	status	!agc_flag_test(AGC_FLAG_CM_DSTBY)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:1012	imu_check_return	status	imu_check_return_job == AGC_JOB_ENTRY_PREPARATION_TARGET_DISPLAY || imu_check_return_job == AGC_JOB_CM_SM_SEPARATION_AFTER_CHECK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:1100	agc_job_entry_imu_check	status	imu_check_return_job != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:1127	agc_task_entry_start_average_g	status	agc_guid_state()->avg.avgexit == AGC_JOB_SERVEXIT	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:1132	agc_task_entry_start_average_g	status	imu_check_return_job != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:1201	agc_job_entry_imu_axis_test	status	code == 01426 || code == 01427	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:1226	agc_job_entry_imu_check_return	status	imu_check_return_job != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:1408	agc_entry_gmaxcalc	status	gmax != NULL && vgam >= 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/csm/entry/programs.c:1518
+src/csm/entry/programs.c:1447	ems_altitude_range	status	ip != NULL && es != NULL && eradm != NULL	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/entry/programs.c:1506; param fact not shown at src/csm/entry/programs.c:1506; param fact at every call site (addr)
+src/csm/entry/programs.c:1478	ems_altitude_range	status	es->rtgo >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/entry/programs.c:1506
+src/csm/entry/programs.c:1536	agc_entry_ems_data	status	es->vpred >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/programs.c:1541	agc_entry_ems_data	status	es->gmax >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/entry/reentry.c:386	agc_entry_targeting	status	es != NULL	VALID	GUARANTEED	EVA VALID (oracle_entry); state/local fact
+src/csm/entry/reentry.c:474	agc_entry_targeting	status	agc_flag_test(AGC_FLAG__05GSW)	VALID	GUARANTEED	EVA VALID (oracle_entry); state/local fact
+src/csm/entry/reentry.c:559	agc_entry_startent	status	es != NULL	VALID	GUARANTEED	EVA VALID (oracle_entry); state/local fact
+src/csm/entry/reentry.c:585	agc_entry_startent	status	agc_flag_test(AGC_FLAG_LATSW)	VALID	GUARANTEED	EVA VALID (oracle_entry); state/local fact
+src/csm/entry/reentry.c:948	agc_job_pre_hunt	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/csm/entry/reentry.c:2276	entry_endexit	status	ctx != NULL && es != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/csm/entry/cm_body_attitude.c:325,src/csm/entry/cm_body_attitude.c:500
+src/csm/entry/reentry.c:2386	agc_entry_huntest_predict	status	es->v > 0 && es->vsquare > 0 && es->lewd > 0 && es->lad > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact; state/local fact; state/local fact
+src/csm/entry/reentry.c:2416	agc_entry_range_predict	status	es->a0 > 0 && es->gammal1 != 0 && es->vbars > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact; state/local fact
+src/csm/navigation/cislunar_navigation.c:153	rz_optics_calibration	status	ctx != NULL && ret != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/csm/navigation/cislunar_navigation.c:913
+src/csm/navigation/landmark_navigation.c:617	rz_landmark_marks_start	status	nmarks >= 0 && nmarks <= 5 && ret != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/navigation/orbital_navigation.c:554; param fact not shown at src/csm/navigation/orbital_navigation.c:554; param fact at every call site (const)
+src/csm/navigation/tpi_search.c:149	agc_rendz_tpi_search_phase	status	ip != NULL && rz != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/csm/navigation/tpi_search.c:948
+src/csm/navigation/tpi_search.c:620	agc_rendz_transang	status	count >= -60 && count <= 60	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/navigation/tpi_search.c:718	agc_rendz_tpi_search_sector	status	ip != NULL && rz != NULL && resume != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/csm/navigation/tpi_search.c:1008; param fact at every call site (const)
+src/csm/navigation/tpi_search.c:793	tps_compute_display	status	proceed != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/navigation/tpi_search.c:822
+src/csm/optics/geometry.c:349	agc_csm_log	status	(ip != NULL) && (neg_log != NULL) && x > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (addr); param fact at every call site (addr); param fact not shown at tests/oracle/align.c:722,tests/programs/align.c:698,tests/programs/align.c:704
+src/csm/optics/sxtmark.c:548	agc_sxtmark_mark2	status	(ram->qpret >= 0) && (ram->qpret < AGC_ALIGN_SXT_MARKS)	VALID	eva-valid-deferred	EVA VALID (imu_imu), lane not reviewed; state/local fact; state/local fact
+src/csm/optics/sxtmark.c:608	agc_sxtmark_mkreject	status	ram->qpret > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/optics/sxtmark.c:857	agc_sxtmark_mark	status	(mark >= 0) && (mark < AGC_ALIGN_SXT_MARKS)	VALID	GUARANTEED	structural: param fact at every call site (const+est); param fact at every call site (const+est)
+src/csm/prelaunch_align.c:120	agc_csm_prelaunch_set_pad	status	latitude >= -AGC_DP_QUARTER && latitude <= AGC_DP_QUARTER	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at tests/imu/imu.c:511; param fact not shown at tests/imu/imu.c:511
+src/csm/prelaunch_align.c:162	prelaunch_set_tmark	status	t >= 0 && t < TIME_WRAP	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/prelaunch_gyrocompass.c:650; word/enum type invariant
+src/csm/prelaunch_align.c:230	agc_csm_prelaunch_erthrvse	status	latitude >= -AGC_DP_QUARTER && latitude <= AGC_DP_QUARTER	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/prelaunch_gyrocompass.c:343; param fact not shown at src/csm/prelaunch_gyrocompass.c:343
+src/csm/prelaunch_align.c:271	earthr_at	status	dt >= 0 && dt <= AGC_DP_MAX	DEAD	FALLIBLE	EVA DEAD; state/local fact; word/enum type invariant
+src/csm/prelaunch_align.c:311	agc_csm_prelaunch_earthr_at_liftoff	status	tliftoff >= 0 && tliftoff <= AGC_DP_MAX	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/earth_orbit_insertion.c:279; word/enum type invariant
+src/csm/prelaunch_align.c:690	agc_job_prelaunch_imu_fine_aligned	status	pl.perfdlay > 0 && pl.perfdlay < TIME_WRAP	DEAD	FALLIBLE	EVA DEAD; state/local fact; word/enum type invariant
+src/csm/prelaunch_align.c:856	agc_job_imu_test_site_loaded	status	pl.latitude >= -AGC_DP_QUARTER && pl.latitude <= AGC_DP_QUARTER	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/prelaunch_gyrocompass.c:138	setgwlst	status	dt > 0 && dt <= 2 * (int32_t) r->onesecxt1	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/csm/prelaunch_gyrocompass.c:191	chkcomed	status	!agc_phase_checkmm(PRELAUNCH_MM_IMU_TEST)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/csm/prelaunch_verify.c:232	agc_job_optical_verification_target_flash	status	(prelaunch_ram()->run == 0) || (prelaunch_ram()->run == RUN_TARGET2)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/alarm.c:442	agc_job_gopoodoo	status	ctx->id == AGC_JOB_GOPOODOO	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:643,src/exec/dispatch.c:1237
+src/exec/change_program/idle.c:85	exec_up_servidle	status	agc_state_vehicle() == AGC_VEHICLE_LM	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/change_program/idle.c:90	exec_up_servidle	status	exec_cp_mmnumber() <= 99U	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/change_program/idle.c:162	flash_program_request	status	(ctx->prio >= 1u) && (ctx->prio <= 037u)	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/change_program/idle.c:212,src/exec/change_program/idle.c:231; param fact not shown at src/exec/change_program/idle.c:212,src/exec/change_program/idle.c:231
+src/exec/change_program/idle.c:183	agc_job_go_idle_fix	status	(ctx->prio >= 1u) && (ctx->prio <= 037u)	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:647,src/exec/dispatch.c:1241; param fact not shown at src/exec/dispatch.c:647,src/exec/dispatch.c:1241
+src/exec/change_program/idle.c:207	agc_job_go_idle_fix	status	agc_erase_extvbact() == extvbact	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/change_program/idle.c:226	agc_job_go_idle_fix_reflash	status	ctx->id == AGC_JOB_GO_IDLE_FIX_REFLASH	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:649,src/exec/dispatch.c:1243
+src/exec/change_program/idle.c:270	exec_up_startsb2	status	agc_interrupts_inhibited()	VALID	eva-valid-deferred	EVA VALID (exec_exec,oracle_dsky,programs_align,programs_rendezvous,sim_harness), lane not reviewed; state/local fact
+src/exec/change_program/idle.c:364	agc_power_on	status	v == AGC_VEHICLE_CSM || v == AGC_VEHICLE_LM	VALID	eva-valid-deferred	EVA VALID (csm_entry,programs_rendezvous,sim_harness), lane not reviewed; param fact not shown at src/sim/main.c:598,tests/sim/harness.c:113
+src/exec/change_program/idle.c:385	agc_power_on	status	agc_state_vehicle() == v	VALID	eva-valid-deferred	EVA VALID (csm_entry,programs_rendezvous,sim_harness), lane not reviewed; state/local fact
+src/exec/change_program/sequence.c:204	agc_change_program	status	new_mm <= 99U	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/dsky/pinball/monitor.c:466
+src/exec/change_program/sequence.c:335	cp_nouveau	status	mindex >= 0 && mindex < n	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/exec/change_program/sequence.c:438	agc_job_change_program_start	status	mindex >= 0 && mindex < n	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/exec/dispatch.c:2833	agc_dispatch_job	status	ctx->id > AGC_JOB_NONE && ctx->id < AGC_JOB_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/exec/executive.c:828,src/imu/attitude_maneuver.c:754; param fact not shown at src/exec/executive.c:828,src/imu/attitude_maneuver.c:754
+src/exec/dispatch.c:2860	agc_dispatch_task	status	agc_interrupts_inhibited()	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; state/local fact
+src/exec/dispatch.c:2865	agc_dispatch_task	status	task > AGC_TASK_NONE && task < AGC_TASK_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/exec/interrupts.c:288,src/exec/interrupts.c:316,src/exec/interrupts.c:475...; param fact not shown at src/exec/interrupts.c:288,src/exec/interrupts.c:316,src/exec/interrupts.c:475...
+src/exec/executive.c:314	spectest	status	newjob > 0	INVALID	FALLIBLE	EVA INVALID; state/local fact
+src/exec/executive.c:386	agc_exec_novac	status	prio >= 1 && prio <= EXEC_PRIO_MAX && job != AGC_JOB_NONE	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/exec/fresh_start.c:868,src/exec/restarts.c:119,src/io/dsky/display_if.c:1604...; param fact not shown at src/exec/fresh_start.c:868,src/exec/restarts.c:119,src/io/dsky/display_if.c:1604...; param fact not shown at src/io/dsky/pinball/monitor.c:316,src/lm/navigation/tracking_data.c:538
+src/exec/executive.c:413	agc_exec_findvac	status	prio >= 1 && prio <= EXEC_PRIO_MAX && job != AGC_JOB_NONE	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/exec/change_program/sequence.c:444,src/exec/restarts.c:115,src/imu/maneuver.c:550...; param fact not shown at src/exec/change_program/sequence.c:444,src/exec/restarts.c:115,src/imu/maneuver.c:550...; param fact not shown at src/exec/change_program/sequence.c:444,src/io/dsky/pinball/monitor.c:316
+src/exec/executive.c:458	agc_exec_set_new_job_arg	status	locctr >= 0 && locctr < AGC_EXEC_MAX_JOBS	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/exec/executive.c:463	agc_exec_set_new_job_arg	status	core[locctr].state == AGC_CORE_ACTIVE	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/exec/executive.c:660	agc_exec_job_wake_as	status	new_loc != AGC_JOB_NONE	VALID	eva-valid-deferred	EVA VALID (programs_rendezvous), lane not reviewed; param fact not shown at src/io/dsky/pinball/nvsub.c:372
+src/exec/executive.c:701	agc_exec_vac_claim	status	*vac_index < AGC_EXEC_MAX_VACS	VALID	eva-valid-deferred	EVA VALID (imu_imu), lane not reviewed; param fact not shown at src/csm/optics/sxtmark.c:154,src/lm/optics/aotmark.c:408
+src/exec/executive.c:720	agc_exec_vac_release	status	vac_index >= 0 && vac_index < AGC_EXEC_MAX_VACS	VALID	eva-valid-deferred	EVA VALID (imu_imu), lane not reviewed; param fact at every call site (est); param fact not shown at src/csm/optics/sxtmark.c:276,src/lm/optics/aotmark.c:447
+src/exec/executive.c:725	agc_exec_vac_release	status	vac_used[vac_index]	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/exec/executive.c:767	agc_exec_job_yield	status	resume_as != AGC_JOB_NONE	VALID	eva-valid-deferred	EVA VALID (imu_imu,oracle_landing,programs_align), lane not reviewed; param fact not shown at src/lm/burns/ignition/clock.c:601,src/lm/burns/ignition/clock.c:633,src/lm/burns/servicer/average_g.c:953
+src/exec/executive.c:772	agc_exec_job_yield	status	newjob >= 0 && core[0].state == AGC_CORE_ACTIVE	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/exec/executive.c:796	agc_exec_run_one	status	newjob >= EXEC_NEWJOB_IDLE && newjob < AGC_EXEC_MAX_JOBS	VALID	eva-valid-deferred	EVA VALID (exec_exec,programs_align,programs_rendezvous), lane not reviewed; state/local fact; state/local fact
+src/exec/executive.c:811	agc_exec_run_one	status	core[0].state == AGC_CORE_ACTIVE	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/exec/executive.c:852	agc_exec_run_one	status	!in_job	VALID	eva-valid-deferred	EVA VALID (exec_exec,programs_align,programs_rendezvous), lane not reviewed; state/local fact
+src/exec/executive.c:873	agc_exec_run_one	status	newjob <= 0 || core[0].state == AGC_CORE_ACTIVE	VALID	eva-valid-deferred	EVA VALID (exec_exec,programs_align,programs_rendezvous), lane not reviewed; state/local fact
+src/exec/executive.c:924	agc_job_endofjob	status	ctx->id == AGC_JOB_ENDOFJOB	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:641,src/exec/dispatch.c:1235
+src/exec/fresh_start.c:884	agc_job_gotopooh	status	ctx->id == AGC_JOB_GOTOPOOH	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:645,src/exec/dispatch.c:1239
+src/exec/interrupts.c:231	rupt_exit	status	agc_interrupts_inhibited()	VALID	eva-valid-deferred	EVA VALID (exec_exec,sim_harness), lane not reviewed; state/local fact
+src/exec/interrupts.c:242	rupt_exit	status	rs != AGC_STATUS_BAD_ARG	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/exec/interrupts.c:464	agc_dispatch_rupt	status	agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/nouns.c:664	agc_dispatch_noun	status	data_id > AGC_DATA_NONE && data_id < AGC_DATA_COUNT	VALID	eva-valid-deferred	EVA VALID (imu_imu,oracle_align,oracle_dsky,oracle_landing,programs_align,programs_rendezvous), lane not reviewed; param fact not shown at src/io/dsky/nouns/data.c:605; param fact at every call site (est)
+src/exec/phase_table.c:485	agc_phase_new	status	group_ok(group) && job != AGC_JOB_NONE && prio >= 1 && prio <= 037	DEAD	UNCALLED	EVA DEAD; param fact not shown at any site (no caller); param fact not shown at any site (no caller); param fact not shown at any site (no caller); param fact not shown at any site (no caller); param fact not shown at any site (no caller)
+src/exec/phase_table.c:660	agc_phase_newmode	status	mode >= EXEC_MODREG_NEG0 && mode <= 0177	VALID	eva-valid-deferred	EVA VALID (csm_entry,imu_imu,oracle_entry), lane not reviewed; param fact not shown at src/io/verbs/uplink_update.c:577; param fact not shown at src/exec/change_program/sequence.c:451,src/io/verbs/uplink_update.c:577
+src/exec/restart_tables.c:333	rst_table_lookup	status	idx >= 0 && idx < n	VALID	eva-valid-deferred	EVA VALID (csm_entry,exec_exec,sim_harness), lane not reviewed; state/local fact; state/local fact
+src/exec/restarts.c:106	start_job	status	prdt != 0 && job != AGC_JOB_NONE	INVALID	FALLIBLE	EVA INVALID; param fact not shown at src/exec/restarts.c:218,src/exec/restarts.c:321,src/exec/restarts.c:377; param fact not shown at src/exec/restarts.c:218,src/exec/restarts.c:321,src/exec/restarts.c:377
+src/exec/restarts.c:139	start_long	status	task != AGC_TASK_NONE && dt_cs < AGC_TIME_MODULUS_CS	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; param fact not shown at src/exec/restarts.c:228,src/exec/restarts.c:317; param fact not shown at src/exec/restarts.c:228,src/exec/restarts.c:317
+src/exec/restarts.c:258	restart_table	status	phase >= 1 && phase <= (int) RS_LOW7	VALID	eva-valid-deferred	EVA VALID (csm_entry,exec_exec,programs_rendezvous,sim_harness), lane not reviewed; param fact not shown at src/exec/restarts.c:363,src/exec/restarts.c:378; param fact not shown at src/exec/restarts.c:363
+src/exec/restarts.c:349	agc_restart_group	status	group >= 1 && group <= AGC_RESTART_GROUPS	VALID	eva-valid-deferred	EVA VALID (csm_entry,exec_exec,programs_align,programs_rendezvous,sim_harness), lane not reviewed; param fact not shown at src/exec/restarts.c:409; param fact not shown at src/exec/restarts.c:409
+src/exec/waitlist.c:121	agc_waitlist_init	status	lst2[0] == AGC_TASK_ENDTASK	VALID	eva-valid-deferred	EVA VALID (csm_entry,exec_exec,imu_imu,nav_integration,oracle_dap_csm,oracle_dap_lm,oracle_dsky,oracle_entry,oracle_imu,oracle_nav_integ,oracle_return_to_earth,oracle_targeting,programs_rendezvous,sim_harness), lane not reviewed; state/local fact
+src/exec/waitlist.c:155	wtlst4	status	delta >= -WL_POSMAX && delta <= 1	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/exec/waitlist.c:220,src/exec/waitlist.c:238; param fact at every call site (est)
+src/exec/waitlist.c:191	wait2	status	dt >= 1 && dt <= AGC_WAITLIST_MAX_DELAY && time3 < WL_TIME3_OVF	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/exec/waitlist.c:300; param fact at every call site (est); state/local fact
+src/exec/waitlist.c:233	wait2	status	prev <= 1 && prev >= -WL_POSMAX	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/exec/waitlist.c:283	agc_waitlist_call	status	task != AGC_TASK_NONE	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/exec/restarts.c:194,src/exec/restarts.c:332,src/io/dsky/pinball/monitor.c:355
+src/exec/waitlist.c:294	agc_waitlist_call	status	delay_cs <= AGC_WAITLIST_MAX_DELAY	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/csm/burns/earth_orbit_insertion.c:377,src/csm/burns/sps/burn.c:519,src/csm/burns/sps/ignition.c:121...
+src/exec/waitlist.c:324	agc_waitlist_vardelay	status	agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/waitlist.c:362	longcycl	status	pending_longcadr != AGC_TASK_NONE	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; state/local fact
+src/exec/waitlist.c:378	longcycl	status	rem >= 0 && rem <= WL_BIT14	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; state/local fact; state/local fact
+src/exec/waitlist.c:403	agc_waitlist_longcall	status	task != AGC_TASK_NONE && delay_cs < AGC_TIME_MODULUS_CS	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; param fact not shown at src/lm/radar/acquisition.c:550; param fact not shown at src/csm/burns/sps/burn.c:418,src/csm/prelaunch_align.c:695,src/exec/restarts.c:150...
+src/exec/waitlist.c:436	svct3	status	agc_interrupts_inhibited()	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; state/local fact
+src/exec/waitlist.c:492	agc_task_endtask	status	agc_interrupts_inhibited()	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; state/local fact
+src/exec/waitlist.c:497	agc_task_endtask	status	lst2[0] != AGC_TASK_NONE	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; state/local fact
+src/exec/waitlist.c:515	agc_task_svct3	status	agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/waitlist.c:520	agc_task_svct3	status	lst2[0] != AGC_TASK_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/waitlist.c:540	agc_task_longcycl	status	agc_interrupts_inhibited()	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; state/local fact
+src/exec/waitlist.c:545	agc_task_longcycl	status	pending_longcadr != AGC_TASK_NONE	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/exec/waitlist.c:563	agc_task_taskover	status	agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/waitlist.c:568	agc_task_taskover	status	time3 < WL_TIME3_OVF	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/waitlist.c:587	agc_task_getcadr	status	agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/exec/waitlist.c:592	agc_task_getcadr	status	pending_longcadr != AGC_TASK_NONE && pending_longcadr != AGC_TASK_GETCADR	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/exec/waitlist.c:616	agc_waitlist_t3rupt	status	time3 < WL_TIME3_OVF	VALID	eva-valid-deferred	EVA VALID (exec_exec), lane not reviewed; state/local fact
+src/exec/waitlist.c:699	agc_waitlist_tick	status	time3 < WL_TIME3_OVF	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/exec/waitlist.c:729	agc_waitlist_tick	status	left == 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/guidance/burn_steering.c:183	agc_guid_calcut	status	rad >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/guidance/burn_steering.c:466	sps_bell_axes	status	agc_dp_from_words(cp) > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/guidance/burn_steering.c:694	agc_guid_steering_tgo_csm	status	den != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/guidance/burn_steering.c:738	agc_guid_steering_tgo_lm	status	dmag != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/guidance/burn_steering.c:860	agc_guid_timeburn_csm	status	emdot >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/sps/steer.c:747
+src/guidance/external_delta_v.c:116	prec_to	status	ic->out.x2 == 0 || ic->out.x2 == 2	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/guidance/external_delta_v.c:160	apo_peri	status	rz->body.rtx2 == 0 || rz->body.rtx2 == 2	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/guidance/external_delta_v.c:206,src/guidance/external_delta_v.c:246,src/guidance/external_delta_v.c:379
+src/guidance/external_delta_v.c:326	agc_guid_again	status	tdec1 >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/guidance/burn_steering.c:212,src/guidance/burn_steering.c:221,src/guidance/external_delta_v.c:372
+src/guidance/servicer_common.c:152	agc_guid_rereadac_resume	status	a->pipage >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/burns/servicer.c:420,src/lm/burns/servicer/average_g.c:341
+src/guidance/servicer_common.c:189	calcgrav_oblateness	status	a->rmagsq > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/guidance/servicer_common.c:258
+src/imu/alignment.c:190	agc_imu_calcga	status	vec_in_range(nb->row[0]) && vec_in_range(sm->row[1])	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/imu/alignment.c:225	agc_imu_calcga	status	id != 0U	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/alignment.c:230	agc_imu_calcga	status	agc_flag_valid(id)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/alignment.c:287	agc_imu_axisgen	status	vec_in_range(a[0]) && vec_in_range(b[0])	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/imu/alignment.c:329	agc_imu_calcsmsc	status	vec_in_range(sincdu) && vec_in_range(coscdu)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/imu/attitude_maneuver.c:119	agc_imu_set_scaxis	status	vec_ok(v)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/attitude_maneuver.c:126	agc_imu_set_scaxis	status	vec_ok(scaxis)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/attitude_maneuver.c:333	vecpoint_from	status	mag >= DPB14	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/attitude_maneuver.c:660	agc_imu_attitude_maneuver	status	ctx != NULL && ret_job != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/csm/navigation/tracking_attitude.c:443
+src/imu/attitude_maneuver.c:718	agc_job_endmanuv	status	!agc_kalc_active()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/attitude_maneuver.c:740	maneuver_return	status	!agc_flag_test(AGC_FLAG_3AXISFLG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/attitude_maneuver.c:768	agc_job_attitude_maneuver_enter	status	ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:671,src/exec/dispatch.c:1265
+src/imu/attitude_maneuver.c:909	agc_job_crew_defined_maneuver_terminate	status	ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:679,src/exec/dispatch.c:1273
+src/imu/compensation.c:193	agc_imu_comp_load	status	params_in_range(p)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/compensation.c:556	comp_irig_words	status	delv != NULL	VALID	GUARANTEED	structural: param fact at every call site (addr)
+src/imu/compensation.c:600	agc_imu_comp_irig	status	agc_dp_pack(dw[1].hi, dw[1].lo) == delv.c[1]	DEAD	UNCALLED	EVA DEAD; state/local fact
+src/imu/compensation.c:638	one_gyro_pulse	status	st == AGC_STATUS_BUSY || st == AGC_STATUS_ALARM	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/compensation.c:655	one_gyro_pulse	status	agc_imu_stall_outcome(AGC_IMU_DEV_IMU) == AGC_IMU_STALL_GOOD	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/compensation.c:713	agc_job_gyro_command_retry	status	ctx->id == AGC_JOB_GYRO_COMMAND_RETRY	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:687,src/exec/dispatch.c:1281
+src/imu/compensation.c:912	agc_job_nbdonly	status	now >= 0 && now < TIME1_MODULUS	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/imu/gyro.c:164	agc_imu_gyro_buf_get	status	buf_ok(buf) && out != NULL	VALID	GUARANTEED	EVA VALID (imu_imu,oracle_imu); state/local fact; param fact at every call site (addr)
+src/imu/gyro.c:247	agc_imu_pulse_buf	status	buf_ok(buf)	VALID	GUARANTEED	EVA VALID (imu_imu); state/local fact
+src/imu/gyro.c:312	agc_imu_pulse	status	gbuf[AGC_IMU_GBUF_OGC][2] == gyro[2]	VALID	GUARANTEED	EVA VALID (imu_imu); state/local fact
+src/imu/gyro.c:502	agc_task_strtgyro	status	lgyro.busy	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/gyro.c:507	agc_task_strtgyro	status	(agc_chan_read(AGC_CHAN_CHAN14) & GDESELCT) == 0u	VALID	GUARANTEED	EVA VALID (imu_imu); state/local fact
+src/imu/gyro.c:536	agc_task_gyro_augment	status	aug_left >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/gyro.c:543	agc_task_gyro_augment	status	sum <= GYROCMD_MAX	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:239	waitlist	status	dt > 0u && dt <= AGC_WAITLIST_MAX_DELAY	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/imu/maneuver.c:702,src/imu/maneuver.c:711; param fact not shown at src/imu/maneuver.c:702,src/imu/maneuver.c:711
+src/imu/maneuver.c:261	agc_kalc_set_rateindx	status	idx >= 0 && idx <= 6 && (idx & 1) == 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (range); param fact at every call site (range); param fact not shown at src/io/verbs/extended_verbs_lm.c:240
+src/imu/maneuver.c:274	agc_kalc_set_rateindx	status	rcs != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:401	agc_kalc_zeroerror	status	agc_erase_cduz() <= CDU_MASK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:406	agc_kalc_zeroerror	status	agc_erase_cdux() <= CDU_MASK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:454	nogo	status	agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:502	agc_task_manustop	status	rcs != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:545	agc_task_endmanu	status	job != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:695	incrdcdu_tmanuchk	status	dt_contmanu > 0 && dt_contmanu < TIME1_MOD	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/imu/maneuver.c:792	steering_update	status	jacc != 0 && agc_dp_high(p) < (jacc < 0 ? -jacc : jacc)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/imu/maneuver.c:897	kalcmanu_start	status	rcs != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:912	kalcmanu_start	status	!agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:929	kalcmanu_start	status	idx >= 0 && idx < RATE_COUNT	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/imu/maneuver.c:981	agc_job_kalcmanu_start	status	ctx->id != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:689,src/exec/dispatch.c:1283
+src/imu/maneuver.c:1014	agc_imu_gomanur	status	attprio <= 037	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:1031	agc_task_updtcall	status	attcadr != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver.c:1073	agc_job_newdelhi	status	attcadr != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/maneuver_calc.c:163	agc_kalc_cdutodcm	status	cdu[i] <= CDU_MASK	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/maneuver_calc.c:282	agc_kalc_dcmtocdu	status	vec_ok(m->row[1]) && vec_ok(m->row[2])	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/imu/maneuver_calc.c:373	agc_kalc_delcomp	status	vec_ok(u) && a >= AGC_DP_MIN && a <= AGC_DP_MAX	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; word/enum type invariant; word/enum type invariant
+src/imu/maneuver_calc.c:559	agc_kalc_compute	status	pd2 >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/mode.c:422	imu_cagetstj	status	mc_get(AGC_IMU_DEV_IMU).state == MC_DONE_BAD	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:429	imu_cagetstj	status	agc_imu_modecadr_bzf(AGC_IMU_DEV_IMU)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:537	agc_imu_hw_set_cducmd	status	axis >= 0 && axis < 3 && pulses >= AGC_SP_MIN && pulses <= AGC_SP_MAX	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/csm/dap/rcs/needles.c:125,src/io/verbs/extended_verbs_lm.c:146,src/lm/dap/rcs/needles.c:195; param fact not shown at src/csm/dap/rcs/needles.c:125,src/io/verbs/extended_verbs_lm.c:146,src/lm/dap/rcs/needles.c:195; word/enum type invariant; word/enum type invariant
+src/imu/mode.c:569	agc_imu_zero	status	lamps <= CDU_MASK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:596	agc_imu_zero	status	(agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_COARSE) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:646	agc_task_imu_zero_release	status	agc_erase_cdux() == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:673	agc_task_imu_zero_done	status	(agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:682	agc_task_imu_zero_done	status	!imu_caged()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:687	agc_task_imu_zero_done	status	(agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:713	agc_imu_coarse	status	thetad[i] <= CDU_MASK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:774	agc_task_coarse_align_commands	status	(agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:842	agc_task_coarse_align_pulses	status	itemp1 >= 0 && itemp1 <= 3	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/imu/mode.c:874	agc_task_coarse_align_check	status	command[0] == 0 && command[1] == 0 && command[2] == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact; state/local fact
+src/imu/mode.c:879	agc_task_coarse_align_check	status	cducmd[0] >= -COMMAX_ && cducmd[0] <= COMMAX_	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/imu/mode.c:911	agc_task_ca_ece	status	(agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ENBIMUERR) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:980	agc_imu_fine	status	(agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_COARSE) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:987	agc_imu_fine	status	(agc_erase_dsptab(11) & ISS_LAMP_NO_ATT) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1034	agc_task_imufined	status	(agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ZEROICDU) == 0u	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/mode.c:1056	fail_inhibit_remove	status	!imu_caged()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1087	agc_task_ifailok	status	!imu_caged()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1094	agc_task_ifailok	status	(agc_erase_imodes30() & IM30_IMUOK) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1116	agc_task_pfailok	status	!imu_caged()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1124	agc_task_pfailok	status	(agc_erase_imodes30() & IM30_PIPOK) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1149	agc_imu_pipuse	status	agc_erase_pipax() == 0 && agc_erase_pipaz() == 0	VALID	GUARANTEED	EVA VALID (imu_imu); state/local fact; state/local fact
+src/imu/mode.c:1246	goodend_common	status	w.job != AGC_JOB_NONE	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/imu/mode.c:1282	agc_imu_badend	status	(int) dev >= 0 && dev < AGC_IMU_DEV_COUNT	DEAD	FALLIBLE	EVA DEAD; word/enum type invariant; param fact not shown at src/csm/navigation/tracking_data.c:629,src/csm/navigation/tracking_data.c:644
+src/imu/mode.c:1302	agc_imu_imubad	status	mc_get(AGC_IMU_DEV_IMU).state != MC_STALLED	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1347	modabort	status	mc_get((int) dev).state == MC_STALLED	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1423	agc_imu_stall	status	st != AGC_STATUS_BAD_ARG	VALID	GUARANTEED	EVA VALID (imu_imu); state/local fact
+src/imu/mode.c:1472	agc_imu_status_check	status	code == 00220 || code == 00210	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1493	agc_imu_set_in_use	status	agc_flag_test(AGC_FLAG_IMUSE)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1541	scalprep	status	scaler != NULL && agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); state/local fact
+src/imu/mode.c:1551	scalprep	status	raw >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1594	agc_job_standby	status	ctx != NULL && ctx->id == AGC_JOB_STANDBY	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/exec/dispatch.c:1139,src/exec/dispatch.c:2269
+src/imu/mode.c:1648	agc_job_standby_request	status	agc_flag_test(AGC_FLAG_NODOFLAG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/imu/mode.c:1682	agc_job_standby_recovery	status	ctx != NULL && scalsave < SCALER_MOD	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/imu/mode.c:1710	agc_job_standby_recovery	status	dt_cs < (SCALER_MOD >> SCALER_TO_CS_SHIFT)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:332	dif_endit	status	cont != AGC_JOB_NONE && userprio >= 1u && userprio <= 037u	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/display_if.c:937,src/io/dsky/display_if.c:1132; param fact not shown at src/io/dsky/display_if.c:937,src/io/dsky/display_if.c:1132; param fact not shown at src/io/dsky/display_if.c:937,src/io/dsky/display_if.c:1132
+src/io/dsky/display_if.c:363	dif_xchsleep	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:405	dif_gosleeps	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:427	agc_job_xchsleepm	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:447	agc_job_xchsleepn	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:472	dif_redoprio	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:501	dif_oktocopy	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:529	dif_markplay	status	pin_invariants()	VALID	GUARANTEED	EVA VALID (oracle_align); state/local fact
+src/io/dsky/display_if.c:543	dif_markplay	status	(f4() & DIF_XDSPFLAG) != 0u	VALID	GUARANTEED	EVA VALID (oracle_align); state/local fact
+src/io/dsky/display_if.c:572	dif_jobxchs	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:650	dif_makeprio	status	pin_invariants() && rq != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact; param fact at every call site (caller)
+src/io/dsky/display_if.c:702	dif_makemark	status	pin_invariants() && rq != NULL	VALID	GUARANTEED	EVA VALID (oracle_align); state/local fact; param fact at every call site (caller)
+src/io/dsky/display_if.c:895	dif_rest	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:1107	dif_endret	status	c >= DIF_PRIOC && c <= DIF_NORMC && outhere <= 2	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact; param fact at every call site (caller)
+src/io/dsky/display_if.c:1197	dif_endout	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:1240	agc_job_termate	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:1260	agc_job_proceed	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:1289	agc_job_idleret3	status	ctx != NULL	DEAD	GUARANTEED	structural: param fact at every call site (caller)
+src/io/dsky/display_if.c:1302	agc_job_idleret3	status	c >= DIF_PRIOC && c <= DIF_NORMC	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/io/dsky/display_if.c:1388	agc_dsky_pinbrnch	status	!agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:1426	agc_dsky_endmark	status	agc_erase_extvbact() == 0u	VALID	GUARANTEED	EVA VALID (imu_imu); state/local fact
+src/io/dsky/display_if.c:1457	agc_job_makeplay	status	ctx != NULL && ctx->arg >= 1 && ctx->arg <= DIF_RQ_LEN	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/exec/dispatch.c:713,src/exec/dispatch.c:1307; param fact not shown at src/exec/dispatch.c:713,src/exec/dispatch.c:1307
+src/io/dsky/display_if.c:1466	agc_job_makeplay	status	rq.used	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:1486	agc_job_playjum1	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:1506	agc_job_markplay	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:1526	agc_job_redoprio	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/display_if.c:1656	agc_dsky_display_ecadr	status	ecadr <= PIN_WORD	VALID	GUARANTEED	EVA VALID (imu_imu,oracle_align,oracle_landing,programs_align,programs_rendezvous); param fact not shown at src/io/verbs/uplink_update.c:311
+src/io/dsky/display_if.c:1742	agc_dsky_blanket	status	g_rq_last >= 0 && g_rq_last < DIF_RQ_LEN && bits <= PIN_WORD	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact; param fact at every call site (caller+const)
+src/io/dsky/display_if.c:1773	agc_dsky_initdsp	status	g_restreg >= 1u && g_restreg <= 037u	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/io/dsky/display_if.c:1783	agc_dsky_initdsp	status	(rq.flags & (DIF_MARK | DIF_PRIO)) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/nouns/data.c:69	agc_noun_lookup_vehicle	status	out != NULL && noun < AGC_NOUN_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at tests/io/nouns.c:233; param fact not shown at tests/io/nouns.c:231,tests/io/nouns.c:232
+src/io/dsky/nouns/data.c:76	agc_noun_lookup_vehicle	status	row->noun == noun && row->ncomp <= AGC_NOUN_MAX_COMP	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/io/dsky/nouns/data.c:102	agc_noun_lookup	status	out != NULL && noun < AGC_NOUN_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (addr); param fact not shown at src/io/dsky/pinball/verbs.c:62,tests/oracle/dsky.c:310
+src/io/dsky/nouns/data.c:131	noun_access_time	status	value != NULL && data_id < AGC_DATA_COUNT && !write || data_id != AGC_DATA_TIME2 || (*value >= 0 && *value < (agc_dp_t) AGC_TIME_MODULUS_CS)	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (est); param fact at every call site (est); param fact not shown at src/io/dsky/nouns/data.c:561
+src/io/dsky/nouns/data.c:372	noun_raw_write	status	value >= 0 && value <= 077777 && data_id < AGC_DATA_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/nouns/data.c:581; param fact not shown at src/io/dsky/nouns/data.c:581; param fact at every call site (est)
+src/io/dsky/nouns/data.c:532	noun_data_access	status	value != NULL && data_id < AGC_DATA_COUNT && data_id != AGC_DATA_NONE	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/nouns/data.c:627; param fact not shown at src/io/dsky/nouns/data.c:627; param fact not shown at src/io/dsky/nouns/data.c:627,src/io/dsky/nouns/data.c:653
+src/io/dsky/nouns/data.c:548	noun_data_access	status	value != NULL && !write	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/nouns/data.c:627; param fact not shown at src/io/dsky/nouns/data.c:653
+src/io/dsky/nouns/data.c:648	agc_noun_write	status	data_id < AGC_DATA_COUNT && v >= AGC_DP_MIN && v <= AGC_DP_MAX	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/pinball/scale.c:600,tests/oracle/dsky.c:224; word/enum type invariant; word/enum type invariant
+src/io/dsky/nouns/scales.c:784	agc_scale_sfconst	status	sf_code < SF_COUNT_CSM	VALID	GUARANTEED	EVA VALID (imu_imu,oracle_dsky,programs_rendezvous); param fact not shown at src/io/dsky/nouns/scales.c:841,tests/io/nouns.c:268,tests/io/nouns.c:269
+src/io/dsky/nouns/scales.c:794	agc_scale_sfconst	status	veh == AGC_VEHICLE_LM && sf_code < SF_COUNT_LM	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/nouns/scales.c:841,tests/io/nouns.c:268; param fact not shown at src/io/dsky/nouns/scales.c:841
+src/io/dsky/nouns/scales.c:824	agc_scale_info_vehicle	status	out != NULL && scale > AGC_SCALE_NONE && scale < AGC_SCALE_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (addr+caller); param fact not shown at src/io/dsky/nouns/scales.c:873,tests/io/nouns.c:262,tests/io/nouns.c:284; param fact not shown at src/io/dsky/nouns/scales.c:873,tests/io/nouns.c:263,tests/io/nouns.c:284
+src/io/dsky/pinball/display.c:71	pin_sign_on	status	inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z	VALID	GUARANTEED	EVA VALID (imu_imu,oracle_align,oracle_dsky,programs_align); state/local fact; state/local fact
+src/io/dsky/pinball/display.c:184	pin_dspdcwd1	status	v >= 0 && ndig >= 1 && ndig <= 10	VALID	GUARANTEED	EVA VALID (imu_imu,oracle_align,oracle_dsky,oracle_landing,programs_align,programs_rendezvous); param fact not shown at src/io/dsky/pinball/display.c:237,src/io/dsky/pinball/display.c:256,src/io/dsky/pinball/display.c:275...; param fact at every call site (const); param fact at every call site (const)
+src/io/dsky/pinball/display.c:208	pin_dspdcwd1	status	s->dspcount == PIN_VD1 && s->dspcount_neg	VALID	GUARANTEED	EVA VALID (imu_imu,oracle_align,oracle_dsky,oracle_landing,programs_align,programs_rendezvous); state/local fact; state/local fact
+src/io/dsky/pinball/display.c:359	pin_dspoctwo	status	s->dspcount == PIN_VD1 && s->dspcount_neg	VALID	GUARANTEED	EVA VALID (imu_imu,oracle_align,oracle_dsky,oracle_landing,programs_rendezvous); state/local fact; state/local fact
+src/io/dsky/pinball/display.c:380	pin_dsp2bit	status	w <= PIN_WORD && pin_st()->dspcount <= PIN_MD1	DEAD	UNCALLED	EVA DEAD; param fact not shown at any site (no caller); state/local fact
+src/io/dsky/pinball/display.c:399	pin_dsp2bit	status	s->dspcount == PIN_VD1 && s->dspcount_neg	DEAD	UNCALLED	EVA DEAD; state/local fact; state/local fact
+src/io/dsky/pinball/display.c:469	agc_job_dspmmjb	status	ctx != NULL && pin_st()->dspcount <= PIN_MD1	VALID	GUARANTEED	EVA VALID (exec_exec); param fact at every call site (caller); state/local fact
+src/io/dsky/pinball/keys.c:112	pin_endnmtst	status	inrel >= 0 && inrel <= PIN_INREL_Z && !s->dspcount_neg	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (est); param fact at every call site (est); state/local fact
+src/io/dsky/pinball/keys.c:157	pin_num	status	inrel >= 0 && s->chr <= 9	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/io/dsky/pinball/keys.c:184	pin_num	status	inrel >= 0 && inrel <= PIN_INREL_Z && chr >= 0 && chr <= 9	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact; state/local fact; state/local fact
+src/io/dsky/pinball/keys.c:192	pin_num	status	decimal	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:206	pin_num	status	v <= 99	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:247	pin_nvcom	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:275	pin_nvcom	status	s->dspcount == PIN_VD1 || s->dspcount == PIN_ND1	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:328	pin_sign_key	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:342	pin_sign_key	status	inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/io/dsky/pinball/keys.c:398	pin_enter_once	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:413	pin_enter_once	status	s->reqret > PIN_REQ_PASS0 && s->reqret < PIN_REQ_COUNT	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/io/dsky/pinball/keys.c:446	pin_enter	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:458	pin_enter	status	st != PIN_STATUS_RECYCLE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:480	pin_tstlts4	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:509	pin_vbreldsp	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:551	pin_tstab	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:585	pin_error_key	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:652	pin_clear_key	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:660	pin_clear_key	status	inrel >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:698	pin_clear_key	status	s_key->clpass != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:721	pin_charin2	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:745	pin_charin2	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:752	pin_charin2	status	s_89test->chr == 8 || s_89test->chr == 9	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:813	pin_charin	status	code <= PIN_LOW5	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/dsky/pinball/keys.c:857
+src/io/dsky/pinball/keys.c:828	pin_charin	status	st != PIN_STATUS_RECYCLE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:852	agc_job_charin	status	ctx != NULL && ctx->arg >= 0 && ctx->arg <= (agc_sp_t) PIN_LOW5	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/exec/dispatch.c:703,src/exec/dispatch.c:1297; param fact not shown at src/exec/dispatch.c:703,src/exec/dispatch.c:1297
+src/io/dsky/pinball/keys.c:878	agc_job_prockey	status	s->dspcount_neg	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:920	pin_keycom	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:925	pin_keycom	status	code <= PIN_LOW5	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/dsky/pinball/keys.c:1050,src/io/dsky/pinball/keys.c:1058
+src/io/dsky/pinball/keys.c:955	agc_dsky_keyrupt1	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:965	agc_dsky_keyrupt1	status	code <= PIN_LOW5	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:985	agc_dsky_keyrupt2	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:994	agc_dsky_keyrupt2	status	code <= PIN_LOW5	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:1020	agc_dsky_uprupt	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:1025	agc_dsky_uprupt	status	inlink <= PIN_WORD	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/interrupts.c:493,tests/io/dsky.c:485,tests/io/dsky.c:488...
+src/io/dsky/pinball/keys.c:1080	agc_dsky_key	status	code <= PIN_LOW5 && code != 0u	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/dsky/pinball/keys.c:1176; param fact at every call site (est)
+src/io/dsky/pinball/keys.c:1153	agc_dsky_keys	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/keys.c:1165	agc_dsky_keys	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:135	agc_dsky_loadlv	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:148	agc_dsky_loadlv	status	s->dspcount_neg	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:177	pin_putcom	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:198	pin_putcom	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:249	pin_putcom	status	word <= PIN_WORD	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:292	pin_alldc_oc	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:299	pin_alldc_oc	status	ncomp == 2 || ncomp == 3	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/dsky/pinball/load.c:333
+src/io/dsky/pinball/load.c:351	pin_putn	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:361	pin_putn	status	s->nounreg == 7u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:458	pin_next_request	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:483	pin_load_resume	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/load.c:488	pin_load_resume	status	step > PIN_REQ_PASS0 && step < PIN_REQ_COUNT	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/dsky/pinball/keys.c:431; param fact not shown at src/io/dsky/pinball/keys.c:431
+src/io/dsky/pinball/monitor.c:85	pin_monitor	status	s->verbreg >= 11u && s->verbreg <= 17u	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/io/dsky/pinball/monitor.c:141	agc_task_monreq	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/monitor.c:237	pin_pastevb	status	verb <= 99u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/monitor.c:273	pin_dspfmem	status	s->verbreg == 27u	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/io/dsky/pinball/monitor.c:307	pin_vbrqexec	status	job < AGC_JOB_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/io/dsky/pinball/monitor.c:346	pin_vbrqwait	status	task < AGC_TASK_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/io/dsky/pinball/monitor.c:420	pin_reqmm	status	s->dspcount == PIN_ND1	VALID	GUARANTEED	EVA VALID (oracle_dsky); state/local fact
+src/io/dsky/pinball/monitor.c:441	pin_mmchang_resume	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/monitor.c:543	agc_task_tstlts2	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/monitor.c:567	agc_job_tstlts3	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/monitor.c:595	agc_job_tstlts3	status	c >= PIN_BIT15	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/nvsub.c:264	agc_dsky_endidle	status	pin_cadrstor_full()	VALID	GUARANTEED	EVA VALID (imu_imu,oracle_align,oracle_landing,programs_rendezvous); state/local fact
+src/io/dsky/pinball/nvsub.c:289	agc_dsky_nvsubusy	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/nvsub.c:296	agc_dsky_nvsubusy	status	wake_as != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/dsky/display_if.c:908
+src/io/dsky/pinball/nvsub.c:313	agc_dsky_nvsubusy	status	pin_dsplist_full()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/nvsub.c:365	pin_recaltst	status	which >= 0 && which <= 2	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/io/dsky/pinball/nvsub.c:432	pin_blankdsp	status	s->dspcount == PIN_VD1 && s->dspcount_neg	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/io/dsky/pinball/nvsub.c:568	agc_dsky_nvsub	status	verb <= 99u && noun <= 99u	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/pinball/nvsub.c:606,src/io/dsky/pinball/nvsub.c:692,tests/oracle/dsky.c:294...; param fact not shown at src/io/dsky/pinball/nvsub.c:692,tests/oracle/dsky.c:335
+src/io/dsky/pinball/nvsub.c:594	agc_dsky_nvsub_mctbs	status	ecadr <= PIN_WORD && noun <= 99u	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at tests/oracle/dsky.c:303; param fact not shown at tests/oracle/dsky.c:303
+src/io/dsky/pinball/nvsub.c:627	agc_dsky_nvmonopt	status	verb <= 99u && noun <= 99u	DEAD	UNCALLED	EVA DEAD; param fact not shown at any site (no caller); param fact not shown at any site (no caller)
+src/io/dsky/pinball/nvsub.c:682	agc_dsky_nvsbwait	status	ctx != NULL && wake_as != AGC_JOB_NONE	DEAD	UNCALLED	EVA DEAD; param fact not shown at any site (no caller); param fact not shown at any site (no caller)
+src/io/dsky/pinball/nvsub.c:760	pin_jam	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/nvsub.c:786	agc_dsky_jamterm	status	pin_invariants()	DEAD	UNCALLED	EVA DEAD; state/local fact
+src/io/dsky/pinball/nvsub.c:806	agc_dsky_jamproc	status	pin_invariants()	DEAD	UNCALLED	EVA DEAD; state/local fact
+src/io/dsky/pinball/nvsub.c:826	agc_job_jamterm	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/nvsub.c:848	agc_dsky_dspmm	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/scale.c:217	agc_dsky_noun_read	status	idx <= 12 && (idx < 6 || idx >= 10 || kind == 1)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/io/dsky/pinball/scale.c:264	agc_dsky_noun_write	status	kind == 0 ? (value >= 0 && value <= (agc_dp_t) PIN_WORD) : (value >= AGC_DP_MIN && value <= AGC_DP_MAX)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/io/dsky/pinball/scale.c:348	pin_comp_scale	status	!info->is_dp	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/pinball/load.c:184,src/io/dsky/pinball/scale.c:375,src/io/dsky/pinball/scale.c:502...
+src/io/dsky/pinball/scale.c:553	pin_comp_write	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/scale.c:697	pin_degout	status	w <= PIN_WORD	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/pinball/scale.c:772,src/io/dsky/pinball/scale.c:1095,src/io/dsky/pinball/scale.c:1103
+src/io/dsky/pinball/scale.c:767	pin_opdegout	status	sum < 0100000	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/io/dsky/pinball/scale.c:793	pin_artout	status	sp >= AGC_SP_MIN && sp <= AGC_SP_MAX && !negzero || sp == 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; word/enum type invariant; word/enum type invariant; param fact not shown at src/io/dsky/pinball/scale.c:1097
+src/io/dsky/pinball/scale.c:798	pin_artout	status	sfout >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/dsky/pinball/scale.c:997,src/io/dsky/pinball/scale.c:1097
+src/io/dsky/pinball/scale.c:829	pin_arout1	status	sp >= AGC_SP_MIN && sp <= AGC_SP_MAX && !negzero || sp == 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; word/enum type invariant; word/enum type invariant; param fact not shown at src/io/dsky/pinball/scale.c:1099
+src/io/dsky/pinball/scale.c:861	pin_dpout	status	v >= AGC_DP_MIN && v <= AGC_DP_MAX && sfout >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; word/enum type invariant; word/enum type invariant; param fact not shown at src/io/dsky/pinball/scale.c:1108
+src/io/dsky/pinball/scale.c:1041	pin_2intout	status	hi >= 0 && lo >= 0 && k >= 0 && k < 3	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact; param fact not shown at src/io/dsky/pinball/scale.c:1154; param fact not shown at src/io/dsky/pinball/scale.c:1154
+src/io/dsky/pinball/scale.c:1176	pin_decdsp	status	n >= 1 && n <= 3	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/io/dsky/pinball/sfin.c:103	pin_binround	status	out != NULL && llabs(dp) < PIN_DP_LIM	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/io/dsky/pinball/sfin.c:144	pin_arthinsf	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/sfin.c:180	pin_artin1sf	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/sfin.c:187	pin_artin1sf	status	dp < PIN_DP_LIM	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/sfin.c:277	pin_deginsf	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/sfin.c:328	pin_optdegin	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/sfin.c:391	pin_sfin_const	status	rout < (uint8_t) PIN_SF_COUNT	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/dsky/pinball/sfin.c:474
+src/io/dsky/pinball/sfin.c:423	pin_putdecsf	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/sfin.c:538	pin_hmsin	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/sfin.c:569	pin_hmsin	status	pin_comp_routine(0) == (uint8_t) PIN_SF_HMS	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/state.c:407	pin_dsptab_store	status	g_pin.nout <= PIN_DSPTAB_PANEL	VALID	GUARANTEED	EVA VALID (exec_exec,imu_imu,oracle_align,oracle_dsky,oracle_landing,programs_align,programs_rendezvous); state/local fact
+src/io/dsky/pinball/state.c:438	pin_dspin1	status	cur != 0u	VALID	GUARANTEED	EVA VALID (imu_imu,oracle_align,oracle_dsky,oracle_landing,programs_align,programs_rendezvous); state/local fact
+src/io/dsky/pinball/state.c:551	pin_5blank_rel	status	inrel >= PIN_INREL_X && inrel <= PIN_INREL_Z	VALID	GUARANTEED	EVA VALID (oracle_align,oracle_dsky,oracle_landing); param fact not shown at src/io/dsky/pinball/keys.c:694,src/io/dsky/pinball/scale.c:1046,src/io/dsky/pinball/state.c:529; param fact not shown at src/io/dsky/pinball/keys.c:694,src/io/dsky/pinball/scale.c:1046,src/io/dsky/pinball/state.c:529
+src/io/dsky/pinball/state.c:584	pin_5blank_rel	status	g_pin.dspcount == rxd1[k] && !g_pin.dspcount_neg	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/io/dsky/pinball/state.c:612	pin_dspoutsb	status	relay_word != NULL && g_pin.nout > 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/io/dsky/pinball/state.c:633	pin_dspoutsb	status	!pin_ones_negative(agc_erase_dsptab(g_pin.dspcnt))	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/state.c:773	agc_dsky_get_state	status	out != NULL && g_pin.nout >= 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); state/local fact
+src/io/dsky/pinball/state.c:812	agc_dsky_get_state	status	out->verbreg <= 99u && out->nounreg <= 99u	DEAD	FALLIBLE	EVA DEAD; param fact not shown at tests/guidance/guidance.c:470,tests/io/dsky.c:176,tests/io/sysmisc.c:407; param fact not shown at tests/guidance/guidance.c:470,tests/io/dsky.c:176,tests/io/sysmisc.c:407
+src/io/dsky/pinball/verbs.c:110	pin_charalrm	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/verbs.c:165	pin_predspal	status	pin_st()->dspcount_neg	VALID	GUARANTEED	EVA VALID (oracle_dsky); state/local fact
+src/io/dsky/pinball/verbs.c:187	pin_almcycle	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/verbs.c:194	pin_almcycle	status	s->verbsave <= 99	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/verbs.c:358	pin_usead	status	ecadr <= PIN_WORD	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/dsky/pinball/verbs.c:477
+src/io/dsky/pinball/verbs.c:453	pin_reqadd_resume	status	pin_invariants()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/dsky/pinball/verbs.c:472	pin_reqadd_resume	status	s->dspcount_neg	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/service/self_check.c:105	agc_selfcheck_set_rope	status	nbanks >= 0 && nbanks <= AGC_ROPE_BANKS && image != NULL || nbanks == 0	VALID	eva-valid-deferred	EVA VALID (io_sysmisc), lane not reviewed; param fact at every call site (const); param fact at every call site (const); param fact not shown at tests/io/sysmisc.c:440
+src/io/service/self_check.c:267	agc_selfcheck_banksum	status	bank >= 0 && bank <= LSTBNKCH	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (const+est); param fact not shown at tests/io/sysmisc.c:439
+src/io/telemetry/down_telemetry.c:963	agc_dnlist_word_count	status	words != NULL && v == agc_state_vehicle()	VALID	eva-valid-deferred	EVA VALID (io_sysmisc), lane not reviewed; param fact at every call site (addr); state/local fact
+src/io/telemetry/downlink_lists_csm.c:382	agc_dnlist_csm_control	status	code >= 0 && code < AGC_DNLIST_CSM_COUNT	VALID	eva-valid-deferred	EVA VALID (io_sysmisc), lane not reviewed; param fact not shown at src/io/telemetry/down_telemetry.c:559; param fact not shown at src/io/telemetry/down_telemetry.c:559,tests/io/sysmisc.c:232
+src/io/telemetry/downlink_lists_csm.c:404	agc_dnlist_csm_sublist	status	sub >= 0 && sub < CM_SUB_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/telemetry/down_telemetry.c:559; param fact not shown at src/io/telemetry/down_telemetry.c:559,tests/io/sysmisc.c:203
+src/io/telemetry/downlink_lists_lm.c:404	agc_dnlist_lm_control	status	code >= 0 && code < AGC_DNLIST_LM_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/telemetry/down_telemetry.c:556; param fact not shown at src/io/telemetry/down_telemetry.c:556,tests/io/sysmisc.c:232
+src/io/telemetry/downlink_lists_lm.c:426	agc_dnlist_lm_sublist	status	sub >= 0 && sub < LM_SUB_COUNT	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/io/telemetry/down_telemetry.c:556; param fact not shown at src/io/telemetry/down_telemetry.c:556,tests/io/sysmisc.c:203
+src/io/verbs/extended_verbs.c:388	agc_extverb	status	verb >= 40 && verb <= 99 && noun >= 0 && noun <= 99	VALID	eva-valid-deferred	EVA VALID (oracle_dsky), lane not reviewed; param fact not shown at src/io/dsky/pinball/verbs.c:645; param fact not shown at src/io/dsky/pinball/verbs.c:645; param fact at every call site (const+range); param fact not shown at src/io/dsky/pinball/verbs.c:645
+src/io/verbs/extended_verbs_csm.c:668	fan_50s_60s	status	v >= AGC_SP_MIN && v <= AGC_SP_MAX	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/io/verbs/extended_verbs_csm.c:827	agc_extverb_csm	status	verb >= 40 && verb <= 99	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/verbs/extended_verbs.c:718; param fact not shown at src/io/verbs/extended_verbs.c:718
+src/io/verbs/extended_verbs_lm.c:323	agc_job_dap_data_load_mass_lm	status	m <= AGC_SP_MAX	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/io/verbs/extended_verbs_lm.c:741	agc_extverb_lm	status	verb >= 40 && verb <= 99	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/verbs/extended_verbs.c:715; param fact not shown at src/io/verbs/extended_verbs.c:715
+src/io/verbs/uplink_update.c:157	agc_uplink_update_write	status	idx >= 0 && idx <= UP_UPTEMP && word <= WORD15	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/verbs/uplink_update.c:517; param fact not shown at src/io/verbs/uplink_update.c:517; param fact not shown at src/io/verbs/uplink_update.c:517
+src/io/verbs/uplink_update.c:207	agc_erase_set_upsvflag	status	v >= -2 && v <= 2	DEAD	UNCALLED	EVA DEAD; param fact not shown at any site (no caller); param fact not shown at any site (no caller)
+src/io/verbs/uplink_update.c:405	agc_uplink_update_start	status	verb >= 70 && verb <= 73	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/io/verbs/extended_verbs.c:664; param fact not shown at src/io/verbs/extended_verbs.c:664
+src/lm/ags_initialization.c:522	agc_job_ags_initialization_imu_zeroed	status	agc_imu_stall_outcome(AGC_IMU_DEV_IMU) != AGC_IMU_STALL_SLEEPING	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/ascent.c:512	as_exitvr	status	!agc_flag_test(AGC_FLAG_FLVR)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/ascent.c:684	agc_lm_ascent	status	agc_flag_test(AGC_FLAG_FLVR)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/ascent.c:841	agc_lm_job_cutoff	status	agc_flag_test(AGC_FLAG_FLRCS)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/ascent.c:860	agc_lm_job_cutoff_display	status	agc_flag_test(AGC_FLAG_FLRCS)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/ascent.c:879	agc_lm_job_cutoff_proceed	status	agc_flag_test(AGC_FLAG_FLRCS)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/ascent.c:911	agc_lm_job_cutoff_trim_display	status	agc_flag_test(AGC_FLAG_FLRCS)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/ascent.c:1039	agc_lm_job_powered_ascent_flash	status	agc_flag_test(AGC_FLAG_MUNFLAG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/ascent.c:1132	agc_lm_job_newload	status	agc_flag_test(AGC_FLAG_FLPI)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/ascent.c:1192	agc_lm_powered_ascent_return	status	s >= 0 && s < AGC_TP_MAX / 8	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/lm/burns/dps_burn.c:645	agc_job_thrust_monitor_lm	status	dt >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/dps_burn.c:1293	agc_job_timeburn_lm	status	m > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/dps_burn.c:1373	agc_task_trimgimb2	status	lm->pittime >= 0 && lm->rolltime >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/burns/dps_burn_rasteer.c:139	rs_geometry	status	rtx2 == 0 || rtx2 == 2	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/dps_burn_rasteer.c:163	rs_geometry	status	w->r1c != 0 && w->ss > 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/burns/dps_burn_rasteer.c:350; param fact not shown at src/lm/burns/dps_burn_rasteer.c:350
+src/lm/burns/dps_burn_rasteer.c:345	agc_lm_rasteer1	status	w.muasteer > 0 && w.geomsgn != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/burns/dps_burn_rasteer.c:380	agc_lm_rasteer1	status	den > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/ignition/burnbaby.c:236	csm_state_for_munrvg	status	p->x2 == 2	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/ignition/burnbaby.c:298	agc_job_preburn_state_vector_lm	status	agc_erase_savet_30() >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/ignition/burnbaby.c:590	agc_task_tig_0_lm	status	zoom > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/ignition/burnbaby.c:688	dps_ignition	status	zoom > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/ignition/burnbaby.c:783	agc_task_ignition_lm	status	tgo >= 0 && tgo <= AGC_DP_MAX - now	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/burns/ignition/clock.c:72	ign_start_clock	status	dt > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/ignition/clock.c:261	agc_job_clokjob	status	dispdex >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/servicer/average_g.c:488	agc_lm_rvboth	status	dt >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/servicer/average_g.c:794	agc_lm_avgexit	status	exit_job != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/servicer/landing_radar.c:431	agc_lm_serv_updatchk	status	g->lm.hmeas >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/servicer/landing_radar.c:632	agc_lm_serv_vmeaschk	status	s >= 0 && s <= 2	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/burns/servicer/landing_radar.c:882	agc_job_lrhjob_done	status	g->lm.hmeas >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/burns/servicer/landing_radar.c:966	agc_lm_setpos2	status	agc_guid_state()->lm.vselect <= 2	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/accont.c:459	axis_against_aos	status	w->anet >= AA_BIT9	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/lm/dap/accont.c:580
+src/lm/dap/accont.c:467	axis_against_aos	status	w->s == -w->ns	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/lm/dap/accont.c:580
+src/lm/dap/accont.c:608	lm_dap_switch_curves	status	d->db >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/accs.c:253	spscont	status	d->kq >= 0 || d->accdotq < 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/lm/dap/accs.c:340,src/lm/dap/accs.c:438
+src/lm/dap/accs.c:326	docked	status	inertia > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/accs.c:364	lm_alone	status	agc_erase_lemmass() > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/accs.c:433	lm_alone	status	abdelv >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/accs.c:474	agc_lm_dap_jet_accel_update	status	d->jacc[0] >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/accs.c:498	agc_job_jet_accel_update	status	ctx->id == AGC_JOB_JET_ACCEL_UPDATE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:1757
+src/lm/dap/accs.c:531	agc_job_jet_accel_reset	status	ctx->id == AGC_JOB_JET_ACCEL_RESET	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/exec/dispatch.c:1755
+src/lm/dap/accs.c:554	lm_dap_accfix	status	st != AGC_STATUS_BAD_ARG	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/dapif.c:62	lm_dap_callaccs	status	st != AGC_STATUS_BAD_ARG	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/dapif.c:106	agc_lm_dap_setmaxdb	status	d->db > 0	VALID	GUARANTEED	EVA VALID (exec_exec); state/local fact
+src/lm/dap/dapif.c:131	agc_lm_dap_setmindb	status	d->db > 0	VALID	GUARANTEED	EVA VALID (exec_exec); state/local fact
+src/lm/dap/dapif.c:155	agc_lm_dap_restordb	status	agc_flag_valid(AGC_FLAG_DBSELFLG)	VALID	GUARANTEED	EVA VALID (exec_exec); state/local fact
+src/lm/dap/dapif.c:260	agc_lm_dap_allcoast	status	st != AGC_STATUS_OK || d->db == DB_WIDE || d->db == DB_NARROW	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/dapif.c:286	agc_lm_dap_needles_init	status	(d->rcsflags & LM_RCS_NEEDLE3) != 0u	DEAD	UNCALLED	EVA DEAD; state/local fact
+src/lm/dap/dapif.c:291	agc_lm_dap_needles_init	status	d->rcsflags <= 077777u	DEAD	UNCALLED	EVA DEAD; state/local fact
+src/lm/dap/rcs/dapidler.c:75	settime5	status	agc_rupt_time(5) == LM_MS100	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/dapidler.c:108	lm_dap_shutdown	status	d->t5adr == LM_T5_DAPIDLER	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/dapidler.c:113	lm_dap_shutdown	status	(agc_chan_read(012) & BGIM23) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/dapidler.c:250	lm_dap_startdap	status	d->tj[0] == 0 && d->aosq == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/dap/rcs/dapidler.c:255	lm_dap_startdap	status	d->cotroler == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/dapidler.c:300	agc_task_dapidler	status	d->t5adr == LM_T5_DAPIDLER	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/dapidler.c:348	agc_lm_dap_t5rupt	status	d->t5adr == LM_T5_DAPIDLER || d->t5adr == LM_T5_PAXIS	DEAD	UNCALLED	EVA DEAD; state/local fact
+src/lm/dap/rcs/needles.c:145	lm_dap_needler	status	(d->rcsflags & LM_RCS_NEEDLE3) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/needles.c:174	lm_dap_needler	status	d != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/needles.c:203	lm_dap_needler	status	d->edrive[0] >= -NDL_DACMAX && d->edrive[0] <= NDL_DACMAX	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/dap/rcs/paxis.c:158	lm_dap_jetsoff	status	d->tj[0] == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/paxis.c:181	altsyst	status	agc_flag_valid(AGC_FLAG_AORBSFLG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/paxis.c:209	lm_dap_pjetslec	status	(numbert >= 4) && (numbert <= 6)	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/paxis.c:297; param fact not shown at src/lm/dap/rcs/paxis.c:297
+src/lm/dap/rcs/paxis.c:264	lm_dap_pjetslec	status	d->abstj >= PX_MINT6	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/paxis.c:287	lm_dap_pjetslec_pair	status	n == 4 || n == 5	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/paxis.c:292	lm_dap_pjetslec_pair	status	agc_flag_valid(AGC_FLAG_AORBSFLG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/paxis.c:320	lm_dap_calcperr	status	d->cduxd <= 077777u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/paxis.c:487	lm_dap_chkvisfz	status	d->nextp == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/paxis.c:541	lm_dap_pretimck	status	d->jetctr[0] >= 0 && d->jetctr[1] >= 0 && d->jetctr[2] >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact; state/local fact
+src/lm/dap/rcs/paxis.c:592	agc_task_paxis	status	d->cduxd <= 077777u && d->cduyd <= 077777u	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/dap/rcs/paxis.c:597	agc_task_paxis	status	d->cduzd <= 077777u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:105	lm_dap_zeroenbl	status	agc_erase_p_rhcctr() == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:130	lm_dap_pstate	status	agc_flag_valid(AGC_FLAG_PULSEFLG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:135	lm_dap_pstate	status	agc_flag_valid(AGC_FLAG_XOVINFLG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:161	lm_dap_pstate	status	d->oldpmin >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:188	lm_dap_pstate	status	d->tj[0] != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:239	justout	status	(d->rcsflags & LM_RCS_PBIT) == 0u	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/pmanual.c:397
+src/lm/dap/rcs/pmanual.c:281	pegi	status	d->neg_ratedb <= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/pmanual.c:362,src/lm/dap/rcs/pmanual.c:367
+src/lm/dap/rcs/pmanual.c:286	pegi	status	d->tcp >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/pmanual.c:362,src/lm/dap/rcs/pmanual.c:367
+src/lm/dap/rcs/pmanual.c:300	pegi	status	d->neg_2jetlim <= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/pmanual.c:362,src/lm/dap/rcs/pmanual.c:367
+src/lm/dap/rcs/pmanual.c:305	pegi	status	absedotp >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:417	lm_dap_detentck	status	d != 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:436	lm_dap_detentck	status	!agc_flag_test(AGC_FLAG_OURRCFLG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:446	lm_dap_detentck	status	d->ch31temp <= 077777u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/pmanual.c:451	lm_dap_detentck	status	agc_erase_p_rhcctr() == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/qraxis.c:158	senseget	status	found	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/qraxis.c:172	senseget	status	(d->nextu & (uint16_t) ~QR_UBITS) == 0u	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qraxis.c:199
+src/lm/dap/rcs/qraxis.c:201	lm_dap_rcs	status	d->sensetyp >= 0 && d->sensetyp <= 2	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/dap/rcs/qraxis.c:211	lm_dap_rcs	status	d->nextu <= 0377u && d->nextv <= 0377u	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/dap/rcs/qraxis.c:267	trygts	status	d->ingts == 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qraxis.c:308
+src/lm/dap/rcs/qrjets.c:183	lm_dap_xtrans	status	d->skip[0] == QJ_SKIPOFF	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/qrjets.c:244	norotat	status	axis == 0 || axis == 1	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrjets.c:343
+src/lm/dap/rcs/qrjets.c:274	rotation_failed	status	axis == 0 || axis == 1	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrjets.c:401
+src/lm/dap/rcs/qrjets.c:282	rotation_failed	status	d->tj[axis + 1] == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/qrjets.c:355	aftertj	status	axis == 0 || axis == 1	DEAD	GUARANTEED	structural: param fact at every call site (est)
+src/lm/dap/rcs/qrjets.c:410	aftertj	status	d->abstj > QJ_150MS	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrjets.c:501,src/lm/dap/rcs/qrjets.c:549,src/lm/dap/rcs/qrjets.c:611
+src/lm/dap/rcs/qrjets.c:464	body_tjlaw	status	axis == 0 || axis == 1	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrjets.c:583
+src/lm/dap/rcs/qrjets.c:524	body_backhand	status	axis == 0 || axis == 1	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrjets.c:586
+src/lm/dap/rcs/qrjets.c:539	body_backhand	status	i >= 0 && i < LM_BLOCK_N	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/dap/rcs/qrjets.c:591	lm_dap_uvloop	status	axis == 0 || axis == 1	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/qrmanual.c:74	lm_dap_qrminimp	status	agc_flag_test(AGC_FLAG_PULSEFLG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/qrmanual.c:125	lm_dap_qrminimp	status	d->oldqrmin == 1	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/qrmanual.c:194	enteruv	status	d->neg_ratedb <= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrmanual.c:294,src/lm/dap/rcs/qrmanual.c:299
+src/lm/dap/rcs/qrmanual.c:199	enteruv	status	d->tcqr >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrmanual.c:294,src/lm/dap/rcs/qrmanual.c:299
+src/lm/dap/rcs/qrmanual.c:265	rhcactiv	status	d->stiksens >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrmanual.c:332,src/lm/dap/rcs/qrmanual.c:349
+src/lm/dap/rcs/qrmanual.c:270	rhcactiv	status	d->neg_ratedb <= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrmanual.c:332,src/lm/dap/rcs/qrmanual.c:349
+src/lm/dap/rcs/qrmanual.c:322	lm_dap_chekstik	status	!agc_flag_test(AGC_FLAG_PULSEFLG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/qrmanual.c:344	lm_dap_chekstik	status	d->cotroler < 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/rate.c:292	lm_dap_backp	status	!ptrap || d->trapedp == 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/rcs/rate.c:360	lm_dap_offset_est	status	d->alphaq == d->aosq	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/dap/rcs/t6rupt.c:100	set_time6	status	v >= 0 && v <= LM_POSMAX	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/t6rupt.c:327; word/enum type invariant
+src/lm/dap/rcs/t6rupt.c:107	set_time6	status	agc_rupt_time(6) == (uint16_t) v	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/t6rupt.c:133	lm_dap_write	status	jets <= 0377u	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/paxis.c:234,src/lm/dap/rcs/qrjets.c:382,src/lm/dap/rcs/qrjets.c:405
+src/lm/dap/rcs/t6rupt.c:184	lm_dap_write_next	status	index == T6_IDX_P || index == T6_IDX_U || index == T6_IDX_V	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/dap/rcs/qrjets.c:172,src/lm/dap/rcs/qrjets.c:240
+src/lm/dap/rcs/t6rupt.c:200	lm_dap_write_next	status	jets <= 0377u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/t6rupt.c:227	lm_dap_jtlst	status	t > 0 && t <= LM_POSMAX	DEAD	FALLIBLE	EVA DEAD; state/local fact; word/enum type invariant
+src/lm/dap/rcs/t6rupt.c:259	lm_dap_jtlst	status	d->t6furtha[0] >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/t6rupt.c:295	agc_lm_dap_t6jobchk	status	raw == LM_T6_NEGZERO	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/t6rupt.c:309	agc_lm_dap_t6jobchk	status	done == T6_IDX_P || done == T6_IDX_U || done == T6_IDX_V	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/t6rupt.c:359	agc_lm_dap_t6rupt	status	st != AGC_STATUS_BAD_ARG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/t6rupt.c:364	agc_lm_dap_t6rupt	status	agc_rupt_time(6) != LM_T6_NEGZERO || st != AGC_STATUS_OK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/dap/rcs/tjetlaw.c:492	lm_dap_tjetlaw	status	d->axisctr >= -1 && d->axisctr <= 1	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/lm/dap/state.c:134	agc_lm_dap_fresh_start	status	!agc_flag_test(AGC_FLAG_ACCOKFLG)	VALID	GUARANTEED	EVA VALID (exec_exec,lm_dap,oracle_dap_lm,oracle_dsky,programs_align,programs_rendezvous,sim_harness); state/local fact
+src/lm/landing/aborts.c:101	agc_lm_task_abort_monitor	status	pipctr >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:113	agc_lm_task_abort_monitor	status	ab_pipctr1 >= 0 && ab_pipctr1 <= 7	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/landing/aborts.c:152	ab_abrtjask	status	agc_erase_modreg() == mm	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:180	ab_abrtjask	status	agc_flag_test(AGC_FLAG_ENGONFLG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:236	agc_lm_abort_monitor_resume	status	mm != 70 && mm != 71	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/landing/aborts.c:298	agc_lm_job_dps_abort	status	st != AGC_STATUS_OK || agc_erase_modreg() == 70	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:327	agc_lm_job_aps_abort	status	st != AGC_STATUS_OK || agc_erase_modreg() == 71	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:351	agc_lm_job_dps_abort_commanded	status	st != AGC_STATUS_OK || agc_erase_modreg() == 70	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:375	agc_lm_job_aps_abort_commanded	status	st != AGC_STATUS_OK || agc_erase_modreg() == 71	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:462	ab_upthrot	status	agc_flag_test(AGC_FLAG_FLVR)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:467	ab_upthrot	status	agc_flag_test(AGC_FLAG_ROTFLAG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:486	agc_lm_job_abort_auto_control_check	status	agc_flag_test(AGC_FLAG_FLVR) || agc_flag_test(AGC_FLAG_FLAP)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:509	agc_lm_job_abort_to_ascent_guidance	status	agc_erase_thrust() == AGC_LM_FEXTRA	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:530	agc_lm_job_aps_abort_oldtime	status	agc_flag_test(AGC_FLAG_FLAP)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:551	agc_lm_job_goabort	status	mm == 70 || mm == 71	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:579	agc_lm_job_goabort	status	agc_erase_modreg() == 71	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:607	agc_lm_job_goabort	status	mass > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/aborts.c:623	agc_lm_job_goabort	status	dv > 0 && agc_dp_from_words(a->tbup) > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/landing/displays.c:181	ld_disprset	status	(agc_erase_imodes33() & LD_BITS8_7) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:186	ld_disprset	status	!agc_flag_test(AGC_FLAG_DIDFLAG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:208	ld_dataout	status	word <= 077777u	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/landing/displays.c:262,src/lm/landing/displays.c:304
+src/lm/landing/displays.c:215	ld_dataout	status	agc_erase_altm() == word	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:249	ld_extrapolate	status	hi >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:257	ld_extrapolate	status	lo >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:294	ld_continue	status	w != 0u || ld_altrate < 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:299	ld_continue	status	(agc_erase_imodes33() & LD_BIT7) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:317	ld_continue	status	(agc_erase_imodes33() & LD_BIT7) == 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:329	ld_continue	status	ld_altsave >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:340	ld_continue	status	ld_altpath == LD_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:399	ld_disindat	status	agc_flag_test(AGC_FLAG_DIDFLAG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:446	agc_lm_landisp	status	agc_flag_test(AGC_FLAG_DIDFLAG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:466	agc_lm_task_intlze	status	(w & LD_BIT8) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:471	agc_lm_task_intlze	status	(agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_ENBRRCDUERR) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/displays.c:568	agc_lm_vmonitor	status	ld_trak[0] >= -1 && ld_trak[0] <= 1	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/landing/displays.c:593	agc_lm_task_speedrun_resume	status	ld_altpath != LD_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/findcduw.c:785	agc_lm_findcduw	status	n == 0 || n == 1	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/guidance.c:301	agc_lm_ttfincr	status	sh >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/guidance.c:327	agc_lm_calcrgvg	status	agc_integ_shared_ctx() != NULL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/guidance.c:478	agc_lm_ttf8cl	status	passes >= 1 && passes <= AGC_LM_ROOT_MAX_PASSES	VALID	GUARANTEED	EVA VALID (oracle_landing); state/local fact; state/local fact
+src/lm/landing/guidance.c:548	agc_lm_quadguid	status	l->ttf_8 != 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/landing/guidance.c:584	agc_lm_afccalc	status	mass > 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/landing/guidance.c:944	agc_lm_start_velocity_nulling	status	agc_lm_ldg()->wchvert < 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/guidance.c:1065	ldg_quadratic	status	sh >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/guidance.c:1070	ldg_quadratic	status	zt >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/guidance.c:1126	agc_lm_guidpass	status	ctx != NULL && entry >= AGC_LM_ENTRY_GUILDRET && entry <= AGC_LM_ENTRY_VERTGUID	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/lm/landing/guidance.c:1194; param fact not shown at src/lm/landing/guidance.c:1194
+src/lm/landing/lunar_landing.c:209	ll_ign_guidance	status	l->nignloop >= 0 && l->nignloop < LL_NIGNLOOP	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/landing/lunar_landing.c:400	agc_lm_job_ignalg_prec	status	agc_lm_ldg()->wchphase == AGC_LM_PHASE_IGNALG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:419	agc_lm_job_ignaloop	status	agc_lm_ldg()->wchphase == AGC_LM_PHASE_IGNALG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:457	agc_lm_job_astnret	status	agc_align_ram()->qmaj == AGC_JOB_BRAKING_PHASE_BURN_ATTITUDE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:517	agc_lm_job_braking_phase_antenna_check	status	agc_erase_modreg() == 63	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:750	agc_lm_redesig	status	sh >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:929	ll_rodcomp	status	dt >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/landing/lunar_landing.c:983	agc_lm_task_rodtask	status	agc_lm_ldg()->wchphase == AGC_LM_PHASE_VERTICAL	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:1017	agc_lm_manual_landing_vertical	status	agc_lm_ldg()->wchvert > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:1068	agc_lm_pitfall	status	l->elvira >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:1088	ll_resetrpt	status	(agc_chan_read(AGC_CHAN_CHAN13) & AGC_CH013_RSTTRAP31A) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:1146	agc_lm_task_redesmon	status	last <= LL_ALL4BITS	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:1161	agc_lm_task_redesmon	status	l->zerlina == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:1190	agc_lm_descbits	status	(c16 & (AGC_CH016_DESCENTDN | AGC_CH016_DESCENTUP)) != 0u	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/lunar_landing.c:1303	agc_lm_job_landing_confirmation_flash	status	agc_flag_test(AGC_FLAG_SURFFLAG)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/landing/throttle.c:241	agc_lm_throttle_measured	status	accel >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/lm/landing/lunar_landing.c:936,src/lm/landing/throttle.c:299,tests/lm/landing.c:162...
+src/lm/landing/throttle.c:246	agc_lm_throttle_measured	status	agc_lm_ldg()->afc >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/landing/throttle.c:292	agc_lm_throttle	status	abdelv >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/lm/navigation/measurement_update.c:896	lmnav_incorporate_accepted	status	ctx != NULL && mu.step != MU_END	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); state/local fact
+src/lm/navigation/navigation.c:1065	agc_task_preferred_tracking_attitude_wait	status	lmnav.r65cntr >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/navigation/tracking_attitude.c:311	agc_task_tracking_attitude_wait	status	lmnav_state()->genret != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/optics/aotmark.c:241	agc_aot_flight_los	status	(ip != NULL) && (m != NULL) && star_sm != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/lm/optics/aotmark.c:736; param fact at every call site (addr)
+src/lm/optics/aotmark.c:288	agc_aot_surfstar	status	(ip != NULL) && (m != NULL) && star_sm != NULL	VALID	eva-valid-deferred	EVA VALID (oracle_align), lane not reviewed; param fact at every call site (addr+caller); param fact not shown at src/lm/optics/aotmark.c:730; param fact at every call site (addr)
+src/lm/optics/aotmark.c:348	agc_aot_aveit	status	(ip != NULL) && (ave != NULL) && (n >= 1) && (n <= AGC_ALIGN_AOT_PAIRS)	VALID	eva-valid-deferred	EVA VALID (oracle_align), lane not reviewed; param fact at every call site (addr+caller); param fact at every call site (addr); param fact not shown at src/lm/optics/aotmark.c:746; param fact not shown at src/lm/optics/aotmark.c:746
+src/lm/optics/aotmark.c:916	surface_again	status	(pair >= 0) && (pair < AGC_ALIGN_AOT_PAIRS)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/optics/aotmark.c:1016	vacstor	status	(ram->markcntr >= 0) && (ram->markcntr < AGC_ALIGN_AOT_PAIRS)	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/radar/acquisition.c:491	agc_job_rendezvous_sighting_mark_reposition	status	n->reposcnt >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/acquisition.c:1188	agc_job_radar_search_data_check	status	n->nsrchpnt >= 0 && n->nsrchpnt <= 6	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/radar/designate.c:131	rr_startdes	status	rr_radmodes_test(RR_DESIGBIT)	VALID	GUARANTEED	EVA VALID (programs_rendezvous); state/local fact
+src/lm/radar/designate.c:307	agc_rr_designate_nb	status	ip != NULL && res != NULL && trunnion <= RR_WORD_MASK && shaft <= RR_WORD_MASK	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact at every call site (addr); param fact not shown at src/lm/radar/acquisition.c:184,src/lm/radar/acquisition.c:530,src/lm/radar/designate.c:742; param fact not shown at src/lm/radar/acquisition.c:184,src/lm/radar/acquisition.c:530,src/lm/radar/designate.c:742
+src/lm/radar/designate.c:426	agc_task_rr_designate_begin	status	agc_erase_radmodes() <= RR_WORD_MASK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/designate.c:454	agc_task_rr_designate_loop	status	agc_erase_radmodes() <= RR_WORD_MASK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/designate.c:520	rr_desdun	status	!rr_radmodes_test(RR_DESIGBIT)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/designate.c:711	agc_rendz_goto_terminate_tracking	status	st != AGC_STATUS_BAD_ARG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/leadin.c:83	agc_task_radsamp	status	delay >= 1 && delay <= AGC_WAITLIST_MAX_DELAY	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/radar/moding.c:560	rr_radnoop	status	st != AGC_STATUS_BAD_ARG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:664	rr_zero_begin	status	st != AGC_STATUS_BAD_ARG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:692	agc_task_rr_zero_counters	status	st != AGC_STATUS_BAD_ARG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:753	agc_task_rrturnon	status	rr_radmodes_test(RR_TURNONBT)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:778	agc_task_rr_turnon_done	status	!rr_radmodes_test(RR_TURNONBT)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:801	agc_task_rr_zero	status	rr_radmodes_test(RR_RCDU0BIT)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:1125	rr_axis_start	status	(int) client >= 0 && client < RR_AXIS_CLIENT_COUNT && rrindex == 0 || rrindex == 1	DEAD	FALLIBLE	EVA DEAD; word/enum type invariant; param fact at every call site (const); param fact not shown at src/lm/radar/moding.c:1217,src/lm/radar/moding.c:1245
+src/lm/radar/moding.c:1153	agc_task_rr_one_axis	status	rr_axis.client < RR_AXIS_CLIENT_COUNT	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:1183	agc_task_dorrepos	status	st != AGC_STATUS_BAD_ARG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:1212	agc_task_rr_reposition_drive	status	ok	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:1240	rr_remode_start	status	ok	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/moding.c:1263	agc_task_rr_remode	status	rr_radmodes_test(RR_REMODBIT)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/powered_flight_designate.c:137	agc_radar_powered_flight_designate	status	!agc_flag_test(AGC_FLAG_NO_POWERED_DESIGNATE)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/powered_flight_designate.c:263	agc_task_powered_flight_preposition	status	rr_radmodes_test(RR_REPOSBIT)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/powered_flight_designate.c:570	pfd_read_end	status	agc_erase_trkmkcnt() == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/read.c:741	agc_task_lr_position_scan	status	st != AGC_STATUS_BAD_ARG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/read.c:782	agc_task_lr_position_check	status	st != AGC_STATUS_BAD_ARG	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/radar/read.c:807	agc_task_lr_position_settled	status	rr_radmodes_test(RR_LRPOSBIT)	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/lm/systems_test.c:364	pipa_index	status	*axis >= 0 && *axis <= 2	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/systems_test.c:914,src/lm/systems_test.c:936,src/lm/systems_test.c:1774; param fact not shown at src/lm/systems_test.c:914,src/lm/systems_test.c:936,src/lm/systems_test.c:1774
+src/lm/systems_test.c:435	image_words	status	ecadr >= 0 && ecadr < (int) EC_ERASABLE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/lm/systems_test.c:1503,src/lm/systems_test.c:1589; param fact not shown at src/lm/systems_test.c:1503,src/lm/systems_test.c:1589
+src/lm/systems_test.c:493	agc_systems_test_zeroing	status	n >= 1 && n <= ZEROING_MAX	DEAD	GUARANTEED	structural: param fact at every call site (const); param fact at every call site (const)
+src/lm/systems_test.c:1168	vertdrft	status	k >= 0 && k < W_WORDS	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/lm/systems_test.c:1303	torque	status	k >= 0 && k < W_WORDS	DEAD	FALLIBLE	EVA DEAD; state/local fact; state/local fact
+src/nav/auxiliary/ephemerides.c:148	ephem_lstime	status	(t < EPHEM_CSM_TSPAN) && (t > -EPHEM_CSM_TSPAN)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact; state/local fact
+src/nav/auxiliary/ephemerides.c:319	agc_ephem_csm_solpos	status	(ip != NULL) && (eph != NULL) && (sun != NULL)	DEAD	UNCALLED	EVA DEAD; param fact not shown at any site (no caller); param fact not shown at any site (no caller); param fact not shown at any site (no caller)
+src/nav/auxiliary/free_fall.c:194	agc_tff_rp_ra	status	(tff->nr >= 0) && (tff->nr <= AGC_DP_BITS) && (tff->na >= 0) && (tff->na <= AGC_DP_BITS)	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/programs/displays/orbit_parameter_display.c:207,tests/nav/navaux.c:404,tests/nav/navaux.c:435...; param fact not shown at src/programs/displays/orbit_parameter_display.c:207,tests/nav/navaux.c:404,tests/nav/navaux.c:435...; param fact not shown at src/programs/displays/orbit_parameter_display.c:207,tests/nav/navaux.c:404,tests/nav/navaux.c:435...; param fact not shown at src/programs/displays/orbit_parameter_display.c:207,tests/nav/navaux.c:404,tests/nav/navaux.c:435...
+src/nav/auxiliary/free_fall.c:396	tff_general	status	tff->tffrtalf != 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/nav/auxiliary/free_fall.c:481
+src/nav/auxiliary/free_fall.c:510	tff_calc	status	(tff->nr >= 0) && (tff->nr <= AGC_DP_BITS)	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/nav/auxiliary/free_fall.c:588,src/nav/auxiliary/free_fall.c:614; param fact not shown at src/nav/auxiliary/free_fall.c:588,src/nav/auxiliary/free_fall.c:614
+src/nav/auxiliary/free_fall.c:583	agc_tff_calctff	status	rterm >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/csm/entry/programs.c:1463,src/csm/entry/programs.c:1522,src/programs/displays/orbit_parameter_display.c:233...
+src/nav/auxiliary/free_fall.c:609	agc_tff_calctper	status	rper >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/programs/displays/orbit_parameter_display.c:226,tests/nav/navaux.c:447
+src/nav/auxiliary/measurement.c:192	agc_incorp_state_deviation	status	(inc->variance >= 0)	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/navigation/cislunar_navigation.c:1241,src/csm/navigation/landmark_navigation.c:812,src/csm/navigation/tracking_data.c:375...
+src/nav/auxiliary/measurement.c:230	agc_incorp_state_deviation	status	tripa > 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/nav/auxiliary/measurement.c:341	agc_incorp_update_w	status	(inc->normgam <= NAVAUX_MAX_SHIFT) && (inc->normgam >= -NAVAUX_MAX_SHIFT)	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/programs/navigation/common.c:1400,tests/nav/navaux.c:551,tests/oracle/nav_aux.c:538; param fact not shown at src/programs/navigation/common.c:1400,tests/nav/navaux.c:551,tests/oracle/nav_aux.c:538
+src/nav/auxiliary/measurement.c:375	agc_incorp_update_w	status	(normgam <= NAVAUX_MAX_SHIFT) && (normgam >= -NAVAUX_MAX_SHIFT)	VALID	GUARANTEED	EVA VALID (oracle_nav_aux); state/local fact; state/local fact
+src/nav/auxiliary/planetary.c:176	newangle_words	status	agc_tp_from_words(tsum) >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/nav/auxiliary/star_tables.c:249	agc_star_vector	status	(star >= 1) && (star <= AGC_STAR_COUNT)	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/csm/navigation/cislunar_navigation.c:783,src/lm/alignment/lunar_surface_sighting.c:313,src/programs/alignment/locsam.c:355...; param fact not shown at src/csm/navigation/cislunar_navigation.c:783,src/lm/alignment/lunar_surface_sighting.c:313,src/programs/alignment/locsam.c:355...
+src/nav/conic/common.c:291	agc_conic_abtconic_	status	agc_state_vehicle() == AGC_VEHICLE_CSM || agc_state_vehicle() == AGC_VEHICLE_LM	VALID	GUARANTEED	EVA VALID (csm_return_to_earth,nav_conic,oracle_conic,oracle_return_to_earth,oracle_targeting,programs_rendezvous); state/local fact
+src/nav/conic/common.c:298	agc_conic_abtconic_	status	st != AGC_STATUS_BAD_ARG	VALID	GUARANTEED	EVA VALID (csm_return_to_earth,nav_conic,oracle_conic,oracle_return_to_earth,oracle_targeting,programs_rendezvous); state/local fact
+src/nav/conic/kepler.c:194	kepler_period	status	pass < AGC_CONIC_PERIOD_MAX_PASSES	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/nav/conic/lambert.c:212	agc_conic_iterator	status	ip != NULL && it != NULL	DEAD	UNCALLED	EVA DEAD; param fact not shown at any site (no caller); param fact not shown at any site (no caller)
+src/nav/conic/lambert.c:621	lambert_entry	status	in->geomsgn != 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/nav/conic/lambert.c:772
+src/nav/conic/lambert.c:639	lambert_entry	status	in->iterctr >= 1 && in->iterctr <= AGC_CONIC_LAMBERT_ITERCTR	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact not shown at src/nav/conic/lambert.c:772; param fact not shown at src/nav/conic/lambert.c:772
+src/nav/conic/timeradius.c:157	agc_conic_timerad	status	out != NULL && in->sgnrdot != 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (addr+caller); param fact not shown at src/csm/burns/return_to_earth/conic.c:277,src/csm/burns/return_to_earth/precision.c:333,src/programs/targeting/csi_cdh_targeting.c:281...
+src/nav/integration/init.c:152	agc_integ_ctx_init	status	ctx != NULL	VALID	eva-valid-deferred	EVA VALID (oracle_nav_integ,oracle_targeting), lane not reviewed; param fact not shown at tests/nav/integration.c:823,tests/nav/integration.c:1100,tests/nav/integration.c:1137
+src/nav/integration/init.c:241	agc_integ_perm_get	status	out != NULL && (veh == AGC_VEHICLE_CSM) || (veh == AGC_VEHICLE_LM)	VALID	eva-valid-deferred	EVA VALID (oracle_nav_integ,programs_rendezvous), lane not reviewed; param fact at every call site (addr); param fact not shown at src/csm/navigation/tracking_data.c:164,src/io/verbs/extended_verbs.c:978,src/programs/navigation/common.c:1406
+src/nav/integration/init.c:280	agc_integ_perm_set	status	in != NULL && (veh == AGC_VEHICLE_CSM) || (veh == AGC_VEHICLE_LM)	VALID	eva-valid-deferred	EVA VALID (oracle_nav_integ), lane not reviewed; param fact at every call site (addr); param fact not shown at src/io/verbs/extended_verbs.c:982,src/nav/integration/init.c:552,src/nav/integration/jobs.c:368...
+src/nav/integration/init.c:371	agc_integ_install	status	(area >= 0) && (area < area_count())	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (const); state/local fact
+src/nav/integration/init.c:509	agc_integ_eraswake	status	(area == 1) || (area == 2) && area < area_count()	VALID	eva-valid-deferred	EVA VALID (nav_integration), lane not reviewed; param fact at every call site (const); state/local fact
+src/nav/integration/init.c:546	atop	status	ip != NULL && (x2 == 0) || (x2 == 2) || (x2 == AGC_INTEG_X2_ORIGEX)	VALID	eva-valid-deferred	EVA VALID (oracle_nav_integ), lane not reviewed; param fact at every call site (caller); param fact not shown at src/nav/integration/init.c:589,src/nav/integration/init.c:612
+src/nav/integration/init.c:712	agc_integ_ptoalem	status	ip != NULL	VALID	GUARANTEED	structural: param fact at every call site (addr+caller)
+src/nav/integration/init.c:1180	agc_integ_run	status	ip != NULL	VALID	GUARANTEED	structural: param fact at every call site (est)
+src/nav/integration/init.c:1257	agc_integ_integrate_permanent	status	ip != NULL	VALID	GUARANTEED	structural: param fact at every call site (caller+est)
+src/nav/integration/init.c:1296	special_entry	status	ip != NULL	VALID	eva-valid-deferred	EVA VALID (programs_rendezvous), lane not reviewed; param fact not shown at src/nav/integration/init.c:1344,src/nav/integration/init.c:1399
+src/nav/integration/init.c:1499	agc_integ_integrvs	status	ip != NULL && agc_integ_area_busy(0)	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (addr+caller+est); state/local fact
+src/nav/integration/init.c:1540	agc_integ_integrv	status	agc_integ_area_busy(0)	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/nav/integration/jobs.c:481	agc_integ_avetomid	status	ip != NULL	DEAD	GUARANTEED	structural: param fact at every call site (addr)
+src/nav/integration/jobs.c:617	agc_integ_midtoav_at_time	status	ip != NULL && out != NULL	DEAD	GUARANTEED	structural: param fact at every call site (addr); param fact at every call site (addr)
+src/nav/integration/jobs.c:680	agc_integ_midtoav_now	status	ip != NULL && out != NULL	DEAD	GUARANTEED	structural: param fact at every call site (addr); param fact at every call site (addr)
+src/nav/integration/jobs.c:830	agc_integ_intwakeu	status	ip != NULL && upsvflag != NULL	DEAD	GUARANTEED	structural: param fact at every call site (addr); param fact at every call site (addr)
+src/nav/integration/orbital_integration.c:321	agc_integ_kepprep	status	ip != NULL	VALID	GUARANTEED	structural: param fact at every call site (caller)
+src/nav/integration/orbital_integration.c:1623	agc_integ_chkswtch	status	ip != NULL && test != NULL	VALID	GUARANTEED	structural: param fact at every call site (caller); param fact at every call site (addr)
+src/programs/alignment/common.c:438	align_goto	status	next != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/alignment/imu_realign.c:322,src/csm/optics/auto_optics_positioning.c:634,src/csm/optics/auto_optics_positioning.c:659...
+src/programs/alignment/common.c:515	align_stall_outcome	status	r != AGC_IMU_STALL_SLEEPING	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/alignment/locsam.c:638	agc_align_planet_vector	status	(ip != NULL) && (los != NULL) && (star6 >= 0) && (star6 <= STAR6_MAX)	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact at every call site (addr); param fact not shown at src/programs/alignment/planet.c:85; param fact not shown at src/programs/alignment/planet.c:85
+src/programs/displays/display.c:120	rz_continue	status	next != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/csm/navigation/cislunar_navigation.c:294,src/csm/navigation/landmark_navigation.c:1127,src/csm/navigation/landmark_navigation.c:1286...
+src/programs/displays/display.c:156	rz_vnpooh	status	ctx != NULL && next != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller+est); param fact not shown at src/programs/displays/display.c:568
+src/programs/displays/display.c:185	agc_job_rendz_vnpooh	status	vnpooh_slot.next != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/displays/display.c:262	rz_ttogo_display	status	ctx != NULL && ip != NULL && rz != NULL && resume_as != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller+est); param fact at every call site (addr+caller+est); param fact not shown at src/programs/targeting/csi_cdh_targeting.c:137,src/programs/targeting/csi_cdh_targeting.c:540,src/programs/targeting/csi_cdh_targeting.c:889...; param fact not shown at src/programs/displays/display.c:597,src/programs/targeting/stable_orbit.c:691
+src/programs/displays/display.c:311	agc_job_rendz_ttogo_display	status	agc_rendz_erasable()->qsaved != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/displays/display.c:411	rz_disdvlvc	status	ctx != NULL && ip != NULL && rz != NULL && noun == 81U || noun == 82U	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact at every call site (addr); param fact not shown at src/programs/targeting/csi_cdh_targeting.c:479,src/programs/targeting/csi_cdh_targeting.c:515,src/programs/targeting/csi_cdh_targeting.c:855; param fact at every call site (const)
+src/programs/displays/display.c:447	rz_tpi_final_displays	status	ctx != NULL && ip != NULL && rz != NULL && resume_as != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact at every call site (addr); param fact not shown at src/programs/targeting/tpi_tpm_targeting.c:450,src/programs/targeting/tpi_tpm_targeting.c:623; param fact at every call site (const)
+src/programs/displays/display.c:561	rz_tpi_flagoff	status	ctx != NULL && ip != NULL && rz != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller+est); param fact at every call site (addr+est); param fact not shown at src/programs/displays/display.c:540
+src/programs/displays/display.c:592	agc_rendz_ttogo_display_start	status	ctx != NULL && ip != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (est); param fact not shown at src/csm/burns/return_to_earth/program.c:875
+src/programs/displays/display.c:624	rz_flash	status	verb < 100U && noun < 100U && (int) kind >= 0 && kind < AGC_DSKY_DISP_COUNT	VALID	GUARANTEED	EVA VALID (programs_rendezvous); param fact not shown at src/csm/navigation/tpi_search.c:802,src/programs/displays/display.c:165; param fact not shown at src/csm/navigation/orbital_navigation.c:217,src/csm/navigation/tpi_search.c:802,src/programs/displays/display.c:165...; word/enum type invariant; param fact at every call site (const)
+src/programs/displays/display.c:771	rz_set_option	status	which == 1 || which == 2 && v <= 077777U	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (const); param fact not shown at src/csm/navigation/tpi_search.c:963
+src/programs/displays/orbit_parameter_display.c:137	agc_orbit_params_select_body	status	in != NULL && rls_mag_or_rpad >= 0	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (addr+caller); param fact not shown at src/programs/displays/orbit_parameter_display.c:334,tests/programs/rendezvous.c:237
+src/programs/displays/orbit_parameter_display.c:303	opd_orbit_params	status	o.neg_tper <= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/displays/orbit_parameter_display.c:460	agc_job_orbit_display_vehicle_select	status	rz_option(1) == 2U	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/displays/orbit_parameter_display.c:586	opd_start_ticking	status	rz->tstart_orbit >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/programs/displays/orbit_parameter_display.c:648,src/programs/displays/orbit_parameter_display.c:763
+src/programs/displays/orbit_parameter_display.c:819	agc_task_ticktest	status	bits != OPD_TICK_MASK	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/displays/out_of_plane_display.c:84	agc_rendz_out_of_plane_compute	status	ip != NULL && rz != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/programs/displays/out_of_plane_display.c:313
+src/programs/displays/out_of_plane_display.c:121	agc_rendz_out_of_plane_compute	status	rz->rtheta >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/programs/displays/out_of_plane_display.c:313
+src/programs/displays/rendezvous_parameter_display.c:94	agc_rendezvous_parameter_display_compdisp	status	ip != NULL && rz != NULL && refsmmat != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (caller); param fact not shown at src/programs/displays/rendezvous_parameter_display.c:199; param fact at every call site (addr)
+src/programs/displays/rendezvous_parameter_display.c:130	agc_rendezvous_parameter_display_compdisp	status	rz->range >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/programs/displays/rendezvous_parameter_display.c:199
+src/programs/displays/rendezvous_parameter_display.c:612	agc_task_rendezvous_parameter_display	status	!rz_is_csm()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/displays/rendezvous_parameter_display.c:617	agc_task_rendezvous_parameter_display	status	agc_interrupts_inhibited()	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/navigation/common.c:961	rz_precset	status	ip != NULL && rz != NULL && tdec1 >= 0	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr+caller+est); param fact not shown at src/programs/targeting/csi_cdh_targeting.c:263,src/programs/targeting/stable_orbit.c:130,src/programs/targeting/stable_orbit.c:815...; param fact not shown at src/programs/targeting/csi.c:192,src/programs/targeting/csi_cdh_targeting.c:263,src/programs/targeting/stable_orbit.c:130...
+src/programs/navigation/common.c:1178	agc_rendz_los_and_normal	status	ip != NULL && rz != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr+caller); param fact not shown at src/programs/targeting/stable_orbit.c:148,src/programs/targeting/stable_orbit.c:822,src/programs/targeting/tpi_tpm_targeting.c:609
+src/programs/navigation/common.c:1186	agc_rendz_los_and_normal	status	rz->unrm.c[0] != AGC_DP_MIN	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/navigation/common.c:1245	agc_rendz_get_lvc	status	delvlvc->c[0] != AGC_DP_MIN	UNKNOWN	FALLIBLE	EVA UNKNOWN; state/local fact
+src/programs/navigation/common.c:1571	rz_integ	status	ip != NULL && out != NULL && (int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT	VALID	GUARANTEED	EVA VALID (programs_rendezvous); param fact at every call site (addr+caller+est); param fact at every call site (addr+caller); word/enum type invariant; param fact not shown at src/csm/navigation/tpi_search.c:328,src/programs/displays/orbit_parameter_display.c:618,src/programs/displays/out_of_plane_display.c:296...
+src/programs/targeting/csi.c:158	agc_rendz_rotate	status	mag >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/targeting/csi.c:187	agc_rendz_advance	status	ip != NULL && rz != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/programs/targeting/csi_cdh_targeting.c:416,src/programs/targeting/csi_cdh_targeting.c:748
+src/programs/targeting/csi.c:1248	agc_rendz_csi_cdh_dv_to_reference	status	ip != NULL && rz != NULL && delvsin != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/programs/targeting/csi_cdh_targeting.c:505,src/programs/targeting/csi_cdh_targeting.c:880; param fact at every call site (addr)
+src/programs/targeting/csi_cdh_targeting.c:313	agc_job_csi_after_nn_elev	status	agc_rendz_erasable()->nn >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/targeting/csi_cdh_targeting.c:364	csi_almxit	status	code >= AGC_ALARM_CSI_00600 && code <= 00606	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/programs/targeting/csi_cdh_targeting.c:437; param fact not shown at src/programs/targeting/csi_cdh_targeting.c:437
+src/programs/targeting/initvel.c:434	agc_rendz_initvel	status	ip != NULL && rz != NULL && numit >= 0 && numit < AGC_RENDZ_INITVEL_MAXITER	UNKNOWN	FALLIBLE	EVA UNKNOWN; param fact at every call site (addr+caller); param fact not shown at src/guidance/burn_steering.c:280,src/guidance/external_delta_v.c:349,src/programs/targeting/lambert_aimpoint_guidance_lm.c:143...; param fact not shown at src/programs/targeting/tpi.c:599,tests/oracle/targeting.c:163; param fact not shown at src/programs/targeting/tpi.c:599,tests/oracle/targeting.c:163
+src/programs/targeting/stable_orbit.c:195	agc_rendz_stable_orbit_deltt	status	ip != NULL && rz != NULL	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/programs/targeting/stable_orbit.c:558
+src/programs/targeting/stable_orbit.c:210	agc_rendz_stable_orbit_deltt	status	hn >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/targeting/tpi.c:246	tpi_search_pass	status	ea >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/targeting/tpi.c:320	tpi_search_pass	status	rz->titer >= 0	DEAD	FALLIBLE	EVA DEAD; param fact not shown at src/programs/targeting/tpi.c:403
+src/programs/targeting/tpi.c:447	agc_rendz_tpi_time_search	status	ip != NULL && rz != NULL && resume != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/programs/targeting/csi_cdh_targeting.c:779,src/programs/targeting/tpi_tpm_targeting.c:348; param fact at every call site (const)
+src/programs/targeting/tpi.c:480	agc_rendz_tpi_time_search_cont	status	ip != NULL && rz != NULL && resume != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/programs/targeting/csi_cdh_targeting.c:805,src/programs/targeting/tpi_tpm_targeting.c:374; param fact at every call site (const)
+src/programs/targeting/tpi.c:647	agc_rendz_tpi_crew_overwrite	status	ip != NULL && rz != NULL && resume != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/programs/displays/display.c:529; param fact at every call site (const)
+src/programs/targeting/tpi.c:734	agc_rendz_tpi_compute	status	ip != NULL && rz != NULL && resume != AGC_JOB_NONE	DEAD	FALLIBLE	EVA DEAD; param fact at every call site (addr); param fact not shown at src/programs/targeting/tpi_tpm_targeting.c:420; param fact at every call site (const)
+src/programs/targeting/tpi_tpm_targeting.c:195	agc_job_tpi_after_ttpi	status	rz->centang >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/targeting/tpi_tpm_targeting.c:264	agc_job_tpi_cycle	status	rz->nomtpi == 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
+src/programs/targeting/tpi_tpm_targeting.c:569	agc_job_tpm_compute	status	rz->tstrt >= 0	DEAD	FALLIBLE	EVA DEAD; state/local fact
