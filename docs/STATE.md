@@ -3,13 +3,12 @@
 Updated: 2026-10-11
 
 ## Running agents (max 2)
-- review-sys-misc: PAUSED at a checkpoint (usage limit, user 2026-10-11);
-  resume from the Progress section of docs/modules/review-sys-misc.md
-  when a slot is free.
-- review-prog-align: PAUSED at a checkpoint (usage limit, user 2026-10-11);
-  resume from the Progress table of docs/modules/review-prog-align.md.
-- NOTHING RUNNING. On resume (two lanes): review-prog-align and
-  review-sys-misc first, both from their Progress sections.
+- review-sys-misc (Opus, resumed): down_telemetry leftovers, downlink
+  lists, extended verbs, uplink, P07, never-fail sweep, collapse-diff
+  check, test hygiene, style. Note: docs/modules/review-sys-misc.md.
+- review-prog-align (Opus, resumed): guard review of sxtmark/sighting_mark/
+  programs/alignment, SXTMARK compare, P51-P53/P57 pass, prelaunch header
+  blocks, style. Note: docs/modules/review-prog-align.md.
 
 ## Queue after it (two at a time)
 1. review-guid-powered, review-nav-integ (resume) -- items in docs/agents/review_items.md

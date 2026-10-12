@@ -600,3 +600,6 @@
             checks, 1 KNOWN PA-W4), 62 BAD_ARG filters now propagate.
             Paused before sxtmark/sighting_mark guard review, SXTMARK
             compare, P51-P53/P57 pass, style. Nothing running.
+2026-10-11  User: resume. Relaunched review-prog-align and review-sys-misc
+            (Opus) from their checkpoints; each told to format only its
+            own files. Two lanes running.
