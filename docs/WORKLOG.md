@@ -792,3 +792,10 @@
             release after scene init (first frame); Orbiter nightly x86
             (single exe, Orbiter.cfg ACTIVE_MODULES block) installed as
             C:\Orbiter-nightly with NASSP, user to try.
+2026-10-12  Forum/guide (user: "couldn't this have been solved in the
+            forums"): NASSP 8 betas target Orbiter 2016 Beta R90, not the
+            2016 release nor 2024; NASSP 9 (rcflyinghokie/NASSP, CMake,
+            x64, Orbiter 2024) is the 2024 line. Installed C:\NASSP9 =
+            Orbiter 2024 x64 + NASSP-V9.0-Orbiter2024-437 (D3D9Client +
+            XRSound active, D3DCompiler_47 x64, Modules/Server junctions).
+            Integration target switched to NASSP 9.
