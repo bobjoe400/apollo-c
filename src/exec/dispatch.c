@@ -1,6 +1,6 @@
-/* GENERATED-DISPATCH: rule 4 exempt */
 /**********************************************************************
  * FILE NAME: dispatch.c
+ * GENERATED-DISPATCH: rule 4 exempt (docs/CODING_STANDARD.md rule 4)
  *
  * PURPOSE:
  *   The switch from agc_job_id_t to the job functions and the one from
@@ -401,8 +401,8 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_pre_hunt(ctx));
         case AGC_JOB_REDOPOSE:
             return (agc_job_redopose(ctx));
-        case AGC_JOB_REFAZE10:
-            return (agc_job_refaze10(ctx));
+        case AGC_JOB_REESTABLISH_ENTRY_SEQUENCER:
+            return (agc_job_reestablish_entry_sequencer(ctx));
 
         /* src/csm/navigation */
         case AGC_JOB_BACKUP_SIGHTING_MARK:

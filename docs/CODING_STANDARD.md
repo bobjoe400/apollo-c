@@ -28,7 +28,8 @@ Language: C11, no extensions. Build flags (Makefile):
    tasks). They are the C form of the AGC's 2CADR tables; the unit a
    reviewer verifies is tools/registry.tsv plus tools/gen_registry.py, not
    the switch. A file claims the exemption only with the marker
-   `/* GENERATED-DISPATCH: rule 4 exempt */` in its first 5 lines, and
+   `GENERATED-DISPATCH: rule 4 exempt` in its first 5 lines (a line of
+   its file prolog), and
    check_rules.py accepts the marker only for src/exec/dispatch.c.
 5. **Assertions (spirit, not count).** An assertion states a fact that
    must hold and that a real execution could violate: a value arriving

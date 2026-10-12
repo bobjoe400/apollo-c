@@ -225,9 +225,9 @@ agc_status_t agc_entry_scalepop(bool *display);
 
 /* REFAZE10: GOTO GOTOADDR */
 agc_status_t agc_entry_reestablish_sequencer(bool *display);
-agc_status_t agc_entry_targeting(void);            /* TARGETNG */
-agc_status_t agc_job_pre_hunt(agc_job_ctx_t *ctx); /* PRE-HUNT  4.47 restart */
-agc_status_t agc_job_refaze10(agc_job_ctx_t *ctx); /* REFAZE10  5.3 restart  */
+agc_status_t agc_entry_targeting(void);                               /* TARGETNG */
+agc_status_t agc_job_pre_hunt(agc_job_ctx_t *ctx);                    /* PRE-HUNT  4.47 restart */
+agc_status_t agc_job_reestablish_entry_sequencer(agc_job_ctx_t *ctx); /* REFAZE10  5.3 restart  */
 
 /* HUNTEST and RANGER without the sequencing side effects (unit tests and
  * the oracle). huntest_predict runs HUNTEST from the current state up to

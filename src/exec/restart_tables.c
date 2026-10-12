@@ -1,50 +1,71 @@
-/*
- * restart_tables.c -- the RESTART TABLES of both vehicles as static const
- *                     data, and the reader for the erasables they name.
+/**********************************************************************
+ * FILE NAME: restart_tables.c
  *
- * Source: RESTART_TABLES.agc, Comanche055 pp. 211-219, Luminary099
- * pp. 238-243.
+ * PURPOSE:
+ *   The RESTART TABLES of both vehicles as static const data, and the
+ *   reader for the erasables they name.
  *
- * Every restart group has an even table (two 3-word entries per even
- * phase, both are restarted) and an odd table (one 3-word entry per odd
- * phase >= 3). Phase numbers are octal: 4.11SPOT is phase 011 = 9. An
- * entry is a job (PRDTTAB = priority, + FINDVAC / - NOVAC, then the job's
- * 2CADR), a task (2CADR stored negatively; PRDTTAB = delta time in cs,
- * -0 for "immediately", or -GENADR of a word holding the delta time) or a
- * LONGCALL (GENADR negative, BBCON positive; PRDTTAB = GENADR of the DP
- * delta time). The AGC tells them apart by signs; here by `kind` and
- * `dtsrc`. Priorities are written as priority numbers (PRIOnn >> 9);
- * OCT 52777 in Luminary is -OCT 25000, a NOVAC of priority 25.
+ * AGC SOURCE:
+ *   Comanche055 RESTART_TABLES.agc pp. 211-219
+ *   Luminary099 RESTART_TABLES.agc pp. 238-243
  *
- * Aliased tables are kept as aliases: Comanche 1.2SPOT = 2.2SPOT =
- * 3.2SPOT = 4.2SPOT, Luminary 2.2SPOT = 3.2SPOT = 6.2SPOT = 1.2SPOT.
- * The AGC's "DEC 0" placeholder entries are kind NONE.
- */
+ * EXTERNAL VARIABLES:
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   TGO           agc_dp_t  I    cs             agc_erase_tgo()
+ *   SAVET-30      agc_dp_t  I    cs             LM agc_erase_savet_30()
+ *   P40TMP        agc_dp_t  I    cs             CSM agc_erase_p40tmp()
+ *   ZOOMTIME      int16_t   I    cs             LM pad load
+ *   S61DT, CM/GYMDT int16_t I    cs             CSM entry delta times
+ *
+ * EXTERNAL REFERENCES:
+ *   none
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   NOT_FOUND for a phase past the end of a table; BAD_ARG for an
+ *   erasable the reader does not hold.
+ *
+ * NOTES:
+ *   Every restart group has an even table (two 3-word entries per even
+ *   phase, both are restarted) and an odd table (one 3-word entry per odd
+ *   phase >= 3). Phase numbers are octal: 4.11SPOT is phase 011 = 9. An
+ *   entry is a job (PRDTTAB = priority, + FINDVAC / - NOVAC, then the job's
+ *   2CADR), a task (2CADR stored negatively; PRDTTAB = delta time in cs,
+ *   -0 for "immediately", or -GENADR of a word holding the delta time) or a
+ *   LONGCALL (GENADR negative, BBCON positive; PRDTTAB = GENADR of the DP
+ *   delta time). The AGC tells them apart by signs; here by `kind` and
+ *   `dtsrc`. Priorities are written as priority numbers (PRIOnn >> 9);
+ *   OCT 52777 in Luminary is -OCT 25000, a NOVAC of priority 25.
+ *
+ *   Aliased tables are kept as aliases: Comanche 1.2SPOT = 2.2SPOT =
+ *   3.2SPOT = 4.2SPOT, Luminary 2.2SPOT = 3.2SPOT = 6.2SPOT = 1.2SPOT.
+ *   The AGC's "DEC 0" placeholder entries are kind NONE.
+ **********************************************************************/
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "internal.h"
 
-#define RST_J          AGC_RESTART_JOB
-#define RST_T          AGC_RESTART_TASK
-#define RST_L          AGC_RESTART_LONGCALL
-#define RST_N          AGC_RESTART_NONE
-#define RST_D          RST_DT_DIRECT
-#define RST_I          RST_DT_IMMEDIATE
-#define RST_X          RST_DT_INDIRECT
-#define RST_G          RST_DT_LONG
-#define RST_E0         RST_E_NONE
-#define RST_JN         AGC_JOB_NONE
-#define RST_TN         AGC_TASK_NONE
-#define RST_600SECS_CS 60000 /* 600SECS 2DEC 60000: 600 s in cs        */
-#define RST_SP_SCALE   16384 /* one SP word, 2^14                      */
+#define RST_J          AGC_RESTART_JOB      /* job entry */
+#define RST_T          AGC_RESTART_TASK     /* task entry */
+#define RST_L          AGC_RESTART_LONGCALL /* LONGCALL entry */
+#define RST_N          AGC_RESTART_NONE     /* DEC 0 placeholder */
+#define RST_D          RST_DT_DIRECT        /* PRDTTAB holds the delta time */
+#define RST_I          RST_DT_IMMEDIATE     /* PRDTTAB -0: immediately */
+#define RST_X          RST_DT_INDIRECT      /* PRDTTAB -GENADR: delta time in erasable */
+#define RST_G          RST_DT_LONG          /* LONGCALL: DP delta time in erasable */
+#define RST_E0         RST_E_NONE           /* no erasable */
+#define RST_JN         AGC_JOB_NONE         /* no job */
+#define RST_TN         AGC_TASK_NONE        /* no task */
+#define RST_600SECS_CS 60000                /* 600SECS 2DEC 60000: 600 s in cs        */
+#define RST_SP_SCALE   16384                /* one SP word, 2^14                      */
 
 typedef struct rst_group_tab
 {
-    const rst_entry_t *even; /* 2 entries per even phase from G.2       */
-    int                n_even;
-    const rst_entry_t *odd;  /* 1 entry per odd phase from G.3          */
-    int                n_odd;
+    const rst_entry_t *even;   /* 2 entries per even phase from G.2       */
+    int                n_even; /* entries in the even table        */
+    const rst_entry_t *odd;    /* 1 entry per odd phase from G.3          */
+    int                n_odd;  /* entries in the odd table         */
 } rst_group_tab_t;
 
 /* ================= Comanche055 (CSM), pp. 212-219 ===================== */
@@ -265,22 +286,32 @@ static const rst_group_tab_t lm_tab[AGC_RESTART_GROUPS]  = {
       (int) (sizeof (lm_odd6) / sizeof (lm_odd6[0]))},
  };
 
-/* ITSATBL / ITSEVEN / PHSPART2 (RESTARTS_ROUTINE C pp.1416-1419): the
- * entry for phase `phase` (>= 2, octal value) of `group`. For an even
- * phase `part` 0 is the first entry and 1 the second (PHSPART2).
- * An index past the end of a table is NOT_FOUND (the AGC would read the
- * next table).                                                         */
+/**********************************************************************
+ * ITSATBL / ITSEVEN / PHSPART2 (RESTARTS_ROUTINE C pp.1416-1419 /
+ * L pp.1305-1308): the entry for phase `phase` (>= 2, octal value) of
+ * `group`. For an even phase `part` 0 is the first entry and 1 the
+ * second (PHSPART2).
+ *
+ * ARGUMENTS:
+ *   group -- restart group, 1..6 (agc_restart_group checked it)
+ *   phase -- the table phase, 2..0177 (restart_table checked it)
+ *   part -- 0, or 1 for the second entry of an even phase
+ *   out -- receives the entry
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND for an index past the
+ *          end of the table (the AGC would read the next table)
+ **********************************************************************/
 agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
 {
-    if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS) || !AGC_ASSERT(phase >= 2 && phase <= 0177) || !AGC_ASSERT(out != 0) || !AGC_ASSERT(part == 0 || (part == 1 && (phase % 2) == 0)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    const rst_group_tab_t *t = &csm_tab[group - 1]; /* the group's even and odd tables */
+    int                    idx;                     /* entry index in the table */
+    int                    n;                       /* entries in the table */
+    const rst_entry_t     *base;                    /* the even or the odd table */
 
-    const rst_group_tab_t *t = (agc_state_vehicle() == AGC_VEHICLE_LM) ? &lm_tab[group - 1] : &csm_tab[group - 1];
-    int                    idx;
-    int                    n;
-    const rst_entry_t     *base;
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        t = &lm_tab[group - 1];
+    }
 
     if ((phase % 2) == 0)
     {
@@ -305,40 +336,41 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
     return (AGC_STATUS_OK);
 }
 
-/* Low word of a DP held in agc_dp_t (sign + 28 bits, value/2^28): the
- * AGC's second word, with the sign of the pair.                        */
-static int16_t dp_low_word(agc_dp_t v)
-{
-    int32_t lo = v % RST_SP_SCALE;
-
-    return ((int16_t) lo);
-}
-
-/* ITSINDIR (C p.1415): NDX A / CA 1 -- the single word at GENADR. For
- * SAVET-30 and P40TMP that is the first word of the B(2) pair, which
- * TIG-30 (L p.735) and P47CSM (C p.691) write with a TS: the writers in
- * C store that SP delta time as the whole DP (src/core/restart_delays.c),
- * so the value read here is the low part of the C DP.                  */
+/**********************************************************************
+ * ITSINDIR (RESTARTS_ROUTINE C p.1415 / L p.1304): NDX A / CA 1 -- the
+ * single word at GENADR. For SAVET-30 and P40TMP that is the first word
+ * of the B(2) pair, which TIG-30 (L p.735) and P47CSM (C p.691) write
+ * with a TS: the writers in C store that SP delta time as the whole DP
+ * (src/core/restart_delays.c), so the value read here is the low part
+ * of the C DP.
+ *
+ * ARGUMENTS:
+ *   src -- the erasable the table names
+ *   out -- receives the delta time, cs
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG for an erasable that
+ *          holds no SP delta time (a table error)
+ **********************************************************************/
 agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
 {
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* BAD_ARG: no SP delta time */
 
     switch (src)
     {
         case RST_E_TGO_1:         /* TGO +1: low word of TGO, cs          */
-            *out = dp_low_word(agc_erase_tgo());
+            *out = (int16_t) (agc_erase_tgo() % RST_SP_SCALE);
             break;
         case RST_E_600SECS:       /* high word of 2DEC 60000              */
             *out = (int16_t) (RST_600SECS_CS / RST_SP_SCALE);
             break;
         case RST_E_SAVET_30:      /* LM -GENADR SAVET-30: TIG-30 TS, cs     */
-            *out = dp_low_word(agc_erase_savet_30());
+            *out = (int16_t) (agc_erase_savet_30() % RST_SP_SCALE);
             break;
         case RST_E_ZOOMTIME:      /* LM ZOOMTIME (pad load), cs             */
             *out = agc_erase_zoomtime();
             break;
         case RST_E_PREREAD_DELAY: /* CSM -GENADR P40TMP: P47CSM TS, cs  */
-            *out = dp_low_word(agc_erase_p40tmp());
+            *out = (int16_t) (agc_erase_p40tmp() % RST_SP_SCALE);
             break;
         case RST_E_S61DT:         /* CSM S61DT, cs                             */
             *out = agc_erase_s61dt();
@@ -348,34 +380,37 @@ agc_status_t rst_read_sp(rst_erasable_t src, int16_t *out)
             break;
         case RST_E_NONE:
         default:
-
-            if (!AGC_ASSERT(src == RST_E_NONE))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
-            st = AGC_STATUS_BAD_ARG;
+            st   = AGC_STATUS_BAD_ARG;
             break;
     }
 
     return (st);
 }
 
-/* ITSLGCL1 (C p.1417): EXTEND / NDX A / DCA 0 -- the DP delta time of a
- * LONGCALL restart, cs.                                                */
+/**********************************************************************
+ * ITSLGCL1 (RESTARTS_ROUTINE C p.1417 / L p.1306): EXTEND / NDX A /
+ * DCA 0 -- the DP delta time of a LONGCALL restart, cs.
+ *
+ * ARGUMENTS:
+ *   src -- the erasable the table names
+ *   out -- receives the delta time, cs
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG for an erasable that
+ *          holds no DP delta time (a table error)
+ **********************************************************************/
 agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
 {
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* BAD_ARG: no DP delta time */
 
     switch (src)
     {
-        case RST_E_600SECS:       /* 600SECS 2DEC 60000 (FRESH_START)      */
+        case RST_E_600SECS:            /* 600SECS 2DEC 60000 (FRESH_START)      */
             *out = (uint32_t) RST_600SECS_CS;
             break;
-        case RST_E_SAVET_30:      /* LM SAVET-30 B(2), cs                   */
+        case RST_E_SAVET_30:           /* LM SAVET-30 B(2), cs                   */
             *out = (uint32_t) agc_erase_savet_30();
             break;
-        case RST_E_PREREAD_DELAY: /* CSM P40TMP B(2), cs                */
+        case RST_E_PREREAD_DELAY:      /* CSM P40TMP B(2), cs                */
             *out = (uint32_t) agc_erase_p40tmp();
             break;
         case RST_E_TGO_1:
@@ -384,13 +419,7 @@ agc_status_t rst_read_dp(rst_erasable_t src, uint32_t *out)
         case RST_E_CM_GYMDT:
         case RST_E_NONE:
         default:
-
-            if (!AGC_ASSERT(src == RST_E_NONE)) /* not a DP delta time  */
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
-            st = AGC_STATUS_BAD_ARG;
+            st   = AGC_STATUS_BAD_ARG; /* not a DP delta time  */
             break;
     }
 

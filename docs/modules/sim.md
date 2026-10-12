@@ -78,7 +78,10 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
   queues MONREQ (1 cs) in the same cs; CLOKTASK re-queues itself every
   second ahead of MONREQ, so MONREQ never runs and V16N45 stays blank
   (yaAGC: marks +00 00, TFI counting, MGA). Scenario e xexpects it.
-- B4 STILL STANDS (2026-10-11): src/exec/waitlist.c:195 wait2() still has the
+- B4 FIXED (review-exec-sched R10, 2026-10-11): wait2() takes both WAIT2
+  CCS paths (C(TIME3) < 200: TD - T1 + 1 = DT + C(TIME3) + 1); test
+  test_waitlist_ruptagn_insert. Scenario e can `expect` V16N45. Old note:
+- B4 (was) STILL STANDS (2026-10-11): src/exec/waitlist.c:195 wait2() still has the
   DEVIATION and computes a = dt - (16384 - time3) + 1 unconditionally. Fix plan
   (not started): when time3 < 128 (octal 200) TIME3 = T - T1 (post-overflow,
   RUPTAGN chain) and a = dt + time3 + 1 (the OCT40001/CS/OCT40201 path of

@@ -513,7 +513,7 @@ agc_status_t agc_job_redopose(agc_job_ctx_t *ctx)
 /**********************************************************************
  * REFAZE10 as the group 5 restart job (REENTRY_CONTROL p. 847).
  *
- * FUNCTION NAME: agc_job_refaze10
+ * FUNCTION NAME: agc_job_reestablish_entry_sequencer
  *
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
@@ -525,7 +525,7 @@ agc_status_t agc_job_redopose(agc_job_ctx_t *ctx)
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_job_refaze10(agc_job_ctx_t *ctx)
+agc_status_t agc_job_reestablish_entry_sequencer(agc_job_ctx_t *ctx)
 {
     bool         disp = false; /* OVERNOUT display wanted */
     agc_status_t st;           /* REFAZE10 status */

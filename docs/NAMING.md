@@ -227,3 +227,9 @@ in what they do (`_proceed`, `_terminate`, `_display`), never in T/P/E/B/1/1B.
 | INCORP1  | both    | incorp_state_deviation   | "PERFORMS THE SIX ... OR NINE DIMENSIONAL STATE VECTOR DEVIATION" |
 | INCORP2 FAZA-FAZB5 | both | incorp_update_w   | W' = W - GAMMA OMEGA ZI (error transition matrix)  |
 | INCORP2 FAZC-FAZAB5 | both | incorp_update_state | "INCORPORATES THE COMPUTED STATE VECTOR DEVIATIONS INTO THE ESTIMATED STATE VECTOR" |
+
+### Added by review-exec-sched (restart jobs)
+
+| AGC      | Vehicle | Identifier stem               | AGC description                                    |
+|----------|---------|-------------------------------|----------------------------------------------------|
+| REFAZE10 | CSM     | reestablish_entry_sequencer   | group 5 restart job: restart 5.3, then GOTO GOTOADDR (AGC_JOB_REESTABLISH_ENTRY_SEQUENCER) |

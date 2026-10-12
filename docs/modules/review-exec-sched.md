@@ -19,25 +19,79 @@ restart priority; ZOOM/P40ZOOMA group-3 question.
 - DONE fidelity: fresh_start.c (R4; SWINIT, IM30INIF/IM30INIR/IM33INIT/IFAILINH/9,6,4 read from both ropes)
 - DONE fidelity: change_program/{v37,csm,lm,idle}.c (R5-R9; PREMM1/FCADRMM1/DNLADMM1 both ropes, 3.1SEC and OCT44571 from the rope)
 - DONE routed items (5), see "Routed items"
-- PARTIAL style debt (1917 findings at start). DONE (0 findings): dispatch.c
-  + jobs.h (tools/gen_registry.py rewritten: per-vehicle switch trees, no
-  ternaries, boxed prologs; mapping verified identical to the old file),
-  executive.c, waitlist.c (LONGTIME/LONGCADR statics renamed
-  pending_longtime/pending_longcadr: check_style's `long` type regex
-  matched `longtime = ...` as a declaration), alarm.c.
-  PARTIAL phase_table.c: prologs done; left: file prolog, scale comment
-  on `mm` (line ~840), ternary comment (line ~334).
-  TODO: restarts.c, restart_tables.c, fresh_start.c, interrupts.c
-  (nested ternary in agc_rupt_time), erasable.c, nouns.c, internal.h,
-  change_program/{v37,csm,lm,idle}.c (rule-5 density < 2 in all four,
-  nouns.c, interrupts.c, phase_table.c, restarts.c), exec.h,
-  tests/exec/exec.c.
-  Tools (scratch, review-exec-sched/): prolog.py FILE OV.py (boxed
-  prologs from existing comments + overrides), annot.py FILE MAP (append
-  decl comments by line), fp.py FILE SPEC.py (file prolog template).
-  All src/exec files compile (-Werror) as of this checkpoint.
-- TODO make / make test / make check (run uncrustify only on exec files,
-  not `make format`: other lanes are mid-edit)
+- DONE style debt (1917 findings at start, 0 now in src/exec,
+  include/agc/exec, tests/exec). Scratch tools (review-exec-sched/):
+  prolog.py, annot.py, fp.py, defc.py.
+- RESUME 2 (2026-10-11, after status-handling-2), in order:
+  - DONE B4 WAIT2 overflow branch (waitlist.c wait2, R10) + test
+    test_waitlist_ruptagn_insert (fails on the old code: 3 checks)
+  - DONE test_phase_codes: status-handling-2 removed the group argument
+    and the mismatched-code negative test; no test in tests/exec uses
+    the assertion-report count (printed only)
+  - DONE R12 (review-dap-lm): LM STARTSB1 calls agc_lm_dap_restart()
+    (fresh_start.c startsb1); test_poodoo_lm checks ACCSOKAY cleared
+  - DONE RDOT noun (review-guid-landing R2): LM AGC_DATA_RDOT reads
+    agc_guid_state()->lm.hdotdisp (RDOT = HDOTDISP, L ERASABLE p.1300 line)
+  - DONE EVA lead SPECTEST (executive.c): invariant confirmed (core set 0
+    free => NEWJOB = -0; argument in the spectest header); the guard is
+    the AGC's own CCSHOLE and stays. Residual: a job JOBWAKEing its own
+    sleep LOC before returning would hit it (no job does).
+  - DONE EVA lead JOBWAKE(NONE): precondition removed, NONE is NOT_FOUND
+    as in the rope (test). Tautological postconditions removed
+    (job_wake, job_wake_as, agc_exec_init -> static assert), prio_word
+    sentinel guard removed.
+  - DONE EVA lead restarts.c start_job/start_long (R11): audit of every
+    B/C PHASCHNG (scratch phcodes.py): 45 plain agc_phase_change calls
+    with type C job codes, A and D clear (GRP2PC 04022 family, 04026,
+    04024 symbols) never stored PHSNAMEn: the AGC takes the return
+    address. phase_table.c store_return_point: such a call from a job
+    stores the running job segment (DEVIATION: reruns the segment from
+    its top). PHSPRDTn presets missing in other lanes -> Requests. The
+    start_job/start_long guards stay (a real unset point -> BAD_ARG).
+  - DONE renames: AGC_JOB_REFAZE10 / agc_job_refaze10 ->
+    AGC_JOB_REESTABLISH_ENTRY_SEQUENCER / agc_job_reestablish_entry_sequencer
+    (registry.tsv + gen_registry, spatch on csm/entry, NAMING.md row);
+    agc_phase_set_prdt was already added as agc_phase_set_priority (R8)
+  - DONE (2) status-handling-2 diff check. Confirmed: waitlist.c,
+    restart_tables.c, nouns.c, internal.h, erasable.c, interrupts.c,
+    executive.c (deletions are by-construction facts). Repaired:
+    alarm.c (PROGLARM prolog left inside store_alarm; tautological
+    enema/restarts_run asserts, restarts_run removed (write-only);
+    service_restart no longer filters ENEMA statuses into BAD_ARG;
+    gopoodoo returned BAD_ARG with INHINT held and turned a SERVIDLE
+    status into an assertion; poodoo single return); KLEANs (MR.KLEAN,
+    P00KLEAN, V37KLEAN) cannot fail -> void (exec.h, callers in exec).
+    phase_table.c confirmed (BELOW1-4 prolog left in phaschng_common
+    and a silent-skip assert removed; phase_var_get -> void). restarts.c
+    rewritten: ITSAVAR helper back (restart_variable), single returns,
+    boxed prologs (style 0); restart_all kept its semantics.
+    fresh_start.c repaired: ENEMA's TVCEXEC WAITLIST status was turned
+    into BAD_ARG with INHINT held (now propagated); GOPROG3 dropped a
+    MMDSPLAY BAILOUT (now returned); REDOCTR < 65535 guards and
+    BAD_ARG status filters removed; single returns (lightset,
+    phase_tables_ok, fresh_enema merged LM/CSM tails); style 0.
+    dispatch.c: marker moved into the prolog (gen_registry.py,
+    CODING_STANDARD rule 4 wording), style 0.
+    interrupts.c: duplicate inhibited/time3/depth tautologies removed
+    (rupt_exit keeps the one real check), INHINT cap / RELINT assert
+    were silent skips (RELINT when enabled is a no-op as in the AGC),
+    T5IDLOC guards by construction; boxed prologs, style 0.
+    change_program/* and exec.h diff confirmed (ctx-less jobs via the
+    registry, CHECKTAB inlined, up-calls void).
+  - (4) style: DONE 0 findings: restarts.c, fresh_start.c, interrupts.c,
+    erasable.c, restart_tables.c, dispatch.c, alarm.c, waitlist.c,
+    executive.c, phase_table.c, nouns.c (agc_dispatch_noun split:
+    noun_by_function, noun_p11_readout, noun_latlong; same lookup order).
+    change_program/{csm,lm,idle,sequence}.c (cleanup_lm -> void,
+    rendezvous_lm -> bool like CSM; RELDSP status no longer filtered;
+    by-construction vehicle guards removed), internal.h, exec.h,
+    tests/exec/exec.c (file prolog, main first with prototypes, test
+    names without alarm numbers). The whole lane is at 0 findings.
+  - DONE (3) DMP/DMPR, shift rounding, word-level API: exec has no
+    flight arithmetic (integer cs/priority words only): 0 sites.
+  - DONE gates: make, make test (all binaries 0 failures), make
+    scenarios (7/7, 0 errors/restarts), make check (check-rules 0 hard,
+    format-check clean), one_liners PLAIN 0.
 
 ## Findings
 | # | file:line | AGC (label, page) | finding | action |
@@ -51,6 +105,10 @@ restart priority; ZOOM/P40ZOOMA group-3 question.
 | R7 | src/exec/change_program/sequence.c CANV37 | CANV37 TEMPFLSH = R00AD, PHASCHNG OCT 14 (C p.199, L p.229) | phase 4.1 restarts the C INITDSP, which re-issues the last display: a restart inside CANV37 lost the V37 (AGC resumes at ROC/R00) | group 4 type C job phase restarting CANV37 (AGC_JOB_CHANGE_PROGRAM_CONTINUE) at PRIO30; V37XEQ restart priority PRIO30 (INITDSP's PRIOCHNG to RESTREG) instead of the program's |
 | R8 | src/exec/change_program/sequence.c POOH, V37XEQ | CAF PRIO5 / TS PHSPRDT2 (C p.200, L p.229); TS PHSPRDT4 (C p.202, L p.232) | not modelled (no exec entry) | new agc_phase_set_priority(group, prio) (exec.h) used in both |
 | R9 | src/exec/change_program/sequence.c NOUVEAU (LM) | SEUDOP00 TS DNLSTCOD / TS AGSWORD (L p.229) | AGSWORD was set only for P00 | AGSWORD = DNLADMM1 for every new LM program |
+| R10 | src/exec/waitlist.c wait2 | WAIT2 CS TIME3 / AD BIT8 / CCS A (C p.1226, L p.1122) | sim B4: DEVIATION "TIME3 overflow already happened cannot arise" was wrong; inside a RUPTAGN chain TIME3 = T - T2 (0 for two tasks due together) and the C code pushed the next chained task back 163.84 s (P30 CLOKTASK starved MONREQ) | both CCS paths translated (C(TIME3) < 200: TD - T1 + 1 = DT + C(TIME3) + 1; = 200: -0 -> AD Q); test added |
+| R11 | src/exec/phase_table.c agc_phase_change | GETNEWNM, A clear: restart point = return address (C p.1411, L p.1300) | plain PHASCHNG of a type B/C job code (GRP2PC OCT 04022 etc., 45 sites) kept a PHSNAMEn nobody stored, so a restart of that group started AGC_JOB_NONE (start_job BAD_ARG; EVA lead restarts.c:54/72) | store_return_point: from a running job, PHSNAMEn = the running segment (DEVIATION: reruns it from its top); test_restart_return_point |
+| R13 | src/exec/alarm.c, fresh_start.c, interrupts.c (status-handling-2 diff) | ENEMA / GOPROG2 (C p.188), GOPROG3 MMDSPLAY, GOPOODOO (L p.1383) | ENEMA turned the TVCEXEC WAITLIST status into BAD_ARG and returned with INHINT held; GOPOODOO the same after the KLEANs; GOPROG3 dropped a MMDSPLAY BAILOUT; service_restart / goprog / rupt filters mapped real statuses to BAD_ARG; leftover helper prologs inside function bodies | statuses propagated, single returns, KLEANs void (cannot fail), filters removed |
+| R12 | src/exec/executive.c agc_exec_job_wake | JOBWAKE2 CS ONE / TS LOCCTR (C p.1216, L p.1111) | JOBWAKE(AGC_JOB_NONE) was BAD_ARG; in the rope a LOC nobody sleeps at is "not found" (EVA lead executive.c:598) | precondition removed; test |
 
 ## Routed items
 * **Deferred restart vs immediate ENEMA.** AGC WHIMPER fakes a RESUME into
@@ -92,4 +150,34 @@ restart priority; ZOOM/P40ZOOMA group-3 question.
   throttle-up. src/lm/burns translates this as flown; exec's KILLTASK
   (first match only, TASKOVER in its place) and 3.3 table entry agree.
 
+## Requests
+* guid-entry (REENTRY_CONTROL p.761, src/csm/entry/reentry.c ~2026): the
+  comment says "no exec API for PHSPRDT5 alone"; there is one now:
+  `agc_phase_set_priority(5, AGC_ENTRY_PRIO16)` (CA PRIO16 / TS PHSPRDT5),
+  before the PHASCHNG OCT 00474; the PRIOCHNG after it (CA PRIO16 / TC
+  PRIOCHNG) is the AGC's and stays. Without the preset, a group 5
+  restart of the type B OCT 10035 phase uses whatever PHSPRDT5 the last
+  D-set phase stored.
+* prog-rendz (P3 in review-prog-rendz.md): the R22LEM3 / P23 / R22
+  `TS PHSPRDT2` presets: call `agc_phase_set_priority(2, prio)` (the
+  entry the request called agc_phase_set_prdt).
+* nav-integ / prog-rendz: the 45 plain `agc_phase_change(04022)`-family
+  calls (GRP2PC etc.) now restart the job segment that made the change
+  (R11). Where that segment is not safe to rerun from its top, name the
+  continuation job with `agc_phase_change_var`.
+* sim: B4 fixed (R10); scenario e can `expect` V16N45 (MONREQ) instead
+  of `xexpect`.
+
 ## Lessons
+* A guard deleted as "by construction" must be checked against every
+  caller, including restart jobs: CANV37 and V37XEQ run again after a
+  restart with whatever MINDEX/MMNUMBER hold, so their mindex checks stay.
+* Inlining a helper during a mechanical pass leaves its prolog comment
+  inside the caller's body (PROGLARM, BELOW1-4): grep for `/****` lines
+  indented inside functions after such a pass.
+* "Return the status" also means "do not filter it": an
+  `if (!AGC_ASSERT(st == OK || st == BAILOUT)) return BAD_ARG;` after a
+  call turns every other real status into BAD_ARG and drops the cause.
+* tools/check_style.py's declaration regex reads `long...`/`int...`
+  identifiers (`longtime`, `interp_result`) as types; rename the variable
+  rather than fight the tool.

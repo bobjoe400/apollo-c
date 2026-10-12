@@ -749,7 +749,7 @@ agc_status_t entry_post_0_05g(agc_entry_state_t *es)
  **********************************************************************/
 agc_status_t entry_upcontrol(agc_entry_state_t *es)
 {
-    agc_phase_var_t v  = { AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U };
+    agc_phase_var_t v  = { AGC_RESTART_JOB, AGC_JOB_REESTABLISH_ENTRY_SEQUENCER, AGC_TASK_NONE, 0, false, 0U };
     agc_status_t    st = agc_phase_newmode(65); /* NEWMODEX / NOVAC status */
 
     if (st == AGC_STATUS_OK)

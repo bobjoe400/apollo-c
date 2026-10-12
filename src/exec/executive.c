@@ -119,7 +119,7 @@ static uint16_t   generation;                  /* STARTSB2 count     */
  *
  * ARGUMENTS: none
  *
- * RETURNS: int -- core sets of the vehicle; 0 on a failed precondition
+ * RETURNS: int -- core sets of the vehicle
  **********************************************************************/
 int agc_exec_core_sets(void)
 {
@@ -142,18 +142,13 @@ int agc_exec_core_sets(void)
  * ARGUMENTS:
  *   i -- core set index, 0..AGC_EXEC_MAX_JOBS-1
  *
- * RETURNS: int32_t -- priority word (priority << 9) + VAC rank, signed by state;
- *          0 on a failed precondition
+ * RETURNS: int32_t -- priority word (priority << 9) + VAC rank, signed by
+ *          state (0 for a free core set)
  **********************************************************************/
 static int32_t prio_word(int i)
 {
     const core_set_t *c = &core[i];                                                        /* core set i */
     int32_t           w = ((int32_t) c->prio << EXEC_PRIO_SHIFT) + (int32_t) (c->vac + 1); /* the priority word, before the sign */
-
-    if (!AGC_ASSERT(c->vac >= -1 && c->vac < AGC_EXEC_MAX_VACS))
-    {
-        w = (int32_t) c->prio << EXEC_PRIO_SHIFT;
-    }
 
     if (c->state == AGC_CORE_FREE)
     {
@@ -230,7 +225,7 @@ void exec_clear_tables(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: uint16_t -- the count (wraps at 2^16); 0 on a failed precondition
+ * RETURNS: uint16_t -- the count (wraps at 2^16)
  **********************************************************************/
 uint16_t exec_restart_generation(void)
 {
@@ -261,22 +256,14 @@ int exec_running_job_prio(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a failed postcondition
+ * RETURNS: agc_status_t -- AGC_STATUS_OK
  **********************************************************************/
 agc_status_t agc_exec_init(void)
 {
+    _Static_assert(AGC_EXEC_CORE_SETS_CSM <= AGC_EXEC_MAX_JOBS && AGC_EXEC_CORE_SETS_LM <= AGC_EXEC_MAX_JOBS, "core sets fit");
+
     exec_clear_tables();
     activity_light(false);
-
-    if (!AGC_ASSERT(newjob == EXEC_NEWJOB_IDLE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(agc_exec_core_sets() <= AGC_EXEC_MAX_JOBS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }
@@ -306,16 +293,20 @@ static void setloc_compare(int i)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; the CCSHOLE (POODOO 1103) status when NEWJOB
- *          is +0 or negative-non-zero; BAD_ARG on a failed precondition
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; the CCSHOLE (POODOO 1103) status
+ *          when NEWJOB is +0
+ *
+ * NEWJOB = +0 here is the AGC's own CCS hole. It cannot arise: core set
+ * 0 is free only after STARTSB2 or after ENDOFJOB's EJSCAN found nothing
+ * (both leave NEWJOB = -0), and NEWJOB becomes +0 only with an active
+ * core set 0 (CHANJOB, SPECTEST, PRIOCHNG in a job). The deferred
+ * JOBSLEEP EJSCAN keeps core set 0 SLEEPING, not free, until the job
+ * body returns, so NOVAC2 cannot pick it in that window; only a JOBWAKE
+ * of core set 0 inside that window (a job waking its own sleep LOC
+ * before it returns) would reach the hole, and no job does that.
  **********************************************************************/
 static agc_status_t spectest(void)
 {
-    if (!AGC_ASSERT(core[0].state == AGC_CORE_ACTIVE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (newjob == EXEC_NEWJOB_IDLE)
     {
         newjob = 0; /* +0 SHOWS ACTIVE JOB ALREADY SET */
@@ -344,7 +335,7 @@ static agc_status_t spectest(void)
  *   vac -- VAC area claimed (0..4), or -1 for NOVAC
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAILOUT (1202) when no core set
- *          is free; BAD_ARG on a failed precondition
+ *          is free; the CCSHOLE status from SPECTEST
  **********************************************************************/
 static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
 {
@@ -585,21 +576,18 @@ void agc_exec_job_sleep(agc_job_id_t wake_as)
 /**********************************************************************
  * JOBWAKE / JOBWAKE2-4 / WAKETEST (C pp.1210,1216 / L pp.1105,1111): find
  * the sleeping job whose LOC is `job`, make it active again and treat it
- * like a new job for NEWJOB. Not found: LOCCTR = -1, NOT_FOUND.
+ * like a new job for NEWJOB. Not found: LOCCTR = -1, NOT_FOUND; that
+ * includes AGC_JOB_NONE, which no sleeping job holds as its LOC (the
+ * AGC's JOBWAKE of a LOC nobody sleeps at is no error).
  *
  * ARGUMENTS:
  *   job -- job id (AGC_JOB_*): the 2CADR the job starts at
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND when no job sleeps at `job`; the
- *          CCSHOLE status from SPECTEST; BAD_ARG on a failed precondition
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND when no job sleeps at
+ *          `job`; the CCSHOLE status from SPECTEST
  **********************************************************************/
 agc_status_t agc_exec_job_wake(agc_job_id_t job)
 {
-    if (!AGC_ASSERT(job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     int n     = agc_exec_core_sets(); /* core sets to scan */
     int found = -1;                   /* sleeping core set at `job`, -1 none */
@@ -636,11 +624,6 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
 
     agc_relint();
 
-    if (!AGC_ASSERT(st != AGC_STATUS_OK || locctr >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 } /* agc_exec_job_wake */
 
@@ -659,7 +642,7 @@ agc_status_t agc_exec_job_wake_if_asleep(agc_job_id_t job)
 {
     const agc_status_t st = agc_exec_job_wake(job); /* JOBWAKE outcome */
 
-    return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st);
+    return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st); /* no sleeper: not an error */
 }
 
 /**********************************************************************
@@ -688,12 +671,7 @@ agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
         return (st);
     }
 
-    if (!AGC_ASSERT(locctr >= 0 && locctr < agc_exec_core_sets()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    core[locctr].loc = new_loc; /* INDEX LOCCTR / TS LOC */
+    core[locctr].loc = new_loc; /* INDEX LOCCTR / TS LOC (JOBWAKE OK: LOCCTR = the woken core set) */
 
     return (AGC_STATUS_OK);
 }
@@ -971,7 +949,7 @@ bool agc_exec_idle(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: int -- NEWJOB; 0 on a failed precondition
+ * RETURNS: int -- NEWJOB
  **********************************************************************/
 int agc_exec_newjob(void)
 {

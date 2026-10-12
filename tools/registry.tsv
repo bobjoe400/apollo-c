@@ -157,7 +157,7 @@ job	AGC_JOB_ENTRY_UPCONTROL_DISPLAY	agc_job_entry_upcontrol_display	-	csm/entry	
 job	AGC_JOB_ENTRY_UPCONTROL_PROCEED	agc_job_entry_upcontrol_proceed	-	csm/entry	P65.1 PROCEED
 job	AGC_JOB_PRE_HUNT	agc_job_pre_hunt	-	csm/entry	4.47 PRE-HUNT
 job	AGC_JOB_REDOPOSE	agc_job_redopose	-	csm/entry	REDOPOSE group 5 restart
-job	AGC_JOB_REFAZE10	agc_job_refaze10	-	csm/entry	REFAZE10 group 5 restart
+job	AGC_JOB_REESTABLISH_ENTRY_SEQUENCER	agc_job_reestablish_entry_sequencer	-	csm/entry	REFAZE10 group 5 restart
 job	AGC_JOB_BACKUP_SIGHTING_MARK	agc_job_backup_sighting_mark	-	csm/navigation	R23CSM (V54)
 job	AGC_JOB_BACKUP_SIGHTING_MARK_REQUEST	agc_job_backup_sighting_mark_request	-	csm/navigation	R23CSM1 V53
 job	AGC_JOB_BACKUP_SIGHTING_MARK_TAKEN	agc_job_backup_sighting_mark_taken	-	csm/navigation	R23CSM1 ENTER

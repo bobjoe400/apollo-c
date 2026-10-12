@@ -1,10 +1,25 @@
-/*
- * agc_exec.h -- EXECUTIVE, WAITLIST, restart and alarm services.
+/**********************************************************************
+ * FILE NAME: exec.h
  *
- * Jobs and tasks are identified by enum (no function pointers, rule 9) and
- * dispatched by the switch in src/exec/dispatch.c. The enums live in
- * agc_jobs.h, which the lead integrates from each module's note.
- */
+ * PURPOSE:
+ *   EXECUTIVE, WAITLIST, phase tables, restarts, alarms and aborts,
+ *   fresh start, interrupt lead-ins: the public contract of src/exec/.
+ *   Jobs and tasks are identified by enum (no function pointers, rule 9)
+ *   and dispatched by the switches in src/exec/dispatch.c; the enums live
+ *   in agc/exec/jobs.h, generated from tools/registry.tsv.
+ *
+ * AGC SOURCE:
+ *   EXECUTIVE.agc, WAITLIST.agc, PHASE_TABLE_MAINTENANCE.agc,
+ *   RESTARTS_ROUTINE.agc, RESTART_TABLES.agc, FRESH_START_AND_RESTART.agc,
+ *   ALARM_AND_ABORT.agc, INTERRUPT_LEAD_INS.agc (Comanche055, Luminary099)
+ *
+ * REQUIRES:
+ *   agc/core/state.h, agc/core/status.h, agc/core/word.h, agc/exec/jobs.h
+ *
+ * GLOBAL VARIABLES:
+ *   none (the executive, waitlist and phase tables are reached through
+ *   the functions below)
+ **********************************************************************/
 #ifndef AGC_EXEC_H
 #define AGC_EXEC_H
 
@@ -27,32 +42,32 @@ typedef uint16_t agc_alarm_code_t; /* octal alarm code, e.g. 01201          */
 
 typedef struct agc_job_ctx
 {
-    agc_job_id_t id;
-    agc_prio_t   prio;
-    bool         has_vac;
+    agc_job_id_t id;        /* LOC: the job being run                */
+    agc_prio_t   prio;      /* priority number (PRIOnn >> 9)         */
+    bool         has_vac;   /* FINDVAC job (a VAC area is claimed)   */
     int          vac_index; /* -1 when !has_vac                      */
-    agc_sp_t     arg;       /* word passed in A/L on entry, if any   */
+    agc_sp_t     arg;       /* word passed in A/L on entry, if any; raw SP (B0) */
 } agc_job_ctx_t;
 
 /* Priorities: agc_prio_t = PRIOnn (octal) >> 9, i.e. the "nn" in octal.     */
-#define AGC_PRIO5  ((agc_prio_t) 005)
-#define AGC_PRIO6  ((agc_prio_t) 006)
-#define AGC_PRIO10 ((agc_prio_t) 010)
-#define AGC_PRIO12 ((agc_prio_t) 012)
-#define AGC_PRIO13 ((agc_prio_t) 013)
-#define AGC_PRIO14 ((agc_prio_t) 014)
-#define AGC_PRIO15 ((agc_prio_t) 015)
-#define AGC_PRIO16 ((agc_prio_t) 016)
-#define AGC_PRIO17 ((agc_prio_t) 017)
-#define AGC_PRIO20 ((agc_prio_t) 020)
-#define AGC_PRIO21 ((agc_prio_t) 021)
-#define AGC_PRIO22 ((agc_prio_t) 022)
-#define AGC_PRIO23 ((agc_prio_t) 023)
-#define AGC_PRIO25 ((agc_prio_t) 025)
-#define AGC_PRIO27 ((agc_prio_t) 027)
-#define AGC_PRIO30 ((agc_prio_t) 030)
-#define AGC_PRIO31 ((agc_prio_t) 031)
-#define AGC_PRIO32 ((agc_prio_t) 032)
+#define AGC_PRIO5  ((agc_prio_t) 005) /* PRIO5 */
+#define AGC_PRIO6  ((agc_prio_t) 006) /* PRIO6 */
+#define AGC_PRIO10 ((agc_prio_t) 010) /* PRIO10 */
+#define AGC_PRIO12 ((agc_prio_t) 012) /* PRIO12 */
+#define AGC_PRIO13 ((agc_prio_t) 013) /* PRIO13 */
+#define AGC_PRIO14 ((agc_prio_t) 014) /* PRIO14 */
+#define AGC_PRIO15 ((agc_prio_t) 015) /* PRIO15 */
+#define AGC_PRIO16 ((agc_prio_t) 016) /* PRIO16 */
+#define AGC_PRIO17 ((agc_prio_t) 017) /* PRIO17 */
+#define AGC_PRIO20 ((agc_prio_t) 020) /* PRIO20 */
+#define AGC_PRIO21 ((agc_prio_t) 021) /* PRIO21 */
+#define AGC_PRIO22 ((agc_prio_t) 022) /* PRIO22 */
+#define AGC_PRIO23 ((agc_prio_t) 023) /* PRIO23 */
+#define AGC_PRIO25 ((agc_prio_t) 025) /* PRIO25 */
+#define AGC_PRIO27 ((agc_prio_t) 027) /* PRIO27 */
+#define AGC_PRIO30 ((agc_prio_t) 030) /* PRIO30 */
+#define AGC_PRIO31 ((agc_prio_t) 031) /* PRIO31 */
+#define AGC_PRIO32 ((agc_prio_t) 032) /* PRIO32 */
 
 /* Executive (EXECUTIVE.agc pp. 1208-1220) */
 agc_status_t agc_exec_init(void);
@@ -104,7 +119,7 @@ agc_status_t agc_poodoo(agc_alarm_code_t code);    /* POODOO  -> P00        */
 agc_status_t agc_abort_restart(void);              /* ABORT                 */
 
 /* Phase table maintenance (PHASE_TABLE_MAINTENANCE.agc pp. 1404-1413).    */
-#define AGC_RESTART_GROUPS 6
+#define AGC_RESTART_GROUPS 6                                              /* restart groups 1..6 (PHASE1..PHASE6) */
 void         agc_phase_change(uint16_t phase_code);                       /* PHASCHNG: GGG in the code */
 agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio); /* NEWPHASE */
 
@@ -122,8 +137,8 @@ agc_status_t agc_phase_restart_all(void); /* RESTART  */
 
 /* Executive core sets: Comanche055 has 7 (NO.CORES = 6), Luminary099 has
  * 8 (NO.CORES = 7, EJSCAN also tests PRIORITY +84D). DUMMYJOB uses none.  */
-#define AGC_EXEC_CORE_SETS_CSM 7
-#define AGC_EXEC_CORE_SETS_LM  8
+#define AGC_EXEC_CORE_SETS_CSM 7 /* Comanche: NO.CORES = 6, + 1 */
+#define AGC_EXEC_CORE_SETS_LM  8 /* Luminary: NO.CORES = 7, + 1 */
 
 /* Alarm / abort codes raised by the exec lane (octal, as in the listing). */
 #define AGC_ALARM_00217 \
@@ -157,7 +172,7 @@ typedef enum agc_core_state
 
 typedef struct agc_exec_core_info
 {
-    agc_core_state_t state;
+    agc_core_state_t state;     /* free, active or sleeping (PRIORITY sign) */
     agc_prio_t       prio;      /* priority number (PRIOnn >> 9)            */
     int              vac_index; /* 0..4, or -1 for a NOVAC job              */
     agc_job_id_t     loc;       /* LOC: where the job starts / resumes      */
@@ -197,7 +212,7 @@ typedef enum agc_restart_kind
  * named explicitly.                                                       */
 typedef struct agc_phase_var
 {
-    agc_restart_kind_t kind;
+    agc_restart_kind_t kind;       /* job, task or LONGCALL                    */
     agc_job_id_t       job;        /* kind == JOB                              */
     agc_task_id_t      task;       /* kind == TASK or LONGCALL                 */
     int16_t            prio_or_dt; /* D bit set: job +prio FINDVAC / -prio NOVAC (priority number); task delta time cs */
@@ -209,9 +224,9 @@ void         agc_phase_change_var(uint16_t code, const agc_phase_var_t *v);     
 void         agc_phase_change2(uint16_t code_a, uint16_t code_b, const agc_phase_var_t *v); /* 2PHSCHNG */
 void         agc_phase_newphase(int group, uint16_t phase, bool set_tbase);                 /* NEWPHASE */
 uint16_t     agc_phase_get(int group);                                                      /* C(PHASEn)            */
-agc_status_t agc_phase_mr_klean(void);                                                      /* MR.KLEAN             */
-agc_status_t agc_phase_idle_klean(void);                                                    /* P00KLEAN             */
-agc_status_t agc_phase_change_program_klean(void);                                          /* V37KLEAN             */
+void         agc_phase_mr_klean(void);                                                      /* MR.KLEAN             */
+void         agc_phase_idle_klean(void);                                                    /* P00KLEAN             */
+void         agc_phase_change_program_klean(void);                                          /* V37KLEAN             */
 agc_status_t agc_phase_newmode(agc_sp_t mode);                                              /* NEWMODEA/NEWMODEX    */
 bool         agc_phase_checkmm(agc_sp_t mode);                                              /* CHECKMM              */
 agc_status_t agc_restart_group(int group);                                                  /* RESTARTS (one group) */
@@ -292,7 +307,7 @@ agc_status_t agc_task_taskover(void);                         /* TASKOVER as a t
 /* MODECADR = IMUCADR, OPTCADR, RADCADR (MODE SWITCHING ERASABLE): the
  * waiting-job words cleared by STARTSB2 and tested by SVCT3. Raw SP word
  * (+0 none, positive = a job is waiting; IMU lane defines the rest).    */
-#define AGC_MODECADR_N 3
+#define AGC_MODECADR_N 3          /* IMUCADR, OPTCADR, RADCADR */
 agc_sp_t agc_erase_modecadr(int dev);
 void     agc_erase_set_modecadr(int dev, agc_sp_t v);
 agc_sp_t agc_erase_imucadr(void); /* = MODECADR +0         */

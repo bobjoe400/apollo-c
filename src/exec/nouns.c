@@ -1,25 +1,53 @@
-/*
- * nouns.c -- noun data owned above the io layer.
+/**********************************************************************
+ * FILE NAME: nouns.c
  *
- * The noun tables (PINBALL_NOUN_TABLES.agc) name erasables by address; in
- * the AGC every erasable is reachable from pinball. In C most of them are
- * fields of the state blocks of the guidance, program and vehicle modules.
- * agc_noun_read / agc_noun_write (src/io/dsky/nouns/data.c) resolve the
- * core erasables themselves and hand every other data id here.
+ * PURPOSE:
+ *   Noun data owned above the io layer: the erasables the noun tables
+ *   name that live in the guidance, program and vehicle modules' state
+ *   blocks.
  *
- * LAYERING: like dispatch.c, this file is the documented place where
- * src/exec/ reaches the higher layers (here: their public state blocks
- * and noun accessors), so that io never includes a higher header.
+ * AGC SOURCE:
+ *   Comanche055 / Luminary099 PINBALL_NOUN_TABLES.agc (the erasable
+ *   addresses of the noun tables); ERASABLE_ASSIGNMENTS.agc (equivalences,
+ *   e.g. LM RDOT = HDOTDISP)
  *
- * Value convention (include/agc/io/nouns.h): DP erasables as the DP, SP
- * erasables in the high word (agc_dp_from_sp), raw words (octal, CDU
- * angles) as the 15-bit word. A vector component is one DP.
+ * EXTERNAL VARIABLES:
+ *   Name          Type      I/O  Scale          Description
+ *   ------------  --------  ---  -------------  ----------------------
+ *   noun erasables  various I/O  per noun       through the owners' state blocks
  *
- * Erasables with no owner in the C translation (ALMCADR +0..+2: the AGC
- * alarm return address, bank and ERCOUNT) stay NOT_FOUND; see
- * docs/modules/integrate.md.  LM AOTCODE +1/+2 (N70/N71 R2, R3) are
- * SINCDUY (docs/modules/review-prog-align.md).
- */
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_guid_state, agc_entry_state, agc_lm_ldg, agc_lm_asc, agc_align_ram
+ *                         owners' state blocks
+ *   agc_navaux_get_latlong / set   LAT, LONG, ALT (noun 43)
+ *   agc_*_rendz_noun_*, agc_return_to_earth_noun   owners' noun accessors
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   NOT_FOUND for an id no owner holds; the owners' statuses; BAD_ARG
+ *   for an id out of range.
+ *
+ * NOTES:
+ *   The noun tables (PINBALL_NOUN_TABLES.agc) name erasables by address; in
+ *   the AGC every erasable is reachable from pinball. In C most of them are
+ *   fields of the state blocks of the guidance, program and vehicle modules.
+ *   agc_noun_read / agc_noun_write (src/io/dsky/nouns/data.c) resolve the
+ *   core erasables themselves and hand every other data id here.
+ *
+ *   LAYERING: like dispatch.c, this file is the documented place where
+ *   src/exec/ reaches the higher layers (here: their public state blocks
+ *   and noun accessors), so that io never includes a higher header.
+ *
+ *   Value convention (include/agc/io/nouns.h): DP erasables as the DP, SP
+ *   erasables in the high word (agc_dp_from_sp), raw words (octal, CDU
+ *   angles) as the 15-bit word. A vector component is one DP.
+ *
+ *   Erasables with no owner in the C translation (ALMCADR +0..+2: the AGC
+ *   alarm return address, bank and ERCOUNT) stay NOT_FOUND; see
+ *   docs/modules/integrate.md.  LM AOTCODE +1/+2 (N70/N71 R2, R3) are
+ *   SINCDUY (docs/modules/review-prog-align.md).
+ **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -37,10 +65,18 @@
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
 
-/* Guidance (SERVICER, P30-P47) DP erasables.                            */
+/**********************************************************************
+ * AGC: none -- guidance (SERVICER, P30-P47) DP erasables named by the
+ * noun tables (PINBALL_NOUN_TABLES.agc).
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *
+ * RETURNS: agc_dp_t * -- the erasable, or NULL when this owner does not hold the id
+ **********************************************************************/
 static agc_dp_t *noun_dp_guidance(uint16_t id)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
     switch (id)
     {
@@ -77,10 +113,18 @@ static agc_dp_t *noun_dp_guidance(uint16_t id)
     }
 }
 
-/* CSM entry (P61-P67) DP erasables.                                     */
+/**********************************************************************
+ * AGC: none -- CSM entry (P61-P67) DP erasables named by the noun
+ * tables (PINBALL_NOUN_TABLES.agc).
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *
+ * RETURNS: agc_dp_t * -- the erasable, or NULL when this owner does not hold the id
+ **********************************************************************/
 static agc_dp_t *noun_dp_entry(uint16_t id)
 {
-    agc_entry_state_t *e = agc_entry_state();
+    agc_entry_state_t *e = agc_entry_state(); /* entry erasables */
 
     switch (id)
     {
@@ -123,13 +167,21 @@ static agc_dp_t *noun_dp_entry(uint16_t id)
         default:
             return (NULL);
     }
-}
+} /* noun_dp_entry */
 
-/* LM landing (P63-P68) and ascent (P12, P70-P71) DP erasables.          */
+/**********************************************************************
+ * AGC: none -- LM landing (P63-P68) and ascent (P12, P70-P71) DP
+ * erasables named by the noun tables (PINBALL_NOUN_TABLES.agc).
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *
+ * RETURNS: agc_dp_t * -- the erasable, or NULL when this owner does not hold the id
+ **********************************************************************/
 static agc_dp_t *noun_dp_landing(uint16_t id)
 {
-    agc_lm_ldg_t *l = agc_lm_ldg();
-    agc_lm_asc_t *a = agc_lm_asc();
+    agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
+    agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
     switch (id)
     {
@@ -152,7 +204,7 @@ static agc_dp_t *noun_dp_landing(uint16_t id)
         case AGC_DATA_YDOT:
             return (&a->ydot);
         case AGC_DATA_RDOT:
-            return (&a->rdot);
+            return (&agc_guid_state()->lm.hdotdisp); /* RDOT EQUALS HDOTDISP (LM ERASABLE_ASSIGNMENTS) */
         case AGC_DATA_XRANGE:
             return (&a->xrange);
         case AGC_DATA_YAW:
@@ -164,10 +216,18 @@ static agc_dp_t *noun_dp_landing(uint16_t id)
     }
 }
 
-/* Alignment (P51-P57, R52-R56) DP erasables and vector components.      */
+/**********************************************************************
+ * AGC: none -- alignment (P51-P57, R52-R56) DP erasables and vector
+ * components named by the noun tables (PINBALL_NOUN_TABLES.agc).
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *
+ * RETURNS: agc_dp_t * -- the erasable, or NULL when this owner does not hold the id
+ **********************************************************************/
 static agc_dp_t *noun_dp_alignment(uint16_t id)
 {
-    agc_align_ram_t *r = agc_align_ram();
+    agc_align_ram_t *r = agc_align_ram(); /* alignment erasables */
 
     switch (id)
     {
@@ -200,14 +260,22 @@ static agc_dp_t *noun_dp_alignment(uint16_t id)
     }
 }
 
-/* The DP erasable behind an id, by owner and vehicle (NULL: none).      */
+/**********************************************************************
+ * AGC: none -- the DP erasable behind an id, by owner and vehicle.
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *   lm -- true for the Luminary rope
+ *
+ * RETURNS: agc_dp_t * -- the erasable, or NULL when this owner does not hold the id
+ **********************************************************************/
 static agc_dp_t *noun_dp(uint16_t id, bool lm)
 {
-    agc_dp_t *p = noun_dp_guidance(id);
+    agc_dp_t *p = noun_dp_guidance(id); /* DP erasable, NULL none */
 
     if (p == NULL)
     {
-        p = lm ? noun_dp_landing(id) : noun_dp_entry(id);
+        p = lm ? noun_dp_landing(id) : noun_dp_entry(id); /* LM landing : CSM entry */
     }
 
     if (p == NULL)
@@ -218,7 +286,14 @@ static agc_dp_t *noun_dp(uint16_t id, bool lm)
     return (p);
 }
 
-/* SP erasables (value in the high word).                                */
+/**********************************************************************
+ * AGC: none -- SP erasables (value in the high word).
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *
+ * RETURNS: agc_sp_t * -- the erasable, or NULL when none holds the id
+ **********************************************************************/
 static agc_sp_t *noun_sp(uint16_t id)
 {
     switch (id)
@@ -240,10 +315,18 @@ static agc_sp_t *noun_sp(uint16_t id)
     }
 }
 
-/* Raw 15-bit words (CDU angles, octal codes) held as uint16_t.          */
+/**********************************************************************
+ * AGC: none -- raw 15-bit words (CDU angles, octal codes) held as
+ * uint16_t.
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *
+ * RETURNS: uint16_t * -- the word, or NULL when none holds the id
+ **********************************************************************/
 static uint16_t *noun_word(uint16_t id)
 {
-    agc_align_ram_t *r = agc_align_ram();
+    agc_align_ram_t *r = agc_align_ram(); /* alignment erasables */
 
     switch (id)
     {
@@ -264,10 +347,18 @@ static uint16_t *noun_word(uint16_t id)
     }
 }
 
-/* Two-integer words (scale TWO_INT: high word XX, low word YY). Nouns 45
+/**********************************************************************
+ * AGC: none -- Two-integer words (scale TWO_INT: high word XX, low word YY). Nouns 45
  * (CM) and 64 (LM) are "no load" (SFINTABR: 2INTOUT CANT BE LOADED), so
  * only the sim and tests store them: VHFCNT,+1 (TRKMKCNT) and FUNNYDSP =
- * TREDES, LOOKANGL.                                                       */
+ * TREDES, LOOKANGL.
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *   v -- the value, at the noun's scale
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK
+ **********************************************************************/
 static agc_status_t noun_two_int_write(uint16_t id, agc_dp_t v)
 {
     if (id == AGC_DATA_VHFCNT)
@@ -284,7 +375,16 @@ static agc_status_t noun_two_int_write(uint16_t id, agc_dp_t v)
     return (AGC_STATUS_OK);
 }
 
-/* Read-only values computed by functions of their owners.               */
+/**********************************************************************
+ * AGC: none -- read-only values computed by functions of their owners.
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *   lm -- true for the Luminary rope
+ *   v -- the value, at the noun's scale
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND for any other id
+ **********************************************************************/
 static agc_status_t noun_derived(uint16_t id, bool lm, agc_dp_t *v)
 {
     switch (id)
@@ -295,14 +395,14 @@ static agc_status_t noun_derived(uint16_t id, bool lm, agc_dp_t *v)
             *v = (agc_dp_t) agc_erase_fdai((int) (id - AGC_DATA_FDAIX));
 
             return (AGC_STATUS_OK);
-        case AGC_DATA_ALPHASB: /* LM N51: PITCHANG; CM N51: RHOSB      */
+        case AGC_DATA_ALPHASB:                                  /* LM N51: PITCHANG; CM N51: RHOSB      */
         case AGC_DATA_RHOSB:
-            *v = lm ? agc_sband_pitchang() : agc_sband_rhosb();
+            *v = lm ? agc_sband_pitchang() : agc_sband_rhosb(); /* LM PITCHANG : CM RHOSB */
 
             return (AGC_STATUS_OK);
-        case AGC_DATA_BETASB: /* LM N51: YAWANG; CM N51: GAMMASB      */
+        case AGC_DATA_BETASB:                                   /* LM N51: YAWANG; CM N51: GAMMASB      */
         case AGC_DATA_GAMMASB:
-            *v = lm ? agc_sband_yawang() : agc_sband_gammasb();
+            *v = lm ? agc_sband_yawang() : agc_sband_gammasb(); /* LM YAWANG : CM GAMMASB */
 
             return (AGC_STATUS_OK);
         case AGC_DATA_TET: /* time of the state being integrated    */
@@ -318,27 +418,50 @@ static agc_status_t noun_derived(uint16_t id, bool lm, agc_dp_t *v)
     }
 }
 
-/* A signed SP word as the raw 15-bit ones'-complement word (SP raw).    */
+/**********************************************************************
+ * AGC: none -- a signed SP word as the raw 15-bit ones'-complement
+ * word (SP raw).
+ *
+ * ARGUMENTS:
+ *   w -- the SP word
+ *
+ * RETURNS: agc_dp_t -- the raw word, 0..077777
+ **********************************************************************/
 static agc_dp_t noun_raw_word(agc_sp_t w)
 {
-    return ((agc_dp_t) ((w >= 0) ? w : (077777 + w)));
+    return ((agc_dp_t) ((w >= 0) ? w : (077777 + w))); /* negative: 077777 + w (ones' complement) */
 }
 
-/* The raw 15-bit word back as a signed SP (07777x negative).            */
+/**********************************************************************
+ * AGC: none -- the raw 15-bit word back as a signed SP (07777x
+ * negative).
+ *
+ * ARGUMENTS:
+ *   raw -- the raw 15-bit word (bits above 15 ignored)
+ *
+ * RETURNS: agc_sp_t -- the signed SP word
+ **********************************************************************/
 static agc_sp_t noun_signed_word(agc_dp_t raw)
 {
-    const agc_sp_t w = (agc_sp_t) (raw & 077777); /* raw word, unsigned */
+    const agc_sp_t w = (agc_sp_t) (raw & 077777); /* raw word, unsigned, B0 */
 
-    return ((w > AGC_SP_MAX) ? (agc_sp_t) (w - 077777) : w);
+    return ((w > AGC_SP_MAX) ? (agc_sp_t) (w - 077777) : w); /* 07777x: negative */
 }
 
-/*
+/**********************************************************************
  * STARCODE (CSM N70/N71 R1), AOTCODE = STARCODE (LM N70/N71 R1), and the
  * LM's AOTCODE +1/+2 (R2, R3).  Luminary ERASABLE_ASSIGNMENTS p. 37:
  * AOTCODE = STARCODE, and STARALGN follows it, so AOTCODE +1/+2 are the
  * two words of SINCDU = SINCDUY (sin(CDUY)/2, CDUTRIG scratch); the C home
  * of SINCDU is the guidance block.  NOT_FOUND for any other id.
- */
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *   write -- true: store *value
+ *   value -- the value, at the noun's scale (read: receives it)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND for any other id
+ **********************************************************************/
 static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
 {
     agc_sp_t *code  = &agc_align_ram()->starcode;                 /* STARCODE/AOTCODE */
@@ -348,17 +471,17 @@ static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
     {
         case AGC_DATA_STARCODE:
         case AGC_DATA_AOTCODE:
-            *code  = write ? noun_signed_word(*value) : *code;
+            *code  = write ? noun_signed_word(*value) : *code; /* store or keep */
             *value = noun_raw_word(*code);
 
             return (AGC_STATUS_OK);
-        case AGC_DATA_AOTCODE_P1: /* AOTCODE +1: SINCDUY high word     */
-            *sin_y = write ? agc_dp_pack(noun_signed_word(*value), agc_dp_low(*sin_y)) : *sin_y;
+        case AGC_DATA_AOTCODE_P1:                                                                /* AOTCODE +1: SINCDUY high word     */
+            *sin_y = write ? agc_dp_pack(noun_signed_word(*value), agc_dp_low(*sin_y)) : *sin_y; /* store R2 or keep */
             *value = noun_raw_word(agc_dp_high(*sin_y));
 
             return (AGC_STATUS_OK);
-        case AGC_DATA_AOTCODE_P2: /* AOTCODE +2: SINCDUY low word      */
-            *sin_y = write ? agc_dp_pack(agc_dp_high(*sin_y), noun_signed_word(*value)) : *sin_y;
+        case AGC_DATA_AOTCODE_P2:                                                                 /* AOTCODE +2: SINCDUY low word      */
+            *sin_y = write ? agc_dp_pack(agc_dp_high(*sin_y), noun_signed_word(*value)) : *sin_y; /* store R3 or keep */
             *value = noun_raw_word(agc_dp_low(*sin_y));
 
             return (AGC_STATUS_OK);
@@ -367,8 +490,171 @@ static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
     }
 }
 
-/* Read (write = false) or store the erasable behind a data id that core
- * does not hold. NOT_FOUND: no owner; BAD_ARG: bad arguments.           */
+/**********************************************************************
+ * AGC: none -- VMAGI, HDOT, ALTI of the P11 monitor (N62, S11.1 "CALC.
+ * VI, H, HDOT FOR NOUN 62"), computed by its owner on every read.
+ *
+ * ARGUMENTS:
+ *   id -- AGC_DATA_VMAGI, AGC_DATA_HDOT or AGC_DATA_ALTI
+ *   value -- receives the value, at the noun's scale
+ *
+ * RETURNS: agc_status_t -- the readout's status
+ **********************************************************************/
+static agc_status_t noun_p11_readout(uint16_t id, agc_dp_t *value)
+{
+    agc_dp_t     vmagi = 0;                                                               /* VMAGI, 2^7 m/cs */
+    agc_dp_t     hdot  = 0;                                                               /* HDOT, 2^7 m/cs  */
+    agc_dp_t     alti  = 0;                                                               /* ALTI, 2^29 m    */
+    agc_status_t st    = agc_earth_orbit_insertion_monitor_readout(&vmagi, &hdot, &alti); /* readout outcome */
+
+    if (st == AGC_STATUS_OK)
+    {
+        *value = vmagi;
+
+        if (id == AGC_DATA_HDOT)
+        {
+            *value = hdot;
+        }
+        else if (id == AGC_DATA_ALTI)
+        {
+            *value = alti;
+        }
+        else
+        {
+            /* VMAGI */
+        }
+    }
+
+    return (st);
+}
+
+/**********************************************************************
+ * AGC: none -- LAT, LONG, ALT (noun 43): the nav-aux store.
+ *
+ * ARGUMENTS:
+ *   id -- AGC_DATA_LAT, AGC_DATA_LONG or AGC_DATA_ALT
+ *   write -- true: store *value
+ *   value -- the value, at the noun's scale (read: receives it)
+ *
+ * RETURNS: agc_status_t -- the nav-aux store's status
+ **********************************************************************/
+static agc_status_t noun_latlong(uint16_t id, bool write, agc_dp_t *value)
+{
+    agc_latlong_t ll;                               /* LAT, LONG, ALT */
+    agc_status_t  st = agc_navaux_get_latlong(&ll); /* store outcome */
+    agc_dp_t     *f  = &ll.alt;                     /* the component named by id */
+
+    if (id == AGC_DATA_LAT)
+    {
+        f = &ll.lat;
+    }
+    else if (id == AGC_DATA_LONG)
+    {
+        f = &ll.lon;
+    }
+    else
+    {
+        /* ALT */
+    }
+
+    if (st == AGC_STATUS_OK && write)
+    {
+        *f = *value;
+        st = agc_navaux_set_latlong(&ll);
+    }
+    else if (st == AGC_STATUS_OK)
+    {
+        *value = *f;
+    }
+    else
+    {
+        /* the store's failure is returned */
+    }
+
+    return (st);
+}
+
+/**********************************************************************
+ * AGC: none -- the ids resolved through functions of their owners: the
+ * P11 readout, LAT/LONG/ALT, STARCODE/AOTCODE, P37, the rendezvous
+ * programs, the two-integer words and the derived values.
+ *
+ * ARGUMENTS:
+ *   id -- noun data id (AGC_DATA_*)
+ *   lm -- true for the Luminary rope
+ *   write -- true: store *value
+ *   value -- the value, at the noun's scale (read: receives it)
+ *
+ * RETURNS: agc_status_t -- the owner's status; NOT_FOUND when no owner
+ *          holds the id
+ **********************************************************************/
+static agc_status_t noun_by_function(uint16_t id, bool lm, bool write, agc_dp_t *value)
+{
+    bool         p11 = !lm && agc_erase_modreg() == 11; /* P11 monitor running */
+    agc_status_t st  = AGC_STATUS_NOT_FOUND;            /* owner outcome */
+
+    if ((id == AGC_DATA_HDOT || id == AGC_DATA_ALTI || (id == AGC_DATA_VMAGI && p11)) && !write)
+    {
+        st = noun_p11_readout(id, value);
+    }
+    else if (id == AGC_DATA_LAT || id == AGC_DATA_LONG || id == AGC_DATA_ALT)
+    {
+        st = noun_latlong(id, write, value);
+    }
+    else
+    {
+        st = noun_star_code(id, write, value);
+
+        if (st == AGC_STATUS_NOT_FOUND && !lm)
+        {
+            st = agc_return_to_earth_noun(id, write, value);
+        }
+
+        if (st == AGC_STATUS_NOT_FOUND && write)
+        {
+            st = agc_rendz_noun_write(id, *value);
+        }
+        else if (st == AGC_STATUS_NOT_FOUND)
+        {
+            st = agc_rendz_noun_read(id, value);
+        }
+        else
+        {
+            /* found above */
+        }
+
+        if (st == AGC_STATUS_NOT_FOUND && !write)
+        {
+            st = lm ? agc_lm_rendz_noun_read(id, value) : agc_csm_rendz_noun_read(id, value); /* LM : CSM */
+        }
+
+        if (st == AGC_STATUS_NOT_FOUND && write && (id == AGC_DATA_VHFCNT || id == AGC_DATA_FUNNYDSP))
+        {
+            st = noun_two_int_write(id, *value);
+        }
+
+        if (st == AGC_STATUS_NOT_FOUND && !write)
+        {
+            st = noun_derived(id, lm, value);
+        }
+    }
+
+    return (st);
+} /* noun_by_function */
+
+/**********************************************************************
+ * AGC: none -- read (write = false) or store the erasable behind a data
+ * id that core does not hold (the noun tables' erasable addresses,
+ * PINBALL_NOUN_TABLES.agc).
+ *
+ * ARGUMENTS:
+ *   data_id -- noun data id (AGC_DATA_*)
+ *   write -- true: store *value
+ *   value -- the value, at the noun's scale (read: receives it)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND when no owner holds
+ *          the id; the owner's status; BAD_ARG for an id out of range
+ **********************************************************************/
 agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
 {
     if (!AGC_ASSERT(data_id > AGC_DATA_NONE && data_id < AGC_DATA_COUNT))
@@ -376,106 +662,36 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool      lm = agc_state_vehicle() == AGC_VEHICLE_LM;
-    agc_dp_t *dp = (data_id == AGC_DATA_VMAGI && !lm && agc_erase_modreg() == 11) ? NULL : noun_dp(data_id, lm);
-    agc_sp_t *sp = noun_sp(data_id);
-    uint16_t *w  = noun_word(data_id);
+    bool         lm = agc_state_vehicle() == AGC_VEHICLE_LM; /* Luminary rope */
+    agc_dp_t    *dp = NULL;                                  /* DP erasable, NULL none */
+    agc_sp_t    *sp = noun_sp(data_id);                      /* SP erasable, NULL none */
+    uint16_t    *w  = noun_word(data_id);                    /* raw word, NULL none */
+    agc_status_t st = AGC_STATUS_OK;                         /* outcome */
+
+    if (data_id != AGC_DATA_VMAGI || lm || agc_erase_modreg() != 11)
+    {
+        dp = noun_dp(data_id, lm); /* VMAGI in P11 is the readout's */
+    }
 
     if (dp != NULL)
     {
-        *dp    = write ? *value : *dp;
+        *dp    = write ? *value : *dp; /* store or keep */
         *value = *dp;
     }
     else if (sp != NULL)
     {
-        *sp    = write ? agc_dp_high(*value) : *sp;
+        *sp    = write ? agc_dp_high(*value) : *sp; /* store or keep */
         *value = agc_dp_from_sp(*sp);
     }
     else if (w != NULL)
     {
-        *w     = write ? (uint16_t) (*value & 077777) : *w;
+        *w     = write ? (uint16_t) (*value & 077777) : *w; /* store or keep */
         *value = (agc_dp_t) *w;
     }
     else
     {
-        /* Ids resolved through functions: the P11 readout, LAT/LONG/ALT, P37,
-         * the rendezvous programs.                                              */
-        bool p11 = !lm && agc_erase_modreg() == 11;
-
-        if ((data_id == AGC_DATA_HDOT || data_id == AGC_DATA_ALTI || (data_id == AGC_DATA_VMAGI && p11)) && !write)
-        {
-            /* VMAGI, HDOT, ALTI of the P11 monitor (N62).                           */
-            {
-                agc_dp_t vmagi = 0;
-                agc_dp_t hdot  = 0;
-                agc_dp_t alti  = 0;
-
-                agc_status_t st = agc_earth_orbit_insertion_monitor_readout(&vmagi, &hdot, &alti);
-
-                if (st != AGC_STATUS_OK)
-                {
-                    return (st);
-                }
-
-                *value = (data_id == AGC_DATA_HDOT) ? hdot : (data_id == AGC_DATA_ALTI) ? alti : vmagi;
-
-                return (AGC_STATUS_OK);
-            }
-        }
-
-        if (data_id == AGC_DATA_LAT || data_id == AGC_DATA_LONG || data_id == AGC_DATA_ALT)
-        {
-            /* LAT, LONG, ALT (noun 43): the nav-aux store.                          */
-            {
-                agc_latlong_t ll;
-                agc_status_t  st = agc_navaux_get_latlong(&ll);
-
-                if (st != AGC_STATUS_OK)
-                {
-                    return (st);
-                }
-
-                agc_dp_t *f = (data_id == AGC_DATA_LAT) ? &ll.lat : (data_id == AGC_DATA_LONG) ? &ll.lon : &ll.alt;
-
-                if (!write)
-                {
-                    *value = *f;
-
-                    return (AGC_STATUS_OK);
-                }
-
-                *f = *value;
-
-                return (agc_navaux_set_latlong(&ll));
-            }
-        }
-
-        agc_status_t st = noun_star_code(data_id, write, value);
-
-        if (st != AGC_STATUS_NOT_FOUND)
-        {
-            return (st);
-        }
-
-        st = lm ? AGC_STATUS_NOT_FOUND : agc_return_to_earth_noun(data_id, write, value);
-
-        if (st == AGC_STATUS_NOT_FOUND)
-        {
-            st = write ? agc_rendz_noun_write(data_id, *value) : agc_rendz_noun_read(data_id, value);
-        }
-
-        if (st == AGC_STATUS_NOT_FOUND && !write)
-        {
-            st = lm ? agc_lm_rendz_noun_read(data_id, value) : agc_csm_rendz_noun_read(data_id, value);
-        }
-
-        if (st == AGC_STATUS_NOT_FOUND && write && (data_id == AGC_DATA_VHFCNT || data_id == AGC_DATA_FUNNYDSP))
-        {
-            st = noun_two_int_write(data_id, *value);
-        }
-
-        return ((st == AGC_STATUS_NOT_FOUND && !write) ? noun_derived(data_id, lm, value) : st);
+        st = noun_by_function(data_id, lm, write, value);
     }
 
-    return (AGC_STATUS_OK);
-}
+    return (st);
+} /* agc_dispatch_noun */

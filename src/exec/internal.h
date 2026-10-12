@@ -1,8 +1,20 @@
-/*
- * internal.h -- declarations shared only between the files of
- * src/exec/ (executive, waitlist, phase tables, restarts, alarms, fresh
- * start, interrupt lead-ins). Not part of the public contract.
- */
+/**********************************************************************
+ * FILE NAME: internal.h
+ *
+ * PURPOSE:
+ *   Declarations shared only between the files of src/exec/ (executive,
+ *   waitlist, phase tables, restarts, alarms, fresh start, interrupt
+ *   lead-ins, change_program/). Not part of the public contract.
+ *
+ * AGC SOURCE:
+ *   as the files that define them (see each declaration)
+ *
+ * REQUIRES:
+ *   agc/exec/exec.h
+ *
+ * GLOBAL VARIABLES:
+ *   none
+ **********************************************************************/
 #ifndef AGC_EXEC_INTERNAL_H
 #define AGC_EXEC_INTERNAL_H
 
@@ -38,13 +50,13 @@ typedef struct phase_var_store
     uint32_t           long_dt_cs; /* DP delta time for a variable LONGCALL (C(-GENADR) at the time of the phase change) */
 } phase_var_store_t;
 
-bool         phase_group_agrees(int group);                          /* PHASEn vs -PHASEn       */
-agc_status_t phase_var_get(int group, phase_var_store_t *out);
-uint16_t     phase_tbase(int group);                                 /* TIME1 at TBASEn set     */
-uint32_t     phase_longbase(void);                                   /* TIME2,TIME1 at LONGBASE */
-void         phase_kill(int group);                                  /* -PHASEn,PHASEn = -0,+0  */
-void         phase_set_fixed(int group, uint16_t phase);             /* both words  */
-void         phase_debug_set_negative(int group, uint16_t neg_word); /* tests */
+bool     phase_group_agrees(int group);                          /* PHASEn vs -PHASEn       */
+void     phase_var_get(int group, phase_var_store_t *out);
+uint16_t phase_tbase(int group);                                 /* TIME1 at TBASEn set     */
+uint32_t phase_longbase(void);                                   /* TIME2,TIME1 at LONGBASE */
+void     phase_kill(int group);                                  /* -PHASEn,PHASEn = -0,+0  */
+void     phase_set_fixed(int group, uint16_t phase);             /* both words  */
+void     phase_debug_set_negative(int group, uint16_t neg_word); /* tests */
 
 /* ---- restart tables (restart_tables.c) -------------------------------- */
 typedef enum rst_dtsrc
@@ -70,12 +82,12 @@ typedef enum rst_erasable
 
 typedef struct rst_entry
 { /* one 3-word restart table entry          */
-    agc_restart_kind_t kind; /* NONE for the DEC 0 placeholders         */
-    int16_t            prdt; /* job: +prio FINDVAC, -prio NOVAC; task DIRECT: delta time cs */
-    rst_dtsrc_t        dtsrc;
-    rst_erasable_t     src;  /* for INDIRECT / LONG                     */
-    agc_job_id_t       job;
-    agc_task_id_t      task;
+    agc_restart_kind_t kind;  /* NONE for the DEC 0 placeholders         */
+    int16_t            prdt;  /* job: +prio FINDVAC, -prio NOVAC; task DIRECT: delta time cs */
+    rst_dtsrc_t        dtsrc; /* where a task's delta time comes from   */
+    rst_erasable_t     src;   /* for INDIRECT / LONG                     */
+    agc_job_id_t       job;   /* kind JOB: its 2CADR                     */
+    agc_task_id_t      task;  /* kind TASK / LONGCALL: its 2CADR         */
 } rst_entry_t;
 
 /* Look up entry `part` (0 or 1; 1 only for even phases) of phase `phase`
@@ -111,7 +123,7 @@ void exec_vac5stor(void); /* CSM debug copy of tables  */
 /* ---- MODREG = -0 ----------------------------------------------------- */
 /* agc_sp_t has no -0; the lanes agree that a negative MODREG means -0
  * (no program; the PROG lights are blanked). See io-pinball DSPMMJB.  */
-#define EXEC_MODREG_NEG0 ((agc_sp_t) -1)
+#define EXEC_MODREG_NEG0 ((agc_sp_t) -1) /* MODREG = -0: no program */
 
 /* ---- up-calls into higher layers (change_program/idle.c) --------------
  * The AGC restart code calls routines that apollo-c places above exec
@@ -153,8 +165,8 @@ void exec_cp_stop_servicer_csm(void);
 void exec_cp_stop_servicer_lm(void);
 
 /* CANV37 after INTSTALL: outbits and flags of each vehicle.           */
-void         exec_cp_cleanup_csm(void);
-agc_status_t exec_cp_cleanup_lm(void);
+void exec_cp_cleanup_csm(void);
+void exec_cp_cleanup_lm(void);
 
 /* POOH / NOUVEAU flag work (FLAGWRD0, FLAGWRD1, CLRADMOD, ...).        */
 void         exec_cp_pooh_flags_csm(void);
@@ -163,7 +175,7 @@ void         exec_cp_nouveau_flags_csm(void);
 agc_status_t exec_cp_nouveau_flags_lm(void);
 
 /* RENDV00: groups 1/2 for rendezvous; true = STATQUO (keep P20, GOMOD). */
-bool         exec_cp_rendezvous_csm(uint8_t mm);
-agc_status_t exec_cp_rendezvous_lm(uint8_t mm, bool *statquo);
+bool exec_cp_rendezvous_csm(uint8_t mm);
+bool exec_cp_rendezvous_lm(uint8_t mm);
 
 #endif /* AGC_EXEC_INTERNAL_H */

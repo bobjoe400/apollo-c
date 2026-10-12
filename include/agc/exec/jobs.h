@@ -447,7 +447,7 @@ typedef enum agc_job_id
     AGC_JOB_ENTRY_UPCONTROL_PROCEED,              /* CSM: P65.1 PROCEED */
     AGC_JOB_PRE_HUNT,                             /* CSM: 4.47 PRE-HUNT */
     AGC_JOB_REDOPOSE,                             /* CSM: REDOPOSE group 5 restart */
-    AGC_JOB_REFAZE10,                             /* CSM: REFAZE10 group 5 restart */
+    AGC_JOB_REESTABLISH_ENTRY_SEQUENCER,          /* CSM: REFAZE10 group 5 restart */
 
     /* ---- src/csm/navigation */
     AGC_JOB_BACKUP_SIGHTING_MARK,                           /* CSM: R23CSM (V54) */

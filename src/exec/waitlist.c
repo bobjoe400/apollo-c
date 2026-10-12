@@ -63,6 +63,7 @@
 #define WL_NEG1_2      (-8192) /* NEG1/2: empty LST1 slot              */
 #define WL_LST1_N      8       /* LST1 to LST1 +7                      */
 #define WL_BIT14       8192    /* BIT14 / DPBIT14 low word, 81.92 s    */
+#define WL_TIME3_BIT8  128     /* BIT8, octal 200: WAIT2 overflow test */
 #define WL_SVCT3_DELAY 500     /* SVCT3X: DEC 500 (5 s)                */
 #define WL_TICK_LIMIT  65536   /* bound for agc_waitlist_tick loop     */
 
@@ -192,9 +193,23 @@ static agc_status_t wait2(uint16_t dt, agc_task_id_t task)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    /* DEVIATION: the "TIME3 overflow already happened" branch (C(TIME3)
-     * < 200 octal) cannot arise: T3RUPT runs synchronously at overflow.  */
-    int32_t a = (int32_t) dt - (WL_TIME3_OVF - (int32_t) time3) + 1; /* TD-T1+1 */
+    /* CS TIME3 / AD BIT8 / CCS A: 200 - C(TIME3) > 0 means TIME3 has
+     * overflowed and C(TIME3) = T - T1. That happens inside a RUPTAGN
+     * chain: ADS TIME3 in T3RUPT2 leaves the excess T - T2 (0 for two
+     * tasks due in the same cs) while task 1 runs, and T2 is the next
+     * task. A normal TIME3 is >= 134 (DTMAX 16250), so the test is
+     * unambiguous. Both paths give TD - T1 + 1; 200 itself is -0 in the
+     * CCS and goes straight to AD Q.                                     */
+    int32_t a = (int32_t) dt - (WL_TIME3_OVF - (int32_t) time3) + 1; /* normal: -(1.0 - C(TIME3)) + 1 + DT */
+
+    if (time3 < WL_TIME3_BIT8)
+    {
+        a = (int32_t) dt + (int32_t) time3 + 1; /* AD OCT40001 / CS A / AD OCT40201 / AD Q */
+    }
+    else if (time3 == WL_TIME3_BIT8)
+    {
+        a = (int32_t) dt; /* CCS -0 -> AD Q */
+    }
 
     if (a <= 0)
     {
@@ -642,7 +657,7 @@ agc_status_t agc_waitlist_t3rupt(void)
         {
             ruptagn = false; /* restart: the RUPTAGN chain is gone */
         }
-    }
+    } /* for each task due now (RUPTAGN) */
 
     agc_relint();
 

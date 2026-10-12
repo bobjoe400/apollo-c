@@ -334,14 +334,8 @@ static void phaschng_common(uint16_t code, const agc_phase_var_t *v, const ph_se
         store_var(&c, v);
     }
 
-    /**********************************************************************
-     * BELOW1 .. BELOW4 (C pp.1411-1412 / L pp.1300-1301).
-     *
-     * ARGUMENTS:
-     *   c -- the decoded code word
-     *   two -- the second group of a 2PHSCHNG (present = false for PHASCHNG)
-     **********************************************************************/
-    if (two->present && AGC_ASSERT(group_ok(two->group)))
+    /* BELOW1 .. BELOW4 (C pp.1411-1412 / L pp.1300-1301).            */
+    if (two->present)
     {
         phase_set_fixed(two->group, two->phase); /* DXCH -PHASE(G2)   */
 
@@ -366,9 +360,39 @@ static void phaschng_common(uint16_t code, const agc_phase_var_t *v, const ph_se
 }
 
 /**********************************************************************
+ * GETNEWNM with A clear (C p.1411 / L p.1300): "the 2CADR of the restart
+ * point is the return address" of PHASCHNG. C cannot name a return
+ * address; the nearest restart point it can name is the job segment that
+ * made the phase change (its current LOC), which the restart re-enters
+ * at its top.
+ * DEVIATION: the AGC resumes after the TC PHASCHNG; C reruns the segment
+ * from its start. Only for a job (type B, or type C with CJW = J) changed
+ * from a running job; a task or LONGCALL keeps the stored point, and
+ * PHSPRDTn is untouched (D is clear: the priority preset by the program,
+ * e.g. TS PHSPRDT2, is kept).
+ *
+ * ARGUMENTS:
+ *   code -- PHASCHNG code word (octal, see the file prolog)
+ **********************************************************************/
+static void store_return_point(uint16_t code)
+{
+    ph_code_t c; /* the decoded code word */
+
+    decode(code, &c);
+    bool job = c.type == PH_TYPE_B || (c.type == PH_TYPE_C && cjw_kind(c.tempp) == AGC_RESTART_JOB); /* the restart point is a job */
+
+    if (job && (code & PH_ABIT) == 0U && exec_in_job())
+    {
+        var[c.group].kind = AGC_RESTART_JOB;
+        var[c.group].job  = exec_running_job_loc(); /* PHSNAMEn = return address */
+    }
+}
+
+/**********************************************************************
  * PHASCHNG (C p.1409 / L p.1298), fixed form: the group is the GGG of
- * the code word. A type B/C code given here keeps the stored restart
- * point and priority (as if D = 0 and the old 2CADR were still right).
+ * the code word. A type B/C job code given here from a running job
+ * restarts that job segment (store_return_point); otherwise the stored
+ * restart point and priority are kept.
  *
  * ARGUMENTS:
  *   phase_code -- PHASCHNG code word (octal); GGG = restart group 1..6
@@ -377,7 +401,10 @@ void agc_phase_change(uint16_t phase_code)
 {
     ph_second_t none = {false, 0, 0, false};
 
+    agc_inhint();
+    store_return_point(phase_code);
     phaschng_common(phase_code, 0, &none);
+    agc_relint();
 }
 
 /**********************************************************************
@@ -499,21 +526,12 @@ bool phase_group_agrees(int group)
  * them): the stored variable restart point of `group`.
  *
  * ARGUMENTS:
- *   group -- restart group, 1..6
- *   out -- receives the decoded fields / the stored restart point
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a bad group or NULL out
+ *   group -- restart group, 1..6 (agc_restart_group checked it)
+ *   out -- receives the stored restart point (the caller's local)
  **********************************************************************/
-agc_status_t phase_var_get(int group, phase_var_store_t *out)
+void phase_var_get(int group, phase_var_store_t *out)
 {
-    if (!AGC_ASSERT(group_ok(group)) || !AGC_ASSERT(out != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *out = var[group];
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -559,10 +577,8 @@ void phase_debug_set_negative(int group, uint16_t neg_word)
  * Luminary also group 1.
  *
  * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a failed postcondition
  **********************************************************************/
-agc_status_t agc_phase_change_program_klean(void)
+void agc_phase_change_program_klean(void)
 {
     agc_inhint();
 
@@ -575,13 +591,6 @@ agc_status_t agc_phase_change_program_klean(void)
     phase_kill(5);
     phase_kill(6);
     agc_relint();
-
-    if (!AGC_ASSERT(phase_w[3] == 0U && phase_w[5] == 0U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -589,10 +598,8 @@ agc_status_t agc_phase_change_program_klean(void)
  * (Comanche also group 1), then V37KLEAN.
  *
  * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- the V37KLEAN status; BAD_ARG on a failed postcondition
  **********************************************************************/
-agc_status_t agc_phase_idle_klean(void)
+void agc_phase_idle_klean(void)
 {
     agc_inhint();
     phase_kill(4);
@@ -603,13 +610,7 @@ agc_status_t agc_phase_idle_klean(void)
     }
 
     agc_relint();
-
-    if (!AGC_ASSERT(phase_w[4] == 0U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (agc_phase_change_program_klean());
+    agc_phase_change_program_klean();
 }
 
 /**********************************************************************
@@ -617,22 +618,13 @@ agc_status_t agc_phase_idle_klean(void)
  * then P00KLEAN -- every group is inactive.
  *
  * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- the P00KLEAN status; BAD_ARG on a failed postcondition
  **********************************************************************/
-agc_status_t agc_phase_mr_klean(void)
+void agc_phase_mr_klean(void)
 {
     agc_inhint();
     phase_kill(2);
     agc_relint();
-    agc_status_t st = agc_phase_idle_klean(); /* P00KLEAN outcome */
-
-    if (!AGC_ASSERT(phase_w[1] == 0U && phase_w[6] == 0U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
+    agc_phase_idle_klean();
 }
 
 /**********************************************************************

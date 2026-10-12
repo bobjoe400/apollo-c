@@ -76,7 +76,6 @@
 static agc_job_id_t almcadr;      /* ALMCADR: job that raised the alarm  */
 static agc_job_id_t localarm;     /* LOCALARM (CSM): LOC at the alarm    */
 static bool         enema_wanted; /* WHIMPER requested, not yet run      */
-static uint16_t     restarts_run; /* software restarts serviced (debug)  */
 
 /* VAC5STOR (C p.204): copy of LOC, PRIORITY of each core set, the phase
  * table and NEWJOB, for post-flight analysis of a restart.            */
@@ -131,12 +130,8 @@ static void store_alarm(agc_alarm_code_t code)
     {
         agc_erase_set_failreg(0, code); /* first alarm       */
 
-        /**********************************************************************
-         * PROGLARM (C p.1494 / L p.1382): CS DSPTAB +11D / MASK OCT40400 / ADS --
-         * turn on the PROG lamp and mark the lamp word for output.
-         *
-         * ARGUMENTS: none
-         **********************************************************************/
+        /* PROGLARM (C p.1494 / L p.1382): CS DSPTAB +11D / MASK OCT40400 /
+         * ADS -- PROG lamp on, lamp word marked for output.              */
         uint16_t w = agc_erase_dsptab(AL_DSPTAB_LAMPS); /* DSPTAB +11D, the C/S lamp word */
 
         agc_erase_set_dsptab(AL_DSPTAB_LAMPS, (uint16_t) (w | AL_OCT40400));
@@ -225,21 +220,12 @@ void exec_request_enema(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a failed postcondition
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (the job or task returns it; the
+ *          restart runs at the service point)
  **********************************************************************/
 agc_status_t agc_exec_enema(void)
 {
     exec_request_enema();
-
-    if (!AGC_ASSERT(agc_exec_restart_pending()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }
@@ -266,28 +252,17 @@ bool agc_exec_restart_pending(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when none was pending; else the ENEMA status
- *          (OK, BAILOUT, ALARM, NOT_FOUND, UNIMPLEMENTED); BAD_ARG otherwise
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when none was pending; else the
+ *          ENEMA status
  **********************************************************************/
 agc_status_t agc_exec_service_restart(void)
 {
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    agc_status_t st = AGC_STATUS_OK; /* ENEMA outcome */
 
-    if (!enema_wanted)
+    if (enema_wanted)
     {
-        return (AGC_STATUS_OK);
-    }
-
-    enema_wanted    = false;
-    restarts_run    = (uint16_t) (restarts_run + 1U);
-    agc_status_t st = fresh_enema(); /* ENEMA outcome */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT || st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND || st == AGC_STATUS_UNIMPLEMENTED))
-    {
-        return (AGC_STATUS_BAD_ARG);
+        enema_wanted = false;
+        st           = fresh_enema();
     }
 
     return (st);
@@ -300,8 +275,7 @@ agc_status_t agc_exec_service_restart(void)
  * ARGUMENTS:
  *   code -- alarm code, octal as displayed (1..077777)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAILOUT (the caller returns it); BAD_ARG on a
- *          failed precondition
+ * RETURNS: agc_status_t -- AGC_STATUS_BAILOUT (the caller returns it)
  **********************************************************************/
 agc_status_t agc_bailout(agc_alarm_code_t code)
 {
@@ -310,16 +284,6 @@ agc_status_t agc_bailout(agc_alarm_code_t code)
     store_alarm(code);
     exec_request_enema(); /* OCT40400+1: WHIMPER */
     agc_relint();
-
-    if (!AGC_ASSERT(enema_wanted))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_BAILOUT);
 }
@@ -343,16 +307,10 @@ static void poodoo_flags(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_POODOO; the SERVIDLE status when it fails;
- *          BAD_ARG on a failed precondition
+ * RETURNS: agc_status_t -- AGC_STATUS_POODOO; the SERVIDLE status when it fails
  **********************************************************************/
 static agc_status_t gopoodoo(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     poodoo_flags();
     agc_status_t st = AGC_STATUS_POODOO; /* POODOO: the program is abandoned */
@@ -365,22 +323,16 @@ static agc_status_t gopoodoo(void)
          * WHIMPER and the 4.33 restart (GOP00FIX) goes to P00.        */
         agc_status_t s1 = exec_up_servidle(); /* SERVIDLE outcome */
 
-        if (!AGC_ASSERT(s1 == AGC_STATUS_OK))
+        if (s1 != AGC_STATUS_OK)
         {
-            return (s1);
+            st = s1;
         }
     }
     else
     {
-        agc_status_t k1 = agc_phase_change_program_klean(); /* groups 1,3,5,6    */
-        agc_status_t k2 = agc_phase_mr_klean();             /* 2,4,... (4 last)  */
-
-        if (!AGC_ASSERT(k1 == AGC_STATUS_OK && k2 == AGC_STATUS_OK))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        exec_request_enema(); /* TCF WHIMPER       */
+        agc_phase_change_program_klean(); /* groups 1,3,5,6    */
+        agc_phase_mr_klean();             /* 2,4,... (4 last)  */
+        exec_request_enema();             /* TCF WHIMPER       */
         agc_relint();
     }
 
@@ -404,7 +356,7 @@ static agc_status_t gopoodoo(void)
 agc_status_t exec_service_interp_alarm(void)
 {
     uint16_t     code = agc_interp_take_alarm(); /* 1301, 1302 or 0 latched by the interpreter */
-    agc_status_t st   = AGC_STATUS_OK;
+    agc_status_t st   = AGC_STATUS_OK;           /* POODOO 1302 outcome */
 
     if (code == 01301u)
     {
@@ -430,10 +382,12 @@ agc_status_t exec_service_interp_alarm(void)
  *   code -- alarm code, octal as displayed (1..077777)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_POODOO; AGC_STATUS_BAILOUT (Comanche with
- *          average-G on); BAD_ARG on a failed precondition
+ *          average-G on)
  **********************************************************************/
 agc_status_t agc_poodoo(agc_alarm_code_t code)
 {
+    agc_status_t st = AGC_STATUS_POODOO; /* the program is abandoned */
+
     agc_inhint();
     exec_vac5stor();
     store_alarm(code);
@@ -442,46 +396,27 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
         /* Comanche POODOO after BORTENT (C p.1495).                            */
-        if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
-        { /* average G on      */
-            exec_request_enema(); /* TC WHIMPER -1     */
-
-            return (AGC_STATUS_BAILOUT);
-        }
-
-        poodoo_flags();
-        agc_status_t st = agc_phase_mr_klean(); /* MR.KLEAN outcome */
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
         {
-            return (AGC_STATUS_BAD_ARG);
+            exec_request_enema(); /* average G on: TC WHIMPER -1 */
+            st = AGC_STATUS_BAILOUT;
         }
-
-        exec_request_enema(); /* TC WHIMPER        */
-
-        if (!AGC_ASSERT(agc_phase_get(4) == 0U))
+        else
         {
-            return (AGC_STATUS_BAD_ARG);
+            poodoo_flags();
+            agc_phase_mr_klean();
+            exec_request_enema(); /* TC WHIMPER        */
         }
-
-        return (AGC_STATUS_POODOO);
     }
-
-    agc_inhint();
-    phase_set_fixed(4, AL_PHASE_4_35); /* DXCH -PHASE4      */
-    agc_relint();
-
-    if (!AGC_ASSERT(phase_group_agrees(4)))
+    else
     {
-        return (AGC_STATUS_BAD_ARG);
+        agc_inhint();
+        phase_set_fixed(4, AL_PHASE_4_35); /* DXCH -PHASE4      */
+        agc_relint();
+        st = gopoodoo();
     }
 
-    return (gopoodoo());
+    return (st);
 } /* agc_poodoo */
 
 /**********************************************************************
@@ -495,7 +430,7 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
  **********************************************************************/
 agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != 0) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    if (!AGC_ASSERT(ctx->id == AGC_JOB_GOPOODOO))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -508,15 +443,10 @@ agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the POODOO 1103 status; BAD_ARG on a failed precondition
+ * RETURNS: agc_status_t -- the POODOO 1103 status
  **********************************************************************/
 agc_status_t agc_ccshole(void)
 {
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     _Static_assert(AGC_ALARM_01103 <= AL_POSMAX, "AGC constant");
 
     return (agc_poodoo(AGC_ALARM_01103));
@@ -529,23 +459,13 @@ agc_status_t agc_ccshole(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAILOUT; BAD_ARG on a failed postcondition
+ * RETURNS: agc_status_t -- AGC_STATUS_BAILOUT
  **********************************************************************/
 agc_status_t agc_abort_restart(void)
 {
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     exec_request_enema();
     agc_relint();
-
-    if (!AGC_ASSERT(enema_wanted))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_BAILOUT);
 }

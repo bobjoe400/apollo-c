@@ -259,9 +259,9 @@ def write_dispatch(rows):
             roots[veh] = root
             body += code
         tops += top_level(kind, roots)
-    out = ['/* GENERATED-DISPATCH: rule 4 exempt */',
-           '/' + '*' * 70,
+    out = ['/' + '*' * 70,
            ' * FILE NAME: dispatch.c',
+           ' * GENERATED-DISPATCH: rule 4 exempt (docs/CODING_STANDARD.md rule 4)',
            ' *',
            ' * PURPOSE:',
            ' *   The switch from agc_job_id_t to the job functions and the one from',

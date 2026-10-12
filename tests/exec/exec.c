@@ -1,18 +1,39 @@
-/*
- * exec.c -- exec-sched unit tests: executive priorities and core
- * sets, VAC exhaustion (1201), core-set exhaustion (1202), waitlist
- * ordering and LST1 delta arithmetic, waitlist overflow (1203), dt = 0
- * (1204), LONGCALL, sleep/wake, PRIOCHNG, PHASCHNG types A/B/C, restart
- * groups from the tables of both vehicles, GOPROG / ENEMA / GOTOPOOH,
- * the KLEANs, POODOO.
+/**********************************************************************
+ * FILE NAME: exec.c
  *
- * Links against the real library (build/libagc_debug.a). The test keeps
- * its own agc_dispatch_job / agc_dispatch_task: test doubles of the
- * dispatch boundary, so that the executive and waitlist can be driven by
- * test jobs (TJ_* / TT_*). src/exec/dispatch.c defines nothing else, so
- * the linker never pulls it in; every other exec, core and up-call
- * function is the library's.
- */
+ * PURPOSE:
+ *   exec-sched unit tests: executive priorities and core sets, VAC
+ *   exhaustion (1201), core-set exhaustion (1202), sleep/wake, PRIOCHNG,
+ *   waitlist ordering and LST1 delta arithmetic, WAIT2 inside a RUPTAGN
+ *   chain, waitlist overflow (1203), zero delay (1204), LONGCALL,
+ *   PHASCHNG types A/B/C and the return-address restart point, restart
+ *   groups from the tables of both vehicles, GOPROG / ENEMA / GOTOPOOH,
+ *   the KLEANs, POODOO, the interpreter alarms 1301 / 1302.
+ *
+ * AGC SOURCE:
+ *   none (tests of src/exec, whose prologs cite the listings)
+ *
+ * EXTERNAL VARIABLES:
+ *   none
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_exec_*, agc_waitlist_*, agc_phase_*, agc_restart_*
+ *                         the functions under test (exec.h, internal.h)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Exit status 1 when any check fails.
+ *
+ * NOTES:
+ *   Links against the real library (build/libagc_debug.a). The test keeps
+ *   its own agc_dispatch_job / agc_dispatch_task: test doubles of the
+ *   dispatch boundary, so that the executive and waitlist can be driven by
+ *   test jobs (TJ_* / TT_*). src/exec/dispatch.c defines nothing else, so
+ *   the linker never pulls it in; every other exec, core and up-call
+ *   function is the library's. AGC_ASSERT failures are counted by this
+ *   file's agc_assert_report() and printed; no check depends on them.
+ **********************************************************************/
 #include <stdio.h>
 
 #include <stdint.h>
@@ -20,14 +41,91 @@
 #include "../../src/exec/internal.h"
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
+#include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 
-static int g_checks;
-static int g_failures;
-static int g_assert_reports;
+static int g_checks;         /* checks run */
+static int g_failures;       /* checks failed */
+static int g_assert_reports; /* AGC_ASSERT failures reported */
 
+/* Prototypes: main() comes first (STYLE 4.6). */
+static void check(bool ok, int line, const char *text);
+static void wl_clean(void);
+static bool only_dspmm_waiting(void);
+static void reset(agc_vehicle_t v);
+static int  run_all(void);
+static bool job_present(agc_job_id_t loc, agc_prio_t prio, int vac);
+static bool task_entry(int i, agc_task_id_t task, int16_t lst1);
+static bool task_queued(agc_task_id_t task);
+static void test_priority_order(void);
+static void test_vac_exhaustion(void);
+static void test_core_exhaustion(void);
+static void test_sleep_wake(void);
+static void test_prio_change(void);
+static void test_bailout_in_job(void);
+static void test_waitlist_order(void);
+static void test_waitlist_ruptagn_insert(void);
+static void test_waitlist_overflow(void);
+static void test_waitlist_zero_delay(void);
+static void test_longcall(void);
+static void test_phase_codes(void);
+static void test_restart_table_task_timing(void);
+static void test_restart_variable(void);
+static void test_restart_return_point(void);
+static void test_lm_tables(void);
+static void test_kleans(void);
+static void test_goprog(void);
+static void test_poodoo_lm(void);
+static void test_inhint(void);
+static void test_interp_alarms(void);
+
+/**********************************************************************
+ * AGC: none (test) -- run every test
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- 0 when all checks pass, 1 otherwise
+ **********************************************************************/
+int main(void)
+{
+    test_priority_order();
+    test_vac_exhaustion();
+    test_interp_alarms();
+    test_core_exhaustion();
+    test_sleep_wake();
+    test_prio_change();
+    test_bailout_in_job();
+    test_waitlist_order();
+    test_waitlist_ruptagn_insert();
+    test_waitlist_overflow();
+    test_waitlist_zero_delay();
+    test_longcall();
+    test_phase_codes();
+    test_restart_table_task_timing();
+    test_restart_variable();
+    test_restart_return_point();
+    test_lm_tables();
+    test_kleans();
+    test_goprog();
+    test_poodoo_lm();
+    test_inhint();
+    (void) printf("test_exec: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
+
+    return ((g_failures == 0) ? 0 : 1); /* exit status */
+}
+
+/**********************************************************************
+ * AGC: none (test) -- hook replacing core/assert.c: count the report
+ *
+ * ARGUMENTS:
+ *   file -- source file
+ *   line -- line
+ *   expr -- assertion text
+ *
+ * RETURNS: bool -- false (go on)
+ **********************************************************************/
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) file;
@@ -40,6 +138,14 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 
 #define CHECK(c) check((c), __LINE__, #c)
 
+/**********************************************************************
+ * AGC: none (test) -- count a check, print a failure
+ *
+ * ARGUMENTS:
+ *   ok -- the check passed
+ *   line -- line
+ *   text -- the checked expression
+ **********************************************************************/
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
@@ -51,39 +157,50 @@ static void check(bool ok, int line, const char *text)
     }
 }
 
-/* ---- test doubles for dispatch.c and the up-calls --------------------- */
-#define TJ_A       ((agc_job_id_t) 0x0F01)
-#define TJ_B       ((agc_job_id_t) 0x0F02)
-#define TJ_C       ((agc_job_id_t) 0x0F03)
-#define TJ_SLEEPER ((agc_job_id_t) 0x0F10)
-#define TJ_WOKEN   ((agc_job_id_t) 0x0F11)
-#define TJ_HOG     ((agc_job_id_t) 0x0F12)
-#define TJ_PRIO    ((agc_job_id_t) 0x0F13)
-#define TJ_ACOS    ((agc_job_id_t) 0x0F14) /* ACOS out of range: 1301 */
-#define TJ_SQRT    ((agc_job_id_t) 0x0F15) /* SQRT of a negative: 1302 */
-#define TT_A       ((agc_task_id_t) 0x0F41)
-#define TT_B       ((agc_task_id_t) 0x0F42)
-#define TT_C       ((agc_task_id_t) 0x0F43)
-#define TT_D       ((agc_task_id_t) 0x0F44)
-#define TT_LONG    ((agc_task_id_t) 0x0F45)
-#define LOG_N      64
+#define TJ_A       ((agc_job_id_t) 0x0F01)  /* plain test job */
+#define TJ_B       ((agc_job_id_t) 0x0F02)  /* plain test job */
+#define TJ_C       ((agc_job_id_t) 0x0F03)  /* plain test job */
+#define TJ_SLEEPER ((agc_job_id_t) 0x0F10)  /* JOBSLEEPs, wakes as TJ_WOKEN */
+#define TJ_WOKEN   ((agc_job_id_t) 0x0F11)  /* continuation of TJ_SLEEPER */
+#define TJ_HOG     ((agc_job_id_t) 0x0F12)  /* claims VAC areas until 1201 */
+#define TJ_PRIO    ((agc_job_id_t) 0x0F13)  /* PRIOCHNG test job */
+#define TJ_ACOS    ((agc_job_id_t) 0x0F14)  /* ACOS out of range: 1301 */
+#define TJ_SQRT    ((agc_job_id_t) 0x0F15)  /* SQRT of a negative: 1302 */
+#define TJ_GRP2PC  ((agc_job_id_t) 0x0F16)  /* PHASCHNG OCT 04022, return address */
+#define TT_A       ((agc_task_id_t) 0x0F41) /* plain test task */
+#define TT_B       ((agc_task_id_t) 0x0F42) /* plain test task */
+#define TT_C       ((agc_task_id_t) 0x0F43) /* plain test task */
+#define TT_D       ((agc_task_id_t) 0x0F44) /* plain test task */
+#define TT_LONG    ((agc_task_id_t) 0x0F45) /* LONGCALL test task */
+#define TT_QUEUER  ((agc_task_id_t) 0x0F46) /* queues TT_C in 1 cs */
+#define LOG_N      64                       /* size of the dispatch logs */
 
-static agc_job_id_t  job_log[LOG_N];
-static int           job_n;
-static agc_task_id_t task_log[LOG_N];
-static int           task_n;
-static int           prio_nj1;      /* NEWJOB after PRIOCHNG 25 */
-static int           prio_nj2;      /* NEWJOB after PRIOCHNG 5  */
-static agc_dp_t      interp_result; /* TJ_ACOS / TJ_SQRT MPAC   */
+static agc_job_id_t  job_log[LOG_N];  /* jobs dispatched, in order */
+static int           job_n;           /* entries in job_log */
+static agc_task_id_t task_log[LOG_N]; /* test tasks dispatched, in order */
+static int           task_n;          /* entries in task_log */
+static int           prio_nj1;        /* NEWJOB after PRIOCHNG 25 */
+static int           prio_nj2;        /* NEWJOB after PRIOCHNG 5  */
+static agc_dp_t      mpac_result;     /* TJ_ACOS / TJ_SQRT MPAC, 2^0 */
 
+/**********************************************************************
+ * AGC: none (test) -- test double of the job dispatch switch: runs the TJ_* test jobs
+ * and the exec jobs the tests need
+ *
+ * ARGUMENTS:
+ *   ctx -- job context (core set 0); ctx->id is the test job
+ *
+ * RETURNS: agc_status_t -- the job's status
+ **********************************************************************/
 agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
 {
     if (job_n < LOG_N)
     {
-        job_log[job_n++] = ctx->id;
+        job_log[job_n] = ctx->id;
+        job_n++;
     }
 
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = AGC_STATUS_OK; /* the job's status */
 
     if (ctx->id == TJ_SLEEPER)
     {
@@ -111,10 +228,15 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
     }
     else if (ctx->id == TJ_ACOS || ctx->id == TJ_SQRT)
     {
-        agc_interp_t ip;
+        agc_interp_t ip; /* interpreter context of the job */
 
         agc_interp_init(&ip);
-        interp_result = (ctx->id == TJ_ACOS) ? agc_dp_acos(&ip, AGC_DP_MAX) : agc_dp_sqrt(-AGC_DP_HALF);
+        mpac_result = (ctx->id == TJ_ACOS) ? agc_dp_acos(&ip, AGC_DP_MAX) : agc_dp_sqrt(-AGC_DP_HALF); /* ACOS of 1.0 : SQRT of a negative */
+    }
+    else if (ctx->id == TJ_GRP2PC)
+    {
+        agc_phase_set_priority(2, 026); /* CAF PRIO26 / TS PHSPRDT2 */
+        agc_phase_change(04022);        /* type C job, A and D clear */
     }
     else if (ctx->id == AGC_JOB_ENDOFJOB)
     {
@@ -126,8 +248,17 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
     }
 
     return (st);
-}
+} /* agc_dispatch_job */
 
+/**********************************************************************
+ * AGC: none (test) -- test double of the task dispatch switch: the waitlist's own
+ * tasks, then a log of the TT_* test tasks
+ *
+ * ARGUMENTS:
+ *   task -- task id
+ *
+ * RETURNS: agc_status_t -- the task's status
+ **********************************************************************/
 agc_status_t agc_dispatch_task(agc_task_id_t task)
 {
     switch ((int) task)
@@ -152,15 +283,26 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
 
     if (task_n < LOG_N)
     {
-        task_log[task_n++] = task;
+        task_log[task_n] = task;
+        task_n++;
     }
 
-    return (AGC_STATUS_OK);
+    agc_status_t st = AGC_STATUS_OK; /* the task's status */
+
+    if (task == TT_QUEUER)
+    {
+        st = agc_waitlist_fixdelay(1, TT_C);
+    }
+
+    return (st);
 }
 
-/* ---- helpers ----------------------------------------------------------- */
-/* Empty waitlist after a fresh start: TIME3 = 37777 makes ENDTASK due in
- * 1 cs; let it run, so the list holds only ENDTASK, 81.93 s away.      */
+/**********************************************************************
+ * AGC: none (test) -- empty waitlist after a fresh start: TIME3 = 37777 makes ENDTASK
+ * due in 1 cs; let it run, so the list holds only ENDTASK, 81.93 s away
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void wl_clean(void)
 {
     (void) agc_waitlist_init();
@@ -168,14 +310,21 @@ static void wl_clean(void)
     task_n = 0;
 }
 
+/**********************************************************************
+ * AGC: none (test) -- GOPROG3 MMDSPLAY with MODREG -0: only DSPMMJOB is active
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true when DSPMMJOB is the only active job
+ **********************************************************************/
 static bool only_dspmm_waiting(void)
 {
-    int  active = 0;
-    bool dspmm  = false;
+    int  active = 0;     /* active core sets */
+    bool dspmm  = false; /* DSPMMJOB among them */
 
     for (int i = 0; i < agc_exec_core_sets(); i++)
     {
-        agc_exec_core_info_t ci;
+        agc_exec_core_info_t ci; /* core set i */
 
         agc_exec_core_info(i, &ci);
 
@@ -189,10 +338,16 @@ static bool only_dspmm_waiting(void)
     return (active == 1 && dspmm); /* GOPROG3 MMDSPLAY: DSPMMJOB only */
 }
 
+/**********************************************************************
+ * AGC: none (test) -- fresh start of vehicle v with no program and an empty waitlist
+ *
+ * ARGUMENTS:
+ *   v -- vehicle to reset to
+ **********************************************************************/
 static void reset(agc_vehicle_t v)
 {
     agc_state_init(v);
-    (void) agc_phase_mr_klean();
+    agc_phase_mr_klean();
     agc_erase_set_modreg(EXEC_MODREG_NEG0);
 
     for (int i = 0; i < 4 && agc_exec_restart_pending(); i++)
@@ -207,9 +362,16 @@ static void reset(agc_vehicle_t v)
     job_n = 0;
 }
 
+/**********************************************************************
+ * AGC: none (test) -- run jobs until the executive is idle (at most 40)
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- the number of jobs run
+ **********************************************************************/
 static int run_all(void)
 {
-    int n = 0;
+    int n = 0; /* jobs run */
 
     for (int i = 0; i < 40 && !agc_exec_idle(); i++)
     {
@@ -220,11 +382,21 @@ static int run_all(void)
     return (n);
 }
 
+/**********************************************************************
+ * AGC: none (test) -- a job with this LOC, priority and VAC kind is active
+ *
+ * ARGUMENTS:
+ *   loc -- LOC of the job looked for
+ *   prio -- its priority number
+ *   vac -- < 0: NOVAC job, >= 0: FINDVAC job
+ *
+ * RETURNS: bool -- true when found
+ **********************************************************************/
 static bool job_present(agc_job_id_t loc, agc_prio_t prio, int vac)
 {
     for (int i = 0; i < agc_exec_core_sets(); i++)
     {
-        agc_exec_core_info_t ci;
+        agc_exec_core_info_t ci; /* core set i */
 
         agc_exec_core_info(i, &ci);
 
@@ -237,22 +409,40 @@ static bool job_present(agc_job_id_t loc, agc_prio_t prio, int vac)
     return (false);
 }
 
+/**********************************************************************
+ * AGC: none (test) -- waitlist entry i holds task with LST1 delta lst1
+ *
+ * ARGUMENTS:
+ *   i -- list entry, 0..8
+ *   task -- task id
+ *   lst1 -- expected delta before it, cs
+ *
+ * RETURNS: bool -- true when it does
+ **********************************************************************/
 static bool task_entry(int i, agc_task_id_t task, int16_t lst1)
 {
-    int16_t       d = 0;
-    agc_task_id_t t = AGC_TASK_NONE;
+    int16_t       d = 0;             /* LST1 delta before entry i, cs */
+    agc_task_id_t t = AGC_TASK_NONE; /* LST2 entry i */
 
     (void) agc_waitlist_entry(i, &d, &t);
 
     return (t == task && d == lst1);
 }
 
+/**********************************************************************
+ * AGC: none (test) -- task is on the waitlist
+ *
+ * ARGUMENTS:
+ *   task -- task id
+ *
+ * RETURNS: bool -- true when it is
+ **********************************************************************/
 static bool task_queued(agc_task_id_t task)
 {
     for (int i = 0; i < AGC_WAITLIST_MAX_TASKS; i++)
     {
-        int16_t       d = 0;
-        agc_task_id_t t = AGC_TASK_NONE;
+        int16_t       d = 0;             /* LST1 delta before entry i, cs */
+        agc_task_id_t t = AGC_TASK_NONE; /* LST2 entry i */
 
         (void) agc_waitlist_entry(i, &d, &t);
 
@@ -265,7 +455,12 @@ static bool task_queued(agc_task_id_t task)
     return (false);
 }
 
-/* ---- executive --------------------------------------------------------- */
+/**********************************************************************
+ * AGC: none (test) -- a job that runs out of VAC areas: 1201 and a restart to
+ * DSPMMJOB only (MODREG -0)
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_priority_order(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -290,7 +485,12 @@ static void test_priority_order(void)
     CHECK(job_log[0] == TJ_B);
 }
 
-static void test_vac_exhaustion_1201(void)
+/**********************************************************************
+ * AGC: none (test) -- FINDVAC with every VAC area in use: BAILOUT 1201
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_vac_exhaustion(void)
 {
     reset(AGC_VEHICLE_CSM);
 
@@ -316,7 +516,12 @@ static void test_vac_exhaustion_1201(void)
     CHECK(agc_erase_failreg(2) == (01204 | 040000));
 }
 
-static void test_core_exhaustion_1202(void)
+/**********************************************************************
+ * AGC: none (test) -- NOVAC with every core set in use: BAILOUT 1202
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_core_exhaustion(void)
 {
     agc_vehicle_t v[2]    = {AGC_VEHICLE_CSM, AGC_VEHICLE_LM};
     int           sets[2] = {7, 8};
@@ -338,13 +543,20 @@ static void test_core_exhaustion_1202(void)
     }
 }
 
+/**********************************************************************
+ * AGC: none (test) -- JOBSLEEP / JOBWAKE by LOC; JOBWAKE of an unknown LOC or NONE is
+ * NOT_FOUND
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_sleep_wake(void)
 {
     reset(AGC_VEHICLE_CSM);
     CHECK(agc_exec_novac(010, TJ_SLEEPER) == AGC_STATUS_OK);
     CHECK(agc_exec_run_one() == AGC_STATUS_OK);
-    CHECK(agc_exec_idle()); /* sleeper dormant */
+    CHECK(agc_exec_idle());                                         /* sleeper dormant */
     CHECK(agc_exec_job_wake(TJ_A) == AGC_STATUS_NOT_FOUND);
+    CHECK(agc_exec_job_wake(AGC_JOB_NONE) == AGC_STATUS_NOT_FOUND); /* no sleeper holds NONE */
     CHECK(agc_exec_job_wake(TJ_WOKEN) == AGC_STATUS_OK);
     CHECK(!agc_exec_idle());
     CHECK(run_all() == 1);
@@ -352,6 +564,11 @@ static void test_sleep_wake(void)
     CHECK(agc_exec_idle());
 }
 
+/**********************************************************************
+ * AGC: none (test) -- PRIOCHNG gives way to a higher waiting job
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_prio_change(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -363,6 +580,11 @@ static void test_prio_change(void)
     CHECK(job_log[1] == TJ_C && job_log[2] == TJ_A); /* C, then resumed */
 }
 
+/**********************************************************************
+ * AGC: none (test) -- a BAILOUT inside a job runs ENEMA when the job returns
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_bailout_in_job(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -373,7 +595,11 @@ static void test_bailout_in_job(void)
     CHECK(only_dspmm_waiting());        /* MODREG -0: no P00 */
 }
 
-/* ---- waitlist ---------------------------------------------------------- */
+/**********************************************************************
+ * AGC: none (test) -- WAITLIST ordering and the LST1 delta arithmetic; RUPTAGN
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_waitlist_order(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -397,7 +623,33 @@ static void test_waitlist_order(void)
     CHECK(task_n == 4 && task_log[3] == TT_C);
 }
 
-static void test_waitlist_overflow_1203(void)
+/**********************************************************************
+ * AGC: none (test) -- B4 (sim P30, CLOKTASK vs MONREQ): two tasks due in the same
+ * cs; the first queues a 1 cs task from inside the RUPTAGN chain, where
+ * TIME3 holds T - T2 = 0. WAIT2's overflow branch puts the new task after
+ * the second chained task, 1 cs later; the second task is not pushed back
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_waitlist_ruptagn_insert(void)
+{
+    reset(AGC_VEHICLE_CSM);
+    CHECK(agc_waitlist_call(10, TT_QUEUER) == AGC_STATUS_OK);
+    CHECK(agc_waitlist_call(10, TT_B) == AGC_STATUS_OK);
+    CHECK(agc_waitlist_tick(10) == AGC_STATUS_OK);
+    CHECK(task_n == 2 && task_log[0] == TT_QUEUER && task_log[1] == TT_B);
+    CHECK(task_entry(0, TT_C, 0)); /* -(T1 - T) + 1: in 1 cs */
+    CHECK(agc_waitlist_tick(1) == AGC_STATUS_OK);
+    CHECK(task_n == 3 && task_log[2] == TT_C);
+    CHECK(!task_queued(TT_B));
+}
+
+/**********************************************************************
+ * AGC: none (test) -- a tenth task: BAILOUT 1203, lists re-initialised
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_waitlist_overflow(void)
 {
     reset(AGC_VEHICLE_LM);
 
@@ -412,7 +664,12 @@ static void test_waitlist_overflow_1203(void)
     CHECK(!task_queued(TT_A)); /* lists re-initialised */
 }
 
-static void test_waitlist_dt0_1204(void)
+/**********************************************************************
+ * AGC: none (test) -- WAITLIST with dt = 0: POODOO 1204, then P00 via GOTOPOOH
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_waitlist_zero_delay(void)
 {
     reset(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(0);
@@ -424,6 +681,11 @@ static void test_waitlist_dt0_1204(void)
     CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
 }
 
+/**********************************************************************
+ * AGC: none (test) -- LONGCALL of 200 s through LONGCYCL and GETCADR
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_longcall(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -440,7 +702,11 @@ static void test_longcall(void)
     CHECK(task_n == 1 && task_log[0] == TT_LONG);
 }
 
-/* ---- phase tables and restarts ---------------------------------------- */
+/**********************************************************************
+ * AGC: none (test) -- PHASCHNG types A and C, 2PHSCHNG, NEWPHASE, kill
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_phase_codes(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -461,6 +727,12 @@ static void test_phase_codes(void)
     CHECK(phase_group_agrees(6));
 }
 
+/**********************************************************************
+ * AGC: none (test) -- a table task restarts at its time from TBASEn, or in 1 cs when
+ * overdue
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_restart_table_task_timing(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -477,6 +749,11 @@ static void test_restart_table_task_timing(void)
     CHECK(task_entry(1, AGC_TASK_TIG_5, 1));     /* also in 1 cs    */
 }
 
+/**********************************************************************
+ * AGC: none (test) -- type C job (FINDVAC / NOVAC) and task, type B, X.1 restarts
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_restart_variable(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -512,6 +789,28 @@ static void test_restart_variable(void)
     CHECK(job_present(AGC_JOB_INITDSP, 014, 0));
 }
 
+/**********************************************************************
+ * AGC: none (test) -- type C job phase with A clear (GRP2PC, OCT 04022): the restart
+ * point is the return address, here the job segment that changed the
+ * phase; the priority is the preset PHSPRDT2
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_restart_return_point(void)
+{
+    reset(AGC_VEHICLE_LM);
+    CHECK(agc_exec_novac(020, TJ_GRP2PC) == AGC_STATUS_OK);
+    CHECK(run_all() == 1);
+    CHECK(agc_phase_get(2) == 0402U);
+    CHECK(agc_restart_group(2) == AGC_STATUS_OK);
+    CHECK(job_present(TJ_GRP2PC, 026, 0)); /* + prio: FINDVAC */
+}
+
+/**********************************************************************
+ * AGC: none (test) -- Luminary restart tables: 4.33, 1.2SPOT, 2.3 LONGCALL, 3.3 ZOOM
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_lm_tables(void)
 {
     reset(AGC_VEHICLE_LM);
@@ -531,6 +830,11 @@ static void test_lm_tables(void)
     CHECK(task_queued(AGC_TASK_ZOOM));
 }
 
+/**********************************************************************
+ * AGC: none (test) -- V37KLEAN, P00KLEAN, MR.KLEAN on both vehicles
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_kleans(void)
 {
     agc_vehicle_t v[2] = {AGC_VEHICLE_CSM, AGC_VEHICLE_LM};
@@ -544,21 +848,28 @@ static void test_kleans(void)
             agc_phase_newphase(g, 3, false);
         }
 
-        CHECK(agc_phase_change_program_klean() == AGC_STATUS_OK);
+        agc_phase_change_program_klean();
         CHECK(agc_phase_get(3) == 0U && agc_phase_get(5) == 0U);
         CHECK(agc_phase_get(6) == 0U && agc_phase_get(2) == 3U);
         CHECK(agc_phase_get(1) == (k == 0 ? 3U : 0U)); /* LM kills 1 */
-        CHECK(agc_phase_idle_klean() == AGC_STATUS_OK);
+        agc_phase_idle_klean();
         CHECK(agc_phase_get(1) == 0U && agc_phase_get(4) == 0U);
         CHECK(agc_phase_get(2) == 3U);
-        CHECK(agc_phase_mr_klean() == AGC_STATUS_OK && agc_phase_get(2) == 0U);
+        agc_phase_mr_klean();
+        CHECK(agc_phase_get(2) == 0U);
     }
 }
 
+/**********************************************************************
+ * AGC: none (test) -- GOPROG: 1107 fresh start on a bad phase table, P00 with no
+ * active group, an active group restarted
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_goprog(void)
 {
     reset(AGC_VEHICLE_CSM);
-    uint16_t redo = agc_restart_redoctr();
+    uint16_t redo = agc_restart_redoctr(); /* REDOCTR before GOPROG */
 
     agc_erase_set_modreg(0);
     phase_debug_set_negative(3, 0);                /* tables disagree */
@@ -583,11 +894,17 @@ static void test_goprog(void)
     CHECK(agc_rupt_t5_task() == AGC_TASK_T5IDLOC);
 }
 
+/**********************************************************************
+ * AGC: none (test) -- LM POODOO: MR.KLEAN, ENEMA to GOTOPOOH 4.33, STARTSB1 DAP part
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_poodoo_lm(void)
 {
     reset(AGC_VEHICLE_LM);
     agc_erase_set_modreg(0);
     agc_phase_newphase(2, 5, false);
+    agc_flag_set(AGC_FLAG_ACCOKFLG);                /* DAPBOOLS ACCSOKAY */
     CHECK(agc_poodoo(01206) == AGC_STATUS_POODOO);
     CHECK(agc_erase_failreg(0) == 01206);
     CHECK(agc_phase_get(2) == 0U);                  /* MR.KLEAN        */
@@ -595,8 +912,14 @@ static void test_poodoo_lm(void)
     CHECK(agc_phase_get(4) == 033U);                /* GOTOPOOH 4.33   */
     CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
     CHECK(agc_rupt_t5_task() == AGC_TASK_DAPIDLER); /* STARTSB1      */
+    CHECK(!agc_flag_test(AGC_FLAG_ACCOKFLG));       /* STARTSB1 DAP part: 1/ACCS reruns */
 }
 
+/**********************************************************************
+ * AGC: none (test) -- INHINT / RELINT nesting
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_inhint(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -609,8 +932,12 @@ static void test_inhint(void)
     CHECK(!agc_interrupts_inhibited());
 }
 
-/* ALARM 1301 / ABORT 1302 latched by ACOS / SQRT in a job are raised by
- * the executive when the job returns.                                  */
+/**********************************************************************
+ * AGC: none (test) -- ALARM 1301 / ABORT 1302 latched by ACOS / SQRT in a job are
+ * raised by the executive when the job returns
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_interp_alarms(void)
 {
     reset(AGC_VEHICLE_CSM);
@@ -623,33 +950,7 @@ static void test_interp_alarms(void)
     reset(AGC_VEHICLE_CSM);
     CHECK(agc_exec_novac(010, TJ_SQRT) == AGC_STATUS_OK);
     (void) run_all();
-    CHECK(interp_result == 0);
+    CHECK(mpac_result == 0);
     CHECK(agc_erase_failreg(0) == 01302);
     CHECK(agc_interp_take_alarm() == 0);
-}
-
-int main(void)
-{
-    test_priority_order();
-    test_vac_exhaustion_1201();
-    test_interp_alarms();
-    test_core_exhaustion_1202();
-    test_sleep_wake();
-    test_prio_change();
-    test_bailout_in_job();
-    test_waitlist_order();
-    test_waitlist_overflow_1203();
-    test_waitlist_dt0_1204();
-    test_longcall();
-    test_phase_codes();
-    test_restart_table_task_timing();
-    test_restart_variable();
-    test_lm_tables();
-    test_kleans();
-    test_goprog();
-    test_poodoo_lm();
-    test_inhint();
-    (void) printf("test_exec: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
-
-    return (g_failures == 0 ? 0 : 1);
 }

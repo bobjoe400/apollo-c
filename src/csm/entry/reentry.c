@@ -2455,7 +2455,7 @@ static entry_step_t entry_final_phase_step(entry_pass_t *p, entry_step_t s)
              *          or ST_ERROR when an assertion fails
              **********************************************************************/
         {
-            agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U };
+            agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REESTABLISH_ENTRY_SEQUENCER, AGC_TASK_NONE, 0, false, 0U };
 
             if (agc_exec_novac(AGC_ENTRY_PRIO16, AGC_JOB_ENTRY_FINAL_PHASE_DISPLAY) != AGC_STATUS_OK)
             {
@@ -2631,7 +2631,7 @@ agc_status_t agc_entry_reestablish_sequencer(bool *display)
 {
     entry_pass_t    pass; /* state of this pass */
     entry_step_t    last; /* terminal step */
-    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REFAZE10, AGC_TASK_NONE, 0, false, 0U };
+    agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REESTABLISH_ENTRY_SEQUENCER, AGC_TASK_NONE, 0, false, 0U };
 
     *display       = false;
     agc_phase_change_var(010035, &v); /* SERVICER 5.3        */
