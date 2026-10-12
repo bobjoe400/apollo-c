@@ -3,14 +3,13 @@
 Updated: 2026-10-12
 
 ## Running agents (max 2)
-- loose-ends (Opus, ALONE): the five open items in review_items.md (entry
-  DOWNCNTL words, waitlist delay bound, pad keyword for the impulsive burn,
-  the 64-jobs limit rationale, prog-align note row). Note:
-  docs/modules/loose-ends.md.
-- always-ok (Opus): the 94 always-OK status functions made void with
-  callers' plumbing removed (`make always-ok-report` to 0), the leadin.c
-  silent skip + check_rules pattern, returns-extra in prolog_check.py;
-  everything except loose-ends' directories. Note: docs/modules/always-ok.md.
+- loose-ends: DONE (96b2f01), all ten items; review_items.md has no open
+  line except the two always-ok ones.
+- always-ok (Opus, ALONE, whole tree): the always-OK status functions made
+  void with callers' plumbing removed (`make always-ok-report` to 0), the
+  leadin.c silent skip + check_rules pattern, returns-extra in
+  prolog_check.py. Note: docs/modules/always-ok.md. When it reports with
+  gates green and both reports at 0: FREEZE, then EVA.
 - prolog-consistency: DONE (95ddc59); 6 findings left in loose-ends'
   directories, handed to loose-ends.
 - document: STOPPED (launched too early, user 2026-10-12); resumes from
