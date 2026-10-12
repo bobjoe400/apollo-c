@@ -50,10 +50,35 @@ tests/guidance/guidance.c test 5 (fails 7 checks on the old code):
 * test_engine_enable_request_lm: WHICH = P40TABLE, DISPDEX = -VB99DEX ->
   V99N40 flashing, asleep.
 sim/scenarios/external_delta_v_burn_csm.txt: the five `xexpect B6` lines
-are `expect` (V99 flash, FLASH on, ENGINE ON, R1/R2 residuals ~0).
+are `expect` (V99 flash, FLASH on, ENGINE ON, R1/R2 residuals ~0); 42
+checks, 0 failed, 0 xfail (V16N85 R1-R3 -00000 / +00000 / +00000). With
+B6 fixed the scenario reached code it had never run, and needed:
+* V48 (R03): DAPDATR1 11102 (config 1, CSM alone), DAPDATR2 01111, CSM
+  weight 57320 lb. With WEIGHT/G = 0, S40.13 (TIMEBURN, p.726) divides by
+  zero: TGO = 16383 cs, IGNITION moved TIG 163 s out and WAITLIST refused
+  ENGINOFF (16383 > 16250 cs), so the engine stayed on.
+* A constant-rate PIPA feed (11 x / 7 y per 2 s for 8 s) in place of the
+  single 44 / 28 burst: the pad has no SPS impulse data (EK1VAL-EK3VAL,
+  FANG = 0; the sim pad file cannot set them), so S40.13 finds the burn
+  non-impulsive and the AGC steers; a steering cycle with no PIPA counts
+  would make TGOCALC divide by |BDT - DELVREF| = 0. S40.81 (TGO < 4 s)
+  then sets up ENGINOFF at the end of the feed.
+* POSTBURN (p.686): V16N40 flashes after SPSOFF; PRO goes to P40RCS
+  (V16N85). Under B6 the V99E bypass went to P40RCS directly.
+* `run 50` after each `until` that is followed by `expect`s on other
+  fields: the display goes out one relay word per T4RUPT, so an `until`
+  can match before the rest of the display is up (two checks failed on
+  that race once the run's timing moved).
 
 ## Open questions
-None.
+* WAITLIST with a delay above DTMAX: the AGC's WAITLIST tests only for a
+  non-positive delay (POODOO 1204); src/exec/waitlist.c:281 asserts
+  delay <= AGC_WAITLIST_MAX_DELAY and returns an error, which IGNITION
+  passes up (sim "2 errors"). Seen only with WEIGHT/G = 0; not changed
+  here (exec lane).
+* A pad keyword for the SPS impulse data (EK1VAL-EK3VAL, FANG, EMDOT) in
+  src/sim/pad.c would let the scenario run the impulsive-burn path
+  (IMPLBURN, ENGINOFF at TIG + TGO) as a real 10 ft/s SPS burn would.
 
 ## Lessons
 * A "paste" display (CLOCPLAY, MARKPLAY, GOPERF) is two NVSUB calls: the
@@ -65,4 +90,4 @@ None.
 ## Progress
 - DONE cknvwrd1 (CSM ENGREQST/FAILDSP) src/csm/burns/sps/clock.c
 - DONE CLOKJOB -13/-35 (LM) src/lm/burns/ignition/clock.c
-- DONE unit test, scenario flip
+- DONE unit test, scenario flip (+ V48, constant-rate feed, POSTBURN PRO, display settle)

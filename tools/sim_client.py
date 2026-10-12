@@ -13,6 +13,9 @@ Usage:
   sim_client.py --scenario FILE [--vehicle csm|lm] [--max-cs N] [--sim PATH]
   sim_client.py --scenario FILE --connect HOST:PORT [--realtime]
   sim_client.py --interactive [...]       (type scenario commands)
+Options: --max-cs N stops the scenario after N cs; --verbose prints the
+display whenever it changes (sampled every 10 cs); --trace prints every
+packet received; --strict makes an XPASS fail the run.
 
 By default it starts `PATH --lockstep --vehicle V --port P` on a free port
 and drives its clock: time advances only when the client steps it (sim-only
@@ -24,7 +27,8 @@ Scenario language (one command per line, `#` comments; times in cs):
   vehicle csm|lm              must match --vehicle (or sets it)
   pad ITEM ...                erasable pad load before power-on: the pad
                               lines are passed to agc_sim --pad (src/sim/
-                              pad.c: refsmmat, flagword); not available
+                              pad.c: refsmmat, flagword, sv); not
+                              available
                               with --connect
   run N                       advance N centiseconds
   keys V06N36E                key presses: digits, V N E C(LR) R(SET) K(EY REL)
@@ -101,7 +105,7 @@ def form_packet(chan, value, ubit=False):
 
 def parse_packet(p):
     """yaAGC ParseIoPacket -> (chan, value, ubit) or None."""
-    if (p[0] & 0xC0, p[1] & 0xC0, p[2] & 0xC0, p[3] & 0xC0) != (0, 0x40, 0x80, 0xC0):
+    if tuple(b & 0xC0 for b in p[:4]) != (0, 0x40, 0x80, 0xC0):
         return None
     chan = ((p[0] & 0x1F) << 3) | ((p[1] >> 3) & 7)
     value = ((p[1] << 12) & 0x7000) | ((p[2] << 6) & 0x0FC0) | (p[3] & 0x3F)
@@ -139,10 +143,14 @@ class Dsky:
         if lk:
             self.d[lk] = left
         self.d[rk] = right
-        signs = {7: (1, 2), 6: (1, 1), 5: (2, 2), 4: (2, 1), 2: (3, 2), 1: (3, 1)}
+        signs = {7: (1, 2), 6: (1, 1), 5: (2, 2), 4: (2, 1),
+                 2: (3, 2), 1: (3, 1)}
         if row in signs:
             reg, bit = signs[row]
-            self.sign[reg] = (self.sign[reg] | bit) if b else (self.sign[reg] & ~bit)
+            if b:
+                self.sign[reg] |= bit
+            else:
+                self.sign[reg] &= ~bit
 
     def take(self, chan, value):
         self.chan[chan] = value
@@ -167,7 +175,8 @@ class Dsky:
         return bool(v & mask)
 
     def text(self):
-        lit = [k for k in LAMPS if k not in ('FLASH', 'COMPACTY') and self.lamp(k)]
+        lit = [k for k in LAMPS
+               if k not in ('FLASH', 'COMPACTY') and self.lamp(k)]
         fl = ' FLASH' if self.lamp('FLASH') else ''
         return ('PROG %s VERB %s NOUN %s%s | R1 %s R2 %s R3 %s | %s' % (
             self.field('PROG'), self.field('VERB'), self.field('NOUN'), fl,
@@ -187,14 +196,14 @@ class Link:
             except OSError:
                 time.sleep(0.05)
         if self.s is None:
-            raise SystemExit('sim_client: cannot connect to %s:%d' % (host, port))
+            raise SystemExit('sim_client: cannot connect to %s:%d'
+                             % (host, port))
         self.s.setblocking(False)
         self.buf = b''
         self.lockstep = lockstep
         self.dsky = Dsky()
         self.cs = 0
         self.trace = trace
-        self.downlink = []
 
     def send(self, chan, value, ubit=False):
         self.s.sendall(form_packet(chan, value, ubit))
@@ -227,8 +236,6 @@ class Link:
                 continue
             if self.trace:
                 print('  %7d < %04o %05o' % (self.cs, chan, value))
-            if chan in (0o34, 0o35):
-                self.downlink.append((self.cs, chan, value))
             self.dsky.take(chan, value)
         return acked
 
@@ -244,14 +251,17 @@ class Link:
             else:
                 end = time.time() + k / 100.0
                 while time.time() < end:
-                    self._take(self._drain(max(0.0, min(0.05, end - time.time()))))
+                    wait = max(0.0, min(0.05, end - time.time()))
+                    self._take(self._drain(wait))
             self.cs += k
             n -= k
 
 
 class Scenario:
+    """Plays the scenario language (module docstring) over a Link."""
+
     def __init__(self, link, vehicle, max_cs, verbose):
-        self.l = link
+        self.link = link
         self.vehicle = vehicle
         self.max_cs = max_cs
         self.verbose = verbose
@@ -267,28 +277,28 @@ class Scenario:
         self.last_text = ''
 
     def say(self, msg):
-        print('%8.2fs %s' % (self.l.cs / 100.0, msg))
+        print('%8.2fs %s' % (self.link.cs / 100.0, msg))
 
     def watch(self):
-        t = self.l.dsky.text()
+        t = self.link.dsky.text()
         if self.verbose and t != self.last_text:
             self.say(t)
         self.last_text = t
 
     def run(self, n):
-        if self.max_cs and self.l.cs + n > self.max_cs:
-            n = max(0, self.max_cs - self.l.cs)
+        if self.max_cs and self.link.cs + n > self.max_cs:
+            n = max(0, self.max_cs - self.link.cs)
         step = 10 if self.verbose else n
         while n > 0:
             k = min(step, n)
-            self.l.step(k)
+            self.link.step(k)
             n -= k
             self.watch()
 
     def key(self, code):
-        self.l.send(0o15, code)
+        self.link.send(0o15, code)
         if code == KEY_CODE['E']:
-            self.enter_cs = self.l.cs
+            self.enter_cs = self.link.cs
         self.run(self.keygap)
 
     def keys(self, text):
@@ -308,14 +318,14 @@ class Scenario:
             self.key(KEY_CODE[c])
 
     def pro(self, hold=50):
-        self.l.send(0o32, 0o20000, ubit=True)   # mask: bit 14 only
-        self.l.send(0o32, 0)                    # pressed (inverted input)
+        self.link.send(0o32, 0o20000, ubit=True)   # mask: bit 14 only
+        self.link.send(0o32, 0)                    # pressed (inverted input)
         self.run(hold)
-        self.l.send(0o32, 0o20000)              # released
+        self.link.send(0o32, 0o20000)              # released
         self.run(self.keygap)
 
     def value_ok(self, field, want, tol):
-        d = self.l.dsky
+        d = self.link.dsky
         f = field.upper()
         if f == 'FLASH':
             return d.lamp('FLASH') == (want.lower() == 'on'), d.lamp('FLASH')
@@ -340,15 +350,17 @@ class Scenario:
         return got.strip() == w.strip() and len(got) >= len(w.strip()), got
 
     def clock_ok(self, tol, now=False):
-        d = self.l.dsky
+        d = self.link.dsky
         try:
-            h, m, s = (int(d.field(r).replace(' ', '')) for r in ('R1', 'R2', 'R3'))
+            h, m, s = (int(d.field(r).replace(' ', ''))
+                       for r in ('R1', 'R2', 'R3'))
         except ValueError:
             return False, d.text()
         shown = (h * 3600 + m * 60) * 100 + s
-        at = self.l.cs if now or self.enter_cs is None else self.enter_cs
+        at = self.link.cs if now or self.enter_cs is None else self.enter_cs
         ref = at + self.clock_base
-        return abs(shown - ref) <= (tol or 50), '%d cs (want %d cs)' % (shown, ref)
+        return (abs(shown - ref) <= (tol or 50),
+                '%d cs (want %d cs)' % (shown, ref))
 
     def check(self, args, quiet=False, bug=None):
         tol = None
@@ -380,8 +392,8 @@ class Scenario:
             i = args.index('within')
             within = int(args[i + 1])
             args = args[:i] + args[i + 2:]
-        start = self.l.cs
-        while self.l.cs - start < within:
+        start = self.link.cs
+        while self.link.cs - start < within:
             if self.check(args, quiet=True):
                 break
             self.run(5)
@@ -407,27 +419,27 @@ class Scenario:
         elif op == 'input':
             ch, v = int(w[1], 8), int(w[2], 8)
             if len(w) > 3:
-                self.l.send(ch, int(w[3], 8), ubit=True)
-            self.l.send(ch, v)
+                self.link.send(ch, int(w[3], 8), ubit=True)
+            self.link.send(ch, v)
         elif op == 'counter':
             addr = int(w[1], 8)
             typ = INC_TYPE.get(w[2].upper(), None)
             typ = int(w[2], 8) if typ is None else typ
             for _ in range(int(w[3]) if len(w) > 3 else 1):
-                self.l.send(0o200 | addr, typ)
+                self.link.send(0o200 | addr, typ)
         elif op == 'cdu':
             addr, want = int(w[1], 8), int(w[2])
             have = self.cdu.get(addr, 0)
             typ = INC_TYPE['PCDU'] if want > have else INC_TYPE['MCDU']
             for _ in range(abs(want - have)):
-                self.l.send(0o200 | addr, typ)
+                self.link.send(0o200 | addr, typ)
             self.cdu[addr] = want
             self.run(1)
         elif op == 'mark':
             bit = 0o100 if len(w) > 1 and w[1].lower() == 'reject' else 0o40
-            self.l.send(0o16, bit)
+            self.link.send(0o16, bit)
             self.run(20)
-            self.l.send(0o16, 0)
+            self.link.send(0o16, 0)
             self.run(self.keygap)
         elif op == 'expect':
             self.check(w[1:])
@@ -442,7 +454,7 @@ class Scenario:
             value = (h * 3600 + m * 60) * 100 + int(round(sec * 100))
             self.clock_base = value - (self.enter_cs or 0)
         elif op == 'show':
-            self.say(self.l.dsky.text())
+            self.say(self.link.dsky.text())
         else:
             raise SystemExit('sim_client: unknown command %r' % line)
 
@@ -451,13 +463,14 @@ class Scenario:
             line = raw.split('#', 1)[0].strip()
             if not line:
                 continue
-            if self.max_cs and self.l.cs >= self.max_cs:
+            if self.max_cs and self.link.cs >= self.max_cs:
                 self.say('max-cs reached')
                 break
             self.command(line)
 
 
 def free_port():
+    """A TCP port free on localhost now (for the lockstep agc_sim)."""
     s = socket.socket()
     s.bind(('127.0.0.1', 0))
     port = s.getsockname()[1]
@@ -466,6 +479,7 @@ def free_port():
 
 
 def scenario_vehicle(path):
+    """The scenario's `vehicle` line, or None."""
     with open(path) as fh:
         for raw in fh:
             w = raw.split('#', 1)[0].split()
@@ -475,6 +489,7 @@ def scenario_vehicle(path):
 
 
 def scenario_pads(path):
+    """The scenario's `pad` lines without the keyword (pad.c format)."""
     out = []
     with open(path) as fh:
         for raw in fh:
@@ -485,6 +500,7 @@ def scenario_pads(path):
 
 
 def main(argv):
+    """Run a scenario (or stdin commands); exit status 0 when all held."""
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--scenario')
     ap.add_argument('--interactive', action='store_true')
@@ -498,7 +514,8 @@ def main(argv):
     ap.add_argument('--strict', action='store_true',
                     help='an XPASS (known bug no longer seen) fails the run')
     a = ap.parse_args(argv[1:])
-    vehicle = a.vehicle or (scenario_vehicle(a.scenario) if a.scenario else None) or 'csm'
+    from_file = scenario_vehicle(a.scenario) if a.scenario else None
+    vehicle = a.vehicle or from_file or 'csm'
     proc = None
     pads = scenario_pads(a.scenario) if a.scenario else []
     padfile = None
@@ -511,7 +528,8 @@ def main(argv):
         port = free_port()
         cmd = [a.sim, '--lockstep', '--vehicle', vehicle, '--port', str(port)]
         if pads:
-            fd, padfile = tempfile.mkstemp(prefix='agc_sim_pad_', suffix='.txt')
+            fd, padfile = tempfile.mkstemp(prefix='agc_sim_pad_',
+                                           suffix='.txt')
             with os.fdopen(fd, 'w') as fh:
                 fh.write('\n'.join(pads) + '\n')
             cmd += ['--pad', padfile]

@@ -68,6 +68,12 @@ $(BUILD)/tests/%: tests/%.c $(BUILD)/libagc_debug.a $(wildcard tests/oracle/*.h)
 	@mkdir -p $(dir $@)
 	$(CC) $(CSTD) $(WARN) $(CFLAGS) $(CPPFLAGS) -DAGC_HOST_DEBUG -o $@ $< $(BUILD)/libagc_debug.a -lm
 
+# The harness's own unit tests link the sim objects (all but main.o).
+SIM_TEST_OBJS := $(filter-out $(BUILD)/src/sim/main.o,$(SIM_OBJS))
+$(BUILD)/tests/sim/%: tests/sim/%.c $(SIM_TEST_OBJS) $(BUILD)/libagc_debug.a
+	@mkdir -p $(dir $@)
+	$(CC) $(CSTD) $(WARN) $(CFLAGS) $(CPPFLAGS) -DAGC_HOST_DEBUG -o $@ $< $(SIM_TEST_OBJS) $(BUILD)/libagc_debug.a -lm
+
 test: $(TEST_BINS) scenarios
 	@for t in $(TEST_BINS); do echo "== $$t"; $$t || exit 1; done
 

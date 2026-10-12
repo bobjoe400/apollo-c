@@ -1,45 +1,87 @@
-/*
- * clock.c -- the software clock and the interrupt driver of the harness.
+/**********************************************************************
+ * FILE NAME: clock.c
  *
- * One call of sim_clock_tick() is one centisecond of AGC time. The counter
- * timing follows yaAGC (agc_engine.c, the 1/1600 s scaler) and the AGC
- * hardware it models:
- *   +0 ms    TIME1/TIME2 (PINC), TIME3 (PINC; overflow -> T3RUPT);
- *   +5 ms    TIME5 (overflow -> T5RUPT); radar gate counter when channel
- *            13 bit 4 is set (9 counts -> RADARUPT, bit 4 reset);
- *   +7.5 ms  TIME4 (overflow -> T4RUPT);
- *   1/1600 s TIME6 (DINC) while channel 13 bit 15 enables it; the DINC at
- *            +-0 requests T6RUPT and resets channel 13 bit 15;
- *   20 ms    DOWNRUPT (the downlink word-pair clock);
- *   HANDRUPT when a trap armed by channel 13 bits 12-14 sees channel 31
- *            bits 1-6 / 7-12 or channel 32 bits 1-10 leave all-ones;
- *   scaler   input channels 4 (LOSCALAR, 1/3200 s per count, 14 bits) and
- *            3 (HISCALAR, the carry out of 4, 5.12 s per count) count 32
- *            per centisecond, in yaAGC's phase: TIME1 at LOSCALAR low
- *            five bits 20 octal, TIME5 at 00, TIME4 at 10; jobs and
- *            interrupts of a centisecond see the scaler at the TIME4
- *            phase (7.5 ms after TIME1). It runs in standby too.
- * Standby (yaAGC agc_engine.c, the SBY/PRO circuit): PRO (channel 32 bit
- * 14 = 0) seen at the scaler's 1.28 s mark and still held 0.64 s later,
- * with standby enabled (channel 13 bit 11, set by P06), puts the computer
- * in standby: a GOJAM that clears channels 5, 6, 010-014, 034, 035 and
- * every interrupt request, the STBY lamp and the EL-off bit on 0163, and
- * nothing runs but the scaler. PRO held the same way again leaves standby:
- * the STBY lamp goes out and the computer starts at 4000 (GOJAM -> GOPROG;
- * P06's POSTAND restart point then reconciles TIME2/TIME1 with the
- * scaler). Only the power-on GOJAM lights RESTART here (the hardware
- * alarms that would also do it are not modelled).
- * Pending interrupts are then taken in the AGC's priority order (vector
- * order at 4000, INTERRUPT_LEAD_INS CM p.131 / LM p.153): T6 T5 T3 T4
- * KEY1 KEY2 UP DOWN RADAR HAND, each through its lead-in in
- * src/exec/interrupts.c. A request stays pending while INHINT is in force.
- * Then the executive runs jobs until DUMMYJOB would run (EXECUTIVE C
- * p.1220), bounded per centisecond.
+ * PURPOSE:
+ *   The harness's software clock and interrupt driver: the 3200 Hz
+ *   scaler, the counter-timers TIME1-TIME6 it drives, the interrupt
+ *   requests they raise, the SBY/PRO standby circuit, and the executive
+ *   between interrupts. One call of sim_clock_tick() is one centisecond
+ *   of AGC time.
  *
- * DEVIATION (timing): a C job runs to completion or to its CHANG1/JOBSLEEP
- * point, so interrupts are taken between jobs, never inside one; within a
- * centisecond the counter phases above keep their order only.
- */
+ * AGC SOURCE:
+ *   No AGC routine: the hardware yaAGC models in virtualagc
+ *   yaAGC/agc_engine.c (agc_engine: scaler, counter-timers, HANDRUPT,
+ *   RADARUPT, standby; CounterPINC, CounterDINC). Vector order of the
+ *   interrupts: INTERRUPT_LEAD_INS C p.131 / L p.153.
+ *
+ * EXTERNAL VARIABLES:
+ *   Name          Type      I/O  Scale     Description
+ *   ------------  --------  ---  --------  --------------------------
+ *   TIME1-TIME3   uint16_t  I/O  cs        agc_time_advance_cs,
+ *                                          agc_waitlist_tick
+ *   TIME4-TIME6   uint16_t  I/O  cs, 1/1600 s  agc_rupt_time
+ *   channel 3, 4  uint16_t  O    1/3200 s  HISCALAR, LOSCALAR
+ *   channel 13    uint16_t  I/O  bits      T6 enable, radar, traps,
+ *                                          standby enable
+ *   channel 31-32 uint16_t  I    bits      HANDRUPT trap inputs, PRO
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_rupt_t6 .. _rupt10  interrupt lead-ins (src/exec/interrupts.c)
+ *   agc_waitlist_tick     PINC TIME3; T3RUPT on overflow (RUPTAGN)
+ *   agc_exec_run_one      one job of the executive (EXECUTIVE C p.1220)
+ *   agc_rupt_go           GOJAM -> GOPROG (leaving standby)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   A handler or job returning AGC_STATUS_BAD_ARG is counted in
+ *   sim_stats_t.errors and reported on stderr; the run goes on (the
+ *   harness exits 1 at the end). No AGC alarm is raised here.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Single thread. The executive is bounded per call (SIM_JOBS_PER_CALL);
+ *   the unbounded loop of rule 2 is in main.c.
+ *
+ * NOTES:
+ *   Timing follows yaAGC's scaler (agc_engine.c, "Here we take care of
+ *   counter-timers"): one centisecond is 32 scaler counts, starting at
+ *   the TIME1 phase; at LOSCALAR & 037 = 020 TIME1/TIME2 and TIME3
+ *   (PINC; TIME3 overflow -> T3RUPT); at 000 TIME5 (-> T5RUPT) and the
+ *   radar gate counter while channel 13 bit 4 is set; at 010 TIME4 (->
+ *   T4RUPT); at every odd count TIME6 (DINC, 1600 per second) while
+ *   channel 13 bit 15 is set, the DINC at +-0 (ZOUT) requesting T6RUPT
+ *   and resetting bit 15; at 036 the radar cycle completes when the gate
+ *   counter is 9 (RADARUPT, bit 4 reset); the HANDRUPT traps are tested
+ *   at every count. Pending interrupts are taken after each count in
+ *   vector order (T6 T5 T3 T4 KEY1 KEY2 UP DOWN RADAR HAND), each through
+ *   its lead-in, and stay pending while INHINT is in force; the
+ *   executive runs after each count that took an interrupt and at the
+ *   end of the centisecond.
+ *   Standby (yaAGC agc_engine.c, SbyPressed): PRO (channel 32 bit 14 =
+ *   0) seen at the scaler's 1.28 s mark (LOSCALAR & 07777 = 0) and still
+ *   held 0.64 s later (04000), with standby enabled (channel 13 bit 11,
+ *   set by P06), puts the computer in standby: a GOJAM that clears
+ *   channels 5, 6, 010-014, 034, 035, every interrupt request and the
+ *   HANDRUPT traps; the STBY lamp and EL-off bit (channels.c); only the
+ *   scaler runs. PRO held the same way again leaves standby: the
+ *   computer starts at 4000 (GOJAM -> GOPROG).
+ *   DEVIATION (timing): a C job runs to completion or to its CHANG1 /
+ *   JOBSLEEP point and an interrupt handler runs whole, so interrupts are
+ *   taken between jobs and between scaler counts, never inside one.
+ *   DEVIATION (DOWNRUPT): requested every 20 ms at the TIME1 phase of
+ *   every other centisecond, as the downlink telemetry's end pulses do in
+ *   the hardware; yaAGC instead times it 20 ms after the program has
+ *   written both 034 and 035 (CpuWriteIO), which stops the downlink after
+ *   a GOJAM until the program writes them again.
+ *   DEVIATION (hardware alarms): the Night Watchman, Rupt Lock, TC Trap
+ *   and parity alarms (yaAGC TriggeredAlarm) are not modelled, so only
+ *   power-on lights RESTART, and the AGC warning filter is not modelled.
+ *
+ * ALGORITHM:
+ *   sim_clock_tick: 32 x clock_step (scaler count, standby circuit,
+ *   counters, traps, interrupts, executive if one was taken); executive;
+ *   channels.c tick (lamps, drives); broadcast the changed outputs.
+ **********************************************************************/
 #include <stddef.h>
 #include <stdio.h>
 
@@ -50,49 +92,57 @@
 #include "agc/io/service.h"
 #include "internal.h"
 
-#define SIM_JOBS_PER_CS 64          /* executive bound per centisecond      */
-#define SIM_T6_PER_CS   16          /* TIME6 counts at 1600 per second      */
-#define SIM_OVF         040000u     /* 15-bit counter overflow              */
-#define SIM_NEG0        077777u     /* ones'-complement -0                  */
-#define SIM_TIME3_LAST  037777u     /* the next PINC overflows TIME3        */
-#define SIM_DOWN_CS     2u          /* DOWNRUPT every 20 ms                 */
-#define SIM_RADAR_GATES 9           /* radar cycle: 9 TIME5 phases          */
-#define SIM_CH13_RADAR  000010u     /* radar activity                       */
-#define SIM_CH13_TRAPS  034000u     /* reset trap 31A, 31B, 32 (bits 12-14) */
-#define SIM_CH13_T31A   004000u
-#define SIM_CH13_T31B   010000u
-#define SIM_CH13_T32    020000u
-#define SIM_CH13_T6ENB  040000u
-#define SIM_CH31_ROT    000077u
-#define SIM_CH31_XLT    007700u
-#define SIM_CH32_TRAP   001777u
-#define SIM_CH13_SBYENB 002000u     /* standby enabled (P06)              */
-#define SIM_CH32_PRO    020000u     /* PRO key, 0 = pressed               */
-#define SIM_SCALER_CS   32u         /* 3200 Hz counts per centisecond     */
-#define SIM_SCALER_T1   020u        /* LOSCALAR low 5 bits at TIME1       */
-#define SIM_SCALER_T5   16u         /* TIME5: 5 ms after TIME1            */
-#define SIM_SCALER_T4   24u         /* TIME4: 7.5 ms after TIME1          */
-#define SIM_SCALER_LO   040000u     /* LOSCALAR wraps into HISCALAR       */
-#define SIM_SCALER_MOD  0x10000000u /* 28 bits: HISCALAR, LOSCALAR       */
-#define SIM_SBY_PHASE   07777u      /* 1.28 s standby / Night Watchman   */
-#define SIM_SBY_SAMPLE  0u          /* PRO sampled                        */
-#define SIM_SBY_DECIDE  04000u      /* 0.64 s later: standby in or out    */
+#define SIM_JOBS_PER_CALL 64          /* executive bound per call               */
+#define SIM_OVF           040000u     /* 15-bit counter overflow (PINC)         */
+#define SIM_NEG0          077777u     /* ones'-complement -0                    */
+#define SIM_TIME3_LAST    037777u     /* the next PINC overflows TIME3          */
+#define SIM_DOWN_CS       2u          /* DOWNRUPT every 20 ms                   */
+#define SIM_RADAR_GATES   9           /* radar cycle: 9 TIME5 phases            */
+#define SIM_CH13_RADAR    000010u     /* bit 4: radar activity                  */
+#define SIM_CH13_TRAPS    034000u     /* bits 12-14: HANDRUPT trap enables      */
+#define SIM_CH13_T31A     004000u     /* bit 12: trap 31A (channel 31 b1-6)     */
+#define SIM_CH13_T31B     010000u     /* bit 13: trap 31B (channel 31 b7-12)    */
+#define SIM_CH13_T32      020000u     /* bit 14: trap 32 (channel 32 b1-10)     */
+#define SIM_CH13_T6ENB    040000u     /* bit 15: TIME6 enable                   */
+#define SIM_CH13_SBYENB   002000u     /* bit 11: standby enabled (P06)          */
+#define SIM_CH31_ROT      000077u     /* channel 31 bits 1-6 (trap 31A)         */
+#define SIM_CH31_XLT      007700u     /* channel 31 bits 7-12 (trap 31B)        */
+#define SIM_CH32_TRAP     001777u     /* channel 32 bits 1-10 (trap 32)         */
+#define SIM_CH32_PRO      020000u     /* channel 32 bit 14: PRO, 0 = pressed    */
+#define SIM_TRAPS         3           /* traps 31A, 31B, 32                     */
+#define SIM_SCALER_CS     32u         /* scaler counts (1/3200 s) per cs        */
+#define SIM_PHASE_MASK    037u        /* LOSCALAR bits 1-5: the 10 ms phase     */
+#define SIM_PHASE_TIME1   020u        /* TIME1, TIME2, TIME3                    */
+#define SIM_PHASE_TIME5   000u        /* TIME5, radar gate (+5 ms)              */
+#define SIM_PHASE_TIME4   010u        /* TIME4 (+7.5 ms)                        */
+#define SIM_PHASE_RADAR   036u        /* radar cycle completion                 */
+#define SIM_SCALER_LO     040000u     /* LOSCALAR wraps into HISCALAR           */
+#define SIM_SCALER_MOD    0x10000000u /* 28 bits: HISCALAR, LOSCALAR            */
+#define SIM_SBY_PHASE     07777u      /* 1.28 s standby period                  */
+#define SIM_SBY_SAMPLE    0u          /* PRO sampled                            */
+#define SIM_SBY_DECIDE    04000u      /* 0.64 s later: standby in or out        */
 
-static uint32_t    g_cs;                 /* centiseconds since power-on */
-static bool        g_irq[SIM_IRQ_COUNT]; /* interrupt requests          */
-static int         g_radar_gate;         /* radar gate counter          */
-static bool        g_trap[3];            /* HANDRUPT traps 31A 31B 32   */
-static sim_stats_t g_stats;
-static uint32_t    g_scaler;             /* 3200 Hz scaler, 28 bits, at TIME1 */
-static bool        g_standby;            /* yaAGC Standby                     */
-static bool        g_sby_pressed;        /* PRO seen at the 1.28 s mark       */
-static bool        g_sby_still;          /* PRO not yet released since entry  */
+static uint32_t    g_cs;                 /* centiseconds since power-on            */
+static bool        g_irq[SIM_IRQ_COUNT]; /* interrupt requests                     */
+static int         g_radar_gate;         /* radar gate counter, TIME5 phases       */
+static bool        g_trap[SIM_TRAPS];    /* HANDRUPT traps 31A 31B 32 armed        */
+static sim_stats_t g_stats;              /* run statistics                         */
+static uint32_t    g_scaler;             /* the next scaler count, 28 bits         */
+static bool        g_standby;            /* yaAGC Standby                          */
+static bool        g_sby_pressed;        /* yaAGC SbyPressed: PRO at the 1.28 s mark */
+static bool        g_sby_still;          /* yaAGC SbyStillPressed                  */
 
-agc_status_t sim_clock_init(void)
+/**********************************************************************
+ * AGC: none -- power-on state of the clock (yaAGC agc_engine_init:
+ * scaler, interrupt requests, standby flags cleared).
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+void sim_clock_init(void)
 {
     g_cs          = 0;
     g_radar_gate  = 0;
-    g_scaler      = SIM_SCALER_T1; /* the first TIME1 phase */
+    g_scaler      = SIM_PHASE_TIME1; /* the first count is a TIME1 phase */
     g_standby     = false;
     g_sby_pressed = false;
     g_sby_still   = false;
@@ -103,7 +153,7 @@ agc_status_t sim_clock_init(void)
         g_stats.rupts[i] = 0;
     }
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < SIM_TRAPS; i++)
     {
         g_trap[i] = false;
     }
@@ -113,39 +163,86 @@ agc_status_t sim_clock_init(void)
     g_stats.restarts   = 0;
     g_stats.busy_ticks = 0;
     g_stats.errors     = 0;
-
-    if (!AGC_ASSERT(!g_irq[SIM_IRQ_T6]) || !AGC_ASSERT(g_stats.jobs == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
+/**********************************************************************
+ * AGC: none -- set an interrupt request (yaAGC InterruptRequests[]).
+ *
+ * ARGUMENTS:
+ *   irq  sim_irq_t  I  the interrupt
+ **********************************************************************/
 void sim_irq_request(sim_irq_t irq)
 {
     g_irq[irq] = true;
 }
 
+/**********************************************************************
+ * AGC: none -- centiseconds run since power-on.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: uint32_t -- centiseconds
+ **********************************************************************/
 uint32_t sim_clock_cs(void)
 {
     return (g_cs);
 }
 
+/**********************************************************************
+ * AGC: none -- the computer is in standby (only the scaler runs).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true in standby
+ **********************************************************************/
 bool sim_clock_standby(void)
 {
     return (g_standby);
 }
 
+/**********************************************************************
+ * AGC: none -- a copy of the run statistics.
+ *
+ * ARGUMENTS:
+ *   out  sim_stats_t *  O  the statistics
+ **********************************************************************/
 void sim_clock_stats(sim_stats_t *out)
 {
     *out = g_stats;
 }
 
-/* PINC of TIME4 (n = 4) or TIME5 (n = 5); overflow requests the rupt.   */
+/**********************************************************************
+ * AGC: none -- yaAGC CpuWriteIO(013): a write of channel 13 bits 12-14
+ * arms the HANDRUPT traps, and the bits cannot be read back. Called
+ * before every sample of the output channels (channels.c), so neither
+ * the program nor a peripheral sees them.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+void sim_clock_arm_traps(void)
+{
+    uint16_t c13 = agc_chan_read((int) AGC_CHAN_CHAN13); /* channel 13 */
+
+    if ((c13 & SIM_CH13_TRAPS) != 0u)
+    {
+        g_trap[0] = g_trap[0] || ((c13 & SIM_CH13_T31A) != 0u);
+        g_trap[1] = g_trap[1] || ((c13 & SIM_CH13_T31B) != 0u);
+        g_trap[2] = g_trap[2] || ((c13 & SIM_CH13_T32) != 0u);
+        agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_TRAPS & SIM_WORD_MASK));
+    }
+}
+
+/**********************************************************************
+ * AGC: none -- yaAGC CounterPINC of TIME4 (n = 4) or TIME5 (n = 5):
+ * 37777 overflows to +0 and requests the interrupt.
+ *
+ * ARGUMENTS:
+ *   n    int        I  4 or 5
+ *   irq  sim_irq_t  I  the interrupt the overflow requests
+ **********************************************************************/
 static void time_pinc(int n, sim_irq_t irq)
 {
-    uint16_t v = (uint16_t) (agc_rupt_time(n) + 1u);
+    uint16_t v = (uint16_t) (agc_rupt_time(n) + 1u); /* TIME4 / TIME5 + 1 */
 
     if (v >= SIM_OVF)
     {
@@ -156,72 +253,50 @@ static void time_pinc(int n, sim_irq_t irq)
     agc_rupt_set_time(n, v);
 }
 
-/* TIME6: DINC 16 times per centisecond while channel 13 bit 15 is set.
- * Ones' complement: +1 -> -0; the DINC at +-0 is the ZOUT that requests
- * T6RUPT, and the hardware then resets channel 13 bit 15.               */
+/**********************************************************************
+ * AGC: none -- yaAGC CounterDINC of TIME6: a positive count steps toward
+ * +0 (+1 -> -0, ones' complement), a negative one toward -0; at +-0 the
+ * DINC emits ZOUT instead, which requests T6RUPT, and the hardware resets
+ * channel 13 bit 15 (yaAGC: CpuWriteIO(013, ch13 & 037777)).
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void time6_dinc(void)
 {
-    for (int i = 0; i < SIM_T6_PER_CS; i++)
+    uint16_t v    = agc_rupt_time(6); /* TIME6, 1/1600 s */
+    uint16_t next = v;                /* TIME6 after the DINC */
+
+    if (v == 0u || v == SIM_NEG0)
     {
-        if ((agc_chan_read((int) AGC_CHAN_CHAN13) & SIM_CH13_T6ENB) == 0u)
-        {
-            return;
-        }
-
-        uint16_t v = agc_rupt_time(6);
-
-        if (v == 0u || v == SIM_NEG0)
-        {
-            sim_irq_request(SIM_IRQ_T6);
-            agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_T6ENB & SIM_WORD_MASK));
-
-            return;
-        }
-
-        uint16_t next = (v == 1u) ? (uint16_t) SIM_NEG0 : ((v & SIM_OVF) != 0u) ? (uint16_t) (v + 1u) : (uint16_t) (v - 1u);
-
-        agc_rupt_set_time(6, (uint16_t) (next & SIM_WORD_MASK));
+        sim_irq_request(SIM_IRQ_T6);
+        agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_T6ENB & SIM_WORD_MASK));
     }
-}
-
-/* Radar gate (yaAGC: counted with TIME5 while channel 13 bit 4 is set). */
-static void radar_gate(void)
-{
-    if ((agc_chan_read((int) AGC_CHAN_CHAN13) & SIM_CH13_RADAR) == 0u)
+    else if ((v & SIM_OVF) != 0u)
     {
-        g_radar_gate = 0;
+        next = (uint16_t) (v + 1u); /* negative: toward -0 */
     }
     else
     {
-        g_radar_gate++;
-
-        if (g_radar_gate >= SIM_RADAR_GATES)
-        { /* cycle complete: RNRAD holds what the radar shifted in    */
-            g_radar_gate = 0;
-            agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_RADAR & SIM_WORD_MASK));
-            sim_irq_request(SIM_IRQ_RADAR);
-        }
+        next = (v == 1u) ? (uint16_t) SIM_NEG0 : (uint16_t) (v - 1u); /* +1 - 1 = -0 in the adder */
     }
+
+    agc_rupt_set_time(6, next);
 }
 
-/* HANDRUPT traps: channel 13 bits 12-14 arm them (and read back as 0).  */
+/**********************************************************************
+ * AGC: none -- yaAGC HANDRUPT check: an armed trap fires (and disarms)
+ * when its inputs leave all-ones: channel 31 bits 1-6 (31A), 7-12 (31B),
+ * channel 32 bits 1-10 (32).
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void hand_traps(void)
 {
-    uint16_t c13 = agc_chan_read((int) AGC_CHAN_CHAN13);
-
-    if ((c13 & SIM_CH13_TRAPS) != 0u)
-    {
-        g_trap[0] = g_trap[0] || ((c13 & SIM_CH13_T31A) != 0u);
-        g_trap[1] = g_trap[1] || ((c13 & SIM_CH13_T31B) != 0u);
-        g_trap[2] = g_trap[2] || ((c13 & SIM_CH13_T32) != 0u);
-        agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_TRAPS & SIM_WORD_MASK));
-    }
-
-    uint16_t c31  = agc_chan_read((int) AGC_CHAN_CHAN31);
-    uint16_t c32  = agc_chan_read((int) AGC_CHAN_CHAN32);
-    bool     hit0 = g_trap[0] && ((c31 & SIM_CH31_ROT) != SIM_CH31_ROT);
-    bool     hit1 = g_trap[1] && ((c31 & SIM_CH31_XLT) != SIM_CH31_XLT);
-    bool     hit2 = g_trap[2] && ((c32 & SIM_CH32_TRAP) != SIM_CH32_TRAP);
+    uint16_t c31  = agc_chan_read((int) AGC_CHAN_CHAN31);                  /* channel 31 */
+    uint16_t c32  = agc_chan_read((int) AGC_CHAN_CHAN32);                  /* channel 32 */
+    bool     hit0 = g_trap[0] && ((c31 & SIM_CH31_ROT) != SIM_CH31_ROT);   /* trap 31A fires */
+    bool     hit1 = g_trap[1] && ((c31 & SIM_CH31_XLT) != SIM_CH31_XLT);   /* trap 31B fires */
+    bool     hit2 = g_trap[2] && ((c32 & SIM_CH32_TRAP) != SIM_CH32_TRAP); /* trap 32 fires */
 
     if (hit0 || hit1 || hit2)
     {
@@ -232,25 +307,32 @@ static void hand_traps(void)
     }
 }
 
-/* Channels 3 and 4 from the scaler (yaAGC ChanSCALER2 / ChanSCALER1).  */
+/**********************************************************************
+ * AGC: none -- channels 4 (LOSCALAR, 14 bits) and 3 (HISCALAR, the carry
+ * out of 4) from the scaler (yaAGC ChanSCALER1 / ChanSCALER2).
+ *
+ * ARGUMENTS:
+ *   scaler  uint32_t  I  scaler count, 1/3200 s, 28 bits
+ **********************************************************************/
 static void scaler_set(uint32_t scaler)
 {
-    agc_status_t lo = agc_chan_set_input((int) AGC_CHAN_LOSCALAR, (uint16_t) (scaler % SIM_SCALER_LO));
-    agc_status_t hi = agc_chan_set_input((int) AGC_CHAN_HISCALAR, (uint16_t) ((scaler / SIM_SCALER_LO) % SIM_SCALER_LO));
+    agc_status_t lo = agc_chan_set_input((int) AGC_CHAN_LOSCALAR, (uint16_t) (scaler % SIM_SCALER_LO));                   /* input channel: OK */
+    agc_status_t hi = agc_chan_set_input((int) AGC_CHAN_HISCALAR, (uint16_t) ((scaler / SIM_SCALER_LO) % SIM_SCALER_LO)); /* input channel: OK */
 
-    if (!AGC_ASSERT(lo == AGC_STATUS_OK && hi == AGC_STATUS_OK))
-    {
-        g_stats.errors++;
-    }
+    g_stats.errors += (lo == AGC_STATUS_OK && hi == AGC_STATUS_OK) ? 0u : 1u; /* a refused input is a harness error */
 }
 
-/* The hardware GOJAM on entering standby (yaAGC: TriggeredAlarm with
+/**********************************************************************
+ * AGC: none -- the GOJAM on entering standby (yaAGC TriggeredAlarm with
  * Standby set): channels 5, 6, 010-014, 034, 035 cleared, every
- * interrupt request and HANDRUPT trap dropped.                          */
+ * interrupt request and HANDRUPT trap dropped; RESTART is not lit.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void standby_gojam(void)
 {
-    static const int k_cleared[] = {005, 006, 010, 011, 012, 013, 014, 034, 035};
-    int              n           = (int) (sizeof (k_cleared) / sizeof (k_cleared[0]));
+    static const int k_cleared[] = {005, 006, 010, 011, 012, 013, 014, 034, 035};      /* cleared channels */
+    int              n           = (int) (sizeof (k_cleared) / sizeof (k_cleared[0])); /* their number */
 
     for (int i = 0; i < n; i++)
     {
@@ -262,7 +344,7 @@ static void standby_gojam(void)
         g_irq[i] = false;
     }
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < SIM_TRAPS; i++)
     {
         g_trap[i] = false;
     }
@@ -271,10 +353,18 @@ static void standby_gojam(void)
     sim_channels_sync();
 }
 
-/* The SBY/PRO circuit at one scaler value (yaAGC agc_engine.c).        */
+/**********************************************************************
+ * AGC: none -- the SBY/PRO circuit at one scaler count (yaAGC
+ * agc_engine.c: SbyPressed, SbyStillPressed, the 04000 / 00000 phases of
+ * channel 4).
+ *
+ * ARGUMENTS:
+ *   scaler  uint32_t  I  scaler count, 1/3200 s
+ **********************************************************************/
 static void standby_check(uint32_t scaler)
 {
-    bool pro = (agc_chan_read((int) AGC_CHAN_CHAN32) & SIM_CH32_PRO) == 0u;
+    bool     pro   = (agc_chan_read((int) AGC_CHAN_CHAN32) & SIM_CH32_PRO) == 0u; /* PRO held */
+    uint32_t phase = scaler & SIM_SBY_PHASE;                                      /* 1.28 s phase */
 
     if (!pro)
     {
@@ -282,13 +372,13 @@ static void standby_check(uint32_t scaler)
         g_sby_still   = false;
     }
 
-    if ((scaler & SIM_SBY_PHASE) == SIM_SBY_SAMPLE && pro)
+    if (phase == SIM_SBY_SAMPLE && pro)
     {
         g_sby_pressed = true;
     }
-    else if ((scaler & SIM_SBY_PHASE) == SIM_SBY_DECIDE && g_sby_pressed)
+    else if (phase == SIM_SBY_DECIDE && g_sby_pressed)
     {
-        bool enabled = (agc_chan_read((int) AGC_CHAN_CHAN13) & SIM_CH13_SBYENB) != 0u;
+        bool enabled = (agc_chan_read((int) AGC_CHAN_CHAN13) & SIM_CH13_SBYENB) != 0u; /* P06 enabled it */
 
         if (!g_standby && enabled)
         {
@@ -298,13 +388,8 @@ static void standby_check(uint32_t scaler)
         }
         else if (g_standby && !g_sby_still)
         {
-            g_standby = false;
-
-            if (agc_rupt_go() == AGC_STATUS_BAD_ARG) /* the CPU starts at 4000 */
-            {
-                g_stats.errors++;
-            }
-
+            g_standby      = false;
+            g_stats.errors += (agc_rupt_go() == AGC_STATUS_BAD_ARG) ? 1u : 0u; /* the CPU starts at 4000 */
             sim_channels_sync();
         }
         else
@@ -318,115 +403,172 @@ static void standby_check(uint32_t scaler)
     }
 }
 
-/* The counter phases of one centisecond.                               */
-static void clock_counters(void)
+/**********************************************************************
+ * AGC: none -- the TIME1 phase: TIME1/TIME2, TIME3, and DOWNRUPT every
+ * other centisecond.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void time1_phase(void)
 {
-    scaler_set(g_scaler);   /* TIME1 phase */
-    agc_time_advance_cs(1); /* TIME1/TIME2 */
+    agc_time_advance_cs(1);
 
     if (agc_waitlist_time3() >= SIM_TIME3_LAST)
     {
-        sim_irq_request(SIM_IRQ_T3); /* the PINC is done by the T3 rupt */
+        sim_irq_request(SIM_IRQ_T3); /* the overflowing PINC is done by rupt_t3 */
     }
     else
     {
-        agc_status_t st = agc_waitlist_tick(1); /* PINC TIME3, no overflow */
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
-        {
-            g_stats.errors++;
-        }
+        g_stats.errors += (agc_waitlist_tick(1) == AGC_STATUS_OK) ? 0u : 1u; /* PINC TIME3, no overflow */
     }
-
-    scaler_set((g_scaler + SIM_SCALER_T5) % SIM_SCALER_MOD);
-    time_pinc(5, SIM_IRQ_T5);
-    radar_gate();
-    scaler_set((g_scaler + SIM_SCALER_T4) % SIM_SCALER_MOD);
-    time_pinc(4, SIM_IRQ_T4);
-    time6_dinc();
-    hand_traps();
 
     if ((g_cs % SIM_DOWN_CS) == 0u)
     {
         sim_irq_request(SIM_IRQ_DOWNLINK);
     }
+}
 
-    if (!AGC_ASSERT(agc_rupt_time(4) < SIM_OVF && agc_rupt_time(5) < SIM_OVF))
+/**********************************************************************
+ * AGC: none -- the counter-timers at one scaler count (yaAGC agc_engine,
+ * "Here we take care of counter-timers").
+ *
+ * ARGUMENTS:
+ *   scaler  uint32_t  I  scaler count, 1/3200 s
+ **********************************************************************/
+static void clock_counters(uint32_t scaler)
+{
+    uint32_t phase = scaler & SIM_PHASE_MASK;              /* 10 ms phase */
+    uint16_t c13   = agc_chan_read((int) AGC_CHAN_CHAN13); /* channel 13 */
+
+    if (phase == SIM_PHASE_TIME1)
     {
-        g_stats.errors++;
+        time1_phase();
+    }
+    else if (phase == SIM_PHASE_TIME5)
+    {
+        time_pinc(5, SIM_IRQ_T5);
+        g_radar_gate += ((c13 & SIM_CH13_RADAR) != 0u) ? 1 : 0; /* gate counted while bit 4 is set */
+    }
+    else if (phase == SIM_PHASE_TIME4)
+    {
+        time_pinc(4, SIM_IRQ_T4);
+    }
+    else
+    {
+        /* no counter-timer at this phase */
+    }
+
+    if ((scaler & 1u) != 0u && (c13 & SIM_CH13_T6ENB) != 0u)
+    {
+        time6_dinc(); /* 1/1600 s, 1/3200 s after TIME1 */
+    }
+
+    hand_traps();
+
+    if (g_radar_gate == SIM_RADAR_GATES && phase == SIM_PHASE_RADAR)
+    { /* radar cycle complete: RNRAD holds what the radar shifted in */
+        g_radar_gate = 0;
+        agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_RADAR & SIM_WORD_MASK));
+        sim_irq_request(SIM_IRQ_RADAR);
     }
 }
 
-/* T3RUPT: the TIME3 PINC that overflows, then the waitlist (T3RUPT, C
- * p.1231), as the lead-in does, and the RESUME restart service.        */
+/**********************************************************************
+ * T3RUPT lead-in (INTERRUPT_LEAD_INS C p.131 / L p.153) with the TIME3
+ * PINC that overflowed: agc_waitlist_tick(1) sets TIME3 to +0 and runs
+ * T3RUPT (WAITLIST C p.1231 / L p.1127, RUPTAGN chain), then RESUME's
+ * restart service as agc_rupt_t3 does.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the T3RUPT status; BAD_ARG when a restart
+ *          failed or the handler left interrupts inhibited
+ **********************************************************************/
 static agc_status_t rupt_t3(void)
 {
     agc_inhint();
-    agc_status_t st = agc_waitlist_tick(1);
+    agc_status_t st = agc_waitlist_tick(1); /* T3RUPT outcome */
 
     agc_relint();
 
     if (agc_exec_restart_pending())
     {
-        agc_status_t rs = agc_exec_service_restart();
-
         g_stats.restarts++;
-
-        if (!AGC_ASSERT(rs != AGC_STATUS_BAD_ARG))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
+        st = (agc_exec_service_restart() == AGC_STATUS_BAD_ARG) ? AGC_STATUS_BAD_ARG : st; /* ENEMA failure wins */
     }
 
-    if (!AGC_ASSERT(!agc_interrupts_inhibited()))
+    if (agc_interrupts_inhibited())
     {
-        return (AGC_STATUS_BAD_ARG);
+        st = AGC_STATUS_BAD_ARG; /* a task left INHINT in force */
     }
 
     return (st);
 }
 
-/* Take one interrupt through its lead-in (src/exec/interrupts.c).      */
+/**********************************************************************
+ * AGC: none -- take one interrupt through its lead-in
+ * (src/exec/interrupts.c, INTERRUPT_LEAD_INS C p.131 / L p.153).
+ *
+ * ARGUMENTS:
+ *   irq  sim_irq_t  I  the interrupt, < SIM_IRQ_COUNT
+ *
+ * RETURNS: agc_status_t -- the handler's status
+ **********************************************************************/
 static agc_status_t take_rupt(sim_irq_t irq)
 {
+    agc_status_t st = AGC_STATUS_OK; /* handler outcome */
+
     switch (irq)
     {
         case SIM_IRQ_T6:
-            return (agc_rupt_t6());
+            st = agc_rupt_t6();
+            break;
         case SIM_IRQ_T5:
-            return (agc_rupt_t5());
+            st = agc_rupt_t5();
+            break;
         case SIM_IRQ_T3:
-            return (rupt_t3());
+            st = rupt_t3();
+            break;
         case SIM_IRQ_T4:
-            return (agc_rupt_t4());
+            st = agc_rupt_t4();
+            break;
         case SIM_IRQ_KEY1:
-            return (agc_rupt_keyrupt1());
+            st = agc_rupt_keyrupt1();
+            break;
         case SIM_IRQ_KEY2:
-            return (agc_rupt_keyrupt2());
+            st = agc_rupt_keyrupt2();
+            break;
         case SIM_IRQ_UPLINK:
-            return (agc_rupt_uprupt());
+            st = agc_rupt_uprupt();
+            break;
         case SIM_IRQ_DOWNLINK:
-            return (agc_rupt_downrupt());
+            st = agc_rupt_downrupt();
+            break;
         case SIM_IRQ_RADAR:
-            return (agc_rupt_radarupt());
+            st = agc_rupt_radarupt();
+            break;
         case SIM_IRQ_HAND:
-            return (agc_rupt_rupt10());
         case SIM_IRQ_COUNT:
         default:
+            st = agc_rupt_rupt10(); /* HANDRUPT; the loop never passes COUNT */
             break;
     }
 
-    if (!AGC_ASSERT(irq < SIM_IRQ_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_NOT_FOUND);
+    return (st);
 }
 
-/* The pending interrupts, highest priority first; held under INHINT.   */
-static void clock_rupts(void)
+/**********************************************************************
+ * AGC: none -- the pending interrupts, highest priority first, each
+ * followed by the broadcast of what it changed; held under INHINT.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true when an interrupt was taken
+ **********************************************************************/
+static bool clock_rupts(void)
 {
+    bool taken = false; /* an interrupt ran */
+
     for (int i = 0; i < (int) SIM_IRQ_COUNT; i++)
     {
         if (!g_irq[i] || agc_interrupts_inhibited())
@@ -434,14 +576,14 @@ static void clock_rupts(void)
             continue;
         }
 
-        g_irq[i]        = false;
+        g_irq[i] = false;
         g_stats.rupts[i]++;
-        agc_status_t st = take_rupt((sim_irq_t) i);
+        taken    = true;
 
-        if (st == AGC_STATUS_BAD_ARG)
+        if (take_rupt((sim_irq_t) i) == AGC_STATUS_BAD_ARG)
         {
             g_stats.errors++;
-            (void) fprintf(stderr, "agc_sim: %lu cs: interrupt %d returned " "BAD_ARG\n", (unsigned long) g_cs, i); /* diagnostic */
+            (void) fprintf(stderr, "agc_sim: %lu cs: interrupt %d returned BAD_ARG\n", (unsigned long int) g_cs, i); /* stdlib diagnostic */
         }
 
         sim_channels_sync();
@@ -455,38 +597,50 @@ static void clock_rupts(void)
             sim_channels_force(AGC_CHAN_DNTM1);
             sim_channels_force(AGC_CHAN_DNTM2);
         }
+        else
+        {
+            /* outputs already sampled */
+        }
     }
 
-    if (!AGC_ASSERT(!agc_interrupts_inhibited()))
-    {
-        g_stats.errors++;
-    }
+    return (taken);
 }
 
-/* The executive until DUMMYJOB (EXECUTIVE C p.1220), bounded.          */
-static void clock_exec(void)
+/**********************************************************************
+ * AGC: none -- the executive until DUMMYJOB would run (EXECUTIVE C
+ * p.1220, NEWJOB), at most SIM_JOBS_PER_CALL jobs.
+ *
+ * ARGUMENTS:
+ *   idle_pass  bool  I  run one pass of the idle loop (DUMMYJOB ->
+ *                       ADVAN -> SELFRET) when no job is ready; once
+ *                       per centisecond, so ROPECHK sums a bank per cs
+ **********************************************************************/
+static void clock_exec(bool idle_pass)
 {
-    int n = 0;
+    int n = 0; /* jobs run */
 
-    for (; n < SIM_JOBS_PER_CS; n++)
+    for (; n < SIM_JOBS_PER_CALL; n++)
     {
         if (agc_exec_restart_pending())
         {
-            agc_status_t rs = agc_exec_service_restart();
-
             g_stats.restarts++;
-            g_stats.errors += (rs == AGC_STATUS_BAD_ARG) ? 1u : 0u;
+            g_stats.errors += (agc_exec_service_restart() == AGC_STATUS_BAD_ARG) ? 1u : 0u; /* ENEMA failure */
         }
 
-        agc_exec_core_info_t job;
-        int                  set = agc_exec_newjob(); /* NEWJOB: the next */
-        agc_exec_core_info((set > 0) ? set : 0, &job);
-        agc_status_t         st  = agc_exec_run_one();
+        agc_exec_core_info_t job;                     /* the job about to run, for the diagnostic */
+        int                  set = agc_exec_newjob(); /* NEWJOB: core set, -1 idle */
+
+        agc_exec_core_info((set > 0) ? set : 0, &job); /* set 0 when idle or running */
+        agc_status_t st = agc_exec_run_one();          /* the job's outcome */
 
         if (st == AGC_STATUS_NOT_FOUND)
         {
-            agc_selfcheck_idle_pass(); /* DUMMYJOB -> ADVAN -> SELFRET */
-            break;                     /* idle */
+            if (idle_pass)
+            {
+                agc_selfcheck_idle_pass();
+            }
+
+            break; /* idle */
         }
 
         g_stats.jobs++;
@@ -494,51 +648,67 @@ static void clock_exec(void)
         if (st == AGC_STATUS_BAD_ARG)
         {
             g_stats.errors++;
-            (void) fprintf(stderr, "agc_sim: %lu cs: job %d returned BAD_ARG\n", /* diagnostic */
-                           (unsigned long) g_cs,
-                           (int) job.loc);
+            (void) fprintf(stderr, "agc_sim: %lu cs: job %d returned BAD_ARG\n", (unsigned long int) g_cs, (int) job.loc); /* stdlib diagnostic */
+        }
+
+        if (!AGC_ASSERT(!agc_interrupts_inhibited()))
+        { /* a job left INHINT in force: every interrupt stays held, as in the AGC */
+            g_stats.errors++;
+            (void) fprintf(stderr, "agc_sim: %lu cs: job %d left interrupts inhibited\n", (unsigned long int) g_cs, (int) job.loc); /* stdlib diagnostic */
         }
 
         sim_channels_sync();
     }
 
-    g_stats.busy_ticks += (n == SIM_JOBS_PER_CS) ? 1u : 0u;
+    g_stats.busy_ticks += (n == SIM_JOBS_PER_CALL) ? 1u : 0u; /* the bound was hit */
+} /* clock_exec */
 
-    if (!AGC_ASSERT(n <= SIM_JOBS_PER_CS))
+/**********************************************************************
+ * AGC: none -- one scaler count: channels 3/4, the standby circuit, and
+ * outside standby the counter-timers, traps, interrupts and, after an
+ * interrupt, the executive.
+ *
+ * ARGUMENTS:
+ *   scaler  uint32_t  I  scaler count, 1/3200 s
+ **********************************************************************/
+static void clock_step(uint32_t scaler)
+{
+    scaler_set(scaler);
+    standby_check(scaler);
+
+    if (!g_standby)
     {
-        g_stats.errors++;
+        sim_clock_arm_traps();
+        clock_counters(scaler);
+
+        if (clock_rupts())
+        {
+            clock_exec(false);
+        }
     }
 }
 
-/* One centisecond: counters, interrupts, executive, peripheral outputs. */
+/**********************************************************************
+ * AGC: none -- one centisecond: 32 scaler counts, the executive, the
+ * peripheral outputs (channels.c).
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 void sim_clock_tick(void)
 {
-    standby_check((g_scaler + SIM_SCALER_T5) % SIM_SCALER_MOD); /* the 1.28 s marks fall on this phase */
-
-    if (g_standby)
+    for (uint32_t k = 0; k < SIM_SCALER_CS; k++)
     {
-        scaler_set((g_scaler + SIM_SCALER_T4) % SIM_SCALER_MOD); /* only the scaler runs */
-    }
-    else
-    {
-        clock_counters();
-        clock_rupts();
-        clock_exec();
+        clock_step(g_scaler);
+        g_scaler = (g_scaler + 1u) % SIM_SCALER_MOD;
     }
 
-    g_scaler = (g_scaler + SIM_SCALER_CS) % SIM_SCALER_MOD;
-
-    if (sim_channels_tick(g_cs) != AGC_STATUS_OK)
+    if (!g_standby)
     {
-        g_stats.errors++; /* a CDU drive count the IMU refused */
+        clock_exec(true);
     }
 
+    g_stats.errors += (sim_channels_tick(g_cs) == AGC_STATUS_OK) ? 0u : 1u; /* a CDU drive count the IMU refused */
     sim_channels_sync();
     g_cs++;
-    g_stats.cs = g_cs;
-
-    if (!AGC_ASSERT(g_stats.cs == g_cs))
-    {
-        g_stats.errors++;
-    }
+    g_stats.cs     = g_cs;
 }

@@ -86,3 +86,8 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 ## Open residuals after follow-up-done-lanes (2026-10-12; all routed items closed)
 - guid-entry: DOWNCNTL stays on values (F3): its DREF words match the rope only if D is kept as stored words, i.e. the entry erasables converted to agc_dp_words_t; would close oracle entry L/D 9 and L/D1 8. Recorded as a deviation for the document wave unless a later pass converts the erasables.
 - prog-align note: Progress row "item 2b" still reads PARTIAL but its remaining files were done in resume 3 (a); note-only staleness.
+
+## From fix-b6 and review-sim (2026-10-12)
+- exec-sched (open): src/exec/waitlist.c rejects a delay above 16250 cs; the AGC's WAITLIST rejects only a delay <= 0 (fix-b6 note, Open questions).
+- sim (open): a pad.c keyword for EK1VAL-EK3VAL / FANG / EMDOT would let scenario e fly the impulsive-burn path.
+- exec-sched (observation): the LM systems-test scenario hits the 64-jobs-per-call executive limit 1,817 times; harmless (jobs continue next call) but worth a look at the limit's rationale.

@@ -686,3 +686,8 @@
             by tools/cocci/vehicle_guard.cocci (guaranteed by construction:
             LM dispatch only); exec_up_servidle's stays (reached from the
             shared POODOO path, caller checks the status).
+2026-10-12  review-sim DONE (three real clock faults: T6 chain, T5/T3 order,
+            trap bits; protocol fixes; style 0; tests/sim/harness.c) and
+            fix-b6 DONE (CLOCPLAY two-part display; scenario e runs the
+            whole burn, 0 xfail; LM had the same defect). Committed. No
+            open flight bugs. Tree frozen: next the single EVA run.

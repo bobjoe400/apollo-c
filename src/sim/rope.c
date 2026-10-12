@@ -1,25 +1,49 @@
-/*
- * rope.c -- the rope image as the harness's fixed memory (--core, --rope).
+/**********************************************************************
+ * FILE NAME: rope.c
  *
- * The translated program needs no fixed memory to run: its code and
- * constants are C. Two AGC routines read the rope as data, the idle-loop
- * self-check ROPECHK and SHOW-BANKSUM (verb 91), which sum each bank
- * (AGC_BLOCK_TWO_SELF_CHECK.agc, C pp.1394-1403 / L pp.1291-1300). The
- * harness loads the real Comanche055 / Luminary099 binary and registers it
- * with agc_selfcheck_set_rope(), so those sums are the real bank sums
- * (data only; no instruction is ever fetched from it).
+ * PURPOSE:
+ *   The rope image as the harness's fixed memory (--core, --exec,
+ *   --rope, or the bare rope path), and the vehicle the rope names.
  *
- * File format (yaYUL / yaAGC "exec-ropes" file, as tools/oracle/ropes and
- * the Virtual AGC source tree hold it): whole banks of 1024 big-endian
- * 16-bit words, each word shifted left by one (bit 0 = parity, dropped),
- * in the order banks 2, 3, 0, 1, 4, 5, ... 43 octal.
+ * AGC SOURCE:
+ *   Comanche055 / Luminary099 binaries (tools/oracle/ropes, as yaYUL
+ *   assembles them). Read as data by ROPECHK and SHOW-BANKSUM
+ *   (AGC_BLOCK_TWO_SELF_CHECK.agc C pp.1394-1403 / L pp.1291-1300).
  *
- * The rope also names the vehicle when the Virtual AGC launcher starts us
- * as yaAGC (--core=source/Comanche055/Comanche055.bin): Comanche055 is the
- * CSM program, Luminary099 the LM's. Any other rope is refused: this
- * program is those two translated, it cannot run another rope's software.
- */
-#define _POSIX_C_SOURCE 200809L
+ * EXTERNAL VARIABLES:
+ *   none (the image is file-static and handed to the self-check)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                    Description
+ *   ----------------------  ----------------------------------------
+ *   agc_selfcheck_set_rope  register the image (src/io/service)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   sim_rope_load: AGC_STATUS_NOT_FOUND when the file cannot be opened,
+ *   AGC_STATUS_BAD_ARG (reported) when it is not a whole 36-bank image.
+ *   sim_rope_vehicle: AGC_STATUS_NOT_FOUND for a rope other than
+ *   Comanche055 / Luminary099.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Called once at start-up (main.c).
+ *
+ * NOTES:
+ *   The translated program needs no fixed memory to run: its code and
+ *   constants are C. ROPECHK and SHOW-BANKSUM (verb 91) sum each bank;
+ *   with the real binary registered, those sums are the real bank sums
+ *   (data only; no instruction is ever fetched from it).
+ *   File format (yaYUL / yaAGC "exec-ropes" file): whole banks of 1024
+ *   big-endian 16-bit words, each word shifted left by one (bit 0 =
+ *   parity, dropped), in the order banks 2, 3, 0, 1, 4, 5, ... 43 octal.
+ *   The rope also names the vehicle when the Virtual AGC launcher starts
+ *   us as yaAGC (--core=source/Comanche055/Comanche055.bin): Comanche055
+ *   is the CSM program, Luminary099 the LM's. Any other rope is refused:
+ *   this program is those two translated and cannot run another rope.
+ *
+ * ALGORITHM:
+ *   none (file read)
+ **********************************************************************/
+#define _POSIX_C_SOURCE 200809L /* POSIX.1-2008: readlink */
 
 #include <stdio.h>
 #include <string.h>
@@ -29,29 +53,47 @@
 #include "agc/io/service.h"
 #include "internal.h"
 
-#define ROPE_WORDS      (AGC_ROPE_BANKS * AGC_ROPE_BANK_WORDS)
-#define ROPE_BANK_BYTES (2 * AGC_ROPE_BANK_WORDS)
-#define ROPE_PATH       512
+#define ROPE_WORDS       (AGC_ROPE_BANKS * AGC_ROPE_BANK_WORDS) /* words in the image          */
+#define ROPE_BANK_BYTES  (2 * AGC_ROPE_BANK_WORDS)              /* bytes per bank in the file  */
+#define ROPE_PATH        512                                    /* longest executable path     */
+#define ROPE_NAME        64                                     /* longest rope name           */
+#define ROPE_FIXED_FIXED 4                                      /* banks 0-3, stored 2, 3, 0, 1 */
 
 static uint16_t g_rope[ROPE_WORDS]; /* fixed memory, bank b at b * 1024, 15-bit words */
 
-/* The rope name in a path: the last component without ".bin".          */
+/**********************************************************************
+ * AGC: none -- the rope name in a path: the last component up to its
+ * first dot.
+ *
+ * ARGUMENTS:
+ *   path  const char *  I  rope path
+ *   name  char *        O  the name, NUL-terminated
+ *   size  size_t        I  bytes at name, >= 1
+ **********************************************************************/
 static void rope_name(const char *path, char *name, size_t size)
 {
-    const char *slash = strrchr(path, '/');
-    const char *base  = (slash != NULL) ? &slash[1] : path;
-    size_t      n     = strcspn(base, ".");
+    const char *slash = strrchr(path, '/');                 /* last separator */
+    const char *base  = (slash != NULL) ? &slash[1] : path; /* last component */
+    size_t      n     = strcspn(base, ".");                 /* name length */
 
-    n       = (n < size - 1u) ? n : size - 1u;
-    (void) memcpy(name, base, n); /* returns name: nothing to check */
+    n       = (n < size - 1u) ? n : size - 1u; /* truncate to fit */
+    (void) memcpy(name, base, n);              /* stdlib: returns name */
     name[n] = '\0';
 }
 
-/* The vehicle a rope belongs to: Comanche055 -> CSM, Luminary099 -> LM.
- * NOT_FOUND for any other rope.                                         */
+/**********************************************************************
+ * AGC: none -- the vehicle a rope belongs to: Comanche055 -> CSM,
+ * Luminary099 -> LM.
+ *
+ * ARGUMENTS:
+ *   path     const char *     I  rope path
+ *   vehicle  agc_vehicle_t *  O  the vehicle
+ *
+ * RETURNS: agc_status_t -- OK, or NOT_FOUND for any other rope
+ **********************************************************************/
 agc_status_t sim_rope_vehicle(const char *path, agc_vehicle_t *vehicle)
 {
-    char name[64];
+    char name[ROPE_NAME]; /* rope name */
 
     rope_name(path, name, sizeof (name));
 
@@ -71,10 +113,17 @@ agc_status_t sim_rope_vehicle(const char *path, agc_vehicle_t *vehicle)
     return (AGC_STATUS_OK);
 }
 
-/* Read the banks of an open rope file into g_rope; the bank count.     */
+/**********************************************************************
+ * AGC: none -- read the banks of an open rope file into g_rope.
+ *
+ * ARGUMENTS:
+ *   f  FILE *  I  the open file
+ *
+ * RETURNS: int -- whole banks read (a partial bank is not counted)
+ **********************************************************************/
 static int rope_read(FILE *f)
 {
-    int banks = 0;
+    int banks = 0; /* whole banks read */
 
     for (int fb = 0; fb < AGC_ROPE_BANKS; fb++)
     {
@@ -85,7 +134,7 @@ static int rope_read(FILE *f)
             break; /* end of file (a partial bank is not counted) */
         }
 
-        int bank = (fb < 4) ? (fb ^ 2) : fb; /* file order 2, 3, 0, 1, 4.. */
+        int bank = (fb < ROPE_FIXED_FIXED) ? (fb ^ 2) : fb; /* file order 2, 3, 0, 1, 4.. */
 
         for (int r = 0; r < AGC_ROPE_BANK_WORDS; r++)
         {
@@ -98,25 +147,32 @@ static int rope_read(FILE *f)
     return (banks);
 }
 
-/* Load the rope at `path` as fixed memory. NOT_FOUND when the file cannot
- * be opened, BAD_ARG when it is not a whole 36-bank image.             */
+/**********************************************************************
+ * AGC: none -- load the rope at `path` as fixed memory.
+ *
+ * ARGUMENTS:
+ *   path  const char *  I  rope file
+ *
+ * RETURNS: agc_status_t -- OK; NOT_FOUND when the file cannot be opened;
+ *          BAD_ARG when it is not a whole 36-bank image (reported)
+ **********************************************************************/
 agc_status_t sim_rope_load(const char *path)
 {
-    FILE *f = fopen(path, "rb");
+    FILE *f = fopen(path, "rb"); /* the rope file */
 
     if (f == NULL)
     {
         return (AGC_STATUS_NOT_FOUND);
     }
 
-    int  banks = rope_read(f);
+    int  banks = rope_read(f);    /* whole banks read */
     bool tail  = fgetc(f) != EOF; /* more than 36 banks, or a partial bank */
 
-    (void) fclose(f); /* read-only file: nothing to lose */
+    (void) fclose(f); /* stdlib: read-only file, nothing to lose */
 
     if (banks != AGC_ROPE_BANKS || tail)
     {
-        (void) fprintf(stderr, "agc_sim: %s is not a 36-bank rope image\n", path); /* diagnostic */
+        (void) fprintf(stderr, "agc_sim: %s is not a 36-bank rope image\n", path); /* stdlib diagnostic */
 
         return (AGC_STATUS_BAD_ARG);
     }
@@ -124,19 +180,29 @@ agc_status_t sim_rope_load(const char *path)
     return (agc_selfcheck_set_rope(g_rope, AGC_ROPE_BANKS));
 }
 
-/* Without --core: the vehicle's rope from tools/oracle/ropes, looked up
- * from the working directory, then next to the executable (build/..).
- * Not finding it is not an error: ROPECHK then passes every bank
- * (self_check.c DEVIATION); the caller logs it.                        */
+/**********************************************************************
+ * AGC: none -- without --core: the vehicle's rope from
+ * tools/oracle/ropes, looked up from the working directory, then next
+ * to the executable (build/..). Not finding it is not an error for the
+ * run: ROPECHK then passes every bank (self_check.c DEVIATION); the
+ * caller logs it.
+ *
+ * ARGUMENTS:
+ *   vehicle  agc_vehicle_t  I  the vehicle
+ *   argv0    const char *   I  argv[0], used when /proc is missing
+ *
+ * RETURNS: agc_status_t -- as sim_rope_load; NOT_FOUND when neither
+ *          place has the rope
+ **********************************************************************/
 agc_status_t sim_rope_load_default(agc_vehicle_t vehicle, const char *argv0)
 {
-    const char *name = (vehicle == AGC_VEHICLE_LM) ? "Luminary099" : "Comanche055";
-    char        path[ROPE_PATH + 64];
-    char        exe[ROPE_PATH];
-    ssize_t     n    = readlink("/proc/self/exe", exe, sizeof (exe) - 1u);
+    const char *name = (vehicle == AGC_VEHICLE_LM) ? "Luminary099" : "Comanche055"; /* rope of the vehicle */
+    char        path[ROPE_PATH + ROPE_NAME];                                        /* candidate path */
+    char        exe[ROPE_PATH];                                                     /* executable path */
+    ssize_t     n    = readlink("/proc/self/exe", exe, sizeof (exe) - 1u);          /* its length, -1 without /proc */
 
-    (void) snprintf(path, sizeof (path), "tools/oracle/ropes/%s.bin", name); /* fits */
-    agc_status_t st = sim_rope_load(path);
+    (void) snprintf(path, sizeof (path), "tools/oracle/ropes/%s.bin", name); /* stdlib: fits */
+    agc_status_t st = sim_rope_load(path);                                   /* from the working directory */
 
     if (st == AGC_STATUS_NOT_FOUND)
     {
@@ -146,15 +212,15 @@ agc_status_t sim_rope_load_default(agc_vehicle_t vehicle, const char *argv0)
         }
         else
         {
-            (void) snprintf(exe, sizeof (exe), "%s", argv0); /* no /proc: argv[0] */
+            (void) snprintf(exe, sizeof (exe), "%s", argv0); /* stdlib: no /proc, argv[0] */
         }
 
-        char *slash = strrchr(exe, '/');
+        char *slash = strrchr(exe, '/'); /* end of the directory */
 
         if (slash != NULL)
         {
             *slash = '\0';
-            (void) snprintf(path, sizeof (path), "%s/../tools/oracle/ropes/%s.bin", exe, name); /* truncation only fails the open */
+            (void) snprintf(path, sizeof (path), "%s/../tools/oracle/ropes/%s.bin", exe, name); /* stdlib: truncation only fails the open */
             st     = sim_rope_load(path);
         }
     }

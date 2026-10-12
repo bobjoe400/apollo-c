@@ -13,6 +13,7 @@
 # Validated against yaAGC + Comanche055 (tools/oracle/bin/yaAGC).
 vehicle csm
 run 300                         # power-on: GOJAM -> GOPROG
+expect LAMP RESTART on          # power-on GOJAM lights it (0163, yaAGC)
 keys R                          # RSET: ERROR resets the RESTART lamp
 expect LAMP RESTART off
 keys V37E00E                    # P00

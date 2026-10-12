@@ -1,145 +1,318 @@
-/*
- * main.c -- build/agc_sim: the translated flight software on the host.
+/**********************************************************************
+ * FILE NAME: main.c
  *
- * Usage: agc_sim [--vehicle csm|lm] [--port N] [--max-cs N] [--script F]
- *                [--pad F] [--core F] [--headless | --lockstep | --fast]
- *                [csm|lm] [cs] [exec-ropes-file]
+ * PURPOSE:
+ *   build/agc_sim: the translated flight software on the host, as a
+ *   drop-in for yaAGC under the Virtual AGC launcher and peripherals.
+ *   Command line, power-on, and the harness loop.
  *
- *   (default)   peripheral server: listens on ports N..N+9 (default 19697
- *               for the CSM, 19797 for the LM: the Virtual AGC port
- *               conventions) and runs in real time, 1 cs of AGC time per
- *               10 ms; yaDSKY2, yaTelemetry, ... connect as to yaAGC.
- *   --fast      server without real-time pacing.
- *   --lockstep  server whose clock advances only when a client asks
- *               (channel 0150 = N cs, answered by 0151); used by
- *               tools/sim_client.py so scenarios are deterministic.
- *   --headless  no sockets: run --max-cs centiseconds (default 1000) and
- *               print a summary (the integration-wave driver).
- *   --script F  timed input packets (script.c), in any mode.
- *   --pad F     erasables set before GOJAM (pad.c): REFSMMAT, flagwords,
- *               state vectors. --resume F does the same when F is a pad
- *               file (the launcher's "custom core file" start-up).
- *   --core F    (also --exec, --rope, or the first bare word) the rope
- *               image: its name picks the vehicle (Comanche055 -> CSM,
- *               Luminary099 -> LM; others refused) and it becomes the
- *               fixed memory ROPECHK / SHOW-BANKSUM sum (rope.c). Without
- *               it the vehicle's rope is taken from tools/oracle/ropes.
- * The bare words csm / lm and a bare number are --vehicle and --max-cs.
+ * AGC SOURCE:
+ *   Power-on: DOFSTART, the machine fresh start through GOJAM -> GOPROG
+ *   (FRESH_START_AND_RESTART C p.184 / L p.211), via agc_rupt_go. The
+ *   command line is yaAGC's (virtualagc yaAGC/agc_cli.c, and
+ *   VirtualAGC.cpp FormCommands for the launcher's use of it).
  *
- * yaAGC command line (the Virtual AGC launcher runs
- *   ../bin/yaAGC --core="source/Comanche055/Comanche055.bin" --port=19697
- *                --cfg=CM.ini [--resume=CM.core] [--debug ...]
- * from its Resources directory): options take one or two dashes, --cfg
- * names the vehicle when no rope does (CMSIM / LMSIM), --cd changes
- * directory, --quiet drops the banner; --resume=F loads F as a pad file
- * (pad.c) when it is one, else logs it (a yaAGC core dump cannot be
- * mapped onto the typed C erasable: fresh start); --debug, --symtab,
- * --directory and the other debugger / alarm / core-dump switches are
- * logged and ignored (no debugger).
+ * EXTERNAL VARIABLES:
+ *   none (options are a local struct)
  *
- * Power-on: agc_power_on (host: vehicle, state, lane erasables, exec),
- * then DOFSTART, the machine fresh start (FRESH_START_AND_RESTART C
- * p.184 / L p.211).
- */
-#define _POSIX_C_SOURCE 200809L
+ * EXTERNAL REFERENCES:
+ *   Name                Description
+ *   ------------------  --------------------------------------------
+ *   agc_power_on        host power-on: vehicle, state, lanes, exec
+ *   agc_rupt_go         GOJAM -> GOPROG
+ *   sim_clock_tick      one centisecond (clock.c)
+ *   sim_socket_*        peripheral server (socket.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Exit status 2: an argument not understood, a rope other than
+ *   Comanche055 / Luminary099, an unreadable --cfg, --rope, --pad or
+ *   --script file, or no port to listen on (each reported on stderr).
+ *   Exit status 1: the run counted errors (a handler or job returning
+ *   AGC_STATUS_BAD_ARG, clock.c). Else 0.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   RULE 2 EXCEPTION (docs/CODING_STANDARD.md): run() is the one loop
+ *   with no compile-time bound. In the server modes without --max-cs the
+ *   AGC runs until the process is stopped or the lockstep client leaves.
+ *
+ * NOTES:
+ *   Usage: agc_sim [--vehicle csm|lm] [--port N] [--max-cs N]
+ *                  [--script F] [--pad F] [--core F]
+ *                  [--headless | --lockstep | --fast] [csm|lm] [cs]
+ *                  [exec-ropes-file [core-resume-file]]
+ *     (default)   peripheral server: listens on ports N..N+9 (default
+ *                 19697 for the CSM, 19797 for the LM: the Virtual AGC
+ *                 port conventions) and runs in real time, 1 cs of AGC
+ *                 time per 10 ms; yaDSKY2, yaTelemetry, ... connect as
+ *                 to yaAGC.
+ *     --fast      server without real-time pacing.
+ *     --lockstep  server whose clock advances only when a client asks
+ *                 (channel 0150 = N cs, answered by 0151); used by
+ *                 tools/sim_client.py so scenarios are deterministic.
+ *     --headless  no sockets: run --max-cs centiseconds (default 1000)
+ *                 and print a summary.
+ *     --script F  timed input packets (script.c), in any mode.
+ *     --pad F     erasables set before GOJAM (pad.c). --resume F does
+ *                 the same when F is a pad file (the launcher's "custom
+ *                 core file" start-up); a yaAGC core dump cannot be
+ *                 mapped onto the typed C erasable: logged, fresh start.
+ *     --core F    (also --exec, --rope, or the first bare word) the rope
+ *                 image: its name picks the vehicle (Comanche055 -> CSM,
+ *                 Luminary099 -> LM; others refused) and it becomes the
+ *                 fixed memory ROPECHK / SHOW-BANKSUM sum (rope.c).
+ *                 Without it the vehicle's rope is taken from
+ *                 tools/oracle/ropes.
+ *   The bare words csm / lm and a bare number are --vehicle and
+ *   --max-cs. yaAGC's command line (the launcher runs
+ *     ../bin/yaAGC --core="source/Comanche055/Comanche055.bin"
+ *                  --port=19697 --cfg=CM.ini [--resume=CM.core] [--debug]
+ *   from its Resources directory): options take one or two dashes and
+ *   `=VALUE` or a separate value; --cfg names the vehicle when no rope
+ *   does (a CMSIM / LMSIM line, yaAGC CliParseCfg); --cd changes
+ *   directory; --quiet drops the banner; the debugger, core-dump and
+ *   alarm switches (k_ignored) are logged and ignored.
+ *
+ * ALGORITHM:
+ *   parse; power on (agc_power_on, rope, pad, channels, GOJAM); run the
+ *   clock in the chosen mode; print the summary.
+ **********************************************************************/
+#define _POSIX_C_SOURCE 200809L /* POSIX.1-2008: clock_gettime, chdir */
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "internal.h"
 
-#define SIM_PORT_CSM   19697     /* Virtual AGC: CM peripherals 19697-19706 */
-#define SIM_PORT_LM    19797     /* LM peripherals 19797-19806              */
-#define SIM_DEFAULT_CS 1000ul    /* headless default run              */
-#define SIM_MAX_RUN_CS 0x0FFFFFFFul
-#define SIM_TICK_NS    10000000L /* 10 ms                           */
-#define SIM_WAIT_MS    20
-#define SIM_LAG_TICKS  100       /* resynchronise after 1 s behind    */
-#define SIM_CFG_LINES  1000      /* bound on --cfg lines read          */
+#define SIM_PORT_CSM   19697        /* Virtual AGC: CM peripherals 19697-19706 */
+#define SIM_PORT_LM    19797        /* LM peripherals 19797-19806              */
+#define SIM_PORT_TOP   65526        /* highest base port (ten ports)           */
+#define SIM_DEFAULT_CS 1000UL       /* headless default run, cs                */
+#define SIM_MAX_RUN_CS 0x0FFFFFFFUL /* longest run, cs (2^28: TIME2/TIME1)     */
+#define SIM_TICK_NS    10000000L    /* 10 ms                                   */
+#define SIM_NS_PER_S   1000000000L  /* nanoseconds per second                  */
+#define SIM_WAIT_MS    20           /* lockstep: longest wait for a packet     */
+#define SIM_LAG_TICKS  100L         /* resynchronise after 1 s behind          */
+#define SIM_CFG_LINES  1000         /* bound on --cfg lines read               */
+#define SIM_CFG_LINE   130          /* longest --cfg line                      */
+#define SIM_EXIT_USAGE 2            /* exit status: start-up refused           */
 
 typedef enum sim_mode
 {
-    SIM_MODE_REALTIME = 0,
-    SIM_MODE_FAST,
-    SIM_MODE_LOCKSTEP,
-    SIM_MODE_HEADLESS
+    SIM_MODE_REALTIME = 0, /* server, paced to wall-clock time */
+    SIM_MODE_FAST,         /* server, unpaced                  */
+    SIM_MODE_LOCKSTEP,     /* server, stepped by a client      */
+    SIM_MODE_HEADLESS      /* no sockets                       */
 } sim_mode_t;
+
+/* Options that take a value, in the order they are tried.               */
+typedef enum sim_opt
+{
+    SIM_OPT_VEHICLE = 0, /* --vehicle csm|lm             */
+    SIM_OPT_PORT,        /* --port N                     */
+    SIM_OPT_MAX_CS,      /* --max-cs N                   */
+    SIM_OPT_SCRIPT,      /* --script F                   */
+    SIM_OPT_PAD,         /* --pad F                      */
+    SIM_OPT_RESUME,      /* --resume F (yaAGC)           */
+    SIM_OPT_CORE,        /* --core F (yaAGC)             */
+    SIM_OPT_EXEC,        /* --exec F (yaAGC)             */
+    SIM_OPT_ROPE,        /* --rope F                     */
+    SIM_OPT_CFG,         /* --cfg F (yaAGC)              */
+    SIM_OPT_CD,          /* --cd DIR (yaAGC)             */
+    SIM_OPT_COUNT        /* number of value options      */
+} sim_opt_t;
 
 typedef struct sim_opts
 {
-    agc_vehicle_t vehicle;
-    bool          vehicle_set; /* --vehicle, csm/lm, the rope or --cfg */
-    sim_mode_t    mode;
-    int           port;
-    unsigned long max_cs;      /* 0: unbounded (server modes)          */
-    const char   *script;
-    const char   *pad;         /* --pad: erasable pad load            */
-    const char   *resume;      /* --resume: pad file, or a yaAGC core  */
-    const char   *core;        /* --core / --exec / --rope / positional */
-    const char   *cfg;         /* --cfg: yaDSKY2 ini (CMSIM / LMSIM)  */
-    const char   *cd;          /* --cd: working directory             */
-    bool          quiet;       /* --quiet: no start-up banner         */
+    agc_vehicle_t     vehicle;     /* the vehicle to run                      */
+    bool              vehicle_set; /* --vehicle or csm / lm given             */
+    sim_mode_t        mode;        /* run mode                                */
+    int               port;        /* base port; 0 = the vehicle's default    */
+    unsigned long int max_cs;      /* 0: unbounded (server modes), cs         */
+    const char       *script;      /* --script                                */
+    const char       *pad;         /* --pad: erasable pad load                */
+    const char       *resume;      /* --resume: pad file, or a yaAGC core     */
+    const char       *core;        /* --core / --exec / --rope / positional   */
+    const char       *cfg;         /* --cfg: yaDSKY2 ini (CMSIM / LMSIM)      */
+    const char       *cd;          /* --cd: working directory                 */
+    bool              quiet;       /* --quiet: no start-up banner             */
+    bool              bad_value;   /* an option value was not understood      */
 } sim_opts_t;
+
+/* Names of the value options, indexed by sim_opt_t (one dash: a second
+ * leading dash is dropped first).                                       */
+static const char *const k_value_names[SIM_OPT_COUNT] = {"-vehicle", "-port", "-max-cs", "-script", "-pad", "-resume", "-core", "-exec", "-rope", "-cfg", "-cd"};
 
 /* yaAGC options that mean nothing here (no debugger, no core dumps, no
  * hardware alarms): accepted, logged, ignored.                         */
-static const char *const k_ignored[] = {"-debug", "-nodebug", "-directory", "-symtab", "-symbols", "-fullname", "-interlace", "-dump-time", "-cdu-log", "-debug-dsky", "-debug-deda", "-deda-quiet", "-inhibit-alarms", "-show-alarms", "-initialize-sunburst-37", "-no-resume", "-command", "-interpreter", "-nx", "-args", "-version"};
+static const char *const k_ignored[] = {"-debug", "-nodebug", "-directory", "-symtab", "-symbols", "-fullname", "-interlace", "-dump-time", "-cdu-log", "-debug-dsky", "-debug-deda", "-deda-quiet", "-inhibit-alarms", "-show-alarms", "-initialize-sunburst-37", "-no-resume", "-command", "-interpreter", "-nx", "-args"};
 
-/* The value of option `name` given as `-name=V` or `-name V` (then
- * *used = 1); NULL when `arg` is not that option. yaAGC accepts one or
- * two dashes; the caller has already dropped the first of two.         */
+static bool         parse_args(int argc, char *argv[], sim_opts_t *o);
+static agc_status_t start(const sim_opts_t *o, const char *argv0);
+static void         run(const sim_opts_t *o);
+static void         print_summary(const sim_opts_t *o);
+
+/**********************************************************************
+ * AGC: none -- the harness program.
+ *
+ * ARGUMENTS:
+ *   argc  int     I  argument count
+ *   argv  char *[] I  arguments (yaAGC's command line or ours)
+ *
+ * RETURNS: int -- 0 clean run, 1 errors counted, 2 start-up refused
+ **********************************************************************/
+int main(int argc, char *argv[])
+{
+    sim_opts_t  o;          /* the options */
+    sim_stats_t s;          /* run statistics */
+    int         status = 0; /* exit status */
+
+    if (!parse_args(argc, argv, &o))
+    {
+        (void) fprintf(stderr, "usage: agc_sim [--vehicle csm|lm] [--port N] [--max-cs N] [--script F] [--pad F] [--resume F] [--core ROPE] [--cfg F] [--cd DIR] [--quiet] [--headless|--lockstep|--fast] [csm|lm] [cs] [rope [resume]]\n"); /* stdlib diagnostic */
+        status = SIM_EXIT_USAGE;
+    }
+    else if (start(&o, argv[0]) != AGC_STATUS_OK)
+    {
+        (void) fprintf(stderr, "agc_sim: start-up failed\n"); /* stdlib diagnostic */
+        status = SIM_EXIT_USAGE;
+    }
+    else
+    {
+        run(&o);
+        sim_socket_close();
+        sim_script_close();
+        print_summary(&o);
+        sim_clock_stats(&s);
+        status = (s.errors != 0u) ? 1 : 0; /* 1: errors counted */
+    }
+
+    return (status);
+}
+
+/**********************************************************************
+ * AGC: none -- a decimal number option value.
+ *
+ * ARGUMENTS:
+ *   v    const char *         I  the text
+ *   max  unsigned long int    I  largest value accepted
+ *   out  unsigned long int *  O  the value
+ *
+ * RETURNS: bool -- false for text that is not a whole number <= max
+ **********************************************************************/
+static bool number_value(const char *v, unsigned long int max, unsigned long int *out)
+{
+    char *end = NULL; /* first character not converted */
+
+    *out = strtoul(v, &end, 10);
+
+    return (end != v && *end == '\0' && *out <= max);
+}
+
+/**********************************************************************
+ * AGC: none -- the value of option `name` given as `-name=V` or
+ * `-name V` (then *used = 1).
+ *
+ * ARGUMENTS:
+ *   arg   const char *  I  the argument, one leading dash
+ *   name  const char *  I  option name with its dash
+ *   next  const char *  I  the following argument, or NULL
+ *   used  int *         O  1 when next was taken
+ *
+ * RETURNS: const char * -- the value; NULL when arg is not that option
+ **********************************************************************/
 static const char *opt_value(const char *arg, const char *name, const char *next, int *used)
 {
-    size_t n = strlen(name);
+    size_t      n = strlen(name); /* name length */
+    const char *v = NULL;         /* the value */
 
-    if (strncmp(arg, name, n) == 0)
+    if (strncmp(arg, name, n) == 0 && arg[n] == '=')
     {
-        if (arg[n] == '=')
-        {
-            return (&arg[n + 1]);
-        }
-
-        if (arg[n] == '\0' && next != NULL)
-        {
-            *used = 1;
-
-            return (next);
-        }
+        v = &arg[n + 1];
+    }
+    else if (strncmp(arg, name, n) == 0 && arg[n] == '\0' && next != NULL)
+    {
+        v     = next;
+        *used = 1;
+    }
+    else
+    {
+        /* not this option */
     }
 
-    return (NULL);
+    return (v);
 }
 
-/* An ignored yaAGC option (k_ignored, alone or with =VALUE): logged.   */
-static bool ignored_option(const char *arg)
+/**********************************************************************
+ * AGC: none -- store one value option.
+ *
+ * ARGUMENTS:
+ *   o   sim_opts_t *  I/O  options
+ *   id  sim_opt_t     I    which option
+ *   v   const char *  I    its value
+ **********************************************************************/
+static void store_option(sim_opts_t *o, sim_opt_t id, const char *v)
 {
-    int n = (int) (sizeof (k_ignored) / sizeof (k_ignored[0]));
+    unsigned long int n = 0; /* a number value */
 
-    for (int i = 0; i < n; i++)
+    switch (id)
     {
-        size_t len = strlen(k_ignored[i]);
-
-        if (strncmp(arg, k_ignored[i], len) == 0 && (arg[len] == '\0' || arg[len] == '='))
-        {
-            (void) fprintf(stderr, "agc_sim: -%s ignored (no meaning for the C program)\n", arg); /* diagnostic */
-
-            return (true);
-        }
+        case SIM_OPT_VEHICLE:
+            o->vehicle     = (strcmp(v, "lm") == 0) ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM; /* csm otherwise */
+            o->vehicle_set = true;
+            o->bad_value   = o->bad_value || (strcmp(v, "lm") != 0 && strcmp(v, "csm") != 0);
+            break;
+        case SIM_OPT_PORT:
+            o->bad_value   = o->bad_value || !number_value(v, SIM_PORT_TOP, &n);
+            o->port        = (int) n;
+            break;
+        case SIM_OPT_MAX_CS:
+            o->bad_value   = o->bad_value || !number_value(v, SIM_MAX_RUN_CS, &o->max_cs);
+            break;
+        case SIM_OPT_SCRIPT:
+            o->script      = v;
+            break;
+        case SIM_OPT_PAD:
+            o->pad         = v;
+            break;
+        case SIM_OPT_RESUME:
+            o->resume      = v;
+            break;
+        case SIM_OPT_CFG:
+            o->cfg         = v;
+            break;
+        case SIM_OPT_CD:
+            o->cd          = v;
+            break;
+        case SIM_OPT_CORE:
+        case SIM_OPT_EXEC:
+        case SIM_OPT_ROPE:
+        case SIM_OPT_COUNT:
+        default:
+            o->core        = v;                                                         /* the rope image */
+            break;
     }
-
-    return (false);
 }
 
-/* The run-mode switches; false when `arg` is none of them.             */
-static bool mode_option(sim_opts_t *o, const char *arg)
+/**********************************************************************
+ * AGC: none -- a switch without a value (mode, --quiet) or an ignored
+ * yaAGC option (logged).
+ *
+ * ARGUMENTS:
+ *   o    sim_opts_t *  I/O  options
+ *   arg  const char *  I    the argument, one leading dash
+ *
+ * RETURNS: bool -- false when arg is none of them
+ **********************************************************************/
+static bool switch_option(sim_opts_t *o, const char *arg)
 {
-    bool hit = true;
+    bool hit = true;                                               /* arg understood */
+    int  n   = (int) (sizeof (k_ignored) / sizeof (k_ignored[0])); /* ignored options */
 
     if (strcmp(arg, "-headless") == 0)
     {
@@ -160,148 +333,140 @@ static bool mode_option(sim_opts_t *o, const char *arg)
     else
     {
         hit = false;
+
+        for (int i = 0; i < n && !hit; i++)
+        {
+            size_t len = strlen(k_ignored[i]); /* option name length */
+
+            hit = strncmp(arg, k_ignored[i], len) == 0 && (arg[len] == '\0' || arg[len] == '=');
+        }
+
+        if (hit)
+        {
+            (void) fprintf(stderr, "agc_sim: -%s ignored (no meaning for the C program)\n", arg); /* stdlib diagnostic */
+        }
     }
 
     return (hit);
 }
 
-/* Options with a value; false when `arg` is none of them.              */
-static bool value_option(sim_opts_t *o, const char *arg, const char *next, int *used)
-{
-    const char *v = NULL;
-
-    if ((v = opt_value(arg, "-vehicle", next, used)) != NULL)
-    {
-        o->vehicle     = (strcmp(v, "lm") == 0) ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM;
-        o->vehicle_set = true;
-    }
-    else if ((v = opt_value(arg, "-port", next, used)) != NULL)
-    {
-        o->port = (int) strtol(v, NULL, 10);
-    }
-    else if ((v = opt_value(arg, "-max-cs", next, used)) != NULL)
-    {
-        o->max_cs = strtoul(v, NULL, 10);
-    }
-    else if ((v = opt_value(arg, "-script", next, used)) != NULL)
-    {
-        o->script = v;
-    }
-    else if ((v = opt_value(arg, "-pad", next, used)) != NULL)
-    {
-        o->pad = v;
-    }
-    else if ((v = opt_value(arg, "-resume", next, used)) != NULL)
-    {
-        o->resume = v;
-    }
-    else if ((v = opt_value(arg, "-core", next, used)) != NULL || (v = opt_value(arg, "-exec", next, used)) != NULL || (v = opt_value(arg, "-rope", next, used)) != NULL)
-    {
-        o->core = v;
-    }
-    else if ((v = opt_value(arg, "-cfg", next, used)) != NULL)
-    {
-        o->cfg = v;
-    }
-    else if ((v = opt_value(arg, "-cd", next, used)) != NULL)
-    {
-        o->cd = v;
-    }
-    else
-    {
-        return (false);
-    }
-
-    return (true);
-}
-
-/* One argument (and maybe the next); false when it is not understood.
- * Bare words: csm / lm (vehicle), a number (--max-cs), else yaAGC's
- * positional exec-ropes-file, then core-resume-file (--resume).       */
+/**********************************************************************
+ * AGC: none -- one argument (and maybe the next). Bare words: csm / lm
+ * (vehicle), a number (--max-cs), else yaAGC's positional
+ * exec-ropes-file, then core-resume-file.
+ *
+ * ARGUMENTS:
+ *   o     sim_opts_t *  I/O  options
+ *   arg   const char *  I    the argument
+ *   next  const char *  I    the following argument, or NULL
+ *   used  int *         O    1 when next was taken
+ *
+ * RETURNS: bool -- false when the argument is not understood
+ **********************************************************************/
 static bool parse_one(sim_opts_t *o, const char *arg, const char *next, int *used)
 {
-    const char *a  = (strncmp(arg, "--", 2) == 0) ? &arg[1] : arg; /* -- -> - as yaAGC */
-    bool        ok = true;
+    const char *a  = (strncmp(arg, "--", 2) == 0) ? &arg[1] : arg; /* one dash, as yaAGC */
+    const char *v  = NULL;                                         /* an option value */
+    bool        ok = true;                                         /* understood */
 
     if (strcmp(a, "csm") == 0 || strcmp(a, "lm") == 0)
     {
-        o->vehicle     = (a[0] == 'l') ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM;
-        o->vehicle_set = true;
+        store_option(o, SIM_OPT_VEHICLE, a);
     }
     else if (a[0] >= '0' && a[0] <= '9')
     {
-        o->max_cs = strtoul(a, NULL, 10);
+        store_option(o, SIM_OPT_MAX_CS, a);
     }
     else if (a[0] != '-')
     {
-        if (o->core == NULL)
-        {
-            o->core = a;
-        }
-        else
-        {
-            o->resume = a; /* yaAGC's positional core-resume-file */
-        }
+        store_option(o, (o->core == NULL) ? SIM_OPT_CORE : SIM_OPT_RESUME, a); /* rope first, then resume file */
     }
     else
     {
-        ok = mode_option(o, a) || value_option(o, a, next, used) || ignored_option(a);
+        for (int i = 0; i < (int) SIM_OPT_COUNT && v == NULL; i++)
+        {
+            v = opt_value(a, k_value_names[i], next, used);
+
+            if (v != NULL)
+            {
+                store_option(o, (sim_opt_t) i, v);
+            }
+        }
+
+        ok = (v != NULL) || switch_option(o, a);
     }
 
     return (ok);
 }
 
-/* --cfg: the yaDSKY2 ini yaAGC is given names the vehicle (a line CMSIM
- * or LMSIM, yaAGC CliParseCfg). An unreadable file is an error there.  */
+/**********************************************************************
+ * AGC: none -- --cfg: the yaDSKY2 ini yaAGC is given names the vehicle
+ * (a line CMSIM or LMSIM, yaAGC CliParseCfg).
+ *
+ * ARGUMENTS:
+ *   path     const char *     I  the ini file
+ *   vehicle  agc_vehicle_t *  O  the vehicle, when found
+ *   found    bool *           O  a CMSIM / LMSIM line was found
+ *
+ * RETURNS: bool -- false when the file cannot be read (an error in
+ *          yaAGC too; reported)
+ **********************************************************************/
 static bool cfg_vehicle(const char *path, agc_vehicle_t *vehicle, bool *found)
 {
-    FILE *f = fopen(path, "r");
-    char  line[130];
+    FILE *f = fopen(path, "r"); /* the ini file */
+    char  line[SIM_CFG_LINE];   /* one line */
 
     *found = false;
 
     if (f == NULL)
     {
-        (void) fprintf(stderr, "agc_sim: cannot read configuration file %s\n", path); /* diagnostic */
-
-        return (false);
+        (void) fprintf(stderr, "agc_sim: cannot read configuration file %s\n", path); /* stdlib diagnostic */
     }
 
-    for (int i = 0; i < SIM_CFG_LINES && fgets(line, (int) sizeof (line), f) != NULL; i++)
+    for (int i = 0; i < SIM_CFG_LINES && f != NULL && fgets(line, (int) sizeof (line), f) != NULL; i++)
     {
         line[strcspn(line, "\r\n")] = '\0';
 
         if (strcmp(line, "LMSIM") == 0 || strcmp(line, "CMSIM") == 0)
         {
-            *vehicle = (line[0] == 'L') ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM;
+            *vehicle = (line[0] == 'L') ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM; /* LMSIM / CMSIM */
             *found   = true;
         }
     }
 
-    (void) fclose(f); /* read-only file: nothing to lose */
+    if (f != NULL)
+    {
+        (void) fclose(f); /* stdlib: read-only file, nothing to lose */
+    }
 
-    return (true);
+    return (f != NULL);
 }
 
-/* The vehicle from the rope name (--core), else --cfg, unless --vehicle
- * gave it; a rope that is not Comanche055 / Luminary099, or one that
- * contradicts --vehicle, is refused.                                    */
+/**********************************************************************
+ * AGC: none -- the vehicle from the rope name (--core), else --cfg,
+ * unless --vehicle gave it; a rope that is not Comanche055 /
+ * Luminary099, or one that contradicts --vehicle, is refused.
+ *
+ * ARGUMENTS:
+ *   o  sim_opts_t *  I/O  options; vehicle set
+ *
+ * RETURNS: bool -- false when refused (reported)
+ **********************************************************************/
 static bool resolve_vehicle(sim_opts_t *o)
 {
-    agc_vehicle_t v     = o->vehicle;
-    bool          found = false;
-    bool          ok    = true;
+    agc_vehicle_t v     = o->vehicle; /* vehicle found */
+    bool          found = false;      /* the rope or --cfg named one */
+    bool          ok    = true;       /* not refused */
 
     if (o->core != NULL)
     {
-        ok = sim_rope_vehicle(o->core, &v) == AGC_STATUS_OK;
+        ok    = sim_rope_vehicle(o->core, &v) == AGC_STATUS_OK;
+        found = ok;
 
         if (!ok)
         {
-            (void) fprintf(stderr, "agc_sim: %s: only the Comanche055 (CSM) and Luminary099 (LM) ropes are translated\n", o->core); /* diagnostic */
+            (void) fprintf(stderr, "agc_sim: %s: only the Comanche055 (CSM) and Luminary099 (LM) ropes are translated\n", o->core); /* stdlib diagnostic */
         }
-
-        found = ok;
     }
     else if (o->cfg != NULL)
     {
@@ -314,50 +479,60 @@ static bool resolve_vehicle(sim_opts_t *o)
 
     if (ok && found && o->vehicle_set && v != o->vehicle)
     {
-        (void) fprintf(stderr, "agc_sim: --vehicle contradicts the rope / --cfg\n"); /* diagnostic */
+        (void) fprintf(stderr, "agc_sim: --vehicle contradicts the rope / --cfg\n"); /* stdlib diagnostic */
         ok = false;
     }
 
-    o->vehicle = (ok && found) ? v : o->vehicle;
+    o->vehicle = (ok && found) ? v : o->vehicle; /* the rope / --cfg wins */
 
     return (ok);
 }
 
+/**********************************************************************
+ * AGC: none -- the command line into *o, then --cd, the vehicle, the
+ * default port and run length.
+ *
+ * ARGUMENTS:
+ *   argc  int           I  argument count
+ *   argv  char *[]      I  arguments
+ *   o     sim_opts_t *  O  options
+ *
+ * RETURNS: bool -- false when an argument is not understood or refused
+ **********************************************************************/
 static bool parse_args(int argc, char *argv[], sim_opts_t *o)
 {
-    (void) memset(o, 0, sizeof (*o)); /* returns o */
+    bool ok = true; /* every argument understood */
+
+    (void) memset(o, 0, sizeof (*o)); /* stdlib: returns o */
     o->vehicle = AGC_VEHICLE_CSM;
     o->mode    = SIM_MODE_REALTIME;
 
-    for (int i = 1; i < argc; i++)
+    for (int i = 1; i < argc && ok; i++)
     {
-        int used = 0;
+        int used = 0; /* the next argument was the value */
 
-        if (!parse_one(o, argv[i], (i + 1 < argc) ? argv[i + 1] : NULL, &used))
+        ok = parse_one(o, argv[i], (i + 1 < argc) ? argv[i + 1] : NULL, &used); /* NULL after the last */
+
+        if (!ok || o->bad_value)
         {
-            (void) fprintf(stderr, "agc_sim: unknown argument %s\n", argv[i]); /* diagnostic output only */
-
-            return (false); /* fprintf result irrelevant: we stop here */
+            (void) fprintf(stderr, "agc_sim: argument %s not understood\n", argv[i]); /* stdlib diagnostic */
+            ok = false;
         }
 
         i += used;
     }
 
-    if (o->cd != NULL && chdir(o->cd) != 0)
+    if (ok && o->cd != NULL && chdir(o->cd) != 0)
     {
-        (void) fprintf(stderr, "agc_sim: cannot change directory to %s\n", o->cd); /* diagnostic */
-
-        return (false);
+        (void) fprintf(stderr, "agc_sim: cannot change directory to %s\n", o->cd); /* stdlib diagnostic */
+        ok = false;
     }
 
-    if (!resolve_vehicle(o))
-    {
-        return (false);
-    }
+    ok = ok && resolve_vehicle(o);
 
     if (o->port == 0)
     {
-        o->port = (o->vehicle == AGC_VEHICLE_LM) ? SIM_PORT_LM : SIM_PORT_CSM;
+        o->port = (o->vehicle == AGC_VEHICLE_LM) ? SIM_PORT_LM : SIM_PORT_CSM; /* Virtual AGC defaults */
     }
 
     if (o->mode == SIM_MODE_HEADLESS && o->max_cs == 0u)
@@ -365,141 +540,39 @@ static bool parse_args(int argc, char *argv[], sim_opts_t *o)
         o->max_cs = SIM_DEFAULT_CS;
     }
 
-    return (o->port > 0 && o->port < 65526 && o->max_cs <= SIM_MAX_RUN_CS);
-}
+    return (ok);
+} /* parse_args */
 
-/* Real-time pacing: sleep until the next 10 ms boundary.              */
-static void pace(struct timespec *next)
-{
-    struct timespec now;
-
-    if (clock_gettime(CLOCK_MONOTONIC, &now) == 0)
-    {
-        next->tv_nsec += SIM_TICK_NS;
-
-        if (next->tv_nsec >= 1000000000L)
-        {
-            next->tv_nsec -= 1000000000L;
-            next->tv_sec++;
-        }
-
-        long ahead = (long) (next->tv_sec - now.tv_sec) * 1000000000L + (next->tv_nsec - now.tv_nsec);
-
-        if (ahead > 0)
-        {
-            struct timespec d = {ahead / 1000000000L, ahead % 1000000000L};
-
-            (void) nanosleep(&d, NULL); /* an early wake-up only shortens the tick */
-        }
-        else if (ahead < -SIM_TICK_NS * SIM_LAG_TICKS)
-        {
-            *next = now; /* fell far behind (debugger, load): resynchronise */
-        }
-    }
-}
-
-/* One lockstep step: wait for credit, run it, acknowledge.            */
-static bool lockstep_step(void)
-{
-    uint32_t n = sim_socket_take_steps();
-
-    if (n == 0u)
-    {
-        if (sim_socket_lost_lockstep())
-        {
-            return (false); /* the stepping client has gone: done */
-        }
-
-        if (sim_socket_wait(SIM_WAIT_MS))
-        {
-            sim_socket_poll(); /* input (or a connection) is waiting */
-        }
-
-        return (true);
-    }
-
-    for (uint32_t i = 0; i < n && i <= SIM_WORD_MASK; i++)
-    {
-        sim_script_tick(sim_clock_cs());
-        sim_clock_tick();
-        sim_socket_poll(); /* other peripherals keep talking */
-    }
-
-    sim_socket_ack(n);
-
-    return (AGC_ASSERT(n <= SIM_WORD_MASK));
-}
-
-/* The harness loop. RULE 2 EXCEPTION (docs/CODING_STANDARD.md): in the
- * server modes without --max-cs this is the one loop with no bound: the
- * AGC runs until the process is stopped or the lockstep client leaves. */
-static void run(const sim_opts_t *o)
-{
-    struct timespec next;
-    bool            sockets = (o->mode != SIM_MODE_HEADLESS);
-
-    if (clock_gettime(CLOCK_MONOTONIC, &next) == 0)
-    {
-        for (;;)
-        {
-            if (o->max_cs != 0u && sim_clock_cs() >= o->max_cs)
-            {
-                return;
-            }
-
-            if (o->mode == SIM_MODE_LOCKSTEP)
-            {
-                if (!lockstep_step())
-                {
-                    return;
-                }
-
-                continue;
-            }
-
-            sim_socket_poll();
-            sim_script_tick(sim_clock_cs());
-            sim_clock_tick();
-
-            if (sockets && o->mode == SIM_MODE_REALTIME)
-            {
-                pace(&next);
-            }
-        }
-    }
-}
-
-static void print_summary(const sim_opts_t *o)
-{
-    sim_stats_t s;
-
-    sim_clock_stats(&s);
-
-    /* printf results are irrelevant: the run is over (rule 7 note).    */
-    (void) printf("agc_sim %s: %lu cs, %lu jobs, %lu restarts, %lu busy, " "%lu errors, MODREG %d, FAILREG %05o %05o %05o\n", (o->vehicle == AGC_VEHICLE_LM) ? "LM" : "CSM", (unsigned long) s.cs, (unsigned long) s.jobs, (unsigned long) s.restarts, (unsigned long) s.busy_ticks, (unsigned long) s.errors, (int) agc_erase_modreg(), (unsigned) agc_erase_failreg(0), (unsigned) agc_erase_failreg(1), (unsigned) agc_erase_failreg(2)); /* diagnostic output only */
-    (void) printf("agc_sim rupts: T6 %lu T5 %lu T3 %lu T4 %lu KEY1 %lu KEY2 %lu " "UP %lu DOWN %lu RADAR %lu HAND %lu\n", (unsigned long) s.rupts[0], (unsigned long) s.rupts[1], (unsigned long) s.rupts[2], (unsigned long) s.rupts[3], (unsigned long) s.rupts[4], (unsigned long) s.rupts[5], (unsigned long) s.rupts[6], (unsigned long) s.rupts[7], (unsigned long) s.rupts[8], (unsigned long) s.rupts[9]);                           /* diagnostic output only */
-}
-
-/* Fixed memory: the --core rope, else the vehicle's rope from
- * tools/oracle/ropes; without one ROPECHK passes every bank (logged).  */
+/**********************************************************************
+ * AGC: none -- fixed memory: the --core rope, else the vehicle's rope
+ * from tools/oracle/ropes; without one ROPECHK passes every bank
+ * (logged). Prints the banner.
+ *
+ * ARGUMENTS:
+ *   o      const sim_opts_t *  I  options
+ *   argv0  const char *        I  argv[0]
+ *
+ * RETURNS: agc_status_t -- OK; the load status for a --core rope that
+ *          could not be loaded
+ **********************************************************************/
 static agc_status_t load_rope(const sim_opts_t *o, const char *argv0)
 {
-    const char  *name = (o->vehicle == AGC_VEHICLE_LM) ? "LM, Luminary099" : "CSM, Comanche055";
-    agc_status_t st   = (o->core != NULL) ? sim_rope_load(o->core) : sim_rope_load_default(o->vehicle, argv0);
+    const char  *name = (o->vehicle == AGC_VEHICLE_LM) ? "LM, Luminary099" : "CSM, Comanche055";               /* banner */
+    agc_status_t st   = (o->core != NULL) ? sim_rope_load(o->core) : sim_rope_load_default(o->vehicle, argv0); /* given or default */
 
     if (st == AGC_STATUS_NOT_FOUND && o->core == NULL)
     {
-        (void) fprintf(stderr, "agc_sim: no rope image found: self-check sums no fixed memory\n"); /* diagnostic */
+        (void) fprintf(stderr, "agc_sim: no rope image found: self-check sums no fixed memory\n"); /* stdlib diagnostic */
         st = AGC_STATUS_OK;
     }
     else if (st != AGC_STATUS_OK)
     {
-        (void) fprintf(stderr, "agc_sim: cannot load rope %s\n", o->core); /* diagnostic */
+        (void) fprintf(stderr, "agc_sim: cannot load rope %s\n", (o->core != NULL) ? o->core : "(default)"); /* stdlib diagnostic */
     }
     else if (!o->quiet)
     {
-        (void) printf("agc_sim: %s, rope %s, port %d\n", name, (o->core != NULL) ? o->core : "tools/oracle/ropes", o->port); /* banner */
-        (void) fflush(stdout);                                                                                               /* the launcher's log sees it at once */
+        (void) printf("agc_sim: %s, rope %s, port %d\n", name, (o->core != NULL) ? o->core : "tools/oracle/ropes", o->port); /* stdlib banner */
+        (void) fflush(stdout);                                                                                               /* stdlib: the launcher's log sees it at once */
     }
     else
     {
@@ -509,90 +582,166 @@ static agc_status_t load_rope(const sim_opts_t *o, const char *argv0)
     return (st);
 }
 
-/* --resume: a pad file is loaded like --pad; anything else (a yaAGC
- * core dump) is logged and the run is a fresh start.                   */
-static agc_status_t load_resume(const char *path)
+/**********************************************************************
+ * AGC: none -- power-on as yaAGC starts: agc_power_on, the rope, the
+ * pad / --resume pad, the clock and the power-on channels (yaAGC
+ * agc_engine_init), then GOJAM -> GOPROG; the script and the server.
+ *
+ * ARGUMENTS:
+ *   o      const sim_opts_t *  I  options
+ *   argv0  const char *        I  argv[0]
+ *
+ * RETURNS: agc_status_t -- OK, or the first step's failure
+ **********************************************************************/
+static agc_status_t start(const sim_opts_t *o, const char *argv0)
 {
-    agc_status_t st = AGC_STATUS_OK;
+    agc_status_t st = agc_power_on(o->vehicle); /* state, lanes, exec */
 
-    if (sim_pad_is_pad(path))
+    st = (st == AGC_STATUS_OK) ? load_rope(o, argv0) : st;                    /* fixed memory */
+    st = (st == AGC_STATUS_OK && o->pad != NULL) ? sim_pad_load(o->pad) : st; /* before GOJAM, like a core image */
+
+    if (st == AGC_STATUS_OK && o->resume != NULL && sim_pad_is_pad(o->resume))
     {
-        st = sim_pad_load(path);
+        st = sim_pad_load(o->resume);
+    }
+    else if (st == AGC_STATUS_OK && o->resume != NULL)
+    {
+        (void) fprintf(stderr, "agc_sim: resume file %s is not a pad file: fresh start\n", o->resume); /* stdlib diagnostic */
     }
     else
     {
-        (void) fprintf(stderr, "agc_sim: resume file %s is not a pad file: fresh start\n", path); /* diagnostic */
+        /* no --resume, or start-up already failed */
     }
+
+    sim_clock_init();
+    st = (st == AGC_STATUS_OK) ? sim_channels_init() : st;                                      /* channel 30 */
+    st = (st == AGC_STATUS_OK) ? agc_rupt_go() : st;                                            /* GOJAM -> GOPROG */
+    st = (st == AGC_STATUS_OK && o->script != NULL) ? sim_script_open(o->script) : st;          /* --script */
+    st = (st == AGC_STATUS_OK && o->mode != SIM_MODE_HEADLESS) ? sim_socket_open(o->port) : st; /* the server */
 
     return (st);
 }
 
-static agc_status_t start(const sim_opts_t *o, const char *argv0)
+/**********************************************************************
+ * AGC: none -- real-time pacing: sleep until the next 10 ms boundary;
+ * after falling more than 1 s behind (debugger, load) resynchronise.
+ *
+ * ARGUMENTS:
+ *   next  struct timespec *  I/O  the boundary, advanced by 10 ms
+ **********************************************************************/
+static void pace(struct timespec *next)
 {
-    agc_status_t st = agc_power_on(o->vehicle); /* state, lanes, exec   */
+    struct timespec now; /* monotonic time */
 
-    st = (st == AGC_STATUS_OK) ? load_rope(o, argv0) : st;
-
-    if (st == AGC_STATUS_OK && o->pad != NULL)
+    if (clock_gettime(CLOCK_MONOTONIC, &now) == 0)
     {
-        st = sim_pad_load(o->pad); /* before GOJAM, like a core image */
+        next->tv_nsec += SIM_TICK_NS;
+
+        if (next->tv_nsec >= SIM_NS_PER_S)
+        {
+            next->tv_nsec -= SIM_NS_PER_S;
+            next->tv_sec++;
+        }
+
+        long int ahead = (long int) (next->tv_sec - now.tv_sec) * SIM_NS_PER_S + (next->tv_nsec - now.tv_nsec); /* ns to sleep */
+
+        if (ahead > 0)
+        {
+            struct timespec d = {ahead / SIM_NS_PER_S, ahead % SIM_NS_PER_S}; /* the sleep */
+
+            (void) nanosleep(&d, NULL); /* stdlib: an early wake-up only shortens the tick */
+        }
+        else if (ahead < -SIM_TICK_NS * SIM_LAG_TICKS)
+        {
+            *next = now;
+        }
+        else
+        {
+            /* behind by less than a second: catch up */
+        }
     }
-
-    if (st == AGC_STATUS_OK && o->resume != NULL)
-    {
-        st = load_resume(o->resume);
-    }
-
-    st = (st == AGC_STATUS_OK) ? sim_clock_init() : st;
-    st = (st == AGC_STATUS_OK) ? agc_rupt_go() : st; /* GOJAM -> GOPROG */
-    st = (st == AGC_STATUS_OK) ? sim_channels_init() : st;
-
-    if (st == AGC_STATUS_OK && o->script != NULL)
-    {
-        st = sim_script_open(o->script);
-    }
-
-    if (st == AGC_STATUS_OK && o->mode != SIM_MODE_HEADLESS)
-    {
-        st = sim_socket_open(o->port);
-    }
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
 }
 
-int main(int argc, char *argv[])
+/**********************************************************************
+ * AGC: none -- one lockstep step: wait for credit, run it, acknowledge.
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- false once the stepping client has gone
+ **********************************************************************/
+static bool lockstep_step(void)
 {
-    sim_opts_t o;
+    uint32_t n    = sim_socket_take_steps();     /* credit, cs */
+    bool     more = !sim_socket_lost_lockstep(); /* the client is still there */
 
-    if (!parse_args(argc, argv, &o))
+    if (n == 0u && more && sim_socket_wait(SIM_WAIT_MS))
     {
-        (void) fprintf(stderr, "usage: agc_sim [--vehicle csm|lm] [--port N] " "[--max-cs N] [--script F] [--pad F] [--core ROPE] " "[--headless|--lockstep|--fast]\n"); /* diagnostic output only */
-
-        return (2); /* fprintf result irrelevant: exiting */
+        sim_socket_poll(); /* input (or a connection) is waiting */
     }
 
-    agc_status_t st = start(&o, argv[0]);
-
-    if (st != AGC_STATUS_OK)
+    for (uint32_t i = 0; i < n && i < (uint32_t) SIM_MAX_RUN_CS; i++)
     {
-        (void) fprintf(stderr, "agc_sim: start-up failed (status %d)\n", (int) st); /* diagnostic output only */
-
-        return (2); /* fprintf result irrelevant: exiting */
+        sim_script_tick(sim_clock_cs());
+        sim_clock_tick();
+        sim_socket_poll(); /* other peripherals keep talking */
     }
 
-    run(&o);
-    sim_socket_close();
-    sim_script_close();
-    print_summary(&o);
+    if (n != 0u)
+    {
+        sim_socket_ack(n);
+    }
 
-    sim_stats_t s;
+    return (more || n != 0u);
+}
+
+/**********************************************************************
+ * AGC: none -- the harness loop. RULE 2 EXCEPTION (file prolog): in the
+ * server modes without --max-cs this loop has no bound; it ends when
+ * the process is stopped or the lockstep client leaves.
+ *
+ * ARGUMENTS:
+ *   o  const sim_opts_t *  I  options
+ **********************************************************************/
+static void run(const sim_opts_t *o)
+{
+    struct timespec next;                                               /* real-time boundary */
+    bool            going = clock_gettime(CLOCK_MONOTONIC, &next) == 0; /* keep running */
+
+    while (going)
+    {
+        if (o->max_cs != 0u && sim_clock_cs() >= o->max_cs)
+        {
+            going = false;
+        }
+        else if (o->mode == SIM_MODE_LOCKSTEP)
+        {
+            going = lockstep_step();
+        }
+        else
+        {
+            sim_socket_poll();
+            sim_script_tick(sim_clock_cs());
+            sim_clock_tick();
+
+            if (o->mode == SIM_MODE_REALTIME)
+            {
+                pace(&next);
+            }
+        }
+    }
+}
+
+/**********************************************************************
+ * AGC: none -- the end-of-run summary on stdout.
+ *
+ * ARGUMENTS:
+ *   o  const sim_opts_t *  I  options
+ **********************************************************************/
+static void print_summary(const sim_opts_t *o)
+{
+    sim_stats_t s; /* run statistics */
 
     sim_clock_stats(&s);
-
-    return ((s.errors != 0u) ? 1 : 0);
+    (void) printf("agc_sim %s: %lu cs, %lu jobs, %lu restarts, %lu busy, %lu errors, MODREG %d, FAILREG %05o %05o %05o\n", (o->vehicle == AGC_VEHICLE_LM) ? "LM" : "CSM", (unsigned long int) s.cs, (unsigned long int) s.jobs, (unsigned long int) s.restarts, (unsigned long int) s.busy_ticks, (unsigned long int) s.errors, (int) agc_erase_modreg(), (unsigned int) agc_erase_failreg(0), (unsigned int) agc_erase_failreg(1), (unsigned int) agc_erase_failreg(2));                                                                                            /* stdlib summary; vehicle name */
+    (void) printf("agc_sim rupts: T6 %lu T5 %lu T3 %lu T4 %lu KEY1 %lu KEY2 %lu UP %lu DOWN %lu RADAR %lu HAND %lu\n", (unsigned long int) s.rupts[SIM_IRQ_T6], (unsigned long int) s.rupts[SIM_IRQ_T5], (unsigned long int) s.rupts[SIM_IRQ_T3], (unsigned long int) s.rupts[SIM_IRQ_T4], (unsigned long int) s.rupts[SIM_IRQ_KEY1], (unsigned long int) s.rupts[SIM_IRQ_KEY2], (unsigned long int) s.rupts[SIM_IRQ_UPLINK], (unsigned long int) s.rupts[SIM_IRQ_DOWNLINK], (unsigned long int) s.rupts[SIM_IRQ_RADAR], (unsigned long int) s.rupts[SIM_IRQ_HAND]); /* stdlib summary */
 }

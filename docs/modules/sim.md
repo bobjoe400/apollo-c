@@ -12,12 +12,12 @@ the same protocol.
 
 | Piece | AGC / yaAGC reference | C (src/sim/) |
 |---|---|---|
-| clock: TIME1/2 every cs, TIME3 (T3RUPT), TIME5 at +5 ms (T5RUPT), TIME4 at +7.5 ms (T4RUPT), TIME6 16 DINC/cs when ch13 b15 (T6RUPT, clears b15), DOWNRUPT every 20 ms, radar cycle (ch13 b4, 9 x TIME5 phases -> RADARUPT), HANDRUPT traps (ch13 b12-14) | yaAGC agc_engine.c (counter timing); INTERRUPT_LEAD_INS (CM p.131, LM p.153) | clock.c |
-| interrupt priority T6 T5 T3 T4 KEY1 KEY2 UP DOWN RADAR HAND, held while INHINT | INTERRUPT_LEAD_INS vector order | clock.c |
-| executive: agc_exec_run_one until idle, bounded per cs | EXECUTIVE (C p.1208) | clock.c |
+| clock: 32 scaler counts per cs (yaAGC phases): TIME1/2/3 at LOSCALAR&037 = 020 (TIME3 overflow -> T3RUPT), TIME5 at 000 (T5RUPT) + radar gate (ch13 b4; 9 gates -> RADARUPT at 036), TIME4 at 010 (T4RUPT), TIME6 DINC on odd counts when ch13 b15 (ZOUT -> T6RUPT, clears b15), DOWNRUPT every 20 ms, HANDRUPT traps (ch13 b12-14) every count; scaler on ch 3/4 | yaAGC agc_engine.c (counter timing); INTERRUPT_LEAD_INS (CM p.131, LM p.153) | clock.c |
+| interrupt priority T6 T5 T3 T4 KEY1 KEY2 UP DOWN RADAR HAND, taken after each scaler count, held while INHINT | INTERRUPT_LEAD_INS vector order | clock.c |
+| executive: agc_exec_run_one until idle after each count that took an interrupt and at the end of the cs, bounded per call | EXECUTIVE (C p.1208) | clock.c |
 | output channels broadcast on change (sampled after every interrupt and job); 010 after every T4RUPT, 034/035 after every DOWNRUPT | yaAGC ChannelOutput | channels.c |
 | fictitious 0163 DSKY lamps (KEY REL, OPR ERR, V/N flash 1.28 s, RESTART, STBY, TEMP) | yaAGC UpdateDSKY | channels.c |
-| output counters: CDUxCMD -> 0174-0176, GYROCMD -> 0177, CDUT/SCMD -> 0171/0172 | yaAGC BurstOutput, gyro | channels.c |
+| output counters: CDUxCMD -> 0174-0176 (<= 24 per axis per 75 ms), GYROCMD -> 0177 (bursts <= 1024 per 0.25 s), CDUT/SCMD -> 0171/0172; DINC by packet on 053-055 answers POUT/MOUT/ZOUT | yaAGC BurstOutput, gyro, CounterDINC | channels.c, counters.c |
 | inputs: u-bit masks, counters (0200|addr: PINC MINC PCDU MCDU DINC SHINC SHANC), 015 -> KEYRUPT1, 016 -> KEYRUPT2, 0173 -> INLINK + UPRUPT, 0166-0170 RHC latched on ch13 b8+9 | yaAGC SocketAPI ChannelInput, UnprogrammedIncrement | channels.c, counters.c |
 | TCP server ports 19697..19706, one client each, connect update | yaAGC ChannelRoutineGeneric | socket.c |
 | lockstep: in 0150 = run N cs, out 0151 = ack (sim-only fictitious channels) | -- | socket.c, main.c |
@@ -25,6 +25,7 @@ the same protocol.
 | yaAGC command line (--core rope -> vehicle, --port, --cfg, --resume = pad file or logged) | VirtualAGC.cpp FormCommands | main.c, pad.c |
 
 ## Progress
+- REVIEWED 2026-10-12 by review-sim (docs/modules/review-sim.md): clock reworked to per-scaler-count phases, protocol fixes S1-S13, style 524 -> 0, unit test tests/sim/harness.c.
 - DONE design (this note)
 - DONE src/sim/internal.h, clock.c (counters, priority interrupts, exec), channels.c (outputs, 0163, drives, inputs), counters.c (PINC..SHANC map), socket.c (server, packets, lockstep), script.c (--script), main.c (modes; power-on = GOJAM -> GOPROG)
 - DONE tools/sim_client.py (lockstep or --connect/--realtime; relay decoding as yaDSKY2; scenario language)
@@ -132,20 +133,20 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
   the C call passes no address (agc_dsky_nvsub_mctbs exists for this) and
   SKEEP1-3 are not readable through the ECADR image (src/core/ecadr.c), so
   R1-R3 show 00000 for every bank. Scenarios show_banksum_* xexpect B5.
-- B6 STILL STANDS (2026-10-12: now clock.c:156,163, unchanged). src/csm/burns/sps/clock.c:156,163 cknvwrd1(): the CLOCKJOB shows the
-  engine-on enable / engine-fail flashes as CLOCPLAY of V99N40 / V97N40.
-  The AGC (ENGREQST / FAILDSP, P40-P47.agc C p.705) does CAF V06N40,
-  CLOCPLAY: the first part is V06N40 and the flashing V99/V97 is pasted
-  as the second part from NVWORD1 (-BIT9 / -0; 1STOR2ND, DISPLAY_INTERFACE
-  _ROUTINES p.1477). The C passes 99 as the verb to execute, so pinball
-  runs extended verb 99 = GOLOADLV -> LOADLV -> RECALTST, which wakes the
-  ENDIDLE at once with the ENTER return (gdb: pin_recaltst <- agc_dsky_loadlv
-  <- agc_extverb_goloadlv <- fan_shared(verb 99)): V99E, SPS bypassed
-  (P40RCS), V16N85 with the full DV at TIG-2.4 s, no V99 flash, no ignition.
-  Fix: pass agc_dsky_vn(6, 40) and give the display NVWORD1
-  (agc_dsky_set_nvword1(csm.nvword1), as src/lm/burns/ignition/clock.c:198
-  does; display_if.c dif_second_vn pastes 97 - NVWORD1). Scenario e
-  xexpects B6.
+- B6 FIXED (fix-b6, 2026-10-12; docs/modules/fix-b6.md). CKNVWRD1
+  (src/csm/burns/sps/clock.c) showed the engine-on enable / engine-fail
+  flashes as CLOCPLAY of V99N40 / V97N40, so pinball ran extended verb 99
+  (GOLOADLV -> LOADLV -> RECALTST), which answered the flash with ENTER
+  (V99E: SPS bypassed). Now as ENGREQST / FAILDSP (P40-P47.agc C p.705):
+  CLOCPLAY of V06N40 with NVWORD1 = -BIT9 / -0 given to the display
+  interface, which pastes the flashing V99 / V97 as the second part
+  (1STOR2ND, C p.1477; display_if.c dif_second_vn). The LM CLOKJOB -13 /
+  -35 had the same defect (V99Nxx / V97Nxx as the first part): fixed to
+  V06Nxx. Test: tests/guidance/guidance.c test 5. Scenario e: the five
+  xexpect B6 lines are expect; it also needed V48 (CSM weight: WEIGHT/G =
+  0 overflowed S40.13 into TGO = 16383 cs, beyond the waitlist limit), a
+  constant-rate PIPA feed (zero SPS pads: non-impulsive, steered burn) and
+  the POSTBURN V16N40 PRO before V16N85.
 - B4 FIXED (review-exec-sched R10, 2026-10-11): wait2() takes both WAIT2
   CCS paths (C(TIME3) < 200: TD - T1 + 1 = DT + C(TIME3) + 1); test
   test_waitlist_ruptagn_insert. Scenario e can `expect` V16N45. Old note:
