@@ -24,8 +24,8 @@
  **********************************************************************/
 #include "internal.h"
 
-static agc_csm_rcs_t    rcs;    /* RCS DAP erasables                     */
-static agc_csm_tvc_t    tvc;    /* TVC DAP erasables                     */
+static agc_csm_rcs_t rcs;    /* RCS DAP erasables                     */
+static agc_csm_tvc_t tvc;    /* TVC DAP erasables                     */
 static agc_csm_dapcom_t dapcom; /* RCS/TVC common storage and pad loads  */
 
 /**********************************************************************

@@ -88,11 +88,6 @@ static agc_tp_words_t with_top(agc_w3_t m, agc_w2_t top)
     m.m0 = top.hi;
     m.m1 = top.lo;
 
-    if (!AGC_ASSERT(agc_w_ok(m.m2)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
-
     return (agc_w3_to_words(m));
 }
 
@@ -171,21 +166,21 @@ agc_tp_words_t agc_mpac_bdsu(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
  **********************************************************************/
 agc_tp_words_t agc_mpac_tad(agc_interp_t *ip, agc_tp_words_t m, agc_tp_words_t x)
 {
-    agc_w3_t w   = agc_w3_from_words(m); /* MPAC words */
-    agc_w3_t t   = agc_w3_from_words(x); /* operand words */
+    agc_w3_t w = agc_w3_from_words(m); /* MPAC words */
+    agc_w3_t t = agc_w3_from_words(x); /* operand words */
     agc_w2_t lo2 = {w.m1, w.m2};
     agc_w2_t add = {t.m1, t.m2};
     agc_w2_t top;                        /* MPAC, MPAC+1 after OVERFLOW */
-    int      o   = 0;                    /* DAS / TS overflow */
+    int o = 0;                    /* DAS / TS overflow */
 
-    lo2  = agc_w_das(lo2, add, &o);       /* DCA 1; DAS MPAC +1 */
+    lo2 = agc_w_das(lo2, add, &o);       /* DCA 1; DAS MPAC +1 */
     w.m1 = lo2.hi;
     w.m2 = lo2.lo;
     w.m0 = agc_w_ts(o + t.m0 + w.m0, &o); /* AD 0; AD MPAC; TS */
 
     if (o != 0)
     {
-        top  = agc_w_overflow(agc_w3_top(w), o, &ip->ovfind); /* SETOVF */
+        top = agc_w_overflow(agc_w3_top(w), o, &ip->ovfind); /* SETOVF */
         w.m0 = top.hi;
         w.m1 = top.lo;
     }
@@ -284,7 +279,7 @@ agc_tp_words_t agc_mpac_dsq(agc_tp_words_t m)
  **********************************************************************/
 agc_tp_words_t agc_mpac_ddv(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t x)
 {
-    int      o = 0; /* OVFIND of DDV */
+    int o = 0; /* OVFIND of DDV */
     agc_w3_t q;     /* MPAC after the divide */
 
     q = agc_w_ddv(agc_w3_from_words(m), agc_w2_from_words(x), &o, &ip->dvsign_neg);
@@ -292,11 +287,6 @@ agc_tp_words_t agc_mpac_ddv(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t x
     if (o != 0)
     {
         ip->ovfind = 1; /* CAF ONE; TS OVFIND */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(q.m0)))
-    {
-        return (m);
     }
 
     return (agc_w3_to_words(q));
@@ -316,7 +306,7 @@ agc_tp_words_t agc_mpac_ddv(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t x
 agc_tp_words_t agc_mpac_bddv(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t x)
 {
     agc_tp_words_t dividend = {x.hi, x.lo, m.lo}; /* MPAC after DXCH */
-    agc_dp_words_t divisor  = {m.hi, m.mid};      /* BUF            */
+    agc_dp_words_t divisor = {m.hi, m.mid};      /* BUF            */
 
     return (agc_mpac_ddv(ip, dividend, divisor));
 }
@@ -357,12 +347,7 @@ agc_tp_words_t agc_mpac_shift(agc_interp_t *ip, agc_tp_words_t m, int n)
 {
     agc_w3_t w = agc_w3_from_words(m); /* MPAC words */
 
-    if (!AGC_ASSERT(ip != 0) || (n == 0))
-    {
-        return (m);
-    }
-
-    if (!AGC_ASSERT((n >= -SHIFT_COUNT_MAX) && (n <= SHIFT_COUNT_MAX)))
+    if (n == 0)
     {
         return (m);
     }
@@ -387,11 +372,6 @@ agc_tp_words_t agc_mpac_shift_round(agc_interp_t *ip, agc_tp_words_t m, int n)
 {
     agc_w3_t w = agc_w3_from_words(m); /* MPAC words */
 
-    if (!AGC_ASSERT((n >= -SHIFT_COUNT_MAX) && (n <= SHIFT_COUNT_MAX)))
-    {
-        return (m);
-    }
-
     if (n < 0)
     {
         return (agc_w3_to_words(agc_w_genscr(w, -n, true)));
@@ -415,15 +395,10 @@ agc_tp_words_t agc_mpac_shift_round(agc_interp_t *ip, agc_tp_words_t m, int n)
  **********************************************************************/
 agc_tp_words_t agc_mpac_norm(agc_tp_words_t m, int *nshift)
 {
-    int      count = 0;                                        /* left shifts done */
-    agc_w3_t w     = agc_w_tslc(agc_w3_from_words(m), &count); /* normalised words */
+    int count = 0;                                        /* left shifts done */
+    agc_w3_t w = agc_w_tslc(agc_w3_from_words(m), &count); /* normalised words */
 
     *nshift = count;
-
-    if (!AGC_ASSERT((count >= 0) && (count <= 42)))
-    {
-        return (m);
-    }
 
     return (agc_w3_to_words(w));
 }
@@ -443,9 +418,9 @@ agc_tp_words_t agc_mpac_dcomp(agc_tp_words_t m)
 {
     agc_tp_words_t r; /* complemented words */
 
-    r.hi  = (agc_sp_t) -m.hi;
+    r.hi = (agc_sp_t) -m.hi;
     r.mid = (agc_sp_t) -m.mid;
-    r.lo  = (agc_sp_t) -m.lo;
+    r.lo = (agc_sp_t) -m.lo;
 
     return (r);
 }
@@ -501,7 +476,7 @@ agc_tp_words_t agc_mpac_dot(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     agc_w3_t m; /* DOTSUB words */
 
     ip->dvsign_neg = false; /* PREDOT: DOTINC = 2 */
-    m              = agc_w_dotsub(u, v, &ip->ovfind);
+    m = agc_w_dotsub(u, v, &ip->ovfind);
 
     return (agc_w3_to_words(m));
 }

@@ -71,22 +71,12 @@ agc_sp_t lm_dap_time6_value(void)
 {
     uint16_t raw = agc_rupt_time(6); /* TIME6 register (15-bit ones' complement) */
 
-    if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
-    {
-        return (0); /* no valid result */
-    }
-
     if (raw <= LM_T6_POSMAX)
     {
         return ((agc_sp_t) raw);
     }
 
     agc_sp_t v = (agc_sp_t) ((int32_t) raw - (int32_t) LM_T6_NEGZERO); /* negative TIME6 value, scaled 0.625 ms per count */
-
-    if (!AGC_ASSERT(v <= 0))
-    {
-        return (0); /* no valid result */
-    }
 
     return (v);
 }
@@ -148,26 +138,26 @@ agc_status_t lm_dap_write(agc_sp_t index, uint16_t jets)
     if (index == T6_IDX_P)
     {
         agc_chan_write(006, jets);
-
-        return (AGC_STATUS_OK);
-    }
-
-    uint16_t keep; /* the other axis' channel 5 bits */
-
-    if (index == T6_IDX_U)
-    {
-        keep = (uint16_t) (agc_chan_read(005) & (uint16_t) ~T6_UBITS & 077777u);
-    }
-    else if (AGC_ASSERT(index == T6_IDX_V))
-    {
-        keep = (uint16_t) (agc_chan_read(005) & T6_UBITS);
     }
     else
     {
-        return (AGC_STATUS_BAD_ARG);
-    }
+        uint16_t keep; /* the other axis' channel 5 bits */
 
-    agc_chan_write(005, (uint16_t) (keep + jets));
+        if (index == T6_IDX_U)
+        {
+            keep = (uint16_t) (agc_chan_read(005) & (uint16_t) ~T6_UBITS & 077777u);
+        }
+        else if (AGC_ASSERT(index == T6_IDX_V))
+        {
+            keep = (uint16_t) (agc_chan_read(005) & T6_UBITS);
+        }
+        else
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_chan_write(005, (uint16_t) (keep + jets));
+    }
 
     return (AGC_STATUS_OK); /* AD L            */
 }
@@ -261,76 +251,19 @@ agc_status_t lm_dap_jtlst(void)
         d->t6furtha[1] = d->t6next[1];
         d->t6next[0]   = (agc_sp_t) (t - time6);
         d->t6next[1]   = idx;
-
-        return (AGC_STATUS_OK);
     }
-
-    d->t6furtha[0] = lm_dap_sat(-mid); /* LASTCHG        */
-
-    if (!AGC_ASSERT(d->t6furtha[0] >= 0))
+    else
     {
-        return (AGC_STATUS_BAD_ARG);
+        d->t6furtha[0] = lm_dap_sat(-mid); /* LASTCHG        */
+
+        if (!AGC_ASSERT(d->t6furtha[0] >= 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
     }
 
     return (AGC_STATUS_OK);
 } /* lm_dap_jtlst */
-
-/**********************************************************************
- * T6JOB (p.1404): a T6RUPT is due. Shift the list up one, restart TIME6
- * if the next entry is a real time (<= 511 counts), then write the queued
- * jets of the axis whose firing just ended.
- *
- * FUNCTION NAME: t6job
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
- **********************************************************************/
-static agc_status_t t6job(lm_dap_t *d)
-{
-    agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */
-    agc_sp_t head = d->t6next[0];    /* DXCH T6NEXT: delta to the next entry, scaled 0.625 ms per count */
-    agc_sp_t done = d->nxt6adr;      /* LXCH NXT6ADR: axis index whose firing ends now (unscaled) */
-
-    if (!AGC_ASSERT(done == T6_IDX_P || done == T6_IDX_U || done == T6_IDX_V))
-    {
-        return (AGC_STATUS_BAD_ARG); /* NXT6ADR is an axis index */
-    }
-
-    d->nxt6adr     = d->t6next[1];
-    d->t6next[0]   = d->t6furtha[0]; /* DXCH T6FURTHA  */
-    d->t6next[1]   = d->t6furtha[1];
-    d->t6furtha[0] = LM_POSMAX;
-    d->t6furtha[1] = 0;
-    agc_status_t st;                 /* status of the TIME6 restart */
-
-    if ((int32_t) head + T6_PRIO37 > LM_POSMAX)
-    { /* list empty     */
-        st = set_time6(LM_POSMAX);
-    }
-    else
-    {
-        st = set_time6(head); /* ENABLET6       */
-        agc_chan_or(013, T6_ENABLE);
-
-        if ((int32_t) d->t6next[0] + T6_PRIO37 > LM_POSMAX)
-        {
-            d->t6next[0] = LM_POSMAX;
-        }
-    }
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (lm_dap_write_next(done)); /* GOCH56         */
-}
 
 /**********************************************************************
  * T6JOBCHK (p.1404): CCS TIME6. Counting: return. -0: a T6RUPT is due,
@@ -369,7 +302,61 @@ agc_status_t agc_lm_dap_t6jobchk(void)
         return (AGC_STATUS_BAD_ARG); /* DEVIATION: AGC hangs here */
     }
 
-    return (t6job(lm_dap_state()));
+    /**********************************************************************
+     * T6JOB (p.1404): a T6RUPT is due. Shift the list up one, restart TIME6
+     * if the next entry is a real time (<= 511 counts), then write the queued
+     * jets of the axis whose firing just ended.
+     *
+     * FUNCTION NAME: t6job
+     *
+     * ARGUMENTS:
+     *   Argument  Type        I/O  Description (scale)
+     *   --------  ----------  ---  --------------------
+     *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+     *          failed assertion, else the status of the routine it
+     *          ends in
+     **********************************************************************/
+    lm_dap_t *d = lm_dap_state();
+
+    agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */
+    agc_sp_t head = d->t6next[0];    /* DXCH T6NEXT: delta to the next entry, scaled 0.625 ms per count */
+    agc_sp_t done = d->nxt6adr;      /* LXCH NXT6ADR: axis index whose firing ends now (unscaled) */
+
+    if (!AGC_ASSERT(done == T6_IDX_P || done == T6_IDX_U || done == T6_IDX_V))
+    {
+        return (AGC_STATUS_BAD_ARG); /* NXT6ADR is an axis index */
+    }
+
+    d->nxt6adr     = d->t6next[1];
+    d->t6next[0]   = d->t6furtha[0]; /* DXCH T6FURTHA  */
+    d->t6next[1]   = d->t6furtha[1];
+    d->t6furtha[0] = LM_POSMAX;
+    d->t6furtha[1] = 0;
+    agc_status_t st;                 /* status of the TIME6 restart */
+
+    if ((int32_t) head + T6_PRIO37 > LM_POSMAX)
+    { /* list empty     */
+        st = set_time6(LM_POSMAX);
+    }
+    else
+    {
+        st = set_time6(head); /* ENABLET6       */
+        agc_chan_or(013, T6_ENABLE);
+
+        if ((int32_t) d->t6next[0] + T6_PRIO37 > LM_POSMAX)
+        {
+            d->t6next[0] = LM_POSMAX;
+        }
+    }
+
+    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (lm_dap_write_next(done)); /* GOCH56         */
 }
 
 /**********************************************************************
@@ -416,25 +403,13 @@ agc_status_t agc_lm_dap_t6rupt(void)
  **********************************************************************/
 void agc_lm_dap_time6_count(uint16_t counts)
 {
-    if (!AGC_ASSERT(counts <= LM_T6_POSMAX))
-    {
-        return; /* more than one TIME6 period per call */
-    }
-
     uint16_t raw = agc_rupt_time(6); /* TIME6 register */
 
-    if ((agc_chan_read(013) & T6_ENABLE) == 0u || raw > LM_T6_POSMAX || counts == 0u)
+    if (!((agc_chan_read(013) & T6_ENABLE) == 0u || raw > LM_T6_POSMAX || counts == 0u)) /* idle, or rupt already due */
     {
-        return; /* idle, or rupt already due */
-    }
+        uint16_t next = (counts > raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts); /* counted past +0: -0, a T6RUPT is due */
 
-    uint16_t next = (counts > raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts); /* counted past +0: -0, a T6RUPT is due */
-
-    agc_rupt_set_time(6, next);
-
-    if (!AGC_ASSERT(next <= LM_T6_NEGZERO))
-    {
-        return;
+        agc_rupt_set_time(6, next);
     }
 }
 
@@ -450,17 +425,7 @@ void agc_lm_dap_time6_count(uint16_t counts)
  **********************************************************************/
 bool agc_lm_dap_t6_pending(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (false); /* TIME6 belongs to the LM DAP */
-    }
-
     uint16_t raw = agc_rupt_time(6); /* TIME6 register */
-
-    if (!AGC_ASSERT(raw <= LM_T6_NEGZERO))
-    {
-        return (false);
-    }
 
     return (raw == LM_T6_NEGZERO);
 }

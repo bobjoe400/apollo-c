@@ -197,11 +197,6 @@ static uint16_t arith_add16(uint16_t a, uint16_t b)
         s = (s + 1u) & 0xFFFFu;
     }
 
-    if (!AGC_ASSERT(s != 0u || (a == 0u && b == 0u)))
-    {
-        return (0); /* +0 only from +0 + +0 with end-around carry */
-    }
-
     return ((uint16_t) s);
 }
 
@@ -324,33 +319,28 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
     if (num == 0)
     {
         r.hi = (d == 0) ? ARITH_MAXMAG : 0; /* 0/0: max, sign rules  */
-
-        return (r);
     }
-
-    if (ah > ad || (ah == ad && nn.lo != 0))
+    else
     {
-        return (dv_improper(n, d)); /* the registers as they are */
+        if (ah > ad || (ah == ad && nn.lo != 0))
+        {
+            return (dv_improper(n, d)); /* the registers as they are */
+        }
+
+        if (ah == ad)
+        { /* |dividend| = |divisor| */
+            r.hi = ((nn.hi > 0) == (d > 0)) ? ARITH_MAXMAG : -ARITH_MAXMAG; /* |n| = |d|: A = +-POSMAX */
+            r.lo = nn.hi;
+        }
+        else
+        {
+            int32_t q   = num / (int32_t) d;     /* quotient, truncated (DV), scale of n/d */
+            int32_t rem = num - q * (int32_t) d; /* remainder, dividend sign, minor-word units */
+
+            r.hi = lm_dap_sat(q);
+            r.lo = (agc_sp_t) rem;
+        }
     }
-
-    if (ah == ad)
-    { /* |dividend| = |divisor| */
-        r.hi = ((nn.hi > 0) == (d > 0)) ? ARITH_MAXMAG : -ARITH_MAXMAG; /* |n| = |d|: A = +-POSMAX */
-        r.lo = nn.hi;
-
-        return (r);
-    }
-
-    int32_t q   = num / (int32_t) d;     /* quotient, truncated (DV), scale of n/d */
-    int32_t rem = num - q * (int32_t) d; /* remainder, dividend sign, minor-word units */
-
-    if (!AGC_ASSERT(q >= -ARITH_MAXMAG && q <= ARITH_MAXMAG))
-    {
-        return ((lm_dp_pair_t){0}); /* no valid result */
-    }
-
-    r.hi = lm_dap_sat(q);
-    r.lo = (agc_sp_t) rem;
 
     return (r);
 } /* lm_dap_dvqr */
@@ -391,11 +381,6 @@ agc_sp_t lm_dap_dv(lm_dp_pair_t n, agc_sp_t d)
  **********************************************************************/
 agc_sp_t lm_dap_wrap(int32_t v)
 {
-    if (!AGC_ASSERT(v >= -3 * ARITH_MAXMAG && v <= 3 * ARITH_MAXMAG))
-    {
-        return (0); /* no valid result */
-    }
-
     for (int i = 0; i < 2; i++)
     { /* a 3-term sum may need two  */
         if (v > ARITH_MAXMAG)
@@ -427,11 +412,6 @@ agc_sp_t lm_dap_wrap(int32_t v)
 agc_sp_t lm_dap_sat(int32_t v)
 {
     agc_sp_t r; /* OVERSUB result, unscaled word */
-
-    if (!AGC_ASSERT(v >= -4 * ARITH_WORD && v <= 4 * ARITH_WORD))
-    {
-        return (0); /* more than a 16-bit A can hold */
-    }
 
     if (v > ARITH_MAXMAG)
     {
@@ -543,16 +523,6 @@ lm_dp_pair_t lm_dap_ddoubl(lm_dp_pair_t x)
  **********************************************************************/
 agc_sp_t lm_dap_msu(uint16_t a, uint16_t b)
 {
-    if (!AGC_ASSERT(a <= ARITH_MASK15))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(b <= ARITH_MASK15))
-    {
-        return (0); /* no valid result */
-    }
-
     int32_t d = ((int32_t) a - (int32_t) b) & ARITH_MASK15; /* 15-bit two's complement difference a - b */
     int32_t v;                                              /* ones' complement value of the difference */
 
@@ -587,17 +557,7 @@ agc_sp_t lm_dap_msu(uint16_t a, uint16_t b)
  **********************************************************************/
 uint16_t lm_dap_ones_to_twos(int32_t v)
 {
-    if (!AGC_ASSERT(v >= -ARITH_MAXMAG && v <= ARITH_MAXMAG))
-    {
-        return (0); /* no valid result */
-    }
-
     int32_t w = (v >= 0) ? v : (v + ARITH_TWOS); /* two's complement word of v */
-
-    if (!AGC_ASSERT(w >= 0 && w <= ARITH_MASK15))
-    {
-        return (0); /* no valid result */
-    }
 
     return ((uint16_t) w);
 }
@@ -655,11 +615,6 @@ agc_sp_t lm_dap_dim(agc_sp_t v)
     else if (v < 0)
     {
         r = (agc_sp_t) (v + 1);
-    }
-
-    if (!AGC_ASSERT(r >= -ARITH_MAXMAG + 1 || r == 0))
-    {
-        return (0); /* no valid result */
     }
 
     return (r);

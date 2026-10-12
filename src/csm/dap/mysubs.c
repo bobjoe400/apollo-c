@@ -255,9 +255,9 @@ agc_sp_t csm_dap_mp_lo(agc_sp_t a, agc_sp_t b)
  **********************************************************************/
 agc_sp_t csm_dap_dv(agc_dp_t num, agc_sp_t den)
 {
-    bool    neg = ((num < 0) != (den < 0)) && (num != 0);     /* quotient sign */
-    int64_t an  = (num < 0) ? -(int64_t) num : (int64_t) num; /* ?: |A,L|, 2^-28 units */
-    int64_t ad  = (den < 0) ? -(int64_t) den : (int64_t) den; /* ?: |divisor|, 2^-14 units */
+    bool neg = ((num < 0) != (den < 0)) && (num != 0);     /* quotient sign */
+    int64_t an = (num < 0) ? -(int64_t) num : (int64_t) num; /* ?: |A,L|, 2^-28 units */
+    int64_t ad = (den < 0) ? -(int64_t) den : (int64_t) den; /* ?: |divisor|, 2^-14 units */
 
     if ((ad == 0) || (an >= ad * W_ONE))
     {

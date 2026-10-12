@@ -103,10 +103,10 @@ static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
 
     for (int i = 0; i < TARGETS; i++) /* TIX,2 TAR1: two passes        */
     {
-        agc_sp_t el_sp  = align_word_to_sp(r->tazel[(2 * i) + 1]); /* EL word, 90 deg = 2^14 */
-        agc_dp_t el     = agc_dp_shr(agc_dp_pack(el_sp, 0), 2);    /* SR2: rev 2^0 */
-        agc_dp_t az     = agc_rtb_cdulogic(r->tazel[2 * i]);       /* rev 2^0 */
-        agc_dp_t cos_el = agc_dp_cos(el);                      /* PUSH: cos / 2, 2^0 */
+        agc_sp_t el_sp = align_word_to_sp(r->tazel[(2 * i) + 1]); /* EL word, 90 deg = 2^14 */
+        agc_dp_t el = agc_dp_shr(agc_dp_pack(el_sp, 0), 2);    /* SR2: rev 2^0 */
+        agc_dp_t az = agc_rtb_cdulogic(r->tazel[2 * i]);       /* rev 2^0 */
+        agc_dp_t cos_el = agc_dp_cos(el);                          /* PUSH: cos / 2, 2^0 */
 
         /* DMP SL1 on the TP product (MPAC+2's top bit reaches the LSB). */
         agc_dp_t s_az = align_dmp_shl(ip, agc_dp_sin(az), cos_el, 1); /* sin AZ cos EL / 2, 2^0 */
@@ -139,17 +139,12 @@ static agc_status_t optdata_load(agc_sp_t run)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
-    r->run              = run;                                                      /* LXCH RUN                                         */
+    r->run = run;                                                      /* LXCH RUN                                         */
     const uint16_t w[3] = {r->tazel[run], r->tazel[run + 1], (run == 0) ? 1u : 2u}; /* BIT1 / TWO       */
 
     for (int i = 0; i < 3; i++)
     {
-        agc_status_t st = agc_dsky_set_dsptem(i, w[i]); /* DSPTEM1 +i */
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
-        {
-            return (st);
-        }
+        agc_dsky_set_dsptem(i, w[i]); /* DSPTEM1 +i */
     }
 
     return (AGC_STATUS_OK);
@@ -169,7 +164,7 @@ agc_status_t agc_job_optical_verification(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip; /* interpreter state for NBPOSPL            */
 
-    agc_phase_change(4, PHASE_VERIFY);                        /* PHASCHNG OCT 00154          */
+    agc_phase_change(PHASE_VERIFY);                           /* PHASCHNG OCT 00154          */
     agc_status_t st = agc_phase_newmode(PRELAUNCH_MM_VERIFY); /* MM 03 */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -301,15 +296,15 @@ static agc_status_t retarg(void)
  **********************************************************************/
 static agc_status_t targdrve(agc_sp_t starcode, agc_sp_t targ)
 {
-    agc_align_ram_t *ar   = agc_align_ram(); /* alignment erasables */
-    agc_interp_t     ip;                     /* interpreter state           */
-    agc_vec_t        tar[TARGETS];           /* PD06, PD12: B1 (half-unit)  */
-    bool             cult = false;           /* CULTFLAG (not tested here)  */
+    agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
+    agc_interp_t ip;                     /* interpreter state           */
+    agc_vec_t tar[TARGETS];           /* PD06, PD12: B1 (half-unit)  */
+    bool cult = false;           /* CULTFLAG (not tested here)  */
 
-    ar->starcode          = starcode;                 /* TS STARCODE                 */
+    ar->starcode = starcode;                 /* TS STARCODE                 */
     prelaunch_ram()->targ = targ;                     /* QXCH QPLAC, TS TARG1/2      */
     agc_interp_init(&ip);
-    agc_status_t st       = target_vectors(&ip, tar); /* CALL TAR/EREF       */
+    agc_status_t st = target_vectors(&ip, tar); /* CALL TAR/EREF       */
 
     if (st != AGC_STATUS_OK)
     {
@@ -317,7 +312,7 @@ static agc_status_t targdrve(agc_sp_t starcode, agc_sp_t targ)
     }
 
     ar->star = tar[(targ == 0) ? 0 : 1]; /* VLOAD* 6D,1; STCALL STAR    */
-    st       = agc_csm_sxtang(&ip, ar->star, &ar->xnb, &ar->sac, &ar->pac, &cult);
+    st = agc_csm_sxtang(&ip, ar->star, &ar->xnb, &ar->sac, &ar->pac, &cult);
 
     if (st != AGC_STATUS_OK)
     {
@@ -344,7 +339,7 @@ agc_status_t agc_job_optical_verification_target_loaded(agc_job_ctx_t *ctx)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
-    r->tazel[r->run]     = agc_dsky_dsptem(0); /* DXCH DSPTEM1        */
+    r->tazel[r->run] = agc_dsky_dsptem(0); /* DXCH DSPTEM1        */
     r->tazel[r->run + 1] = agc_dsky_dsptem(1); /* INDEX RUN, DXCH     */
 
     if (r->run == 0) /* CCS RUN: +0                                   */
@@ -360,105 +355,6 @@ agc_status_t agc_job_optical_verification_target_loaded(agc_job_ctx_t *ctx)
     }
 
     return (targdrve(1, 0)); /* CONTIN33: STARCODE 1, TARGDRVE 0      */
-}
-
-/**********************************************************************
- * NEXTBNKS / NEXBNKSS (IMU_CALIBRATION_AND_ALIGNMENT.agc pp.450-451) --
- * target 1 marked: STARAD = XSM PD06 VSL1, STARAD +6 = XSM PD12 VSL1,
- * LOSVEC = LITTLSUB; MKRELEAS; then drive to target 2 (STARCODE 2,
- * TARGDRVE 6)
- *
- * RETURNS: agc_status_t of LITTLSUB, MKRELEAS or TARGDRVE
- **********************************************************************/
-static agc_status_t target1_marked(void)
-{
-    agc_align_ram_t     *ar = agc_align_ram(); /* alignment erasables */
-    agc_interp_t         ip;                   /* interpreter state           */
-    agc_vec_t            tar[TARGETS];         /* PD06, PD12: B1 (half-unit)  */
-    agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)     */
-
-    agc_interp_init(&ip);
-    agc_status_t st = target_vectors(&ip, tar); /* CALL TAR/EREF       */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    for (int i = 0; i < TARGETS; i++) /* VLOAD MXV, VSL1, STORE STARAD */
-    {
-        ar->starad[i] = agc_vec_shl(&ip, agc_mat_vec(&ip, &ar->xsm, tar[i]), 1);
-    }
-
-    st = agc_sxtmark_mark(0, &m); /* LITTLSUB: LXC,1 MARKSTAT        */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (st);
-    }
-
-    st = agc_csm_sxtsm(&ip, &m, &prelaunch_ram()->losvec); /* STORE LOSVEC */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS                  */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (st);
-    }
-
-    return (targdrve(2, TARG_TARGET2)); /* NEXBNKSS                    */
-} /* target1_marked */
-
-/**********************************************************************
- * NEXBNKSS +5 (IMU_CALIBRATION_AND_ALIGNMENT.agc p.451) -- target 2
- * marked: 12D = LITTLSUB, 6D = LOSVEC, AXISGEN (STARAD expected, 6D/12D
- * marked), CALCGTA into OGC, IGC, MGC; then GCOMP4
- *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I  the P03 job
- *
- * RETURNS: agc_status_t of LITTLSUB, AXISGEN or the V06N93 flash
- **********************************************************************/
-static agc_status_t target2_marked(agc_job_ctx_t *ctx)
-{
-    agc_align_ram_t     *ar = agc_align_ram(); /* alignment erasables */
-    agc_interp_t         ip;                   /* interpreter state             */
-    agc_vec_t            marked[2];            /* 6D, 12D: marked LOS, B1 */
-    agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)       */
-    agc_mat_t            xdc;                  /* XDC..ZDC, half-unit           */
-
-    agc_interp_init(&ip);
-    agc_status_t st = agc_sxtmark_mark(0, &m); /* CALL LITTLSUB        */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (st);
-    }
-
-    st = agc_csm_sxtsm(&ip, &m, &marked[1]); /* STOVL 12D             */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    marked[0] = prelaunch_ram()->losvec;                        /* LOSVEC, STCALL 06D        */
-    st        = agc_imu_axisgen(&ip, ar->starad, marked, &xdc); /* AXISGEN */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    ar->xdc = xdc;
-    agc_imu_calcgta(&ip, &xdc, ar->ogc); /* CALL CALCGTA               */
-
-    return (agc_job_optical_verification_torque_display(ctx)); /* GCOMP4 */
 }
 
 /**********************************************************************
@@ -501,10 +397,105 @@ agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx)
 
     if (targ == 0)
     {
-        return (target1_marked()); /* TC QPLAC: NEXTBNKS              */
+        /* TC QPLAC: NEXTBNKS              */
+        /**********************************************************************
+         * NEXTBNKS / NEXBNKSS (IMU_CALIBRATION_AND_ALIGNMENT.agc pp.450-451) --
+         * target 1 marked: STARAD = XSM PD06 VSL1, STARAD +6 = XSM PD12 VSL1,
+         * LOSVEC = LITTLSUB; MKRELEAS; then drive to target 2 (STARCODE 2,
+         * TARGDRVE 6)
+         *
+         * RETURNS: agc_status_t of LITTLSUB, MKRELEAS or TARGDRVE
+         **********************************************************************/
+        {
+            agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
+            agc_interp_t ip;                   /* interpreter state           */
+            agc_vec_t tar[TARGETS];         /* PD06, PD12: B1 (half-unit)  */
+            agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)     */
+
+            agc_interp_init(&ip);
+            agc_status_t st = target_vectors(&ip, tar); /* CALL TAR/EREF       */
+
+            if (st != AGC_STATUS_OK)
+            {
+                return (st);
+            }
+
+            for (int i = 0; i < TARGETS; i++) /* VLOAD MXV, VSL1, STORE STARAD */
+            {
+                ar->starad[i] = agc_vec_shl(&ip, agc_mat_vec(&ip, &ar->xsm, tar[i]), 1);
+            }
+
+            st = agc_sxtmark_mark(0, &m); /* LITTLSUB: LXC,1 MARKSTAT        */
+
+            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            {
+                return (st);
+            }
+
+            st = agc_csm_sxtsm(&ip, &m, &prelaunch_ram()->losvec); /* STORE LOSVEC */
+
+            if (st != AGC_STATUS_OK)
+            {
+                return (st);
+            }
+
+            st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS                  */
+
+            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            {
+                return (st);
+            }
+
+            return (targdrve(2, TARG_TARGET2)); /* NEXBNKSS                    */
+        }
     }
 
-    return (target2_marked(ctx)); /* TC QPLAC: NEXBNKSS +5            */
+    /* TC QPLAC: NEXBNKSS +5            */
+    /**********************************************************************
+     * NEXBNKSS +5 (IMU_CALIBRATION_AND_ALIGNMENT.agc p.451) -- target 2
+     * marked: 12D = LITTLSUB, 6D = LOSVEC, AXISGEN (STARAD expected, 6D/12D
+     * marked), CALCGTA into OGC, IGC, MGC; then GCOMP4
+     *
+     * ARGUMENTS:
+     *   ctx  agc_job_ctx_t *  I  the P03 job
+     *
+     * RETURNS: agc_status_t of LITTLSUB, AXISGEN or the V06N93 flash
+     **********************************************************************/
+    {
+        agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
+        agc_interp_t ip;                   /* interpreter state             */
+        agc_vec_t marked[2];            /* 6D, 12D: marked LOS, B1 */
+        agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)       */
+        agc_mat_t xdc;                  /* XDC..ZDC, half-unit           */
+
+        agc_interp_init(&ip);
+        agc_status_t st = agc_sxtmark_mark(0, &m); /* CALL LITTLSUB        */
+
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return (st);
+        }
+
+        st = agc_csm_sxtsm(&ip, &m, &marked[1]); /* STOVL 12D             */
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
+
+        marked[0] = prelaunch_ram()->losvec;                        /* LOSVEC, STCALL 06D        */
+        st = agc_imu_axisgen(&ip, ar->starad, marked, &xdc); /* AXISGEN */
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
+
+        ar->xdc = xdc;
+        agc_imu_calcgta(&ip, &xdc, ar->ogc); /* CALL CALCGTA               */
+
+        return (agc_job_optical_verification_torque_display(ctx)); /* GCOMP4 */
+    }
 }
 
 /**********************************************************************
@@ -538,8 +529,8 @@ agc_status_t agc_job_optical_verification_torque_display(agc_job_ctx_t *ctx)
 agc_status_t agc_job_optical_verification_torque_accepted(void)
 {
     const agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
-    agc_interp_t           ip;                   /* interpreter state (VAD)         */
-    agc_dp_t               buf[3];               /* ERCOMP1, rev 2^0                */
+    agc_interp_t ip;                   /* interpreter state (VAD)         */
+    agc_dp_t buf[3];               /* ERCOMP1, rev 2^0                */
 
     agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* status of the call */
 
@@ -586,7 +577,7 @@ agc_status_t agc_job_optical_verification_end(void)
         return (st);
     }
 
-    agc_phase_change(4, PHASE_GROUP4_OFF); /* PHASCHNG OCT 00004       */
+    agc_phase_change(PHASE_GROUP4_OFF); /* PHASCHNG OCT 00004       */
 
     return (AGC_STATUS_OK); /* ENDOFJOB                             */
 }

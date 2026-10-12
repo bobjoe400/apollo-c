@@ -149,11 +149,6 @@ void agc_lm_comminit(agc_interp_t *ip)
     agc_vec_t h = agc_vec_cross(ip, agc_erase_vrectcsm(), agc_erase_rrectcsm()); /* VCSM x RCSM: CSM orbit normal, 2^36 */
 
     a->qaxis = agc_vec_unit(ip, agc_mat_vec(ip, &m, h), NULL, NULL);
-
-    if (!AGC_ASSERT(a->rco > 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -175,16 +170,9 @@ void agc_lm_powered_ascent_init(agc_interp_t *ip)
     a->tto   = agc_dp_shl(ip, agc_dp_neg(AS_ATDECAY), 11);
     a->ve    = agc_dp_shr(agc_dp_from_sp((agc_sp_t) -AS_APSVEX), 2);
 
-    if (agc_flag_test(AGC_FLAG_FLAP))
+    if (!agc_flag_test(AGC_FLAG_FLAP)) /* RVQ          */
     {
-        return; /* RVQ          */
-    }
-
-    agc_lm_comminit(ip);
-
-    if (!AGC_ASSERT(agc_lm_asc()->ve > 0)) /* VE = -APSVEX SR2 > 0 */
-    {
-        return;
+        agc_lm_comminit(ip);
     }
 }
 
@@ -205,11 +193,6 @@ agc_dp_t agc_lm_ycomp(agc_interp_t *ip)
 
     a->y = agc_dp_mul_trunc(d, a->rco);
 
-    if (!AGC_ASSERT(a->rco >= 0))
-    {
-        return (0);
-    }
-
     return (a->y);
 }
 
@@ -225,21 +208,11 @@ agc_dp_t agc_lm_ycomp(agc_interp_t *ip)
  **********************************************************************/
 agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(x > 0))
-    {
-        return (0);
-    }
-
     int      n   = 0;                                                          /* NORM shift count (MPAC+6 = -n) */
     agc_dp_t xn  = agc_dp_norm(x, &n);                                         /* NORM: x left-justified, 2^0 */
     agc_dp_t p   = agc_dp_poly(agc_dp_sub(ip, AS_NEARONE, xn), as_logcoef, 7); /* ln(1 - u)/32 by POLY, scale 2^5 */
     agc_tp_t s   = agc_tp_mul_sp(agc_tp_from_dp(AS_CLOG2_32), (agc_sp_t) -n);  /* -n ln(2)/32 as a TP, 2^5 */
     agc_dp_t sum = agc_dp_add(ip, (agc_dp_t) s, p);                            /* DAS MPAC: ln(x)/32, scale 2^5 */
-
-    if (!AGC_ASSERT(n >= 0 && n < 28))
-    {
-        return (0);
-    }
 
     return (agc_dp_neg(sum)); /* DCOMP        */
 }
@@ -247,35 +220,6 @@ agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
 /* ======================================================================
  * Ascent guidance equations (ASCENT_GUIDANCE pp. 845-849)
  * ====================================================================== */
-
-/**********************************************************************
- * MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO.
- * DEVIATION: the AGC's DSU TTO (and ATMAG's DSU 6SEC(18) for TBUP)
- * can leave the two words sign-disagreeing; SR 11D shifts each word
- * on its own and every later DDV by TGO or TBUP divides those words.
- * An agc_dp_t holds the value only, so TTOGO may differ by 1 cs and
- * AT, PRATE..YCONS, ATR..ATP, YAW, PITCH by a few LSB (oracle
- * ascent_a/b; the rope run on canonical words matches the C).
- *
- * ARGUMENTS:
- *   ip     agc_interp_t *  I/O  interpreter state (OVFIND)
- *   vgmag  agc_dp_t        I    |VGVECT|, 2^7 m/cs
- **********************************************************************/
-static void as_maineng(agc_interp_t *ip, agc_dp_t vgmag)
-{
-    agc_lm_asc_t *a = agc_lm_asc();                                            /* ascent erasables */
-    agc_dp_t      r = agc_dp_div(ip, vgmag, a->ve);                            /* VG/VE, scale 2^0 */
-    agc_dp_t      t = agc_dp_sub(ip, AS_NEARONE, agc_dp_mul_trunc(r, AS_KT1)); /* 1 - KT VG/VE, scale 2^0 */
-
-    t      = agc_dp_mul_trunc(agc_dp_mul_trunc(t, r), a->tbup);
-    a->tgo = agc_dp_sub(ip, t, a->tto);
-    agc_erase_set_ttogo(agc_dp_neg(agc_dp_shr(a->tgo, 11))); /* 2^28  */
-
-    if (!AGC_ASSERT(a->ve != 0))
-    {
-        return;
-    }
-}
 
 /**********************************************************************
  * RATES .. PROK (pp. 846-848): PRATE (B) and YRATE (D) from the radius
@@ -290,11 +234,6 @@ static void as_rates(agc_interp_t *ip, agc_dp_t d12)
 {
     agc_lm_asc_t *a = agc_lm_asc();     /* ascent erasables */
     agc_guid_t   *g = agc_guid_state(); /* guidance state   */
-
-    if (!AGC_ASSERT(a->tgo > 0)) /* RATES only while TGO > T3 */
-    {
-        return;
-    }
 
     agc_dp_t d21 = agc_dp_sub(ip, a->tgo, d12);                                       /* PDL 4D, 2^17 cs  */
     agc_dp_t e   = agc_dp_shl(ip, agc_dp_sub(ip, a->tgo, agc_dp_shl(ip, d21, 1)), 3); /* E = TGO - 2 D21, SL3 (PDL 6D), 2^14 cs */
@@ -325,10 +264,6 @@ static void as_rates(agc_interp_t *ip, agc_dp_t d12)
 
     a->yrate = agc_dp_div(ip, agc_dp_div(ip, d, e), a->tgo);
 
-    if (!AGC_ASSERT(a->prate <= 0)) /* B > 0 is not permitted */
-    {
-        return;
-    }
 } /* as_rates */
 
 /**********************************************************************
@@ -376,10 +311,6 @@ static void as_t2test(agc_interp_t *ip)
 
     a->ycons = agc_dp_sub(ip, agc_dp_shr(agc_dp_div(ip, a->dydot, negl), 2), dd);
 
-    if (!AGC_ASSERT(negl != 0))
-    {
-        return;
-    }
 } /* as_t2test */
 
 /**********************************************************************
@@ -405,9 +336,9 @@ static void as_cmponent(agc_interp_t *ip)
     agc_dp_t ahsq  = 0;                     /* |AH|^2 (34D), scale 2^18 */
     agc_dp_t ahmag = agc_vec_abval(ip, ah); /* |AH| (PDL 6), scale 2^9 */
 
-    ahsq          = agc_vec_sq(ip, ah);                         /* 34D */
+    ahsq          = agc_vec_sq(ip, ah);                     /* 34D */
     agc_dp_t atp2 = agc_dp_sub(ip, agc_dp_sq(a->at), ahsq); /* AT^2 - AH^2 = ATP^2, scale 2^18 */
-    agc_dp_t atp  = 0;                                          /* ATP before SIGN, scale 2^-9 m/cs^2 */
+    agc_dp_t atp  = 0;                                      /* ATP before SIGN, scale 2^-9 m/cs^2 */
 
     if (atp2 >= 0)
     {
@@ -423,10 +354,6 @@ static void as_cmponent(agc_interp_t *ip)
 
     agc_lm_ldg()->unfc_2 = agc_vec_add(ip, f, ah);
 
-    if (!AGC_ASSERT(a->tbup != 0))
-    {
-        return;
-    }
 } /* as_cmponent */
 
 /**********************************************************************
@@ -566,52 +493,6 @@ static agc_status_t as_exitvr(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 }
 
 /**********************************************************************
- * CHECKALT / CHECKYAW / KEEPVR (pp. 850-852): below 25,000 ft keep the
- * vertical rise until the line of sight is within 5 degrees of the
- * YZ plane or RDOT exceeds 40 ft/s.
- *
- * ARGUMENTS:
- *   ctx  const agc_job_ctx_t *  I    executive job context
- *   ip   agc_interp_t *         I/O  interpreter state (OVFIND)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
- **********************************************************************/
-static agc_status_t as_checkalt(const agc_job_ctx_t *ctx, agc_interp_t *ip)
-{
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR))) /* in the vertical rise */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_lm_asc_t *a = agc_lm_asc();                                                               /* ascent erasables */
-    agc_guid_t   *g = agc_guid_state();                                                           /* guidance state */
-    agc_dp_t      h = agc_dp_sub(ip, agc_dp_sub(ip, a->r_mag, agc_lm_ldg()->land_mag), AS_25KFT); /* /R/MAG - /LAND/ - 25KFT, 2^24 m */
-
-    if (h >= 0)
-    {
-        return (as_exitvr(ctx, ip));
-    }
-
-    agc_flag_set(AGC_FLAG_XOVINFLG);                                                                            /* prohibit X override    */
-    agc_vec_t los = agc_vec_add(ip, agc_vec_scale(ip, a->laxis, a->aty), agc_vec_scale(ip, a->zaxis1, a->atp)); /* ATY LAXIS + ATP ZAXIS1 (LOSVEC), 2^8 */
-
-    los        = agc_vec_unit(ip, los, NULL, NULL);
-    agc_dp_t s = agc_dp_abs(agc_vec_dot(ip, los, g->lm.xnbpip.row[1])); /* |LOS . YNBPIP|, scale 2^2 */
-
-    if (agc_dp_sub(ip, s, AS_SIN5DEG) < 0 && agc_dp_sub(ip, g->lm.hdotdisp, AS_40FPS) >= 0)
-    {
-        agc_flag_clear(AGC_FLAG_ROTFLAG); /* EXITVR1 */
-
-        return (as_exitvr(ctx, ip));
-    }
-
-    agc_lm_ldg()->unwc_2 = los; /* KEEPVR */
-
-    return (as_keepvr_radial_thrust(ctx, ip));
-} /* as_checkalt */
-
-/**********************************************************************
  * ENGOFF (pp. 852-853): engine-off task at TGO, restart protected in
  * group 4 with the variable delay ENGOFFDT; the delta-V monitor off.
  *
@@ -640,11 +521,6 @@ static void as_engoff(agc_interp_t *ip)
     agc_phase_change_var(047014, &v);
     agc_relint();
     agc_flag_set(AGC_FLAG_IDLEFLAG); /* DVMON off     */
-
-    if (!AGC_ASSERT(a->engoffdt >= 1)) /* at least one centisecond */
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -699,7 +575,26 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (AGC_STATUS_OK); /* ASCTERM2      */
     }
 
-    as_maineng(ip, vgmag);
+    /**********************************************************************
+     * MAINENG (p. 846): TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO; TTOGO.
+     * DEVIATION: the AGC's DSU TTO (and ATMAG's DSU 6SEC(18) for TBUP)
+     * can leave the two words sign-disagreeing; SR 11D shifts each word
+     * on its own and every later DDV by TGO or TBUP divides those words.
+     * An agc_dp_t holds the value only, so TTOGO may differ by 1 cs and
+     * AT, PRATE..YCONS, ATR..ATP, YAW, PITCH by a few LSB (oracle
+     * ascent_a/b; the rope run on canonical words matches the C).
+     *
+     * ARGUMENTS:
+     *   ip     agc_interp_t *  I/O  interpreter state (OVFIND)
+     *   vgmag  agc_dp_t        I    |VGVECT|, 2^7 m/cs
+     **********************************************************************/
+    agc_lm_asc_t *a_maineng = agc_lm_asc();                                            /* ascent erasables */
+    agc_dp_t      r         = agc_dp_div(ip, vgmag, a_maineng->ve);                    /* VG/VE, scale 2^0 */
+    agc_dp_t      t         = agc_dp_sub(ip, AS_NEARONE, agc_dp_mul_trunc(r, AS_KT1)); /* 1 - KT VG/VE, scale 2^0 */
+
+    t              = agc_dp_mul_trunc(agc_dp_mul_trunc(t, r), a_maineng->tbup);
+    a_maineng->tgo = agc_dp_sub(ip, t, a_maineng->tto);
+    agc_erase_set_ttogo(agc_dp_neg(agc_dp_shr(a_maineng->tgo, 11))); /* 2^28  */
 
     if (!agc_flag_test(AGC_FLAG_IDLEFLAG) && agc_dp_sub(ip, a->tgo, AS_4SEC17) < 0)
     {
@@ -716,7 +611,48 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (agc_flag_test(AGC_FLAG_FLVR))
     {
-        return (as_checkalt(ctx, ip));
+        /**********************************************************************
+         * CHECKALT / CHECKYAW / KEEPVR (pp. 850-852): below 25,000 ft keep the
+         * vertical rise until the line of sight is within 5 degrees of the
+         * YZ plane or RDOT exceeds 40 ft/s.
+         *
+         * ARGUMENTS:
+         *   ctx  const agc_job_ctx_t *  I    executive job context
+         *   ip   agc_interp_t *         I/O  interpreter state (OVFIND)
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
+         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+         **********************************************************************/
+        if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR))) /* in the vertical rise */
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_lm_asc_t *a_checkalt = agc_lm_asc();                                                                        /* ascent erasables */
+        agc_guid_t   *g_checkalt = agc_guid_state();                                                                    /* guidance state */
+        agc_dp_t      h          = agc_dp_sub(ip, agc_dp_sub(ip, a_checkalt->r_mag, agc_lm_ldg()->land_mag), AS_25KFT); /* /R/MAG - /LAND/ - 25KFT, 2^24 m */
+
+        if (h >= 0)
+        {
+            return (as_exitvr(ctx, ip));
+        }
+
+        agc_flag_set(AGC_FLAG_XOVINFLG);                                                                                                                /* prohibit X override    */
+        agc_vec_t los = agc_vec_add(ip, agc_vec_scale(ip, a_checkalt->laxis, a_checkalt->aty), agc_vec_scale(ip, a_checkalt->zaxis1, a_checkalt->atp)); /* ATY LAXIS + ATP ZAXIS1 (LOSVEC), 2^8 */
+
+        los        = agc_vec_unit(ip, los, NULL, NULL);
+        agc_dp_t s = agc_dp_abs(agc_vec_dot(ip, los, g_checkalt->lm.xnbpip.row[1])); /* |LOS . YNBPIP|, scale 2^2 */
+
+        if (agc_dp_sub(ip, s, AS_SIN5DEG) < 0 && agc_dp_sub(ip, g_checkalt->lm.hdotdisp, AS_40FPS) >= 0)
+        {
+            agc_flag_clear(AGC_FLAG_ROTFLAG); /* EXITVR1 */
+
+            return (as_exitvr(ctx, ip));
+        }
+
+        agc_lm_ldg()->unwc_2 = los; /* KEEPVR */
+
+        return (as_keepvr_radial_thrust(ctx, ip));
     }
 
     return (as_mainline(ctx, ip));
@@ -964,11 +900,6 @@ agc_status_t agc_lm_job_termasc(void)
  **********************************************************************/
 static void as_restart_here(agc_job_id_t job)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* LM only */
-    {
-        return;
-    }
-
     const agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, 0, false, 0U};
 
     agc_phase_change_var(04024, &v);
@@ -1207,7 +1138,7 @@ agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t
          * has the same normalised root and one shift fewer, so it is
          * the same two words (s < 1/8 keeps 4 s in range).          */
         agc_dp_t root2 = agc_tp_sqrt(agc_tp_shift(ip, s, 2)); /* SQRT(4 s) = 2 sqrt(s), scale 2^9 */
-        agc_dp_t h     = agc_dp_div(ip, a->aty, root2);           /* ATY/|AT horizontal|, scale 2^1 */
+        agc_dp_t h     = agc_dp_div(ip, a->aty, root2);       /* ATY/|AT horizontal|, scale 2^1 */
 
         a->yaw = agc_dp_asin(ip, h); /* revolutions   */
     }

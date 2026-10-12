@@ -65,8 +65,8 @@
 #define FLAG_BIT_MAX    15      /* AGC bit numbers run 1..15            */
 
 static agc_vehicle_t g_vehicle = AGC_VEHICLE_CSM; /* selected program */
-static uint32_t      g_time_cs;                   /* C(TIME2,TIME1), cs, 28 bits        */
-static uint16_t      g_flagword[AGC_FLAGWORDS];   /* FLAGWRD0..FLGWRD13 */
+static uint32_t g_time_cs;                   /* C(TIME2,TIME1), cs, 28 bits        */
+static uint16_t g_flagword[AGC_FLAGWORDS];   /* FLAGWRD0..FLGWRD13 */
 
 /**********************************************************************
  * AGC: none (power-up: select the rope and zero erasable memory; the
@@ -92,11 +92,6 @@ void agc_state_init(agc_vehicle_t v)
 
     agc_erase_reset();
     agc_chan_reset();
-
-    if (!AGC_ASSERT(agc_chan_read(AGC_CHAN_CHAN30) == AGC_CHAN_MASK))
-    {
-        return; /* channel image not at its power-up value */
-    }
 }
 
 /**********************************************************************
@@ -140,11 +135,6 @@ uint32_t agc_time_now_cs(void)
  **********************************************************************/
 void agc_time_set_cs(uint32_t t_cs)
 {
-    if (!AGC_ASSERT(t_cs < AGC_TIME_MODULUS_CS))
-    {
-        return;
-    }
-
     g_time_cs = t_cs;
 }
 
@@ -228,7 +218,7 @@ static int words_for_vehicle(void)
 bool agc_flag_valid(agc_flag_id_t f)
 {
     const int word = (int) (f >> 4);             /* flagword index n */
-    const int bit  = (int) (f & FLAG_BIT_FIELD); /* AGC bit 1..15    */
+    const int bit = (int) (f & FLAG_BIT_FIELD); /* AGC bit 1..15    */
 
     return ((word < words_for_vehicle()) && (bit >= 1) && (bit <= FLAG_BIT_MAX));
 }
@@ -247,11 +237,6 @@ bool agc_flag_valid(agc_flag_id_t f)
  **********************************************************************/
 int agc_flag_word(agc_flag_id_t f)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return (-1);
-    }
-
     return ((int) (f >> 4));
 }
 
@@ -269,11 +254,6 @@ int agc_flag_word(agc_flag_id_t f)
  **********************************************************************/
 int agc_flag_bit(agc_flag_id_t f)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return (-1);
-    }
-
     return ((int) (f & FLAG_BIT_FIELD));
 }
 
@@ -292,11 +272,6 @@ int agc_flag_bit(agc_flag_id_t f)
  **********************************************************************/
 uint16_t agc_flag_mask(agc_flag_id_t f)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return (0);
-    }
-
     return ((uint16_t) (1u << ((f & FLAG_BIT_FIELD) - 1u)));
 }
 
@@ -315,11 +290,6 @@ uint16_t agc_flag_mask(agc_flag_id_t f)
  **********************************************************************/
 bool agc_flag_test(agc_flag_id_t f)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return (false);
-    }
-
     return ((g_flagword[f >> 4] & agc_flag_mask(f)) != 0u);
 }
 
@@ -335,17 +305,7 @@ bool agc_flag_test(agc_flag_id_t f)
  **********************************************************************/
 void agc_flag_set(agc_flag_id_t f)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return;
-    }
-
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] | agc_flag_mask(f));
-
-    if (!AGC_ASSERT(agc_flag_test(f)))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -360,17 +320,7 @@ void agc_flag_set(agc_flag_id_t f)
  **********************************************************************/
 void agc_flag_clear(agc_flag_id_t f)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return;
-    }
-
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] & ~agc_flag_mask(f));
-
-    if (!AGC_ASSERT(!agc_flag_test(f)))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -385,19 +335,7 @@ void agc_flag_clear(agc_flag_id_t f)
  **********************************************************************/
 void agc_flag_invert(agc_flag_id_t f)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return;
-    }
-
-    const bool before = agc_flag_test(f); /* state to complement */
-
     g_flagword[f >> 4] = (uint16_t) (g_flagword[f >> 4] ^ agc_flag_mask(f));
-
-    if (!AGC_ASSERT(agc_flag_test(f) != before))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -415,11 +353,6 @@ void agc_flag_invert(agc_flag_id_t f)
  **********************************************************************/
 void agc_flag_put(agc_flag_id_t f, bool on)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return;
-    }
-
     if (on)
     {
         agc_flag_set(f);
@@ -427,11 +360,6 @@ void agc_flag_put(agc_flag_id_t f, bool on)
     else
     {
         agc_flag_clear(f);
-    }
-
-    if (!AGC_ASSERT(agc_flag_test(f) == on))
-    {
-        return;
     }
 }
 
@@ -450,11 +378,6 @@ void agc_flag_put(agc_flag_id_t f, bool on)
  **********************************************************************/
 uint16_t agc_flagword_get(int word)
 {
-    if (!AGC_ASSERT((word >= 0) && (word < words_for_vehicle())))
-    {
-        return (0);
-    }
-
     return (g_flagword[word]);
 }
 
@@ -474,16 +397,6 @@ uint16_t agc_flagword_get(int word)
  **********************************************************************/
 void agc_flagword_set(int word, uint16_t value)
 {
-    if (!AGC_ASSERT((word >= 0) && (word < words_for_vehicle())))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(value <= AGC_WORD15_MASK))
-    {
-        return;
-    }
-
     g_flagword[word] = value;
 }
 
@@ -505,11 +418,6 @@ static agc_flag_id_t other_moon_flag(void)
         f = (agc_flag_id_t) AGC_FLAG_CMOONFLG;
     }
 
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return ((agc_flag_id_t) AGC_FLAG_LMOONFLG);
-    }
-
     return (f);
 }
 
@@ -527,35 +435,30 @@ static agc_flag_id_t other_moon_flag(void)
  *   out       agc_state_vector_t *  O    r (m, 2^29 earth / 2^27
  *                                        moon), v (m/cs, 2^7 / 2^5),
  *                                        t (cs, 2^28), moon flag
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
- *          NULL out or bad which
  **********************************************************************/
-agc_status_t agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out)
+void agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out)
 {
     if (which == AGC_SV_THIS)
     {
-        out->r    = agc_erase_rn();
-        out->v    = agc_erase_vn();
-        out->t    = agc_erase_piptime();
+        out->r = agc_erase_rn();
+        out->v = agc_erase_vn();
+        out->t = agc_erase_piptime();
         out->moon = agc_flag_test(AGC_FLAG_MOONFLAG);
     }
     else if (g_vehicle == AGC_VEHICLE_CSM)
     {
-        out->r    = agc_erase_rrectlem(); /* RRECTOTH = RRECTLEM (C)  */
-        out->v    = agc_erase_vrectlem();
-        out->t    = agc_erase_tetlem();
+        out->r = agc_erase_rrectlem(); /* RRECTOTH = RRECTLEM (C)  */
+        out->v = agc_erase_vrectlem();
+        out->t = agc_erase_tetlem();
         out->moon = agc_flag_test(other_moon_flag());
     }
     else
     {
-        out->r    = agc_erase_rrectcsm(); /* RRECTOTH = RRECTCSM (L)  */
-        out->v    = agc_erase_vrectcsm();
-        out->t    = agc_erase_tetcsm();
+        out->r = agc_erase_rrectcsm(); /* RRECTOTH = RRECTCSM (L)  */
+        out->v = agc_erase_vrectcsm();
+        out->t = agc_erase_tetcsm();
         out->moon = agc_flag_test(other_moon_flag());
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

@@ -118,71 +118,8 @@ static uint16_t pfd_offset(void)
     agc_sp_t c  = agc_guid_state()->avg.pipctr;             /* PIPCTR, unscaled */
     int      dt = ((c > 0) ? -PFD_SUPER110 : 0) + PFD_1SEC; /* CCS PIPCTR */
 
-    if (!AGC_ASSERT(dt == 4 || dt == PFD_1SEC))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((uint16_t) dt);
 }
-
-/**********************************************************************
- * R29.LOS / SETUP29D (pp.597-598): LOS = R(CSM) - R + (V(CSM) - V)(T -
- * PIPTIME), handed to the designate loop when it is ready for new data
- * (LOSCMFLG off); start the loop (BEGDES29) if it is not requested.
- * AGC: R29.LOS, SETUP29D (P20-P25.agc pp.597-598)
- *
- * FUNCTION NAME: pfd_los
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the waitlist status
- **********************************************************************/
-static agc_status_t pfd_los(void)
-{
-    agc_guid_t *g  = agc_guid_state();                                                             /* servicer erasables */
-    uint32_t    dt = (agc_time_now_cs() - (uint32_t) agc_erase_piptime()) & (uint32_t) AGC_DP_MAX; /* cs */
-    agc_dp_t    dt17;                                                                              /* MP BIT12, cs 2^17 */
-
-    dt17 = (agc_dp_t) ((dt & 037777u) << 11);
-    agc_interp_t ip; /* interpreter state */
-
-    agc_interp_init(&ip);
-    agc_vec_t losvel = agc_vec_sub(&ip, g->lm.v_csm, g->lm.v);                                                     /* m/cs 2^7 */
-    agc_vec_t los    = agc_vec_sub(&ip, agc_vec_add(&ip, agc_vec_scale(&ip, losvel, dt17), g->lm.r_csm), g->lm.r); /* m 2^24 */
-
-    agc_inhint();
-
-    if (agc_flag_test(AGC_FLAG_LOSCMFLG))
-    { /* BOFSET: loop on  */
-        agc_relint();
-
-        return (AGC_STATUS_OK);
-    }
-
-    rz_flag_put(AGC_FLAG_LOSCMFLG, true);
-    agc_relint();
-    rr_state_t *s = rr_state(); /* radar erasables */
-
-    s->rrtarget = los;                                         /* LOSSM    */
-    s->losvel   = agc_vec_scale(&ip, losvel, PFD_HALFSEC_B17); /* LOSVDT/4 */
-    rz_flag_put(AGC_FLAG_LOSCMFLG, false);
-
-    if (agc_flag_test(AGC_FLAG_OLDESFLG))
-    {
-        return (AGC_STATUS_OK);
-    }
-
-    agc_inhint();
-    rz_flag_put(AGC_FLAG_OLDESFLG, true);
-    agc_status_t st; /* BEGDES29 */
-
-    st = agc_waitlist_call(pfd_offset(), AGC_TASK_POWERED_FLIGHT_DESIGNATE);
-
-    agc_relint();
-
-    return (st);
-} /* pfd_los */
 
 /**********************************************************************
  * R29 (p.596), called by SERVICER.
@@ -232,7 +169,62 @@ agc_status_t agc_radar_powered_flight_designate(void)
         return (st);
     }
 
-    return (pfd_los());
+    /**********************************************************************
+     * R29.LOS / SETUP29D (pp.597-598): LOS = R(CSM) - R + (V(CSM) - V)(T -
+     * PIPTIME), handed to the designate loop when it is ready for new data
+     * (LOSCMFLG off); start the loop (BEGDES29) if it is not requested.
+     * AGC: R29.LOS, SETUP29D (P20-P25.agc pp.597-598)
+     *
+     * FUNCTION NAME: pfd_los
+     *
+     * ARGUMENTS: none
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, else the waitlist status
+     **********************************************************************/
+    {
+        agc_guid_t *g  = agc_guid_state();                                                             /* servicer erasables */
+        uint32_t    dt = (agc_time_now_cs() - (uint32_t) agc_erase_piptime()) & (uint32_t) AGC_DP_MAX; /* cs */
+        agc_dp_t    dt17;                                                                              /* MP BIT12, cs 2^17 */
+
+        dt17 = (agc_dp_t) ((dt & 037777u) << 11);
+        agc_interp_t ip; /* interpreter state */
+
+        agc_interp_init(&ip);
+        agc_vec_t losvel = agc_vec_sub(&ip, g->lm.v_csm, g->lm.v);                                                     /* m/cs 2^7 */
+        agc_vec_t los    = agc_vec_sub(&ip, agc_vec_add(&ip, agc_vec_scale(&ip, losvel, dt17), g->lm.r_csm), g->lm.r); /* m 2^24 */
+
+        agc_inhint();
+
+        if (agc_flag_test(AGC_FLAG_LOSCMFLG))
+        { /* BOFSET: loop on  */
+            agc_relint();
+
+            return (AGC_STATUS_OK);
+        }
+
+        rz_flag_put(AGC_FLAG_LOSCMFLG, true);
+        agc_relint();
+        rr_state_t *s = rr_state(); /* radar erasables */
+
+        s->rrtarget = los;                                         /* LOSSM    */
+        s->losvel   = agc_vec_scale(&ip, losvel, PFD_HALFSEC_B17); /* LOSVDT/4 */
+        rz_flag_put(AGC_FLAG_LOSCMFLG, false);
+
+        if (agc_flag_test(AGC_FLAG_OLDESFLG))
+        {
+            return (AGC_STATUS_OK);
+        }
+
+        agc_inhint();
+        rz_flag_put(AGC_FLAG_OLDESFLG, true);
+        agc_status_t st; /* BEGDES29 */
+
+        st = agc_waitlist_call(pfd_offset(), AGC_TASK_POWERED_FLIGHT_DESIGNATE);
+
+        agc_relint();
+
+        return (st);
+    }
 }
 
 /**********************************************************************
@@ -459,67 +451,6 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los, agc_cdutrig_
 }
 
 /**********************************************************************
- * R29DPAS2: commands to null half the error in .5 s:
- *   shaft    = ULOSNB' . (cos S, 0, -sin S)
- *   trunnion = ULOSNB' . (sin S sin T, cos T, cos S sin T), both x
- *   RR29GAIN.
- * AGC: R29DPAS2 (P20-P25.agc p.603)
- *
- * FUNCTION NAME: pfd_commands
- *
- * ARGUMENTS:
- *   Argument  Type                I/O  Description (scale)
- *   --------  ------------------  ---  ----------------------------
- *   t         const pfd_trig_t *  I    SP sines and cosines of the RR CDUs
- *   u         const agc_sp_t      I    ULOSNB of the advanced LOS, 2^1
- **********************************************************************/
-static void pfd_commands(const pfd_trig_t *t, const agc_sp_t u[3])
-{
-    agc_dp_t shaft; /* 2^2 */
-
-    shaft         = agc_sp_mul(t->cos_s, u[0]) + agc_sp_mul((agc_sp_t) -t->sin_s, u[2]);
-    agc_dp_t trun = pfd_mp_chain(t->sin_t, t->sin_s, u[0]) + agc_sp_mul(t->cos_t, u[1]) + pfd_mp_chain(t->sin_t, t->cos_s, u[2]); /* 2^2 */
-
-    agc_erase_set_tang(0, agc_dp_high(agc_sp_mul(agc_dp_high(trun), PFD_GAIN)));
-    agc_erase_set_tang(1, agc_dp_high(agc_sp_mul(agc_dp_high(shaft), PFD_GAIN)));
-}
-
-/**********************************************************************
- * DGOOD? / R29LOKON / END29DOD (p.604): on RR data good stop designating
- * and start the reading task; else send the commands.
- * AGC: DGOOD?, R29LOKON, END29DOD (P20-P25.agc p.604)
- *
- * FUNCTION NAME: pfd_lock_check
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the waitlist status
- **********************************************************************/
-static agc_status_t pfd_lock_check(void)
-{
-    agc_status_t st = AGC_STATUS_OK; /* status of the last step */
-
-    agc_inhint();
-
-    if ((agc_chan_read(AGC_CHAN_CHAN33) & RR_CH33_RR_DGOOD) != 0U)
-    {
-        rr_rrout();
-    }
-    else
-    { /* R29LOKON */
-        rr_radmodes_clear(RR_DESIGBIT);
-        rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
-        rz_flag_put(AGC_FLAG_READRFLG, true);
-        st = agc_waitlist_call(pfd_offset(), AGC_TASK_POWERED_FLIGHT_READ);
-    }
-
-    rz_flag_put(AGC_FLAG_LOSCMFLG, false); /* END29DOD */
-    agc_relint();
-
-    return (st);
-}
-
-/**********************************************************************
  * R29DODES: the LOS now (first pass) and LOSSM advanced .5 s, projected
  * 1 s ahead (second pass).
  * AGC: R29DODES (P20-P25.agc pp.600-604)
@@ -559,9 +490,60 @@ agc_status_t agc_job_powered_flight_designate(void)
         return (st);
     }
 
-    pfd_commands(&t, u);
+    /**********************************************************************
+     * R29DPAS2: commands to null half the error in .5 s:
+     *   shaft    = ULOSNB' . (cos S, 0, -sin S)
+     *   trunnion = ULOSNB' . (sin S sin T, cos T, cos S sin T), both x
+     *   RR29GAIN.
+     * AGC: R29DPAS2 (P20-P25.agc p.603)
+     *
+     * FUNCTION NAME: pfd_commands
+     *
+     * ARGUMENTS:
+     *   Argument  Type                I/O  Description (scale)
+     *   --------  ------------------  ---  ----------------------------
+     *   t         const pfd_trig_t *  I    SP sines and cosines of the RR CDUs
+     *   u         const agc_sp_t      I    ULOSNB of the advanced LOS, 2^1
+     **********************************************************************/
+    agc_dp_t shaft; /* 2^2 */
 
-    return (pfd_lock_check());
+    shaft         = agc_sp_mul(t.cos_s, u[0]) + agc_sp_mul((agc_sp_t) -t.sin_s, u[2]);
+    agc_dp_t trun = pfd_mp_chain(t.sin_t, t.sin_s, u[0]) + agc_sp_mul(t.cos_t, u[1]) + pfd_mp_chain(t.sin_t, t.cos_s, u[2]); /* 2^2 */
+
+    agc_erase_set_tang(0, agc_dp_high(agc_sp_mul(agc_dp_high(trun), PFD_GAIN)));
+    agc_erase_set_tang(1, agc_dp_high(agc_sp_mul(agc_dp_high(shaft), PFD_GAIN)));
+
+    /**********************************************************************
+     * DGOOD? / R29LOKON / END29DOD (p.604): on RR data good stop designating
+     * and start the reading task; else send the commands.
+     * AGC: DGOOD?, R29LOKON, END29DOD (P20-P25.agc p.604)
+     *
+     * FUNCTION NAME: pfd_lock_check
+     *
+     * ARGUMENTS: none
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, else the waitlist status
+     **********************************************************************/
+    agc_status_t st_check = AGC_STATUS_OK; /* status of the last step */
+
+    agc_inhint();
+
+    if ((agc_chan_read(AGC_CHAN_CHAN33) & RR_CH33_RR_DGOOD) != 0U)
+    {
+        rr_rrout();
+    }
+    else
+    { /* R29LOKON */
+        rr_radmodes_clear(RR_DESIGBIT);
+        rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
+        rz_flag_put(AGC_FLAG_READRFLG, true);
+        st_check = agc_waitlist_call(pfd_offset(), AGC_TASK_POWERED_FLIGHT_READ);
+    }
+
+    rz_flag_put(AGC_FLAG_LOSCMFLG, false); /* END29DOD */
+    agc_relint();
+
+    return (st_check);
 }
 
 /* ---- R29READ / R29RDJOB (pp.605-607) ---------------------------------- */

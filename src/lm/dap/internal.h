@@ -277,7 +277,6 @@ agc_status_t lm_dap_moreidle(void);     /* MOREIDLE                  */
 agc_status_t lm_dap_shutdown(void);     /* SHUTDOWN + SETTIME5       */
 agc_status_t lm_dap_startdap(void);     /* STARTDAP                  */
 agc_status_t lm_dap_altdsply(void);     /* ALTDSPLY                  */
-agc_status_t lm_dap_dsplytot(void);     /* DSPLYTOT                  */
 agc_status_t lm_dap_needler(void);      /* NEEDLER                   */
 
 /* ---- P axis (paxis.c, pmanual.c, rate.c) -------------------------------- */

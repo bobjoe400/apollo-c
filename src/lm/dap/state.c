@@ -155,25 +155,6 @@ agc_status_t agc_lm_dap_fresh_start(void)
 
 /* ---- accessors of DAP erasables shared with other modules -------------- */
 /**********************************************************************
- * AGC: none -- consistency of the DAP block before an accessor uses it:
- * the indexes and enum-valued cells hold values the DAP can write (a
- * smashed block would show here first).
- *
- * FUNCTION NAME: dap_valid
- *
- * ARGUMENTS:
- *   Argument  Type              I/O  Description (scale)
- *   --------  ----------------  ---  --------------------
- *   d         const lm_dap_t *  I    DAP erasables (lm_dap_state())
- *
- * RETURNS: bool -- true when T5ADR, RETJADR and AXISCTR are in range
- **********************************************************************/
-static bool dap_valid(const lm_dap_t *d)
-{
-    return ((d->t5adr == LM_T5_DAPIDLER || d->t5adr == LM_T5_PAXIS) && d->retjadr <= LM_UV_MINRTN && d->axisctr >= -1 && d->axisctr <= 1);
-}
-
-/**********************************************************************
  * AGC: none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).
  *
  * FUNCTION NAME: agc_erase_cduxd
@@ -186,11 +167,6 @@ uint16_t agc_erase_cduxd(void)
 {
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     uint16_t        v = d->cduxd;       /* CDUXD, 2's complement scaled pi rad */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (v);
 }
@@ -209,11 +185,6 @@ uint16_t agc_erase_cduyd(void)
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     uint16_t        v = d->cduyd;       /* CDUYD, 2's complement scaled pi rad */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -230,11 +201,6 @@ uint16_t agc_erase_cduzd(void)
 {
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     uint16_t        v = d->cduzd;       /* CDUZD, 2's complement scaled pi rad */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (v);
 }
@@ -254,11 +220,6 @@ uint16_t agc_erase_cduzd(void)
 void agc_erase_set_cduxd(uint16_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
 
     if (AGC_ASSERT(v <= 077777u))
     {
@@ -282,11 +243,6 @@ void agc_erase_set_cduyd(uint16_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
-
     if (AGC_ASSERT(v <= 077777u))
     {
         d->cduyd = v;
@@ -308,11 +264,6 @@ void agc_erase_set_cduyd(uint16_t v)
 void agc_erase_set_cduzd(uint16_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
 
     if (AGC_ASSERT(v <= 077777u))
     {
@@ -336,11 +287,6 @@ void agc_erase_set_delcdux(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
-
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
         d->delcdux = v;
@@ -362,11 +308,6 @@ void agc_erase_set_delcdux(agc_sp_t v)
 void agc_erase_set_delcduy(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
 
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
@@ -390,11 +331,6 @@ void agc_erase_set_delcduz(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
-
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
         d->delcduz = v;
@@ -415,11 +351,6 @@ agc_sp_t agc_erase_omegapd(void)
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->omegapd;     /* OMEGAPD, scaled pi/4 rad/s */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -437,11 +368,6 @@ agc_sp_t agc_erase_omegaqd(void)
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->omegaqd;     /* OMEGAQD, scaled pi/4 rad/s */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -458,11 +384,6 @@ agc_sp_t agc_erase_omegard(void)
 {
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->omegard;     /* OMEGARD, scaled pi/4 rad/s */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (v);
 }
@@ -482,11 +403,6 @@ agc_sp_t agc_erase_omegard(void)
 void agc_erase_set_omegapd(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
 
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
@@ -510,11 +426,6 @@ void agc_erase_set_omegaqd(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
-
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
         d->omegaqd = v;
@@ -536,11 +447,6 @@ void agc_erase_set_omegaqd(agc_sp_t v)
 void agc_erase_set_omegard(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
 
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
@@ -564,11 +470,6 @@ void agc_erase_set_delperor(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
-
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
         d->delperor = v;
@@ -590,11 +491,6 @@ void agc_erase_set_delperor(agc_sp_t v)
 void agc_erase_set_delqeror(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
 
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
@@ -618,11 +514,6 @@ void agc_erase_set_delreror(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
-
     if (AGC_ASSERT(v >= LM_NEGMAX))
     {
         d->delreror = v;
@@ -643,11 +534,6 @@ agc_sp_t agc_erase_omegap(void)
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->omegap;      /* OMEGAP, scaled pi/4 rad/s */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -665,11 +551,6 @@ agc_sp_t agc_erase_omegaq(void)
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->omegaq;      /* OMEGAQ, scaled pi/4 rad/s */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -686,11 +567,6 @@ agc_sp_t agc_erase_omegar(void)
 {
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->omegar;      /* OMEGAR, scaled pi/4 rad/s */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (v);
 }
@@ -711,11 +587,6 @@ agc_dp_t agc_erase_aosq(void)
     const lm_dap_t *d = lm_dap_state();        /* DAP erasables */
     lm_dp_pair_t    p = {d->aosq, d->aosq_lo}; /* AOSQ words, DP scaled pi/2 rad/s^2 */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_dp_t) lm_dap_dpval(p));
 }
 
@@ -732,11 +603,6 @@ agc_dp_t agc_erase_aosr(void)
 {
     const lm_dap_t *d = lm_dap_state();        /* DAP erasables */
     lm_dp_pair_t    p = {d->aosr, d->aosr_lo}; /* AOSR words, DP scaled pi/2 rad/s^2 */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
 
     return ((agc_dp_t) lm_dap_dpval(p));
 }
@@ -756,11 +622,6 @@ agc_dp_t agc_erase_aosr(void)
 void agc_erase_set_aosq(agc_dp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
 
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
@@ -787,11 +648,6 @@ void agc_erase_set_aosr(agc_dp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
-
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
         lm_dp_pair_t p = lm_dap_dpmake((int32_t) v); /* AOSR words, scaled pi/2 rad/s^2 */
@@ -815,11 +671,6 @@ agc_sp_t agc_erase_alphaq(void)
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->alphaq;      /* ALPHAQ, scaled pi/2 rad/s^2 */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -836,11 +687,6 @@ agc_sp_t agc_erase_alphar(void)
 {
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->alphar;      /* ALPHAR, scaled pi/2 rad/s^2 */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (v);
 }
@@ -859,11 +705,6 @@ agc_sp_t agc_erase_1jacc(void)
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->jacc[0];     /* 1JACC, scaled pi/4 rad/s^2 */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -880,11 +721,6 @@ agc_sp_t agc_erase_1jaccq(void)
 {
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->jacc[1];     /* 1JACCQ, scaled pi/4 rad/s^2 */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (v);
 }
@@ -903,11 +739,6 @@ agc_sp_t agc_erase_1jaccr(void)
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->jacc[2];     /* 1JACCR, scaled pi/4 rad/s^2 */
 
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -924,11 +755,6 @@ agc_sp_t agc_erase_stiksens(void)
 {
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
     agc_sp_t        v = d->stiksens;    /* STIKSENS, scaled 1 */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (v);
 }
@@ -948,11 +774,6 @@ agc_sp_t agc_erase_stiksens(void)
 void agc_erase_set_stiksens(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
 
     if (AGC_ASSERT(v >= 0))
     {
@@ -975,11 +796,6 @@ void agc_erase_set_stiksens(agc_sp_t v)
 void agc_erase_set_neg_ratedb(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return;
-    }
 
     if (AGC_ASSERT(v <= 0))
     {

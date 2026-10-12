@@ -131,11 +131,6 @@ static agc_sp_t chkmintj(int32_t a)
 
     agc_sp_t r = lm_dap_wrap(a); /* CHKMINTJ result, scaled 4 s */
 
-    if (!AGC_ASSERT(r > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -176,16 +171,6 @@ static bool zone_axis_time(const lm_dap_t *d, tjl_t *w)
  **********************************************************************/
 static agc_sp_t zone_fire_to_axis(const lm_dap_t *d, const tjl_t *w)
 {
-    if (!AGC_ASSERT(d->block[TJ_ZONE3LIM] >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(d->edot >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     if ((int32_t) w->ttoaxis - d->block[TJ_ZONE3LIM] > 0)
     {
         return (w->ttoaxis); /* ZONE2          */
@@ -234,109 +219,6 @@ static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
 }
 
 /**********************************************************************
- * ZONE5 (pp.1463-1465): between the coast and fire curves; TJET from
- * H = 4 f ACCFCTZ5 and TTOAXIS = 1/ANET2 EDOT by FORMULA1/2 or FULLTIME.
- *
- * FUNCTION NAME: zone_between_curves
- *
- * ARGUMENTS:
- *   Argument  Type              I/O  Description (scale)
- *   --------  ----------------  ---  --------------------
- *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *   w         tjl_t *           I/O  working cells of this computation
- *   f         agc_sp_t          I    distance below the coast curve, scaled
- *                                    pi/4
- *
- * RETURNS: agc_sp_t -- jet time, scaled 4 s
- **********************************************************************/
-static agc_sp_t zone_between_curves(const lm_dap_t *d, tjl_t *w, agc_sp_t f)
-{
-    if (w->rotsense < 0)
-    {
-        w->adr2 = (agc_sp_t) (w->adr2 - 2);
-    }
-
-    w->hh      = lm_dap_ddoubl(lm_dap_ddoubl(lm_dap_mp(f, blk(d, LM_BK_ACCFCTZ5, w->adr2))));
-    w->ttoaxis = lm_dap_mphi(blk(d, LM_BK_1ANET2, w->adr2), d->edot);
-    int32_t t1 = (int32_t) lm_dap_mphi(w->ttoaxis, TJ_M05AT2) + w->hh.hi - 2; /* H - .05 TTOAXIS - .00125, scaled 8 s^2 */
-
-    if (t1 <= 0)
-    { /* FORMULA1       */
-        agc_sp_t q1 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_025AT4)); /* HH / (TTOAXIS - .025): FORMULA1, scaled 2 s */
-
-        return (chkmintj(lm_dap_mphi(q1, TJ_BIT14)));
-    }
-
-    int32_t t2 = (int32_t) lm_dap_mphi(w->ttoaxis, TJ_M15AT2) + w->hh.hi + TJ_M0112A8; /* H - .15 TTOAXIS - .01125, scaled 8 s^2 */
-
-    if (t2 > 0)
-    {
-        return (TJ_FULLTIME);
-    }
-
-    lm_dp_pair_t k = {TJ_00375HI, TJ_00375LO}; /* FORMULA2       */
-
-    w->hh       = lm_dap_das(w->hh, k);
-    agc_sp_t q2 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_1AT4)); /* (HH + .00375) / (TTOAXIS + .1): FORMULA2, scaled 2 s */
-
-    return (lm_dap_mphi(q2, TJ_BIT14));
-}
-
-/**********************************************************************
- * ZONE4 / JETSON / DRIFT/ON (p.1463): the coast region, but jets already
- * firing toward the target stay on if the target (axis strip when
- * drifting, parabola when powered) can still be reached.
- *
- * FUNCTION NAME: zone_coast_jets_on
- *
- * ARGUMENTS:
- *   Argument  Type              I/O  Description (scale)
- *   --------  ----------------  ---  --------------------
- *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *   w         tjl_t *           I/O  working cells of this computation
- *
- * RETURNS: agc_sp_t -- jet time, scaled 4 s
- **********************************************************************/
-static agc_sp_t zone_coast_jets_on(const lm_dap_t *d, tjl_t *w)
-{
-    agc_sp_t tj = d->tj[d->axisctr + 1]; /* TJ of the axis now, scaled 0.625 ms per count */
-
-    if (lm_dap_mphi((agc_sp_t) -tj, w->rotsense) <= 0)
-    {
-        return (0); /* COASTTJ        */
-    }
-
-    if (!AGC_ASSERT(d->block[TJ_FLAT] >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (d->block[TJ_FLAT] > 0)
-    { /* DRIFT/ON       */
-        int32_t s = -2 * (int32_t) blk(d, LM_BK_FIREDB, w->adr1) + d->firefct; /* FIREFCT - 2 FIREDB: target strip reachable, scaled pi/4 rad */
-
-        if (s > 0)
-        {
-            return (0);
-        }
-
-        return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_fire_to_axis(d, w)); /* ZONE2,3 time, or FULLTIME */
-    }
-
-    if ((int32_t) blk(d, LM_BK_AXISDIST, w->adr1) - d->firefct <= 0)
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(w->rotsense != 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_beyond_switch(d, w)); /* ZONE1 time, or FULLTIME */
-}
-
-/**********************************************************************
  * FINELAW (pp.1462-1466): EDOTSQ, max-jet decision, FIREFCT and zones.
  *
  * FUNCTION NAME: finelaw
@@ -370,11 +252,6 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
 
     d->firefct = lm_dap_sat(f); /* -E-.5EDOT^2/ACC-DB; TS FIREFCT overflow (and its skip) unreachable: the rough law takes large E, EDOT, so sat = wrap here */
 
-    if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
-    {
-        return (0); /* no valid result */
-    }
-
     if (d->firefct <= 0)
     { /* ZON1,2,3       */
         if (zone_axis_time(d, w))
@@ -394,12 +271,98 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
 
     if (g > 0)
     {
-        return (zone_coast_jets_on(d, w)); /* ZONE4          */
+        /* ZONE4          */
+        /**********************************************************************
+         * ZONE4 / JETSON / DRIFT/ON (p.1463): the coast region, but jets already
+         * firing toward the target stay on if the target (axis strip when
+         * drifting, parabola when powered) can still be reached.
+         *
+         * FUNCTION NAME: zone_coast_jets_on
+         *
+         * ARGUMENTS:
+         *   Argument  Type              I/O  Description (scale)
+         *   --------  ----------------  ---  --------------------
+         *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+         *   w         tjl_t *           I/O  working cells of this computation
+         *
+         * RETURNS: agc_sp_t -- jet time, scaled 4 s
+         **********************************************************************/
+        agc_sp_t tj = d->tj[d->axisctr + 1]; /* TJ of the axis now, scaled 0.625 ms per count */
+
+        if (lm_dap_mphi((agc_sp_t) -tj, w->rotsense) <= 0)
+        {
+            return (0); /* COASTTJ        */
+        }
+
+        if (d->block[TJ_FLAT] > 0)
+        { /* DRIFT/ON       */
+            int32_t s = -2 * (int32_t) blk(d, LM_BK_FIREDB, w->adr1) + d->firefct; /* FIREFCT - 2 FIREDB: target strip reachable, scaled pi/4 rad */
+
+            if (s > 0)
+            {
+                return (0);
+            }
+
+            return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_fire_to_axis(d, w)); /* ZONE2,3 time, or FULLTIME */
+        }
+
+        if ((int32_t) blk(d, LM_BK_AXISDIST, w->adr1) - d->firefct <= 0)
+        {
+            return (0);
+        }
+
+        return (zone_axis_time(d, w) ? (agc_sp_t) TJ_FULLTIME : zone_beyond_switch(d, w)); /* ZONE1 time, or FULLTIME */
     }
 
     /* ZONE5: TS L of an overflowed A would store the wrapped word and skip;
      * unreachable (rough law takes large E, EDOT), so sat = wrap here.     */
-    return (zone_between_curves(d, w, lm_dap_sat(g)));
+    /**********************************************************************
+     * ZONE5 (pp.1463-1465): between the coast and fire curves; TJET from
+     * H = 4 f ACCFCTZ5 and TTOAXIS = 1/ANET2 EDOT by FORMULA1/2 or FULLTIME.
+     *
+     * FUNCTION NAME: zone_between_curves
+     *
+     * ARGUMENTS:
+     *   Argument  Type              I/O  Description (scale)
+     *   --------  ----------------  ---  --------------------
+     *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+     *   w         tjl_t *           I/O  working cells of this computation
+     *   f         agc_sp_t          I    distance below the coast curve, scaled
+     *                                    pi/4
+     *
+     * RETURNS: agc_sp_t -- jet time, scaled 4 s
+     **********************************************************************/
+    agc_sp_t f_curves = lm_dap_sat(g);
+
+    if (w->rotsense < 0)
+    {
+        w->adr2 = (agc_sp_t) (w->adr2 - 2);
+    }
+
+    w->hh      = lm_dap_ddoubl(lm_dap_ddoubl(lm_dap_mp(f_curves, blk(d, LM_BK_ACCFCTZ5, w->adr2))));
+    w->ttoaxis = lm_dap_mphi(blk(d, LM_BK_1ANET2, w->adr2), d->edot);
+    int32_t t1 = (int32_t) lm_dap_mphi(w->ttoaxis, TJ_M05AT2) + w->hh.hi - 2; /* H - .05 TTOAXIS - .00125, scaled 8 s^2 */
+
+    if (t1 <= 0)
+    { /* FORMULA1       */
+        agc_sp_t q1 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_025AT4)); /* HH / (TTOAXIS - .025): FORMULA1, scaled 2 s */
+
+        return (chkmintj(lm_dap_mphi(q1, TJ_BIT14)));
+    }
+
+    int32_t t2 = (int32_t) lm_dap_mphi(w->ttoaxis, TJ_M15AT2) + w->hh.hi + TJ_M0112A8; /* H - .15 TTOAXIS - .01125, scaled 8 s^2 */
+
+    if (t2 > 0)
+    {
+        return (TJ_FULLTIME);
+    }
+
+    lm_dp_pair_t k = {TJ_00375HI, TJ_00375LO}; /* FORMULA2       */
+
+    w->hh       = lm_dap_das(w->hh, k);
+    agc_sp_t q2 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_1AT4)); /* (HH + .00375) / (TTOAXIS + .1): FORMULA2, scaled 2 s */
+
+    return (lm_dap_mphi(q2, TJ_BIT14));
 } /* finelaw */
 
 /**********************************************************************
@@ -446,11 +409,6 @@ static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
  **********************************************************************/
 static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 {
-    if (!AGC_ASSERT(a >= 0))
-    {
-        return (0); /* RUFLAW12 gets the magnitude of the rate change */
-    }
-
     lm_dp_pair_t p = lm_dap_mp(a, blk(d, LM_BK_1ANET1 + 2, w->adr2)); /* desired change x 1/ANET (2 jets): TJET, DP scaled 32 s */
     int32_t      x = (int32_t) p.hi + TJ_M1_8;                        /* TJET - 4 s, scaled 32 s */
 
@@ -460,11 +418,6 @@ static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a
     }
 
     int32_t t = (8 * lm_dap_dpval(p)) / 16384; /* DAS A x 3      */
-
-    if (!AGC_ASSERT(t >= 0 && t <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
 
     return (chkmintj(t));
 }
@@ -486,11 +439,6 @@ static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a
  **********************************************************************/
 static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error)
 {
-    if (!AGC_ASSERT(d->edot >= 0))
-    {
-        return (0); /* NEGEDOT has reflected EDOT */
-    }
-
     if (!negative_error)
     { /* RUFLAW2        */
         rufsetup(d, w, true);
@@ -520,38 +468,6 @@ static agc_sp_t rough_law_large_error(lm_dap_t *d, tjl_t *w, bool negative_error
     }
 
     return (rough_law_jet_time(d, w, (agc_sp_t) -d->edot));
-}
-
-/**********************************************************************
- * RUFLAW3 (p.1469): |EDOT| >= pi/32 rad/s, E at pi/4. Fire full time if
- * above the switch curve 1/ANET EDOT^2 + E - FIREDB = 0, else coast.
- *
- * FUNCTION NAME: rough_law_large_rate
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *   w         tjl_t *     I/O  working cells of this computation
- *
- * RETURNS: agc_sp_t -- jet time: FULLTIME or 0, scaled 4 s
- **********************************************************************/
-static agc_sp_t rough_law_large_rate(lm_dap_t *d, tjl_t *w)
-{
-    if (!AGC_ASSERT(d->edot > 0))
-    {
-        return (0); /* EDOT >= pi/32 after NEGEDOT */
-    }
-
-    rufsetup(d, w, true);
-    agc_sp_t dist = lm_dap_wrap((int32_t) d->e - blk(d, LM_BK_FIREDB, w->adr1)); /* E - FIREDB, scaled pi/4 rad */
-    agc_sp_t t    = lm_dap_mphi(dist, TJ_BIT11);                                 /* distance from the switch curve, scaled 4 pi rad */
-    agc_sp_t sq   = lm_dap_mphi(d->edot, d->edot);                               /* EDOT^2, scaled pi^2/16 rad^2/s^2 */
-
-    d->edot   = t;                                                                /* XCH EDOT       */
-    int32_t s = (int32_t) lm_dap_mphi(sq, blk(d, LM_BK_1ANET1 + 2, w->adr1)) + t; /* 1/ANET1 EDOT^2 + E - FIREDB: above the curve, scaled 4 pi rad */
-
-    return ((s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME); /* below the switch curve: coast */
 }
 
 /**********************************************************************
@@ -629,7 +545,28 @@ agc_status_t lm_dap_tjetlaw(void)
 
         if (pd.hi != 0)
         {
-            a = rough_law_large_rate(d, &w);
+            /**********************************************************************
+             * RUFLAW3 (p.1469): |EDOT| >= pi/32 rad/s, E at pi/4. Fire full time if
+             * above the switch curve 1/ANET EDOT^2 + E - FIREDB = 0, else coast.
+             *
+             * FUNCTION NAME: rough_law_large_rate
+             *
+             * ARGUMENTS:
+             *   Argument  Type        I/O  Description (scale)
+             *   --------  ----------  ---  --------------------
+             *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+             *   w         tjl_t *     I/O  working cells of this computation
+             *
+             * RETURNS: agc_sp_t -- jet time: FULLTIME or 0, scaled 4 s
+             **********************************************************************/
+            rufsetup(d, &w, true);
+            agc_sp_t dist = lm_dap_wrap((int32_t) d->e - blk(d, LM_BK_FIREDB, w.adr1)); /* E - FIREDB, scaled pi/4 rad */
+            agc_sp_t t    = lm_dap_mphi(dist, TJ_BIT11);                                /* distance from the switch curve, scaled 4 pi rad */
+            agc_sp_t sq   = lm_dap_mphi(d->edot, d->edot);                              /* EDOT^2, scaled pi^2/16 rad^2/s^2 */
+
+            d->edot   = t;                                                               /* XCH EDOT       */
+            int32_t s = (int32_t) lm_dap_mphi(sq, blk(d, LM_BK_1ANET1 + 2, w.adr1)) + t; /* 1/ANET1 EDOT^2 + E - FIREDB: above the curve, scaled 4 pi rad */
+            a         = (s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME;
         }
         else
         {

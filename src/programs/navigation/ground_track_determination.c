@@ -150,17 +150,9 @@ agc_status_t agc_job_ground_track_time(agc_job_ctx_t *ctx)
  *   x2        int             I    X2 of the integration (0 earth, 2 moon)
  *   vel       agc_dp_t *      O    |V|, m/cs 2^7
  *   gamma     agc_dp_t *      O    flight path angle, revolutions 2^0
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
- *          argument
  **********************************************************************/
-agc_status_t agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2, agc_dp_t *vel, agc_dp_t *gamma)
+void agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2, agc_dp_t *vel, agc_dp_t *gamma)
 {
-    if (!AGC_ASSERT(ip != NULL && vel != NULL && gamma != NULL) || !AGC_ASSERT(x2 == 0 || x2 == 2))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* ABVAL SL* 0,2: count 0 - X2, so the moon-scale 2^5 speed is shifted
      * right 2 to 2^7.                                                   */
     *vel = rz_sl_star(ip, rz_abval(ip, vatt1), 0, x2);
@@ -169,125 +161,6 @@ agc_status_t agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_ve
     c = agc_vec_dot(ip, rz_unit(ip, ratt), vatt);
 
     *gamma = agc_dp_asin(ip, agc_dp_div(ip, c, *vel)); /* DDV ASIN   */
-
-    return (AGC_STATUS_OK);
-}
-
-/**********************************************************************
- * P21CONT (p.457-458): INTEGRVS from the saved base vector.
- * AGC: P21CONT (GROUND_TRACKING_DETERMINATION_PROGRAM.agc pp.457-458)
- *
- * FUNCTION NAME: gtd_from_base
- *
- * ARGUMENTS:
- *   Argument  Type                 I/O  Description (scale)
- *   --------  -------------------  ---  ---------------------------
- *   ip        agc_interp_t *       I/O  interpreter state (OVFIND)
- *   ic        agc_integ_ctx_t *    I/O  integration erasables (RCV VCV TET
- *                                       in)
- *   rz        const agc_rendz_t *  I    rendezvous erasables
- *   tdec1     agc_dp_t             I    TDEC1, time to integrate to, cs
- *                                       2^28
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the INTEGRVS status
- **********************************************************************/
-static agc_status_t gtd_from_base(agc_interp_t *ip, agc_integ_ctx_t *ic, const agc_rendz_t *rz, agc_dp_t tdec1)
-{
-    ic->sv.rcv = rz->ground_track_base_r;
-    ic->sv.vcv = rz->ground_track_base_v;
-    ic->sv.tet = rz->ground_track_time;
-    rz_flag_put(AGC_FLAG_DIM0FLAG, false);
-    rz_flag_put(AGC_FLAG_MOONFLAG, rz->ground_track_origin != 0);
-
-    return (agc_integ_integrvs(ip, ic, tdec1));
-}
-
-/**********************************************************************
- * P21VSAVE (p.458): save the base vector, |V|, gamma, P21ORIG; P21FLAG
- * set (LM: not for its own state on the surface).
- * AGC: P21VSAVE (GROUND_TRACKING_DETERMINATION_PROGRAM.agc p.458)
- *
- * FUNCTION NAME: gtd_save_base
- *
- * ARGUMENTS:
- *   Argument  Type                     I/O  Description (scale)
- *   --------  -----------------------  ---  -----------------------
- *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
- *   rz        agc_rendz_t *            I/O  rendezvous erasables
- *   o         const agc_integ_out_t *  I    the integration result
- **********************************************************************/
-static void gtd_save_base(agc_interp_t *ip, agc_rendz_t *rz, const agc_integ_out_t *o)
-{
-    rz->ground_track_time   = o->tat;
-    rz->ground_track_base_r = o->ratt1;
-    rz->ground_track_base_v = o->vatt1;
-    agc_status_t st         = agc_ground_track_determination_flight_path(ip, o->ratt, o->vatt, o->vatt1, o->x2, &rz->ground_track_vel, &rz->ground_track_gamma); /* P21VSAVE */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return;
-    }
-
-    rz->ground_track_origin = (agc_sp_t) o->x2;
-    bool this_vehicle       = ((rz_option(2) >> 1) == 0U); /* option 1 */
-
-    if (rz_is_csm() || !this_vehicle || !agc_flag_test(AGC_FLAG_SURFFLAG))
-    {
-        rz_vflag_set(RZ_VF_GROUND_TRACK, true);
-    }
-}
-
-/**********************************************************************
- * P21DSP (p.458): LAT-LONG of RATT at TAT (LUNAFLAG from X2, ERADFLAG
- * clear), P21ALT = ALT x .01; V06N43 flashing.
- * AGC: P21DSP (GROUND_TRACKING_DETERMINATION_PROGRAM.agc p.458)
- *
- * FUNCTION NAME: gtd_display
- *
- * ARGUMENTS:
- *   Argument  Type                     I/O  Description (scale)
- *   --------  -----------------------  ---  -----------------------
- *   ctx       const agc_job_ctx_t *    I    job context of the calling job
- *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
- *   rz        agc_rendz_t *            I/O  rendezvous erasables
- *   o         const agc_integ_out_t *  I    the integration result (RATT,
- *                                           TAT, X2)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
- **********************************************************************/
-static agc_status_t gtd_display(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, const agc_integ_out_t *o)
-{
-    agc_latlong_opt_t opt; /* LUNAFLAG ERADFLAG */
-
-    opt.lunar               = (o->x2 != 0);
-    opt.erad                = false;
-    rz_flag_put(AGC_FLAG_LUNAFLAG, opt.lunar);
-    rz_flag_put(AGC_FLAG_ERADFLAG, false);
-    agc_navaux_padload_t pad;                               /* pad loads */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
-    agc_latlong_t        ll;                                /* LAT LONG ALT */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_from_r(ip, &pad, opt, o->ratt, o->tat, &ll);
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    st = agc_navaux_set_latlong(&ll); /* LAT LONG ALT */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    rz->ground_track_alt = agc_dp_mul_trunc(ll.alt, GTD_K01); /* DMP K.01 */
-
-    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 43U, AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_GROUND_TRACK_RECYCLE));
 }
 
 /**********************************************************************
@@ -327,7 +200,30 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
 
     if (rz_vflag_test(RZ_VF_GROUND_TRACK))
     { /* BON P21CONT   */
-        st = gtd_from_base(&ip, ic, rz, tdec1);
+        /**********************************************************************
+         * P21CONT (p.457-458): INTEGRVS from the saved base vector.
+         * AGC: P21CONT (GROUND_TRACKING_DETERMINATION_PROGRAM.agc pp.457-458)
+         *
+         * FUNCTION NAME: gtd_from_base
+         *
+         * ARGUMENTS:
+         *   Argument  Type                 I/O  Description (scale)
+         *   --------  -------------------  ---  ---------------------------
+         *   ip        agc_interp_t *       I/O  interpreter state (OVFIND)
+         *   ic        agc_integ_ctx_t *    I/O  integration erasables (RCV VCV TET
+         *                                       in)
+         *   rz        const agc_rendz_t *  I    rendezvous erasables
+         *   tdec1     agc_dp_t             I    TDEC1, time to integrate to, cs
+         *                                       2^28
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, else the INTEGRVS status
+         **********************************************************************/
+        ic->sv.rcv = rz->ground_track_base_r;
+        ic->sv.vcv = rz->ground_track_base_v;
+        ic->sv.tet = rz->ground_track_time;
+        rz_flag_put(AGC_FLAG_DIM0FLAG, false);
+        rz_flag_put(AGC_FLAG_MOONFLAG, rz->ground_track_origin != 0);
+        st         = agc_integ_integrvs(&ip, ic, tdec1);
     }
     else
     {
@@ -349,9 +245,83 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
 
     agc_integ_out_t o = ic->out; /* integration result */
 
-    gtd_save_base(&ip, rz, &o);
+    /**********************************************************************
+     * P21VSAVE (p.458): save the base vector, |V|, gamma, P21ORIG; P21FLAG
+     * set (LM: not for its own state on the surface).
+     * AGC: P21VSAVE (GROUND_TRACKING_DETERMINATION_PROGRAM.agc p.458)
+     *
+     * FUNCTION NAME: gtd_save_base
+     *
+     * ARGUMENTS:
+     *   Argument  Type                     I/O  Description (scale)
+     *   --------  -----------------------  ---  -----------------------
+     *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+     *   rz        agc_rendz_t *            I/O  rendezvous erasables
+     *   o         const agc_integ_out_t *  I    the integration result
+     **********************************************************************/
+    rz->ground_track_time   = o.tat;
+    rz->ground_track_base_r = o.ratt1;
+    rz->ground_track_base_v = o.vatt1;
 
-    return (gtd_display(ctx, &ip, rz, &o));
+    agc_ground_track_determination_flight_path(&ip, o.ratt, o.vatt, o.vatt1, o.x2, &rz->ground_track_vel, &rz->ground_track_gamma); /* P21VSAVE: X2 0 or 2 from the integration */
+
+    rz->ground_track_origin = (agc_sp_t) o.x2;
+    bool this_vehicle       = ((rz_option(2) >> 1) == 0U); /* option 1 */
+
+    if (rz_is_csm() || !this_vehicle || !agc_flag_test(AGC_FLAG_SURFFLAG))
+    {
+        rz_vflag_set(RZ_VF_GROUND_TRACK, true);
+    }
+
+    /**********************************************************************
+     * P21DSP (p.458): LAT-LONG of RATT at TAT (LUNAFLAG from X2, ERADFLAG
+     * clear), P21ALT = ALT x .01; V06N43 flashing.
+     * AGC: P21DSP (GROUND_TRACKING_DETERMINATION_PROGRAM.agc p.458)
+     *
+     * FUNCTION NAME: gtd_display
+     *
+     * ARGUMENTS:
+     *   Argument  Type                     I/O  Description (scale)
+     *   --------  -----------------------  ---  -----------------------
+     *   ctx       const agc_job_ctx_t *    I    job context of the calling job
+     *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+     *   rz        agc_rendz_t *            I/O  rendezvous erasables
+     *   o         const agc_integ_out_t *  I    the integration result (RATT,
+     *                                           TAT, X2)
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
+     *          argument, else the status of the call that failed
+     **********************************************************************/
+    agc_latlong_opt_t opt; /* LUNAFLAG ERADFLAG */
+
+    opt.lunar                       = (o.x2 != 0);
+    opt.erad                        = false;
+    rz_flag_put(AGC_FLAG_LUNAFLAG, opt.lunar);
+    rz_flag_put(AGC_FLAG_ERADFLAG, false);
+    agc_navaux_padload_t pad;                                       /* pad loads */
+    agc_status_t         st_display = agc_navaux_get_padload(&pad); /* pad loads */
+    agc_latlong_t        ll;                                        /* LAT LONG ALT */
+
+    if (st_display == AGC_STATUS_OK)
+    {
+        st_display = agc_latlong_from_r(&ip, &pad, opt, o.ratt, o.tat, &ll);
+    }
+
+    if (st_display != AGC_STATUS_OK)
+    {
+        return (st_display);
+    }
+
+    st_display = agc_navaux_set_latlong(&ll); /* LAT LONG ALT */
+
+    if (st_display != AGC_STATUS_OK)
+    {
+        return (st_display);
+    }
+
+    rz->ground_track_alt = agc_dp_mul_trunc(ll.alt, GTD_K01); /* DMP K.01 */
+
+    return (rz_flash(ctx, AGC_DSKY_GOFLASH, 6U, 43U, AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_GROUND_TRACK_RECYCLE));
 } /* agc_job_ground_track_compute */
 
 /**********************************************************************
@@ -374,13 +344,8 @@ agc_status_t agc_job_ground_track_recycle(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_dp_t     t  = agc_dp_add(&ip, agc_rendz_erasable()->ground_track_time, RZ_600SEC); /* cs 2^28 */
-    agc_status_t st = rz_set_dsptem_dp(RZ_DSPTEM1, t);                                     /* DSPTEM1 */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_dp_t t = agc_dp_add(&ip, agc_rendz_erasable()->ground_track_time, RZ_600SEC); /* cs 2^28 */
+    rz_set_dsptem_dp(RZ_DSPTEM1, t);                                                  /* DSPTEM1 */
 
     return (agc_job_ground_track_time(ctx));
 }

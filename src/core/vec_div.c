@@ -57,42 +57,35 @@
  **********************************************************************/
 static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k, bool sneg, bool *dvsign)
 {
-    bool     neg = sneg;               /* DVSIGN = VBUF+5  */
-    agc_dp_t a   = *c;                 /* |c| after /MPAC-, scaled as v */
+    bool neg = sneg;               /* DVSIGN = VBUF+5  */
+    agc_dp_t a = *c;                 /* |c| after /MPAC-, scaled as v */
     agc_w2_t w;                        /* |c| as MPAC words */
-    agc_w2_t d   = agc_w_split(s_abs); /* BUF2 words */
+    agc_w2_t d = agc_w_split(s_abs); /* BUF2 words */
     agc_dp_t q;                        /* |quotient|, scaled 2^0 */
-
-    if (!AGC_ASSERT((k >= 0) && (k < VDIV_NORM_MAX)))
-    {
-        return (false);
-    }
 
     *dvsign = neg;
 
-    if (a == 0)
+    if (a != 0) /* exit on zero     */
     {
-        return (true); /* exit on zero     */
+        if (a < 0)
+        { /* /MPAC-           */
+            a = -a;
+            neg = !neg;
+            *dvsign = neg; /* INCR DVSIGN      */
+        }
+
+        w = agc_w_split(a);
+
+        if ((d.hi - w.hi < 0) || ((d.hi == w.hi) && (d.lo - w.lo <= 0)))
+        {
+            *c = neg ? AGC_DP_MIN : AGC_DP_MAX; /* DVOVF            */ /* DVSIGN */
+
+            return (false);
+        }
+
+        q = agc_w_join(agc_w_genddv(agc_w_split(a * ((agc_dp_t) 1 << k)), agc_w_split(s_norm), d.hi == w.hi));
+        *c = neg ? -q : q; /* FINALDV +3: DVSIGN */
     }
-
-    if (a < 0)
-    { /* /MPAC-           */
-        a       = -a;
-        neg     = !neg;
-        *dvsign = neg; /* INCR DVSIGN      */
-    }
-
-    w = agc_w_split(a);
-
-    if ((d.hi - w.hi < 0) || ((d.hi == w.hi) && (d.lo - w.lo <= 0)))
-    {
-        *c = neg ? AGC_DP_MIN : AGC_DP_MAX; /* DVOVF            */ /* DVSIGN */
-
-        return (false);
-    }
-
-    q  = agc_w_join(agc_w_genddv(agc_w_split(a * ((agc_dp_t) 1 << k)), agc_w_split(s_norm), d.hi == w.hi));
-    *c = neg ? -q : q; /* FINALDV +3: DVSIGN */
 
     return (true);
 }
@@ -112,14 +105,14 @@ static bool vsc_dv(agc_dp_t *c, agc_dp_t s_abs, agc_dp_t s_norm, int k, bool sne
  **********************************************************************/
 static int vsc_shift14(agc_dp_t m[AGC_VEC_N], agc_dp_t *s)
 {
-    int      k; /* component slot */
+    int k; /* component slot */
     agc_w2_t w; /* component words before the shift */
 
     *s = agc_w_split(*s).lo * AGC_W_ONE;
 
     for (k = 0; k < AGC_VEC_N; k++)
     {
-        w    = agc_w_split(m[k]);
+        w = agc_w_split(m[k]);
         m[k] = w.lo * AGC_W_ONE; /* XCH +1; XCH      */
 
         if (w.hi != 0)
@@ -169,9 +162,9 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 {
     agc_dp_t m[AGC_VEC_N] = {v.c[0], v.c[1], v.c[2]}; /* MPAC, +3, +5 */
     agc_dp_t s_norm;                                  /* BUF: |s| 2^k, scaled as s */
-    bool     sneg         = false;                    /* VBUF+5 = -0: scalar negative */
-    int      k            = 0;                        /* DVNORMCT: divisor doublings */
-    int      bad;                                     /* slot that overflowed in V/SC2, or -1 */
+    bool sneg = false;                    /* VBUF+5 = -0: scalar negative */
+    int k = 0;                        /* DVNORMCT: divisor doublings */
+    int bad;                                     /* slot that overflowed in V/SC2, or -1 */
 
     if (agc_w_split(s).hi == 0)
     {
@@ -187,14 +180,9 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
         }
     }
 
-    if (!AGC_ASSERT(s != 0))
-    {
-        return (v);
-    }
-
     if (s < 0)
     { /* /BUF-            */
-        s    = -s;
+        s = -s;
         sneg = true;
     }
 
@@ -243,11 +231,11 @@ agc_vec_t agc_vec_div(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 static agc_vec_t unit_overflow(agc_interp_t *ip, agc_vec_t v)
 {
     agc_ovf_t o = 0; /* overflow of the x^2 + y^2 accumulation */
-    agc_w3_t  acc;   /* BUF: x^2 + y^2 (TP) */
-    int32_t   a;     /* A at the DVOVF: major word or the overflow */
+    agc_w3_t acc;   /* BUF: x^2 + y^2 (TP) */
+    int32_t a;     /* A at the DVOVF: major word or the overflow */
 
     acc = agc_w_dot_acc(agc_w_dsqsub(agc_w_split(v.c[0])), agc_w_dsqsub(agc_w_split(v.c[1])), &o);
-    a   = (o != 0) ? (int32_t) o : acc.m0; /* TS BUF / TS OVFIND */ /* A */
+    a = (o != 0) ? (int32_t) o : acc.m0; /* TS BUF / TS OVFIND */ /* A */
 
     ip->ovfind = 1;
 
@@ -275,24 +263,14 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root, bool *dvsign)
     agc_dp_t a = (c < 0) ? -c : c; /* |c|, scaled as v */
     agc_dp_t q;                    /* |quotient|, scaled 2^0 */
 
-    if (!AGC_ASSERT((kdiv >= -1) && (kdiv <= 13)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(root > AGC_DP_QUARTER)) /* normalised root  */
-    {
-        return (0); /* no valid result */
-    }
-
     if (c == 0)
     {
         return (0); /* exit on zero     */
     }
 
     *dvsign = (c < 0);                                                            /* UMPAC- / UMPAC+  */
-    a       = (kdiv < 0) ? (a / 2) : (a * ((agc_dp_t) 1 << kdiv));                /* SRDDV / left kdiv */
-    q       = agc_w_join(agc_w_genddv(agc_w_split(a), agc_w_split(root), false)); /* MAXDVSW = -1 */
+    a = (kdiv < 0) ? (a / 2) : (a * ((agc_dp_t) 1 << kdiv));                /* SRDDV / left kdiv */
+    q = agc_w_join(agc_w_genddv(agc_w_split(a), agc_w_split(root), false)); /* MAXDVSW = -1 */
 
     return ((c < 0) ? -q : q); /* UMPAC-: complement */
 }
@@ -314,13 +292,13 @@ static agc_dp_t unit_dv(agc_dp_t c, int kdiv, agc_dp_t root, bool *dvsign)
  **********************************************************************/
 static void unit_core(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *vsq, agc_vec_t *u)
 {
-    agc_ovf_t o     = 0;         /* OVFIND of VSQSUB (saved OVFIND restored) */
-    agc_w3_t  sq;                /* |v|^2 (TP MPAC) */
-    agc_w2_t  root;              /* SQRTSUB: normalised root */
-    agc_w3_t  lv    = {0, 0, 0}; /* LV words, unnormalised root */
-    int       shift = 0;         /* MPTEMP: SQRTSUB right-shift count */
-    int       kdiv;              /* pre-divide shift, -1..13 */
-    bool      abort = false;     /* SQRTABRT: cannot happen, |v|^2 >= 0 */
+    agc_ovf_t o = 0;         /* OVFIND of VSQSUB (saved OVFIND restored) */
+    agc_w3_t sq;                /* |v|^2 (TP MPAC) */
+    agc_w2_t root;              /* SQRTSUB: normalised root */
+    agc_w3_t lv = {0, 0, 0}; /* LV words, unnormalised root */
+    int shift = 0;         /* MPTEMP: SQRTSUB right-shift count */
+    int kdiv;              /* pre-divide shift, -1..13 */
+    bool abort = false;     /* SQRTABRT: cannot happen, |v|^2 >= 0 */
     agc_vec_t r;                 /* MPAC after UNIT */
 
     sq = agc_w_vsqsub(v, &o); /* OVFIND saved     */
@@ -351,7 +329,7 @@ static void unit_core(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *
         {
             if (shift > 14)
             { /* SMALL: |v| < 2^-14, so every major word is 0 */
-                kdiv  = shift - 15;
+                kdiv = shift - 15;
                 lv.m1 = agc_w_mp((int32_t) 1 << (28 - shift), root.hi).hi;
 
                 for (int k = 0; k < AGC_VEC_N; k++)
@@ -361,19 +339,19 @@ static void unit_core(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *
             }
             else if (shift == 14)
             {
-                kdiv  = 13; /* CS THIRTEEN      */
+                kdiv = 13; /* CS THIRTEEN      */
                 lv.m1 = root.hi;
             }
             else if (shift > 0)
             { /* LARGE3           */
-                kdiv  = shift - 1;
+                kdiv = shift - 1;
                 lv.m0 = root.hi;
                 lv.m1 = root.lo;
-                lv    = agc_w_mpacshr(lv, shift, false);
+                lv = agc_w_mpacshr(lv, shift, false);
             }
             else
             { /* LARGE: CS SRDDV  */
-                kdiv  = -1;
+                kdiv = -1;
                 lv.m0 = root.hi;
                 lv.m1 = root.lo;
             }

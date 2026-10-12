@@ -75,48 +75,6 @@ agc_status_t agc_job_rendezvous_final_attitude_option(agc_job_ctx_t *ctx)
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_AXIS_OPTION, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_OPTION));
 }
 
-/*
- * V89CALL1: SCAXIS = UNITZ (option 1) or UNITX (option 2); VECPOINT ->
- * CPHI (THETAD); BALLANGS -> FDAIX..Z; flash V06N18.
- */
-static agc_status_t final_attitude_angles(const agc_job_ctx_t *ctx, agc_vec_t pointvsm)
-{
-    agc_interp_t ip;
-
-    agc_interp_init(&ip);
-    const bool      z_axis = (agc_erase_optionx(1) == AXIS_Z);
-    const agc_vec_t scaxis = z_axis ? agc_vec_make(0, 0, AGC_DP_HALF) : agc_vec_make(AGC_DP_HALF, 0, 0); /* ALINEZ; ALINEX */
-    uint16_t        gimbal[3];
-    uint16_t        fdai[3];
-
-    agc_imu_set_pointvsm(pointvsm);
-    agc_status_t st = AGC_STATUS_OK;
-
-    st = agc_imu_set_scaxis(scaxis);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_imu_vecpoint(&ip, pointvsm, scaxis, gimbal);
-    }
-
-    for (int i = 0; (i < 3) && (st == AGC_STATUS_OK); i++)
-    {
-        agc_erase_set_thetad(i, gimbal[i]); /* CPHI     */
-    }
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_imu_ballangs(&ip, gimbal, fdai);
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_BALL_ANGLES, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE));
-}
-
 /* LEMCONIC to TSTART82; POINTVSM from RONE - RATT. */
 static agc_status_t final_attitude_lm(const agc_job_ctx_t *ctx)
 {
@@ -144,7 +102,41 @@ static agc_status_t final_attitude_lm(const agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (final_attitude_angles(ctx, pointvsm));
+    /*
+     * V89CALL1: SCAXIS = UNITZ (option 1) or UNITX (option 2); VECPOINT ->
+     * CPHI (THETAD); BALLANGS -> FDAIX..Z; flash V06N18.
+     */
+    agc_interp_t ip_angles;
+
+    agc_interp_init(&ip_angles);
+    const bool      z_axis = (agc_erase_optionx(1) == AXIS_Z);
+    const agc_vec_t scaxis = z_axis ? agc_vec_make(0, 0, AGC_DP_HALF) : agc_vec_make(AGC_DP_HALF, 0, 0); /* ALINEZ; ALINEX */
+    uint16_t        gimbal[3];
+    uint16_t        fdai[3];
+
+    agc_imu_set_pointvsm(pointvsm);
+    agc_status_t st_angles = AGC_STATUS_OK;
+
+    st_angles = agc_imu_set_scaxis(scaxis);
+
+    if (st_angles == AGC_STATUS_OK)
+    {
+        st_angles = agc_imu_vecpoint(&ip_angles, pointvsm, scaxis, gimbal);
+    }
+
+    if (st_angles != AGC_STATUS_OK)
+    {
+        return (st_angles);
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        agc_erase_set_thetad(i, gimbal[i]); /* CPHI     */
+    }
+
+    agc_imu_ballangs(&ip_angles, gimbal, fdai);
+
+    return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_BALL_ANGLES, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_COMPUTE));
 }
 
 /* CSMCONIC to TSTART82; RONE = RATT; then the LM. */

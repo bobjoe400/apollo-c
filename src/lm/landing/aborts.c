@@ -74,16 +74,6 @@ static agc_sp_t ab_pipctr1; /* PIPCTR1 (= LADQSAVE), passes, unscaled */
  **********************************************************************/
 agc_sp_t agc_lm_pipctr1(void)
 {
-    if (!AGC_ASSERT(ab_pipctr1 >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(ab_pipctr1 <= 7))
-    {
-        return (0); /* no valid result */
-    }
-
     return (ab_pipctr1);
 }
 
@@ -415,11 +405,6 @@ void agc_lm_tgocomp(agc_interp_t *ip)
     agc_dp_t t = agc_dp_sub(ip, agc_rtb_loadtime(), agc_erase_tig()); /* TIME - TIG, 2^28 cs */
 
     agc_lm_asc()->tgo = agc_dp_shl(ip, t, 11);
-
-    if (!AGC_ASSERT(agc_rtb_loadtime() >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -429,16 +414,6 @@ void agc_lm_throtup(void)
 {
     agc_erase_set_thrust(AGC_LM_FEXTRA);
     agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_THRUSTACT);
-
-    if (!AGC_ASSERT(agc_erase_thrust() == AGC_LM_FEXTRA))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) & AGC_CH014_THRUSTACT) != 0u))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -466,11 +441,6 @@ static void ab_bothpoly(agc_interp_t *ip, bool aps)
         a->zdotd = p->vmin; /* too small    */
     }
 
-    if (!AGC_ASSERT(a->zdotd >= p->vmin)) /* at least VMIN        */
-    {
-        return;
-    }
-
     a->rdotd    = p->abtrdot;                                /* UPRATE       */
     a->y        = agc_lm_ycomp(ip);
     agc_dp_t dy = agc_dp_sub(ip, agc_dp_abs(a->y), p->ylim); /* |Y| - YLIM, 2^24 m */
@@ -481,11 +451,6 @@ static void ab_bothpoly(agc_interp_t *ip, bool aps)
     }
 
     a->xrange = agc_dp_shr(agc_dp_sub(ip, a->yco, a->y), 5); /* YOK  */
-
-    if (!AGC_ASSERT(b == 0 || b == 4))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -552,7 +517,7 @@ agc_status_t agc_lm_job_abort_to_ascent_guidance(void)
 {
     agc_lm_throtup();
     agc_guid_state()->avg.avgexit = AGC_JOB_ATMAG;
-    agc_phase_change(4, 00004);
+    agc_phase_change(00004);
 
     if (!AGC_ASSERT(agc_erase_thrust() == AGC_LM_FEXTRA)) /* full thrust */
     {
@@ -560,49 +525,6 @@ agc_status_t agc_lm_job_abort_to_ascent_guidance(void)
     }
 
     return (AGC_STATUS_OK); /* ENDOFJOB     */
-}
-
-/**********************************************************************
- * P70INIT (p. 833): DPS engine data and targets for P70.
- *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
- *   ip   agc_interp_t *   I/O  interpreter state (OVFIND)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
- **********************************************************************/
-static agc_status_t ab_dps_abort_init(agc_job_ctx_t *ctx, agc_interp_t *ip)
-{
-    agc_lm_asc_t *a    = agc_lm_asc();              /* ascent erasables */
-    agc_dp_t      mass = agc_guid_state()->lm.mass; /* MASS, 2^16 kg */
-
-    if (!AGC_ASSERT(mass > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_lm_tgocomp(ip);
-    a->tbup     = agc_dp_div(ip, mass, agc_dp_shl(ip, AB_MDOTDPS, 4));
-    agc_dp_t dv = agc_dp_shr(agc_dp_div(ip, mass, AB_K1DV), 1); /* 1/DV1 = MASS / K(1/DV), SR1, 2^8 */
-
-    a->dv[1] = dv;
-    a->dv[2] = dv;
-    a->dv[3] = dv;
-    a->at    = agc_dp_div(ip, AB_KAT, dv);
-    a->tto   = agc_dp_shl(ip, agc_dp_neg(AB_DTDECAY), 11);
-    a->ve    = agc_dp_shr(agc_dp_from_sp((agc_sp_t) -AB_DPSVEX), 2);
-
-    if (!AGC_ASSERT(dv > 0 && a->tbup > 0)) /* positive mass terms */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_flag_set(AGC_FLAG_FLAP);
-    agc_lm_comminit(ip);
-    ab_bothpoly(ip, false);
-
-    return (ab_upthrot(ctx));
 }
 
 /**********************************************************************
@@ -624,48 +546,6 @@ agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx)
     }
 
     return (agc_lm_job_abort_auto_control_check(ctx));
-}
-
-/**********************************************************************
- * P71RET (p. 835): ascent threshold; after P70 (FLAP) the remaining TGO
- * is doubled (OLDTIME) and the targets kept; otherwise TGO from TIG and
- * the APS injection targets (INJTARG).
- *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I    executive job context
- *   ip   agc_interp_t *   I/O  interpreter state (OVFIND)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
- **********************************************************************/
-static agc_status_t ab_aps_abort_return(agc_job_ctx_t *ctx, agc_interp_t *ip)
-{
-    agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
-
-    agc_flag_clear(AGC_FLAG_LETABORT);
-    agc_guid_state()->lm.dvthrush = AB_THRESH2;
-
-    if (!AGC_ASSERT(agc_erase_modreg() == 71)) /* P71RET: in P71   */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (agc_flag_test(AGC_FLAG_FLAP))
-    {
-        a->tgo1                 = agc_dp_shl(ip, a->tgo, 1); /* OLDTIME      */
-        agc_lm_powered_ascent_init(ip);
-        const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_ABORT_OLDTIME, AGC_TASK_NONE, 0, false, 0U};
-
-        agc_phase_change_var(04024, &v);
-
-        return (agc_lm_job_aps_abort_oldtime(ctx));
-    }
-
-    agc_lm_tgocomp(ip);
-    agc_lm_powered_ascent_init(ip); /* to INJTARG   */
-    ab_bothpoly(ip, true);
-
-    return (ab_upthrot(ctx));
 }
 
 /**********************************************************************
@@ -701,8 +581,85 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
 
     if (!agc_phase_checkmm(70))
     {
-        return (ab_aps_abort_return(ctx, &ip));
+        /**********************************************************************
+         * P71RET (p. 835): ascent threshold; after P70 (FLAP) the remaining TGO
+         * is doubled (OLDTIME) and the targets kept; otherwise TGO from TIG and
+         * the APS injection targets (INJTARG).
+         *
+         * ARGUMENTS:
+         *   ctx  agc_job_ctx_t *  I    executive job context
+         *   ip   agc_interp_t *   I/O  interpreter state (OVFIND)
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
+         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+         **********************************************************************/
+        agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
+
+        agc_flag_clear(AGC_FLAG_LETABORT);
+        agc_guid_state()->lm.dvthrush = AB_THRESH2;
+
+        if (!AGC_ASSERT(agc_erase_modreg() == 71)) /* P71RET: in P71   */
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (agc_flag_test(AGC_FLAG_FLAP))
+        {
+            a->tgo1                 = agc_dp_shl(&ip, a->tgo, 1); /* OLDTIME      */
+            agc_lm_powered_ascent_init(&ip);
+            const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_ABORT_OLDTIME, AGC_TASK_NONE, 0, false, 0U};
+
+            agc_phase_change_var(04024, &v);
+
+            return (agc_lm_job_aps_abort_oldtime(ctx));
+        }
+
+        agc_lm_tgocomp(&ip);
+        agc_lm_powered_ascent_init(&ip); /* to INJTARG   */
+        ab_bothpoly(&ip, true);
+
+        return (ab_upthrot(ctx));
     }
 
-    return (ab_dps_abort_init(ctx, &ip));
+    /**********************************************************************
+     * P70INIT (p. 833): DPS engine data and targets for P70.
+     *
+     * ARGUMENTS:
+     *   ctx  agc_job_ctx_t *  I    executive job context
+     *   ip   agc_interp_t *   I/O  interpreter state (OVFIND)
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
+     *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+     **********************************************************************/
+    {
+        agc_lm_asc_t *a    = agc_lm_asc();              /* ascent erasables */
+        agc_dp_t      mass = agc_guid_state()->lm.mass; /* MASS, 2^16 kg */
+
+        if (!AGC_ASSERT(mass > 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_lm_tgocomp(&ip);
+        a->tbup     = agc_dp_div(&ip, mass, agc_dp_shl(&ip, AB_MDOTDPS, 4));
+        agc_dp_t dv = agc_dp_shr(agc_dp_div(&ip, mass, AB_K1DV), 1); /* 1/DV1 = MASS / K(1/DV), SR1, 2^8 */
+
+        a->dv[1] = dv;
+        a->dv[2] = dv;
+        a->dv[3] = dv;
+        a->at    = agc_dp_div(&ip, AB_KAT, dv);
+        a->tto   = agc_dp_shl(&ip, agc_dp_neg(AB_DTDECAY), 11);
+        a->ve    = agc_dp_shr(agc_dp_from_sp((agc_sp_t) -AB_DPSVEX), 2);
+
+        if (!AGC_ASSERT(dv > 0 && a->tbup > 0)) /* positive mass terms */
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_flag_set(AGC_FLAG_FLAP);
+        agc_lm_comminit(&ip);
+        ab_bothpoly(&ip, false);
+
+        return (ab_upthrot(ctx));
+    }
 }

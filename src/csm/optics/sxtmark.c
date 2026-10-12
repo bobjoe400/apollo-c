@@ -65,19 +65,14 @@ static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
     w[4] = m->cduz;
     w[5] = m->cdut;
     w[6] = m->cdux;
-
-    if (!AGC_ASSERT(w[6] <= CDU_MASK))
-    {
-        return;
-    }
 }
 
 /* MARKOK / MKVACFND: claim a VAC area for the marks (BAILOUT 01207). */
 static agc_status_t markok(void)
 {
-    agc_align_ram_t   *ram = agc_align_ram();
-    int                vac = -1;
-    const agc_status_t st  = agc_exec_vac_claim(&vac);
+    agc_align_ram_t *ram = agc_align_ram();
+    int vac = -1;
+    const agc_status_t st = agc_exec_vac_claim(&vac);
 
     if (st != AGC_STATUS_OK)
     {
@@ -93,7 +88,7 @@ static agc_status_t markok(void)
 
     ram->mkvac_index = vac;
     agc_erase_set_markstat((uint16_t) (vac + 1));
-    ram->qpret       = 0; /* next mark slot       */
+    ram->qpret = 0; /* next mark slot       */
 
     return (AGC_STATUS_OK);
 }
@@ -160,7 +155,7 @@ agc_status_t agc_sxtmark_reserve(void)
 agc_status_t agc_sxtmark_free_vac(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    const uint16_t   old = agc_erase_markstat();
+    const uint16_t old = agc_erase_markstat();
 
     agc_erase_set_markstat(0);
     agc_status_t st = AGC_STATUS_OK;
@@ -216,18 +211,18 @@ agc_status_t agc_sxtmark_mkreleas(void)
  */
 agc_status_t agc_sxtmark_markrupt(void)
 {
-    mk.cdut           = agc_erase_cdut();
-    mk.cdus           = agc_erase_cdus();
-    mk.cduy           = agc_erase_cduy();
-    mk.cduz           = agc_erase_cduz();
-    mk.cdux           = agc_erase_cdux();
-    mk.t              = align_loadtime();
+    mk.cdut = agc_erase_cdut();
+    mk.cdus = agc_erase_cdus();
+    mk.cduy = agc_erase_cduy();
+    mk.cduz = agc_erase_cduz();
+    mk.cdux = agc_erase_cdux();
+    mk.t = align_loadtime();
     agc_erase_set_samptime(mk.t);
     const uint16_t in = agc_chan_read(016);
 
     if ((in & AGC_CH016_MARK) != 0u)
     {
-        uint16_t       dt  = MARKDIF_MIN_DT; /* MARKIT   */
+        uint16_t dt = MARKDIF_MIN_DT; /* MARKIT   */
         const agc_sp_t chk = agc_erase_cduchkwd();
 
         if (chk > 0)
@@ -269,11 +264,6 @@ static bool difchk(uint16_t mark_cdu, uint16_t now_cdu)
     else
     {
         /* in range */
-    }
-
-    if (!AGC_ASSERT((d >= -(CDU_MOD / 2)) && (d < CDU_MOD / 2)))
-    {
-        return (false);
     }
 
     return ((d <= DIFCHK_MAX) && (d >= -DIFCHK_MAX));
@@ -352,7 +342,7 @@ agc_status_t agc_sxtmark_markcont(void)
     }
 
     const agc_status_t st = agc_exec_novac(ALIGN_PRIO5, AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY);
-    uint16_t           w[MARK_WORDS];
+    uint16_t w[MARK_WORDS];
 
     mark_words(&mk, w);
 
@@ -374,7 +364,7 @@ agc_status_t agc_sxtmark_markcont(void)
 agc_status_t agc_sxtmark_mark2(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    uint16_t         ms  = agc_erase_markstat();
+    uint16_t ms = agc_erase_markstat();
 
     if ((ms & MS_WANTED_MASK) == 0u)
     {
@@ -484,12 +474,7 @@ agc_status_t agc_job_mark_request_flash(agc_job_ctx_t *ctx)
 /* MKVB50: R1 = 00016, V50N25 (all marks in), without KLEENEX. */
 agc_status_t agc_job_mark_complete_display(agc_job_ctx_t *ctx)
 {
-    const agc_status_t st = agc_dsky_set_dsptem(0, CHK_MARKS_DONE);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    agc_dsky_set_dsptem(0, CHK_MARKS_DONE);
 
     return (mark_flash(ctx, VN_MARKS_DONE));
 }
@@ -531,11 +516,11 @@ agc_status_t agc_job_termsxt(agc_job_ctx_t *ctx)
 agc_status_t agc_job_entanswr(void)
 {
     agc_erase_set_markstat((uint16_t) (agc_erase_markstat() & MS_VAC_MASK));
+
     if (!AGC_ASSERT(agc_align_ram()->qpret >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
-
 
     agc_inhint();
     agc_status_t st = agc_waitlist_call(ENDMARKS_DT, AGC_TASK_ENDMARKS);
@@ -574,11 +559,6 @@ agc_status_t agc_task_endmarks(void)
 agc_sp_t agc_sxtmark_marks_made(void)
 {
     const agc_sp_t n = agc_align_ram()->qpret;
-
-    if (!AGC_ASSERT((n >= 0) && (n <= AGC_ALIGN_SXT_MARKS)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (n);
 }

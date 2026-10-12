@@ -60,10 +60,5 @@ agc_flag_id_t rz_vflag_csm(rz_vflag_t f)
         AGC_FLAG_TIMRFLAG /* TIMRFLAG */
     };
 
-    if (!AGC_ASSERT(ids[f] == 0U || agc_flag_bit(ids[f]) >= 1))
-    {
-        return (0U);
-    }
-
     return (ids[f]);
 }

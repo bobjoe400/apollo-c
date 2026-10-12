@@ -72,8 +72,8 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, 
 agc_status_t agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *los_nb)
 {
     const agc_dp_t t     = agc_align_cdulogic(trunnion_cdu);
-    const agc_dp_t y     = agc_dp_neg(agc_dp_sin(t)); /* 34D      */
-    const agc_dp_t cos_t = agc_dp_cos(t);             /* PD0      */
+    const agc_dp_t y     = agc_dp_neg(agc_dp_sin(t));     /* 34D      */
+    const agc_dp_t cos_t = agc_dp_cos(t);                 /* PD0      */
     const agc_dp_t s     = agc_align_cdulogic(shaft_cdu); /* RRNB1    */
 
     /* DMP SL1 then STORE: the SL1 acts on the TP product, so MPAC+2's top

@@ -61,11 +61,6 @@ typedef struct rs_work
 /* SL* n: left for n > 0 (overflow to OVFIND), truncating right for n < 0. */
 static agc_dp_t dp_shift(agc_interp_t *ip, agc_dp_t v, int n)
 {
-    if (!AGC_ASSERT(n > -64 && n < 64))
-    {
-        return (0); /* no valid result */
-    }
-
     if (n >= 0)
     {
         return (agc_dp_shl(ip, v, n));
@@ -122,11 +117,6 @@ static agc_dp_t rs_speed(agc_interp_t *ip, const rs_work_t *w, agc_dp_t len, agc
     int      k      = 0;
     agc_dp_t d      = agc_dp_norm(agc_dp_sub(ip, w->ss, rk), &k);                  /* NORM X1        */
 
-    if (!AGC_ASSERT(d > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     d          = agc_dp_shr(d, 1);          /* SR1            */
     agc_dp_t q = agc_dp_div(ip, d, w->r1c); /* DDV R1C        */
     agc_tp_t p = agc_dp_mul_tp(q, energy);  /* DMP (pushed)   */
@@ -144,11 +134,6 @@ static agc_vec_t rs_normal(agc_interp_t *ip, agc_vec_t v, agc_sp_t geomsgn)
     if (geomsgn < 0)
     {
         n = agc_vec_neg(n); /* SIGN GEOMSGN   */
-    }
-
-    if (!AGC_ASSERT(geomsgn != 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
     }
 
     return (agc_vec_unit(ip, n, NULL, NULL));
@@ -204,11 +189,6 @@ static agc_vec_t rs_vg(agc_interp_t *ip, agc_vec_t vr)
     /* UNIT RN leaves |RN|^2 at 34D (LVSQUARE, the VSQ of RN).          */
     agc_dp_t rsq = agc_vec_sq(ip, agc_erase_rn());
 
-    if (!AGC_ASSERT(rsq > 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     agc_dp_t dt = agc_dp_sub(ip, agc_erase_piptime(), g->lm.gobltime);
     agc_dp_t k  = agc_dp_div(ip, agc_dp_mul_trunc(dt, EARTHMU), rsq); /* 2^6     */
 
@@ -259,7 +239,7 @@ agc_status_t agc_lm_rasteer1(agc_interp_t *ip)
     t          = agc_dp_sign(t, agc_dp_from_sp(w.geomsgn));
     agc_dp_t q = agc_dp_sub(ip, agc_dp_shr(PI_B2, 2), t); /* SR2 DSU        */
 
-    q            = agc_dp_mul_trunc(q, w.ss);                      /* DMP SS         */
+    q            = agc_dp_mul_trunc(q, w.ss);                  /* DMP SS         */
     agc_dp_t num = agc_dp_mul_trunc(agc_dp_sqrt(agc_dp_shr(w.ss, 3)), q);
     agc_dp_t den = agc_dp_sqrt(agc_dp_shl(ip, w.muasteer, 3)); /* SL3 SQRT */
 

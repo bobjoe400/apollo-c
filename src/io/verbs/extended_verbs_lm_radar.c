@@ -166,11 +166,6 @@ static void clear_designate_bits(void)
     agc_inhint();
     agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() & ~(uint32_t) OCT41000));
     agc_relint();
-
-    if (!AGC_ASSERT((agc_erase_radmodes() & OCT41000) == 0u))
-    {
-        return;
-    }
 }
 
 /* ---- V40 N72, V60 ----------------------------------------------------------- */
@@ -375,12 +370,10 @@ agc_status_t agc_job_rr_designate_drive(void)
  * 503 DESIGNATE FAIL; ENDOFJOB either way.                               */
 agc_status_t agc_job_rr_designate_result(void)
 {
-    if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_BAD)
+    if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) == AGC_IMU_STALL_BAD)
     {
-        return (AGC_STATUS_OK);
+        agc_alarm(ALARM_DESIGNATE_FAIL);
     }
-
-    agc_alarm(ALARM_DESIGNATE_FAIL);
 
     return (AGC_STATUS_OK);
 }
@@ -460,11 +453,6 @@ static agc_dp_t angle_0_360(agc_interp_t *ip, agc_dp_t sin4, agc_dp_t cos4)
     if (a < 0)
     {
         a = agc_dp_add(ip, a, AGC_DP_MAX);
-    }
-
-    if (!AGC_ASSERT(a >= 0 && a <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
     }
 
     return (a);

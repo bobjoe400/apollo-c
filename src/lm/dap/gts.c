@@ -194,16 +194,6 @@ agc_status_t lm_dap_gimbal_drive_update(void)
  **********************************************************************/
 static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
 {
-    if (!AGC_ASSERT(halfarg >= 0))
-    {
-        return (0); /* the root of a negative argument */
-    }
-
-    if (!AGC_ASSERT(x > 0))
-    {
-        return (0);
-    }
-
     lm_dp_pair_t n = {halfarg, 0};
     agc_sp_t     q = lm_dap_dv(n, x); /* (ARG/X)/2, scaled 1 (fraction) */
 
@@ -318,11 +308,6 @@ static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
 
     w->omega = (i == 0) ? d->edotq : d->edotr; /* EDOTQ or EDOTR */
     w->k     = (i == 0) ? d->kq : d->krdap;    /* KQ or KRDAP */
-
-    if (!AGC_ASSERT(w->k >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -356,100 +341,16 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
     { /* HUGEQUOT       */
         w->a2.hi = LM_POSMAX;
         w->a2.lo = LM_POSMAX;
-
-        return;
     }
-
-    lm_dp_pair_t num = dp_neg(sq);             /* ALPHA^2/2      */
-    lm_dp_pair_t q1  = lm_dap_dvqr(num, w->k); /* (ALPHA^2/2)/K: quotient and remainder, DP at 16 pi */
-    lm_dp_pair_t rem = {q1.lo, 0};             /* LXCH 7         */
-
-    w->a2.hi = q1.hi;
-    w->a2.lo = lm_dap_dv(rem, w->k);
-
-    if (!AGC_ASSERT(w->a2.hi >= 0 && w->a2.lo >= 0))
+    else
     {
-        return;
+        lm_dp_pair_t num = dp_neg(sq);             /* ALPHA^2/2      */
+        lm_dp_pair_t q1  = lm_dap_dvqr(num, w->k); /* (ALPHA^2/2)/K: quotient and remainder, DP at 16 pi */
+        lm_dp_pair_t rem = {q1.lo, 0};             /* LXCH 7         */
+
+        w->a2.hi = q1.hi;
+        w->a2.lo = lm_dap_dv(rem, w->k);
     }
-}
-
-/**********************************************************************
- * HAVEQUOT .. FUNCT3 (pp.1474-1475): DEL, K2CNTRAL = DEL OMEGA +
- * ALPHA^2/(2K), and the ALPHA (DEL OMEGA + ALPHA^2/(3K)) term of
- * NEGUSUM.
- *
- * FUNCTION NAME: gts_middle_terms
- *
- * ARGUMENTS:
- *   Argument  Type       I/O  Description (scale)
- *   --------  ---------  ---  --------------------
- *   w         gts_w_t *  I/O  working cells of this computation
- *
- * RETURNS: none
- **********************************************************************/
-static void gts_middle_terms(gts_w_t *w)
-{
-    w->k2          = lm_dap_mp(w->omega, (agc_sp_t) 256);                                          /* OMEGA at 16 pi */
-    lm_dp_pair_t f = (w->alpha > 0) ? lm_dap_das(w->k2, w->a2) : lm_dap_das(w->k2, dp_neg(w->a2)); /* DEL OMEGA + SGN(ALPHA) ALPHA^2/(2K), DP at 16 pi */
-
-    w->del = dp_sign(f);
-
-    if (w->del == 0)
-    { /* DEFUNCT        */
-        w->k2.hi = 0;
-        w->k2.lo = 0;
-    }
-    else if (w->del < 0)
-    { /* NEGFNCT2       */
-        w->k2 = dp_neg(w->k2);
-    }
-
-    w->k2      = lm_dap_das(w->k2, w->a2);  /* FUNCT2         */
-    w->a2      = dp_x_sp(w->a2, GT_NEG1_3); /* -ALPHA^2/(6K)  */
-    w->a2      = lm_dap_das(w->a2, w->k2);
-    w->k2theta = lm_dap_das(w->k2theta, dp_x_sp(w->a2, w->alpha));
-}
-
-/**********************************************************************
- * GETROOT .. ADDITIN (pp.1475-1483): add DEL K^(1/2) (K2CNTRAL)^(3/2)
- * using GTSQRT of K K2CNTRAL and the shift it reports.
- *
- * FUNCTION NAME: gts_root_term
- *
- * ARGUMENTS:
- *   Argument  Type       I/O  Description (scale)
- *   --------  ---------  ---  --------------------
- *   w         gts_w_t *  I/O  working cells of this computation
- *
- * RETURNS: none
- **********************************************************************/
-static void gts_root_term(gts_w_t *w)
-{
-    w->fn = dp_x_sp(w->k2, w->k); /* at pi^2/16     */
-
-    if (w->del == 0)
-    {
-        return; /* NEGUSUM        */
-    }
-
-    if (w->del < 0)
-    {
-        w->k2 = dp_neg(w->k2); /* NEGATE         */
-    }
-
-    agc_sp_t shft    = 0;                                      /* SHFTFLAG, unscaled shift count */
-    agc_sp_t inindex = 0;                                      /* ININDEX, twice the scaling shift (unscaled) */
-    agc_sp_t root    = lm_dap_gtsqrt(&w->fn, &shft, &inindex); /* sqrt(FUNCTION) before the shift, scaled 1 (fraction) */
-
-    w->k2 = dp_x_sp(w->k2, root);                                      /* PRODUCT        */
-    shft  = (agc_sp_t) (shft + lm_dap_mphi(inindex, (agc_sp_t) 8192)); /* DOSHIFT */
-
-    if (shft != 0)
-    {
-        w->k2 = dp_x_sp(w->k2, (agc_sp_t) (1 << (14 - shft))); /* 2^-S     */
-    }
-
-    w->k2theta = lm_dap_das(w->k2theta, w->k2); /* ADDITIN        */
 }
 
 /**********************************************************************
@@ -485,26 +386,24 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 
     agc_sp_t prod = (agc_sp_t) (old * newneg); /* sign of NEGU old x new (unscaled) */
 
-    if (prod > 0)
+    if (prod <= 0) /* LOUPE          */
     {
-        return (AGC_STATUS_OK); /* LOUPE          */
-    }
+        if (prod < 0)
+        { /* REVERSAL       */
+            if (i == 0)
+            {
+                d->qaccdot = 0;
+            }
+            else
+            {
+                d->raccdot = 0;
+            }
 
-    if (prod < 0)
-    { /* REVERSAL       */
-        if (i == 0)
-        {
-            d->qaccdot = 0;
+            agc_chan_and(012, (uint16_t) (~((i == 0) ? GT_GIMQ : GT_GIMR) & 077777u)); /* drive bits of this axis */
         }
-        else
-        {
-            d->raccdot = 0;
-        }
 
-        agc_chan_and(012, (uint16_t) (~((i == 0) ? GT_GIMQ : GT_GIMR) & 077777u)); /* drive bits of this axis */
+        d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_CALLGMBL); /* ZEROLOUP  */
     }
-
-    d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_CALLGMBL); /* ZEROLOUP  */
 
     return (AGC_STATUS_OK);
 } /* gts_drive */
@@ -546,8 +445,77 @@ agc_status_t lm_dap_gts(void)
         if (w.k != 0)
         { /* else POSDRIVE +1 */
             gts_first_terms(d, i, &w);
-            gts_middle_terms(&w);
-            gts_root_term(&w);
+
+            /**********************************************************************
+             * HAVEQUOT .. FUNCT3 (pp.1474-1475): DEL, K2CNTRAL = DEL OMEGA +
+             * ALPHA^2/(2K), and the ALPHA (DEL OMEGA + ALPHA^2/(3K)) term of
+             * NEGUSUM.
+             *
+             * FUNCTION NAME: gts_middle_terms
+             *
+             * ARGUMENTS:
+             *   Argument  Type       I/O  Description (scale)
+             *   --------  ---------  ---  --------------------
+             *   w         gts_w_t *  I/O  working cells of this computation
+             *
+             * RETURNS: none
+             **********************************************************************/
+            w.k2           = lm_dap_mp(w.omega, (agc_sp_t) 256);                                      /* OMEGA at 16 pi */
+            lm_dp_pair_t f = (w.alpha > 0) ? lm_dap_das(w.k2, w.a2) : lm_dap_das(w.k2, dp_neg(w.a2)); /* DEL OMEGA + SGN(ALPHA) ALPHA^2/(2K), DP at 16 pi */
+
+            w.del = dp_sign(f);
+
+            if (w.del == 0)
+            { /* DEFUNCT        */
+                w.k2.hi = 0;
+                w.k2.lo = 0;
+            }
+            else if (w.del < 0)
+            { /* NEGFNCT2       */
+                w.k2 = dp_neg(w.k2);
+            }
+
+            w.k2      = lm_dap_das(w.k2, w.a2);   /* FUNCT2         */
+            w.a2      = dp_x_sp(w.a2, GT_NEG1_3); /* -ALPHA^2/(6K)  */
+            w.a2      = lm_dap_das(w.a2, w.k2);
+            w.k2theta = lm_dap_das(w.k2theta, dp_x_sp(w.a2, w.alpha));
+
+            /**********************************************************************
+             * GETROOT .. ADDITIN (pp.1475-1483): add DEL K^(1/2) (K2CNTRAL)^(3/2)
+             * using GTSQRT of K K2CNTRAL and the shift it reports.
+             *
+             * FUNCTION NAME: gts_root_term
+             *
+             * ARGUMENTS:
+             *   Argument  Type       I/O  Description (scale)
+             *   --------  ---------  ---  --------------------
+             *   w         gts_w_t *  I/O  working cells of this computation
+             *
+             * RETURNS: none
+             **********************************************************************/
+            w.fn = dp_x_sp(w.k2, w.k); /* at pi^2/16     */
+
+            if (w.del != 0) /* NEGUSUM        */
+            {
+                if (w.del < 0)
+                {
+                    w.k2 = dp_neg(w.k2); /* NEGATE         */
+                }
+
+                agc_sp_t shft    = 0;                                     /* SHFTFLAG, unscaled shift count */
+                agc_sp_t inindex = 0;                                     /* ININDEX, twice the scaling shift (unscaled) */
+                agc_sp_t root    = lm_dap_gtsqrt(&w.fn, &shft, &inindex); /* sqrt(FUNCTION) before the shift, scaled 1 (fraction) */
+
+                w.k2 = dp_x_sp(w.k2, root);                                       /* PRODUCT        */
+                shft = (agc_sp_t) (shft + lm_dap_mphi(inindex, (agc_sp_t) 8192)); /* DOSHIFT */
+
+                if (shft != 0)
+                {
+                    w.k2 = dp_x_sp(w.k2, (agc_sp_t) (1 << (14 - shft))); /* 2^-S     */
+                }
+
+                w.k2theta = lm_dap_das(w.k2theta, w.k2); /* ADDITIN        */
+            }
             newneg = dp_sign(w.k2theta);
         }
 
@@ -627,10 +595,6 @@ static void timegmbl_axis(lm_dap_t *d, int i)
         d->rgimtimr = set_timer ? timer : d->rgimtimr; /* keep the timer when the drive stops now */
     }
 
-    if (!AGC_ASSERT(timer >= 0))
-    {
-        return;
-    }
 } /* timegmbl_axis */
 
 /**********************************************************************

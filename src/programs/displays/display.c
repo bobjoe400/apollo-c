@@ -97,11 +97,6 @@ bool rz_active_vehicle_program(void)
 {
     agc_sp_t mm = agc_erase_modreg(); /* MODREG, unscaled */
 
-    if (!AGC_ASSERT(mm >= 0))
-    {
-        return (false);
-    }
-
     return (mm < RZ_HIGH9_MODES);
 }
 
@@ -368,7 +363,7 @@ agc_status_t agc_job_rendz_kilclock(void)
 agc_status_t agc_job_rendz_clupdate(void)
 {
     rz_dispdex_zero();
-    agc_phase_change(4, RZ_PHASE_04024);
+    agc_phase_change(RZ_PHASE_04024);
     agc_flag_clear(AGC_FLAG_UPDATFLG);
 
     return (rz_continue(agc_rendz_erasable()->qsaved));
@@ -394,7 +389,7 @@ agc_status_t agc_job_rendz_ttogo_proceed(void)
         return (agc_job_rendz_kilclock());
     }
 
-    agc_phase_change(4, RZ_PHASE_04024);
+    agc_phase_change(RZ_PHASE_04024);
     agc_flag_set(AGC_FLAG_FINALFLG); /* UPFLAG     */
 
     return (agc_job_rendz_clupdate());
@@ -493,40 +488,6 @@ agc_status_t rz_tpi_final_displays(const agc_job_ctx_t *ctx, agc_interp_t *ip, a
 }
 
 /**********************************************************************
- * LM NTARGCHK: add the differences of the six words of DELVLVC and its
- * saved copy GDT/2. DEVIATION: the AGC sums ones' complement SP words
- * with ADS (overflow wraps); here the sum is exact, which only differs
- * when the word differences overflow 14 bits and cancel.
- * AGC: NTARGCHK (Luminary099 P32-P35_P72-P75.agc)
- *
- * FUNCTION NAME: rz_ntargchk
- *
- * ARGUMENTS:
- *   Argument  Type                 I/O  Description (scale)
- *   --------  -------------------  ---  ---------------------------
- *   rz        const agc_rendz_t *  I    rendezvous erasables
- *
- * RETURNS: bool -- true when the crew changed DELVLVC (word sum non-zero)
- **********************************************************************/
-static bool rz_ntargchk(const agc_rendz_t *rz)
-{
-    int32_t sum = 0; /* word differences */
-
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-        sum += (int32_t) agc_dp_high(rz->gdt_2.c[i]) - (int32_t) agc_dp_high(rz->delvlvc.c[i]);
-        sum += (int32_t) agc_dp_low(rz->gdt_2.c[i]) - (int32_t) agc_dp_low(rz->delvlvc.c[i]);
-    }
-
-    if (!AGC_ASSERT(sum >= -(6 * 2 * 0x4000) && sum <= 6 * 2 * 0x4000))
-    {
-        return (false);
-    }
-
-    return (sum != 0);
-}
-
-/**********************************************************************
  * S34/35.5 after PROCEED on V06N81: test for a crew overwrite of the
  * computed delta V (CM: |DELVLVC - DVLOS| non-zero; LM: NTARGCHK sets
  * NTARGFLG); an overwrite is processed by S34/35.3. NOCHG: CLEAR
@@ -558,7 +519,30 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
     }
     else
     {
-        overwrite = rz_ntargchk(rz);
+        /**********************************************************************
+         * LM NTARGCHK: add the differences of the six words of DELVLVC and its
+         * saved copy GDT/2. DEVIATION: the AGC sums ones' complement SP words
+         * with ADS (overflow wraps); here the sum is exact, which only differs
+         * when the word differences overflow 14 bits and cancel.
+         * AGC: NTARGCHK (Luminary099 P32-P35_P72-P75.agc)
+         *
+         * FUNCTION NAME: rz_ntargchk
+         *
+         * ARGUMENTS:
+         *   Argument  Type                 I/O  Description (scale)
+         *   --------  -------------------  ---  ---------------------------
+         *   rz        const agc_rendz_t *  I    rendezvous erasables
+         *
+         * RETURNS: bool -- true when the crew changed DELVLVC (word sum non-zero)
+         **********************************************************************/
+        int32_t sum = 0; /* word differences */
+
+        for (int i = 0; i < AGC_VEC_N; i++)
+        {
+            sum += (int32_t) agc_dp_high(rz->gdt_2.c[i]) - (int32_t) agc_dp_high(rz->delvlvc.c[i]);
+            sum += (int32_t) agc_dp_low(rz->gdt_2.c[i]) - (int32_t) agc_dp_low(rz->delvlvc.c[i]);
+        }
+        overwrite = sum != 0;
 
         if (overwrite)
         {
@@ -773,16 +757,9 @@ agc_status_t rz_comptgo(agc_job_id_t cont)
  **********************************************************************/
 void rz_dispdex_zero(void)
 {
-    if (rz_is_csm())
+    if (!rz_is_csm())
     {
-        return;
-    }
-
-    agc_guid_state()->lm.dispdex = 0;
-
-    if (!AGC_ASSERT(agc_guid_state()->lm.dispdex == 0))
-    {
-        return;
+        agc_guid_state()->lm.dispdex = 0;
     }
 }
 
@@ -826,7 +803,9 @@ agc_status_t rz_set_option(int which, uint16_t v)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_dsky_set_dsptem(3 + which, v));
+    agc_dsky_set_dsptem(3 + which, v);
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -844,11 +823,6 @@ agc_status_t rz_set_option(int which, uint16_t v)
  **********************************************************************/
 static agc_sp_t rz_word_to_sp(uint16_t w)
 {
-    if (!AGC_ASSERT(w <= 077777U))
-    {
-        return (0); /* no valid result */
-    }
-
     if ((w & 040000U) != 0U)
     {
         return ((agc_sp_t) (-(agc_sp_t) ((uint16_t) ~w & 037777U)));
@@ -917,20 +891,10 @@ agc_dp_t rz_dsptem_dp(int index)
  *   --------  --------  ---  --------------------------------------
  *   index     int       I    RZ_DSPTEM1 or RZ_DSPTEMX
  *   v         agc_dp_t  I    the DP (a time, cs 2^28)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG for a bad
- *          index, else the DSKY status
+
  **********************************************************************/
-agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v)
+void rz_set_dsptem_dp(int index, agc_dp_t v)
 {
-    agc_status_t st; /* high */
-
-    st = agc_dsky_set_dsptem(index, rz_sp_to_word(agc_dp_high(v)));
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_dsky_set_dsptem(index + 1, rz_sp_to_word(agc_dp_low(v)));
-    }
-
-    return (st);
+    agc_dsky_set_dsptem(index, rz_sp_to_word(agc_dp_high(v)));
+    agc_dsky_set_dsptem(index + 1, rz_sp_to_word(agc_dp_low(v)));
 }

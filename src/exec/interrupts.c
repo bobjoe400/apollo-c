@@ -43,10 +43,10 @@
 #define RUPT_TIME5_SB  037774u /* STARTSUB: 37774 to TIME5         */
 #define RUPT_HALF_SEC  50      /* .5SEC DEC 50 (cs)                */
 
-static int           inhint_depth;             /* > 0: interrupts inhibited        */
-static uint16_t      time4;                    /* TIME4 (T4RUPT every 10-120 ms)   */
-static uint16_t      time5;                    /* TIME5 (T5RUPT, autopilot)        */
-static uint16_t      time6;                    /* TIME6 (T6RUPT, LM jet timing)    */
+static int inhint_depth;             /* > 0: interrupts inhibited        */
+static uint16_t time4;                    /* TIME4 (T4RUPT every 10-120 ms)   */
+static uint16_t time5;                    /* TIME5 (T5RUPT, autopilot)        */
+static uint16_t time6;                    /* TIME6 (T6RUPT, LM jet timing)    */
 static agc_task_id_t t5loc = AGC_TASK_T5IDLOC; /* T5LOC / T5ADR          */
 static agc_task_id_t t6loc = AGC_TASK_NONE;    /* T6LOC (CSM)            */
 
@@ -56,11 +56,6 @@ void agc_inhint(void)
     {
         inhint_depth++;
     }
-
-    if (!AGC_ASSERT(inhint_depth > 0))
-    {
-        return;
-    }
 }
 
 void agc_relint(void)
@@ -69,25 +64,10 @@ void agc_relint(void)
     {
         inhint_depth--;
     }
-    if (!AGC_ASSERT(inhint_depth >= 0))
-    {
-        return;
-    }
-
 }
 
 bool agc_interrupts_inhibited(void)
 {
-    if (!AGC_ASSERT(inhint_depth >= 0))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(inhint_depth <= RUPT_MAX_DEPTH))
-    {
-        return (false);
-    }
-
     return (inhint_depth > 0);
 }
 
@@ -102,22 +82,12 @@ void rupt_reset_timers(void)
 uint16_t agc_rupt_time(int n)
 {
     uint16_t v = (n == 4) ? time4 : ((n == 5) ? time5 : time6);
-    if (!AGC_ASSERT(v <= RUPT_TIME_MASK))
-    {
-        return (0);
-    }
-
 
     return (v);
 }
 
 void agc_rupt_set_time(int n, uint16_t v)
 {
-    if (!AGC_ASSERT(n >= 4 && n <= 6) || !AGC_ASSERT(v <= RUPT_TIME_MASK))
-    {
-        return;
-    }
-
     if (n == 4)
     {
         time4 = v;
@@ -130,47 +100,22 @@ void agc_rupt_set_time(int n, uint16_t v)
     {
         time6 = v;
     }
-
-    if (!AGC_ASSERT(agc_rupt_time(n) == v))
-    {
-        return;
-    }
 }
 
 /* DXCH T5LOC (CSM) / T5ADR (LM): the program the next T5RUPT runs.    */
 void agc_rupt_set_t5_task(agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE))
-    {
-        return;
-    }
-
     t5loc = task;
-    if (!AGC_ASSERT(t5loc == task))
-    {
-        return;
-    }
-
 }
 
 agc_task_id_t agc_rupt_t5_task(void)
 {
-    if (!AGC_ASSERT(inhint_depth >= 0))
-    {
-        return (AGC_TASK_NONE);
-    }
-
     return (t5loc);
 }
 
 /* T6LOC (CSM only; the LM T6RUPT always goes to DOT6RUPT).            */
 void agc_rupt_set_t6_task(agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return;
-    }
-
     t6loc = task;
 }
 
@@ -260,8 +205,8 @@ agc_status_t agc_rupt_t6(void)
 agc_status_t agc_rupt_t5(void)
 {
     agc_inhint();
-    agc_status_t st       = AGC_STATUS_OK;
-    bool         spurious = (agc_state_vehicle() == AGC_VEHICLE_CSM) && (RUPT_HALF_SEC - (int32_t) time5 <= 0);
+    agc_status_t st = AGC_STATUS_OK;
+    bool spurious = (agc_state_vehicle() == AGC_VEHICLE_CSM) && (RUPT_HALF_SEC - (int32_t) time5 <= 0);
 
     if (!spurious)
     { /* CSM: BZMF NOQBRSM              */
@@ -366,7 +311,7 @@ agc_status_t agc_task_t5idloc(void)
 /* Interrupt handlers owned by other lanes (INTERRUPT_LEAD_INS).        */
 agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 {
-    bool         lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
     agc_status_t st = AGC_STATUS_UNIMPLEMENTED;
 
     if (!AGC_ASSERT(agc_interrupts_inhibited()))

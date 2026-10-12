@@ -86,11 +86,6 @@ static int        load_target; /* MPAC+2: block index or UP_UPTEMP     */
 
 uint16_t agc_uplink_update_dnword(int idx)
 {
-    if (!AGC_ASSERT(idx >= 0 && idx < UP_BLOCK))
-    {
-        return (0);
-    }
-
     return (up[idx]);
 }
 
@@ -117,21 +112,11 @@ agc_status_t agc_uplink_update_write(int idx, uint16_t word)
 
 int agc_uplink_update_target(void)
 {
-    if (!AGC_ASSERT(load_target >= UP_UPBUFF && load_target <= UP_UPTEMP))
-    {
-        return (0); /* no valid result */
-    }
-
     return (load_target);
 }
 
 agc_sp_t agc_erase_upsvflag(void)
 {
-    if (!AGC_ASSERT(upsvflag >= -2 && upsvflag <= 2))
-    {
-        return (0); /* no valid result */
-    }
-
     return (upsvflag);
 }
 
@@ -160,11 +145,6 @@ agc_status_t agc_uplink_update_fresh_start(void)
 /* Signed value of a 15-bit ones'-complement word.                        */
 static int32_t ones_value(uint16_t w)
 {
-    if (!AGC_ASSERT(w <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
     return (((w & 040000u) != 0u) ? -(int32_t) (WORD15 - w) : (int32_t) w);
 }
 
@@ -259,11 +239,6 @@ static bool update_allowed(void)
         return (false); /* UPERROR              */
     }
 
-    if (!AGC_ASSERT(mm > 0))
-    {
-        return (false);
-    }
-
     /* CS FLAGWRD5, MASK BIT8: COMPUTER flag (set: the computer is the CMC). */
     return ((agc_flagword_get(5) & BIT8) != 0u && mm == 2);
 }
@@ -353,14 +328,15 @@ agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
 /* Data or V32 on a load (CK4V32 and the branch after it).                */
 agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
 {
-    uint8_t      verb = 0;
-    uint8_t      noun = 0;
-    agc_status_t st   = agc_dsky_response(&verb, &noun);
+    uint8_t verb = 0;
+    uint8_t noun = 0;
 
-    if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK)
+    if (!AGC_ASSERT(ctx != NULL))
     {
         return (up_error_exit());
     }
+
+    agc_dsky_response(&verb, &noun);
 
     if (verb == RECYCLE_VERB)
     { /* V32: ask again      */
@@ -473,7 +449,7 @@ static bool timedidr(void)
     }
 
     agc_relint();
-    agc_phase_change(UP_GROUP, UP_PHASE_STORE);
+    agc_phase_change(UP_PHASE_STORE);
 
     return (ok);
 }
@@ -504,7 +480,7 @@ static agc_status_t v70_tail(void)
     agc_erase_set_tetlem((agc_dp_t) (tl - delta));               /* DAS TETLEM          */
     agc_erase_set_tephem(agc_erase_tephem() + (agc_tp_t) delta); /* TEPHEM +1 */
     set_upbuff_dp(0, 0);
-    agc_phase_change(UP_GROUP, UP_PHASE_STORE);
+    agc_phase_change(UP_PHASE_STORE);
 
     return (upout());
 }
@@ -612,7 +588,7 @@ agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* sleeps in INTSTALL  */
     }
 
-    agc_phase_change(UP_GROUP, UP_PHASE_STORE);
+    agc_phase_change(UP_PHASE_STORE);
     agc_flag_set((agc_flag_id_t) AGC_FLAG_REINTFLG);
 
     if (up[UP_UPVERB] == 0u)

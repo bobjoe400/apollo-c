@@ -84,143 +84,36 @@ agc_status_t lm_dap_altdsply(void)
 
     if (agc_flag_test(AGC_FLAG_NEEDLFLG))
     { /* total attitude error   */
-        return (lm_dap_dsplytot());
-    }
+        /**********************************************************************
+         * DSPLYTOT (pp.1415-1416): desired minus present gimbal angles resolved
+         * into pilot axes (M13 = 1), each limited by OVERSUB2. At pi rad.
+         *
+         * FUNCTION NAME: lm_dap_dsplytot
+         *
+         * ARGUMENTS: none
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+         *          failed assertion, else the status of the routine it
+         *          ends in
+         **********************************************************************/
+        lm_dap_t *d_dsplytot = lm_dap_state();                                    /* DAP erasables */
+        agc_sp_t  ydif       = lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY, scaled pi rad */
+        agc_sp_t  zdif       = lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ, scaled pi rad */
+        agc_sp_t  xdif       = lm_dap_msu(agc_erase_thetad(0), agc_erase_cdux()); /* CPHI-CDUX, scaled pi rad */
 
-    d->ak[1] = (agc_sp_t) -d->qerror; /* error complements      */
-    d->ak[2] = (agc_sp_t) -d->rerror;
-    d->ak[0] = (agc_sp_t) -d->perror;
+        d_dsplytot->ak[1] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m21()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m22()));
+        d_dsplytot->ak[2] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m31()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m32()));
+        d_dsplytot->ak[0] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m11()) + (int32_t) xdif);
+    }
+    else
+    {
+        d->ak[1] = (agc_sp_t) -d->qerror; /* error complements      */
+        d->ak[2] = (agc_sp_t) -d->rerror;
+        d->ak[0] = (agc_sp_t) -d->perror;
+    }
 
     return (AGC_STATUS_OK);
 }
-
-/**********************************************************************
- * DSPLYTOT (pp.1415-1416): desired minus present gimbal angles resolved
- * into pilot axes (M13 = 1), each limited by OVERSUB2. At pi rad.
- *
- * FUNCTION NAME: lm_dap_dsplytot
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
- **********************************************************************/
-agc_status_t lm_dap_dsplytot(void)
-{
-    lm_dap_t *d    = lm_dap_state();                                    /* DAP erasables */
-    agc_sp_t  ydif = lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY, scaled pi rad */
-    agc_sp_t  zdif = lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ, scaled pi rad */
-    agc_sp_t  xdif = lm_dap_msu(agc_erase_thetad(0), agc_erase_cdux()); /* CPHI-CDUX, scaled pi rad */
-
-    d->ak[1] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m21()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m22()));
-    d->ak[2] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m31()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m32()));
-    d->ak[0] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m11()) + (int32_t) xdif);
-
-    return (AGC_STATUS_OK);
-}
-
-/**********************************************************************
- * NEEDLE11 (p.1418): first pass -- zero inputs, display registers and
- * the error counters; next pass enables the counters.
- *
- * FUNCTION NAME: needles_first_pass
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
- **********************************************************************/
-static agc_status_t needles_first_pass(lm_dap_t *d)
-{
-    agc_status_t st = AGC_STATUS_OK; /* a failing CDU drive status replaces st */
-
-    for (int i = 0; i < 3; i++)
-    {
-        d->ak[i]       = 0;
-        d->edrive[i]   = 0;
-        agc_status_t s = agc_imu_hw_set_cducmd(i, 0); /* CS ZERO: -0       */
-
-        st = (s != AGC_STATUS_OK) ? s : st; /* a failure replaces st */
-    }
-
-    d->rcsflags = (uint16_t) ((d->rcsflags & ~NDL_PASSBITS) | LM_RCS_NEEDLE2);
-
-    if (!AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
-}
-
-/**********************************************************************
- * NEEDLES / DACLOOP (p.1419): meter the change of each display into the
- * IMU error counter, limited to +-384 bits.
- *
- * FUNCTION NAME: needles
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
- **********************************************************************/
-static agc_status_t needles(lm_dap_t *d)
-{
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_status_t st = AGC_STATUS_OK; /* a failing CDU drive status replaces st */
-
-    for (int i = 2; i >= 0; i--)
-    { /* DINDX = 2, 1, 0       */
-        int32_t l = lm_dap_mphi((agc_sp_t) -NDL_ONETENTH, d->ak[i]); /* at 1800 deg */
-
-        if (l > NDL_DACMAX)
-        {
-            l = NDL_DACMAX; /* overflow: DACLIMIT +1 */
-        }
-        else if (l < -NDL_DACMAX)
-        {
-            l = -NDL_DACMAX;
-        }
-
-        int32_t      cmd = (int32_t) agc_imu_cducmd(i) + l - (int32_t) d->edrive[i]; /* CDUxCMD + new drive - old drive, scaled 1800 deg */
-        agc_status_t s   = agc_imu_hw_set_cducmd(i, lm_dap_wrap(cmd));               /* ADS CDUXCMD */
-
-        st           = (s != AGC_STATUS_OK) ? s : st; /* a failure replaces st */
-        d->edrive[i] = (agc_sp_t) l;
-    }
-
-    agc_chan_or(014, NDL_DACBITS); /* DAC activity bits */
-
-    if (!AGC_ASSERT(d->edrive[0] >= -NDL_DACMAX && d->edrive[0] <= NDL_DACMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
-} /* needles */
 
 /**********************************************************************
  * NEEDLER (pp.1418-1419): relay sequencing, then the DAC loop.
@@ -249,7 +142,45 @@ agc_status_t lm_dap_needler(void)
         { /* first pass         */
             agc_chan_and(012, (uint16_t) ~NDL_IMUERR & 077777u);
 
-            return (needles_first_pass(d));
+            /**********************************************************************
+             * NEEDLE11 (p.1418): first pass -- zero inputs, display registers and
+             * the error counters; next pass enables the counters.
+             *
+             * FUNCTION NAME: needles_first_pass
+             *
+             * ARGUMENTS:
+             *   Argument  Type        I/O  Description (scale)
+             *   --------  ----------  ---  --------------------
+             *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+             *
+             * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+             *          failed assertion, else the status of the routine it
+             *          ends in
+             **********************************************************************/
+            agc_status_t st = AGC_STATUS_OK; /* a failing CDU drive status replaces st */
+
+            for (int i = 0; i < 3; i++)
+            {
+                d->ak[i]       = 0;
+                d->edrive[i]   = 0;
+                agc_status_t s = agc_imu_hw_set_cducmd(i, 0); /* CS ZERO: -0       */
+
+                st = (s != AGC_STATUS_OK) ? s : st; /* a failure replaces st */
+            }
+
+            d->rcsflags = (uint16_t) ((d->rcsflags & ~NDL_PASSBITS) | LM_RCS_NEEDLE2);
+
+            if (!AGC_ASSERT((d->rcsflags & LM_RCS_NEEDLE3) == 0u))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            return (st);
         }
 
         agc_chan_or(012, NDL_IMUERR); /* NEEDLER2: enable */
@@ -265,5 +196,61 @@ agc_status_t lm_dap_needler(void)
         return (AGC_STATUS_OK);
     }
 
-    return (needles(d));
+    /**********************************************************************
+     * NEEDLES / DACLOOP (p.1419): meter the change of each display into the
+     * IMU error counter, limited to +-384 bits.
+     *
+     * FUNCTION NAME: needles
+     *
+     * ARGUMENTS:
+     *   Argument  Type        I/O  Description (scale)
+     *   --------  ----------  ---  --------------------
+     *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+     *          failed assertion, else the status of the routine it
+     *          ends in
+     **********************************************************************/
+    {
+        if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (!AGC_ASSERT(d != 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_status_t st = AGC_STATUS_OK; /* a failing CDU drive status replaces st */
+
+        for (int i = 2; i >= 0; i--)
+        { /* DINDX = 2, 1, 0       */
+            int32_t l = lm_dap_mphi((agc_sp_t) -NDL_ONETENTH, d->ak[i]); /* at 1800 deg */
+
+            if (l > NDL_DACMAX)
+            {
+                l = NDL_DACMAX; /* overflow: DACLIMIT +1 */
+            }
+            else if (l < -NDL_DACMAX)
+            {
+                l = -NDL_DACMAX;
+            }
+
+            int32_t      cmd = (int32_t) agc_imu_cducmd(i) + l - (int32_t) d->edrive[i]; /* CDUxCMD + new drive - old drive, scaled 1800 deg */
+            agc_status_t s   = agc_imu_hw_set_cducmd(i, lm_dap_wrap(cmd));               /* ADS CDUXCMD */
+
+            st           = (s != AGC_STATUS_OK) ? s : st; /* a failure replaces st */
+            d->edrive[i] = (agc_sp_t) l;
+        }
+
+        agc_chan_or(014, NDL_DACBITS); /* DAC activity bits */
+
+        if (!AGC_ASSERT(d->edrive[0] >= -NDL_DACMAX && d->edrive[0] <= NDL_DACMAX))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        return (st);
+    }
 }

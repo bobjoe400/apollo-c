@@ -71,9 +71,9 @@
 #define BIT11    ((agc_sp_t) 02000)  /* JTIME second SMALLMP: 2^-4         */
 
 /* WL+H, WL-H, WL (2DEC, 450 deg/s) as their two words.                   */
-static const agc_dp_words_t wlh  = {022, 06426};  /* .0011111111 0.5 deg/s */
+static const agc_dp_words_t wlh = {022, 06426};  /* .0011111111 0.5 deg/s */
 static const agc_dp_words_t wlmh = {012, 035415}; /* .0006666666 0.3 deg/s */
-static const agc_dp_words_t wl   = {016, 022021}; /* .0008888888 0.4 deg/s */
+static const agc_dp_words_t wl = {016, 022021}; /* .0008888888 0.4 deg/s */
 
 /* MINTAU (p. 1026): minimum impulse on-times, 1/1600 s.                  */
 static const agc_sp_t mintau[4] = {0, 23, -23, 0}; /* 0, +-14 ms, 0       */
@@ -81,7 +81,7 @@ static const agc_sp_t mintau[4] = {0, 23, -23, 0}; /* 0, +-14 ms, 0       */
 /* Forced firing masks (OCT01400, OCT00060, OCT00300) and rate damping
  * bits (BIT13, BIT12, BIT11) by SPNDX: roll, pitch, yaw.                */
 static const uint16_t forcemask[AGC_CSM_AXES] = {001400, 000060, 000300};
-static const uint16_t dampbit[AGC_CSM_AXES]   = {010000, 004000, 002000};
+static const uint16_t dampbit[AGC_CSM_AXES] = {010000, 004000, 002000};
 
 /* Outcome of the switching logic: the label the AGC branches to.        */
 typedef enum pp_region
@@ -99,15 +99,13 @@ typedef struct pp_point
 {
     agc_dp_words_t edot;    /* EDOT = ADOT - WBODY, 450 deg/s          */
     agc_dp_words_t edotvel; /* EDOTVEL = EDOT by its sign, 450 deg/s   */
-    agc_sp_t       aerr;    /* AERR = ERROR, scale 180 deg             */
-    agc_sp_t       aerrvel; /* AERRVEL = AERR by the sign of EDOT, scale 180 deg */
-    agc_sp_t       adbvel;  /* ADBVEL = +-(ADB+AF), scale 180 deg      */
-    agc_sp_t       adbaf;   /* T5TEMP = ADB+AF, scale 180 deg          */
+    agc_sp_t aerr;    /* AERR = ERROR, scale 180 deg             */
+    agc_sp_t aerrvel; /* AERRVEL = AERR by the sign of EDOT, scale 180 deg */
+    agc_sp_t adbvel;  /* ADBVEL = +-(ADB+AF), scale 180 deg      */
+    agc_sp_t adbaf;   /* T5TEMP = ADB+AF, scale 180 deg          */
 } pp_point_t;
 
 static bool         words_nonneg(agc_dp_words_t w);
-static agc_status_t rcs_freecont(void);
-static agc_status_t rcs_holdfunc(void);
 static agc_status_t rcs_grabang(void);
 static agc_status_t rcs_atthold(void);
 static agc_status_t rcs_t6prog(void);
@@ -151,7 +149,43 @@ agc_status_t csm_rcs_ahfnorot(void)
 
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_FREE) == 0u)
     {
-        return (rcs_freecont()); /* READ CHAN31; MASK BIT14; BZMF        */
+        /* READ CHAN31; MASK BIT14; BZMF        */
+        /**********************************************************************
+         * FREECONT (AUTOMATIC_MANEUVERS.agc pp. 1025-1026) -- minimum impulse
+         * control from channel 32, firing only on a new deflection (CHANTEMP
+         * holds the last image): TAU = MINTAU by the STICKCHK indices.
+         *
+         * ARGUMENTS: none
+         *
+         * RETURNS: agc_status_t -- the STICKCHK or T6PROGM status
+         **********************************************************************/
+        agc_csm_rcs_t *r_freecont = agc_csm_dap_rcs(); /* RCS DAP erasables          */
+
+        r_freecont->holdflag = 1;                                                                 /* CAF ONE; TS HOLDFLAG: inhibit steering        */
+        uint16_t ch32 = agc_chan_read(AGC_CHAN_CHAN32);                                    /* READ CHAN32; TS L */
+        uint16_t bits = (uint16_t) (~(unsigned int) ch32 & MANROT & r_freecont->chantemp); /* COM; MASK MANROT; MASK CHANTEMP */
+
+        r_freecont->chantemp = ch32;                       /* LXCH CHANTEMP                            */
+        agc_status_t st = agc_csm_dap_stickchk(bits); /* TC STICKCHK */
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
+
+        for (int i = 0; i < AGC_CSM_AXES; i++)
+        {
+            int m = (int) r_freecont->manndx[i]; /* INDEX RMANNDX                    */
+
+            if (!AGC_ASSERT((m >= 0) && (m <= 3)))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            r_freecont->tau[i] = mintau[m]; /* CA MINTAU; TS TAU, TAU1, TAU2         */
+        }
+
+        return (csm_rcs_t6prog_manual());
     }
 
     if (csm_rcs_rate_init_pending())
@@ -161,72 +195,28 @@ agc_status_t csm_rcs_ahfnorot(void)
 
     if ((agc_chan_read(AGC_CHAN_CHAN31) & (uint16_t) AGC_CH031_ATTHOLD) == 0u)
     {
-        return (rcs_holdfunc()); /* MASK BIT13; BZMF HOLDFUNC            */
+        /* MASK BIT13; BZMF HOLDFUNC            */
+        /**********************************************************************
+         * HOLDFUNC (AUTOMATIC_MANEUVERS.agc p. 1028) -- attitude hold: HOLDFLAG
+         * +0 holds the references; anything else grabs new ones.
+         *
+         * ARGUMENTS: none
+         *
+         * RETURNS: agc_status_t -- the ATTHOLD or GRABANG status
+         **********************************************************************/
+        const agc_csm_rcs_t *r_holdfunc = agc_csm_dap_rcs(); /* RCS DAP erasables    */
+
+        if (r_holdfunc->holdflag == 0)
+        {
+            return (rcs_atthold()); /* CCS HOLDFLAG: +0                      */
+        }
+
+        return (rcs_grabang());
     }
 
     if (r->holdflag <= 0)
     { /* AUTOCONT: HOLDFLAG +0, -0, - (BZMF) */
         return (rcs_atthold());
-    }
-
-    return (rcs_grabang());
-}
-
-/**********************************************************************
- * FREECONT (AUTOMATIC_MANEUVERS.agc pp. 1025-1026) -- minimum impulse
- * control from channel 32, firing only on a new deflection (CHANTEMP
- * holds the last image): TAU = MINTAU by the STICKCHK indices.
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- the STICKCHK or T6PROGM status
- **********************************************************************/
-static agc_status_t rcs_freecont(void)
-{
-    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
-
-    r->holdflag   = 1;                                                        /* CAF ONE; TS HOLDFLAG: inhibit steering        */
-    uint16_t ch32 = agc_chan_read(AGC_CHAN_CHAN32);                           /* READ CHAN32; TS L */
-    uint16_t bits = (uint16_t) (~(unsigned int) ch32 & MANROT & r->chantemp); /* COM; MASK MANROT; MASK CHANTEMP */
-
-    r->chantemp     = ch32;                       /* LXCH CHANTEMP                            */
-    agc_status_t st = agc_csm_dap_stickchk(bits); /* TC STICKCHK */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    for (int i = 0; i < AGC_CSM_AXES; i++)
-    {
-        int m = (int) r->manndx[i]; /* INDEX RMANNDX                    */
-
-        if (!AGC_ASSERT((m >= 0) && (m <= 3)))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        r->tau[i] = mintau[m]; /* CA MINTAU; TS TAU, TAU1, TAU2         */
-    }
-
-    return (csm_rcs_t6prog_manual());
-}
-
-/**********************************************************************
- * HOLDFUNC (AUTOMATIC_MANEUVERS.agc p. 1028) -- attitude hold: HOLDFLAG
- * +0 holds the references; anything else grabs new ones.
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- the ATTHOLD or GRABANG status
- **********************************************************************/
-static agc_status_t rcs_holdfunc(void)
-{
-    const agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables    */
-
-    if (r->holdflag == 0)
-    {
-        return (rcs_atthold()); /* CCS HOLDFLAG: +0                      */
     }
 
     return (rcs_grabang());
@@ -244,13 +234,13 @@ static agc_status_t rcs_holdfunc(void)
  **********************************************************************/
 static agc_status_t rcs_grabang(void)
 {
-    agc_csm_rcs_t          *r = agc_csm_dap_rcs(); /* RCS DAP erasables  */
+    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables  */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* RCSFLAGS           */
 
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         r->wbody[i] = 0; /* CAF ZERO; TS WBODY .. BIAS2                  */
-        r->bias[i]  = 0;
+        r->bias[i] = 0;
     }
 
     if ((c->rcsflags & DAMPBITS) != 0u)
@@ -284,14 +274,14 @@ static agc_status_t rcs_grabang(void)
  **********************************************************************/
 static agc_status_t rcs_atthold(void)
 {
-    agc_csm_rcs_t *r  = agc_csm_dap_rcs();                           /* RCS DAP erasables       */
-    agc_sp_t       ex = csm_dap_msu(agc_erase_cdux(), r->thetad[0]); /* CDUX - THETADX, scale 180 deg */
-    agc_sp_t       t  = csm_dap_msu(agc_erase_cduy(), r->thetad[1]); /* T5TEMP, scale 180 deg   */
+    agc_csm_rcs_t *r = agc_csm_dap_rcs();                           /* RCS DAP erasables       */
+    agc_sp_t ex = csm_dap_msu(agc_erase_cdux(), r->thetad[0]); /* CDUX - THETADX, scale 180 deg */
+    agc_sp_t t = csm_dap_msu(agc_erase_cduy(), r->thetad[1]); /* T5TEMP, scale 180 deg   */
 
     r->error[0] = csm_dap_ads(ex, csm_dap_mp_hi(t, r->amgb1)); /* MP AMGB1; ADS ERRORX */
     r->error[1] = csm_dap_mp_hi(t, r->amgb4);
     r->error[2] = csm_dap_mp_hi(t, r->amgb7);
-    t           = csm_dap_msu(agc_erase_cduz(), r->thetad[2]);
+    t = csm_dap_msu(agc_erase_cduz(), r->thetad[2]);
     r->error[1] = csm_dap_ads(r->error[1], csm_dap_mp_hi(t, r->amgb5));
     r->error[2] = csm_dap_ads(r->error[2], csm_dap_mp_hi(t, r->amgb8));
 
@@ -319,7 +309,7 @@ static agc_status_t rcs_atthold(void)
 agc_status_t csm_rcs_jets(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
-    pp_point_t     p;                     /* the axis' point            */
+    pp_point_t p;                     /* the axis' point            */
 
     p.adbaf = csm_dap_ads(r->adb, AF); /* CA ADB; AD FOUR; TS T5TEMP    */
 
@@ -332,12 +322,12 @@ agc_status_t csm_rcs_jets(void)
             csm_dap_words_das(&p.edot, csm_dap_words_neg(agc_dp_to_words(r->wbody[i])));
         }
 
-        p.aerr   = r->error[i];          /* INHOLD: AERR = BIAS + AK   */
+        p.aerr = r->error[i];          /* INHOLD: AERR = BIAS + AK   */
         bool pos = words_nonneg(p.edot); /* CCS EDOT; SIGNCK1          */
 
-        p.edotvel            = pos ? p.edot : csm_dap_words_neg(p.edot); /* ?: POSVEL DCA / NEGVEL DCS EDOT */
-        p.adbvel             = pos ? p.adbaf : (agc_sp_t) -p.adbaf;      /* ?: +-(ADB+AF)    */
-        p.aerrvel            = pos ? p.aerr : (agc_sp_t) -p.aerr;        /* ?: +-AERR        */
+        p.edotvel = pos ? p.edot : csm_dap_words_neg(p.edot); /* ?: POSVEL DCA / NEGVEL DCS EDOT */
+        p.adbvel = pos ? p.adbaf : (agc_sp_t) -p.adbaf;      /* ?: +-(ADB+AF)    */
+        p.aerrvel = pos ? p.aerr : (agc_sp_t) -p.aerr;        /* ?: +-AERR        */
         agc_dp_words_t kmpac = {0, 0};                                   /* DELTA W, 450 deg/s */
 
         if (rcs_delta_w(i, &p, &kmpac))
@@ -360,8 +350,8 @@ agc_status_t csm_rcs_jets(void)
  **********************************************************************/
 static pp_region_t rcs_region(const pp_point_t *p)
 {
-    const agc_csm_rcs_t *r   = agc_csm_dap_rcs(); /* ADB, SLOPE           */
-    int                  adb = (int) r->adb;      /* ADB, 180 deg         */
+    const agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* ADB, SLOPE           */
+    int adb = (int) r->adb;      /* ADB, 180 deg         */
 
     if ((int) p->aerrvel - adb + WLH_SLOP > 0)
     { /* J6.: SU ADB; AD WLH/SLOP; BZMF J8 */
@@ -424,44 +414,44 @@ static pp_region_t rcs_region(const pp_point_t *p)
  **********************************************************************/
 static bool rcs_delta_w(int i, const pp_point_t *p, agc_dp_words_t *kmpac)
 {
-    agc_csm_dapcom_t *c     = agc_csm_dap_com();          /* RCSFLAGS          */
-    pp_region_t       reg   = rcs_region(p);              /* switching logic   */
-    agc_dp_words_t    medot = csm_dap_words_neg(p->edot); /* DCS EDOT, 450 deg/s */
-    bool              epos  = words_nonneg(p->edot);      /* CCS EDOT; SIGNCK4/5 */
-    bool              fire  = true;                       /* JTIME follows     */
+    agc_csm_dapcom_t *c = agc_csm_dap_com();          /* RCSFLAGS          */
+    pp_region_t reg = rcs_region(p);              /* switching logic   */
+    agc_dp_words_t medot = csm_dap_words_neg(p->edot); /* DCS EDOT, 450 deg/s */
+    bool epos = words_nonneg(p->edot);      /* CCS EDOT; SIGNCK4/5 */
+    bool fire = true;                       /* JTIME follows     */
 
     switch (reg)
     {
         case PP_J23:
             c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned int) dampbit[i]); /* CS BIT13; MASK RCSFLAGS */
-            fire        = (c->rcsflags & forcemask[i]) != 0u;                    /* forced: TCF J18 */
-            *kmpac      = medot;
+            fire = (c->rcsflags & forcemask[i]) != 0u;                    /* forced: TCF J18 */
+            *kmpac = medot;
             break;
         case PP_J18:
-            *kmpac      = medot;                                                 /* DCS EDOT; DXCH KMPAC                    */
+            *kmpac = medot;                                                 /* DCS EDOT; DXCH KMPAC                    */
             break;
         case PP_J20:
             /* CS AERR; AD ADBVEL; MP SLOPE2; DXCH KMPAC; DCS EDOT; DAS   */
-            *kmpac      = csm_dap_words_mp(csm_dap_ads((agc_sp_t) -p->aerr, p->adbvel), SLOPE2);
+            *kmpac = csm_dap_words_mp(csm_dap_ads((agc_sp_t) -p->aerr, p->adbvel), SLOPE2);
             csm_dap_words_das(kmpac, medot);
             break;
         case PP_J24:
             /* CS AERR; SU ADBVEL; MP SLOPE2; DXCH KMPAC; DCS EDOT; DAS   */
-            *kmpac      = csm_dap_words_mp(csm_dap_ads((agc_sp_t) -p->aerr, (agc_sp_t) -p->adbvel), SLOPE2);
+            *kmpac = csm_dap_words_mp(csm_dap_ads((agc_sp_t) -p->aerr, (agc_sp_t) -p->adbvel), SLOPE2);
             csm_dap_words_das(kmpac, medot);
             break;
         case PP_J21:
             /* EDOT + : JP (DCS EDOT; DCS WL; DAS), - : JN (DCA WL; DAS)  */
-            *kmpac      = medot;
+            *kmpac = medot;
             csm_dap_words_das(kmpac, epos ? csm_dap_words_neg(wl) : wl);         /* ?: JP / JN */
             break;
         case PP_J22:
             /* EDOT + : JN, - : JP                                        */
-            *kmpac      = medot;
+            *kmpac = medot;
             csm_dap_words_das(kmpac, epos ? wl : csm_dap_words_neg(wl));         /* ?: JN / JP */
             break;
         default:
-            fire        = false;                                                 /* unreachable: all regions listed        */
+            fire = false;                                                 /* unreachable: all regions listed        */
             break;
     }
 

@@ -210,7 +210,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
@@ -221,9 +221,9 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
     { /* R61C+L04 */
         uint16_t fdai[3]; /* FDAI angles (BALLANGS) */
 
-        st = agc_imu_ballangs(&ip, gimbal, fdai);
+        agc_imu_ballangs(&ip, gimbal, fdai);
 
-        return ((st != AGC_STATUS_OK) ? st : ta_next()); /* R61C+L06 */
+        return (ta_next()); /* R61C+L06 */
     }
 
     /* R61 in auto: phi (the LOS from +Z, CDU*SMNB) over 15 degrees: R60
@@ -287,7 +287,7 @@ agc_status_t agc_job_tracking_attitude_maneuvered(void)
         return (st);
     }
 
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     rz_flag_put(AGC_FLAG_PDSPFLAG, false);
 
     return (ta_next());

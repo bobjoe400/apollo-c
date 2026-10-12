@@ -54,11 +54,6 @@ static const agc_dp_t VSCAL[3] = {145245838, 203089473, -107912228};
 /* ALTCHK (p.878): is HCALC at or below the criterion ALTCRIT + index?     */
 void agc_lm_altchk(agc_sp_t index, bool *below)
 {
-    if (!AGC_ASSERT(below != NULL) || !AGC_ASSERT(index >= 0 && index <= 6 && (index % 2) == 0))
-    {
-        return;
-    }
-
     agc_ovf_t ovf = 0;
     agc_dp_t  d   = agc_dp_sub_raw(ALTCRIT[index / 2], agc_guid_state()->lm.hcalc, &ovf);
 
@@ -96,32 +91,6 @@ agc_status_t agc_lm_serv_contserv(agc_job_ctx_t *ctx)
     agc_relint();
 
     return (agc_lm_serv_copycyc1(ctx));
-}
-
-/* HIGATASK (p.873): about 6 s before high gate set PSTHIGAT and NOLRREAD
- * (PRIO3 = bits 10, 11 of FLGWRD11) and start HIGATJOB (POS1 -> POS2).    */
-agc_status_t agc_lm_serv_higatask(agc_job_ctx_t *ctx)
-{
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_inhint();
-    agc_flag_set(AGC_FLAG_PSTHIGAT);
-    agc_flag_set(AGC_FLAG_NOLRREAD);
-    agc_status_t st = agc_exec_findvac(AGC_PRIO32, AGC_JOB_HIGATJOB);
-
-    if (st != AGC_STATUS_OK)
-    {
-        agc_relint();
-
-        return (st);
-    }
-
-    agc_relint();
-
-    return (agc_lm_serv_contserv(ctx));
 }
 
 /* MUNRETRN (p.874) with XORCHK and 35KCHK (p.878-879): LR reading enabled
@@ -188,7 +157,29 @@ agc_status_t agc_lm_serv_munretrn(agc_job_ctx_t *ctx)
 
         if ((int) ttf8 + lm->rpcrtime > 0 && (int) lm->rpcrtqsw - (int) agc_dp_high(lm->xnbpip.row[0].c[0]) <= 0)
         {
-            return (agc_lm_serv_higatask(ctx)); /* UXBXP > QSW: REPOSITION */
+            /* UXBXP > QSW: REPOSITION */
+            /* HIGATASK (p.873): about 6 s before high gate set PSTHIGAT and NOLRREAD
+             * (PRIO3 = bits 10, 11 of FLGWRD11) and start HIGATJOB (POS1 -> POS2).    */
+            if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            agc_inhint();
+            agc_flag_set(AGC_FLAG_PSTHIGAT);
+            agc_flag_set(AGC_FLAG_NOLRREAD);
+            agc_status_t st = agc_exec_findvac(AGC_PRIO32, AGC_JOB_HIGATJOB);
+
+            if (st != AGC_STATUS_OK)
+            {
+                agc_relint();
+
+                return (st);
+            }
+
+            agc_relint();
+
+            return (agc_lm_serv_contserv(ctx));
         }
 
         if ((ch33 & (uint16_t) AGC_CH033_LRPOS1) == 0U)
@@ -452,11 +443,6 @@ static agc_dp_t lr_deltav(agc_interp_t *ip, agc_guid_t *g, agc_vec_t *vbsm, agc_
 
     vu   = agc_vec_add(ip, agc_vec_shl(ip, vu, 2), g->lm.delvs); /* 2^5         */
     *lim = agc_dp_add(ip, agc_dp_shr(agc_vec_abval(ip, vu), 4), SEVEN_HALF);
-
-    if (!AGC_ASSERT(s >= 0 && s <= 2))
-    {
-        return (0); /* no valid result */
-    }
 
     return (agc_dp_sub(ip, vm, agc_vec_dot(ip, vu, *vbsm))); /* BDSU        */
 }
@@ -748,22 +734,22 @@ agc_status_t agc_job_lrhjob_done(void)
     if (g->lm.stilbadh > 0)
     {
         g->lm.stilbadh--; /* HSTILBAD               */
-
-        return (AGC_STATUS_OK);
     }
-
-    agc_inhint();
-    g->lm.hmeas  = agc_radar_samplsum();         /* 1.079 FT/BIT           */
-    g->lm.mktime = g->avg.piptime1;
-    g->lm.aig    = (agc_sp_t) g->avg.cdutemp[1]; /* CDUY,Z = AIG,AMG       */
-    g->lm.amg    = (agc_sp_t) g->avg.cdutemp[2];
-    g->lm.aog    = (agc_sp_t) g->avg.cdutemp[0];
-    agc_flag_set(AGC_FLAG_RNGEDATA);
-    agc_relint();
-
-    if (!AGC_ASSERT(g->lm.hmeas >= 0))
+    else
     {
-        return (AGC_STATUS_BAD_ARG);
+        agc_inhint();
+        g->lm.hmeas  = agc_radar_samplsum();         /* 1.079 FT/BIT           */
+        g->lm.mktime = g->avg.piptime1;
+        g->lm.aig    = (agc_sp_t) g->avg.cdutemp[1]; /* CDUY,Z = AIG,AMG       */
+        g->lm.amg    = (agc_sp_t) g->avg.cdutemp[2];
+        g->lm.aog    = (agc_sp_t) g->avg.cdutemp[0];
+        agc_flag_set(AGC_FLAG_RNGEDATA);
+        agc_relint();
+
+        if (!AGC_ASSERT(g->lm.hmeas >= 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
     }
 
     return (AGC_STATUS_OK);

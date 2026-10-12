@@ -51,11 +51,6 @@ static bool          g_step_lost;   /* that client disconnected        */
 
 void sim_packet_form(uint16_t chan, uint16_t value, uint8_t pkt[SIM_PACKET_BYTES])
 {
-    if (!AGC_ASSERT(chan <= 0777u) || !AGC_ASSERT(value <= SIM_WORD_MASK))
-    {
-        return;
-    }
-
     pkt[0] = (uint8_t) (chan >> 3);
     pkt[1] = (uint8_t) (0x40u | ((chan << 3) & 0x38u) | ((value >> 12) & 0x07u));
     pkt[2] = (uint8_t) (0x80u | ((value >> 6) & 0x3Fu));
@@ -78,23 +73,21 @@ bool sim_packet_parse(const uint8_t pkt[SIM_PACKET_BYTES], uint16_t *chan, uint1
 
 static void client_close(int i)
 {
-    if (!AGC_ASSERT(i >= 0 && i < SOCK_SLOTS) || g_client[i].fd < 0)
+    if (g_client[i].fd >= 0)
     {
-        return;
-    }
+        if (close(g_client[i].fd) != 0)
+        {
+            g_client[i].fd = -1; /* already gone; nothing else to do */
+        }
 
-    if (close(g_client[i].fd) != 0)
-    {
-        g_client[i].fd = -1; /* already gone; nothing else to do */
-    }
+        g_client[i].fd   = -1;
+        g_client[i].size = 0;
 
-    g_client[i].fd   = -1;
-    g_client[i].size = 0;
-
-    if (i == g_step_client)
-    {
-        g_step_lost   = true;
-        g_step_client = -1;
+        if (i == g_step_client)
+        {
+            g_step_lost   = true;
+            g_step_client = -1;
+        }
     }
 }
 
@@ -102,7 +95,7 @@ static bool set_nonblocking(int fd)
 {
     int fl = fcntl(fd, F_GETFL, 0);
 
-    if (!AGC_ASSERT(fd >= 0) || fl < 0)
+    if (fl < 0)
     {
         return (false);
     }
@@ -185,25 +178,18 @@ void sim_socket_close(void)
     }
 
     g_open = false;
-
-    if (!AGC_ASSERT(!g_open))
-    {
-        return;
-    }
 }
 
 static void send_to(int i, const uint8_t pkt[SIM_PACKET_BYTES])
 {
-    if (!AGC_ASSERT(i >= 0 && i < SOCK_SLOTS) || g_client[i].fd < 0)
+    if (g_client[i].fd >= 0)
     {
-        return;
-    }
+        ssize_t n = send(g_client[i].fd, pkt, SIM_PACKET_BYTES, MSG_NOSIGNAL);
 
-    ssize_t n = send(g_client[i].fd, pkt, SIM_PACKET_BYTES, MSG_NOSIGNAL);
-
-    if (n != (ssize_t) SIM_PACKET_BYTES && !(n < 0 && errno == EAGAIN))
-    {
-        client_close(i); /* broken pipe or short write: drop the client */
+        if (n != (ssize_t) SIM_PACKET_BYTES && !(n < 0 && errno == EAGAIN))
+        {
+            client_close(i); /* broken pipe or short write: drop the client */
+        }
     }
 }
 
@@ -262,11 +248,6 @@ static bool act_on_packet(int i)
     if (!sim_packet_parse(g_client[i].pkt, &chan, &value, &ubit))
     {
         return (false); /* e.g. the 0xFF keep-alive of other peripherals */
-    }
-
-    if (!AGC_ASSERT(chan < SOCK_CHANNELS))
-    {
-        return (false);
     }
 
     if (ubit)
@@ -343,18 +324,16 @@ static void read_client(int i)
 
 void sim_socket_poll(void)
 {
-    if (!g_open)
+    if (g_open)
     {
-        return;
-    }
+        accept_clients();
 
-    accept_clients();
-
-    for (int i = 0; i < SOCK_SLOTS; i++)
-    {
-        if (g_client[i].fd >= 0 && !(g_steps > 0u && i == g_step_client))
+        for (int i = 0; i < SOCK_SLOTS; i++)
         {
-            read_client(i);
+            if (g_client[i].fd >= 0 && !(g_steps > 0u && i == g_step_client))
+            {
+                read_client(i);
+            }
         }
     }
 }
@@ -366,11 +345,6 @@ int sim_socket_clients(void)
     for (int i = 0; i < SOCK_SLOTS; i++)
     {
         n += (g_client[i].fd >= 0) ? 1 : 0;
-    }
-
-    if (!AGC_ASSERT(n >= 0 && n <= SOCK_SLOTS))
-    {
-        return (0);
     }
 
     return (n);
@@ -403,11 +377,6 @@ uint32_t sim_socket_take_steps(void)
     uint32_t s = g_steps;
 
     g_steps = 0;
-
-    if (!AGC_ASSERT(g_steps == 0u))
-    {
-        return (0);
-    }
 
     return (s);
 }

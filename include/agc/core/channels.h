@@ -443,6 +443,7 @@ enum agc_channel_bits
 
 uint16_t     agc_chan_read(int chan);                                    /* READ          */
 void         agc_chan_write(int chan, uint16_t value);                   /* WRITE         */
+bool         agc_chan_writable(int chan);                                /* L, Q, outputs, 033 */
 void         agc_chan_or(int chan, uint16_t mask);                       /* WOR           */
 void         agc_chan_and(int chan, uint16_t mask);                      /* WAND          */
 agc_status_t agc_chan_set_input(int chan, uint16_t value);               /* sim: raw sensed value */

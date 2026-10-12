@@ -50,11 +50,11 @@ void agc_erase_reset_display(void)
     }
 
     g_samptime = 0;
-    g_sfail    = 0;
+    g_sfail = 0;
     g_trkmkcnt = 0;
-    g_t3tot4   = 0;
-    g_rr_az    = 0;
-    g_rr_elev  = 0;
+    g_t3tot4 = 0;
+    g_rr_az = 0;
+    g_rr_elev = 0;
 }
 
 agc_sp_t agc_erase_option1(int index)
@@ -89,51 +89,21 @@ void agc_erase_set_sfail(uint16_t v)
 
 uint16_t agc_erase_markdown(int index)
 {
-    if (!AGC_ASSERT(index >= 0 && index <= 6))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(g_markdown[index - 0] <= EW15_MAX))
-    {
-        return (0);
-    }
-
     return (g_markdown[index - 0]);
 }
 
 void agc_erase_set_markdown(int index, uint16_t v)
 {
-    if (!AGC_ASSERT(v <= EW15_MAX))
-    {
-        return;
-    }
-
     g_markdown[index - 0] = v;
 }
 
 uint16_t agc_erase_mark2dwn(int index)
 {
-    if (!AGC_ASSERT(index >= 0 && index <= 6))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(g_mark2dwn[index - 0] <= EW15_MAX))
-    {
-        return (0);
-    }
-
     return (g_mark2dwn[index - 0]);
 }
 
 void agc_erase_set_mark2dwn(int index, uint16_t v)
 {
-    if (!AGC_ASSERT(v <= EW15_MAX))
-    {
-        return;
-    }
-
     g_mark2dwn[index - 0] = v;
 }
 

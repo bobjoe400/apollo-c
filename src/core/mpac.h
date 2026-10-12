@@ -54,7 +54,6 @@ typedef struct agc_w3
 } agc_w3_t;
 
 /* ---- representation ----------------------------------------------------- */
-bool     agc_w_ok(int32_t w);      /* |w| < 2^14             */
 agc_w2_t agc_w_split(agc_dp_t v);  /* sign-agreeing words    */
 agc_dp_t agc_w_join(agc_w2_t p);   /* value of a word pair   */
 agc_w3_t agc_w3_from_tp(agc_tp_t v);

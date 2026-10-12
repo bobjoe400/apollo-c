@@ -84,25 +84,25 @@
 /* S22.1 erasables.                                                       */
 typedef struct ln_state
 {
-    uint16_t     svmrkdat[LN_SVMRK]; /* SVMRKDAT: marks (time DP, 5 CDUs)   */
-    agc_sp_t     i;                  /* 8KK: present mark, 1..N, unscaled */
-    agc_sp_t     n;                  /* 8NN: number of marks, unscaled */
-    int          loc;                /* S22LOC: word index of mark I             */
-    int          eorm;               /* S22EORM: 0 earth, -2 moon                */
-    agc_dp_t     toff;               /* S22TOFF: offset mark time, cs 2^28       */
-    agc_dp_t     tprim;              /* S22TPRIM: last mark time, cs 2^28        */
-    agc_vec_t    uoff;               /* S22UOFF: UM of the offset mark, 2^1 */
-    agc_vec_t    csmpos;             /* CSMPOS: CSM position, body scale         */
-    agc_vec_t    um;                 /* UM: optics LOS, reference, 2^1           */
-    agc_vec_t    rclp;               /* RCLP: landmark - CSM, body scale         */
-    agc_vec_t    ustar;              /* USTAR: star direction, 2^1               */
-    agc_dp_t     d;                  /* S22D: UM . RL, B-29                      */
-    agc_dp_t     rho;                /* S22RHO: range to the landmark, B-30      */
-    agc_dp_t     n49disp[2];         /* N49DISP: |dR| B-29, |dV| B-7             */
+    uint16_t svmrkdat[LN_SVMRK]; /* SVMRKDAT: marks (time DP, 5 CDUs)   */
+    agc_sp_t i;                  /* 8KK: present mark, 1..N, unscaled */
+    agc_sp_t n;                  /* 8NN: number of marks, unscaled */
+    int loc;                /* S22LOC: word index of mark I             */
+    int eorm;               /* S22EORM: 0 earth, -2 moon                */
+    agc_dp_t toff;               /* S22TOFF: offset mark time, cs 2^28       */
+    agc_dp_t tprim;              /* S22TPRIM: last mark time, cs 2^28        */
+    agc_vec_t uoff;               /* S22UOFF: UM of the offset mark, 2^1 */
+    agc_vec_t csmpos;             /* CSMPOS: CSM position, body scale         */
+    agc_vec_t um;                 /* UM: optics LOS, reference, 2^1           */
+    agc_vec_t rclp;               /* RCLP: landmark - CSM, body scale         */
+    agc_vec_t ustar;              /* USTAR: star direction, 2^1               */
+    agc_dp_t d;                  /* S22D: UM . RL, B-29                      */
+    agc_dp_t rho;                /* S22RHO: range to the landmark, B-30      */
+    agc_dp_t n49disp[2];         /* N49DISP: |dR| B-29, |dV| B-7             */
     agc_incorp_t inc;                /* BVECTOR DELTAQ VARIANCE DELTAX           */
     agc_job_id_t ret;                /* S22RTNEX                                 */
-    agc_sp_t     cxoff;              /* CXOFF: offset point mark (code B), unscaled */
-    bool         first;              /* FIG2EXIT (first mark) or S2INTS1         */
+    agc_sp_t cxoff;              /* CXOFF: offset point mark (code B), unscaled */
+    bool first;              /* FIG2EXIT (first mark) or S2INTS1         */
 } ln_state_t;
 
 static ln_state_t ln; /* S22.1 erasables */
@@ -124,11 +124,6 @@ static agc_dp_t *ln_w(int o)
 {
     agc_incorp_w_t *w = &agc_integ_shared_ctx()->w; /* W matrix */
 
-    if (!AGC_ASSERT(o >= 0 && o < 162 && (o % 2) == 0))
-    {
-        return (&w->blk[0][0].c[0]);
-    }
-
     int b = o / 54; /* column block */
     int r = o % 54; /* word in the block */
 
@@ -147,11 +142,6 @@ static agc_dp_t *ln_w(int o)
  **********************************************************************/
 static agc_dp_t ln_gettf(void)
 {
-    if (!AGC_ASSERT(ln.loc >= 0 && ln.loc + 1 < LN_SVMRK))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_dp_pack((agc_sp_t) ln.svmrkdat[ln.loc], (agc_sp_t) ln.svmrkdat[ln.loc + 1]));
 }
 
@@ -188,7 +178,7 @@ static void ln_flags(void)
 static agc_status_t ln_calrc(agc_interp_t *ip)
 {
     agc_integ_sv_t sv; /* permanent state */
-    agc_status_t   st; /* CSM state */
+    agc_status_t st; /* CSM state */
 
     st = agc_integ_perm_get(AGC_VEHICLE_CSM, &sv);
 
@@ -213,13 +203,13 @@ static agc_status_t ln_calrc(agc_interp_t *ip)
  **********************************************************************/
 static void ln_landmark_on_surface(agc_interp_t *ip, agc_dp_t eradm)
 {
-    agc_dp_t  rc   = 0;                                      /* |RC|, body scale */
-    agc_vec_t u    = agc_vec_unit(ip, ln.csmpos, &rc, NULL); /* UNIT RC, 2^1 */
-    agc_dp_t  c    = agc_vec_dot(ip, u, ln.um);              /* UM . URC, 2^2  */
-    agc_dp_t  cosa = agc_dp_neg(agc_dp_shl(ip, c, 1));       /* COSA, 2^1      */
-    agc_dp_t  cos2 = agc_dp_sq(cosa);                    /* COSA^2, 2^2 */
-    agc_dp_t  sin2 = agc_dp_sub(ip, AGC_DP_QUARTER, cos2);   /* SINA^2, 2^2 */
-    agc_dp_t  r0   = eradm;                                  /* R0, m 2^29     */
+    agc_dp_t rc = 0;                                      /* |RC|, body scale */
+    agc_vec_t u = agc_vec_unit(ip, ln.csmpos, &rc, NULL); /* UNIT RC, 2^1 */
+    agc_dp_t c = agc_vec_dot(ip, u, ln.um);              /* UM . URC, 2^2  */
+    agc_dp_t cosa = agc_dp_neg(agc_dp_shl(ip, c, 1));       /* COSA, 2^1      */
+    agc_dp_t cos2 = agc_dp_sq(cosa);                        /* COSA^2, 2^2 */
+    agc_dp_t sin2 = agc_dp_sub(ip, AGC_DP_QUARTER, cos2);   /* SINA^2, 2^2 */
+    agc_dp_t r0 = eradm;                                  /* R0, m 2^29     */
 
     if (ln.eorm != 0)
     {
@@ -227,10 +217,10 @@ static void ln_landmark_on_surface(agc_interp_t *ip, agc_dp_t eradm)
     }
 
     agc_dp_t q = agc_dp_div(ip, agc_dp_shr_round(r0, 1), rc); /* B-1 */
-    agc_dp_t s = agc_dp_sub(ip, agc_dp_sq(q), sin2);      /* 2^2 */
+    agc_dp_t s = agc_dp_sub(ip, agc_dp_sq(q), sin2);          /* 2^2 */
 
-    s            = agc_dp_sqrt(s);               /* 2^1 */
-    ln.rho       = agc_dp_mul_trunc(agc_dp_sub(ip, cosa, s), rc);
+    s = agc_dp_sqrt(s);                   /* 2^1 */
+    ln.rho = agc_dp_mul_trunc(agc_dp_sub(ip, cosa, s), rc);
     agc_vec_t rl = agc_vec_scale(ip, ln.um, ln.rho); /* RHO UM, body scale */
 
     rl = agc_vec_shl(ip, rl, 2);
@@ -292,8 +282,8 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
         rho = agc_dp_shr(ln.rho, 2); /* moon: to B-30 */
     }
 
-    int      x2 = 0;                 /* NORM index, -(left shifts) */
-    agc_dp_t n  = rz_norm(rho, &x2); /* RHO, 2^(-30+X2) */
+    int x2 = 0;                 /* NORM index, -(left shifts) */
+    agc_dp_t n = rz_norm(rho, &x2); /* RHO, 2^(-30+X2) */
 
     x2 = 2 * x2; /* XAD,2 X2 */
     agc_dp_t r2; /* 1/2 RHO^2 VARSCT, B-42 */
@@ -311,15 +301,15 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
     }
 
     agc_mat_t umum = ln_outer(ip, ln.um, ln.um); /* B-2      */
-    agc_dp_t  q;                                 /* R0 SR3 / D, 2^0 */
+    agc_dp_t q;                                 /* R0 SR3 / D, 2^0 */
 
-    q                 = agc_dp_div(ip, agc_dp_shr(eradm, 3), ln.d);
-    agc_dp_t        s = agc_dp_mul_trunc(agc_dp_sq(q), agc_rendz_nav_pad()->rpvar); /* RPVAR scale */
-    agc_incorp_w_t *w = &agc_integ_shared_ctx()->w;                                     /* W matrix */
+    q = agc_dp_div(ip, agc_dp_shr(eradm, 3), ln.d);
+    agc_dp_t s = agc_dp_mul_trunc(agc_dp_sq(q), agc_rendz_nav_pad()->rpvar); /* RPVAR scale */
+    agc_incorp_w_t *w = &agc_integ_shared_ctx()->w;                                 /* W matrix */
 
     for (int r = 0; r < 3; r++)
     { /* S22NXXB  */
-        e.row[r]         = agc_vec_add(ip, agc_vec_scale(ip, umum.row[r], s), e.row[r]);
+        e.row[r] = agc_vec_add(ip, agc_vec_scale(ip, umum.row[r], s), e.row[r]);
         w->blk[2][6 + r] = agc_vec_zero();
     }
 
@@ -335,7 +325,7 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
 
         if (w74 != 0)
         {
-            *ln_w(148)   = w74;
+            *ln_w(148) = w74;
             agc_dp_t w73 = agc_dp_div(ip, e.row[2].c[1], w74); /* W73, B-19 */
 
             if (!agc_interp_test_ovf(ip))
@@ -356,7 +346,7 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
 
     agc_dp_t r76; /* B-38 */
 
-    r76          = agc_dp_sub(ip, e.row[1].c[1], agc_dp_sq(*ln_w(146)));
+    r76 = agc_dp_sub(ip, e.row[1].c[1], agc_dp_sq(*ln_w(146)));
     agc_dp_t w76 = 0; /* S22W76X, B-19 */
 
     if (r76 >= 0)
@@ -366,7 +356,7 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
 
     if (w76 != 0)
     {
-        *ln_w(152)   = w76;
+        *ln_w(152) = w76;
         agc_dp_t num = agc_dp_sub(ip, e.row[1].c[0], agc_dp_mul_trunc(*ln_w(144), *ln_w(146))); /* B-38 */
         agc_dp_t w75 = agc_dp_div(ip, num, w76);                                                /* W75, B-19 */
 
@@ -411,13 +401,13 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
 static agc_status_t ln_unknown_landmark(agc_interp_t *ip)
 {
     agc_navaux_padload_t pad;                                /* pad loads */
-    agc_status_t         st  = agc_navaux_get_padload(&pad); /* pad loads */
-    agc_latlong_opt_t    opt = {agc_flag_test(AGC_FLAG_CMOONFLG), true};
+    agc_status_t st = agc_navaux_get_padload(&pad); /* pad loads */
+    agc_latlong_opt_t opt = {agc_flag_test(AGC_FLAG_CMOONFLG), true};
 
     rz_flag_put(AGC_FLAG_LUNAFLAG, opt.lunar);
     agc_vec_t alphav; /* ALPHAV, 2^1 */
 
-    alphav         = agc_vec_unit(ip, ln.csmpos, NULL, NULL);
+    alphav = agc_vec_unit(ip, ln.csmpos, NULL, NULL);
     agc_dp_t eradm = 0; /* R0, m 2^29 */
 
     if (st == AGC_STATUS_OK)
@@ -438,7 +428,7 @@ static agc_status_t ln_unknown_landmark(agc_interp_t *ip)
         rl = agc_vec_shr(rl, 2); /* S22RL, moon: to B-29 */
     }
 
-    ln.d           = agc_dp_shl(ip, agc_vec_dot(ip, rl, ln.um), 1);
+    ln.d = agc_dp_shl(ip, agc_vec_dot(ip, rl, ln.um), 1);
     agc_mat_t umrl = ln_outer(ip, ln.um, rl); /* B-30     */
     agc_mat_t u;                              /* U, B-3 */
 
@@ -446,7 +436,7 @@ static agc_status_t ln_unknown_landmark(agc_interp_t *ip)
     { /* S22NXTU  */
         agc_vec_t id = agc_vec_zero(); /* row of I, B-3 */
 
-        id.c[k]  = AGC_DP_HALF >> 2; /* 1 B-3    */
+        id.c[k] = AGC_DP_HALF >> 2; /* 1 B-3    */
         u.row[k] = agc_vec_sub(ip, id, agc_vec_div(ip, agc_vec_shr(umrl.row[k], 2), ln.d));
     }
 
@@ -515,11 +505,6 @@ static int ln_next_lower_column(int x)
 {
     int n = x - 2; /* 9DWID    */
 
-    if (!AGC_ASSERT(x > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     if (n == 52)
     {
         return (4); /* TEST I=26: from the velocity to the position block */
@@ -544,7 +529,7 @@ static int ln_next_lower_column(int x)
 static void ln_reduce_w_to_six(agc_interp_t *ip)
 {
     agc_dp_t e[LN_EMATRIX]; /* EMATRIX, W scale squared */
-    int      p = 0;         /* EMATRIX index */
+    int p = 0;         /* EMATRIX index */
 
     for (int j = 58; p < LN_EMATRIX; j = ln_next_lower_column(j))
     { /* 9DWI=J   */
@@ -565,7 +550,7 @@ static void ln_reduce_w_to_six(agc_interp_t *ip)
         }
     }
 
-    agc_phase_change(2, 04022);                     /* 9DWFIG6  */
+    agc_phase_change(04022);                        /* 9DWFIG6  */
     agc_incorp_w_t *w = &agc_integ_shared_ctx()->w; /* W matrix */
 
     for (int m = 0; m < LN_ROWS; m++)
@@ -574,7 +559,7 @@ static void ln_reduce_w_to_six(agc_interp_t *ip)
         w->blk[1][m] = agc_vec_zero();
     }
 
-    p     = 0;
+    p = 0;
     int n = 0; /* row offset of column j */
 
     for (int j = 58; p < LN_EMATRIX; j = ln_next_lower_column(j), n += 6)
@@ -595,7 +580,7 @@ static void ln_reduce_w_to_six(agc_interp_t *ip)
 
         for (int i = j; i != 0 && p < LN_EMATRIX;)
         { /* TST2I=0  */
-            i          = ln_next_lower_column(i);
+            i = ln_next_lower_column(i);
             agc_interp_clear_ovf(ip);
             agc_dp_t v = agc_dp_div(ip, agc_dp_sub(ip, e[LN_EMATRIX - 1 - p], ln_rowdot(ip, i, j)), workw); /* W scale */
 
@@ -614,7 +599,7 @@ static void ln_reduce_w_to_six(agc_interp_t *ip)
         }
     }
 
-    agc_phase_change(2, 04022); /* 9DWEXITX */
+    agc_phase_change(04022); /* 9DWEXITX */
 
     for (int m = 0; m < LN_ROWS; m++)
     {
@@ -646,7 +631,7 @@ agc_status_t rz_landmark_marks_start(agc_sp_t nmarks, agc_job_id_t ret)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    ln.n   = nmarks;
+    ln.n = nmarks;
     ln.ret = ret;
 
     return (rz_continue(AGC_JOB_ORBITAL_NAVIGATION_MARKS));
@@ -670,14 +655,14 @@ agc_status_t rz_landmark_marks_start(agc_sp_t nmarks, agc_job_id_t ret)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_marks(agc_job_ctx_t *ctx)
 {
-    ln.i   = 1;
+    ln.i = 1;
     ln.loc = 0;
 
     for (int k = 0; k < 5; k++)
     { /* S22.111  */
         agc_align_sxt_mark_t m;                            /* the mark */
-        agc_status_t         st = agc_sxtmark_mark(k, &m); /* mark k */
-        uint16_t            *d;                            /* SVMRKDAT words */
+        agc_status_t st = agc_sxtmark_mark(k, &m); /* mark k */
+        uint16_t *d;                            /* SVMRKDAT words */
 
         d = &ln.svmrkdat[LN_MARK_WORDS * k];
 
@@ -742,7 +727,7 @@ static void ln_w_setup(void)
     if (!agc_flag_test(AGC_FLAG_ORBWFLAG))
     { /* SETWW5D  */
         const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
-        agc_incorp_w_t            *w;                       /* W matrix */
+        agc_incorp_w_t *w;                       /* W matrix */
 
         w = &agc_integ_shared_ctx()->w;
 
@@ -757,7 +742,7 @@ static void ln_w_setup(void)
 
         for (int k = 0; k < 3; k++)
         {
-            w->blk[0][k].c[k]     = agc_dp_from_sp(p->worbpos);
+            w->blk[0][k].c[k] = agc_dp_from_sp(p->worbpos);
             w->blk[1][3 + k].c[k] = agc_dp_from_sp(p->worbvel);
         }
     }
@@ -784,10 +769,10 @@ static void ln_w_setup(void)
  **********************************************************************/
 static agc_status_t ln_getum(agc_interp_t *ip)
 {
-    const uint16_t      *d = &ln.svmrkdat[ln.loc]; /* mark I words */
+    const uint16_t *d = &ln.svmrkdat[ln.loc]; /* mark I words */
     agc_align_sxt_mark_t m;                        /* the mark */
 
-    m.t    = ln_gettf();
+    m.t = ln_gettf();
     m.cduy = d[2];
     m.cdus = d[3];
     m.cduz = d[4];
@@ -799,9 +784,9 @@ static agc_status_t ln_getum(agc_interp_t *ip)
         agc_erase_set_markdown(k, d[k]);
     }
 
-    agc_vec_t    los      = agc_vec_zero();              /* SM LOS, 2^1 */
-    agc_status_t st       = agc_csm_sxtsm(ip, &m, &los); /* SXTNB, NBSM */
-    agc_mat_t    refsmmat = agc_erase_refsmmat();        /* REFSMMAT, 2^1 */
+    agc_vec_t los = agc_vec_zero();              /* SM LOS, 2^1 */
+    agc_status_t st = agc_csm_sxtsm(ip, &m, &los); /* SXTNB, NBSM */
+    agc_mat_t refsmmat = agc_erase_refsmmat();        /* REFSMMAT, 2^1 */
 
     ln.um = agc_vec_shl(ip, agc_vec_mat(ip, los, &refsmmat), 1);
 
@@ -829,21 +814,21 @@ static bool ln_variance_and_incorporate(agc_interp_t *ip, agc_status_t *st)
 {
     rz_flag_put(AGC_FLAG_DMENFLG, true);
     rz_flag_put(AGC_FLAG_VEHUPFLG, true);
-    int      x1 = 0;                                        /* NORM index, -(left shifts) */
-    agc_dp_t n  = rz_norm(agc_vec_abval(ip, ln.rclp), &x1); /* 2^(S+X1) */
+    int x1 = 0;                                        /* NORM index, -(left shifts) */
+    agc_dp_t n = rz_norm(agc_vec_abval(ip, ln.rclp), &x1); /* 2^(S+X1) */
     agc_tp_t v;                                             /* TP, B-40 after the SR* */
 
     v = agc_dp_mul_tp(agc_dp_sq(n), agc_dp_add(ip, LN_SCTVAR, LN_IMUVARR)); /* TP, B+18 */
 
-    x1                = 2 * x1 + 2 * ln.eorm;
-    ln.inc.variance   = agc_tp_shift(ip, v, x1);         /* SR* 0,1  */
+    x1 = 2 * x1 + 2 * ln.eorm;
+    ln.inc.variance = agc_tp_shift(ip, v, x1);         /* SR* 0,1  */
     rz_bvectors(ip, ln.rclp, ln.um, &ln.ustar, &ln.inc); /* S2BVTRS  */
     ln.inc.bvector[2] = agc_vec_neg(ln.inc.bvector[0]);  /* B2 = -B0 */
-    ln.inc.dim9       = true;
-    *st               = agc_incorp_state_deviation(ip,
-                                                   &agc_integ_shared_ctx()->w,
-                                                   &ln.inc);
-    agc_phase_change(2, 04022);
+    ln.inc.dim9 = true;
+    *st = agc_incorp_state_deviation(ip,
+                                     &agc_integ_shared_ctx()->w,
+                                     &ln.inc);
+    agc_phase_change(04022);
 
     if (*st != AGC_STATUS_OK || !agc_flag_test(AGC_FLAG_22DSPFLG))
     {
@@ -851,39 +836,11 @@ static bool ln_variance_and_incorporate(agc_interp_t *ip, agc_status_t *st)
     }
 
     rz_flag_put(AGC_FLAG_22DSPFLG, false);
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     ln.n49disp[0] = rz_shift(ip, agc_vec_abval(ip, ln.inc.deltax[0]), ln.eorm);
     ln.n49disp[1] = rz_shift(ip, agc_vec_abval(ip, ln.inc.deltax[1]), ln.eorm);
 
     return (true);
-}
-
-/**********************************************************************
- * S22BOX32: X789 = RL; first pass; RCLP = RL - RC; USTAR =
- * UNIT(UNIT(RCLP) x UM). False on an overflow (the mark is skipped).
- * AGC: S22BOX32 (P20-P25.agc p.605)
- *
- * FUNCTION NAME: ln_landmark_first_pass
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- *   rl        agc_vec_t       I    RL, the landmark, body scale
- *
- * RETURNS: bool -- false on an overflow (the mark is skipped)
- **********************************************************************/
-static bool ln_landmark_first_pass(agc_interp_t *ip, agc_vec_t rl)
-{
-    agc_erase_set_x789(rl);
-    rz_flag_put(AGC_FLAG_INCORFLG, true);
-    agc_interp_clear_ovf(ip);
-    ln.rclp     = agc_vec_sub(ip, rl, ln.csmpos);
-    agc_vec_t u = agc_vec_unit(ip, ln.rclp, NULL, NULL); /* 2^1 */
-
-    ln.ustar = agc_vec_unit(ip, agc_vec_cross(ip, u, ln.um), NULL, NULL);
-
-    return (!agc_interp_test_ovf(ip));
 }
 
 /**********************************************************************
@@ -900,7 +857,7 @@ static bool ln_landmark_first_pass(agc_interp_t *ip, agc_vec_t rl)
 static agc_status_t ln_next(void)
 {
     ln.tprim = ln_gettf(); /* S22SAVET */
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     if (ln.i >= ln.n)
     {
@@ -908,9 +865,9 @@ static agc_status_t ln_next(void)
     }
 
     ln.i++;
-    ln.loc   += LN_MARK_WORDS;
+    ln.loc += LN_MARK_WORDS;
     ln.first = false;
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     return (rz_continue(AGC_JOB_ORBITAL_NAVIGATION_MARK));
 }
@@ -951,7 +908,7 @@ static agc_status_t ln_incorporate(agc_job_ctx_t *ctx, agc_interp_t *ip, bool at
         }
 
         at_box42 = false;
-        st       = rz_incorp2(ip, &ln.inc, agc_flag_test(AGC_FLAG_CMOONFLG)); /* S22BOX42 */
+        st = rz_incorp2(ip, &ln.inc, agc_flag_test(AGC_FLAG_CMOONFLG)); /* S22BOX42 */
 
         if (st == AGC_STATUS_OK)
         {
@@ -968,72 +925,13 @@ static agc_status_t ln_incorporate(agc_job_ctx_t *ctx, agc_interp_t *ip, bool at
             return (ln_next());
         }
 
-        agc_phase_change(2, 04022);
+        agc_phase_change(04022);
         rz_flag_put(AGC_FLAG_INCORFLG, false);
         ln.rclp = agc_vec_sub(ip, agc_erase_x789(), ln.csmpos);
     }
 
     return (AGC_STATUS_NO_CONVERGE); /* step bound exhausted */
 } /* ln_incorporate */
-
-/**********************************************************************
- * S22BOX22, a known landmark: the landmark rows of W from S22WSUBL; RL
- * from LAT LONG ALT at TF (LALOTORV, SL2 in the moon's sphere).
- * AGC: S22BOX22, S22BX22B (P20-P25.agc p.604)
- *
- * FUNCTION NAME: ln_known_landmark
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- *   rl        agc_vec_t *     O    RL from LAT LONG ALT, body scale
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the pad, LAT-LONG or
- *          LALOTORV status
- **********************************************************************/
-static agc_status_t ln_known_landmark(agc_interp_t *ip, agc_vec_t *rl)
-{
-    agc_incorp_w_t *w = &agc_integ_shared_ctx()->w; /* W matrix */
-
-    for (int m = 0; m < LN_ROWS; m++)
-    { /* CLRW678  */
-        w->blk[2][m] = agc_vec_zero();
-    }
-
-    agc_dp_t wl; /* S22WSUBL, pad scale */
-
-    wl = agc_dp_from_sp(agc_rendz_nav_pad()->s22wsubl);
-
-    *ln_w(144) = wl;
-    *ln_w(152) = wl;
-    *ln_w(160) = wl;
-    bool moon  = agc_flag_test(AGC_FLAG_CMOONFLG); /* moon sphere */
-
-    rz_flag_put(AGC_FLAG_LUNAFLAG, moon);
-    agc_navaux_padload_t pad;                               /* pad loads */
-    agc_latlong_t        ll;                                /* LAT LONG ALT */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_navaux_get_latlong(&ll);
-    }
-
-    agc_latlong_opt_t opt = {moon, agc_flag_test(AGC_FLAG_ERADFLAG)};
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_to_r(ip, &pad, opt, &ll, ln_gettf(), rl, NULL);
-    }
-
-    if (moon)
-    {
-        *rl = agc_vec_shl(ip, *rl, 2); /* S22BX22B: SL2 */
-    }
-
-    return (st);
-}
 
 /**********************************************************************
  * DMPINTEG (p.600): the offset point mark is kept (S22OFF=I); with the
@@ -1062,14 +960,14 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (ln_next());
     }
 
-    agc_vec_t    rl = agc_erase_x789(); /* RL, body scale */
+    agc_vec_t rl = agc_erase_x789(); /* RL, body scale */
     agc_status_t st = AGC_STATUS_OK;    /* status of the last step */
 
     if (agc_flag_test(AGC_FLAG_DMENFLG))
     { /* S22D=9   */
         agc_navaux_padload_t pad;                   /* pad loads */
-        agc_vec_t            rp;                    /* RP, planet fixed, body scale */
-        bool                 moon = (ln.eorm != 0); /* moon sphere */
+        agc_vec_t rp;                    /* RP, planet fixed, body scale */
+        bool moon = (ln.eorm != 0); /* moon sphere */
 
         st = agc_navaux_get_padload(&pad);
 
@@ -1085,7 +983,7 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
     }
     else
     {
-        agc_phase_change(2, 04022);
+        agc_phase_change(04022);
         rz_flag_put(AGC_FLAG_ORBWFLAG, true);
         rz_flag_put(AGC_FLAG_DMENFLG, true);
         rz_flag_put(AGC_FLAG_22DSPFLG, true);
@@ -1103,7 +1001,61 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
             return (ln_next());
         }
 
-        st = ln_known_landmark(ip, &rl);
+        /**********************************************************************
+         * S22BOX22, a known landmark: the landmark rows of W from S22WSUBL; RL
+         * from LAT LONG ALT at TF (LALOTORV, SL2 in the moon's sphere).
+         * AGC: S22BOX22, S22BX22B (P20-P25.agc p.604)
+         *
+         * FUNCTION NAME: ln_known_landmark
+         *
+         * ARGUMENTS:
+         *   Argument  Type            I/O  Description (scale)
+         *   --------  --------------  ---  --------------------------------
+         *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+         *   rl        agc_vec_t *     O    RL from LAT LONG ALT, body scale
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, else the pad, LAT-LONG or
+         *          LALOTORV status
+         **********************************************************************/
+        agc_incorp_w_t *w = &agc_integ_shared_ctx()->w; /* W matrix */
+
+        for (int m = 0; m < LN_ROWS; m++)
+        { /* CLRW678  */
+            w->blk[2][m] = agc_vec_zero();
+        }
+
+        agc_dp_t wl; /* S22WSUBL, pad scale */
+
+        wl = agc_dp_from_sp(agc_rendz_nav_pad()->s22wsubl);
+
+        *ln_w(144) = wl;
+        *ln_w(152) = wl;
+        *ln_w(160) = wl;
+        bool moon_landmark = agc_flag_test(AGC_FLAG_CMOONFLG); /* moon sphere */
+
+        rz_flag_put(AGC_FLAG_LUNAFLAG, moon_landmark);
+        agc_navaux_padload_t pad_landmark;                                        /* pad loads */
+        agc_latlong_t ll;                                                  /* LAT LONG ALT */
+        agc_status_t st_landmark = agc_navaux_get_padload(&pad_landmark); /* pad loads */
+
+        if (st_landmark == AGC_STATUS_OK)
+        {
+            st_landmark = agc_navaux_get_latlong(&ll);
+        }
+
+        agc_latlong_opt_t opt = {moon_landmark, agc_flag_test(AGC_FLAG_ERADFLAG)};
+
+        if (st_landmark == AGC_STATUS_OK)
+        {
+            st_landmark = agc_latlong_to_r(ip, &pad_landmark, opt, &ll, ln_gettf(), &rl, NULL);
+        }
+
+        if (moon_landmark)
+        {
+            rl = agc_vec_shl(ip, rl, 2); /* S22BX22B: SL2 */
+        }
+
+        st = st_landmark;
     }
 
     if (st != AGC_STATUS_OK)
@@ -1111,7 +1063,30 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (st);
     }
 
-    if (!ln_landmark_first_pass(ip, rl))
+    /**********************************************************************
+     * S22BOX32: X789 = RL; first pass; RCLP = RL - RC; USTAR =
+     * UNIT(UNIT(RCLP) x UM). False on an overflow (the mark is skipped).
+     * AGC: S22BOX32 (P20-P25.agc p.605)
+     *
+     * FUNCTION NAME: ln_landmark_first_pass
+     *
+     * ARGUMENTS:
+     *   Argument  Type            I/O  Description (scale)
+     *   --------  --------------  ---  --------------------------------
+     *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+     *   rl        agc_vec_t       I    RL, the landmark, body scale
+     *
+     * RETURNS: bool -- false on an overflow (the mark is skipped)
+     **********************************************************************/
+    agc_erase_set_x789(rl);
+    rz_flag_put(AGC_FLAG_INCORFLG, true);
+    agc_interp_clear_ovf(ip);
+    ln.rclp = agc_vec_sub(ip, rl, ln.csmpos);
+    agc_vec_t u = agc_vec_unit(ip, ln.rclp, NULL, NULL); /* 2^1 */
+
+    ln.ustar = agc_vec_unit(ip, agc_vec_cross(ip, u, ln.um), NULL, NULL);
+
+    if (!(!agc_interp_test_ovf(ip)))
     {
         return (ln_next()); /* S22SAVET */
     }
@@ -1251,15 +1226,15 @@ agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    bool     moon = agc_flag_test(AGC_FLAG_CMOONFLG); /* moon sphere */
+    bool moon = agc_flag_test(AGC_FLAG_CMOONFLG); /* moon sphere */
     agc_sp_t off;                                     /* offset mark number, unscaled */
 
-    off             = (agc_sp_t) (ln.cxoff >> 9);
+    off = (agc_sp_t) (ln.cxoff >> 9);
     agc_status_t st = AGC_STATUS_OK; /* status of the last step */
 
     if (off != 0 && ln.n - off >= 0)
     {
-        agc_phase_change(2, 04022);
+        agc_phase_change(04022);
         agc_integ_out_t o; /* integration result */
 
         st = rz_integ(&ip, RZ_CSMPREC, ln.toff, AGC_JOB_ORBITAL_NAVIGATION_SITE, &o);
@@ -1270,7 +1245,7 @@ agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx)
         }
 
         ln.csmpos = o.ratt1;
-        ln.um     = ln.uoff;
+        ln.um = ln.uoff;
         agc_dp_t r0; /* |X789|, body scale */
 
         r0 = agc_vec_abval(&ip, agc_erase_x789());
@@ -1296,8 +1271,8 @@ agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx)
     }
 
     agc_navaux_padload_t pad; /* pad loads */
-    agc_latlong_t        ll;  /* LAT LONG ALT */
-    agc_latlong_opt_t    opt = {moon, agc_flag_test(AGC_FLAG_ERADFLAG)};
+    agc_latlong_t ll;  /* LAT LONG ALT */
+    agc_latlong_opt_t opt = {moon, agc_flag_test(AGC_FLAG_ERADFLAG)};
 
     st = agc_navaux_get_padload(&pad);
 
@@ -1343,7 +1318,7 @@ agc_status_t agc_job_orbital_navigation_site_accept(void)
 
     agc_interp_init(&ip);
     agc_navaux_padload_t pad;                               /* pad loads */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
+    agc_status_t st = agc_navaux_get_padload(&pad); /* pad loads */
 
     if (st == AGC_STATUS_OK)
     {

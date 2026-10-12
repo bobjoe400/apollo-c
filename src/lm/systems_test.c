@@ -98,11 +98,6 @@ agc_status_t agc_systems_test_finetime(agc_dp_t *t)
  * difference that went negative across TIME2 overflow (wraps like DAD).   */
 agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (a);
-    }
-
     agc_dp_t s = agc_dp_add(ip, a, AGC_DP_MAX);
 
     s = agc_dp_add(ip, s, ONEDPP);

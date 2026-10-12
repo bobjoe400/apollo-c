@@ -38,31 +38,29 @@ static agc_vec_t v_other;
  */
 agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2, agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav, agc_vec_t tnuv, agc_dp_t tet)
 {
-    if (this_vehicle && agc_flag_test(AGC_FLAG_AVEMIDSW))
+    if (!(this_vehicle && agc_flag_test(AGC_FLAG_AVEMIDSW))) /* BOF AVEMIDSW; RVQ */
     {
-        return (AGC_STATUS_OK); /* BOF AVEMIDSW; RVQ */
+        agc_vec_t r = agc_vec_zero(); /* X2 = ORIGEX: shifted out, m B29    */
+        agc_vec_t v = agc_vec_zero(); /* X2 = ORIGEX: shifted out, m/cs B7  */
+
+        if (x2 != AGC_INTEG_X2_ORIGEX)
+        {
+            r = agc_vec_shr(agc_vec_add(ip, agc_vec_shr(tdeltav, SVDWN_R_SHIFT + x2), rcv), x2);
+            v = agc_vec_shr(agc_vec_add(ip, agc_vec_shr(tnuv, SVDWN_V_SHIFT + x2), vcv), x2);
+        }
+
+        if (this_vehicle)
+        {
+            agc_erase_set_rn(r);        /* STOVL RN          */
+            agc_erase_set_vn(v);        /* STODL VN          */
+            agc_erase_set_piptime(tet); /* STORE PIPTIME     */
+        }
+        else
+        {
+            r_other = r; /* STOVL R-OTHER     */
+            v_other = v; /* STORE V-OTHER     */
+        }
     }
-
-    agc_vec_t r = agc_vec_zero(); /* X2 = ORIGEX: shifted out, m B29    */
-    agc_vec_t v = agc_vec_zero(); /* X2 = ORIGEX: shifted out, m/cs B7  */
-
-    if (x2 != AGC_INTEG_X2_ORIGEX)
-    {
-        r = agc_vec_shr(agc_vec_add(ip, agc_vec_shr(tdeltav, SVDWN_R_SHIFT + x2), rcv), x2);
-        v = agc_vec_shr(agc_vec_add(ip, agc_vec_shr(tnuv, SVDWN_V_SHIFT + x2), vcv), x2);
-    }
-
-    if (this_vehicle)
-    {
-        agc_erase_set_rn(r);        /* STOVL RN          */
-        agc_erase_set_vn(v);        /* STODL VN          */
-        agc_erase_set_piptime(tet); /* STORE PIPTIME     */
-
-        return (AGC_STATUS_OK);
-    }
-
-    r_other = r; /* STOVL R-OTHER     */
-    v_other = v; /* STORE V-OTHER     */
 
     return (AGC_STATUS_OK);
 }

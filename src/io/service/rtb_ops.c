@@ -85,21 +85,11 @@
 static int32_t cdu_pattern_value(uint16_t pattern)
 {
     uint16_t p = (uint16_t) (pattern & CDU_MASK); /* 15-bit pattern */
-    int32_t  v = (int32_t) p;                     /* count, 2^-14 half-rev */
-
-    if (!AGC_ASSERT((pattern & (uint16_t) ~CDU_MASK) == 0u)) /* 15-bit */
-    {
-        return (0); /* no valid result */
-    }
+    int32_t v = (int32_t) p;                     /* count, 2^-14 half-rev */
 
     if ((p & CDU_SIGN) != 0u)
     {
         v -= (int32_t) CDU_MODULUS;
-    }
-
-    if (!AGC_ASSERT(v >= -(int32_t) SP_RANGE && v < (int32_t) SP_RANGE))
-    {
-        return (0); /* no valid result */
     }
 
     return (v);
@@ -119,19 +109,9 @@ static uint16_t cdu_value_pattern(int32_t v)
 {
     int32_t m = v % (int32_t) CDU_MODULUS; /* pattern value, 2^-14 half-rev */
 
-    if (!AGC_ASSERT(v > -4 * (int32_t) CDU_MODULUS && v < 4 * (int32_t) CDU_MODULUS))
-    {
-        return (0); /* no valid result */
-    }
-
     if (m < 0)
     {
         m += (int32_t) CDU_MODULUS;
-    }
-
-    if (!AGC_ASSERT(m >= 0 && m < (int32_t) CDU_MODULUS))
-    {
-        return (0); /* no valid result */
     }
 
     return ((uint16_t) m);
@@ -147,17 +127,7 @@ agc_dp_t agc_rtb_loadtime(void)
 {
     uint32_t t = agc_time_now_cs(); /* TIME2,TIME1, cs */
 
-    if (!AGC_ASSERT(t <= (uint32_t) DP_TIME_MASK))
-    {
-        return (0); /* no valid result */
-    }
-
     t &= (uint32_t) DP_TIME_MASK;
-    if (!AGC_ASSERT((agc_dp_t) t <= AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
 
     return ((agc_dp_t) t);
 }
@@ -180,18 +150,8 @@ agc_dp_t agc_rtb_loadtime(void)
  **********************************************************************/
 agc_dp_t agc_rtb_cdulogic(uint16_t cdu_pattern)
 {
-    int32_t  v = cdu_pattern_value(cdu_pattern);            /* 2^-14 half-revs       */
+    int32_t v = cdu_pattern_value(cdu_pattern);            /* 2^-14 half-revs       */
     agc_dp_t r = (agc_dp_t) (v * (int32_t) (SP_RANGE / 2)); /* revolutions, 2^0 */
-
-    if (!AGC_ASSERT(r >= -AGC_DP_HALF && r < AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT((cdu_pattern & (uint16_t) ~CDU_MASK) == 0u)) /* 15-bit */
-    {
-        return (0); /* no valid result */
-    }
 
     return (r); /* revolutions, scale 2^0 */
 }
@@ -210,13 +170,9 @@ agc_dp_t agc_rtb_cdulogic(uint16_t cdu_pattern)
  **********************************************************************/
 int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
 {
-    for (int i = 0; i < 3; i++)
-    {
-    }
-
-    int64_t v    = ((int64_t) mpac->w[0] * SP_RANGE * SP_RANGE) + ((int64_t) mpac->w[1] * SP_RANGE) + (int64_t) mpac->w[2]; /* V, units of 2^-42 */
-    int     sign = 0;                                                                                                       /* signum of V, the TPAGREE result in A */
-    int64_t mag  = (v < 0) ? -v : v;                                                                                        /* |V|, 2^-42 */
+    int64_t v = ((int64_t) mpac->w[0] * SP_RANGE * SP_RANGE) + ((int64_t) mpac->w[1] * SP_RANGE) + (int64_t) mpac->w[2]; /* V, units of 2^-42 */
+    int sign = 0;                                                                                                       /* signum of V, the TPAGREE result in A */
+    int64_t mag = (v < 0) ? -v : v;                                                                                        /* |V|, 2^-42 */
 
     /* DEVIATION: when |V| >= 1 the AGC leaves an overflowed high word; the
      * C version saturates the high word at POSMAX instead.                  */
@@ -237,7 +193,7 @@ int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
     }
 
     int64_t mid = (mag / SP_RANGE) % SP_RANGE; /* MPAC+1 magnitude */
-    int64_t lo  = mag % SP_RANGE;              /* MPAC+2 magnitude */
+    int64_t lo = mag % SP_RANGE;              /* MPAC+2 magnitude */
 
     mpac->w[0] = (agc_sp_t) (sign * hi);
     mpac->w[1] = (agc_sp_t) (sign * mid);
@@ -263,14 +219,9 @@ agc_dp_t agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo)
     m.w[0] = hi;
     m.w[1] = lo;
     m.w[2] = 0;
-    int sg = agc_rtb_sgnagree(&m); /* signum of the agreed pair           */
-    if (!AGC_ASSERT(sg >= -1 && sg <= 1))
-    {
-        return (0); /* no valid result */
-    }
+    const int sg = agc_rtb_sgnagree(&m); /* signum of the agreed pair: 0 gives +0 */
 
-
-    return ((agc_dp_t) ((int32_t) m.w[0] * (int32_t) SP_RANGE + (int32_t) m.w[1]));
+    return ((sg == 0) ? 0 : (agc_dp_t) ((int32_t) m.w[0] * (int32_t) SP_RANGE + (int32_t) m.w[1]));
 }
 
 /**********************************************************************
@@ -288,12 +239,7 @@ agc_dp_t agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo)
 static uint16_t one_to_two(agc_dp_t angle_rev)
 {
     int64_t doubled = 2 * (int64_t) angle_rev;      /* DDOUBL            */
-    int64_t hi      = doubled / (int64_t) SP_RANGE; /* truncates to 0    */
-    if (!AGC_ASSERT(hi > -2 * (int64_t) SP_RANGE && hi < 2 * (int64_t) SP_RANGE))
-    {
-        return (0); /* no valid result */
-    }
-
+    int64_t hi = doubled / (int64_t) SP_RANGE; /* truncates to 0    */
 
     return (cdu_value_pattern((int32_t) hi));
 }
@@ -311,11 +257,6 @@ uint16_t agc_rtb_1sto2s(agc_dp_t angle_rev)
 {
     uint16_t p = one_to_two(angle_rev); /* 2's comp half-revs */
 
-    if (!AGC_ASSERT(p <= CDU_MASK))
-    {
-        return (0); /* no valid result */
-    }
-
     return (p);
 }
 
@@ -328,16 +269,13 @@ uint16_t agc_rtb_1sto2s(agc_dp_t angle_rev)
  *   out         uint16_t []  O   MPAC, MPAC+1, MPAC+2: 2's complement
  *                                half-revolutions
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL out
  **********************************************************************/
-agc_status_t agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3])
+void agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3])
 {
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         out[i] = one_to_two(angles_rev.c[i]);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -390,11 +328,6 @@ uint16_t agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc)
     int32_t a = cdu_pattern_value(angle_pattern); /* angle, 2^-14 half-rev */
 
     uint16_t r = cdu_value_pattern(a + (int32_t) inc); /* new pattern */
-
-    if (!AGC_ASSERT(r <= CDU_MASK))
-    {
-        return (0); /* no valid result */
-    }
 
     return (r);
 }
@@ -474,10 +407,6 @@ agc_vec_t agc_rtb_readpips(void)
  **********************************************************************/
 agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds)
 {
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-    }
-
     agc_status_t st = agc_imu_pulse(gyro_cmds.c); /* OGC buffer */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
@@ -541,11 +470,6 @@ agc_dp_t agc_rtb_signmpac(agc_dp_t mpac)
 {
     agc_dp_t r = (mpac < 0) ? -AGC_DP_MAX : AGC_DP_MAX; /* +-DPOSMAX, 2^0 */
 
-    if (!AGC_ASSERT(r == AGC_DP_MAX || r == -AGC_DP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -577,7 +501,7 @@ agc_dp_t agc_rtb_signmpac(agc_dp_t mpac)
 agc_vec_t agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift, agc_dp_t *abval, agc_dp_t *vsq)
 {
     agc_vec_t w = v; /* vector given to UNIT, scale of v */
-    int       n = 0; /* shift count (37D) */
+    int n = 0; /* shift count (37D) */
 
     bool all_small = true; /* all high words zero */
 
@@ -642,15 +566,15 @@ agc_vec_t agc_rtb_vecsgnag(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
 {
-    static const agc_dp_t five_eighths = 0x0A000000;               /* 5/8: 2DEC 5 B-3 */
-    agc_dp_t              x2           = agc_dp_sq(urpv.c[0]); /* B2              */
-    agc_dp_t              y2           = agc_dp_sq(urpv.c[1]); /* B2              */
-    agc_dp_t              d            = agc_dp_sub(ip, y2, x2);   /* DSU, B2         */
+    static const agc_dp_t five_eighths = 0x0A000000;             /* 5/8: 2DEC 5 B-3 */
+    agc_dp_t x2 = agc_dp_sq(urpv.c[0]);   /* B2              */
+    agc_dp_t y2 = agc_dp_sq(urpv.c[1]);   /* B2              */
+    agc_dp_t d = agc_dp_sub(ip, y2, x2); /* DSU, B2         */
 
-    d           = agc_dp_mul(ip, d, five_eighths); /* DMP 5/8, B5     */
+    d = agc_dp_mul(ip, d, five_eighths); /* DMP 5/8, B5     */
     agc_vec_t v = agc_vec_scale(ip, urpv, d);      /* VXSC, B6        */
 
-    v      = agc_vec_shl(ip, v, 3);                            /* VSL3, B3        */
+    v = agc_vec_shl(ip, v, 3);                            /* VSL3, B3        */
     v.c[0] = agc_dp_add(ip, agc_dp_shr(urpv.c[0], 1), v.c[0]); /* SR1 DAD  */
     v.c[1] = agc_dp_sub(ip, v.c[1], agc_dp_shr(urpv.c[1], 1)); /* SR1 BDSU */
 

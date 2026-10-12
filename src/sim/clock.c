@@ -89,36 +89,16 @@ agc_status_t sim_clock_init(void)
 void sim_irq_request(sim_irq_t irq)
 {
     g_irq[irq] = true;
-
-    if (!AGC_ASSERT(g_irq[irq]))
-    {
-        return;
-    }
 }
 
 uint32_t sim_clock_cs(void)
 {
-    if (!AGC_ASSERT(g_stats.cs == g_cs))
-    {
-        return (g_cs);
-    }
-
-    if (!AGC_ASSERT(g_cs < AGC_TIME_MODULUS_CS))
-    {
-        return (0);
-    }
-
     return (g_cs);
 }
 
 void sim_clock_stats(sim_stats_t *out)
 {
     *out = g_stats;
-
-    if (!AGC_ASSERT(out->cs == g_cs))
-    {
-        return;
-    }
 }
 
 /* PINC of TIME4 (n = 4) or TIME5 (n = 5); overflow requests the rupt.   */
@@ -133,11 +113,6 @@ static void time_pinc(int n, sim_irq_t irq)
     }
 
     agc_rupt_set_time(n, v);
-
-    if (!AGC_ASSERT(v < SIM_OVF))
-    {
-        return;
-    }
 }
 
 /* TIME6: DINC 16 times per centisecond while channel 13 bit 15 is set.
@@ -166,11 +141,6 @@ static void time6_dinc(void)
 
         agc_rupt_set_time(6, (uint16_t) (next & SIM_WORD_MASK));
     }
-
-    if (!AGC_ASSERT(agc_rupt_time(6) <= SIM_NEG0))
-    {
-        return;
-    }
 }
 
 /* Radar gate (yaAGC: counted with TIME5 while channel 13 bit 4 is set). */
@@ -179,22 +149,17 @@ static void radar_gate(void)
     if ((agc_chan_read((int) AGC_CHAN_CHAN13) & SIM_CH13_RADAR) == 0u)
     {
         g_radar_gate = 0;
-
-        return;
     }
-
-    g_radar_gate++;
-
-    if (g_radar_gate >= SIM_RADAR_GATES)
-    { /* cycle complete: RNRAD holds what the radar shifted in    */
-        g_radar_gate = 0;
-        agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_RADAR & SIM_WORD_MASK));
-        sim_irq_request(SIM_IRQ_RADAR);
-    }
-
-    if (!AGC_ASSERT(g_radar_gate >= 0 && g_radar_gate < SIM_RADAR_GATES))
+    else
     {
-        return;
+        g_radar_gate++;
+
+        if (g_radar_gate >= SIM_RADAR_GATES)
+        { /* cycle complete: RNRAD holds what the radar shifted in    */
+            g_radar_gate = 0;
+            agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (~SIM_CH13_RADAR & SIM_WORD_MASK));
+            sim_irq_request(SIM_IRQ_RADAR);
+        }
     }
 }
 
@@ -223,11 +188,6 @@ static void hand_traps(void)
         g_trap[1] = g_trap[1] && !hit1;
         g_trap[2] = g_trap[2] && !hit2;
         sim_irq_request(SIM_IRQ_HAND);
-    }
-
-    if (!AGC_ASSERT(c31 <= SIM_WORD_MASK && c32 <= SIM_WORD_MASK))
-    {
-        return;
     }
 }
 
@@ -390,7 +350,7 @@ static void clock_exec(void)
 
         agc_exec_core_info_t job;
         int                  set = agc_exec_newjob(); /* NEWJOB: the next */
-        agc_status_t         ci  = agc_exec_core_info((set > 0) ? set : 0, &job);
+        agc_exec_core_info((set > 0) ? set : 0, &job);
         agc_status_t         st  = agc_exec_run_one();
 
         if (st == AGC_STATUS_NOT_FOUND)
@@ -405,7 +365,7 @@ static void clock_exec(void)
             g_stats.errors++;
             (void) fprintf(stderr, "agc_sim: %lu cs: job %d returned BAD_ARG\n", /* diagnostic */
                            (unsigned long) g_cs,
-                           (ci == AGC_STATUS_OK) ? (int) job.loc : -1);
+                           (int) job.loc);
         }
 
         sim_channels_sync();
@@ -425,7 +385,11 @@ void sim_clock_tick(void)
     clock_counters();
     clock_rupts();
     clock_exec();
-    sim_channels_tick(g_cs);
+    if (sim_channels_tick(g_cs) != AGC_STATUS_OK)
+    {
+        g_stats.errors++; /* a CDU drive count the IMU refused */
+    }
+
     sim_channels_sync();
     g_cs++;
     g_stats.cs = g_cs;

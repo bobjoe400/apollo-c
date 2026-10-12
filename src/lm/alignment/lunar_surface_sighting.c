@@ -111,26 +111,26 @@ static bool star_in_position(agc_interp_t *ip, agc_vec_t star, uint16_t az)
     {
         ram->cursor = 0; /* ZSPCR    */
         ram->spiral = 0;
-
-        return (true);
     }
-
-    const agc_dp_t  spiral12 = agc_dp_shl(ip, agc_dp_mul(ip, sep, THREE_QUARTERS), 4);
-    const agc_vec_t ux       = agc_vec_make(AGC_DP_HALF, 0, 0);
-    const agc_vec_t oaux     = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, ux), NULL, NULL);
-    const agc_vec_t c2       = agc_vec_unit(ip, agc_vec_neg(agc_vec_cross(ip, oaux, ram->scaxis)), NULL, NULL);
-    const agc_vec_t oas      = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, star), NULL, NULL);
-    agc_dp_t        thet     = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, oas, oaux), 1));
-
-    if (agc_vec_dot(ip, oas, c2) < 0)
+    else
     {
-        thet = agc_dp_sub(ip, ABOUTONE, thet); /* 360-THET */
+        const agc_dp_t  spiral12 = agc_dp_shl(ip, agc_dp_mul(ip, sep, THREE_QUARTERS), 4);
+        const agc_vec_t ux       = agc_vec_make(AGC_DP_HALF, 0, 0);
+        const agc_vec_t oaux     = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, ux), NULL, NULL);
+        const agc_vec_t c2       = agc_vec_unit(ip, agc_vec_neg(agc_vec_cross(ip, oaux, ram->scaxis)), NULL, NULL);
+        const agc_vec_t oas      = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, star), NULL, NULL);
+        agc_dp_t        thet     = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, oas, oaux), 1));
+
+        if (agc_vec_dot(ip, oas, c2) < 0)
+        {
+            thet = agc_dp_sub(ip, ABOUTONE, thet); /* 360-THET */
+        }
+
+        const agc_dp_t yrot = agc_dp_add(ip, agc_dp_shr(agc_dp_pack(align_word_to_sp(az), 0), 1), thet);
+
+        ram->cursor = agc_align_ones_to_twos(yrot); /* 1STO2S   */
+        ram->spiral = agc_align_ones_to_twos(agc_dp_add(ip, spiral12, yrot));
     }
-
-    const agc_dp_t yrot = agc_dp_add(ip, agc_dp_shr(agc_dp_pack(align_word_to_sp(az), 0), 1), thet);
-
-    ram->cursor = agc_align_ones_to_twos(yrot); /* 1STO2S   */
-    ram->spiral = agc_align_ones_to_twos(agc_dp_add(ip, spiral12, yrot));
 
     return (true);
 }

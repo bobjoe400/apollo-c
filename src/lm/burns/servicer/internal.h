@@ -36,9 +36,6 @@ agc_status_t agc_lm_serv_copycycl(agc_job_ctx_t *ctx);
 /* MUNRETRN (p.874): return point of MUNRVG; LR logic, then COPYCYC1.    */
 agc_status_t agc_lm_serv_munretrn(agc_job_ctx_t *ctx);
 
-/* HIGATASK (p.873): start the LR repositioning job, CONTSERV.            */
-agc_status_t agc_lm_serv_higatask(agc_job_ctx_t *ctx);
-
 /* UPDATCHK (p.884) / VMEASCHK (p.886) / VALTCHK (p.889): the LR update.   */
 agc_status_t agc_lm_serv_updatchk(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_serv_vmeaschk(agc_job_ctx_t *ctx);

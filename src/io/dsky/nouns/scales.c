@@ -55,8 +55,8 @@ typedef struct scale_def
     int8_t csm_code;    /* SF constant code                         */
     int8_t lm_routine;  /* -1: not in Luminary                      */
     int8_t lm_code;     /* LM SF constant code, -1 none */
-    bool   is_dp;       /* DP pair (else one SP word)               */
-    bool   is_raw;      /* full 15-bit SP word, passed raw          */
+    bool is_dp;       /* DP pair (else one SP word)               */
+    bool is_raw;      /* full 15-bit SP word, passed raw          */
 } scale_def_t;
 
 /* SFINTAB, Comanche055 (CSM): one DP pair (high, low) per SF constant code. */
@@ -786,19 +786,19 @@ agc_status_t agc_scale_sfconst(agc_vehicle_t veh, uint8_t sf_code, agc_dp_t *sf_
             return (AGC_STATUS_BAD_ARG);
         }
 
-        *sf_in  = sf_pair_value(&sfintab_csm[sf_code]);
+        *sf_in = sf_pair_value(&sfintab_csm[sf_code]);
         *sf_out = sf_pair_value(&sfoutab_csm[sf_code]);
-
-        return (AGC_STATUS_OK);
     }
-
-    if (!AGC_ASSERT(veh == AGC_VEHICLE_LM) || !AGC_ASSERT(sf_code < SF_COUNT_LM))
+    else
     {
-        return (AGC_STATUS_BAD_ARG);
-    }
+        if (!AGC_ASSERT(veh == AGC_VEHICLE_LM) || !AGC_ASSERT(sf_code < SF_COUNT_LM))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
 
-    *sf_in  = sf_pair_value(&sfintab_lm[sf_code]);
-    *sf_out = sf_pair_value(&sfoutab_lm[sf_code]);
+        *sf_in = sf_pair_value(&sfintab_lm[sf_code]);
+        *sf_out = sf_pair_value(&sfoutab_lm[sf_code]);
+    }
 
     return (AGC_STATUS_OK);
 }
@@ -826,10 +826,10 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale, agc_sc
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const scale_def_t *def     = &scale_defs[scale];                       /* scale definition row */
-    const bool         csm     = (veh == AGC_VEHICLE_CSM);                 /* which columns */
-    const int          routine = csm ? def->csm_routine : def->lm_routine; /* SF routine of veh */
-    const int          code    = csm ? def->csm_code : def->lm_code;       /* SF const code */
+    const scale_def_t *def = &scale_defs[scale];                       /* scale definition row */
+    const bool csm = (veh == AGC_VEHICLE_CSM);                 /* which columns */
+    const int routine = csm ? def->csm_routine : def->lm_routine; /* SF routine of veh */
+    const int code = csm ? def->csm_code : def->lm_code;       /* SF const code */
 
     if (routine < 0)
     {
@@ -845,11 +845,11 @@ agc_status_t agc_scale_info_vehicle(agc_vehicle_t veh, agc_scale_t scale, agc_sc
         return (st);
     }
 
-    out->scale   = scale;
+    out->scale = scale;
     out->routine = (uint8_t) routine;
     out->sf_code = (uint8_t) code;
-    out->is_dp   = def->is_dp;
-    out->is_raw  = def->is_raw;
+    out->is_dp = def->is_dp;
+    out->is_raw = def->is_raw;
 
     return (AGC_STATUS_OK);
 }

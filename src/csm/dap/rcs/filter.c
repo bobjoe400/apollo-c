@@ -104,10 +104,7 @@ static const agc_sp_t gain2[GAIN_N] = {
     14226 /* 33622 .8683 */
 };
 
-static void         rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES]);
-static agc_status_t rcs_dcduincr(void);
-static agc_status_t rcs_dacndls(void);
-static agc_status_t rcs_fdaitotl(void);
+static void rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES]);
 
 /**********************************************************************
  * RATEFILT, DRHOLOOP, ADOTLOOP (RCS-CSM_DIGITAL_AUTOPILOT.agc
@@ -124,14 +121,14 @@ static agc_status_t rcs_fdaitotl(void);
  **********************************************************************/
 agc_status_t csm_rcs_ratefilt(void)
 {
-    agc_csm_rcs_t *r  = agc_csm_dap_rcs();             /* RCS DAP erasables       */
-    int            g  = (int) r->attkalmn + GAIN_BIAS; /* INDEX ATTKALMN  */
-    agc_status_t   st = AGC_STATUS_OK;                 /* gain table status */
+    agc_csm_rcs_t *r = agc_csm_dap_rcs();             /* RCS DAP erasables       */
+    int g = (int) r->attkalmn + GAIN_BIAS; /* INDEX ATTKALMN  */
+    agc_status_t st = AGC_STATUS_OK;                 /* gain table status */
     agc_dp_words_t deltemp[AGC_CSM_AXES];              /* DELTEMPX..Z, scale 180 deg */
 
     if (!AGC_ASSERT((g >= 0) && (g < GAIN_N)))
     {
-        g  = GAIN_BIAS; /* ATTKALMN out of table: use +0          */
+        g = GAIN_BIAS; /* ATTKALMN out of table: use +0          */
         st = AGC_STATUS_BAD_ARG;
     }
 
@@ -176,13 +173,13 @@ agc_status_t csm_rcs_ratefilt(void)
 static void rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES])
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
-    agc_sp_t       dx[AGC_CSM_AXES];      /* CDU - RHO, scale 180 deg (T5TEMP for Y, Z) */
+    agc_sp_t dx[AGC_CSM_AXES];      /* CDU - RHO, scale 180 deg (T5TEMP for Y, Z) */
 
     for (int i = 0; i < AGC_CSM_AXES; i++)
     {
         uint16_t now = csm_dap_cdu(i); /* CA CDUX; XCH RHO            */
 
-        dx[i]     = (agc_sp_t) -csm_dap_msu(r->rho[i], now); /* MSU RHO; COM   */
+        dx[i] = (agc_sp_t) -csm_dap_msu(r->rho[i], now); /* MSU RHO; COM   */
         r->rho[i] = now;
     }
 
@@ -213,9 +210,9 @@ static void rcs_delrho(agc_dp_words_t deltemp[AGC_CSM_AXES])
  **********************************************************************/
 agc_status_t csm_rcs_kmatrix(void)
 {
-    agc_csm_rcs_t *r  = agc_csm_dap_rcs();             /* RCS DAP erasables          */
-    agc_sp_t       a  = (agc_sp_t) (r->attsec & LOW4); /* CA ATTSEC; MASK LOW4, unscaled */
-    agc_status_t   st = AGC_STATUS_OK;                 /* NOVAC, DCDUINCR status */
+    agc_csm_rcs_t *r = agc_csm_dap_rcs();             /* RCS DAP erasables          */
+    agc_sp_t a = (agc_sp_t) (r->attsec & LOW4); /* CA ATTSEC; MASK LOW4, unscaled */
+    agc_status_t st = AGC_STATUS_OK;                 /* NOVAC, DCDUINCR status */
 
     if (a > 0)
     {
@@ -241,7 +238,32 @@ agc_status_t csm_rcs_kmatrix(void)
 
     if (r->holdflag < 0)
     { /* CS HOLDFLAG; BZMF DACNDLS: automatic steering only */
-        st = rcs_dcduincr();
+        /**********************************************************************
+         * DCDUINCR, DELOOP (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1007-1008) --
+         * CDUXD = CDUXD + DELCDUX (DP, modulo 360 deg via DPADD), THETADX =
+         * upper word of CDUXD; axes Z, Y, X.
+         *
+         * ARGUMENTS: none
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when
+         *          HOLDFLAG is not negative
+         **********************************************************************/
+        agc_csm_rcs_t *r_dcduincr = agc_csm_dap_rcs(); /* RCS DAP erasables          */
+
+        if (!AGC_ASSERT(r_dcduincr->holdflag < 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
+        {
+            agc_dp_t kmpac = csm_dap_dpadd(r_dcduincr->cdud[i], r_dcduincr->delcdu[i]); /* DCA CDUXD; DXCH KMPAC; DCA DELCDUX; TC DPADD, scale 180 deg */
+
+            r_dcduincr->thetad[i] = csm_dap_sp_word(agc_dp_high(kmpac)); /* TS THETADX */
+            r_dcduincr->cdud[i] = kmpac;                               /* DXCH CDUXD */
+        }
+
+        st = AGC_STATUS_OK;
     }
 
     if (st != AGC_STATUS_OK)
@@ -249,54 +271,19 @@ agc_status_t csm_rcs_kmatrix(void)
         return (st);
     }
 
-    return (rcs_dacndls());
-}
-
-/**********************************************************************
- * DCDUINCR, DELOOP (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1007-1008) --
- * CDUXD = CDUXD + DELCDUX (DP, modulo 360 deg via DPADD), THETADX =
- * upper word of CDUXD; axes Z, Y, X.
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when
- *          HOLDFLAG is not negative
- **********************************************************************/
-static agc_status_t rcs_dcduincr(void)
-{
-    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
-
-    if (!AGC_ASSERT(r->holdflag < 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    for (int i = AGC_CSM_AXES - 1; i >= 0; i--)
-    {
-        agc_dp_t kmpac = csm_dap_dpadd(r->cdud[i], r->delcdu[i]); /* DCA CDUXD; DXCH KMPAC; DCA DELCDUX; TC DPADD, scale 180 deg */
-
-        r->thetad[i] = csm_dap_sp_word(agc_dp_high(kmpac)); /* TS THETADX */
-        r->cdud[i]   = kmpac;                               /* DXCH CDUXD */
-    }
-
-    return (AGC_STATUS_OK);
-}
-
-/**********************************************************************
- * DACNDLS, FDAIDSP1, KRESUME1, FDAIDSP2 (RCS-CSM_DIGITAL_AUTOPILOT.agc
- * pp. 1009, 1022) -- alternate between driving the needles (FDAIDSP1:
- * NEEDLER) and preparing AK..AK2 (FDAIDSP2). With NEEDLFLG off (V61)
- * the needles show the autopilot following errors -ERRORX..Z; with it
- * on, the total attitude errors (FDAITOTL).
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- the NEEDLER status, or AGC_STATUS_OK
- **********************************************************************/
-static agc_status_t rcs_dacndls(void)
-{
-    const agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables    */
-    agc_csm_dapcom_t    *c = agc_csm_dap_com(); /* AK, RCSFLAGS         */
+    /**********************************************************************
+     * DACNDLS, FDAIDSP1, KRESUME1, FDAIDSP2 (RCS-CSM_DIGITAL_AUTOPILOT.agc
+     * pp. 1009, 1022) -- alternate between driving the needles (FDAIDSP1:
+     * NEEDLER) and preparing AK..AK2 (FDAIDSP2). With NEEDLFLG off (V61)
+     * the needles show the autopilot following errors -ERRORX..Z; with it
+     * on, the total attitude errors (FDAITOTL).
+     *
+     * ARGUMENTS: none
+     *
+     * RETURNS: agc_status_t -- the NEEDLER status, or AGC_STATUS_OK
+     **********************************************************************/
+    const agc_csm_rcs_t *r_dacndls = agc_csm_dap_rcs(); /* RCS DAP erasables    */
+    agc_csm_dapcom_t *c = agc_csm_dap_com(); /* AK, RCSFLAGS         */
 
     if ((c->rcsflags & AGC_CSM_RCSF_FDAIALT) == 0u)
     { /* FDAIDSP1: ADS RCSFLAGS (BIT4) */
@@ -309,48 +296,44 @@ static agc_status_t rcs_dacndls(void)
 
     if (agc_flag_test(AGC_FLAG_NEEDLFLG))
     {
-        return (rcs_fdaitotl()); /* total attitude errors   */
-    }
+        /* total attitude errors   */
+        /**********************************************************************
+         * FDAITOTL, WRTN22, WRTN17, GETAKS (RCS-CSM_DIGITAL_AUTOPILOT.agc
+         * pp. 1022-1023) -- total attitude error with respect to N22 (THETAD,
+         * N22ORN17 set: V62) or N17 (CPHIX, V63), resolved into S/C control
+         * axes as a fly-to indicator: AK = AMGB (THETA - CDU), 180 deg.
+         *
+         * ARGUMENTS: none
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK (end phase 1)
+         **********************************************************************/
+        const agc_csm_rcs_t *r_fdaitotl = agc_csm_dap_rcs();                                     /* AMGB                     */
+        agc_csm_dapcom_t *c_fdaitotl = agc_csm_dap_com();                                     /* AK, CPHIX                */
+        bool use_desired_angles = agc_flag_test(AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES); /* N22ORN17 */
+        uint16_t ref[AGC_CSM_AXES];                                                          /* WTEMP: N22 or N17 gimbal angles, raw     */
 
-    for (int i = 0; i < AGC_CSM_AXES; i++)
+        for (int i_fdaitotl = 0; i_fdaitotl < AGC_CSM_AXES; i_fdaitotl++)
+        {
+            ref[i_fdaitotl] = use_desired_angles ? agc_erase_thetad(i_fdaitotl) : c_fdaitotl->cphix[i_fdaitotl]; /* ?: CPHI (WRTN22) or CPHIX (WRTN17) */
+        }
+
+        agc_sp_t t = csm_dap_msu(ref[1], agc_erase_cduy()); /* T5TEMP = CTHETA - CDUY, scale 180 deg */
+
+        c_fdaitotl->ak[0] = csm_dap_msu(ref[0], agc_erase_cdux()); /* MSU CDUX; TS AK */
+        c_fdaitotl->ak[0] = csm_dap_ads(c_fdaitotl->ak[0], csm_dap_mp_hi(t, r_fdaitotl->amgb1));
+        c_fdaitotl->ak[1] = csm_dap_mp_hi(t, r_fdaitotl->amgb4);
+        c_fdaitotl->ak[2] = csm_dap_mp_hi(t, r_fdaitotl->amgb7);
+        t = csm_dap_msu(ref[2], agc_erase_cduz()); /* CPSI - CDUZ, 180 deg */
+        c_fdaitotl->ak[1] = csm_dap_ads(c_fdaitotl->ak[1], csm_dap_mp_hi(t, r_fdaitotl->amgb5));
+        c_fdaitotl->ak[2] = csm_dap_ads(c_fdaitotl->ak[2], csm_dap_mp_hi(t, r_fdaitotl->amgb8));
+    }
+    else
     {
-        c->ak[i] = (agc_sp_t) -r->error[i]; /* DCS ERRORX; DXCH AK; CS ERRORZ; TS AK2 */
+        for (int i_dacndls = 0; i_dacndls < AGC_CSM_AXES; i_dacndls++)
+        {
+            c->ak[i_dacndls] = (agc_sp_t) -r_dacndls->error[i_dacndls]; /* DCS ERRORX; DXCH AK; CS ERRORZ; TS AK2 */
+        }
     }
 
     return (AGC_STATUS_OK); /* RESUME: end phase 1                     */
-}
-
-/**********************************************************************
- * FDAITOTL, WRTN22, WRTN17, GETAKS (RCS-CSM_DIGITAL_AUTOPILOT.agc
- * pp. 1022-1023) -- total attitude error with respect to N22 (THETAD,
- * N22ORN17 set: V62) or N17 (CPHIX, V63), resolved into S/C control
- * axes as a fly-to indicator: AK = AMGB (THETA - CDU), 180 deg.
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (end phase 1)
- **********************************************************************/
-static agc_status_t rcs_fdaitotl(void)
-{
-    const agc_csm_rcs_t *r                  = agc_csm_dap_rcs();                                     /* AMGB                     */
-    agc_csm_dapcom_t    *c                  = agc_csm_dap_com();                                     /* AK, CPHIX                */
-    bool                 use_desired_angles = agc_flag_test(AGC_FLAG_ATTITUDE_ERROR_DESIRED_ANGLES); /* N22ORN17 */
-    uint16_t             ref[AGC_CSM_AXES];                                                          /* WTEMP: N22 or N17 gimbal angles, raw     */
-
-    for (int i = 0; i < AGC_CSM_AXES; i++)
-    {
-        ref[i] = use_desired_angles ? agc_erase_thetad(i) : c->cphix[i]; /* ?: CPHI (WRTN22) or CPHIX (WRTN17) */
-    }
-
-    agc_sp_t t = csm_dap_msu(ref[1], agc_erase_cduy()); /* T5TEMP = CTHETA - CDUY, scale 180 deg */
-
-    c->ak[0] = csm_dap_msu(ref[0], agc_erase_cdux()); /* MSU CDUX; TS AK */
-    c->ak[0] = csm_dap_ads(c->ak[0], csm_dap_mp_hi(t, r->amgb1));
-    c->ak[1] = csm_dap_mp_hi(t, r->amgb4);
-    c->ak[2] = csm_dap_mp_hi(t, r->amgb7);
-    t        = csm_dap_msu(ref[2], agc_erase_cduz()); /* CPSI - CDUZ, 180 deg */
-    c->ak[1] = csm_dap_ads(c->ak[1], csm_dap_mp_hi(t, r->amgb5));
-    c->ak[2] = csm_dap_ads(c->ak[2], csm_dap_mp_hi(t, r->amgb8));
-
-    return (AGC_STATUS_OK); /* RESUME: end phase 1 of RCS DAP           */
 }

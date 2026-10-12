@@ -119,11 +119,6 @@ static rd_state_t rd = {0, 0, 0, 0, -1, 0U, 0U, 0U, {0U}};
  **********************************************************************/
 agc_dp_t agc_radar_samplsum(void)
 {
-    if (!AGC_ASSERT(rd.samplim >= -1))
-    {
-        return (0); /* no valid result */
-    }
-
     return (rd.samplsum);
 }
 
@@ -139,11 +134,6 @@ agc_dp_t agc_radar_samplsum(void)
  **********************************************************************/
 agc_dp_t rr_timehold(void)
 {
-    if (!AGC_ASSERT(rd.timehold >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (rd.timehold);
 }
 
@@ -183,11 +173,6 @@ uint16_t agc_erase_dnrrange(int index)
  **********************************************************************/
 static void rd_initread(uint16_t code, agc_sp_t n)
 {
-    if (!AGC_ASSERT(n >= 1 && n <= 5) || !AGC_ASSERT(code >= RD_RRRANGE && code <= RD_LRALT))
-    {
-        return;
-    }
-
     agc_inhint();
     rd.timehold = (agc_dp_t) (4 * n); /* MP BIT3  */
     rd.nsamp    = (agc_sp_t) (n - 1);
@@ -245,8 +230,6 @@ agc_status_t agc_radar_rrrdot(void)
 void agc_radar_lralt(void)
 {
     rd_initread(RD_LRALT, 1);
-
-    return;
 }
 
 /**********************************************************************
@@ -264,16 +247,9 @@ void agc_radar_lralt(void)
  **********************************************************************/
 void agc_radar_lr_velocity_beam(int beam, agc_sp_t nsamples)
 {
-    if (!AGC_ASSERT(beam >= 0 && beam <= 2))
-    {
-        return;
-    }
-
     static const uint16_t codes[3] = {RD_LRVELZ, RD_LRVELY, RD_LRVELX};
 
     rd_initread(codes[beam], nsamples);
-
-    return;
 }
 
 /**********************************************************************
@@ -290,14 +266,7 @@ void agc_radar_lr_velocity_beam(int beam, agc_sp_t nsamples)
  **********************************************************************/
 void agc_radar_lrvel(agc_sp_t beam2)
 {
-    if (!AGC_ASSERT(beam2 == 0 || beam2 == 2 || beam2 == 4))
-    {
-        return;
-    }
-
     agc_radar_lr_velocity_beam(beam2 / 2, 5);
-
-    return;
 }
 
 /**********************************************************************
@@ -336,12 +305,7 @@ static void rd_lr_lamp(bool velocity)
         rr_lamp_put(lamp, false); /* LITIT    */
     }
 
-    agc_status_t st = agc_rr_settrkf(); /* RRTRKF   */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return;
-    }
+    agc_rr_settrkf(); /* RRTRKF   */
 }
 
 /**********************************************************************
@@ -358,31 +322,19 @@ static void rd_lr_lamp(bool velocity)
  **********************************************************************/
 void rr_radlites(uint16_t itemp1)
 {
-    if (!AGC_ASSERT(itemp1 != 0U))
+    if ((agc_erase_imodes33() & 1U) == 0U) /* lamp test */
     {
-        return;
-    }
-
-    if ((agc_erase_imodes33() & 1U) != 0U)
-    {
-        return; /* lamp test */
-    }
-
-    if (itemp1 == RR_LRVELBIT)
-    {
-        rd_lr_lamp(true);
-    }
-    else if (itemp1 == RR_LRALTBIT)
-    {
-        rd_lr_lamp(false);
-    }
-    else
-    {
-        agc_status_t st = agc_rr_settrkf(); /* RRTRKF */
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (itemp1 == RR_LRVELBIT)
         {
-            return;
+            rd_lr_lamp(true);
+        }
+        else if (itemp1 == RR_LRALTBIT)
+        {
+            rd_lr_lamp(false);
+        }
+        else
+        {
+            agc_rr_settrkf(); /* RRTRKF */
         }
     }
 }
@@ -397,17 +349,10 @@ void rr_radlites(uint16_t itemp1)
  **********************************************************************/
 void agc_radar_landing_radar_lights(void)
 {
-    if ((agc_erase_imodes33() & 1U) != 0U)
+    if ((agc_erase_imodes33() & 1U) == 0U) /* ISWRETRN */
     {
-        return; /* ISWRETRN */
-    }
-
-    rd_lr_lamp(false);
-    rd_lr_lamp(true);
-
-    if (!AGC_ASSERT(agc_erase_radmodes() <= RR_WORD_MASK))
-    {
-        return;
+        rd_lr_lamp(false);
+        rd_lr_lamp(true);
     }
 }
 
@@ -552,39 +497,7 @@ static agc_dp_t rd_count(int bias)
     int      hi = (int) ((w >> 14) & 1U);                        /* bit 15 */
     int      lo = (int) (w & RD_POSMAX) + bias;                  /* bits 1-14 + bias */
 
-    if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_dp_pack((agc_sp_t) hi, (agc_sp_t) lo));
-}
-
-/**********************************************************************
- * LRSCK (p.559): LR altitude on high scale: SCALBAD when the reading is
- * below 2481.7 ft (the low scale discrete should be present); the high
- * scale reading is 5 times the low scale count.
- * AGC: LRSCK (P20-P25.agc p.559)
- *
- * FUNCTION NAME: rd_lr_scale
- *
- * ARGUMENTS: none
- **********************************************************************/
-static void rd_lr_scale(void)
-{
-    bool low; /* SCALBAD */
-
-    low = (agc_dp_high(rd.sample) <= 0) && (agc_dp_low(rd.sample) < RD_HISCALIM);
-
-    rz_flag_put(AGC_FLAG_SCALBAD, low);
-    agc_interp_t ip; /* interpreter state */
-
-    agc_interp_init(&ip);
-    agc_dp_t four; /* DDOUBL x2, counts unscaled */
-
-    four = agc_dp_shl(&ip, rd.sample, 2);
-
-    rd.sample = agc_dp_add(&ip, rd.sample, four); /* DASAMPL  */
 }
 
 /**********************************************************************
@@ -640,7 +553,31 @@ static agc_status_t rd_scaled(uint16_t scale_bit, bool lr)
     { /* SCALADJ: high scale  */
         if (lr)
         {
-            rd_lr_scale();
+            /**********************************************************************
+             * LRSCK (p.559): LR altitude on high scale: SCALBAD when the reading is
+             * below 2481.7 ft (the low scale discrete should be present); the high
+             * scale reading is 5 times the low scale count.
+             * AGC: LRSCK (P20-P25.agc p.559)
+             *
+             * FUNCTION NAME: rd_lr_scale
+             *
+             * ARGUMENTS: none
+             **********************************************************************/
+            {
+                bool low; /* SCALBAD */
+
+                low = (agc_dp_high(rd.sample) <= 0) && (agc_dp_low(rd.sample) < RD_HISCALIM);
+
+                rz_flag_put(AGC_FLAG_SCALBAD, low);
+                agc_interp_t ip; /* interpreter state */
+
+                agc_interp_init(&ip);
+                agc_dp_t four; /* DDOUBL x2, counts unscaled */
+
+                four = agc_dp_shl(&ip, rd.sample, 2);
+
+                rd.sample = agc_dp_add(&ip, rd.sample, four); /* DASAMPL  */
+            }
         }
         else
         {

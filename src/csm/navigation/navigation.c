@@ -66,7 +66,7 @@
 #define NC_MRKBUF_EMPTY 077776u            /* -1: no mark in the buffer  */
 #define NC_MRK_WORDS    7                  /* words per buffer */
 
-static agc_dp_t     nc_marktime; /* MARKTIME: cs 2^28          */
+static agc_dp_t nc_marktime; /* MARKTIME: cs 2^28          */
 static agc_job_id_t nc_pointex;  /* POINTEX: WAITONE return    */
 
 /* ---- vehicle dispatch --------------------------------------------------- */
@@ -149,11 +149,6 @@ agc_dp_t rz_marktime(void)
  **********************************************************************/
 void rz_set_marktime(agc_dp_t t)
 {
-    if (!AGC_ASSERT(t >= 0))
-    {
-        return;
-    }
-
     nc_marktime = t;
 }
 
@@ -250,7 +245,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(void)
         return (AGC_STATUS_OK); /* ENDPLAC  */
     }
 
-    agc_phase_change(2, 00132);      /* REDOR22  */
+    agc_phase_change(00132);         /* REDOR22  */
     agc_exec_prio_change(NC_PRIO26); /* PRIOCHNG */
 
     return (agc_svc_delayjob(NC_4SECS, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK));
@@ -316,8 +311,8 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    nc_marktime      = agc_rtb_loadtime();
-    bool         csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* CSM corrected */
+    nc_marktime = agc_rtb_loadtime();
+    bool csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* CSM corrected */
     agc_status_t st;                                     /* SETINTG */
 
     st = rz_setintg(AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_INTEGRATE);
@@ -330,7 +325,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(void)
     rz_flag_put(AGC_FLAG_DIM0FLAG, agc_flag_test(AGC_FLAG_RENDWFLG));
     rz_flag_put(AGC_FLAG_VINTFLAG, csm); /* P20.1    */
     st = agc_integ_integrv(&ip, agc_integ_shared_ctx(), nc_marktime);
-    agc_phase_change(2, 04022);          /* GRP2PC   */
+    agc_phase_change(04022);             /* GRP2PC   */
 
     if (st == AGC_STATUS_OK)
     {
@@ -355,8 +350,8 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(void)
         return (st);
     }
 
-    agc_phase_change(2, 00072);
-    agc_phase_change(1, 00111);
+    agc_phase_change(00072);
+    agc_phase_change(00111);
 
     return (agc_job_rendezvous_navigation_csm_track());
 } /* agc_job_rendezvous_navigation_csm_integrate */
@@ -456,11 +451,6 @@ static void nc_mrkbuf_copy(void)
     for (int i = 0; i < NC_MRK_WORDS; i++)
     { /* GENTRAN  */
         agc_erase_set_mrkbuf(2, i, agc_erase_mrkbuf(1, i));
-    }
-
-    if (!AGC_ASSERT(agc_erase_mrkbuf(2, 0) == agc_erase_mrkbuf(1, 0)))
-    {
-        return;
     }
 }
 
@@ -662,7 +652,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_end(agc_job_ctx_t *ctx)
 agc_status_t agc_rendz_llasrd(void)
 {
     agc_latlong_t ll;                               /* LAT LONG ALT */
-    agc_status_t  st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
+    agc_status_t st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
 
     if (st != AGC_STATUS_OK)
     {
@@ -671,8 +661,8 @@ agc_status_t agc_rendz_llasrd(void)
 
     agc_align_ram_t *a = agc_align_ram(); /* LANDLAT .. LANDALT */
 
-    a->landlat  = ll.lat;
-    a->landalt  = ll.alt;
+    a->landlat = ll.lat;
+    a->landalt = ll.alt;
     a->landlong = agc_dp_shr(ll.lon, 1);
 
     return (AGC_STATUS_OK);
@@ -692,7 +682,7 @@ agc_status_t agc_rendz_llasrd(void)
 agc_status_t agc_rendz_llasrda(void)
 {
     agc_latlong_t ll;                               /* LAT LONG ALT */
-    agc_status_t  st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
+    agc_status_t st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
 
     if (st != AGC_STATUS_OK)
     {
@@ -700,7 +690,7 @@ agc_status_t agc_rendz_llasrda(void)
     }
 
     agc_align_ram_t *a = agc_align_ram(); /* LANDLAT .. LANDALT */
-    agc_interp_t     ip;                  /* interpreter state */
+    agc_interp_t ip;                  /* interpreter state */
 
     agc_interp_init(&ip);
     ll.lat = a->landlat;

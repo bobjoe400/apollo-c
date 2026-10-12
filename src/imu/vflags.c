@@ -61,11 +61,6 @@ bool imu_vflag_test(imu_vflag_t f)
 {
     agc_flag_id_t id = imu_vflag(f); /* id on this vehicle */
 
-    if (!AGC_ASSERT(id == 0U || agc_flag_valid(id)))
-    {
-        return (false);
-    }
-
     return ((id != 0U) && agc_flag_test(id));
 }
 
@@ -79,16 +74,6 @@ bool imu_vflag_test(imu_vflag_t f)
 void imu_vflag_set(imu_vflag_t f)
 {
     agc_flag_id_t id = imu_vflag(f); /* id on this vehicle */
-
-    if (!AGC_ASSERT(id != 0U))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(agc_flag_valid(id)))
-    {
-        return;
-    }
 
     agc_flag_set(id);
 }

@@ -78,7 +78,6 @@ agc_sp_t agc_sp_from_double(double x, int scale_pow2);
 agc_dp_t agc_dp_from_double(double x, int scale_pow2);
 double   agc_sp_to_double(agc_sp_t v, int scale_pow2);
 double   agc_dp_to_double(agc_dp_t v, int scale_pow2);
-double   agc_tp_to_double(agc_tp_t v, int scale_pow2);
 
 /* ---- SP/DP/TP structure ------------------------------------------------- */
 agc_sp_t agc_dp_high(agc_dp_t v);               /* upper SP word (MPAC)    */
@@ -97,7 +96,6 @@ agc_tp_t       agc_tp_from_words(agc_tp_words_t m); /* hi 2^28 + mid 2^14 + lo *
 
 /* ---- raw arithmetic: saturating, overflow reported through *ovf ---------- */
 agc_sp_t agc_sp_add(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf);
-agc_sp_t agc_sp_sub(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf);
 agc_dp_t agc_sp_mul(agc_sp_t a, agc_sp_t b);                     /* MP: SP x SP -> DP     */
 agc_dp_t agc_dp_add_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf);
 agc_dp_t agc_dp_sub_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf);

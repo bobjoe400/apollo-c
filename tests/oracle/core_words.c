@@ -376,14 +376,14 @@ static bool run_lane(agc_interp_t *ip, const char *op, const char *tag, agc_tp_w
     {
         (void) agc_mpac_sin(*m);                                /* SIN PDDL: PD0 = SIN(A) */
         *m  = agc_mpac_cos(agc_mpac_dload(agc_mpac_store(*m))); /* MPAC = A; COS          */
-        pd2 = agc_mpac_store(*m);                                   /* PUSH: PD2 = COS(A)     */
-        *m  = agc_mpac_shift(ip, *m, -2);                           /* SR2                    */
-        v1  = agc_mpac_store(*m);                                   /* PDDL: PD2 = COS/4 ...  */
+        pd2 = agc_mpac_store(*m);                               /* PUSH: PD2 = COS(A)     */
+        *m  = agc_mpac_shift(ip, *m, -2);                       /* SR2                    */
+        v1  = agc_mpac_store(*m);                               /* PDDL: PD2 = COS/4 ...  */
         *m  = agc_mpac_bdsu(ip, agc_mpac_dload(pd2), in_dp(tag, "VAC1+22"));
-        pd2 = v1;                                                   /* ... MPAC = COS(A)      */
-        pd4 = agc_mpac_store(*m);                                   /* PDDL: PD4 = 1-COS(A)   */
+        pd2 = v1;                                               /* ... MPAC = COS(A)      */
+        pd4 = agc_mpac_store(*m);                               /* PDDL: PD4 = 1-COS(A)   */
         *m  = agc_mpac_dmp(agc_mpac_dsq(agc_mpac_dload(in_dp(tag, "VAC1+20"))), pd4);
-        *m  = agc_mpac_shift(ip, agc_mpac_dad(ip, *m, pd2), 3);     /* DAD 2; SL3             */
+        *m  = agc_mpac_shift(ip, agc_mpac_dad(ip, *m, pd2), 3); /* DAD 2; SL3             */
     }
     else if (strcmp(op, "HUNTEST") == 0)
     {

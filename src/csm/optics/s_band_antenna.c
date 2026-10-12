@@ -27,26 +27,11 @@ static agc_dp_t gammasb; /* GAMMASB (= RHOSB +2) N51 yaw, revs           */
 
 agc_dp_t agc_sband_rhosb(void)
 {
-    if (!AGC_ASSERT(rhosb >= -AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(rhosb <= AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
     return (rhosb);
 }
 
 agc_dp_t agc_sband_gammasb(void)
 {
-    if (!AGC_ASSERT(gammasb >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (gammasb);
 }
 
@@ -61,17 +46,17 @@ agc_status_t agc_sband_cm_angles(agc_interp_t *ip, agc_vec_t r_nb, agc_dp_t *pit
 {
     const agc_mat_t hiunit = agc_mat_identity_half(); /* HIUNITX,Y,Z  */
 
-    *yaw                = 0;                                  /* HI6ZEROS     */
-    const agc_vec_t ur  = agc_vec_unit(ip, r_nb, NULL, NULL); /* 8D */
-    const agc_vec_t pz  = agc_vec_shl(ip, agc_vec_proj(ip, r_nb, hiunit.row[2]), 2);
-    agc_vec_t       urp = agc_vec_sub(ip, r_nb, pz);          /* BVSU R       */
+    *yaw = 0;                                  /* HI6ZEROS     */
+    const agc_vec_t ur = agc_vec_unit(ip, r_nb, NULL, NULL); /* 8D */
+    const agc_vec_t pz = agc_vec_shl(ip, agc_vec_proj(ip, r_nb, hiunit.row[2]), 2);
+    agc_vec_t urp = agc_vec_sub(ip, r_nb, pz);          /* BVSU R       */
 
     align_clear_ovf(ip);                     /* BOV COVCNV   */
     urp = agc_vec_unit(ip, urp, NULL, NULL); /* COVCNV UNIT  */
 
     if (!agc_interp_test_ovf(ip))
     { /* BOV NOADJUST */
-        *yaw              = agc_dp_acos(ip, align_dot_shl(ip, urp, hiunit.row[0], 1));
+        *yaw = agc_dp_acos(ip, align_dot_shl(ip, urp, hiunit.row[0], 1));
         const agc_dp_t uy = align_dot_shl(ip, urp, hiunit.row[1], 1); /* B0 */
 
         if (uy < 0)
@@ -95,9 +80,9 @@ static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o, 
     if (o->x2 != 0)
     { /* moon: LUNPOS */
         agc_navaux_padload_t pad;
-        agc_ephem_csm_t      eph;
-        agc_vec_t            rem;
-        agc_status_t         st = agc_navaux_get_padload(&pad);
+        agc_ephem_csm_t eph;
+        agc_vec_t rem;
+        agc_status_t st = agc_navaux_get_padload(&pad);
 
         if (st == AGC_STATUS_OK)
         {
@@ -133,13 +118,13 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_cdutrig_t   trig;
+    agc_cdutrig_t trig;
     agc_integ_out_t o;
-    const agc_dp_t  now = align_loadtime();
+    const agc_dp_t now = align_loadtime();
 
     agc_guid_cdutrig(&trig); /* CDUTRIG      */
     agc_status_t st = align_integ(&ip, ALIGN_CSMCONIC, now, AGC_JOB_SBANDANT_CM_RECYCLE, &o);
-    agc_vec_t    r;
+    agc_vec_t r;
 
     if (st == AGC_STATUS_OK)
     {

@@ -89,15 +89,13 @@ agc_status_t agc_task_radsamp(void)
 
     st = agc_waitlist_call((uint16_t) delay, AGC_TASK_RADSAMP);
 
-    if (st != AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK)
     {
-        return (st);
+        st           = agc_exec_novac(LEADIN_PRIO25, AGC_JOB_RADAR_SAMPLE);
+        agc_sp_t loc = agc_erase_rtstloc(); /* RTSTLOC offset (unscaled) */
+
+        agc_erase_set_rtstdex((agc_sp_t) (loc / 2 + agc_erase_rtstbase()));
     }
-
-    st           = agc_exec_novac(LEADIN_PRIO25, AGC_JOB_RADAR_SAMPLE);
-    agc_sp_t loc = agc_erase_rtstloc(); /* RTSTLOC offset (unscaled) */
-
-    agc_erase_set_rtstdex((agc_sp_t) (loc / 2 + agc_erase_rtstbase()));
 
     return (st);
 }

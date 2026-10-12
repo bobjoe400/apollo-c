@@ -96,13 +96,13 @@ agc_vec_t agc_vec_zero(void)
 agc_vec_t agc_vec_add(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 {
     static const int order[AGC_VEC_N] = {1, 2, 0};
-    agc_vec_t        r                = u; /* result, scale of u */
-    int              k;                    /* component index */
-    int              i;                    /* step in AGC order */
+    agc_vec_t r = u; /* result, scale of u */
+    int k;                    /* component index */
+    int i;                    /* step in AGC order */
 
     for (i = 0; i < AGC_VEC_N; i++)
     {
-        k      = order[i];
+        k = order[i];
         r.c[k] = agc_w_join(agc_w_dad(agc_w_split(u.c[k]), agc_w_split(v.c[k]), &ip->ovfind));
     }
 
@@ -136,7 +136,7 @@ agc_vec_t agc_vec_sub(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 agc_vec_t agc_vec_neg(agc_vec_t v)
 {
     agc_vec_t r; /* -v, scale of v */
-    int       k; /* component index */
+    int k; /* component index */
 
     for (k = 0; k < AGC_VEC_N; k++)
     {
@@ -163,13 +163,13 @@ agc_vec_t agc_vec_neg(agc_vec_t v)
 agc_vec_t agc_vec_scale(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 {
     agc_vec_t r = v; /* result, scales of v and s add */
-    agc_w3_t  m;     /* DMPSUB TP product */
-    int       k;     /* component index */
+    agc_w3_t m;     /* DMPSUB TP product */
+    int k;     /* component index */
 
     for (k = 0; k < AGC_VEC_N; k++)
     {
-        m      = agc_w_dmpsub(agc_w_split(v.c[k]), agc_w_split(s));
-        m      = agc_w_roundsub(m, &ip->ovfind); /* VROUND           */
+        m = agc_w_dmpsub(agc_w_split(v.c[k]), agc_w_split(s));
+        m = agc_w_roundsub(m, &ip->ovfind); /* VROUND           */
         r.c[k] = agc_w_join(agc_w3_top(m));
     }
 
@@ -192,7 +192,7 @@ agc_tp_t agc_vec_dot_tp(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     agc_w3_t m; /* DOTSUB TP result */
 
     ip->dvsign_neg = false; /* PREDOT: DOTINC (= DVSIGN) = 2 */
-    m              = agc_w_dotsub(u, v, &ip->ovfind);
+    m = agc_w_dotsub(u, v, &ip->ovfind);
 
     return (agc_w3_value(m));
 }
@@ -213,7 +213,7 @@ agc_dp_t agc_vec_dot(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
     agc_w3_t m; /* DOTSUB TP result */
 
     ip->dvsign_neg = false; /* PREDOT: DOTINC (= DVSIGN) = 2 */
-    m              = agc_w_dotsub(u, v, &ip->ovfind);
+    m = agc_w_dotsub(u, v, &ip->ovfind);
 
     return (agc_w_join(agc_w3_top(m)));
 }
@@ -270,11 +270,6 @@ agc_dp_t agc_vec_abval(agc_interp_t *ip, agc_vec_t v)
 
     sq = agc_vec_sq_tp(ip, v);
 
-    if (!AGC_ASSERT(sq >= 0))
-    {
-        return (0);
-    }
-
     return (agc_tp_sqrt(sq));
 }
 
@@ -308,9 +303,9 @@ static agc_w2_t mul_top(agc_dp_t mpac, agc_dp_t x)
 agc_vec_t agc_vec_cross(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 {
     agc_vec_t r; /* u x v, scales add */
-    agc_w2_t  z; /* z: X2M1 - X1M2 */
-    agc_w2_t  y; /* y: X1M3 - X3M1 */
-    agc_w2_t  x; /* x: X3M2 - X2M3 */
+    agc_w2_t z; /* z: X2M1 - X1M2 */
+    agc_w2_t y; /* y: X1M3 - X3M1 */
+    agc_w2_t x; /* x: X3M2 - X2M3 */
 
     z = mul_top(-u.c[1], v.c[0]);                            /* -X1M2 in MPAC+5  */
     z = agc_w_dad(z, mul_top(u.c[0], v.c[1]), &ip->ovfind);  /* + X2M1    */
@@ -341,17 +336,17 @@ agc_vec_t agc_vec_cross(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 agc_vec_t agc_vec_proj(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
 {
     agc_vec_t r = v; /* (u . v) v, scales of u, v, v add */
-    agc_w2_t  d;     /* u . v as MPAC words */
-    agc_w3_t  m;     /* DMPSUB TP product */
-    int       k;     /* component index */
+    agc_w2_t d;     /* u . v as MPAC words */
+    agc_w3_t m;     /* DMPSUB TP product */
+    int k;     /* component index */
 
     ip->dvsign_neg = false; /* PREDOT: DOTINC (= DVSIGN) = 2 */
-    d              = agc_w3_top(agc_w_dotsub(u, v, &ip->ovfind));
+    d = agc_w3_top(agc_w_dotsub(u, v, &ip->ovfind));
 
     for (k = 0; k < AGC_VEC_N; k++)
     {
-        m      = agc_w_dmpsub(d, agc_w_split(v.c[k])); /* DVXSC            */
-        m      = agc_w_roundsub(m, &ip->ovfind);       /* VROUND           */
+        m = agc_w_dmpsub(d, agc_w_split(v.c[k])); /* DVXSC            */
+        m = agc_w_roundsub(m, &ip->ovfind);       /* VROUND           */
         r.c[k] = agc_w_join(agc_w3_top(m));
     }
 
@@ -374,10 +369,10 @@ agc_vec_t agc_vec_proj(agc_interp_t *ip, agc_vec_t u, agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_vec_shl(agc_interp_t *ip, agc_vec_t v, int n)
 {
-    agc_w2_t  p[AGC_VEC_N]; /* component words */
+    agc_w2_t p[AGC_VEC_N]; /* component words */
     agc_vec_t r = v;        /* result, scale -n */
-    int       k;            /* component index */
-    int       j;            /* steps done */
+    int k;            /* component index */
+    int j;            /* steps done */
 
     if (n < 0)
     {
@@ -387,11 +382,6 @@ agc_vec_t agc_vec_shl(agc_interp_t *ip, agc_vec_t v, int n)
     for (k = 0; k < AGC_VEC_N; k++)
     {
         p[k] = agc_w_split(v.c[k]);
-    }
-
-    if (!AGC_ASSERT(n <= 127)) /* 7-bit count      */
-    {
-        return (v);
     }
 
     for (j = 0; (j < n) && (j < VSHIFT_MAX); j++)
@@ -423,9 +413,9 @@ agc_vec_t agc_vec_shl(agc_interp_t *ip, agc_vec_t v, int n)
 agc_vec_t agc_vec_shr(agc_vec_t v, int n)
 {
     agc_vec_t r = v; /* result, scale +n */
-    int       k;     /* component index */
+    int k;     /* component index */
 
-    if (!AGC_ASSERT(n >= 0) || (n == 0))
+    if (n == 0)
     {
         return (v);
     }
@@ -449,8 +439,8 @@ agc_vec_t agc_vec_shr(agc_vec_t v, int n)
 agc_mat_t agc_mat_identity_half(void)
 {
     agc_mat_t m; /* I/2, scaled 2^1 */
-    int       i; /* row index */
-    int       j; /* column index */
+    int i; /* row index */
+    int j; /* column index */
 
     for (i = 0; i < AGC_VEC_N; i++)
     {
@@ -477,7 +467,7 @@ agc_mat_t agc_mat_identity_half(void)
 agc_vec_t agc_mat_vec(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t v)
 {
     agc_vec_t r; /* M v, scales add */
-    int       i; /* row index */
+    int i; /* row index */
 
     for (i = 0; i < AGC_VEC_N; i++)
     {
@@ -499,8 +489,8 @@ agc_vec_t agc_mat_vec(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t v)
 agc_mat_t agc_mat_transpose(const agc_mat_t *m)
 {
     agc_mat_t t; /* transpose */
-    int       i; /* row index */
-    int       j; /* column index */
+    int i; /* row index */
+    int j; /* column index */
 
     for (i = 0; i < AGC_VEC_N; i++)
     {
@@ -508,11 +498,6 @@ agc_mat_t agc_mat_transpose(const agc_mat_t *m)
         {
             t.row[i].c[j] = m->row[j].c[i];
         }
-    }
-
-    if (!AGC_ASSERT(t.row[0].c[1] == m->row[1].c[0]))
-    {
-        return (agc_mat_identity_half());
     }
 
     return (t);
@@ -533,7 +518,7 @@ agc_vec_t agc_vec_mat(agc_interp_t *ip, agc_vec_t v, const agc_mat_t *m)
 {
     agc_vec_t r; /* v^T M, scales add */
     agc_mat_t t; /* M transposed (columns as rows) */
-    int       j; /* column index */
+    int j; /* column index */
 
     t = agc_mat_transpose(m);
 
@@ -561,7 +546,7 @@ agc_mat_t agc_mat_mul(agc_interp_t *ip, const agc_mat_t *a, const agc_mat_t *b)
 {
     agc_mat_t cols; /* columns of A B */
     agc_mat_t bt;   /* B transposed */
-    int       j;    /* column index */
+    int j;    /* column index */
 
     bt = agc_mat_transpose(b);
 

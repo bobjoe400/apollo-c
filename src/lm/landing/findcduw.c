@@ -151,11 +151,6 @@ static int32_t fc_ones_word(agc_sp_t v)
 {
     int32_t w = (v < 0) ? 0x7FFF + (int32_t) v : (int32_t) v; /* 1's bits */
 
-    if (!AGC_ASSERT(w >= 0 && w <= 0x7FFF))
-    {
-        return (0); /* no valid result */
-    }
-
     return (w);
 }
 
@@ -364,7 +359,7 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb, agc_sp_t 
     /* DSQ leaves a TP; BDSU DP1/4TH complements only MPAC, MPAC+1, so
      * MPAC+2 keeps the square's low word with its own sign, and SQRT
      * reads all three words: 1/4 - top(s^2) + low(s^2), at 2^2.      */
-    agc_dp_t sq   = agc_dp_sq(nb->row[0].c[1]);                                                   /* top words of DSQ, 2^2 */
+    agc_dp_t sq   = agc_dp_sq(nb->row[0].c[1]);                                                       /* top words of DSQ, 2^2 */
     agc_tp_t sqtp = agc_dp_sq_tp(nb->row[0].c[1]);                                                    /* DSQ as a TP, 2^2 */
     agc_tp_t c2   = agc_tp_from_dp(agc_dp_sub(ip, AGC_DP_QUARTER, sq)) + (sqtp - agc_tp_from_dp(sq)); /* as SQRT sees it, 2^2 */
 
@@ -374,7 +369,7 @@ static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb, agc_sp_t 
     }
 
     agc_dp_t cos2 = agc_tp_sqrt(c2); /* cos(CDUZ) in units of 2, 2^1 */
-    agc_sp_t tem5 = AGC_SP_MAX;          /* DDOUBL overflow -> POSMAX, cos 2^0 */
+    agc_sp_t tem5 = AGC_SP_MAX;      /* DDOUBL overflow -> POSMAX, cos 2^0 */
 
     if (cos2 < AGC_DP_HALF)
     {
@@ -431,7 +426,7 @@ static agc_sp_t fc_fltrsub(agc_sp_t orig, agc_sp_t meas)
  **********************************************************************/
 static bool fc_unwctest(agc_interp_t *ip, agc_vec_t unz, agc_vec_t unx)
 {
-    agc_dp_t d   = agc_dp_sq(agc_vec_dot(ip, unz, unx));    /* (UNZ . UNX)^2, 2^2 */
+    agc_dp_t d   = agc_dp_sq(agc_vec_dot(ip, unz, unx));        /* (UNZ . UNX)^2, 2^2 */
     agc_dp_t lim = agc_dp_pack(FC_DOTSWFMX_HI, FC_DOTSWFMX_LO); /* DOTSWFMX: cos^2(15 deg)/16, 2^2 */
 
     if (agc_dp_sub(ip, d, lim) < 0)
@@ -445,34 +440,6 @@ static bool fc_unwctest(agc_interp_t *ip, agc_vec_t unz, agc_vec_t unx)
 }
 
 /**********************************************************************
- * DCMCL (p. 913): the required direction cosine matrix. The filtered
- * thrust offsets (UNFVY/2, UNFVZ/2) tilt X so that the estimated thrust,
- * not the X axis, lies along the command.
- *
- * ARGUMENTS:
- *   ip   agc_interp_t *  I/O  interpreter state (OVFIND)
- *   unx  agc_vec_t       I    thrust command, half unit 2^1
- *   unz  agc_vec_t       I    window vector, half unit 2^1
- *
- * RETURNS: agc_mat_t -- required nav base rows in SM axes, 2^1
- **********************************************************************/
-static agc_mat_t fc_dcmcl(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
-{
-    agc_vec_t uny1 = agc_vec_unit(ip, agc_vec_cross(ip, unz, unx), NULL, NULL); /* UNIT(UNZ x UNX), half unit 2^1 */
-    agc_vec_t munz = agc_vec_shl(ip, agc_vec_cross(ip, uny1, unx), 1);          /* -UNZ, half unit 2^1 */
-    agc_vec_t a    = agc_vec_scale(ip, munz, fc_unfv_2.c[2]);                   /* UNFVZ/2 (-UNZ), 2^1 */
-    agc_vec_t b    = agc_vec_scale(ip, uny1, fc_unfv_2.c[1]);                   /* UNFVY/2 UNY1, 2^1 */
-    agc_vec_t t    = agc_vec_shl(ip, agc_vec_sub(ip, a, b), 1);                 /* BVSU: thrust offset vector, 2^1 */
-    agc_mat_t m;                                                                /* required nav base rows X, Y, Z, 2^1 */
-
-    m.row[0] = agc_vec_unit(ip, agc_vec_add(ip, t, unx), NULL, NULL);
-    m.row[1] = agc_vec_shl(ip, agc_vec_cross(ip, m.row[0], munz), 1);
-    m.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, agc_vec_neg(m.row[1]), m.row[0]), 1);
-
-    return (m);
-}
-
-/**********************************************************************
  * INITCDUW (p. 910): one call before each guided maneuver.
  **********************************************************************/
 void agc_lm_initcduw(void)
@@ -481,11 +448,6 @@ void agc_lm_initcduw(void)
 
     fc_unfv_2            = unitx;
     agc_lm_ldg()->unwc_2 = unitx;
-
-    if (!AGC_ASSERT(fc_unfv_2.c[0] == AGC_DP_HALF))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -653,10 +615,6 @@ static void fc_transfer(void)
 
         /* ONESTO2S         */
         /* DELCDUX, DELCDUY, DELCDUZ by index (INDEX TEM2 / TS DELCDUX). */
-        if (!AGC_ASSERT(i >= 0 && i <= 2))
-        {
-            return;
-        }
 
         if (i == 0)
         {
@@ -693,10 +651,6 @@ static void fc_transfer(void)
     agc_erase_set_delqeror(lag[1]);
     agc_erase_set_delreror(lag[2]);
 
-    if (!AGC_ASSERT(lag[0] >= -FC_DELERLIM && lag[0] <= FC_DELERLIM))
-    {
-        return;
-    }
 } /* fc_transfer */
 
 /**********************************************************************
@@ -731,14 +685,12 @@ static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx, 
 
     agc_vec_t u = agc_vec_unit(ip, agc_erase_delv(), NULL, NULL); /* unit DELV, SM, half unit 2^1 */
 
-    if (agc_interp_test_ovf(ip))
+    if (!agc_interp_test_ovf(ip)) /* skip the filter  */
     {
-        return (AGC_STATUS_OK); /* skip the filter  */
+        agc_guid_smnb(trig, &u); /* unit DELV, NB    */
+        fc_unfv_2.c[1] = agc_dp_from_sp(fc_fltrsub(agc_dp_high(fc_unfv_2.c[1]), agc_dp_high(u.c[1])));
+        fc_unfv_2.c[2] = agc_dp_from_sp(fc_fltrsub(agc_dp_high(fc_unfv_2.c[2]), agc_dp_high(u.c[2])));
     }
-
-    agc_guid_smnb(trig, &u); /* unit DELV, NB    */
-    fc_unfv_2.c[1] = agc_dp_from_sp(fc_fltrsub(agc_dp_high(fc_unfv_2.c[1]), agc_dp_high(u.c[1])));
-    fc_unfv_2.c[2] = agc_dp_from_sp(fc_fltrsub(agc_dp_high(fc_unfv_2.c[2]), agc_dp_high(u.c[2])));
 
     return (AGC_STATUS_OK);
 }
@@ -804,8 +756,33 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
         return (st);
     }
 
-    agc_mat_t m = fc_dcmcl(ip, unx, fc_window(ip, unx, unz)); /* required nav base rows, 2^1 */
-    agc_sp_t  cdu[3];                                         /* required CDU angles X, Y, Z, 2's, scale pi */
+    /**********************************************************************
+     * DCMCL (p. 913): the required direction cosine matrix. The filtered
+     * thrust offsets (UNFVY/2, UNFVZ/2) tilt X so that the estimated thrust,
+     * not the X axis, lies along the command.
+     *
+     * ARGUMENTS:
+     *   ip   agc_interp_t *  I/O  interpreter state (OVFIND)
+     *   unx  agc_vec_t       I    thrust command, half unit 2^1
+     *   unz  agc_vec_t       I    window vector, half unit 2^1
+     *
+     * RETURNS: agc_mat_t -- required nav base rows in SM axes, 2^1
+     **********************************************************************/
+    agc_vec_t unz_dcmcl = fc_window(ip, unx, unz);
+
+    agc_vec_t uny1    = agc_vec_unit(ip, agc_vec_cross(ip, unz_dcmcl, unx), NULL, NULL); /* UNIT(UNZ x UNX), half unit 2^1 */
+    agc_vec_t munz    = agc_vec_shl(ip, agc_vec_cross(ip, uny1, unx), 1);                /* -UNZ, half unit 2^1 */
+    agc_vec_t a       = agc_vec_scale(ip, munz, fc_unfv_2.c[2]);                         /* UNFVZ/2 (-UNZ), 2^1 */
+    agc_vec_t b       = agc_vec_scale(ip, uny1, fc_unfv_2.c[1]);                         /* UNFVY/2 UNY1, 2^1 */
+    agc_vec_t t_dcmcl = agc_vec_shl(ip, agc_vec_sub(ip, a, b), 1);                       /* BVSU: thrust offset vector, 2^1 */
+    agc_mat_t m;                                                                         /* required nav base rows X, Y, Z, 2^1 */
+
+    m.row[0] = agc_vec_unit(ip, agc_vec_add(ip, t_dcmcl, unx), NULL, NULL);
+    m.row[1] = agc_vec_shl(ip, agc_vec_cross(ip, m.row[0], munz), 1);
+    m.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, agc_vec_neg(m.row[1]), m.row[0]), 1);
+
+    /* required nav base rows, 2^1 */
+    agc_sp_t cdu[3]; /* required CDU angles X, Y, Z, 2's, scale pi */
 
     st = fc_nb2cdusp(ip, &m, cdu);
 

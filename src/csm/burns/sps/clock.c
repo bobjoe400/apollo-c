@@ -116,7 +116,7 @@ static agc_status_t cknvwrd1(agc_job_ctx_t *ctx)
 /* CLOCKJOB (p.705): fresh CDU trig for the displays, then CKNVWRD1.       */
 agc_status_t agc_job_clockjob(agc_job_ctx_t *ctx)
 {
-    agc_guid_t    *g      = agc_guid_state();
+    agc_guid_t *g = agc_guid_state();
     const uint16_t cdu[3] = {agc_erase_cduy(), agc_erase_cduz(), agc_erase_cdux()};
 
     agc_guid_quictrig(&g->trig, cdu);
@@ -229,13 +229,13 @@ agc_status_t agc_job_engine_fail_terminate(agc_job_ctx_t *ctx)
 agc_status_t agc_task_engine_fail_shutdown(void)
 {
     agc_guid_state()->csm.nvword1 = 0; /* DISABLE CLOCKJOB       */
-    agc_csm_dap_tvc()->masstmp    = (agc_sp_t) (AGC_CSM_3MDOT + agc_erase_csmmass());
-    agc_phase_var_t v             = {AGC_RESTART_TASK,
-                                     AGC_JOB_NONE,
-                                     AGC_TASK_ENGINE_FAIL_SHUTDOWN_RESTART,
-                                     0,
-                                     true,
-                                     0U};
+    agc_csm_dap_tvc()->masstmp = (agc_sp_t) (AGC_CSM_3MDOT + agc_erase_csmmass());
+    agc_phase_var_t v = {AGC_RESTART_TASK,
+                         AGC_JOB_NONE,
+                         AGC_TASK_ENGINE_FAIL_SHUTDOWN_RESTART,
+                         0,
+                         true,
+                         0U};
 
     agc_phase_change_var((uint16_t) 005014, &v);
 
@@ -250,7 +250,7 @@ agc_status_t agc_task_engine_fail_shutdown(void)
 agc_status_t agc_task_engine_fail_shutdown_restart(void)
 {
     agc_csm_spsoff();
-    agc_phase_change(4, (uint16_t) 000714); /* 4.71 = V97TRCS         */
+    agc_phase_change((uint16_t) 000714); /* 4.71 = V97TRCS         */
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_ENGONFLG)))
     {
@@ -286,7 +286,7 @@ agc_status_t agc_task_engine_fail_rcs_dap(void)
 /* V97P (p.707): proceed: 4.73 V97PTASK now.                               */
 agc_status_t agc_job_engine_fail_proceed(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(4, (uint16_t) 040734);
+    agc_phase_change((uint16_t) 040734);
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
@@ -302,11 +302,11 @@ agc_status_t agc_task_engine_fail_resume(void)
 {
     agc_csm_tvc_t *tvc = agc_csm_dap_tvc();
 
-    tvc->vcntr                    = tvc->engine_fail_vcntr;
+    tvc->vcntr = tvc->engine_fail_vcntr;
     agc_guid_state()->csm.nvword1 = agc_csm_vn(6, 40);
     agc_flag_set(AGC_FLAG_IDLEFAIL);
     agc_flag_set(AGC_FLAG_STEERSW);
-    agc_phase_change(4, (uint16_t) 000134); /* 4.13 = R40ENABL        */
+    agc_phase_change((uint16_t) 000134); /* 4.13 = R40ENABL        */
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_STEERSW)))
     {
@@ -334,7 +334,7 @@ agc_status_t agc_task_engine_fail_reenable(void)
 /* V97E (p.708): re-ignite: 4.53 V97ETASK in 10 ms.                         */
 agc_status_t agc_job_engine_fail_reignite(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(4, (uint16_t) 040534);
+    agc_phase_change((uint16_t) 040534);
 
     if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
     {
@@ -350,8 +350,8 @@ agc_status_t agc_task_engine_fail_reignite_prep(void)
 {
     agc_erase_set_tig(agc_dp_pack((agc_sp_t) -024, 0)); /* CS OCT24 TS TIG   */
     agc_guid_state()->csm.nvword1 = agc_csm_vn(6, 40);
-    agc_csm_dap_tvc()->masstmp    = (agc_sp_t) (AGC_CSM_3MDOT + agc_erase_csmmass());
-    agc_phase_change(4, (uint16_t) 000754);             /* 4.75 = SPSOFF97        */
+    agc_csm_dap_tvc()->masstmp = (agc_sp_t) (AGC_CSM_3MDOT + agc_erase_csmmass());
+    agc_phase_change((uint16_t) 000754);                 /* 4.75 = SPSOFF97        */
 
     if (!AGC_ASSERT(agc_erase_tig() < 0))
     {
@@ -364,7 +364,7 @@ agc_status_t agc_task_engine_fail_reignite_prep(void)
 agc_status_t agc_task_spsoff97(void)
 {
     agc_csm_spsoff();
-    agc_phase_change(4, (uint16_t) 000114); /* 4.11 = V97E40.6        */
+    agc_phase_change((uint16_t) 000114); /* 4.11 = V97E40.6        */
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_ENGONFLG)))
     {
@@ -446,7 +446,7 @@ agc_status_t agc_task_gimbal_trim_restart(void)
     }
 
     agc_guid_state()->csm.mrkrtmp = -1;
-    agc_csm_dap_tvc()->cntr       = 1;
+    agc_csm_dap_tvc()->cntr = 1;
 
     if (!AGC_ASSERT(agc_csm_dap_tvc()->cntr == 1))
     {
@@ -491,7 +491,7 @@ agc_status_t agc_task_gimbal_test_relays(void)
 static agc_status_t gimbal_output(int step)
 {
     static const agc_sp_t inc[3] = {ACT_P2DEG, ACT_M4DEG, ACT_P2DEG};
-    bool                  yaw    = (step >= 3);
+    bool yaw = (step >= 3);
 
     if (yaw)
     {
@@ -516,7 +516,7 @@ static agc_status_t gimbal_output(int step)
  * waits 4 s; else the drive test: +2, -4, +2 degrees in pitch, then yaw.  */
 agc_status_t agc_task_gimbal_test_rstrtst(void)
 {
-    agc_guid_t    *g   = agc_guid_state();
+    agc_guid_t *g = agc_guid_state();
     agc_csm_tvc_t *tvc = agc_csm_dap_tvc();
 
     if (tvc->cntr > 0)

@@ -69,22 +69,17 @@ static agc_sp_t sp_arg90(int a)
  **********************************************************************/
 static agc_sp_t sp_polley(int32_t x)
 {
-    int32_t  sq;    /* SQ: x^2, scaled at (pi/2)^2              */
-    int32_t  a;     /* accumulator, scaled at 1                 */
+    int32_t sq;    /* SQ: x^2, scaled at (pi/2)^2              */
+    int32_t a;     /* accumulator, scaled at 1                 */
     agc_w2_t p;     /* MP TEMK product (A, L), scaled at 1/2    */
     agc_w2_t two;   /* DDOUBL of p, scaled at 1                 */
-    int      o = 0; /* DDOUBL overflow, +-1 or 0                */
+    int o = 0; /* DDOUBL overflow, +-1 or 0                */
 
     sq = agc_w_mp(x, x).hi; /* MP TEMK; TS SQ   */
 
-    if (!AGC_ASSERT(sq >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    a   = agc_w_mp(sq, AGC_K_C5_2).hi + AGC_K_C3_2; /* MP C5/2; AD C3/2 */
-    a   = agc_w_mp(a, sq).hi + AGC_K_C1_2;          /* MP SQ; AD C1/2   */
-    p   = agc_w_mp(a, x);                           /* MP TEMK          */
+    a = agc_w_mp(sq, AGC_K_C5_2).hi + AGC_K_C3_2; /* MP C5/2; AD C3/2 */
+    a = agc_w_mp(a, sq).hi + AGC_K_C1_2;          /* MP SQ; AD C1/2   */
+    p = agc_w_mp(a, x);                           /* MP TEMK          */
     two = agc_w_das(p, p, &o);                      /* DDOUBL           */
 
     if (o != 0)
@@ -107,7 +102,7 @@ static agc_sp_t sp_polley(int32_t x)
  **********************************************************************/
 static agc_sp_t sp_sine(int32_t a16)
 {
-    int     o = 0;                 /* overflow of the last TS, +-1 or 0 */
+    int o = 0;                 /* overflow of the last TS, +-1 or 0 */
     int32_t t = agc_w_ts(a16, &o); /* TEMK, scaled at pi                */
     int32_t x;                     /* TEMK after SPT, scaled at pi/2    */
 
@@ -126,11 +121,6 @@ static agc_sp_t sp_sine(int32_t a16)
     /* XCH TEMK; INDEX TEMK; AD LIMITS; COM; AD TEMK: x -> +-1.0 - x       */
     x = (o > 0) ? (x - AGC_K_POSMAX) : (x + AGC_K_POSMAX); /* AD LIMITS+-1 */
     x = -x + o;
-
-    if (!AGC_ASSERT((x >= -AGC_W_ONE) && (x <= AGC_W_ONE)))
-    {
-        return (0); /* no valid result */
-    }
 
     x = agc_w_ts(x, &o); /* TS TEMK          */
 

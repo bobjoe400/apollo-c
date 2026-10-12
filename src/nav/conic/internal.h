@@ -149,7 +149,6 @@ agc_tp_words_t agc_conic_msign_sp_(agc_tp_words_t m, agc_sp_t s);               
 bool           agc_conic_mbmn_(agc_tp_words_t m);                                  /* BMN taken      */
 bool           agc_conic_mbze_(agc_tp_words_t m);                                  /* BZE taken      */
 agc_tp_words_t agc_conic_poly_(agc_tp_words_t m, const agc_dp_t *coef, int ncoef); /* TC POLY        */
-agc_dp_t       agc_conic_value_(agc_dp_words_t w);                                 /* words -> value */
 agc_vec_t      agc_conic_vxsc_(agc_interp_t *ip, agc_tp_words_t m, agc_vec_t v);   /* DVXSC          */
 
 /* ---- universal.c: DELTIME, NEWSTATE, LAMENTER --------------------- */

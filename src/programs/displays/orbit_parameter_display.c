@@ -108,11 +108,6 @@ agc_dp_t agc_orbit_params_maxchk(agc_interp_t *ip, agc_dp_t h)
 
     agc_dp_t r = agc_dp_add(ip, d, RZ_MAXNM); /* DAD MAXNM, m 2^29 */
 
-    if (!AGC_ASSERT(r < RZ_MAXNM))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 

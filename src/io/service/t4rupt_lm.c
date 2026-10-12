@@ -120,16 +120,7 @@ uint16_t agc_erase_radmodes(void)
 {
     uint16_t v = 0; /* RADMODES bits */
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (0); /* no valid result */
-    }
-
     v = agc_flagword_get(RADMODES_WORD);
-    if (!AGC_ASSERT(v <= WORD15))
-    {
-        return ((uint16_t) (v & WORD15));
-    }
 
 
     return (v);
@@ -144,11 +135,6 @@ uint16_t agc_erase_radmodes(void)
  **********************************************************************/
 void agc_erase_set_radmodes(uint16_t v)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return;
-    }
-
     if (AGC_ASSERT(v <= WORD15))
     {
         agc_flagword_set(RADMODES_WORD, v);
@@ -162,11 +148,6 @@ void agc_erase_set_radmodes(uint16_t v)
  **********************************************************************/
 agc_sp_t agc_erase_m11(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM) || !AGC_ASSERT(matrix_consistent()))
-    {
-        return (0); /* no valid result */
-    }
-
     return (m11);
 }
 
@@ -177,11 +158,6 @@ agc_sp_t agc_erase_m11(void)
  **********************************************************************/
 agc_sp_t agc_erase_m21(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM) || !AGC_ASSERT(matrix_consistent()))
-    {
-        return (0); /* no valid result */
-    }
-
     return (m21);
 }
 
@@ -192,11 +168,6 @@ agc_sp_t agc_erase_m21(void)
  **********************************************************************/
 agc_sp_t agc_erase_m22(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM) || !AGC_ASSERT(matrix_consistent()))
-    {
-        return (0); /* no valid result */
-    }
-
     return (m22);
 }
 
@@ -207,11 +178,6 @@ agc_sp_t agc_erase_m22(void)
  **********************************************************************/
 agc_sp_t agc_erase_m31(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM) || !AGC_ASSERT(matrix_consistent()))
-    {
-        return (0); /* no valid result */
-    }
-
     return (m31);
 }
 
@@ -222,11 +188,6 @@ agc_sp_t agc_erase_m31(void)
  **********************************************************************/
 agc_sp_t agc_erase_m32(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM) || !AGC_ASSERT(matrix_consistent()))
-    {
-        return (0); /* no valid result */
-    }
-
     return (m32);
 }
 
@@ -237,11 +198,6 @@ agc_sp_t agc_erase_m32(void)
  **********************************************************************/
 agc_sp_t agc_erase_cosmg(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM) || !AGC_ASSERT(matrix_consistent()))
-    {
-        return (0); /* no valid result */
-    }
-
     return (cosmg);
 }
 
@@ -262,16 +218,7 @@ static agc_sp_t cdu_sp(uint16_t cdu)
 {
     int v = 0; /* signed reading, LSB 2^-14 pi */
 
-    if (!AGC_ASSERT(cdu <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
     v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu; /* 1s */
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
 
 
     return ((agc_sp_t) v);
@@ -296,10 +243,6 @@ static agc_sp_t mp_hi(agc_sp_t a, agc_sp_t b)
     hi = agc_dp_high(p);
 
     /* |a b| <= |a| for |b| <= 1 */
-    if (!AGC_ASSERT(abs(hi) <= abs(a)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (hi);
 }
@@ -348,11 +291,6 @@ agc_status_t agc_t4_gimbal_matrix(void)
 static void ch_clear(int chan, uint16_t bits)
 {
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
-
-    if (!AGC_ASSERT((agc_chan_read(chan) & bits) == 0u))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -363,34 +301,25 @@ static void ch_clear(int chan, uint16_t bits)
  * RADMODES shows remode, CDU zeroing, monitor or RR not in auto (bits 14,
  * 13, 11, 2).  Out of limits: set REPOSBIT, disable the tracker and the
  * error counters (channel 12 bits 14, 2), DORREPOS in 20 ms.
+ *
+ * RETURNS: AGC_STATUS_OK, or the WAITLIST status of DORREPOS
  **********************************************************************/
-static void t4_rrgimon(void)
+static agc_status_t t4_rrgimon(void)
 {
-    agc_status_t st = AGC_STATUS_OK; /* WAITLIST result */
-
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return;
-    }
-
     if (agc_flag_test((agc_flag_id_t) AGC_FLAG_NORRMON) || (agc_flag_test((agc_flag_id_t) AGC_FLAG_AVEGFLAG) && agc_flag_test((agc_flag_id_t) AGC_FLAG_MUNFLAG)) || ((agc_erase_radmodes() & OCT32002) != 0u))
     {
-        return; /* TCF NORRGMON */
+        return (AGC_STATUS_OK); /* TCF NORRGMON */
     }
 
     if (agc_rr_limchk(agc_erase_cdut(), agc_erase_cdus()))
     {
-        return; /* angles in limits (RRLIMCHK L+3) */
+        return (AGC_STATUS_OK); /* angles in limits (RRLIMCHK L+3) */
     }
 
     agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() + REPOSBIT));
     ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) OCT20002);
-    st = agc_waitlist_call(DORREPOS_DELAY_CS, AGC_TASK_DORREPOS);
 
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG) || !AGC_ASSERT((agc_erase_radmodes() & REPOSBIT) != 0u))
-    {
-        return;
-    }
+    return (agc_waitlist_call(DORREPOS_DELAY_CS, AGC_TASK_DORREPOS));
 }
 
 /**********************************************************************
@@ -406,36 +335,23 @@ static void t4_rrgimon(void)
  **********************************************************************/
 static bool t4_rrcduchk(void)
 {
-    agc_status_t st  = AGC_STATUS_OK;                                                                         /* SETTRKF   */
-    uint16_t     chg = (uint16_t) ((agc_erase_radmodes() ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & RCDUFBIT); /* changed */
+    uint16_t chg = (uint16_t) ((agc_erase_radmodes() ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & RCDUFBIT); /* changed */
 
-    if (chg == 0u)
+    if (chg != 0u) /* BZF RRGIMON */
     {
-        return (true); /* BZF RRGIMON */
-    }
+        if ((agc_erase_radmodes() & AUTOMBIT) != 0u)
+        {
+            return (false); /* not in auto: TCF NORRGMON */
+        }
 
-    if ((agc_erase_radmodes() & AUTOMBIT) != 0u)
-    {
-        return (false); /* not in auto: TCF NORRGMON */
-    }
+        agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() ^ RCDUFBIT));
 
-    agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() ^ RCDUFBIT));
+        if (((agc_erase_radmodes() & RCDUFBIT) == 0u) && agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG))
+        {
+            agc_alarm(ALARM_RR_CDU_FAIL);
+        }
 
-    if (!AGC_ASSERT(((agc_erase_radmodes() ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & RCDUFBIT) == 0u))
-    {
-        return (false);
-    }
-
-    if (((agc_erase_radmodes() & RCDUFBIT) == 0u) && agc_flag_test((agc_flag_id_t) AGC_FLAG_RNDVZFLG))
-    {
-        agc_alarm(ALARM_RR_CDU_FAIL);
-    }
-
-    st = agc_rr_settrkf(); /* TRKFLCDU */
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (false);
+        agc_rr_settrkf(); /* TRKFLCDU */
     }
 
     return (true);
@@ -451,7 +367,8 @@ static bool t4_rrcduchk(void)
  * skipping the two monitors this pass.  Switched off: disable the RR CDU
  * error counters (channel 12 bit 2, RRCDUCHK -3).
  *
- * RETURNS: AGC_STATUS_OK, or BAD_ARG when the waitlist or GPMATRIX fails
+ * RETURNS: AGC_STATUS_OK, the WAITLIST status, or the GPMATRIX
+ *          status
  **********************************************************************/
 agc_status_t agc_t4_rr_monitor(void)
 {
@@ -479,9 +396,9 @@ agc_status_t agc_t4_rr_monitor(void)
             agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() + OCT10001));
             st = agc_waitlist_call(RRTURNON_DELAY_CS, AGC_TASK_RRTURNON);
 
-            if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+            if (st != AGC_STATUS_OK)
             {
-                return (AGC_STATUS_BAD_ARG);
+                return (st); /* waitlist full: BAILOUT */
             }
 
             return (agc_t4_gimbal_matrix()); /* TCF NORRGMON */
@@ -492,7 +409,12 @@ agc_status_t agc_t4_rr_monitor(void)
 
     if (t4_rrcduchk())
     {
-        t4_rrgimon();
+        st = t4_rrgimon();
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
     }
 
     return (agc_t4_gimbal_matrix());

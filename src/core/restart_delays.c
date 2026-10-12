@@ -18,17 +18,12 @@ static agc_sp_t g_zoomtime; /* ZOOMTIME: DPS throttle-up time, cs (PL)*/
 static agc_sp_t g_s61dt;    /* S61DT: 4.43 waitlist dt, cs            */
 static agc_sp_t g_cm_gymdt; /* CM/GYMDT: 6.11 waitlist dt, cs         */
 
-static bool dt_ok(agc_sp_t v)
-{
-    return ((v >= 0) && (v <= AGC_SP_MAX));
-}
-
 void agc_erase_reset_restart_delays(void)
 {
-    g_p40tmp   = 0;
+    g_p40tmp = 0;
     g_savet_30 = 0;
     g_zoomtime = 0;
-    g_s61dt    = 0;
+    g_s61dt = 0;
     g_cm_gymdt = 0;
 }
 
@@ -69,11 +64,6 @@ agc_sp_t agc_erase_s61dt(void)
 
 void agc_erase_set_s61dt(agc_sp_t v)
 {
-    if (!AGC_ASSERT(dt_ok(v)))
-    {
-        return;
-    }
-
     g_s61dt = v;
 }
 
@@ -84,10 +74,5 @@ agc_sp_t agc_erase_cm_gymdt(void)
 
 void agc_erase_set_cm_gymdt(agc_sp_t v)
 {
-    if (!AGC_ASSERT(dt_ok(v)))
-    {
-        return;
-    }
-
     g_cm_gymdt = v;
 }

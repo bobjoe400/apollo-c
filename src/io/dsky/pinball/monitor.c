@@ -93,7 +93,7 @@ agc_status_t pin_monitor(void)
 
     if (s->entret == PIN_ENT_ENDOFJOB)
     {
-        m1          |= PIN_BIT14; /* externally initiated monitor  */
+        m1 |= PIN_BIT14; /* externally initiated monitor  */
         s->monsave2 = 0;          /* zero NVMONOPT options         */
     }
 
@@ -101,7 +101,7 @@ agc_status_t pin_monitor(void)
 
     m = (uint16_t) (((uint16_t) (s->verbreg & PIN_LOW7) << 7) | s->nounreg);
 
-    s->dsplock      = false;         /* +0 into DSPLOCK so monitor can run */
+    s->dsplock = false;         /* +0 into DSPLOCK so monitor can run */
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     /* Turn off KR lite if CADRSTOR and DSPLIST are both empty. (Lite comes
@@ -119,7 +119,7 @@ agc_status_t pin_monitor(void)
         st = agc_waitlist_call(1, AGC_TASK_MONREQ); /* request MONREQ  */
     }
 
-    s->monsave  = m;
+    s->monsave = m;
     s->monsave1 = m1;
     agc_relint();
 
@@ -149,7 +149,7 @@ agc_status_t agc_task_monreq(void)
 
     if ((s->monsave1 & PIN_BIT15) != 0u)
     { /* killer bit = 1: KILLMON      */
-        s->monsave  = 0;
+        s->monsave = 0;
         s->monsave1 = 0; /* turn off kill and external bits */
 
         return (AGC_STATUS_OK);
@@ -200,7 +200,7 @@ agc_status_t agc_job_mondo(void)
 
     agc_status_t st; /* status so far */
 
-    st        = pin_updatnn((uint8_t) (s->monsave & PIN_LOW7));
+    st = pin_updatnn((uint8_t) (s->monsave & PIN_LOW7));
     int dverb = (int) ((s->monsave & PIN_MID7) >> 7) - PIN_MONREF; /* V01-V07 */
 
     if (st != AGC_STATUS_OK || !AGC_ASSERT(dverb >= 1 && dverb <= 7))
@@ -209,9 +209,9 @@ agc_status_t agc_job_mondo(void)
     }
 
     s->verbreg = (uint8_t) dverb;
-    s->entret  = PIN_ENT_PASTEVB; /* return to PASTEVB after display */
-    s->mpac2   = (uint16_t) (s->monsave1 & ~(PIN_BIT15 | PIN_BIT14));
-    st         = pin_testnn();
+    s->entret = PIN_ENT_PASTEVB; /* return to PASTEVB after display */
+    s->mpac2 = (uint16_t) (s->monsave1 & ~(PIN_BIT15 | PIN_BIT14));
+    st = pin_testnn();
 
     return ((st == AGC_STATUS_POODOO) ? st : AGC_STATUS_OK); /* abort only */
 }
@@ -230,9 +230,9 @@ agc_status_t agc_job_mondo(void)
  **********************************************************************/
 agc_status_t pin_pastevb(void)
 {
-    pin_state_t *s     = pin_st();                            /* pinball erasables */
-    uint16_t     paste = (uint16_t) (s->monsave2 & PIN_MID7); /* paste option */
-    uint16_t     verb  = (uint16_t) (s->monsave >> 7);        /* monitor verb */
+    pin_state_t *s = pin_st();                            /* pinball erasables */
+    uint16_t paste = (uint16_t) (s->monsave2 & PIN_MID7); /* paste option */
+    uint16_t verb = (uint16_t) (s->monsave >> 7);        /* monitor verb */
 
     if (paste != 0u)
     {
@@ -246,7 +246,7 @@ agc_status_t pin_pastevb(void)
 
     agc_status_t st = pin_updatvb((uint8_t) verb); /* status so far */
 
-    s->reqret     = PIN_REQ_PASS0;
+    s->reqret = PIN_REQ_PASS0;
     s->reqret_neg = false;
 
     if (st == AGC_STATUS_OK)
@@ -300,11 +300,11 @@ agc_status_t pin_dspfmem(void)
  **********************************************************************/
 agc_status_t pin_vbrqexec(void)
 {
-    pin_state_t *s    = pin_st();                            /* pinball erasables */
-    uint16_t     w    = s->dsptem[0];                        /* DSPTEM1: priority word */
-    agc_prio_t   prio = (agc_prio_t) ((w & ~PIN_BIT1) >> 9); /* PRIO into MPAC+4 */
-    agc_job_id_t job  = (agc_job_id_t) s->dsptem[1];         /* job */
-    agc_status_t st   = agc_dsky_releasedsp();               /* REQUESTC    */
+    pin_state_t *s = pin_st();                            /* pinball erasables */
+    uint16_t w = s->dsptem[0];                        /* DSPTEM1: priority word */
+    agc_prio_t prio = (agc_prio_t) ((w & ~PIN_BIT1) >> 9); /* PRIO into MPAC+4 */
+    agc_job_id_t job = (agc_job_id_t) s->dsptem[1];         /* job */
+    agc_status_t st = agc_dsky_releasedsp();               /* REQUESTC    */
 
     if (!AGC_ASSERT(prio >= 1u && prio <= 037u) || !AGC_ASSERT(job != AGC_JOB_NONE))
     {
@@ -336,10 +336,10 @@ agc_status_t pin_vbrqexec(void)
  **********************************************************************/
 agc_status_t pin_vbrqwait(void)
 {
-    pin_state_t  *s     = pin_st();                     /* pinball erasables */
-    uint16_t      delay = s->dsptem[0];                 /* DSPTEM1: delay, cs */
-    agc_task_id_t task  = (agc_task_id_t) s->dsptem[1]; /* task */
-    agc_status_t  st    = agc_dsky_releasedsp();        /* status so far */
+    pin_state_t *s = pin_st();                     /* pinball erasables */
+    uint16_t delay = s->dsptem[0];                 /* DSPTEM1: delay, cs */
+    agc_task_id_t task = (agc_task_id_t) s->dsptem[1]; /* task */
+    agc_status_t st = agc_dsky_releasedsp();        /* status so far */
 
     if (!AGC_ASSERT(delay >= 1u) || !AGC_ASSERT(task != AGC_TASK_NONE))
     {
@@ -380,7 +380,7 @@ agc_status_t pin_vbproc_common(pin_loadstat_t ls)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->loadstat     = ls;
+    s->loadstat = ls;
     pin_kilmonon();                          /* turn on kill monitor bit      */
     agc_status_t st = agc_dsky_releasedsp(); /* status so far */
 
@@ -406,10 +406,10 @@ agc_status_t pin_reqmm(void)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->reqret       = PIN_REQ_MM;
-    s->reqret_neg   = true;
+    s->reqret = PIN_REQ_MM;
+    s->reqret_neg = true;
     pin_set_dspcount(PIN_ND1);
-    s->nounreg      = 0;
+    s->nounreg = 0;
     agc_status_t st = pin_2blank(); /* status so far */
 
     pin_flashon();
@@ -450,7 +450,7 @@ agc_status_t pin_mmchang_resume(void)
 
     uint8_t mm = s->nounreg; /* major mode keyed */
 
-    s->nounreg      = 0;
+    s->nounreg = 0;
     pin_set_dspcount(PIN_ND1);
     agc_status_t st = pin_2blank(); /* status so far */
 
@@ -480,8 +480,8 @@ agc_status_t pin_mmchang_resume(void)
  **********************************************************************/
 agc_status_t pin_vbtstlts(void)
 {
-    pin_state_t *s   = pin_st();                               /* pinball erasables */
-    bool         csm = agc_state_vehicle() == AGC_VEHICLE_CSM; /* CSM */
+    pin_state_t *s = pin_st();                               /* pinball erasables */
+    bool csm = agc_state_vehicle() == AGC_VEHICLE_CSM; /* CSM */
 
     if (csm && agc_erase_modreg() != 0)
     { /* CHKPOOH (CM only)   */

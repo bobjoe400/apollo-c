@@ -119,11 +119,6 @@ static mu_state_t mu; /* LSR22.3 erasables */
  **********************************************************************/
 static agc_dp_t mu_srr_star(agc_interp_t *ip, agc_dp_t a, int count)
 {
-    if (!AGC_ASSERT(count >= -40 && count <= 40))
-    {
-        return (0); /* no valid result */
-    }
-
     if (count < 0)
     {
         return (agc_dp_shl_round(ip, a, -count)); /* negative: left */
@@ -149,11 +144,6 @@ static agc_dp_t mu_srr_star(agc_interp_t *ip, agc_dp_t a, int count)
  **********************************************************************/
 static agc_dp_t mu_slr_star(agc_interp_t *ip, agc_dp_t a, int count)
 {
-    if (!AGC_ASSERT(count >= -40 && count <= 40))
-    {
-        return (0); /* no valid result */
-    }
-
     if (count < 0)
     {
         return (agc_dp_shr_round(a, -count)); /* negative: right */
@@ -179,11 +169,6 @@ static agc_dp_t mu_slr_star(agc_interp_t *ip, agc_dp_t a, int count)
  **********************************************************************/
 static agc_tp_t mu_tp_sr(agc_interp_t *ip, agc_tp_t v, int count)
 {
-    if (!AGC_ASSERT(count >= -60 && count <= 60))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_tp_shift(ip, v, -count));
 }
 
@@ -235,7 +220,7 @@ static agc_status_t mu_intgrcal(agc_interp_t *ip)
 
     st = agc_integ_integrv(ip, agc_integ_shared_ctx(), lmnav_state()->mktime);
 
-    agc_phase_change(2, 04022); /* GRP2PC   */
+    agc_phase_change(04022); /* GRP2PC   */
 
     return (st);
 }
@@ -525,8 +510,8 @@ static agc_status_t mu_rate(agc_interp_t *ip)
     agc_dp_t r8; /* B-8 */
 
     r8            = mu_srr_star(ip, rdot, 2 - mu.x2);
-    agc_dp_t var  = agc_dp_mul(ip, agc_dp_sq(r8), p->ratevar); /* B-4 */
-    agc_dp_t vmin = agc_dp_shr(agc_dp_from_sp(p->vvarmin), 16);    /* B-4 */
+    agc_dp_t var  = agc_dp_mul(ip, agc_dp_sq(r8), p->ratevar);  /* B-4 */
+    agc_dp_t vmin = agc_dp_shr(agc_dp_from_sp(p->vvarmin), 16); /* B-4 */
 
     if (agc_dp_sub(ip, vmin, var) >= 0)
     {
@@ -552,54 +537,16 @@ static agc_status_t mu_rate(agc_interp_t *ip)
         x1 = s0;
     }
 
-    mu.inc.bvector[0] = rz_vshift(ip, b0, -x1);                /* VSL* 0,1 */
+    mu.inc.bvector[0] = rz_vshift(ip, b0, -x1);            /* VSL* 0,1 */
     mu.inc.bvector[1] = rz_vshift(ip, mu.inc.bvector[1], -x1);
     mu.inc.deltaq     = rz_shift(ip, dq, -x1);
-    agc_dp_t rl       = rz_shift(ip, mu.rlc, -1 - x1);         /* SL* 0-1,1, B-24 */
+    agc_dp_t rl       = rz_shift(ip, mu.rlc, -1 - x1);     /* SL* 0-1,1, B-24 */
     agc_tp_t v        = agc_dp_mul_tp(agc_dp_sq(rl), var); /* TP, B-44 */
 
     mu.inc.variance = agc_tp_shift(ip, v, 4); /* SL4, TP  */
 
     return (st);
 } /* mu_rate */
-
-/**********************************************************************
- * MXMYMZ (p.579): the NB unit axes at the mark (CDUs AIG AMG AOG) in
- * reference axes: M = (UNIT NB ->SM) x REFSMMAT, VSL1.
- * AGC: MXMYMZ (P20-P25.agc p.579)
- *
- * FUNCTION NAME: mu_mxmymz
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- *
- * RETURNS: agc_status_t -- the TRG*NBSM status
- **********************************************************************/
-static agc_status_t mu_mxmymz(agc_interp_t *ip)
-{
-    lmnav_state_t *n        = lmnav_state();                         /* LM navigation erasables */
-    agc_mat_t      refsmmat = agc_erase_refsmmat();                  /* REFSMMAT, 2^1 */
-    agc_cdutrig_t  trig;                                             /* CDUTRIG sines / cosines */
-    uint16_t       yzx[3]   = {n->aig, n->amg, n->aog};
-    agc_vec_t      ax[3]    = {agc_vec_make(AGC_DP_HALF, 0, 0),
-                               agc_vec_make(0, AGC_DP_HALF, 0),
-                               agc_vec_make(0, 0, AGC_DP_HALF)};
-    agc_status_t   st       = agc_guid_trg_nbsm(&trig, yzx, &ax[0]); /* UNITX */
-
-    if (st == AGC_STATUS_OK)
-    {
-        agc_guid_nbsm(&trig, &ax[1]); /* UNITY *NBSM* */
-        agc_guid_nbsm(&trig, &ax[2]); /* UNITZ *NBSM* */
-    }
-
-    mu.mx = agc_vec_shl(ip, agc_vec_mat(ip, ax[0], &refsmmat), 1);
-    mu.my = agc_vec_shl(ip, agc_vec_mat(ip, ax[1], &refsmmat), 1);
-    mu.mz = agc_vec_shl(ip, agc_vec_mat(ip, ax[2], &refsmmat), 1);
-
-    return (st);
-}
 
 /**********************************************************************
  * Angle measurement common part: B2 has RXZ (SR* 0-2,1, SRR* 0,2) in
@@ -730,9 +677,9 @@ static agc_status_t mu_range(agc_interp_t *ip)
     agc_dp_t rlc      = mu_srr_star(ip, mu.rlc, 2 - mu.x2);     /* m 2^29 */
     agc_dp_t r        = agc_dp_sub(ip, lmnav_state()->rm, rlc); /* m 2^29 */
 
-    mu.inc.deltaq = mu_slr_star(ip, r, 2 - mu.x2);                /* B-29/B-27 */
-    int      x1   = 0;                                            /* NORM index, -(left shifts) */
-    agc_dp_t n    = rz_norm(mu.rlc, &x1);                         /* 2^(S+X1) */
+    mu.inc.deltaq = mu_slr_star(ip, r, 2 - mu.x2);            /* B-29/B-27 */
+    int      x1   = 0;                                        /* NORM index, -(left shifts) */
+    agc_dp_t n    = rz_norm(mu.rlc, &x1);                     /* 2^(S+X1) */
     agc_tp_t v    = agc_dp_mul_tp(agc_dp_sq(n), p->rangevar); /* TP, B12 */
 
     v               = mu_tp_sr(ip, v, -2 - x1); /* SR* 0-2,1 */
@@ -767,7 +714,7 @@ static agc_status_t mu_range(agc_interp_t *ip)
 static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
 {
     lmnav_state()->whchread = (agc_sp_t) step; /* WHCHREAD */
-    agc_phase_change(2, 04022);                /* GRP2PC   */
+    agc_phase_change(04022);                   /* GRP2PC   */
 
     switch (step)
     {
@@ -777,7 +724,39 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
             return (mu_rate(ip));
         case MU_SHAFT:
         { /* Shaft (SHAFTBQ p.580): angle = ARCTAN(ULC . MX, ULC . MZ); B0 = UNIT(ULC x MY), complemented if the CSM is corrected. */
-            agc_status_t st = mu_mxmymz(ip); /* MXMYMZ */
+            /**********************************************************************
+             * MXMYMZ (p.579): the NB unit axes at the mark (CDUs AIG AMG AOG) in
+             * reference axes: M = (UNIT NB ->SM) x REFSMMAT, VSL1.
+             * AGC: MXMYMZ (P20-P25.agc p.579)
+             *
+             * FUNCTION NAME: mu_mxmymz
+             *
+             * ARGUMENTS:
+             *   Argument  Type            I/O  Description (scale)
+             *   --------  --------------  ---  --------------------------------
+             *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+             *
+             * RETURNS: agc_status_t -- the TRG*NBSM status
+             **********************************************************************/
+            lmnav_state_t *n         = lmnav_state();                         /* LM navigation erasables */
+            agc_mat_t      refsmmat  = agc_erase_refsmmat();                  /* REFSMMAT, 2^1 */
+            agc_cdutrig_t  trig;                                              /* CDUTRIG sines / cosines */
+            uint16_t       yzx[3]    = {n->aig, n->amg, n->aog};
+            agc_vec_t      ax[3]     = {agc_vec_make(AGC_DP_HALF, 0, 0),
+                                        agc_vec_make(0, AGC_DP_HALF, 0),
+                                        agc_vec_make(0, 0, AGC_DP_HALF)};
+            agc_status_t   st_mxmymz = agc_guid_trg_nbsm(&trig, yzx, &ax[0]); /* UNITX */
+
+            if (st_mxmymz == AGC_STATUS_OK)
+            {
+                agc_guid_nbsm(&trig, &ax[1]); /* UNITY *NBSM* */
+                agc_guid_nbsm(&trig, &ax[2]); /* UNITZ *NBSM* */
+            }
+
+            mu.mx           = agc_vec_shl(ip, agc_vec_mat(ip, ax[0], &refsmmat), 1);
+            mu.my           = agc_vec_shl(ip, agc_vec_mat(ip, ax[1], &refsmmat), 1);
+            mu.mz           = agc_vec_shl(ip, agc_vec_mat(ip, ax[2], &refsmmat), 1);
+            agc_status_t st = st_mxmymz; /* MXMYMZ */
 
             if (st == AGC_STATUS_OK)
             {
@@ -907,7 +886,7 @@ static agc_status_t mu_run(agc_interp_t *ip)
             return (st);
         }
 
-        agc_phase_change(2, 04022);
+        agc_phase_change(04022);
         mu.step = mu_next(mu.step);
     }
 
@@ -946,7 +925,7 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     mu.step = mu_next(mu.step);
 
     return (mu_run(&ip));
@@ -970,8 +949,8 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_incorporate(void)
 {
-    agc_phase_change(2, 04022); /* GRP2PC   */
-    agc_interp_t ip;            /* interpreter state */
+    agc_phase_change(04022); /* GRP2PC   */
+    agc_interp_t ip;         /* interpreter state */
 
     agc_interp_init(&ip);
     agc_status_t st; /* integration status */
@@ -1029,7 +1008,7 @@ agc_status_t agc_job_rendezvous_tracking_data_measure(void)
         mu.x2 = 0; /* moon */
     }
 
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     mu.step = MU_RANGE;
     agc_interp_t ip; /* interpreter state */
 

@@ -119,11 +119,6 @@ agc_status_t agc_integ_set_lunar_coeffs(agc_sp_t j22, agc_sp_t c31)
 /* MUEARTH - X2: the mu of earth (0), moon (2) or sun (4).               */
 agc_dp_t agc_integ_mu(int x2)
 {
-    if (!AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == 4)))
-    {
-        return (MU_TAB[0]);
-    }
-
     return (MU_TAB[x2 / 2]);
 }
 
@@ -206,7 +201,7 @@ agc_status_t agc_integ_setmoon(agc_integ_ctx_t *ctx, bool moon)
  *   VRECT = VCV = TNUV SR(4+PBODY) + VCV, then MINIRECT.                 */
 agc_status_t agc_integ_rectify(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
+    if (!AGC_ASSERT(ip != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -225,11 +220,6 @@ agc_status_t agc_integ_rectify(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 /* MINIRECT (p. 1347): VRECT = VCV = v, zero TDELTAV TNUV TC XKEP.        */
 void agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
-    {
-        return;
-    }
-
     ctx->sv.vrect  = v;
     ctx->sv.vcv    = v;
     ctx->sv.deltav = agc_vec_zero();
@@ -248,7 +238,7 @@ void agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v)
  */
 agc_status_t agc_integ_kepprep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
+    if (!AGC_ASSERT(ip != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -320,11 +310,6 @@ static agc_status_t advance_conic_half_step(agc_interp_t *ip, agc_integ_ctx_t *c
  * integration is hopeless: POODOO 00430.                                 */
 static agc_integ_next_t gobaque(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(agc_integ_valid_ctx(ctx)))
-    {
-        return (INTEG_NEXT_FAIL);
-    }
-
     if (agc_vec_abval(ip, ctx->sv.deltav) == 0)
     {
         return (INTEG_NEXT_ABORT); /* POODOO INT-ABRT, raised by the driver */
@@ -371,11 +356,6 @@ static agc_tp_t vsq_tp(agc_interp_t *ip, agc_vec_t v)
         s = agc_tp_add(ip, s, agc_dp_mul_tp(v.c[i], v.c[i]));
     }
 
-    if (!AGC_ASSERT((s >= 0) && (s <= AGC_TP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (s);
 }
 
@@ -410,11 +390,6 @@ static bool gamcomp(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1, int x2)
 {
     gam_work_t g;
 
-    if (!AGC_ASSERT((x1 >= 0) && (x1 < 2 * ASCALE_N) && ((x1 % 2) == 0)) || !AGC_ASSERT((x2 == 0) || (x2 == 2) || (x2 == 4)))
-    {
-        return (true);
-    }
-
     /* GAMCOMP first half (p. 1338-1339): normalised B^2, BETAV -> unit,
      * BETAM = |BETAV|, rho = ALPHAM / BETAM.                                */
     int      n2 = 0;
@@ -431,15 +406,6 @@ static bool gamcomp(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1, int x2)
     g.rho_q    = agc_dp_shr_round(agc_dp_div(ip, am, bm), 1); /* BDDV SR1R  */
     g.xs       = ASCALE_S1[x1 / 2] - n2 + n3;                 /* XCHX,2 S1 XAD,2 32D XSU,2 33D */
     g.rho      = agc_integ_dshift(ip, g.rho_q, 1 + g.xs);     /* SR* 0 -1,2  */
-    if (!AGC_ASSERT((x1 >= 0) && (x1 < 2 * ASCALE_N)))
-    {
-        return (true);
-    }
-
-    if (!AGC_ASSERT(ctx->betam >= 0))
-    {
-        return (true);
-    }
 
 
     agc_dp_t       pd6 = agc_dp_shr_round(g.rho, 1); /* 6D   */
@@ -612,7 +578,7 @@ static agc_status_t moon_axes(agc_interp_t *ip, const agc_integ_ctx_t *ctx, obl_
         st = agc_planet_moonmx(ip, &pad, ctx->sv.tet, &m);
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -625,79 +591,12 @@ static agc_status_t moon_axes(agc_interp_t *ip, const agc_integ_ctx_t *ctx, obl_
     return (AGC_STATUS_OK);
 }
 
-/* COMTERM Legendre polynomials in COSPHI/2.                             */
-static void legendre_terms(agc_interp_t *ip, agc_dp_t cphi, legendre_t *l)
-{
-    l->p2      = agc_dp_mul(ip, cphi, K_3_32);                                         /* P2/64 0D */
-    l->p3      = agc_dp_sub(ip, agc_dp_mul(ip, agc_dp_sq(cphi), K_15_16), K_3_64); /* P3/32 2D */
-    agc_dp_t t = dmp_sl1r(ip, agc_dp_mul(ip, l->p3, cphi), K_7_12);
-
-    l->p4 = agc_dp_sub(ip, t, agc_dp_mul(ip, l->p2, K_2_3));   /* P4/128 4D */
-    t     = agc_dp_mul(ip, agc_dp_mul(ip, l->p4, cphi), K_9_16);
-    l->p5 = agc_dp_sub(ip, t, agc_dp_mul(ip, l->p3, K_5_128)); /* P5/1024 */
-}
-
-/* COMTERM (p. 1341-1342): TVEC = (((P5 J4/J3 / R + P4) 2J3RE/J2 / R + P3)
- * UR - (((P4 J4/J3 / R + P3) 2J3RE/J2 / R + P2) UZ, before the J2/R^4
- * factor.                                                               */
-static agc_vec_t comterm_tvec(agc_interp_t *ip, const agc_integ_ctx_t *ctx, const obl_work_t *w, const legendre_t *l)
-{
-    const int b = ctx->pbody / 2;
-    if (!AGC_ASSERT((b == 0) || (b == 1)))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-
-    if (!AGC_ASSERT(ctx->alpham > 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    agc_dp_t t = agc_dp_mul(ip, l->p5, J4REQ_J3[b]); /* DMP*     */
-
-    t                    = agc_dp_add(ip, agc_dp_div(ip, t, ctx->alpham), l->p4);
-    t                    = agc_dp_mul(ip, t, J3RE_J2_2[b]);   /* DMPR*    */
-    t                    = agc_dp_add(ip, agc_dp_div(ip, t, ctx->alpham), l->p3);
-    const agc_vec_t tvec = agc_vec_scale(ip, ctx->alphav, t); /* TVEC     */
-
-    t                 = agc_dp_shr(agc_dp_mul(ip, l->p4, J4REQ_J3[b]), 1); /* DMP* SR1 */
-    t                 = agc_dp_add(ip, agc_dp_div(ip, t, ctx->alpham), l->p3);
-    t                 = agc_dp_shr(agc_dp_mul(ip, t, J3RE_J2_2[b]), 3);    /* DMPR* SR3*/
-    t                 = agc_dp_add(ip, agc_dp_div(ip, t, ctx->alpham), l->p2);
-    const agc_vec_t u = agc_vec_shl(ip, agc_vec_scale(ip, w->uz, t), 1);
-
-    return (agc_vec_sub(ip, tvec, u)); /* BVSU     */
-}
-
-/* QUALITY1 / QUALITY2 (CM RT8_OP_CODES p. 1516, LM p. 1248): the lunar
- * J22 term x R^4, B61:  E3J22R2M ( 5 (Y^2 - X^2) UR + (X, -Y, 0) ) / 2.  */
-static agc_vec_t lunar_j22_term(agc_interp_t *ip, const obl_work_t *w)
-{
-    const agc_vec_t u = w->urpv;
-    if (!AGC_ASSERT(w->r4n >= 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-
-    agc_dp_t t = agc_dp_sub(ip, agc_dp_sq(u.c[1]), agc_dp_sq(u.c[0]));
-
-    t           = agc_dp_mul(ip, t, K_5_8);                    /* DMP 5/8  */
-    agc_vec_t q = agc_vec_shl(ip, agc_vec_scale(ip, u, t), 3); /* VSL3 2D */
-
-    q.c[0] = agc_dp_add(ip, agc_dp_shr(u.c[0], 1), q.c[0]); /* SR1 DAD  */
-    q.c[1] = agc_dp_sub(ip, q.c[1], agc_dp_shr(u.c[1], 1)); /* SR1 BDSU */
-
-    return (agc_vec_scale(ip, q, agc_dp_from_sp(e3j22r2m))); /* SLOAD VXSC */
-}
-
 /* QUALITY3 (p. 1342-1343): the C31 term, added to the J22 term, scaled
  * by 1/R^4, rotated to reference axes (RP-TO-R) and added to FV.        */
 static acc_result_t lunar_c31_term(agc_interp_t *ip, agc_integ_ctx_t *ctx, const obl_work_t *w, agc_vec_t j22)
 {
     const agc_vec_t u  = w->urpv;
-    const agc_dp_t  c2 = agc_dp_sq(w->cphi);                                         /* DSQ  */
+    const agc_dp_t  c2 = agc_dp_sq(w->cphi);                                             /* DSQ  */
     const agc_dp_t  c5 = agc_dp_mul(ip, c2, K_5_8);                                      /* 8D   */
     agc_dp_t        t  = agc_dp_sub(ip, K_D1_32, agc_dp_add(ip, agc_dp_shr(c2, 2), c5)); /* 1-7c2 */
 
@@ -741,7 +640,7 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     obl_work_t w;
     legendre_t l = {0};
 
-    if (!AGC_ASSERT((b == 0) || (b == 1)) || (agc_dp_sub(ip, ctx->alpham, RD_TAB[b]) >= 0))
+    if (agc_dp_sub(ip, ctx->alpham, RD_TAB[b]) >= 0) /* b: PBODY / 2, 0 or 1 */
     {
         return (ACC_OK); /* BPL NBRANCH   */
     }
@@ -764,11 +663,39 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         /* URPV, COSPHI/2, UZ set */
     }
 
-    legendre_terms(ip, w.cphi, &l);
-    const agc_vec_t tvec = comterm_tvec(ip, ctx, &w, &l);
-    int             n    = 0;
-    int             m    = 0;
-    const agc_dp_t  r2   = agc_dp_sq(agc_dp_norm(ctx->alpham, &n)); /* NORM X1 DSQ */
+    /* COMTERM Legendre polynomials in COSPHI/2.                             */
+    agc_dp_t cphi = w.cphi;
+
+    l.p2       = agc_dp_mul(ip, cphi, K_3_32);                                     /* P2/64 0D */
+    l.p3       = agc_dp_sub(ip, agc_dp_mul(ip, agc_dp_sq(cphi), K_15_16), K_3_64); /* P3/32 2D */
+    agc_dp_t t = dmp_sl1r(ip, agc_dp_mul(ip, l.p3, cphi), K_7_12);
+
+    l.p4 = agc_dp_sub(ip, t, agc_dp_mul(ip, l.p2, K_2_3));   /* P4/128 4D */
+    t    = agc_dp_mul(ip, agc_dp_mul(ip, l.p4, cphi), K_9_16);
+    l.p5 = agc_dp_sub(ip, t, agc_dp_mul(ip, l.p3, K_5_128)); /* P5/1024 */
+
+    /* COMTERM (p. 1341-1342): TVEC = (((P5 J4/J3 / R + P4) 2J3RE/J2 / R + P3)
+     * UR - (((P4 J4/J3 / R + P3) 2J3RE/J2 / R + P2) UZ, before the J2/R^4
+     * factor.                                                               */
+    const int b_tvec = ctx->pbody / 2;
+
+
+    agc_dp_t t_tvec = agc_dp_mul(ip, l.p5, J4REQ_J3[b_tvec]); /* DMP*     */
+
+    t_tvec                    = agc_dp_add(ip, agc_dp_div(ip, t_tvec, ctx->alpham), l.p4);
+    t_tvec                    = agc_dp_mul(ip, t_tvec, J3RE_J2_2[b_tvec]); /* DMPR*    */
+    t_tvec                    = agc_dp_add(ip, agc_dp_div(ip, t_tvec, ctx->alpham), l.p3);
+    const agc_vec_t tvec_tvec = agc_vec_scale(ip, ctx->alphav, t_tvec);    /* TVEC     */
+
+    t_tvec                 = agc_dp_shr(agc_dp_mul(ip, l.p4, J4REQ_J3[b_tvec]), 1);    /* DMP* SR1 */
+    t_tvec                 = agc_dp_add(ip, agc_dp_div(ip, t_tvec, ctx->alpham), l.p3);
+    t_tvec                 = agc_dp_shr(agc_dp_mul(ip, t_tvec, J3RE_J2_2[b_tvec]), 3); /* DMPR* SR3*/
+    t_tvec                 = agc_dp_add(ip, agc_dp_div(ip, t_tvec, ctx->alpham), l.p2);
+    const agc_vec_t u_tvec = agc_vec_shl(ip, agc_vec_scale(ip, w.uz, t_tvec), 1);
+    const agc_vec_t tvec   = agc_vec_sub(ip, tvec_tvec, u_tvec);
+    int             n      = 0;
+    int             m      = 0;
+    const agc_dp_t  r2     = agc_dp_sq(agc_dp_norm(ctx->alpham, &n));                  /* NORM X1 DSQ */
 
     w.r4n            = agc_tp_to_dp(tp_norm(ip, agc_dp_mul_tp(r2, r2), &m)); /* DSQ NORM S1 */
     const agc_dp_t k = agc_dp_div(ip, J2REQSQ_TAB[b], w.r4n);                /* BDDV*      */
@@ -789,7 +716,19 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         return (ACC_OK); /* QUALITY1 BOF   */
     }
 
-    return (lunar_c31_term(ip, ctx, &w, lunar_j22_term(ip, &w)));
+    /* QUALITY1 / QUALITY2 (CM RT8_OP_CODES p. 1516, LM p. 1248): the lunar
+     * J22 term x R^4, B61:  E3J22R2M ( 5 (Y^2 - X^2) UR + (X, -Y, 0) ) / 2.  */
+    const agc_vec_t u = w.urpv;
+
+
+    agc_dp_t t_term = agc_dp_sub(ip, agc_dp_sq(u.c[1]), agc_dp_sq(u.c[0]));
+
+    t_term      = agc_dp_mul(ip, t_term, K_5_8);                    /* DMP 5/8  */
+    agc_vec_t q = agc_vec_shl(ip, agc_vec_scale(ip, u, t_term), 3); /* VSL3 2D */
+
+    q.c[0] = agc_dp_add(ip, agc_dp_shr(u.c[0], 1), q.c[0]); /* SR1 DAD  */
+    q.c[1] = agc_dp_sub(ip, q.c[1], agc_dp_shr(u.c[1], 1)); /* SR1 BDSU */
+    return (lunar_c31_term(ip, ctx, &w, agc_vec_scale(ip, q, agc_dp_from_sp(e3j22r2m))));
 }
 
 /* ACCOMP (p. 1337): FV = disturbing acceleration at ALPHAV (deviation).
@@ -798,11 +737,6 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 static acc_result_t accomp(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     const int p = ctx->pbody;
-
-    if (!AGC_ASSERT((ctx->stage >= 0) && (ctx->stage <= 2)) || !AGC_ASSERT((p == INTEG_PBODY_EARTH) || (p == INTEG_PBODY_MOON)))
-    {
-        return (ACC_FAIL);
-    }
 
     ctx->fv    = agc_vec_zero();
     ctx->betav = agc_vec_add(ip, agc_vec_shr(ctx->alphav, 7 + p), ctx->sv.rcv);
@@ -856,16 +790,6 @@ static agc_vec_t body_gravity_gradient(agc_interp_t *ip, const agc_integ_ctx_t *
 
     g = agc_vec_scale(ip, g, k);
 
-    if (!AGC_ASSERT(rmag >= 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(ctx->betam > 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     return (agc_integ_vshift(ip, g, (3 * n) + m - 8)); /* 0 -8D,2 */
 }
 
@@ -874,34 +798,23 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     const int p = ctx->pbody;
     const int k = ctx->stage;
-    if (!AGC_ASSERT((k >= 0) && (k <= 2)))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT((p == INTEG_PBODY_EARTH) || (p == INTEG_PBODY_MOON)))
-    {
-        return;
-    }
 
 
     ctx->betam = agc_integ_mu(p); /* MUEARTH,2   */
     ctx->fv    = body_gravity_gradient(ip, ctx, ctx->vectab[2 * k]);
 
-    if (!agc_flag_test(AGC_FLAG_MIDFLAG))
+    if (agc_flag_test(AGC_FLAG_MIDFLAG))
     {
-        return;
+        ctx->betam   = agc_integ_mu(2 - p); /* MUEARTH -2,2, X2 = -PBODY */
+        agc_vec_t f2 = body_gravity_gradient(ip, ctx, ctx->vectab[(2 * k) + 1]);
+
+        if (!agc_flag_test(AGC_FLAG_MOONFLAG))
+        {
+            f2 = agc_vec_shr(f2, 6); /* VSR6        */
+        }
+
+        ctx->fv = agc_vec_add(ip, f2, ctx->fv);
     }
-
-    ctx->betam   = agc_integ_mu(2 - p); /* MUEARTH -2,2, X2 = -PBODY */
-    agc_vec_t f2 = body_gravity_gradient(ip, ctx, ctx->vectab[(2 * k) + 1]);
-
-    if (!agc_flag_test(AGC_FLAG_MOONFLAG))
-    {
-        f2 = agc_vec_shr(f2, 6); /* VSR6        */
-    }
-
-    ctx->fv = agc_vec_add(ip, f2, ctx->fv);
 }
 
 /* ======================================================================
@@ -911,30 +824,15 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 /* DIFEQ0 (p. 1345): ALPHAV = YV, DIFEQCNT = 0, H = 0.                    */
 static void nystrom_start(agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return;
-    }
-
     ctx->alphav = ctx->yv;
     ctx->stage  = 0;
     ctx->h      = 0;
-
-    if (!AGC_ASSERT(ctx->dt2 != 0))
-    {
-        return;
-    }
 }
 
 /* DIFEQ+0 / DIFEQ+1 (p. 1348) and DIFEQCOM (p. 1350): accumulate PHIV,
  * PSIV, advance H by DT/2 and predict ALPHAV = YV + H (ZV + H FV / 2).   */
 static void nystrom_stage(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT((ctx->stage == 0) || (ctx->stage == 1)))
-    {
-        return;
-    }
-
     if (ctx->stage == 0)
     {
         ctx->phiv = agc_vec_shr(ctx->fv, 3); /* DIFEQ+0 */
@@ -953,21 +851,12 @@ static void nystrom_stage(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     a           = agc_vec_scale(ip, agc_vec_add(ip, a, ctx->zv), ctx->h);
     ctx->alphav = agc_vec_add(ip, a, ctx->yv);
-    if (!AGC_ASSERT(ctx->stage <= 2))
-    {
-        return;
-    }
 
 }
 
 /* DIFEQ+2 (p. 1348): end of the step, YV and ZV updated.                */
 static void nystrom_end(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->stage == 2))
-    {
-        return;
-    }
-
     const agc_dp_t h23 = agc_dp_mul(ip, ctx->h, K_2_3);
     agc_vec_t      y   = agc_vec_shl(ip, agc_vec_scale(ip, ctx->phiv, h23), 1);
 
@@ -979,80 +868,6 @@ static void nystrom_end(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     ctx->zv = agc_vec_add(ip, z, ctx->zv);
 }
 
-/* INTGRATE .. ENDSTATE (p. 1345-1349) for the state vector: three ACCOMP
- * evaluations at H = 0, DT/2, DT with FBR3 conic advances in between.   */
-static agc_integ_next_t state_step(agc_interp_t *ip, agc_integ_ctx_t *ctx)
-{
-    nystrom_start(ctx);
-
-    for (int k = 0; k < 3; k++)
-    { /* NBRANCH stages        */
-        const acc_result_t r = accomp(ip, ctx);
-
-        if (r == ACC_OVF)
-        {
-            return (gobaque(ip, ctx));
-        }
-
-        if (!AGC_ASSERT(r == ACC_OK))
-        {
-            return (INTEG_NEXT_FAIL);
-        }
-
-        if (k == 2)
-        {
-            break;
-        }
-
-        nystrom_stage(ip, ctx);
-
-        if (advance_conic_half_step(ip, ctx) != AGC_STATUS_OK)
-        {
-            return (INTEG_NEXT_FAIL);
-        }
-    }
-
-    nystrom_end(ip, ctx);
-
-    if (agc_interp_test_ovf(ip))
-    { /* ENDSTATE BOV GOBAQUE  */
-        return (gobaque(ip, ctx));
-    }
-
-    ctx->sv.nuv    = ctx->zv;
-    ctx->sv.deltav = ctx->yv;
-
-    if (agc_flag_test(AGC_FLAG_MIDAVFLG))
-    {
-        return (INTEG_NEXT_MIDTOAV_CHECK);
-    }
-
-    if (!agc_flag_test(AGC_FLAG_DIM0FLAG))
-    {
-        return (INTEG_NEXT_TESTLOOP);
-    }
-
-    return (INTEG_NEXT_WMATRIX);
-}
-
-/* WMATEND (p. 1350): W overflowed. Stop integrating and invalidating it;
- * pick up a permanent state vector update instead; ALARM 421.            */
-static agc_integ_next_t wmatend(void)
-{
-    agc_flag_put(AGC_FLAG_DIM0FLAG, false);
-    agc_flag_put(AGC_FLAG_ORBWFLAG, false);
-    agc_flag_put(AGC_FLAG_RENDWFLG, false);
-    agc_flag_put(AGC_FLAG_STATEFLG, true);
-    agc_alarm(AGC_INTEG_ALARM_WMATEND);
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_DIM0FLAG)))
-    {
-        return (INTEG_NEXT_FAIL);
-    }
-
-    return (INTEG_NEXT_TESTLOOP);
-}
-
 /*
  * AMOVED, NEXTCOL, DIFEQ+2 (JSWITCH), RELOADSV (p. 1348-1350): integrate
  * the W columns COLREG = -30 (6x6, D6OR9FLG clear) or -48 (9x9) up to 0,
@@ -1062,11 +877,6 @@ static agc_integ_next_t wmatend(void)
  */
 agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
-    {
-        return (INTEG_NEXT_FAIL);
-    }
-
     agc_flag_put(AGC_FLAG_JSWITCH, true); /* AMOVED   */
     const int first = agc_flag_test(AGC_FLAG_D6OR9FLG) ? 8 : 5;
 
@@ -1078,15 +888,6 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         ctx->zv     = agc_vec_shr(ctx->w.blk[1][col], 3);
 
         /* One W column over the step just taken: DIFEQ0, DOW.., DIFEQ+0/+1/+2. */
-        if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_JSWITCH)))
-        {
-            return (INTEG_NEXT_FAIL);
-        }
-
-        if (!AGC_ASSERT((ctx->colreg >= 0) && (ctx->colreg < AGC_INTEG_W_COLUMNS)))
-        {
-            return (INTEG_NEXT_FAIL);
-        }
 
         nystrom_start(ctx);
 
@@ -1107,7 +908,15 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
         if (agc_interp_test_ovf(ip))
         {
-            return (wmatend());
+            /* WMATEND (p. 1350): W overflowed. Stop integrating and invalidating it;
+             * pick up a permanent state vector update instead; ALARM 421.            */
+            agc_flag_put(AGC_FLAG_DIM0FLAG, false);
+            agc_flag_put(AGC_FLAG_ORBWFLAG, false);
+            agc_flag_put(AGC_FLAG_RENDWFLG, false);
+            agc_flag_put(AGC_FLAG_STATEFLG, true);
+            agc_alarm(AGC_INTEG_ALARM_WMATEND);
+
+            return (INTEG_NEXT_TESTLOOP);
         }
 
         ctx->w.blk[0][col] = y; /* W,2      */
@@ -1201,27 +1010,27 @@ static agc_status_t lm_sphere(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool *sw)
         }
 
         *sw = true; /* DOSWITCH */
-
-        return (AGC_STATUS_OK);
     }
-
-    if (agc_flag_test(AGC_FLAG_RPQFLAG))
-    { /* else EARSPH */
-        const agc_status_t st = agc_lsposition(ip, ctx->sv.tet, &ctx->rpqv, &sun);
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
-    }
-
-    const agc_dp_t d = agc_vec_abval(ip, agc_vec_sub(ip, ctx->sv.rcv, ctx->rpqv));
-
-    *sw = (agc_dp_sub(ip, d, K_RSPHERE) < 0); /* INLUNCHK */
-
-    if (!AGC_ASSERT(d >= 0))
+    else
     {
-        return (AGC_STATUS_BAD_ARG);
+        if (agc_flag_test(AGC_FLAG_RPQFLAG))
+        { /* else EARSPH */
+            const agc_status_t st = agc_lsposition(ip, ctx->sv.tet, &ctx->rpqv, &sun);
+
+            if (st != AGC_STATUS_OK)
+            {
+                return (st);
+            }
+        }
+
+        const agc_dp_t d = agc_vec_abval(ip, agc_vec_sub(ip, ctx->sv.rcv, ctx->rpqv));
+
+        *sw = (agc_dp_sub(ip, d, K_RSPHERE) < 0); /* INLUNCHK */
+
+        if (!AGC_ASSERT(d >= 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
     }
 
     return (AGC_STATUS_OK);
@@ -1235,11 +1044,6 @@ static agc_status_t lm_sphere(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool *sw)
  */
 agc_integ_next_t agc_integ_timestep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)))
-    {
-        return (INTEG_NEXT_FAIL);
-    }
-
     bool         sw = false;
     agc_status_t st = AGC_STATUS_OK;
 
@@ -1272,7 +1076,58 @@ agc_integ_next_t agc_integ_timestep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     ctx->yv = ctx->sv.deltav;
     agc_flag_put(AGC_FLAG_JSWITCH, false);
 
-    return (state_step(ip, ctx));
+    /* INTGRATE .. ENDSTATE (p. 1345-1349) for the state vector: three ACCOMP
+     * evaluations at H = 0, DT/2, DT with FBR3 conic advances in between.   */
+    nystrom_start(ctx);
+
+    for (int k = 0; k < 3; k++)
+    { /* NBRANCH stages        */
+        const acc_result_t r = accomp(ip, ctx);
+
+        if (r == ACC_OVF)
+        {
+            return (gobaque(ip, ctx));
+        }
+
+        if (r != ACC_OK)
+        {
+            return (INTEG_NEXT_FAIL); /* a routine ACCOMP called failed */
+        }
+
+        if (k == 2)
+        {
+            break;
+        }
+
+        nystrom_stage(ip, ctx);
+
+        if (advance_conic_half_step(ip, ctx) != AGC_STATUS_OK)
+        {
+            return (INTEG_NEXT_FAIL);
+        }
+    }
+
+    nystrom_end(ip, ctx);
+
+    if (agc_interp_test_ovf(ip))
+    { /* ENDSTATE BOV GOBAQUE  */
+        return (gobaque(ip, ctx));
+    }
+
+    ctx->sv.nuv    = ctx->zv;
+    ctx->sv.deltav = ctx->yv;
+
+    if (agc_flag_test(AGC_FLAG_MIDAVFLG))
+    {
+        return (INTEG_NEXT_MIDTOAV_CHECK);
+    }
+
+    if (!agc_flag_test(AGC_FLAG_DIM0FLAG))
+    {
+        return (INTEG_NEXT_TESTLOOP);
+    }
+
+    return (INTEG_NEXT_WMATRIX);
 }
 
 /*
@@ -1282,7 +1137,7 @@ agc_integ_next_t agc_integ_timestep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  */
 agc_status_t agc_integ_chkswtch(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t *test)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(agc_integ_valid_ctx(ctx)) || !AGC_ASSERT(test != NULL))
+    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(test != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }

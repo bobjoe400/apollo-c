@@ -47,11 +47,11 @@ agc_status_t agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
     if (is_flagword(ecadr))
     {
         *word = (uint16_t) (agc_flagword_get((int) (ecadr - EC_STATE)) & EC_WORD_MAX);
-
-        return (AGC_STATUS_OK);
     }
-
-    *word = g_image[ecadr];
+    else
+    {
+        *word = g_image[ecadr];
+    }
 
     return (AGC_STATUS_OK);
 }
@@ -67,11 +67,11 @@ agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word)
     if (is_flagword(ecadr))
     {
         agc_flagword_set((int) (ecadr - EC_STATE), word);
-
-        return (AGC_STATUS_OK);
     }
-
-    g_image[ecadr] = word;
+    else
+    {
+        g_image[ecadr] = word;
+    }
 
     return (AGC_STATUS_OK);
 }

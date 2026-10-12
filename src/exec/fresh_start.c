@@ -64,30 +64,18 @@
 #define FS_PHASE_4_33       033u    /* GOTOPOOH (LM): 4.33SPOT, GOP00FIX      */
 #define FS_FLAGWORDS_SWINIT 12      /* SWINIT covers STATE .. STATE +11D      */
 
-static uint16_t   redoctr; /* REDOCTR: restarts since fresh start     */
+static uint16_t redoctr; /* REDOCTR: restarts since fresh start     */
 static agc_prio_t restreg; /* RESTREG: display restart priority       */
-static uint16_t   ercount; /* ERCOUNT: self-check error counter       */
+static uint16_t ercount; /* ERCOUNT: self-check error counter       */
 
 static bool is_lm(void)
 {
-    agc_vehicle_t v = agc_state_vehicle();
-
-    if (!AGC_ASSERT(v == AGC_VEHICLE_CSM || v == AGC_VEHICLE_LM))
-    {
-        return (false);
-    }
-
     return (agc_state_vehicle() == AGC_VEHICLE_LM);
 }
 
 /* Replace the bits of flagword `w` outside `keep` by `init`.          */
 static void flagword_init(int w, uint16_t keep, uint16_t init)
 {
-    if (!AGC_ASSERT((keep & init) == 0U))
-    {
-        return;
-    }
-
     uint16_t v = (uint16_t) ((agc_flagword_get(w) & keep) | init);
 
     agc_flagword_set(w, v);
@@ -101,38 +89,28 @@ static void set_lampword(uint16_t v)
 /* STARTSB2, channel and flag part (C p.190 / L p.220).                */
 static void startsb2_outbits(void)
 {
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return;
-    }
-
     if (!is_lm())
     {
         agc_chan_and(AGC_CHAN_DSALMOUT, 077603u);                 /* UPLINK ACTY .. OPR ERR off */
         agc_chan_and(AGC_CHAN_CHAN13, 074777u);                   /* test alarms, standby enable */
         flagword_init(2, (uint16_t) ~025000u & 077777u, 001000u); /* R21MARK, P21FLAG off; SKIPVHF on */
-
-        return;
     }
-
-    agc_chan_and(AGC_CHAN_DSALMOUT, 030001u);            /* keep engine on/off, ISS warning */
-    flagword_init(3, (uint16_t) ~000400u & 077777u, 0u); /* READRFLG off   */
-
-    /* delegated: RADMODES turn-on/reposition/CDU zero/remode bits (prog-rendz) */
-    agc_chan_and(AGC_CHAN_CHAN12, 027470u);              /* keep IMU flags, trims, RR lockon */
-    flagword_init(5, (uint16_t) ~002010u & 077777u, 0u); /* NORRMON, R77FLAG off */
-    agc_chan_and(AGC_CHAN_CHAN13, 074160u);              /* keep telemetry flags        */
-    agc_chan_or(AGC_CHAN_CHAN13, FS_BIT12);              /* re-enable RUPT10            */
-    agc_chan_and(AGC_CHAN_CHAN14, FS_BIT6);              /* keep gyro enable            */
-
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) & ~FS_BIT6) == 0U))
+    else
     {
-        return;
+        agc_chan_and(AGC_CHAN_DSALMOUT, 030001u);            /* keep engine on/off, ISS warning */
+        flagword_init(3, (uint16_t) ~000400u & 077777u, 0u); /* READRFLG off   */
+
+        /* delegated: RADMODES turn-on/reposition/CDU zero/remode bits (prog-rendz) */
+        agc_chan_and(AGC_CHAN_CHAN12, 027470u);              /* keep IMU flags, trims, RR lockon */
+        flagword_init(5, (uint16_t) ~002010u & 077777u, 0u); /* NORRMON, R77FLAG off */
+        agc_chan_and(AGC_CHAN_CHAN13, 074160u);              /* keep telemetry flags        */
+        agc_chan_or(AGC_CHAN_CHAN13, FS_BIT12);              /* re-enable RUPT10            */
+        agc_chan_and(AGC_CHAN_CHAN14, FS_BIT6);              /* keep gyro enable            */
     }
 }
 
 /* STARTSB2 (C pp.190-192 / L pp.220-222): waitlist, executive, DSKY.  */
-static void startsb2(void)
+static agc_status_t startsb2(void)
 {
     startsb2_outbits();
     waitlist_clear_lists(); /* LST1 = NEG1/2, LST2 = ENDTASK */
@@ -150,9 +128,9 @@ static void startsb2(void)
      * SAMPLIM.                                                          */
     agc_status_t su = exec_up_startsb2();
 
-    if (!AGC_ASSERT(su == AGC_STATUS_OK))
+    if (su != AGC_STATUS_OK)
     {
-        return;
+        return (su);
     }
 
     agc_erase_set_markstat(0);
@@ -163,22 +141,14 @@ static void startsb2(void)
     { /* leave bit 6 unchanged   */
         agc_erase_set_imodes33((uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
     }
-    if (!AGC_ASSERT(agc_flagword_get(4) == 0u))
-    {
-        return;
-    }
 
+    return (AGC_STATUS_OK);
 }
 
 /* STARTSB1 (L p.220; the same code opens Comanche's STARTSUB C p.190):
  * TIME3 = 37777, TIME4 = 37775, TIME5 = 37774, then STARTSB2.         */
-static void startsb1(void)
+static agc_status_t startsb1(void)
 {
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return;
-    }
-
     waitlist_reset_time3();
     rupt_reset_timers();
 
@@ -190,54 +160,35 @@ static void startsb1(void)
         agc_rupt_set_t5_task(AGC_TASK_DAPIDLER);
     }
 
-    startsb2();
+    return (startsb2());
 }
 
 /* STARTSUB (C p.190 / L p.220).                                       */
-static void startsub(void)
+static agc_status_t startsub(void)
 {
     /* delegated (sys-misc): DNTMGOTO = DNPHASE1, restart the downlist.
      * LM, delegated (prog-rendz): RADMODES = chan 33 bit 6 + RMODINIT.  */
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return;
-    }
 
-    startsb1();
-
-    if (!AGC_ASSERT(agc_exec_idle()))
-    {
-        return;
-    }
+    return (startsb1());
 }
 
 /* DOFSTART tail common to both vehicles: groups, MODREG, IMU words.   */
-static void dofstart_common(void)
+static agc_status_t dofstart_common(void)
 {
     /* "The IMU was in coarse align in gimbal lock, so put it back"
      * (DOFSTART C p.184 / L p.212).                                       */
     uint16_t lamps = agc_erase_dsptab(FS_LAMPWORD);
-    if (!AGC_ASSERT(lamps <= 077777u))
-    {
-        return;
-    }
-
 
     if ((~lamps & FS_BITS4_6) == 0U)
     {
         agc_chan_or(AGC_CHAN_CHAN12, FS_BITS4_6);
     }
 
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return;
-    }
-
     agc_status_t st = agc_phase_mr_klean(); /* TC MR.KLEAN          */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return;
+        return (st);
     }
 
     agc_erase_set_modreg(EXEC_MODREG_NEG0); /* CS ZERO / TS MODREG  */
@@ -308,32 +259,13 @@ static void dofstart_common(void)
         flagword_init(w, keep, init);
     }
 
-    if (!AGC_ASSERT(refsm != 0U))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(moons != 0U))
-    {
-        return;
-    }
-
     /* ENDRSTRT: on to DUMMYJOB +2 (RELINT, NEWJOB untouched).          */
-    if (!AGC_ASSERT(restreg == FS_PRIO30))
-    {
-        return;
-    }
-
+    return (AGC_STATUS_OK);
 }
 
 /* DOFSTART (C p.183): outputs off and fresh-start initialisation.     */
-static void dofstart_csm(void)
+static agc_status_t dofstart_csm(void)
 {
-    if (!AGC_ASSERT(!is_lm()))
-    {
-        return;
-    }
-
     /* delegated (sys-misc self-check / uplink): ERESTORE, SMODE, UPSVFLAG */
     agc_chan_write(AGC_CHAN_PYJETS, 0); /* turn off RCS jets    */
     agc_chan_write(AGC_CHAN_ROLLJETS, 0);
@@ -344,22 +276,12 @@ static void dofstart_csm(void)
 
     /* delegated: WTOPTION, DNLSTCOD, NVSAVE, EBANKTEM, RATEINDX, TRKMKCNT,
      * VHFCNT, EXTVBACT.                                                */
-    dofstart_common();
-
-    if (!AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_T5IDLOC))
-    {
-        return;
-    }
+    return (dofstart_common());
 }
 
 /* DOFSTRT1 (L p.211): as DOFSTART but the engine is not touched.      */
-static void dofstrt1_lm(void)
+static agc_status_t dofstrt1_lm(void)
 {
-    if (!AGC_ASSERT(is_lm()))
-    {
-        return;
-    }
-
     /* delegated (dap-lm, sys-misc): RCSFLAGS = 4, ABDELV, NVSAVE,
      * EBANKTEM, CH5MASK, CH6MASK, PVALVEST, ERESTORE, SMODE, DNLSTCOD,
      * AGSWORD, UPSVFLAG.                                               */
@@ -369,18 +291,16 @@ static void dofstrt1_lm(void)
     agc_chan_write(AGC_CHAN_CHAN12, 0);
     agc_chan_write(AGC_CHAN_CHAN13, 0);
     agc_chan_write(AGC_CHAN_CHAN14, 0);
-    dofstart_common();
 
-    if (!AGC_ASSERT(agc_erase_modreg() == EXEC_MODREG_NEG0))
-    {
-        return;
-    }
+    return (dofstart_common());
 }
 
 /* DOFSTART (engine_off) or, LM only, DOFSTRT1 (!engine_off: PTBAD and a
  * bad ERESTORE leave the engine alone), then the other modules' resets. */
-static void dofstart(bool slap1, bool engine_off)
+static agc_status_t dofstart(bool slap1, bool engine_off)
 {
+    agc_status_t st; /* status of the vehicle's DOFSTART */
+
     if (is_lm())
     {
         if (engine_off)
@@ -389,42 +309,35 @@ static void dofstart(bool slap1, bool engine_off)
             agc_erase_set_thrust(0);                     /* CS ZERO / TS THRUST (-0)      */
         }
 
-        dofstrt1_lm();
+        st = dofstrt1_lm();
     }
     else
     {
-        dofstart_csm();
+        st = dofstart_csm();
     }
 
-    agc_status_t st = exec_up_dofstart(slap1); /* other modules' erasables */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return;
+        return (st);
     }
 
-    if (!AGC_ASSERT(restreg == FS_PRIO30))
-    {
-        return;
-    }
+    return (exec_up_dofstart(slap1)); /* other modules' erasables */
 }
 
 /* LIGHTSET (C p.189 / L p.219): MARK REJECT together with ERROR LIGHT
- * RESET forces a fresh start. Returns true when it did one.           */
-static bool lightset(void)
+ * RESET forces a fresh start; *done is true when it did one. Returns
+ * the status of the fresh start.                                       */
+static agc_status_t lightset(bool *done)
 {
-    uint16_t nav = agc_chan_read(AGC_CHAN_NAVKEYIN);
+    *done = false;
 
-    if (!AGC_ASSERT(nav <= AGC_CHAN_MASK))
-    {
-        return (false);
-    }
+    uint16_t nav = agc_chan_read(AGC_CHAN_NAVKEYIN);
 
     uint16_t mark_reject = is_lm() ? FS_BIT5 : FS_BIT7;
 
     if ((nav & mark_reject) == 0U)
     {
-        return (false); /* NONAVKEY: TC Q       */
+        return (AGC_STATUS_OK); /* NONAVKEY: TC Q       */
     }
 
     bool elr = !is_lm() && (nav & FS_KEYCODE) == FS_ELR; /* nav DSKY  */
@@ -436,23 +349,25 @@ static bool lightset(void)
 
     if (!elr)
     {
-        return (false);
+        return (AGC_STATUS_OK);
     }
 
-    startsub();
-    dofstart(false, true);
+    *done = true;
 
-    if (!AGC_ASSERT(agc_erase_modreg() == EXEC_MODREG_NEG0))
+    agc_status_t st = startsub();
+
+    if (st != AGC_STATUS_OK)
     {
-        return (false);
+        return (st);
     }
 
-    return (true);
+    return (dofstart(false, true));
 }
 
 /* PCLOOP .. PTBAD (C p.188 / L p.218): every group's -PHASEn must be
- * the complement of PHASEn, else alarm 1107 and a fresh start.        */
-static bool phase_tables_ok(void)
+ * the complement of PHASEn (*ok), else alarm 1107 and a fresh start,
+ * whose status is returned.                                           */
+static agc_status_t phase_tables_ok(bool *ok_out)
 {
     bool ok = true;
 
@@ -461,29 +376,35 @@ static bool phase_tables_ok(void)
         ok = phase_group_agrees(g);
     }
 
+    *ok_out = ok;
+
     if (!ok)
     {
-        agc_alarm(AGC_ALARM_01107); /* PTBAD        */
-        dofstart(false, false);     /* LM DOFSTRT1, CSM DOFSTART */
+        agc_alarm(AGC_ALARM_01107);      /* PTBAD        */
+
+        return (dofstart(false, false)); /* LM DOFSTRT1, CSM DOFSTART */
     }
 
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return (false);
-    }
-
-    return (ok);
+    return (AGC_STATUS_OK);
 }
 
 /* GOPROG3 (C pp.188-189 / L pp.218-219).                              */
 static agc_status_t goprog3(void)
 {
-    if (!phase_tables_ok())
+    bool ok = false;                /* phase tables agree */
+    agc_status_t st = phase_tables_ok(&ok); /* PCLOOP; PTBAD's fresh start */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    if (!ok)
     {
         return (AGC_STATUS_ALARM);
     }
 
-    agc_status_t st = fresh_mmdsplay(); /* TC MMDSPLAY          */
+    st = fresh_mmdsplay(); /* TC MMDSPLAY          */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
     {
@@ -497,12 +418,7 @@ static agc_status_t goprog3(void)
     }
     else if ((agc_flagword_get(6) & FS_F6_DAPBITS) == FS_F6_RCS)
     {
-        st = exec_up_stoprate(); /* RCS DAP: STOPRATE    */
-
-        if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
+        exec_up_stoprate(); /* RCS DAP: STOPRATE    */
     }
     else
     {
@@ -525,13 +441,13 @@ static agc_status_t goprog3(void)
 }
 
 /* ELRSKIP .. NOCOARSE (C pp.187-188): the CSM hardware-restart part. */
-static void goprog_csm_tail(void)
+static agc_status_t goprog_csm_tail(void)
 {
     static const agc_task_id_t t5idler[4] = {
         /* T5IDLER 2CADRs       */
         AGC_TASK_T5IDLOC, AGC_TASK_REDORCS, AGC_TASK_REDOTVC, AGC_TASK_REDOSAT
     };
-    unsigned                   sel        = (unsigned) (agc_flagword_get(6) >> 13) & 3u; /* bits 15,14 */
+    unsigned sel = (unsigned) (agc_flagword_get(6) >> 13) & 3u; /* bits 15,14 */
 
     agc_rupt_set_t5_task(t5idler[sel]); /* T5LOC     */
     agc_status_t st = AGC_STATUS_OK;
@@ -539,9 +455,9 @@ static void goprog_csm_tail(void)
     agc_flag_clear(AGC_FLAG_INTFLAG); /* RASFLAG INTFLBIT     */
     st = exec_up_goprog_optics();     /* OPTMODES = (OPTMODES & OPTINITR) + BIT7 */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return;
+        return (st);
     }
 
     agc_erase_set_imodes33((uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
@@ -551,18 +467,12 @@ static void goprog_csm_tail(void)
 
     if ((old & FS_BIT4) != 0U)
     { /* NO ATT lamp was on   */
-        st = exec_up_setcoars();
+        exec_up_setcoars();
+        st = agc_waitlist_call(FS_CA_ECE_CS, AGC_TASK_CA_ECE);
 
-        if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+        if (st != AGC_STATUS_OK)
         {
-            return;
-        }
-
-        const agc_status_t st_ca_ece = agc_waitlist_call(FS_CA_ECE_CS, AGC_TASK_CA_ECE);
-
-        if (!AGC_ASSERT(st_ca_ece != AGC_STATUS_BAD_ARG))
-        {
-            return;
+            return (st); /* waitlist full: BAILOUT 1203 */
         }
     }
 
@@ -572,38 +482,8 @@ static void goprog_csm_tail(void)
     {
         agc_chan_or(AGC_CHAN_DSALMOUT, FS_BIT13); /* turn engine on       */
     }
-}
 
-/* SETINFL .. GOPROG3 (L p.217): the LM hardware-restart part.         */
-static void goprog_lm_tail(void)
-{
-    if (!AGC_ASSERT(is_lm()))
-    {
-        return;
-    }
-
-    agc_flag_clear(AGC_FLAG_INTFLAG);
-    uint16_t old = agc_erase_dsptab(FS_LAMPWORD);
-
-    set_lampword((uint16_t) ((old & FS_LAMPS_964) | FS_BIT15));
-    agc_erase_set_imodes30((uint16_t) ((agc_erase_imodes30() & FS_IFAILINH) | FS_IM30INIR));
-
-    /* delegated (sys-misc): DNLSTCOD = AGSWORD                         */
-    agc_chan_or(AGC_CHAN_CHAN14, FS_BIT4); /* throttle counter on  */
-
-    if (agc_flag_test(AGC_FLAG_ENGONFLG))
-    {
-        agc_chan_or(AGC_CHAN_DSALMOUT, FS_BIT13); /* turn engine on       */
-    }
-    else
-    {
-        agc_chan_or(AGC_CHAN_DSALMOUT, FS_BIT14); /* turn engine off      */
-    }
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_INTFLAG)))
-    {
-        return;
-    }
+    return (AGC_STATUS_OK);
 }
 
 /* GOPROG (C pp.186-188 / L pp.216-217): hardware restart from GOJAM.  */
@@ -629,11 +509,16 @@ agc_status_t agc_restart_goprog(void)
 
         if ((ch33 & FS_BIT15) != 0U && (ch33 & FS_BIT14) == 0U)
         {
-            startsub();
-            dofstart(false, true);
+            agc_status_t sf = startsub();
+
+            if (sf == AGC_STATUS_OK)
+            {
+                sf = dofstart(false, true);
+            }
+
             agc_relint();
 
-            return (AGC_STATUS_OK);
+            return (sf);
         }
     }
     else if ((agc_erase_dsptab(FS_LAMPWORD) & FS_BIT4) != 0U)
@@ -645,22 +530,47 @@ agc_status_t agc_restart_goprog(void)
         /* LM, NO ATT lamp off */
     }
 
-    agc_status_t st = AGC_STATUS_OK;
+    bool done = false;           /* LIGHTSET did a fresh start */
+    agc_status_t st = lightset(&done); /* BUTTONS              */
 
-    if (!lightset())
-    { /* BUTTONS              */
-        startsub(); /* ERESTORE = +0        */
+    if (st == AGC_STATUS_OK && !done)
+    {
+        st = startsub(); /* ERESTORE = +0        */
 
-        if (is_lm())
+        if (st == AGC_STATUS_OK && is_lm())
         {
-            goprog_lm_tail();
+            /* SETINFL .. GOPROG3 (L p.217): the LM hardware-restart part.         */
+            agc_flag_clear(AGC_FLAG_INTFLAG);
+            uint16_t old = agc_erase_dsptab(FS_LAMPWORD);
+
+            set_lampword((uint16_t) ((old & FS_LAMPS_964) | FS_BIT15));
+            agc_erase_set_imodes30((uint16_t) ((agc_erase_imodes30() & FS_IFAILINH) | FS_IM30INIR));
+
+            /* delegated (sys-misc): DNLSTCOD = AGSWORD                         */
+            agc_chan_or(AGC_CHAN_CHAN14, FS_BIT4); /* throttle counter on  */
+
+            if (agc_flag_test(AGC_FLAG_ENGONFLG))
+            {
+                agc_chan_or(AGC_CHAN_DSALMOUT, FS_BIT13); /* turn engine on       */
+            }
+            else
+            {
+                agc_chan_or(AGC_CHAN_DSALMOUT, FS_BIT14); /* turn engine off      */
+            }
+        }
+        else if (st == AGC_STATUS_OK)
+        {
+            st = goprog_csm_tail();
         }
         else
         {
-            goprog_csm_tail();
+            /* STARTSUB failed: its status is returned */
         }
 
-        st = goprog3();
+        if (st == AGC_STATUS_OK)
+        {
+            st = goprog3();
+        }
     }
 
     agc_relint();
@@ -677,17 +587,23 @@ agc_status_t agc_restart_goprog(void)
 agc_status_t fresh_enema(void)
 {
     agc_inhint();
+    bool done = false; /* LIGHTSET did a fresh start */
     agc_status_t st = AGC_STATUS_OK;
 
     if (is_lm())
     {
-        startsb1(); /* TC STARTSB1          */
+        st = startsb1(); /* TC STARTSB1          */
 
-        if (lightset())
+        if (st == AGC_STATUS_OK)
+        {
+            st = lightset(&done);
+        }
+
+        if (st != AGC_STATUS_OK || done)
         { /* GOPROG2A             */
             agc_relint();
 
-            return (AGC_STATUS_OK);
+            return (st);
         }
 
         flagword_init(10, (uint16_t) ~FS_INTMASK & 077777u, 0u); /* RSFLGBTS */
@@ -697,32 +613,38 @@ agc_status_t fresh_enema(void)
         return (st);
     }
 
-    if (lightset())
-    {
-        agc_relint();
+    st = lightset(&done);
 
-        return (st);
+    if (st == AGC_STATUS_OK && !done)
+    {
+        st = startsb2();
     }
 
-    startsb2();
-    flagword_init(10, (uint16_t) ~FS_INTMASK & 077777u, 0u); /* INTMASK  */
-
-    if ((agc_flagword_get(6) & FS_F6_DAPBITS) == FS_F6_TVC)
+    if (st != AGC_STATUS_OK || done)
     {
-        const agc_status_t st_tvc = agc_waitlist_call(FS_HALF_SEC, AGC_TASK_TVCEXEC);
+        agc_relint();
+    }
+    else
+    {
+        flagword_init(10, (uint16_t) ~FS_INTMASK & 077777u, 0u); /* INTMASK  */
 
-        if (!AGC_ASSERT(st_tvc != AGC_STATUS_BAD_ARG)) /* TVC on */
+        if ((agc_flagword_get(6) & FS_F6_DAPBITS) == FS_F6_TVC)
+        {
+            const agc_status_t st_tvc = agc_waitlist_call(FS_HALF_SEC, AGC_TASK_TVCEXEC);
+
+            if (!AGC_ASSERT(st_tvc != AGC_STATUS_BAD_ARG)) /* TVC on */
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+        }
+
+        st = goprog3();
+        agc_relint();
+
+        if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
         {
             return (AGC_STATUS_BAD_ARG);
         }
-    }
-
-    st = goprog3();
-    agc_relint();
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);
@@ -732,33 +654,33 @@ agc_status_t fresh_enema(void)
 agc_status_t agc_fresh_start_slap1(void)
 {
     agc_inhint();
-    startsub();
+    agc_status_t st = startsub();
 
-    /* STARTSW: TCF SKIPSIM (the simulation start patch is not used).   */
-    uint16_t lamps = agc_erase_dsptab(FS_LAMPWORD);
-
-    set_lampword((uint16_t) ((lamps & FS_BITS4_6) | FS_BIT15));
-
-    /* delegated: LM DUMPCNT = BIT12 (sys-misc); DSRUPTSW = -PRIO12.    */
-    ercount = 0;
-
-    for (int i = 0; i < 3; i++)
+    if (st != AGC_STATUS_OK)
     {
-        agc_status_t st = agc_erase_set_failreg(i, 0);
+        agc_relint();
+    }
+    else
+    {
+        /* STARTSW: TCF SKIPSIM (the simulation start patch is not used).   */
+        uint16_t lamps = agc_erase_dsptab(FS_LAMPWORD);
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        set_lampword((uint16_t) ((lamps & FS_BITS4_6) | FS_BIT15));
+
+        /* delegated: LM DUMPCNT = BIT12 (sys-misc); DSRUPTSW = -PRIO12.    */
+        ercount = 0;
+
+        for (int i = 0; i < 3; i++)
         {
-            agc_relint();
-
-            return (AGC_STATUS_BAD_ARG);
+            agc_erase_set_failreg(i, 0);
         }
+
+        redoctr = 0;
+        st = dofstart(true, true);
+        agc_relint();
     }
 
-    redoctr = 0;
-    dofstart(true, true);
-    agc_relint();
-
-    return (AGC_STATUS_OK);
+    return (st);
 }
 
 /* DOFSTART entry (machine-initiated fresh start).                     */
@@ -770,8 +692,14 @@ agc_status_t agc_fresh_dofstart(void)
     }
 
     agc_inhint();
-    dofstart(false, true);
+    agc_status_t st = dofstart(false, true);
+
     agc_relint();
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
 
     if (!AGC_ASSERT(agc_erase_modreg() == EXEC_MODREG_NEG0))
     {
@@ -808,7 +736,7 @@ agc_status_t agc_exec_gotopooh(void)
     }
     else
     {
-        agc_phase_change(4, FS_PHASE_4_1); /* TC PHASCHNG OCT 14   */
+        agc_phase_change(FS_PHASE_4_1); /* TC PHASCHNG OCT 14   */
     }
 
     if (exec_in_job())

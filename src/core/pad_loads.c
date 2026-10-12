@@ -38,68 +38,28 @@ void agc_erase_reset_pad_loads(void)
     }
 
     g_cduchkwd = 0;
-    g_rted1    = 0;
+    g_rted1 = 0;
     g_p37range = 0;
-    g_tland    = 0;
+    g_tland = 0;
 }
 
 uint16_t agc_erase_aotaz(int index)
 {
-    if (!AGC_ASSERT(index >= 1 && index <= 6))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(g_aotaz[index - 1] <= EW15_MAX))
-    {
-        return (0);
-    }
-
     return (g_aotaz[index - 1]);
 }
 
 void agc_erase_set_aotaz(int index, uint16_t v)
 {
-    if (!AGC_ASSERT(index >= 1 && index <= 6))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(v <= EW15_MAX))
-    {
-        return;
-    }
-
     g_aotaz[index - 1] = v;
 }
 
 uint16_t agc_erase_aotel(int index)
 {
-    if (!AGC_ASSERT(index >= 1 && index <= 6))
-    {
-        return (0);
-    }
-
-    if (!AGC_ASSERT(g_aotel[index - 1] <= EW15_MAX))
-    {
-        return (0);
-    }
-
     return (g_aotel[index - 1]);
 }
 
 void agc_erase_set_aotel(int index, uint16_t v)
 {
-    if (!AGC_ASSERT(index >= 1 && index <= 6))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(v <= EW15_MAX))
-    {
-        return;
-    }
-
     g_aotel[index - 1] = v;
 }
 

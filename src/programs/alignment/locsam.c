@@ -51,11 +51,6 @@
  */
 static agc_dp_t occos(agc_interp_t *ip, agc_dp_t radius, agc_dp_t rmag)
 {
-    if (!AGC_ASSERT(rmag > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_dp_t a = agc_dp_shr(agc_dp_div(ip, radius, rmag), 1);
 
     a = agc_dp_add(ip, agc_dp_asin(ip, a), DEG5_REVS);
@@ -184,11 +179,6 @@ agc_status_t agc_align_locsam(agc_interp_t *ip, agc_dp_t time_cs, agc_job_id_t r
  */
 bool agc_align_occult(agc_interp_t *ip, const agc_align_locsam_t *ls, agc_vec_t star)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(ls != NULL))
-    {
-        return (true);
-    }
-
     agc_mat_t cultrix;
 
     cultrix.row[0]       = ls->vearth;
@@ -205,11 +195,6 @@ bool agc_align_occult(agc_interp_t *ip, const agc_align_locsam_t *ls, agc_vec_t 
 static agc_vec_t catlog(int star6)
 {
     agc_vec_t v = agc_vec_zero();
-
-    if (!AGC_ASSERT((star6 % 6) == 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
 
     if (AGC_ASSERT((star6 >= 6) && (star6 <= 6 * AGC_ALIGN_NSTARS)))
     {
@@ -236,40 +221,28 @@ typedef struct picapar_search
  * pair with the smaller dot product (larger separation). */
 static void picapar_strategy(picapar_search_t *s, int i6, int j6)
 {
-    if (!AGC_ASSERT((i6 > j6) && (j6 >= 6)))
-    {
-        return;
-    }
-
     if (s->vflag)
     { /* BONCLR VFLAG    */
         s->vflag = false;
         s->besti = i6; /* NEWPAR          */
         s->bestj = j6;
-
-        return;
     }
+    else
+    {
+        const agc_dp_t best = agc_vec_dot(s->ip, catlog(s->besti), catlog(s->bestj));
+        const agc_dp_t cur  = agc_vec_dot(s->ip, catlog(i6), catlog(j6));
 
-    const agc_dp_t best = agc_vec_dot(s->ip, catlog(s->besti), catlog(s->bestj));
-    const agc_dp_t cur  = agc_vec_dot(s->ip, catlog(i6), catlog(j6));
-
-    if (agc_dp_sub(s->ip, cur, best) >= 0)
-    { /* BPL PIC3        */
-        return;
+        if (agc_dp_sub(s->ip, cur, best) < 0)
+        {
+            s->besti = i6; /* NEWPAR          */
+            s->bestj = j6;
+        }
     }
-
-    s->besti = i6; /* NEWPAR          */
-    s->bestj = j6;
 }
 
 /* PIC1-PIC4 for the CSM (Comanche pp. 753-754). */
 static void picapar_search_csm(picapar_search_t *s)
 {
-    if (!AGC_ASSERT(s->ip != NULL))
-    {
-        return;
-    }
-
     for (int i6 = 6 * AGC_ALIGN_NSTARS; i6 >= 6; i6 -= 6)
     { /* PIC1 */
         const agc_vec_t si = catlog(i6);

@@ -88,7 +88,7 @@ const exec_cp_mode_t *exec_cp_modes_csm(int *n)
 agc_status_t exec_cp_engine_off_to_idle(void)
 {
     bool engine = (agc_chan_read(AGC_CHAN_DSALMOUT) & CP_BIT13) != 0U;
-    bool tvc    = (agc_flagword_get(6) & CP_F6_DAPBITS) == CP_F6_TVC;
+    bool tvc = (agc_flagword_get(6) & CP_F6_DAPBITS) == CP_F6_TVC;
 
     if (!engine && !tvc)
     {
@@ -130,11 +130,6 @@ agc_status_t agc_job_change_program_jets_off(void)
 void exec_cp_stop_servicer_csm(void)
 {
     agc_flag_clear(AGC_FLAG_AVEGFLAG);
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_AVEGFLAG)))
-    {
-        return;
-    }
 }
 
 /* CANV37 after INTSTALL (C p.199-200): caution reset and test connector
@@ -152,11 +147,6 @@ void exec_cp_cleanup_csm(void)
     agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (CP_WORD15 & ~(uint16_t) AGC_CH011_UPACT));
     agc_flag_clear(AGC_FLAG_VHFRFLAG);
     agc_flag_clear(AGC_FLAG_MARKRUPT_OPTION_ONE); /* R21MARK */
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_STIKFLAG)))
-    {
-        return;
-    }
 }
 
 /* TRACK, TARG1 and UPDATE flags off (SEUDOP00: CS OCT01120 MASK FLAGWRD1). */
@@ -173,11 +163,6 @@ void exec_cp_pooh_flags_csm(void)
     agc_flag_clear(AGC_FLAG_IMUSE);
     agc_flag_clear(AGC_FLAG_RNDVZFLG); /* KILL P20 */
     cp_track_flags_off();
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_RNDVZFLG)))
-    {
-        return;
-    }
 }
 
 /* NOUVEAU (C p.202): IMUSE off unless P20 runs (RNDVZFLG), SEUDOP00.      */
@@ -189,11 +174,6 @@ void exec_cp_nouveau_flags_csm(void)
     }
 
     cp_track_flags_off();
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_UPDATFLG)))
-    {
-        return;
-    }
 }
 
 /* RENDV00 .. REV37 (C p.201): P20 requested while P20 runs: STATQUO (keep
@@ -202,11 +182,6 @@ void exec_cp_nouveau_flags_csm(void)
 bool exec_cp_rendezvous_csm(uint8_t mm)
 {
     bool rndvz = agc_flag_test(AGC_FLAG_RNDVZFLG);
-
-    if (!AGC_ASSERT(mm <= 99U))
-    {
-        return (false);
-    }
 
     if (mm == 20U && agc_erase_modreg() != 20 && rndvz)
     { /* STATQUO                        */

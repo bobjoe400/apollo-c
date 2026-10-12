@@ -171,12 +171,12 @@ static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
         }
     }
 
-    agc_cdutrig_t t;                              /* CDUTRIG sines/cosines */
-    agc_status_t  st = agc_guid_cdu_nbsm(&t, &a); /* CDU*NBSM  */
+    agc_cdutrig_t t; /* CDUTRIG sines/cosines */
 
+    agc_guid_cdu_nbsm(&t, &a); /* CDU*NBSM  */
     *axis_sm = a;
 
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -283,11 +283,6 @@ static agc_dp_t rpd_getrvn(agc_rendz_t *rz)
     rz->rone   = agc_erase_rn();
     rz->vone   = agc_erase_vn();
     agc_dp_t t = agc_erase_piptime(); /* PIPTIME, cs 2^28 */
-
-    if (!AGC_ASSERT(t >= 0))
-    {
-        return (0); /* no valid result */
-    }
 
     return (t);
 }

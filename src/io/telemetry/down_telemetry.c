@@ -86,10 +86,6 @@ static uint16_t      dntmbuff[DNTMBUFF_WORDS]; /* DNTMBUFF snapshot buffer    */
 static uint16_t sp_word(agc_sp_t v)
 {
     int32_t w = (v >= 0) ? (int32_t) v : (int32_t) WORD15 + (int32_t) v;
-    if (!AGC_ASSERT(w >= 0 && w <= (int32_t) WORD15))
-    {
-        return (0); /* no valid result */
-    }
 
 
     return ((uint16_t) w);
@@ -98,22 +94,12 @@ static uint16_t sp_word(agc_sp_t v)
 /* Word k (0 = high, 1 = low) of a DP value.                               */
 static uint16_t dp_word(agc_dp_t v, int k)
 {
-    if (!AGC_ASSERT(k == 0 || k == 1))
-    {
-        return (0); /* no valid result */
-    }
-
     return (sp_word((k == 0) ? agc_dp_high(v) : agc_dp_low(v)));
 }
 
 /* Word k (0..5) of a DP vector, X high first.                             */
 static uint16_t vec_word(agc_vec_t v, int k)
 {
-    if (!AGC_ASSERT(k >= 0 && k < 2 * AGC_VEC_N))
-    {
-        return (0);
-    }
-
     return (dp_word(v.c[k / 2], k % 2));
 }
 
@@ -121,11 +107,6 @@ static uint16_t vec_word(agc_vec_t v, int k)
  * CDUT CDUS PIPAX PIPAY PIPAZ.                                            */
 static uint16_t counter_word(int k)
 {
-    if (!AGC_ASSERT(k >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     switch (k)
     {
         case 0:
@@ -309,23 +290,14 @@ static bool item_word_lm_dap(agc_dn_item_t item, int k, uint16_t *w)
 /* SP word at offset k of a downlist item (FETCH2WD's DCA 1400 +ECADR).    */
 static uint16_t item_word(agc_dn_item_t item, int k)
 {
-    if (!AGC_ASSERT(item < AGC_DN_ITEM_COUNT) || !AGC_ASSERT(k >= 0 && k < 64))
-    {
-        return (0);
-    }
-
     uint16_t w = 0;
 
     if (item == AGC_DN_R_OTHER || item == AGC_DN_V_OTHER || item == AGC_DN_T_OTHER)
     {
         /* The other vehicle's state vector words (R-OTHER, V-OTHER, T-OTHER).     */
         agc_state_vector_t sv;
-        agc_status_t       st = agc_sv_get(AGC_SV_OTHER, &sv);
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
-        {
-            return (0);
-        }
+        agc_sv_get(AGC_SV_OTHER, &sv);
 
         if (item == AGC_DN_R_OTHER)
         {
@@ -343,9 +315,9 @@ static uint16_t item_word(agc_dn_item_t item, int k)
     if (item == AGC_DN_REFSMMAT)
     {
         /* REFSMMAT: 9 DP elements row by row = 18 words.                          */
-        if (!AGC_ASSERT(k >= 0) || k >= 6 * AGC_VEC_N)
+        if (k >= 6 * AGC_VEC_N)
         {
-            return (0);
+            return (0); /* past the matrix */
         }
 
         agc_mat_t m = agc_erase_refsmmat();
@@ -376,11 +348,6 @@ static agc_status_t dntmexit(uint16_t a, uint16_t l)
 static void wozero(void)
 {
     agc_chan_and((int) AGC_CHAN_CHAN13, (uint16_t) (WORD15 & ~BIT7));
-
-    if (!AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN13) & BIT7) == 0u))
-    {
-        return;
-    }
 }
 
 /* SENDID: word order zero, then the ID word and LOWIDCOD.                 */
@@ -409,21 +376,11 @@ static agc_dn_entry_t cursor_take(tm_cursor_t *c)
 {
     agc_dn_entry_t e = {1, true, (uint16_t) AGC_DN_SPARE, 0};
 
-    if (!AGC_ASSERT(c != NULL && c->active && c->next < c->list.count))
-    {
-        return (e);
-    }
-
     e = c->list.entry[c->next];
     c->next++;
 
     if (c->next >= c->list.count)
     {
-        if (!AGC_ASSERT(e.neg)) /* -xDNADR ends every list   */
-        {
-            return (e);
-        }
-
         c->active = false;
     }
 
@@ -447,74 +404,6 @@ static agc_status_t fetch2wd(void)
     return (dntmexit(a, l));
 }
 
-/* SNAPLOOP / SNAPEND: copy all but the last entry of a snapshot sublist
- * into DNTMBUFF and send the last one now.                                */
-static agc_status_t snapshot(const agc_dn_list_t *sub)
-{
-    if (!AGC_ASSERT(sub != NULL && sub->count >= 1) || !AGC_ASSERT(2 * (sub->count - 1) <= DNTMBUFF_WORDS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    for (int i = 0; i + 1 < sub->count; i++)
-    {
-        agc_dn_entry_t e = sub->entry[i];
-
-        if (!AGC_ASSERT(e.op == 1)) /* 1DNADRs only (rule 3)     */
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        dntmbuff[2 * i]     = item_word((agc_dn_item_t) e.ref, e.offset);
-        dntmbuff[2 * i + 1] = item_word((agc_dn_item_t) e.ref, e.offset + 1);
-    }
-
-    agc_dn_entry_t last = sub->entry[sub->count - 1];
-
-    sublist.active = false; /* SUBLIST, DNECADR = -1    */
-    dn_left        = 0;
-
-    return (dntmexit(item_word((agc_dn_item_t) last.ref, last.offset), item_word((agc_dn_item_t) last.ref, last.offset + 1)));
-}
-
-/* DODNPTR: start a sublist.                                               */
-static agc_status_t dodnptr(int ref)
-{
-    agc_dn_list_t sub;
-    agc_status_t  st = list_lookup(true, ref, &sub);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (st);
-    }
-
-    if (sub.snapshot)
-    {
-        return (snapshot(&sub));
-    }
-
-    sublist.list     = sub; /* DOSUBLST                 */
-    sublist.next     = 0;
-    sublist.active   = true;
-    agc_dn_entry_t e = cursor_take(&sublist);
-
-    if (!AGC_ASSERT(e.op != AGC_DN_OP_PTR)) /* sublists do not nest     */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (e.op == AGC_DN_OP_CHAN)
-    {
-        return (dntmexit(agc_chan_read((int) e.ref), agc_chan_read((int) e.ref + 1)));
-    }
-
-    dn_item   = (agc_dn_item_t) e.ref;
-    dn_offset = e.offset;
-    dn_left   = e.op;
-
-    return (fetch2wd());
-}
-
 /* SETWO .. DODNCHAN: act on one list entry.  from_control: the TIME2 test
  * (word order code to zero) is made only for control-list entries.        */
 static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
@@ -531,7 +420,69 @@ static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
 
     if (e.op == AGC_DN_OP_PTR)
     {
-        return (dodnptr((int) e.ref));
+        /* DODNPTR: start a sublist.                                               */
+        int ref = (int) e.ref;
+
+        agc_dn_list_t sub;
+        agc_status_t  st = list_lookup(true, ref, &sub);
+
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return (st);
+        }
+
+        if (sub.snapshot)
+        {
+            /* SNAPLOOP / SNAPEND: copy all but the last entry of a snapshot sublist
+             * into DNTMBUFF and send the last one now.                                */
+            {
+                if (!AGC_ASSERT(&sub != NULL && sub.count >= 1) || !AGC_ASSERT(2 * (sub.count - 1) <= DNTMBUFF_WORDS))
+                {
+                    return (AGC_STATUS_BAD_ARG);
+                }
+
+                for (int i = 0; i + 1 < sub.count; i++)
+                {
+                    agc_dn_entry_t e_dodnptr = sub.entry[i];
+
+                    if (!AGC_ASSERT(e_dodnptr.op == 1)) /* 1DNADRs only (rule 3)     */
+                    {
+                        return (AGC_STATUS_BAD_ARG);
+                    }
+
+                    dntmbuff[2 * i]     = item_word((agc_dn_item_t) e_dodnptr.ref, e_dodnptr.offset);
+                    dntmbuff[2 * i + 1] = item_word((agc_dn_item_t) e_dodnptr.ref, e_dodnptr.offset + 1);
+                }
+
+                agc_dn_entry_t last = sub.entry[sub.count - 1];
+
+                sublist.active = false; /* SUBLIST, DNECADR = -1    */
+                dn_left        = 0;
+
+                return (dntmexit(item_word((agc_dn_item_t) last.ref, last.offset), item_word((agc_dn_item_t) last.ref, last.offset + 1)));
+            }
+        }
+
+        sublist.list             = sub; /* DOSUBLST                 */
+        sublist.next             = 0;
+        sublist.active           = true;
+        agc_dn_entry_t e_dodnptr = cursor_take(&sublist);
+
+        if (!AGC_ASSERT(e_dodnptr.op != AGC_DN_OP_PTR)) /* sublists do not nest     */
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (e_dodnptr.op == AGC_DN_OP_CHAN)
+        {
+            return (dntmexit(agc_chan_read((int) e_dodnptr.ref), agc_chan_read((int) e_dodnptr.ref + 1)));
+        }
+
+        dn_item   = (agc_dn_item_t) e_dodnptr.ref;
+        dn_offset = e_dodnptr.offset;
+        dn_left   = e_dodnptr.op;
+
+        return (fetch2wd());
     }
 
     if (e.op == AGC_DN_OP_CHAN)
@@ -567,31 +518,6 @@ static agc_status_t newlist(void)
     return (sendid((uint16_t) (WORD15 - (uint16_t) dnlstcod))); /* CS DNLSTCOD */
 }
 
-/* DNPHASE2: the next word of the downlist.                                */
-static agc_status_t dnphase2(void)
-{
-    if (dn_left > 0)
-    { /* CCS DNECADR: in progress */
-        return (fetch2wd());
-    }
-
-    if (sublist.active)
-    { /* NEXTINSL                 */
-        agc_dn_entry_t e = cursor_take(&sublist);
-
-        return (do_entry(e, false));
-    }
-
-    if (!ctlist.active)
-    { /* CHKLIST: end of list     */
-        return (newlist());
-    }
-
-    agc_dn_entry_t e = cursor_take(&ctlist); /* NEXTINCL                 */
-
-    return (do_entry(e, true));
-}
-
 /* DNPHASE1: reset the pointers and restart the current list.             */
 static agc_status_t dnphase1(void)
 {
@@ -625,25 +551,6 @@ static agc_status_t dndump_id(void)
     return (dntmexit(lm ? ERASID_LM : ERASID_CSM, (uint16_t) AGC_DN_LOWIDCOD));
 }
 
-/* DNDUMP: step DUMPLOC by one DP word; at the end of an EBANK either end
- * the dump (DUMPCNT complete dumps) or send the next EBANK's ID.         */
-static agc_status_t dndump(void)
-{
-    dumploc = (uint16_t) ((dumploc + 2u) & WORD15);
-
-    if ((dumploc & LOW8) != 0u)
-    {
-        return (dntmexit(0, 0)); /* DNDUMP2 (DEVIATION: 0)   */
-    }
-
-    if ((dumploc & dumpcnt & PRIO34) != 0u)
-    {
-        return (dnphase1()); /* resume the downlist      */
-    }
-
-    return (dndump_id());
-}
-
 /* ---- public ------------------------------------------------------------ */
 
 /* DODOWNTM (DOWNRUPT, every 20 ms): word order code to 1, then the phase
@@ -662,7 +569,29 @@ agc_status_t agc_telem_downrupt(void)
         case TM_PHASE1:
             return (dnphase1());
         case TM_PHASE2:
-            return (dnphase2());
+            /* DNPHASE2: the next word of the downlist.                                */
+            {
+                if (dn_left > 0)
+                { /* CCS DNECADR: in progress */
+                    return (fetch2wd());
+                }
+
+                if (sublist.active)
+                { /* NEXTINSL                 */
+                    agc_dn_entry_t e = cursor_take(&sublist);
+
+                    return (do_entry(e, false));
+                }
+
+                if (!ctlist.active)
+                { /* CHKLIST: end of list     */
+                    return (newlist());
+                }
+
+                agc_dn_entry_t e = cursor_take(&ctlist); /* NEXTINCL                 */
+
+                return (do_entry(e, true));
+            }
         case TM_DUMP_ID:
             return (dndump_id());
         case TM_DUMP_LOC: /* DUMPLOC and TIME1        */
@@ -674,7 +603,23 @@ agc_status_t agc_telem_downrupt(void)
 
             return (dntmexit(0, 0));
         case TM_DUMP_NEXT:
-            return (dndump());
+            /* DNDUMP: step DUMPLOC by one DP word; at the end of an EBANK either end
+             * the dump (DUMPCNT complete dumps) or send the next EBANK's ID.         */
+            {
+                dumploc = (uint16_t) ((dumploc + 2u) & WORD15);
+
+                if ((dumploc & LOW8) != 0u)
+                {
+                    return (dntmexit(0, 0)); /* DNDUMP2 (DEVIATION: 0)   */
+                }
+
+                if ((dumploc & dumpcnt & PRIO34) != 0u)
+                {
+                    return (dnphase1()); /* resume the downlist      */
+                }
+
+                return (dndump_id());
+            }
         default:
             break;
     }
@@ -716,23 +661,11 @@ agc_status_t agc_telem_restart(void)
 /* TS DNLSTCOD: select the list sent from the next NEWLIST on.            */
 void agc_telem_select_list(int code)
 {
-    int n = (agc_state_vehicle() == AGC_VEHICLE_LM) ? AGC_DNLIST_LM_COUNT : AGC_DNLIST_CSM_COUNT;
-    if (!AGC_ASSERT(code >= 0 && code < n))
-    {
-        return;
-    }
-
-
-    dnlstcod = code;
+    dnlstcod = code; /* a list-code constant at every caller */
 }
 
 int agc_telem_list_code(void)
 {
-    if (!AGC_ASSERT(dnlstcod >= 0 && dnlstcod < AGC_DNLIST_LM_COUNT))
-    {
-        return (0); /* no valid result */
-    }
-
     return (dnlstcod);
 }
 
@@ -770,11 +703,6 @@ uint16_t agc_telem_dumpcnt(void)
 /* AGSWORD (LM): the downlist to return to after AGS initialization.      */
 uint16_t agc_erase_agsword(void)
 {
-    if (!AGC_ASSERT(agsword < (uint16_t) AGC_DNLIST_LM_COUNT))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agsword);
 }
 
@@ -786,38 +714,36 @@ void agc_erase_set_agsword(uint16_t v)
     }
 }
 
-/* DP words one DNPTR sends at its place in the list: a snapshot sublist
- * sends only its last entry now (the rest go out via DNTMBUFF entries).   */
-static int sublist_words(int ref)
+/* DP words one DNPTR sends at its place in the list (*words): a snapshot
+ * sublist sends only its last entry now (the rest go out via DNTMBUFF
+ * entries). Returns the status of the sublist lookup.                    */
+static agc_status_t sublist_words(int ref, int *words)
 {
     agc_dn_list_t sub;
     agc_status_t  st = list_lookup(true, ref, &sub);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    *words = 0;
+
+    if (st != AGC_STATUS_OK)
     {
-        return (0);
+        return (st);
     }
 
     if (sub.snapshot)
     {
-        return (1);
+        *words = 1;
     }
-
-    int n = 0;
-
-    for (int i = 0; i < sub.count; i++)
+    else
     {
-        uint8_t op = sub.entry[i].op;
-
-        if (!AGC_ASSERT(op != AGC_DN_OP_PTR))
+        for (int i = 0; i < sub.count; i++)
         {
-            return (0);
-        }
+            uint8_t op = sub.entry[i].op;
 
-        n += (op == AGC_DN_OP_CHAN) ? 1 : (int) op;
+            *words += (op == AGC_DN_OP_CHAN) ? 1 : (int) op;
+        }
     }
 
-    return (n);
+    return (AGC_STATUS_OK);
 }
 
 /* Number of DP words a downlist sends, the ID word included.             */
@@ -838,11 +764,22 @@ agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words)
 
     int n = 1; /* ID / sync word           */
 
-    for (int i = 0; i < list.count; i++)
+    for (int i = 0; i < list.count && st == AGC_STATUS_OK; i++)
     {
         agc_dn_entry_t e = list.entry[i];
+        int            k = (e.op == AGC_DN_OP_CHAN) ? 1 : (int) e.op; /* DP words of the entry */
 
-        n += (e.op == AGC_DN_OP_PTR) ? sublist_words((int) e.ref) : (e.op == AGC_DN_OP_CHAN) ? 1 : (int) e.op;
+        if (e.op == AGC_DN_OP_PTR)
+        {
+            st = sublist_words((int) e.ref, &k);
+        }
+
+        n += k;
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
     }
 
     *words = n;

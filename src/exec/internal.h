@@ -31,11 +31,11 @@ void waitlist_reset_time3(void); /* STARTSB1: TIME3 = POSMAX   */
 typedef struct phase_var_store
 {
     agc_restart_kind_t kind;       /* what PHSNAMEn names                    */
-    agc_job_id_t       job;        /* PHSNAMEn when it names a job           */
-    agc_task_id_t      task;       /* PHSNAMEn when it names a task/longcall */
-    int16_t            prdt;       /* PHSPRDTn: +prio FINDVAC / -prio NOVAC, or delta time in cs for a task */
-    bool               immediate;  /* PHSPRDTn = -0: immediate task       */
-    uint32_t           long_dt_cs; /* DP delta time for a variable LONGCALL (C(-GENADR) at the time of the phase change) */
+    agc_job_id_t job;        /* PHSNAMEn when it names a job           */
+    agc_task_id_t task;       /* PHSNAMEn when it names a task/longcall */
+    int16_t prdt;       /* PHSPRDTn: +prio FINDVAC / -prio NOVAC, or delta time in cs for a task */
+    bool immediate;  /* PHSPRDTn = -0: immediate task       */
+    uint32_t long_dt_cs; /* DP delta time for a variable LONGCALL (C(-GENADR) at the time of the phase change) */
 } phase_var_store_t;
 
 bool         phase_group_agrees(int group);                          /* PHASEn vs -PHASEn       */
@@ -71,11 +71,11 @@ typedef enum rst_erasable
 typedef struct rst_entry
 { /* one 3-word restart table entry          */
     agc_restart_kind_t kind; /* NONE for the DEC 0 placeholders         */
-    int16_t            prdt; /* job: +prio FINDVAC, -prio NOVAC; task DIRECT: delta time cs */
-    rst_dtsrc_t        dtsrc;
-    rst_erasable_t     src;  /* for INDIRECT / LONG                     */
-    agc_job_id_t       job;
-    agc_task_id_t      task;
+    int16_t prdt; /* job: +prio FINDVAC, -prio NOVAC; task DIRECT: delta time cs */
+    rst_dtsrc_t dtsrc;
+    rst_erasable_t src;  /* for INDIRECT / LONG                     */
+    agc_job_id_t job;
+    agc_task_id_t task;
 } rst_entry_t;
 
 /* Look up entry `part` (0 or 1; 1 only for even phases) of phase `phase`
@@ -96,8 +96,8 @@ bool         exec_in_job(void);          /* a job body is executing   */
 agc_job_id_t exec_running_job_loc(void); /* LOC of core set 0 (LOCALARM) */
 
 /* ---- software restart request (alarm.c) ------------------------------ */
-void exec_request_enema(void);        /* WHIMPER: ENEMA at next service */
-void exec_service_interp_alarm(void); /* ALARM 1301 / ABORT 1302 of SQRT etc */
+void         exec_request_enema(void);        /* WHIMPER: ENEMA at next service */
+agc_status_t exec_service_interp_alarm(void); /* ALARM 1301 / ABORT 1302 of SQRT etc */
 
 /* ---- MODECADR (erasable.c) -------------------------------------- */
 void exec_clear_modecadr(void); /* STARTSB2: IMU/OPT/RAD CADR = 0 */
@@ -117,9 +117,9 @@ void exec_vac5stor(void); /* CSM debug copy of tables  */
  * The AGC restart code calls routines that apollo-c places above exec
  * (DAP, IMU, SERVICER). These few calls are collected in
  * change_program/, the layering exception next to dispatch.c.         */
-agc_status_t exec_up_stoprate(void);       /* CSM GOPROG3 / INITSUB: STOPRATE */
+void         exec_up_stoprate(void);       /* CSM GOPROG3 / INITSUB: STOPRATE */
 agc_status_t exec_up_servidle(void);       /* LM STRTIDLE: SERVIDLE          */
-agc_status_t exec_up_setcoars(void);       /* CSM GOPROG: SETCOARS (NO ATT)  */
+void         exec_up_setcoars(void);       /* CSM GOPROG: SETCOARS (NO ATT)  */
 agc_status_t exec_up_startsb2(void);       /* STARTSB2: other modules' resets */
 agc_status_t exec_up_dofstart(bool slap1); /* DOFSTART: other modules' resets */
 agc_status_t exec_up_goprog_optics(void);  /* CSM GOPROG: OPTMODES       */
@@ -131,9 +131,9 @@ void exec_initsub_csm(void); /* INITSUB / RAKE (CSM)           */
  * field has no meaning in C) and DNLADMM1 (downlist code).            */
 typedef struct exec_cp_mode
 {
-    uint8_t      mm;     /* major mode number                         */
-    agc_prio_t   prio;   /* PREMM1 bits 15-11                         */
-    int          dnlist; /* DNLADMM1: DNLSTCOD for the new program    */
+    uint8_t mm;     /* major mode number                         */
+    agc_prio_t prio;   /* PREMM1 bits 15-11                         */
+    int dnlist; /* DNLADMM1: DNLSTCOD for the new program    */
     agc_job_id_t job;    /* FCADRMM1: the program's first job          */
 } exec_cp_mode_t;
 

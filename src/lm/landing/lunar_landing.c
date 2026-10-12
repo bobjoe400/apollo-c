@@ -88,11 +88,6 @@
  **********************************************************************/
 static void ll_restart_here(agc_job_id_t job)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* LM only */
-    {
-        return;
-    }
-
     const agc_phase_var_t v = {AGC_RESTART_JOB, job, AGC_TASK_NONE, 0, false, 0U};
 
     agc_phase_change_var(04024, &v);
@@ -162,74 +157,6 @@ static agc_status_t ll_ignalg_prec(agc_job_ctx_t *ctx, agc_interp_t *ip)
     l->ttf_8_hi = 0;
 
     return (ll_ignaloop(ctx, false));
-}
-
-/**********************************************************************
- * DDUMCALC (pp. 786-787): the ignition time correction
- *          (RIGNZ - RGU2)/16 + 16 RGU1^2 KIGNY/B8 + (RGU0 - RIGNX) KIGNX/B4
- *          + (|VGU| - VIGN) KIGNV/B4
- *   DDUM = ----------------------------------------------------------
- *                     2^10 (VGU2 - 16 VGU0 KIGNX/B4)
- * numerator 2^28 m, denominator 2^10 m/cs, quotient rescaled to 2^28 cs.
- *
- * ARGUMENTS:
- *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
- *
- * RETURNS: agc_dp_t -- DDUM, the ignition time correction, cs 2^28
- **********************************************************************/
-static agc_dp_t ll_ddum(agc_interp_t *ip)
-{
-    const agc_lm_ldg_t *l   = agc_lm_ldg();                                                      /* landing erasables */
-    const agc_lm_pad_t *p   = agc_lm_pad();                                                      /* pad loads */
-    agc_dp_t            den = agc_dp_shl_round(ip, agc_dp_mul(ip, l->vgu.c[0], p->kignx_b4), 4); /* VGU2 - 16 VGU0 KIGNX/B4, 2^10 m/cs */
-
-    den          = agc_dp_sub(ip, l->vgu.c[2], den);
-    agc_dp_t a   = agc_dp_shr_round(agc_dp_sub(ip, p->rignz, l->rgu.c[2]), 4);                       /* (RIGNZ - RGU2)/16, 2^28 m */
-    agc_dp_t b   = agc_dp_shl_round(ip, agc_dp_mul(ip, agc_dp_sq(l->rgu.c[1]), p->kigny_b8), 4); /* 16 RGU1^2 KIGNY/B8, 2^28 m */
-    agc_dp_t c   = agc_dp_mul(ip, agc_dp_sub(ip, l->rgu.c[0], p->rignx), p->kignx_b4);               /* (RGU0 - RIGNX) KIGNX/B4, 2^28 m */
-    agc_dp_t d   = agc_dp_mul(ip, agc_dp_sub(ip, agc_vec_abval(ip, l->vgu), p->vign), p->kignv_b4);  /* (|VGU| - VIGN) KIGNV/B4, 2^28 m */
-    agc_dp_t num = agc_dp_add(ip, agc_dp_add(ip, agc_dp_add(ip, d, c), b), a);                       /* numerator, 2^28 m */
-    agc_dp_t q   = agc_dp_shr_round(agc_dp_div(ip, num, den), 10);                                   /* DDUM, cs 2^28 */
-
-    if (!AGC_ASSERT(den != 0))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (q);
-}
-
-/**********************************************************************
- * DDUMGOOD and R60INIT (p. 788): TIG = TDEC1 - ZOOMTIME; the landing
- * site's distance out of the orbital plane (+ right/north); UNFC/2 kept
- * in R60VSAVE for the attitude maneuver.
- *
- * ARGUMENTS:
- *   ip     agc_interp_t *  I/O  interpreter state (OVFIND)
- *   tdec1  agc_dp_t        I    converged TDEC1, cs 2^28
- **********************************************************************/
-static void ll_ddumgood(agc_interp_t *ip, agc_dp_t tdec1)
-{
-    agc_lm_ldg_t        *l  = agc_lm_ldg();                    /* landing erasables */
-    const agc_guid_lm_t *g  = &agc_guid_state()->lm;           /* LM guidance state */
-    agc_dp_t             zt = (agc_dp_t) agc_erase_zoomtime(); /* SLOAD ZOOMTIME, SR 14D: cs 2^28 */
-
-    agc_erase_set_tig(agc_dp_sub(ip, tdec1, zt));
-    agc_vec_t n = agc_vec_unit(ip, agc_vec_cross(ip, g->v, g->r), NULL, NULL); /* UNIT(V x R), half unit 2^1 */
-
-    /* DOT SL1: the shift takes in MPAC+2 of the DOT's TP product.     */
-    l->outofpln      = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, n, l->land), 1));
-    l->pointvsm_save = l->unfc_2;
-
-    if (!AGC_ASSERT(zt >= 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(tdec1 >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -317,13 +244,58 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
                 return (st);
             }
 
-            agc_dp_t ddum = ll_ddum(&ip); /* DDUM, cs 2^28 */
+            /**********************************************************************
+             * DDUMCALC (pp. 786-787): the ignition time correction
+             *          (RIGNZ - RGU2)/16 + 16 RGU1^2 KIGNY/B8 + (RGU0 - RIGNX) KIGNX/B4
+             *          + (|VGU| - VIGN) KIGNV/B4
+             *   DDUM = ----------------------------------------------------------
+             *                     2^10 (VGU2 - 16 VGU0 KIGNX/B4)
+             * numerator 2^28 m, denominator 2^10 m/cs, quotient rescaled to 2^28 cs.
+             *
+             * ARGUMENTS:
+             *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
+             *
+             * RETURNS: agc_dp_t -- DDUM, the ignition time correction, cs 2^28
+             **********************************************************************/
+            const agc_lm_ldg_t *l_ddum = agc_lm_ldg();                                                             /* landing erasables */
+            const agc_lm_pad_t *p      = agc_lm_pad();                                                             /* pad loads */
+            agc_dp_t            den    = agc_dp_shl_round(&ip, agc_dp_mul(&ip, l_ddum->vgu.c[0], p->kignx_b4), 4); /* VGU2 - 16 VGU0 KIGNX/B4, 2^10 m/cs */
+
+            den           = agc_dp_sub(&ip, l_ddum->vgu.c[2], den);
+            agc_dp_t a    = agc_dp_shr_round(agc_dp_sub(&ip, p->rignz, l_ddum->rgu.c[2]), 4);                        /* (RIGNZ - RGU2)/16, 2^28 m */
+            agc_dp_t b    = agc_dp_shl_round(&ip, agc_dp_mul(&ip, agc_dp_sq(l_ddum->rgu.c[1]), p->kigny_b8), 4);     /* 16 RGU1^2 KIGNY/B8, 2^28 m */
+            agc_dp_t c    = agc_dp_mul(&ip, agc_dp_sub(&ip, l_ddum->rgu.c[0], p->rignx), p->kignx_b4);               /* (RGU0 - RIGNX) KIGNX/B4, 2^28 m */
+            agc_dp_t d    = agc_dp_mul(&ip, agc_dp_sub(&ip, agc_vec_abval(&ip, l_ddum->vgu), p->vign), p->kignv_b4); /* (|VGU| - VIGN) KIGNV/B4, 2^28 m */
+            agc_dp_t num  = agc_dp_add(&ip, agc_dp_add(&ip, agc_dp_add(&ip, d, c), b), a);                           /* numerator, 2^28 m */
+            agc_dp_t ddum = agc_dp_shr_round(agc_dp_div(&ip, num, den), 10);                                         /* DDUM, cs 2^28 */
+
+            /* DDUM, cs 2^28 */
 
             ic->tdec1 = agc_dp_add(&ip, ddum, agc_guid_state()->avg.piptime1);
 
             if (agc_dp_abs(ddum) < LL_DDUMCRIT)
             {
-                ll_ddumgood(&ip, ic->tdec1);
+                /**********************************************************************
+                 * DDUMGOOD and R60INIT (p. 788): TIG = TDEC1 - ZOOMTIME; the landing
+                 * site's distance out of the orbital plane (+ right/north); UNFC/2 kept
+                 * in R60VSAVE for the attitude maneuver.
+                 *
+                 * ARGUMENTS:
+                 *   ip     agc_interp_t *  I/O  interpreter state (OVFIND)
+                 *   tdec1  agc_dp_t        I    converged TDEC1, cs 2^28
+                 **********************************************************************/
+                agc_dp_t tdec1 = ic->tdec1;
+
+                agc_lm_ldg_t        *l  = agc_lm_ldg();                    /* landing erasables */
+                const agc_guid_lm_t *g  = &agc_guid_state()->lm;           /* LM guidance state */
+                agc_dp_t             zt = (agc_dp_t) agc_erase_zoomtime(); /* SLOAD ZOOMTIME, SR 14D: cs 2^28 */
+
+                agc_erase_set_tig(agc_dp_sub(&ip, tdec1, zt));
+                agc_vec_t n_ddumgood = agc_vec_unit(&ip, agc_vec_cross(&ip, g->v, g->r), NULL, NULL); /* UNIT(V x R), half unit 2^1 */
+
+                /* DOT SL1: the shift takes in MPAC+2 of the DOT's TP product.     */
+                l->outofpln      = agc_tp_to_dp(agc_tp_shift(&ip, agc_vec_dot_tp(&ip, n_ddumgood, l->land), 1));
+                l->pointvsm_save = l->unfc_2;
 
                 return (agc_lm_job_ignalgrt());
             }
@@ -604,14 +576,10 @@ agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx)
  **********************************************************************/
 static void ll_rate_of_descent_setup(void)
 {
-    agc_lm_ldg_t         *l  = agc_lm_ldg();         /* landing erasables */
-    agc_imu_comp_params_t c;                         /* IMU compensation pad loads (PBIAS) */
-    agc_status_t          st = agc_imu_comp_get(&c); /* step status */
+    agc_lm_ldg_t         *l = agc_lm_ldg(); /* landing erasables */
+    agc_imu_comp_params_t c;                /* IMU compensation pad loads (PBIAS) */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return;
-    }
+    agc_imu_comp_get(&c);
 
     agc_interp_t ip; /* interpreter state (OVFIND) */
 
@@ -633,11 +601,6 @@ static void ll_rate_of_descent_setup(void)
     l->lasttpip           = agc_erase_piptime();
     agc_lm_thr()->fcold   = 0;
     agc_lm_thr()->fweight = agc_lm_words(0);
-
-    if (!AGC_ASSERT(l->rodscal1 == agc_lm_pad()->rodscale))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -657,55 +620,28 @@ static void ll_vrtstart(agc_sp_t wchvert)
     agc_lm_dap_stoprate();
     agc_flag_clear(AGC_FLAG_XOVINFLG);
     agc_flag_clear(AGC_FLAG_REDFLAG);
-
-    if (!AGC_ASSERT(l->wchphase == AGC_LM_PHASE_VERTICAL)) /* P65..P67 */
-    {
-        return;
-    }
 }
 
 /**********************************************************************
  * STARTP66 (p. 800): P66 with desired altitude rate = current rate.
+ *
+ * RETURNS: agc_status_t -- OK, or the NEWMODE (MMDSPLAY NOVAC) status
  **********************************************************************/
-static void ll_start_rate_of_descent_landing(void)
+static agc_status_t ll_start_rate_of_descent_landing(void)
 {
     agc_lm_fastchng();
-    agc_status_t st = agc_phase_newmode(66); /* step status */
+    agc_status_t st = agc_phase_newmode(66); /* NEWMODE: MMDSPLAY (NOVAC) */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
+    if (st != AGC_STATUS_OK)
     {
-        return;
+        return (st);
     }
 
     agc_lm_ldg()->vdgvert = agc_guid_state()->lm.hdotdisp;
     ll_rate_of_descent_setup();
     ll_vrtstart(0);
 
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_RODFLAG))) /* ROD initialised */
-    {
-        return;
-    }
-}
-
-/**********************************************************************
- * STARTP67 (p. 801): no harm in "starting" P67 over and over.
- **********************************************************************/
-static void ll_start_manual_landing(void)
-{
-    agc_status_t st = agc_phase_newmode(67); /* step status */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
-    {
-        return;
-    }
-
-    agc_lm_ldg()->rodcount = 0;
-    ll_vrtstart(10);
-
-    if (!AGC_ASSERT(agc_lm_ldg()->wchvert > 0)) /* P67: WCHVERT = 10   */
-    {
-        return;
-    }
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -729,16 +665,28 @@ agc_status_t agc_lm_guildenstern(int *entry)
 
     if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN30, AGC_CH030_AUTOTHROT))
     {
-        ll_start_manual_landing(); /* un-auto-throttle present  */
+        /* un-auto-throttle present  */
+        /**********************************************************************
+         * STARTP67 (p. 801): no harm in "starting" P67 over and over.
+         *
+         * RETURNS: agc_status_t -- OK, or the NEWMODE (MMDSPLAY NOVAC) status
+         **********************************************************************/
+        agc_status_t st = agc_phase_newmode(67); /* NEWMODE: MMDSPLAY (NOVAC) */
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
+
+        agc_lm_ldg()->rodcount = 0;
+        ll_vrtstart(10);
 
         return (AGC_STATUS_OK);
     }
 
     if (agc_phase_checkmm(67))
     { /* P67NOW?                   */
-        ll_start_rate_of_descent_landing();
-
-        return (AGC_STATUS_OK);
+        return (ll_start_rate_of_descent_landing());
     }
 
     if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_ATTHOLD))
@@ -766,42 +714,12 @@ agc_status_t agc_lm_guildenstern(int *entry)
         return (AGC_STATUS_OK);
     }
 
-    ll_start_rate_of_descent_landing(); /* switch into the ROD mode  */
-
-    return (AGC_STATUS_OK);
+    return (ll_start_rate_of_descent_landing()); /* switch into the ROD mode  */
 } /* agc_lm_guildenstern */
 
 /* ======================================================================
  * Landing site perturbation equations (pp. 804-805)
  * ====================================================================== */
-
-/**********************************************************************
- * REDES1 (p. 805): the new site where the perturbed line of sight W
- * (half size) meets the plane of the old site's X coordinate.
- *
- * ARGUMENTS:
- *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
- *   w   agc_vec_t       I    perturbed line of sight, half size
- *                            (2^1), x component limited by DEPRCRIT
- *
- * RETURNS: agc_vec_t -- LANDTEMP, the new site, SM 2^24 m
- **********************************************************************/
-static agc_vec_t ll_redesignated_site(agc_interp_t *ip, agc_vec_t w)
-{
-    agc_lm_ldg_t   *l = agc_lm_ldg();                                                 /* landing erasables */
-    const agc_vec_t r = agc_guid_state()->lm.r;                                       /* R, SM, 2^24 m */
-    agc_dp_t        q = agc_dp_div(ip, agc_dp_sub(ip, l->land.c[0], r.c[0]), w.c[0]); /* 2^24 m */
-    agc_vec_t       n = agc_vec_add(ip, agc_vec_scale(ip, w, q), r);                  /* R + q W, 2^24 m */
-
-    n = agc_vec_unit(ip, n, NULL, NULL);
-
-    if (!AGC_ASSERT(w.c[0] != 0))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    return (agc_vec_shl(ip, agc_vec_scale(ip, n, l->land_mag), 1));
-}
 
 /**********************************************************************
  * REDESIG (pp. 804-805): with REDFLAG set and TREDES not zero, move the
@@ -842,7 +760,24 @@ agc_status_t agc_lm_redesig(agc_interp_t *ip)
         w.c[0] = LL_DEPRCRIT; /* not too close to horizon  */
     }
 
-    l->landtemp = ll_redesignated_site(ip, w);
+    /**********************************************************************
+     * REDES1 (p. 805): the new site where the perturbed line of sight W
+     * (half size) meets the plane of the old site's X coordinate.
+     *
+     * ARGUMENTS:
+     *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
+     *   w   agc_vec_t       I    perturbed line of sight, half size
+     *                            (2^1), x component limited by DEPRCRIT
+     *
+     * RETURNS: agc_vec_t -- LANDTEMP, the new site, SM 2^24 m
+     **********************************************************************/
+    agc_lm_ldg_t   *l_site = agc_lm_ldg();                                                      /* landing erasables */
+    const agc_vec_t r      = agc_guid_state()->lm.r;                                            /* R, SM, 2^24 m */
+    agc_dp_t        q      = agc_dp_div(ip, agc_dp_sub(ip, l_site->land.c[0], r.c[0]), w.c[0]); /* 2^24 m */
+    agc_vec_t       n      = agc_vec_add(ip, agc_vec_scale(ip, w, q), r);                       /* R + q W, 2^24 m */
+
+    n           = agc_vec_unit(ip, n, NULL, NULL);
+    l->landtemp = agc_vec_shl(ip, agc_vec_scale(ip, n, l_site->land_mag), 1);
     agc_lm_fastchng();
     l->land     = l->landtemp;
 
@@ -902,12 +837,8 @@ static agc_dp_t ll_rod_afc(agc_interp_t *ip, agc_vec_t ur)
     agc_dp_t            arod = agc_dp_div(ip, agc_dp_sub(ip, l->vdgvert, g->lm.hdotdisp), p->taurod);     /* (VDGVERT - HDOTDISP)/TAUROD, 2^-4 m/cs^2 */
     agc_dp_t            gm   = agc_dp_shr(agc_dp_div(ip, agc_vec_abval(ip, g->avg.gdt_2), LL_GSCALE), 2); /* |G| (20D), 2^-4 m/cs^2 */
     agc_vec_t           x    = agc_vec_make(AGC_DP_HALF, 0, 0);                                           /* UNITX, transformed to SM by CDU*NBSM, 2^1 */
-    agc_status_t        st   = agc_guid_cdu_nbsm(&g->trig, &x);                                           /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (0); /* no valid result */
-    }
+    agc_guid_cdu_nbsm(&g->trig, &x);
 
     agc_dp_t xur = agc_vec_dot(ip, x, ur); /* X.UR (22D), scale 2^2 */
 
@@ -938,11 +869,6 @@ static agc_dp_t ll_rod_afc(agc_interp_t *ip, agc_vec_t ur)
     else if (afc >= amax)
     {
         l->afc = amax;
-    }
-
-    if (!AGC_ASSERT(xur != 0))
-    {
-        return (0); /* no valid result */
     }
 
     return (meas);
@@ -1060,7 +986,7 @@ static agc_status_t ll_rodcomp(const agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_rate_of_descent_vertical(const agc_job_ctx_t *ctx)
 {
-    agc_phase_change(3, 00003);
+    agc_phase_change(00003);
     agc_status_t st = agc_waitlist_call(LL_1SEC, AGC_TASK_RODTASK); /* TWIDDLE */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -1125,7 +1051,7 @@ agc_status_t agc_lm_manual_landing_vertical(const agc_job_ctx_t *ctx, agc_interp
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_change(3, 00003);
+    agc_phase_change(00003);
 
     return (ll_vhorcomp(ctx, ip, agc_guid_state()->lm.v));
 }
@@ -1144,11 +1070,6 @@ static uint16_t ll_lpd_bits(void)
 {
     uint16_t c = (uint16_t) (~agc_chan_read(AGC_CHAN_CHAN31) & LL_ALL4BITS); /* present LPD bits */
 
-    if (!AGC_ASSERT((c & ~(unsigned int) LL_ALL4BITS) == 0u))
-    {
-        return (0); /* no valid result */
-    }
-
     _Static_assert(LL_ALL4BITS == 063, "AGC constant");
 
     return (c);
@@ -1163,25 +1084,23 @@ static uint16_t ll_lpd_bits(void)
  **********************************************************************/
 agc_status_t agc_lm_pitfall(void)
 {
-    if (!agc_phase_checkmm(64))
+    if (agc_phase_checkmm(64)) /* RESUME       */
     {
-        return (AGC_STATUS_OK); /* RESUME       */
-    }
+        agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
-    agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
+        l->elvira       = (agc_sp_t) ll_lpd_bits();
+        l->zerlina      = 2;
+        agc_status_t st = agc_waitlist_call(5, AGC_TASK_REDESMON); /* step status */
 
-    l->elvira       = (agc_sp_t) ll_lpd_bits();
-    l->zerlina      = 2;
-    agc_status_t st = agc_waitlist_call(5, AGC_TASK_REDESMON); /* step status */
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(l->elvira >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
+        if (!AGC_ASSERT(l->elvira >= 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
     }
 
     return (AGC_STATUS_OK);

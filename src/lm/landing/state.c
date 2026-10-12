@@ -46,16 +46,6 @@ static agc_lm_asc_t lm_asc; /* ascent guidance erasables, EBANK 7      */
  **********************************************************************/
 agc_lm_pad_t *agc_lm_pad(void)
 {
-    if (!AGC_ASSERT(lm_pad.leadtime <= 0)) /* LEADTIME is a lead, cs  */
-    {
-        return (&lm_pad);
-    }
-
-    if (!AGC_ASSERT(lm_pad.taurod >= 0)) /* TAUROD time constant     */
-    {
-        return (&lm_pad);
-    }
-
     return (&lm_pad);
 }
 
@@ -66,16 +56,6 @@ agc_lm_pad_t *agc_lm_pad(void)
  **********************************************************************/
 agc_lm_ldg_t *agc_lm_ldg(void)
 {
-    if (!AGC_ASSERT(lm_ldg.wchphase >= AGC_LM_PHASE_IGNALG && lm_ldg.wchphase <= AGC_LM_PHASE_VERTICAL)) /* WCHPHASE */
-    {
-        return (&lm_ldg);
-    }
-
-    if (!AGC_ASSERT(lm_ldg.flpass0 >= 0)) /* FLPASS0 counts passes      */
-    {
-        return (&lm_ldg);
-    }
-
     return (&lm_ldg);
 }
 
@@ -96,16 +76,6 @@ agc_lm_thr_t *agc_lm_thr(void)
  **********************************************************************/
 agc_lm_asc_t *agc_lm_asc(void)
 {
-    if (!AGC_ASSERT(lm_asc.tbup >= 0)) /* TBUP, burn-up time, never < 0 */
-    {
-        return (&lm_asc);
-    }
-
-    if (!AGC_ASSERT(lm_asc.ve >= 0)) /* VE = -APSVEX/-DPSVEX, positive */
-    {
-        return (&lm_asc);
-    }
-
     return (&lm_asc);
 }
 
@@ -115,10 +85,10 @@ agc_lm_asc_t *agc_lm_asc(void)
  **********************************************************************/
 void agc_lm_landing_reset(void)
 {
-    (void) memset(&lm_pad, 0, sizeof (lm_pad)); /* returns &lm_pad   */
-    (void) memset(&lm_ldg, 0, sizeof (lm_ldg));
-    (void) memset(&lm_thr, 0, sizeof (lm_thr));
-    (void) memset(&lm_asc, 0, sizeof (lm_asc));
+    (void) memset(&lm_pad, 0, sizeof (lm_pad)); /* memset returns its first argument */
+    (void) memset(&lm_ldg, 0, sizeof (lm_ldg)); /* memset returns its first argument */
+    (void) memset(&lm_thr, 0, sizeof (lm_thr)); /* memset returns its first argument */
+    (void) memset(&lm_asc, 0, sizeof (lm_asc)); /* memset returns its first argument */
     lm_ldg.wchphase = AGC_LM_PHASE_IGNALG;
 }
 
@@ -132,9 +102,7 @@ void agc_lm_landing_reset(void)
  **********************************************************************/
 void agc_lm_phaschng(uint16_t octal_code)
 {
-    int group = (int) (octal_code & 7u); /* restart group 1..6         */
-
-    agc_phase_change(group, octal_code);
+    agc_phase_change(octal_code);
 }
 
 /**********************************************************************
@@ -146,12 +114,7 @@ void agc_lm_phaschng(uint16_t octal_code)
  **********************************************************************/
 void agc_lm_fastchng(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* LM only */
-    {
-        return;
-    }
-
-    agc_phase_change(3, LM_FASTCHNG_CODE);
+    agc_phase_change(LM_FASTCHNG_CODE);
 }
 
 /**********************************************************************
@@ -183,8 +146,8 @@ agc_sp_t agc_lm_time1(void)
  **********************************************************************/
 agc_sp_t agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor)
 {
-    if (!AGC_ASSERT(divisor != 0))
-    {
+    if (divisor == 0)
+    { /* |dividend| >= |divisor|: DV leaves a meaningless quotient */
         return ((dividend >= 0) ? AGC_SP_MAX : AGC_SP_MIN); /* by sign */
     }
 
@@ -213,16 +176,6 @@ agc_sp_t agc_lm_mp_hi(agc_sp_t a, agc_sp_t b)
     int32_t p  = (int32_t) a * (int32_t) b; /* DP product, 2^-28 units */
     int32_t hi = p / LM_WORD;               /* truncate toward zero    */
 
-    if (!AGC_ASSERT(hi <= AGC_SP_MAX && hi >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(hi * hi <= (int32_t) a * a))
-    {
-        return (0); /* not reached: |b| < 1 cannot enlarge |a| */
-    }
-
     return ((agc_sp_t) hi);
 }
 
@@ -245,11 +198,6 @@ agc_sp_t agc_lm_ad(agc_sp_t a, agc_sp_t b)
     if (!AGC_ASSERT(s <= AGC_SP_MAX && s >= AGC_SP_MIN))
     { /* overflow-corrected store: drop the overflow bit           */
         s = (s > 0) ? s - LM_WORD : s + LM_WORD; /* by overflow sign */
-    }
-
-    if (!AGC_ASSERT(s >= AGC_SP_MIN && s <= AGC_SP_MAX)) /* one word */
-    {
-        return (0); /* not reached: one correction fits a word */
     }
 
     return ((agc_sp_t) s);
@@ -336,16 +284,6 @@ agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y, int *ovf)
     *ovf             = a;
     agc_lm_words_t r = {(agc_sp_t) hi, (agc_sp_t) lo}; /* result, 2^S */
 
-    if (!AGC_ASSERT(lo >= AGC_SP_MIN && lo <= AGC_SP_MAX))
-    {
-        return (x); /* not reached: one carry corrects a word sum */
-    }
-
-    if (!AGC_ASSERT((int64_t) agc_lm_words_value(r) + (int64_t) a * LM_WORD * LM_WORD == (int64_t) agc_lm_words_value(x) + agc_lm_words_value(y)))
-    {
-        return (x); /* not reached: DAS is exact up to the overflow */
-    }
-
     return (r);
 } /* agc_lm_das_ovf */
 
@@ -363,11 +301,6 @@ agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y)
 {
     int            ovf = 0;                          /* net overflow  */
     agc_lm_words_t r   = agc_lm_das_ovf(x, y, &ovf); /* sum, 2^S      */
-
-    if (!AGC_ASSERT(ovf == 0))
-    {
-        return (r); /* overflow-corrected words, as TS stores them */
-    }
 
     return (r);
 }

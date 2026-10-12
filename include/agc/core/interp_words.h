@@ -84,8 +84,8 @@ agc_tp_words_t agc_mpac_abs(agc_tp_words_t m);                    /* ABS: BRANCH
 agc_tp_words_t agc_mpac_sign(agc_tp_words_t m, agc_dp_words_t x); /* SIGN: DCOMP if x < 0     */
 
 /* ---- trigonometric (scalings as interp.h); TP MPAC out ------------------- */
-agc_tp_words_t agc_mpac_sin(agc_tp_words_t m);  /* SIN                       */
-agc_tp_words_t agc_mpac_cos(agc_tp_words_t m);  /* COS                       */
+agc_tp_words_t agc_mpac_sin(agc_tp_words_t m);                    /* SIN                       */
+agc_tp_words_t agc_mpac_cos(agc_tp_words_t m);                    /* COS                       */
 agc_tp_words_t agc_mpac_asin(agc_interp_t *ip, agc_tp_words_t m); /* ASIN: ALARM 01301 latched */
 agc_tp_words_t agc_mpac_acos(agc_interp_t *ip, agc_tp_words_t m); /* ACOS: ALARM 01301 latched */
 

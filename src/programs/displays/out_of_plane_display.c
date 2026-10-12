@@ -207,12 +207,7 @@ agc_status_t agc_job_out_of_plane_start(agc_job_ctx_t *ctx)
         oop_work.optiony = rz_option(2); /* LXCH OPTIONY   */
     }
 
-    agc_status_t st = rz_set_dsptem_dp(RZ_DSPTEMX, 0); /* DSPTEMX = 0 */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    rz_set_dsptem_dp(RZ_DSPTEMX, 0); /* DSPTEMX = 0 */
 
     return (agc_job_out_of_plane_time(ctx));
 }
@@ -317,15 +312,12 @@ agc_status_t agc_job_out_of_plane_compute(agc_job_ctx_t *ctx)
 
     st = agc_rendz_out_of_plane_compute(&ip, rz, oop_work.rpass36, vp, o.ratt, o.vatt);
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = rz_set_dsptem_dp(RZ_DSPTEMX, o.tat); /* SGNAGREE 30D   */
-    }
-
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    rz_set_dsptem_dp(RZ_DSPTEMX, o.tat); /* SGNAGREE 30D   */
 
     return (rz_flash(ctx, AGC_DSKY_GOMARKF, 6U, 90U, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_RENDZ_ENDEXT, AGC_JOB_OUT_OF_PLANE_TIME));
 } /* agc_job_out_of_plane_compute */

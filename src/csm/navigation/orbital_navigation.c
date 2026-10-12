@@ -72,7 +72,7 @@
  * S22TOFF return of S22N7071 / P22SUBRB.                                 */
 typedef struct on_state
 {
-    uint8_t      noun; /* 70 or 71                              */
+    uint8_t noun; /* 70 or 71                              */
     agc_job_id_t ret;  /* where the check returns               */
 } on_state_t;
 
@@ -120,7 +120,7 @@ agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx)
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
     agc_vec_t n;                               /* 2^1 */
 
-    n          = agc_vec_unit(&ip, agc_vec_cross(&ip, o.vatt, o.ratt), NULL, NULL);
+    n = agc_vec_unit(&ip, agc_vec_cross(&ip, o.vatt, o.ratt), NULL, NULL);
     agc_dp_t c = agc_dp_abs(agc_vec_dot(&ip, n, refsmmat.row[1])); /* 2^2 */
 
     agc_rendz_erasable()->plus_mga = agc_dp_acos(&ip, agc_dp_shl(&ip, c, 1));
@@ -263,9 +263,9 @@ static agc_status_t on_site_from_rls(void)
 
     agc_interp_init(&ip);
     agc_navaux_padload_t pad;                               /* pad loads */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
-    agc_dp_t             t  = agc_rtb_loadtime();           /* now, cs 2^28 */
-    agc_vec_t            r  = agc_vec_zero();               /* RLS reference, 2^27 */
+    agc_status_t st = agc_navaux_get_padload(&pad); /* pad loads */
+    agc_dp_t t = agc_rtb_loadtime();           /* now, cs 2^28 */
+    agc_vec_t r = agc_vec_zero();               /* RLS reference, 2^27 */
 
     if (st == AGC_STATUS_OK)
     {
@@ -273,7 +273,7 @@ static agc_status_t on_site_from_rls(void)
     }
 
     agc_latlong_opt_t opt = {agc_flag_test(AGC_FLAG_LUNAFLAG), agc_flag_test(AGC_FLAG_ERADFLAG)};
-    agc_latlong_t     ll; /* LAT LONG ALT */
+    agc_latlong_t ll; /* LAT LONG ALT */
 
     if (st == AGC_STATUS_OK)
     {
@@ -346,7 +346,7 @@ static agc_status_t on_abde(agc_job_ctx_t *ctx, uint16_t de)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_code_check(agc_job_ctx_t *ctx)
 {
-    uint16_t lm    = rz_word_of(agc_erase_landmark()); /* ABCDE word */
+    uint16_t lm = rz_word_of(agc_erase_landmark()); /* ABCDE word */
     uint16_t cxoff = (uint16_t) (lm & ON_PRIO7);       /* B (offset) */
 
     rz_landmark_set_offset((agc_sp_t) cxoff);
@@ -538,7 +538,7 @@ agc_status_t agc_job_orbital_navigation_advanced_optics(agc_job_ctx_t *ctx)
 agc_status_t agc_job_orbital_navigation_marked(agc_job_ctx_t *ctx)
 {
     on.noun = 71U;
-    on.ret  = AGC_JOB_ORBITAL_NAVIGATION_PROCESS;
+    on.ret = AGC_JOB_ORBITAL_NAVIGATION_PROCESS;
 
     return (agc_job_orbital_navigation_code(ctx));
 }
@@ -577,7 +577,7 @@ agc_status_t agc_job_orbital_navigation_process(void)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_over(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     return (agc_job_orbital_navigation_landmark(ctx));
 }

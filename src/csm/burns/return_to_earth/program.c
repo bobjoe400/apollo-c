@@ -89,12 +89,12 @@
 #define RTE_BLANK_R3                ((uint16_t) 4)     /* 37BLANK +1: R3 */
 
 /* Constants (P37_P70.agc pp. 931-932, words from the Comanche055 rope).   */
-static const agc_dp_t VCSPS    = 264328360;  /* VCSPS    37405 12250  31.510396 B-5 m/cs */
-static const agc_dp_t VCRCS    = 227049420;  /* VCRCS    33041 37714  27.0664 B-5 m/cs   */
-static const agc_dp_t MDOTRCS  = 54945;      /* MDOTRCS  00003 13241  .0016375 B-3 kg/cs */
-static const agc_dp_t CSUBT    = 134217728;  /* CSUBT 20000 00000 .5, B0 */
-static const agc_dp_t MCOS7_5  = -266138953; /* MCOS7.5 40214 45266 -.99144486, B0 */
-static const agc_dp_t MSIN7_5  = -35037857;  /* MSIN7.5 73645 56536 -.13052619, B0 */
+static const agc_dp_t VCSPS = 264328360;  /* VCSPS    37405 12250  31.510396 B-5 m/cs */
+static const agc_dp_t VCRCS = 227049420;  /* VCRCS    33041 37714  27.0664 B-5 m/cs   */
+static const agc_dp_t MDOTRCS = 54945;      /* MDOTRCS  00003 13241  .0016375 B-3 kg/cs */
+static const agc_dp_t CSUBT = 134217728;  /* CSUBT 20000 00000 .5, B0 */
+static const agc_dp_t MCOS7_5 = -266138953; /* MCOS7.5 40214 45266 -.99144486, B0 */
+static const agc_dp_t MSIN7_5 = -35037857;  /* MSIN7.5 73645 56536 -.13052619, B0 */
 static const agc_dp_t MCOS22_5 = -62000506;  /* MCOS22.5 70467 71205  -.92387953 B-2     */
 static const agc_dp_t THETA165 = 123032917;  /* THETA165 16525 12525 .4583333 rev, B0 */
 static const agc_dp_t THETA210 = 156587349;  /* THETA210 22525 12525 .5833333 rev, B0 */
@@ -264,7 +264,7 @@ agc_status_t agc_job_return_to_earth_alarm_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx)
 {
-    agc_guid_t        *g  = agc_guid_state();  /* guidance erasables (TIG, ECSTEER) */
+    agc_guid_t *g = agc_guid_state();  /* guidance erasables (TIG, ECSTEER) */
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables (VPRED, GAMMAEI) */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT((g != NULL) && (es != NULL)))
@@ -272,10 +272,10 @@ agc_status_t agc_job_return_to_earth(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_change(4, RTE_PHASE_NOT_RESTARTABLE);
+    agc_phase_change(RTE_PHASE_NOT_RESTARTABLE);
     g->burn.ecsteer = agc_dp_pack(RTE_ECSTEER, agc_dp_low(g->burn.ecsteer));
-    es->vpred       = 0; /* ZEROVECS      */
-    es->gammaei     = 0;
+    es->vpred = 0; /* ZEROVECS      */
+    es->gammaei = 0;
 
     return (agc_job_return_to_earth_tig_display(ctx));
 }
@@ -362,7 +362,7 @@ static agc_status_t rte_show_solution(const agc_job_ctx_t *ctx, agc_interp_t *ip
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rs->vnstore     = vnstore;                                                                            /* STQ VNSTORE   */
+    rs->vnstore = vnstore;                                                                            /* STQ VNSTORE   */
     agc_status_t st = rte_display_values(ip, rs, agc_erase_tig(), agc_erase_return_to_earth_range(), &d); /* RTEDISP / display status */
 
     if (st != AGC_STATUS_OK)
@@ -372,10 +372,10 @@ static agc_status_t rte_show_solution(const agc_job_ctx_t *ctx, agc_interp_t *ip
 
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables (LAT/LNG(SPL)) */
 
-    es->vpred                     = d.vpred;
-    es->gammaei                   = d.gammaei;
-    es->lat_spl                   = d.lat_spl;
-    es->lng_spl                   = d.lng_spl;
+    es->vpred = d.vpred;
+    es->gammaei = d.gammaei;
+    es->lat_spl = d.lat_spl;
+    es->lng_spl = d.lng_spl;
     agc_erase_set_t3tot4(d.t3tot4);
     agc_rendz_erasable()->delvlvc = d.delvlvc;
     agc_guid_state()->burn.vgdisp = d.vgdisp;
@@ -402,8 +402,8 @@ static agc_status_t rte_show_solution(const agc_job_ctx_t *ctx, agc_interp_t *ip
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_conic_search(agc_job_ctx_t *ctx)
 {
-    agc_interp_t    *ip = rte_ip();               /* P37 interpreter state */
-    rte_erasable_t  *rs = rte_state();            /* P37 erasables */
+    agc_interp_t *ip = rte_ip();               /* P37 interpreter state */
+    rte_erasable_t *rs = rte_state();            /* P37 erasables */
     agc_integ_ctx_t *ic = agc_integ_shared_ctx(); /* INTSTALL area (CSMPREC) */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ic != NULL))
@@ -411,9 +411,9 @@ agc_status_t agc_job_return_to_earth_conic_search(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    ip->ovfind      = 0;                                                                                /* SSP OVFIND 0  */
-    rs->rtedvd      = agc_entry_state()->vpred;
-    rs->rtegam2d    = agc_entry_state()->gammaei;
+    ip->ovfind = 0;                                                                                /* SSP OVFIND 0  */
+    rs->rtedvd = agc_entry_state()->vpred;
+    rs->rtegam2d = agc_entry_state()->gammaei;
     agc_status_t st = agc_integ_csmprec(ip, ic, agc_erase_tig(), AGC_JOB_RETURN_TO_EARTH_CONIC_SEARCH); /* step status */
 
     if (st == AGC_STATUS_BUSY)
@@ -579,7 +579,7 @@ agc_status_t agc_job_return_to_earth_precision(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_precision_resume(agc_job_ctx_t *ctx)
 {
-    agc_interp_t   *ip = rte_ip();    /* P37 interpreter state */
+    agc_interp_t *ip = rte_ip();    /* P37 interpreter state */
     rte_erasable_t *rs = rte_state(); /* P37 erasables */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(rs->nn1a >= 0))
@@ -588,7 +588,7 @@ agc_status_t agc_job_return_to_earth_precision_resume(agc_job_ctx_t *ctx)
     }
 
     const agc_job_id_t resume = AGC_JOB_RETURN_TO_EARTH_PRECISION_RESUME; /* job INTSTALL wakes */
-    agc_status_t       st     = rte_precision_run(ip, rs, resume);        /* PREC120 */
+    agc_status_t st = rte_precision_run(ip, rs, resume);        /* PREC120 */
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -677,12 +677,12 @@ agc_status_t agc_job_return_to_earth_option_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx)
 {
-    agc_interp_t     *ip = rte_ip();          /* P37 interpreter state */
-    rte_erasable_t   *rs = rte_state();       /* P37 erasables */
+    agc_interp_t *ip = rte_ip();          /* P37 interpreter state */
+    rte_erasable_t *rs = rte_state();       /* P37 erasables */
     agc_csm_dapcom_t *dc = agc_csm_dap_com(); /* DAP erasables (EMDOT, WEIGHT/G) */
-    agc_dp_t          mdot;                   /* MDOT, kg/cs B3 x 2^n1 */
-    agc_dp_t          vc = VCSPS;             /* VC exhaust speed, m/cs B7 */
-    int               n1 = 0;                 /* NORM shift count of MDOT */
+    agc_dp_t mdot;                   /* MDOT, kg/cs B3 x 2^n1 */
+    agc_dp_t vc = VCSPS;             /* VC exhaust speed, m/cs B7 */
+    int n1 = 0;                 /* NORM shift count of MDOT */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(dc != NULL))
     {
@@ -693,7 +693,7 @@ agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx)
     { /* P37Q          */
         mdot = agc_flag_test(AGC_FLAG_NJETSFLG) ? MDOTRCS : agc_dp_shl(ip, MDOTRCS, 1); /* 2 jets : 4 */
         mdot = agc_dp_shl(ip, mdot, 1);                                                 /* P37R SL1      */
-        vc   = VCRCS;
+        vc = VCRCS;
     }
     else
     {
@@ -712,8 +712,8 @@ agc_status_t agc_job_return_to_earth_ignition_time(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t a   = agc_dp_poly(agc_dp_div(ip, rs->dv, vc), BURN_POLY, 2); /* P37T POLY: 1 - E^(-DV/VC), B3 */
-    agc_dp_t w   = agc_dp_mul_trunc(agc_dp_from_sp(dc->weight_g), a);     /* DMP: WEIGHT/G A, B17 */
+    agc_dp_t a = agc_dp_poly(agc_dp_div(ip, rs->dv, vc), BURN_POLY, 2); /* P37T POLY: 1 - E^(-DV/VC), B3 */
+    agc_dp_t w = agc_dp_mul_trunc(agc_dp_from_sp(dc->weight_g), a);     /* DMP: WEIGHT/G A, B17 */
     agc_dp_t dtb = agc_dp_shl(ip, agc_dp_div(ip, w, mdot), n1 - 12);      /* SL* B28 */
 
     agc_erase_set_tig(agc_dp_sub(ip, rs->t1, agc_dp_mul_trunc(dtb, CSUBT)));
@@ -766,7 +766,7 @@ agc_status_t agc_job_return_to_earth_biased_tig_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
 {
-    agc_interp_t   *ip = rte_ip();    /* P37 interpreter state */
+    agc_interp_t *ip = rte_ip();    /* P37 interpreter state */
     rte_erasable_t *rs = rte_state(); /* P37 erasables */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(rs->t2 != rs->t1))
@@ -788,15 +788,15 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    rs->rtarg     = rs->r_t2v;                                                                                /* RATT, 0D      */
+    rs->rtarg = rs->r_t2v;                                                                                /* RATT, 0D      */
     agc_vec_t ur2 = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);                                                  /* UR(T2), B1 */
-    agc_vec_t k   = agc_vec_add(ip, agc_vec_scale(ip, rs->ur1, MCOS7_5), agc_vec_scale(ip, rs->uh, MSIN7_5)); /* K/ aim direction, B1 */
+    agc_vec_t k = agc_vec_add(ip, agc_vec_scale(ip, rs->ur1, MCOS7_5), agc_vec_scale(ip, rs->uh, MSIN7_5)); /* K/ aim direction, B1 */
 
     if (agc_dp_add(ip, agc_vec_dot(ip, k, ur2), MCOS22_5) >= 0)
     {
-        agc_timetheta_in_t   in;            /* TIMETHET inputs */
+        agc_timetheta_in_t in;            /* TIMETHET inputs */
         agc_conic_time_out_t out;           /* TIMETHET outputs */
-        agc_dp_t             th = THETA165; /* aim angle, revs B0  */
+        agc_dp_t th = THETA165; /* aim angle, revs B0  */
 
         if (agc_vec_dot(ip, rs->uh, rs->r_t2v) < 0)
         {
@@ -810,14 +810,14 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
         in.rvec = rs->r_t1v;
         in.vvec = rs->v2_t1v;
         in.body = AGC_CONIC_EARTH;
-        st      = agc_conic_timethet(ip, &in, &out);
+        st = agc_conic_timethet(ip, &in, &out);
 
         if (st != AGC_STATUS_OK)
         {
             return (st);
         }
 
-        rs->rtarg   = out.rnew;
+        rs->rtarg = out.rnew;
         rs->conic_t = out.t;
     }
 
@@ -847,9 +847,9 @@ agc_status_t agc_job_return_to_earth_targeting(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
 {
-    agc_interp_t         *ip = rte_ip();             /* P37 interpreter state */
+    agc_interp_t *ip = rte_ip();             /* P37 interpreter state */
     const rte_erasable_t *rs = rte_state();          /* P37 erasables */
-    agc_rendz_t          *rz = agc_rendz_erasable(); /* rendezvous targets (RTARG ..) */
+    agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous targets (RTARG ..) */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(rz != NULL))
     {
@@ -865,8 +865,8 @@ agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz->rtarg   = rs->rtarg;
-    rz->tpass4  = agc_dp_add(ip, rs->conic_t, rs->t1);
+    rz->rtarg = rs->rtarg;
+    rz->tpass4 = agc_dp_add(ip, rs->conic_t, rs->t1);
     rz->delvsin = agc_vec_sub(ip, rs->v2_t1v, rs->v_t1v);
 
     const agc_job_id_t again = AGC_JOB_RETURN_TO_EARTH_TARGET_STORE; /* V32 */
@@ -895,7 +895,7 @@ agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
 agc_status_t agc_return_to_earth_noun(uint16_t data_id, bool write, agc_dp_t *value)
 {
     rte_erasable_t *rs = rte_state(); /* P37 erasables */
-    agc_dp_t       *p  = NULL;        /* the erasable addressed */
+    agc_dp_t *p = NULL;        /* the erasable addressed */
 
     if (data_id == AGC_DATA_RTEDVD)
     {

@@ -43,7 +43,7 @@ agc_status_t agc_job_csm_fine_align(agc_job_ctx_t *ctx)
 
     agc_align_ram_t *ram = agc_align_ram();
 
-    ram->starind  = 1;
+    ram->starind = 1;
     ram->markindx = 1;
 
     return (agc_job_csm_fine_align_next_star(ctx));
@@ -69,8 +69,8 @@ agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx)
 /* STARCODE = BESTI +STARIND x 1/6, then R51DSP. */
 agc_status_t agc_job_csm_fine_align_star_code(agc_job_ctx_t *ctx)
 {
-    agc_align_ram_t *ram   = agc_align_ram();
-    const agc_sp_t   star6 = (ram->starind == 0) ? ram->besti : ram->bestj;
+    agc_align_ram_t *ram = agc_align_ram();
+    const agc_sp_t star6 = (ram->starind == 0) ? ram->besti : ram->bestj;
 
     if (!AGC_ASSERT((star6 >= 0) && (star6 <= AGC_ALIGN_STAR_CODE_MAX * STAR_WORDS)))
     {
@@ -145,7 +145,7 @@ agc_status_t agc_job_csm_fine_align_star_located(agc_job_ctx_t *ctx)
 agc_status_t agc_job_csm_fine_align_marked(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t     ip;
+    agc_interp_t ip;
 
     agc_interp_init(&ip);
     agc_status_t st = agc_csm_sxtsm_marks(&ip, &ram->starsav2);
@@ -171,24 +171,24 @@ agc_status_t agc_job_csm_fine_align_marked(agc_job_ctx_t *ctx)
 agc_status_t agc_job_csm_fine_align_star_at_mark(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t     ip;
+    agc_interp_t ip;
 
     agc_interp_init(&ip);
     const agc_mat_t refsmmat = agc_erase_refsmmat();
-    const agc_vec_t cat      = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, ram->planet_los), NULL, NULL);
+    const agc_vec_t cat = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, ram->planet_los), NULL, NULL);
 
     if (ram->starind != 0)
     { /* R51.4    */
-        ram->planvec  = cat;
+        ram->planvec = cat;
         ram->starsav1 = ram->starsav2;
-        ram->starind  = 0;
+        ram->starind = 0;
 
         return (agc_job_csm_fine_align_next_star(ctx));
     }
 
     ram->starad[0] = cat;
-    ram->vac6      = ram->starsav2;
-    ram->vac12     = ram->starsav1;
+    ram->vac6 = ram->starsav2;
+    ram->vac12 = ram->starsav1;
     ram->starad[1] = ram->planvec;
 
     return (agc_align_sighting_data_display(ctx, AGC_JOB_CSM_FINE_ALIGN_DATA_CHECKED));
@@ -206,12 +206,12 @@ agc_status_t agc_job_csm_fine_align_data_checked(agc_job_ctx_t *ctx)
     }
 
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t     ip;
+    agc_interp_t ip;
 
     agc_interp_init(&ip);
-    const agc_vec_t    a[2] = {ram->starad[0], ram->starad[1]};
-    const agc_vec_t    b[2] = {ram->vac6, ram->vac12};
-    const agc_status_t st   = agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
+    const agc_vec_t a[2] = {ram->starad[0], ram->starad[1]};
+    const agc_vec_t b[2] = {ram->vac6, ram->vac12};
+    const agc_status_t st = agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
 
     if (st != AGC_STATUS_OK)
     {

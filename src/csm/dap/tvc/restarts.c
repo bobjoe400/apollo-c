@@ -102,10 +102,10 @@ static agc_status_t tvcr_tvc_enable(void)
  **********************************************************************/
 agc_status_t agc_task_redotvc(void)
 {
-    agc_csm_tvc_t          *t  = agc_csm_dap_tvc(); /* TVC erasables    */
-    const agc_csm_dapcom_t *c  = agc_csm_dap_com(); /* trims            */
-    agc_status_t            st = AGC_STATUS_OK;     /* first failure    */
-    agc_status_t            s2 = AGC_STATUS_OK;     /* copycycle status */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC erasables    */
+    const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* trims            */
+    agc_status_t st = AGC_STATUS_OK;     /* first failure    */
+    agc_status_t s2 = AGC_STATUS_OK;     /* copycycle status */
 
     if (!AGC_ASSERT((t->tvcphase >= -2) && (t->tvcphase <= 3)))
     {
@@ -221,8 +221,8 @@ static agc_status_t tvcr_chkstrk(void)
  **********************************************************************/
 agc_status_t agc_task_cmdsout(void)
 {
-    agc_csm_tvc_t *t  = agc_csm_dap_tvc(); /* TVC DAP erasables         */
-    agc_status_t   st = AGC_STATUS_OK;     /* switch-over status        */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables         */
+    agc_status_t st = AGC_STATUS_OK;     /* switch-over status        */
 
     agc_erase_set_tvcpitch(t->pcmd); /* CS ZERO; AD PCMD; TS TVCPITCH  */
     agc_erase_set_tvcyaw(t->ycmd);

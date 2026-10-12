@@ -34,21 +34,6 @@
 /* ---- representation ----------------------------------------------------- */
 
 /**********************************************************************
- * AGC: none (representation predicate) -- a valid 15-bit word.
- * No AGC_ASSERT here: this is the predicate the assertions use.
- *
- * ARGUMENTS:
- *   w  int32_t  I  candidate word, scaled 2^-14 per unit
- *
- * RETURNS: bool -- true when -2^14 < w < 2^14
- **********************************************************************/
-bool agc_w_ok(int32_t w)
-{
-    /* No AGC_ASSERT here: this is the predicate the assertions use.        */
-    return ((w > -AGC_W_ONE) && (w < AGC_W_ONE));
-}
-
-/**********************************************************************
  * AGC: none (representation) -- split a DP into the sign-agreeing word
  * pair the AGC holds after DCA of a stored DP (pp.1131ff).
  *
@@ -224,9 +209,9 @@ agc_tp_words_t agc_w3_to_words(agc_w3_t m)
 {
     agc_tp_words_t r = {0, 0, 0};
 
-    r.hi  = (agc_sp_t) m.m0;
+    r.hi = (agc_sp_t) m.m0;
     r.mid = (agc_sp_t) m.m1;
-    r.lo  = (agc_sp_t) m.m2;
+    r.lo = (agc_sp_t) m.m2;
 
     return (r);
 }
@@ -270,12 +255,12 @@ int32_t agc_w_ts(int32_t a16, int *ovf)
     if (a16 >= AGC_W_ONE)
     {
         a16 -= AGC_W_ONE;
-        o   = 1;
+        o = 1;
     }
     else if (a16 <= -AGC_W_ONE)
     {
         a16 += AGC_W_ONE;
-        o   = -1;
+        o = -1;
     }
 
     if (AGC_ASSERT(ovf != 0))
@@ -321,7 +306,7 @@ int agc_w_ovf(int32_t a16)
 agc_w2_t agc_w_das(agc_w2_t x, agc_w2_t y, int *ovf)
 {
     agc_w2_t r;         /* stored sum */
-    int      carry = 0; /* minor-word overflow into the major word */
+    int carry = 0; /* minor-word overflow into the major word */
 
     r.lo = agc_w_ts(x.lo + y.lo, &carry);
     r.hi = agc_w_ts(x.hi + y.hi + carry, ovf);
@@ -343,8 +328,8 @@ agc_w2_t agc_w_das(agc_w2_t x, agc_w2_t y, int *ovf)
  **********************************************************************/
 agc_w2_t agc_w_dv(int32_t a, int32_t l, int32_t k)
 {
-    agc_w2_t r        = {AGC_W_POSMAX, 0};
-    int32_t  dividend = a * AGC_W_ONE + l; /* A, L value, 2^-28 per unit */
+    agc_w2_t r = {AGC_W_POSMAX, 0};
+    int32_t dividend = a * AGC_W_ONE + l; /* A, L value, 2^-28 per unit */
 
     r.hi = dividend / k;
     r.lo = dividend % k;
@@ -388,9 +373,9 @@ agc_w2_t agc_w_dcs(agc_w2_t p)
 agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind)
 {
     int32_t buf;   /* BUF: +-POSMAX, sign of the overflow */
-    int     o = 0; /* overflow of each ADS, +-1 or 0 */
+    int o = 0; /* overflow of each ADS, +-1 or 0 */
 
-    buf  = (a > 0) ? AGC_W_POSMAX : -AGC_W_POSMAX; /* CS LIMITS      */ /* sign of a */
+    buf = (a > 0) ? AGC_W_POSMAX : -AGC_W_POSMAX; /* CS LIMITS      */ /* sign of a */
     m.lo = agc_w_ts(m.lo + buf + a, &o);           /* AUG A, ADS     */
     m.hi = agc_w_ts(m.hi + buf + o, &o);           /* AD BUF, ADS    */
 
@@ -415,7 +400,7 @@ agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind)
  **********************************************************************/
 agc_w2_t agc_w_dad(agc_w2_t m, agc_w2_t x, agc_ovf_t *ovfind)
 {
-    int      o = 0;                   /* overflow DAS leaves in A */
+    int o = 0;                   /* overflow DAS leaves in A */
     agc_w2_t r = agc_w_das(m, x, &o); /* MPAC after DAS */
 
     if (o != 0)
@@ -441,19 +426,19 @@ agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x)
 {
     agc_w3_t m;     /* TP product */
     agc_w2_t acc;   /* DAS accumulator pair */
-    int      o = 0; /* net DAS overflow, the carry into MPAC */
+    int o = 0; /* net DAS overflow, the carry into MPAC */
 
     acc.hi = 0;                                           /* MPAC+1 := 0    */
     acc.lo = agc_w_mp(mpac.lo, x.lo).hi;                  /* MPAC+2         */
-    acc    = agc_w_das(acc, agc_w_mp(x.lo, mpac.hi), &o); /* no overflow    */
-    acc    = agc_w_das(acc, agc_w_mp(mpac.lo, x.hi), &o); /* A = net ovf    */
-    m.m1   = acc.hi;
-    m.m2   = acc.lo;
+    acc = agc_w_das(acc, agc_w_mp(x.lo, mpac.hi), &o); /* no overflow    */
+    acc = agc_w_das(acc, agc_w_mp(mpac.lo, x.hi), &o); /* A = net ovf    */
+    m.m1 = acc.hi;
+    m.m2 = acc.lo;
     acc.hi = o;                                           /* XCH MPAC       */
     acc.lo = m.m1;
-    acc    = agc_w_das(acc, agc_w_mp(mpac.hi, x.hi), &o); /* no overflow    */
-    m.m0   = acc.hi;
-    m.m1   = acc.lo;
+    acc = agc_w_das(acc, agc_w_mp(mpac.hi, x.hi), &o); /* no overflow    */
+    m.m0 = acc.hi;
+    m.m1 = acc.lo;
 
     return (m);
 }
@@ -472,23 +457,21 @@ agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind)
 {
     int o = 0; /* rounding carry, then TS overflow */
 
-    o    = agc_w_ovf(2 * m.m2); /* DOUBLE; TS L   */
+    o = agc_w_ovf(2 * m.m2); /* DOUBLE; TS L   */
     m.m2 = 0;
-
-    if (o == 0)
-    {
-        return (m);
-    }
-
-    m.m1 = agc_w_ts(m.m1 + o, &o);
 
     if (o != 0)
     {
-        m.m0 = agc_w_ts(m.m0 + o, &o);
+        m.m1 = agc_w_ts(m.m1 + o, &o);
 
-        if ((o != 0) && AGC_ASSERT(ovfind != 0))
+        if (o != 0)
         {
-            *ovfind = (agc_ovf_t) o; /* SETOVF2        */
+            m.m0 = agc_w_ts(m.m0 + o, &o);
+
+            if ((o != 0) && AGC_ASSERT(ovfind != 0))
+            {
+                *ovfind = (agc_ovf_t) o; /* SETOVF2        */
+            }
         }
     }
 
@@ -509,21 +492,21 @@ agc_w3_t agc_w_dsqsub(agc_w2_t p)
     agc_w3_t m;     /* TP square */
     agc_w2_t acc;   /* DAS accumulator pair */
     agc_w2_t cross; /* 2 hi lo cross term */
-    int      o = 0; /* DAS overflow, the carry into MPAC */
+    int o = 0; /* DAS overflow, the carry into MPAC */
 
-    acc.hi   = 0;
-    acc.lo   = agc_w_mp(p.lo, p.lo).hi;                  /* MPAC+2         */
-    cross    = agc_w_mp(p.lo, p.hi);
-    cross    = agc_w_das(cross, cross, &o);              /* DDOUBL         */
+    acc.hi = 0;
+    acc.lo = agc_w_mp(p.lo, p.lo).hi;                  /* MPAC+2         */
+    cross = agc_w_mp(p.lo, p.hi);
+    cross = agc_w_das(cross, cross, &o);              /* DDOUBL         */
     cross.hi += o * AGC_W_ONE;                           /* A keeps ovf    */
-    acc      = agc_w_das(acc, cross, &o);
-    m.m1     = acc.hi;
-    m.m2     = acc.lo;
-    acc.hi   = o;
-    acc.lo   = m.m1;
-    acc      = agc_w_das(acc, agc_w_mp(p.hi, p.hi), &o); /* SQUARE; DAS    */
-    m.m0     = acc.hi;
-    m.m1     = acc.lo;
+    acc = agc_w_das(acc, cross, &o);
+    m.m1 = acc.hi;
+    m.m2 = acc.lo;
+    acc.hi = o;
+    acc.lo = m.m1;
+    acc = agc_w_das(acc, agc_w_mp(p.hi, p.hi), &o); /* SQUARE; DAS    */
+    m.m0 = acc.hi;
+    m.m1 = acc.lo;
 
     return (m);
 }
@@ -544,9 +527,9 @@ agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
 {
     agc_w2_t lo2 = {buf.m1, buf.m2};
     agc_w2_t add = {t.m1, t.m2};
-    int      o   = 0; /* minor-pair carry, then TS overflow */
+    int o = 0; /* minor-pair carry, then TS overflow */
 
-    lo2    = agc_w_das(lo2, add, &o);
+    lo2 = agc_w_das(lo2, add, &o);
     buf.m1 = lo2.hi;
     buf.m2 = lo2.lo;
     buf.m0 = agc_w_ts(o + t.m0 + buf.m0, &o);
@@ -575,16 +558,16 @@ static agc_w3_t end_dot(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
     agc_w2_t lo2 = {t.m1, t.m2};
     agc_w2_t add = {buf.m1, buf.m2};
     agc_w2_t top;     /* MPAC, MPAC+1 of the sum */
-    int      o   = 0; /* minor-pair carry, then TS overflow */
+    int o = 0; /* minor-pair carry, then TS overflow */
 
-    lo2  = agc_w_das(lo2, add, &o);
+    lo2 = agc_w_das(lo2, add, &o);
     t.m1 = lo2.hi;
     t.m2 = lo2.lo;
     t.m0 = agc_w_ts(o + t.m0 + buf.m0, &o);
 
     if (o != 0)
     {
-        top  = agc_w_overflow(agc_w3_top(t), o, ovfind);
+        top = agc_w_overflow(agc_w3_top(t), o, ovfind);
         t.m0 = top.hi;
         t.m1 = top.lo;
     }
@@ -609,10 +592,10 @@ agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind)
     agc_w3_t t;   /* MPAC: the next partial product */
 
     buf = agc_w_dmpsub(agc_w_split(u.c[0]), agc_w_split(v.c[0]));
-    t   = agc_w_dmpsub(agc_w_split(u.c[1]), agc_w_split(v.c[1]));
+    t = agc_w_dmpsub(agc_w_split(u.c[1]), agc_w_split(v.c[1]));
     buf = agc_w_dot_acc(buf, t, ovfind);
-    t   = agc_w_dmpsub(agc_w_split(u.c[2]), agc_w_split(v.c[2]));
-    t   = end_dot(buf, t, ovfind);
+    t = agc_w_dmpsub(agc_w_split(u.c[2]), agc_w_split(v.c[2]));
+    t = end_dot(buf, t, ovfind);
 
     return (t);
 }
@@ -632,10 +615,10 @@ agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind)
     agc_w3_t t;   /* MPAC: the next square */
 
     buf = agc_w_dsqsub(agc_w_split(v.c[0]));
-    t   = agc_w_dsqsub(agc_w_split(v.c[1]));
+    t = agc_w_dsqsub(agc_w_split(v.c[1]));
     buf = agc_w_dot_acc(buf, t, ovfind);
-    t   = agc_w_dsqsub(agc_w_split(v.c[2]));
-    t   = end_dot(buf, t, ovfind);
+    t = agc_w_dsqsub(agc_w_split(v.c[2]));
+    t = end_dot(buf, t, ovfind);
 
     return (t);
 }
@@ -652,10 +635,10 @@ agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind)
  **********************************************************************/
 agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf)
 {
-    agc_w2_t lo2   = {m.m1, m.m2};
-    int      carry = 0; /* minor-pair carry into the major word */
+    agc_w2_t lo2 = {m.m1, m.m2};
+    int carry = 0; /* minor-pair carry into the major word */
 
-    lo2  = agc_w_das(lo2, lo2, &carry);
+    lo2 = agc_w_das(lo2, lo2, &carry);
     m.m1 = lo2.hi;
     m.m2 = lo2.lo;
     m.m0 = agc_w_ts(carry + m.m0 + m.m0, ovf);
@@ -681,15 +664,15 @@ agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree)
 {
     agc_w3_t m = {0, 0, 0};
     agc_w2_t top;   /* MPAC, MPAC+1 (Horner accumulator) */
-    int      o = 0; /* DAS overflow, ignored as in the AGC */
-    int      k;     /* coefficient index, degree-1 .. 0 */
+    int o = 0; /* DAS overflow, ignored as in the AGC */
+    int k;     /* coefficient index, degree-1 .. 0 */
 
     top = agc_w_split(coef[degree]);
 
     for (k = degree - 1; k >= 0; k--)
     { /* bound: degree  */
-        m    = agc_w_dmpsub(top, x);
-        top  = agc_w_das(agc_w3_top(m), agc_w_split(coef[k]), &o);
+        m = agc_w_dmpsub(top, x);
+        top = agc_w_das(agc_w3_top(m), agc_w_split(coef[k]), &o);
         m.m0 = top.hi;
         m.m1 = top.lo;
     }

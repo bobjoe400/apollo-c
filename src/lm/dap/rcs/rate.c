@@ -216,11 +216,6 @@ static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega, agc_s
 
     *ntraps = lm_dap_wrap((int32_t) *ntraps + 1); /* INCR NxTRAPS     */
 
-    if (!AGC_ASSERT(*ntraps != 0))
-    {
-        return (false);
-    }
-
     return (big);
 }
 
@@ -243,11 +238,6 @@ static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega, agc_s
 static agc_sp_t aos_update(agc_sp_t aos, agc_sp_t corr, agc_sp_t oldn, agc_sp_t kaosn)
 {
     agc_sp_t div = lm_dap_wrap((int32_t) oldn + kaosn); /* old NxTRAPS + KAOSN, unscaled count */
-
-    if (!AGC_ASSERT(div > 0))
-    {
-        return (aos);
-    }
 
     agc_sp_t q = lm_dap_dv(lm_dap_mp(corr, RT_FIVE), div); /* 5 x correction / count: AOS change, scaled pi/2 rad/s^2 */
 

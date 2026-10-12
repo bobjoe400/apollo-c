@@ -60,7 +60,7 @@ static agc_status_t gyro_torquing_done(void)
     }
     else
     {
-        agc_phase_change(4, ALIGN_PH_04024);
+        agc_phase_change(ALIGN_PH_04024);
     }
 
     return (align_goto(agc_align_ram()->qmin)); /* R55RET     */
@@ -90,15 +90,12 @@ agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx, agc_job_i
 
     st = agc_align_chksdata_angle(&ip, cat, obs, &diff); /* CHKSB/CHKSD */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = align_set_dsptem1(diff); /* NORMTEM1 = DSPTEM1    */
-    }
-
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    align_set_dsptem1(diff); /* NORMTEM1 = DSPTEM1    */
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
@@ -173,7 +170,7 @@ agc_status_t agc_job_gyro_torquing_pulse(void)
 {
     const bool csm = (agc_state_vehicle() == AGC_VEHICLE_CSM);
 
-    agc_phase_change(4, csm ? PH_TORQUE_CSM : PH_TORQUE_LM);
+    agc_phase_change(csm ? PH_TORQUE_CSM : PH_TORQUE_LM);
     agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_GYRO_TORQUING_PULSE); /* IMUPULSE  */
 
     if (st == AGC_STATUS_BUSY)

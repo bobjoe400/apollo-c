@@ -208,7 +208,7 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write, agc_dp_t *val
 static agc_status_t noun_access_sp(uint16_t data_id, bool write, agc_dp_t *value)
 {
     const agc_sp_t w = write ? agc_dp_high(*value) : 0; /* SP scale */
-    agc_sp_t       r = 0;                               /* SP word read, SP scale */
+    agc_sp_t r = 0;                               /* SP word read, SP scale */
 
     switch (data_id)
     {
@@ -407,11 +407,17 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
 
             return (AGC_STATUS_OK);
         case AGC_DATA_FAILREG:
-            return (agc_erase_set_failreg(0, w));
+            agc_erase_set_failreg(0, w);
+
+            return (AGC_STATUS_OK);
         case AGC_DATA_FAILREG_P1:
-            return (agc_erase_set_failreg(1, w));
+            agc_erase_set_failreg(1, w);
+
+            return (AGC_STATUS_OK);
         case AGC_DATA_FAILREG_P2:
-            return (agc_erase_set_failreg(2, w));
+            agc_erase_set_failreg(2, w);
+
+            return (AGC_STATUS_OK);
         case AGC_DATA_THETAD:
             agc_erase_set_thetad(0, w);
 

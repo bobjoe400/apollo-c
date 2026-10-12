@@ -79,11 +79,6 @@ static int32_t thr_csad(agc_sp_t a, agc_sp_t b, agc_sp_t c)
 {
     int32_t sum = (int32_t) a - (int32_t) b + (int32_t) c; /* cs     */
 
-    if (!AGC_ASSERT(a >= 0 && b >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     /* x + ~x is -0 in ones' complement, so a zero sum is all ones. */
     return ((sum > 0) ? sum : THR_A_ONES + sum); /* ones' complement */
 }
@@ -102,11 +97,6 @@ static agc_lm_words_t thr_massmult(agc_dp_t accel)
 {
     agc_lm_words_t force = {AGC_SP_MAX, THR_MASSMULT_L}; /* overflow */
     agc_dp_t       mass  = agc_guid_state()->lm.mass;    /* MASS, 2^16 kg */
-
-    if (!AGC_ASSERT(mass >= 0))
-    {
-        return (agc_lm_words(0));
-    }
 
     /* First DMP leaves a TP in MPAC; the second DMP uses only MPAC,+1. */
     agc_dp_t ma  = agc_tp_to_dp(agc_dp_mul_tp(accel, mass)); /* 2^12 */
@@ -137,11 +127,6 @@ static agc_sp_t thr_region(agc_lm_thr_t *t, const agc_lm_pad_t *pad)
     agc_sp_t lowcrit  = pad->lowcrit;  /* L*WCR*T, pulses, unscaled */
     agc_sp_t highcrit = pad->highcrit; /* H*GHCR*T, pulses, unscaled */
     agc_sp_t fc       = t->fcodd.hi;   /* AD FCODD, pulses, unscaled */
-
-    if (!AGC_ASSERT(lowcrit >= 0 && highcrit >= 0) || !AGC_ASSERT(lowcrit <= highcrit))
-    {
-        return (0);
-    }
 
     /* PIFPSET = -0 initially; DEVIATION: modelled as +0.               */
     if (t->fcold > highcrit)
@@ -321,17 +306,25 @@ agc_status_t agc_lm_throttle(void)
 }
 
 /**********************************************************************
- * WHATOUT (THROTTLE_CONTROL_ROUTINES.agc p. 796) -- command a fixed
- * pulse count through PIFPSET so that FWEIGHT comes out zero; FCOLD and
- * the PIF high word become -0 (DEVIATION: +0, same pulses and FWEIGHT)
+ * FLATOUT (THROTTLE_CONTROL_ROUTINES.agc p. 796) -- throttle the descent
+ * engine up to full: WHATOUT with BIT13 = 4096 pulses
  *
- * ARGUMENTS:
- *   pulses  agc_sp_t  I  pulses to send, |pulses| <= FEXTRA
- *
- * RETURNS: agc_status_t -- status of DOIT, or AGC_STATUS_BAD_ARG
+ * RETURNS: agc_status_t -- status of WHATOUT
  **********************************************************************/
-static agc_status_t thr_whatout(agc_sp_t pulses)
+agc_status_t agc_lm_throttle_flatout(void)
 {
+    /**********************************************************************
+     * WHATOUT (THROTTLE_CONTROL_ROUTINES.agc p. 796) -- command a fixed
+     * pulse count through PIFPSET so that FWEIGHT comes out zero; FCOLD and
+     * the PIF high word become -0 (DEVIATION: +0, same pulses and FWEIGHT)
+     *
+     * ARGUMENTS:
+     *   pulses  agc_sp_t  I  pulses to send, |pulses| <= FEXTRA
+     *
+     * RETURNS: agc_status_t -- status of DOIT, or AGC_STATUS_BAD_ARG
+     **********************************************************************/
+    agc_sp_t pulses = (agc_sp_t) AGC_LM_FEXTRA;
+
     agc_lm_thr_t *t = agc_lm_thr(); /* throttle erasables             */
 
     t->pifpset      = pulses;
@@ -344,18 +337,7 @@ static agc_status_t thr_whatout(agc_sp_t pulses)
         thr_fweight(t);
     }
 
-    return (st);
-}
-
-/**********************************************************************
- * FLATOUT (THROTTLE_CONTROL_ROUTINES.agc p. 796) -- throttle the descent
- * engine up to full: WHATOUT with BIT13 = 4096 pulses
- *
- * RETURNS: agc_status_t -- status of WHATOUT
- **********************************************************************/
-agc_status_t agc_lm_throttle_flatout(void)
-{
-    agc_status_t st = thr_whatout((agc_sp_t) AGC_LM_FEXTRA); /* status */
+    /* status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK) || !AGC_ASSERT(agc_lm_thr()->pifpset == AGC_LM_FEXTRA))
     {

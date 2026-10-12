@@ -70,10 +70,8 @@ align_words_t align_words_of(agc_dp_t v)
 {
     align_words_t w; /* the pair, same scale as v */
 
-    (void) AGC_ASSERT((v >= AGC_DP_MIN) && (v <= AGC_DP_MAX));
     w.hi = agc_dp_high(v);
     w.lo = agc_dp_low(v);
-    (void) AGC_ASSERT((w.lo >= -WORD_MAX) && (w.lo <= WORD_MAX));
 
     return (w);
 }
@@ -132,7 +130,6 @@ align_words_t align_words_add(align_words_t a, align_words_t b)
 
     r.hi = (agc_sp_t) hi;
     r.lo = (agc_sp_t) lo;
-    (void) AGC_ASSERT((r.hi >= -WORD_MAX) && (r.hi <= WORD_MAX));
 
     return (r);
 }
@@ -153,8 +150,6 @@ align_words_t align_words_neg(align_words_t a)
 {
     align_words_t r; /* complemented pair */
 
-    (void) AGC_ASSERT((a.hi >= -WORD_MAX) && (a.hi <= WORD_MAX));
-    (void) AGC_ASSERT((a.lo >= -WORD_MAX) && (a.lo <= WORD_MAX));
     r.hi = (agc_sp_t) -a.hi;
     r.lo = (agc_sp_t) -a.lo;
 
@@ -181,7 +176,6 @@ align_words_t align_asin_words(agc_dp_t v)
     const align_words_t quarter = {QUARTER_HI, 0}; /* QUARTER */
     align_words_t       c;                         /* ARCCOS(|x|) words, positive        */
 
-    (void) AGC_ASSERT((v >= -(AGC_DP_HALF / 2)) && (v <= AGC_DP_HALF / 2));
 
     if (v >= 0)
     {
@@ -215,7 +209,6 @@ align_words_t align_asin_words(agc_dp_t v)
  **********************************************************************/
 align_words_t align_acos_words(agc_dp_t v, bool arg_negative)
 {
-    (void) AGC_ASSERT((v >= 0) && (v <= AGC_DP_HALF));
 
     if (!arg_negative)
     {
@@ -225,7 +218,6 @@ align_words_t align_acos_words(agc_dp_t v, bool arg_negative)
     const align_words_t half = {HALF_HI, 0}; /* HALF          */
     const align_words_t c    = align_words_of(AGC_DP_HALF - v);
 
-    (void) AGC_ASSERT(c.hi >= 0);
 
     return (align_words_add(align_words_neg(c), half));
 }
@@ -249,8 +241,6 @@ align_words_t align_acos_words(agc_dp_t v, bool arg_negative)
  **********************************************************************/
 align_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh, agc_dp_t theta)
 {
-    (void) AGC_ASSERT(ip != NULL);
-    (void) AGC_ASSERT((theta >= -AGC_DP_HALF) && (theta <= AGC_DP_HALF));
 
     if (agc_dp_sub(ip, agc_dp_abs(sinth), QTSN45) >= 0)
     {
@@ -299,7 +289,6 @@ uint16_t align_words_to_cdu(align_words_t w)
     int32_t a     = 2 * (int32_t) w.hi; /* DDOUBL major word, counts */
     int32_t carry = 0;                  /* from 2 x minor word       */
 
-    (void) AGC_ASSERT((w.lo >= -WORD_MAX) && (w.lo <= WORD_MAX));
 
     if (2 * (int32_t) w.lo > WORD_MAX)
     {
@@ -329,7 +318,6 @@ uint16_t align_words_to_cdu(align_words_t w)
         /* in range */
     }
 
-    (void) AGC_ASSERT((a >= -(CDU_MOD / 2)) && (a < CDU_MOD / 2));
 
     return ((uint16_t) ((a < 0) ? (a + CDU_MOD) : a));
 }
@@ -352,8 +340,6 @@ uint16_t align_words_to_cdu(align_words_t w)
  **********************************************************************/
 agc_dp_t align_dot_shl(agc_interp_t *ip, agc_vec_t u, agc_vec_t v, int n)
 {
-    (void) AGC_ASSERT(ip != NULL);
-    (void) AGC_ASSERT((n >= 1) && (n <= 4));
 
     return (agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, u, v), n)));
 }
@@ -375,8 +361,6 @@ agc_dp_t align_dot_shl(agc_interp_t *ip, agc_vec_t u, agc_vec_t v, int n)
  **********************************************************************/
 agc_dp_t align_dmp_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, int n)
 {
-    (void) AGC_ASSERT(ip != NULL);
-    (void) AGC_ASSERT((n >= 1) && (n <= 4));
 
     return (agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, b), n)));
 }

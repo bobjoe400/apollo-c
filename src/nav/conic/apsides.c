@@ -66,8 +66,8 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
 
     agc_conic_param_(ip, &ctx, rvec, vvec, &sngamma, &m); /* CALL PARAM  */
 
-    agc_interp_clear_ovf(ip);                                     /* BOV GETECC     */
-    m = agc_mpac_shift(ip, agc_mpac_dmp(m, ctx.r1a), 4);          /* DMP R1A SL4: 2^6 */
+    agc_interp_clear_ovf(ip);                                 /* BOV GETECC     */
+    m = agc_mpac_shift(ip, agc_mpac_dmp(m, ctx.r1a), 4);      /* DMP R1A SL4: 2^6 */
     m = agc_mpac_sqrt(agc_mpac_bdsu(ip, m, AGC_CONIC_D1_64)); /* BDSU D1/64 SQRT */
 
     const agc_dp_words_t ecc     = agc_mpac_store(m);                                   /* STORE ECC, 2^3 */
@@ -88,14 +88,14 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
     }
 
     /* Copy the results and the PARAM debris to *out. */
-    out->rapo    = agc_conic_value_(agc_mpac_store(m));
-    out->rperi   = agc_conic_value_(rperi);
-    out->ecc     = agc_conic_value_(ecc);
-    out->r1      = agc_conic_value_(ctx.r1);
-    out->r1a     = agc_conic_value_(ctx.r1a);
-    out->p       = agc_conic_value_(ctx.p);
-    out->coga    = agc_conic_value_(ctx.coga);
-    out->magvec2 = agc_conic_value_(ctx.magvec2);
+    out->rapo    = agc_dp_from_words(agc_mpac_store(m));
+    out->rperi   = agc_dp_from_words(rperi);
+    out->ecc     = agc_dp_from_words(ecc);
+    out->r1      = agc_dp_from_words(ctx.r1);
+    out->r1a     = agc_dp_from_words(ctx.r1a);
+    out->p       = agc_dp_from_words(ctx.p);
+    out->coga    = agc_dp_from_words(ctx.coga);
+    out->magvec2 = agc_dp_from_words(ctx.magvec2);
     out->ur1     = ctx.ur1;
     out->u2      = ctx.u2;
     out->un      = ctx.un;

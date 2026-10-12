@@ -89,16 +89,6 @@ static bool policy_ok(lm_dap_t *d)
 {
     d->polytemp = (agc_sp_t) (alljets[d->rotindex] & alljets[4 + d->numbert]);
 
-    if (!AGC_ASSERT(d->polytemp >= 0 && d->polytemp <= 0377))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(d->ch5mask <= 0377u))
-    {
-        return (false);
-    }
-
     return (((uint16_t) d->polytemp & d->ch5mask) == 0u);
 }
 
@@ -115,11 +105,6 @@ static bool policy_ok(lm_dap_t *d)
 bool lm_dap_selctsub(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 5) || !AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
-    {
-        return (false);
-    }
 
     if (policy_ok(d))
     {
@@ -324,81 +309,7 @@ static agc_status_t rotation_failed(lm_dap_t *d, int axis)
 static void feedback(lm_dap_t *d, int axis)
 {
     d->nojets[axis + 1] = (d->numbert - 3 > 0) ? 2 : 1; /* NUMBERT 4: two jets, else one */
-
-    if (!AGC_ASSERT(axis == 0 || axis == 1))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 4))
-    {
-        return;
-    }
 }
-
-/**********************************************************************
- * DOSKIP / NOTMIN (pp.1453-1455): a firing of 150 ms or less is timed by
- * JTLST and the next pass of this axis is skipped. Under 14 ms becomes a
- * one-jet 14 ms minimum impulse, on the side translation prefers (or
- * chosen by the low bit of LOSCALAR).
- *
- * FUNCTION NAME: doskip
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
- **********************************************************************/
-static agc_status_t doskip(lm_dap_t *d, int axis)
-{
-    if (!AGC_ASSERT(axis == 0 || axis == 1))
-    {
-        return (AGC_STATUS_BAD_ARG); /* U or V only */
-    }
-
-    if (QJ_TJMIN - d->abstj > 0)
-    {
-        d->abstj        = QJ_TJMIN;
-        d->tj[axis + 1] = (agc_sp_t) ((d->tj[axis + 1] > 0) ? QJ_TJMIN : -QJ_TJMIN); /* MINTIMES with the sign of TJ */
-
-        if (d->sensetyp > 0)
-        {
-            d->numbert = (agc_sp_t) (d->sensetyp - 1); /* NOTMIN -1      */
-        }
-        else
-        {
-            d->numbert = (agc_sp_t) (agc_chan_read(AGC_CHAN_LOSCALAR) & 1u);
-        }
-    }
-
-    if (!lm_dap_selctsub())
-    { /* NOTMIN         */
-        return (rotation_failed(d, axis));
-    }
-
-    agc_inhint();
-    d->t6furtha[1]  = indexes[axis];
-    agc_status_t sw = lm_dap_write(indexes[axis], (uint16_t) d->polytemp); /* WRITEU/V: jets on now */
-
-    d->t6furtha[0]  = d->abstj;
-    agc_status_t sj = lm_dap_jtlst(); /* JTLST: schedule the turn-off */
-
-    agc_relint();
-    d->skip[axis] = 0;
-    feedback(d, axis);
-
-    if (!AGC_ASSERT(sw == AGC_STATUS_OK && sj == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (sw);
-} /* doskip */
 
 /**********************************************************************
  * AFTERTJ / DOROTAT (pp.1453-1454): select and fire the rotation jets for
@@ -441,7 +352,66 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
 
     if (d->abstj - QJ_150MS <= 0)
     {
-        return (doskip(d, axis));
+        /**********************************************************************
+         * DOSKIP / NOTMIN (pp.1453-1455): a firing of 150 ms or less is timed by
+         * JTLST and the next pass of this axis is skipped. Under 14 ms becomes a
+         * one-jet 14 ms minimum impulse, on the side translation prefers (or
+         * chosen by the low bit of LOSCALAR).
+         *
+         * FUNCTION NAME: doskip
+         *
+         * ARGUMENTS:
+         *   Argument  Type        I/O  Description (scale)
+         *   --------  ----------  ---  --------------------
+         *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+         *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+         *          failed assertion, else the status of the routine it
+         *          ends in
+         **********************************************************************/
+        if (!AGC_ASSERT(axis == 0 || axis == 1))
+        {
+            return (AGC_STATUS_BAD_ARG); /* U or V only */
+        }
+
+        if (QJ_TJMIN - d->abstj > 0)
+        {
+            d->abstj        = QJ_TJMIN;
+            d->tj[axis + 1] = (agc_sp_t) ((d->tj[axis + 1] > 0) ? QJ_TJMIN : -QJ_TJMIN); /* MINTIMES with the sign of TJ */
+
+            if (d->sensetyp > 0)
+            {
+                d->numbert = (agc_sp_t) (d->sensetyp - 1); /* NOTMIN -1      */
+            }
+            else
+            {
+                d->numbert = (agc_sp_t) (agc_chan_read(AGC_CHAN_LOSCALAR) & 1u);
+            }
+        }
+
+        if (!lm_dap_selctsub())
+        { /* NOTMIN         */
+            return (rotation_failed(d, axis));
+        }
+
+        agc_inhint();
+        d->t6furtha[1]  = indexes[axis];
+        agc_status_t sw = lm_dap_write(indexes[axis], (uint16_t) d->polytemp); /* WRITEU/V: jets on now */
+
+        d->t6furtha[0]  = d->abstj;
+        agc_status_t sj = lm_dap_jtlst(); /* JTLST: schedule the turn-off */
+
+        agc_relint();
+        d->skip[axis] = 0;
+        feedback(d, axis);
+
+        if (!AGC_ASSERT(sw == AGC_STATUS_OK && sj == AGC_STATUS_OK))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        return (sw);
     }
 
     if (!lm_dap_selctsub())
@@ -480,11 +450,6 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
  **********************************************************************/
 static bool skip_axis(lm_dap_t *d, int axis)
 {
-    if (!AGC_ASSERT(d->skip[axis] == 0 || d->skip[axis] == QJ_SKIPOFF))
-    {
-        return (false);
-    }
-
     if (d->skip[axis] == 0)
     {
         d->skip[axis] = QJ_SKIPOFF;
@@ -602,48 +567,6 @@ static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
 }
 
 /**********************************************************************
- * MINRTN / MIMRET (pp.1445-1446): minimum impulse; 60 ms when docked.
- *
- * FUNCTION NAME: body_minrtn
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
- *   end       bool *      O    true when XTRANS has already ended the pass
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
- **********************************************************************/
-static agc_status_t body_minrtn(lm_dap_t *d, int axis, bool *end)
-{
-    if (!AGC_ASSERT(axis == 0 || axis == 1))
-    {
-        return (AGC_STATUS_BAD_ARG); /* U or V only */
-    }
-
-    if (agc_flag_test(AGC_FLAG_CSMDKFLG))
-    {
-        agc_sp_t tj = d->tj[axis + 1]; /* TJU or TJV, scaled 0.625 ms per count */
-
-        if (tj > 0)
-        {
-            d->tj[axis + 1] = QJ_60MS;
-        }
-        else if (tj < 0)
-        {
-            d->tj[axis + 1] = -QJ_60MS;
-        }
-    }
-
-    d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2; /* B : A     */
-
-    return (aftertj(d, axis, end));
-}
-
-/**********************************************************************
  * LOOPER (p.1454): run the RETJADR body for V (AXISCTR 1) then U, then
  * CLOSEOUT -- unless XTRANS already closed the pass.
  *
@@ -680,7 +603,45 @@ agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
                 st = body_backhand(d, axis, &end);
                 break;
             case LM_UV_MINRTN:
-                st = body_minrtn(d, axis, &end);
+                /**********************************************************************
+                 * MINRTN / MIMRET (pp.1445-1446): minimum impulse; 60 ms when docked.
+                 *
+                 * FUNCTION NAME: body_minrtn
+                 *
+                 * ARGUMENTS:
+                 *   Argument  Type        I/O  Description (scale)
+                 *   --------  ----------  ---  --------------------
+                 *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+                 *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
+                 *   end       bool *      O    true when XTRANS has already ended the pass
+                 *
+                 * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+                 *          failed assertion, else the status of the routine it
+                 *          ends in
+                 **********************************************************************/
+                {
+                    if (!AGC_ASSERT(axis == 0 || axis == 1))
+                    {
+                        return (AGC_STATUS_BAD_ARG);
+                    }
+
+                    if (agc_flag_test(AGC_FLAG_CSMDKFLG))
+                    {
+                        agc_sp_t tj = d->tj[axis + 1]; /* TJU or TJV, scaled 0.625 ms per count */
+
+                        if (tj > 0)
+                        {
+                            d->tj[axis + 1] = QJ_60MS;
+                        }
+                        else if (tj < 0)
+                        {
+                            d->tj[axis + 1] = -QJ_60MS;
+                        }
+                    }
+
+                    d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2; /* B : A     */
+                    st         = aftertj(d, axis, &end);
+                }
                 break;
             default:
                 st = AGC_STATUS_BAD_ARG;

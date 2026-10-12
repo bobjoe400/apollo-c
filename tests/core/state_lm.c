@@ -210,7 +210,7 @@ static void test_lm_state(void)
     CHECK(agc_erase_tetcsm() == 4242);
     CHECK(agc_flag_test(AGC_FLAG_CMOONFLG));
     CHECK(!agc_flag_test(AGC_FLAG_LMOONFLG));
-    CHECK(agc_sv_get(AGC_SV_OTHER, &out) == AGC_STATUS_OK);
+    agc_sv_get(AGC_SV_OTHER, &out);
     CHECK(out.moon && (out.t == 4242) && (out.r.c[1] == 22));
     CHECK(agc_sv_set(AGC_SV_THIS, &in) == AGC_STATUS_OK);
     CHECK(agc_erase_rn().c[0] == 11);

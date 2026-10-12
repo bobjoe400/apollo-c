@@ -113,11 +113,6 @@ static agc_navaux_padload_t padload; /* AZO AXO -AYO 504LM, see type */
  **********************************************************************/
 agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
 {
-    if (!AGC_ASSERT(agc_navaux_tp_ok(pad->tephem) && agc_navaux_vec_ok(pad->lm504)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     padload = *pad;
     agc_erase_set_tephem(pad->tephem); /* one TEPHEM: core erasable */
     agc_erase_set_rls(pad->rls);       /* one RLS: core erasable    */
@@ -376,8 +371,8 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad
     ang.cob = agc_dp_cos(b);
     ang.sob = agc_dp_sin(b);
 
-    agc_dp_t  cosn   = agc_dp_cos(ang.nodi);                      /* COSNODI, 2^1 */
-    agc_dp_t  sinn   = agc_dp_sin(ang.nodi);                      /* SINNODI, 2^1 */
+    agc_dp_t  cosn   = agc_dp_cos(ang.nodi);                          /* COSNODI, 2^1 */
+    agc_dp_t  sinn   = agc_dp_sin(ang.nodi);                          /* SINNODI, 2^1 */
     agc_dp_t  sncb   = mul_half(ip, sinn, ang.cob);                   /* sin N cos B, 2^1 */
     agc_dp_t  snsb   = mul_half(ip, sinn, ang.sob);                   /* sin N sin B, 2^1 */
     agc_dp_t  cncb   = mul_half(ip, cosn, ang.cob);                   /* cos N cos B, 2^1 */
@@ -388,8 +383,8 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad
 
     m->row[2]        = combine(ip, cvectr, COSI, bvectr, SINI, false);
     agc_vec_t dvectr = combine(ip, bvectr, COSI, cvectr, SINI, true); /* 2^1 */
-    agc_dp_t  cosf   = agc_dp_cos(ang.f);                         /* COS 504F, 2^1 */
-    agc_dp_t  sinf   = agc_dp_sin(ang.f);                         /* SIN 504F, 2^1 */
+    agc_dp_t  cosf   = agc_dp_cos(ang.f);                             /* COS 504F, 2^1 */
+    agc_dp_t  sinf   = agc_dp_sin(ang.f);                             /* SIN 504F, 2^1 */
 
     m->row[1] = combine(ip, avectr, sinf, dvectr, cosf, true);
     m->row[0] = agc_vec_neg(combine(ip, avectr, cosf, dvectr, sinf, false));
@@ -472,11 +467,6 @@ static agc_status_t planet_m_and_l(agc_interp_t *ip, const agc_navaux_padload_t 
  **********************************************************************/
 agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t r, agc_dp_t t_cs, agc_vec_t *rp)
 {
-    if (!AGC_ASSERT(agc_navaux_vec_ok(r)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_mat_t    m;                                                       /* M(T), scale 2^1  */
     agc_vec_t    l;                                                       /* L, scale 2^0 rad */
     agc_status_t st = planet_m_and_l(ip, pad, moon, t_cs, false, &m, &l); /* returned to the caller */
@@ -514,11 +504,6 @@ agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pa
  **********************************************************************/
 agc_status_t agc_planet_rp_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t rp, agc_dp_t t_cs, agc_vec_t *r)
 {
-    if (!AGC_ASSERT(agc_navaux_vec_ok(rp)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_mat_t    m;                                                       /* M(T), scale 2^1   */
     agc_vec_t    lp;                                                      /* LP, scale 2^0 rad */
     agc_status_t st = planet_m_and_l(ip, pad, moon, t_cs, true, &m, &lp); /* returned to the caller */

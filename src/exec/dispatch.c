@@ -49,9 +49,9 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
-#include "agc/exec/exec.h"
 #include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
@@ -137,6 +137,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_optical_verification_torque_accepted());
         case AGC_JOB_OPTICAL_VERIFICATION_END:
             return (agc_job_optical_verification_end());
+
         /* src/csm/alignment */
         case AGC_JOB_CSM_FINE_ALIGN:
             return (agc_job_csm_fine_align(ctx));
@@ -192,6 +193,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_csm_realign_stars_located(ctx));
         case AGC_JOB_CSM_REALIGN_STAR_SELECTION:
             return (agc_job_csm_realign_star_selection(ctx));
+
         /* src/csm/burns */
         case AGC_JOB_ATERJOB:
             return (agc_job_aterjob());
@@ -341,11 +343,13 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_vhhdot(ctx));
         case AGC_JOB_VTOGAIN:
             return (agc_job_vtogain_csm(ctx));
+
         /* src/csm/dap */
         case AGC_JOB_AMBGUPDT:
             return (agc_job_ambgupdt());
         case AGC_JOB_STRKTSTI:
             return (agc_job_strktsti());
+
         /* src/csm/entry */
         case AGC_JOB_CM_DAPON_WAIT:
             return (agc_job_cm_dapon_wait(ctx));
@@ -399,6 +403,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_redopose(ctx));
         case AGC_JOB_REFAZE10:
             return (agc_job_refaze10(ctx));
+
         /* src/csm/navigation */
         case AGC_JOB_BACKUP_SIGHTING_MARK:
             return (agc_job_backup_sighting_mark(ctx));
@@ -564,6 +569,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_tracking_attitude_csm(ctx));
         case AGC_JOB_TRACKING_ATTITUDE_CSM_MANEUVERED:
             return (agc_job_tracking_attitude_csm_maneuvered());
+
         /* src/csm/optics */
         case AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY:
             return (agc_job_alternate_los_angles_display(ctx));
@@ -613,6 +619,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_sighting_mark_marked(ctx));
         case AGC_JOB_TERMSXT:
             return (agc_job_termsxt(ctx));
+
         /* src/exec */
         case AGC_JOB_DUMMY:
             return (AGC_STATUS_OK);
@@ -626,6 +633,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_go_idle_fix(ctx));
         case AGC_JOB_GO_IDLE_FIX_REFLASH:
             return (agc_job_go_idle_fix_reflash(ctx));
+
         /* src/guidance */
         case AGC_JOB_EXTERNAL_DELTA_V:
             return (agc_job_external_delta_v(ctx));
@@ -643,6 +651,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_lambert_aimpoint_display_dv(ctx));
         case AGC_JOB_LAMBERT_AIMPOINT_GUIDANCE:
             return (agc_job_lambert_aimpoint_guidance_csm(ctx));
+
         /* src/imu */
         case AGC_JOB_ATTITUDE_MANEUVER_ENTER:
             return (agc_job_attitude_maneuver_enter(ctx));
@@ -674,6 +683,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_redomanc(ctx));
         case AGC_JOB_RELINUS:
             return (agc_job_relinus(ctx));
+
         /* src/io/dsky */
         case AGC_JOB_CHARIN:
             return (agc_job_charin(ctx));
@@ -707,6 +717,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_xchsleepm());
         case AGC_JOB_XCHSLEEPN:
             return (agc_job_xchsleepn());
+
         /* src/io/verbs */
         case AGC_JOB_ATTITUDE_ERROR_ENABLE:
             return (agc_job_attitude_error_enable(ctx));
@@ -818,9 +829,11 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_uplink_update_proceed(ctx));
         case AGC_JOB_UPLINK_UPDATE_TERMINATE:
             return (agc_job_uplink_update_terminate());
+
         /* src/lm */
         case AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE:
             return (agc_job_rendezvous_final_attitude_csm(ctx));
+
         /* src/nav/integration */
         case AGC_JOB_STATEUP_STALL:
             return (agc_job_stateup_stall());
@@ -828,6 +841,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_statint1());
         case AGC_JOB_STATINT1_STALL:
             return (agc_job_statint1_stall());
+
         /* src/programs/alignment */
         case AGC_JOB_ALIGN_COARSE_DONE:
             return (agc_job_align_coarse_done());
@@ -879,6 +893,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_realign_time_flash(ctx));
         case AGC_JOB_REALIGN_TIME_PROCEED:
             return (agc_job_realign_time_proceed(ctx));
+
         /* src/programs/displays */
         case AGC_JOB_ORBIT_DISPLAY_AVERAGE_G:
             return (agc_job_orbit_display_average_g());
@@ -936,6 +951,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_rendz_ttogo_proceed());
         case AGC_JOB_RENDZ_VNPOOH:
             return (agc_job_rendz_vnpooh(ctx));
+
         /* src/programs/navigation */
         case AGC_JOB_GROUND_TRACK_COMPUTE:
             return (agc_job_ground_track_compute(ctx));
@@ -953,6 +969,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_w_matrix_monitor_display(ctx));
         case AGC_JOB_W_MATRIX_MONITOR_PROCEED:
             return (agc_job_w_matrix_monitor_proceed());
+
         /* src/programs/targeting */
         case AGC_JOB_CDH_AFTER_DV_LV:
             return (agc_job_cdh_after_dv_lv(ctx));
@@ -1082,17 +1099,21 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_tpm_targeting(ctx));
         case AGC_JOB_TPM_TARGETING_OTHER_VEHICLE:
             return (agc_job_tpm_targeting_other_vehicle(ctx));
+
         /* src/exec */
         case AGC_JOB_CHANGE_PROGRAM_CONTINUE:
             return (agc_job_change_program_continue());
         case AGC_JOB_CHANGE_PROGRAM_START:
             return (agc_job_change_program_start());
+
         /* src/csm/burns */
         case AGC_JOB_SPS_BURN:
             return (agc_job_sps_burn(ctx));
+
         /* src/csm/alignment */
         case AGC_JOB_IMU_ORIENTATION_DETERMINATION:
             return (agc_job_csm_imu_orientation_determination(ctx));
+
         /* src/imu */
         case AGC_JOB_STANDBY:
             return (agc_job_standby(ctx));
@@ -1100,9 +1121,11 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_standby_request(ctx));
         case AGC_JOB_STANDBY_RECOVERY:
             return (agc_job_standby_recovery(ctx));
+
         /* src/csm */
         case AGC_JOB_PRELAUNCH_INITIALIZATION:
             return (agc_job_prelaunch_initialization(ctx));
+
         /* src/exec */
         case AGC_JOB_CHANGE_PROGRAM_JETS_OFF:
             return (agc_job_change_program_jets_off());
@@ -1174,12 +1197,15 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_timeburn_lm());
         case AGC_JOB_VTOGAIN:
             return (agc_job_vtogain_lm(ctx));
+
         /* src/csm/navigation */
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA:
             return (agc_job_rendezvous_tracking_data(ctx));
+
         /* src/csm/optics */
         case AGC_JOB_SBAND_B5OFF:
             return (agc_job_sband_b5off());
+
         /* src/exec */
         case AGC_JOB_DUMMY:
             return (AGC_STATUS_OK);
@@ -1193,6 +1219,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_go_idle_fix(ctx));
         case AGC_JOB_GO_IDLE_FIX_REFLASH:
             return (agc_job_go_idle_fix_reflash(ctx));
+
         /* src/guidance */
         case AGC_JOB_EXTERNAL_DELTA_V:
             return (agc_job_external_delta_v(ctx));
@@ -1210,6 +1237,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_lambert_aimpoint_display_dv(ctx));
         case AGC_JOB_LAMBERT_AIMPOINT_GUIDANCE:
             return (agc_job_lambert_aimpoint_guidance_lm(ctx));
+
         /* src/imu */
         case AGC_JOB_ATTITUDE_MANEUVER_ENTER:
             return (agc_job_attitude_maneuver_enter(ctx));
@@ -1241,6 +1269,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_redomanc(ctx));
         case AGC_JOB_RELINUS:
             return (agc_job_relinus(ctx));
+
         /* src/io/dsky */
         case AGC_JOB_CHARIN:
             return (agc_job_charin(ctx));
@@ -1274,6 +1303,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_xchsleepm());
         case AGC_JOB_XCHSLEEPN:
             return (agc_job_xchsleepn());
+
         /* src/io/verbs */
         case AGC_JOB_ATTITUDE_ERROR_ENABLE:
             return (agc_job_attitude_error_enable(ctx));
@@ -1385,6 +1415,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_uplink_update_proceed(ctx));
         case AGC_JOB_UPLINK_UPDATE_TERMINATE:
             return (agc_job_uplink_update_terminate());
+
         /* src/lm */
         case AGC_JOB_AGS_INITIALIZATION:
             return (agc_job_ags_initialization(ctx));
@@ -1446,6 +1477,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_systems_test(ctx));
         case AGC_JOB_TERMASC:
             return (agc_lm_job_termasc());
+
         /* src/lm/alignment */
         case AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY:
             return (agc_job_lm_auto_optics_az_el_display(ctx));
@@ -1571,6 +1603,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_lunar_surface_trim_pulse());
         case AGC_JOB_LUNAR_SURFACE_TRIM_RETRY:
             return (agc_job_lunar_surface_trim_retry());
+
         /* src/lm/burns */
         case AGC_JOB_APS_BURN:
             return (agc_job_aps_burn(ctx));
@@ -1650,11 +1683,13 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_stopclok());
         case AGC_JOB_TERM40:
             return (agc_job_term40());
+
         /* src/lm/dap */
         case AGC_JOB_JET_ACCEL_RESET:
             return (agc_job_jet_accel_reset(ctx));
         case AGC_JOB_JET_ACCEL_UPDATE:
             return (agc_job_jet_accel_update(ctx));
+
         /* src/lm/landing */
         case AGC_JOB_ABORT_AUTO_CONTROL_CHECK:
             return (agc_lm_job_abort_auto_control_check(ctx));
@@ -1704,6 +1739,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_lm_job_rodcomp(ctx));
         case AGC_JOB_ABORT_TO_ASCENT_GUIDANCE:
             return (agc_lm_job_abort_to_ascent_guidance());
+
         /* src/lm/navigation */
         case AGC_JOB_PREFERRED_TRACKING_ATTITUDE:
             return (agc_job_preferred_tracking_attitude());
@@ -1775,6 +1811,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_tracking_attitude_compute(ctx));
         case AGC_JOB_TRACKING_ATTITUDE_MANEUVERED:
             return (agc_job_tracking_attitude_maneuvered());
+
         /* src/lm/optics */
         case AGC_JOB_AOT_MARK_CHECK:
             return (agc_job_aot_mark_check(ctx));
@@ -1798,6 +1835,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_sbandant_lm(ctx));
         case AGC_JOB_SBANDANT_LM_RECYCLE:
             return (agc_job_sbandant_lm_recycle(ctx));
+
         /* src/lm/radar */
         case AGC_JOB_MANUAL_ACQUISITION:
             return (agc_job_manual_acquisition(ctx));
@@ -1867,6 +1905,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_rendezvous_sighting_mark_wait());
         case AGC_JOB_RR_DESIGNATE_COMMAND:
             return (agc_job_rr_designate_command());
+
         /* src/nav/integration */
         case AGC_JOB_STATEUP_STALL:
             return (agc_job_stateup_stall());
@@ -1874,6 +1913,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_statint1());
         case AGC_JOB_STATINT1_STALL:
             return (agc_job_statint1_stall());
+
         /* src/programs/alignment */
         case AGC_JOB_ALIGN_COARSE_DONE:
             return (agc_job_align_coarse_done());
@@ -1925,6 +1965,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_realign_time_flash(ctx));
         case AGC_JOB_REALIGN_TIME_PROCEED:
             return (agc_job_realign_time_proceed(ctx));
+
         /* src/programs/displays */
         case AGC_JOB_ORBIT_DISPLAY_AVERAGE_G:
             return (agc_job_orbit_display_average_g());
@@ -1982,6 +2023,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_rendz_ttogo_proceed());
         case AGC_JOB_RENDZ_VNPOOH:
             return (agc_job_rendz_vnpooh(ctx));
+
         /* src/programs/navigation */
         case AGC_JOB_GROUND_TRACK_COMPUTE:
             return (agc_job_ground_track_compute(ctx));
@@ -1999,6 +2041,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_w_matrix_monitor_display(ctx));
         case AGC_JOB_W_MATRIX_MONITOR_PROCEED:
             return (agc_job_w_matrix_monitor_proceed());
+
         /* src/programs/targeting */
         case AGC_JOB_CDH_AFTER_DV_LV:
             return (agc_job_cdh_after_dv_lv(ctx));
@@ -2128,17 +2171,21 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_tpm_targeting(ctx));
         case AGC_JOB_TPM_TARGETING_OTHER_VEHICLE:
             return (agc_job_tpm_targeting_other_vehicle(ctx));
+
         /* src/exec */
         case AGC_JOB_CHANGE_PROGRAM_CONTINUE:
             return (agc_job_change_program_continue());
         case AGC_JOB_CHANGE_PROGRAM_START:
             return (agc_job_change_program_start());
+
         /* src/csm/alignment */
         case AGC_JOB_IMU_ORIENTATION_DETERMINATION:
             return (agc_job_lm_imu_orientation_determination(ctx));
+
         /* src/lm/alignment */
         case AGC_JOB_LUNAR_SURFACE_ALIGN:
             return (agc_job_lunar_surface_align(ctx));
+
         /* src/imu */
         case AGC_JOB_STANDBY:
             return (agc_job_standby(ctx));
@@ -2146,6 +2193,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_standby_request(ctx));
         case AGC_JOB_STANDBY_RECOVERY:
             return (agc_job_standby_recovery(ctx));
+
         /* src/exec */
         case AGC_JOB_CHANGE_PROGRAM_RETURN:
             return (agc_job_change_program_return());
@@ -2181,6 +2229,7 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
             return (agc_task_gyrocompassing_sample());
         case AGC_TASK_GYROCOMPASSING_WAKE:
             return (agc_task_gyrocompassing_wake());
+
         /* src/csm/burns */
         case AGC_TASK_ATERTASK:
             return (agc_task_atertask());
@@ -2262,6 +2311,7 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
             return (agc_task_tig_5_csm());
         case AGC_TASK_TTG_0:
             return (agc_task_ttg_0());
+
         /* src/csm/dap */
         case AGC_TASK_CMDSOUT:
             return (agc_task_cmdsout());
@@ -2299,6 +2349,7 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
             return (agc_task_tvc_initialize());
         case AGC_TASK_YAWDAP:
             return (agc_task_yawdap());
+
         /* src/csm/entry */
         case AGC_TASK_ATTRATES:
             return (agc_task_attrates());
@@ -2312,11 +2363,13 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
             return (agc_task_setjtag());
         case AGC_TASK_WAKE_CM_SM_SEPARATION:
             return (agc_task_wake_cm_sm_separation());
+
         /* src/csm/optics */
         case AGC_TASK_ENDMARKS:
             return (agc_task_endmarks());
         case AGC_TASK_MARKDIF:
             return (agc_task_markdif());
+
         /* src/exec */
         case AGC_TASK_ENDTASK:
             return (agc_task_endtask());
@@ -2330,6 +2383,7 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
             return (agc_task_t5idloc());
         case AGC_TASK_TASKOVER:
             return (agc_task_taskover());
+
         /* src/imu */
         case AGC_TASK_GYRO_AUGMENT:
             return (agc_task_gyro_augment());
@@ -2359,11 +2413,13 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
             return (agc_task_strtgyro());
         case AGC_TASK_UPDTCALL:
             return (agc_task_updtcall());
+
         /* src/io/dsky */
         case AGC_TASK_MONREQ:
             return (agc_task_monreq());
         case AGC_TASK_TSTLTS2:
             return (agc_task_tstlts2());
+
         /* src/io/service */
         case AGC_TASK_ENDTNON:
             return (agc_t4_task(task));
@@ -2377,12 +2433,15 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
             return (agc_t4_task(task));
         case AGC_TASK_WAKER:
             return (agc_svc_delay_wake(-1));
+
         /* src/io/verbs */
         case AGC_TASK_ATTITUDE_ERROR_OUTPUT:
             return (agc_task_attitude_error_output());
+
         /* src/nav/integration */
         case AGC_TASK_STATEINT:
             return (agc_task_stateint());
+
         /* src/programs/displays */
         case AGC_TASK_RENDEZVOUS_PARAMS_WAIT:
             return (agc_task_rendezvous_params_wait());
@@ -2432,6 +2491,7 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
             return (agc_task_tig_0_lm());
         case AGC_TASK_TIG_5:
             return (agc_task_tig_5_lm());
+
         /* src/exec */
         case AGC_TASK_ENDTASK:
             return (agc_task_endtask());
@@ -2443,6 +2503,7 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
             return (agc_task_svct3());
         case AGC_TASK_TASKOVER:
             return (agc_task_taskover());
+
         /* src/imu */
         case AGC_TASK_GYRO_AUGMENT:
             return (agc_task_gyro_augment());
@@ -2472,11 +2533,13 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
             return (agc_task_strtgyro());
         case AGC_TASK_UPDTCALL:
             return (agc_task_updtcall());
+
         /* src/io/dsky */
         case AGC_TASK_MONREQ:
             return (agc_task_monreq());
         case AGC_TASK_TSTLTS2:
             return (agc_task_tstlts2());
+
         /* src/io/service */
         case AGC_TASK_ENDTNON:
             return (agc_t4_task(task));
@@ -2486,15 +2549,19 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
             return (agc_t4_task(task));
         case AGC_TASK_WAKER:
             return (agc_svc_delay_wake(-1));
+
         /* src/io/verbs */
         case AGC_TASK_ATTITUDE_ERROR_OUTPUT:
             return (agc_task_attitude_error_output());
+
         /* src/lm */
         case AGC_TASK_ASCENT_ENGINE_OFF:
             return (agc_lm_task_ascent_engine_off());
+
         /* src/lm/alignment */
         case AGC_TASK_LUNAR_GRAVITY_SAMPLE:
             return (agc_task_lunar_gravity_sample());
+
         /* src/lm/burns */
         case AGC_TASK_BIBIBIAS:
             return (agc_task_bibibias());
@@ -2540,11 +2607,13 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
             return (agc_task_ullgtask());
         case AGC_TASK_ZOOM:
             return (agc_task_zoom());
+
         /* src/lm/dap */
         case AGC_TASK_DAPIDLER:
             return (agc_task_dapidler());
         case AGC_TASK_PAXIS:
             return (agc_task_paxis());
+
         /* src/lm/landing */
         case AGC_TASK_ABORT_MONITOR:
             return (agc_lm_task_abort_monitor());
@@ -2556,6 +2625,7 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
             return (agc_lm_task_rodtask());
         case AGC_TASK_SPEEDRUN_RESUME:
             return (agc_lm_task_speedrun_resume());
+
         /* src/lm/navigation */
         case AGC_TASK_PREFERRED_TRACKING_ATTITUDE_WAIT:
             return (agc_task_preferred_tracking_attitude_wait());
@@ -2565,9 +2635,11 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
             return (agc_task_rendezvous_navigation_track_wait());
         case AGC_TASK_TRACKING_ATTITUDE_WAIT:
             return (agc_task_tracking_attitude_wait());
+
         /* src/lm/optics */
         case AGC_TASK_AOT_MARK_RELEASE:
             return (agc_task_aot_mark_release());
+
         /* src/lm/radar */
         case AGC_TASK_DORREPOS:
             return (agc_task_dorrepos());
@@ -2615,9 +2687,11 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
             return (agc_task_rr_zero_counters());
         case AGC_TASK_RR_ZERO_SETTLED:
             return (agc_task_rr_zero_settled());
+
         /* src/nav/integration */
         case AGC_TASK_STATEINT:
             return (agc_task_stateint());
+
         /* src/programs/displays */
         case AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY:
             return (agc_task_rendezvous_parameter_display());

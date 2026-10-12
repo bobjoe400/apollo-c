@@ -114,10 +114,6 @@ static bool selectp(lm_dap_t *d)
 {
     for (int tempnum = 6; tempnum >= -1; tempnum--)
     { /* <= 8 tries     */
-        if (!AGC_ASSERT(d->numbert >= 0 && d->numbert <= 6) || !AGC_ASSERT(d->rotindex >= 0 && d->rotindex <= 10))
-        {
-            return (false);
-        }
 
         d->polytemp = (agc_sp_t) (jettab[PX_TYPEP + d->numbert] & jettab[d->rotindex]);
 
@@ -416,34 +412,6 @@ agc_status_t lm_dap_purgency(void)
 }
 
 /**********************************************************************
- * ALTERYZ (p.1430): flip RCSFLAGS bit 1 and move to a diagonal policy.
- *
- * FUNCTION NAME: alteryz
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *
- * RETURNS: none
- **********************************************************************/
-static void alteryz(lm_dap_t *d)
-{
-    d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1);
-    d->rotindex = (agc_sp_t) (d->rotindex + 4 + (int) (d->rcsflags & LM_RCS_ZEROOR1));
-
-    if (!AGC_ASSERT(d->rotindex >= 6 && d->rotindex <= 10))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(d->rcsflags <= 077777u))
-    {
-        return;
-    }
-}
-
-/**********************************************************************
  * CHKVISFZ / TRYUORV / ABORTYZ (pp.1429-1430): Y,Z translation from the
  * THC into NEXTP. *policy = false if SELECTP found no policy (ALARM 02003,
  * JETSOFF done): the pass then goes straight to QRAXIS.
@@ -507,7 +475,20 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
             break; /* ABORTYZ        */
         }
 
-        alteryz(d);
+        /**********************************************************************
+         * ALTERYZ (p.1430): flip RCSFLAGS bit 1 and move to a diagonal policy.
+         *
+         * FUNCTION NAME: alteryz
+         *
+         * ARGUMENTS:
+         *   Argument  Type        I/O  Description (scale)
+         *   --------  ----------  ---  --------------------
+         *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+         *
+         * RETURNS: none
+         **********************************************************************/
+        d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1);
+        d->rotindex = (agc_sp_t) (d->rotindex + 4 + (int) (d->rcsflags & LM_RCS_ZEROOR1));
     }
 
     agc_alarm(AGC_ALARM_02001);

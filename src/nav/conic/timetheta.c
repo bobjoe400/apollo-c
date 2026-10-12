@@ -54,15 +54,15 @@
  *********************************************************************/
 void agc_conic_time_out_fill_(const agc_conic_ctx_t *ctx, agc_conic_time_out_t *out)
 {
-    out->t        = agc_conic_value_(ctx->t);
+    out->t        = agc_dp_from_words(ctx->t);
     out->infinflg = ctx->infinflg;
     out->cogaflag = ctx->cogaflag;
-    out->r1       = agc_conic_value_(ctx->r1);
-    out->r1a      = agc_conic_value_(ctx->r1a);
-    out->p        = agc_conic_value_(ctx->p);
-    out->coga     = agc_conic_value_(ctx->coga);
-    out->csth     = agc_conic_value_(ctx->csth);
-    out->snth     = agc_conic_value_(ctx->snth);
+    out->r1       = agc_dp_from_words(ctx->r1);
+    out->r1a      = agc_dp_from_words(ctx->r1a);
+    out->p        = agc_dp_from_words(ctx->p);
+    out->coga     = agc_dp_from_words(ctx->coga);
+    out->csth     = agc_dp_from_words(ctx->csth);
+    out->snth     = agc_dp_from_words(ctx->snth);
     out->ur1      = ctx->ur1;
     out->u2       = ctx->u2;
     out->un       = ctx->un;

@@ -91,11 +91,6 @@ agc_status_t sim_script_open(const char *path)
 /* Apply one event; true when it requested an interrupt.                 */
 static bool script_apply(const script_event_t *e)
 {
-    if (!AGC_ASSERT(e != NULL) || !AGC_ASSERT(e->valid))
-    {
-        return (false);
-    }
-
     uint16_t chan  = (uint16_t) e->chan;
     uint16_t value = (uint16_t) e->value;
 
@@ -133,11 +128,6 @@ void sim_script_tick(uint32_t cs)
             return; /* end of script, or one interrupt input per cs */
         }
     }
-
-    if (!AGC_ASSERT(g_line < 0x7FFFFFFFul))
-    {
-        return;
-    }
 }
 
 void sim_script_close(void)
@@ -149,9 +139,4 @@ void sim_script_close(void)
 
     g_file       = NULL;
     g_next.valid = false;
-
-    if (!AGC_ASSERT(g_file == NULL))
-    {
-        return;
-    }
 }

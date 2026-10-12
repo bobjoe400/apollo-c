@@ -86,11 +86,6 @@ void exec_cp_stop_servicer_lm(void)
 {
     agc_flag_clear(AGC_FLAG_AVEGFLAG);
     agc_guid_state()->lm.outroute = AGC_JOB_CHANGE_PROGRAM_RETURN;
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_AVEGFLAG)))
-    {
-        return;
-    }
 }
 
 /* V37RET (L p.228): group 2 for the program that keeps running: 2.7 when
@@ -104,11 +99,11 @@ agc_status_t agc_job_change_program_return(void)
 
     if (agc_flag_test(AGC_FLAG_RNDVZFLG))
     {
-        agc_phase_change(2, CP_PHASE_2_7); /* 2.7SPT     */
+        agc_phase_change(CP_PHASE_2_7); /* 2.7SPT     */
     }
     else if (agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE))
     {
-        agc_phase_change(2, CP_PHASE_2_11); /* 2.11SPT    */
+        agc_phase_change(CP_PHASE_2_11); /* 2.11SPT    */
     }
     else
     {
@@ -200,8 +195,8 @@ static void cp_reset22(bool clear_flags)
 agc_status_t exec_cp_rendezvous_lm(uint8_t mm, bool *statquo)
 {
     agc_sp_t modreg = agc_erase_modreg();
-    bool     p20    = agc_flag_test(AGC_FLAG_RNDVZFLG);
-    bool     p25    = agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE);
+    bool p20 = agc_flag_test(AGC_FLAG_RNDVZFLG);
+    bool p25 = agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE);
 
     *statquo = false;
 

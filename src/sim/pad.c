@@ -31,7 +31,6 @@
 
 #define PAD_LINE        512
 #define PAD_LINES_MAX   256   /* bound on lines read                 */
-#define PAD_FLAGWORDS   14    /* FLAGWRD0 .. FLGWRD13                 */
 #define PAD_MAT_N       9
 #define PAD_SCALE_REFSM 1     /* REFSMMAT 'SCALE OF B1'               */
 #define PAD_UNIT_MAX    1.0
@@ -57,7 +56,7 @@ static bool pad_refsmmat(const char *args)
 
     for (int i = 0; i < PAD_MAT_N; i++)
     {
-        if (m[i] > PAD_UNIT_MAX || m[i] < -PAD_UNIT_MAX)
+        if (!(m[i] <= PAD_UNIT_MAX && m[i] >= -PAD_UNIT_MAX)) /* also NaN */
         {
             return (false);
         }
@@ -76,12 +75,12 @@ static bool pad_flagword(const char *args)
     int          word = -1;
     unsigned int bits = 0;
 
-    if (!AGC_ASSERT(args != NULL) || sscanf(args, "%d %o", &word, &bits) != 2)
+    if (sscanf(args, "%d %o", &word, &bits) != 2)
     {
         return (false);
     }
 
-    if (word < 0 || word >= PAD_FLAGWORDS || bits > SIM_WORD_MASK)
+    if (word < 0 || word >= ((agc_state_vehicle() == AGC_VEHICLE_LM) ? AGC_FLAGWORDS_LM : AGC_FLAGWORDS_CSM) || bits > SIM_WORD_MASK)
     {
         return (false);
     }
@@ -102,7 +101,7 @@ static bool pad_state_vector(const char *args)
     int  n  = sscanf(args, "%7s %lf %lf %lf %lf %lf %lf %lf", veh, &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &x[6]);
     bool lm = strcmp(veh, "lm") == 0;
 
-    if (n < 7 || (!lm && strcmp(veh, "csm") != 0) || x[6] < 0.0 || x[6] > PAD_T_MAX)
+    if (n < 7 || (!lm && strcmp(veh, "csm") != 0) || !(x[6] >= 0.0 && x[6] <= PAD_T_MAX)) /* also NaN */
     {
         return (false);
     }
@@ -111,7 +110,7 @@ static bool pad_state_vector(const char *args)
 
     for (int i = 0; i < 3; i++)
     {
-        if (x[i] > PAD_R_MAX || x[i] < -PAD_R_MAX || x[i + 3] > PAD_V_MAX || x[i + 3] < -PAD_V_MAX)
+        if (!(x[i] <= PAD_R_MAX && x[i] >= -PAD_R_MAX && x[i + 3] <= PAD_V_MAX && x[i + 3] >= -PAD_V_MAX)) /* also NaN */
         {
             return (false);
         }
@@ -142,11 +141,6 @@ static bool pad_line(char *buf)
     if (sscanf(buf, "%31s%n", key, &used) != 1)
     {
         return (true); /* blank */
-    }
-
-    if (!AGC_ASSERT(used > 0 && (size_t) used <= strlen(buf)))
-    {
-        return (false);
     }
 
     if (strcmp(key, "refsmmat") == 0)

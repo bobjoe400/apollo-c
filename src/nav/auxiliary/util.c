@@ -40,60 +40,6 @@
 #define NAVAUX_DP_ONE ((int64_t) 1 << AGC_DP_BITS) /* 1.0 in DP raw units */
 
 /**********************************************************************
- * AGC: none (range predicate) -- true when a is a valid DP
- *
- * FUNCTION NAME: agc_navaux_dp_ok
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  ------------------------------------
- *   a         agc_dp_t  I    value, any scale
- *
- * RETURNS: bool -- true when |a| <= DPPOSMAX
- **********************************************************************/
-bool agc_navaux_dp_ok(agc_dp_t a)
-{
-    /* No AGC_ASSERT here: this is the predicate the assertions use.        */
-    return ((a <= AGC_DP_MAX) && (a >= AGC_DP_MIN));
-}
-
-/**********************************************************************
- * AGC: none (range predicate) -- true when every component is a valid DP
- *
- * FUNCTION NAME: agc_navaux_vec_ok
- *
- * ARGUMENTS:
- *   Argument  Type       I/O  Description (scale)
- *   --------  ---------  ---  ------------------------------------
- *   v         agc_vec_t  I    vector, any scale
- *
- * RETURNS: bool -- true when all three components are in range
- **********************************************************************/
-bool agc_navaux_vec_ok(agc_vec_t v)
-{
-    /* No AGC_ASSERT here: this is the predicate the assertions use.        */
-    return (agc_navaux_dp_ok(v.c[0]) && agc_navaux_dp_ok(v.c[1]) && agc_navaux_dp_ok(v.c[2]));
-}
-
-/**********************************************************************
- * AGC: none (range predicate) -- true when a is a valid TP
- *
- * FUNCTION NAME: agc_navaux_tp_ok
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  ------------------------------------
- *   a         agc_tp_t  I    value, any scale
- *
- * RETURNS: bool -- true when |a| <= the TP maximum
- **********************************************************************/
-bool agc_navaux_tp_ok(agc_tp_t a)
-{
-    /* No AGC_ASSERT here: this is the predicate the assertions use.        */
-    return ((a <= AGC_TP_MAX) && (a >= AGC_TP_MIN));
-}
-
-/**********************************************************************
  * AGC: SL* / SR* X,n (INTERPRETER.agc) -- DP shift by an indexed count
  *
  * FUNCTION NAME: agc_navaux_dp_shift
@@ -140,16 +86,6 @@ agc_dp_t agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n)
  **********************************************************************/
 agc_vec_t agc_navaux_vec_shift(agc_interp_t *ip, agc_vec_t v, int n)
 {
-    if (!AGC_ASSERT(agc_navaux_vec_ok(v)))
-    {
-        return (agc_vec_zero());
-    }
-
-    if (!AGC_ASSERT((n <= NAVAUX_MAX_SHIFT) && (n >= -NAVAUX_MAX_SHIFT)))
-    {
-        return (agc_vec_zero());
-    }
-
     agc_vec_t r = v; /* shifted vector, scale 2^(s-n) */
 
     if (n > 0)
@@ -159,16 +95,6 @@ agc_vec_t agc_navaux_vec_shift(agc_interp_t *ip, agc_vec_t v, int n)
     else if (n < 0)
     {
         r = agc_vec_shr(v, -n);
-    }
-
-    if (!AGC_ASSERT(agc_navaux_vec_ok(r))) /* post: in range         */
-    {
-        return (agc_vec_zero());
-    }
-
-    if (!AGC_ASSERT((n >= 0) || ((agc_dp_abs(r.c[0]) <= agc_dp_abs(v.c[0])) && (agc_dp_abs(r.c[1]) <= agc_dp_abs(v.c[1])) && (agc_dp_abs(r.c[2]) <= agc_dp_abs(v.c[2])))))
-    {
-        return (agc_vec_zero()); /* post: VSR never grows a component */
     }
 
     return (r);

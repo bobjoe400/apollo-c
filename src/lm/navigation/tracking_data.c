@@ -163,7 +163,7 @@ static agc_status_t td_read_rdot(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     if (!agc_flag_test(AGC_FLAG_RNDVZFLG))
     {
@@ -192,7 +192,7 @@ agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx)
         return (agc_job_rendezvous_tracking_data_next()); /* R22LEM42 */
     }
 
-    agc_phase_change(2, 00152);            /* a restart reads range rate again */
+    agc_phase_change(00152);               /* a restart reads range rate again */
     rz_flag_put(AGC_FLAG_RNGSCFLG, false); /* LRS22.1  */
     agc_inhint();
     uint16_t scale;                        /* range scale */
@@ -251,40 +251,6 @@ agc_status_t agc_job_rendezvous_tracking_data_range(void)
 }
 
 /**********************************************************************
- * LRS22.1 conversions: RDOTM = count SL14 x RDOTCONV, RM = count x
- * RANGCONV SL2R, RRTRUN / RRSHAFT (CDULOGIC), RRBORSIT = RRNB(TANGNB),
- * and the downlink copy (RANGRDOT, TANGNB).
- * AGC: LRS22.1 conversions (P20-P25.agc p.570)
- *
- * FUNCTION NAME: td_convert
- *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
- *   n         lmnav_state_t *  I/O  the mark data
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the RRNB status
- **********************************************************************/
-static agc_status_t td_convert(agc_interp_t *ip, lmnav_state_t *n)
-{
-    rr_state_t *s = rr_state(); /* radar erasables */
-
-    agc_inhint();
-    n->rangrdot[0] = agc_erase_dnrrange(0);
-    n->rangrdot[1] = agc_erase_dnrrange(1);
-    s->tangnb[0]   = n->tang[0];
-    s->tangnb[1]   = n->tang[1];
-    agc_relint();
-    n->rdotm       = agc_dp_mul(ip, agc_dp_shl(ip, n->rdotmsav, 14), TD_RDOTCONV);
-    n->rrtrun      = agc_guid_cdulogic(n->tang[0]);
-    n->rrshaft     = agc_guid_cdulogic(n->tang[1]);
-    n->rm          = agc_dp_shl_round(ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
-
-    return (agc_lm_rrnb(ip, n->tang[0], n->tang[1], &n->rrborsit));
-}
-
-/**********************************************************************
  * After the range read: a range scale change takes another reading;
  * another failure is error exit 1. Else convert, LOS from the state
  * vectors at the CDU time (LPS20.1) rotated to NB with the mark CDUs
@@ -319,8 +285,37 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
     agc_interp_t   ip;                /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st      = td_convert(&ip, n); /* conversions */
-    bool         too_far = false;              /* range > 400 NM */
+
+    /**********************************************************************
+     * LRS22.1 conversions: RDOTM = count SL14 x RDOTCONV, RM = count x
+     * RANGCONV SL2R, RRTRUN / RRSHAFT (CDULOGIC), RRBORSIT = RRNB(TANGNB),
+     * and the downlink copy (RANGRDOT, TANGNB).
+     * AGC: LRS22.1 conversions (P20-P25.agc p.570)
+     *
+     * FUNCTION NAME: td_convert
+     *
+     * ARGUMENTS:
+     *   Argument  Type             I/O  Description (scale)
+     *   --------  ---------------  ---  -------------------------------
+     *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
+     *   n         lmnav_state_t *  I/O  the mark data
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, else the RRNB status
+     **********************************************************************/
+    rr_state_t *s = rr_state(); /* radar erasables */
+
+    agc_inhint();
+    n->rangrdot[0]       = agc_erase_dnrrange(0);
+    n->rangrdot[1]       = agc_erase_dnrrange(1);
+    s->tangnb[0]         = n->tang[0];
+    s->tangnb[1]         = n->tang[1];
+    agc_relint();
+    n->rdotm             = agc_dp_mul(&ip, agc_dp_shl(&ip, n->rdotmsav, 14), TD_RDOTCONV);
+    n->rrtrun            = agc_guid_cdulogic(n->tang[0]);
+    n->rrshaft           = agc_guid_cdulogic(n->tang[1]);
+    n->rm                = agc_dp_shl_round(&ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
+    agc_status_t st      = agc_lm_rrnb(&ip, n->tang[0], n->tang[1], &n->rrborsit); /* conversions */
+    bool         too_far = false;                                                  /* range > 400 NM */
 
     if (st == AGC_STATUS_OK)
     {
@@ -347,12 +342,7 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
     c = agc_dp_shl(&ip, agc_vec_dot(&ip, los, n->rrborsit), 1);
 
     n->dtheta = agc_dp_acos(&ip, c);
-    st        = rz_set_dsptem_dp(RZ_DSPTEM1, n->dtheta);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    rz_set_dsptem_dp(RZ_DSPTEM1, n->dtheta);
 
     if (agc_dp_sub(&ip, n->dtheta, TD_THREEDEG) < 0)
     { /* NORMEXIT */
@@ -404,7 +394,7 @@ agc_status_t agc_job_rendezvous_tracking_data_los_alarm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 5U, AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE, AGC_JOB_RENDEZVOUS_TRACKING_DATA_ACCEPT, AGC_JOB_RENDEZVOUS_NAVIGATION_DESIGNATE));
 }
@@ -427,7 +417,7 @@ agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_accept(void)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
@@ -538,7 +528,7 @@ agc_status_t agc_job_rendezvous_tracking_data_next(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_done(void)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     agc_erase_set_trkmkcnt((agc_sp_t) (agc_erase_trkmkcnt() + 1));
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
@@ -566,7 +556,7 @@ agc_status_t agc_job_rendezvous_tracking_data_done(void)
 agc_status_t lmnav_residuals_display(void)
 {
     lmnav_state()->n49flag = 0;
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     agc_job_id_t j         = AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS; /* N49DSP */
     agc_status_t st        = agc_exec_novac(TD_PRIO27, j);               /* NOVAC */
 
@@ -665,7 +655,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx)
 
     if (f < 0)
     {
-        agc_phase_change(2, 04022); /* GRP2PC   */
+        agc_phase_change(04022); /* GRP2PC   */
 
         return (lmnav_incorporate_accepted(ctx)); /* ASTOK    */
     }
@@ -695,7 +685,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_restart(void)
 {
-    agc_phase_change(2, 00152);
+    agc_phase_change(00152);
     agc_status_t st = agc_radar_rrrdot(); /* RRRDOT */
 
     if (st != AGC_STATUS_OK)

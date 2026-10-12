@@ -250,51 +250,6 @@ static agc_status_t justout(lm_dap_t *d)
 }
 
 /**********************************************************************
- * RATEDONE (p.1433): manual command and damping finished in all axes.
- * Rate command off; desired attitude = present (CDUXD only in auto,
- * X-axis override; all three via ZATTEROR in attitude hold).
- *
- * FUNCTION NAME: ratedone
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
- **********************************************************************/
-static agc_status_t ratedone(lm_dap_t *d)
-{
-    if (!AGC_ASSERT(d != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_inhint();
-    agc_flag_clear(AGC_FLAG_OURRCFLG);
-
-    if ((agc_chan_read(031) & PM_CH31_ATTHOLD) != 0u)
-    {
-        d->cduxd = agc_erase_cdux(); /* X-axis override */
-    }
-    else
-    {
-        agc_lm_dap_zatteror();
-    }
-
-    agc_relint();
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_OURRCFLG)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (lm_dap_purgency());
-}
-
-/**********************************************************************
  * PEGI (p.1435): direct rate control. Zero the P attitude error; stay in
  * direct rate (PBIT) while the rate error is outside the target deadband
  * and TCP has not run out, then fire against the rate error.
@@ -461,7 +416,47 @@ agc_status_t lm_dap_detentck(void)
     }
     else if ((d->rcsflags & (LM_RCS_PBIT | LM_RCS_QRBIT)) == 0u)
     { /* RUTH */
-        return (ratedone(d));
+        /**********************************************************************
+         * RATEDONE (p.1433): manual command and damping finished in all axes.
+         * Rate command off; desired attitude = present (CDUXD only in auto,
+         * X-axis override; all three via ZATTEROR in attitude hold).
+         *
+         * FUNCTION NAME: ratedone
+         *
+         * ARGUMENTS:
+         *   Argument  Type        I/O  Description (scale)
+         *   --------  ----------  ---  --------------------
+         *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+         *          failed assertion, else the status of the routine it
+         *          ends in
+         **********************************************************************/
+        if (!AGC_ASSERT(d != 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        agc_inhint();
+        agc_flag_clear(AGC_FLAG_OURRCFLG);
+
+        if ((agc_chan_read(031) & PM_CH31_ATTHOLD) != 0u)
+        {
+            d->cduxd = agc_erase_cdux(); /* X-axis override */
+        }
+        else
+        {
+            agc_lm_dap_zatteror();
+        }
+
+        agc_relint();
+
+        if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_OURRCFLG)))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        return (lm_dap_purgency());
     }
 
     agc_erase_set_p_rhcctr(0); /* RATEDAMP       */

@@ -95,19 +95,19 @@
 /* R22 erasables (EBANK= MRKBUF1).                                       */
 typedef struct td_csm
 {
-    agc_dp_t     vhftime;    /* VHFTIME: last VHF reading, cs 2^28        */
-    agc_dp_t     vhfrange;   /* VHFRANGE: m 2^27                          */
-    uint16_t     rm;         /* RM: raw VHF range (.01 NM), 15 bits       */
-    uint16_t     mark[7];    /* MARKTIME, VTEMP: the mark being used      */
-    agc_vec_t    csmpos;     /* CSMPOS: body scale                        */
-    agc_vec_t    lempos;     /* LEMPOS: body scale                        */
-    agc_vec_t    rclp;       /* RCLP: LM - CSM, body scale                */
-    agc_vec_t    ucl;        /* UCL: unit RCLP, 2^1                       */
-    agc_vec_t    um;         /* UM: optics LOS, reference, 2^1            */
-    agc_vec_t    ustar;      /* USTAR: star direction, 2^1                */
-    agc_dp_t     n49disp[3]; /* N49DISP: |dR| 2^29, |dV| 2^7, source 1/2 */
-    agc_sp_t     tempor1;    /* TEMPOR1: 0 open, -1 PRO, + V32, unscaled  */
-    int          x2;         /* SHIFTNDX: 0 earth, -2 moon                */
+    agc_dp_t vhftime;    /* VHFTIME: last VHF reading, cs 2^28        */
+    agc_dp_t vhfrange;   /* VHFRANGE: m 2^27                          */
+    uint16_t rm;         /* RM: raw VHF range (.01 NM), 15 bits       */
+    uint16_t mark[7];    /* MARKTIME, VTEMP: the mark being used      */
+    agc_vec_t csmpos;     /* CSMPOS: body scale                        */
+    agc_vec_t lempos;     /* LEMPOS: body scale                        */
+    agc_vec_t rclp;       /* RCLP: LM - CSM, body scale                */
+    agc_vec_t ucl;        /* UCL: unit RCLP, 2^1                       */
+    agc_vec_t um;         /* UM: optics LOS, reference, 2^1            */
+    agc_vec_t ustar;      /* USTAR: star direction, 2^1                */
+    agc_dp_t n49disp[3]; /* N49DISP: |dR| 2^29, |dV| 2^7, source 1/2 */
+    agc_sp_t tempor1;    /* TEMPOR1: 0 open, -1 PRO, + V32, unscaled  */
+    int x2;         /* SHIFTNDX: 0 earth, -2 moon                */
     agc_incorp_t inc;        /* BVECTOR DELTAQ VARIANCE .. DELTAX         */
 } td_csm_t;
 
@@ -161,7 +161,7 @@ static int td_shiftndx(void)
 static agc_status_t td_pos(agc_interp_t *ip, agc_vehicle_t v, agc_vec_t *pos)
 {
     agc_integ_sv_t sv;                              /* permanent state */
-    agc_status_t   st = agc_integ_perm_get(v, &sv); /* state */
+    agc_status_t st = agc_integ_perm_get(v, &sv); /* state */
 
     *pos = agc_vec_add(ip, rz_vshift(ip, sv.deltav, -(7 - td.x2)), sv.rcv);
 
@@ -195,13 +195,8 @@ static void td_initialw(agc_sp_t pos, agc_sp_t vel)
 
     for (int k = 0; k < 3; k++)
     {
-        w->blk[0][k].c[k]     = agc_dp_from_sp(pos);
+        w->blk[0][k].c[k] = agc_dp_from_sp(pos);
         w->blk[1][3 + k].c[k] = agc_dp_from_sp(vel);
-    }
-
-    if (!AGC_ASSERT(w->blk[0][0].c[0] == agc_dp_from_sp(pos)))
-    {
-        return;
     }
 }
 
@@ -224,7 +219,7 @@ static agc_status_t td_getum(agc_interp_t *ip, agc_vec_t *um)
 {
     agc_align_sxt_mark_t m; /* the mark */
 
-    m.t    = agc_dp_pack((agc_sp_t) td.mark[0], (agc_sp_t) td.mark[1]);
+    m.t = agc_dp_pack((agc_sp_t) td.mark[0], (agc_sp_t) td.mark[1]);
     m.cduy = td.mark[2];
     m.cdus = td.mark[3];
     m.cduz = td.mark[4];
@@ -236,9 +231,9 @@ static agc_status_t td_getum(agc_interp_t *ip, agc_vec_t *um)
         agc_erase_set_markdown(i, td.mark[i]);
     }
 
-    agc_vec_t    los      = agc_vec_zero();              /* SM LOS, 2^1 */
-    agc_status_t st       = agc_csm_sxtsm(ip, &m, &los); /* SXTNB, NBSM */
-    agc_mat_t    refsmmat = agc_erase_refsmmat();        /* REFSMMAT, 2^1 */
+    agc_vec_t los = agc_vec_zero();              /* SM LOS, 2^1 */
+    agc_status_t st = agc_csm_sxtsm(ip, &m, &los); /* SXTNB, NBSM */
+    agc_mat_t refsmmat = agc_erase_refsmmat();        /* REFSMMAT, 2^1 */
 
     *um = agc_vec_shl(ip, agc_vec_mat(ip, los, &refsmmat), 1);
 
@@ -278,17 +273,17 @@ static void td_bvectors(agc_interp_t *ip)
  **********************************************************************/
 static void td_variance(agc_interp_t *ip, agc_dp_t base)
 {
-    const agc_rendz_nav_pad_t *p  = agc_rendz_nav_pad(); /* pad loads */
-    int                        x1 = 0;                   /* NORM index, -(left shifts) */
-    agc_dp_t                   n;                        /* 2^(S+X1) */
+    const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
+    int x1 = 0;                   /* NORM index, -(left shifts) */
+    agc_dp_t n;                        /* 2^(S+X1) */
 
     n = rz_norm(agc_vec_abval(ip, td.rclp), &x1);
     agc_tp_t v; /* TP, B-40 after the SR* */
 
     v = agc_dp_mul_tp(agc_dp_sq(n), base);
 
-    x1              = 2 * x1 + 2 * td_shiftndx();      /* XAD,1    */
-    v               = agc_tp_shift(ip, v, -(-2 - x1)); /* SR* 0-2,1 */
+    x1 = 2 * x1 + 2 * td_shiftndx();      /* XAD,1    */
+    v = agc_tp_shift(ip, v, -(-2 - x1)); /* SR* 0-2,1 */
     agc_tp_t intvar = (agc_tp_t) p->intvar * 8;        /* SR 25, B-40 */
 
     v = agc_tp_add(ip, intvar, v);
@@ -325,12 +320,12 @@ static void td_variance(agc_interp_t *ip, agc_dp_t base)
  **********************************************************************/
 static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
 {
-    *st    = AGC_STATUS_OK;
+    *st = AGC_STATUS_OK;
     td.ucl = agc_vec_unit(ip, td.rclp, NULL, NULL);
 
     if (agc_flag_test(AGC_FLAG_INCORFLG))
     {
-        *st         = td_getum(ip, &td.um);
+        *st = td_getum(ip, &td.um);
         agc_interp_clear_ovf(ip);
         agc_vec_t c = agc_vec_cross(ip, td.ucl, td.um); /* REND8, 2^2 */
 
@@ -349,7 +344,7 @@ static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
         td.inc.bvector[0] = agc_vec_neg(td.inc.bvector[0]);
     }
 
-    agc_phase_change(2, 04022);                         /* REND9A   */
+    agc_phase_change(04022);                            /* REND9A   */
     const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
 
     if (agc_flag_test(AGC_FLAG_BACKUP_MARKING))
@@ -362,45 +357,6 @@ static bool td_optics_mark(agc_interp_t *ip, agc_status_t *st)
     }
 
     return (true);
-}
-
-/**********************************************************************
- * REND14: the VHF range: B0 = UNIT(RCLP) (complemented if the CSM is
- * corrected), DELTAQ = VHFRANGE (SR2 in earth orbit) - |RCLP|.
- * AGC: REND14, REND14A (P20-P25.agc p.583)
- *
- * FUNCTION NAME: td_vhf_mark
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- **********************************************************************/
-static void td_vhf_mark(agc_interp_t *ip)
-{
-    agc_dp_t  absr = 0;                                      /* |RCLP|, body scale */
-    agc_vec_t u    = agc_vec_unit(ip, td.rclp, &absr, NULL); /* 2^1 */
-
-    td.inc.bvector[0] = u;
-    td.inc.bvector[1] = agc_vec_zero();
-    td.inc.bvector[2] = agc_vec_zero();
-
-    if (agc_flag_test(AGC_FLAG_VEHUPFLG))
-    {
-        td.inc.bvector[0] = agc_vec_neg(u); /* the CSM is corrected */
-    }
-
-    agc_dp_t r = td.vhfrange; /* moon: m 2^27 */
-
-    if (!agc_flag_test(AGC_FLAG_CMOONFLG))
-    {
-        r = agc_dp_shr(td.vhfrange, 2); /* earth: SR2, m 2^29 */
-    }
-
-    td.inc.deltaq = agc_dp_sub(ip, r, absr);
-    rz_flag_put(AGC_FLAG_INCORFLG, true);
-    agc_phase_change(2, 04022); /* REND14A  */
-    td_variance(ip, agc_rendz_nav_pad()->rvar);
 }
 
 /**********************************************************************
@@ -422,10 +378,10 @@ static bool td_incorp1(agc_interp_t *ip, agc_status_t *st)
 {
     rz_flag_put(AGC_FLAG_DMENFLG, false);
     td.inc.dim9 = false;
-    *st         = agc_incorp_state_deviation(ip,
-                                             &agc_integ_shared_ctx()->w,
-                                             &td.inc);
-    agc_phase_change(2, 04022);
+    *st = agc_incorp_state_deviation(ip,
+                                     &agc_integ_shared_ctx()->w,
+                                     &td.inc);
+    agc_phase_change(04022);
 
     if (*st != AGC_STATUS_OK || !agc_flag_test(AGC_FLAG_INCORFLG))
     {
@@ -433,7 +389,7 @@ static bool td_incorp1(agc_interp_t *ip, agc_status_t *st)
     }
 
     const agc_rendz_nav_pad_t *p = agc_rendz_nav_pad(); /* pad loads */
-    int                        k = 0 - td_shiftndx();   /* SR* 0,2  */
+    int k = 0 - td_shiftndx();   /* SR* 0,2  */
 
     td.n49disp[1] = rz_shift(ip, agc_vec_abval(ip, td.inc.deltax[1]), -k);
     td.n49disp[0] = rz_shift(ip, agc_vec_abval(ip, td.inc.deltax[0]), -k);
@@ -465,7 +421,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm(void)
 
     agc_erase_set_mrkbuf2(0, TD_NEG3);
     td.vhftime = agc_rtb_loadtime();
-    agc_phase_change(2, 04022); /* REND1    */
+    agc_phase_change(04022); /* REND1    */
 
     return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK));
 }
@@ -483,7 +439,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm(void)
  **********************************************************************/
 static agc_status_t td_wait_for_mark(void)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_MARK));
 }
@@ -500,7 +456,7 @@ static agc_status_t td_wait_for_mark(void)
  **********************************************************************/
 static agc_status_t td_wait_for_vhf(void)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     return (rz_waitone(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_VHF));
 }
@@ -538,7 +494,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_mark(void)
     agc_relint();
     rz_set_marktime(agc_dp_pack((agc_sp_t) td.mark[0], (agc_sp_t) td.mark[1]));
     rz_flag_put(AGC_FLAG_SOURCFLG, false); /* optics   */
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     return (agc_job_rendezvous_tracking_data_csm_incorporate()); /* REND4 */
 }
@@ -578,9 +534,9 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_vhf(void)
     rz_set_marktime(agc_rtb_loadtime());
     rz_flag_put(AGC_FLAG_SKIPVHF, false);
     agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING; /* RADSTALL result */
-    agc_job_id_t           next;                         /* RANGERD */
+    agc_job_id_t next;                         /* RANGERD */
 
-    next            = AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE;
+    next = AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE;
     agc_status_t st = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, next, &res); /* RADSTALL */
 
     if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
@@ -613,7 +569,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(void)
 
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_GOOD)
     {
-        st         = AGC_STATUS_OK;
+        st = AGC_STATUS_OK;
         td.vhftime = rz_marktime(); /* LIGHTON  */
 
         if (td.vhfrange != 0)
@@ -655,7 +611,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_range(void)
 
     td.vhfrange = r;
     rz_flag_put(AGC_FLAG_SOURCFLG, true);
-    td.vhftime  = rz_marktime();
+    td.vhftime = rz_marktime();
 
     return (agc_job_rendezvous_tracking_data_csm_incorporate()); /* REND4 */
 } /* agc_job_rendezvous_tracking_data_csm_range */
@@ -726,9 +682,9 @@ static agc_status_t td_integrate(agc_interp_t *ip)
 {
     agc_job_id_t resume; /* INTSTALL */
 
-    resume           = AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_INCORPORATE;
-    bool         csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* CSM corrected */
-    agc_status_t st  = rz_setintg(resume);               /* SETINTG */
+    resume = AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_INCORPORATE;
+    bool csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* CSM corrected */
+    agc_status_t st = rz_setintg(resume);               /* SETINTG */
 
     if (st != AGC_STATUS_OK)
     {
@@ -737,33 +693,31 @@ static agc_status_t td_integrate(agc_interp_t *ip)
 
     rz_flag_put(AGC_FLAG_VINTFLAG, !csm); /* the other vehicle   */
     st = agc_integ_integrv(ip, agc_integ_shared_ctx(), rz_marktime());
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     if (st == AGC_STATUS_OK)
     {
         st = rz_setintg(resume);
     }
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    rz_flag_put(AGC_FLAG_VINTFLAG, csm);
-    rz_flag_put(AGC_FLAG_DIM0FLAG, agc_flag_test(AGC_FLAG_RENDWFLG)); /* REND5 */
-    st    = agc_integ_integrv(ip, agc_integ_shared_ctx(), rz_marktime());
-    td.x2 = td_shiftndx();
-
     if (st == AGC_STATUS_OK)
     {
-        st = td_pos(ip, AGC_VEHICLE_CSM, &td.csmpos); /* CMPOS    */
-    }
+        rz_flag_put(AGC_FLAG_VINTFLAG, csm);
+        rz_flag_put(AGC_FLAG_DIM0FLAG, agc_flag_test(AGC_FLAG_RENDWFLG)); /* REND5 */
+        st = agc_integ_integrv(ip, agc_integ_shared_ctx(), rz_marktime());
+        td.x2 = td_shiftndx();
 
-    rz_flag_put(AGC_FLAG_INCORFLG, true);
+        if (st == AGC_STATUS_OK)
+        {
+            st = td_pos(ip, AGC_VEHICLE_CSM, &td.csmpos); /* CMPOS    */
+        }
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = td_pos(ip, AGC_VEHICLE_LM, &td.lempos); /* LMPOS    */
+        rz_flag_put(AGC_FLAG_INCORFLG, true);
+
+        if (st == AGC_STATUS_OK)
+        {
+            st = td_pos(ip, AGC_VEHICLE_LM, &td.lempos); /* LMPOS    */
+        }
     }
 
     return (st);
@@ -797,7 +751,42 @@ static agc_status_t td_passes(agc_interp_t *ip, bool at_incorp2)
         {
             if (agc_flag_test(AGC_FLAG_SOURCFLG))
             {
-                td_vhf_mark(ip); /* REND14   */
+                /* REND14   */
+                /**********************************************************************
+                 * REND14: the VHF range: B0 = UNIT(RCLP) (complemented if the CSM is
+                 * corrected), DELTAQ = VHFRANGE (SR2 in earth orbit) - |RCLP|.
+                 * AGC: REND14, REND14A (P20-P25.agc p.583)
+                 *
+                 * FUNCTION NAME: td_vhf_mark
+                 *
+                 * ARGUMENTS:
+                 *   Argument  Type            I/O  Description (scale)
+                 *   --------  --------------  ---  --------------------------------
+                 *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+                 **********************************************************************/
+                agc_dp_t absr = 0;                                      /* |RCLP|, body scale */
+                agc_vec_t u = agc_vec_unit(ip, td.rclp, &absr, NULL); /* 2^1 */
+
+                td.inc.bvector[0] = u;
+                td.inc.bvector[1] = agc_vec_zero();
+                td.inc.bvector[2] = agc_vec_zero();
+
+                if (agc_flag_test(AGC_FLAG_VEHUPFLG))
+                {
+                    td.inc.bvector[0] = agc_vec_neg(u); /* the CSM is corrected */
+                }
+
+                agc_dp_t r = td.vhfrange; /* moon: m 2^27 */
+
+                if (!agc_flag_test(AGC_FLAG_CMOONFLG))
+                {
+                    r = agc_dp_shr(td.vhfrange, 2); /* earth: SR2, m 2^29 */
+                }
+
+                td.inc.deltaq = agc_dp_sub(ip, r, absr);
+                rz_flag_put(AGC_FLAG_INCORFLG, true);
+                agc_phase_change(04022); /* REND14A  */
+                td_variance(ip, agc_rendz_nav_pad()->rvar);
             }
             else if (!td_optics_mark(ip, &st))
             {
@@ -828,7 +817,7 @@ static agc_status_t td_passes(agc_interp_t *ip, bool at_incorp2)
         }
 
         at_incorp2 = false;
-        st         = rz_incorp2(ip, &td.inc, agc_flag_test(AGC_FLAG_CMOONFLG)); /* REND12 */
+        st = rz_incorp2(ip, &td.inc, agc_flag_test(AGC_FLAG_CMOONFLG)); /* REND12 */
 
         if (st != AGC_STATUS_OK)
         {
@@ -860,7 +849,7 @@ static agc_status_t td_passes(agc_interp_t *ip, bool at_incorp2)
             st = td_pos(ip, AGC_VEHICLE_LM, &td.lempos);
         }
 
-        agc_phase_change(2, 04022); /* REND13   */
+        agc_phase_change(04022); /* REND13   */
         td.rclp = agc_vec_sub(ip, td.lempos, td.csmpos);
         rz_flag_put(AGC_FLAG_INCORFLG, false);
 
@@ -938,8 +927,8 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_display(void)
         td.n49disp[2] = 2; /* VHF */
     }
 
-    td.tempor1      = 0;
-    agc_phase_change(2, 04022);
+    td.tempor1 = 0;
+    agc_phase_change(04022);
     agc_status_t st = agc_exec_novac(TD_PRIO27, AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS); /* RENDISP2 */
 
     if (st != AGC_STATUS_OK)

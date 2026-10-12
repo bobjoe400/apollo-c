@@ -163,11 +163,6 @@ static bool t4_seq_ok(void)
 static void chan_clear(int chan, uint16_t bits)
 {
     agc_chan_and(chan, (uint16_t) (~(uint32_t) bits & WORD15));
-
-    if (!AGC_ASSERT((agc_chan_read(chan) & bits) == 0u))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -179,17 +174,7 @@ static void chan_clear(int chan, uint16_t bits)
  **********************************************************************/
 static void set_lampword(uint16_t w)
 {
-    if (!AGC_ASSERT(w <= WORD15))
-    {
-        return;
-    }
-
     agc_erase_set_dsptab(LAMPWORD, w);
-
-    if (!AGC_ASSERT(agc_erase_dsptab(LAMPWORD) == w))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -198,17 +183,12 @@ static void set_lampword(uint16_t w)
  * ARGUMENTS:
  *   dt    uint16_t       I   delay, cs (> 0)
  *   task  agc_task_id_t  I   the waitlist task
+ *
+ * RETURNS: the WAITLIST status (BAILOUT 1203 when the list is full)
  **********************************************************************/
-static void call_wait(uint16_t dt, agc_task_id_t task)
+static agc_status_t call_wait(uint16_t dt, agc_task_id_t task)
 {
-    agc_status_t st = AGC_STATUS_OK; /* WAITLIST result */
-
-    st = agc_waitlist_call(dt, task);
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return;
-    }
+    return (agc_waitlist_call(dt, task));
 }
 
 /**********************************************************************
@@ -219,14 +199,7 @@ static void call_wait(uint16_t dt, agc_task_id_t task)
  **********************************************************************/
 bool agc_t4_lamptest(void)
 {
-    uint16_t m = agc_erase_imodes33(); /* IMODES33 bits */
-
-    if (!AGC_ASSERT(m <= WORD15))
-    {
-        return (false);
-    }
-
-    return ((m & BIT1) != 0u);
+    return ((agc_erase_imodes33() & BIT1) != 0u);
 }
 
 /**********************************************************************
@@ -243,11 +216,6 @@ bool agc_t4_lamptest(void)
 static bool t4_cdrve(void)
 {
     uint16_t w = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D, lamp relay word */
-    if (!AGC_ASSERT(w <= WORD15))
-    {
-        return (false);
-    }
-
 
     if ((w & BIT15) == 0u)
     {
@@ -261,11 +229,6 @@ static bool t4_cdrve(void)
     set_lampword(lamps);
     agc_chan_write((int) AGC_CHAN_OUT0, (uint16_t) (lamps + RELTAB11));
 
-    if (!AGC_ASSERT((agc_erase_dsptab(LAMPWORD) & BIT15) == 0u))
-    {
-        return (false); /* not replaced positively */
-    }
-
     return (true);
 }
 
@@ -276,18 +239,8 @@ static bool t4_cdrve(void)
  **********************************************************************/
 static uint16_t t4_hang20(void)
 {
-    if (!AGC_ASSERT(t4_quick_left == 0)) /* only from a normal pass */
-    {
-        return (0); /* no valid result */
-    }
-
     t4_quick_left  = T4_QUICK_PASSES;
     t4_quick_wrote = true;
-    if (!AGC_ASSERT(t4_phase >= 0 && t4_phase < T4_PHASES))
-    {
-        return (0); /* no valid result */
-    }
-
 
     return (T4_20MS_CS);
 }
@@ -295,19 +248,20 @@ static uint16_t t4_hang20(void)
 /**********************************************************************
  * CDRVE / DSPOUT / NODSPOUT (pp.134-137): returns the TIME4 delay.
  *
- * RETURNS: the TIME4 delay in cs: 2 after a relay word (HANG20), 12 after
- *          NODSPOUT (120MRUPT), 0 on a pinball error
+ * ARGUMENTS:
+ *   dt  uint16_t *  O   the TIME4 delay in cs: 2 after a relay word
+ *                       (HANG20), 12 after NODSPOUT (120MRUPT)
+ *
+ * RETURNS: AGC_STATUS_OK, or the DSPOUT status when pinball failed (the
+ *          relays are turned off and 120MRUPT follows)
  **********************************************************************/
-static uint16_t t4_display_pass(void)
+static agc_status_t t4_display_pass(uint16_t *dt)
 {
-    if (!AGC_ASSERT(t4_seq_ok()) || !AGC_ASSERT(t4_quick_left == 0))
-    {
-        return (0); /* no valid result */
-    }
-
     if (t4_cdrve())
     {
-        return (t4_hang20());
+        *dt = t4_hang20();
+
+        return (AGC_STATUS_OK);
     }
 
     uint16_t     relay = 0;                       /* relay word written (unused) */
@@ -315,17 +269,15 @@ static uint16_t t4_display_pass(void)
 
     if (st == AGC_STATUS_OK)
     {
-        return (t4_hang20());
-    }
+        *dt = t4_hang20();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_NOT_FOUND))
-    {
-        return (0); /* no valid result */
+        return (AGC_STATUS_OK);
     }
 
     agc_chan_write((int) AGC_CHAN_OUT0, 0); /* NODSPOUT: relays off     */
+    *dt = T4_120MS_CS;
 
-    return (T4_120MS_CS);
+    return ((st == AGC_STATUS_NOT_FOUND) ? AGC_STATUS_OK : st); /* NOT_FOUND: nothing to show */
 }
 
 /**********************************************************************
@@ -336,11 +288,6 @@ static uint16_t t4_display_pass(void)
  **********************************************************************/
 static uint16_t t4_quikdsp(void)
 {
-    if (!AGC_ASSERT(t4_quick_left > 0 && t4_quick_left <= T4_FLUSH_PASSES))
-    {
-        return (0); /* no valid result */
-    }
-
     if (t4_quick_wrote)
     { /* QUIKOFF                 */
         agc_chan_write((int) AGC_CHAN_OUT0, 0);
@@ -366,50 +313,32 @@ static uint16_t t4_quikdsp(void)
 
     t4_quick_left = 0;
 
-    if (!AGC_ASSERT(dt <= T4_20MS_CS * T4_FLUSH_PASSES))
-    {
-        return (0); /* no valid result */
-    }
-
     return (dt);
 }
 
 /**********************************************************************
  * PROCEEDE (p.136): the PRO key, channel 32 bit 14 compared with IMODES33
  * bit 14 (0 = pressed, inverted input).
+ *
+ * RETURNS: AGC_STATUS_OK, or the NOVAC status of the PROCKEY request
  **********************************************************************/
-static void t4_proceede(void)
+static agc_status_t t4_proceede(void)
 {
     uint16_t im33 = agc_erase_imodes33();                 /* IMODES33 bits */
     uint16_t ch32 = agc_chan_read((int) AGC_CHAN_CHAN32); /* inverted inputs, bit 14 = PRO */
-    if (!AGC_ASSERT(im33 <= WORD15 && ch32 <= WORD15))
+
+    if (((im33 ^ ch32) & BIT14) != 0u) /* no change               */
     {
-        return;
-    }
+        im33 = (uint16_t) (im33 ^ BIT14);
+        agc_erase_set_imodes33(im33);
 
-
-    if (((im33 ^ ch32) & BIT14) == 0u)
-    {
-        return; /* no change               */
-    }
-
-    im33 = (uint16_t) (im33 ^ BIT14);
-    agc_erase_set_imodes33(im33);
-
-    if (!AGC_ASSERT(((agc_erase_imodes33() ^ ch32) & BIT14) == 0u))
-    {
-        return;
-    }
-
-    if ((im33 & BIT14) == 0u)
-    { /* was off -- now on       */
-        agc_status_t st = agc_dsky_prockey_request(); /* NOVAC PROCKEY   */
-
-        if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-        {
-            return;
+        if ((im33 & BIT14) == 0u)
+        { /* was off -- now on       */
+            return (agc_dsky_prockey_request()); /* NOVAC PROCKEY   */
         }
     }
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -489,9 +418,18 @@ agc_status_t agc_t4rupt(uint16_t *next_cs)
         return (AGC_STATUS_OK);
     }
 
-    t4_phase = (t4_phase > 0) ? (t4_phase - 1) : (T4_PHASES - 1); /* CCS  */
-    *next_cs = t4_display_pass();
-    t4_proceede();
+    t4_phase        = (t4_phase > 0) ? (t4_phase - 1) : (T4_PHASES - 1); /* CCS  */
+    agc_status_t st = t4_display_pass(next_cs);
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = t4_proceede();
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
 
     if (!AGC_ASSERT(*next_cs >= T4_20MS_CS) || !AGC_ASSERT(t4_seq_ok()))
     {
@@ -580,133 +518,56 @@ agc_status_t agc_t4_fresh_start_flush(void)
  * 1.  On a failure VARALARM is given the fail bits minus one -- the famous
  * 07777 (IMU fail), 03777 (ICDU fail), 14777 (PIPA fail) codes.
  *
- * RETURNS: AGC_STATUS_ALARM when the ISS warning was turned on (VARALARM
- *          given), AGC_STATUS_OK otherwise, BAD_ARG on a bad IMODES30
  **********************************************************************/
-agc_status_t agc_t4_setissw(void)
+void agc_t4_setissw(void)
 {
-    uint16_t im30 = agc_erase_imodes30(); /* IMODES30 bits */
-    if (!AGC_ASSERT(im30 <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-
+    uint16_t im30  = agc_erase_imodes30();                               /* IMODES30 bits */
     uint16_t inhib = (uint16_t) ((im30 & OCT15) << 9);                   /* MP BIT10        */
     uint16_t fail  = (uint16_t) (~(uint32_t) (im30 | inhib) & OCT15000); /* 0 = failure, bits 13,12,10 */
 
     if (fail != 0u)
     { /* ISSWON          */
         agc_exec_varalarm((agc_alarm_code_t) (fail - 1u));
-        agc_status_t st = AGC_STATUS_ALARM; /* VARALARM given */
-
         agc_chan_or((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT1);
-
-        if (!AGC_ASSERT((agc_chan_read((int) AGC_CHAN_DSALMOUT) & BIT1) != 0u))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        return (st);
     }
-
-    if (!agc_t4_lamptest())
+    else if (!agc_t4_lamptest())
     { /* ISSWOFF         */
         chan_clear((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT1);
     }
-
-    return (AGC_STATUS_OK);
+    else
+    {
+        /* lamp test in progress: the warning stays as it is */
+    }
 }
 
 /**********************************************************************
  * CAGESUB2 (p.158): flags for caging / turn-on; inhibit ISS warnings and
  * the DAP auto and hold modes.
- *
- * RETURNS: AGC_STATUS_OK, or BAD_ARG if the flags did not stick
  **********************************************************************/
-agc_status_t agc_t4_cagesub2(void)
+void agc_t4_cagesub2(void)
 {
     agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() | OCT75));
     agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | BIT6));
-
-    if (!AGC_ASSERT((agc_erase_imodes30() & OCT75) == OCT75) || !AGC_ASSERT((agc_erase_imodes33() & BIT6) != 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
  * CAGESUB1 (p.158): NO ATT lamp on (DSPTAB +11D bit 4, bit 15 = send).
- *
- * RETURNS: the CAGESUB2 status
  **********************************************************************/
-static agc_status_t t4_cagesub1(void)
+static void t4_cagesub1(void)
 {
-    uint16_t w = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D */
-
-    if (!AGC_ASSERT(w <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    set_lampword((uint16_t) (w | OC40010)); /* CS / MASK / ADS = OR */
-
-    if (!AGC_ASSERT((agc_erase_dsptab(LAMPWORD) & OC40010) == OC40010))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (agc_t4_cagesub2());
+    set_lampword((uint16_t) (agc_erase_dsptab(LAMPWORD) | OC40010)); /* CS / MASK / ADS = OR */
+    agc_t4_cagesub2();
 }
 
 /**********************************************************************
  * CAGESUB (p.158): outbits for turn-on or cage: error counter disabled,
  * delay-complete removed, zero + coarse sent.
- *
- * RETURNS: the CAGESUB2 status, or BAD_ARG if channel 12 did not take the
- *          bits
  **********************************************************************/
-agc_status_t agc_t4_cagesub(void)
+void agc_t4_cagesub(void)
 {
     chan_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT15_6);
     agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BITS4_5);
-
-    if (!AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN12) & BITS4_5) == BITS4_5) || !AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT15_6) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (t4_cagesub1());
-}
-
-/**********************************************************************
- * TLIM (p.149): temp caution lamp (channel 11 bit 4) follows channel 30
- * bit 15 (IMODES30 negative = temperature out of limits).
- **********************************************************************/
-static void t4_tlim(void)
-{
-    uint16_t im30 = agc_erase_imodes30(); /* IMODES30 bits */
-    if (!AGC_ASSERT(im30 <= WORD15))
-    {
-        return;
-    }
-
-
-    if ((im30 & BIT15) != 0u)
-    {
-        agc_chan_or((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT4);
-
-        if (!AGC_ASSERT((agc_chan_read((int) AGC_CHAN_DSALMOUT) & BIT4) != 0u))
-        {
-            return;
-        }
-    }
-    else if (!agc_t4_lamptest())
-    { /* TEMPOK                  */
-        chan_clear((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT4);
-    }
+    t4_cagesub1();
 }
 
 /**********************************************************************
@@ -720,70 +581,20 @@ static void t4_iturnon2(void)
     {
         agc_erase_set_radmodes((uint16_t) RRINIT); /* LM: CAF RRINIT     */
     }
-
-    if (!AGC_ASSERT((agc_erase_imodes30() & BIT7) != 0u) || !AGC_ASSERT((agc_state_vehicle() != AGC_VEHICLE_LM) || (agc_erase_radmodes() == RRINIT)))
-    {
-        return;
-    }
-}
-
-/**********************************************************************
- * ITURNON (p.150): channel 30 bit 14 (ISS turn-on request) changed.
- **********************************************************************/
-static void t4_iturnon(void)
-{
-    uint16_t im30 = agc_erase_imodes30(); /* IMODES30 bits */
-
-    if (!AGC_ASSERT(im30 <= WORD15))
-    {
-        return;
-    }
-
-    if ((im30 & BIT2) != 0u)
-    {
-        return; /* failed delay: wait for ENDTNON   */
-    }
-
-    if ((im30 & BIT14) == 0u)
-    {
-        t4_iturnon2(); /* just on                          */
-
-        return;
-    }
-
-    if ((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT15) != 0u)
-    {
-        return; /* delay complete already sent      */
-    }
-
-    agc_erase_set_imodes30((uint16_t) (im30 + BIT2));
-    agc_alarm(ALARM_ISS_DELAY_FAIL);
-
-    if (!AGC_ASSERT((agc_erase_imodes30() & BIT2) != 0u))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
  * ISSZERO (p.144): zero the ICDUs; UNZ2 follows in 320 ms.
+ *
+ * RETURNS: the WAITLIST status of UNZ2
  **********************************************************************/
-static void t4_isszero(void)
+static agc_status_t t4_isszero(void)
 {
-    if (!AGC_ASSERT(agc_erase_imodes30() <= WORD15))
-    {
-        return;
-    }
-
     agc_imu_noattoff();
     agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT5);
     agc_imu_zeroicdu();
-    call_wait(UNZ2_DELAY_CS, AGC_TASK_UNZ2);
 
-    if (!AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT5) != 0u))
-    {
-        return; /* ISS CDU zero not sent */
-    }
+    return (call_wait(UNZ2_DELAY_CS, AGC_TASK_UNZ2));
 }
 
 /**********************************************************************
@@ -793,16 +604,18 @@ static void t4_isszero(void)
  * ARGUMENTS:
  *   newbit  uint16_t  I   new channel 30 bit 11 (nonzero = cage button
  *                         released)
+ *   stop    bool *    O   set true when the scan ends (ISSZERO exits to
+ *                         C33TEST)
  *
- * RETURNS: true when the scan ends (ISSZERO exits to C33TEST)
+ * RETURNS: AGC_STATUS_OK, or the WAITLIST status of ISSZERO
  **********************************************************************/
-static bool t4_imucage(uint16_t newbit)
+static agc_status_t t4_imucage(uint16_t newbit, bool *stop)
 {
     if (newbit != 0u)
     { /* button released: ISSZERO       */
-        t4_isszero();
+        *stop = true;
 
-        return (true);
+        return (t4_isszero());
     }
 
     chan_clear((int) AGC_CHAN_CHAN14, (uint16_t) OCT77000); /* pulse trains */
@@ -822,141 +635,52 @@ static bool t4_imucage(uint16_t newbit)
         agc_chan_write((int) AGC_CHAN_DSALMOUT, (uint16_t) ((ch11 & ~(uint32_t) PRIO30) + BIT14));
     }
 
-    agc_status_t st = t4_cagesub1(); /* CAGESUB1 result */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (false);
-    }
-
-    agc_imu_rndrefdr();        /* track, REFSMMAT, drift flags    */
-    st = agc_imu_clear_cmds(); /* -0 into CDUXCMD..Z, GYROCMD     */
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (false);
-    }
-
+    t4_cagesub1();
+    agc_imu_rndrefdr();                                   /* track, REFSMMAT, drift flags    */
+    agc_imu_clear_cmds();                                 /* -0 into CDUXCMD..Z, GYROCMD     */
     chan_clear((int) AGC_CHAN_CHAN14, (uint16_t) OCT740); /* deselect gyros */
 
-    return (false);
+    return (AGC_STATUS_OK);
 } /* t4_imucage */
-
-/**********************************************************************
- * IMUOP (p.154): channel 30 bit 9 (ISS operate) changed.
- *
- * ARGUMENTS:
- *   newbit  uint16_t  I   new channel 30 bit 9 (0 = ISS operate on)
- **********************************************************************/
-static void t4_imuop(uint16_t newbit)
-{
-    if (newbit == 0u)
-    { /* IMUOP2       */
-        if ((agc_erase_imodes30() & BIT2) == 0u)
-        {
-            t4_iturnon2();
-        }
-
-        return;
-    }
-
-    /* disable DAP  */
-    agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | BIT6));
-    agc_imu_rndrefdr();
-    bool in_use = agc_flag_test((agc_flag_id_t) AGC_FLAG_IMUSE); /* IMUSE before the knock-down */
-
-    agc_flag_clear((agc_flag_id_t) AGC_FLAG_RNDVZFLG);
-    agc_flag_clear((agc_flag_id_t) AGC_FLAG_IMUSE);
-
-    if (in_use)
-    {
-        agc_alarm(ALARM_ISS_OFF_IN_USE);
-    }
-
-    if (!AGC_ASSERT(!agc_flag_test((agc_flag_id_t) AGC_FLAG_IMUSE)) || !AGC_ASSERT((agc_erase_imodes33() & BIT6) != 0u))
-    {
-        return;
-    }
-}
-
-/**********************************************************************
- * IFAILJMP (p.159): one changed channel 30 bit.  bit is the AGC bit
- * number.  Returns true when the scan must stop (ISSZERO).
- *
- * ARGUMENTS:
- *   bit     int       I   AGC bit number of the changed bit, 9..14
- *   newbit  uint16_t  I   its new value in IMODES30 (masked, not shifted)
- *
- * RETURNS: true when the scan must stop (ISSZERO), or on a bad bit number
- **********************************************************************/
-static bool t4_ifailjmp(int bit, uint16_t newbit)
-{
-    if (!AGC_ASSERT(bit >= 9 && bit <= 14))
-    {
-        return (true);
-    }
-
-    switch (bit)
-    {
-        case 14:
-            t4_iturnon();
-
-            return (false);
-        case 13: /* IMUFAIL  EQUALS SETISSW         */
-        case 12: /* ICDUFAIL EQUALS SETISSW         */
-        {
-            agc_status_t st = agc_t4_setissw(); /* SETISSW result */
-
-            if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-            {
-                return (true);
-            }
-        }
-
-            return (false);
-        case 11:
-            return (t4_imucage(newbit));
-        case 9:
-            t4_imuop(newbit);
-
-            return (false);
-        default: /* bit 10 is not sampled here      */
-            return (false);
-    }
-}
 
 /**********************************************************************
  * IMUMON (p.139): process changes of channel 30 bits 15,14,13,12,11,9,
  * bit 15 first then from bit 14 down (NXTIFBIT), then TNONTEST.
  *
- * RETURNS: the status of TNONTEST or C33TEST (the rest of the chain),
- *          BAD_ARG on a bad IMODES30
+ * RETURNS: the status of TNONTEST or C33TEST (the rest of the chain), or
+ *          the WAITLIST status of ISSZERO
  **********************************************************************/
 agc_status_t agc_t4_imumon(void)
 {
     uint16_t im30    = agc_erase_imodes30();                                                    /* IMODES30 bits */
     uint16_t changes = (uint16_t) ((im30 ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & IM30_RDMSK); /* changed bits of chan 30 */
-    if (!AGC_ASSERT(im30 <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
 
     if (changes != 0u)
     {
         agc_erase_set_imodes30((uint16_t) (im30 ^ changes));
 
-        if (!AGC_ASSERT(((agc_erase_imodes30() ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & IM30_RDMSK) == 0u))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         if ((changes & BIT15) != 0u)
         {
-            t4_tlim();
+            /**********************************************************************
+             * TLIM (p.149): temp caution lamp (channel 11 bit 4) follows channel 30
+             * bit 15 (IMODES30 negative = temperature out of limits).
+             **********************************************************************/
+            if ((agc_erase_imodes30() & BIT15) != 0u)
+            {
+                agc_chan_or((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT4);
+            }
+            else if (!agc_t4_lamptest())
+            { /* TEMPOK                  */
+                chan_clear((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT4);
+            }
+            else
+            {
+                /* lamp test: the lamp stays on */
+            }
         }
 
-        bool stop = false; /* ISSZERO ends the scan */
+        bool         stop = false;         /* ISSZERO ends the scan */
+        agc_status_t st   = AGC_STATUS_OK; /* ISSZERO's WAITLIST status */
 
         for (int bit = 14; bit >= 9 && !stop; bit--)
         {
@@ -964,8 +688,97 @@ agc_status_t agc_t4_imumon(void)
 
             if ((changes & mask) != 0u)
             {
-                stop = t4_ifailjmp(bit, (uint16_t) (agc_erase_imodes30() & mask));
+                /**********************************************************************
+                 * IFAILJMP (p.159): one changed channel 30 bit.  bit is the AGC bit
+                 * number (9..14, from IMUMON's scan).
+                 *
+                 * ARGUMENTS:
+                 *   bit     int       I   AGC bit number of the changed bit, 9..14
+                 *   newbit  uint16_t  I   its new value in IMODES30 (masked, not shifted)
+                 *   stop    bool *    O   set true when the scan must stop (ISSZERO)
+                 *
+                 * RETURNS: AGC_STATUS_OK, or the WAITLIST status of ISSZERO
+                 **********************************************************************/
+                uint16_t newbit = (uint16_t) (agc_erase_imodes30() & mask);
+
+                agc_status_t st_ifailjmp = AGC_STATUS_OK; /* ISSZERO's WAITLIST status */
+
+                switch (bit)
+                {
+                    case 14:
+                        /**********************************************************************
+                         * ITURNON (p.150): channel 30 bit 14 (ISS turn-on request) changed.
+                         **********************************************************************/
+                        {
+                            uint16_t im30_iturnon = agc_erase_imodes30(); /* IMODES30 bits */
+
+                            if ((im30_iturnon & BIT2) == 0u) /* failed delay: wait for ENDTNON   */
+                            {
+                                if ((im30_iturnon & BIT14) == 0u)
+                                {
+                                    t4_iturnon2(); /* just on                          */
+                                }
+                                else if ((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT15) == 0u)
+                                { /* delay complete not yet sent      */
+                                    agc_erase_set_imodes30((uint16_t) (im30_iturnon + BIT2));
+                                    agc_alarm(ALARM_ISS_DELAY_FAIL);
+                                }
+                                else
+                                {
+                                    /* delay complete already sent */
+                                }
+                            }
+                        }
+                        break;
+                    case 13: /* IMUFAIL  EQUALS SETISSW         */
+                    case 12: /* ICDUFAIL EQUALS SETISSW         */
+                        agc_t4_setissw();
+                        break;
+                    case 11:
+                        st_ifailjmp = t4_imucage(newbit, &stop);
+                        break;
+                    case 9:
+                        /**********************************************************************
+                         * IMUOP (p.154): channel 30 bit 9 (ISS operate) changed.
+                         *
+                         * ARGUMENTS:
+                         *   newbit  uint16_t  I   new channel 30 bit 9 (0 = ISS operate on)
+                         **********************************************************************/
+                        {
+                            if (newbit == 0u)
+                            { /* IMUOP2       */
+                                if ((agc_erase_imodes30() & BIT2) == 0u)
+                                {
+                                    t4_iturnon2();
+                                }
+                            }
+                            else
+                            {
+                                /* disable DAP  */
+                                agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | BIT6));
+                                agc_imu_rndrefdr();
+                                bool in_use = agc_flag_test((agc_flag_id_t) AGC_FLAG_IMUSE); /* IMUSE before the knock-down */
+
+                                agc_flag_clear((agc_flag_id_t) AGC_FLAG_RNDVZFLG);
+                                agc_flag_clear((agc_flag_id_t) AGC_FLAG_IMUSE);
+
+                                if (in_use)
+                                {
+                                    agc_alarm(ALARM_ISS_OFF_IN_USE);
+                                }
+                            }
+                        }
+                        break;
+                    default: /* bit 10 is not sampled here      */
+                        break;
+                }
+                st = st_ifailjmp;
             }
+        }
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
         }
 
         if (stop)
@@ -979,8 +792,10 @@ agc_status_t agc_t4_imumon(void)
 
 /**********************************************************************
  * PROCTNON (p.142): act on the turn-on request one sample after it came.
+ *
+ * RETURNS: AGC_STATUS_OK, or the WAITLIST status (ISSZERO's UNZ2, ENDTNON)
  **********************************************************************/
-static void t4_proctnon(void)
+static agc_status_t t4_proctnon(void)
 {
     uint16_t im30 = (uint16_t) (agc_erase_imodes30() & ~(uint32_t) OCT300); /* IMODES30 less BITS7&8 */
 
@@ -990,19 +805,12 @@ static void t4_proctnon(void)
     { /* OPONLY: operate only */
         if ((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT4) != 0u || agc_flag_test((agc_flag_id_t) AGC_FLAG_IMUSE))
         {
-            return; /* coarse align (gimbal lock) / in use */
+            return (AGC_STATUS_OK); /* coarse align (gimbal lock) / in use */
         }
 
-        agc_status_t st_cage = agc_t4_cagesub2(); /* CAGESUB2 result */
+        agc_t4_cagesub2();
 
-        if (!AGC_ASSERT(st_cage == AGC_STATUS_OK))
-        {
-            return;
-        }
-
-        t4_isszero();
-
-        return;
+        return (t4_isszero());
     }
 
     if ((im30 & BIT9) != 0u)
@@ -1010,103 +818,48 @@ static void t4_proctnon(void)
         agc_alarm(ALARM_TURNON_NO_OP); /* turn-on, no operate  */
     }
 
-    agc_status_t st = agc_t4_cagesub(); /* CAGESUB result */
+    agc_t4_cagesub();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return;
-    }
-
-    call_wait((uint16_t) NINETY_SECS_CS, AGC_TASK_ENDTNON);
+    return (call_wait((uint16_t) NINETY_SECS_CS, AGC_TASK_ENDTNON));
 }
 
 /**********************************************************************
  * TNONTEST (p.141): IMODES30 bit 7 = turn-on seen, bit 8 = one sample
  * waited.
  *
- * RETURNS: the C33TEST status (the rest of the chain), BAD_ARG on a bad
- *          IMODES30
+ * RETURNS: the C33TEST status (the rest of the chain), or PROCTNON's
+ *          WAITLIST status
  **********************************************************************/
 agc_status_t agc_t4_tnontest(void)
 {
     uint16_t im30 = agc_erase_imodes30(); /* IMODES30 bits */
 
-    if (!AGC_ASSERT(im30 <= WORD15))
+    if ((im30 & BIT7) != 0u && (im30 & BIT8) != 0u)
     {
-        return (AGC_STATUS_BAD_ARG);
-    }
+        agc_status_t st = t4_proctnon();
 
-    if ((im30 & BIT7) != 0u)
-    {
-        if ((im30 & BIT8) != 0u)
+        if (st != AGC_STATUS_OK)
         {
-            t4_proctnon();
-        }
-        else
-        {
-            agc_erase_set_imodes30((uint16_t) (im30 + BIT8));
+            return (st);
         }
     }
-
-    /* bit 8 (one sample waited) is only ever set together with bit 7 */
-    if (!AGC_ASSERT(((agc_erase_imodes30() & BIT8) == 0u) || ((agc_erase_imodes30() & BIT7) != 0u)))
+    else if ((im30 & BIT7) != 0u)
     {
-        return (AGC_STATUS_BAD_ARG);
+        agc_erase_set_imodes30((uint16_t) (im30 + BIT8));
+    }
+    else
+    {
+        /* no turn-on request */
     }
 
     return (agc_t4_c33test());
 }
 
 /**********************************************************************
- * C33JMP: PIPFAIL (p.155), DNTMFAST / UPTMFAST (p.156).
- *
- * ARGUMENTS:
- *   bit     int       I   AGC bit number of the changed channel 33 bit,
- *                         11..13
- *   newbit  uint16_t  I   its new value in IMODES33 (masked, not shifted)
- **********************************************************************/
-static void t4_c33jmp(int bit, uint16_t newbit)
-{
-    if (!AGC_ASSERT(bit >= 11 && bit <= 13))
-    {
-        return;
-    }
-
-    if (bit == 12 || bit == 11)
-    {
-        if (newbit == 0u)
-        {
-            agc_alarm((bit == 12) ? ALARM_DNLINK_FAST : ALARM_UPLINK_FAST); /* DNTMFAST; UPTMFAST */
-        }
-
-        return;
-    }
-
-    /* PIPFAIL: IMODES30 bit 10 follows channel 33 bit 13.                 */
-    uint16_t pip  = (newbit != 0u) ? BIT10 : 0u;                                   /* CCS A / CAF BIT10 */
-    uint16_t im30 = (uint16_t) ((agc_erase_imodes30() & ~(uint32_t) BIT10) | pip); /* bit 10 = the new PIPA bit */
-
-    agc_erase_set_imodes30(im30);
-    agc_status_t sst = agc_t4_setissw(); /* SETISSW result */
-
-    if (!AGC_ASSERT(sst != AGC_STATUS_BAD_ARG))
-    {
-        return;
-    }
-
-    im30 = agc_erase_imodes30();
-
-    if ((im30 & BIT1) != 0u && (im30 & OCT1720) == 0u)
-    {
-        agc_alarm(ALARM_PIPA_FAIL); /* no ISS warning, operating, not caged */
-    }
-}
-
-/**********************************************************************
  * C33TEST (p.145): channel 33 flip-flops 13,12,11 (read, then reset by
  * the WAND write pulse), changes processed from bit 13 down.
  *
- * RETURNS: the GLOCKMON status, BAD_ARG on a bad IMODES33
+ * RETURNS: the GLOCKMON status
  **********************************************************************/
 agc_status_t agc_t4_c33test(void)
 {
@@ -1116,19 +869,9 @@ agc_status_t agc_t4_c33test(void)
     uint16_t im33    = agc_erase_imodes33();                   /* IMODES33 bits */
     uint16_t changes = (uint16_t) ((im33 & IM33_RDMSK) ^ now); /* changed bits of chan 33 */
 
-    if (!AGC_ASSERT(im33 <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (changes != 0u)
     {
         agc_erase_set_imodes33((uint16_t) (im33 ^ changes));
-
-        if (!AGC_ASSERT((agc_erase_imodes33() & IM33_RDMSK) == now))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
 
         for (int bit = 13; bit >= 11; bit--)
         {
@@ -1136,7 +879,38 @@ agc_status_t agc_t4_c33test(void)
 
             if ((changes & mask) != 0u)
             {
-                t4_c33jmp(bit, (uint16_t) (agc_erase_imodes33() & mask));
+                /**********************************************************************
+                 * C33JMP: PIPFAIL (p.155), DNTMFAST / UPTMFAST (p.156).
+                 *
+                 * ARGUMENTS:
+                 *   bit     int       I   AGC bit number of the changed channel 33 bit,
+                 *                         11..13
+                 *   newbit  uint16_t  I   its new value in IMODES33 (masked, not shifted)
+                 **********************************************************************/
+                uint16_t newbit = (uint16_t) (agc_erase_imodes33() & mask);
+
+                if (bit == 12 || bit == 11)
+                {
+                    if (newbit == 0u)
+                    {
+                        agc_alarm((bit == 12) ? ALARM_DNLINK_FAST : ALARM_UPLINK_FAST); /* DNTMFAST; UPTMFAST */
+                    }
+                }
+                else
+                {
+                    /* PIPFAIL: IMODES30 bit 10 follows channel 33 bit 13.                 */
+                    uint16_t pip  = (newbit != 0u) ? BIT10 : 0u;                                   /* CCS A / CAF BIT10 */
+                    uint16_t im30 = (uint16_t) ((agc_erase_imodes30() & ~(uint32_t) BIT10) | pip); /* bit 10 = the new PIPA bit */
+
+                    agc_erase_set_imodes30(im30);
+                    agc_t4_setissw();
+                    im30 = agc_erase_imodes30();
+
+                    if ((im30 & BIT1) != 0u && (im30 & OCT1720) == 0u)
+                    {
+                        agc_alarm(ALARM_PIPA_FAIL); /* no ISS warning, operating, not caged */
+                    }
+                }
             }
         }
     }
@@ -1153,35 +927,14 @@ agc_status_t agc_t4_c33test(void)
  **********************************************************************/
 static void t4_setglock(bool want_on)
 {
-    uint16_t w     = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D */
-    bool     is_on = (w & BIT6) != 0u;           /* gimbal lock lamp lit */
-    if (!AGC_ASSERT(w <= WORD15))
+    uint16_t w     = agc_erase_dsptab(LAMPWORD);                                                                            /* DSPTAB +11D */
+    bool     is_on = (w & BIT6) != 0u;                                                                                      /* gimbal lock lamp lit */
+    bool     keep  = (is_on == want_on) || (is_on && agc_t4_lamptest()) || (!is_on && (agc_erase_imodes30() & BIT6) != 0u); /* GLOCKOK; lamp test; IMU being caged */
+
+    if (!keep)
     {
-        return;
-    }
-
-
-    if (is_on == want_on)
-    {
-        return; /* GLOCKOK          */
-    }
-
-    if (is_on && agc_t4_lamptest())
-    {
-        return; /* lamp test        */
-    }
-
-    if (!is_on && (agc_erase_imodes30() & BIT6) != 0u)
-    {
-        return; /* IMU being caged  */
-    }
-
-    /* GLINVERT: CS / MASK BIT6 / AD BIT15 / XCH / MASK OCT37737 / ADS */
-    set_lampword((uint16_t) (((w ^ BIT6) & ~(uint32_t) BIT15) | BIT15));
-
-    if (!AGC_ASSERT(((agc_erase_dsptab(LAMPWORD) & BIT6) != 0u) == want_on))
-    {
-        return;
+        /* GLINVERT: CS / MASK BIT6 / AD BIT15 / XCH / MASK OCT37737 / ADS */
+        set_lampword((uint16_t) (((w ^ BIT6) & ~(uint32_t) BIT15) | BIT15));
     }
 }
 
@@ -1189,27 +942,18 @@ static void t4_setglock(bool want_on)
  * GLOCKMON (p.147): middle gimbal angle (CDUZ) above 70 deg -> gimbal lock
  * lamp; above 85 deg -> coarse align (SETCOARS) to stop gimbal runaway.
  *
- * RETURNS: AGC_STATUS_OK (GLOCKOK = RESUME), BAD_ARG on a bad CDUZ word
+ * RETURNS: AGC_STATUS_OK (GLOCKOK = RESUME), or the WAITLIST status of
+ *          CA+ECE after a coarse align
  **********************************************************************/
 agc_status_t agc_t4_glockmon(void)
 {
     /* Magnitude of a CDU counter word as CCS sees it (ones' complement).     */
     uint16_t cdu = agc_erase_cduz(); /* middle gimbal CDU, 2s comp */
 
-    if (!AGC_ASSERT(cdu <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* |CDUZ| as CCS sees it (ones' complement), 2^14 = pi */
-    int mag = ((cdu & CDU_SIGN) != 0u) ? (int) (WORD15 - cdu) : (int) cdu; /* < 0 */
-    if (!AGC_ASSERT(mag >= 0 && mag <= 037777))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-
-    bool lamp = false; /* desired lamp state */
+    int          mag  = ((cdu & CDU_SIGN) != 0u) ? (int) (WORD15 - cdu) : (int) cdu; /* < 0 */
+    bool         lamp = false;                                                       /* desired lamp state */
+    agc_status_t st   = AGC_STATUS_OK;                                               /* WAITLIST status of CA+ECE */
 
     if (mag > 0 && (mag - 1) - MINUS_70DEG > 0)
     { /* GLOCKCHK        */
@@ -1218,18 +962,13 @@ agc_status_t agc_t4_glockmon(void)
         if ((mag - 1) - MINUS_70DEG - MINUS_15DEG > 0 && (agc_chan_read((int) AGC_CHAN_CHAN12) & BIT4) == 0u)
         {
             agc_imu_setcoars();
-            call_wait(CA_ECE_DELAY_CS, AGC_TASK_CA_ECE);
+            st = call_wait(CA_ECE_DELAY_CS, AGC_TASK_CA_ECE);
         }
     }
 
     t4_setglock(lamp);
-    if (!AGC_ASSERT(mag >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
-
-    return (AGC_STATUS_OK);
+    return (st);
 }
 
 /* ---- the T4RUPT waitlist tasks ---------------------------------------- */
@@ -1243,93 +982,8 @@ static agc_status_t t4_unz2(void)
 {
     agc_imu_zeroicdu();
     chan_clear((int) AGC_CHAN_CHAN12, (uint16_t) BITS4_5);
-    agc_status_t st = agc_waitlist_vardelay((uint16_t) ISSUP_DELAY_CS, AGC_TASK_ISSUP); /* VARDELAY result */
 
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG) || !AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN12) & BITS4_5) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
-}
-
-/**********************************************************************
- * ENDTNON (p.142): end of the 90 s ISS turn-on delay.
- *
- * RETURNS: AGC_STATUS_OK (TASKOVER), the VARDELAY status (RETNON, UNZ2)
- *          or the IMUBAD status (failed turn-on)
- **********************************************************************/
-static agc_status_t t4_endtnon(void)
-{
-    uint16_t old = agc_erase_imodes30(); /* IMODES30 before ENDTNON */
-
-    if (!AGC_ASSERT(old <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_erase_set_imodes30((uint16_t) (old & ~(uint32_t) BIT2));
-
-    if (!AGC_ASSERT((agc_erase_imodes30() & BIT2) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if ((old & BIT2) == 0u)
-    { /* ENDTNON2         */
-        /* delay complete  */
-        agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT15);
-        agc_imu_noattoff();
-
-        return (t4_unz2());
-    }
-
-    if ((old & BIT14) == 0u)
-    { /* RETNON           */
-        return (agc_waitlist_vardelay((uint16_t) NINETY_SECS_CS, AGC_TASK_ENDTNON));
-    }
-
-    if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_IMUSE))
-    {
-        return (AGC_STATUS_OK); /* TASKOVER         */
-    }
-
-    return (agc_imu_imubad()); /* failed turn-on   */
-}
-
-/**********************************************************************
- * ISSUP (p.143): caging and fail inhibits removed, DAP enabled; LM also
- * starts free-fall IMU compensation (DRIFTFLG, 1/PIPADT = TIME1).
- *
- * RETURNS: AGC_STATUS_OK (TASKOVER), BAD_ARG when SETISSW fails
- **********************************************************************/
-static agc_status_t t4_issup(void)
-{
-    agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() & ~(uint32_t) OCT54));
-    agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() & ~(uint32_t) BIT6));
-
-    if (!AGC_ASSERT((agc_erase_imodes30() & OCT54) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (agc_state_vehicle() == AGC_VEHICLE_LM && !agc_flag_test((agc_flag_id_t) AGC_FLAG_DRIFTFLG))
-    {
-        agc_flag_set((agc_flag_id_t) AGC_FLAG_DRIFTFLG);
-        agc_imu_set_pipa_interval(agc_erase_time1());
-    }
-
-    agc_status_t sst = agc_t4_setissw(); /* SETISSW result */
-
-    if (!AGC_ASSERT(sst != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    chan_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT15);
-    call_wait((uint16_t) FOUR_SECS_CS, AGC_TASK_PFAILOK);
-
-    return (AGC_STATUS_OK);
+    return (agc_waitlist_vardelay((uint16_t) ISSUP_DELAY_CS, AGC_TASK_ISSUP)); /* VARDELAY */
 }
 
 /**********************************************************************
@@ -1351,7 +1005,36 @@ agc_status_t agc_t4_task(agc_task_id_t task)
 
     if (task == AGC_TASK_ENDTNON)
     {
-        return (t4_endtnon());
+        /**********************************************************************
+         * ENDTNON (p.142): end of the 90 s ISS turn-on delay.
+         *
+         * RETURNS: AGC_STATUS_OK (TASKOVER), the VARDELAY status (RETNON, UNZ2)
+         *          or the IMUBAD status (failed turn-on)
+         **********************************************************************/
+        uint16_t old = agc_erase_imodes30(); /* IMODES30 before ENDTNON */
+
+        agc_erase_set_imodes30((uint16_t) (old & ~(uint32_t) BIT2));
+
+        if ((old & BIT2) == 0u)
+        { /* ENDTNON2         */
+            /* delay complete  */
+            agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT15);
+            agc_imu_noattoff();
+
+            return (t4_unz2());
+        }
+
+        if ((old & BIT14) == 0u)
+        { /* RETNON           */
+            return (agc_waitlist_vardelay((uint16_t) NINETY_SECS_CS, AGC_TASK_ENDTNON));
+        }
+
+        if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_IMUSE))
+        {
+            return (AGC_STATUS_OK); /* TASKOVER         */
+        }
+
+        return (agc_imu_imubad()); /* failed turn-on   */
     }
 
     if (task == AGC_TASK_UNZ2)
@@ -1361,7 +1044,25 @@ agc_status_t agc_t4_task(agc_task_id_t task)
 
     if (task == AGC_TASK_ISSUP)
     {
-        return (t4_issup());
+        /**********************************************************************
+         * ISSUP (p.143): caging and fail inhibits removed, DAP enabled; LM also
+         * starts free-fall IMU compensation (DRIFTFLG, 1/PIPADT = TIME1).
+         *
+         * RETURNS: AGC_STATUS_OK (TASKOVER), or the WAITLIST status of PFAILOK
+         **********************************************************************/
+        agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() & ~(uint32_t) OCT54));
+        agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() & ~(uint32_t) BIT6));
+
+        if (agc_state_vehicle() == AGC_VEHICLE_LM && !agc_flag_test((agc_flag_id_t) AGC_FLAG_DRIFTFLG))
+        {
+            agc_flag_set((agc_flag_id_t) AGC_FLAG_DRIFTFLG);
+            agc_imu_set_pipa_interval(agc_erase_time1());
+        }
+
+        agc_t4_setissw();
+        chan_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT15);
+
+        return (call_wait((uint16_t) FOUR_SECS_CS, AGC_TASK_PFAILOK));
     }
 
     if (task == AGC_TASK_ENDZOPT || task == AGC_TASK_ENDZOPT2)

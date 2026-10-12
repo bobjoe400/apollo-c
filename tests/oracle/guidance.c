@@ -145,9 +145,9 @@ static void deltime(const char *t, long tol)
     c.xi          = agc_dp_to_words(oracle_in_dp(t, "VAC1+24", 0));
     (void) agc_conic_deltime_(&ip, &c);
     oracle_require_ok(t, "POODOO");
-    (void) oracle_cmp(t, "S(XI)", agc_conic_value_(c.s_xi), oracle_out_dp(t, "VAC1+26"), tol);
-    (void) oracle_cmp(t, "XSQC(XI)", agc_conic_value_(c.xsqc_xi), oracle_out_dp(t, "VAC1+28"), tol);
-    (void) oracle_cmp(t, "T", agc_conic_value_(c.t), oracle_out_dp(t, "VAC1+30"), tol);
+    (void) oracle_cmp(t, "S(XI)", agc_dp_from_words(c.s_xi), oracle_out_dp(t, "VAC1+26"), tol);
+    (void) oracle_cmp(t, "XSQC(XI)", agc_dp_from_words(c.xsqc_xi), oracle_out_dp(t, "VAC1+28"), tol);
+    (void) oracle_cmp(t, "T", agc_dp_from_words(c.t), oracle_out_dp(t, "VAC1+30"), tol);
 }
 
 int main(void)

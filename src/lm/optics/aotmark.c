@@ -78,11 +78,6 @@ typedef struct aot_sample
 
 static void set_markstat(uint16_t v)
 {
-    if (!AGC_ASSERT((v & MS_VAC) != 0u))
-    {
-        return;
-    }
-
     agc_erase_set_markstat(v);
 }
 
@@ -160,17 +155,6 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
     return (st);
 }
 
-/* JUSTZY of SURFSTAR: UNIT(UPP x OA), with UPP = the reticle line at
- * angle YROT: UNIT(cos YROT YPNB - sin YROT XPNB).                       */
-static agc_vec_t surface_upp_x_oa(agc_interp_t *ip, agc_dp_t yrot, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb)
-{
-    const agc_vec_t s   = agc_vec_scale(ip, xpnb, agc_dp_sin(yrot));
-    const agc_vec_t c   = agc_vec_scale(ip, ypnb, agc_dp_cos(yrot));
-    const agc_vec_t upp = agc_vec_unit(ip, agc_vec_sub(ip, c, s), NULL, NULL);
-
-    return (agc_vec_unit(ip, agc_vec_cross(ip, upp, oa), NULL, NULL));
-}
-
 /*
  * SURFSTAR (p. 254): from CURSOR (YROT) and SPIRAL (SROT), SEP = (360 +
  * SROT - YROT)/12 is the star's distance off the optic axis; the star is
@@ -190,7 +174,12 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, a
 
     if ((yrot != 0) || (srot != 0))
     {
-        const agc_vec_t px  = surface_upp_x_oa(ip, yrot, oa, xpnb, ypnb);
+        /* JUSTZY of SURFSTAR: UNIT(UPP x OA), with UPP = the reticle line at
+         * angle YROT: UNIT(cos YROT YPNB - sin YROT XPNB).                       */
+        const agc_vec_t s   = agc_vec_scale(ip, xpnb, agc_dp_sin(yrot));
+        const agc_vec_t c   = agc_vec_scale(ip, ypnb, agc_dp_cos(yrot));
+        const agc_vec_t upp = agc_vec_unit(ip, agc_vec_sub(ip, c, s), NULL, NULL);
+        const agc_vec_t px  = agc_vec_unit(ip, agc_vec_cross(ip, upp, oa), NULL, NULL);
         const agc_dp_t  sep = agc_dp_mul(ip, agc_dp_add(ip, agc_dp_sub(ip, srot, yrot), ABOUTONE), DP_ONE_TWELFTH);
         const agc_vec_t a   = agc_vec_shl(ip, agc_vec_scale(ip, px, agc_dp_sin(sep)), 1);
         const agc_vec_t b   = agc_vec_shl(ip, agc_vec_scale(ip, oa, agc_dp_cos(sep)), 1);
@@ -711,62 +700,6 @@ static agc_status_t mark_button(const aot_sample_t *s, bool y_mark)
 }
 
 /*
- * MKREJ (p. 259): surface: one mark fewer (alarm 115 if none).  Flight:
- * with no mark made alarm 115; otherwise bit 13 set and, if the last
- * thing was a mark, that mark taken back, or after a second reject both;
- * then REMARK.
- */
-static agc_status_t mark_reject(void)
-{
-    agc_align_ram_t *ram = agc_align_ram();
-
-    if (surface_marks())
-    { /* SURFREJ  */
-        if (ram->markcntr <= 0)
-        {
-            agc_alarm(ALM_NO_REJECT);
-
-            return (AGC_STATUS_ALARM);
-        }
-
-        ram->markcntr = (agc_sp_t) (ram->markcntr - 1);
-
-        return (AGC_STATUS_OK);
-    }
-
-    const uint16_t old = agc_erase_markstat();
-
-    if ((old & MS_XY) == 0u)
-    {
-        agc_alarm(ALM_NO_REJECT);
-
-        return (AGC_STATUS_ALARM); /* REJALM   */
-    }
-
-    uint16_t       ms   = (uint16_t) ((old & ~MS_REJECT_CLR) + MS_REJECTED);
-    const uint16_t drop = ((old & MS_REJECTED) != 0u) ? MS_XY : (uint16_t) ram->xymark;
-
-    ms         = (uint16_t) (ms & ~drop);        /* RENEWMK  */
-    set_markstat(ms);
-    ram->mkdex = (agc_sp_t) ((ms & MS_XY) >> 9); /* REMARK   */
-
-    return (agc_exec_novac(ALIGN_PRIO15, AGC_JOB_AOT_MARK_NEXT_ACTION));
-}
-
-/* SOMEKEY: the rate-of-descent switch (DESCBITS), else alarm 113. */
-static agc_status_t other_key(uint16_t in)
-{
-    if ((in & DESCENT_KEYS) != 0u)
-    {
-        return (agc_lm_descbits()); /* POSTJUMP */
-    }
-
-    agc_alarm(ALM_NO_INBITS);
-
-    return (AGC_STATUS_ALARM);
-}
-
-/*
  * MARKRUPT (p. 258): sample CDUY, CDUZ, CDUX and TIME2/1 at once; then
  * only the X / Y mark and reject buttons count, and only while marks are
  * wanted (bit 12 clear) and being accepted (MARKSTAT non-zero, else alarm
@@ -784,7 +717,15 @@ agc_status_t agc_aotmark_markrupt(void)
 
     if ((in & MARK_KEYS) == 0u)
     {
-        return (other_key(in));
+        /* SOMEKEY: the rate-of-descent switch (DESCBITS), else alarm 113. */
+        if ((in & DESCENT_KEYS) != 0u)
+        {
+            return (agc_lm_descbits()); /* POSTJUMP */
+        }
+
+        agc_alarm(ALM_NO_INBITS);
+
+        return (AGC_STATUS_ALARM);
     }
 
     const uint16_t ms = agc_erase_markstat();
@@ -803,7 +744,45 @@ agc_status_t agc_aotmark_markrupt(void)
 
     if ((in & AGC_CH016_AOTREJECT) != 0u)
     {
-        return (mark_reject());
+        /*
+         * MKREJ (p. 259): surface: one mark fewer (alarm 115 if none).  Flight:
+         * with no mark made alarm 115; otherwise bit 13 set and, if the last
+         * thing was a mark, that mark taken back, or after a second reject both;
+         * then REMARK.
+         */
+        agc_align_ram_t *ram = agc_align_ram();
+
+        if (surface_marks())
+        { /* SURFREJ  */
+            if (ram->markcntr <= 0)
+            {
+                agc_alarm(ALM_NO_REJECT);
+
+                return (AGC_STATUS_ALARM);
+            }
+
+            ram->markcntr = (agc_sp_t) (ram->markcntr - 1);
+
+            return (AGC_STATUS_OK);
+        }
+
+        const uint16_t old = agc_erase_markstat();
+
+        if ((old & MS_XY) == 0u)
+        {
+            agc_alarm(ALM_NO_REJECT);
+
+            return (AGC_STATUS_ALARM); /* REJALM   */
+        }
+
+        uint16_t       ms_reject = (uint16_t) ((old & ~MS_REJECT_CLR) + MS_REJECTED);
+        const uint16_t drop      = ((old & MS_REJECTED) != 0u) ? MS_XY : (uint16_t) ram->xymark;
+
+        ms_reject  = (uint16_t) (ms_reject & ~drop);        /* RENEWMK  */
+        set_markstat(ms_reject);
+        ram->mkdex = (agc_sp_t) ((ms_reject & MS_XY) >> 9); /* REMARK   */
+
+        return (agc_exec_novac(ALIGN_PRIO15, AGC_JOB_AOT_MARK_NEXT_ACTION));
     }
 
     if ((in & AGC_CH016_YAXISMARK) != 0u)

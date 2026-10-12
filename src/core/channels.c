@@ -54,23 +54,6 @@
 static uint16_t g_chan[AGC_CHAN_COUNT]; /* channel image, 15-bit words */
 
 /**********************************************************************
- * AGC: none (helper) -- true for a modelled channel number 1..037
- *
- * FUNCTION NAME: chan_valid
- *
- * ARGUMENTS:
- *   Argument  Type  I/O  Description (scale)
- *   --------  ----  ---  ------------------------------------------
- *   chan      int   I    channel number (octal in the AGC)
- *
- * RETURNS: bool -- true when 1 <= chan < AGC_CHAN_COUNT
- **********************************************************************/
-static bool chan_valid(int chan)
-{
-    return ((chan >= 1) && (chan < AGC_CHAN_COUNT));
-}
-
-/**********************************************************************
  * AGC: none (helper; INPUT_OUTPUT_CHANNEL_BIT_DESCRIPTIONS L p. 54:
  *      channels 30-33 are inverted)
  *
@@ -92,7 +75,7 @@ static bool chan_inverted(int chan)
  * AGC: none (helper) -- channels a program may write: L, Q, the
  *      outputs, and 033 (flip-flop reset pulse)
  *
- * FUNCTION NAME: chan_writable
+ * FUNCTION NAME: agc_chan_writable
  *
  * ARGUMENTS:
  *   Argument  Type  I/O  Description (scale)
@@ -101,7 +84,7 @@ static bool chan_inverted(int chan)
  *
  * RETURNS: bool -- true when WRITE/WOR/WAND may address chan
  **********************************************************************/
-static bool chan_writable(int chan)
+bool agc_chan_writable(int chan)
 {
     switch (chan)
     {
@@ -170,11 +153,6 @@ void agc_chan_reset(void)
             g_chan[i] = (uint16_t) AGC_CHAN_MASK; /* no signal present */
         }
     }
-
-    if (!AGC_ASSERT(g_chan[AGC_CHAN_CHAN30] == AGC_CHAN_MASK))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -192,11 +170,6 @@ void agc_chan_reset(void)
  **********************************************************************/
 uint16_t agc_chan_read(int chan)
 {
-    if (!AGC_ASSERT(chan_valid(chan)))
-    {
-        return (0);
-    }
-
     return (g_chan[chan]);
 }
 
@@ -219,16 +192,11 @@ static void reset_flipflops(void)
  * ARGUMENTS:
  *   Argument  Type      I/O  Description (scale)
  *   --------  --------  ---  ---------------------------------------
- *   chan      int       I    writable channel (see chan_writable)
+ *   chan      int       I    writable channel (see agc_chan_writable)
  *   value     uint16_t  I    15-bit word to latch
  **********************************************************************/
 void agc_chan_write(int chan, uint16_t value)
 {
-    if (!AGC_ASSERT(chan_writable(chan)))
-    {
-        return;
-    }
-
     if (chan == AGC_CHAN_CHAN33)
     {
         reset_flipflops();
@@ -252,11 +220,6 @@ void agc_chan_write(int chan, uint16_t value)
  **********************************************************************/
 void agc_chan_or(int chan, uint16_t mask)
 {
-    if (!AGC_ASSERT(chan_writable(chan)))
-    {
-        return;
-    }
-
     if (chan == AGC_CHAN_CHAN33)
     {
         reset_flipflops();
@@ -264,11 +227,6 @@ void agc_chan_or(int chan, uint16_t mask)
     else
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] | mask);
-
-        if (!AGC_ASSERT((g_chan[chan] & mask) == mask))
-        {
-            return;
-        }
     }
 }
 
@@ -290,11 +248,6 @@ void agc_chan_and(int chan, uint16_t mask)
      * neither do we. */
     mask = (uint16_t) (mask & AGC_CHAN_MASK);
 
-    if (!AGC_ASSERT(chan_writable(chan)))
-    {
-        return;
-    }
-
     if (chan == AGC_CHAN_CHAN33)
     {
         reset_flipflops();
@@ -302,11 +255,6 @@ void agc_chan_and(int chan, uint16_t mask)
     else
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] & mask);
-
-        if (!AGC_ASSERT((g_chan[chan] & (uint16_t) ~mask) == 0u))
-        {
-            return;
-        }
     }
 }
 

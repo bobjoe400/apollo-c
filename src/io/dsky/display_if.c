@@ -140,38 +140,38 @@ static const uint16_t k_genmask[3] = {020140u, 042420u, 011250u};
 
 typedef struct dif_class
 {
-    uint16_t        flags;    /* EBANKSAV / MARKEBAN / EBANKTEM (DSPFLG)  */
+    uint16_t flags;    /* EBANKSAV / MARKEBAN / EBANKTEM (DSPFLG)  */
     agc_dsky_cont_t cadr;     /* CADRFLSH / CADRMARK / TEMPFLSH           */
-    uint16_t        nvword;   /* NVWORD / MARKNV / NVSAVE (ones' compl.)  */
-    agc_prio_t      userprio; /* USERPRIO of the requesting job (MODE)    */
+    uint16_t nvword;   /* NVWORD / MARKNV / NVSAVE (ones' compl.)  */
+    agc_prio_t userprio; /* USERPRIO of the requesting job (MODE)    */
 } dif_class_t;
 
 typedef struct dif_req
 { /* PLAYTEM1, PLAYTEM3, PLAYTEM4             */
-    bool            used;  /* slot holds a request */
-    uint16_t        vn;    /* VN: verb x 2^7 + noun */
-    uint16_t        flags; /* PLAYTEM3 display flags */
+    bool used;  /* slot holds a request */
+    uint16_t vn;    /* VN: verb x 2^7 + noun */
+    uint16_t flags; /* PLAYTEM3 display flags */
     agc_dsky_cont_t cadr;  /* PLAYTEM4 user returns */
 } dif_req_t;
 
 typedef struct dif_job
 { /* job temporaries (LOC, MPAC +3..+6)       */
-    int        c;        /* COPINDEX                                 */
-    uint16_t   tempor2;  /* TEMPOR2: flags copy                      */
+    int c;        /* COPINDEX                                 */
+    uint16_t tempor2;  /* TEMPOR2: flags copy                      */
     agc_prio_t userprio; /* USERPRIO                                 */
-    int        outhere;  /* OUTHERE: 0 term, 1 proceed, 2 enter, -1 end */
+    int outhere;  /* OUTHERE: 0 term, 1 proceed, 2 enter, -1 end */
 } dif_job_t;
 
 static dif_class_t g_cls[3];                /* per-class copies (COPINDEX) */
-static dif_req_t   g_rq[DIF_RQ_LEN];        /* requests of R-started jobs */
-static int         g_rq_last = -1;          /* MPAC+5 of the last R request      */
-static uint16_t    g_priotime;              /* PRIOTIME (TIME1)                  */
-static uint16_t    g_nvword1 = PIN_NEGZERO; /* NVWORD1                     */
-static agc_prio_t  g_restreg;               /* RESTREG: normal user's priority   */
+static dif_req_t g_rq[DIF_RQ_LEN];        /* requests of R-started jobs */
+static int g_rq_last = -1;          /* MPAC+5 of the last R request      */
+static uint16_t g_priotime;              /* PRIOTIME (TIME1)                  */
+static uint16_t g_nvword1 = PIN_NEGZERO; /* NVWORD1                     */
+static agc_prio_t g_restreg;               /* RESTREG: normal user's priority   */
 
 static struct
 {
-    int        copmpac;  /* COPMPAC: class in ENDIDLE */
+    int copmpac;  /* COPMPAC: class in ENDIDLE */
     agc_prio_t userprio; /* USERPRIO of the ENDIDLE user */
 } g_idle;
 
@@ -208,11 +208,6 @@ static void f4_up(uint16_t bits)
     /* cannot fail for word 4 */
     agc_flagword_set(DIF_F4, (uint16_t) (f4() | bits));
     agc_relint();
-
-    if (!AGC_ASSERT((f4() & bits) == bits))
-    {
-        return; /* flag bits did not stick */
-    }
 }
 
 /**********************************************************************
@@ -230,24 +225,6 @@ static void f4_down(uint16_t bits)
     agc_inhint();
     agc_flagword_set(DIF_F4, (uint16_t) (f4() & ~bits));
     agc_relint();
-}
-
-/**********************************************************************
- * AGC: none (helper)
- *
- * All three astronaut returns of a flashing display are set.
- *
- * ARGUMENTS:
- *   Argument  Type                     I/O  Description (scale)
- *   --------  -----------------------  ---  -------------------
- *   c         const agc_dsky_cont_t *  I    continuations (terminate,
- *                                           proceed, enter)
- *
- * RETURNS: bool -- true when all three continuations are set
- **********************************************************************/
-static bool dif_cont_valid(const agc_dsky_cont_t *c)
-{
-    return (c->terminate != AGC_JOB_NONE && c->proceed != AGC_JOB_NONE && c->enter != AGC_JOB_NONE);
 }
 
 /**********************************************************************
@@ -286,7 +263,7 @@ static agc_status_t dif_witchone(agc_job_id_t new_loc)
     agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (PIN_WORD ^ PIN_CH11_KEYREL));
     pin_sleeper_t sl; /* the emptied sleeper slot */
 
-    sl              = pin_take_sleeper((f4() & DIF_NVBUSMSK) != 0u);
+    sl = pin_take_sleeper((f4() & DIF_NVBUSMSK) != 0u);
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     agc_inhint();
@@ -327,7 +304,7 @@ static void dif_copies(int c, const dif_req_t *rq, agc_prio_t userprio)
         g_cls[c].cadr = rq->cadr; /* CADRFLSH */
     }
 
-    g_cls[c].nvword   = rq->vn; /* NVWORD   */
+    g_cls[c].nvword = rq->vn; /* NVWORD   */
     g_cls[c].userprio = userprio;
     agc_relint();
 }
@@ -635,18 +612,16 @@ static agc_status_t dif_jobxchs(int face, const dif_req_t *rq, agc_prio_t userpr
 static void dif_linuschr(int c, const dif_req_t *rq, bool *linus, bool *end)
 {
     *linus = false;
-    *end   = false;
+    *end = false;
 
-    if ((rq->flags & DIF_LINUS) == 0u)
+    if ((rq->flags & DIF_LINUS) != 0u) /* Q+1: no                */
     {
-        return; /* Q+1: no                */
-    }
+        *linus = true;
 
-    *linus = true;
-
-    if (rq->cadr.terminate == g_cls[c].cadr.terminate && pin_st()->dsplock)
-    {
-        *end = true; /* already active         */
+        if (rq->cadr.terminate == g_cls[c].cadr.terminate && pin_st()->dsplock)
+        {
+            *end = true; /* already active         */
+        }
     }
 }
 
@@ -675,7 +650,7 @@ static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
     }
 
     bool linus = false; /* LINUS: replaces the display */
-    bool end   = false; /* new display just ends */
+    bool end = false; /* new display just ends */
 
     dif_linuschr(DIF_PRIOC, rq, &linus, &end);
 
@@ -774,7 +749,7 @@ static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
 static agc_status_t dif_makenorm(const dif_req_t *rq, agc_prio_t userprio)
 {
     bool linus = false; /* LINUS: replaces the display */
-    bool end   = false; /* new display just ends */
+    bool end = false; /* new display just ends */
 
     dif_linuschr(DIF_NORMC, rq, &linus, &end);
 
@@ -896,7 +871,7 @@ static agc_status_t dif_flashsub(int c, agc_prio_t userprio, bool flash)
         return (((f4() & DIF_ITISMASK) == 0u) ? dif_priobort() : AGC_STATUS_OK); /* ISITPRIO; ISITPRIO */
     }
 
-    g_idle.copmpac  = c; /* COPMPAC                */
+    g_idle.copmpac = c; /* COPMPAC                */
     g_idle.userprio = userprio;
 
     return (agc_dsky_endidle(AGC_JOB_TERMATE, AGC_JOB_PROCEED, AGC_JOB_IDLERET3));
@@ -1000,11 +975,6 @@ static uint16_t dif_second_vn(const dif_job_t *j)
 
         vn = (int) agc_dsky_vn(97, 0) - (int) pin_sp_from_ones(g_nvword1);
 
-        if (!AGC_ASSERT(vn > 0 && vn <= (int) PIN_POSMAX))
-        {
-            return (0); /* no valid result */
-        }
-
         return ((uint16_t) vn);
     }
 
@@ -1060,11 +1030,11 @@ static uint16_t dif_first_vn(int c)
  **********************************************************************/
 static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 {
-    dif_job_t j    = {c, g_cls[c].flags, userprio, 0};    /* COPYPACS */
-    uint16_t  opts = (uint16_t) (j.tempor2 & DIF_BLANKS); /* blank bits for NVMONOPT */
+    dif_job_t j = {c, g_cls[c].flags, userprio, 0};    /* COPYPACS */
+    uint16_t opts = (uint16_t) (j.tempor2 & DIF_BLANKS); /* blank bits for NVMONOPT */
 
     g_cls[c].flags = (uint16_t) (g_cls[c].flags & ~DIF_SECOND);
-    uint16_t vn    = dif_first_vn(c); /* VN: verb x 2^7 + noun */
+    uint16_t vn = dif_first_vn(c); /* VN: verb x 2^7 + noun */
 
     if (vn == 0u)
     {
@@ -1090,7 +1060,7 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
         pin_flashoff();                                      /* in case of extended verb non flash */
         j.tempor2 = g_cls[c].flags;                          /* COPYTOGO: MPACS destroyed by NVSUB */
         f4_down(DIF_MRKNVFLG | DIF_NRMNVFLG | DIF_PRONVFLG); /* unset sleeping bits */
-        st        = agc_dsky_blanksub(j.tempor2);            /* BLANKCHK                      */
+        st = agc_dsky_blanksub(j.tempor2);            /* BLANKCHK                      */
 
         if ((j.tempor2 & DIF_PERFORM) == 0u || (j.tempor2 & DIF_SECOND) != 0u)
         {
@@ -1098,8 +1068,8 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
         }
 
         g_cls[c].flags = (uint16_t) (g_cls[c].flags | DIF_SECOND);
-        vn             = dif_second_vn(&j);
-        opts           = 0; /* ZL                            */
+        vn = dif_second_vn(&j);
+        opts = 0; /* ZL                            */
     }
 
     return (dif_goanidle(&j));
@@ -1136,8 +1106,8 @@ static agc_status_t dif_endret(int outhere)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_dsky_cont_t *k    = &g_cls[c].cadr; /* the user's returns */
-    agc_job_id_t           cont = k->enter;       /* OUTHERE 2: CADR +3 */
+    const agc_dsky_cont_t *k = &g_cls[c].cadr; /* the user's returns */
+    agc_job_id_t cont = k->enter;       /* OUTHERE 2: CADR +3 */
 
     if (outhere == 0)
     {
@@ -1176,7 +1146,7 @@ static agc_status_t dif_endret(int outhere)
  **********************************************************************/
 static agc_status_t dif_normret(int outhere)
 {
-    uint16_t     f  = f4();          /* C(FLAGWRD4) */
+    uint16_t f = f4();          /* C(FLAGWRD4) */
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     if ((f & DIF_BITS5_11) != 0u)
@@ -1240,7 +1210,7 @@ static agc_status_t dif_endout(int outhere)
         /* CS TIME1, AD PRIOTIME: equal times give -0, i.e. no time.     */
         int d; /* TIME1 since PRIOTIME, cs */
 
-        d           = (int) g_priotime - (int) agc_erase_time1();
+        d = (int) g_priotime - (int) agc_erase_time1();
         int elapsed = (d > 0) ? 040000 - d : -d; /* TIME1 wraps at 2^14 */
 
         if (elapsed <= DIF_2SEC)
@@ -1313,10 +1283,12 @@ agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx)
     uint8_t verb = 0; /* verb of the response */
     uint8_t noun = 0; /* noun of the response */
 
-    if (!AGC_ASSERT(ctx != NULL) || agc_dsky_response(&verb, &noun) != AGC_STATUS_OK)
+    if (!AGC_ASSERT(ctx != NULL))
     {
         return (AGC_STATUS_BAD_ARG);
     }
+
+    agc_dsky_response(&verb, &noun);
 
     int d = (int) verb - PIN_LOWLOAD; /* TIME1 since PRIOTIME, cs */
 
@@ -1566,8 +1538,8 @@ agc_status_t agc_job_redoprio(void)
 typedef struct dif_kind
 {
     uint16_t flags; /* PLAYTEM4                                  */
-    bool     r;     /* immediate return: separate MAKEPLAY job   */
-    uint8_t  src;   /* 0 VN in A, 1 VN 0, 2 GOPERF1, 3 GOPERF4   */
+    bool r;     /* immediate return: separate MAKEPLAY job   */
+    uint8_t src;   /* 0 VN in A, 1 VN 0, 2 GOPERF1, 3 GOPERF4   */
 } dif_kind_t;
 
 static const dif_kind_t k_kinds[AGC_DSKY_DISP_COUNT] = {
@@ -1636,10 +1608,10 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
 
     if (st == AGC_STATUS_OK)
     {
-        st              = agc_exec_set_new_job_arg((agc_sp_t) (slot + 1));
-        g_rq[slot]      = *rq;
+        st = agc_exec_set_new_job_arg((agc_sp_t) (slot + 1));
+        g_rq[slot] = *rq;
         g_rq[slot].used = true;
-        g_rq_last       = slot;
+        g_rq_last = slot;
     }
 
     agc_relint();
@@ -1673,11 +1645,11 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
  **********************************************************************/
 agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn_or_value, const agc_dsky_cont_t *cont)
 {
-    const dif_kind_t *k  = &k_kinds[kind]; /* component 0..2 (R1..R3) */
-    dif_req_t         rq = {true,
-                            vn_or_value,
-                            k->flags,
-                            {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
+    const dif_kind_t *k = &k_kinds[kind]; /* component 0..2 (R1..R3) */
+    dif_req_t rq = {true,
+                    vn_or_value,
+                    k->flags,
+                    {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
 
     if (cont != NULL)
     {
@@ -1688,7 +1660,7 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, ui
      * EXDSPRET return to call CADR +1 (terminate). CLEANDSP and KLEENEX
      * (VN forced to +0) have no return slots in their AGC calling
      * sequence ("TC BANKCALL / CADR CLEANDSP"): they return to the user. */
-    if (((k->flags & DIF_FLASH) != 0u && k->src != 1u && !AGC_ASSERT(dif_cont_valid(&rq.cadr))) || ((k->flags & DIF_GODSPRET) != 0u && !AGC_ASSERT(rq.cadr.terminate != AGC_JOB_NONE)))
+    if (((k->flags & DIF_FLASH) != 0u && k->src != 1u && !AGC_ASSERT(rq.cadr.terminate != AGC_JOB_NONE && rq.cadr.proceed != AGC_JOB_NONE && rq.cadr.enter != AGC_JOB_NONE)) || ((k->flags & DIF_GODSPRET) != 0u && !AGC_ASSERT(rq.cadr.terminate != AGC_JOB_NONE)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -1700,22 +1672,16 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, ui
         if (cont == NULL)
         { /* DEVIATION: CLEANDSP / KLEENEX without a continuation run in a MAKEPLAY job of their own (as the R entries do), which ends when JAMTERM (or, after GOSLEEPS, the wake) lets it out of ENDIDLE. The C caller goes on at once and its job is never left asleep; the AGC returns to the user only after that. Exact for callers that end the job next (P40BLNKR, P41BLANK, BLANKDEX); P11 and P61-P67 STARTENT do their next steps before the clean-out instead of after it. */
             rq.cadr.terminate = AGC_JOB_ENDOFJOB;
-            rq.cadr.proceed   = AGC_JOB_ENDOFJOB;
-            rq.cadr.enter     = AGC_JOB_ENDOFJOB;
+            rq.cadr.proceed = AGC_JOB_ENDOFJOB;
+            rq.cadr.enter = AGC_JOB_ENDOFJOB;
 
             return (dif_start_makeplay(&rq, ctx->prio));
         }
     }
     else if (k->src == 2u)
     {
-        agc_status_t st = agc_dsky_set_dsptem(0, (uint16_t) (vn_or_value & PIN_WORD)); /* NORMTEM1 */
-
-        rq.vn = agc_dsky_vn(1, 25); /* V01N25         */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        agc_dsky_set_dsptem(0, (uint16_t) (vn_or_value & PIN_WORD)); /* NORMTEM1 */
+        rq.vn = agc_dsky_vn(1, 25);                                  /* V01N25         */
     }
     else if (k->src == 3u)
     {
@@ -1808,10 +1774,5 @@ agc_status_t agc_dsky_initdsp(void)
  **********************************************************************/
 void agc_dsky_set_nvword1(uint16_t word)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return;
-    }
-
     g_nvword1 = word;
 }

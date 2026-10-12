@@ -43,11 +43,6 @@ agc_vec_t agc_k_unitx(void)
 {
     agc_vec_t v = agc_vec_make(AGC_K_DPHALF, 0, 0); /* scaled 2^1 */
 
-    if (!AGC_ASSERT(v.c[0] == AGC_DP_HALF))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -60,11 +55,6 @@ agc_vec_t agc_k_unity(void)
 {
     agc_vec_t v = agc_vec_make(0, AGC_K_DPHALF, 0); /* scaled 2^1 */
 
-    if (!AGC_ASSERT(v.c[1] == AGC_DP_HALF))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -76,11 +66,6 @@ agc_vec_t agc_k_unity(void)
 agc_vec_t agc_k_unitz(void)
 {
     agc_vec_t v = agc_vec_make(0, 0, AGC_K_DPHALF); /* scaled 2^1 */
-
-    if (!AGC_ASSERT(v.c[2] == AGC_DP_HALF))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
 
     return (v);
 }

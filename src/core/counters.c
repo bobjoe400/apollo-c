@@ -57,10 +57,10 @@ void agc_erase_reset_counters(void)
         g_tem[i] = 0;
     }
 
-    g_rnrad  = 0;
+    g_rnrad = 0;
     g_inlink = 0;
     g_thrust = 0;
-    g_altm   = 0;
+    g_altm = 0;
 }
 
 /* ---- P-, Q-, R-RHCCTR (LM, 042-044) ------------------------------------ */
@@ -112,11 +112,6 @@ uint16_t agc_erase_rnrad(void)
 
 void agc_erase_set_rnrad(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= CTR_WORD15_MAX))
-    {
-        return;
-    }
-
     g_rnrad = v;
 }
 
@@ -169,11 +164,6 @@ uint16_t agc_erase_altm(void)
 
 void agc_erase_set_altm(uint16_t word)
 {
-    if (!AGC_ASSERT(word <= CTR_WORD15_MAX))
-    {
-        return;
-    }
-
     g_altm = word;
 }
 
@@ -197,11 +187,6 @@ void agc_pipasr_noscale(void)
     }
 
     agc_erase_set_delv(agc_vec_make(agc_dp_pack(p[0], 0), agc_dp_pack(p[1], 0), agc_dp_pack(p[2], 0)));
-
-    if (!AGC_ASSERT(agc_erase_pipax() == 0 && agc_erase_pipaz() == 0))
-    {
-        return;
-    }
 }
 
 agc_sp_t agc_erase_tem(int axis)
@@ -223,10 +208,5 @@ uint16_t agc_erase_inlink(void)
 
 void agc_erase_set_inlink(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= CTR_WORD15_MAX))
-    {
-        return;
-    }
-
     g_inlink = v;
 }

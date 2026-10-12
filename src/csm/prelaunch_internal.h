@@ -36,8 +36,8 @@ typedef struct prelaunch_filter
 {
     agc_vec_t thetax1;     /* THETAX1: ERCOMP1 at LASTGTS, rev 2^0      */
     agc_vec_t thetan1;     /* THETAN1: compass/erection torque, rev 2^0 */
-    agc_dp_t  fildelv1[2]; /* FILDELV1 +0,+4: filtered Y,Z PIPA B14     */
-    agc_dp_t  intvec1[2];  /* INTVEC1 +0,+4: sum of FILDELV1, B14       */
+    agc_dp_t fildelv1[2]; /* FILDELV1 +0,+4: filtered Y,Z PIPA B14     */
+    agc_dp_t intvec1[2];  /* INTVEC1 +0,+4: sum of FILDELV1, B14       */
 } prelaunch_filter_t;
 
 /* The AINLA overlay ("OPTIMUM CALIB. AND ALIGNMENT", EBANK 5) and the
@@ -46,32 +46,32 @@ typedef struct prelaunch_ram
 {
     prelaunch_filter_t filt;      /* THETAX1 .. INTVEC1                   */
     prelaunch_filter_t restarpt;  /* RESTARPT: STOREDTA copy of filt      */
-    agc_dp_t           latitude;  /* LATITUDE of the pad, rev 2^0         */
-    agc_dp_t           azimuth;   /* AZIMUTH of ZNB from north, rev 2^0   */
-    agc_dp_t           launchaz;  /* LAUNCHAZ = LUNCHAZ1, rev 2^0         */
-    agc_dp_t           newazmth;  /* NEWAZMTH = NEWAZ1, rev 2^0           */
-    agc_dp_t           oldazmth;  /* OLDAZMTH, rev 2^0                    */
-    agc_dp_t           perfdlay;  /* PERFDLAY: delay to ESTIMS, cs 2^28   */
-    agc_dp_t           alk;       /* ALK: TMARK kept by LASTGTS, cs 2^28  */
-    agc_dp_t           dpipa[2];  /* DPIPAY, DPIPAZ: level PIPA, B14      */
-    agc_dp_t           wango;     /* WANGO: sin LAT (perf test), 2^0      */
-    agc_dp_t           wangi;     /* WANGI: -cos LAT (perf test), 2^0     */
-    agc_vec_t          losvec;    /* LOSVEC: marked target 1, B1         */
-    agc_sp_t           geocomp1;  /* GEOCOMP1: 1 compass, 0 IMU test, B0  */
-    agc_sp_t           lengthot;  /* LENGTHOT: passes left, count B0      */
-    agc_sp_t           onesecxt1; /* 1SECXT1: sample period, cs B0        */
-    agc_sp_t           gtswtlt1;  /* GTSWTLT1: TIME1 at the sample, cs B0 */
-    agc_sp_t           erectim1;  /* ERECTIM1: erection cycles left, B0   */
-    agc_sp_t           geosave1;  /* GEOSAVE1: restart copy, count B0     */
-    agc_sp_t           premtrxc;  /* PREMTRXC = PREMTRX1, count B0        */
-    agc_sp_t           altim;     /* ALTIM: gain counter (perf test), B0  */
-    agc_sp_t           altims;    /* ALTIMS: ALTIM - 1 or 0, B0           */
-    agc_sp_t           alx1s;     /* ALX1S: gain index (perf test), B0    */
-    agc_sp_t           cmpx1;     /* CMPX1: index (perf test), B0         */
-    agc_sp_t           ndxctr;    /* NDXCTR: 1 if gimbal lock, B0         */
-    agc_sp_t           run;       /* RUN: 0 target 1, 2 target 2, B0      */
-    agc_sp_t           targ;      /* TARG1/2: 0 target 1, 6 target 2, B0  */
-    uint16_t           tazel[4];  /* TAZEL1: AZ1 (CDU), EL1 (90 deg = 1), AZ2, EL2; raw 15-bit words */
+    agc_dp_t latitude;  /* LATITUDE of the pad, rev 2^0         */
+    agc_dp_t azimuth;   /* AZIMUTH of ZNB from north, rev 2^0   */
+    agc_dp_t launchaz;  /* LAUNCHAZ = LUNCHAZ1, rev 2^0         */
+    agc_dp_t newazmth;  /* NEWAZMTH = NEWAZ1, rev 2^0           */
+    agc_dp_t oldazmth;  /* OLDAZMTH, rev 2^0                    */
+    agc_dp_t perfdlay;  /* PERFDLAY: delay to ESTIMS, cs 2^28   */
+    agc_dp_t alk;       /* ALK: TMARK kept by LASTGTS, cs 2^28  */
+    agc_dp_t dpipa[2];  /* DPIPAY, DPIPAZ: level PIPA, B14      */
+    agc_dp_t wango;     /* WANGO: sin LAT (perf test), 2^0      */
+    agc_dp_t wangi;     /* WANGI: -cos LAT (perf test), 2^0     */
+    agc_vec_t losvec;    /* LOSVEC: marked target 1, B1         */
+    agc_sp_t geocomp1;  /* GEOCOMP1: 1 compass, 0 IMU test, B0  */
+    agc_sp_t lengthot;  /* LENGTHOT: passes left, count B0      */
+    agc_sp_t onesecxt1; /* 1SECXT1: sample period, cs B0        */
+    agc_sp_t gtswtlt1;  /* GTSWTLT1: TIME1 at the sample, cs B0 */
+    agc_sp_t erectim1;  /* ERECTIM1: erection cycles left, B0   */
+    agc_sp_t geosave1;  /* GEOSAVE1: restart copy, count B0     */
+    agc_sp_t premtrxc;  /* PREMTRXC = PREMTRX1, count B0        */
+    agc_sp_t altim;     /* ALTIM: gain counter (perf test), B0  */
+    agc_sp_t altims;    /* ALTIMS: ALTIM - 1 or 0, B0           */
+    agc_sp_t alx1s;     /* ALX1S: gain index (perf test), B0    */
+    agc_sp_t cmpx1;     /* CMPX1: index (perf test), B0         */
+    agc_sp_t ndxctr;    /* NDXCTR: 1 if gimbal lock, B0         */
+    agc_sp_t run;       /* RUN: 0 target 1, 2 target 2, B0      */
+    agc_sp_t targ;      /* TARG1/2: 0 target 1, 6 target 2, B0  */
+    uint16_t tazel[4];  /* TAZEL1: AZ1 (CDU), EL1 (90 deg = 1), AZ2, EL2; raw 15-bit words */
 } prelaunch_ram_t;
 
 #define PRELAUNCH_ALARM_DRIFT  ((agc_alarm_code_t) 01600) /* overflow  */

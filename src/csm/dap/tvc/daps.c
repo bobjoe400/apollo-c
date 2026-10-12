@@ -108,24 +108,6 @@ static agc_sp_t tvcd_rlimtest(agc_sp_t d)
 }
 
 /**********************************************************************
- * PCDUDOTS (TVCDAPS.agc p. 964) -- minus CDU rates for pitch and yaw
- * (past - present), used by both DAPs; updates the past values.
- *
- * ARGUMENTS: none
- **********************************************************************/
-static void tvcd_pcdudots(void)
-{
-    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
-    uint16_t       y = agc_erase_cduy();  /* CDUY, raw counter word     */
-    uint16_t       z = agc_erase_cduz();  /* CDUZ, raw counter word     */
-
-    t->mcduydot = tvcd_rlimtest(csm_dap_msu(t->pcduypst, y)); /* XCH; MSU */
-    t->pcduypst = y;
-    t->mcduzdot = tvcd_rlimtest(csm_dap_msu(t->pcduzpst, z));
-    t->pcduzpst = z;
-}
-
-/**********************************************************************
  * ERRORLIM (TVCDAPS.agc p. 970) -- limit the body-axis error input to
  * +-45 deg. Tests and overwrites the upper word of ERRBTMP only.
  *
@@ -152,8 +134,8 @@ static void tvcd_errorlim(void)
  **********************************************************************/
 static void tvcd_actlim(void)
 {
-    agc_csm_tvc_t *t   = agc_csm_dap_tvc(); /* TVC DAP erasables        */
-    agc_sp_t       rnd = 0;                 /* TS L overflow, scale 1 ascrev */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables        */
+    agc_sp_t rnd = 0;                 /* TS L overflow, scale 1 ascrev */
 
     if (t->cmdtmp.lo >= ROUND_HALF)
     {
@@ -192,13 +174,13 @@ static void tvcd_actlim(void)
  **********************************************************************/
 static agc_dp_words_t tvcd_cascade_out(agc_dp_words_t in, agc_sp_t n, int k)
 {
-    agc_csm_tvc_t *t   = agc_csm_dap_tvc(); /* TVC DAP erasables     */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables     */
     agc_dp_words_t out = {0, 0};            /* DAPn, B-1 rev         */
 
     /* CAE in +1; MP N; TS DAPn +1 (DAPn zeroed by FWDFLTR); CA in; MP N;
      * DAS DAPn: the one-and-a-half precision product                     */
-    out.lo              = csm_dap_mp_hi(in.lo, n);
-    agc_sp_t       ovf  = csm_dap_words_das_carry(&out, csm_dap_words_mp(in.hi, n)); /* A after DAS: overflow, unscaled */
+    out.lo = csm_dap_mp_hi(in.lo, n);
+    agc_sp_t ovf = csm_dap_words_das_carry(&out, csm_dap_words_mp(in.hi, n)); /* A after DAS: overflow, unscaled */
     agc_dp_words_t node = t->tmp[k];                                                 /* TMP(2k-1), B-1 rev          */
 
     /* DXCH TMP(2k-1): A,L = overflow, +0 go to TMP; DAS DAPn             */
@@ -221,10 +203,10 @@ static void tvcd_fwdfltr(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
-    t->cmdtmp.hi   = 0;                                          /* CAF ZERO; TS DAP1..3 (rewritten), CMDTMP */
+    t->cmdtmp.hi = 0;                                          /* CAF ZERO; TS DAP1..3 (rewritten), CMDTMP */
     t->delbrtmp.hi = 0;                                          /* TS DELBRTMP                              */
-    t->dap1        = tvcd_cascade_out(t->errbtmp, t->n10[0], 0); /* N10  */
-    t->dap2        = tvcd_cascade_out(t->dap1, t->n10[5], 2);    /* N20  */
+    t->dap1 = tvcd_cascade_out(t->errbtmp, t->n10[0], 0); /* N10  */
+    t->dap2 = tvcd_cascade_out(t->dap1, t->n10[5], 2);    /* N20  */
 
     if ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u)
     { /* LM on */
@@ -256,7 +238,7 @@ static void tvcd_fwdfltr(void)
  **********************************************************************/
 static void tvcd_cascade_pre(agc_dp_words_t in, agc_dp_words_t out, int j, int k)
 {
-    agc_csm_tvc_t *t    = agc_csm_dap_tvc();      /* TVC DAP erasables    */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc();      /* TVC DAP erasables    */
     agc_dp_words_t nout = csm_dap_words_neg(out); /* CS DAPn, B-1 rev */
 
     /* TTMP1 = N_1/2 in, TTMP2 = -D_1/2 out; DAS TTMP1                    */
@@ -296,27 +278,6 @@ static void tvcd_precomp(void)
 }
 
 /**********************************************************************
- * DELBARP / DELBARY (TVCDAPS.agc pp. 966, 969) -- the offset-tracker
- * filter DELBRTMP = E(-AT) DELBAR + (1 - E(-AT)) CMDTMP, the lower word
- * of DELBAR and the upper word of CMDTMP each multiplied alone.
- *
- * ARGUMENTS:
- *   delbar  agc_dp_words_t  I  DELPBAR or DELYBAR, 1 ascrev
- **********************************************************************/
-static void tvcd_delbar(agc_dp_words_t delbar)
-{
-    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
-
-    _Static_assert(E_AT + ONE_M_EAT == 16384, "AGC constant");
-
-    /* CAE DELxBAR +1; MP E(-AT); TS DELBRTMP +1 (upper word zeroed by
-     * FWDFLTR); CAE DELxBAR; MP E(-AT); DAS DELBRTMP                      */
-    t->delbrtmp.lo = csm_dap_mp_hi(delbar.lo, E_AT);
-    csm_dap_words_das(&t->delbrtmp, csm_dap_words_mp(delbar.hi, E_AT));
-    csm_dap_words_das(&t->delbrtmp, csm_dap_words_mp(t->cmdtmp.hi, ONE_M_EAT));
-}
-
-/**********************************************************************
  * PCOPY, PMISC (TVCDAPS.agc p. 966) -- the pitch copycycle, called by
  * the pitch DAP or (restart = true, PCOPY +1) by the TVC restart
  * package. TVCPHASE goes 0 -> 1 (copy in progress) -> 2 (completed).
@@ -342,10 +303,10 @@ agc_status_t csm_tvc_pcopy(bool restart)
     }
 
     agc_csm_dap_com()->ak[1] = t->errbtmp.hi;                /* TS AK1, B-1 rev      */
-    t->perrb                 = t->errbtmp;                   /* rate-error integrator */
-    t->pcmd                  = t->cmdtmp.hi;                 /* actuator command     */
-    t->delpbar               = t->delbrtmp;                  /* offset tracker       */
-    t->tvcphase              = (agc_sp_t) (t->tvcphase + 1); /* (2)   */
+    t->perrb = t->errbtmp;                   /* rate-error integrator */
+    t->pcmd = t->cmdtmp.hi;                 /* actuator command     */
+    t->delpbar = t->delbrtmp;                  /* offset tracker       */
+    t->tvcphase = (agc_sp_t) (t->tvcphase + 1); /* (2)   */
 
     if (!AGC_ASSERT(t->pcmd == t->cmdtmp.hi))
     {
@@ -385,10 +346,10 @@ agc_status_t csm_tvc_ycopy(bool restart)
     }
 
     agc_csm_dap_com()->ak[2] = t->errbtmp.hi; /* TS AK2, B-1 rev      */
-    t->yerrb                 = t->errbtmp;
-    t->ycmd                  = t->cmdtmp.hi;
-    t->delybar               = t->delbrtmp;
-    t->tvcphase              = 0;             /* reset TVCPHASE                   */
+    t->yerrb = t->errbtmp;
+    t->ycmd = t->cmdtmp.hi;
+    t->delybar = t->delbrtmp;
+    t->tvcphase = 0;             /* reset TVCPHASE                   */
 
     if (!AGC_ASSERT(t->ycmd == t->cmdtmp.hi))
     {
@@ -409,13 +370,13 @@ agc_status_t csm_tvc_ycopy(bool restart)
  **********************************************************************/
 static void tvcd_integrate(tvcd_axis_t ax)
 {
-    agc_csm_tvc_t       *t    = agc_csm_dap_tvc();                  /* TVC DAP erasables */
-    const agc_cdutrig_t *g    = &agc_guid_state()->trig;            /* QUICTRIG     */
-    bool                 p    = (ax == TVCD_PITCH);                 /* pitch pass        */
-    int                  a    = p ? 1 : 2;                          /* OMEGAYx / OMEGAZx */
-    agc_sp_t             cosz = agc_dp_high(g->coscdu[AGC_TRIG_Z]); /* 2^1 */
-    agc_sp_t             cosx = agc_dp_high(g->coscdu[AGC_TRIG_X]); /* 2^1 */
-    agc_sp_t             sinx = agc_dp_high(g->sincdu[AGC_TRIG_X]); /* 2^1 */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc();                  /* TVC DAP erasables */
+    const agc_cdutrig_t *g = &agc_guid_state()->trig;            /* QUICTRIG     */
+    bool p = (ax == TVCD_PITCH);                 /* pitch pass        */
+    int a = p ? 1 : 2;                          /* OMEGAYx / OMEGAZx */
+    agc_sp_t cosz = agc_dp_high(g->coscdu[AGC_TRIG_Z]); /* 2^1 */
+    agc_sp_t cosx = agc_dp_high(g->coscdu[AGC_TRIG_X]); /* 2^1 */
+    agc_sp_t sinx = agc_dp_high(g->sincdu[AGC_TRIG_X]); /* 2^1 */
 
     /* DCA xERRB; DXCH ERRBTMP; DCA OMEGAxC; DAS ERRBTMP (B-1 rev)        */
     t->errbtmp = p ? t->perrb : t->yerrb; /* pitch or yaw integrator   */
@@ -426,82 +387,13 @@ static void tvcd_integrate(tvcd_axis_t ax)
      * yaw:   CAE COSCDUZ; MP SINCDUX; ...;   MP COSCDUX ... OMEGAZB      */
     agc_sp_t c1 = p ? (agc_sp_t) -cosz : cosz;                       /* ?: CS / CAE COSCDUZ, scale 2^1 */
     agc_sp_t c2 = p ? cosx : sinx;                                   /* ?: COSCDUX / SINCDUX, scale 2^1 */
-    agc_sp_t k  = csm_dap_words_ddoubl(csm_dap_words_mp(c1, c2)).hi; /* MP; DDOUBL, scale 2^1 */
+    agc_sp_t k = csm_dap_words_ddoubl(csm_dap_words_mp(c1, c2)).hi; /* MP; DDOUBL, scale 2^1 */
 
     t->omegab[a] = csm_dap_words_ddoubl(csm_dap_words_mp(k, t->mcduydot));                                              /* revs/s  */
     csm_dap_words_das(&t->omegab[a], csm_dap_words_ddoubl(csm_dap_words_mp((agc_sp_t) -t->mcduzdot, p ? sinx : cosx))); /* ?: axis */
 
     /* DCS OMEGAxB; DAS ERRBTMP                                           */
     csm_dap_words_das(&t->errbtmp, csm_dap_words_neg(t->omegab[a]));
-}
-
-/**********************************************************************
- * POFFSET .. POUT / YOFFSET .. YOUT (TVCDAPS.agc pp. 965, 968) -- add
- * the trim estimate, round and limit, and send the increment over the
- * last command to the optics error counter with its count release.
- *
- * ARGUMENTS:
- *   ax  tvcd_axis_t  I  TVCD_PITCH or TVCD_YAW
- **********************************************************************/
-static void tvcd_output(tvcd_axis_t ax)
-{
-    agc_csm_tvc_t *t = agc_csm_dap_tvc();  /* TVC DAP erasables          */
-    bool           p = (ax == TVCD_PITCH); /* pitch pass                 */
-
-    /* DCA xDELOFF; DAS CMDTMP: now scaled B+0 ascrev                     */
-    csm_dap_words_das(&t->cmdtmp, p ? t->pdeloff : t->ydeloff); /* ?: pitch or yaw */
-    tvcd_actlim();
-
-    /* CS xCMD; AD CMDTMP: the increment, 85.41 arcsec/bit                */
-    agc_sp_t inc = csm_dap_ads((agc_sp_t) -(p ? t->pcmd : t->ycmd), t->cmdtmp.hi); /* ?: increment, unscaled 85.41 arcsec/bit */
-
-    if (p)
-    {
-        agc_erase_set_tvcpitch(csm_dap_ads(agc_erase_tvcpitch(), inc));
-        agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS); /* 11 */
-    }
-    else
-    {
-        agc_erase_set_tvcyaw(csm_dap_ads(agc_erase_tvcyaw(), inc));
-        agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUT); /* 12 */
-    }
-}
-
-/**********************************************************************
- * PINTEGRL .. PDAPEND / YINTEGRL .. YDAPEND (TVCDAPS.agc pp. 964-969)
- * -- the body of one DAP pass after the T5 set-up and stroke check.
- *
- * ARGUMENTS:
- *   ax  tvcd_axis_t  I  TVCD_PITCH or TVCD_YAW
- *
- * RETURNS: agc_status_t -- the copycycle's status (AGC_STATUS_OK)
- **********************************************************************/
-static agc_status_t tvcd_dap(tvcd_axis_t ax)
-{
-    agc_csm_tvc_t *t = agc_csm_dap_tvc();  /* TVC DAP erasables          */
-    bool           p = (ax == TVCD_PITCH); /* pitch pass                 */
-
-    tvcd_integrate(ax);
-    tvcd_errorlim(); /* xERORLIM                                        */
-
-    for (int i = 0; i < NODES; i += 2)
-    { /* xFORWARD: TMP1,3,5  */
-        t->tmp[i] = p ? t->ptmp[i] : t->ytmp[i]; /* ?: axis             */
-    }
-
-    tvcd_fwdfltr();
-    tvcd_output(ax);
-
-    for (int i = 1; i < NODES; i += 2)
-    { /* xPRECOMP: TMP2,4,6  */
-        t->tmp[i] = p ? t->ptmp[i] : t->ytmp[i]; /* ?: axis             */
-    }
-
-    tvcd_precomp();
-    tvcd_delbar(p ? t->delpbar : t->delybar); /* DELBARx: ?: axis      */
-
-    /* xCOPYCYC; xDAPEND: TCF RESUME                                      */
-    return (p ? csm_tvc_pcopy(false) : csm_tvc_ycopy(false)); /* ?: axis */
 }
 
 /**********************************************************************
@@ -518,8 +410,8 @@ static agc_status_t tvcd_dap(tvcd_axis_t ax)
  **********************************************************************/
 static agc_status_t tvcd_entry(tvcd_axis_t ax)
 {
-    agc_csm_tvc_t *t    = agc_csm_dap_tvc(); /* TVC DAP erasables       */
-    agc_task_id_t  next = AGC_TASK_PITCHDAP; /* T5LOC: the other axis   */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
+    agc_task_id_t next = AGC_TASK_PITCHDAP; /* T5LOC: the other axis   */
 
     if (ax == TVCD_PITCH)
     {
@@ -535,10 +427,104 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
 
     if (ax == TVCD_PITCH)
     {
-        tvcd_pcdudots(); /* the yaw DAP uses the pitch pass's rates     */
+        /* the yaw DAP uses the pitch pass's rates     */
+        /**********************************************************************
+         * PCDUDOTS (TVCDAPS.agc p. 964) -- minus CDU rates for pitch and yaw
+         * (past - present), used by both DAPs; updates the past values.
+         *
+         * ARGUMENTS: none
+         **********************************************************************/
+        agc_csm_tvc_t *t_pcdudots = agc_csm_dap_tvc(); /* TVC DAP erasables          */
+        uint16_t y = agc_erase_cduy();  /* CDUY, raw counter word     */
+        uint16_t z = agc_erase_cduz();  /* CDUZ, raw counter word     */
+
+        t_pcdudots->mcduydot = tvcd_rlimtest(csm_dap_msu(t_pcdudots->pcduypst, y)); /* XCH; MSU */
+        t_pcdudots->pcduypst = y;
+        t_pcdudots->mcduzdot = tvcd_rlimtest(csm_dap_msu(t_pcdudots->pcduzpst, z));
+        t_pcdudots->pcduzpst = z;
     }
 
-    agc_status_t s2 = tvcd_dap(ax); /* status of the DAP body          */
+    /**********************************************************************
+     * PINTEGRL .. PDAPEND / YINTEGRL .. YDAPEND (TVCDAPS.agc pp. 964-969)
+     * -- the body of one DAP pass after the T5 set-up and stroke check.
+     *
+     * ARGUMENTS:
+     *   ax  tvcd_axis_t  I  TVCD_PITCH or TVCD_YAW
+     *
+     * RETURNS: agc_status_t -- the copycycle's status (AGC_STATUS_OK)
+     **********************************************************************/
+    agc_csm_tvc_t *t_dap = agc_csm_dap_tvc();  /* TVC DAP erasables          */
+    bool p = (ax == TVCD_PITCH); /* pitch pass                 */
+
+    tvcd_integrate(ax);
+    tvcd_errorlim(); /* xERORLIM                                        */
+
+    for (int i = 0; i < NODES; i += 2)
+    { /* xFORWARD: TMP1,3,5  */
+        t_dap->tmp[i] = p ? t_dap->ptmp[i] : t_dap->ytmp[i]; /* ?: axis             */
+    }
+
+    tvcd_fwdfltr();
+
+    /**********************************************************************
+     * POFFSET .. POUT / YOFFSET .. YOUT (TVCDAPS.agc pp. 965, 968) -- add
+     * the trim estimate, round and limit, and send the increment over the
+     * last command to the optics error counter with its count release.
+     *
+     * ARGUMENTS:
+     *   ax  tvcd_axis_t  I  TVCD_PITCH or TVCD_YAW
+     **********************************************************************/
+    agc_csm_tvc_t *t_output = agc_csm_dap_tvc();  /* TVC DAP erasables          */
+    bool p_output = (ax == TVCD_PITCH); /* pitch pass                 */
+
+    /* DCA xDELOFF; DAS CMDTMP: now scaled B+0 ascrev                     */
+    csm_dap_words_das(&t_output->cmdtmp, p_output ? t_output->pdeloff : t_output->ydeloff); /* ?: pitch or yaw */
+    tvcd_actlim();
+
+    /* CS xCMD; AD CMDTMP: the increment, 85.41 arcsec/bit                */
+    agc_sp_t inc = csm_dap_ads((agc_sp_t) -(p_output ? t_output->pcmd : t_output->ycmd), t_output->cmdtmp.hi); /* ?: increment, unscaled 85.41 arcsec/bit */
+
+    if (p_output)
+    {
+        agc_erase_set_tvcpitch(csm_dap_ads(agc_erase_tvcpitch(), inc));
+        agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUS); /* 11 */
+    }
+    else
+    {
+        agc_erase_set_tvcyaw(csm_dap_ads(agc_erase_tvcyaw(), inc));
+        agc_chan_or(AGC_CHAN_CHAN14, (uint16_t) AGC_CH014_DRIVECDUT); /* 12 */
+    }
+
+    for (int i = 1; i < NODES; i += 2)
+    { /* xPRECOMP: TMP2,4,6  */
+        t_dap->tmp[i] = p ? t_dap->ptmp[i] : t_dap->ytmp[i]; /* ?: axis             */
+    }
+
+    tvcd_precomp();
+
+    /* DELBARx: ?: axis      */
+    /**********************************************************************
+     * DELBARP / DELBARY (TVCDAPS.agc pp. 966, 969) -- the offset-tracker
+     * filter DELBRTMP = E(-AT) DELBAR + (1 - E(-AT)) CMDTMP, the lower word
+     * of DELBAR and the upper word of CMDTMP each multiplied alone.
+     *
+     * ARGUMENTS:
+     *   delbar  agc_dp_words_t  I  DELPBAR or DELYBAR, 1 ascrev
+     **********************************************************************/
+    agc_dp_words_t delbar = p ? t_dap->delpbar : t_dap->delybar;
+
+    agc_csm_tvc_t *t_delbar = agc_csm_dap_tvc(); /* TVC DAP erasables          */
+
+    _Static_assert(E_AT + ONE_M_EAT == 16384, "AGC constant");
+
+    /* CAE DELxBAR +1; MP E(-AT); TS DELBRTMP +1 (upper word zeroed by
+     * FWDFLTR); CAE DELxBAR; MP E(-AT); DAS DELBRTMP                      */
+    t_delbar->delbrtmp.lo = csm_dap_mp_hi(delbar.lo, E_AT);
+    csm_dap_words_das(&t_delbar->delbrtmp, csm_dap_words_mp(delbar.hi, E_AT));
+    csm_dap_words_das(&t_delbar->delbrtmp, csm_dap_words_mp(t_delbar->cmdtmp.hi, ONE_M_EAT));
+
+    /* xCOPYCYC; xDAPEND: TCF RESUME                                      */
+    agc_status_t s2 = p ? csm_tvc_pcopy(false) : csm_tvc_ycopy(false); /* status of the DAP body          */
 
     return ((st != AGC_STATUS_OK) ? st : s2); /* first failure          */
 }
@@ -606,7 +592,7 @@ agc_status_t agc_task_yawdap(void)
 agc_status_t agc_task_dapinit(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc();                                           /* TVC DAP erasables          */
-    int            w = -1 + (int) t->t5tvcdt + (int) AGC_SP_MIN + (int) t->t5tvcdt; /* TIME5 word, 10 ms counts    */
+    int w = -1 + (int) t->t5tvcdt + (int) AGC_SP_MIN + (int) t->t5tvcdt; /* TIME5 word, 10 ms counts    */
 
     if (!AGC_ASSERT((w > 0) && (w <= AGC_SP_MAX)))
     {

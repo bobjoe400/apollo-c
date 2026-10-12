@@ -42,11 +42,6 @@ static agc_sp_t option2(void)
 {
     const agc_sp_t v = agc_erase_option1(1);
 
-    if (!AGC_ASSERT((v >= 0) && (v <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -132,9 +127,9 @@ agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
 
     if (opt == 0)
     { /* OPT4           */
-        const agc_status_t st = align_set_dsptem1(agc_erase_tland());
+        align_set_dsptem1(agc_erase_tland());
 
-        return ((st == AGC_STATUS_OK) ? agc_job_realign_time_flash(ctx) : st);
+        return (agc_job_realign_time_flash(ctx));
     }
 
     agc_align_ram()->qmaj = AGC_JOB_GOTOPOOH; /* P52OUT         */
@@ -145,12 +140,7 @@ agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
 /* P52T: DSPTEM1 = -0 (0 here: both tests treat +-0 alike), then VN_ALIGN_TIME. */
 agc_status_t agc_job_realign_time(agc_job_ctx_t *ctx)
 {
-    const agc_status_t st = align_set_dsptem1(0);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    align_set_dsptem1(0);
 
     return (agc_job_realign_time_flash(ctx));
 }
@@ -180,12 +170,7 @@ agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
     {
         if (t == 0)
         { /* BZF       */
-            const agc_status_t st = align_set_dsptem1(align_loadtime());
-
-            if (!AGC_ASSERT(st == AGC_STATUS_OK))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
+            align_set_dsptem1(align_loadtime());
         }
 
         return (nominal ? agc_job_realign_nominal_orientation(ctx) : agc_job_csm_imu_realign_landing_site(ctx));

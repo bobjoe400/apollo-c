@@ -42,7 +42,7 @@
 #define CP_PRIO5      ((agc_prio_t) 05)   /* PHSPRDT2 for P00 (POOH)    */
 
 static uint8_t mmnumber; /* MMNUMBER: the requested major mode       */
-static int     mindex;   /* MINDEX: its index in the mode tables       */
+static int mindex;   /* MINDEX: its index in the mode tables       */
 
 uint8_t exec_cp_mmnumber(void)
 {
@@ -52,26 +52,6 @@ uint8_t exec_cp_mmnumber(void)
 static const exec_cp_mode_t *cp_modes(int *n)
 {
     return ((agc_state_vehicle() == AGC_VEHICLE_LM) ? exec_cp_modes_lm(n) : exec_cp_modes_csm(n));
-}
-
-/* CHECKTAB / AGAINMM (C p.198 / L p.228): MINDEX of `mm`, -1 if none.  */
-static int cp_find(uint8_t mm)
-{
-    int                   n = 0;
-    const exec_cp_mode_t *t = cp_modes(&n);
-    int                   k = -1;
-
-    for (int i = 0; i < n && k < 0; i++)
-    {
-        k = (t[i].mm == mm) ? i : -1;
-    }
-
-    if (!AGC_ASSERT(n > 0 && mm <= 99U))
-    {
-        return (-1);
-    }
-
-    return (k);
 }
 
 /* CANTR00 / V37BAD (C p.198 / L p.228): alarm 1520, release the DSKY.
@@ -112,7 +92,17 @@ static agc_status_t cp_select(void)
             return (cp_refuse(true)); /* CANTR00           */
         }
 
-        mindex = cp_find(mmnumber);
+        /* CHECKTAB / AGAINMM (C p.198 / L p.228): MINDEX of `mm`, -1 if none.  */
+        int n = 0;
+        const exec_cp_mode_t *t = cp_modes(&n);
+        int k = -1;
+
+        for (int i = 0; i < n && k < 0; i++)
+        {
+            k = (t[i].mm == mmnumber) ? i : -1;
+        }
+
+        mindex = k;
 
         if (mindex < 0)
         {
@@ -153,8 +143,8 @@ agc_status_t agc_change_program(uint8_t new_mm)
     }
 
     mmnumber = new_mm; /* TS MMNUMBER       */
-    mindex   = -1;
-    bool lm  = agc_state_vehicle() == AGC_VEHICLE_LM;
+    mindex = -1;
+    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
 
     if ((agc_erase_imodes30() & CP_BIT6) != 0U)
     { /* IMU initialising  */
@@ -267,9 +257,9 @@ static agc_status_t cp_pooh(void)
  * program's downlist, flags, the rendezvous groups, then GOPROG2. */
 static agc_status_t cp_nouveau(void)
 {
-    int                   n  = 0;
-    const exec_cp_mode_t *t  = cp_modes(&n);
-    bool                  lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+    int n = 0;
+    const exec_cp_mode_t *t = cp_modes(&n);
+    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
 
     if (!AGC_ASSERT(mindex >= 0 && mindex < n))
     {
@@ -367,7 +357,7 @@ agc_status_t agc_job_change_program_continue(void)
  * is not reproduced.)                                                   */
 agc_status_t agc_job_change_program_start(void)
 {
-    int                   n = 0;
+    int n = 0;
     const exec_cp_mode_t *t = cp_modes(&n);
 
     if (!AGC_ASSERT(mindex >= 0 && mindex < n))

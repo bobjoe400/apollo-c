@@ -147,57 +147,8 @@ static agc_status_t rr_startdes(agc_rr_designate_result_t *res)
  **********************************************************************/
 static void rr_nordstal(void)
 {
-    agc_status_t st; /* RADCADR */
-
-    st = agc_erase_set_modecadr(AGC_IMU_DEV_RADAR, 0);
-
-    agc_relint(); /* DESRTRN */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return;
-    }
-}
-
-/**********************************************************************
- * RRANGLES failed (LOS along the navigation-base Y axis): LUNDESCH. On
- * the surface: no coverage. In rendezvous: NODESSM, maneuver required;
- * else (R29) the job ends. Note: NODESSM re-inverts the mode bit
- * although this path never inverted it (as in the AGC).
- * AGC: LUNDESCH, NODESSM (P20-P25.agc p.542)
- *
- * FUNCTION NAME: rr_lundesch
- *
- * ARGUMENTS:
- *   Argument  Type                         I/O  Description (scale)
- *   --------  ---------------------------  ---  -------------------
- *   res       agc_rr_designate_result_t *  O    NO_COVERAGE, MANEUVER or
- *                                               END_JOB
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
- **********************************************************************/
-static agc_status_t rr_lundesch(agc_rr_designate_result_t *res)
-{
-    if (agc_flag_test(AGC_FLAG_SURFFLAG))
-    {
-        rr_nordstal();
-        *res = AGC_RR_DESIGNATE_NO_COVERAGE;
-
-        return (AGC_STATUS_OK);
-    }
-
-    if (agc_flag_test(AGC_FLAG_RNDVZFLG))
-    {
-        rr_mode_invert(); /* NODESSM */
-        rr_nordstal();
-        *res = AGC_RR_DESIGNATE_MANEUVER;
-
-        return (AGC_STATUS_OK);
-    }
-
-    *res = AGC_RR_DESIGNATE_END_JOB; /* ENDOFJOB */
-
-    return (AGC_STATUS_OK);
+    agc_erase_set_modecadr(AGC_IMU_DEV_RADAR, 0); /* RADCADR */
+    agc_relint();                                 /* DESRTRN */
 }
 
 /**********************************************************************
@@ -242,7 +193,43 @@ agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *re
 
     if (along_y)
     {
-        return (rr_lundesch(res));
+        /**********************************************************************
+         * RRANGLES failed (LOS along the navigation-base Y axis): LUNDESCH. On
+         * the surface: no coverage. In rendezvous: NODESSM, maneuver required;
+         * else (R29) the job ends. Note: NODESSM re-inverts the mode bit
+         * although this path never inverted it (as in the AGC).
+         * AGC: LUNDESCH, NODESSM (P20-P25.agc p.542)
+         *
+         * FUNCTION NAME: rr_lundesch
+         *
+         * ARGUMENTS:
+         *   Argument  Type                         I/O  Description (scale)
+         *   --------  ---------------------------  ---  -------------------
+         *   res       agc_rr_designate_result_t *  O    NO_COVERAGE, MANEUVER or
+         *                                               END_JOB
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK
+         **********************************************************************/
+        if (agc_flag_test(AGC_FLAG_SURFFLAG))
+        {
+            rr_nordstal();
+            *res = AGC_RR_DESIGNATE_NO_COVERAGE;
+
+            return (AGC_STATUS_OK);
+        }
+
+        if (agc_flag_test(AGC_FLAG_RNDVZFLG))
+        {
+            rr_mode_invert(); /* NODESSM */
+            rr_nordstal();
+            *res = AGC_RR_DESIGNATE_MANEUVER;
+
+            return (AGC_STATUS_OK);
+        }
+
+        *res = AGC_RR_DESIGNATE_END_JOB; /* ENDOFJOB */
+
+        return (AGC_STATUS_OK);
     }
 
     agc_erase_set_tang(0, (agc_sp_t) rr_ones(s->modea[0])); /* MODEA = TANG */
@@ -258,24 +245,24 @@ agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *re
     { /* no mode 2 on the moon */
         rr_nordstal();
         *res = AGC_RR_DESIGNATE_NO_COVERAGE;
-
-        return (AGC_STATUS_OK);
     }
-
-    rr_mode_invert();                                     /* TRYSWS  */
-    bool other = agc_rr_limchk(s->modeb[0], s->modeb[1]); /* other mode OK */
-
-    rr_mode_invert();
-
-    if (other)
+    else
     {
-        rr_radmodes_set(RR_REMODBIT);
+        rr_mode_invert();                                     /* TRYSWS  */
+        bool other = agc_rr_limchk(s->modeb[0], s->modeb[1]); /* other mode OK */
 
-        return (rr_startdes(res));
+        rr_mode_invert();
+
+        if (other)
+        {
+            rr_radmodes_set(RR_REMODBIT);
+
+            return (rr_startdes(res));
+        }
+
+        rr_nordstal(); /* NODESSM */
+        *res = AGC_RR_DESIGNATE_MANEUVER;
     }
-
-    rr_nordstal(); /* NODESSM */
-    *res = AGC_RR_DESIGNATE_MANEUVER;
 
     return (AGC_STATUS_OK);
 } /* agc_rr_designate_sm */
@@ -517,20 +504,20 @@ static agc_status_t rr_dodes_los(agc_interp_t *ip, const rr_state_t *s, agc_cdut
     if (agc_flag_test(AGC_FLAG_RRNBSW))
     {
         *los = s->rrtarget; /* DONBRD  */
-
-        return (AGC_STATUS_OK);
     }
+    else
+    {
+        agc_vec_t r; /* m 2^29 */
 
-    agc_vec_t r; /* m 2^29 */
+        r = agc_vec_shl(ip, agc_vec_scale(ip, s->rrtarget, s->mlosv), 1);
+        agc_vec_t dv; /* 1 s of LOSVEL, 2^29 */
 
-    r = agc_vec_shl(ip, agc_vec_scale(ip, s->rrtarget, s->mlosv), 1);
-    agc_vec_t dv; /* 1 s of LOSVEL, 2^29 */
+        dv = agc_vec_scale(ip, s->losvel, RR_MCTOMS);
 
-    dv = agc_vec_scale(ip, s->losvel, RR_MCTOMS);
-
-    *los = agc_vec_unit(ip, agc_vec_add(ip, r, dv), NULL, NULL);
-    agc_guid_cdutrig(trig);
-    agc_guid_smnb(trig, los);
+        *los = agc_vec_unit(ip, agc_vec_add(ip, r, dv), NULL, NULL);
+        agc_guid_cdutrig(trig);
+        agc_guid_smnb(trig, los);
+    }
 
     return (AGC_STATUS_OK);
 }
@@ -647,12 +634,12 @@ static agc_status_t rr_dorrout(agc_interp_t *ip, rr_state_t *s)
 static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s, const agc_cdutrig_t *trig, agc_vec_t los)
 {
     agc_dp_t sa    = agc_guid_cdulogic(agc_erase_cdus());                                                /* rev 2^0 */
-    agc_dp_t sn_s  = agc_dp_sin(sa);                                                                 /* 0D, 2^1 */
-    agc_dp_t cs_s  = agc_dp_cos(sa);                                                                 /* 2D, 2^1 */
+    agc_dp_t sn_s  = agc_dp_sin(sa);                                                                     /* 0D, 2^1 */
+    agc_dp_t cs_s  = agc_dp_cos(sa);                                                                     /* 2D, 2^1 */
     agc_dp_t shaft = agc_dp_sub(ip, agc_dp_mul_trunc(cs_s, los.c[0]), agc_dp_mul_trunc(los.c[2], sn_s)); /* 2^2 */
     agc_dp_t ta    = agc_guid_cdulogic(agc_erase_cdut());                                                /* rev 2^0 */
-    agc_dp_t cs_t  = agc_dp_cos(ta);                                                                 /* 4D, 2^1 */
-    agc_dp_t sn_t  = agc_dp_sin(ta);                                                                 /* 6D, 2^1 */
+    agc_dp_t cs_t  = agc_dp_cos(ta);                                                                     /* 4D, 2^1 */
+    agc_dp_t sn_t  = agc_dp_sin(ta);                                                                     /* 6D, 2^1 */
     agc_dp_t ux    = agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, sn_s), 1);                                    /* 2^1 */
     agc_dp_t uz    = agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, cs_s), 1);                                    /* 2^1 */
     agc_dp_t trun  = agc_vec_dot(ip, agc_vec_make(ux, cs_t, uz), los);                                   /* 2^2 */

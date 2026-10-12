@@ -177,7 +177,7 @@ static bool only_dspmm_waiting(void)
     {
         agc_exec_core_info_t ci;
 
-        (void) agc_exec_core_info(i, &ci);
+        agc_exec_core_info(i, &ci);
 
         if (ci.state != AGC_CORE_FREE)
         {
@@ -226,7 +226,7 @@ static bool job_present(agc_job_id_t loc, agc_prio_t prio, int vac)
     {
         agc_exec_core_info_t ci;
 
-        (void) agc_exec_core_info(i, &ci);
+        agc_exec_core_info(i, &ci);
 
         if (ci.state != AGC_CORE_FREE && ci.loc == loc && ci.prio == prio && ((vac < 0) == (ci.vac_index < 0)))
         {
@@ -444,10 +444,9 @@ static void test_longcall(void)
 static void test_phase_codes(void)
 {
     reset(AGC_VEHICLE_CSM);
-    agc_phase_change(4, 040064); /* 4.6, TBASE */
+    agc_phase_change(040064); /* 4.6, TBASE */
     CHECK(agc_phase_get(4) == 6U);
     CHECK(phase_group_agrees(4));
-    agc_phase_change(3, 040064); /* group 4: rejected by AGC_ASSERT */
     CHECK(agc_phase_get(3) == 0U);
     agc_phase_var_t v = {AGC_RESTART_JOB, TJ_A, AGC_TASK_NONE, 023, false, 0};
 
@@ -466,7 +465,7 @@ static void test_restart_table_task_timing(void)
 {
     reset(AGC_VEHICLE_CSM);
     agc_time_set_cs(5000);
-    agc_phase_change(4, 040064);                 /* TBASE4 */
+    agc_phase_change(040064);                    /* TBASE4 */
     agc_time_advance_cs(1000);
     CHECK(agc_restart_group(4) == AGC_STATUS_OK);
     CHECK(task_entry(0, AGC_TASK_PRECHECK, 0));  /* -0: in 1 cs     */
@@ -508,7 +507,7 @@ static void test_restart_variable(void)
     CHECK(task_queued(AGC_TASK_REREADAC));
 
     /* X.1: redisplay                                                  */
-    agc_phase_change(2, 012);
+    agc_phase_change(012);
     CHECK(agc_restart_group(2) == AGC_STATUS_OK);
     CHECK(job_present(AGC_JOB_INITDSP, 014, 0));
 }

@@ -64,35 +64,6 @@
 
 /* ---- V43 ------------------------------------------------------------------ */
 
-/* IMUATTCK (V43, p.272): P00; not with coarse align or zero ICDU; the
- * attitude-indicator mode switch (channel 31 bits 13,14) must be off.     */
-static agc_status_t verb_attitude_error(agc_job_ctx_t *ctx)
-{
-    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_chkpooh())
-    {
-        return (AGC_STATUS_OK);
-    }
-
-    if ((agc_chan_read((int) AGC_CHAN_CHAN12) & OCT30) != 0u || ((agc_chan_read((int) AGC_CHAN_CHAN31) ^ BIT13_14) & BIT13_14) != 0u)
-    {
-        return (agc_extverb_alm_end());
-    }
-
-    bool         ok = false;
-    agc_status_t st = agc_extverb_testxact(&ok);
-
-    if (!ok)
-    {
-        return (st);
-    }
-
-    agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END,
-                            AGC_JOB_ATTITUDE_ERROR_LOAD,
-                            AGC_JOB_ATTITUDE_ERROR_LOAD};
-
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22), &cont));
-}
-
 /* V43 after the load: show V43 again (EXDSPRET).                          */
 agc_status_t agc_job_attitude_error_load_lm(agc_job_ctx_t *ctx)
 {
@@ -157,31 +128,6 @@ static agc_status_t dap_data_display(agc_job_ctx_t *ctx, uint8_t verb, uint8_t n
     return (agc_dsky_blanket(blank)); /* then ENDOFJOB           */
 }
 
-/* DAPDISP (V48): TESTXACT, priority 7, DAPDATA1: DAPDATR1 from DAPBOOLS
- * with bit 14 = not APSFLAG.                                              */
-static agc_status_t verb_dap_data_load(agc_job_ctx_t *ctx)
-{
-    bool         ok = false;
-    agc_status_t st = agc_extverb_testxact(&ok);
-
-    if (!AGC_ASSERT(ctx != NULL) || !ok)
-    {
-        return (st);
-    }
-
-    agc_exec_prio_change(PRIO7);
-    uint16_t d = (uint16_t) (agc_flagword_get(DAPBOOLS_WORD) & BOOLSMSK);
-
-    if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_APSFLAG))
-    {
-        d = (uint16_t) (d + BIT14);
-    }
-
-    agc_erase_set_dapdatr1(d);
-
-    return (agc_job_dap_data_load_noun46_lm(ctx));
-}
-
 /* CHKDATA1: bits 13 and 14 both zero -> force bit 13; mask out illegal
  * bits; V01N46.                                                            */
 agc_status_t agc_job_dap_data_load_noun46_lm(agc_job_ctx_t *ctx)
@@ -196,28 +142,6 @@ agc_status_t agc_job_dap_data_load_noun46_lm(agc_job_ctx_t *ctx)
     agc_erase_set_dapdatr1((uint16_t) (d & DSPLYMSK));
 
     return (dap_data_display(ctx, 1, 46, AGC_JOB_EXTENDED_VERB_END, AGC_JOB_DAP_DATA_LOAD_CONFIG, AGC_JOB_DAP_DATA_LOAD_NOUN46, REVCNT));
-}
-
-/* STIKLOAD: stick sensitivity and rate deadband (divided by 10 / halved
- * when the CSM is docked).                                                */
-static void stikload(uint16_t dapbools)
-{
-    agc_sp_t sens   = ((dapbools & RHCSCALE) != 0u) ? (agc_sp_t) (NORMAL_SENS + FINE_SENS) : FINE_SENS;
-    agc_sp_t ratedb = RATEDB_LM;
-
-    if ((dapbools & CSMDOCKD) != 0u)
-    {
-        sens   = agc_dp_high(agc_sp_mul(sens, ONE_TENTH));
-        ratedb = RATEDB_CSM;
-    }
-
-    agc_erase_set_stiksens(sens);
-    agc_erase_set_neg_ratedb(ratedb);
-
-    if (!AGC_ASSERT(agc_erase_stiksens() == sens))
-    {
-        return;
-    }
 }
 
 /* DPDAT1 (N46 proceed): APSFLAG = not bit 14; DAPBOOLS from DAPDATR1
@@ -244,7 +168,19 @@ agc_status_t agc_job_dap_data_load_config_lm(agc_job_ctx_t *ctx)
     agc_flag_put(nj, (b & ACC4OR2X) == 0u);
     agc_status_t sr = agc_kalc_set_rateindx((agc_sp_t) ((b & RATE_BITS) * 2u));
 
-    stikload(b);
+    /* STIKLOAD: stick sensitivity and rate deadband (divided by 10 / halved
+     * when the CSM is docked).                                                */
+    agc_sp_t sens   = ((b & RHCSCALE) != 0u) ? (agc_sp_t) (NORMAL_SENS + FINE_SENS) : FINE_SENS;
+    agc_sp_t ratedb = RATEDB_LM;
+
+    if ((b & CSMDOCKD) != 0u)
+    {
+        sens   = agc_dp_high(agc_sp_mul(sens, ONE_TENTH));
+        ratedb = RATEDB_CSM;
+    }
+
+    agc_erase_set_stiksens(sens);
+    agc_erase_set_neg_ratedb(ratedb);
     agc_relint();
 
     if (!AGC_ASSERT(ctx != NULL) || sr != AGC_STATUS_OK)
@@ -389,7 +325,7 @@ agc_status_t agc_job_tracking_terminate_lm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK);
     }
 
-    agc_phase_change(2, 02);
+    agc_phase_change(02);
     agc_inhint();
     agc_lm_dap_stoprate();
     agc_status_t s2 = agc_lm_dap_restordb();
@@ -450,14 +386,12 @@ static agc_status_t verb_rendezvous_display(void)
     bool         ok = false;
     agc_status_t st = agc_extverb_testxact(&ok);
 
-    if (!ok)
+    if (ok)
     {
-        return (st);
+        agc_inhint();
+        st = agc_waitlist_call(RENDEZVOUS_DISPLAY_DELAY_CS, AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY);
+        agc_relint();
     }
-
-    agc_inhint();
-    st = agc_waitlist_call(RENDEZVOUS_DISPLAY_DELAY_CS, AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY);
-    agc_relint();
 
     return (st);
 }
@@ -467,9 +401,17 @@ static agc_status_t xact_findvac(bool pooh, agc_prio_t prio, agc_job_id_t job)
 {
     bool ok = false;
 
-    if (pooh && !agc_extverb_chkpooh())
+    bool         xv_ok = true;          /* CHKPOOH passed (or not asked) */
+    agc_status_t xv_st = AGC_STATUS_OK; /* ALM/END outcome otherwise */
+
+    if (pooh)
     {
-        return (AGC_STATUS_OK);
+        xv_st = agc_extverb_chkpooh(&xv_ok);
+    }
+
+    if (!xv_ok)
+    {
+        return (xv_st);
     }
 
     agc_status_t st = agc_extverb_testxact(&ok);
@@ -482,24 +424,6 @@ static agc_status_t xact_findvac(bool pooh, agc_prio_t prio, agc_job_id_t job)
     return (agc_extverb_schedule(prio, job, true));
 }
 
-/* WMATRXNG (V93): INHINT, RENDWFLG off.                                    */
-static agc_status_t verb_w_matrix_reset(void)
-{
-    agc_inhint();
-    agc_flag_clear((agc_flag_id_t) AGC_FLAG_RENDWFLG);
-    agc_relint();
-
-    return (agc_extverb_gopin());
-}
-
-/* VERB96: QUITFLAG, V37 to P00.                                           */
-static agc_status_t verb_quit_integration(void)
-{
-    agc_flag_set((agc_flag_id_t) AGC_FLAG_QUITFLAG);
-
-    return (agc_change_program(0));
-}
-
 /* Verbs 40-69.                                                             */
 static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
 {
@@ -510,7 +434,36 @@ static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
         case 41:
             return ((agc_extverb_noun() == 72) ? agc_extverb_rr_designate(ctx) : agc_extverb_alm_end());
         case 43:
-            return (verb_attitude_error(ctx));
+            /* IMUATTCK (V43, p.272): P00; not with coarse align or zero ICDU; the
+             * attitude-indicator mode switch (channel 31 bits 13,14) must be off.     */
+            {
+                bool         xv_ok = false;                       /* CHKPOOH passed */
+                agc_status_t xv_st = agc_extverb_chkpooh(&xv_ok); /* ALM/END outcome otherwise */
+
+                if (!xv_ok)
+                {
+                    return (xv_st);
+                }
+
+                if ((agc_chan_read((int) AGC_CHAN_CHAN12) & OCT30) != 0u || ((agc_chan_read((int) AGC_CHAN_CHAN31) ^ BIT13_14) & BIT13_14) != 0u)
+                {
+                    return (agc_extverb_alm_end());
+                }
+
+                bool         ok = false;
+                agc_status_t st = agc_extverb_testxact(&ok);
+
+                if (!ok)
+                {
+                    return (st);
+                }
+
+                agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END,
+                                        AGC_JOB_ATTITUDE_ERROR_LOAD,
+                                        AGC_JOB_ATTITUDE_ERROR_LOAD};
+
+                return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22), &cont));
+            }
         case 44:
             return (agc_extverb_rr_designate_end());
         case 60:
@@ -520,7 +473,29 @@ static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
         case 47:
             return (xact_findvac(false, PRIO4, AGC_JOB_AGS_INITIALIZATION));
         case 48:
-            return (verb_dap_data_load(ctx));
+            /* DAPDISP (V48): TESTXACT, priority 7, DAPDATA1: DAPDATR1 from DAPBOOLS
+             * with bit 14 = not APSFLAG.                                              */
+            {
+                bool         ok = false;
+                agc_status_t st = agc_extverb_testxact(&ok);
+
+                if (!AGC_ASSERT(ctx != NULL) || !ok)
+                {
+                    return (st);
+                }
+
+                agc_exec_prio_change(PRIO7);
+                uint16_t d = (uint16_t) (agc_flagword_get(DAPBOOLS_WORD) & BOOLSMSK);
+
+                if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_APSFLAG))
+                {
+                    d = (uint16_t) (d + BIT14);
+                }
+
+                agc_erase_set_dapdatr1(d);
+
+                return (agc_job_dap_data_load_noun46_lm(ctx));
+            }
         case 52:
         case 53:
         case 54:
@@ -570,11 +545,23 @@ static agc_status_t fan_70s_90s(agc_job_ctx_t *ctx, int verb)
         case 92:
             return (xact_findvac(true, PRIO22, AGC_JOB_SYSTEMS_TEST));
         case 93:
-            return (verb_w_matrix_reset());
+            /* WMATRXNG (V93): INHINT, RENDWFLG off.                                    */
+            {
+                agc_inhint();
+                agc_flag_clear((agc_flag_id_t) AGC_FLAG_RENDWFLG);
+                agc_relint();
+
+                return (agc_extverb_gopin());
+            }
         case 95:
             return (agc_extverb_upflag((agc_flag_id_t) AGC_FLAG_NOUPFLAG));
         case 96:
-            return (verb_quit_integration());
+            /* VERB96: QUITFLAG, V37 to P00.                                           */
+            {
+                agc_flag_set((agc_flag_id_t) AGC_FLAG_QUITFLAG);
+
+                return (agc_change_program(0));
+            }
         default:
             break;
     }

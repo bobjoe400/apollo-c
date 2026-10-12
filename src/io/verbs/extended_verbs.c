@@ -59,11 +59,6 @@ static int      xv_noun;       /* NOUNREG at GOEXTVB                 */
 
 uint16_t agc_erase_extvbact(void)
 {
-    if (!AGC_ASSERT(extvbact <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
     return (extvbact);
 }
 
@@ -78,21 +73,11 @@ void agc_erase_set_extvbact(uint16_t v)
 /* TS EXTVBACT by another program (P61 locks out the extended verbs).     */
 void agc_svc_set_extvbact(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= WORD15))
-    {
-        return;
-    }
-
     extvbact = v;
 }
 
 bool agc_extverb_busy(void)
 {
-    if (!AGC_ASSERT(extvbact <= WORD15))
-    {
-        return (false);
-    }
-
     return (extvbact != 0u);
 }
 
@@ -154,41 +139,22 @@ agc_status_t agc_extverb_testxact(bool *ok)
     return (AGC_STATUS_OK);
 }
 
-/* CHKPOOH: true if the major mode is P00 (MODREG +-0), else ALM/END.     */
-bool agc_extverb_chkpooh(void)
+/* CHKPOOH: *p00 = the major mode is P00 (MODREG +-0); otherwise ALM/END,
+ * whose status is returned.                                              */
+agc_status_t agc_extverb_chkpooh(bool *p00)
 {
-    if (agc_erase_modreg() == 0)
-    {
-        return (true);
-    }
+    *p00 = (agc_erase_modreg() == 0);
 
-    agc_status_t st = agc_extverb_alm_end();
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (false);
-    }
-
-    return (false);
+    return (*p00 ? AGC_STATUS_OK : agc_extverb_alm_end());
 }
 
-/* CKMODCAD: true if nobody waits on IMU mode switching (MODECADR = 0),
- * else ALM/END.                                                           */
-bool agc_extverb_ckmodcad(void)
+/* CKMODCAD: *free = nobody waits on IMU mode switching (MODECADR = 0);
+ * otherwise ALM/END, whose status is returned.                            */
+agc_status_t agc_extverb_ckmodcad(bool *free)
 {
-    if (agc_erase_modecadr(0) == 0)
-    {
-        return (true);
-    }
+    *free = (agc_erase_modecadr(0) == 0);
 
-    agc_status_t st = agc_extverb_alm_end();
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (false);
-    }
-
-    return (false);
+    return (*free ? AGC_STATUS_OK : agc_extverb_alm_end());
 }
 
 /* GOLOADLV (V50 and the other please-perform verbs): FLASHOFF, then the
@@ -306,9 +272,12 @@ agc_status_t agc_extverb(int verb, int noun)
 /* VBZERO (V40, C p.238 / L p.265), IMU part: zero the ICDUs, then GOPIN. */
 static agc_status_t verb_zero_imu(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_ckmodcad())
+    bool         xv_ok = false;                        /* CKMODCAD passed */
+    agc_status_t xv_st = agc_extverb_ckmodcad(&xv_ok); /* ALM/END outcome otherwise */
+
+    if (!xv_ok)
     {
-        return (AGC_STATUS_OK);
+        return (xv_st);
     }
 
     agc_status_t st = agc_imu_zero(); /* IMUZERO         */
@@ -326,9 +295,12 @@ static agc_status_t verb_coarse_imu(agc_job_ctx_t *ctx)
 {
     bool ok = false;
 
-    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_ckmodcad())
+    bool         xv_ok = false;                        /* CKMODCAD passed */
+    agc_status_t xv_st = agc_extverb_ckmodcad(&xv_ok); /* ALM/END outcome otherwise */
+
+    if (!xv_ok)
     {
-        return (AGC_STATUS_OK);
+        return (xv_st);
     }
 
     agc_status_t st = agc_extverb_testxact(&ok);
@@ -346,9 +318,12 @@ static agc_status_t verb_fine_align(agc_job_ctx_t *ctx)
 {
     bool ok = false;
 
-    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_ckmodcad())
+    bool         xv_ok = false;                        /* CKMODCAD passed */
+    agc_status_t xv_st = agc_extverb_ckmodcad(&xv_ok); /* ALM/END outcome otherwise */
+
+    if (!xv_ok)
     {
-        return (AGC_STATUS_OK);
+        return (xv_st);
     }
 
     agc_status_t st = agc_extverb_testxact(&ok);
@@ -361,34 +336,22 @@ static agc_status_t verb_fine_align(agc_job_ctx_t *ctx)
     return (agc_extverb_flash(ctx, 25, 93, AGC_JOB_KEYBOARD_FINE_ALIGN, AGC_JOB_KEYBOARD_FINE_ALIGN));
 }
 
-/* ALINTIME (V55): load the clock increment by V25N24 (LM: as R33 at
- * priority 7).                                                            */
-static agc_status_t verb_clock_align(agc_job_ctx_t *ctx)
-{
-    bool         ok = false;
-    agc_status_t st = agc_extverb_testxact(&ok);
-
-    if (!AGC_ASSERT(ctx != NULL) || !ok)
-    {
-        return (st);
-    }
-
-    if (agc_state_vehicle() == AGC_VEHICLE_LM)
-    {
-        agc_exec_prio_change(PRIO7);
-    }
-
-    return (agc_extverb_flash(ctx, 25, 24, AGC_JOB_EXTENDED_VERB_END, AGC_JOB_CLOCK_ALIGN_UPDATE));
-}
-
 /* TESTXACT (and CHKPOOH when pooh), then schedule job at prio.           */
 static agc_status_t xact_and_schedule(bool pooh, agc_prio_t prio, agc_job_id_t job)
 {
     bool ok = false;
 
-    if (pooh && !agc_extverb_chkpooh())
+    bool         xv_ok = true;          /* CHKPOOH passed (or not asked) */
+    agc_status_t xv_st = AGC_STATUS_OK; /* ALM/END outcome otherwise */
+
+    if (pooh)
     {
-        return (AGC_STATUS_OK);
+        xv_st = agc_extverb_chkpooh(&xv_ok);
+    }
+
+    if (!xv_ok)
+    {
+        return (xv_st);
     }
 
     agc_status_t st = agc_extverb_testxact(&ok);
@@ -399,36 +362,6 @@ static agc_status_t xact_and_schedule(bool pooh, agc_prio_t prio, agc_job_id_t j
     }
 
     return (agc_extverb_schedule(prio, job, true)); /* FINDVAC         */
-}
-
-/* V82PERF: R30 runs on in this job at priority 7 (V82CALL must not be a
- * FINDVAC job).                                                           */
-static agc_status_t verb_orbit_parameters(agc_job_ctx_t *ctx)
-{
-    bool         ok = false;
-    agc_status_t st = agc_extverb_testxact(&ok);
-
-    if (!AGC_ASSERT(ctx != NULL) || !ok)
-    {
-        return (st);
-    }
-
-    agc_exec_prio_change(PRIO7);
-
-    return (agc_job_orbit_parameter_display(ctx)); /* POSTJUMP V82CALL */
-}
-
-/* VERB69: force a hardware restart (the AGC does TC VERB69, a TC trap).  */
-static agc_status_t verb_hardware_restart(void)
-{
-    agc_status_t st = agc_rupt_go();
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
 }
 
 /* V74 DNEDUMP: replace the downlist by the erasable dump.                */
@@ -459,9 +392,12 @@ static agc_status_t verb_show_banksum(agc_job_ctx_t *ctx)
 {
     bool ok = false;
 
-    if (!AGC_ASSERT(ctx != NULL) || !agc_extverb_chkpooh())
+    bool         xv_ok = false;                       /* CHKPOOH passed */
+    agc_status_t xv_st = agc_extverb_chkpooh(&xv_ok); /* ALM/END outcome otherwise */
+
+    if (!xv_ok)
     {
-        return (AGC_STATUS_OK);
+        return (xv_st);
     }
 
     agc_status_t st = agc_extverb_testxact(&ok);
@@ -506,7 +442,24 @@ static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
         case 99:
             return (agc_extverb_goloadlv());
         case 55:
-            return (verb_clock_align(ctx));
+            /* ALINTIME (V55): load the clock increment by V25N24 (LM: as R33 at
+             * priority 7).                                                            */
+            {
+                bool         ok = false;
+                agc_status_t st = agc_extverb_testxact(&ok);
+
+                if (!AGC_ASSERT(ctx != NULL) || !ok)
+                {
+                    return (st);
+                }
+
+                if (agc_state_vehicle() == AGC_VEHICLE_LM)
+                {
+                    agc_exec_prio_change(PRIO7);
+                }
+
+                return (agc_extverb_flash(ctx, 25, 24, AGC_JOB_EXTENDED_VERB_END, AGC_JOB_CLOCK_ALIGN_UPDATE));
+            }
         case 64:
             return (xact_and_schedule(true, PRIO4, lm ? AGC_JOB_SBANDANT_LM : AGC_JOB_SBANDANT_CM));
         case 66:
@@ -514,7 +467,17 @@ static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
         case 67:
             return (xact_and_schedule(false, PRIO5, AGC_JOB_W_MATRIX_MONITOR));
         case 69:
-            return (verb_hardware_restart());
+            /* VERB69: force a hardware restart (the AGC does TC VERB69, a TC trap).  */
+            {
+                agc_status_t st = agc_rupt_go();
+
+                if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+                {
+                    return (AGC_STATUS_BAD_ARG);
+                }
+
+                return (st);
+            }
         case 70:
         case 71:
         case 72:
@@ -523,7 +486,21 @@ static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
         case 74:
             return (verb_erasable_dump());
         case 82:
-            return (verb_orbit_parameters(ctx));
+            /* V82PERF: R30 runs on in this job at priority 7 (V82CALL must not be a
+             * FINDVAC job).                                                           */
+            {
+                bool         ok = false;
+                agc_status_t st = agc_extverb_testxact(&ok);
+
+                if (!AGC_ASSERT(ctx != NULL) || !ok)
+                {
+                    return (st);
+                }
+
+                agc_exec_prio_change(PRIO7);
+
+                return (agc_job_orbit_parameter_display(ctx)); /* POSTJUMP V82CALL */
+            }
         case 89:
             return (xact_and_schedule(true, PRIO10, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE));
         case 90:
@@ -662,11 +639,6 @@ agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx)
 /* Signed value of a 15-bit ones'-complement word.                        */
 static int32_t ones_value(uint16_t w)
 {
-    if (!AGC_ASSERT(w <= WORD15))
-    {
-        return (0); /* no valid result */
-    }
-
     return (((w & 040000u) != 0u) ? -(int32_t) (WORD15 - w) : (int32_t) w);
 }
 
@@ -675,11 +647,12 @@ static int32_t ones_value(uint16_t w)
  * wraps at 2^28 like TIME2).                                              */
 agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx)
 {
-    uint8_t      verb = 0;
-    uint8_t      noun = 0;
-    agc_status_t st   = agc_dsky_response(&verb, &noun);
+    uint8_t verb = 0;
+    uint8_t noun = 0;
 
-    if (!AGC_ASSERT(ctx != NULL) || st != AGC_STATUS_OK || verb != TIME_UPDATE_VERB)
+    agc_dsky_response(&verb, &noun);
+
+    if (!AGC_ASSERT(ctx != NULL) || verb != TIME_UPDATE_VERB)
     {
         return (agc_dsky_endmark()); /* not a V23 data load     */
     }
@@ -694,9 +667,8 @@ agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx)
     agc_inhint();
     int64_t t = (int64_t) agc_time_now_cs() + (int64_t) delta;
 
-    t  = ((t % (int64_t) AGC_TIME_MODULUS_CS) + (int64_t) AGC_TIME_MODULUS_CS) % (int64_t) AGC_TIME_MODULUS_CS;
+    t = ((t % (int64_t) AGC_TIME_MODULUS_CS) + (int64_t) AGC_TIME_MODULUS_CS) % (int64_t) AGC_TIME_MODULUS_CS;
     agc_time_set_cs((uint32_t) t);
-    st = AGC_STATUS_OK;
     agc_relint();
 
     return (agc_dsky_endmark()); /* UPDTMEND                */

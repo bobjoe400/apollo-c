@@ -64,7 +64,7 @@
 /* DELAYLOC +0..+3: the job sleeping in each slot (AGC: its FCADR) and,
  * in C, the time it is due (the waitlist runs WAKER in due order).        */
 static agc_job_id_t delayloc[DELAYNUM]; /* DELAYLOC +0..+3: sleeping job ids */
-static uint32_t     delaydue[DELAYNUM]; /* cs, 2^28 wrap                  */
+static uint32_t delaydue[DELAYNUM]; /* cs, 2^28 wrap                  */
 
 /**********************************************************************
  * UPFLAG (p.1486): set a named flag; returns the new flagword.
@@ -75,19 +75,9 @@ static uint32_t     delaydue[DELAYNUM]; /* cs, 2^28 wrap                  */
  **********************************************************************/
 uint16_t agc_svc_upflag(agc_flag_id_t f)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return (0);
-    }
-
     agc_inhint();
     agc_flag_set(f);
     agc_relint();
-
-    if (!AGC_ASSERT(agc_flag_test(f)))
-    {
-        return (0);
-    }
 
     return (agc_flagword_get(agc_flag_word(f)));
 }
@@ -100,19 +90,9 @@ uint16_t agc_svc_upflag(agc_flag_id_t f)
  **********************************************************************/
 uint16_t agc_svc_downflag(agc_flag_id_t f)
 {
-    if (!AGC_ASSERT(agc_flag_valid(f)))
-    {
-        return (0);
-    }
-
     agc_inhint();
     agc_flag_clear(f);
     agc_relint();
-
-    if (!AGC_ASSERT(!agc_flag_test(f)))
-    {
-        return (0);
-    }
 
     return (agc_flagword_get(agc_flag_word(f)));
 }
@@ -130,13 +110,8 @@ uint16_t agc_svc_downflag(agc_flag_id_t f)
  **********************************************************************/
 static int ent2_word(uint16_t arg, uint16_t *bits)
 {
-    *bits    = (uint16_t) (arg & OCT77770);
+    *bits = (uint16_t) (arg & OCT77770);
     int word = (agc_state_vehicle() == AGC_VEHICLE_LM) ? LM_ENT2_FLAGWORD : (int) (arg & OCT7); /* LM: FLAGWRD4 */
-
-    if (!AGC_ASSERT(word >= 0 && word < AGC_FLAGWORDS))
-    {
-        return (-1);
-    }
 
     return (word);
 }
@@ -154,7 +129,7 @@ static int ent2_word(uint16_t arg, uint16_t *bits)
 agc_status_t agc_svc_upent2(uint16_t arg)
 {
     uint16_t bits = 0;                     /* bits 4-15 of the argument */
-    int      word = ent2_word(arg, &bits); /* flagword index */
+    int word = ent2_word(arg, &bits); /* flagword index */
 
     if (!AGC_ASSERT(word >= 0))
     {
@@ -185,7 +160,7 @@ agc_status_t agc_svc_upent2(uint16_t arg)
 agc_status_t agc_svc_downent2(uint16_t arg)
 {
     uint16_t bits = 0;                     /* bits 4-15 of the argument */
-    int      word = ent2_word(arg, &bits); /* flagword index */
+    int word = ent2_word(arg, &bits); /* flagword index */
 
     if (!AGC_ASSERT(word >= 0))
     {
@@ -236,8 +211,8 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
         return (bst);
     }
 
-    delayloc[slot]  = wake_as;
-    delaydue[slot]  = (agc_time_now_cs() + delay_cs) & (AGC_TIME_MODULUS_CS - 1u);
+    delayloc[slot] = wake_as;
+    delaydue[slot] = (agc_time_now_cs() + delay_cs) & (AGC_TIME_MODULUS_CS - 1u);
     agc_status_t st = agc_waitlist_call(delay_cs, AGC_TASK_WAKER); /* WAITLIST result */
 
     agc_relint();
@@ -267,18 +242,8 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
  **********************************************************************/
 static int32_t delay_lateness(int i, uint32_t now)
 {
-    if (!AGC_ASSERT(i >= 0 && i < DELAYNUM))
-    {
-        return (0); /* no valid result */
-    }
-
-    uint32_t d    = (now - delaydue[i]) & (AGC_TIME_MODULUS_CS - 1u);                                              /* cs since due, 2^28 wrap */
-    int32_t  late = (d >= (AGC_TIME_MODULUS_CS >> 1)) ? (int32_t) d - (int32_t) AGC_TIME_MODULUS_CS : (int32_t) d; /* signed lateness, cs */
-
-    if (!AGC_ASSERT(late > -(int32_t) AGC_TIME_MODULUS_CS))
-    {
-        return (0); /* no valid result */
-    }
+    uint32_t d = (now - delaydue[i]) & (AGC_TIME_MODULUS_CS - 1u);                                              /* cs since due, 2^28 wrap */
+    int32_t late = (d >= (AGC_TIME_MODULUS_CS >> 1)) ? (int32_t) d - (int32_t) AGC_TIME_MODULUS_CS : (int32_t) d; /* signed lateness, cs */
 
     return (late);
 }
@@ -392,11 +357,11 @@ agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
 agc_status_t agc_svc_b5off(void)
 {
     uint16_t x = agc_erase_extvbact(); /* EXTVBACT bits */
+
     if (!AGC_ASSERT(x <= WORD15))
     {
         return (AGC_STATUS_BAD_ARG);
     }
-
 
     agc_erase_set_extvbact((uint16_t) (x & ~(uint32_t) BIT5));
 

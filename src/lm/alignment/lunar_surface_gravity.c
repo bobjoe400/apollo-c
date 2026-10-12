@@ -250,15 +250,9 @@ agc_status_t agc_job_lunar_gravity_measured(agc_job_ctx_t *ctx)
     agc_interp_t     ip;
 
     agc_interp_init(&ip);
-    ram->starsav1         = agc_vec_unit(&ip, agc_vec_add(&ip, agc_vec_shr(ram->gout, 1), ram->starad[2]), NULL, NULL);
-    const agc_dp_t     c  = agc_dp_shl(&ip, agc_vec_dot(&ip, ram->starsav1, ram->gsav), 1);
-    const agc_status_t st = align_set_dsptem1(agc_dp_acos(&ip, c));
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
+    ram->starsav1    = agc_vec_unit(&ip, agc_vec_add(&ip, agc_vec_shr(ram->gout, 1), ram->starad[2]), NULL, NULL);
+    const agc_dp_t c = agc_dp_shl(&ip, agc_vec_dot(&ip, ram->starsav1, ram->gsav), 1);
+    align_set_dsptem1(agc_dp_acos(&ip, c));
     agc_flag_clear(AGC_FLAG_FREEFLAG);
 
     return (agc_job_lunar_gravity_display(ctx));
@@ -405,59 +399,6 @@ agc_status_t agc_job_lunar_surface_trimmed(void)
 }
 
 /*
- * GYROTRIM (p. 966): STQ QMIN; with CDUSPOT = THETAD the nav-base X and Y
- * axes in SM (TRG*NBSM, *NBSM*) go to STARAD, STARAD +6; the present
- * XNB, YNB (CDUTRIG, CALCSMSC) to 6D, 12D; AXISGEN -> XDC; CALCGTA ->
- * OGC; JUSTTRIM.
- */
-static agc_status_t gyro_trim(agc_job_id_t ret)
-{
-    agc_align_ram_t *ram = agc_align_ram();
-
-    ram->lunar_gravity_return = ret;
-    const agc_mat_t unit      = agc_mat_identity_half();
-    const uint16_t  yzx[3]    = {agc_erase_thetad(1), agc_erase_thetad(2), agc_erase_thetad(0)};
-    agc_cdutrig_t   t;
-    agc_vec_t       x         = unit.row[0];
-    agc_vec_t       y         = unit.row[1];
-    agc_status_t    st        = agc_guid_trg_nbsm(&t, yzx, &x);
-
-    if (st == AGC_STATUS_OK)
-    {
-        agc_guid_nbsm(&t, &y);
-    }
-
-    agc_interp_t ip;
-
-    agc_interp_init(&ip);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = align_nb_present(&ip, &t, &ram->xnb);
-    }
-
-    const agc_vec_t a[2] = {x, y};
-    const agc_vec_t b[2] = {ram->xnb.row[0], ram->xnb.row[1]};
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_imu_axisgen(&ip, a, b, &ram->xdc);
-    }
-
-    if (st == AGC_STATUS_OK)
-    {
-        agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    return (agc_lm_lunar_surface_just_trim());
-}
-
-/*
  * COATRIM (p. 976): XSM = XDC; CDUTRIG, CALCSMSC, CALCGA -> THETAD.  The
  * initial alignment shows the final gimbal angles (V06N22) first; then
  * CORSIT.
@@ -526,5 +467,53 @@ agc_status_t agc_job_lunar_surface_coarse_trimmed(void)
         return (st);
     }
 
-    return (gyro_trim(AGC_JOB_LUNAR_SURFACE_ALIGNED));
+    /*
+     * GYROTRIM (p. 966): STQ QMIN; with CDUSPOT = THETAD the nav-base X and Y
+     * axes in SM (TRG*NBSM, *NBSM*) go to STARAD, STARAD +6; the present
+     * XNB, YNB (CDUTRIG, CALCSMSC) to 6D, 12D; AXISGEN -> XDC; CALCGTA ->
+     * OGC; JUSTTRIM.
+     */
+    agc_align_ram_t *ram = agc_align_ram();
+
+    ram->lunar_gravity_return = AGC_JOB_LUNAR_SURFACE_ALIGNED;
+    const agc_mat_t unit      = agc_mat_identity_half();
+    const uint16_t  yzx[3]    = {agc_erase_thetad(1), agc_erase_thetad(2), agc_erase_thetad(0)};
+    agc_cdutrig_t   t;
+    agc_vec_t       x         = unit.row[0];
+    agc_vec_t       y         = unit.row[1];
+    agc_status_t    st_trim   = agc_guid_trg_nbsm(&t, yzx, &x);
+
+    if (st_trim == AGC_STATUS_OK)
+    {
+        agc_guid_nbsm(&t, &y);
+    }
+
+    agc_interp_t ip;
+
+    agc_interp_init(&ip);
+
+    if (st_trim == AGC_STATUS_OK)
+    {
+        st_trim = align_nb_present(&ip, &t, &ram->xnb);
+    }
+
+    const agc_vec_t a[2] = {x, y};
+    const agc_vec_t b[2] = {ram->xnb.row[0], ram->xnb.row[1]};
+
+    if (st_trim == AGC_STATUS_OK)
+    {
+        st_trim = agc_imu_axisgen(&ip, a, b, &ram->xdc);
+    }
+
+    if (st_trim == AGC_STATUS_OK)
+    {
+        agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
+    }
+
+    if (st_trim != AGC_STATUS_OK)
+    {
+        return (st_trim);
+    }
+
+    return (agc_lm_lunar_surface_just_trim());
 }

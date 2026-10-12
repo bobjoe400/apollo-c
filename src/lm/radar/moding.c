@@ -183,11 +183,6 @@ int rr_ones(uint16_t w)
  **********************************************************************/
 uint16_t rr_word(int v)
 {
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return (0U);
-    }
-
     if (v < 0)
     {
         return ((uint16_t) ((int) RR_WORD_MASK + v)); /* ones' complement */
@@ -244,11 +239,6 @@ static int rr_msu(uint16_t a, uint16_t k)
         d -= 0100000;
     }
 
-    if (!AGC_ASSERT(d >= -16384 && d <= 16383))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((d < AGC_SP_MIN) ? AGC_SP_MIN : d); /* -16384 -> -16383 */
 }
 
@@ -268,11 +258,6 @@ static int rr_msu(uint16_t a, uint16_t k)
  **********************************************************************/
 static int rr_mp(int a, int b)
 {
-    if (!AGC_ASSERT(a >= AGC_SP_MIN && a <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_dp_high(agc_sp_mul((agc_sp_t) a, (agc_sp_t) b)));
 }
 
@@ -306,11 +291,6 @@ void rr_chan_clear(int chan, uint16_t bits)
  **********************************************************************/
 void rr_radmodes_set(uint16_t bits)
 {
-    if (!AGC_ASSERT(bits <= RR_WORD_MASK))
-    {
-        return;
-    }
-
     agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() | bits));
 }
 
@@ -375,11 +355,6 @@ void rr_mode_invert(void)
     uint16_t m = agc_erase_radmodes(); /* RADMODES */
 
     agc_erase_set_radmodes((uint16_t) (m ^ RR_ANTENBIT));
-
-    if (!AGC_ASSERT(((agc_erase_radmodes() ^ m) & RR_ANTENBIT) != 0U))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -456,12 +431,10 @@ void rr_lamp_put(uint16_t lamp, bool on)
 {
     bool now = (agc_erase_dsptab(RR_DSPTAB_11) & lamp) != 0U; /* lamp on now */
 
-    if (now == on)
+    if (now != on) /* NO CHANGE      */
     {
-        return; /* NO CHANGE      */
+        agc_rendz_flip(lamp);
     }
-
-    agc_rendz_flip(lamp);
 }
 
 /**********************************************************************
@@ -491,20 +464,13 @@ static void rr_trkf(void)
  * FUNCTION NAME: agc_rr_settrkf
  *
  * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
- *          failed invariant
  **********************************************************************/
-agc_status_t agc_rr_settrkf(void)
+void agc_rr_settrkf(void)
 {
-    if ((agc_erase_imodes33() & 1U) != 0U)
+    if ((agc_erase_imodes33() & 1U) == 0U)
     {
-        return (AGC_STATUS_OK);
+        rr_trkf(); /* no lamp test (IMODES33 bit 1) */
     }
-
-    rr_trkf();
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -624,11 +590,6 @@ void agc_rendz_clradmod(void)
     rr_radmodes_clear(RR_BIT10_15);
     rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
     agc_relint();
-
-    if (!AGC_ASSERT(!rr_radmodes_test(RR_BIT10_15)))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -642,14 +603,12 @@ void agc_rendz_clradmod(void)
  **********************************************************************/
 void rr_setrrecr(void)
 {
-    if ((agc_chan_read(AGC_CHAN_CHAN12) & RR_CH12_ENB_ECTR) != 0U)
+    if ((agc_chan_read(AGC_CHAN_CHAN12) & RR_CH12_ENB_ECTR) == 0U)
     {
-        return;
+        rr_designate_state.lastcmd[0] = 0;
+        rr_designate_state.lastcmd[1] = 0;
+        agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
     }
-
-    rr_designate_state.lastcmd[0] = 0;
-    rr_designate_state.lastcmd[1] = 0;
-    agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
 }
 
 /**********************************************************************
@@ -770,12 +729,7 @@ agc_status_t agc_task_rr_zero_settled(void)
         rr_radmodes_set(RR_ANTENBIT); /* mode 2  */
     }
 
-    agc_status_t st = agc_rr_settrkf(); /* SETTRKF */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    agc_rr_settrkf(); /* SETTRKF */
 
     if (rr_zero_ret == RR_ZERO_FOR_RRZERO)
     {
@@ -784,14 +738,7 @@ agc_status_t agc_task_rr_zero_settled(void)
 
     /* RRTURNON: wait 1 s before removing the turn-on flag, so that a
      * monitor reposition will not alarm.                                */
-    st = agc_waitlist_fixdelay(RR_DT_1SEC, AGC_TASK_RR_TURNON_DONE);
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
+    return (agc_waitlist_fixdelay(RR_DT_1SEC, AGC_TASK_RR_TURNON_DONE));
 }
 
 /**********************************************************************

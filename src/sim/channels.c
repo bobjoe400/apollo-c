@@ -75,7 +75,7 @@ static bool     g_restart_light;        /* yaAGC RestartLight       */
 /* Output channels sampled for changes (010, 034, 035 are forced).        */
 static const uint16_t k_outputs[] = {005, 006, 011, 012, 013, 014};
 
-void sim_channels_init(void)
+agc_status_t sim_channels_init(void)
 {
     for (int i = 0; i < CH_SLOTS; i++)
     {
@@ -91,21 +91,12 @@ void sim_channels_init(void)
     g_rhc[1]        = 0;
     g_rhc[2]        = 0;
     g_restart_light = true; /* lit by the power-on GOJAM */
-    agc_status_t st = agc_chan_set_input((int) AGC_CHAN_CHAN30, CH30_POWER_UP);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK) || !AGC_ASSERT(g_sent[0] == 0u))
-    {
-        return;
-    }
+    return (agc_chan_set_input((int) AGC_CHAN_CHAN30, CH30_POWER_UP));
 }
 
 static void send_if_changed(uint16_t chan, uint16_t value)
 {
-    if (!AGC_ASSERT(chan < CH_SLOTS) || !AGC_ASSERT(value <= SIM_WORD_MASK))
-    {
-        return;
-    }
-
     if (g_sent[chan] != value)
     {
         g_sent[chan] = value;
@@ -128,11 +119,6 @@ void sim_channels_sync(void)
     {
         g_restart_light = false; /* channel 11 bit 10 resets RESTART */
     }
-
-    if (!AGC_ASSERT(n == 6))
-    {
-        return;
-    }
 }
 
 void sim_channels_force(uint16_t chan)
@@ -145,11 +131,6 @@ void sim_channels_force(uint16_t chan)
     if (chan == (uint16_t) AGC_CHAN_OUT0)
     {
         g_relay[(v >> 11) & 017u] = v; /* AAAA: relay row               */
-    }
-
-    if (!AGC_ASSERT(v <= SIM_WORD_MASK))
-    {
-        return;
     }
 }
 
@@ -174,11 +155,6 @@ void sim_channels_send_all(void)
             sim_socket_send(c, v);
         }
     }
-
-    if (!AGC_ASSERT(g_relay[0] == 0u || g_relay[0] <= SIM_WORD_MASK))
-    {
-        return;
-    }
 }
 
 /* yaAGC UpdateDSKY: the fictitious lamp channel 0163.                   */
@@ -202,16 +178,13 @@ static void dsky_lamps(uint32_t cs)
     }
 
     send_if_changed(SIM_CH_DSKY_LAMPS, v);
-
-    if (!AGC_ASSERT((v & LAMP_AGC_WARN) == 0u))
-    {
-        return;
-    }
 }
 
 /* yaAGC BurstOutput: CDUXCMD..CDUZCMD while channel 14 drives the axis. */
-static void cdu_drive(uint16_t c14)
+static agc_status_t cdu_drive(uint16_t c14)
 {
+    agc_status_t st = AGC_STATUS_OK; /* first refused counter write */
+
     for (int axis = 0; axis < 3; axis++)
     {
         agc_sp_t cmd = agc_imu_cducmd(axis);
@@ -226,13 +199,12 @@ static void cdu_drive(uint16_t c14)
         int32_t left = (cmd < 0) ? -(mag - part) : (mag - part);
 
         sim_socket_send((uint16_t) (SIM_CH_CDUX_DRV + (uint16_t) axis), (uint16_t) (((cmd < 0) ? SIGN15 : 0u) | (uint16_t) part));
-        agc_status_t st = agc_imu_hw_set_cducmd(axis, (agc_sp_t) left);
+        agc_status_t s = agc_imu_hw_set_cducmd(axis, (agc_sp_t) left);
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
-        {
-            return;
-        }
+        st = (st == AGC_STATUS_OK) ? s : st; /* keep the first failure */
     }
+
+    return (st);
 }
 
 /* Gyro torquing: GYROCMD is emptied while channel 14 bit 10 is set.     */
@@ -240,26 +212,19 @@ static void gyro_drive(uint16_t c14)
 {
     uint16_t left = agc_imu_gyrocmd();
 
-    if ((c14 & CH14_GYRO_ACT) == 0u || left == 0u)
+    if (!((c14 & CH14_GYRO_ACT) == 0u || left == 0u))
     {
-        return;
-    }
+        uint16_t sel = (uint16_t) ((c14 & CH14_GYRO_BITS) << 6);
 
-    uint16_t sel = (uint16_t) ((c14 & CH14_GYRO_BITS) << 6);
+        for (int i = 0; i < GYRO_PACKETS && left > 0u; i++)
+        {
+            uint16_t part = (left > GYRO_BURST) ? (uint16_t) GYRO_BURST : left;
 
-    for (int i = 0; i < GYRO_PACKETS && left > 0u; i++)
-    {
-        uint16_t part = (left > GYRO_BURST) ? (uint16_t) GYRO_BURST : left;
+            sim_socket_send(SIM_CH_GYRO, (uint16_t) (sel | part));
+            left = (uint16_t) (left - part);
+        }
 
-        sim_socket_send(SIM_CH_GYRO, (uint16_t) (sel | part));
-        left = (uint16_t) (left - part);
-    }
-
-    agc_imu_hw_set_gyrocmd(0);
-
-    if (!AGC_ASSERT(left == 0u))
-    {
-        return;
+        agc_imu_hw_set_gyrocmd(0);
     }
 }
 
@@ -283,21 +248,11 @@ static void optics_drive(uint16_t c14)
         sim_socket_send(chan[which], word);
         agc_erase_set_cdutcmd(which, 0);
     }
-
-    if (!AGC_ASSERT(c14 <= SIM_WORD_MASK))
-    {
-        return;
-    }
 }
 
 /* A ones'-complement 15-bit word as a signed SP value (-0 -> 0).       */
 static agc_sp_t sp_of_word(uint16_t w)
 {
-    if (!AGC_ASSERT(w <= SIM_WORD_MASK))
-    {
-        return (0);
-    }
-
     agc_sp_t v = ((w & SIGN15) != 0u) ? (agc_sp_t) -(int32_t) ((uint16_t) ~w & 037777u) : (agc_sp_t) w;
 
     return (v);
@@ -309,53 +264,41 @@ static void rhc_latch(void)
 {
     uint16_t c13 = agc_chan_read((int) AGC_CHAN_CHAN13);
 
-    if ((c13 & CH13_RHC_READ) != CH13_RHC_READ || agc_state_vehicle() != AGC_VEHICLE_LM)
+    if (!((c13 & CH13_RHC_READ) != CH13_RHC_READ || agc_state_vehicle() != AGC_VEHICLE_LM))
     {
-        return;
+        agc_sp_t q = sp_of_word(g_rhc[0]);
+        agc_sp_t p = sp_of_word(g_rhc[1]);
+        agc_sp_t r = sp_of_word(g_rhc[2]);
+
+        agc_erase_set_q_rhcctr(q); /* pitch */
+        agc_erase_set_p_rhcctr(p); /* yaw, as yaAGC stores it at 043 */
+        agc_erase_set_r_rhcctr(r);
     }
-
-    agc_sp_t q = sp_of_word(g_rhc[0]);
-    agc_sp_t p = sp_of_word(g_rhc[1]);
-    agc_sp_t r = sp_of_word(g_rhc[2]);
-
-    agc_erase_set_q_rhcctr(q); /* pitch */
-    agc_erase_set_p_rhcctr(p); /* yaw, as yaAGC stores it at 043 */
-    agc_erase_set_r_rhcctr(r);
 }
 
-void sim_channels_tick(uint32_t cs)
+agc_status_t sim_channels_tick(uint32_t cs)
 {
     uint16_t c14 = agc_chan_read((int) AGC_CHAN_CHAN14);
 
     dsky_lamps(cs);
-    cdu_drive(c14);
+    agc_status_t st = cdu_drive(c14);
+
     gyro_drive(c14);
     optics_drive(c14);
     rhc_latch();
 
-    if (!AGC_ASSERT(c14 <= SIM_WORD_MASK))
-    {
-        return;
-    }
+    return (st);
 }
 
-/* Store an input channel through the client's mask (ChannelInput).      */
-static void input_channel(uint16_t chan, uint16_t value, uint16_t mask)
+/* Store an input channel through the client's mask (ChannelInput); false
+ * when chan is not an input channel (the packet is ignored, as yaAGC does). */
+static bool input_channel(uint16_t chan, uint16_t value, uint16_t mask)
 {
-    if (!AGC_ASSERT(chan < AGC_CHAN_COUNT))
-    {
-        return;
-    }
-
     uint16_t old = agc_chan_read((int) chan);
     uint16_t v   = (uint16_t) ((value & mask) | (old & (uint16_t) ~mask));
 
-    agc_status_t st = agc_chan_set_input((int) chan, (uint16_t) (v & SIM_WORD_MASK));
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAD_ARG))
-    {
-        return;
-    }
+    return (agc_chan_set_input((int) chan, (uint16_t) (v & SIM_WORD_MASK)) == AGC_STATUS_OK);
 }
 
 /* One inbound packet that is not a mask or a counter (yaAGC
@@ -368,11 +311,6 @@ static void input_channel(uint16_t chan, uint16_t value, uint16_t mask)
  *   0166-0170 RHC angles, kept until channel 13 asks for them.         */
 bool sim_input(uint16_t chan, uint16_t value, uint16_t mask)
 {
-    if (!AGC_ASSERT(value <= SIM_WORD_MASK) || !AGC_ASSERT(chan < CH_SLOTS))
-    {
-        return (false);
-    }
-
     if (chan == SIM_CH_UPLINK)
     {
         agc_erase_set_inlink((uint16_t) (value & mask));
@@ -385,30 +323,29 @@ bool sim_input(uint16_t chan, uint16_t value, uint16_t mask)
     {
         g_rhc[chan - SIM_CH_RHC_PITCH] = (uint16_t) (value & mask);
         sim_socket_send(chan, value); /* yaAGC echoes it */
-
-        return (false);
     }
-
-    if (chan >= AGC_CHAN_COUNT)
+    else
     {
-        return (false);
-    }
+        if (chan < AGC_CHAN_COUNT)
+        {
+            if (input_channel(chan, value, mask)) /* not an input channel: ignored */
+            {
+                if (chan == (uint16_t) AGC_CHAN_MNKEYIN)
+                {
+                    g_restart_light = g_restart_light && ((value & 037u) != KEY_RSET);
+                    sim_irq_request(SIM_IRQ_KEY1);
 
-    input_channel(chan, value, mask);
+                    return (true);
+                }
 
-    if (chan == (uint16_t) AGC_CHAN_MNKEYIN)
-    {
-        g_restart_light = g_restart_light && ((value & 037u) != KEY_RSET);
-        sim_irq_request(SIM_IRQ_KEY1);
+                if (chan == (uint16_t) AGC_CHAN_NAVKEYIN && (value & CH16_KEYS_MARKS) != 0u)
+                {
+                    sim_irq_request(SIM_IRQ_KEY2);
 
-        return (true);
-    }
-
-    if (chan == (uint16_t) AGC_CHAN_NAVKEYIN && (value & CH16_KEYS_MARKS) != 0u)
-    {
-        sim_irq_request(SIM_IRQ_KEY2);
-
-        return (true);
+                    return (true);
+                }
+            }
+        }
     }
 
     return (false);

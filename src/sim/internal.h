@@ -70,11 +70,11 @@ void         sim_socket_ack(uint32_t done);                  /* lockstep: N cs r
 bool         sim_socket_lost_lockstep(void);                 /* stepping client gone  */
 
 /* ---- channels and counters (channels.c, counters.c) ------------------- */
-void         sim_channels_init(void);
+agc_status_t sim_channels_init(void);
 void         sim_channels_sync(void);           /* broadcast changes     */
 void         sim_channels_force(uint16_t chan); /* send even if same     */
 void         sim_channels_send_all(void);       /* connect update        */
-void         sim_channels_tick(uint32_t cs);    /* 0163, drives, RHC     */
+agc_status_t sim_channels_tick(uint32_t cs);    /* 0163, drives, RHC     */
 bool         sim_input(uint16_t chan, uint16_t value, uint16_t mask);
 agc_status_t sim_counter_increment(uint16_t addr, uint16_t type);
 

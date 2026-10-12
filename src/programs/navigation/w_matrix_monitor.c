@@ -219,83 +219,6 @@ agc_status_t agc_job_w_matrix_monitor_display(agc_job_ctx_t *ctx)
 }
 
 /**********************************************************************
- * CM V06N9933 / V6N99INP: option 0 changes nothing; else the pad pair
- * of the option gets the high words of WWPOS, WWVEL.
- * AGC: V06N9933, V6N99INP (P20-P25.agc pp.632-633)
- *
- * FUNCTION NAME: wm_load_csm
- *
- * ARGUMENTS:
- *   Argument  Type                   I/O  Description (scale)
- *   --------  ---------------------  ---  -------------------------
- *   rz        const agc_rendz_t *    I    rendezvous erasables
- *   p         agc_rendz_nav_pad_t *  O    the pad pair of the option
- **********************************************************************/
-static void wm_load_csm(const agc_rendz_t *rz, agc_rendz_nav_pad_t *p)
-{
-    agc_sp_t opt = agc_dp_high(rz->rtheta); /* WWOPT, unscaled */
-    agc_sp_t x1  = agc_dp_high(rz->range);  /* LXA,1, pad scale */
-    agc_sp_t x2  = agc_dp_high(rz->rrate);  /* LXA,2, pad scale */
-
-    if (opt == WM_DEC2)
-    { /* V67WORB  */
-        p->worbpos = x1;
-        p->worbvel = x2;
-    }
-    else if (opt > WM_DEC2)
-    { /* V67WMID  */
-        p->wmidpos = x1;
-        p->wmidvel = x2;
-    }
-    else
-    {
-        p->wrendpos = x1;
-        p->wrendvel = x2;
-    }
-
-    rz_flag_put(AGC_FLAG_ORBWFLAG, false); /* V67EXITX */
-}
-
-/**********************************************************************
- * LM V06N9933: WWPOS SL5 and WWVEL to WRENDPOS/WRENDVEL (WSURF.. on the
- * surface), WWBIAS SL10 to WTRUN and WSHAFT.
- * AGC: Luminary099 V06N9933 (P20-P25.agc p.609)
- *
- * FUNCTION NAME: wm_load_lm
- *
- * ARGUMENTS:
- *   Argument  Type                   I/O  Description (scale)
- *   --------  ---------------------  ---  -------------------------
- *   ip        agc_interp_t *         I/O  interpreter state (OVFIND)
- *   rz        const agc_rendz_t *    I    rendezvous erasables
- *   p         agc_rendz_nav_pad_t *  O    WREND / WSURF pair, WTRUN, WSHAFT
- **********************************************************************/
-static void wm_load_lm(agc_interp_t *ip, const agc_rendz_t *rz, agc_rendz_nav_pad_t *p)
-{
-    agc_sp_t pos; /* SL5, pad scale */
-
-    pos          = agc_dp_high(agc_dp_shl(ip, agc_dp_shl(ip, rz->range, 4), 1));
-    agc_sp_t vel = agc_dp_high(rz->rrate); /* pad scale */
-    agc_sp_t bias;                         /* SL10, pad scale */
-
-    bias = agc_dp_high(agc_dp_shl(ip, rz->rtheta, 10));
-
-    if (agc_flag_test(AGC_FLAG_SURFFLAG))
-    { /* V67SURF  */
-        p->wsurfpos = pos;
-        p->wsurfvel = vel;
-    }
-    else
-    {
-        p->wrendpos = pos;
-        p->wrendvel = vel;
-    }
-
-    p->wtrun  = bias; /* V67CLRF  */
-    p->wshaft = bias;
-}
-
-/**********************************************************************
  * PROCEED on V06N99: (LM V6N99PRO) any displayed value changed sets
  * V67FLAG; load the pads; W invalid (RENDWFLG off); ENDEXT.
  * AGC: V06N9933, V6N99PRO (P20-P25.agc p.632)
@@ -323,7 +246,40 @@ agc_status_t agc_job_w_matrix_monitor_proceed(void)
             return (agc_dsky_endmark());
         }
 
-        wm_load_csm(rz, p);
+        /**********************************************************************
+         * CM V06N9933 / V6N99INP: option 0 changes nothing; else the pad pair
+         * of the option gets the high words of WWPOS, WWVEL.
+         * AGC: V06N9933, V6N99INP (P20-P25.agc pp.632-633)
+         *
+         * FUNCTION NAME: wm_load_csm
+         *
+         * ARGUMENTS:
+         *   Argument  Type                   I/O  Description (scale)
+         *   --------  ---------------------  ---  -------------------------
+         *   rz        const agc_rendz_t *    I    rendezvous erasables
+         *   p         agc_rendz_nav_pad_t *  O    the pad pair of the option
+         **********************************************************************/
+        agc_sp_t opt = agc_dp_high(rz->rtheta); /* WWOPT, unscaled */
+        agc_sp_t x1  = agc_dp_high(rz->range);  /* LXA,1, pad scale */
+        agc_sp_t x2  = agc_dp_high(rz->rrate);  /* LXA,2, pad scale */
+
+        if (opt == WM_DEC2)
+        { /* V67WORB  */
+            p->worbpos = x1;
+            p->worbvel = x2;
+        }
+        else if (opt > WM_DEC2)
+        { /* V67WMID  */
+            p->wmidpos = x1;
+            p->wmidvel = x2;
+        }
+        else
+        {
+            p->wrendpos = x1;
+            p->wrendvel = x2;
+        }
+
+        rz_flag_put(AGC_FLAG_ORBWFLAG, false); /* V67EXITX */
     }
     else
     {
@@ -337,7 +293,41 @@ agc_status_t agc_job_w_matrix_monitor_proceed(void)
             return (agc_dsky_endmark());
         }
 
-        wm_load_lm(&ip, rz, p);
+        /**********************************************************************
+         * LM V06N9933: WWPOS SL5 and WWVEL to WRENDPOS/WRENDVEL (WSURF.. on the
+         * surface), WWBIAS SL10 to WTRUN and WSHAFT.
+         * AGC: Luminary099 V06N9933 (P20-P25.agc p.609)
+         *
+         * FUNCTION NAME: wm_load_lm
+         *
+         * ARGUMENTS:
+         *   Argument  Type                   I/O  Description (scale)
+         *   --------  ---------------------  ---  -------------------------
+         *   ip        agc_interp_t *         I/O  interpreter state (OVFIND)
+         *   rz        const agc_rendz_t *    I    rendezvous erasables
+         *   p         agc_rendz_nav_pad_t *  O    WREND / WSURF pair, WTRUN, WSHAFT
+         **********************************************************************/
+        agc_sp_t pos; /* SL5, pad scale */
+
+        pos          = agc_dp_high(agc_dp_shl(&ip, agc_dp_shl(&ip, rz->range, 4), 1));
+        agc_sp_t vel = agc_dp_high(rz->rrate); /* pad scale */
+        agc_sp_t bias;                         /* SL10, pad scale */
+
+        bias = agc_dp_high(agc_dp_shl(&ip, rz->rtheta, 10));
+
+        if (agc_flag_test(AGC_FLAG_SURFFLAG))
+        { /* V67SURF  */
+            p->wsurfpos = pos;
+            p->wsurfvel = vel;
+        }
+        else
+        {
+            p->wrendpos = pos;
+            p->wrendvel = vel;
+        }
+
+        p->wtrun  = bias; /* V67CLRF  */
+        p->wshaft = bias;
     }
 
     rz_flag_put(AGC_FLAG_RENDWFLG, false);

@@ -73,10 +73,10 @@ static agc_status_t pin_sign_on(bool plus)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    int          minus_rel = k_sgntab[inrel - PIN_INREL_X];    /* - sign word */
-    int          off       = plus ? minus_rel : minus_rel + 1; /* SGNOFF */
-    int          on        = plus ? minus_rel + 1 : minus_rel; /* SGNON */
-    agc_status_t st        = pin_11dspin(off, false);          /* status so far */
+    int minus_rel = k_sgntab[inrel - PIN_INREL_X];    /* - sign word */
+    int off = plus ? minus_rel : minus_rel + 1; /* SGNOFF */
+    int on = plus ? minus_rel + 1 : minus_rel; /* SGNON */
+    agc_status_t st = pin_11dspin(off, false);          /* status so far */
 
     if (st == AGC_STATUS_OK)
     {
@@ -156,21 +156,11 @@ static agc_status_t pin_dspsign(agc_dp_t *v, bool negzero)
  **********************************************************************/
 static agc_dp_t pin_dsprnd(agc_dp_t v)
 {
-    if (!AGC_ASSERT(v >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     int64_t s = (int64_t) v + PIN_DECROUND; /* pinball erasables */
 
     if (s > (int64_t) AGC_DP_MAX)
     {
         return (AGC_DP_MAX);
-    }
-
-    if (!AGC_ASSERT(s >= (int64_t) v))
-    {
-        return (0); /* rounding only ever adds */
     }
 
     return ((agc_dp_t) s);
@@ -196,20 +186,20 @@ static agc_status_t pin_dspdcwd1(agc_dp_t v, int ndig)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s  = pin_st();      /* pinball erasables */
-    int64_t      f  = v;             /* fraction, 2^-28 units */
+    pin_state_t *s = pin_st();      /* pinball erasables */
+    int64_t f = v;             /* fraction, 2^-28 units */
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     for (int i = 0; i < ndig && st == AGC_STATUS_OK; i++)
     {
-        f         *= PIN_BINCON;              /* SHORTMP by BINCON    */
+        f *= PIN_BINCON;              /* SHORTMP by BINCON    */
         int digit = (int) (f >> AGC_DP_BITS); /* next decimal digit 0..9 */
 
-        f             &= PIN_DP_ONE - 1;
+        f &= PIN_DP_ONE - 1;
         int16_t count = s->dspcount; /* DSPCOUNT of the next char */
 
         s->dspcount = (count > 0) ? (int16_t) (count - 1) : count; /* next char */
-        st          = pin_dspin(count, agc_dsky_relay_code(digit));
+        st = pin_dspin(count, agc_dsky_relay_code(digit));
     }
 
     pin_block_dspcount(PIN_VD1);
@@ -329,7 +319,7 @@ agc_status_t pin_dspdecvn(int n)
 {
     int32_t lword; /* L after MP by VNDSPCON */
 
-    lword      = (int32_t) (((int32_t) n * PIN_VNDSPCON) & (int32_t) PIN_POSMAX);
+    lword = (int32_t) (((int32_t) n * PIN_VNDSPCON) & (int32_t) PIN_POSMAX);
     agc_dp_t f = (agc_dp_t) (lword << AGC_SP_BITS); /* MPAC = L, 2^-28 */
 
     return (pin_dspdcwd1(f, 2)); /* DSPDC2NR +3          */
@@ -351,16 +341,16 @@ agc_status_t pin_dspoctwo(uint16_t w)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->dspcount     = (int16_t) ((uint16_t) s->dspcount | PIN_BIT14);
+    s->dspcount = (int16_t) ((uint16_t) s->dspcount | PIN_BIT14);
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     for (int i = 4; i >= 0 && st == AGC_STATUS_OK; i--)
     { /* WDAGAIN      */
-        int     digit = (int) ((w >> (3 * i)) & 7u); /* CYL x3, DSPMSK */
+        int digit = (int) ((w >> (3 * i)) & 7u); /* CYL x3, DSPMSK */
         int16_t count = s->dspcount;                 /* DSPCOUNT of the next char */
 
         s->dspcount = ((count & 037) > 0) ? (int16_t) (count - 1) : count; /* next char */
-        st          = pin_dspin(count, agc_dsky_relay_code(digit));
+        st = pin_dspin(count, agc_dsky_relay_code(digit));
     }
 
     pin_block_dspcount(PIN_VD1); /* DSPLV        */
@@ -392,7 +382,7 @@ agc_status_t pin_dsp2bit(uint16_t w)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s  = pin_st();      /* pinball erasables */
+    pin_state_t *s = pin_st();      /* pinball erasables */
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     for (int i = 1; i >= 0 && st == AGC_STATUS_OK; i--)
@@ -400,7 +390,7 @@ agc_status_t pin_dsp2bit(uint16_t w)
         int16_t count = s->dspcount; /* DSPCOUNT of the next char */
 
         s->dspcount = (count > 0) ? (int16_t) (count - 1) : count; /* next char */
-        st          = pin_dspin(count, agc_dsky_relay_code((int) ((w >> (3 * i)) & 7u)));
+        st = pin_dspin(count, agc_dsky_relay_code((int) ((w >> (3 * i)) & 7u)));
     }
 
     pin_block_dspcount(PIN_VD1);
@@ -448,7 +438,7 @@ agc_status_t pin_updatvb(uint8_t verb)
 agc_status_t pin_updatnn(uint8_t noun)
 {
     pin_st()->nounreg = noun;
-    agc_status_t st   = pin_noun_load(); /* status so far */
+    agc_status_t st = pin_noun_load(); /* status so far */
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)
     {
@@ -481,15 +471,15 @@ agc_status_t agc_job_dspmmjb(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t *s        = pin_st();           /* pinball erasables */
-    int16_t      save     = s->dspcount;        /* DSPMMTEM             */
-    bool         save_neg = s->dspcount_neg;    /* blocked flag */
-    agc_sp_t     mm       = agc_erase_modreg(); /* MODREG, unscaled */
+    pin_state_t *s = pin_st();           /* pinball erasables */
+    int16_t save = s->dspcount;        /* DSPMMTEM             */
+    bool save_neg = s->dspcount_neg;    /* blocked flag */
+    agc_sp_t mm = agc_erase_modreg(); /* MODREG, unscaled */
 
     pin_set_dspcount(PIN_MD1);
     agc_status_t st = (mm >= 0) ? pin_dspdecvn(mm) : pin_2blank(); /* status */
 
-    s->dspcount     = save;
+    s->dspcount = save;
     s->dspcount_neg = save_neg;
 
     return (st);

@@ -56,11 +56,6 @@ const ign_table_t *ign_table(void)
 {
     agc_sp_t w = agc_guid_state()->lm.which;
 
-    if (!AGC_ASSERT(w >= 0 && w < (agc_sp_t) AGC_LM_WHICH_COUNT))
-    {
-        return (&IGN_TABLES[AGC_LM_WHICH_DPS_BURN]);
-    }
-
     return (&IGN_TABLES[w]);
 }
 
@@ -68,22 +63,12 @@ const ign_table_t *ign_table(void)
  * Called in a task or under INHINT.                                        */
 void agc_lm_noullage(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return;
-    }
-
     _Static_assert(AGC_FLAG_ULLAGFLG != AGC_FLAG_DRIFTDFL, "AGC constant");
     agc_flag_clear(AGC_FLAG_ULLAGFLG);
 }
 
 void agc_lm_onullage(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return;
-    }
-
     agc_flag_set(AGC_FLAG_ULLAGFLG);
 }
 
@@ -231,7 +216,7 @@ agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
         return (sw);
     }
 
-    agc_phase_change(4, (uint16_t) 020254); /* 4.25SPOT               */
+    agc_phase_change((uint16_t)020254); /* 4.25SPOT               */
 
     if (agc_phase_checkmm(63))
     { /* P63 DISPLAYS NOW       */
@@ -255,7 +240,7 @@ agc_status_t agc_task_tig_35(void)
         return (sw);
     }
 
-    agc_phase_change(4, (uint16_t) 040154); /* 4.15SPOT               */
+    agc_phase_change((uint16_t)040154); /* 4.15SPOT               */
     lm->dispdex = (agc_sp_t) -IGN_BLANKDEX;
 
     if (ign_table()->ullage_cs >= 0)
@@ -382,7 +367,7 @@ agc_status_t agc_task_ullgtask(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_change(1, (uint16_t) 000001);
+    agc_phase_change((uint16_t)000001);
 
     return (AGC_STATUS_OK);
 }
@@ -414,7 +399,7 @@ agc_status_t agc_task_tig_5_lm(void)
             return (st);
         }
 
-        agc_phase_change(3, (uint16_t) 000053); /* 3.5SPOT FOR S40.13     */
+        agc_phase_change((uint16_t)000053); /* 3.5SPOT FOR S40.13     */
     }
 
     if (t->tig5 != IGN_TIG5_COMMON)
@@ -422,7 +407,7 @@ agc_status_t agc_task_tig_5_lm(void)
         agc_guid_state()->lm.dispdex = (agc_sp_t) -IGN_VB99DEX; /* DISPCHNG    */
     }
 
-    agc_phase_change(4, (uint16_t) 040074);
+    agc_phase_change((uint16_t)040074);
 
     return (AGC_STATUS_OK); /* 4.7SPOT                */
 }
@@ -486,32 +471,6 @@ agc_status_t agc_task_tig_0_lm(void)
     return (agc_task_ignition_if_enabled());
 }
 
-/* P63IGN (p.739): burn displays (AVEGEXIT = P63DISPS -2), CLOKTASK killed,
- * LETABORT (P70/P71 allowed), SWANDISP (R10 on), DAP out of minimum-impulse
- * mode (in case of P66), TIG = TIME for P70/P71, WCHPHASE = WCHPHOLD = 0,
- * FLPASS0 = 2.                                                            */
-static void braking_phase_ignition(void)
-{
-    agc_guid_t *g = agc_guid_state();
-
-    g->avg.avgexit    = AGC_JOB_BRAKING_PHASE_DISPLAY; /* DSP2CADR               */
-    g->lm.dispdex     = IGN_DISPDEX_KILL;              /* ASSASSINATE CLOKTASK   */
-    agc_flag_set(AGC_FLAG_LETABORT);
-    agc_flag_set(AGC_FLAG_SWANDISP);
-    agc_flag_clear(AGC_FLAG_PULSEFLG);
-    agc_erase_set_tig((agc_dp_t) agc_time_now_cs());   /* TIG FOR P70 AND P71    */
-    agc_lm_ldg_t *ldg = agc_lm_ldg();
-
-    ldg->wchphase = 0;
-    ldg->wchphold = 0;
-    ldg->flpass0  = 2;
-
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_LETABORT)))
-    {
-        return;
-    }
-}
-
 /* P12IGN (p.740): DAP bias acceleration estimates AOSQ, AOSR = the pad
  * loads IGNAOSQ, IGNAOSR (upper words only: CA / TS), then ABRTIGN.
  * ABRTIGN: CLOKTASK killed, AVEGEXIT = ATMAG (ascent guidance), R10 on.  */
@@ -528,42 +487,6 @@ static void ascent_ignition(bool load_bias)
     g->lm.dispdex  = IGN_DISPDEX_KILL; /* ABRTIGN: KILL CLOKTASK */
     g->avg.avgexit = AGC_JOB_ATMAG;    /* ATMAGADR               */
     agc_flag_set(AGC_FLAG_SWANDISP);   /* ENABLE R10             */
-
-    if (!AGC_ASSERT(g->lm.dispdex > 0))
-    {
-        return;
-    }
-}
-
-/* P40IGN (p.739-740): unless NOTHROTL, throttle-up (P40ZOOM) ZOOMTIME
- * after ignition; P63IGN1: 3.3 for the ZOOM restart and 4.1 type C,
- * immediate, at P42IGN.                                                   */
-static agc_status_t dps_ignition(void)
-{
-    if (agc_flag_test(AGC_FLAG_NOTHROTL))
-    {
-        return (agc_task_ignition_finish());
-    }
-
-    agc_sp_t zoom = agc_erase_zoomtime();
-
-    if (!AGC_ASSERT(zoom > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_status_t st = agc_waitlist_call((uint16_t) zoom, AGC_TASK_DPS_BURN_ZOOM);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IGNITION_FINISH, 0, true, 0U };
-
-    agc_phase_change2((uint16_t) 040033, (uint16_t) 005014, &v);
-
-    return (agc_task_ignition_finish());
 }
 
 /* INDEX WHICH / TCF 13 (p.739): the program-specific part of IGNITION.   */
@@ -572,11 +495,57 @@ static agc_status_t ignition_by_program(ign_kind_t kind)
     switch (kind)
     {
         case IGN_KIND_BRAKING:
-            braking_phase_ignition();
+            /* P63IGN (p.739): burn displays (AVEGEXIT = P63DISPS -2), CLOKTASK killed,
+             * LETABORT (P70/P71 allowed), SWANDISP (R10 on), DAP out of minimum-impulse
+             * mode (in case of P66), TIG = TIME for P70/P71, WCHPHASE = WCHPHOLD = 0,
+             * FLPASS0 = 2.                                                            */
+            {
+                agc_guid_t *g = agc_guid_state();
+
+                g->avg.avgexit    = AGC_JOB_BRAKING_PHASE_DISPLAY; /* DSP2CADR               */
+                g->lm.dispdex     = IGN_DISPDEX_KILL;              /* ASSASSINATE CLOKTASK   */
+                agc_flag_set(AGC_FLAG_LETABORT);
+                agc_flag_set(AGC_FLAG_SWANDISP);
+                agc_flag_clear(AGC_FLAG_PULSEFLG);
+                agc_erase_set_tig((agc_dp_t) agc_time_now_cs());   /* TIG FOR P70 AND P71    */
+                agc_lm_ldg_t *ldg = agc_lm_ldg();
+
+                ldg->wchphase = 0;
+                ldg->wchphold = 0;
+                ldg->flpass0  = 2;
+            }
 
             return (agc_task_ignition_finish());
         case IGN_KIND_DPS:
-            return (dps_ignition());
+            /* P40IGN (p.739-740): unless NOTHROTL, throttle-up (P40ZOOM) ZOOMTIME
+             * after ignition; P63IGN1: 3.3 for the ZOOM restart and 4.1 type C,
+             * immediate, at P42IGN.                                                   */
+            {
+                if (agc_flag_test(AGC_FLAG_NOTHROTL))
+                {
+                    return (agc_task_ignition_finish());
+                }
+
+                agc_sp_t zoom = agc_erase_zoomtime();
+
+                if (!AGC_ASSERT(zoom > 0))
+                {
+                    return (AGC_STATUS_BAD_ARG);
+                }
+
+                agc_status_t st = agc_waitlist_call((uint16_t) zoom, AGC_TASK_DPS_BURN_ZOOM);
+
+                if (st != AGC_STATUS_OK)
+                {
+                    return (st);
+                }
+
+                agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IGNITION_FINISH, 0, true, 0U };
+
+                agc_phase_change2((uint16_t) 040033, (uint16_t) 005014, &v);
+
+                return (agc_task_ignition_finish());
+            }
         case IGN_KIND_ASCENT:
             ascent_ignition(true);
 
@@ -634,10 +603,10 @@ agc_status_t agc_task_ignition_finish(void)
         return (agc_task_implburn_lm());
     }
 
-    agc_flag_clear(AGC_FLAG_IGNFLAG);       /* CONNECT DVMON          */
+    agc_flag_clear(AGC_FLAG_IGNFLAG);   /* CONNECT DVMON          */
     agc_flag_clear(AGC_FLAG_ASTNFLAG);
     agc_flag_clear(AGC_FLAG_IDLEFLAG);
-    agc_phase_change(4, (uint16_t) 040054); /* 4.5SPOT                */
+    agc_phase_change((uint16_t)040054); /* 4.5SPOT                */
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_IDLEFLAG)))
     {
@@ -677,7 +646,7 @@ agc_status_t agc_task_tigtask(void)
         return (st);
     }
 
-    agc_phase_change(6, (uint16_t) 000006);
+    agc_phase_change((uint16_t)000006);
 
     return (AGC_STATUS_OK); /* KILL GROUP 6           */
 }
@@ -726,7 +695,7 @@ agc_status_t agc_task_zoom(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_change(3, (uint16_t) 000003);
+    agc_phase_change((uint16_t)000003);
 
     return (AGC_STATUS_OK);
 }

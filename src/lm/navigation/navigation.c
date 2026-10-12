@@ -191,11 +191,6 @@ bool lmnav_range_ok(void)
 {
     agc_dp_t m = rr_state()->mlosv; /* MLOSV, m 2^20 */
 
-    if (!AGC_ASSERT(m >= 0))
-    {
-        return (false);
-    }
-
     return (m < NAV_FHNM);
 }
 
@@ -224,22 +219,20 @@ static agc_status_t nav_uppsv_one(agc_interp_t *ip, bool csm, bool with_w, agc_d
 {
     agc_status_t st = agc_integ_install(0, resume); /* INTSTALL */
 
-    if (st != AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK)
     {
-        return (st);
+        agc_integ_setiflgs();
+
+        if (with_w)
+        {
+            rz_flag_put(AGC_FLAG_DIM0FLAG, true);
+            rz_flag_put(AGC_FLAG_D6OR9FLG, !agc_flag_test(AGC_FLAG_SURFFLAG));
+        }
+
+        rz_flag_put(AGC_FLAG_VINTFLAG, csm);
+        st = agc_integ_integrv(ip, agc_integ_shared_ctx(), tdec1);
+        agc_phase_change(04022); /* GRP2PC   */
     }
-
-    agc_integ_setiflgs();
-
-    if (with_w)
-    {
-        rz_flag_put(AGC_FLAG_DIM0FLAG, true);
-        rz_flag_put(AGC_FLAG_D6OR9FLG, !agc_flag_test(AGC_FLAG_SURFFLAG));
-    }
-
-    rz_flag_put(AGC_FLAG_VINTFLAG, csm);
-    st = agc_integ_integrv(ip, agc_integ_shared_ctx(), tdec1);
-    agc_phase_change(2, 04022); /* GRP2PC   */
 
     return (st);
 }
@@ -268,25 +261,21 @@ static agc_status_t nav_uppsv(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t res
     bool         first = !w || csm;                                  /* UPPSV1: the CSM first */
     agc_status_t st    = nav_uppsv_one(ip, first, w, tdec1, resume); /* 1st */
 
-    if (st != AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK)
     {
-        return (st);
+        agc_dp_t t2 = first ? agc_erase_tetcsm() : agc_erase_tetlem(); /* cs 2^28 */
+
+        st = nav_uppsv_one(ip, !first, false, t2, resume); /* UPPSV4  */
+
+        if (!(st != AGC_STATUS_OK || !agc_flag_test(AGC_FLAG_SURFFLAG)))
+        {
+            agc_integ_sv_t sv; /* LM permanent state */
+
+            st          = agc_integ_perm_get(AGC_VEHICLE_LM, &sv);
+            lmnav.lmpos = agc_vec_shr(sv.rcv, 2); /* VSR2     */
+            lmnav.lmvel = agc_vec_shr(sv.vcv, 2);
+        }
     }
-
-    agc_dp_t t2 = first ? agc_erase_tetcsm() : agc_erase_tetlem(); /* cs 2^28 */
-
-    st = nav_uppsv_one(ip, !first, false, t2, resume); /* UPPSV4  */
-
-    if (st != AGC_STATUS_OK || !agc_flag_test(AGC_FLAG_SURFFLAG))
-    {
-        return (st);
-    }
-
-    agc_integ_sv_t sv; /* LM permanent state */
-
-    st          = agc_integ_perm_get(AGC_VEHICLE_LM, &sv);
-    lmnav.lmpos = agc_vec_shr(sv.rcv, 2); /* VSR2     */
-    lmnav.lmvel = agc_vec_shr(sv.vcv, 2);
 
     return (st);
 }
@@ -441,7 +430,7 @@ static agc_status_t nav_orbit_states(agc_interp_t *ip, agc_vec_t *rsubl, agc_vec
     rz_flag_put(AGC_FLAG_DIM0FLAG, false);
     rz_flag_put(AGC_FLAG_D6OR9FLG, false);
     st           = agc_integ_integrv(ip, ctx, lmnav.lnchtm); /* INTEGRV  */
-    agc_phase_change(2, 04022);                              /* GRP2PC   */
+    agc_phase_change(04022);                                 /* GRP2PC   */
 
     if (st == AGC_STATUS_OK)
     {
@@ -449,27 +438,25 @@ static agc_status_t nav_orbit_states(agc_interp_t *ip, agc_vec_t *rsubl, agc_vec
         st     = agc_integ_install(0, AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE);
     }
 
-    if (st != AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK)
     {
-        return (st);
+        agc_dp_t tat = ctx->out.tat;                     /* TAT, cs 2^28 */
+        bool     w   = agc_flag_test(AGC_FLAG_RENDWFLG); /* W valid */
+
+        rz_flag_put(AGC_FLAG_VINTFLAG, true); /* CSM      */
+        rz_flag_put(AGC_FLAG_INTYPFLG, false);
+        rz_flag_put(AGC_FLAG_DIM0FLAG, w);
+
+        if (w)
+        {
+            rz_flag_put(AGC_FLAG_D6OR9FLG, true);
+        }
+
+        st     = agc_integ_integrv(ip, ctx, tat); /* NOWMATX  */
+        agc_phase_change(04022);
+        *vsubc = ctx->out.vatt1;
+        *rsubc = ctx->out.ratt1;
     }
-
-    agc_dp_t tat = ctx->out.tat;                     /* TAT, cs 2^28 */
-    bool     w   = agc_flag_test(AGC_FLAG_RENDWFLG); /* W valid */
-
-    rz_flag_put(AGC_FLAG_VINTFLAG, true); /* CSM      */
-    rz_flag_put(AGC_FLAG_INTYPFLG, false);
-    rz_flag_put(AGC_FLAG_DIM0FLAG, w);
-
-    if (w)
-    {
-        rz_flag_put(AGC_FLAG_D6OR9FLG, true);
-    }
-
-    st     = agc_integ_integrv(ip, ctx, tat); /* NOWMATX  */
-    agc_phase_change(2, 04022);
-    *vsubc = ctx->out.vatt1;
-    *rsubc = ctx->out.ratt1;
 
     return (st);
 } /* nav_orbit_states */
@@ -535,7 +522,7 @@ static agc_status_t nav_orbit_change(agc_interp_t *ip)
 
     ncsmvel = agc_vec_shl(ip, agc_vec_scale(ip, dir, agc_vec_abval(ip, newvel)), 1);
 
-    agc_phase_change(2, 04022); /* GRP2PC   */
+    agc_phase_change(04022); /* GRP2PC   */
     st = agc_integ_install(0, AGC_JOB_RENDEZVOUS_NAVIGATION_ORBIT_CHANGE);
 
     if (st != AGC_STATUS_OK)
@@ -648,7 +635,7 @@ agc_status_t agc_job_rendezvous_navigation_start(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_range_check(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     agc_erase_set_trkmkcnt(0); /* MARKCTR  */
     agc_interp_t ip;           /* interpreter state */
 
@@ -728,7 +715,7 @@ agc_status_t agc_job_rendezvous_navigation_terminate(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_attitude(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
@@ -899,7 +886,7 @@ agc_status_t agc_job_rendezvous_navigation_update_states(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_designate(void)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     if (!agc_flag_test(AGC_FLAG_RNDVZFLG))
     {
@@ -936,7 +923,7 @@ agc_status_t lmnav_wait(uint16_t delay_cs)
 
     if (st == AGC_STATUS_OK && agc_flag_test(AGC_FLAG_TRACKFLG))
     {
-        agc_phase_change(2, 040072); /* P20LMWT1 */
+        agc_phase_change(040072); /* P20LMWT1 */
     }
 
     return (st); /* ENDOFJOB */
@@ -1043,7 +1030,7 @@ agc_status_t agc_job_preferred_tracking_attitude(void)
  **********************************************************************/
 agc_status_t agc_job_preferred_tracking_attitude_check(void)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
 
     if (!agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE))
     {

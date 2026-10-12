@@ -308,11 +308,6 @@ agc_dp_t agc_erase_rstack(int index)
  **********************************************************************/
 void agc_erase_set_rstack(int index, agc_dp_t v)
 {
-    if (!AGC_ASSERT(index >= 0 && index < RZ_RSTACK_WORDS) || !AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
-    {
-        return;
-    }
-
     rstack[index] = v;
 }
 
@@ -423,11 +418,6 @@ uint16_t *rz_tracking_angles(bool preferred)
 {
     uint16_t *p = trk_angles[preferred ? 1 : 0]; /* PRAXIS / CPHIX */
 
-    if (!AGC_ASSERT(p != NULL))
-    {
-        return (trk_angles[0]);
-    }
-
     return (p);
 }
 
@@ -450,12 +440,6 @@ void agc_rendz_reset(agc_rendz_t *rz)
 
     if (agc_rendz_selectmu(rz, false) != AGC_STATUS_OK)
     {
-        return;
-    }
-
-    if (!AGC_ASSERT(rz->body.rtx1 == -2))
-    {
-        return;
     }
 }
 
@@ -557,11 +541,6 @@ void rz_vflag_set(rz_vflag_t f, bool on)
 {
     agc_flag_id_t id = rz_vflag(f); /* vehicle flag id */
 
-    if (!AGC_ASSERT(id != 0U))
-    {
-        return; /* not a flag of this vehicle */
-    }
-
     rz_flag_put(id, on);
 }
 
@@ -578,11 +557,6 @@ void rz_vflag_set(rz_vflag_t f, bool on)
 bool rz_moonthis(void)
 {
     agc_flag_id_t f = rz_is_csm() ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG; /* MOONTHIS */
-
-    if (!AGC_ASSERT(f != 0U))
-    {
-        return (false);
-    }
 
     return (agc_flag_test(f));
 }
@@ -604,11 +578,6 @@ bool rz_moonthis(void)
  **********************************************************************/
 agc_vec_t rz_unit(agc_interp_t *ip, agc_vec_t v)
 {
-    if (!AGC_ASSERT(v.c[0] != AGC_DP_MIN))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
     return (agc_vec_unit(ip, v, NULL, NULL));
 }
 
@@ -655,11 +624,6 @@ int rz_norm_xreg(agc_dp_t a)
 
     const int n = agc_dp_norm_count(a); /* left shifts */
 
-    if (!AGC_ASSERT(n >= 0 && n <= AGC_DP_BITS))
-    {
-        return (0); /* no shift */
-    }
-
     return (-n);
 }
 
@@ -688,11 +652,6 @@ agc_dp_t rz_norm(agc_dp_t a, int *xreg)
 
     int      n = 0;                  /* left shifts */
     agc_dp_t r = agc_dp_norm(a, &n); /* normalized, 2^(S-N) */
-
-    if (!AGC_ASSERT(n >= 0 && n <= AGC_DP_BITS))
-    {
-        return (a);
-    }
 
     *xreg = -n;
 
@@ -841,16 +800,6 @@ agc_vec_t agc_rendz_vec_to_body(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec
  **********************************************************************/
 agc_vec_t rz_vec_from_body(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t v)
 {
-    if (!AGC_ASSERT(ip != NULL && rz != NULL))
-    {
-        return (v);
-    }
-
-    if (!AGC_ASSERT(rz->body.rtx2 == 0 || rz->body.rtx2 == 2))
-    {
-        return (v);
-    }
-
     return (rz_vshift(ip, v, -(int) rz->body.rtx2));
 }
 
@@ -946,11 +895,6 @@ void rz_avflag(bool this_active)
 
         b->ecsteer = agc_dp_pack((agc_sp_t) 010000, agc_dp_low(b->ecsteer));
     }
-
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_AVFLAG) == lm_active))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -965,16 +909,6 @@ void rz_tracking_flags_on(void)
 {
     agc_flag_set(AGC_FLAG_TRACKFLG);
     agc_flag_set(AGC_FLAG_UPDATFLG);
-
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_UPDATFLG)))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_TRACKFLG)))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -1011,18 +945,8 @@ void rz_store_active(agc_rendz_t *rz, agc_vec_t r, agc_vec_t v)
  **********************************************************************/
 void rz_store_passive(agc_rendz_t *rz, agc_vec_t r, agc_vec_t v)
 {
-    if (!AGC_ASSERT(rz != NULL))
-    {
-        return;
-    }
-
     rz->rpass3 = r; /* PASSIVE: STOVL RPASS3      */
     rz->vpass3 = v; /*          STORE VPASS3      */
-
-    if (!AGC_ASSERT(rz->body.rtx2 >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -1487,7 +1411,7 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc, bool moonthis
     agc_vehicle_t    veh = csm ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM; /* corrected */
     agc_status_t     st  = agc_incorp_update_w(ip, inc, &ctx->w);  /* W update */
 
-    agc_phase_change(2, 04022); /* FAZC     */
+    agc_phase_change(04022); /* FAZC     */
 
     if (st == AGC_STATUS_OK)
     {
@@ -1520,7 +1444,7 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc, bool moonthis
         st = agc_integ_rectify(ip, ctx); /* FAZAB2   */
     }
 
-    agc_phase_change(2, 04022); /* FAZAB3   */
+    agc_phase_change(04022); /* FAZAB3   */
 
     if (st == AGC_STATUS_OK)
     {
@@ -1567,9 +1491,9 @@ void rz_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um, agc_vec_t *usta
     agc_vec_t u    = agc_vec_unit(ip, rclp, &absr, NULL); /* 26D, 2^1 */
 
     inc->bvector[0] = agc_vec_unit(ip, agc_vec_cross(ip, *ustar, u), NULL, NULL);
-    agc_phase_change(2, 04022); /* GRP2PC   */
+    agc_phase_change(04022); /* GRP2PC   */
     *ustar          = inc->bvector[0];
-    agc_dp_t a;                 /* rev 2^0 */
+    agc_dp_t a;              /* rev 2^0 */
 
     a           = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, *ustar, um), 1));
     int      x1 = 0;                                               /* NORM index, -(left shifts) */
@@ -1714,23 +1638,21 @@ agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in, agc_job_i
 {
     agc_status_t st = agc_integ_install(0, resume); /* INTSTALL */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    agc_integ_ctx_t *ctx = agc_integ_shared_ctx(); /* integration erasables */
-
-    rz_flag_put(AGC_FLAG_INTYPFLG, in->conic);
-    rz_flag_put(AGC_FLAG_MOONFLAG, in->moon);
-    ctx->sv.rcv = in->rcv;
-    ctx->sv.vcv = in->vcv;
-    ctx->sv.tet = in->tet;
-    st          = agc_integ_integrvs(ip, ctx, in->tdec1);
-
     if (st == AGC_STATUS_OK)
     {
-        *out = ctx->out;
+        agc_integ_ctx_t *ctx = agc_integ_shared_ctx(); /* integration erasables */
+
+        rz_flag_put(AGC_FLAG_INTYPFLG, in->conic);
+        rz_flag_put(AGC_FLAG_MOONFLAG, in->moon);
+        ctx->sv.rcv = in->rcv;
+        ctx->sv.vcv = in->vcv;
+        ctx->sv.tet = in->tet;
+        st          = agc_integ_integrvs(ip, ctx, in->tdec1);
+
+        if (st == AGC_STATUS_OK)
+        {
+            *out = ctx->out;
+        }
     }
 
     return (st);
@@ -1755,11 +1677,6 @@ agc_status_t rz_integrvs(agc_interp_t *ip, const rz_integrvs_in_t *in, agc_job_i
  **********************************************************************/
 void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job, int16_t prio)
 {
-    if (!AGC_ASSERT(job != AGC_JOB_NONE) || !AGC_ASSERT(prio > 0))
-    {
-        return;
-    }
-
     agc_phase_var_t v; /* restart job */
 
     v.kind       = AGC_RESTART_JOB;

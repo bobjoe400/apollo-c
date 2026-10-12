@@ -381,7 +381,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_alarm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_sighting_mark_verify(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     agc_dsky_cont_t cont; /* astronaut returns */
 
     cont.terminate = AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE;
@@ -779,7 +779,7 @@ agc_status_t agc_job_manual_acquisition_maneuver(void)
  **********************************************************************/
 agc_status_t agc_job_radar_search(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(2, 04022);       /* R21SRCH  */
+    agc_phase_change(04022);          /* R21SRCH  */
     rz_flag_put(AGC_FLAG_SRCHOPTN, true);
     rz_flag_put(AGC_FLAG_LOSCMFLG, false);
     lmnav_state_t *n = lmnav_state(); /* R24LEM1  */
@@ -809,7 +809,7 @@ agc_status_t agc_job_radar_search(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_radar_search_display(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     agc_dsky_cont_t cont; /* astronaut returns */
 
     cont.terminate = AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE;
@@ -869,7 +869,7 @@ agc_status_t agc_job_radar_search_accept(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_radar_search_maneuver(void)
 {
-    agc_phase_change(2, 04022);
+    agc_phase_change(04022);
     agc_inhint();
     agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT); /* CALLDGCH */
     agc_relint();
@@ -921,14 +921,7 @@ agc_status_t agc_job_radar_search_maneuver_done(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_radar_search_resume(agc_job_ctx_t *ctx)
 {
-    agc_status_t st; /* RADCADR */
-
-    st = agc_erase_set_modecadr(AGC_IMU_DEV_RADAR, 0);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_erase_set_modecadr(AGC_IMU_DEV_RADAR, 0); /* RADCADR */
 
     return (agc_job_radar_search_display(ctx));
 }

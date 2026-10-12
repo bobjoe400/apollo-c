@@ -169,11 +169,6 @@ static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
  **********************************************************************/
 static bool beyond(agc_sp_t x, agc_sp_t negdb)
 {
-    if (!AGC_ASSERT(negdb <= 0))
-    {
-        return (false);
-    }
-
     return ((int32_t) lm_dap_ccs_dim(x) + negdb > 0);
 }
 

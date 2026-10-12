@@ -28,10 +28,10 @@ typedef uint16_t agc_alarm_code_t; /* octal alarm code, e.g. 01201          */
 typedef struct agc_job_ctx
 {
     agc_job_id_t id;
-    agc_prio_t   prio;
-    bool         has_vac;
-    int          vac_index; /* -1 when !has_vac                      */
-    agc_sp_t     arg;       /* word passed in A/L on entry, if any   */
+    agc_prio_t prio;
+    bool has_vac;
+    int vac_index; /* -1 when !has_vac                      */
+    agc_sp_t arg;       /* word passed in A/L on entry, if any   */
 } agc_job_ctx_t;
 
 /* Priorities: agc_prio_t = PRIOnn (octal) >> 9, i.e. the "nn" in octal.     */
@@ -63,7 +63,7 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job);                 /* JOBWAKE */
 
 /* JOBWAKE where the caller does not care whether the job is still asleep:
  * the AGC's JOBWAKE2 just "EXIT[S] IF SLEEPING JOB NOT FOUND" (LOCCTR -1). */
-void agc_exec_job_wake_if_asleep(agc_job_id_t job);
+agc_status_t agc_exec_job_wake_if_asleep(agc_job_id_t job);
 
 /* JOBWAKE the job sleeping at `loc`, then INDEX LOCCTR / TS LOC: it
  * resumes at `new_loc` (pinball RECAL2, XCHNYLOC). NOT_FOUND: no job
@@ -105,7 +105,7 @@ agc_status_t agc_abort_restart(void);              /* ABORT                 */
 
 /* Phase table maintenance (PHASE_TABLE_MAINTENANCE.agc pp. 1404-1413).    */
 #define AGC_RESTART_GROUPS 6
-void         agc_phase_change(int group, uint16_t phase_code);            /* PHASCHNG */
+void         agc_phase_change(uint16_t phase_code);                       /* PHASCHNG: GGG in the code */
 agc_status_t agc_phase_new(int group, agc_job_id_t job, agc_prio_t prio); /* NEWPHASE */
 
 /* CS TIME1 / TS TBASEn without a phase change (e.g. TBASE2 for R10,R11). */
@@ -158,14 +158,14 @@ typedef enum agc_core_state
 typedef struct agc_exec_core_info
 {
     agc_core_state_t state;
-    agc_prio_t       prio;      /* priority number (PRIOnn >> 9)            */
-    int              vac_index; /* 0..4, or -1 for a NOVAC job              */
-    agc_job_id_t     loc;       /* LOC: where the job starts / resumes      */
+    agc_prio_t prio;      /* priority number (PRIOnn >> 9)            */
+    int vac_index; /* 0..4, or -1 for a NOVAC job              */
+    agc_job_id_t loc;       /* LOC: where the job starts / resumes      */
 } agc_exec_core_info_t;
 
-int          agc_exec_core_sets(void); /* 7 CSM, 8 LM            */
-agc_status_t agc_exec_core_info(int core_set, agc_exec_core_info_t *out);
-int          agc_exec_newjob(void);    /* NEWJOB: -1 idle (-0), 0 run set 0, k change */
+int  agc_exec_core_sets(void);         /* 7 CSM, 8 LM            */
+void agc_exec_core_info(int core_set, agc_exec_core_info_t *out);
+int  agc_exec_newjob(void);            /* NEWJOB: -1 idle (-0), 0 run set 0, k change */
 
 /* Job/task dispatch (src/exec/dispatch.c, the one switch each).          */
 agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx);
@@ -198,11 +198,11 @@ typedef enum agc_restart_kind
 typedef struct agc_phase_var
 {
     agc_restart_kind_t kind;
-    agc_job_id_t       job;        /* kind == JOB                              */
-    agc_task_id_t      task;       /* kind == TASK or LONGCALL                 */
-    int16_t            prio_or_dt; /* D bit set: job +prio FINDVAC / -prio NOVAC (priority number); task delta time cs */
-    bool               immediate;  /* task: PHSPRDT = -0, restart immediately  */
-    uint32_t           long_dt_cs; /* longcall: DP delta time, cs              */
+    agc_job_id_t job;        /* kind == JOB                              */
+    agc_task_id_t task;       /* kind == TASK or LONGCALL                 */
+    int16_t prio_or_dt; /* D bit set: job +prio FINDVAC / -prio NOVAC (priority number); task delta time cs */
+    bool immediate;  /* task: PHSPRDT = -0, restart immediately  */
+    uint32_t long_dt_cs; /* longcall: DP delta time, cs              */
 } agc_phase_var_t;
 
 void         agc_phase_change_var(uint16_t code, const agc_phase_var_t *v);                 /* PHASCHNG type B/C */
@@ -273,29 +273,29 @@ void         agc_exec_varalarm(agc_alarm_code_t code); /* VARALARM      */
 void         agc_phase_kill(int group);                /* DXCH -PHASEn with NEG0 */
 
 /* Jobs and tasks defined in src/exec/ (called from dispatch.c).         */
-agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx);                /* GOTOPOOH          */
-agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx);             /* GOP00FIX          */
-agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx);                /* GOPOODOO          */
-agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx);     /* GOP00FIX -3 */
-agc_status_t agc_job_change_program_continue(void); /* CANV37   */
-agc_status_t agc_job_change_program_start(void);    /* V37XEQ   */
-agc_status_t agc_job_change_program_jets_off(void); /* R00TOP00 +DELAYJOB (CSM) */
-agc_status_t agc_job_change_program_return(void);   /* V37RET (LM) */
-agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx);                /* ENDOFJOB as a job */
-agc_status_t agc_task_endtask(void);                              /* ENDTASK / SVCT3   */
-agc_status_t agc_task_svct3(void);                                /* SVCT3 (retry)     */
-agc_status_t agc_task_longcycl(void);                             /* LONGCYCL          */
-agc_status_t agc_task_getcadr(void);                              /* GETCADR           */
-agc_status_t agc_task_t5idloc(void);                              /* T5IDLOC (CSM)     */
-agc_status_t agc_task_taskover(void);                             /* TASKOVER as a task*/
+agc_status_t agc_job_gotopooh(agc_job_ctx_t *ctx);            /* GOTOPOOH          */
+agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx);         /* GOP00FIX          */
+agc_status_t agc_job_gopoodoo(agc_job_ctx_t *ctx);            /* GOPOODOO          */
+agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx); /* GOP00FIX -3 */
+agc_status_t agc_job_change_program_continue(void);           /* CANV37   */
+agc_status_t agc_job_change_program_start(void);              /* V37XEQ   */
+agc_status_t agc_job_change_program_jets_off(void);           /* R00TOP00 +DELAYJOB (CSM) */
+agc_status_t agc_job_change_program_return(void);             /* V37RET (LM) */
+agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx);            /* ENDOFJOB as a job */
+agc_status_t agc_task_endtask(void);                          /* ENDTASK / SVCT3   */
+agc_status_t agc_task_svct3(void);                            /* SVCT3 (retry)     */
+agc_status_t agc_task_longcycl(void);                         /* LONGCYCL          */
+agc_status_t agc_task_getcadr(void);                          /* GETCADR           */
+agc_status_t agc_task_t5idloc(void);                          /* T5IDLOC (CSM)     */
+agc_status_t agc_task_taskover(void);                         /* TASKOVER as a task*/
 
 /* MODECADR = IMUCADR, OPTCADR, RADCADR (MODE SWITCHING ERASABLE): the
  * waiting-job words cleared by STARTSB2 and tested by SVCT3. Raw SP word
  * (+0 none, positive = a job is waiting; IMU lane defines the rest).    */
 #define AGC_MODECADR_N 3
-agc_sp_t     agc_erase_modecadr(int dev);
-agc_status_t agc_erase_set_modecadr(int dev, agc_sp_t v);
-agc_sp_t     agc_erase_imucadr(void); /* = MODECADR +0         */
+agc_sp_t agc_erase_modecadr(int dev);
+void     agc_erase_set_modecadr(int dev, agc_sp_t v);
+agc_sp_t agc_erase_imucadr(void); /* = MODECADR +0         */
 
 /* TIME4, TIME5, TIME6 (exec-private counters, agc_state.h): the sim
  * harness advances them and calls the T4/T5/T6 lead-ins on overflow.

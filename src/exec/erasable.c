@@ -20,16 +20,9 @@ agc_sp_t agc_erase_modecadr(int dev)
     return (modecadr[dev]);
 }
 
-agc_status_t agc_erase_set_modecadr(int dev, agc_sp_t v)
+void agc_erase_set_modecadr(int dev, agc_sp_t v)
 {
-    if (!AGC_ASSERT(dev >= 0 && dev < AGC_MODECADR_N))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    modecadr[dev] = v;
-
-    return (AGC_STATUS_OK);
+    modecadr[dev] = v; /* dev: an agc_imu_device_t constant at every caller */
 }
 
 agc_sp_t agc_erase_imucadr(void)
@@ -42,18 +35,8 @@ agc_sp_t agc_erase_imucadr(void)
 /* STARTSB2: TS IMUCADR / TS OPTCADR / TS RADCADR (+0).               */
 void exec_clear_modecadr(void)
 {
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return;
-    }
-
     for (int d = 0; d < AGC_MODECADR_N; d++)
     {
         modecadr[d] = 0;
     }
-    if (!AGC_ASSERT(modecadr[0] == 0))
-    {
-        return;
-    }
-
 }

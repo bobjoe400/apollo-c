@@ -182,6 +182,14 @@ scale, a channel-bit test named after the bit) or an accessor to erasable or
 module state (the module boundary, where the entry check lives). A one-line
 function that is merely an expression over its parameters is inlined at
 every caller, whatever the caller count.
+`python3 -I tools/one_liners.py` classifies every one-line function (body of
+one return or expression statement) into docs/overview/one_liners.tsv:
+ACCESSOR (reads or writes file-scope/static storage, directly or through a
+callee; const tables are not state; pointer parameters are the function's
+own), NAMED (state-free, header comment names an AGC label, or listed in
+the tool's HAND table with the meaning the name carries: word structure,
+instruction semantics, a scale conversion), PLAIN (everything else: inline
+and delete). The tree is kept at PLAIN 0.
 * `frama-c -eva` (Frama-C value analysis) to prove or refute assertions
   statically; `make prove` runs the project configuration (detached; see
   tools/prove/progress.log and summary.txt) and `make prove-classify`

@@ -87,11 +87,6 @@ static agc_sp_t spsstart(const lm_dap_t *d)
         return (((int32_t) d->edot + SR_RATELIM2 <= 0) ? 0 : (agc_sp_t) -SR_HALF); /* returning faster than 1.125 deg/s: coast */
     }
 
-    if (!AGC_ASSERT(ez < 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return (((int32_t) d->edot - SR_RATELIM2 <= 0) ? SR_HALF : 0); /* returning faster than 1.125 deg/s: coast */
 }
 
@@ -124,15 +119,15 @@ static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
             d->jetctr[i] = utime[i]; /* SETCTR             */
             d->tj[i]     = 0;        /* ZAPTJ              */
         }
-
-        return;
     }
-
-    /* CTRCHECK: a nonzero counter inhibits (the CCS < 0 branch also
-     * reaches ZAPTJ; the counter is never negative).                     */
-    if (d->jetctr[i] != 0)
+    else
     {
-        d->tj[i] = 0;
+        /* CTRCHECK: a nonzero counter inhibits (the CCS < 0 branch also
+         * reaches ZAPTJ; the counter is never negative).                     */
+        if (d->jetctr[i] != 0)
+        {
+            d->tj[i] = 0;
+        }
     }
 }
 

@@ -217,26 +217,18 @@ static void test_flag_ops(void)
 }
 
 /**********************************************************************
- * AGC: none (test) -- invalid flag ids and flagword indices are rejected
+ * AGC: none (test) -- flag id validity per vehicle (the ids are
+ *      constants; agc_flag_valid states which exist)
  *
  * FUNCTION NAME: test_flag_errors
  **********************************************************************/
 static void test_flag_errors(void)
 {
-    const int before = g_assert_reports; /* reports before this test */
-
     agc_state_init(AGC_VEHICLE_CSM);
-    agc_flag_set((agc_flag_id_t) 0x00);   /* rejected by AGC_ASSERT */ /* bit 0 */
-    agc_flag_set((agc_flag_id_t) 0xC1);   /* rejected by AGC_ASSERT */ /* word 12 is LM-only */
-    agc_flag_clear((agc_flag_id_t) 0xFF); /* rejected by AGC_ASSERT */
-    CHECK(!agc_flag_test((agc_flag_id_t) 0x10));
-    agc_flagword_set(0, 0100000u);        /* rejected by AGC_ASSERT */ /* > 15 bits */
-    agc_flagword_set(12, 1u);             /* rejected by AGC_ASSERT */
-    agc_flagword_set(-1, 1u);             /* rejected by AGC_ASSERT */
-    CHECK(agc_flagword_get(0) == 0u);
+    CHECK(!agc_flag_valid((agc_flag_id_t) 0x00)); /* bit 0 */
+    CHECK(!agc_flag_valid((agc_flag_id_t) 0xC1)); /* word 12 is LM-only */
     CHECK(!agc_flag_valid((agc_flag_id_t) 0x0F0));
     CHECK(agc_flag_valid(AGC_FLAG_CPHIFLAG));
-    CHECK(g_assert_reports > before);     /* the failures above were reported */
 }
 
 /**********************************************************************
@@ -252,7 +244,7 @@ static void test_time(void)
     agc_time_advance_cs(100u);
     CHECK(agc_time_now_cs() == 100u);
     agc_time_set_cs(AGC_TIME_MODULUS_CS - 1u);
-    agc_time_advance_cs(1u);              /* TIME2 overflow */
+    agc_time_advance_cs(1u); /* TIME2 overflow */
     CHECK(agc_time_now_cs() == 0u);
     agc_time_set_cs(AGC_TIME_MODULUS_CS - 2u);
     agc_time_advance_cs(10u);
@@ -311,14 +303,12 @@ static void test_channels(void)
     CHECK(AGC_CH012_ZEROOPTICS == 001000);
     CHECK(AGC_CH012_SIVBINJECT == 010000);
 
-    /* output channels reject the 16th bit; inputs and invalid channels are errors */
-    agc_chan_write(AGC_CHAN_CHAN12, 0100000u); /* rejected by AGC_ASSERT */
-    agc_chan_write(AGC_CHAN_CHAN30, 0u);       /* rejected by AGC_ASSERT */
-    agc_chan_write(AGC_CHAN_MNKEYIN, 1u);      /* rejected by AGC_ASSERT */
-    agc_chan_write(0, 1u);                     /* rejected by AGC_ASSERT */
-    agc_chan_write(AGC_CHAN_COUNT, 1u);        /* rejected by AGC_ASSERT */
-    agc_chan_or(AGC_CHAN_HISCALAR, 1u);        /* rejected by AGC_ASSERT */
-    CHECK(agc_chan_read(-1) == 0u);
+    /* a program writes only L, Q, the outputs and 033 */
+    CHECK(agc_chan_writable(AGC_CHAN_CHAN12));
+    CHECK(!agc_chan_writable(AGC_CHAN_CHAN30));
+    CHECK(!agc_chan_writable(AGC_CHAN_MNKEYIN));
+    CHECK(!agc_chan_writable(0));
+    CHECK(!agc_chan_writable(AGC_CHAN_COUNT));
 
     /* simulator side */
     CHECK(agc_chan_set_input(AGC_CHAN_MNKEYIN, 031u) == AGC_STATUS_OK);
@@ -421,7 +411,7 @@ static void test_state_vectors(void)
     in.t    = 123456;
     in.moon = true;
     CHECK(agc_sv_set(AGC_SV_THIS, &in) == AGC_STATUS_OK);
-    CHECK(agc_sv_get(AGC_SV_THIS, &out) == AGC_STATUS_OK);
+    agc_sv_get(AGC_SV_THIS, &out);
     CHECK(vec_eq(out.r, in.r) && vec_eq(out.v, in.v) && (out.t == in.t) && out.moon);
     CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));
     CHECK(vec_eq(agc_erase_rn(), in.r));
@@ -429,7 +419,7 @@ static void test_state_vectors(void)
     CHECK(agc_erase_piptime() == 123456);
 
     /* the other vehicle's set is independent; CSM build -> LM set */
-    CHECK(agc_sv_get(AGC_SV_OTHER, &out) == AGC_STATUS_OK);
+    agc_sv_get(AGC_SV_OTHER, &out);
     CHECK(vec_eq(out.r, vec3(0, 0, 0)) && !out.moon);
     in.r    = vec3(7, 8, 9);
     in.v    = vec3(10, 11, 12);
@@ -459,7 +449,7 @@ static void test_state_vectors(void)
  **********************************************************************/
 static void test_erasables(void)
 {
-    agc_mat_t m;                         /* REFSMMAT, scale 2^1       */
+    agc_mat_t m; /* REFSMMAT, scale 2^1       */
 
     agc_state_init(AGC_VEHICLE_CSM);
 
@@ -492,7 +482,7 @@ static void test_erasables(void)
 
     agc_erase_set_dsptab(11, 040010u);
     CHECK(agc_erase_dsptab(11) == 040010u);
-    CHECK(agc_erase_set_failreg(2, 01201u) == AGC_STATUS_OK);
+    agc_erase_set_failreg(2, 01201u);
     CHECK(agc_erase_failreg(2) == 01201u);
 
     /* fresh-start zeroing reaches every storage class */

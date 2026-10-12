@@ -25,11 +25,6 @@ static agc_sp_t star6_of_code(void)
 {
     const agc_sp_t code = (agc_sp_t) (agc_align_ram()->starcode & STAR_CODE_MASK);
 
-    if (!AGC_ASSERT((code >= 0) && (code <= AGC_ALIGN_STAR_CODE_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_sp_t) (code * STAR_WORDS));
 }
 

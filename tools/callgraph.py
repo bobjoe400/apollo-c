@@ -134,6 +134,37 @@ def agc_labels():
 
 
 POS = {}
+REFS = {}
+
+
+def agc_label_refs():
+    """label -> references in the rope that uses it most: every operand
+    token equal to the label (TC, TCF, BZF, BZMF, CCS/INDEX tables, CADR,
+    2CADR, ADRES, interpretive GOTO/CALL/BON operands ...), the defining
+    label field and comments excluded.  The refined collapse rule
+    (docs/agents/collapse.md): a label entered from fewer than 2 places
+    protects nothing."""
+    if REFS:
+        return REFS
+    src = os.environ.get('AGC_SRC', DEFAULT_SRC)
+    for rope in ('Comanche055', 'Luminary099'):
+        count = collections.Counter()
+        for p in glob.glob(os.path.join(src, rope, '*.agc')):
+            with open(p, encoding='utf-8', errors='replace') as fh:
+                for ln in fh:
+                    code = ln.split('#')[0]
+                    if not code.strip() or code.lstrip().startswith('$'):
+                        continue
+                    f = code.split()
+                    if code and not code[0].isspace():
+                        f = f[1:]  # the label field defines, it does not refer
+                    for tok in re.split(r'[\s,]+', ' '.join(f)):
+                        tok = tok.lstrip('-+').rstrip('.:')
+                        if tok:
+                            count[tok] += 1
+        for k, v in count.items():
+            REFS[k] = max(REFS.get(k, 0), v)
+    return REFS
 
 
 def _clean(t):
@@ -198,6 +229,17 @@ def own_labels(helper_comment, caller_comment, code):
             continue
         out.add(t)
     return out
+
+
+def entry_label(comment, own, code):
+    """The helper's entry label: the first of its own labels in its
+    comment's head ("BDZCHECK, TAUCHECK, NOBDZ" -> BDZCHECK); the later
+    ones are targets inside the routine."""
+    first = cgast.first_comment_line(comment or '')
+    for t in _label_tokens(first, code):
+        if t in own:
+            return t
+    return sorted(own)[0] if own else None
 
 
 def has_agc_label(comment, labels):
@@ -485,11 +527,16 @@ def main(argv):
         own = own_labels(info.get(t, {}).get('comment', ''), info.get(c, {}).get('comment', ''),
                          code_labels)
         old = bool(info.get(t, {}).get('agc_label'))
-        if own:
+        refs = agc_label_refs()
+        entry = entry_label(info.get(t, {}).get('comment', ''), own, code_labels)
+        entered = {entry} if entry is not None and refs.get(entry, 0) >= 2 else set()
+        if entered:
             kept_label += 1
-            protected[t] = {'caller': c, 'sites': sites, 'labels': own}
+            protected[t] = {'caller': c, 'sites': sites, 'labels': entered}
             continue
-        cand[t] = {'caller': c, 'sites': sites, 'protection': 'page-only' if old else 'none'}
+        prot = (f'label<2refs:{entry}={refs.get(entry, 0)}') if own \
+            else ('page-only' if old else 'none')
+        cand[t] = {'caller': c, 'sites': sites, 'protection': prot}
         tus_needed[n['file']].append(('helper', t))
         tus_needed[defined[c]['file']].append(('site', t))
 
@@ -602,7 +649,7 @@ def main(argv):
     # collapse_candidates.tsv, smallest helper first
     # the candidates of the first rule first, then the delta of the label
     # rule: page-only (now candidates) and label-distinct (still protected)
-    rows.sort(key=lambda t: (cand[t]['protection'] != 'none', info[t]['lines'],
+    rows.sort(key=lambda t: (cand[t]['protection'].split(':')[0] != 'none', info[t]['lines'],
                              defined[t]['file'], defined[t]['name']))
     with open(os.path.join(opt.out, 'collapse_candidates.tsv'), 'w', encoding='utf-8') as fh:
         fh.write('helper\tfile\tline\tcaller\tsite_line\tsites\thelper_lines\tcaller_lines\t'
@@ -626,7 +673,8 @@ def main(argv):
             fh.write('\t'.join([
                 defined[t]['name'], defined[t]['file'], str(defined[t]['line']), disp(p['caller']),
                 '-', str(p['sites']), str(info[t]['lines']), str(info.get(p['caller'], {}).get('lines', '')),
-                '-', '-', '-', '-', '-', '-', 'kept', 'label-distinct:' + ','.join(sorted(p['labels'])),
+                '-', '-', '-', '-', '-', '-', 'kept',
+                'label-entered:' + ','.join(f'{lb}={agc_label_refs().get(lb, 0)}' for lb in sorted(p['labels'])),
                 '-', '-', 'label-distinct',
                 cgast.first_comment_line(info[t]['comment']).replace('\t', ' ')[:100] or '-']) + '\n')
 

@@ -42,7 +42,6 @@ typedef enum agc_integ_next
 agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_integ_next_t first); /* the driver */
 agc_status_t agc_integ_integrate_permanent(agc_interp_t *ip, agc_integ_ctx_t *ctx);
 agc_dp_t     agc_integ_loadtime(void);                                                      /* LOADTIME  */
-bool         agc_integ_valid_ctx(const agc_integ_ctx_t *ctx);
 
 /* ---- jobs.c --------------------------------------------- */
 agc_integ_next_t agc_integ_midtoav_check(agc_interp_t *ip, agc_integ_ctx_t *ctx);

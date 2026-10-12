@@ -124,46 +124,6 @@ static bool mp_negzero(agc_sp_t a, agc_sp_t k)
 }
 
 /**********************************************************************
- * GETAOSUV (p.1497): which of the ROT-TOUV results AOSU (A), AOSV (L) the
- * AGC leaves as -0. A ones'-complement sum of zero is -0 unless both terms
- * are +0: V = COEFFQ AOSQ + COEFFR AOSR, U = -COEFFQ AOSQ + COEFFR AOSR.
- * With AOSQ = AOSR = +0 (COEFFQ < 0) this makes AOSV = -0, which BOTHAXES
- * takes as a negative offset (CCS fourth branch: SIGNAOS = 1).
- *
- * FUNCTION NAME: aos_negzero
- *
- * ARGUMENTS:
- *   Argument  Type              I/O  Description (scale)
- *   --------  ----------------  ---  --------------------
- *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *   w         acc_work_t *      I/O  working cells of this computation
- *
- * RETURNS: none
- **********************************************************************/
-static void aos_negzero(const lm_dap_t *d, acc_work_t *w)
-{
-    agc_sp_t tq = lm_dap_mphi(d->aosq, d->coeffq);             /* COEFFQ AOSQ, scaled pi/2 rad/s^2 */
-    agc_sp_t tr = lm_dap_mphi(d->aosr, d->coeffr);             /* COEFFR AOSR, scaled pi/2 rad/s^2 */
-    bool     nq = (tq == 0) && mp_negzero(d->aosq, d->coeffq); /* that product is -0 */
-    bool     nr = (tr == 0) && mp_negzero(d->aosr, d->coeffr); /* that product is -0 */
-    bool     pq = (tq == 0) && !nq;                            /* COEFFQ AOSQ = +0  */
-    bool     pr = (tr == 0) && !nr;                            /* COEFFR AOSR = +0  */
-
-    w->negzero[0] = (d->aosu == 0) && !(nq && pr); /* -(-0) + +0 = +0   */
-    w->negzero[1] = (d->aosv == 0) && !(pq && pr);
-
-    if (!AGC_ASSERT(!w->negzero[0] || d->aosu == 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(!w->negzero[1] || d->aosv == 0))
-    {
-        return;
-    }
-}
-
-/**********************************************************************
  * INVERT (p.1504): 1/x, x at pi/2 -> 2^7/pi (BIT9, 0 DV x). x = AMIN
  * (BIT9, from NETNEG or a failed jet pair in FIXMIN) gives POSMAX. x is
  * the unlimited sum in A: when it has overflowed (9/8 |AOS| near pi/2),
@@ -245,40 +205,6 @@ static agc_sp_t net_min(acc_work_t *w)
 }
 
 /**********************************************************************
- * DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.
- *
- * FUNCTION NAME: p_axis
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *
- * RETURNS: none
- **********************************************************************/
-static void p_axis(lm_dap_t *d)
-{
-    agc_sp_t funtem = lm_dap_wrap((int32_t) d->jacc[0] + AA_BIT9); /* FUNTEM = 1 + ANET/ACOAST, scaled 2^6 */
-    agc_sp_t inv    = invert(d->jacc[0]);                          /* 1/ANETP, scaled 2^7/pi */
-
-    agc_inhint();                                                         /* consistent     */
-    d->block[2] = inv;                                                    /* 1/ANETP        */
-    d->block[3] = inv;
-    agc_sp_t f  = lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT9, inv), funtem); /* PACCFUN, scaled 2^7/pi */
-
-    d->block[8] = f;         /* PACCFUN        */
-    d->block[9] = f;
-    d->block[4] = LM_POSMAX; /* 1/ACOSTP = 1/.03 */
-    d->block[5] = LM_POSMAX;
-    agc_relint();
-
-    if (!AGC_ASSERT(funtem > 0))
-    {
-        return;
-    }
-}
-
-/**********************************************************************
  * NOTMUCH (p.1500): |AOS| <= AMIN: ACOAST = AMIN both ways; powered
  * flight deadbands SOMEAOS / NOAOS.
  *
@@ -297,25 +223,18 @@ static void db_smallaos(const lm_dap_t *d, acc_work_t *w)
     w->t[T_ACOSTT]     = LM_POSMAX;
     w->t[T_ACOSTT + 1] = LM_POSMAX;
 
-    if (w->t[T_FLAT] > 0)
+    if (w->t[T_FLAT] <= 0) /* drift or GTS   */
     {
-        return; /* drift or GTS   */
-    }
-
-    if ((int32_t) w->absaos - AA_BIT8 > 0)
-    { /* SOMEAOS        */
-        w->t[T_DBB3 + w->ns] = w->dbval3; /* DB/2           */
-        w->t[T_DBB4 + w->s]  = lm_dap_wrap(2 * (int32_t) w->dbval3);
-    }
-    else
-    { /* NOAOS          */
-        w->t[T_DBB3] = d->db;
-        w->t[T_DBB4] = d->db;
-    }
-
-    if (!AGC_ASSERT(w->t[T_DBB3] >= 0 && w->t[T_DBB4] >= 0))
-    {
-        return;
+        if ((int32_t) w->absaos - AA_BIT8 > 0)
+        { /* SOMEAOS        */
+            w->t[T_DBB3 + w->ns] = w->dbval3; /* DB/2           */
+            w->t[T_DBB4 + w->s]  = lm_dap_wrap(2 * (int32_t) w->dbval3);
+        }
+        else
+        { /* NOAOS          */
+            w->t[T_DBB3] = d->db;
+            w->t[T_DBB4] = d->db;
+        }
     }
 }
 
@@ -394,16 +313,6 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
         w->anet = lm_dap_wrap((int32_t) anet_pi + AA_BIT8); /* 1 + .. at 2^7  */
         w->inv  = lm_dap_mphi(invert(anet_pi), AA_BIT14);   /* at 2^7/pi      */
 
-        if (!AGC_ASSERT(w->anet > 0))
-        {
-            return;
-        }
-
-        if (!AGC_ASSERT(anet_pi > 0))
-        {
-            return;
-        }
-
         acc = lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT8, w->inv), w->anet);
     }
     else
@@ -421,38 +330,6 @@ static void axis_with_aos(const lm_dap_t *d, acc_work_t *w)
     w->t[T_Z5 + w->ns]    = acc;
     w->t[T_ATEM2 + w->ns] = w->inv;
 } /* axis_with_aos */
-
-/**********************************************************************
- * FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
- * pair; AXISDIST from the deadbands and FLAT.
- *
- * FUNCTION NAME: axis_fail_dist
- *
- * ARGUMENTS:
- *   Argument  Type              I/O  Description (scale)
- *   --------  ----------------  ---  --------------------
- *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *   w         acc_work_t *      I/O  working cells of this computation
- *
- * RETURNS: none
- **********************************************************************/
-static void axis_fail_dist(const lm_dap_t *d, acc_work_t *w)
-{
-    if ((uvmask[2 + w->uv] & d->ch5mask) != 0u)
-    { /* +U (+V) failed */
-        w->t[T_ATEM2 + 2] = w->t[T_ATEM2];
-        w->t[T_Z5 + 2]    = w->t[T_Z5];
-    }
-
-    if ((uvmask[w->uv] & d->ch5mask) != 0u)
-    { /* -U (-V) failed */
-        w->t[T_ATEM1 + 2] = w->t[T_ATEM1];
-        w->t[T_Z1 + 2]    = w->t[T_Z1];
-    }
-
-    w->t[T_AXD]     = lm_dap_wrap((int32_t) w->t[T_DBB1] - w->t[T_DBB3] + w->t[T_FLAT]);
-    w->t[T_AXD + 1] = lm_dap_wrap((int32_t) w->t[T_DBB2] - w->t[T_DBB4] + w->t[T_FLAT]);
-}
 
 /**********************************************************************
  * STORV (pp.1502-1503) and the U-axis store: ACCSWx and the ten words
@@ -640,14 +517,40 @@ agc_status_t lm_dap_switch_curves(void)
     acc_work_t w       = {{0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {false, false}};
     agc_sp_t   quarter = lm_dap_mphi(d->db, AA_BIT13); /* .25 DB, scaled pi/4 rad */
 
-    w.dbval3    = lm_dap_wrap(2 * (int32_t) quarter);                       /* .50 DB         */
-    w.dbval2    = lm_dap_wrap((int32_t) quarter - d->db);                   /* -.75 DB        */
-    agc_inhint();                                                           /* GETAOSUV       */
+    w.dbval3 = lm_dap_wrap(2 * (int32_t) quarter);     /* .50 DB         */
+    w.dbval2 = lm_dap_wrap((int32_t) quarter - d->db); /* -.75 DB        */
+    agc_inhint();                                      /* GETAOSUV       */
     lm_dap_rot_touv(d->aosq, d->aosr, &d->aosu, &d->aosv);
     agc_relint();
-    aos_negzero(d, &w);
-    w.drifter   = agc_flag_test(AGC_FLAG_DRIFTDFL) ? 1 : 0;                 /* DRIFTER */
-    w.t[T_FLAT] = ((int32_t) w.drifter + d->allowgts > 0) ? AA_FLATVAL : 0; /* FLATEMP: .8 deg in drift or GTS */
+
+    /**********************************************************************
+     * GETAOSUV (p.1497): which of the ROT-TOUV results AOSU (A), AOSV (L) the
+     * AGC leaves as -0. A ones'-complement sum of zero is -0 unless both terms
+     * are +0: V = COEFFQ AOSQ + COEFFR AOSR, U = -COEFFQ AOSQ + COEFFR AOSR.
+     * With AOSQ = AOSR = +0 (COEFFQ < 0) this makes AOSV = -0, which BOTHAXES
+     * takes as a negative offset (CCS fourth branch: SIGNAOS = 1).
+     *
+     * FUNCTION NAME: aos_negzero
+     *
+     * ARGUMENTS:
+     *   Argument  Type              I/O  Description (scale)
+     *   --------  ----------------  ---  --------------------
+     *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+     *   w         acc_work_t *      I/O  working cells of this computation
+     *
+     * RETURNS: none
+     **********************************************************************/
+    agc_sp_t tq = lm_dap_mphi(d->aosq, d->coeffq);             /* COEFFQ AOSQ, scaled pi/2 rad/s^2 */
+    agc_sp_t tr = lm_dap_mphi(d->aosr, d->coeffr);             /* COEFFR AOSR, scaled pi/2 rad/s^2 */
+    bool     nq = (tq == 0) && mp_negzero(d->aosq, d->coeffq); /* that product is -0 */
+    bool     nr = (tr == 0) && mp_negzero(d->aosr, d->coeffr); /* that product is -0 */
+    bool     pq = (tq == 0) && !nq;                            /* COEFFQ AOSQ = +0  */
+    bool     pr = (tr == 0) && !nr;                            /* COEFFR AOSR = +0  */
+
+    w.negzero[0] = (d->aosu == 0) && !(nq && pr);                            /* -(-0) + +0 = +0   */
+    w.negzero[1] = (d->aosv == 0) && !(pq && pr);
+    w.drifter    = agc_flag_test(AGC_FLAG_DRIFTDFL) ? 1 : 0;                 /* DRIFTER */
+    w.t[T_FLAT]  = ((int32_t) w.drifter + d->allowgts > 0) ? AA_FLATVAL : 0; /* FLATEMP: .8 deg in drift or GTS */
 
     /* DEVIATION: in powered flight without GTS the AGC leaves Z3TEM (a
      * VBUF word) as it was and copies it to ZONE3LIM; here ZONE3LIM
@@ -659,7 +562,31 @@ agc_status_t lm_dap_switch_curves(void)
         w.t[T_Z3] = (w.drifter != 0) ? AA_ZONE3MAX : 0; /* ZONE3LIM: 17.5 ms drifting, 0 in GTS */
     }
 
-    p_axis(d);
+    /**********************************************************************
+     * DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.
+     *
+     * FUNCTION NAME: p_axis
+     *
+     * ARGUMENTS:
+     *   Argument  Type        I/O  Description (scale)
+     *   --------  ----------  ---  --------------------
+     *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+     *
+     * RETURNS: none
+     **********************************************************************/
+    agc_sp_t funtem = lm_dap_wrap((int32_t) d->jacc[0] + AA_BIT9); /* FUNTEM = 1 + ANET/ACOAST, scaled 2^6 */
+    agc_sp_t inv    = invert(d->jacc[0]);                          /* 1/ANETP, scaled 2^7/pi */
+
+    agc_inhint();                                                         /* consistent     */
+    d->block[2] = inv;                                                    /* 1/ANETP        */
+    d->block[3] = inv;
+    agc_sp_t f  = lm_dap_dv(lm_dap_mp((agc_sp_t) -AA_BIT9, inv), funtem); /* PACCFUN, scaled 2^7/pi */
+
+    d->block[8] = f;         /* PACCFUN        */
+    d->block[9] = f;
+    d->block[4] = LM_POSMAX; /* 1/ACOSTP = 1/.03 */
+    d->block[5] = LM_POSMAX;
+    agc_relint();
 
     if (w.drifter != 0)
     {
@@ -681,7 +608,34 @@ agc_status_t lm_dap_switch_curves(void)
             return (st);
         }
 
-        axis_fail_dist(d, &w);
+        /**********************************************************************
+         * FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
+         * pair; AXISDIST from the deadbands and FLAT.
+         *
+         * FUNCTION NAME: axis_fail_dist
+         *
+         * ARGUMENTS:
+         *   Argument  Type              I/O  Description (scale)
+         *   --------  ----------------  ---  --------------------
+         *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+         *   w         acc_work_t *      I/O  working cells of this computation
+         *
+         * RETURNS: none
+         **********************************************************************/
+        if ((uvmask[2 + w.uv] & d->ch5mask) != 0u)
+        { /* +U (+V) failed */
+            w.t[T_ATEM2 + 2] = w.t[T_ATEM2];
+            w.t[T_Z5 + 2]    = w.t[T_Z5];
+        }
+
+        if ((uvmask[w.uv] & d->ch5mask) != 0u)
+        { /* -U (-V) failed */
+            w.t[T_ATEM1 + 2] = w.t[T_ATEM1];
+            w.t[T_Z1 + 2]    = w.t[T_Z1];
+        }
+
+        w.t[T_AXD]     = lm_dap_wrap((int32_t) w.t[T_DBB1] - w.t[T_DBB3] + w.t[T_FLAT]);
+        w.t[T_AXD + 1] = lm_dap_wrap((int32_t) w.t[T_DBB2] - w.t[T_DBB4] + w.t[T_FLAT]);
         store_axis(d, &w);
     }
 

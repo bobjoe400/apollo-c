@@ -91,11 +91,6 @@ static void load_engine(bool aps)
     g->lm.mdot   = aps ? MDOTAPS : MDOTDPS;
     g->lm.tdecay = aps ? ATDECAY : DTDECAY;
     g->lm.vex    = agc_dp_shr(agc_dp_neg(agc_dp_from_sp(aps ? APSVEX : DPSVEX)), 1);
-
-    if (!AGC_ASSERT(g->lm.vex > 0))
-    {
-        return;
-    }
 }
 
 /* P40IN .. P40SXT4 (p.753-754): S40.1, S40.2,3; DB 1 deg (PFLITEDB); R60
@@ -345,7 +340,7 @@ agc_status_t agc_job_postburn_lm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change(4, (uint16_t) 000014);
+    agc_phase_change((uint16_t)000014);
 
     return (AGC_STATUS_OK); /* P40PHS1                */
 }
@@ -374,7 +369,7 @@ agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change(4, (uint16_t) 000014);
+    agc_phase_change((uint16_t)000014);
 
     return (AGC_STATUS_OK);
 }
@@ -517,7 +512,7 @@ agc_status_t agc_job_thrust_monitor_display_lm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change(4, (uint16_t) 000014);
+    agc_phase_change((uint16_t)000014);
 
     return (AGC_STATUS_OK); /* P40PHS1                */
 }
@@ -528,11 +523,6 @@ static uint16_t getdt(agc_sp_t t)
     agc_sp_t dt = (t > 0) ? t : 1; /* CCS: AD ONE            */
 
     agc_erase_set_tgo((agc_dp_t) dt);
-
-    if (!AGC_ASSERT(dt >= 1))
-    {
-        return (0); /* no valid result */
-    }
 
     return ((uint16_t) dt);
 }
@@ -551,7 +541,7 @@ agc_status_t agc_task_implburn_lm(void)
     agc_flag_clear(AGC_FLAG_IGNFLAG);
     agc_flag_clear(AGC_FLAG_ASTNFLAG);
     agc_flag_clear(AGC_FLAG_IMPULSW);
-    agc_phase_change(4, (uint16_t) 040114); /* ENGOFTSK (ENGINOFF)    */
+    agc_phase_change((uint16_t)040114); /* ENGOFTSK (ENGINOFF)    */
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_IMPULSW)))
     {
@@ -597,11 +587,6 @@ void agc_lm_enginof3(void)
     agc_flag_set(AGC_FLAG_USEQRFLG);          /* TURN OFF TRIM GIMBAL   */
     agc_erase_set_thrust((agc_sp_t) -010000); /* CS HIRTHROT (BIT13)    */
 
-    if (!AGC_ASSERT((agc_chan_read(011) & AGC_CH011_ENGINEON) == 0U))
-    {
-        return;
-    }
-
     agc_chan_or(014, (uint16_t) AGC_CH014_THRUSTACT);
 }
 
@@ -609,11 +594,6 @@ void agc_lm_enginof3(void)
 void agc_lm_enginof4(void)
 {
     agc_erase_set_tevent((agc_dp_t) agc_time_now_cs());
-
-    if (!AGC_ASSERT(agc_erase_tevent() >= 0))
-    {
-        return;
-    }
 
     agc_lm_enginof3();
 }
@@ -873,11 +853,6 @@ static agc_dp_t timeburn_aps(agc_interp_t *ip, agc_dp_t v, agc_dp_t m)
         return (-1); /* S40.13D  */
     }
 
-    if (!AGC_ASSERT(temp2 > 0))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_dp_t r = agc_dp_div(ip, temp1, temp2); /* BDDV     */
 
     return (agc_dp_add(ip, agc_dp_mul_trunc(r, SEC5_14), SEC1_2D));
@@ -914,13 +889,13 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *im
     if (d < 0)
     {
         *impulsive = true; /* S40.132  */
-
-        return (t);
     }
-
-    if (agc_dp_sub(ip, d, SEC89_14) < 0)
-    { /* S40.138  */
-        agc_flag_set(AGC_FLAG_NOTHROTL);
+    else
+    {
+        if (agc_dp_sub(ip, d, SEC89_14) < 0)
+        { /* S40.138  */
+            agc_flag_set(AGC_FLAG_NOTHROTL);
+        }
     }
 
     return (t); /* STORETGO */
@@ -974,7 +949,7 @@ agc_status_t agc_job_timeburn_lm(void)
         agc_erase_set_tgo((agc_dp_t) agc_dp_high(t14)); /* S40.132*: TGO = (0, MPAC) */
     }
 
-    agc_phase_change(3, (uint16_t) 000003);
+    agc_phase_change((uint16_t)000003);
 
     return (AGC_STATUS_OK); /* S40.134                  */
 }

@@ -62,17 +62,17 @@
 #include "internal.h"
 
 /* Constants (P37_P70.agc pp. 931-933, words read from the Comanche055 rope). */
-static const agc_dp_t ONE_B2       = 67108864;  /* 1RTEB2   10000 00000  1.0 B-2            */
-static const agc_dp_t EPC1RTE      = 134172094; /* EPC1RTE  17775 06676  .99966 B-1 (CFPA)  */
-static const agc_dp_t EPC2RTE      = 50;        /* EPC2RTE  00000 00062  100. B-29 m        */
-static const agc_dp_t EPC3RTE      = 268435;    /* EPC3RTE 00020 14223 .001, B0 */
-static const agc_dp_t K1RTE        = 3500000;   /* K1RTE    00325 23740  7. E6 B-29 m       */
-static const agc_dp_t K2RTE        = 3247500;   /* K2RTE    00306 06614  6495000. B-29 m    */
-static const agc_dp_t K3RTE        = -16387985; /* K3RTE 76027 70156 -.06105, B0 */
-static const agc_dp_t K4RTE        = -28059558; /* K4RTE 74517 54131 -.10453, B0 */
-static const agc_dp_t C4RTE        = -17466608; /* C4RTE    75725 75417  -6.986643 E7 B-30 m */
-static const agc_dp_t E3RTE        = 60960;     /* E3RTE    00003 27040  121920. B-29 m (400 kft) */
-static const agc_dp_t M30480       = 15240;     /* 30480RTE 00000 35610  30480. B-29 m (100 kft) */
+static const agc_dp_t ONE_B2 = 67108864;  /* 1RTEB2   10000 00000  1.0 B-2            */
+static const agc_dp_t EPC1RTE = 134172094; /* EPC1RTE  17775 06676  .99966 B-1 (CFPA)  */
+static const agc_dp_t EPC2RTE = 50;        /* EPC2RTE  00000 00062  100. B-29 m        */
+static const agc_dp_t EPC3RTE = 268435;    /* EPC3RTE 00020 14223 .001, B0 */
+static const agc_dp_t K1RTE = 3500000;   /* K1RTE    00325 23740  7. E6 B-29 m       */
+static const agc_dp_t K2RTE = 3247500;   /* K2RTE    00306 06614  6495000. B-29 m    */
+static const agc_dp_t K3RTE = -16387985; /* K3RTE 76027 70156 -.06105, B0 */
+static const agc_dp_t K4RTE = -28059558; /* K4RTE 74517 54131 -.10453, B0 */
+static const agc_dp_t C4RTE = -17466608; /* C4RTE    75725 75417  -6.986643 E7 B-30 m */
+static const agc_dp_t E3RTE = 60960;     /* E3RTE    00003 27040  121920. B-29 m (400 kft) */
+static const agc_dp_t M30480 = 15240;     /* 30480RTE 00000 35610  30480. B-29 m (100 kft) */
 static const agc_sp_t SGNRDOT_DOWN = -0x2000;   /* OCT 20000: SGNRDOT -.5, B0 */
 
 /* RTE317 POLY: MAMAX2 = C0 + C1 R + C2 R^2 + C3 R^3, B31 (then SL1 -> B30). */
@@ -100,20 +100,20 @@ typedef struct rte_kfit
     agc_dp_t c;     /* CK1K2.. value at VREF, scale of K          */
 } rte_kfit_t;
 
-static const rte_kfit_t K1_BELOW_21K   = {2556848, 0, 189866};            /* V(400), 0, 5500 */
-static const rte_kfit_t K1_21K_28K     = {178979340, -642218, 82850};     /* V(28K), -.443, 2400 */
-static const rte_kfit_t K1_ABOVE_28K   = {19176358, 0, 82850};            /* V(3K), 0, 2400 */
-static const rte_kfit_t K2_BELOW_24K   = {153410863, 38359106, -2386093}; /* V(24K), .001225, -3.2 */
-static const rte_kfit_t K2_24K_28_4K   = {178979340, 32879233, 745654};   /* 28K, .00105, 1 */
+static const rte_kfit_t K1_BELOW_21K = {2556848, 0, 189866};            /* V(400), 0, 5500 */
+static const rte_kfit_t K1_21K_28K = {178979340, -642218, 82850};     /* V(28K), -.443, 2400 */
+static const rte_kfit_t K1_ABOVE_28K = {19176358, 0, 82850};            /* V(3K), 0, 2400 */
+static const rte_kfit_t K2_BELOW_24K = {153410863, 38359106, -2386093}; /* V(24K), .001225, -3.2 */
+static const rte_kfit_t K2_24K_28_4K = {178979340, 32879233, 745654};   /* 28K, .00105, 1 */
 static const rte_kfit_t K2_ABOVE_28_4K = {204547817, 8924363, 1789570};   /* V(32K), .000285, 2.4 */
-static const agc_dp_t   V21K           = 134217728;                       /* V(21K)   64.000 B-7 m/cs  */
-static const agc_dp_t   V3K            = 19176358;                        /* V(3K)    9.144 B-7        */
-static const agc_dp_t   V4K            = 25568477;                        /* V(4K)    12.192 B-7       */
-static const agc_dp_t   V400           = 2556848;                         /* V(400)   1.2192 B-7       */
-static const agc_dp_t   V26K           = 166195102;                       /* V(26K)   79.248 B-7       */
-static const agc_dp_t   MAXPHIC        = 24855239;                        /* MAXPHIC .09259298 rev, B0 */
-static const agc_dp_t   TLESS26        = 445427;                          /* TLESS26  5.70146688 E7 B-35 (8660 PHI/V) */
-static const agc_dp_t   TGR26CON       = 720000;                          /* TGR26CON 7.2 E5 B-28 cs/rev (PHI/3) */
+static const agc_dp_t V21K = 134217728;                       /* V(21K)   64.000 B-7 m/cs  */
+static const agc_dp_t V3K = 19176358;                        /* V(3K)    9.144 B-7        */
+static const agc_dp_t V4K = 25568477;                        /* V(4K)    12.192 B-7       */
+static const agc_dp_t V400 = 2556848;                         /* V(400)   1.2192 B-7       */
+static const agc_dp_t V26K = 166195102;                       /* V(26K)   79.248 B-7       */
+static const agc_dp_t MAXPHIC = 24855239;                        /* MAXPHIC .09259298 rev, B0 */
+static const agc_dp_t TLESS26 = 445427;                          /* TLESS26  5.70146688 E7 B-35 (8660 PHI/V) */
+static const agc_dp_t TGR26CON = 720000;                          /* TGR26CON 7.2 E5 B-28 cs/rev (PHI/3) */
 
 /**********************************************************************
  * INVC100 after CSMPREC .. INVC125 (P37_P70.agc pp. 905-906): R(T1)/ V(T1)/
@@ -145,16 +145,16 @@ static const agc_dp_t   TGR26CON       = 720000;                          /* TGR
 agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t ratt, agc_vec_t vatt, agc_dp_t tat, int x2)
 {
     agc_vec_t n; /* orbit normal N/, B1 */
+
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT((x2 == 0) || (x2 == 2)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-
     rs->r_t1v = ratt;
-    rs->p_t1  = (agc_sp_t) x2; /* SXA,2 P(T1)   */
+    rs->p_t1 = (agc_sp_t) x2; /* SXA,2 P(T1)   */
     rs->v_t1v = vatt;
-    rs->t1    = tat;
+    rs->t1 = tat;
 
     if (rs->p_t1 != 0)
     {
@@ -163,8 +163,8 @@ agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t
         return (AGC_STATUS_ALARM);
     }
 
-    rs->ur1  = agc_vec_unit(ip, rs->r_t1v, &rs->r_t1, NULL); /* UR1/, 36D     */
-    rs->uv1  = agc_vec_unit(ip, rs->v_t1v, NULL, NULL);      /* UV1/          */
+    rs->ur1 = agc_vec_unit(ip, rs->r_t1v, &rs->r_t1, NULL); /* UR1/, 36D     */
+    rs->uv1 = agc_vec_unit(ip, rs->v_t1v, NULL, NULL);      /* UV1/          */
     rs->cfpa = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, rs->uv1, rs->ur1), 1));
 
     if (agc_dp_sub(ip, agc_dp_abs(rs->cfpa), EPC1RTE) >= 0)
@@ -259,7 +259,7 @@ agc_status_t rte_conic_setup(agc_interp_t *ip, rte_erasable_t *rs)
  **********************************************************************/
 agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t rvec, agc_vec_t vvec, agc_dp_t rdesired)
 {
-    agc_timerad_in_t     in;  /* TIMERAD inputs */
+    agc_timerad_in_t in;  /* TIMERAD inputs */
     agc_conic_time_out_t out; /* TIMERAD outputs (R, V, T) */
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rdesired > 0))
@@ -268,12 +268,12 @@ agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t rve
     }
 
     agc_flag_clear(AGC_FLAG_RVSW);
-    in.rvec         = rvec;
-    in.vvec         = vvec;
-    in.rdesired     = rdesired;
-    in.sgnrdot      = SGNRDOT_DOWN;
-    in.rvsw         = false;
-    in.body         = AGC_CONIC_EARTH;                  /* LXC,1 CONICX1 */
+    in.rvec = rvec;
+    in.vvec = vvec;
+    in.rdesired = rdesired;
+    in.sgnrdot = SGNRDOT_DOWN;
+    in.rvsw = false;
+    in.body = AGC_CONIC_EARTH;                  /* LXC,1 CONICX1 */
     agc_status_t st = agc_conic_timerad(ip, &in, &out); /* TIMERAD status */
 
     if (st != AGC_STATUS_OK)
@@ -281,9 +281,9 @@ agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t rve
         return (st);
     }
 
-    rs->v_t2v   = out.vnew; /* V(T2)/        */
-    rs->r_t2v   = out.rnew; /* R(T2)/        */
-    rs->t12     = out.t;    /* T12           */
+    rs->v_t2v = out.vnew; /* V(T2)/        */
+    rs->r_t2v = out.rnew; /* R(T2)/        */
+    rs->t12 = out.t;    /* T12           */
     rs->conic_t = out.t;    /* T (30D)       */
 
     return (AGC_STATUS_OK);
@@ -311,7 +311,7 @@ agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t rve
  **********************************************************************/
 static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t xd)
 {
-    int      n1 = 0; /* NORM shift count (X1) */
+    int n1 = 0; /* NORM shift count (X1) */
     agc_dp_t dx;     /* DX(T2) correction, B0 */
 
     if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->nn1a < 0))
@@ -319,9 +319,9 @@ static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t  xerr  = agc_dp_sub(ip, xd, rs->x_t2);                             /* X(T2)ERR 00D, B0 */
-    agc_vec_t ur2   = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);                  /* ALPHAV, B1 */
-    agc_dp_t  rcon1 = agc_dp_add(ip, agc_latlong_geterad(ip, ur2.c[2]), E3RTE); /* RCON: Fischer radius + 400 kft, m B29 */
+    agc_dp_t xerr = agc_dp_sub(ip, xd, rs->x_t2);                             /* X(T2)ERR 00D, B0 */
+    agc_vec_t ur2 = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);                  /* ALPHAV, B1 */
+    agc_dp_t rcon1 = agc_dp_add(ip, agc_latlong_geterad(ip, ur2.c[2]), E3RTE); /* RCON: Fischer radius + 400 kft, m B29 */
 
     if ((agc_dp_sub(ip, agc_dp_abs(agc_dp_sub(ip, rcon1, rs->rcon)), EPC2RTE) < 0) && (agc_dp_sub(ip, agc_dp_abs(xerr), EPC3RTE) < 0))
     {
@@ -344,21 +344,19 @@ static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t
     else
     {
         agc_dp_t z1 = agc_dp_norm(agc_dp_sub(ip, xerr, rs->drcon), &n1);           /* Z1 = X(T2)ERR - X(T2)ERR', B0 x 2^n1 */
-        agc_dp_t q  = agc_dp_div(ip, agc_dp_sub(ip, rs->rpre_prev, rs->x_t2), z1); /* Z2/Z1, B0 */
+        agc_dp_t q = agc_dp_div(ip, agc_dp_sub(ip, rs->rpre_prev, rs->x_t2), z1); /* Z2/Z1, B0 */
 
         dx = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(q, xerr), n1)); /* SL* 0,1 */
     }
 
     rs->rcon = rcon1; /* RTE390        */
 
-    if (agc_interp_test_ovf(ip))
+    if (!agc_interp_test_ovf(ip)) /* BOV RTE360    */
     {
-        return (AGC_STATUS_OK); /* BOV RTE360    */
+        rs->drcon = xerr;     /* X(T2)ERR,     */
+        rs->rpre_prev = rs->x_t2; /* X(T2)PRI      */
+        rs->x_t2 = agc_dp_add(ip, dx, rs->x_t2);
     }
-
-    rs->drcon     = xerr;     /* X(T2)ERR,     */
-    rs->rpre_prev = rs->x_t2; /* X(T2)PRI      */
-    rs->x_t2      = agc_dp_add(ip, dx, rs->x_t2);
 
     return (AGC_STATUS_OK);
 } /* conic_correct */
@@ -401,8 +399,8 @@ agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t rte
     }
 
     rs->mamax2 = agc_dp_shl(ip, agc_dp_poly(rs->r_t1, MAMAX2_POLY, 3), 1);
-    rs->nn1a   = -RTE_CONIC_PASSES; /* M9RTEB28      */
-    rs->rcon   = K2RTE;             /* RTE320        */
+    rs->nn1a = -RTE_CONIC_PASSES; /* M9RTEB28      */
+    rs->rcon = K2RTE;             /* RTE320        */
 
     if (rs->rtegam2d != 0)
     {
@@ -435,7 +433,7 @@ agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t rte
             return (st);
         }
 
-        rs->t2      = agc_dp_add(ip, rs->t12, rs->t1);
+        rs->t2 = agc_dp_add(ip, rs->t12, rs->t1);
         agc_dp_t xd = rs->x_t2; /* RTE372 X(T2) wanted, B0 */
 
         if (rs->rtegam2d == 0)
@@ -456,7 +454,7 @@ agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t rte
     if (st == AGC_STATUS_OK)
     {
         rs->alarm_code = RTE_ALARM_ITERATIONS; /* cannot happen: NN1A bounds it */
-        st             = AGC_STATUS_ALARM;
+        st = AGC_STATUS_ALARM;
     }
 
     return (st);
@@ -531,9 +529,9 @@ agc_status_t rte_augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t abs_gamma, agc_
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_dp_t d21  = agc_dp_sub(ip, v, V21K);   /* DSU V(21K), m/cs B7 */
-    const agc_dp_t d24  = agc_dp_sub(ip, d21, V3K);  /* DSU V(3K), m/cs B7 */
-    const agc_dp_t d28  = agc_dp_sub(ip, d24, V4K);  /* DSU V(4K), m/cs B7 */
+    const agc_dp_t d21 = agc_dp_sub(ip, v, V21K);   /* DSU V(21K), m/cs B7 */
+    const agc_dp_t d24 = agc_dp_sub(ip, d21, V3K);  /* DSU V(3K), m/cs B7 */
+    const agc_dp_t d28 = agc_dp_sub(ip, d24, V4K);  /* DSU V(4K), m/cs B7 */
     const agc_dp_t d284 = agc_dp_sub(ip, d28, V400); /* DSU V(400), m/cs B7 */
 
     if (d21 < 0)
@@ -579,52 +577,6 @@ agc_status_t rte_augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t abs_gamma, agc_
 } /* rte_augekugl */
 
 /**********************************************************************
- * RTEDISP .. RTD18 (pp. 902-903): VPRED, T3TOT4, GAMMAEI at R(T2) and the
- * delta V in local vertical coordinates (X forward, Z down; X negated for a
- * retrograde orbit).
- *
- * FUNCTION NAME: display_entry
- *
- * ARGUMENTS:
- *   Argument  Type                    I/O  Description (scale)
- *   --------  ----------------------  ---  ------------------------------
- *   ip        agc_interp_t *          IO   interpreter state of the job:
- *                                          OVFIND, DVSIGN, alarms
- *   rs        const rte_erasable_t *  I    P37 erasables (RTE names, scales
- *                                          in internal.h)
- *   tig       agc_dp_t                I    time of ignition, cs B28
- *   out       rte_display_t *         O    display values (VPRED, T3TOT4,
- *                                          GAMMAEI, DELVLVC, VGDISP)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a failed
- *          assertion
- **********************************************************************/
-static agc_status_t display_entry(agc_interp_t *ip, const rte_erasable_t *rs, agc_dp_t tig, rte_display_t *out)
-{
-    agc_vec_t uv2 = agc_vec_unit(ip, rs->v_t2v, &out->vpred, NULL); /* UNIT(V(T2)/), B1 */
-
-    out->t3tot4   = agc_dp_sub(ip, rs->t2, tig);                                     /* T21           */
-    agc_vec_t ur2 = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);                         /* UR(T2), B1 */
-    agc_dp_t  c   = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, ur2, uv2), 1)); /* DOT SL1: cos, B1 */
-
-    out->gammaei  = agc_dp_sub(ip, ONE_B2, agc_dp_acos(ip, c)); /* ARCCOS BDSU   */
-    agc_vec_t dvv = agc_vec_sub(ip, rs->v2_t1v, rs->v_t1v);     /* DV, m/cs B7 */
-    agc_dp_t  z   = agc_dp_neg(agc_vec_dot(ip, dvv, rs->ur1));  /* B7 */
-    agc_dp_t  x   = agc_vec_dot(ip, dvv, rs->uh);               /* DV.UH, m/cs B7 */
-
-    out->delvlvc = agc_vec_shl(ip, agc_vec_make(x, 0, z), 1); /* VDEF VSL1     */
-
-    if (agc_flag_test(AGC_FLAG_RETROFLG))
-    {
-        out->delvlvc.c[0] = agc_dp_neg(out->delvlvc.c[0]); /* RETROGRADE    */
-    }
-
-    out->vgdisp = agc_vec_abval(ip, out->delvlvc); /* RTD18         */
-
-    return (AGC_STATUS_OK);
-}
-
-/**********************************************************************
  * RTEDISP (P37_P70.agc pp. 902-904): "OUTPUT FOR DISPLAY IS CONVERTED TO
  * PROPER UNITS ... LANDING SITE COMPUTATION ... IS INCLUDED". Leaves R(T2)/
  * V(T2)/ T12 at 300,000 ft, as the AGC does.
@@ -654,7 +606,47 @@ agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t t
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = display_entry(ip, rs, tig, out); /* RTEDISP status */
+    /**********************************************************************
+     * RTEDISP .. RTD18 (pp. 902-903): VPRED, T3TOT4, GAMMAEI at R(T2) and the
+     * delta V in local vertical coordinates (X forward, Z down; X negated for a
+     * retrograde orbit).
+     *
+     * FUNCTION NAME: display_entry
+     *
+     * ARGUMENTS:
+     *   Argument  Type                    I/O  Description (scale)
+     *   --------  ----------------------  ---  ------------------------------
+     *   ip        agc_interp_t *          IO   interpreter state of the job:
+     *                                          OVFIND, DVSIGN, alarms
+     *   rs        const rte_erasable_t *  I    P37 erasables (RTE names, scales
+     *                                          in internal.h)
+     *   tig       agc_dp_t                I    time of ignition, cs B28
+     *   out       rte_display_t *         O    display values (VPRED, T3TOT4,
+     *                                          GAMMAEI, DELVLVC, VGDISP)
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a failed
+     *          assertion
+     **********************************************************************/
+    agc_vec_t uv2 = agc_vec_unit(ip, rs->v_t2v, &out->vpred, NULL); /* UNIT(V(T2)/), B1 */
+
+    out->t3tot4 = agc_dp_sub(ip, rs->t2, tig);                                     /* T21           */
+    agc_vec_t ur2 = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);                         /* UR(T2), B1 */
+    agc_dp_t c = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, ur2, uv2), 1)); /* DOT SL1: cos, B1 */
+
+    out->gammaei = agc_dp_sub(ip, ONE_B2, agc_dp_acos(ip, c)); /* ARCCOS BDSU   */
+    agc_vec_t dvv = agc_vec_sub(ip, rs->v2_t1v, rs->v_t1v);     /* DV, m/cs B7 */
+    agc_dp_t z = agc_dp_neg(agc_vec_dot(ip, dvv, rs->ur1));  /* B7 */
+    agc_dp_t x = agc_vec_dot(ip, dvv, rs->uh);               /* DV.UH, m/cs B7 */
+
+    out->delvlvc = agc_vec_shl(ip, agc_vec_make(x, 0, z), 1); /* VDEF VSL1     */
+
+    if (agc_flag_test(AGC_FLAG_RETROFLG))
+    {
+        out->delvlvc.c[0] = agc_dp_neg(out->delvlvc.c[0]); /* RETROGRADE    */
+    }
+
+    out->vgdisp = agc_vec_abval(ip, out->delvlvc); /* RTD18         */
+    agc_status_t st = AGC_STATUS_OK;                   /* RTEDISP status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -667,10 +659,10 @@ agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t t
      * ALPHAV = UR3 COS(PHIE) + UH3 SIN(PHIE), UH3 = UNIT(UR3 X UV3 X UR3);
      * LAT-LONG (ERADFLAG, LUNAFLAG clear) at T(LS).                      */
     agc_dp_t phie = 0; /* PHIE, revs B0 */
-    agc_dp_t te   = 0; /* TE, cs B28 */
-    agc_dp_t v3   = 0; /* V3, m/cs B7 */
+    agc_dp_t te = 0; /* TE, cs B28 */
+    agc_dp_t v3 = 0; /* V3, m/cs B7 */
 
-    agc_dp_t     rdes    = agc_dp_sub(ip, agc_vec_abval(ip, rs->r_t2v), M30480); /* R3 = R(T2) - 100 kft, m B29 */
+    agc_dp_t rdes = agc_dp_sub(ip, agc_vec_abval(ip, rs->r_t2v), M30480); /* R3 = R(T2) - 100 kft, m B29 */
     agc_status_t st_site = rte_time_radius(ip, rs, rs->r_t2v, rs->v_t2v, rdes);  /* site status */
 
     if (st_site != AGC_STATUS_OK)
@@ -678,9 +670,9 @@ agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t t
         return (st_site);
     }
 
-    agc_vec_t ur3    = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);                                          /* UR3, B1 */
-    agc_vec_t uv3    = agc_vec_unit(ip, rs->v_t2v, &v3, NULL);                                           /* UV3, B1 */
-    agc_dp_t  gammae = agc_dp_asin(ip, agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, ur3, uv3), 1))); /* GAMMAE, revs B0 */
+    agc_vec_t ur3 = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);                                          /* UR3, B1 */
+    agc_vec_t uv3 = agc_vec_unit(ip, rs->v_t2v, &v3, NULL);                                           /* UV3, B1 */
+    agc_dp_t gammae = agc_dp_asin(ip, agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, ur3, uv3), 1))); /* GAMMAE, revs B0 */
 
     st_site = rte_augekugl(ip, v3, agc_dp_abs(gammae), &phie, &te);
 
@@ -698,13 +690,13 @@ agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t t
 
     agc_vec_t uh3 = agc_vec_cross(ip, agc_vec_cross(ip, ur3, uv3), ur3); /* UH3, B1 */
 
-    uh3              = agc_vec_unit(ip, uh3, NULL, NULL);
+    uh3 = agc_vec_unit(ip, uh3, NULL, NULL);
     agc_vec_t alphav = agc_vec_add(ip, agc_vec_scale(ip, ur3, agc_dp_cos(phie)), agc_vec_scale(ip, uh3, agc_dp_sin(phie))); /* ALPHAV landing site, B1 */
 
     agc_flag_clear(AGC_FLAG_ERADFLAG);
     agc_flag_clear(AGC_FLAG_LUNAFLAG);
-    agc_navaux_padload_t    pad; /* pad loads (earth) */
-    agc_latlong_t           ll;  /* LAT LONG ALT of the site */
+    agc_navaux_padload_t pad; /* pad loads (earth) */
+    agc_latlong_t ll;  /* LAT LONG ALT of the site */
     const agc_latlong_opt_t opt = {false, false};
 
     st_site = agc_navaux_get_padload(&pad);

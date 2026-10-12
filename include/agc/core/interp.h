@@ -89,13 +89,13 @@ typedef struct agc_mat
 typedef struct agc_interp
 {
     agc_ovf_t ovfind;                  /* OVFIND: 0, or +-1 (sign of the overflow)    */
-    agc_sp_t  x1;                      /* X1 index register, unscaled (as data)       */
-    agc_sp_t  x2;                      /* X2 index register, unscaled                 */
-    agc_sp_t  s1;                      /* S1 step register, unscaled                  */
-    agc_sp_t  s2;                      /* S2 step register, unscaled                  */
-    bool      sw[AGC_INTERP_SWITCHES]; /* interpretive switch bits    */
-    bool      dvsign_neg;              /* DVSIGN (= DOTINC) holds -0: last divide gave a negative quotient (see DVOVF) */
-    agc_dp_t  mpac;                    /* MPAC as left by a DAD/DDV whose result only sets OVFIND (BOV next) */
+    agc_sp_t x1;                      /* X1 index register, unscaled (as data)       */
+    agc_sp_t x2;                      /* X2 index register, unscaled                 */
+    agc_sp_t s1;                      /* S1 step register, unscaled                  */
+    agc_sp_t s2;                      /* S2 step register, unscaled                  */
+    bool sw[AGC_INTERP_SWITCHES]; /* interpretive switch bits    */
+    bool dvsign_neg;              /* DVSIGN (= DOTINC) holds -0: last divide gave a negative quotient (see DVOVF) */
+    agc_dp_t mpac;                    /* MPAC as left by a DAD/DDV whose result only sets OVFIND (BOV next) */
 } agc_interp_t;
 
 void agc_interp_init(agc_interp_t *ip);
@@ -109,10 +109,10 @@ void     agc_dp_div_ovf_only(agc_interp_t *ip, agc_dp_t a, agc_dp_t b); /* DDV, 
 agc_dp_t agc_dp_sub(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);          /* DSU   */
 agc_dp_t agc_dp_mul(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);          /* DMPR  */
 agc_dp_t agc_dp_div(agc_interp_t *ip, agc_dp_t a, agc_dp_t b);          /* DDV   */
-agc_dp_t agc_dp_sq(agc_dp_t a);                       /* DSQ   */
-agc_dp_t agc_dp_sqrt(agc_dp_t a);                     /* SQRT  */
-agc_dp_t agc_dp_sin(agc_dp_t a);                      /* SIN   */
-agc_dp_t agc_dp_cos(agc_dp_t a);                      /* COS   */
+agc_dp_t agc_dp_sq(agc_dp_t a);                                         /* DSQ   */
+agc_dp_t agc_dp_sqrt(agc_dp_t a);                                       /* SQRT  */
+agc_dp_t agc_dp_sin(agc_dp_t a);                                        /* SIN   */
+agc_dp_t agc_dp_cos(agc_dp_t a);                                        /* COS   */
 agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a);                     /* ASIN  */
 agc_dp_t agc_dp_acos(agc_interp_t *ip, agc_dp_t a);                     /* ACOS  */
 agc_dp_t agc_dp_shl(agc_interp_t *ip, agc_dp_t a, int n);               /* SL n  */
@@ -134,7 +134,7 @@ agc_dp_t  agc_vec_abval(agc_interp_t *ip, agc_vec_t v);              /* ABVAL*/
 /* UNIT: returns unit vector; *abval = |v| (scaled as v), *vsq = |v|^2 as
  * left at 34D/36D by the AGC. Either out pointer may be NULL.            */
 agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *vsq);
-agc_dp_t  agc_vec_unit_abval(agc_interp_t *ip, agc_vec_t v); /* UNIT, LV only */
+agc_dp_t  agc_vec_unit_abval(agc_interp_t *ip, agc_vec_t v);        /* UNIT, LV only */
 agc_vec_t agc_vec_proj(agc_interp_t *ip, agc_vec_t u, agc_vec_t v); /* VPROJ*/
 agc_vec_t agc_vec_shl(agc_interp_t *ip, agc_vec_t v, int n);        /* VSL  */
 agc_vec_t agc_vec_shr(agc_vec_t v, int n);                          /* VSR  */

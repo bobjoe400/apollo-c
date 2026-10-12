@@ -75,16 +75,16 @@
 
 static agc_job_id_t almcadr;      /* ALMCADR: job that raised the alarm  */
 static agc_job_id_t localarm;     /* LOCALARM (CSM): LOC at the alarm    */
-static bool         enema_wanted; /* WHIMPER requested, not yet run      */
-static uint16_t     restarts_run; /* software restarts serviced (debug)  */
+static bool enema_wanted; /* WHIMPER requested, not yet run      */
+static uint16_t restarts_run; /* software restarts serviced (debug)  */
 
 /* VAC5STOR (C p.204): copy of LOC, PRIORITY of each core set, the phase
  * table and NEWJOB, for post-flight analysis of a restart.            */
 static struct
 {
     agc_exec_core_info_t core[AGC_EXEC_MAX_JOBS];   /* LOC, BANKSET, PRIORITY of each core set */
-    uint16_t             phase[AGC_RESTART_GROUPS]; /* PHASE1 .. PHASE6 */
-    int                  newjob;                    /* NEWJOB */
+    uint16_t phase[AGC_RESTART_GROUPS]; /* PHASE1 .. PHASE6 */
+    int newjob;                    /* NEWJOB */
 } vac5;
 
 /**********************************************************************
@@ -96,50 +96,20 @@ static struct
  **********************************************************************/
 void exec_vac5stor(void)
 {
-    if (agc_state_vehicle() != AGC_VEHICLE_CSM)
+    if (agc_state_vehicle() == AGC_VEHICLE_CSM) /* Comanche only     */
     {
-        return; /* Comanche only     */
-    }
-
-    for (int i = 0; i < AGC_EXEC_MAX_JOBS; i++)
-    {
-        agc_status_t st = agc_exec_core_info(i, &vac5.core[i]); /* copy of core set i */
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        for (int i = 0; i < AGC_EXEC_MAX_JOBS; i++)
         {
-            return;
+            agc_exec_core_info(i, &vac5.core[i]); /* copy of core set i */
         }
+
+        for (int g = 1; g <= AGC_RESTART_GROUPS; g++)
+        {
+            vac5.phase[g - 1] = agc_phase_get(g);
+        }
+
+        vac5.newjob = agc_exec_newjob();
     }
-
-    for (int g = 1; g <= AGC_RESTART_GROUPS; g++)
-    {
-        vac5.phase[g - 1] = agc_phase_get(g);
-    }
-
-    vac5.newjob = agc_exec_newjob();
-    if (!AGC_ASSERT(vac5.newjob >= -1))
-    {
-        return;
-    }
-
-}
-
-/**********************************************************************
- * PROGLARM (C p.1494 / L p.1382): CS DSPTAB +11D / MASK OCT40400 / ADS --
- * turn on the PROG lamp and mark the lamp word for output.
- *
- * ARGUMENTS: none
- **********************************************************************/
-static void proglarm(void)
-{
-    uint16_t w = agc_erase_dsptab(AL_DSPTAB_LAMPS); /* DSPTAB +11D, the C/S lamp word */
-
-    if (!AGC_ASSERT(w <= 077777u))
-    {
-        return;
-    }
-
-    agc_erase_set_dsptab(AL_DSPTAB_LAMPS, (uint16_t) (w | AL_OCT40400));
 }
 
 /**********************************************************************
@@ -157,29 +127,31 @@ static void store_alarm(agc_alarm_code_t code)
         localarm = almcadr; /* CA LOC/TS LOCALARM */
     }
 
-    agc_status_t st; /* outcome of the FAILREG store */
-
     if (agc_erase_failreg(0) == 0U)
     {
-        st = agc_erase_set_failreg(0, code); /* first alarm       */
-        proglarm();
+        agc_erase_set_failreg(0, code); /* first alarm       */
+
+        /**********************************************************************
+         * PROGLARM (C p.1494 / L p.1382): CS DSPTAB +11D / MASK OCT40400 / ADS --
+         * turn on the PROG lamp and mark the lamp word for output.
+         *
+         * ARGUMENTS: none
+         **********************************************************************/
+        uint16_t w = agc_erase_dsptab(AL_DSPTAB_LAMPS); /* DSPTAB +11D, the C/S lamp word */
+
+        agc_erase_set_dsptab(AL_DSPTAB_LAMPS, (uint16_t) (w | AL_OCT40400));
     }
     else if (agc_erase_failreg(1) == 0U)
     {
-        st = agc_erase_set_failreg(1, code);
+        agc_erase_set_failreg(1, code);
     }
     else if ((agc_erase_failreg(2) & AL_POSMAX) != 0U)
     {
-        st = agc_erase_set_failreg(2, (uint16_t) (code | AL_BIT15));
+        agc_erase_set_failreg(2, (uint16_t) (code | AL_BIT15));
     }
     else
     {
-        st = agc_erase_set_failreg(2, code);
-    }
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return;
+        agc_erase_set_failreg(2, code);
     }
 }
 
@@ -191,19 +163,9 @@ static void store_alarm(agc_alarm_code_t code)
  **********************************************************************/
 void agc_alarm(agc_alarm_code_t code)
 {
-    if (!AGC_ASSERT(code != 0U && code <= AL_POSMAX))
-    {
-        return;
-    }
-
     agc_inhint();
     store_alarm(code);
     agc_relint();
-
-    if (!AGC_ASSERT(agc_erase_failreg(0) != 0U))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -214,16 +176,6 @@ void agc_alarm(agc_alarm_code_t code)
  **********************************************************************/
 void agc_exec_varalarm(agc_alarm_code_t code)
 {
-    if (!AGC_ASSERT(code != 0U))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(code <= AL_POSMAX))
-    {
-        return;
-    }
-
     agc_alarm(code);
 }
 
@@ -235,11 +187,6 @@ void agc_exec_varalarm(agc_alarm_code_t code)
 void agc_curtains(void)
 {
     _Static_assert(AGC_ALARM_00217 <= AL_POSMAX, "AGC constant");
-
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return;
-    }
 
     agc_alarm(AGC_ALARM_00217);
 }
@@ -260,11 +207,6 @@ void agc_prioalarm(agc_alarm_code_t code)
     agc_inhint();
     store_alarm(code);
     agc_relint();
-
-    if (!AGC_ASSERT(agc_erase_failreg(0) != 0U))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -274,17 +216,7 @@ void agc_prioalarm(agc_alarm_code_t code)
  **********************************************************************/
 void exec_request_enema(void)
 {
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return;
-    }
-
     enema_wanted = true;
-    if (!AGC_ASSERT(enema_wanted))
-    {
-        return;
-    }
-
 }
 
 /**********************************************************************
@@ -322,16 +254,6 @@ agc_status_t agc_exec_enema(void)
  **********************************************************************/
 bool agc_exec_restart_pending(void)
 {
-    if (!AGC_ASSERT(restarts_run < UINT16_MAX))
-    {
-        return (false);
-    }
-
-    if (!AGC_ASSERT(agc_erase_failreg(2) <= 077777u))
-    {
-        return (false);
-    }
-
     return (enema_wanted);
 }
 
@@ -359,8 +281,8 @@ agc_status_t agc_exec_service_restart(void)
         return (AGC_STATUS_OK);
     }
 
-    enema_wanted    = false;
-    restarts_run    = (uint16_t) (restarts_run + 1U);
+    enema_wanted = false;
+    restarts_run = (uint16_t) (restarts_run + 1U);
     agc_status_t st = fresh_enema(); /* ENEMA outcome */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT || st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND || st == AGC_STATUS_UNIMPLEMENTED))
@@ -413,11 +335,6 @@ static void poodoo_flags(void)
     agc_flag_clear(AGC_FLAG_STATEFLG);
     agc_flag_clear(AGC_FLAG_REINTFLG);
     agc_flag_clear(AGC_FLAG_NODOFLAG);
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_STATEFLG)))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -452,20 +369,20 @@ static agc_status_t gopoodoo(void)
         {
             return (s1);
         }
-
-        return (st);
     }
-
-    agc_status_t k1 = agc_phase_change_program_klean(); /* groups 1,3,5,6    */
-    agc_status_t k2 = agc_phase_mr_klean();             /* 2,4,... (4 last)  */
-
-    if (!AGC_ASSERT(k1 == AGC_STATUS_OK && k2 == AGC_STATUS_OK))
+    else
     {
-        return (AGC_STATUS_BAD_ARG);
-    }
+        agc_status_t k1 = agc_phase_change_program_klean(); /* groups 1,3,5,6    */
+        agc_status_t k2 = agc_phase_mr_klean();             /* 2,4,... (4 last)  */
 
-    exec_request_enema(); /* TCF WHIMPER       */
-    agc_relint();
+        if (!AGC_ASSERT(k1 == AGC_STATUS_OK && k2 == AGC_STATUS_OK))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        exec_request_enema(); /* TCF WHIMPER       */
+        agc_relint();
+    }
 
     return (st);
 }
@@ -479,10 +396,15 @@ static agc_status_t gopoodoo(void)
  * exec, so they are raised when the job or task returns.
  *
  * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the POODOO 1302 outcome
+ *          (POODOO, or BAILOUT with average-G on); the restart it
+ *          requested is serviced by the caller (agc_exec_restart_pending)
  **********************************************************************/
-void exec_service_interp_alarm(void)
+agc_status_t exec_service_interp_alarm(void)
 {
     uint16_t code = agc_interp_take_alarm(); /* 1301, 1302 or 0 latched by the interpreter */
+    agc_status_t st = AGC_STATUS_OK;
 
     if (code == 01301u)
     {
@@ -490,17 +412,14 @@ void exec_service_interp_alarm(void)
     }
     else if (code == 01302u)
     {
-        agc_status_t st = agc_poodoo((agc_alarm_code_t) 01302); /* POODOO 1302 outcome */
-
-        if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-        {
-            return;
-        }
+        st = agc_poodoo((agc_alarm_code_t) 01302); /* POODOO 1302 outcome */
     }
     else
     {
         /* none */
     }
+
+    return (st);
 }
 
 /**********************************************************************
@@ -544,11 +463,11 @@ agc_status_t agc_poodoo(agc_alarm_code_t code)
         }
 
         exec_request_enema(); /* TC WHIMPER        */
+
         if (!AGC_ASSERT(agc_phase_get(4) == 0U))
         {
             return (AGC_STATUS_BAD_ARG);
         }
-
 
         return (AGC_STATUS_POODOO);
     }

@@ -162,7 +162,7 @@ uint16_t rz_option(int which);
 #define RZ_DSPTEM1 0 /* DSPTEM1: DSPTEM1 +0 */
 #define RZ_DSPTEMX 4 /* DSPTEMX: DSPTEM2 +1 */
 agc_dp_t     rz_dsptem_dp(int index);
-agc_status_t rz_set_dsptem_dp(int index, agc_dp_t v);
+void         rz_set_dsptem_dp(int index, agc_dp_t v);
 agc_status_t rz_set_option(int which, uint16_t v);
 
 /* PHASCHNG type A (group, code), and type C restarting job `job` at

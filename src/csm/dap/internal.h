@@ -105,6 +105,5 @@ agc_status_t csm_tvc_gains(bool full);                /* S40.15 (full) or S40.15
 agc_status_t csm_tvc_pcopy(bool restart);             /* PCOPY (restart: PCOPY +1)   */
 agc_status_t csm_tvc_ycopy(bool restart);             /* YCOPY (restart: YCOPY +1)   */
 agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs); /* EXRSTRT targets    */
-agc_status_t csm_tvc_tstinit(void);                   /* TSTINIT                     */
 agc_status_t csm_tvc_hack(void);                      /* HACK (entry from the DAPs)  */
 #endif                                                /* CSM_DAP_INTERNAL_H */

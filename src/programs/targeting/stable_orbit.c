@@ -93,16 +93,14 @@ static agc_status_t so_flashr(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t no
 
     st = rz_flash(ctx, AGC_DSKY_GOFLASHR, verb, noun, AGC_JOB_GOTOPOOH, proceed, recycle);
 
-    if (st != AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK)
     {
-        return (st);
-    }
+        st = agc_dsky_blanket(blank);
 
-    st = agc_dsky_blanket(blank);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
+        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
     }
 
     return (st); /* TCF ENDOFJOB     */
@@ -432,12 +430,7 @@ agc_status_t agc_job_stable_orbit_option_chosen(agc_job_ctx_t *ctx)
 
     if (rz_is_csm())
     {
-        st = rz_set_dsptem_dp(RZ_DSPTEM1, rz->tpass4); /* FOR DISPLAY    */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        rz_set_dsptem_dp(RZ_DSPTEM1, rz->tpass4); /* FOR DISPLAY    */
     }
 
     return (agc_job_stable_orbit_deltar(ctx));
@@ -482,14 +475,7 @@ agc_status_t agc_job_stable_orbit_intercept_time(agc_job_ctx_t *ctx)
 {
     if (!rz_is_csm())
     {
-        agc_status_t st; /* TINT */
-
-        st = rz_set_dsptem_dp(RZ_DSPTEM1, agc_rendz_erasable()->tpass4);
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        rz_set_dsptem_dp(RZ_DSPTEM1, agc_rendz_erasable()->tpass4); /* TINT */
     }
 
     return (rz_vnpooh(ctx, 6U, 34U, AGC_JOB_STABLE_ORBIT_START));

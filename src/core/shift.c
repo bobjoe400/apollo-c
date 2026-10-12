@@ -55,44 +55,34 @@
  **********************************************************************/
 agc_w3_t agc_w_mpacshr(agc_w3_t m, int n, bool round)
 {
-    int32_t  t;     /* BIT14 indexed by n-1: 2^(14-n), unscaled  */
+    int32_t t;     /* BIT14 indexed by n-1: 2^(14-n), unscaled  */
     agc_w2_t lo2;   /* MPAC+1, MPAC+2 of the truncating shift    */
     agc_w2_t p;     /* MPAC, MPAC+1 of the rounding shift        */
-    int      o = 0; /* DAS overflow / rounding carry, +-1 or 0   */
-
-    if (!AGC_ASSERT((n >= 1) && (n <= 14)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
+    int o = 0; /* DAS overflow / rounding carry, +-1 or 0   */
 
     t = (int32_t) 1 << (14 - n);
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
 
     if (!round)
     {
         lo2.hi = agc_w_mp(t, m.m0).lo;                  /* DXCH MPAC        */
         lo2.lo = agc_w_mp(t, m.m2).hi;                  /* TS MPAC +2       */
-        lo2    = agc_w_das(lo2, agc_w_mp(t, m.m1), &o); /* DAS MPAC +1      */
-        m.m0   = agc_w_mp(t, m.m0).hi;
-        m.m1   = lo2.hi;
-        m.m2   = lo2.lo;
-
-        return (m);
+        lo2 = agc_w_das(lo2, agc_w_mp(t, m.m1), &o); /* DAS MPAC +1      */
+        m.m0 = agc_w_mp(t, m.m0).hi;
+        m.m1 = lo2.hi;
+        m.m2 = lo2.lo;
     }
-
-    /* MPACSRND: residual = major(m2 t) + minor(m1 t); DOUBLE; TS MPAC +2.  */
-    p.hi = 0;
-    p.lo = agc_w_mp(t, m.m1).hi;                /* trial minor part */
-    o    = agc_w_ovf(2 * (agc_w_mp(t, m.m2).hi + agc_w_mp(t, m.m1).lo));
-    p.lo += o;                                  /* ADS MPAC +1      */
-    p    = agc_w_das(p, agc_w_mp(t, m.m0), &o); /* DAS MPAC         */
-    m.m0 = p.hi;
-    m.m1 = p.lo;
-    m.m2 = 0;
+    else
+    {
+        /* MPACSRND: residual = major(m2 t) + minor(m1 t); DOUBLE; TS MPAC +2.  */
+        p.hi = 0;
+        p.lo = agc_w_mp(t, m.m1).hi;                /* trial minor part */
+        o = agc_w_ovf(2 * (agc_w_mp(t, m.m2).hi + agc_w_mp(t, m.m1).lo));
+        p.lo += o;                                  /* ADS MPAC +1      */
+        p = agc_w_das(p, agc_w_mp(t, m.m0), &o); /* DAS MPAC         */
+        m.m0 = p.hi;
+        m.m1 = p.lo;
+        m.m2 = 0;
+    }
 
     return (m);
 } /* agc_w_mpacshr */
@@ -131,14 +121,9 @@ agc_w2_t agc_w_vshrrnd(agc_w2_t p, int n)
  **********************************************************************/
 agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
 {
-    int       pass;       /* whole-word passes done */
-    int       left   = n; /* MPTEMP + 1       */ /* still to shift */
+    int pass;       /* whole-word passes done */
+    int left = n; /* MPTEMP + 1       */ /* still to shift */
     agc_ovf_t unused = 0; /* ROUNDSUB OVFIND (cannot overflow here) */
-
-    if (!AGC_ASSERT(n >= 1))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
 
     for (pass = 0; pass < SHIFT_MAX_WORDS; pass++)
     {
@@ -176,10 +161,10 @@ agc_w3_t agc_w_genscr(agc_w3_t m, int n, bool round)
  **********************************************************************/
 agc_w2_t agc_w_vright(agc_w2_t p, int n)
 {
-    int      pass;          /* whole-word passes done */
-    int      left = n;      /* places still to shift */
-    int      o    = 0;      /* SETROUND carry, then DAS overflow */
-    agc_w2_t rnd  = {0, 0}; /* rounding carry as a pair */
+    int pass;          /* whole-word passes done */
+    int left = n;      /* places still to shift */
+    int o = 0;      /* SETROUND carry, then DAS overflow */
+    agc_w2_t rnd = {0, 0}; /* rounding carry as a pair */
 
     for (pass = 0; pass < SHIFT_MAX_WORDS; pass++)
     {
@@ -188,12 +173,12 @@ agc_w2_t agc_w_vright(agc_w2_t p, int n)
             return (agc_w_vshrrnd(p, left));
         }
 
-        o      = agc_w_ovf(2 * p.lo);   /* SETROUND         */
+        o = agc_w_ovf(2 * p.lo);   /* SETROUND         */
         rnd.lo = o;
-        p.lo   = p.hi;                  /* XCH MPAC; +1     */
-        p.hi   = 0;
-        p      = agc_w_das(p, rnd, &o); /* DAS MPAC         */
-        left   -= 14;
+        p.lo = p.hi;                  /* XCH MPAC; +1     */
+        p.hi = 0;
+        p = agc_w_das(p, rnd, &o); /* DAS MPAC         */
+        left -= 14;
 
         if (left == 0)
         { /* MPTEMP = -0      */
@@ -263,22 +248,20 @@ agc_w3_t agc_w_tslc(agc_w3_t m, int *count)
 
     *count = 0;
 
-    if ((m.m0 == 0) && (m.m1 == 0) && (m.m2 == 0))
-    { /* BRANCH: zero     */
-        return (m);
-    }
-
-    m = agc_w_tpagree(m); /* TC TPAGREE       */
-
-    for (k = 0; k < SHIFT_MAX_LEFT; k++)
+    if (!((m.m0 == 0) && (m.m1 == 0) && (m.m2 == 0)))
     {
-        if ((m.m0 >= AGC_W_HALF) || (m.m0 <= -AGC_W_HALF))
-        {
-            break; /* DOUBLE; OVSK     */
-        }
+        m = agc_w_tpagree(m); /* TC TPAGREE       */
 
-        m      = agc_w_tp_shl1(m, &o); /* TSLCLOOP         */
-        *count += 1;
+        for (k = 0; k < SHIFT_MAX_LEFT; k++)
+        {
+            if ((m.m0 >= AGC_W_HALF) || (m.m0 <= -AGC_W_HALF))
+            {
+                break; /* DOUBLE; OVSK     */
+            }
+
+            m = agc_w_tp_shl1(m, &o); /* TSLCLOOP         */
+            *count += 1;
+        }
     }
 
     return (m);

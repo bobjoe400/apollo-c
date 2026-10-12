@@ -80,8 +80,8 @@ typedef struct agc_state_vector
 {
     agc_vec_t r;    /* position, meters, scale 2^29 always (RN); conic-local copies use 2^27 for moon */
     agc_vec_t v;    /* velocity, m/cs,   scale 2^7 always (VN); conic-local copies use 2^5 for moon  */
-    agc_dp_t  t;    /* time of state, centiseconds, scale 2^28        */
-    bool      moon; /* primary body (MOONFLAG equivalent)             */
+    agc_dp_t t;    /* time of state, centiseconds, scale 2^28        */
+    bool moon; /* primary body (MOONFLAG equivalent)             */
 } agc_state_vector_t;
 
 /*
@@ -100,7 +100,7 @@ typedef enum agc_vehicle_sv
     AGC_SV_OTHER = 1
 } agc_vehicle_sv_t;
 
-agc_status_t agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out); /* RN,VN,PIPTIME / other */
+void         agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out); /* RN,VN,PIPTIME / other */
 agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in);
 
 /* ---- shared erasables: agc_erase_<agcname>() / agc_erase_set_<agcname>() --
@@ -274,8 +274,8 @@ uint16_t agc_erase_dsptab(int index);
 void     agc_erase_set_dsptab(int index, uint16_t v);
 
 /* three alarm code registers FAILREG +0..+2 (octal alarm codes) Index 0..2. */
-uint16_t     agc_erase_failreg(int index);
-agc_status_t agc_erase_set_failreg(int index, uint16_t v);
+uint16_t agc_erase_failreg(int index);
+void     agc_erase_set_failreg(int index, uint16_t v);
 
 /* desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style
  * words, 2^15 = 1 revolution Index 0..2. */

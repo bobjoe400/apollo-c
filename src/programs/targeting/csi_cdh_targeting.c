@@ -109,11 +109,6 @@ static agc_dp_t csi_mod_hour(agc_interp_t *ip, agc_dp_t x)
         v = d;
     }
 
-    if (!AGC_ASSERT(v < RZ_60MIN))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -247,57 +242,6 @@ agc_status_t agc_job_csi_input(agc_job_ctx_t *ctx)
 }
 
 /**********************************************************************
- * LM VN0611 (p.~): TCSI <= 0 -> TCSI = time of the next apocenter of the
- * LM state (PRECSET at TETLEM, TIMERAD to DPPOSMAX), V06N11 again.
- * AGC: VN0611 (P32-P35_P72-P75.agc p.621)
- *
- * FUNCTION NAME: csi_lm_auto_tcsi
- *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
- *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
- *   rz        agc_rendz_t *    I/O  rendezvous erasables
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
- **********************************************************************/
-static agc_status_t csi_lm_auto_tcsi(agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz)
-{
-    agc_status_t st; /* PRECSET */
-
-    st = rz_precset(ip, rz, agc_erase_tetlem(), AGC_JOB_CSI_AFTER_TCSI);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    agc_timerad_in_t in; /* TIMERAD inputs */
-
-    in.rvec     = agc_rendz_vec_to_body(ip, rz, rz->ract3);
-    in.vvec     = agc_rendz_vec_to_body(ip, rz, rz->vact3);
-    in.rdesired = RZ_DPPOSMAX; /* beyond the apocenter      */
-    in.sgnrdot  = AGC_SP_HALF; /* not set by the AGC; unused at APSESW */
-    in.rvsw     = true;
-    in.body     = agc_conic_body_of_x1(rz->body.rtx1);
-    rz_flag_put(AGC_FLAG_RVSW, true);
-    agc_conic_time_out_t o;    /* conic result */
-
-    st = agc_conic_timerad(ip, &in, &o);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    rz->tcsi = agc_dp_add(ip, o.t, rz->tdec2);
-
-    return (rz_vnpooh(ctx, 6U, 11U, AGC_JOB_CSI_AFTER_TCSI));
-}
-
-/**********************************************************************
  * After V06N11: (LM: automatic TCSI) V06N55 NN, ELEV.
  * AGC: P32/P72A after V06N11, LM VN0611 (P32-P35_P72-P75.agc)
  *
@@ -319,7 +263,53 @@ agc_status_t agc_job_csi_after_tcsi(agc_job_ctx_t *ctx)
 
     if (!rz_is_csm() && agc_dp_neg(rz->tcsi) >= 0)
     {
-        return (csi_lm_auto_tcsi(ctx, &ip, rz));
+        /**********************************************************************
+         * LM VN0611 (p.~): TCSI <= 0 -> TCSI = time of the next apocenter of the
+         * LM state (PRECSET at TETLEM, TIMERAD to DPPOSMAX), V06N11 again.
+         * AGC: VN0611 (P32-P35_P72-P75.agc p.621)
+         *
+         * FUNCTION NAME: csi_lm_auto_tcsi
+         *
+         * ARGUMENTS:
+         *   Argument  Type             I/O  Description (scale)
+         *   --------  ---------------  ---  -------------------------------
+         *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+         *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
+         *   rz        agc_rendz_t *    I/O  rendezvous erasables
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
+         *          argument, else the status of the call that failed
+         **********************************************************************/
+        agc_status_t st; /* PRECSET */
+
+        st = rz_precset(&ip, rz, agc_erase_tetlem(), AGC_JOB_CSI_AFTER_TCSI);
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
+
+        agc_timerad_in_t in; /* TIMERAD inputs */
+
+        in.rvec     = agc_rendz_vec_to_body(&ip, rz, rz->ract3);
+        in.vvec     = agc_rendz_vec_to_body(&ip, rz, rz->vact3);
+        in.rdesired = RZ_DPPOSMAX; /* beyond the apocenter      */
+        in.sgnrdot  = AGC_SP_HALF; /* not set by the AGC; unused at APSESW */
+        in.rvsw     = true;
+        in.body     = agc_conic_body_of_x1(rz->body.rtx1);
+        rz_flag_put(AGC_FLAG_RVSW, true);
+        agc_conic_time_out_t o;    /* conic result */
+
+        st = agc_conic_timerad(&ip, &in, &o);
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
+
+        rz->tcsi = agc_dp_add(&ip, o.t, rz->tdec2);
+
+        return (rz_vnpooh(ctx, 6U, 11U, AGC_JOB_CSI_AFTER_TCSI));
     }
 
     return (rz_vnpooh(ctx, 6U, 55U, AGC_JOB_CSI_AFTER_NN_ELEV));
@@ -425,36 +415,6 @@ agc_status_t agc_job_csi_alarm_display(agc_job_ctx_t *ctx)
 }
 
 /**********************************************************************
- * P32/P72C .. P32/P72F (pp.653-654): UPDATFLG unless final, the times
- * modulo one hour, V06N75.
- * AGC: P32/P72C .. P32/P72F (P32-P33_P72-P73.agc pp.653-654)
- *
- * FUNCTION NAME: csi_results
- *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
- *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
- *   rz        agc_rendz_t *    I/O  rendezvous erasables
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
- **********************************************************************/
-static agc_status_t csi_results(agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz)
-{
-    if (!agc_flag_test(AGC_FLAG_FINALFLG))
-    {
-        agc_flag_set(AGC_FLAG_UPDATFLG);
-    }
-
-    rz->t1tot2 = csi_mod_hour(ip, rz->t1tot2); /* P32/P72E  */
-    rz->t2tot3 = csi_mod_hour(ip, rz->t2tot3); /* P32/P72F  */
-
-    return (rz_vnpooh(ctx, 6U, 75U, AGC_JOB_CSI_AFTER_RESULTS));
-}
-
-/**********************************************************************
  * P32/P72B (p.653): ADVANCE; passive TCSI -> TTPI (conic) as PASSIVE;
  * CSI/A; ALMXIT on failure.
  *
@@ -504,7 +464,32 @@ agc_status_t agc_job_csi_compute(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    return (csi_results(ctx, &ip, rz));
+    /**********************************************************************
+     * P32/P72C .. P32/P72F (pp.653-654): UPDATFLG unless final, the times
+     * modulo one hour, V06N75.
+     * AGC: P32/P72C .. P32/P72F (P32-P33_P72-P73.agc pp.653-654)
+     *
+     * FUNCTION NAME: csi_results
+     *
+     * ARGUMENTS:
+     *   Argument  Type             I/O  Description (scale)
+     *   --------  ---------------  ---  -------------------------------
+     *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+     *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
+     *   rz        agc_rendz_t *    I/O  rendezvous erasables
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
+     *          argument, else the status of the call that failed
+     **********************************************************************/
+    if (!agc_flag_test(AGC_FLAG_FINALFLG))
+    {
+        agc_flag_set(AGC_FLAG_UPDATFLG);
+    }
+
+    rz->t1tot2 = csi_mod_hour(&ip, rz->t1tot2); /* P32/P72E  */
+    rz->t2tot3 = csi_mod_hour(&ip, rz->t2tot3); /* P32/P72F  */
+
+    return (rz_vnpooh(ctx, 6U, 75U, AGC_JOB_CSI_AFTER_RESULTS));
 }
 
 /**********************************************************************

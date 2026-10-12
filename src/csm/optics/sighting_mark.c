@@ -244,13 +244,13 @@ agc_status_t agc_job_alternate_los_marked(agc_job_ctx_t *ctx)
     agc_inhint();
     agc_align_sxt_mark_t m;
 
-    m.t             = align_loadtime();
-    m.cduy          = agc_erase_cduy();
-    m.cdus          = ram->sac;
-    m.cduz          = agc_erase_cduz();
-    m.cdut          = ram->pac;
-    m.cdux          = agc_erase_cdux();
-    ram->sxt[0]     = m; /* INDEX MARKSTAT TS */
+    m.t = align_loadtime();
+    m.cduy = agc_erase_cduy();
+    m.cdus = ram->sac;
+    m.cduz = agc_erase_cduz();
+    m.cdut = ram->pac;
+    m.cdux = agc_erase_cdux();
+    ram->sxt[0] = m; /* INDEX MARKSTAT TS */
     agc_relint();
     agc_dsky_clearmrk(); /* CLEARMRK */
     agc_status_t st = align_flash(ctx, AGC_DSKY_GOPERF1, CHK_MARK_DONE, AGC_JOB_GOTOPOOH, AGC_JOB_SIGHTING_MARK_CODE_CLEAN, AGC_JOB_ALTERNATE_LOS_REMARK);
@@ -271,22 +271,20 @@ agc_status_t agc_job_alternate_los_remark(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *los_sm)
 {
-    agc_vec_t    v;
+    agc_vec_t v;
     agc_status_t st = agc_csm_sxtnb(ip, m->cdut, m->cdus, &v); /* SXTNB */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    const uint16_t yzx[3] = {m->cduy, m->cduz, m->cdux};
-    agc_cdutrig_t  t;
-
-    st = agc_guid_trg_nbsm(&t, yzx, &v); /* NBSM  */
 
     if (st == AGC_STATUS_OK)
     {
-        *los_sm = v;
+        const uint16_t yzx[3] = {m->cduy, m->cduz, m->cdux};
+        agc_cdutrig_t t;
+
+        st = agc_guid_trg_nbsm(&t, yzx, &v); /* NBSM  */
+
+        if (st == AGC_STATUS_OK)
+        {
+            *los_sm = v;
+        }
     }
 
     return (st);
@@ -302,11 +300,6 @@ static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
     w[4] = m->cduz;
     w[5] = m->cdut;
     w[6] = m->cdux;
-
-    if (!AGC_ASSERT(w[0] <= 077777u))
-    {
-        return;
-    }
 }
 
 /*
@@ -316,8 +309,8 @@ static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
  */
 agc_status_t agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm)
 {
-    agc_align_ram_t           *ram = agc_align_ram();
-    const agc_align_sxt_mark_t m   = ram->sxt[0];
+    agc_align_ram_t *ram = agc_align_ram();
+    const agc_align_sxt_mark_t m = ram->sxt[0];
 
     ram->tsight = m.t; /* TSIGHT   */
     uint16_t w[MARK_WORDS];

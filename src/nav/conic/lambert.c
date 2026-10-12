@@ -94,35 +94,6 @@ typedef enum lambert_next
 } lambert_next_t;
 
 /**********************************************************************
- * FIRSTIME (CONIC_SUBROUTINES.agc pp. 1285-1286) -- first step
- * (MAX - MIN) TWEEKIT with the sign of DELDEP. TWEEKIT is read as a DP
- * word: 40D = TWEEKIT and 41D = S2, which GETX has just set to 1 ("S2(41D)
- * SHOULDNT CONTAIN HI ORDER ONES").
- *
- * FUNCTION NAME: iterator_firstime
- *
- * ARGUMENTS:
- *   Argument  Type                    I/O  Description (scale)
- *   --------  ----------------------  ---  -----------------------------
- *   ip        agc_interp_t *          I/O  interpreter state (OVFIND)
- *   it        const agc_iterator_t *  I    MAX, MIN, TWEEKIT, DELDEP
- *
- * RETURNS: agc_tp_words_t -- trial DELINDEP, scale of INDEP
- *********************************************************************/
-static agc_tp_words_t iterator_firstime(agc_interp_t *ip, const agc_iterator_t *it)
-{
-    const agc_dp_words_t tw = {it->tweekit, 1};                          /* (TWEEKIT, S2), 2^0 */
-    agc_tp_words_t       m  = agc_mpac_dmp(agc_mpac_dload(it->min), tw); /* DMP: scale of INDEP */
-    const agc_dp_words_t lo = agc_mpac_store(m);                         /* 0D MIN TWEEKIT, scale of INDEP */
-
-    m = agc_mpac_dmp(agc_mpac_dload(it->max), tw); /* MAX TWEEKIT */
-
-    m = agc_mpac_dsu(ip, m, lo);
-
-    return (agc_mpac_sign(m, it->deldep)); /* SIGN DELDEP    */
-}
-
-/**********************************************************************
  * ITERATOR (CONIC_SUBROUTINES.agc pp. 1285-1286, labels ITERATOR,
  * SGNCHECK, MINCHECK, MODNGDEL, FIRSTIME, POSDEL, MAXCHECK, DELOK, NEWDEL,
  * MODPSDEL) -- secant step DELINDEP = DELINDEP DELDEP / (DEP - DEPREV),
@@ -147,7 +118,31 @@ static void iterator_run(agc_interp_t *ip, agc_iterator_t *it)
     if (it->slopesw)
     { /* BONCLR SLOPESW */
         it->slopesw = false;
-        m           = iterator_firstime(ip, it);
+
+        /**********************************************************************
+         * FIRSTIME (CONIC_SUBROUTINES.agc pp. 1285-1286) -- first step
+         * (MAX - MIN) TWEEKIT with the sign of DELDEP. TWEEKIT is read as a DP
+         * word: 40D = TWEEKIT and 41D = S2, which GETX has just set to 1 ("S2(41D)
+         * SHOULDNT CONTAIN HI ORDER ONES").
+         *
+         * FUNCTION NAME: iterator_firstime
+         *
+         * ARGUMENTS:
+         *   Argument  Type                    I/O  Description (scale)
+         *   --------  ----------------------  ---  -----------------------------
+         *   ip        agc_interp_t *          I/O  interpreter state (OVFIND)
+         *   it        const agc_iterator_t *  I    MAX, MIN, TWEEKIT, DELDEP
+         *
+         * RETURNS: agc_tp_words_t -- trial DELINDEP, scale of INDEP
+         *********************************************************************/
+        const agc_dp_words_t tw         = {it->tweekit, 1};                          /* (TWEEKIT, S2), 2^0 */
+        agc_tp_words_t       m_firstime = agc_mpac_dmp(agc_mpac_dload(it->min), tw); /* DMP: scale of INDEP */
+        const agc_dp_words_t lo         = agc_mpac_store(m_firstime);                /* 0D MIN TWEEKIT, scale of INDEP */
+
+        m_firstime = agc_mpac_dmp(agc_mpac_dload(it->max), tw); /* MAX TWEEKIT */
+
+        m_firstime = agc_mpac_dsu(ip, m_firstime, lo);
+        m          = agc_mpac_sign(m_firstime, it->deldep);
     }
     else
     {
@@ -283,7 +278,7 @@ static bool lambert_geometry(agc_interp_t *ip, agc_conic_ctx_t *ctx, const agc_l
 
     m                         = agc_mpac_shift(ip, agc_mpac_dload(ls->r1_r2), -1);
     m                         = agc_mpac_shift(ip, agc_mpac_ddv(ip, m, omc_n), n - 3); /* SL* 0 -3,1 */
-    const agc_dp_words_t root = agc_mpac_store(agc_mpac_sqrt(m));                  /* 2D 2^5 */
+    const agc_dp_words_t root = agc_mpac_store(agc_mpac_sqrt(m));                      /* 2D 2^5 */
 
     m           = agc_mpac_shift(ip, agc_mpac_dload(ctx->snth), -6);
     m           = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, ls->one_m_csth), root);
@@ -701,9 +696,6 @@ static agc_sp_t  g_geomsgn; /* GEOMSGN SP 2^0: +.5 short / -.5 long way */
  *********************************************************************/
 agc_vec_t agc_erase_un(void)
 {
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-    }
 
     return (g_un);
 }
@@ -739,13 +731,13 @@ agc_sp_t agc_erase_geomsgn(void)
  *********************************************************************/
 static void lambert_output(const agc_conic_ctx_t *ctx, const lambert_state_t *ls, agc_lambert_out_t *out)
 {
-    out->snth       = agc_conic_value_(ctx->snth);
-    out->csth       = agc_conic_value_(ctx->csth);
-    out->one_m_csth = agc_conic_value_(ls->one_m_csth);
-    out->coga       = agc_conic_value_(ctx->coga);
-    out->p          = agc_conic_value_(ctx->p);
-    out->r1a        = agc_conic_value_(ctx->r1a);
-    out->r1         = agc_conic_value_(ctx->r1);
+    out->snth       = agc_dp_from_words(ctx->snth);
+    out->csth       = agc_dp_from_words(ctx->csth);
+    out->one_m_csth = agc_dp_from_words(ls->one_m_csth);
+    out->coga       = agc_dp_from_words(ctx->coga);
+    out->p          = agc_dp_from_words(ctx->p);
+    out->r1a        = agc_dp_from_words(ctx->r1a);
+    out->r1         = agc_dp_from_words(ctx->r1);
     out->ur1        = ctx->ur1;
     out->u2         = ctx->u2;
     out->un         = ctx->un;

@@ -99,131 +99,6 @@ static agc_mat_t incorp_part(const agc_incorp_w_t *w, int b, int a)
 }
 
 /**********************************************************************
- * Z123 / INCOR1 (MEASUREMENT_INCORPORATION.agc p. 1253, labels Z123,
- *   INCOR1) -- ZI[a] = sum_b MXV(W part (b,a), BVECTOR[b])
- *
- * FUNCTION NAME: incorp_z
- *
- * ARGUMENTS:
- *   Argument  Type                    I/O  Description (scale)
- *   --------  ----------------------  ---  ----------------------------
- *   ip        agc_interp_t *          I/O  interpreter state
- *   w         const agc_incorp_w_t *  I    W, scale of the integration
- *   inc       agc_incorp_t *          I/O  in: bvector, dim9; out: zi
- *                                          (ZI[2] zeroed when 6-dim)
- *
- * RETURNS: void
- **********************************************************************/
-static void incorp_z(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t *inc)
-{
-    for (int a = 0; a < 3; a++)
-    { /* TIX,2 Z123      */
-        agc_vec_t z = agc_vec_zero(); /* ZI[a], scale of W B */
-
-        for (int b = 0; b < AGC_INCORP_BLKS; b++)
-        {
-            agc_mat_t m = incorp_part(w, b, a);                 /* scale of W */
-            agc_vec_t t = agc_mat_vec(ip, &m, inc->bvector[b]); /* scale W B */
-
-            z = agc_vec_add(ip, t, z); /* VAD* (first pass: 0 + t) */
-        }
-
-        inc->zi[a] = z;
-    }
-
-    if (!inc->dim9)
-    { /* BON DMENFLG     */
-        inc->zi[2] = agc_vec_zero();
-    }
-}
-
-/**********************************************************************
- * INCOR1A (MEASUREMENT_INCORPORATION.agc p. 1253, label INCOR1A)
- *   -- TRIPA = Z1^2 + Z2^2 + Z3^2 + VARIANCE
- *
- * FUNCTION NAME: incorp_tripa
- *
- * ARGUMENTS:
- *   Argument  Type                  I/O  Description (scale)
- *   --------  --------------------  ---  ------------------------------
- *   ip        agc_interp_t *        I/O  interpreter state
- *   inc       const agc_incorp_t *  I    zi, variance (scale of ZI^2)
- *
- * RETURNS: agc_tp_t -- TRIPA (A), TP at the scale of VARIANCE; 0 on bad
- *          input
- **********************************************************************/
-static agc_tp_t incorp_tripa(agc_interp_t *ip, const agc_incorp_t *inc)
-{
-    if (!AGC_ASSERT(agc_navaux_tp_ok(inc->variance) && (inc->variance >= 0)))
-    {
-        return (0);
-    }
-
-    /* VSQ RTB TPMODE keeps the full DOTSUB triple of each square.         */
-    agc_tp_t a = agc_vec_sq_tp(ip, inc->zi[0]); /* sum, scale of ZI^2 */
-
-    a = agc_tp_add(ip, a, agc_vec_sq_tp(ip, inc->zi[1]));
-    a = agc_tp_add(ip, a, agc_vec_sq_tp(ip, inc->zi[2]));
-
-    return (agc_tp_add(ip, a, inc->variance)); /* TAD VARIANCE */
-}
-
-/**********************************************************************
- * INCOR1B / INCOR1C (MEASUREMENT_INCORPORATION.agc pp. 1253-1254,
- *   labels INCOR1B, INCOR1C) -- GAMMA and NORMGAM
- *   TEMPVAR = VARIANCE 4^k (largest k without overflow), then
- *   GAMMA = (1/4) / NORM(TRIPA + sqrt(TRIPA TEMPVAR) 2^-k),
- *   NORMGAM = -(normalization count) - 2  (AGC index value),
- *   so that the true gamma is GAMMA 2^-NORMGAM
- *
- * FUNCTION NAME: incorp_gamma
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  ------------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- *   inc       agc_incorp_t *  I/O  in: variance; out: gamma (2^0),
- *                                  normgam
- *   tripa     agc_tp_t        I    TRIPA, scale of VARIANCE
- *
- * RETURNS: void
- **********************************************************************/
-static void incorp_gamma(agc_interp_t *ip, agc_incorp_t *inc, agc_tp_t tripa)
-{
-    agc_interp_clear_ovf(ip);          /* TLOAD BOV: clear  */
-    agc_tp_t tempvar = inc->variance;  /* scale of VARIANCE 4^k */
-    int      k       = 0;              /* X2 = 0            */
-    bool     ovf     = (tempvar == 0); /* BZE INCOR1C       */
-
-    for (int i = 0; (i < INCORP_MAX_SL2) && !ovf; i++)
-    {
-        agc_tp_t t = agc_tp_shift(ip, tempvar, 2); /* SL2: scale 4 TEMPVAR */
-
-        ovf = agc_interp_test_ovf(ip); /* BOV INCOR1C      */
-
-        if (!ovf)
-        {
-            tempvar = t; /* STORE TEMPVAR    */
-            k++;         /* INCR,2 1          */
-        }
-    }
-
-    /* TLOAD ROUND TRIPA, DMP TEMPVAR (its top two words): the TP product
-     * goes to SQRT whole; SL* 0,2 shifts the root right k places into
-     * MPAC+2 and TAD adds the TP TRIPA.                                    */
-    agc_tp_t prod = agc_dp_mul_tp(agc_tp_round(ip, tripa), agc_tp_to_dp(tempvar)); /* TRIPA TEMPVAR, scale of A^2 4^k */
-    agc_tp_t root = agc_tp_from_dp(agc_tp_sqrt(prod));                         /* scale A 2^k */
-    agc_tp_t den  = agc_tp_shift(ip, root, -k);                                    /* SL* 0,2: scale of A */
-    int      n    = 0;                                                             /* NORM count        */
-
-    den = agc_tp_add(ip, den, tripa); /* TAD TRIPA        */
-
-    den          = agc_tp_norm(den, &n);                                 /* NORM X2           */
-    inc->normgam = -n - 2;                                               /* INCR,2 -2; SXA,2  */
-    inc->gamma   = agc_dp_div(ip, INCORP_DP_QUARTER, agc_tp_to_dp(den)); /* BDDV: GAMMA, scale 2^0 */
-} /* incorp_gamma */
-
-/**********************************************************************
  * INCOR1C tail (MEASUREMENT_INCORPORATION.agc p. 1254, label INCOR1C)
  *   -- DELTAQ/A, both normalized
  *
@@ -250,54 +125,6 @@ static agc_dp_t incorp_dq_over_a(agc_interp_t *ip, const agc_incorp_t *inc, agc_
     *x1 = -m + q; /* XSU,1 S1 */
 
     return (agc_dp_div(ip, agc_dp_shr(dq, 1), a)); /* SR1 DDV  */
-}
-
-/**********************************************************************
- * NEWZCOMP / NEWZCMP1 (MEASUREMENT_INCORPORATION.agc pp. 1260-1261,
- *   labels NEWZCOMP, NEWZCMP1) -- normalize ZI by its largest magnitude
- *
- * FUNCTION NAME: incorp_newzcomp
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  ------------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state
- *   inc       agc_incorp_t *  I/O  zi shifted left p-2 (p = NORM count
- *                                  of max |ZI[a]|), normgam += 2(p-2)
- *   x1_dq     int             I    X1 from INCOR1C (-m + q)
- *
- * RETURNS: int -- the X1 for INCOR3, (p-2) + x1_dq
- **********************************************************************/
-static int incorp_newzcomp(agc_interp_t *ip, agc_incorp_t *inc, int x1_dq)
-{
-    if (!AGC_ASSERT((x1_dq <= NAVAUX_MAX_SHIFT) && (x1_dq >= -NAVAUX_MAX_SHIFT)))
-    {
-        return (0);
-    }
-
-    agc_dp_t normzi = agc_vec_abval(ip, inc->zi[0]); /* scale of ZI */
-
-    for (int a = 1; a < 3; a++)
-    {
-        agc_dp_t mag = agc_vec_abval(ip, inc->zi[a]); /* scale of ZI */
-
-        if (agc_dp_sub(ip, mag, normzi) >= 0)
-        { /* DSU BMN         */
-            normzi = mag;
-        }
-    }
-
-    int p     = agc_dp_norm_count(normzi); /* NORM X1         */
-    int shift = p - 2;                     /* INCR,1 2        */
-
-    for (int a = 0; a < 3; a++)
-    {
-        inc->zi[a] = agc_navaux_vec_shift(ip, inc->zi[a], shift); /* VSL* 0,1 */
-    }
-
-    inc->normgam = inc->normgam + (2 * shift); /* XSU,1 twice     */
-
-    return (shift + x1_dq); /* LXC,1 XAD,1     */
 }
 
 /**********************************************************************
@@ -340,40 +167,6 @@ static void incorp_omega(agc_interp_t *ip, const agc_incorp_w_t *w, agc_incorp_t
 }
 
 /**********************************************************************
- * INCOR3 (MEASUREMENT_INCORPORATION.agc p. 1255, label INCOR3)
- *   -- DELTAX[b] = OMEGA[b] (DELTAQ/A) shifted left -X1
- *
- * FUNCTION NAME: incorp_deltax
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  ------------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state
- *   inc       agc_incorp_t *  I/O  in: omega; out: deltax (state scale;
- *                                  the velocity triple a further VSL3)
- *   dqa       agc_dp_t        I    DELTAQ/A from INCOR1C (normalized)
- *   x1        int             I    X1 from NEWZCOMP
- *
- * RETURNS: void
- **********************************************************************/
-static void incorp_deltax(agc_interp_t *ip, agc_incorp_t *inc, agc_dp_t dqa, int x1)
-{
-    if (!AGC_ASSERT((x1 <= NAVAUX_MAX_SHIFT) && (x1 >= -NAVAUX_MAX_SHIFT)))
-    {
-        return;
-    }
-
-    for (int b = 0; b < AGC_INCORP_BLKS; b++)
-    { /* TIX,2 INCOR3    */
-        agc_vec_t d = agc_vec_scale(ip, inc->omega[b], dqa); /* scale 2^X1 */
-
-        inc->deltax[b] = agc_navaux_vec_shift(ip, d, -x1); /* VSL* 0,1 */
-    }
-
-    inc->deltax[1] = agc_vec_shl(ip, inc->deltax[1], 3); /* VSL3   */
-}
-
-/**********************************************************************
  * INCORP1 (MEASUREMENT_INCORPORATION.agc pp. 1252-1255, label INCORP1,
  *   with NEWZCOMP pp. 1260-1261) -- state deviation from a measurement
  *
@@ -396,26 +189,199 @@ agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
                                         const agc_incorp_w_t *w,
                                         agc_incorp_t         *inc)
 {
-    if (!AGC_ASSERT(agc_navaux_tp_ok(inc->variance) && (inc->variance >= 0) && agc_navaux_dp_ok(inc->deltaq)))
+    if (!AGC_ASSERT((inc->variance >= 0)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    incorp_z(ip, w, inc);
-    agc_tp_t tripa = incorp_tripa(ip, inc); /* A, scale of VARIANCE */
+    /**********************************************************************
+     * Z123 / INCOR1 (MEASUREMENT_INCORPORATION.agc p. 1253, labels Z123,
+     *   INCOR1) -- ZI[a] = sum_b MXV(W part (b,a), BVECTOR[b])
+     *
+     * FUNCTION NAME: incorp_z
+     *
+     * ARGUMENTS:
+     *   Argument  Type                    I/O  Description (scale)
+     *   --------  ----------------------  ---  ----------------------------
+     *   ip        agc_interp_t *          I/O  interpreter state
+     *   w         const agc_incorp_w_t *  I    W, scale of the integration
+     *   inc       agc_incorp_t *          I/O  in: bvector, dim9; out: zi
+     *                                          (ZI[2] zeroed when 6-dim)
+     *
+     * RETURNS: void
+     **********************************************************************/
+    {
+        for (int a = 0; a < 3; a++)
+        { /* TIX,2 Z123      */
+            agc_vec_t z = agc_vec_zero(); /* ZI[a], scale of W B */
+
+            for (int b = 0; b < AGC_INCORP_BLKS; b++)
+            {
+                agc_mat_t m = incorp_part(w, b, a);                 /* scale of W */
+                agc_vec_t t = agc_mat_vec(ip, &m, inc->bvector[b]); /* scale W B */
+
+                z = agc_vec_add(ip, t, z); /* VAD* (first pass: 0 + t) */
+            }
+
+            inc->zi[a] = z;
+        }
+
+        if (!inc->dim9)
+        { /* BON DMENFLG     */
+            inc->zi[2] = agc_vec_zero();
+        }
+    }
+
+    /**********************************************************************
+     * INCOR1A (MEASUREMENT_INCORPORATION.agc p. 1253, label INCOR1A)
+     *   -- TRIPA = Z1^2 + Z2^2 + Z3^2 + VARIANCE
+     *
+     * FUNCTION NAME: incorp_tripa
+     *
+     * ARGUMENTS:
+     *   Argument  Type                  I/O  Description (scale)
+     *   --------  --------------------  ---  ------------------------------
+     *   ip        agc_interp_t *        I/O  interpreter state
+     *   inc       const agc_incorp_t *  I    zi, variance (scale of ZI^2)
+     *
+     * RETURNS: agc_tp_t -- TRIPA (A), TP at the scale of VARIANCE; 0 on bad
+     *          input
+     **********************************************************************/
+    /* VSQ RTB TPMODE keeps the full DOTSUB triple of each square.         */
+    agc_tp_t a_tripa = agc_vec_sq_tp(ip, inc->zi[0]); /* sum, scale of ZI^2 */
+
+    a_tripa        = agc_tp_add(ip, a_tripa, agc_vec_sq_tp(ip, inc->zi[1]));
+    a_tripa        = agc_tp_add(ip, a_tripa, agc_vec_sq_tp(ip, inc->zi[2]));
+    agc_tp_t tripa = agc_tp_add(ip, a_tripa, inc->variance); /* A, scale of VARIANCE */
 
     if (!AGC_ASSERT(tripa > 0))
     { /* A = 0: no information at all */
         return (AGC_STATUS_BAD_ARG);
     }
 
-    incorp_gamma(ip, inc, tripa);
+    /**********************************************************************
+     * INCOR1B / INCOR1C (MEASUREMENT_INCORPORATION.agc pp. 1253-1254,
+     *   labels INCOR1B, INCOR1C) -- GAMMA and NORMGAM
+     *   TEMPVAR = VARIANCE 4^k (largest k without overflow), then
+     *   GAMMA = (1/4) / NORM(TRIPA + sqrt(TRIPA TEMPVAR) 2^-k),
+     *   NORMGAM = -(normalization count) - 2  (AGC index value),
+     *   so that the true gamma is GAMMA 2^-NORMGAM
+     *
+     * FUNCTION NAME: incorp_gamma
+     *
+     * ARGUMENTS:
+     *   Argument  Type            I/O  Description (scale)
+     *   --------  --------------  ---  ------------------------------------
+     *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+     *   inc       agc_incorp_t *  I/O  in: variance; out: gamma (2^0),
+     *                                  normgam
+     *   tripa     agc_tp_t        I    TRIPA, scale of VARIANCE
+     *
+     * RETURNS: void
+     **********************************************************************/
+    {
+        agc_interp_clear_ovf(ip);          /* TLOAD BOV: clear  */
+        agc_tp_t tempvar = inc->variance;  /* scale of VARIANCE 4^k */
+        int      k       = 0;              /* X2 = 0            */
+        bool     ovf     = (tempvar == 0); /* BZE INCOR1C       */
+
+        for (int i = 0; (i < INCORP_MAX_SL2) && !ovf; i++)
+        {
+            agc_tp_t t = agc_tp_shift(ip, tempvar, 2); /* SL2: scale 4 TEMPVAR */
+
+            ovf = agc_interp_test_ovf(ip); /* BOV INCOR1C      */
+
+            if (!ovf)
+            {
+                tempvar = t; /* STORE TEMPVAR    */
+                k++;         /* INCR,2 1          */
+            }
+        }
+
+        /* TLOAD ROUND TRIPA, DMP TEMPVAR (its top two words): the TP product
+         * goes to SQRT whole; SL* 0,2 shifts the root right k places into
+         * MPAC+2 and TAD adds the TP TRIPA.                                    */
+        agc_tp_t prod = agc_dp_mul_tp(agc_tp_round(ip, tripa), agc_tp_to_dp(tempvar)); /* TRIPA TEMPVAR, scale of A^2 4^k */
+        agc_tp_t root = agc_tp_from_dp(agc_tp_sqrt(prod));                             /* scale A 2^k */
+        agc_tp_t den  = agc_tp_shift(ip, root, -k);                                    /* SL* 0,2: scale of A */
+        int      n    = 0;                                                             /* NORM count        */
+
+        den = agc_tp_add(ip, den, tripa); /* TAD TRIPA        */
+
+        den          = agc_tp_norm(den, &n);                                 /* NORM X2           */
+        inc->normgam = -n - 2;                                               /* INCR,2 -2; SXA,2  */
+        inc->gamma   = agc_dp_div(ip, INCORP_DP_QUARTER, agc_tp_to_dp(den)); /* BDDV: GAMMA, scale 2^0 */
+    }
     int      x1  = 0;                                     /* AGC X1     */
     agc_dp_t dqa = incorp_dq_over_a(ip, inc, tripa, &x1); /* 2^(q-m-1) */
 
-    x1 = incorp_newzcomp(ip, inc, x1);
+    /**********************************************************************
+     * NEWZCOMP / NEWZCMP1 (MEASUREMENT_INCORPORATION.agc pp. 1260-1261,
+     *   labels NEWZCOMP, NEWZCMP1) -- normalize ZI by its largest magnitude
+     *
+     * FUNCTION NAME: incorp_newzcomp
+     *
+     * ARGUMENTS:
+     *   Argument  Type            I/O  Description (scale)
+     *   --------  --------------  ---  ------------------------------------
+     *   ip        agc_interp_t *  I/O  interpreter state
+     *   inc       agc_incorp_t *  I/O  zi shifted left p-2 (p = NORM count
+     *                                  of max |ZI[a]|), normgam += 2(p-2)
+     *   x1_dq     int             I    X1 from INCOR1C (-m + q)
+     *
+     * RETURNS: int -- the X1 for INCOR3, (p-2) + x1_dq
+     **********************************************************************/
+    {
+        agc_dp_t normzi = agc_vec_abval(ip, inc->zi[0]); /* scale of ZI */
+
+        for (int a = 1; a < 3; a++)
+        {
+            agc_dp_t mag = agc_vec_abval(ip, inc->zi[a]); /* scale of ZI */
+
+            if (agc_dp_sub(ip, mag, normzi) >= 0)
+            { /* DSU BMN         */
+                normzi = mag;
+            }
+        }
+
+        int p     = agc_dp_norm_count(normzi); /* NORM X1         */
+        int shift = p - 2;                     /* INCR,1 2        */
+
+        for (int a = 0; a < 3; a++)
+        {
+            inc->zi[a] = agc_navaux_vec_shift(ip, inc->zi[a], shift); /* VSL* 0,1 */
+        }
+
+        inc->normgam = inc->normgam + (2 * shift); /* XSU,1 twice     */
+        x1           = shift + x1;
+    }
     incorp_omega(ip, w, inc);
-    incorp_deltax(ip, inc, dqa, x1);
+
+    /**********************************************************************
+     * INCOR3 (MEASUREMENT_INCORPORATION.agc p. 1255, label INCOR3)
+     *   -- DELTAX[b] = OMEGA[b] (DELTAQ/A) shifted left -X1
+     *
+     * FUNCTION NAME: incorp_deltax
+     *
+     * ARGUMENTS:
+     *   Argument  Type            I/O  Description (scale)
+     *   --------  --------------  ---  ------------------------------------
+     *   ip        agc_interp_t *  I/O  interpreter state
+     *   inc       agc_incorp_t *  I/O  in: omega; out: deltax (state scale;
+     *                                  the velocity triple a further VSL3)
+     *   dqa       agc_dp_t        I    DELTAQ/A from INCOR1C (normalized)
+     *   x1        int             I    X1 from NEWZCOMP
+     *
+     * RETURNS: void
+     **********************************************************************/
+    for (int b = 0; b < AGC_INCORP_BLKS; b++)
+    { /* TIX,2 INCOR3    */
+        agc_vec_t d = agc_vec_scale(ip, inc->omega[b], dqa); /* scale 2^X1 */
+
+        inc->deltax[b] = agc_navaux_vec_shift(ip, d, -x1); /* VSL* 0,1 */
+    }
+
+    inc->deltax[1] = agc_vec_shl(ip, inc->deltax[1], 3); /* VSL3   */
 
     return (AGC_STATUS_OK);
 }
@@ -476,7 +442,7 @@ agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc, agc_
             agc_vec_t omegam_wrow = omegam[b];    /* scale of W          */
             int       normgam     = inc->normgam; /* AGC index value     */
 
-            if (!AGC_ASSERT(agc_navaux_dp_ok(zim) && (normgam <= NAVAUX_MAX_SHIFT) && (normgam >= -NAVAUX_MAX_SHIFT)))
+            if (!AGC_ASSERT((normgam <= NAVAUX_MAX_SHIFT) && (normgam >= -NAVAUX_MAX_SHIFT)))
             {
                 return (AGC_STATUS_BAD_ARG);
             }
@@ -528,11 +494,6 @@ agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc, agc_
  **********************************************************************/
 agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_sv_t *sv)
 {
-    if (!AGC_ASSERT(agc_navaux_vec_ok(sv->tdeltav) && agc_navaux_vec_ok(sv->tnuv)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_vec_t tx789 = sv->x789; /* TX789, scale of X789 */
 
     tx789 = agc_vec_add(ip, tx789, inc->deltax[2]);

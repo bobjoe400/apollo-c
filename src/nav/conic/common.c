@@ -207,24 +207,6 @@ agc_tp_words_t agc_conic_poly_(agc_tp_words_t m, const agc_dp_t *coef, int ncoef
 }
 
 /**********************************************************************
- * AGC: none (C boundary) -- the value of a stored DP pair, for the public
- * outputs (conic.h) and the vector instructions, which take values
- *
- * FUNCTION NAME: agc_conic_value_
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  ------------------------------------
- *   w         agc_dp_words_t  I    major, minor word
- *
- * RETURNS: agc_dp_t -- major 2^14 + minor, same scale
- *********************************************************************/
-agc_dp_t agc_conic_value_(agc_dp_words_t w)
-{
-    return (agc_dp_from_words(w));
-}
-
-/**********************************************************************
  * VXSC with the scalar in MPAC (DVXSC, INTERPRETER.agc p. 1146) -- per
  * component: MPAC = the scalar's words, DMPSUB by the component, VROUND
  *

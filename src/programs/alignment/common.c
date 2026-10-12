@@ -42,15 +42,6 @@ void agc_align_ram_reset(void)
     align_ram.sighting_mark_return = AGC_JOB_NONE;
     align_ram.planet_ret           = AGC_JOB_NONE;
     align_ram.coarse_ret           = AGC_JOB_NONE;
-    if (!AGC_ASSERT(align_ram.mkvac_index == -1))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(align_ram.starind == 0))
-    {
-        return;
-    }
 
 }
 
@@ -62,16 +53,7 @@ void agc_align_ram_reset(void)
  */
 agc_dp_t agc_align_cdulogic(uint16_t cdu)
 {
-    if (!AGC_ASSERT(cdu <= CDU_WORD_MASK))
-    {
-        return (0); /* no valid result */
-    }
-
     const agc_dp_t r = agc_guid_cdulogic((uint16_t) (cdu & CDU_WORD_MASK));
-    if (!AGC_ASSERT((r >= -AGC_DP_HALF) && (r < AGC_DP_HALF)))
-    {
-        return (0); /* no valid result */
-    }
 
 
     return (r);
@@ -109,11 +91,6 @@ uint16_t agc_align_ones_to_twos(agc_dp_t revs)
     if (hv < 0)
     {
         hv += CDU_MODULUS;
-    }
-
-    if (!AGC_ASSERT((hv >= 0) && (hv <= (int32_t) CDU_WORD_MASK)))
-    {
-        return (0); /* no valid result */
     }
 
     return ((uint16_t) hv);
@@ -155,11 +132,6 @@ void align_read_cdus(uint16_t cdu[3])
     cdu[1] = agc_erase_cduy();
     cdu[2] = agc_erase_cduz();
     agc_relint();
-
-    if (!AGC_ASSERT(cdu[0] <= CDU_WORD_MASK))
-    {
-        return;
-    }
 }
 
 /* CALL CDUTRIG; CALL CALCSMSC on the present CDUs. */
@@ -226,21 +198,12 @@ agc_status_t align_show(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t
 /* The verb of the answer was V32 (MPAC = V32 at the third return). */
 bool align_resp_recycle(void)
 {
-    uint8_t            verb = 0;
-    uint8_t            noun = 0;
-    const agc_status_t st   = agc_dsky_response(&verb, &noun);
+    uint8_t verb = 0;
+    uint8_t noun = 0;
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (false);
-    }
+    agc_dsky_response(&verb, &noun);
 
-    if (!AGC_ASSERT(verb < 100u))
-    {
-        return (false);
-    }
-
-    return ((st == AGC_STATUS_OK) && (verb == 32u));
+    return (verb == 32u);
 }
 
 /* TC / GOTO another resumption point of the running job. */
@@ -311,11 +274,6 @@ agc_status_t align_stall_outcome(agc_imu_device_t dev)
 /* TC PHASCHNG; OCT code (type C, job at the next instruction). */
 void align_phase_job(uint16_t code, agc_job_id_t job, agc_prio_t prio)
 {
-    if (!AGC_ASSERT(job != AGC_JOB_NONE) || !AGC_ASSERT(prio <= 037u))
-    {
-        return;
-    }
-
     agc_phase_var_t v = {0};
 
     v.kind       = AGC_RESTART_JOB;
@@ -329,16 +287,7 @@ agc_dp_t align_loadtime(void)
 {
     const uint32_t t = agc_time_now_cs();
 
-    if (!AGC_ASSERT(t < AGC_TIME_MODULUS_CS))
-    {
-        return (0); /* no valid result */
-    }
-
     const agc_dp_t d = (agc_dp_t) (t & (AGC_TIME_MODULUS_CS - 1u));
-    if (!AGC_ASSERT(d >= 0))
-    {
-        return (0); /* no valid result */
-    }
 
 
     return (d);
@@ -349,19 +298,9 @@ agc_sp_t align_word_to_sp(uint16_t w)
 {
     const uint16_t m = (uint16_t) (w & CDU_WORD_MASK);
 
-    if (!AGC_ASSERT(w <= CDU_WORD_MASK))
-    {
-        return (0); /* no valid result */
-    }
-
     if ((m & WORD_SIGN) != 0u)
     {
         return ((agc_sp_t) ((int32_t) m - WORD_ONES_NEG));
-    }
-
-    if (!AGC_ASSERT(m < WORD_SIGN))
-    {
-        return (0); /* no valid result */
     }
 
     return ((agc_sp_t) m);
@@ -387,16 +326,10 @@ agc_dp_t align_dsptem1(void)
     return (agc_dp_pack(hi, lo));
 }
 
-agc_status_t align_set_dsptem1(agc_dp_t v)
+void align_set_dsptem1(agc_dp_t v)
 {
-    agc_status_t st = agc_dsky_set_dsptem(0, align_sp_to_word(agc_dp_high(v)));
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_dsky_set_dsptem(1, align_sp_to_word(agc_dp_low(v)));
-    }
-
-    return (st);
+    agc_dsky_set_dsptem(0, align_sp_to_word(agc_dp_high(v)));
+    agc_dsky_set_dsptem(1, align_sp_to_word(agc_dp_low(v)));
 }
 
 /*
@@ -418,7 +351,7 @@ agc_status_t align_set1_pdt(void)
 /* TC PHASCHNG; OCT code (type A, group 4). */
 agc_status_t align_phase4(uint16_t code)
 {
-    agc_phase_change(4, code);
+    agc_phase_change(code);
 
     return (AGC_STATUS_OK);
 }
@@ -524,9 +457,4 @@ void align_clear_ovf(agc_interp_t *ip)
     const bool was_set = agc_interp_test_ovf(ip);
 
     (void) was_set; /* the overflow is discarded    */
-
-    if (!AGC_ASSERT(ip->ovfind == 0))
-    {
-        return;
-    }
 }

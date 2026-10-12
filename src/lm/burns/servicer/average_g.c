@@ -78,11 +78,6 @@ static void repip4(agc_avg_g_t *a)
     {
         a->pipatmp[i] = agc_dp_high(delv.c[i]);
     }
-
-    if (!AGC_ASSERT(a->pguide >= 0))
-    {
-        return;
-    }
 }
 
 /* PREREAD (p.857): 5.7 so that a restart skips LASTBIAS, then BIBIBIAS.   */
@@ -263,26 +258,14 @@ agc_status_t agc_task_rereadac_lm(void)
  * DV divides the DP ABDVCONV by the SP VEX; MP uses the high word of MASS. */
 static void massmon(agc_guid_lm_t *lm)
 {
-    if (agc_flag_test(AGC_FLAG_SURFFLAG))
+    if (!agc_flag_test(AGC_FLAG_SURFFLAG)) /* YES: BYPASS MASS MESS  */
     {
-        return; /* YES: BYPASS MASS MESS  */
-    }
+        agc_sp_t  vex = agc_flag_test(AGC_FLAG_APSFLAG) ? APSVEX : DPSVEX;
+        agc_ovf_t ovf = 0;
+        agc_dp_t  q   = agc_dp_div_raw(lm->abdvconv, agc_dp_from_sp(vex), &ovf); /* DV Q */
+        agc_dp_t  dm  = agc_sp_mul(agc_dp_high(q), agc_dp_high(lm->mass));       /* MP MASS */
 
-    agc_sp_t  vex = agc_flag_test(AGC_FLAG_APSFLAG) ? APSVEX : DPSVEX;
-    agc_ovf_t ovf = 0;
-    agc_dp_t  q   = agc_dp_div_raw(lm->abdvconv, agc_dp_from_sp(vex), &ovf); /* DV Q */
-    agc_dp_t  dm  = agc_sp_mul(agc_dp_high(q), agc_dp_high(lm->mass));       /* MP MASS */
-
-    lm->mass1 = agc_dp_add_raw(lm->mass1, dm, &ovf); /* DAS MASS1 */
-
-    if (!AGC_ASSERT(vex < 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(ovf == 0))
-    {
-        return;
+        lm->mass1 = agc_dp_add_raw(lm->mass1, dm, &ovf); /* DAS MASS1 */
     }
 }
 
@@ -291,19 +274,9 @@ void agc_lm_tmptospt(void)
 {
     agc_guid_t *g = agc_guid_state();
 
-    if (!AGC_ASSERT(g->avg.cdutemp[0] <= 077777U))
-    {
-        return;
-    }
-
     g->trig.cduraw[AGC_TRIG_Y] = (agc_sp_t) (g->avg.cdutemp[1] & 077777U);
     g->trig.cduraw[AGC_TRIG_Z] = (agc_sp_t) (g->avg.cdutemp[2] & 077777U);
     g->trig.cduraw[AGC_TRIG_X] = (agc_sp_t) (g->avg.cdutemp[0] & 077777U);
-
-    if (!AGC_ASSERT(g->trig.cduraw[AGC_TRIG_X] >= 0))
-    {
-        return;
-    }
 }
 
 /* SERVICER (p.860): restart point GETABVAL, compensation, then GETABVAL.  */
@@ -339,11 +312,6 @@ agc_vec_t agc_lm_mungrav(agc_interp_t *ip, agc_vec_t r)
 
     a->unitr   = agc_vec_unit(ip, r, &a->rmag, &a->rmagsq); /* STODL UNIT/R/ 34D */
     agc_dp_t x = agc_dp_shl(ip, a->rmagsq, 6);              /* SL 6D         */
-
-    if (!AGC_ASSERT(x != 0))
-    {
-        return (agc_vec_zero());
-    }
 
     agc_dp_t k = agc_dp_mul_trunc(agc_dp_div(ip, MUDTMUN, x), SHIFT11); /* BDDV DMP */
 
@@ -381,11 +349,6 @@ static void rvboth_store(agc_guid_t *g)
     g->lm.g_csm = g->avg.gdt1_2; /* STOVL G(CSM)           */
     g->lm.r_csm = g->lm.r1s;     /* STOVL R(CSM)           */
     g->lm.v_csm = g->lm.v1s;     /* STORE V(CSM)           */
-
-    if (!AGC_ASSERT(g->avg.pguide >= 0))
-    {
-        return;
-    }
 }
 
 /* MUNRVG (p.882-883): the LM's own spherical-moon average-G in SM axes:
@@ -478,13 +441,10 @@ static agc_status_t getabval(agc_job_ctx_t *ctx)
     }
 
     agc_state_vector_t sv;
-    agc_status_t       st       = agc_sv_get(AGC_SV_THIS, &sv);
-    agc_mat_t          refsmmat = agc_erase_refsmmat();
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_guid_calcrvg(&ip, AGC_VEHICLE_LM, agc_rendz_erasable()->body.rtx2 != 0, &refsmmat, agc_erase_delv(), &sv, &g->avg); /* RTX2 */
-    }
+    agc_sv_get(AGC_SV_THIS, &sv);
+    agc_mat_t    refsmmat = agc_erase_refsmmat();
+    agc_status_t st       = agc_guid_calcrvg(&ip, AGC_VEHICLE_LM, agc_rendz_erasable()->body.rtx2 != 0, &refsmmat, agc_erase_delv(), &sv, &g->avg); /* RTX2 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -539,7 +499,7 @@ static agc_status_t lothrust(void)
 
     if (agc_phase_get(4) == 0U)
     { /* COMFAIL JOB ACTIVE?    */
-        agc_phase_change(4, (uint16_t) 000374); /* 4.37SPOT FOR COMFAIL   */
+        agc_phase_change((uint16_t)000374); /* 4.37SPOT FOR COMFAIL   */
         agc_status_t st = agc_exec_novac(AGC_PRIO25, AGC_JOB_COMFAIL);
 
         if (st != AGC_STATUS_OK)
@@ -549,39 +509,6 @@ static agc_status_t lothrust(void)
     }
 
     if (!AGC_ASSERT(lm->dvcntr <= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (servout());
-}
-
-/* DVMON (p.861-862): thrust detected when ABDELV > DVTHRUSH: STEERSW set,
- * two low-thrust passes allowed again; the trim gimbal is used unless the
- * APS is in use or the gimbal has failed (channel 32 bit 9).              */
-static agc_status_t dvmon(void)
-{
-    agc_guid_lm_t *lm = &agc_guid_state()->lm;
-
-    if (lm->abdelv - lm->dvthrush <= 0)
-    {
-        return (lothrust());
-    }
-
-    agc_flag_set(AGC_FLAG_STEERSW);
-    lm->dvcntr = 1; /* DVCNTSET               */
-    bool jets  = agc_flag_test(AGC_FLAG_APSFLAG) || ((agc_chan_read(032) & (uint16_t) AGC_CH032_DPSGIMBDIS) == 0U);
-
-    if (jets)
-    {
-        agc_flag_set(AGC_FLAG_USEQRFLG); /* USEJETS                */
-    }
-    else
-    {
-        agc_flag_clear(AGC_FLAG_USEQRFLG); /* USEGTS                 */
-    }
-
-    if (!AGC_ASSERT(lm->dvcntr == 1))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -621,7 +548,35 @@ agc_status_t agc_lm_serv_copycycl(agc_job_ctx_t *ctx)
         return (servout());
     }
 
-    return (dvmon());
+    /* DVMON (p.861-862): thrust detected when ABDELV > DVTHRUSH: STEERSW set,
+     * two low-thrust passes allowed again; the trim gimbal is used unless the
+     * APS is in use or the gimbal has failed (channel 32 bit 9).              */
+    agc_guid_lm_t *lm = &agc_guid_state()->lm;
+
+    if (lm->abdelv - lm->dvthrush <= 0)
+    {
+        return (lothrust());
+    }
+
+    agc_flag_set(AGC_FLAG_STEERSW);
+    lm->dvcntr = 1; /* DVCNTSET               */
+    bool jets  = agc_flag_test(AGC_FLAG_APSFLAG) || ((agc_chan_read(032) & (uint16_t) AGC_CH032_DPSGIMBDIS) == 0U);
+
+    if (jets)
+    {
+        agc_flag_set(AGC_FLAG_USEQRFLG); /* USEJETS                */
+    }
+    else
+    {
+        agc_flag_clear(AGC_FLAG_USEQRFLG); /* USEGTS                 */
+    }
+
+    if (!AGC_ASSERT(lm->dvcntr == 1))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (servout());
 }
 
 /* DCA AVGEXIT / DXCH Z (p.863).                                            */

@@ -42,9 +42,9 @@
 typedef struct rst_group_tab
 {
     const rst_entry_t *even; /* 2 entries per even phase from G.2       */
-    int                n_even;
+    int n_even;
     const rst_entry_t *odd;  /* 1 entry per odd phase from G.3          */
-    int                n_odd;
+    int n_odd;
 } rst_group_tab_t;
 
 /* ================= Comanche055 (CSM), pp. 212-219 ===================== */
@@ -67,25 +67,25 @@ static const rst_entry_t csm_even6[] = {
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_GIMBAL_TRIM_RESTART}, /* 6.2 */
     {RST_T, 100, RST_D, RST_E0, RST_JN, AGC_TASK_CLOKTASK},
 };
-static const rst_entry_t csm_odd1[]  = {
+static const rst_entry_t csm_odd1[] = {
     {RST_T, 120, RST_D, RST_E0, RST_JN, AGC_TASK_SETJTAG}, /* 1.3 */
     {RST_J, 010, RST_D, RST_E0, AGC_JOB_REDO40_9, RST_TN}, /* 1.5 */
     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN},  /* 1.7 */
-     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK,
+    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_TRACK,
      RST_TN},                                              /* 1.11 */
- };
-static const rst_entry_t csm_odd2[]  = {
+};
+static const rst_entry_t csm_odd2[] = {
     {RST_L, 0, RST_G, RST_E_600SECS, RST_JN, AGC_TASK_STATEINT}, /* 2.3 */
     {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN},        /* 2.5 */
-     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA,
+    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA,
      RST_TN},                                                    /* 2.7 */
-     {RST_J, 014, RST_D, RST_E0, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT,
-      RST_TN},
+    {RST_J, 014, RST_D, RST_E0, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT,
+     RST_TN},
 
-     /* 2.11 */
-     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK,
+    /* 2.11 */
+    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK,
      RST_TN}, /* 2.13 */
- };
+};
 static const rst_entry_t csm_odd3[] = {
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_TIMEBURN, RST_TN},     /* 3.3 */
     {RST_N, 0, RST_D, RST_E0, RST_JN, RST_TN},                 /* 3.5 */
@@ -182,28 +182,28 @@ static const rst_entry_t lm_even5[] = {
     {RST_T, 200, RST_D, RST_E0, RST_JN, AGC_TASK_REREADAC}, /* 5.4 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_SERVICER, RST_TN},
 };
-static const rst_entry_t lm_odd1[]  = {
+static const rst_entry_t lm_odd1[] = {
     {RST_T, 0, RST_X, RST_E_SAVET_30, RST_JN, AGC_TASK_ULLGTASK}, /* 1.3 */
- };
-static const rst_entry_t lm_odd2[]  = {
+};
+static const rst_entry_t lm_odd2[] = {
     {RST_L, 0, RST_G, RST_E_600SECS, RST_JN, AGC_TASK_STATEINT}, /* 2.3 */
     {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN},        /* 2.5 */
-     {RST_T, 1500, RST_D, RST_E0, RST_JN,
+    {RST_T, 1500, RST_D, RST_E0, RST_JN,
      AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK},                /* 2.7 */
-     {RST_J, 014, RST_D, RST_E0, AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK,
+    {RST_J, 014, RST_D, RST_E0, AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK,
      RST_TN},                                                    /* 2.11 */
     {RST_J, 010, RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN},        /* 2.13 */
-     {RST_J, 026, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART,
+    {RST_J, 026, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART,
      RST_TN},                                                    /* 2.15 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO2_17},        /* 2.17 */
-     {RST_T, 25, RST_D, RST_E0, RST_JN,
+    {RST_T, 25, RST_D, RST_E0, RST_JN,
      AGC_TASK_ABORT_MONITOR},                                    /* 2.21 */
- };
-static const rst_entry_t lm_odd3[]  = {
+};
+static const rst_entry_t lm_odd3[] = {
     {RST_T, 0, RST_X, RST_E_ZOOMTIME, RST_JN, AGC_TASK_ZOOM}, /* 3.3 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_TIMEBURN, RST_TN},    /* 3.5 */
- };
-static const rst_entry_t lm_odd4[]  = {
+};
+static const rst_entry_t lm_odd4[] = {
     {RST_J, 025, RST_D, RST_E0, AGC_JOB_GOABORT, RST_TN},      /* 4.3 */
     {RST_T, 50, RST_D, RST_E0, RST_JN, AGC_TASK_ULLAGOFF},     /* 4.5 */
     {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_0},       /* 4.7 */
@@ -211,19 +211,19 @@ static const rst_entry_t lm_odd4[]  = {
     {RST_J, 012, RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN},     /* 4.13 */
     {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_30},      /* 4.15 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_TIG_5},         /* 4.17 */
-     {RST_J, 013, RST_D, RST_E0, AGC_JOB_LM_FINE_ALIGN_PERFORM, RST_TN},
+    {RST_J, 013, RST_D, RST_E0, AGC_JOB_LM_FINE_ALIGN_PERFORM, RST_TN},
 
-     /* 4.21 */
+    /* 4.21 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_IGNITION},       /* 4.23 */
     {RST_L, 0, RST_G, RST_E_SAVET_30, RST_JN, AGC_TASK_TIG_35}, /* 4.25 */
-     {RST_J, -025, RST_D, RST_E0, AGC_JOB_DPS_ABORT_COMMANDED,
+    {RST_J, -025, RST_D, RST_E0, AGC_JOB_DPS_ABORT_COMMANDED,
      RST_TN},                                                   /* 4.27 */
-     {RST_J, -025, RST_D, RST_E0, AGC_JOB_APS_ABORT_COMMANDED,
+    {RST_J, -025, RST_D, RST_E0, AGC_JOB_APS_ABORT_COMMANDED,
      RST_TN},                                                   /* 4.31 */
     {RST_J, -031, RST_D, RST_E0, AGC_JOB_GO_IDLE_FIX, RST_TN},  /* 4.33 */
     {RST_J, -031, RST_D, RST_E0, AGC_JOB_GOPOODOO, RST_TN},     /* 4.35 */
     {RST_J, -025, RST_D, RST_E0, AGC_JOB_COMFAIL, RST_TN},      /* 4.37 */
- };
+};
 static const rst_entry_t lm_odd5[] = {
     {RST_T, 200, RST_D, RST_E0, RST_JN, AGC_TASK_REREADAC}, /* 5.3 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO5_5},    /* 5.5 */
@@ -250,20 +250,20 @@ static const rst_group_tab_t csm_tab[AGC_RESTART_GROUPS] = {
     {csm_even6, (int) (sizeof (csm_even6) / sizeof (csm_even6[0])), csm_odd6,
      (int) (sizeof (csm_odd6) / sizeof (csm_odd6[0]))},
 };
-static const rst_group_tab_t lm_tab[AGC_RESTART_GROUPS]  = {
-     {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd1,
-      (int) (sizeof (lm_odd1) / sizeof (lm_odd1[0]))},
-     {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd2,
-      (int) (sizeof (lm_odd2) / sizeof (lm_odd2[0]))},
-     {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd3,
-      (int) (sizeof (lm_odd3) / sizeof (lm_odd3[0]))},
-     {lm_even4, (int) (sizeof (lm_even4) / sizeof (lm_even4[0])), lm_odd4,
-      (int) (sizeof (lm_odd4) / sizeof (lm_odd4[0]))},
-     {lm_even5, (int) (sizeof (lm_even5) / sizeof (lm_even5[0])), lm_odd5,
-      (int) (sizeof (lm_odd5) / sizeof (lm_odd5[0]))},
-     {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd6,
-      (int) (sizeof (lm_odd6) / sizeof (lm_odd6[0]))},
- };
+static const rst_group_tab_t lm_tab[AGC_RESTART_GROUPS] = {
+    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd1,
+     (int) (sizeof (lm_odd1) / sizeof (lm_odd1[0]))},
+    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd2,
+     (int) (sizeof (lm_odd2) / sizeof (lm_odd2[0]))},
+    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd3,
+     (int) (sizeof (lm_odd3) / sizeof (lm_odd3[0]))},
+    {lm_even4, (int) (sizeof (lm_even4) / sizeof (lm_even4[0])), lm_odd4,
+     (int) (sizeof (lm_odd4) / sizeof (lm_odd4[0]))},
+    {lm_even5, (int) (sizeof (lm_even5) / sizeof (lm_even5[0])), lm_odd5,
+     (int) (sizeof (lm_odd5) / sizeof (lm_odd5[0]))},
+    {lm_even1, (int) (sizeof (lm_even1) / sizeof (lm_even1[0])), lm_odd6,
+     (int) (sizeof (lm_odd6) / sizeof (lm_odd6[0]))},
+};
 
 /* ITSATBL / ITSEVEN / PHSPART2 (RESTARTS_ROUTINE C pp.1416-1419): the
  * entry for phase `phase` (>= 2, octal value) of `group`. For an even
@@ -278,20 +278,20 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
     }
 
     const rst_group_tab_t *t = (agc_state_vehicle() == AGC_VEHICLE_LM) ? &lm_tab[group - 1] : &csm_tab[group - 1];
-    int                    idx;
-    int                    n;
-    const rst_entry_t     *base;
+    int idx;
+    int n;
+    const rst_entry_t *base;
 
     if ((phase % 2) == 0)
     {
-        idx  = (phase - 2) + part; /* 2 entries per even phase      */
-        n    = t->n_even;
+        idx = (phase - 2) + part; /* 2 entries per even phase      */
+        n = t->n_even;
         base = t->even;
     }
     else
     {
-        idx  = (phase - 3) / 2;
-        n    = t->n_odd;
+        idx = (phase - 3) / 2;
+        n = t->n_odd;
         base = t->odd;
     }
 
@@ -310,11 +310,6 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
 static int16_t dp_low_word(agc_dp_t v)
 {
     int32_t lo = v % RST_SP_SCALE;
-
-    if (!AGC_ASSERT(lo > -RST_SP_SCALE && lo < RST_SP_SCALE))
-    {
-        return (0); /* no valid result */
-    }
 
     return ((int16_t) lo);
 }

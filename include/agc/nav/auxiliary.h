@@ -49,10 +49,10 @@
  * ==================================================================== */
 typedef struct agc_navaux_padload
 {
-    agc_tp_t  tephem;  /* TEPHEM (= TIMSUBO): cs from midnight 1 July preceding launch to AGC clock zero, 2^42 cs */
-    agc_dp_t  azo;     /* AZO: earth rotation angle at TEPHEM, scale 2^0 revs  */
-    agc_dp_t  axo;     /* AXO: earth precession angle about X, scale 2^0 rad   */
-    agc_dp_t  neg_ayo; /* -AYO: minus the angle about Y, scale 2^0 rad   */
+    agc_tp_t tephem;  /* TEPHEM (= TIMSUBO): cs from midnight 1 July preceding launch to AGC clock zero, 2^42 cs */
+    agc_dp_t azo;     /* AZO: earth rotation angle at TEPHEM, scale 2^0 revs  */
+    agc_dp_t axo;     /* AXO: earth precession angle about X, scale 2^0 rad   */
+    agc_dp_t neg_ayo; /* -AYO: minus the angle about Y, scale 2^0 rad   */
     agc_vec_t lm504;   /* 504LM: lunar libration vector, moon-fixed, 2^0 rad   */
     agc_vec_t rls;     /* RLS: landing site, moon-fixed, scale 2^27 m          */
 } agc_navaux_padload_t;
@@ -137,29 +137,29 @@ typedef struct agc_incorp_w
 typedef struct agc_incorp
 {
     /* inputs to INCORP1 */
-    bool      dim9;                     /* DMENFLG: true = 9-dim      */
+    bool dim9;                     /* DMENFLG: true = 9-dim      */
     agc_vec_t bvector[AGC_INCORP_BLKS]; /* BVECTOR, per-measurement scale */
-    agc_dp_t  deltaq;                   /* DELTAQ, measurement scale  */
-    agc_tp_t  variance;                 /* VARIANCE, scale of ZI^2    */
+    agc_dp_t deltaq;                   /* DELTAQ, measurement scale  */
+    agc_tp_t variance;                 /* VARIANCE, scale of ZI^2    */
 
     /* outputs of INCORP1 (inputs of INCORP2) */
     agc_vec_t zi[AGC_INCORP_BLKS];     /* ZI, scale set by NEWZCOMP  */
     agc_vec_t omega[AGC_INCORP_BLKS];  /* OMEGA, scale of W ZI       */
     agc_vec_t deltax[AGC_INCORP_BLKS]; /* DELTAX state deviations: [0] pos 2^29/2^27 m, [1] vel 2^7/2^5 m/cs, [2] bias */
-    agc_dp_t  gamma;                   /* GAMMA, scale 2^-NORMGAM    */
-    int       normgam;                 /* NORMGAM, AGC index value   */
+    agc_dp_t gamma;                   /* GAMMA, scale 2^-NORMGAM    */
+    int normgam;                 /* NORMGAM, AGC index value   */
 } agc_incorp_t;
 
 /* Integration temporaries touched by INCORP2 phase 3 (FAZC..FAZAB5). */
 typedef struct agc_incorp_sv
 {
-    bool      moon;    /* MOONTHIS: primary body of the updated vehicle  */
+    bool moon;    /* MOONTHIS: primary body of the updated vehicle  */
     agc_vec_t rcv;     /* RCV  conic position, 2^29 / 2^27 m              */
     agc_vec_t vcv;     /* VCV  conic velocity, 2^7 / 2^5 m/cs             */
     agc_vec_t tdeltav; /* TDELTAV position deviation, 2^22 / 2^18 m       */
     agc_vec_t tnuv;    /* TNUV velocity deviation, 2^3 / 2^-1 m/cs        */
     agc_vec_t x789;    /* X789 bias states, scale of DELTAX[2]           */
-    bool      rectify; /* out: caller must CALL RECTIFY (PBODY = moon)    */
+    bool rectify; /* out: caller must CALL RECTIFY (PBODY = moon)    */
 } agc_incorp_sv_t;
 
 /* INCORP1 */
@@ -183,19 +183,19 @@ typedef struct agc_tff
     /* inputs */
     agc_vec_t rone; /* RONE  E 2^29 m,  M 2^27 m                       */
     agc_vec_t vone; /* VONE  E 2^7 m/cs, M 2^5 m/cs                    */
-    agc_dp_t  rtmu; /* TFF/RTMU 1/sqrt(mu) E 2^-17, M 2^-14            */
+    agc_dp_t rtmu; /* TFF/RTMU 1/sqrt(mu) E 2^-17, M 2^-14            */
 
     /* TFFCONIC outputs */
     agc_vec_t vone_p;   /* VONE' = VN/sqrt(mu)  E 2^-10, M 2^-9            */
-    agc_dp_t  rmag1;    /* RMAG1 |RN|            E 2^29, M 2^27 m          */
-    agc_dp_t  nrmag;    /* NRMAG |RN| normalized E 2^(29-NR) m             */
-    int       nr;       /* NR (AGC X1 = -NR)                               */
-    agc_dp_t  tffnp;    /* TFFNP semi latus rectum E 2^(38-2NR), M 2^(36-2NR) */
-    agc_dp_t  tffvsq;   /* TFFVSQ -(v^2/mu) 1/m E 2^-20, M 2^-18           */
-    agc_dp_t  tffalfa;  /* TFFALFA alfa 1/m E 2^-(26-NR), M 2^-(24-NR)     */
-    agc_dp_t  tffrtalf; /* TFFRTALF sqrt|alfa| E 2^-(10+NA), M 2^-(9+NA)   */
-    int       na;       /* NA (AGC X2 = -NA)                               */
-    agc_dp_t  tff1_alf; /* TFF1/ALF 1/alfa m E 2^(22+2NA), M 2^(20+2NA)    */
+    agc_dp_t rmag1;    /* RMAG1 |RN|            E 2^29, M 2^27 m          */
+    agc_dp_t nrmag;    /* NRMAG |RN| normalized E 2^(29-NR) m             */
+    int nr;       /* NR (AGC X1 = -NR)                               */
+    agc_dp_t tffnp;    /* TFFNP semi latus rectum E 2^(38-2NR), M 2^(36-2NR) */
+    agc_dp_t tffvsq;   /* TFFVSQ -(v^2/mu) 1/m E 2^-20, M 2^-18           */
+    agc_dp_t tffalfa;  /* TFFALFA alfa 1/m E 2^-(26-NR), M 2^-(24-NR)     */
+    agc_dp_t tffrtalf; /* TFFRTALF sqrt|alfa| E 2^-(10+NA), M 2^-(9+NA)   */
+    int na;       /* NA (AGC X2 = -NA)                               */
+    agc_dp_t tff1_alf; /* TFF1/ALF 1/alfa m E 2^(22+2NA), M 2^(20+2NA)    */
 
     /* TFFRP/RA outputs */
     agc_dp_t rper; /* RPER perigee radius E 2^29, M 2^27 m            */
@@ -216,7 +216,7 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff); /* TFFRP/RA */
 /* Returned time: cs scale 2^28; NEARONE (AGC_TFF_NEARONE) = no free fall. */
 agc_status_t agc_tff_calctff(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rterm, agc_dp_t *t_cs); /* CALCTFF  */
 agc_status_t agc_tff_calctper(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t rper, agc_dp_t *t_cs); /* CALCTPER */
-agc_dp_t     agc_tff_poly(agc_dp_t x);                                        /* T(X)     */
+agc_dp_t     agc_tff_poly(agc_dp_t x);                                                          /* T(X)     */
 
 #define AGC_TFF_NEARONE \
     ((agc_dp_t) 268435455) /* NEARONE 2DEC .999999999, oct 37777 37777 */
@@ -228,11 +228,11 @@ agc_dp_t     agc_tff_poly(agc_dp_t x);                                        /*
 
 typedef struct agc_ephem_csm
 {
-    agc_tp_t  timemo;                  /* TIMEMO centre of validity, TP 2^42 cs */
+    agc_tp_t timemo;                  /* TIMEMO centre of validity, TP 2^42 cs */
     agc_vec_t vecoem[AGC_EPHEM_NCOEF]; /* VECOEM, descending: [0] = a9 .. [9] = a0; a_n m/cs^n at scale 2^(31 - 26n) so that the Horner sum with t at 2^26 cs is 2^31 m */
     agc_vec_t reso;                    /* RESO sun position at TIMEMO, 2^38 m  */
     agc_vec_t veso;                    /* VESO sun velocity at TIMEMO, 2^9 m/cs*/
-    agc_dp_t  omegaes;                 /* OMEGAES rate of RESO, 2^-26 rev/cs   */
+    agc_dp_t omegaes;                 /* OMEGAES rate of RESO, 2^-26 rev/cs   */
 } agc_ephem_csm_t;
 
 agc_status_t agc_ephem_set_csm_data(const agc_ephem_csm_t *eph);

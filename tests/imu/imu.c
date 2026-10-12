@@ -455,7 +455,7 @@ static void test_lastbias_pipuse(void)
 static void test_pipfree_alarm(void)
 {
     agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() & ~01000u));
-    (void) agc_erase_set_failreg(0, 0);
+    agc_erase_set_failreg(0, 0);
     agc_imu_pipfree();
     CHECK(!agc_interrupts_inhibited());
     CHECK(agc_erase_failreg(0) == 00212u);
@@ -474,7 +474,7 @@ static void test_pipfree_alarm(void)
  **********************************************************************/
 static void p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx)
 {
-    const agc_align_ram_t *ar   = agc_align_ram(); /* alignment erasables */
+    const agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
 
     agc_erase_set_cduy(imu[1]);
     agc_erase_set_cduz(imu[2]);
@@ -486,8 +486,8 @@ static void p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx)
     CHECK(agc_chan_set_signal(016, AGC_CH016_MARK, false) == AGC_STATUS_OK);
     (void) agc_sxtmark_mark2();
     CHECK(agc_sxtmark_marks_made() == 1);
-    CHECK(agc_job_entanswr() == AGC_STATUS_OK); /* V33 on V50N25 */
-    CHECK(agc_task_endmarks() == AGC_STATUS_OK);     /* GOODEND        */
+    CHECK(agc_job_entanswr() == AGC_STATUS_OK);  /* V33 on V50N25 */
+    CHECK(agc_task_endmarks() == AGC_STATUS_OK); /* GOODEND        */
     CHECK(agc_job_optical_verification_marked(ctx) == AGC_STATUS_OK);
 }
 
@@ -511,13 +511,13 @@ static void test_optical_verification(void)
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, erc);
     CHECK(agc_job_optical_verification(&ctx) == AGC_STATUS_OK);
     CHECK(agc_phase_checkmm(3));
-    CHECK(agc_dsky_dsptem(2) == 1u);                        /* target 1 shown */
-    CHECK(agc_dsky_set_dsptem(0, cdu_deg(20.0)) == AGC_STATUS_OK);
-    CHECK(agc_dsky_set_dsptem(1, 0546u) == AGC_STATUS_OK);  /* EL 2 deg */
+    CHECK(agc_dsky_dsptem(2) == 1u); /* target 1 shown */
+    agc_dsky_set_dsptem(0, cdu_deg(20.0));
+    agc_dsky_set_dsptem(1, 0546u);   /* EL 2 deg */
     CHECK(agc_job_optical_verification_target_loaded(&ctx) == AGC_STATUS_OK);
-    CHECK(agc_dsky_dsptem(2) == 2u);                        /* target 2 shown */
-    CHECK(agc_dsky_set_dsptem(0, cdu_deg(60.0)) == AGC_STATUS_OK);
-    CHECK(agc_dsky_set_dsptem(1, 01326u) == AGC_STATUS_OK); /* EL 5 deg */
+    CHECK(agc_dsky_dsptem(2) == 2u); /* target 2 shown */
+    agc_dsky_set_dsptem(0, cdu_deg(60.0));
+    agc_dsky_set_dsptem(1, 01326u);  /* EL 5 deg */
 
     agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
 

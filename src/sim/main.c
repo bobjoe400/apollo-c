@@ -66,21 +66,19 @@ static const char *opt_value(const char *arg, const char *name, const char *next
 {
     size_t n = strlen(name);
 
-    if (!AGC_ASSERT(arg != NULL && used != NULL) || strncmp(arg, name, n) != 0)
+    if (strncmp(arg, name, n) == 0)
     {
-        return (NULL);
-    }
+        if (arg[n] == '=')
+        {
+            return (&arg[n + 1]);
+        }
 
-    if (arg[n] == '=')
-    {
-        return (&arg[n + 1]);
-    }
+        if (arg[n] == '\0' && next != NULL)
+        {
+            *used = 1;
 
-    if (arg[n] == '\0' && next != NULL)
-    {
-        *used = 1;
-
-        return (next);
+            return (next);
+        }
     }
 
     return (NULL);
@@ -90,11 +88,6 @@ static const char *opt_value(const char *arg, const char *name, const char *next
 static bool parse_one(sim_opts_t *o, const char *arg, const char *next, int *used)
 {
     const char *v = NULL;
-
-    if (!AGC_ASSERT(o != NULL && arg != NULL))
-    {
-        return (false);
-    }
 
     if (strcmp(arg, "csm") == 0 || strcmp(arg, "lm") == 0)
     {
@@ -136,11 +129,6 @@ static bool parse_one(sim_opts_t *o, const char *arg, const char *next, int *use
 
 static bool parse_args(int argc, char *argv[], sim_opts_t *o)
 {
-    if (!AGC_ASSERT(o != NULL) || !AGC_ASSERT(argc >= 1))
-    {
-        return (false);
-    }
-
     o->vehicle = AGC_VEHICLE_CSM;
     o->mode    = SIM_MODE_REALTIME;
     o->port    = 0; /* by vehicle unless --port */
@@ -154,7 +142,7 @@ static bool parse_args(int argc, char *argv[], sim_opts_t *o)
 
         if (!parse_one(o, argv[i], (i + 1 < argc) ? argv[i + 1] : NULL, &used))
         {
-            (void) fprintf(stderr, "agc_sim: unknown argument %s\n", argv[i]);
+            (void) fprintf(stderr, "agc_sim: unknown argument %s\n", argv[i]); /* diagnostic output only */
 
             return (false); /* fprintf result irrelevant: we stop here */
         }
@@ -180,30 +168,28 @@ static void pace(struct timespec *next)
 {
     struct timespec now;
 
-    if (!AGC_ASSERT(next != NULL) || clock_gettime(CLOCK_MONOTONIC, &now) != 0)
+    if (clock_gettime(CLOCK_MONOTONIC, &now) == 0)
     {
-        return;
-    }
+        next->tv_nsec += SIM_TICK_NS;
 
-    next->tv_nsec += SIM_TICK_NS;
+        if (next->tv_nsec >= 1000000000L)
+        {
+            next->tv_nsec -= 1000000000L;
+            next->tv_sec++;
+        }
 
-    if (next->tv_nsec >= 1000000000L)
-    {
-        next->tv_nsec -= 1000000000L;
-        next->tv_sec++;
-    }
+        long ahead = (long) (next->tv_sec - now.tv_sec) * 1000000000L + (next->tv_nsec - now.tv_nsec);
 
-    long ahead = (long) (next->tv_sec - now.tv_sec) * 1000000000L + (next->tv_nsec - now.tv_nsec);
+        if (ahead > 0)
+        {
+            struct timespec d = {ahead / 1000000000L, ahead % 1000000000L};
 
-    if (ahead > 0)
-    {
-        struct timespec d = {ahead / 1000000000L, ahead % 1000000000L};
-
-        (void) nanosleep(&d, NULL); /* an early wake-up only shortens the tick */
-    }
-    else if (ahead < -SIM_TICK_NS * SIM_LAG_TICKS)
-    {
-        *next = now; /* fell far behind (debugger, load): resynchronise */
+            (void) nanosleep(&d, NULL); /* an early wake-up only shortens the tick */
+        }
+        else if (ahead < -SIM_TICK_NS * SIM_LAG_TICKS)
+        {
+            *next = now; /* fell far behind (debugger, load): resynchronise */
+        }
     }
 }
 
@@ -219,8 +205,10 @@ static bool lockstep_step(void)
             return (false); /* the stepping client has gone: done */
         }
 
-        (void) sim_socket_wait(SIM_WAIT_MS); /* timeout and input alike */
-        sim_socket_poll();
+        if (sim_socket_wait(SIM_WAIT_MS))
+        {
+            sim_socket_poll(); /* input (or a connection) is waiting */
+        }
 
         return (true);
     }
@@ -245,35 +233,33 @@ static void run(const sim_opts_t *o)
     struct timespec next;
     bool            sockets = (o->mode != SIM_MODE_HEADLESS);
 
-    if (!AGC_ASSERT(o != NULL) || clock_gettime(CLOCK_MONOTONIC, &next) != 0)
+    if (clock_gettime(CLOCK_MONOTONIC, &next) == 0)
     {
-        return;
-    }
-
-    for (;;)
-    {
-        if (o->max_cs != 0u && sim_clock_cs() >= o->max_cs)
+        for (;;)
         {
-            return;
-        }
-
-        if (o->mode == SIM_MODE_LOCKSTEP)
-        {
-            if (!lockstep_step())
+            if (o->max_cs != 0u && sim_clock_cs() >= o->max_cs)
             {
                 return;
             }
 
-            continue;
-        }
+            if (o->mode == SIM_MODE_LOCKSTEP)
+            {
+                if (!lockstep_step())
+                {
+                    return;
+                }
 
-        sim_socket_poll();
-        sim_script_tick(sim_clock_cs());
-        sim_clock_tick();
+                continue;
+            }
 
-        if (sockets && o->mode == SIM_MODE_REALTIME)
-        {
-            pace(&next);
+            sim_socket_poll();
+            sim_script_tick(sim_clock_cs());
+            sim_clock_tick();
+
+            if (sockets && o->mode == SIM_MODE_REALTIME)
+            {
+                pace(&next);
+            }
         }
     }
 }
@@ -285,8 +271,8 @@ static void print_summary(const sim_opts_t *o)
     sim_clock_stats(&s);
 
     /* printf results are irrelevant: the run is over (rule 7 note).    */
-    (void) printf("agc_sim %s: %lu cs, %lu jobs, %lu restarts, %lu busy, " "%lu errors, MODREG %d, FAILREG %05o %05o %05o\n", (o->vehicle == AGC_VEHICLE_LM) ? "LM" : "CSM", (unsigned long) s.cs, (unsigned long) s.jobs, (unsigned long) s.restarts, (unsigned long) s.busy_ticks, (unsigned long) s.errors, (int) agc_erase_modreg(), (unsigned) agc_erase_failreg(0), (unsigned) agc_erase_failreg(1), (unsigned) agc_erase_failreg(2));
-    (void) printf("agc_sim rupts: T6 %lu T5 %lu T3 %lu T4 %lu KEY1 %lu KEY2 %lu " "UP %lu DOWN %lu RADAR %lu HAND %lu\n", (unsigned long) s.rupts[0], (unsigned long) s.rupts[1], (unsigned long) s.rupts[2], (unsigned long) s.rupts[3], (unsigned long) s.rupts[4], (unsigned long) s.rupts[5], (unsigned long) s.rupts[6], (unsigned long) s.rupts[7], (unsigned long) s.rupts[8], (unsigned long) s.rupts[9]);
+    (void) printf("agc_sim %s: %lu cs, %lu jobs, %lu restarts, %lu busy, " "%lu errors, MODREG %d, FAILREG %05o %05o %05o\n", (o->vehicle == AGC_VEHICLE_LM) ? "LM" : "CSM", (unsigned long) s.cs, (unsigned long) s.jobs, (unsigned long) s.restarts, (unsigned long) s.busy_ticks, (unsigned long) s.errors, (int) agc_erase_modreg(), (unsigned) agc_erase_failreg(0), (unsigned) agc_erase_failreg(1), (unsigned) agc_erase_failreg(2)); /* diagnostic output only */
+    (void) printf("agc_sim rupts: T6 %lu T5 %lu T3 %lu T4 %lu KEY1 %lu KEY2 %lu " "UP %lu DOWN %lu RADAR %lu HAND %lu\n", (unsigned long) s.rupts[0], (unsigned long) s.rupts[1], (unsigned long) s.rupts[2], (unsigned long) s.rupts[3], (unsigned long) s.rupts[4], (unsigned long) s.rupts[5], (unsigned long) s.rupts[6], (unsigned long) s.rupts[7], (unsigned long) s.rupts[8], (unsigned long) s.rupts[9]);                           /* diagnostic output only */
 }
 
 static agc_status_t start(const sim_opts_t *o)
@@ -300,7 +286,7 @@ static agc_status_t start(const sim_opts_t *o)
 
     st = (st == AGC_STATUS_OK) ? sim_clock_init() : st;
     st = (st == AGC_STATUS_OK) ? agc_rupt_go() : st; /* GOJAM -> GOPROG */
-    sim_channels_init();
+    st = (st == AGC_STATUS_OK) ? sim_channels_init() : st;
 
     if (st == AGC_STATUS_OK && o->script != NULL)
     {
@@ -326,7 +312,7 @@ int main(int argc, char *argv[])
 
     if (!parse_args(argc, argv, &o))
     {
-        (void) fprintf(stderr, "usage: agc_sim [--vehicle csm|lm] [--port N] " "[--max-cs N] [--script F] [--pad F] " "[--headless|--lockstep|--fast]\n");
+        (void) fprintf(stderr, "usage: agc_sim [--vehicle csm|lm] [--port N] " "[--max-cs N] [--script F] [--pad F] " "[--headless|--lockstep|--fast]\n"); /* diagnostic output only */
 
         return (2); /* fprintf result irrelevant: exiting */
     }
@@ -335,7 +321,7 @@ int main(int argc, char *argv[])
 
     if (st != AGC_STATUS_OK)
     {
-        (void) fprintf(stderr, "agc_sim: start-up failed (status %d)\n", (int) st);
+        (void) fprintf(stderr, "agc_sim: start-up failed (status %d)\n", (int) st); /* diagnostic output only */
 
         return (2); /* fprintf result irrelevant: exiting */
     }

@@ -85,12 +85,12 @@
  * |LOS|), CPHIX (N96), PRAXIS (N95), R61CNTR, GENRET.                  */
 typedef struct ta_csm
 {
-    agc_vec_t    savepos;     /* SAVEPOS: CSM position, then unit LOS 2^1 */
-    agc_vec_t    savevel;     /* SAVEVEL: CSM velocity, m/cs 2^7          */
-    agc_vec_t    vlem;        /* DCDU (temp): LM velocity, m/cs 2^7       */
-    agc_dp_t     abslos;      /* P21TIME (temp): |LOS|, m 2^29            */
-    uint16_t     savedcdu[3]; /* SAVEDCDU: desired CDUs (THETAD)          */
-    agc_sp_t     r61cntr;     /* R61CNTR: + passes to skip, - KALCMANU, unscaled */
+    agc_vec_t savepos;     /* SAVEPOS: CSM position, then unit LOS 2^1 */
+    agc_vec_t savevel;     /* SAVEVEL: CSM velocity, m/cs 2^7          */
+    agc_vec_t vlem;        /* DCDU (temp): LM velocity, m/cs 2^7       */
+    agc_dp_t abslos;      /* P21TIME (temp): |LOS|, m 2^29            */
+    uint16_t savedcdu[3]; /* SAVEDCDU: desired CDUs (THETAD)          */
+    agc_sp_t r61cntr;     /* R61CNTR: + passes to skip, - KALCMANU, unscaled */
     agc_job_id_t genret;      /* GENRET                                   */
 } ta_csm_t;
 
@@ -154,7 +154,7 @@ void agc_erase_set_r61cntr(agc_sp_t v)
 static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t, agc_job_id_t resume)
 {
     agc_integ_out_t o;                                             /* integration result */
-    agc_status_t    st = rz_integ(ip, RZ_CSMCONIC, t, resume, &o); /* CSM */
+    agc_status_t st = rz_integ(ip, RZ_CSMCONIC, t, resume, &o); /* CSM */
 
     if (st != AGC_STATUS_OK)
     {
@@ -163,21 +163,21 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t, agc_job_id_t resume
 
     ta.savepos = o.ratt;                                   /* HOLDATT  */
     ta.savevel = o.vatt;
-    st         = rz_integ(ip, RZ_LEMCONIC, t, resume, &o); /* CALCLEM  */
+    st = rz_integ(ip, RZ_LEMCONIC, t, resume, &o); /* CALCLEM  */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    ta.vlem            = o.vatt;
-    ta.savepos         = agc_vec_unit(ip, agc_vec_sub(ip, o.ratt, ta.savepos), &ta.abslos, NULL);
+    ta.vlem = o.vatt;
+    ta.savepos = agc_vec_unit(ip, agc_vec_sub(ip, o.ratt, ta.savepos), &ta.abslos, NULL);
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
     agc_vec_t pointvsm;                        /* SM, 2^1 */
 
-    pointvsm        = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, ta.savepos), 1);
+    pointvsm = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, ta.savepos), 1);
     agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0);     /* +X, 2^1 */
-    agc_vec_t prf   = agc_vec_make(TA_PRF_X, 0, TA_PRF_Z); /* PRFUNIT, 2^1 */
+    agc_vec_t prf = agc_vec_make(TA_PRF_X, 0, TA_PRF_Z); /* PRFUNIT, 2^1 */
 
     st = agc_imu_vecpoint(ip, pointvsm, unitx, rz_tracking_angles(false));
 
@@ -188,7 +188,7 @@ static agc_status_t ta_desired(agc_interp_t *ip, agc_dp_t t, agc_job_id_t resume
 
     bool prftrk = agc_flag_test(AGC_FLAG_PRFTRKAT); /* PRFTRKAT */
 
-    agc_vec_t       axis = unitx;                     /* SCAXIS: +X, 2^1 */
+    agc_vec_t axis = unitx;                     /* SCAXIS: +X, 2^1 */
     const uint16_t *cdus = rz_tracking_angles(false); /* CPHIX      */
 
     if (prftrk)
@@ -250,105 +250,6 @@ static bool ta_gross(void)
 }
 
 /**********************************************************************
- * CRS61.2: LOS rate OMEGA = ((-UNIT DV) x UNIT LOS) |DV| / |LOS|
- * (100/2PI), normalized (X1); in SM axes, 0.1 s of it to CDU increments
- * (SMCDURES); in NB then control axes (MBDYTCTL) x .8 for WBODY.
- * AGC: CRS61.2 (P20-P25.agc pp.594-596)
- *
- * FUNCTION NAME: ta_rates
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- *   delcdu    agc_vec_t *     O    DELCDU: 0.1 s CDU increments, 180 deg
- *   wbody     agc_vec_t *     O    WBODY: LOS rate in control axes, 450
- *                                  deg/s
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the SMCDURES status
- **********************************************************************/
-static agc_status_t ta_rates(agc_interp_t *ip, agc_vec_t *delcdu, agc_vec_t *wbody)
-{
-    agc_dp_t  absdv = 0;                                                                                 /* |DV|, m/cs 2^7 */
-    agc_vec_t u     = agc_vec_neg(agc_vec_unit(ip, agc_vec_sub(ip, ta.vlem, ta.savevel), &absdv, NULL)); /* -UNIT DV, 2^1 */
-    agc_vec_t cross;                                                                                     /* 2^6 */
-
-    cross        = agc_vec_scale(ip, agc_vec_cross(ip, u, ta.savepos), TA_RVCS_RDS);
-    int      x1  = 0;                       /* NORM index, -(left shifts) */
-    int      s1  = 0;                       /* NORM index of |DV| */
-    agc_dp_t den = rz_norm(ta.abslos, &x1); /* 2^(29+X1) */
-    agc_dp_t num = rz_norm(absdv, &s1);     /* 2^(7+S1) */
-
-    x1 -= s1;      /* XSU,1 S1 */
-    agc_dp_t quot; /* |DV|/|LOS|, scale by X1 */
-
-    quot                   = agc_dp_div(ip, agc_dp_shr(num, 1), den);
-    agc_mat_t     refsmmat = agc_erase_refsmmat();                                                           /* REFSMMAT, 2^1 */
-    agc_vec_t     om       = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, agc_vec_scale(ip, cross, quot)), 1); /* OMEGA, SM, scale by X1 */
-    agc_cdutrig_t trig;                                                                                      /* CDUTRIG sines / cosines */
-
-    agc_guid_cdutrig(&trig);
-    agc_vec_t    dcdu = agc_vec_zero();              /* SMCDURES result, CDU scale */
-    agc_status_t st   = agc_guid_smcdures(ip, &trig, /* SMCDURES */
-                                          agc_vec_scale(ip, om, TA_TENTH),
-                                          &dcdu);
-
-    *delcdu = rz_vshift(ip, dcdu, -17 - x1); /* VSL* 0-17D,1 */
-
-    if (st == AGC_STATUS_OK)
-    {
-        agc_guid_smnb(&trig, &om); /* *SMNB*   */
-    }
-
-    agc_mat_t m; /* matrix rows, unit 2^1 */
-
-    m.row[0] = agc_vec_make(AGC_DP_HALF, 0, 0); /* MBDYTCTL */
-    m.row[1] = agc_vec_make(0, TA_COS725, agc_dp_neg(TA_SIN725));
-    m.row[2] = agc_vec_make(0, TA_SIN725, TA_COS725);
-    agc_vec_t w;                                /* control axes, scale by X1 */
-
-    w = agc_vec_scale(ip, agc_mat_vec(ip, &m, om), TA_POINT8);
-
-    *wbody = rz_vshift(ip, w, -14 - x1); /* VSL* 0-14D,1 */
-
-    return (st);
-} /* ta_rates */
-
-/**********************************************************************
- * CRS61.2A: the DAP inputs under INHINT; HOLDFLAG = -1.
- * AGC: CRS61.2A (P20-P25.agc p.596)
- *
- * FUNCTION NAME: ta_feed_dap
- *
- * ARGUMENTS:
- *   Argument  Type       I/O  Description (scale)
- *   --------  ---------  ---  -------------------------------------
- *   delcdu    agc_vec_t  I    DELCDU, 180 deg
- *   wbody     agc_vec_t  I    WBODY, 450 deg/s
- **********************************************************************/
-static void ta_feed_dap(agc_vec_t delcdu, agc_vec_t wbody)
-{
-    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* DAP erasables */
-
-    agc_inhint();
-
-    for (int i = 0; i < 3; i++)
-    {
-        r->cdud[i]   = agc_dp_from_sp((agc_sp_t) rz_word_value(ta.savedcdu[i]));
-        r->wbody[i]  = wbody.c[i];
-        r->delcdu[i] = delcdu.c[i];
-    }
-
-    r->holdflag = -1;
-    agc_relint();
-
-    if (!AGC_ASSERT(r->holdflag < 0))
-    {
-        return;
-    }
-}
-
-/**********************************************************************
  * CRS61.1 (pp.592-596): desired CDUs now; a gross maneuver (MANUEXIT,
  * CPHI.. = SAVEDCDU) unless someone is on the stick (then the UPLINK
  * ACTY lamp); in auto with the stick free, CRS61.2 and the DAP inputs.
@@ -368,7 +269,7 @@ static void ta_feed_dap(agc_vec_t delcdu, agc_vec_t wbody)
  **********************************************************************/
 static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta_result_t *res)
 {
-    *res            = TA_FED_DAP;
+    *res = TA_FED_DAP;
     agc_status_t st = ta_desired(ip, agc_rtb_loadtime(), resume); /* STORT    */
 
     if (st != AGC_STATUS_OK)
@@ -403,11 +304,95 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta
     agc_vec_t delcdu; /* DELCDU, scale 180 deg */
     agc_vec_t wbody;  /* WBODY, scale 450 deg/s */
 
-    st = ta_rates(ip, &delcdu, &wbody); /* CRS61.2  */
+    /**********************************************************************
+     * CRS61.2: LOS rate OMEGA = ((-UNIT DV) x UNIT LOS) |DV| / |LOS|
+     * (100/2PI), normalized (X1); in SM axes, 0.1 s of it to CDU increments
+     * (SMCDURES); in NB then control axes (MBDYTCTL) x .8 for WBODY.
+     * AGC: CRS61.2 (P20-P25.agc pp.594-596)
+     *
+     * FUNCTION NAME: ta_rates
+     *
+     * ARGUMENTS:
+     *   Argument  Type            I/O  Description (scale)
+     *   --------  --------------  ---  --------------------------------
+     *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+     *   delcdu    agc_vec_t *     O    DELCDU: 0.1 s CDU increments, 180 deg
+     *   wbody     agc_vec_t *     O    WBODY: LOS rate in control axes, 450
+     *                                  deg/s
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, else the SMCDURES status
+     **********************************************************************/
+    agc_dp_t absdv = 0;                                                                                 /* |DV|, m/cs 2^7 */
+    agc_vec_t u = agc_vec_neg(agc_vec_unit(ip, agc_vec_sub(ip, ta.vlem, ta.savevel), &absdv, NULL)); /* -UNIT DV, 2^1 */
+    agc_vec_t cross;                                                                                     /* 2^6 */
+
+    cross = agc_vec_scale(ip, agc_vec_cross(ip, u, ta.savepos), TA_RVCS_RDS);
+    int x1 = 0;                       /* NORM index, -(left shifts) */
+    int s1 = 0;                       /* NORM index of |DV| */
+    agc_dp_t den = rz_norm(ta.abslos, &x1); /* 2^(29+X1) */
+    agc_dp_t num = rz_norm(absdv, &s1);     /* 2^(7+S1) */
+
+    x1 -= s1;      /* XSU,1 S1 */
+    agc_dp_t quot; /* |DV|/|LOS|, scale by X1 */
+
+    quot = agc_dp_div(ip, agc_dp_shr(num, 1), den);
+    agc_mat_t refsmmat = agc_erase_refsmmat();                                                           /* REFSMMAT, 2^1 */
+    agc_vec_t om = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, agc_vec_scale(ip, cross, quot)), 1); /* OMEGA, SM, scale by X1 */
+    agc_cdutrig_t trig;                                                                                      /* CDUTRIG sines / cosines */
+
+    agc_guid_cdutrig(&trig);
+    agc_vec_t dcdu = agc_vec_zero();              /* SMCDURES result, CDU scale */
+    agc_status_t st_rates = agc_guid_smcdures(ip, &trig, /* SMCDURES */
+                                              agc_vec_scale(ip, om, TA_TENTH),
+                                              &dcdu);
+
+    delcdu = rz_vshift(ip, dcdu, -17 - x1); /* VSL* 0-17D,1 */
+
+    if (st_rates == AGC_STATUS_OK)
+    {
+        agc_guid_smnb(&trig, &om); /* *SMNB*   */
+    }
+
+    agc_mat_t m; /* matrix rows, unit 2^1 */
+
+    m.row[0] = agc_vec_make(AGC_DP_HALF, 0, 0); /* MBDYTCTL */
+    m.row[1] = agc_vec_make(0, TA_COS725, agc_dp_neg(TA_SIN725));
+    m.row[2] = agc_vec_make(0, TA_SIN725, TA_COS725);
+    agc_vec_t w;                                /* control axes, scale by X1 */
+
+    w = agc_vec_scale(ip, agc_mat_vec(ip, &m, om), TA_POINT8);
+
+    wbody = rz_vshift(ip, w, -14 - x1); /* VSL* 0-14D,1 */
+    st = st_rates;                   /* CRS61.2  */
 
     if (st == AGC_STATUS_OK)
     {
-        ta_feed_dap(delcdu, wbody); /* CRS61.2A */
+        /* CRS61.2A */
+        /**********************************************************************
+         * CRS61.2A: the DAP inputs under INHINT; HOLDFLAG = -1.
+         * AGC: CRS61.2A (P20-P25.agc p.596)
+         *
+         * FUNCTION NAME: ta_feed_dap
+         *
+         * ARGUMENTS:
+         *   Argument  Type       I/O  Description (scale)
+         *   --------  ---------  ---  -------------------------------------
+         *   delcdu    agc_vec_t  I    DELCDU, 180 deg
+         *   wbody     agc_vec_t  I    WBODY, 450 deg/s
+         **********************************************************************/
+        agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* DAP erasables */
+
+        agc_inhint();
+
+        for (int i = 0; i < 3; i++)
+        {
+            r->cdud[i] = agc_dp_from_sp((agc_sp_t) rz_word_value(ta.savedcdu[i]));
+            r->wbody[i] = wbody.c[i];
+            r->delcdu[i] = delcdu.c[i];
+        }
+
+        r->holdflag = -1;
+        agc_relint();
     }
 
     return (st);
@@ -469,8 +454,8 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    ta_result_t  res = TA_FED_DAP;                                                   /* CRS61.1 result */
-    agc_status_t st  = ta_point_at_target(&ip, AGC_JOB_TRACKING_ATTITUDE_CSM, &res); /* CRS61.1 */
+    ta_result_t res = TA_FED_DAP;                                                   /* CRS61.1 result */
+    agc_status_t st = ta_point_at_target(&ip, AGC_JOB_TRACKING_ATTITUDE_CSM, &res); /* CRS61.1 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -508,7 +493,7 @@ agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx)
 agc_status_t agc_job_tracking_attitude_csm_maneuvered(void)
 {
     rz_flag_put(AGC_FLAG_PDSPFLAG, false);
-    agc_phase_change(1, 00111);
+    agc_phase_change(00111);
     ta.r61cntr = 0;
 
     return (rz_continue(ta.genret));

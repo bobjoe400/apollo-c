@@ -100,25 +100,25 @@ void agc_conic_geom_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_vec_t r1vec, ag
     { /* HAVENORM: ABVAL SIGN */
         m     = agc_mpac_sqrt(agc_mpac_vsq(ip, n));
         *snth = agc_mpac_store(agc_conic_msign_sp_(m, ctx->geomsgn));
-
-        return;
     }
+    else
+    {
+        /* SIGN with a vector MPAC: complement it if the SP tag is negative. */
+        agc_sp_t s = ctx->geomsgn; /* GEOMSGN, SP 2^0 */
 
-    /* SIGN with a vector MPAC: complement it if the SP tag is negative. */
-    agc_sp_t s = ctx->geomsgn; /* GEOMSGN, SP 2^0 */
+        n            = (s < 0) ? agc_vec_neg(n) : n;   /* SIGN GEOMSGN, UNIT   */
+        agc_dp_t  sn = 0;                              /* |N| = SNTH magnitude, 2^1 */
+        agc_vec_t un = agc_vec_unit(ip, n, &sn, NULL); /* UNIT: UN, 2^1 */
 
-    n            = (s < 0) ? agc_vec_neg(n) : n;   /* SIGN GEOMSGN, UNIT   */
-    agc_dp_t  sn = 0;                              /* |N| = SNTH magnitude, 2^1 */
-    agc_vec_t un = agc_vec_unit(ip, n, &sn, NULL); /* UNIT: UN, 2^1 */
+        if (agc_interp_test_ovf(ip))
+        { /* BOV COLINEAR: VSR1   */
+            un = agc_vec_shr(un, 1);
+        }
 
-    if (agc_interp_test_ovf(ip))
-    { /* BOV COLINEAR: VSR1   */
-        un = agc_vec_shr(un, 1);
+        ctx->un = un;                                                   /* UNITNORM: STODL UN 36D */
+        m       = agc_mpac_dload(agc_dp_to_words(sn));
+        *snth   = agc_mpac_store(agc_conic_msign_sp_(m, ctx->geomsgn)); /* SIGN GEOMSGN */
     }
-
-    ctx->un = un;                                                   /* UNITNORM: STODL UN 36D */
-    m       = agc_mpac_dload(agc_dp_to_words(sn));
-    *snth   = agc_mpac_store(agc_conic_msign_sp_(m, ctx->geomsgn)); /* SIGN GEOMSGN */
 } /* agc_conic_geom_ */
 
 /**********************************************************************
@@ -274,7 +274,7 @@ static getx_next_t getx_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx, agc_
         }
 
         m = agc_mpac_round(ip, agc_mpac_sqrt(m)); /* SQRT ROUND */
-        m = agc_mpac_dad(ip, m, w);                   /* DAD 0D  */
+        m = agc_mpac_dad(ip, m, w);               /* DAD 0D  */
 
         if (agc_interp_test_ovf(ip))
         {
@@ -289,46 +289,6 @@ static getx_next_t getx_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx, agc_
 
     return (agc_interp_test_ovf(ip) ? GETX_TO_INFINITY : GETX_TO_POLYCOEF); /* BOV INFINITY */
 } /* getx_wloop */
-
-/**********************************************************************
- * 360CHECK / INVRSEQN (CONIC_SUBROUTINES.agc p. 1294) -- near-360-degree
- * form: 1/W = SNTH / (sqrt(P) (1 + CSTH - SNTH COGA)) and its square
- *
- * FUNCTION NAME: getx_invrseqn
- *
- * ARGUMENTS:
- *   Argument  Type                     I/O  Description (scale)
- *   --------  -----------------------  ---  ---------------------------
- *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
- *   ctx       const agc_conic_ctx_t *  I    P, SNTH, CSTH, COGA
- *   inv_w_sq  agc_dp_words_t *         O    34D (1/W)^2, 2^-2
- *
- * RETURNS: agc_dp_words_t -- 0D 1/W, 2^-1
- *********************************************************************/
-static agc_dp_words_t getx_invrseqn(agc_interp_t *ip, const agc_conic_ctx_t *ctx, agc_dp_words_t *inv_w_sq)
-{
-    agc_tp_words_t m = agc_mpac_sqrt(agc_mpac_dload(ctx->p)); /* DLOAD P SQRT, 2^2 */
-
-    const agc_dp_words_t sqrtp = agc_mpac_store(m); /* PDDL: 0D SQRT P, 2^2 */
-
-    m = agc_mpac_dmp(agc_mpac_dload(ctx->snth), ctx->coga); /* SNTH DMP COGA */
-
-    const agc_dp_words_t sn_coga = agc_mpac_store(agc_mpac_shift(ip, m, 1)); /* SL1: 2D SNTH COGA, 2^5 */
-
-    m     = agc_mpac_shift(ip, agc_mpac_dload(ctx->csth), -4); /* SR4     */
-    m     = agc_mpac_dad(ip, m, AGC_CONIC_D1_32);              /* 1+CSTH  */
-    m     = agc_mpac_dsu(ip, m, sn_coga);
-    m     = agc_mpac_dmp(m, sqrtp);                            /* 2^7     */
-    int n = 0;                                                 /* NORM X1 count */
-
-    m         = agc_mpac_norm(m, &n);               /* NORM X1   */
-    m         = agc_mpac_bddv(ip, m, ctx->snth);    /* BDDV SNTH */
-    m         = agc_mpac_shift_round(ip, m, n - 5); /* SLR* 0 -5,1 */
-    m         = agc_mpac_abs(m);                    /* ABS       */
-    *inv_w_sq = agc_mpac_store(agc_mpac_dsq(m));    /* 34D 2^-2  */
-
-    return (agc_mpac_store(m)); /* 0D 2^-1 */
-}
 
 /**********************************************************************
  * 1/WLOOP (CONIC_SUBROUTINES.agc p. 1294) -- G = G + sqrt(G^2 + R1A/W^2)
@@ -348,9 +308,44 @@ static agc_dp_words_t getx_invrseqn(agc_interp_t *ip, const agc_conic_ctx_t *ctx
  *********************************************************************/
 static getx_next_t getx_inv_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx, agc_tp_words_t *mpac)
 {
-    agc_dp_words_t       inv_w_sq = AGC_CONIC_KEPZERO;                 /* 34D (1/W)^2, 2^-2 */
-    const agc_dp_words_t inv_w    = getx_invrseqn(ip, ctx, &inv_w_sq); /* 0D 1/W, 2^-1 */
-    agc_tp_words_t       m        = agc_mpac_dload(AGC_CONIC_D1_16);   /* STODL 34D D1/16: G = 1, 2^4 */
+    agc_dp_words_t inv_w_sq = AGC_CONIC_KEPZERO; /* 34D (1/W)^2, 2^-2 */
+
+    /**********************************************************************
+     * 360CHECK / INVRSEQN (CONIC_SUBROUTINES.agc p. 1294) -- near-360-degree
+     * form: 1/W = SNTH / (sqrt(P) (1 + CSTH - SNTH COGA)) and its square
+     *
+     * FUNCTION NAME: getx_invrseqn
+     *
+     * ARGUMENTS:
+     *   Argument  Type                     I/O  Description (scale)
+     *   --------  -----------------------  ---  ---------------------------
+     *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
+     *   ctx       const agc_conic_ctx_t *  I    P, SNTH, CSTH, COGA
+     *   inv_w_sq  agc_dp_words_t *         O    34D (1/W)^2, 2^-2
+     *
+     * RETURNS: agc_dp_words_t -- 0D 1/W, 2^-1
+     *********************************************************************/
+    agc_tp_words_t m_invrseqn = agc_mpac_sqrt(agc_mpac_dload(ctx->p)); /* DLOAD P SQRT, 2^2 */
+
+    const agc_dp_words_t sqrtp = agc_mpac_store(m_invrseqn); /* PDDL: 0D SQRT P, 2^2 */
+
+    m_invrseqn = agc_mpac_dmp(agc_mpac_dload(ctx->snth), ctx->coga); /* SNTH DMP COGA */
+
+    const agc_dp_words_t sn_coga = agc_mpac_store(agc_mpac_shift(ip, m_invrseqn, 1)); /* SL1: 2D SNTH COGA, 2^5 */
+
+    m_invrseqn     = agc_mpac_shift(ip, agc_mpac_dload(ctx->csth), -4); /* SR4     */
+    m_invrseqn     = agc_mpac_dad(ip, m_invrseqn, AGC_CONIC_D1_32);     /* 1+CSTH  */
+    m_invrseqn     = agc_mpac_dsu(ip, m_invrseqn, sn_coga);
+    m_invrseqn     = agc_mpac_dmp(m_invrseqn, sqrtp);                   /* 2^7     */
+    int n_invrseqn = 0;                                                 /* NORM X1 count */
+
+    m_invrseqn                 = agc_mpac_norm(m_invrseqn, &n_invrseqn);               /* NORM X1   */
+    m_invrseqn                 = agc_mpac_bddv(ip, m_invrseqn, ctx->snth);             /* BDDV SNTH */
+    m_invrseqn                 = agc_mpac_shift_round(ip, m_invrseqn, n_invrseqn - 5); /* SLR* 0 -5,1 */
+    m_invrseqn                 = agc_mpac_abs(m_invrseqn);                             /* ABS       */
+    inv_w_sq                   = agc_mpac_store(agc_mpac_dsq(m_invrseqn));             /* 34D 2^-2  */
+    const agc_dp_words_t inv_w = agc_mpac_store(m_invrseqn);                           /* 0D 1/W, 2^-1 */
+    agc_tp_words_t       m     = agc_mpac_dload(AGC_CONIC_D1_16);                      /* STODL 34D D1/16: G = 1, 2^4 */
 
     for (int pass = 0; pass < AGC_CONIC_GETX_PASSES; pass++)
     { /* TIX,2 */
@@ -435,47 +430,6 @@ static bool getx_polycoef(agc_interp_t *ip, const agc_conic_ctx_t *ctx, agc_tp_w
 } /* getx_polycoef */
 
 /**********************************************************************
- * XCOMMON (CONIC_SUBROUTINES.agc pp. 1293-1294) -- XI, X, XSQ, KEPC1,
- * KEPC2 from x', and CLEAR INFINFLG
- *
- * FUNCTION NAME: getx_xcommon
- *
- * ARGUMENTS:
- *   Argument  Type               I/O  Description (scale)
- *   --------  -----------------  ---  ---------------------------------
- *   ip        agc_interp_t *     I/O  interpreter state (OVFIND)
- *   ctx       agc_conic_ctx_t *  I/O  XI 2^6, X 2^17 / 2^16, XSQ
- *                                     2^(34-N1), KEPC1 2^17, KEPC2 2^6
- *   xprime    agc_tp_words_t           I    0D x' from POLYCOEF
- *********************************************************************/
-static void getx_xcommon(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t xprime)
-{
-    const agc_dp_words_t xp = agc_mpac_store(xprime); /* 0D x' as pushed */
-    int                  n  = 0;                      /* NORM X1 count */
-    agc_tp_words_t       m  = agc_mpac_dsq(xprime);   /* DSQ: x'^2, 2^12 */
-
-    m = agc_mpac_norm(m, &n); /* NORM X1 */
-
-    m             = agc_mpac_dmp(m, ctx->r1a);                           /* DMP R1A */
-    ctx->xi       = agc_mpac_store(agc_mpac_shift_round(ip, m, 12 - n)); /* SRR* 0 -12D,1: XI 2^6 */
-    m             = agc_mpac_shift(ip, agc_mpac_dload(ctx->r1), -1);     /* R1 SR1  */
-    m             = agc_mpac_round(ip, agc_mpac_sqrt(m));            /* SQRT ROUND */
-    m             = agc_mpac_shift_round(ip, agc_mpac_dmp(m, xp), 4);    /* DMP 0D SL4R */
-    ctx->x        = agc_mpac_store(m);                                   /* X 2^17  */
-    m             = agc_mpac_norm(agc_mpac_dsq(m), &n);                  /* DSQ NORM X1 */
-    ctx->xsq      = agc_mpac_store(m);                                   /* 0D      */
-    ctx->xsq_n1   = n;
-    m             = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(ctx->p), ctx->r1), 3);
-    m             = agc_mpac_sqrt(m);                                /* SQRT       */
-    m             = agc_mpac_dmp(m, ctx->coga);                          /* DMP COGA   */
-    ctx->kepc1    = agc_mpac_store(agc_mpac_shift_round(ip, m, 3));      /* SL3R 2^17 */
-    m             = agc_mpac_bdsu(ip, agc_mpac_dload(ctx->r1a), AGC_CONIC_D1_64);
-    ctx->infinflg = false;                                               /* CLEAR INFINFLG */
-    agc_conic_mirror_flag_(AGC_CONIC_FLAG_INFINFLG, false);              /* mirror only */
-    ctx->kepc2    = agc_mpac_store(m);                                   /* KEPC2 2^6 */
-} /* getx_xcommon */
-
-/**********************************************************************
  * GETX (CONIC_SUBROUTINES.agc pp. 1292-1295, label GETX) -- universal
  * variable x of the conic through (CSTH, SNTH)
  *
@@ -519,7 +473,43 @@ void agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t mpac
         return;
     }
 
-    getx_xcommon(ip, ctx, xprime);
+    /**********************************************************************
+     * XCOMMON (CONIC_SUBROUTINES.agc pp. 1293-1294) -- XI, X, XSQ, KEPC1,
+     * KEPC2 from x', and CLEAR INFINFLG
+     *
+     * FUNCTION NAME: getx_xcommon
+     *
+     * ARGUMENTS:
+     *   Argument  Type               I/O  Description (scale)
+     *   --------  -----------------  ---  ---------------------------------
+     *   ip        agc_interp_t *     I/O  interpreter state (OVFIND)
+     *   ctx       agc_conic_ctx_t *  I/O  XI 2^6, X 2^17 / 2^16, XSQ
+     *                                     2^(34-N1), KEPC1 2^17, KEPC2 2^6
+     *   xprime    agc_tp_words_t           I    0D x' from POLYCOEF
+     *********************************************************************/
+    const agc_dp_words_t xp        = agc_mpac_store(xprime); /* 0D x' as pushed */
+    int                  n         = 0;                      /* NORM X1 count */
+    agc_tp_words_t       m_xcommon = agc_mpac_dsq(xprime);   /* DSQ: x'^2, 2^12 */
+
+    m_xcommon = agc_mpac_norm(m_xcommon, &n); /* NORM X1 */
+
+    m_xcommon     = agc_mpac_dmp(m_xcommon, ctx->r1a);                           /* DMP R1A */
+    ctx->xi       = agc_mpac_store(agc_mpac_shift_round(ip, m_xcommon, 12 - n)); /* SRR* 0 -12D,1: XI 2^6 */
+    m_xcommon     = agc_mpac_shift(ip, agc_mpac_dload(ctx->r1), -1);             /* R1 SR1  */
+    m_xcommon     = agc_mpac_round(ip, agc_mpac_sqrt(m_xcommon));                /* SQRT ROUND */
+    m_xcommon     = agc_mpac_shift_round(ip, agc_mpac_dmp(m_xcommon, xp), 4);    /* DMP 0D SL4R */
+    ctx->x        = agc_mpac_store(m_xcommon);                                   /* X 2^17  */
+    m_xcommon     = agc_mpac_norm(agc_mpac_dsq(m_xcommon), &n);                  /* DSQ NORM X1 */
+    ctx->xsq      = agc_mpac_store(m_xcommon);                                   /* 0D      */
+    ctx->xsq_n1   = n;
+    m_xcommon     = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(ctx->p), ctx->r1), 3);
+    m_xcommon     = agc_mpac_sqrt(m_xcommon);                                    /* SQRT       */
+    m_xcommon     = agc_mpac_dmp(m_xcommon, ctx->coga);                          /* DMP COGA   */
+    ctx->kepc1    = agc_mpac_store(agc_mpac_shift_round(ip, m_xcommon, 3));      /* SL3R 2^17 */
+    m_xcommon     = agc_mpac_bdsu(ip, agc_mpac_dload(ctx->r1a), AGC_CONIC_D1_64);
+    ctx->infinflg = false;                                                       /* CLEAR INFINFLG */
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_INFINFLG, false);                      /* mirror only */
+    ctx->kepc2    = agc_mpac_store(m_xcommon);                                   /* KEPC2 2^6 */
 } /* agc_conic_getx_ */
 
 /**********************************************************************
@@ -557,12 +547,12 @@ agc_status_t agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, a
 
     agc_conic_param_(ip, &ctx, rvec, vvec, &sngamma, &m);
 
-    out->sngamma = agc_conic_value_(sngamma);
-    out->p       = agc_conic_value_(ctx.p);
-    out->r1a     = agc_conic_value_(ctx.r1a);
-    out->coga    = agc_conic_value_(ctx.coga);
-    out->r1      = agc_conic_value_(ctx.r1);
-    out->magvec2 = agc_conic_value_(ctx.magvec2);
+    out->sngamma = agc_dp_from_words(sngamma);
+    out->p       = agc_dp_from_words(ctx.p);
+    out->r1a     = agc_dp_from_words(ctx.r1a);
+    out->coga    = agc_dp_from_words(ctx.coga);
+    out->r1      = agc_dp_from_words(ctx.r1);
+    out->magvec2 = agc_dp_from_words(ctx.magvec2);
     out->ur1     = ctx.ur1;
     out->u2      = ctx.u2;
     out->un      = ctx.un;

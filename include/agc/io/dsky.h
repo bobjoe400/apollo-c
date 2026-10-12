@@ -93,18 +93,18 @@ int      agc_dsky_relay_digit(uint16_t code); /* -1 for blank/bad  */
 
 typedef struct agc_dsky_state
 {
-    int8_t   prog[2];                /* MD1 MD2 (or AGC_DSKY_BLANK)       */
-    int8_t   verb[2];                /* VD1 VD2                           */
-    int8_t   noun[2];                /* ND1 ND2                           */
-    int8_t   r[3][AGC_DSKY_RDIGITS]; /* R1..R3, D1..D5                    */
-    int8_t   r_sign[3];              /* +1 plus lit, -1 minus lit, 0 none */
+    int8_t prog[2];                /* MD1 MD2 (or AGC_DSKY_BLANK)       */
+    int8_t verb[2];                /* VD1 VD2                           */
+    int8_t noun[2];                /* ND1 ND2                           */
+    int8_t r[3][AGC_DSKY_RDIGITS]; /* R1..R3, D1..D5                    */
+    int8_t r_sign[3];              /* +1 plus lit, -1 minus lit, 0 none */
     uint16_t lamps;                  /* channel 011 image                 */
-    bool     flash;                  /* V/N flash (bit 6)                 */
-    bool     key_rel;                /* KEY REL lamp (bit 5)              */
-    bool     opr_err;                /* OPR ERR lamp (bit 7)              */
-    bool     uplink_act;             /* UPLINK ACTY lamp (bit 3)          */
-    uint8_t  verbreg;                /* VERBREG (two-digit verb code)     */
-    uint8_t  nounreg;                /* NOUNREG                           */
+    bool flash;                  /* V/N flash (bit 6)                 */
+    bool key_rel;                /* KEY REL lamp (bit 5)              */
+    bool opr_err;                /* OPR ERR lamp (bit 7)              */
+    bool uplink_act;             /* UPLINK ACTY lamp (bit 3)          */
+    uint8_t verbreg;                /* VERBREG (two-digit verb code)     */
+    uint8_t nounreg;                /* NOUNREG                           */
 } agc_dsky_state_t;
 
 /* ---- initialisation (part of STARTSUB, FRESH_START_AND_RESTART) ------ */
@@ -143,8 +143,8 @@ agc_status_t agc_dsky_get_state(agc_dsky_state_t *out);
 /* DSPTEM1 +0..+2 = index 0..2, DSPTEM2 +0..+2 = index 3..5, index 6 =
  * the word after DSPTEM2 +2 (DSPTEMX +2). Raw 15-bit AGC words.
  * DSPTEMX = OPTIONX = DSPTEM2 +1, NORMTEM1 = DSPTEM1.                   */
-uint16_t     agc_dsky_dsptem(int index);
-agc_status_t agc_dsky_set_dsptem(int index, uint16_t word);
+uint16_t agc_dsky_dsptem(int index);
+void     agc_dsky_set_dsptem(int index, uint16_t word);
 
 /* The same buffer under the erasable names the programs use: DSPTEM1 +i
  * (i 0..2), OPTIONX +i (i 0..2, = DSPTEM2 +1 +i), DSPTEMX (DP, cs 2^28
@@ -166,7 +166,7 @@ agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value);
 
 /* Verb and noun at the time the operator answered ENDIDLE (the AGC left
  * them in the woken job's MPAC, MPAC+1).                               */
-agc_status_t agc_dsky_response(uint8_t *verb, uint8_t *noun);
+void agc_dsky_response(uint8_t *verb, uint8_t *noun);
 
 /* ---- internal program interface (NVSUB etc., PINBALL pp. 369-383) ---- */
 /* Return AGC_STATUS_OK = "L+2, performed", AGC_STATUS_BUSY = "L+1,
@@ -274,18 +274,18 @@ agc_status_t agc_dsky_initdsp(void);          /* INITDSP (.1 restarts)     */
 
 /* ---- executive entry points owned by pinball (dispatch.c calls these) */
 agc_status_t agc_job_charin(agc_job_ctx_t *ctx);   /* CHARIN              */
-agc_status_t agc_job_prockey(void);  /* PROCKEY             */
-agc_status_t agc_job_mondo(void);    /* MONDO               */
+agc_status_t agc_job_prockey(void);                /* PROCKEY             */
+agc_status_t agc_job_mondo(void);                  /* MONDO               */
 agc_status_t agc_job_dspmmjb(agc_job_ctx_t *ctx);  /* DSPMMJB             */
-agc_status_t agc_job_tstlts3(void);  /* TSTLTS3             */
+agc_status_t agc_job_tstlts3(void);                /* TSTLTS3             */
 agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx); /* MAKEPLAY (R kinds)  */
-agc_status_t agc_job_playjum1(void); /* PLAYJUM1            */
-agc_status_t agc_job_markplay(void); /* MARKPLAY            */
-agc_status_t agc_job_redoprio(void); /* REDOPRIO            */
-agc_status_t agc_job_termate(void);  /* TERMATE  (ENDIDLE+1) */
-agc_status_t agc_job_proceed(void);  /* PROCEED  (ENDIDLE+2) */
+agc_status_t agc_job_playjum1(void);               /* PLAYJUM1            */
+agc_status_t agc_job_markplay(void);               /* MARKPLAY            */
+agc_status_t agc_job_redoprio(void);               /* REDOPRIO            */
+agc_status_t agc_job_termate(void);                /* TERMATE  (ENDIDLE+1) */
+agc_status_t agc_job_proceed(void);                /* PROCEED  (ENDIDLE+2) */
 agc_status_t agc_job_idleret3(agc_job_ctx_t *ctx); /* IDLERET1+2 (ENDIDLE+3) */
-agc_status_t agc_job_jamterm(void);  /* JAMTERM via FINDVAC */
+agc_status_t agc_job_jamterm(void);                /* JAMTERM via FINDVAC */
 
 /* XCHSLEEP, FACEREG 0 (mark) */
 agc_status_t agc_job_xchsleepm(void);

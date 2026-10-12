@@ -113,43 +113,11 @@ static void iv_setup(agc_interp_t *ip, agc_rendz_t *rz, agc_dp_t e4, iv_work_t *
     w->itctr      = -1;
     w->cozy4      = agc_dp_shr(agc_dp_cos(e4), 1); /* COSINE SR1   */
     w->r2vec      = w->rtarg1;
-    agc_vec_t uri = rz_unit(ip, w->rinit);             /* URI unit RINIT, 2^1 */
+    agc_vec_t uri = rz_unit(ip, w->rinit);         /* URI unit RINIT, 2^1 */
 
     w->un     = rz_unit(ip, agc_vec_cross(ip, uri, w->vinit));
     w->cozy4  = agc_dp_add(ip, agc_vec_dot(ip, rz_unit(ip, w->rtarg1), uri), w->cozy4);
     w->normsw = false;
-}
-
-/**********************************************************************
- * INITVEL2 rotation (p.488): RC into the RI, VI plane, |RC| kept.
- * AGC: INITVEL2 (P34-35_P74-75.agc p.488)
- *
- * FUNCTION NAME: iv_rotate
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- *   w         iv_work_t *     I/O  R2VEC rotated (RTARG1 too on the first
- *                                  pass), NORMSW set
- **********************************************************************/
-static void iv_rotate(agc_interp_t *ip, iv_work_t *w)
-{
-    w->normsw    = true;
-    agc_dp_t  rc = rz_abval(ip, w->r2vec); /* |RC|, body scale (m 2^29/27) */
-    agc_vec_t p;                           /* RC . UN UN, body scale */
-
-    p = agc_vec_shl(ip, agc_vec_proj(ip, w->r2vec, w->un), 2);
-    agc_vec_t u; /* in-plane unit, 2^1 */
-
-    u = rz_unit(ip, agc_vec_sub(ip, w->r2vec, p));
-
-    w->r2vec = agc_vec_shl(ip, agc_vec_scale(ip, u, rc), 1);
-
-    if (w->itctr < 0)
-    {
-        w->rtarg1 = w->r2vec; /* first pass   */
-    }
 }
 
 /**********************************************************************
@@ -193,11 +161,6 @@ static agc_sp_t iv_geomsgn(agc_interp_t *ip, const agc_rendz_t *rz, const iv_wor
 
     d          = agc_vec_dot(ip, agc_vec_cross(ip, v, ur1), ur2);
     agc_dp_t g = (d >= 0) ? muearth : agc_dp_neg(muearth); /* GEOMSGN, 2^36 */
-
-    if (!AGC_ASSERT(x1 >= -8 && x1 <= 8))
-    {
-        return (0); /* no valid result */
-    }
 
     return (agc_dp_high(g));
 }
@@ -272,51 +235,6 @@ static agc_status_t iv_lambert(agc_interp_t *ip, const agc_rendz_t *rz, agc_sp_t
     w->lin.coga   = w->lout.coga; /* next guess         */
     w->viprime    = w->lout.vvec;
     w->vtarget    = w->lout.vtarget;
-
-    return (st);
-}
-
-/**********************************************************************
- * INITVEL5 (pp.489-490): precision integration of RINIT, VIPRIME over
- * DELLT4; VTARGET = VATT1; *rend = RATT1 (body scale).
- * AGC: INITVEL5 (P34-35_P74-75.agc pp.489-490)
- *
- * FUNCTION NAME: iv_integrate
- *
- * ARGUMENTS:
- *   Argument  Type                 I/O  Description (scale)
- *   --------  -------------------  ---  ---------------------------
- *   ip        agc_interp_t *       I/O  interpreter state (OVFIND)
- *   rz        const agc_rendz_t *  I    rendezvous erasables
- *   w         iv_work_t *          I/O  RINIT, VIPRIME in; VTARGET = VATT1
- *                                       out
- *   resume    agc_job_id_t         I    job that continues the caller
- *   rend      agc_vec_t *          O    RATT1, the integrated end position,
- *                                       body scale
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status of rz_integrvs
- *          (sleep, restart)
- **********************************************************************/
-static agc_status_t iv_integrate(agc_interp_t *ip, const agc_rendz_t *rz, iv_work_t *w, agc_job_id_t resume, agc_vec_t *rend)
-{
-    rz_integrvs_in_t in; /* INTEGRVS inputs */
-
-    in.moon  = (rz->body.rtx2 != 0);
-    in.rcv   = w->rinit;
-    in.vcv   = w->viprime;
-    in.tet   = rz->intime;
-    in.tdec1 = agc_dp_add(ip, rz->intime, rz->dellt4);
-    in.conic = false;   /* CLEAR INTYPFLG     */
-    agc_integ_out_t o;  /* integration result */
-    agc_status_t    st; /* integration status */
-
-    st = rz_integrvs(ip, &in, resume, &o);
-
-    if (st == AGC_STATUS_OK)
-    {
-        w->vtarget = o.vatt1;
-        *rend      = o.ratt1;
-    }
 
     return (st);
 }
@@ -406,7 +324,34 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, ag
     { /* INITVEL2     */
         if (w.cozy4 < 0)
         {
-            iv_rotate(ip, &w);
+            /**********************************************************************
+             * INITVEL2 rotation (p.488): RC into the RI, VI plane, |RC| kept.
+             * AGC: INITVEL2 (P34-35_P74-75.agc p.488)
+             *
+             * FUNCTION NAME: iv_rotate
+             *
+             * ARGUMENTS:
+             *   Argument  Type            I/O  Description (scale)
+             *   --------  --------------  ---  --------------------------------
+             *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
+             *   w         iv_work_t *     I/O  R2VEC rotated (RTARG1 too on the first
+             *                                  pass), NORMSW set
+             **********************************************************************/
+            w.normsw     = true;
+            agc_dp_t  rc = rz_abval(ip, w.r2vec); /* |RC|, body scale (m 2^29/27) */
+            agc_vec_t p;                          /* RC . UN UN, body scale */
+
+            p = agc_vec_shl(ip, agc_vec_proj(ip, w.r2vec, w.un), 2);
+            agc_vec_t u; /* in-plane unit, 2^1 */
+
+            u = rz_unit(ip, agc_vec_sub(ip, w.r2vec, p));
+
+            w.r2vec = agc_vec_shl(ip, agc_vec_scale(ip, u, rc), 1);
+
+            if (w.itctr < 0)
+            {
+                w.rtarg1 = w.r2vec; /* first pass   */
+            }
         }
 
         st       = iv_lambert(ip, rz, numit, &w);
@@ -421,7 +366,46 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, ag
 
         agc_vec_t rend; /* RATT1, body scale */
 
-        st = iv_integrate(ip, rz, &w, resume, &rend);
+        /**********************************************************************
+         * INITVEL5 (pp.489-490): precision integration of RINIT, VIPRIME over
+         * DELLT4; VTARGET = VATT1; *rend = RATT1 (body scale).
+         * AGC: INITVEL5 (P34-35_P74-75.agc pp.489-490)
+         *
+         * FUNCTION NAME: iv_integrate
+         *
+         * ARGUMENTS:
+         *   Argument  Type                 I/O  Description (scale)
+         *   --------  -------------------  ---  ---------------------------
+         *   ip        agc_interp_t *       I/O  interpreter state (OVFIND)
+         *   rz        const agc_rendz_t *  I    rendezvous erasables
+         *   w         iv_work_t *          I/O  RINIT, VIPRIME in; VTARGET = VATT1
+         *                                       out
+         *   resume    agc_job_id_t         I    job that continues the caller
+         *   rend      agc_vec_t *          O    RATT1, the integrated end position,
+         *                                       body scale
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status of rz_integrvs
+         *          (sleep, restart)
+         **********************************************************************/
+        rz_integrvs_in_t in; /* INTEGRVS inputs */
+
+        in.moon  = (rz->body.rtx2 != 0);
+        in.rcv   = w.rinit;
+        in.vcv   = w.viprime;
+        in.tet   = rz->intime;
+        in.tdec1 = agc_dp_add(ip, rz->intime, rz->dellt4);
+        in.conic = false;             /* CLEAR INTYPFLG     */
+        agc_integ_out_t o;            /* integration result */
+        agc_status_t    st_integrate; /* integration status */
+
+        st_integrate = rz_integrvs(ip, &in, resume, &o);
+
+        if (st_integrate == AGC_STATUS_OK)
+        {
+            w.vtarget = o.vatt1;
+            rend      = o.ratt1;
+        }
+        st = st_integrate;
 
         if (st != AGC_STATUS_OK)
         {

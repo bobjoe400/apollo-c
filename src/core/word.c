@@ -60,11 +60,6 @@ static double clamp_round(double v, double max)
 {
     double r;
 
-    if (!AGC_ASSERT(v == v))
-    { /* NaN              */
-        return (0.0);
-    }
-
     r = (v < 0.0) ? -floor(-v + 0.5) : floor(v + 0.5); /* half away from 0 */
 
     if (r > max)
@@ -141,25 +136,6 @@ double agc_sp_to_double(agc_sp_t v, int scale_pow2)
 double agc_dp_to_double(agc_dp_t v, int scale_pow2)
 {
     return (ldexp((double) v, scale_pow2 - AGC_DP_BITS));
-}
-
-/**********************************************************************
- * AGC: none (tests, sim) -- TP to engineering value.
- *
- * ARGUMENTS:
- *   v           agc_tp_t  I  TP value
- *   scale_pow2  int       I  N of the scale 2^N
- *
- * RETURNS: double -- v 2^(N-42)
- **********************************************************************/
-double agc_tp_to_double(agc_tp_t v, int scale_pow2)
-{
-    if (!AGC_ASSERT((scale_pow2 > -64) && (scale_pow2 < 64)))
-    {
-        return (0); /* no valid result */
-    }
-
-    return (ldexp((double) v, scale_pow2 - AGC_TP_BITS));
 }
 
 /* ---- SP/DP/TP structure ------------------------------------------------- */
@@ -273,7 +249,7 @@ agc_dp_t agc_tp_to_dp(agc_tp_t v)
 agc_dp_t agc_tp_round_dp(agc_tp_t v)
 {
     agc_ovf_t ovf = 0;                                       /* ROUNDSUB carry out of MPAC */
-    agc_w3_t  m   = agc_w_roundsub(agc_w3_from_tp(v), &ovf); /* rounded TP MPAC */
+    agc_w3_t m = agc_w_roundsub(agc_w3_from_tp(v), &ovf); /* rounded TP MPAC */
 
     if (ovf != 0)
     {
@@ -299,11 +275,6 @@ agc_dp_words_t agc_dp_to_words(agc_dp_t v)
     agc_dp_words_t w; /* the sign-agreeing words */
 
     w = agc_w2_to_words(agc_w_split(v));
-
-    if (!AGC_ASSERT(agc_dp_from_words(w) == v)) /* same value */
-    {
-        return (agc_w2_to_words((agc_w2_t){0, 0}));
-    }
 
     return (w);
 }
@@ -335,11 +306,6 @@ agc_tp_words_t agc_tp_to_words(agc_tp_t v)
     agc_tp_words_t m; /* the sign-agreeing words */
 
     m = agc_w3_to_words(agc_w3_from_tp(v));
-
-    if (!AGC_ASSERT(agc_tp_from_words(m) == v)) /* same value */
-    {
-        return (agc_w3_to_words((agc_w3_t){0, 0, 0}));
-    }
 
     return (m);
 }
@@ -409,21 +375,6 @@ static int32_t saturate32(int64_t v, int32_t max, agc_ovf_t *ovf)
 agc_sp_t agc_sp_add(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf)
 {
     return ((agc_sp_t) saturate32((int64_t) a + b, AGC_SP_MAX, ovf));
-}
-
-/**********************************************************************
- * AGC: none (raw utility, saturating SU) -- a - b.
- *
- * ARGUMENTS:
- *   a    agc_sp_t     I  minuend
- *   b    agc_sp_t     I  subtrahend, same scale
- *   ovf  agc_ovf_t *  O  +-1 when the difference saturated, else 0
- *
- * RETURNS: agc_sp_t -- a - b clamped to +-POSMAX
- **********************************************************************/
-agc_sp_t agc_sp_sub(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf)
-{
-    return ((agc_sp_t) saturate32((int64_t) a - b, AGC_SP_MAX, ovf));
 }
 
 /**********************************************************************
@@ -499,19 +450,9 @@ agc_tp_t agc_dp_mul_tp(agc_dp_t a, agc_dp_t b)
 agc_dp_t agc_dp_mul_raw(agc_dp_t a, agc_dp_t b)
 {
     agc_ovf_t ovf = 0;                                            /* ROUNDSUB carry (none: |a b| < 1) */
-    agc_w3_t  m   = agc_w_dmpsub(agc_w_split(a), agc_w_split(b)); /* DMPSUB TP product */
+    agc_w3_t m = agc_w_dmpsub(agc_w_split(a), agc_w_split(b)); /* DMPSUB TP product */
 
     m = agc_w_roundsub(m, &ovf);
-
-    if (!AGC_ASSERT(ovf == 0)) /* |a b| < 1        */
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(m.m2 == 0))
-    {
-        return (0); /* no valid result */
-    }
 
     return (agc_w_join(agc_w3_top(m)));
 }
@@ -530,8 +471,8 @@ agc_dp_t agc_dp_mul_raw(agc_dp_t a, agc_dp_t b)
  **********************************************************************/
 agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 {
-    int      o      = 0;     /* OVFIND of DDV: 1 on overflow         */
-    bool     dvsign = false; /* DVSIGN, not kept by the raw utility */
+    int o = 0;     /* OVFIND of DDV: 1 on overflow         */
+    bool dvsign = false; /* DVSIGN, not kept by the raw utility */
     agc_dp_t q;              /* quotient, scaled 2^0                */
 
     q = agc_w_join(agc_w3_top(agc_w_ddv(agc_w3_from_tp(agc_tp_from_dp(a)), agc_w_split(b), &o, &dvsign)));
@@ -558,7 +499,7 @@ agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 agc_dp_t agc_dp_shl_raw(agc_dp_t a, int n, agc_ovf_t *ovf)
 {
     int64_t v = a; /* a 2^k, exact */
-    int     k;     /* doublings done */
+    int k;     /* doublings done */
 
     for (k = 0; (k < n) && (k < SHIFT_DP_MAX + 1); k++)
     {
@@ -587,7 +528,7 @@ agc_dp_t agc_dp_shr(agc_dp_t a, int n)
 {
     agc_w3_t m; /* TP MPAC of a */
 
-    if (!AGC_ASSERT(n >= 0) || (n == 0))
+    if (n == 0)
     {
         return (a);
     }
@@ -611,7 +552,7 @@ agc_dp_t agc_dp_shr_round(agc_dp_t a, int n)
 {
     agc_w3_t m; /* TP MPAC of a */
 
-    if (!AGC_ASSERT(n >= 0) || (n == 0))
+    if (n == 0)
     {
         return (a);
     }
@@ -662,9 +603,9 @@ agc_dp_t agc_dp_abs(agc_dp_t a)
 agc_dp_t agc_dp_round(agc_dp_t a)
 {
     agc_w2_t p = agc_w_split(a); /* MPAC, MPAC+1 of a */
-    int      o = 0;              /* rounding carry, +-1 or 0 */
+    int o = 0;              /* rounding carry, +-1 or 0 */
 
-    o    = agc_w_ovf(2 * p.lo); /* DOUBLE; TS L     */
+    o = agc_w_ovf(2 * p.lo); /* DOUBLE; TS L     */
     p.hi += o;
 
     if (p.hi > AGC_W_POSMAX)
@@ -710,8 +651,8 @@ agc_dp_t agc_dp_sign(agc_dp_t a, agc_dp_t sign_of)
  **********************************************************************/
 static void dp_norm_core(agc_dp_t a, int *shift, agc_dp_t *out)
 {
-    int      count = 0;                                 /* left shifts done */
-    agc_w3_t m     = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
+    int count = 0;                                 /* left shifts done */
+    agc_w3_t m = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
 
     m = agc_w_tslc(m, &count);
 

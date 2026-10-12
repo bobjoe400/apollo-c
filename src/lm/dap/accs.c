@@ -119,11 +119,6 @@ static agc_sp_t mass_hi(void)
 {
     agc_dp_t m = agc_guid_state()->lm.mass; /* MASS (DP), scaled 2^16 kg */
 
-    if (!AGC_ASSERT(m >= 0))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_sp_t) (m / 16384)); /* major word of MASS          */
 }
 
@@ -144,11 +139,6 @@ static agc_sp_t mass_hi(void)
  **********************************************************************/
 static bool lem_mass(lm_dap_t *d, bool docked)
 {
-    if (!AGC_ASSERT(d->hiascent >= 0))
-    {
-        return (false); /* HIASCENT is a mass */
-    }
-
     agc_sp_t csm    = docked ? agc_erase_csmmass() : 0;                              /* CSMMASS when docked, scaled 2^16 kg */
     agc_sp_t lem    = (agc_sp_t) (mass_hi() - csm);                                  /* LEMMASS candidate, scaled 2^16 kg */
     bool     ascent = agc_flag_test(AGC_FLAG_APSFLAG);                               /* APSFLAG: ascent stage */
@@ -174,11 +164,6 @@ static bool lem_mass(lm_dap_t *d, bool docked)
 
     agc_erase_set_lemmass(lem);
     agc_guid_state()->lm.mass = (agc_dp_t) ((int32_t) (csm + lem) * 16384);
-
-    if (!AGC_ASSERT(lem > 0))
-    {
-        return (false);
-    }
 
     return (!ascent);
 }
@@ -208,71 +193,6 @@ static agc_sp_t fit_row(int k, agc_sp_t *rem)
     *rem = q.lo;
 
     return (lm_dap_wrap((int32_t) q.hi + inerconb[k])); /* TS 1JACC */
-}
-
-/**********************************************************************
- * COMMEQS (pp.1488-1489): coupling EPSILON = 1 - Imin/Imax, limited to
- * .42265, and the U,V resolution coefficients
- *   IR > IQ: COEFFR = .707(1 + .5 EPS), COEFFQ = -(1 - EPS) COEFFR
- *   IQ > IR: COEFFQ = -.707(1 + .5 EPS), COEFFR = (1 - EPS)(-COEFFQ).
- *
- * FUNCTION NAME: commeqs
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *   rem       agc_sp_t    I    remainder left in L by the last fit row
- *
- * RETURNS: none
- **********************************************************************/
-static void commeqs(lm_dap_t *d, agc_sp_t rem)
-{
-    lm_dp_pair_t diff = {lm_dap_wrap((int32_t) d->jacc[1] - d->jacc[2]), rem};
-
-    if (diff.hi > 0)
-    {
-        agc_sp_t eps = lm_dap_dv(diff, d->jacc[1]); /* EPSILON = 1 - IQ/IR, unscaled fraction */
-
-        eps       = ((int32_t) eps - AC_EPSMAX > 0) ? AC_EPSMAX : eps; /* GOODEPS1 */
-        d->coeffr = lm_dap_wrap((int32_t) lm_dap_mphi(eps, AC_035356) + AC_07071);
-        d->coeffq = lm_dap_mphi(lm_dap_wrap((int32_t) eps - LM_POSMAX), d->coeffr);
-    }
-    else
-    { /* BIGIQ    */
-        agc_sp_t neps = lm_dap_dv(diff, d->jacc[2]); /* -EPSILON = IR/IQ - 1, unscaled fraction */
-
-        neps      = ((int32_t) -neps - AC_EPSMAX > 0) ? (agc_sp_t) -AC_EPSMAX : neps; /* limited to -.42265 */
-        d->coeffq = lm_dap_wrap((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
-        d->coeffr = lm_dap_mphi(lm_dap_wrap((int32_t) -neps + LM_NEGMAX), d->coeffq);
-    }
-}
-
-/**********************************************************************
- * JACCUV (p.1489): 1JACCU = 1JACCV = -COEFFQ 1JACCQ + COEFFR 1JACCR,
- * rescaled from pi/4 to pi/2.
- *
- * FUNCTION NAME: jaccuv
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *
- * RETURNS: none
- **********************************************************************/
-static void jaccuv(lm_dap_t *d)
-{
-    agc_sp_t u = lm_dap_mphi((agc_sp_t) -d->coeffq, d->jacc[1]);                /* -COEFFQ 1JACCQ, scaled pi/4 rad/s^2 */
-    agc_sp_t a = lm_dap_wrap((int32_t) lm_dap_mphi(d->coeffr, d->jacc[2]) + u); /* 1JACCU before halving, scaled pi/4 rad/s^2 */
-
-    d->jacc[3] = lm_dap_mphi(a, AC_BIT14);
-    d->jacc[4] = d->jacc[3];
-
-    if (!AGC_ASSERT(d->jacc[4] == d->jacc[3]))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -341,39 +261,6 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
 } /* spscont */
 
 /**********************************************************************
- * LRESC (pp.1489-1490): descent jerk ACCDOTx = (ABDELV MASS / GFACTM)
- * L,PVT-CG 1JACCx / TORKJET1, i.e. engine thrust x moment arm divided by
- * the jet torque, times the jet acceleration.
- *
- * FUNCTION NAME: lresc
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  --------------------
- *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
- **********************************************************************/
-static agc_status_t lresc(lm_dap_t *d)
-{
-    agc_sp_t abdelv = agc_guid_state()->lm.abdelv;                             /* ABDELV, scaled 2^13 cm/s^2 */
-    agc_sp_t f      = lm_dap_dvovsub(lm_dap_mp(abdelv, mass_hi()), AC_GFACTM); /* thrust T = ABDELV MASS / GFACTM, scaled 2^14 lb */
-    agc_sp_t t      = lm_dap_mphi(f, d->l_pvt_cg);                             /* torque T x L,PVT-CG, scaled 2^17 lb-ft */
-
-    d->accdotr = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[2]), AC_TORKJET1);
-    agc_sp_t q = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[1]), AC_TORKJET1); /* ACCDOTQ, scaled pi/2^7 rad/s^3 */
-
-    if (!AGC_ASSERT(abdelv >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (spscont(d, q));
-}
-
-/**********************************************************************
  * SPSLOOP1/2 (pp.1494-1495): the docked quadratic fit in X = CSMMASS,
  * Y = LEMMASS starting at COEFF row `base` (0 inertia, 6 CG).
  *
@@ -399,11 +286,6 @@ static agc_sp_t docked_fit(int base)
     agc_sp_t ly = lm_dap_wrap((int32_t) lm_dap_mphi(c[2], y) + c[4]); /* B Y + E, scale per fit */
 
     m = lm_dap_wrap((int32_t) m + lm_dap_mphi(ly, y));
-
-    if (!AGC_ASSERT(x >= 0 && y >= 0))
-    {
-        return (0);
-    }
 
     return (m);
 }
@@ -491,8 +373,59 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
         d->jacc[j] = fit_row(base + j, &rem);
     }
 
-    commeqs(d, rem);
-    jaccuv(d);
+    /**********************************************************************
+     * COMMEQS (pp.1488-1489): coupling EPSILON = 1 - Imin/Imax, limited to
+     * .42265, and the U,V resolution coefficients
+     *   IR > IQ: COEFFR = .707(1 + .5 EPS), COEFFQ = -(1 - EPS) COEFFR
+     *   IQ > IR: COEFFQ = -.707(1 + .5 EPS), COEFFR = (1 - EPS)(-COEFFQ).
+     *
+     * FUNCTION NAME: commeqs
+     *
+     * ARGUMENTS:
+     *   Argument  Type        I/O  Description (scale)
+     *   --------  ----------  ---  --------------------
+     *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+     *   rem       agc_sp_t    I    remainder left in L by the last fit row
+     *
+     * RETURNS: none
+     **********************************************************************/
+    lm_dp_pair_t diff = {lm_dap_wrap((int32_t) d->jacc[1] - d->jacc[2]), rem};
+
+    if (diff.hi > 0)
+    {
+        agc_sp_t eps = lm_dap_dv(diff, d->jacc[1]); /* EPSILON = 1 - IQ/IR, unscaled fraction */
+
+        eps       = ((int32_t) eps - AC_EPSMAX > 0) ? AC_EPSMAX : eps; /* GOODEPS1 */
+        d->coeffr = lm_dap_wrap((int32_t) lm_dap_mphi(eps, AC_035356) + AC_07071);
+        d->coeffq = lm_dap_mphi(lm_dap_wrap((int32_t) eps - LM_POSMAX), d->coeffr);
+    }
+    else
+    { /* BIGIQ    */
+        agc_sp_t neps = lm_dap_dv(diff, d->jacc[2]); /* -EPSILON = IR/IQ - 1, unscaled fraction */
+
+        neps      = ((int32_t) -neps - AC_EPSMAX > 0) ? (agc_sp_t) -AC_EPSMAX : neps; /* limited to -.42265 */
+        d->coeffq = lm_dap_wrap((int32_t) lm_dap_mphi(neps, AC_035356) - AC_07071);
+        d->coeffr = lm_dap_mphi(lm_dap_wrap((int32_t) -neps + LM_NEGMAX), d->coeffq);
+    }
+
+    /**********************************************************************
+     * JACCUV (p.1489): 1JACCU = 1JACCV = -COEFFQ 1JACCQ + COEFFR 1JACCR,
+     * rescaled from pi/4 to pi/2.
+     *
+     * FUNCTION NAME: jaccuv
+     *
+     * ARGUMENTS:
+     *   Argument  Type        I/O  Description (scale)
+     *   --------  ----------  ---  --------------------
+     *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+     *
+     * RETURNS: none
+     **********************************************************************/
+    agc_sp_t u = lm_dap_mphi((agc_sp_t) -d->coeffq, d->jacc[1]);                /* -COEFFQ 1JACCQ, scaled pi/4 rad/s^2 */
+    agc_sp_t a = lm_dap_wrap((int32_t) lm_dap_mphi(d->coeffr, d->jacc[2]) + u); /* 1JACCU before halving, scaled pi/4 rad/s^2 */
+
+    d->jacc[3] = lm_dap_mphi(a, AC_BIT14);
+    d->jacc[4] = d->jacc[3];
 
     /* DEVIATION: the AGC tells descent from ascent here by CCS on the
      * index MPAC, which counts down 6, 4, 2 to -0 (ones'-complement
@@ -512,7 +445,35 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
      * 1/ACCS with real masses replaces them). The C stores the row.     */
     d->l_pvt_cg = fit_row(0, &rem);
 
-    return (lresc(d));
+    /**********************************************************************
+     * LRESC (pp.1489-1490): descent jerk ACCDOTx = (ABDELV MASS / GFACTM)
+     * L,PVT-CG 1JACCx / TORKJET1, i.e. engine thrust x moment arm divided by
+     * the jet torque, times the jet acceleration.
+     *
+     * FUNCTION NAME: lresc
+     *
+     * ARGUMENTS:
+     *   Argument  Type        I/O  Description (scale)
+     *   --------  ----------  ---  --------------------
+     *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
+     *
+     * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
+     *          failed assertion, else the status of the routine it
+     *          ends in
+     **********************************************************************/
+    agc_sp_t abdelv = agc_guid_state()->lm.abdelv;                             /* ABDELV, scaled 2^13 cm/s^2 */
+    agc_sp_t f      = lm_dap_dvovsub(lm_dap_mp(abdelv, mass_hi()), AC_GFACTM); /* thrust T = ABDELV MASS / GFACTM, scaled 2^14 lb */
+    agc_sp_t t      = lm_dap_mphi(f, d->l_pvt_cg);                             /* torque T x L,PVT-CG, scaled 2^17 lb-ft */
+
+    d->accdotr = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[2]), AC_TORKJET1);
+    agc_sp_t q = lm_dap_dvovsub(lm_dap_mp(t, d->jacc[1]), AC_TORKJET1); /* ACCDOTQ, scaled pi/2^7 rad/s^3 */
+
+    if (!AGC_ASSERT(abdelv >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (spscont(d, q));
 } /* lm_alone */
 
 /**********************************************************************

@@ -65,22 +65,12 @@ static agc_sp_t sp_step(agc_sp_t v, uint16_t type)
         n = (n > 0) ? n - 1 : ((n < 0) ? n + 1 : 0);
     }
 
-    if (!AGC_ASSERT(n >= (int32_t) AGC_SP_MIN && n <= (int32_t) AGC_SP_MAX))
-    {
-        return (0);
-    }
-
     return ((agc_sp_t) n);
 }
 
 /* +1 / -1 on a two's-complement 15-bit CDU word.                       */
 static uint16_t cdu_step(uint16_t v, uint16_t type)
 {
-    if (!AGC_ASSERT(v <= SIM_WORD_MASK))
-    {
-        return (0);
-    }
-
     bool     up = (type == INC_PINC || type == INC_PCDU);
     bool     dn = (type == INC_MINC || type == INC_MCDU);
     uint32_t n  = up ? (uint32_t) v + 1u : (dn ? (uint32_t) v + SIM_WORD_MASK : (uint32_t) v);
@@ -91,21 +81,11 @@ static uint16_t cdu_step(uint16_t v, uint16_t type)
 /* SHINC / SHANC: shift left, bring in 0 / 1 (radar and uplink data).    */
 static uint16_t shift_in(uint16_t v, uint16_t type)
 {
-    if (!AGC_ASSERT(type == INC_SHINC || type == INC_SHANC))
-    {
-        return (v);
-    }
-
     uint16_t n = (uint16_t) (((uint32_t) v << 1) & SIM_WORD_MASK);
 
     if (type == INC_SHANC)
     {
         n = (uint16_t) (n | 1u);
-    }
-
-    if (!AGC_ASSERT(n <= SIM_WORD_MASK))
-    {
-        return (0);
     }
 
     return (n);

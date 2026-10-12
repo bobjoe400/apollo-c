@@ -84,7 +84,7 @@
 /* ---- primary-body selection, set by SELECTMU ---------------------------- */
 typedef struct agc_rendz_body
 {
-    bool     moon;    /* CMOONFLG at SELECTMU time                         */
+    bool moon;    /* CMOONFLG at SELECTMU time                         */
     agc_sp_t rtx1;    /* RTX1: -2 earth, -10 moon (X1 of conics), unscaled */
     agc_sp_t rtx2;    /* RTX2: 0 earth, 2 moon (VSR* 0,2 shift), unscaled  */
     agc_dp_t rtmu;    /* RTMU: mu, m^3/cs^2, scale 2^36 (moon value SR 6)  */
@@ -123,7 +123,7 @@ typedef struct agc_rendz
     agc_vec_t delveet2; /* DELVEET2: CDH delta V, reference, m/cs 2^7    */
     agc_vec_t delveet3; /* DELVEET3: TPI/TPM delta V, reference, 2^7     */
     agc_vec_t delvsin;  /* DELVSIN: delta V for thrust program, 2^7      */
-    agc_dp_t  delvsab;  /* DELVSAB: |DELVSIN|, m/cs 2^7                  */
+    agc_dp_t delvsab;  /* DELVSAB: |DELVSIN|, m/cs 2^7                  */
     agc_vec_t delvlvc;  /* DELVLVC: delta V local vertical, m/cs 2^7     */
     agc_vec_t dvlos;    /* DVLOS: delta V along LOS frame, m/cs 2^7      */
     agc_vec_t gdt_2;    /* GDT/2 (LM S34/35.5 overwrite copy), m/cs 2^7  */
@@ -183,14 +183,14 @@ typedef struct agc_rendz
     agc_sp_t vhfcnt;  /* VHFCNT (CM): VHF range marks, unscaled          */
 
     /* R36 / R31 / R34 displays */
-    agc_dp_t  range;    /* RANGE: m 2^29 (R36: Y out of plane)           */
-    agc_dp_t  rrate;    /* RRATE: m/cs 2^7 (R36: YDOT)                   */
-    agc_dp_t  rtheta;   /* RTHETA: revolutions 2^0 (R36: PSI)            */
+    agc_dp_t range;    /* RANGE: m 2^29 (R36: Y out of plane)           */
+    agc_dp_t rrate;    /* RRATE: m/cs 2^7 (R36: YDOT)                   */
+    agc_dp_t rtheta;   /* RTHETA: revolutions 2^0 (R36: PSI)            */
     agc_vec_t basethp;  /* BASETHP: this base position, body scale */
     agc_vec_t basethv;  /* BASETHV: this base velocity, body scale */
     agc_vec_t baseotp;  /* BASEOTP: other base position, body scale */
     agc_vec_t baseotv;  /* BASEOTV: other base velocity, body scale */
-    agc_dp_t  basetime; /* BASETIME: time of the base vectors, cs 2^28   */
+    agc_dp_t basetime; /* BASETIME: time of the base vectors, cs 2^28   */
 
     /* P38/P39 stable orbit */
     agc_dp_t deltar;   /* DELTAR: desired separation, m 2^29         */
@@ -198,52 +198,52 @@ typedef struct agc_rendz
     agc_dp_t targtime; /* TARGTIME: passive at the intercept point, cs 2^28 (TINT EQUALS TPASS4 and TINTSOI EQUALS DELTAR in the AGC: rz->tpass4, rz->deltar) */
 
     /* P17 TPI search (Comanche) */
-    agc_dp_t  delhite;  /* DELHITE: |RP| - |RA|, m 2^29                   */
+    agc_dp_t delhite;  /* DELHITE: |RP| - |RA|, m 2^29                   */
     agc_vec_t e2;       /* E2: unit passive orbit normal, 2^1             */
-    agc_dp_t  thetzero; /* THETZERO: phase angle, revolutions 2^0         */
-    agc_dp_t  tf;       /* TF: transfer time, cs 2^28                     */
-    agc_dp_t  hp;       /* HP: pericenter altitude, m 2^29                */
-    agc_dp_t  hpermin;  /* HPERMIN: minimum pericenter, m 2^29            */
-    agc_dp_t  delvee;   /* DELVEE: total delta V, m/cs 2^7                */
-    agc_dp_t  magvtpi;  /* MAGVTPI: |dV| at TPI, m/cs 2^7                 */
-    agc_dp_t  reldelv;  /* RELDELV: |dV| at TPF, m/cs 2^7                 */
-    agc_sp_t  nn1;      /* NN1: pericenter code for display, unscaled     */
-    agc_dp_t  csth;     /* CSTH: cos of the last Lambert transfer angle (INITVEL debris), 2^1 */
-    agc_dp_t  snth;     /* SNTH: sin of that angle, 2^1                   */
+    agc_dp_t thetzero; /* THETZERO: phase angle, revolutions 2^0         */
+    agc_dp_t tf;       /* TF: transfer time, cs 2^28                     */
+    agc_dp_t hp;       /* HP: pericenter altitude, m 2^29                */
+    agc_dp_t hpermin;  /* HPERMIN: minimum pericenter, m 2^29            */
+    agc_dp_t delvee;   /* DELVEE: total delta V, m/cs 2^7                */
+    agc_dp_t magvtpi;  /* MAGVTPI: |dV| at TPI, m/cs 2^7                 */
+    agc_dp_t reldelv;  /* RELDELV: |dV| at TPF, m/cs 2^7                 */
+    agc_sp_t nn1;      /* NN1: pericenter code for display, unscaled     */
+    agc_dp_t csth;     /* CSTH: cos of the last Lambert transfer angle (INITVEL debris), 2^1 */
+    agc_dp_t snth;     /* SNTH: sin of that angle, 2^1                   */
 
     /* P21 ground track determination (P21TIME .. P21ALT) */
-    agc_dp_t  ground_track_time;   /* P21TIME: base vector time, cs 2^28   */
+    agc_dp_t ground_track_time;   /* P21TIME: base vector time, cs 2^28   */
     agc_vec_t ground_track_base_r; /* P21BASER: m 2^29 earth / 2^27 moon   */
     agc_vec_t ground_track_base_v; /* P21BASEV: m/cs 2^7 earth / 2^5 moon  */
-    agc_sp_t  ground_track_origin; /* P21ORIG: 0 earth, 2 moon, unscaled   */
-    agc_dp_t  ground_track_vel;    /* P21VEL: |V| m/cs 2^7 (noun 73)       */
-    agc_dp_t  ground_track_gamma;  /* P21GAM: flight path angle, rev 2^0   */
-    agc_dp_t  ground_track_alt;    /* P21ALT: altitude / 100, m 2^29       */
+    agc_sp_t ground_track_origin; /* P21ORIG: 0 earth, 2 moon, unscaled   */
+    agc_dp_t ground_track_vel;    /* P21VEL: |V| m/cs 2^7 (noun 73)       */
+    agc_dp_t ground_track_gamma;  /* P21GAM: flight path angle, rev 2^0   */
+    agc_dp_t ground_track_alt;    /* P21ALT: altitude / 100, m 2^29       */
 
     /* P76 */
     agc_vec_t delvov; /* DELVOV: other vehicle delta V (LV), 2^7    */
 
     /* working cells */
-    agc_dp_t     tdec2;    /* TDEC2: PRECSET time, cs 2^28               */
+    agc_dp_t tdec2;    /* TDEC2: PRECSET time, cs 2^28               */
     agc_job_id_t qsaved;   /* QSAVED: VN1645 return (job to resume)      */
     agc_job_id_t normex;   /* NORMEX/SUBEXIT: S34/35.5, DISDVLVC return  */
-    agc_dp_t     rtmag;    /* RTMAG: |RTARG| (LM INITVEL), m 2^29        */
-    agc_dp_t     mu_a;     /* MU/A (LM INITVEL exit), m^2/cs^2 2^?       */
-    agc_dp_t     muasteer; /* MUASTEER: MU/A SR 6 (LM INITVEL), MU/A 2^6 */
-    agc_sp_t     numit;    /* ITCTR: INITVEL offsets done, unscaled      */
+    agc_dp_t rtmag;    /* RTMAG: |RTARG| (LM INITVEL), m 2^29        */
+    agc_dp_t mu_a;     /* MU/A (LM INITVEL exit), m^2/cs^2 2^?       */
+    agc_dp_t muasteer; /* MUASTEER: MU/A SR 6 (LM INITVEL), MU/A 2^6 */
+    agc_sp_t numit;    /* ITCTR: INITVEL offsets done, unscaled      */
 
     /* R30 (V82) */
     agc_vec_t rone;                            /* RONE: m 2^29 (moon: SL2)                   */
     agc_vec_t vone;                            /* VONE: m/cs 2^7 (moon: SL2)                 */
-    agc_dp_t  hapox;                           /* HAPOX: apogee height, m 2^29               */
-    agc_dp_t  hperx;                           /* HPERX: perigee height, m 2^29              */
-    agc_dp_t  tff;                             /* TFF: cs 2^28 (negative)                    */
-    agc_dp_t  neg_tper;                        /* -TPER: cs 2^28                             */
-    agc_dp_t  tstart_orbit;                    /* TSTART82: cs 2^28                          */
-    agc_dp_t  rpadtem;                         /* RPADTEM: pad / site radius, m 2^29 / 2^27  */
-    agc_dp_t  orbit_parameter_display_hpermin; /* HPERMIN (R30), m 2^29  */
-    agc_dp_t  tff_rtmu;                        /* TFF/RTMU: 1/sqrt(mu), 2^17 / 2^14          */
-    agc_sp_t  orbit_display_flags;             /* V82FLAGS: tick bits, unscaled      */
+    agc_dp_t hapox;                           /* HAPOX: apogee height, m 2^29               */
+    agc_dp_t hperx;                           /* HPERX: perigee height, m 2^29              */
+    agc_dp_t tff;                             /* TFF: cs 2^28 (negative)                    */
+    agc_dp_t neg_tper;                        /* -TPER: cs 2^28                             */
+    agc_dp_t tstart_orbit;                    /* TSTART82: cs 2^28                          */
+    agc_dp_t rpadtem;                         /* RPADTEM: pad / site radius, m 2^29 / 2^27  */
+    agc_dp_t orbit_parameter_display_hpermin; /* HPERMIN (R30), m 2^29  */
+    agc_dp_t tff_rtmu;                        /* TFF/RTMU: 1/sqrt(mu), 2^17 / 2^14          */
+    agc_sp_t orbit_display_flags;             /* V82FLAGS: tick bits, unscaled      */
 } agc_rendz_t;
 
 /* TRKMKCNT (B(1)PRM, rendezvous tracking marks): owned here, zeroed by
@@ -268,10 +268,10 @@ typedef struct agc_orbit_params_in
 {
     agc_vec_t rone;     /* RONE: m, 2^29 (earth or moon centred)          */
     agc_vec_t vone;     /* VONE: m/cs, 2^7                                */
-    bool      moon;     /* V82EMFLG: set = moon (RONE/VONE rescaled SL2)  */
-    agc_dp_t  tff_rtmu; /* TFF/RTMU: 1/sqrt(mu) 2^17 earth / 2^14 moon    */
-    agc_dp_t  rpadtem;  /* RPADTEM: pad / landing site radius 2^29 / 2^27 */
-    agc_dp_t  hpermin;  /* HPERMIN: 300 kft 2^29 earth / 35 kft 2^27 moon */
+    bool moon;     /* V82EMFLG: set = moon (RONE/VONE rescaled SL2)  */
+    agc_dp_t tff_rtmu; /* TFF/RTMU: 1/sqrt(mu) 2^17 earth / 2^14 moon    */
+    agc_dp_t rpadtem;  /* RPADTEM: pad / landing site radius 2^29 / 2^27 */
+    agc_dp_t hpermin;  /* HPERMIN: 300 kft 2^29 earth / 35 kft 2^27 moon */
 } agc_orbit_params_in_t;
 
 typedef struct agc_orbit_params_out
@@ -406,7 +406,7 @@ agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz);
 /* ---- P21 ground track ---------------------------------------------------- */
 /* P21VSAVE (p.458): |V| (VATT1 SL* 0,2, m/cs 2^7) and the flight path
  * angle asin(unit(RATT) . VATT / |V|), revolutions.                       */
-agc_status_t agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2, agc_dp_t *vel, agc_dp_t *gamma);
+void agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2, agc_dp_t *vel, agc_dp_t *gamma);
 
 /* ---- P76 ---------------------------------------------------------------- */
 agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t dv_lv, agc_vec_t *v_new);
@@ -483,7 +483,7 @@ typedef enum agc_rr_designate_result
 
 /* RRLIMCHK: in limits */
 bool         agc_rr_limchk(uint16_t cdut, uint16_t cdus);
-agc_status_t agc_rr_settrkf(void);              /* SETTRKF       */
+void         agc_rr_settrkf(void);              /* SETTRKF       */
 void         agc_rendz_flip(uint16_t lamp_bit); /* FLIP          */
 void         agc_rendz_clradmod(void);          /* CLRADMOD      */
 agc_status_t agc_rr_zero(void);                 /* RRZERO        */
@@ -509,27 +509,27 @@ void         agc_radar_landing_radar_lights(void);                    /* R12LITE
 agc_status_t agc_radar_powered_flight_designate(void);                /* R29 (SERVICER) */
 
 /* waitlist tasks and jobs of the radar routines                         */
-agc_status_t agc_task_rrturnon(void);                          /* RRTURNON      */
-agc_status_t agc_task_rr_zero_counters(void);                  /* RRZEROSB      */
+agc_status_t agc_task_rrturnon(void);            /* RRTURNON      */
+agc_status_t agc_task_rr_zero_counters(void);    /* RRZEROSB      */
 agc_status_t agc_task_rr_zero_settled(void);
 agc_status_t agc_task_rr_turnon_done(void);
-agc_status_t agc_task_rr_zero(void);                           /* RRZ2          */
-agc_status_t agc_task_rr_goodend(void);                        /* RGOODEND      */
-agc_status_t agc_task_rr_one_axis(void);                       /* NXTRR1AX      */
-agc_status_t agc_task_dorrepos(void);                          /* DORREPOS      */
+agc_status_t agc_task_rr_zero(void);             /* RRZ2          */
+agc_status_t agc_task_rr_goodend(void);          /* RGOODEND      */
+agc_status_t agc_task_rr_one_axis(void);         /* NXTRR1AX      */
+agc_status_t agc_task_dorrepos(void);            /* DORREPOS      */
 agc_status_t agc_task_rr_reposition_drive(void);
-agc_status_t agc_task_rr_remode(void);                         /* REMODE        */
-agc_status_t agc_task_rr_designate_begin(void);                /* BEGDES        */
-agc_status_t agc_task_rr_designate_loop(void);                 /* DESLOOP       */
+agc_status_t agc_task_rr_remode(void);           /* REMODE        */
+agc_status_t agc_task_rr_designate_begin(void);  /* BEGDES        */
+agc_status_t agc_task_rr_designate_loop(void);   /* DESLOOP       */
 agc_status_t agc_job_rr_designate_command(void); /* DODES     */
-agc_status_t agc_task_lr_position_scan(void);                  /* LRPOSCAN      */
-agc_status_t agc_task_lr_position_check(void);                 /* LRPOSNXT      */
-agc_status_t agc_task_lr_position_settled(void);               /* LASTLRDT      */
+agc_status_t agc_task_lr_position_scan(void);    /* LRPOSCAN      */
+agc_status_t agc_task_lr_position_check(void);   /* LRPOSNXT      */
+agc_status_t agc_task_lr_position_settled(void); /* LASTLRDT      */
 
-agc_status_t agc_task_radsamp(void);                   /* RADSAMP       */
-agc_status_t agc_job_radar_sample(void); /* DORSAMP       */
+agc_status_t agc_task_radsamp(void);      /* RADSAMP       */
+agc_status_t agc_job_radar_sample(void);  /* DORSAMP       */
 agc_status_t agc_job_radar_sample_done(void);
-agc_dp_t     agc_erase_rstack(int index);              /* RSTACK, 0..3  */
+agc_dp_t     agc_erase_rstack(int index); /* RSTACK, 0..3  */
 void         agc_erase_set_rstack(int index, agc_dp_t v);
 
 /* RRDESNB to TANG, TANG +1 (verb 41 noun 72); *started false when the
@@ -585,9 +585,9 @@ agc_status_t agc_job_rendz_vnpooh(agc_job_ctx_t *ctx); /* VNPOOH TC -5 */
 
 /* VN1645 V16N45 */
 agc_status_t agc_job_rendz_ttogo_display(agc_job_ctx_t *ctx);
-agc_status_t agc_job_rendz_kilclock(void);         /* KILCLOCK     */
-agc_status_t agc_job_rendz_ttogo_proceed(void);    /* N45PROC      */
-agc_status_t agc_job_rendz_clupdate(void);         /* CLUPDATE     */
+agc_status_t agc_job_rendz_kilclock(void);                       /* KILCLOCK     */
+agc_status_t agc_job_rendz_ttogo_proceed(void);                  /* N45PROC      */
+agc_status_t agc_job_rendz_clupdate(void);                       /* CLUPDATE     */
 agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx); /* S34/35.5 */
 
 /* VN1645 entry for other programs (+MGA, COMPTGO, QSAVED, V16N45).     */
@@ -846,13 +846,13 @@ agc_status_t agc_job_manual_acquisition_maneuver(void);
 agc_status_t agc_job_radar_search(agc_job_ctx_t *ctx);                            /* R24LEM */
 agc_status_t agc_job_radar_search_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_radar_search_accept(agc_job_ctx_t *ctx);                     /* R24END */
-agc_status_t agc_job_radar_search_maneuver(void);                   /* R24LEM3 */
+agc_status_t agc_job_radar_search_maneuver(void);                                 /* R24LEM3 */
 agc_status_t agc_job_radar_search_maneuver_done(agc_job_ctx_t *ctx);
 agc_status_t agc_job_radar_search_resume(agc_job_ctx_t *ctx);                     /* R24LEM4 */
-agc_status_t agc_job_radar_search_point(void);                      /* CHKSRCH */
-agc_status_t agc_job_radar_search_los(void);                        /* LRS24.11 */
+agc_status_t agc_job_radar_search_point(void);                                    /* CHKSRCH */
+agc_status_t agc_job_radar_search_los(void);                                      /* LRS24.11 */
 agc_status_t agc_task_radar_search_next_point(void);                              /* CALLDGCH */
-agc_status_t agc_job_radar_search_data_check(void);                 /* DATGDCHK */
+agc_status_t agc_job_radar_search_data_check(void);                               /* DATGDCHK */
 
 /* lm/navigation/{tracking_data,measurement_update}.c                 */
 /* (R22LEM, LRS22.1/2, LSR22.3/4) */

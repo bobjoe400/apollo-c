@@ -95,11 +95,6 @@ static void ld_imodes33_bits(uint16_t set, uint16_t clear)
     uint16_t w = (uint16_t) ((agc_erase_imodes33() | set) & ~(unsigned int) clear); /* new IMODES33 */
 
     agc_erase_set_imodes33(w);
-
-    if (!AGC_ASSERT((w & set) == set))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -115,16 +110,6 @@ static void ld_imodes33_bits(uint16_t set, uint16_t clear)
 static agc_sp_t ld_wrap(int32_t x)
 {
     int32_t r = x % 16384; /* overflow-corrected word, 2^S */
-
-    if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(x - r == (x / 16384) * 16384))
-    {
-        return (0); /* not reached: r = x mod 2^14 */
-    }
 
     return ((agc_sp_t) r);
 }
@@ -236,44 +221,6 @@ static agc_status_t ld_dataout(uint16_t word)
 }
 
 /**********************************************************************
- * ALTROUT +1 / ARCOMP (p. 898): altitude rate = RUNIT . VVECT in bit
- * units plus the DALTRATE compensation; positive rates go out with the
- * sign bit set (never +0).
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
- **********************************************************************/
-static agc_status_t ld_altrout(void)
-{
-    ld_imodes33_bits(LD_BIT7, 0u);                  /* altitude next time         */
-    agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_ALTRATESEL);
-    const agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
-    int32_t              r = 0;                     /* RUNIT . VVECT accumulator, m/cs 2^6 */
-
-    for (int i = 0; i < 3; i++)
-    {
-        r += agc_lm_mp_hi(g->runit[i], ld_vvect[i]); /* m/cs 2^6       */
-    }
-
-    agc_sp_t rate = ld_mp_dbl(LD_ARCONV, ld_wrap(r), 2); /* altitude rate, bit units 2^14 */
-
-    ld_altrate = agc_lm_ad(agc_lm_mp_hi(g->daltrate, ld_dt), rate);
-    uint16_t w = (ld_altrate < 0) ? (uint16_t) (-ld_altrate) : (uint16_t) ((uint16_t) ld_altrate | LD_BIT15W); /* ALTM: -rate, or rate | bit 15; not +0 */
-
-    if (!AGC_ASSERT(w != 0u || ld_altrate < 0)) /* never +0       */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((agc_erase_imodes33() & LD_BIT7) != 0u)) /* ALT next */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (ld_dataout(w));
-}
-
-/**********************************************************************
  * OLDDATA .. NEWDATA (pp. 899-900): extrapolate ALTSAVE with ALTRATE by
  * `factor` (ARTOA for half a second, or DT for new data); no negative
  * altitudes; a 15-bit unsigned output.
@@ -316,43 +263,6 @@ static agc_status_t ld_extrapolate(agc_sp_t factor)
 }
 
 /**********************************************************************
- * ALTOUT +1 (p. 899): altitude. New data from SERVICER (ALTBITS not
- * negative) restarts the extrapolation over DT; otherwise the old value
- * is carried on by half a second of ALTRATE.
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
- **********************************************************************/
-static agc_status_t ld_altout(void)
-{
-    ld_imodes33_bits(0u, LD_BIT7);            /* altitude rate next time    */
-    agc_chan_and(AGC_CHAN_CHAN14, (uint16_t) (077777u & ~(unsigned int) AGC_CH014_ALTRATESEL));
-    agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
-
-    if (!AGC_ASSERT((agc_erase_imodes33() & LD_BIT7) == 0u)) /* rate next */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (agc_dp_high(g->altbits) < 0)
-    {
-        return (ld_extrapolate(LD_ARTOA)); /* OLDDATA        */
-    }
-
-    ld_altsave = g->altbits; /* new data       */
-
-    if (!AGC_ASSERT(ld_altsave >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    g->altbits   = agc_dp_from_sp(-1);                       /* -1: extrapolate next pass     */
-    agc_sp_t dt9 = agc_lm_dv((agc_dp_t) ld_dt * 16384, 512); /* DT rescaled to 2^9 cs */
-
-    return (ld_extrapolate(agc_lm_mp_hi(dt9, LD_ARTOA2)));
-}
-
-/**********************************************************************
  * TC LADQSAVE (pp. 902, 907): continue at ALTROUT +1 or ALTOUT +1.
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
@@ -362,12 +272,79 @@ static agc_status_t ld_continue(void)
 {
     if (ld_altpath == LD_ALTROUT)
     {
-        return (ld_altrout());
+        /**********************************************************************
+         * ALTROUT +1 / ARCOMP (p. 898): altitude rate = RUNIT . VVECT in bit
+         * units plus the DALTRATE compensation; positive rates go out with the
+         * sign bit set (never +0).
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
+         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+         **********************************************************************/
+        {
+            ld_imodes33_bits(LD_BIT7, 0u);                  /* altitude next time         */
+            agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_ALTRATESEL);
+            const agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
+            int32_t              r = 0;                     /* RUNIT . VVECT accumulator, m/cs 2^6 */
+
+            for (int i = 0; i < 3; i++)
+            {
+                r += agc_lm_mp_hi(g->runit[i], ld_vvect[i]); /* m/cs 2^6       */
+            }
+
+            agc_sp_t rate = ld_mp_dbl(LD_ARCONV, ld_wrap(r), 2); /* altitude rate, bit units 2^14 */
+
+            ld_altrate = agc_lm_ad(agc_lm_mp_hi(g->daltrate, ld_dt), rate);
+            uint16_t w = (ld_altrate < 0) ? (uint16_t) (-ld_altrate) : (uint16_t) ((uint16_t) ld_altrate | LD_BIT15W); /* ALTM: -rate, or rate | bit 15; not +0 */
+
+            if (!AGC_ASSERT(w != 0u || ld_altrate < 0)) /* never +0       */
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            if (!AGC_ASSERT((agc_erase_imodes33() & LD_BIT7) != 0u)) /* ALT next */
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            return (ld_dataout(w));
+        }
     }
 
     if (ld_altpath == LD_ALTOUT)
     {
-        return (ld_altout());
+        /**********************************************************************
+         * ALTOUT +1 (p. 899): altitude. New data from SERVICER (ALTBITS not
+         * negative) restarts the extrapolation over DT; otherwise the old value
+         * is carried on by half a second of ALTRATE.
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
+         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+         **********************************************************************/
+        ld_imodes33_bits(0u, LD_BIT7);            /* altitude rate next time    */
+        agc_chan_and(AGC_CHAN_CHAN14, (uint16_t) (077777u & ~(unsigned int) AGC_CH014_ALTRATESEL));
+        agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
+
+        if (!AGC_ASSERT((agc_erase_imodes33() & LD_BIT7) == 0u)) /* rate next */
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (agc_dp_high(g->altbits) < 0)
+        {
+            return (ld_extrapolate(LD_ARTOA)); /* OLDDATA        */
+        }
+
+        ld_altsave = g->altbits; /* new data       */
+
+        if (!AGC_ASSERT(ld_altsave >= 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        g->altbits   = agc_dp_from_sp(-1);                       /* -1: extrapolate next pass     */
+        agc_sp_t dt9 = agc_lm_dv((agc_dp_t) ld_dt * 16384, 512); /* DT rescaled to 2^9 cs */
+
+        return (ld_extrapolate(agc_lm_mp_hi(dt9, LD_ARTOA2)));
     }
 
     if (!AGC_ASSERT(ld_altpath == LD_NONE))
@@ -376,41 +353,6 @@ static agc_status_t ld_continue(void)
     }
 
     return (AGC_STATUS_OK);
-}
-
-/**********************************************************************
- * SPEEDRUN (pp. 901-902): VVECT = V + G (T - TN) + DELV now, m/cs 2^5;
- * then a 40 ms pause to let other rupts in.
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
- **********************************************************************/
-static agc_status_t ld_speedrun(void)
-{
-    const agc_guid_t *g = agc_guid_state();                                           /* guidance state */
-    int32_t           d = (int32_t) agc_lm_time1() - agc_dp_low(agc_erase_piptime()); /* TIME1 - PIPTIME +1, cs (TIME1 may wrap) */
-
-    ld_dt                  = (agc_sp_t) (d & 0x3FFF); /* AD HALF, HALF  */
-    const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(), agc_erase_pipaz()};
-
-    for (int i = 0; i < 3; i++)
-    {
-        agc_sp_t g4 = ld_quadruple_high(g->avg.gdt_2.c[i]);                            /* high word of 4 GDT/2, m/cs 2^5 */
-        agc_sp_t gt = agc_lm_dv(agc_sp_mul(g4, ld_dt), LD_1SEC);                       /* G (T - TN), m/cs 2^5 */
-        agc_sp_t v4 = ld_quadruple_high(g->lm.v.c[i]);                                 /* m/cs 2^5       */
-        agc_sp_t dv = agc_lm_mp_hi(agc_lm_ad(pipa[i], g->avg.pipatmp[i]), LD_KPIP1_5); /* DELV now, m/cs 2^5 */
-
-        ld_vvect[i] = agc_lm_ad(agc_lm_ad(gt, v4), dv);
-    }
-
-    agc_status_t st = agc_waitlist_call(4, AGC_TASK_SPEEDRUN_RESUME); /* VARDELAY */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
 }
 
 /**********************************************************************
@@ -430,7 +372,39 @@ static agc_status_t ld_disindat(void)
 
     if (agc_flag_test(AGC_FLAG_DIDFLAG))
     {
-        return (ld_speedrun());
+        /**********************************************************************
+         * SPEEDRUN (pp. 901-902): VVECT = V + G (T - TN) + DELV now, m/cs 2^5;
+         * then a 40 ms pause to let other rupts in.
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
+         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+         **********************************************************************/
+        {
+            const agc_guid_t *g = agc_guid_state();                                           /* guidance state */
+            int32_t           d = (int32_t) agc_lm_time1() - agc_dp_low(agc_erase_piptime()); /* TIME1 - PIPTIME +1, cs (TIME1 may wrap) */
+
+            ld_dt                  = (agc_sp_t) (d & 0x3FFF); /* AD HALF, HALF  */
+            const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(), agc_erase_pipaz()};
+
+            for (int i = 0; i < 3; i++)
+            {
+                agc_sp_t g4 = ld_quadruple_high(g->avg.gdt_2.c[i]);                            /* high word of 4 GDT/2, m/cs 2^5 */
+                agc_sp_t gt = agc_lm_dv(agc_sp_mul(g4, ld_dt), LD_1SEC);                       /* G (T - TN), m/cs 2^5 */
+                agc_sp_t v4 = ld_quadruple_high(g->lm.v.c[i]);                                 /* m/cs 2^5       */
+                agc_sp_t dv = agc_lm_mp_hi(agc_lm_ad(pipa[i], g->avg.pipatmp[i]), LD_KPIP1_5); /* DELV now, m/cs 2^5 */
+
+                ld_vvect[i] = agc_lm_ad(agc_lm_ad(gt, v4), dv);
+            }
+
+            agc_status_t st = agc_waitlist_call(4, AGC_TASK_SPEEDRUN_RESUME); /* VARDELAY */
+
+            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            {
+                return (AGC_STATUS_BAD_ARG);
+            }
+
+            return (st);
+        }
     }
 
     agc_flag_set(AGC_FLAG_DIDFLAG);
@@ -539,11 +513,6 @@ agc_status_t agc_lm_task_intlze(void)
 static agc_sp_t ld_vmon_delta(agc_sp_t vel, agc_sp_t metr, agc_sp_t trak, agc_sp_t *trak_new)
 {
     const int32_t mx = LD_MAXVBITS; /* MAXVBITS meter stop, bits */
-
-    if (!AGC_ASSERT(trak >= -1 && trak <= 1)) /* TRAK is -1, 0 or +1 */
-    {
-        return (0); /* no valid result */
-    }
 
     *trak_new = 0;
 

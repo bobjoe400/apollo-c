@@ -121,11 +121,6 @@ static void tdv_moonflag(tdv_work_t *w)
     }
 
     rz_flag_put(AGC_FLAG_MOONFLAG, w->x2 != 0);
-
-    if (!AGC_ASSERT(w->x2 == 0 || w->x2 == 2))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -322,7 +317,7 @@ agc_status_t agc_job_target_delta_v_store(void)
     ic->sv.rcv   = ic->out.ratt1;
     ic->sv.tet   = ic->out.tat;
     agc_integ_minirect(ic, ic->out.vatt1);
-    agc_phase_change(4, TDV_PHASE_04024);
+    agc_phase_change(TDV_PHASE_04024);
     agc_flag_set(AGC_FLAG_REINTFLG);
     st           = rz_is_csm() ? agc_integ_atoplem(&ip, ic, tdv_work.x2) : agc_integ_atopcsm(&ip, ic, tdv_work.x2); /* ATOPOTH */
 

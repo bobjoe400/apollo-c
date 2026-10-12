@@ -38,21 +38,9 @@
 #define VP_LM_F13_CLR          000440u /* LM FLAGWRD13: XOVINFLG bit 9, ULLAGFLG bit 6 */
 
 /* ---- up-calls used by fresh_start.c and alarm.c ---------------------- */
-agc_status_t exec_up_stoprate(void)
+void exec_up_stoprate(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(exec_cp_mmnumber() <= 99U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_kalc_stoprate();
-
-    return (AGC_STATUS_OK);
+    agc_kalc_stoprate(); /* CSM only: both callers test the vehicle */
 }
 
 /* STRTIDLE (L p.1383): SERVIDLE puts SERVICER into its ground state and
@@ -74,21 +62,9 @@ agc_status_t exec_up_servidle(void)
 
 /* SETCOARS (IMU_MODE_SWITCHING_ROUTINES): coarse-align enable after a
  * restart with the NO ATT lamp on (CSM GOPROG).                         */
-agc_status_t exec_up_setcoars(void)
+void exec_up_setcoars(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(exec_cp_mmnumber() <= 99U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_imu_setcoars();
-
-    return (AGC_STATUS_OK);
+    agc_imu_setcoars(); /* CSM only: called from the CSM GOPROG tail */
 }
 
 /* INITSUB / RAKE (C p.203): STOPRATE, restore the deadband (FLAGWRD9
@@ -96,18 +72,9 @@ agc_status_t exec_up_setcoars(void)
  * FLAGWRD0..11, set IMPULSW, OPTIND = -1.                              */
 void exec_initsub_csm(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return;
-    }
-
     static const uint16_t flagtabl[VP_RAKE_WORDS] = { 0, 000040u, 006000u, 0, 0, 004140u, 010000u, 016000u, 0, 042000u, 0, 0 };
-    agc_status_t          st                      = exec_up_stoprate();
 
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return;
-    }
+    exec_up_stoprate();
 
     if (agc_flag_test(AGC_FLAG_MAXDBFLG))
     {
@@ -127,11 +94,6 @@ void exec_initsub_csm(void)
 
     agc_flag_set(AGC_FLAG_IMPULSW);
     agc_erase_set_optind(-1); /* CA NEGONE / TS OPTIND (kill CDU optics) */
-
-    if (!AGC_ASSERT(agc_erase_optind() == -1))
-    {
-        return;
-    }
 }
 
 /* The V37 N99 flash of GOP00FIX: every response re-flashes it

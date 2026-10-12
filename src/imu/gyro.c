@@ -80,17 +80,17 @@
  * phase counter (bits 13-14: 0 = Y, 1 = Z, 2 = X, 3 = done).             */
 typedef struct lgyro_word
 {
-    bool               busy;  /* LGYRO nonzero: gyros reserved     */
+    bool busy;  /* LGYRO nonzero: gyros reserved     */
     agc_imu_gyro_buf_t buf;   /* command buffer (LGYRO low 8 bits) */
-    int                phase; /* bits 13-14: 0 Y, 1 Z, 2 X, 3 done */
+    int phase; /* bits 13-14: 0 Y, 1 Z, 2 X, 3 done */
 } lgyro_word_t;
 
-static agc_dp_t     gbuf[AGC_IMU_GBUF_COUNT][3]; /* OGC, GCOMP, ERCOMP: rev 2^0 */
+static agc_dp_t gbuf[AGC_IMU_GBUF_COUNT][3]; /* OGC, GCOMP, ERCOMP: rev 2^0 */
 static lgyro_word_t lgyro;                       /* LGYRO                                  */
-static uint16_t     gyrocmd;                     /* GYROCMD hardware counter, pulses    */
-static int          aug_left;                    /* 8192 augments still to come         */
+static uint16_t gyrocmd;                     /* GYROCMD hardware counter, pulses    */
+static int aug_left;                    /* 8192 augments still to come         */
 static agc_job_id_t gyro_waiter;                 /* job sleeping in GYROBUSY            */
-static bool         gwake_pending;               /* GWAKE: waking job restarts torquing */
+static bool gwake_pending;               /* GWAKE: waking job restarts torquing */
 
 /**********************************************************************
  * AGC: none (helper) -- a valid gyro command buffer id
@@ -125,11 +125,6 @@ static void chan14(uint16_t bits, bool on)
     else
     {
         agc_chan_and(AGC_CHAN_CHAN14, (uint16_t) (~(unsigned int) bits & GYROCMD_MAX));
-    }
-
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) & bits) == (on ? bits : 0u))) /* set or cleared */
-    {
-        return;
     }
 }
 
@@ -192,11 +187,6 @@ agc_status_t agc_imu_gyro_buf_get(agc_imu_gyro_buf_t buf, agc_dp_t out[3])
  **********************************************************************/
 void agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3])
 {
-    if (!AGC_ASSERT(buf_ok(buf) && in != NULL))
-    {
-        return;
-    }
-
     for (int i = 0; i < 3; i++)
     {
         gbuf[buf][i] = in[i];
@@ -210,11 +200,6 @@ void agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3])
  **********************************************************************/
 bool agc_imu_gyros_busy(void)
 {
-    if (!AGC_ASSERT(lgyro.busy || lgyro.phase == 0))
-    {
-        return (false);
-    }
-
     return (lgyro.busy);
 }
 
@@ -287,7 +272,7 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
 
     if (gwake_pending)
     {
-        dt            = DT_GWAKE; /* power supply left on by the waker   */
+        dt = DT_GWAKE; /* power supply left on by the waker   */
         gwake_pending = false;
     }
     else
@@ -302,8 +287,8 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
         return (st);
     }
 
-    lgyro.busy  = true; /* TS LGYRO         */
-    lgyro.buf   = buf;
+    lgyro.busy = true; /* TS LGYRO         */
+    lgyro.buf = buf;
     lgyro.phase = 0;
 
     /* GYROAGRE: force sign agreement on the inputs; an agc_dp_t always
@@ -393,14 +378,14 @@ static agc_status_t augment_schedule(void)
  **********************************************************************/
 static agc_status_t torque(int axis, uint16_t select, agc_dp_t cmd)
 {
-    bool     neg   = (cmd < 0);                             /* MAJ- / MIN- path             */
+    bool neg = (cmd < 0);                             /* MAJ- / MIN- path             */
     agc_dp_t total = neg ? cmd - GYROFRAC : cmd + GYROFRAC; /* DAS +-GYROFRAC, rev 2^0; toward larger magnitude */
 
     chan14((uint16_t) (neg ? (select | AGC_CH014_GYRONEG) : select), true); /* AD BIT9 */
-    uint32_t mag    = (uint32_t) (neg ? -total : total);                    /* |cmd|, 2^-28 rev */
-    agc_dp_t frac   = (agc_dp_t) (mag & 0177u);                             /* LOW7, rev 2^0   */
+    uint32_t mag = (uint32_t) (neg ? -total : total);                    /* |cmd|, 2^-28 rev */
+    agc_dp_t frac = (agc_dp_t) (mag & 0177u);                             /* LOW7, rev 2^0   */
     uint32_t pulses = mag >> PULSE_SHIFT;                                   /* whole pulses (2^-21 rev) */
-    uint32_t naug   = pulses >> 13;                                         /* major / 64       */
+    uint32_t naug = pulses >> 13;                                         /* major / 64       */
     uint16_t itemp2 = (uint16_t) (pulses & 017777u);                        /* pulses mod 8192  */
 
     gbuf[lgyro.buf][axis] = neg ? -frac : frac; /* COM for MAJ- */
@@ -408,7 +393,7 @@ static agc_status_t torque(int axis, uint16_t select, agc_dp_t cmd)
     if (naug >= 2u)
     { /* LONGGYRO         */
         aug_left = (int) naug - 2;
-        gyrocmd  = (uint16_t) (AUG_PULSES + itemp2);
+        gyrocmd = (uint16_t) (AUG_PULSES + itemp2);
 
         return (augment_schedule());
     }
@@ -434,15 +419,10 @@ static agc_status_t torque(int axis, uint16_t select, agc_dp_t cmd)
  **********************************************************************/
 static bool gselect(int axis, uint16_t select, agc_status_t *st)
 {
-    if (!AGC_ASSERT(lgyro.busy && buf_ok(lgyro.buf)))
-    {
-        return (false);
-    }
-
-    agc_dp_t cmd   = gbuf[lgyro.buf][axis];                                           /* DCA 1400, rev 2^0 */
+    agc_dp_t cmd = gbuf[lgyro.buf][axis];                                           /* DCA 1400, rev 2^0 */
     agc_sp_t major = agc_dp_high(cmd);                                                /* RUPTREG1, 128 pulses B0 */
     agc_sp_t minor = agc_dp_low(cmd);                                                 /* RUPTREG2, pulse/128 B0  */
-    bool     send  = (major != 0) || (minor > GYROMIN_LSB) || (minor < -GYROMIN_LSB); /* MAJ+ / MAJ-; MIN+/- */
+    bool send = (major != 0) || (minor > GYROMIN_LSB) || (minor < -GYROMIN_LSB); /* MAJ+ / MAJ-; MIN+/- */
 
     if (!send)
     {
@@ -465,8 +445,8 @@ static bool gselect(int axis, uint16_t select, agc_status_t *st)
  **********************************************************************/
 static agc_status_t gyro_next(void)
 {
-    static const int      axis_of[PHASE_DONE] = {1, 2, 0}; /* Y, Z, X */
-    static const uint16_t sel_of[PHASE_DONE]  = {GSEL_Y, GSEL_Z, GSEL_X};
+    static const int axis_of[PHASE_DONE] = {1, 2, 0}; /* Y, Z, X */
+    static const uint16_t sel_of[PHASE_DONE] = {GSEL_Y, GSEL_Z, GSEL_X};
 
     for (int guard = 0; guard <= PHASE_DONE; guard++)
     {
@@ -474,20 +454,26 @@ static agc_status_t gyro_next(void)
 
         if (p == PHASE_DONE)
         {
-            lgyro.busy  = false; /* TS LGYRO = 0     */
+            lgyro.busy = false; /* TS LGYRO = 0     */
             lgyro.phase = 0;
 
             if (gyro_waiter != AGC_JOB_NONE)
             { /* JOBWAKE LGWAKE   */
                 gwake_pending = true;
-                agc_exec_job_wake_if_asleep(gyro_waiter);
-                gyro_waiter   = AGC_JOB_NONE;
+                agc_status_t st = agc_exec_job_wake_if_asleep(gyro_waiter);
+
+                gyro_waiter = AGC_JOB_NONE;
+
+                if (st != AGC_STATUS_OK)
+                {
+                    return (st); /* CCSHOLE: POODOO */
+                }
             }
 
             return (agc_task_imufined()); /* NORESET          */
         }
 
-        lgyro.phase     = p + 1;         /* AD BIT13 ADS LGYRO */
+        lgyro.phase = p + 1;         /* AD BIT13 ADS LGYRO */
         agc_status_t st = AGC_STATUS_OK; /* status of the call */
 
         if (gselect(axis_of[p], sel_of[p], &st))

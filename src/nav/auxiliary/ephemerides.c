@@ -96,11 +96,6 @@ static agc_ephem_csm_t csm_data; /* CM uplink, scales in the type */
  **********************************************************************/
 agc_status_t agc_ephem_set_csm_data(const agc_ephem_csm_t *eph)
 {
-    if (!AGC_ASSERT(agc_navaux_tp_ok(eph->timemo) && agc_navaux_vec_ok(eph->reso) && agc_navaux_vec_ok(eph->veso)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     csm_data = *eph;
 
     return (AGC_STATUS_OK);
@@ -192,39 +187,6 @@ static agc_vec_t ephem_rem(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_dp_
 }
 
 /**********************************************************************
- * VEM / VEMA (Comanche055 LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc
- *   p. 787, labels VEM, VEMA) -- moon velocity, the derivative of the
- *   REM polynomial: ((9 a9 t + 8 a8) t + ... ) t + 1 a1, multipliers n
- *   at scale 2^4 (NINEB4 counting down by ONEB4), then VSL2
- *
- * FUNCTION NAME: ephem_vem
- *
- * ARGUMENTS:
- *   Argument  Type                     I/O  Description (scale)
- *   --------  -----------------------  ---  ---------------------------
- *   ip        agc_interp_t *           I/O  interpreter state
- *   eph       const agc_ephem_csm_t *  I    VECOEM (scales in the type)
- *   t26       agc_dp_t                 I    t, cs scale 2^26
- *
- * RETURNS: agc_vec_t -- moon velocity, earth-centred, scale 2^7 m/cs
- **********************************************************************/
-static agc_vec_t ephem_vem(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_dp_t t26)
-{
-    agc_dp_t  n = NINEB4;                               /* n, scale 2^4 */
-    agc_vec_t v = agc_vec_scale(ip, eph->vecoem[0], n); /* sum, 2^9 m/cs */
-
-    for (int i = 1; i < (AGC_EPHEM_NCOEF - 1); i++)
-    { /* TIX,1 VEMA     */
-        agc_vec_t acc = agc_vec_scale(ip, v, t26); /* VXSC 0D, scale of sum */
-
-        n = agc_dp_sub(ip, n, ONEB4); /* DSU ONEB4      */
-        v = agc_vec_add(ip, agc_vec_scale(ip, eph->vecoem[i], n), acc);
-    }
-
-    return (agc_vec_shl(ip, v, 2)); /* VSL2           */
-}
-
-/**********************************************************************
  * RES (Comanche055 LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc p. 786,
  *   labels RES, RESA) -- sun position, RESO rotated by OMEGAES t about
  *   the normal N = UNIT(UNIT(RESO) x VESO):
@@ -245,9 +207,9 @@ static agc_vec_t ephem_res(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_dp_
 {
     /* PUSH DMP OMEGAES / PUSH COS: the angle is used as its top words.  */
     agc_dp_t  ang = agc_dp_mul_trunc(t26, eph->omegaes);     /* revs 2^0    */
-    agc_dp_t  cw  = agc_dp_cos(ang);                     /* scale 2^1  */
+    agc_dp_t  cw  = agc_dp_cos(ang);                         /* scale 2^1  */
     agc_vec_t c   = agc_vec_scale(ip, eph->reso, cw);        /* 2^39 m     */
-    agc_dp_t  s   = agc_dp_sin(ang);                     /* scale 2^1  */
+    agc_dp_t  s   = agc_dp_sin(ang);                         /* scale 2^1  */
     agc_vec_t u   = agc_vec_unit(ip, eph->reso, NULL, NULL); /* scale 2^1  */
     agc_vec_t nrm = agc_vec_cross(ip, u, eph->veso);         /* 2^10 m/cs */
 
@@ -317,7 +279,34 @@ agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph, 
         return (st);
     }
 
-    *vmoon = ephem_vem(ip, eph, t26);
+    /**********************************************************************
+     * VEM / VEMA (Comanche055 LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc
+     *   p. 787, labels VEM, VEMA) -- moon velocity, the derivative of the
+     *   REM polynomial: ((9 a9 t + 8 a8) t + ... ) t + 1 a1, multipliers n
+     *   at scale 2^4 (NINEB4 counting down by ONEB4), then VSL2
+     *
+     * FUNCTION NAME: ephem_vem
+     *
+     * ARGUMENTS:
+     *   Argument  Type                     I/O  Description (scale)
+     *   --------  -----------------------  ---  ---------------------------
+     *   ip        agc_interp_t *           I/O  interpreter state
+     *   eph       const agc_ephem_csm_t *  I    VECOEM (scales in the type)
+     *   t26       agc_dp_t                 I    t, cs scale 2^26
+     *
+     * RETURNS: agc_vec_t -- moon velocity, earth-centred, scale 2^7 m/cs
+     **********************************************************************/
+    agc_dp_t  n = NINEB4;                               /* n, scale 2^4 */
+    agc_vec_t v = agc_vec_scale(ip, eph->vecoem[0], n); /* sum, 2^9 m/cs */
+
+    for (int i = 1; i < (AGC_EPHEM_NCOEF - 1); i++)
+    { /* TIX,1 VEMA     */
+        agc_vec_t acc = agc_vec_scale(ip, v, t26); /* VXSC 0D, scale of sum */
+
+        n = agc_dp_sub(ip, n, ONEB4); /* DSU ONEB4      */
+        v = agc_vec_add(ip, agc_vec_scale(ip, eph->vecoem[i], n), acc);
+    }
+    *vmoon = agc_vec_shl(ip, v, 2);
 
     return (AGC_STATUS_OK);
 }

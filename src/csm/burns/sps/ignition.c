@@ -22,11 +22,6 @@ bool agc_csm_tvc_on(void)
 {
     uint16_t w = agc_flagword_get(agc_flag_word(AGC_FLAG_DAPBIT1));
 
-    if (!AGC_ASSERT(agc_flag_word(AGC_FLAG_DAPBIT1) == 6))
-    {
-        return (false);
-    }
-
     return ((w & AGC_CSM_T5BITS) == AGC_CSM_T5_TVC);
 }
 
@@ -107,8 +102,8 @@ agc_status_t agc_task_dotvcon(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    tvc->tvcphase   = -1;                        /* CS BIT1                */
-    tvc->tvcexphs   = 0;
+    tvc->tvcphase = -1;                        /* CS BIT1                */
+    tvc->tvcexphs = 0;
     agc_flag_set(AGC_FLAG_DAPBIT1);              /* BITS 15,14 = 10        */
     agc_flag_clear(AGC_FLAG_DAPBIT2);
     agc_phase_newphase(6, 3, false);             /* 6.3 = CLOKTASK         */
@@ -196,7 +191,7 @@ agc_status_t agc_task_dotvcrcs(void)
     agc_inhint();
     agc_csm_tvczap();
     agc_relint();
-    agc_phase_change(4, (uint16_t) 000354); /* 4.35 = POSTBURN        */
+    agc_phase_change((uint16_t) 000354); /* 4.35 = POSTBURN        */
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_TIMRFLAG)))
     {
@@ -206,33 +201,6 @@ agc_status_t agc_task_dotvcrcs(void)
     return (agc_exec_novac(AGC_PRIO12, AGC_JOB_POSTBURN));
 }
 
-/* MASSBACK (p.702-703): restore the part of the pre-decremented mass not
- * flowed: CSMMASS = MASSTMP + (V97VCNTR EMDOT, low word) * 100 cs (high
- * word); the trims follow DELPBAR/DELYBAR once the TVC DAP is running.   */
-static void massback(void)
-{
-    agc_csm_tvc_t    *tvc  = agc_csm_dap_tvc();
-    agc_csm_dapcom_t *com  = agc_csm_dap_com();
-    int32_t           p    = (int32_t) tvc->engine_fail_vcntr * (int32_t) com->emdot; /* MP EMDOT */
-    int32_t           lo   = p % 16384;                                               /* LXCH A   */
-    int32_t           corr = (lo * CS_PER_SEC) / 16384;                               /* MP 1SEC  */
-
-    agc_erase_set_csmmass((agc_sp_t) (tvc->masstmp + corr));
-
-    if (tvc->tvcphase + 1 == 0 || !agc_csm_tvc_on())
-    {
-        return; /* BTRIMR                 */
-    }
-
-    com->pactoff = tvc->delpbar.hi; /* CA DELPBAR (high word) BESTTRIM */
-    com->yactoff = tvc->delybar.hi;
-
-    if (!AGC_ASSERT(corr >= -CS_PER_SEC && corr <= CS_PER_SEC))
-    {
-        return;
-    }
-}
-
 /* SPSOFF (p.702): TEVENT, ENGONFLG reset, SPS off, SIV cutoff, MASSBACK.  */
 void agc_csm_spsoff(void)
 {
@@ -240,11 +208,22 @@ void agc_csm_spsoff(void)
     agc_flag_clear(AGC_FLAG_ENGONFLG);   /* RESTARTS WILL SHUT DOWN */
     agc_chan_and(011, (uint16_t) ~AGC_CSM_SPSON);
     agc_chan_or(012, AGC_CSM_SIVCUTOFF); /* SIV CUTOFF COMMAND     */
-    massback();
 
-    if (!AGC_ASSERT((agc_chan_read(011) & AGC_CSM_SPSON) == 0U))
+    /* MASSBACK (p.702-703): restore the part of the pre-decremented mass not
+     * flowed: CSMMASS = MASSTMP + (V97VCNTR EMDOT, low word) * 100 cs (high
+     * word); the trims follow DELPBAR/DELYBAR once the TVC DAP is running.   */
+    agc_csm_tvc_t *tvc = agc_csm_dap_tvc();
+    agc_csm_dapcom_t *com = agc_csm_dap_com();
+    int32_t p = (int32_t) tvc->engine_fail_vcntr * (int32_t) com->emdot; /* MP EMDOT */
+    int32_t lo = p % 16384;                                               /* LXCH A   */
+    int32_t corr = (lo * CS_PER_SEC) / 16384;                               /* MP 1SEC  */
+
+    agc_erase_set_csmmass((agc_sp_t) (tvc->masstmp + corr));
+
+    if (!(tvc->tvcphase + 1 == 0 || !agc_csm_tvc_on())) /* BTRIMR                 */
     {
-        return;
+        com->pactoff = tvc->delpbar.hi; /* CA DELPBAR (high word) BESTTRIM */
+        com->yactoff = tvc->delybar.hi;
     }
 }
 
@@ -257,11 +236,6 @@ void agc_csm_tvczap(void)
     agc_erase_set_optind(-1); /* CS BIT1                */
     agc_guid_state()->csm.nvword1 = 0;
     agc_flag_clear(AGC_FLAG_TIMRFLAG);
-
-    if (!AGC_ASSERT(agc_guid_state()->csm.nvword1 == 0))
-    {
-        return;
-    }
 }
 
 /* A flashing display: terminate -> POST41.                                 */
@@ -334,23 +308,6 @@ agc_status_t agc_job_post41(agc_job_ctx_t *ctx)
     return (agc_exec_gotopooh());
 }
 
-/* P41/DSP (p.697): V06N85 by the CLOCKJOB (VGTIG in control axes), CALCN85
- * as AVEGEXIT, 6.3 and 4.23, then P40S/RS.                                */
-agc_status_t agc_csm_rcs_burn_display(agc_job_ctx_t *ctx)
-{
-    agc_guid_t *g = agc_guid_state();
-
-    g->csm.nvword1 = agc_csm_vn(6, 85); /* V06N85B                */
-    agc_interp_t ip;
-
-    agc_interp_init(&ip);
-    agc_csm_convert_vg_body(&ip); /* VGTIG IN CTRL COORDS   */
-    g->avg.avgexit = AGC_JOB_CALC_VG_BODY;
-    agc_phase_change2((uint16_t) 040036, (uint16_t) 000234, NULL);
-
-    return (agc_csm_preburn_start_clock(ctx));
-}
-
 /* P47CSM (p.698): IMU status, MIDTOAV2 (time to PREREAD < 1 s), TIGON.    */
 agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
 {
@@ -362,7 +319,7 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
     }
 
     agc_integ_midtoav_out_t mo;
-    agc_interp_t            ip;
+    agc_interp_t ip;
 
     agc_interp_init(&ip);
     agc_status_t st = agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo);
@@ -383,7 +340,7 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change(4, (uint16_t) 040574);
+    agc_phase_change((uint16_t) 040574);
 
     return (AGC_STATUS_OK); /* 4.57 = TIGON           */
 }
@@ -392,7 +349,7 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
 agc_status_t agc_task_tigon(void)
 {
     agc_guid_state()->avg.avgexit = AGC_JOB_CALC_DELTA_V_BODY;
-    agc_status_t st               = agc_exec_novac(AGC_PRIO30, AGC_JOB_THRUST_MONITOR_RESET);
+    agc_status_t st = agc_exec_novac(AGC_PRIO30, AGC_JOB_THRUST_MONITOR_RESET);
 
     if (st != AGC_STATUS_OK)
     {

@@ -104,11 +104,6 @@ static int ldg_tgt(void)
  **********************************************************************/
 static agc_sp_t ldg_posonly(int32_t x)
 {
-    if (!AGC_ASSERT(x >= -2 * LDG_POSMAX && x <= 2 * LDG_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     int32_t r = (x > 0) ? x : 0; /* max(x, 0), scale 2^S */
 
     if (r > LDG_POSMAX)
@@ -251,11 +246,6 @@ agc_sp_t agc_lm_ttf8_high(void)
 
     agc_sp_t hi = ldg_raw_high(l->ttf_8, l->ttf_8_hi); /* stored high word of TTF/8, scale 2^14 cs */
 
-    if (!AGC_ASSERT(hi <= 0 || l->ttf_8 > 0))
-    {
-        return (agc_dp_high(l->ttf_8));
-    }
-
     return (hi);
 }
 
@@ -275,11 +265,6 @@ void agc_lm_tdispset(void)
     int32_t  y = (x < 0) ? x : 0;                                      /* AD NEGMAX    */
 
     l->tredes = ldg_posonly(y + LDG_DEC99);
-
-    if (!AGC_ASSERT(l->ttfdisp <= 0 || t8 > 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -527,11 +512,6 @@ static void ldg_quadcoef(agc_sp_t c[4])
     c[1] = ldg_wrap(cr);
     c[2] = ldg_wrap(cd);
     c[3] = ldg_wrap(ca);
-
-    if (!AGC_ASSERT(buf <= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -605,8 +585,8 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
     /* DDV DSQ leaves a TP; the two DSUs change MPAC, MPAC+1 only and
      * SQRT reads all three words (MPAC+2 of the DSQ takes part).      */
     agc_tp_t amax = agc_dp_sq_tp(agc_dp_div(ip, LDG_HIGHESTF, mass)); /* (HIGHESTF/MASS)^2 as a TP, 2^-8 */
-    agc_dp_t a1sq = agc_dp_sq(l->unfc_2.c[1]);                    /* A1^2, popped first, 2^-8 */
-    agc_dp_t a0sq = agc_dp_sq(l->unfc_2.c[0]);                    /* A0^2, 2^-8 */
+    agc_dp_t a1sq = agc_dp_sq(l->unfc_2.c[1]);                        /* A1^2, popped first, 2^-8 */
+    agc_dp_t a0sq = agc_dp_sq(l->unfc_2.c[0]);                        /* A0^2, 2^-8 */
 
     amax = agc_tp_add(ip, amax, agc_tp_from_dp(agc_dp_neg(a1sq)));
     amax = agc_tp_add(ip, amax, agc_tp_from_dp(agc_dp_neg(a0sq)));
@@ -650,22 +630,20 @@ agc_status_t agc_lm_cgcalc(agc_interp_t *ip)
     int32_t                ai = (int32_t) t->tcgi + t8;           /* TCGI + TTF/8, cs */
     int32_t                af = (int32_t) t->tcgf + t8;           /* TCGF + TTF/8, cs */
 
-    if (!(ai > 0 && af < 0))
+    if (ai > 0 && af < 0) /* TCF EXTLOGIC     */
     {
-        return (AGC_STATUS_OK); /* TCF EXTLOGIC     */
+        const agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
+
+        l->cg.row[0] = agc_vec_unit(ip, l->land, NULL, NULL);
+        agc_dp_t  k  = agc_dp_mul_trunc(l->ttf_8, t->gain);                        /* DMP* GAINBRAK: TTF/8 GAIN, 2^14 cs */
+        agc_vec_t w  = agc_vec_add(ip, agc_vec_scale(ip, l->angterm, k), l->land); /* look-ahead point, 2^24 m */
+        int       sh = 0;                                                          /* NORMUNIT shift count (unused) */
+
+        w            = agc_rtb_normunit(ip, agc_vec_sub(ip, w, g->r), &sh, NULL, NULL);
+        w            = agc_rtb_normunit(ip, agc_vec_cross(ip, w, l->land), &sh, NULL, NULL);
+        l->cg.row[1] = w;
+        l->cg.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, l->cg.row[0], w), 1);
     }
-
-    const agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
-
-    l->cg.row[0] = agc_vec_unit(ip, l->land, NULL, NULL);
-    agc_dp_t  k  = agc_dp_mul_trunc(l->ttf_8, t->gain);                        /* DMP* GAINBRAK: TTF/8 GAIN, 2^14 cs */
-    agc_vec_t w  = agc_vec_add(ip, agc_vec_scale(ip, l->angterm, k), l->land); /* look-ahead point, 2^24 m */
-    int       sh = 0;                                                          /* NORMUNIT shift count (unused) */
-
-    w            = agc_rtb_normunit(ip, agc_vec_sub(ip, w, g->r), &sh, NULL, NULL);
-    w            = agc_rtb_normunit(ip, agc_vec_cross(ip, w, l->land), &sh, NULL, NULL);
-    l->cg.row[1] = w;
-    l->cg.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, l->cg.row[0], w), 1);
 
     return (AGC_STATUS_OK);
 } /* agc_lm_cgcalc */
@@ -694,11 +672,6 @@ static agc_sp_t ldg_extlogic(void)
         tend = p->tendappr;
     }
 
-    if (!AGC_ASSERT(l->wchphase < AGC_LM_PHASE_VERTICAL))
-    {
-        return (0); /* no valid result */
-    }
-
     if ((int32_t) tend + agc_lm_ttf8_high() <= 0)
     {
         return (l->wchphase); /* BZMF WHATEXIT    */
@@ -708,87 +681,7 @@ static agc_sp_t ldg_extlogic(void)
     l->wchphase = (agc_sp_t) (l->wchphold + 1); /* next phase       */
     l->flpass0  = 0;
 
-    if (!AGC_ASSERT(l->wchphase <= AGC_LM_PHASE_VERTICAL))
-    {
-        return (0); /* no valid result */
-    }
-
     return (l->wchphold);
-}
-
-/**********************************************************************
- * EXGSUB (pp. 811-812): IGNALG exit. Trim velocity correction term
- * UNFC/2 = UNIT(UNFC/2) ZOOMTIME TRIMACCL (2^7 m/cs), used by CALCRGVG.
- *
- * ARGUMENTS:
- *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
- **********************************************************************/
-static agc_status_t ldg_exgsub(agc_interp_t *ip)
-{
-    agc_lm_ldg_t *l  = agc_lm_ldg();                                     /* landing erasables */
-    int           sh = 0;                                                /* NORMUNIT shift count (unused) */
-    agc_vec_t     u  = agc_rtb_normunit(ip, l->unfc_2, &sh, NULL, NULL); /* UNIT(UNFC/2), half unit 2^1 */
-
-    /* VXSC ZOOMTIME takes the DP (ZOOMTIME, TENDBRAK).                  */
-    agc_dp_t zt = agc_dp_pack(agc_erase_zoomtime(), agc_lm_pad()->tendbrak); /* ZOOMTIME, cs (scale 2^14 cs) */
-
-    l->unfc_2 = agc_vec_scale(ip, agc_vec_scale(ip, u, zt), LDG_TRIMACCL);
-
-    if (!AGC_ASSERT(sh >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(zt >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
-}
-
-/**********************************************************************
- * EXNORM (pp. 812-813): window vector between UNIT(LAND - R) and CG row 2
- * according to PROJ = (UNIT(LAND - R) x XNBPIP) . CG row 1, 1/8 size:
- *   UNWC/2 = max(PROJMAX - PROJ, 0) CG row 2
- *          + max(PROJ - PROJMIN, 0) UNIT(LAND - R).
- *
- * ARGUMENTS:
- *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
- **********************************************************************/
-static void ldg_exnorm(agc_interp_t *ip)
-{
-    agc_lm_ldg_t        *l  = agc_lm_ldg();          /* landing erasables */
-    const agc_guid_lm_t *g  = &agc_guid_state()->lm; /* LM guidance state */
-    int                  sh = 0;                     /* NORMUNIT shift count (unused) */
-
-    l->unwc_2      = agc_rtb_normunit(ip, agc_vec_sub(ip, l->land, g->r), &sh, NULL, NULL);
-    agc_vec_t yw   = agc_vec_cross(ip, l->unwc_2, g->xnbpip.row[0]); /* UNIT(LAND - R) x XNBPIP, 2^2 */
-    agc_dp_t  proj = agc_vec_dot(ip, yw, l->cg.row[1]);              /* PROJ, scale 2^3 */
-    agc_sp_t  ph   = agc_dp_high(proj);                              /* PROJ high word, 2^3 */
-    agc_sp_t  buf  = ldg_posonly((int32_t) LDG_PROJMAX - ph);        /* max(PROJMAX - PROJ, 0), 2^3 */
-    agc_sp_t  buf1 = ldg_posonly((int32_t) ph - LDG_PROJMIN);        /* max(PROJ - PROJMIN, 0), 2^3 */
-
-    for (int i = 2; i >= 0; i--)
-    { /* UNWCLOOP, bound 3 */
-        agc_dp_t a = agc_sp_mul(buf, agc_dp_high(l->cg.row[2].c[i])); /* CG row 2 part, 2^4 */
-        agc_dp_t b = agc_sp_mul(agc_dp_high(l->unwc_2.c[i]), buf1);   /* UNIT(LAND - R) part, 2^4 */
-
-        l->unwc_2.c[i] = (agc_dp_t) (a + b); /* DXCH, MP, DAS    */
-    }
-
-    if (!AGC_ASSERT(buf >= 0 && buf1 >= 0))
-    {
-        return;
-    }
-
-    if (!AGC_ASSERT(sh >= 0))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -799,11 +692,6 @@ static void ldg_ratestop(void)
     if (!agc_lm_chan_bit_present(AGC_CHAN_CHAN31, AGC_CH031_ATTHOLD))
     {
         agc_lm_dap_stoprate();
-    }
-
-    if (!AGC_ASSERT(agc_lm_ldg()->wchphold >= AGC_LM_PHASE_IGNALG))
-    {
-        return;
     }
 }
 
@@ -1184,7 +1072,37 @@ static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (ex == AGC_LM_PHASE_IGNALG)
     {
-        return (ldg_exgsub(ip)); /* back to IGNALG   */
+        /* back to IGNALG   */
+        /**********************************************************************
+         * EXGSUB (pp. 811-812): IGNALG exit. Trim velocity correction term
+         * UNFC/2 = UNIT(UNFC/2) ZOOMTIME TRIMACCL (2^7 m/cs), used by CALCRGVG.
+         *
+         * ARGUMENTS:
+         *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
+         *
+         * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
+         *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+         **********************************************************************/
+        agc_lm_ldg_t *l_exgsub = agc_lm_ldg();                                            /* landing erasables */
+        int           sh       = 0;                                                       /* NORMUNIT shift count (unused) */
+        agc_vec_t     u        = agc_rtb_normunit(ip, l_exgsub->unfc_2, &sh, NULL, NULL); /* UNIT(UNFC/2), half unit 2^1 */
+
+        /* VXSC ZOOMTIME takes the DP (ZOOMTIME, TENDBRAK).                  */
+        agc_dp_t zt = agc_dp_pack(agc_erase_zoomtime(), agc_lm_pad()->tendbrak); /* ZOOMTIME, cs (scale 2^14 cs) */
+
+        l_exgsub->unfc_2 = agc_vec_scale(ip, agc_vec_scale(ip, u, zt), LDG_TRIMACCL);
+
+        if (!AGC_ASSERT(sh >= 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        if (!AGC_ASSERT(zt >= 0))
+        {
+            return (AGC_STATUS_BAD_ARG);
+        }
+
+        return (AGC_STATUS_OK);
     }
 
     if (ex == AGC_LM_PHASE_BRAKQUAD)
@@ -1193,7 +1111,33 @@ static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     }
     else
     {
-        ldg_exnorm(ip);
+        /**********************************************************************
+         * EXNORM (pp. 812-813): window vector between UNIT(LAND - R) and CG row 2
+         * according to PROJ = (UNIT(LAND - R) x XNBPIP) . CG row 1, 1/8 size:
+         *   UNWC/2 = max(PROJMAX - PROJ, 0) CG row 2
+         *          + max(PROJ - PROJMIN, 0) UNIT(LAND - R).
+         *
+         * ARGUMENTS:
+         *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
+         **********************************************************************/
+        agc_lm_ldg_t        *l_exnorm  = agc_lm_ldg();          /* landing erasables */
+        const agc_guid_lm_t *g         = &agc_guid_state()->lm; /* LM guidance state */
+        int                  sh_exnorm = 0;                     /* NORMUNIT shift count (unused) */
+
+        l_exnorm->unwc_2 = agc_rtb_normunit(ip, agc_vec_sub(ip, l_exnorm->land, g->r), &sh_exnorm, NULL, NULL);
+        agc_vec_t yw     = agc_vec_cross(ip, l_exnorm->unwc_2, g->xnbpip.row[0]); /* UNIT(LAND - R) x XNBPIP, 2^2 */
+        agc_dp_t  proj   = agc_vec_dot(ip, yw, l_exnorm->cg.row[1]);              /* PROJ, scale 2^3 */
+        agc_sp_t  ph     = agc_dp_high(proj);                                     /* PROJ high word, 2^3 */
+        agc_sp_t  buf    = ldg_posonly((int32_t) LDG_PROJMAX - ph);               /* max(PROJMAX - PROJ, 0), 2^3 */
+        agc_sp_t  buf1   = ldg_posonly((int32_t) ph - LDG_PROJMIN);               /* max(PROJ - PROJMIN, 0), 2^3 */
+
+        for (int i = 2; i >= 0; i--)
+        { /* UNWCLOOP, bound 3 */
+            agc_dp_t a = agc_sp_mul(buf, agc_dp_high(l_exnorm->cg.row[2].c[i])); /* CG row 2 part, 2^4 */
+            agc_dp_t b = agc_sp_mul(agc_dp_high(l_exnorm->unwc_2.c[i]), buf1);   /* UNIT(LAND - R) part, 2^4 */
+
+            l_exnorm->unwc_2.c[i] = (agc_dp_t) (a + b); /* DXCH, MP, DAS    */
+        }
     }
 
     return (agc_lm_steer_exit(ctx, ip));
@@ -1279,7 +1223,7 @@ agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx)
     const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_LUNLAND, AGC_TASK_NONE, 021, false, 0U };
 
     agc_phase_change_var(05023, &v);
-    int          entry = AGC_LM_ENTRY_GUILDRET;            /* entry chosen by R13 */
+    int          entry = AGC_LM_ENTRY_GUILDRET;       /* entry chosen by R13 */
     agc_status_t st    = agc_lm_guildenstern(&entry); /* step status */
 
     if (st != AGC_STATUS_OK)

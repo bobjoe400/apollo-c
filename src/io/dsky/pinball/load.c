@@ -67,11 +67,11 @@
 agc_status_t pin_reqdat(int inrel, pin_reqret_t step)
 {
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
-    pin_state_t         *s       = pin_st(); /* pinball erasables */
+    pin_state_t *s = pin_st(); /* pinball erasables */
 
     pin_set_dspcount(rnd1[inrel - PIN_INREL_X]);
-    s->reqret       = step;
-    s->reqret_neg   = true;
+    s->reqret = step;
+    s->reqret_neg = true;
     agc_status_t st = pin_5blank(); /* status so far */
 
     pin_flashon();
@@ -94,11 +94,6 @@ agc_status_t pin_reqdat(int inrel, pin_reqret_t step)
  **********************************************************************/
 pin_reqret_t pin_reqret_backup(pin_reqret_t step)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (step); /* no backup */
-    }
-
     switch (step)
     {
         case PIN_REQ_ABC_Y:
@@ -144,8 +139,8 @@ agc_status_t agc_dsky_loadlv(void)
 
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->decbrnch     = 0;
-    s->loadstat     = PIN_LS_DATAIN;         /* CS ZERO TS LOADSTAT      */
+    s->decbrnch = 0;
+    s->loadstat = PIN_LS_DATAIN;         /* CS ZERO TS LOADSTAT      */
     agc_status_t st = agc_dsky_releasedsp(); /* status so far */
 
     pin_block_dspcount(PIN_VD1);
@@ -184,9 +179,9 @@ static agc_status_t pin_putcom(int k, bool *finished)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    pin_state_t     *s  = pin_st();                 /* pinball erasables */
+    pin_state_t *s = pin_st();                 /* pinball erasables */
     agc_scale_info_t info;                          /* scale of the component */
-    agc_status_t     st = pin_comp_scale(k, &info); /* status so far */
+    agc_status_t st = pin_comp_scale(k, &info); /* status so far */
 
     if (!AGC_ASSERT(finished != NULL) || st != AGC_STATUS_OK)
     {
@@ -215,7 +210,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
         }
 
         agc_status_t st_octal = AGC_STATUS_OK;       /* status of the octal store */
-        uint16_t     word     = s_octal->xyz_oct[k]; /* octal word */
+        uint16_t word = s_octal->xyz_oct[k]; /* octal word */
 
         if (s_octal->nntype == PIN_NNTYPE_CHAN)
         { /* CHANLOAD  */
@@ -244,7 +239,7 @@ static agc_status_t pin_putcom(int k, bool *finished)
             agc_dp_t old = 0; /* major part, unscaled */
 
             st_octal = pin_comp_read(k, &old);
-            v_octal  = agc_dp_pack(pin_sp_from_ones(word), agc_dp_low(old));
+            v_octal = agc_dp_pack(pin_sp_from_ones(word), agc_dp_low(old));
         }
         else
         {
@@ -335,7 +330,7 @@ static agc_status_t pin_putn(int first, int ncomp)
 {
     agc_status_t st; /* status so far */
 
-    st            = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK; /* ALLDC/OC */
+    st = (ncomp > 1) ? pin_alldc_oc(ncomp) : AGC_STATUS_OK; /* ALLDC/OC */
     bool finished = false;                                             /* load ended inside PUTCOM */
 
     for (int k = first; k < first + ncomp && st == AGC_STATUS_OK && !finished; k++)
@@ -358,10 +353,10 @@ static agc_status_t pin_putn(int first, int ncomp)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        const pin_state_t *s     = pin_st();      /* pinball erasables */
-        uint16_t           ecadr = s->xyz_oct[0]; /* flag word ECADR (XREG) */
-        uint16_t           bits  = s->xyz_oct[1]; /* YREG bits */
-        uint16_t           word  = 0;             /* octal word */
+        const pin_state_t *s = pin_st();      /* pinball erasables */
+        uint16_t ecadr = s->xyz_oct[0]; /* flag word ECADR (XREG) */
+        uint16_t bits = s->xyz_oct[1]; /* YREG bits */
+        uint16_t word = 0;             /* octal word */
 
         if (!AGC_ASSERT(s->nounreg == 7u))
         {

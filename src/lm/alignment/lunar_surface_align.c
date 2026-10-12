@@ -44,11 +44,6 @@ static agc_sp_t option2(void)
 {
     const agc_sp_t v = agc_erase_option1(1);
 
-    if (!AGC_ASSERT((v >= 0) && (v <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -203,9 +198,9 @@ agc_status_t agc_job_lunar_surface_option(agc_job_ctx_t *ctx)
 
     if (opt == 0)
     { /* TDISP    */
-        const agc_status_t st = align_set_dsptem1(agc_erase_tig());
+        align_set_dsptem1(agc_erase_tig());
 
-        return ((st == AGC_STATUS_OK) ? agc_job_lunar_surface_time_display(ctx) : st);
+        return (agc_job_lunar_surface_time_display(ctx));
     }
 
     if (opt == 2)
@@ -423,58 +418,10 @@ static agc_status_t gravity_sm(agc_vec_t *g)
 {
     agc_cdutrig_t t;
 
-    *g                    = agc_align_ram()->gsav;
-    const agc_status_t st = agc_guid_cdu_nbsm(&t, g);
+    *g = agc_align_ram()->gsav;
+    agc_guid_cdu_nbsm(&t, g);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
-}
-
-/*
- * P57OPT1: VEC1 = UNIT(RLS), VEC2 = ZNBSAV; STARSAV1 = GSAV in SM,
- * STARSAV2 = ZNB (present SM).  P57OPT3: VEC1 = VEC2 = UNIT(RLS) (VEC2 is
- * a dummy until the star is marked); STARSAV1 = GSAV in SM; MFREF; 1STAR.
- */
-static agc_status_t site_and_gravity(agc_job_ctx_t *ctx, bool one_star)
-{
-    agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t     ip;
-
-    agc_interp_init(&ip);
-    ram->vec1        = agc_vec_unit(&ip, agc_erase_rls(), NULL, NULL);
-    ram->vec2        = one_star ? ram->vec1 : ram->znbsav;
-    agc_cdutrig_t t;
-    agc_vec_t     g;
-    agc_status_t  st = align_nb_present(&ip, &t, &ram->xnb);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = gravity_sm(&g);
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    if (!one_star)
-    {
-        return (same_type(ctx, g, ram->xnb.row[2]));
-    }
-
-    ram->starsav1 = g;
-    st            = agc_align_mfref(&ip);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    return (agc_lm_lunar_surface_one_star(ctx));
+    return (AGC_STATUS_OK);
 }
 
 /* P57JUMP: PHASCHNG; CLEAR INITALGN; branch on the option. */
@@ -500,7 +447,48 @@ agc_status_t agc_job_lunar_surface_realign(agc_job_ctx_t *ctx)
         return (agc_lm_lunar_surface_two_stars(ctx)); /* P57OPT2  */
     }
 
-    return (site_and_gravity(ctx, opt == OPTION_MASK)); /* 1 or 3   */
+    /* 1 or 3   */
+    /*
+     * P57OPT1: VEC1 = UNIT(RLS), VEC2 = ZNBSAV; STARSAV1 = GSAV in SM,
+     * STARSAV2 = ZNB (present SM).  P57OPT3: VEC1 = VEC2 = UNIT(RLS) (VEC2 is
+     * a dummy until the star is marked); STARSAV1 = GSAV in SM; MFREF; 1STAR.
+     */
+    bool one_star = opt == OPTION_MASK;
+
+    agc_align_ram_t *ram = agc_align_ram();
+    agc_interp_t     ip;
+
+    agc_interp_init(&ip);
+    ram->vec1                = agc_vec_unit(&ip, agc_erase_rls(), NULL, NULL);
+    ram->vec2                = one_star ? ram->vec1 : ram->znbsav;
+    agc_cdutrig_t t;
+    agc_vec_t     g;
+    agc_status_t  st_gravity = align_nb_present(&ip, &t, &ram->xnb);
+
+    if (st_gravity == AGC_STATUS_OK)
+    {
+        st_gravity = gravity_sm(&g);
+    }
+
+    if (st_gravity != AGC_STATUS_OK)
+    {
+        return (st_gravity);
+    }
+
+    if (!one_star)
+    {
+        return (same_type(ctx, g, ram->xnb.row[2]));
+    }
+
+    ram->starsav1 = g;
+    st_gravity    = agc_align_mfref(&ip);
+
+    if (st_gravity != AGC_STATUS_OK)
+    {
+        return (st_gravity);
+    }
+
+    return (agc_lm_lunar_surface_one_star(ctx));
 }
 
 /*

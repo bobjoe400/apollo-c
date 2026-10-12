@@ -130,7 +130,7 @@ typedef enum tvc_coef_set
  **********************************************************************/
 static void tvc_loadcoef(tvc_coef_set_t set)
 {
-    agc_csm_tvc_t          *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* HBN10 pad load    */
 
     for (int i = 0; i < AGC_CSM_N10_WORDS; i++)
@@ -164,20 +164,20 @@ static void tvc_loadcoef(tvc_coef_set_t set)
  **********************************************************************/
 agc_status_t csm_tvc_gains(bool full)
 {
-    agc_csm_tvc_t          *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* IXX, IAVG/TLX     */
 
     if (full)
     {
         agc_dp_t p = agc_sp_mul(c->ixx, TWOPI_M); /* MP 2PI/M, scale B+12 */
 
-        p             = csm_dap_ddoubl(csm_dap_ddoubl(csm_dap_ddoubl(p)));
+        p = csm_dap_ddoubl(csm_dap_ddoubl(csm_dap_ddoubl(p)));
         t->one_conacc = agc_dp_high(p); /* TS 1/CONACC, B+9 s^2/rev  */
     }
 
     agc_dp_t v = agc_sp_mul(t->ktlx_i, c->iavg_tlx); /* MP, scale B+5 ascrev */
 
-    v       = csm_dap_ddoubl(csm_dap_ddoubl(v));
+    v = csm_dap_ddoubl(csm_dap_ddoubl(v));
     t->vark = agc_dp_high(v); /* TS VARK, B+3 ascrev                   */
 
     return (AGC_STATUS_OK);
@@ -196,7 +196,7 @@ agc_status_t csm_tvc_gains(bool full)
  **********************************************************************/
 agc_status_t csm_tvc_mrclean(void)
 {
-    agc_csm_tvc_t       *t    = agc_csm_dap_tvc(); /* TVC erasables  */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC erasables  */
     const agc_dp_words_t zero = {0, 0};            /* +0, +0         */
 
     _Static_assert(NZERO % 2 == 1, "AGC constant");
@@ -216,18 +216,18 @@ agc_status_t csm_tvc_mrclean(void)
         t->ytmp[i] = zero;
     }
 
-    t->rollfire     = 0;
-    t->rollword     = 0u;
-    t->temreg       = 0;
-    t->stroker      = 0;
-    t->perrb        = zero;
-    t->yerrb        = zero;
-    t->delpbar      = zero;
-    t->delybar      = zero;
-    t->pdeloff      = zero;
-    t->ydeloff      = zero;
-    t->ttmp1        = 0;
-    t->cntr         = 0;                                                  /* CNTR, the loop counter, ends at +0           */
+    t->rollfire = 0;
+    t->rollword = 0u;
+    t->temreg = 0;
+    t->stroker = 0;
+    t->perrb = zero;
+    t->yerrb = zero;
+    t->delpbar = zero;
+    t->delybar = zero;
+    t->pdeloff = zero;
+    t->ydeloff = zero;
+    t->ttmp1 = 0;
+    t->cntr = 0;                                                  /* CNTR, the loop counter, ends at +0           */
     agc_status_t st = csm_dap_set_t5(AGC_TASK_TVC_INITIALIZE, T5_POSMAX); /* T5 status */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
@@ -277,7 +277,7 @@ agc_status_t agc_task_tvcdapon(void)
  **********************************************************************/
 static agc_status_t tvc_init_filter_timing(int lem)
 {
-    agc_csm_tvc_t          *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* pad loads         */
 
     if (!AGC_ASSERT((lem == 0) || (lem == 1)))
@@ -296,11 +296,11 @@ static agc_status_t tvc_init_filter_timing(int lem)
      * product words (14 places left); scaled pi/8                       */
     agc_sp_t ek = c->ekprime[lem]; /* EKPRIME, scale (100 pi)/16 */
 
-    t->kprimedt          = agc_dp_pack(csm_dap_mp_lo(ek, half_dt), csm_dap_mp_hi(ek, half_dt));
-    t->repfrac           = c->erepfrac[lem]; /* REPFRAC, 2^2             */
-    t->cntr              = tcorr[lem];       /* one-shot correction time */
-    t->strktime          = -1;               /* no stroke test until V68 */
-    t->vcntr             = NINETEEN;         /* gain update in 10 s      */
+    t->kprimedt = agc_dp_pack(csm_dap_mp_lo(ek, half_dt), csm_dap_mp_hi(ek, half_dt));
+    t->repfrac = c->erepfrac[lem]; /* REPFRAC, 2^2             */
+    t->cntr = tcorr[lem];       /* one-shot correction time */
+    t->strktime = -1;               /* no stroke test until V68 */
+    t->vcntr = NINETEEN;         /* gain update in 10 s      */
     t->engine_fail_vcntr = NINETEEN;         /* V97VCNTR for ENGFAIL     */
 
     if (!AGC_ASSERT(t->t5tvcdt > 0))
@@ -320,14 +320,14 @@ static agc_status_t tvc_init_filter_timing(int lem)
  **********************************************************************/
 static void tvc_init_trims(void)
 {
-    agc_csm_tvc_t          *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* PACTOFF, YACTOFF  */
 
     t->pdeloff.hi = c->pactoff; /* CAE PACTOFF; TS PDELOFF, PCMD, DELPBAR */
-    t->pcmd       = c->pactoff;
+    t->pcmd = c->pactoff;
     t->delpbar.hi = c->pactoff;
     t->ydeloff.hi = c->yactoff;
-    t->ycmd       = c->yactoff;
+    t->ycmd = c->yactoff;
     t->delybar.hi = c->yactoff;
 }
 
@@ -343,36 +343,34 @@ static void tvc_init_trims(void)
 static void tvc_attinit(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
-    agc_sp_t      *w[2];                  /* ERRBTMP, ERRBTMP +1        */
+    agc_sp_t *w[2];                  /* ERRBTMP, ERRBTMP +1        */
 
-    if ((agc_erase_dapdatr1() & CSM_DAP_BIT13) == 0u)
+    if ((agc_erase_dapdatr1() & CSM_DAP_BIT13) != 0u) /* CSM/LM: BZF NEEDLEIN                               */
     {
-        return; /* CSM/LM: BZF NEEDLEIN                               */
+        w[0] = &t->errbtmp.hi;
+        w[1] = &t->errbtmp.lo;
+
+        for (int k = 1; k >= 0; k--)
+        { /* TTMP1 = 1, then 0   */
+            agc_sp_t q = csm_dap_mp_hi(*w[k], RECIP_ATTLIM); /* 0: < 1.5 deg, unscaled */
+
+            if (q > 0)
+            {
+                *w[k] = ATTLIM; /* |error| > 1.5 deg, and positive          */
+            }
+            else if (q < 0)
+            {
+                *w[k] = (agc_sp_t) -ATTLIM; /* |error| > 1.5 deg, negative  */
+            }
+            else
+            {
+                /* |error| less than 1.5 deg: keep it */
+            }
+        }
+
+        t->perrb.hi = t->errbtmp.hi; /* CA ERRBTMP; TS PERRB                 */
+        t->yerrb.hi = t->errbtmp.lo; /* CA ERRBTMP +1; TS YERRB              */
     }
-
-    w[0] = &t->errbtmp.hi;
-    w[1] = &t->errbtmp.lo;
-
-    for (int k = 1; k >= 0; k--)
-    { /* TTMP1 = 1, then 0   */
-        agc_sp_t q = csm_dap_mp_hi(*w[k], RECIP_ATTLIM); /* 0: < 1.5 deg, unscaled */
-
-        if (q > 0)
-        {
-            *w[k] = ATTLIM; /* |error| > 1.5 deg, and positive          */
-        }
-        else if (q < 0)
-        {
-            *w[k] = (agc_sp_t) -ATTLIM; /* |error| > 1.5 deg, negative  */
-        }
-        else
-        {
-            /* |error| less than 1.5 deg: keep it */
-        }
-    }
-
-    t->perrb.hi = t->errbtmp.hi; /* CA ERRBTMP; TS PERRB                 */
-    t->yerrb.hi = t->errbtmp.lo; /* CA ERRBTMP +1; TS YERRB              */
 }
 
 /**********************************************************************
@@ -388,7 +386,7 @@ static void tvc_attinit(void)
  **********************************************************************/
 agc_status_t agc_task_tvc_initialize(void)
 {
-    agc_csm_tvc_t    *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* pad loads, RCSFLAGS     */
 
     agc_csm_dap_massprop(); /* IXX, IAVG/TLX for the DAP gains            */
@@ -396,12 +394,12 @@ agc_status_t agc_task_tvc_initialize(void)
     /* TENMDOT = EMDOT (kg/cs, B+3) x 1000: 10-s mass loss, kg B+16       */
     t->tenmdot = csm_dap_mp_hi(c->emdot, ONETHOU);
     t->masstmp = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot);
-    int lem    = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? 1 : 0; /* ?: LM on (DAPDATR1 bit 14) */
+    int lem = ((agc_erase_dapdatr1() & CSM_DAP_BIT14) != 0u) ? 1 : 0; /* ?: LM on (DAPDATR1 bit 14) */
 
     /* CNTR: ?: LM on (BIT1) or off (0)                                   */
 
     tvc_loadcoef((lem != 0) ? TVC_COEF_HB : TVC_COEF_CSM); /* ?: LM   */
-    t->ktlx_i       = c->ektlx_i[lem];                     /* 1/(8 ascrev) scale        */
+    t->ktlx_i = c->ektlx_i[lem];                     /* 1/(8 ascrev) scale        */
     agc_status_t st = csm_tvc_gains(true);                 /* 1/CONACC, VARK           */
 
     if (st == AGC_STATUS_OK)
@@ -413,7 +411,7 @@ agc_status_t agc_task_tvc_initialize(void)
     tvc_attinit();
 
     /* NEEDLEIN: set RCSFLAGS bit 3 for the initialisation pass          */
-    c->rcsflags     = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
+    c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
     agc_status_t s2 = csm_dap_needler(); /* NEEDLER                    */
 
     if (st == AGC_STATUS_OK)
@@ -443,7 +441,7 @@ agc_status_t csm_tvc_init_complete(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     t->tvcphase = 0;
-    t->oganow   = agc_erase_cdux(); /* prepare the roll DAP             */
+    t->oganow = agc_erase_cdux(); /* prepare the roll DAP             */
 
     if (csm_dap_engine_on())
     {
@@ -480,9 +478,9 @@ agc_status_t csm_tvc_init_complete(void)
  **********************************************************************/
 agc_status_t csm_tvc_swichovr_body(void)
 {
-    agc_csm_tvc_t          *t    = agc_csm_dap_tvc(); /* TVC erasables  */
-    const agc_csm_dapcom_t *c    = agc_csm_dap_com(); /* EKTLX/I +2     */
-    const agc_dp_words_t    zero = {0, 0};            /* +0, +0         */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC erasables  */
+    const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* EKTLX/I +2     */
+    const agc_dp_words_t zero = {0, 0};            /* +0, +0         */
 
     _Static_assert(NZEROJR + 1 == 2 * NODES * 2, "AGC constant");
 
@@ -492,15 +490,15 @@ agc_status_t csm_tvc_swichovr_body(void)
         t->ytmp[i] = zero;
     }
 
-    t->cntrtmp      = 1;                    /* the zeroing loop's counter ends at 1           */
+    t->cntrtmp = 1;                    /* the zeroing loop's counter ends at 1           */
     agc_flag_set(AGC_FLAG_SWTOVER);
-    t->ktlx_i       = c->ektlx_i[2];        /* low-bandwidth DAP gain   */
+    t->ktlx_i = c->ektlx_i[2];        /* low-bandwidth DAP gain   */
     agc_status_t st = csm_tvc_gains(false); /* S40.15 +7: VARK only     */
 
     t->kprimedt = agc_dp_pack(FKPRIMDT, agc_dp_low(t->kprimedt)); /* steering, pi/8 */
-    t->repfrac  = FREPFRAC;                                       /* TMC loop, 2^2                        */
-    t->pdeloff  = t->delpbar;                                     /* update the trim estimates            */
-    t->ydeloff  = t->delybar;
+    t->repfrac = FREPFRAC;                                       /* TMC loop, 2^2                        */
+    t->pdeloff = t->delpbar;                                     /* update the trim estimates            */
+    t->ydeloff = t->delybar;
     tvc_loadcoef(TVC_COEF_LB);
     t->tvcphase = t->phasetmp;                                    /* restore TVCPHASE                    */
 
@@ -522,8 +520,8 @@ agc_status_t agc_csm_tvc_preswtch(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     agc_inhint();
-    t->phasetmp     = t->tvcphase;             /* save TVCPHASE                         */
-    t->tvcphase     = -2;
+    t->phasetmp = t->tvcphase;             /* save TVCPHASE                         */
+    t->tvcphase = -2;
     agc_status_t st = csm_tvc_swichovr_body(); /* SWICHOVR +5          */
 
     agc_relint(); /* POSTJUMP PINBRNCH                                 */

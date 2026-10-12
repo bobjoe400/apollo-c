@@ -30,26 +30,11 @@ static agc_dp_t yawang;   /* YAWANG   (= BETASB)  N51 R2, revs            */
 
 agc_dp_t agc_sband_pitchang(void)
 {
-    if (!AGC_ASSERT(pitchang >= -AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
     return (pitchang);
 }
 
 agc_dp_t agc_sband_yawang(void)
 {
-    if (!AGC_ASSERT(yawang >= -AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(yawang <= AGC_DP_HALF))
-    {
-        return (0); /* no valid result */
-    }
-
     return (yawang);
 }
 
@@ -57,10 +42,6 @@ agc_dp_t agc_sband_yawang(void)
 static agc_dp_t signed_asin(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 {
     const agc_dp_t m = agc_vec_abval(ip, v);
-    if (!AGC_ASSERT(m >= 0))
-    {
-        return (0); /* no valid result */
-    }
 
 
     return (agc_dp_asin(ip, agc_dp_sign(m, s)));
@@ -88,26 +69,24 @@ agc_status_t agc_sband_lm_angles(agc_interp_t *ip, agc_vec_t r_nb, agc_dp_t *pit
     align_clear_ovf(ip);
     urp = agc_vec_unit(ip, urp, NULL, NULL); /* COVCNV       */
 
-    if (agc_interp_test_ovf(ip))
+    if (!agc_interp_test_ovf(ip)) /* BOV SBANDEX  */
     {
-        return (AGC_STATUS_OK); /* BOV SBANDEX  */
+        const agc_vec_t x = agc_vec_neg(agc_vec_shl(ip, agc_vec_cross(ip, urp, u.row[2]), 1));
+
+        *pitch = signed_asin(ip, x, agc_vec_dot(ip, x, u.row[1]));
+
+        if (agc_vec_dot(ip, urp, u.row[2]) < 0)
+        { /* BPL NOADJUST */
+            *pitch = agc_dp_sub(ip, AGC_DP_HALF, *pitch); /* HIDPHALF - p */
+        }
+
+        const agc_vec_t z  = agc_vec_shl(ip, agc_vec_cross(ip, ur, urp), 1);
+        const agc_vec_t a  = agc_vec_scale(ip, u.row[2], agc_dp_sin(*pitch));
+        const agc_vec_t b  = agc_vec_scale(ip, u.row[0], agc_dp_cos(*pitch));
+        const agc_dp_t  yz = agc_vec_dot(ip, agc_vec_sub(ip, b, a), z); /* YAW.Z */
+
+        *yaw = signed_asin(ip, z, yz);
     }
-
-    const agc_vec_t x = agc_vec_neg(agc_vec_shl(ip, agc_vec_cross(ip, urp, u.row[2]), 1));
-
-    *pitch = signed_asin(ip, x, agc_vec_dot(ip, x, u.row[1]));
-
-    if (agc_vec_dot(ip, urp, u.row[2]) < 0)
-    { /* BPL NOADJUST */
-        *pitch = agc_dp_sub(ip, AGC_DP_HALF, *pitch); /* HIDPHALF - p */
-    }
-
-    const agc_vec_t z  = agc_vec_shl(ip, agc_vec_cross(ip, ur, urp), 1);
-    const agc_vec_t a  = agc_vec_scale(ip, u.row[2], agc_dp_sin(*pitch));
-    const agc_vec_t b  = agc_vec_scale(ip, u.row[0], agc_dp_cos(*pitch));
-    const agc_dp_t  yz = agc_vec_dot(ip, agc_vec_sub(ip, b, a), z); /* YAW.Z */
-
-    *yaw = signed_asin(ip, z, yz);
 
     return (AGC_STATUS_OK);
 }
@@ -134,34 +113,6 @@ static agc_status_t earth_unit(agc_interp_t *ip, const agc_integ_out_t *o, agc_v
     *ue = agc_vec_neg(agc_vec_unit(ip, r, NULL, NULL)); /* CONV5        */
 
     return (AGC_STATUS_OK);
-}
-
-/* SBANDEX: display VN_ANTENNA_ANGLES at PRIO5 while EXTVBACT bit 5 is on. */
-static agc_status_t sbandex(const agc_job_ctx_t *ctx)
-{
-    if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
-    {
-        return (agc_dsky_endmark());
-    }
-
-    agc_exec_prio_change(PRIO5); /* PRIOCHNG       */
-    agc_status_t st = align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES, AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF, AGC_JOB_ENDOFJOB);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    st = agc_dsky_blanket(BLANK_R3);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_exec_prio_change(PRIO4); /* PRIOCHNG: on to SBANDANT +2 */
-
-    return (align_goto(AGC_JOB_SBANDANT_LM_RECYCLE)); /* TC SBANDANT+2 */
 }
 
 /* SBANDANT +2 (p. 486-488): LEMCONIC to now, UE, CDUTRIG, SM, *SMNB*. */
@@ -203,7 +154,30 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
         return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st);
     }
 
-    return (sbandex(ctx));
+    /* SBANDEX: display VN_ANTENNA_ANGLES at PRIO5 while EXTVBACT bit 5 is on. */
+    if ((agc_erase_extvbact() & EXTVB_BIT5) == 0u)
+    {
+        return (agc_dsky_endmark());
+    }
+
+    agc_exec_prio_change(PRIO5); /* PRIOCHNG       */
+    agc_status_t st_sbandex = align_flash(ctx, AGC_DSKY_GOMARKFR, VN_ANTENNA_ANGLES, AGC_JOB_SBAND_B5OFF, AGC_JOB_SBAND_B5OFF, AGC_JOB_ENDOFJOB);
+
+    if (st_sbandex != AGC_STATUS_OK)
+    {
+        return (st_sbandex);
+    }
+
+    st_sbandex = agc_dsky_blanket(BLANK_R3);
+
+    if (!AGC_ASSERT(st_sbandex == AGC_STATUS_OK))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_exec_prio_change(PRIO4); /* PRIOCHNG: on to SBANDANT +2 */
+
+    return (align_goto(AGC_JOB_SBANDANT_LM_RECYCLE)); /* TC SBANDANT+2 */
 }
 
 /* SBANDANT (V64 E): R02BOTH, then SBANDANT +2. */
