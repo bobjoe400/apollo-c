@@ -753,3 +753,11 @@
             (one statement, behaviour unchanged); the three entries rerun.
             INVALID 2 at the two known fallible guards (SPECTEST CCSHOLE,
             start_job with no stored point) reached by tests on purpose.
+2026-10-12  tools/prove/eta.py (progress meter: coverage vs reachable set,
+            position, loop heads, memory) showed the unbounded sim entry
+            swapping at 14.4 GB RSS, 78 % coverage, outer loop not yet
+            re-entered: killed. User, on whether to build EVA harnesses
+            like coverage: stop here, finish the project. EVA rerun
+            stopped; verdicts merged from the 33 completed entries
+            (VALID 100, INVALID 2, UNKNOWN 146, DEAD 644). Launched
+            finish (Opus) to apply them and close the gates.

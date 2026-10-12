@@ -3,13 +3,15 @@
 Updated: 2026-10-12
 
 ## Running agents (max 2)
-- NONE. TREE FROZEN at the EVA start commit (see WORKLOG). EVA (process):
-  `python3 -I tools/prove/eva_run.py --jobs 1 --timeout 2592000`, progress
-  in tools/prove/progress.log, logs tools/prove/runs/. When done: `make
-  prove-classify`, apply VALID deletions (tools/prove/apply.py --match),
-  the 21 post-eva setter guards per review_items.md, triage alarms, fix
-  the check_rules silent-skip rule, gates, commit; then resume `document`
-  from docs/modules/document.md.
+- finish (Opus, ALONE): apply the EVA pass on disk (33 entries: VALID 100,
+  INVALID 2, UNKNOWN 146, DEAD 644): delete VALID guards, convert the 21
+  setter guards, check_rules bare invocation, drop the unbounded sim entry
+  from eva_run, all gates green incl. `make check`. Note: docs/modules/finish.md.
+- After it: document wave resumes ALONE from docs/modules/document.md
+  Progress; then the lead ticks the definition of done in PLAN.md.
+- EVA: FINISHED (user, 2026-10-12: stop here). The unbounded sim entry
+  exhausted memory (14.4 GB at 78 % coverage); sim_harness covers src/sim.
+  No further runs; proof harnesses (coverage-shaped) deliberately not built.
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md
