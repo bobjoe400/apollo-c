@@ -72,7 +72,9 @@ Phases (checkpoint docs/modules/nassp-integration.md Progress after each):
 Order: 1 and 2 first (2 can run while 1 is read); 3-5 only after 1 and 2
 report. If 2 fails for toolchain reasons, report exactly what is missing
 (winget ids) and stop there. GUI: Orbiter must run on the host display;
-quit it after each check. Rules: no subagents; ONE waiter per background
+quit it after each check, and when the host is busy with an Orbiter the user
+started, close it yourself (taskkill.exe /IM Orbiter.exe /F, /IM
+Orbiter_ng.exe /F; user approval 2026-10-12) rather than wait. Rules: no subagents; ONE waiter per background
 process (host processes included: poll with tasklist, not loops of
 launches); scratch under the session scratchpad's nassp-integration/.
 Final report <= 15 lines: phase reached, build results, milestones flown,
