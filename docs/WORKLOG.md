@@ -670,3 +670,9 @@
             NASSP, stretch). Open flight bug B6. Lead: assert.h ->
             assertion.h (guide 3.4), make test now runs the scenarios.
             Launched fix-b6 and review-sim (Opus).
+2026-10-12  User's editor showed "too few arguments" on agc_telem_fresh_start:
+            the C/C++ extension had resolved the header from the stale EVA
+            snapshot build/prove/tree. Snapshot deleted; `make
+            compile_commands` (tools/compile_commands.py) + .vscode config
+            (compileCommands, build/ excluded) added so editors use
+            include/ with the Makefile's flags.

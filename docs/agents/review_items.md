@@ -27,7 +27,7 @@
 
 - DONE agc_imu_hw_set_cducmd widened to the SP range + test; docs/modules/follow-up-done-lanes.md item 2.4.
 
-## EVA bug leads (status-handling-2, make prove 2026-10-11; run artefacts in build/prove/*.csv, build/prove/eva_verdicts.tsv, build/prove/tree (snapshot), tools/prove/{summary.txt,progress.log,runs/*.log}; positions are the snapshot's = the tree of that date)
+## EVA bug leads (status-handling-2, make prove 2026-10-11; run artefacts in build/prove/*.csv, build/prove/eva_verdicts.tsv, (the build/prove/tree snapshot was deleted 2026-10-12: stale, and editors picked its headers up), tools/prove/{summary.txt,progress.log,runs/*.log}; positions are the snapshot's = the tree of that date)
 EVA is the project-end cleanup step; these are leads for the owning reviews, not fixes.
 - DONE exec-sched SPECTEST lead: false alarm in flight (every PRIOCHNG caller is a job body); docs/modules/follow-up-done-lanes.md "EVA lead decisions".
 - DONE exec-sched JOBWAKE(NONE) lead: closed by review-exec-sched R12 (nav-integ INTSTALL side stays with nav-integ); docs/modules/follow-up-done-lanes.md.

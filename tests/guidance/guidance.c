@@ -16,11 +16,18 @@
  *      plus the AUGEKUGL entry range, a positive overshoot of a few degrees
  *      to a few tens of degrees.
  *   4. S40.6 stores OPTIND = -0 (optics reserved for the TVC).
+ *   5. CLOCPLAY two-part displays (B6): the CSM CLOCKJOB with NVWORD1 =
+ *      -BIT9 / -0 and the LM CLOKJOB with DISPDEX = -VB99DEX show V06N40
+ *      (V06Nxx) and paste the flashing V99 / V97 as the second part; the
+ *      job sleeps in ENDIDLE until the crew answers, and PRO on the CSM
+ *      V99 takes V99P (ASTNFLAG set, NVWORD1 back to V06N40).
  *
  * AGC SOURCE:
  *   Luminary099 SERVICER.agc pp. 880-881 (CALCRVG); Comanche055
  *   P40-P47.agc pp. 719-722 (S40.8), p. 730 (S40.6), P30-P37.agc
- *   pp. 643-647 (DELRSPL)
+ *   pp. 643-647 (DELRSPL), pp. 705-706 (CLOCKJOB, ENGREQST, FAILDSP,
+ *   V99P); Luminary099 BURN_BABY_BURN--MASTER_IGNITION_ROUTINE.agc p. 745
+ *   (CLOKJOB); DISPLAY_INTERFACE_ROUTINES.agc CM p. 1477 (1STOR2ND)
  *
  * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
  *   Name          Type       I/O  Scale        Description
@@ -63,6 +70,7 @@
 #include "agc/csm/entry.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
+#include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/rendezvous.h"
@@ -81,9 +89,15 @@ static void      test_cross_product_steering(void);
 static void      delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo, double hi);
 static void      test_splash_error(void);
 static void      test_tvc_optics_reserved(void);
+static void      run_jobs(void);
+static int       sleeping_jobs(void);
+static bool      dsky_shows(int verb, int noun, bool flash);
+static void      test_engine_enable_request_csm(void);
+static void      test_engine_fail_csm(void);
+static void      test_engine_enable_request_lm(void);
 
 /**********************************************************************
- * Run the four tests.
+ * Run the tests.
  * AGC: none (test driver).
  *
  * FUNCTION NAME: main
@@ -98,6 +112,9 @@ int main(void)
     test_cross_product_steering();
     test_splash_error();
     test_tvc_optics_reserved();
+    test_engine_enable_request_csm();
+    test_engine_fail_csm();
+    test_engine_enable_request_lm();
     (void) printf("test_guidance: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -387,4 +404,156 @@ static void test_tvc_optics_reserved(void)
     CHECK(agc_task_gimbal_test_trim() == AGC_STATUS_OK);
     agc_relint();
     CHECK(agc_erase_optind() == AGC_OPTIND_NEG0);
+}
+
+/**********************************************************************
+ * Run ready jobs until the executive is idle (bounded).
+ * AGC: none (test helper).
+ *
+ * FUNCTION NAME: run_jobs
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void run_jobs(void)
+{
+    for (int i = 0; i < 100 && agc_exec_run_one() != AGC_STATUS_NOT_FOUND; i++)
+    {
+        /* the display jobs and what they start */
+    }
+}
+
+/**********************************************************************
+ * Count the core sets of sleeping jobs (JOBSLEEP: ENDIDLE waits).
+ * AGC: none (test helper).
+ *
+ * FUNCTION NAME: sleeping_jobs
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- number of sleeping core sets
+ **********************************************************************/
+static int sleeping_jobs(void)
+{
+    int n = 0; /* sleeping core sets */
+
+    for (int c = 0; c < agc_exec_core_sets(); c++)
+    {
+        agc_exec_core_info_t ci; /* core set c */
+
+        agc_exec_core_info(c, &ci);
+        n += (ci.state == AGC_CORE_SLEEPING) ? 1 : 0; /* count sleepers */
+    }
+
+    return (n);
+}
+
+/**********************************************************************
+ * The DSKY shows verb / noun with the V/N flash on or off.
+ * AGC: none (test helper).
+ *
+ * FUNCTION NAME: dsky_shows
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------------
+ *   verb      int   I    verb digits expected
+ *   noun      int   I    noun digits expected
+ *   flash     bool  I    V/N flash expected
+ *
+ * RETURNS: bool -- true when the DSKY shows exactly that
+ **********************************************************************/
+static bool dsky_shows(int verb, int noun, bool flash)
+{
+    agc_dsky_state_t s; /* DSKY readout */
+
+    CHECK(agc_dsky_get_state(&s) == AGC_STATUS_OK);
+
+    return (s.verb[0] == verb / 10 && s.verb[1] == verb % 10 && s.noun[0] == noun / 10 && s.noun[1] == noun % 10 && s.flash == flash);
+}
+
+/**********************************************************************
+ * Test 5a: ENGREQST (P40-P47.agc p.705): NVWORD1 = -BIT9 makes the
+ * CLOCKJOB flash V99N40 as the paste after V06N40 and sleep in ENDIDLE;
+ * PRO is V99P (p.706): ASTNFLAG set, NVWORD1 = V06N40. With V99 executed
+ * as a verb (B6) the display answered itself with ENTER (V99E).
+ * AGC: ENGREQST, V99P (P40-P47.agc pp. 705-706)
+ *
+ * FUNCTION NAME: test_engine_enable_request_csm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_engine_enable_request_csm(void)
+{
+    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    run_jobs();
+    agc_guid_state()->csm.nvword1 = (agc_sp_t) -0400;                   /* -BIT9: V99 flash */
+    agc_inhint();
+    CHECK(agc_exec_novac(AGC_PRIO27, AGC_JOB_CLOCKJOB) == AGC_STATUS_OK);
+    agc_relint();
+    run_jobs();
+    CHECK(dsky_shows(99, 40, true));
+    CHECK(sleeping_jobs() == 1);
+    CHECK(!agc_flag_test(AGC_FLAG_ASTNFLAG));
+    CHECK(agc_dsky_keys("P") == AGC_STATUS_OK);
+    run_jobs();
+    CHECK(agc_flag_test(AGC_FLAG_ASTNFLAG));
+    CHECK(agc_guid_state()->csm.nvword1 == (agc_sp_t) (6 * 0200 + 40)); /* V06N40 */
+    CHECK(sleeping_jobs() == 0);
+}
+
+/**********************************************************************
+ * Test 5b: FAILDSP (P40-P47.agc p.705): NVWORD1 = -0 (-1 in the C word)
+ * makes the CLOCKJOB flash V97N40 as the paste after V06N40 and sleep.
+ * AGC: FAILDSP (P40-P47.agc p.705)
+ *
+ * FUNCTION NAME: test_engine_fail_csm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_engine_fail_csm(void)
+{
+    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    run_jobs();
+    agc_guid_state()->csm.nvword1 = (agc_sp_t) -1; /* the AGC's -0: V97 flash */
+    agc_inhint();
+    CHECK(agc_exec_novac(AGC_PRIO27, AGC_JOB_CLOCKJOB) == AGC_STATUS_OK);
+    agc_relint();
+    run_jobs();
+    CHECK(dsky_shows(97, 40, true));
+    CHECK(sleeping_jobs() == 1);
+}
+
+/**********************************************************************
+ * Test 5c: CLOKJOB -13 (BURN_BABY_BURN p.745): DISPDEX = -VB99DEX with
+ * the P40 table flashes V99N40, the paste after the countdown V06N40,
+ * and sleeps until the crew answers.
+ * AGC: CLOKJOB -13 (Luminary099 p.745)
+ *
+ * FUNCTION NAME: test_engine_enable_request_lm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_engine_enable_request_lm(void)
+{
+    CHECK(agc_power_on(AGC_VEHICLE_LM) == AGC_STATUS_OK);
+    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    run_jobs();
+    agc_guid_state()->lm.which   = (agc_sp_t) AGC_LM_WHICH_DPS_BURN; /* P40TABLE: noun 40 */
+    agc_guid_state()->lm.dispdex = (agc_sp_t) -013;                  /* -VB99DEX           */
+    agc_inhint();
+    CHECK(agc_exec_novac(AGC_PRIO27, AGC_JOB_CLOCKJOB) == AGC_STATUS_OK);
+    agc_relint();
+    run_jobs();
+    CHECK(dsky_shows(99, 40, true));
+    CHECK(sleeping_jobs() == 1);
 }

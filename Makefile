@@ -23,7 +23,7 @@ UNCRUSTIFY     ?= uncrustify
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph prove prove-classify clean
+.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -148,3 +148,9 @@ clean:
 	rm -rf $(BUILD)
 
 -include $(LIB_OBJS:.o=.d) $(DBG_OBJS:.o=.d) $(SIM_OBJS:.o=.d)
+
+# Editor support: compile_commands.json for clangd / the VS Code C/C++
+# extension, so editors resolve headers from include/ (never from a copy
+# under build/).  Flags mirror the object rules above.
+compile_commands:
+	@python3 -I tools/compile_commands.py "$(CC) $(CSTD) $(WARN) $(CFLAGS) $(CPPFLAGS) -DAGC_HOST_DEBUG" $(LIB_SRCS) $(SIM_SRCS) $(TEST_SRCS)

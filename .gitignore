@@ -7,3 +7,4 @@ __pycache__/
 tools/prove/runs/
 tools/prove/progress.log
 tools/prove/summary.txt
+compile_commands.json

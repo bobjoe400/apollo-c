@@ -20,9 +20,10 @@
 #   identity, IMU CDUs 0) as PINC on PIPAX / PIPAY at 5.85 cm/s per pulse;
 #   the AGC ends the burn (SPSOFF p.698: bit 13 off) and shows V16N85
 #   residuals (VG body, ft/s) near zero.
-# Everything from the V99N40 flash on is "Bugs found" B6: the C CLOCKJOB
-# executes V99 as an extended verb, which answers the flash with ENTER
-# (V99E, SPS bypassed: P40RCS, V16N85 with the full 10 ft/s at TIG).
+# The V99N40 flash and everything after it were "Bugs found" B6 (the C
+# CLOCKJOB executed V99 as an extended verb, which answered the flash
+# with ENTER); fixed by fix-b6: CLOCPLAY of V06N40 with V99 pasted from
+# NVWORD1 as the second part, as in the AGC.
 #
 # Set-up: pad REFSMMAT = identity and a 189.7 km circular equatorial orbit
 # moving along +X (prograde = stable-member X at the epoch), IMU operate +
@@ -76,14 +77,14 @@ expect R2 +00100                 # VG 10.0 ft/s
 until R1 -00 38 within 40000     # TFI counts down to TIG-38 s
 until VERB blank within 1000     # TIGBLNK
 until NOUN 40 within 700         # TIGAVEG: display back at TIG-30
-xuntil B6 VERB 99 within 2600    # TIG-5: engine-on enable request
-xexpect B6 FLASH on
+until VERB 99 within 2600        # TIG-5: engine-on enable request
+expect FLASH on
 pro                              # V99P
-xuntil B6 LAMP ENGINEON on within 700  # TIG-0: IGNITION, SPSON
+until LAMP ENGINEON on within 700 # TIG-0: IGNITION, SPSON
 counter 37 PINC 44               # 10 ft/s at 32.66 deg from X: 44 x, 28 y
 counter 40 PINC 28
 run 100
-until LAMP ENGINEON off within 1000 # SPSOFF (true under B6 too)
-until NOUN 85 within 1500         # V16N85 (also under B6, via V99E)
-xexpect B6 R1 +00000 ~5          # residuals near zero (0.5 ft/s); under
-xexpect B6 R2 +00000 ~5          # B6 R1/R2 keep the 8.4 / 5.4 ft/s
+until LAMP ENGINEON off within 1000 # SPSOFF
+until NOUN 85 within 1500         # V16N85 residuals
+expect R1 +00000 ~5          # residuals near zero (0.5 ft/s)
+expect R2 +00000 ~5

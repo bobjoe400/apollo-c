@@ -175,9 +175,10 @@ agc_status_t agc_task_cloktask_lm(void)
 }
 
 /**********************************************************************
- * -13 (p.745): V99Nxx "PLEASE ENABLE ENGINE", flashing (V99 pasted by
- * NVWORD1 = -BIT9; here the paste is the verb of the CLOCPLAY VN, as in
- * the CSM clock). Also V99RECYC, the P63 *ENTER.
+ * -13 (p.745): V99Nxx "PLEASE ENABLE ENGINE", flashing: CLOCPLAY of the
+ * countdown V06Nxx (INDEX WHICH / CA 0); the display interface pastes the
+ * flashing V99 as the second part from NVWORD1 = -BIT9 (1STOR2ND, p.1477
+ * CM). Also V99RECYC, the P63 *ENTER.
  *
  * FUNCTION NAME: engine_enable_display
  *
@@ -197,7 +198,7 @@ static agc_status_t engine_enable_display(const agc_job_ctx_t *ctx)
 
     agc_dsky_set_nvword1((uint16_t) (077777U & ~0400U)); /* CS BIT9    */
 
-    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(99, ign_table()->noun), &c99));
+    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(6, ign_table()->noun), &c99));
 }
 
 /**********************************************************************
@@ -227,7 +228,8 @@ agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
     switch (-dispdex)
     {
         case IGN_VB97DEX:
-            /* -35 (p.745): V97Nxx engine fail (NVWORD1 = -0 pastes V97).
+            /* -35 (p.745): V97Nxx engine fail: CLOCPLAY of V06Nxx, NVWORD1 = -0
+             * pastes the flashing V97 as the second part.
              * DEVIATION: the AGC shows NVWORD +2 (the last V06 noun); the table's
              * countdown noun is the same noun in every case that reaches COMFAIL.     */
         {
@@ -235,7 +237,7 @@ agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
 
             agc_dsky_set_nvword1((uint16_t) 077777U); /* CS ZERO                */
 
-            return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(97, ign_table()->noun), &c97));
+            return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(6, ign_table()->noun), &c97));
         }
         case IGN_ASTNDEX:
             /* -25 (p.745): V06N61 by ASTNCLOK, used by the crew in P63 to set the

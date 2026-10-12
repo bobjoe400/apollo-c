@@ -42,6 +42,9 @@
  * NOTES:
  *   NVWORD1 (agc_guid_t csm.nvword1) holds the display the CLOCKJOB
  *   shows: a VN code, the V99 request or the V97 flash.
+ *   DEVIATION: the display interface keeps its own copy of NVWORD1 (the
+ *   15-bit word 1STOR2ND reads); CKNVWRD1 writes it (-BIT9 / -0) just
+ *   before each CLOCPLAY, as the LM CLOKJOB does at CS BIT9 / CS ZERO.
  *
  * ALGORITHM:
  *   As in the listing.
@@ -118,8 +121,10 @@ agc_status_t agc_task_cloktask_csm(void)
 
 /**********************************************************************
  * CKNVWRD1 (p.705-706): +VN: show NVWORD1 (REGODSP); V99 flash: engine on
- * enable request; V97 flash: engine failed. The flashing paste is passed
- * as the verb of the CLOCPLAY VN (the AGC pastes it from NVWORD1).
+ * enable request (ENGREQST); V97 flash: engine failed (FAILDSP). Both are
+ * CAF V06N40 / CLOCPLAY: the first part is V06N40 and the display
+ * interface pastes the flashing V99 / V97 as the second part from NVWORD1
+ * (-BIT9 / -0; 1STOR2ND, DISPLAY_INTERFACE_ROUTINES p.1477).
  *
  * FUNCTION NAME: cknvwrd1
  *
@@ -153,14 +158,18 @@ static agc_status_t cknvwrd1(agc_job_ctx_t *ctx)
                                AGC_JOB_ENGINE_FAIL_PROCEED,
                                AGC_JOB_ENGINE_FAIL_REIGNITE};
 
-        return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(97, 40), &c97));
+        agc_dsky_set_nvword1((uint16_t) 077777U); /* NVWORD1 = -0: pastes V97 */
+
+        return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(6, 40), &c97));
     }
 
     agc_dsky_cont_t c99 = {AGC_JOB_ENGINE_ENABLE_TERMINATE,
                            AGC_JOB_ENGINE_ENABLE_PROCEED,
                            AGC_JOB_ENGINE_ENABLE_BYPASS}; /* ENGREQST */
 
-    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(99, 40), &c99));
+    agc_dsky_set_nvword1((uint16_t) (077777U & ~0400U)); /* NVWORD1 = -BIT9: pastes V99 */
+
+    return (agc_dsky_display(ctx, AGC_DSKY_CLOCPLAY, agc_dsky_vn(6, 40), &c99));
 }
 
 /**********************************************************************

@@ -1,0 +1,4 @@
+{
+    "files.exclude": { "build/**": true },
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json"
+}
