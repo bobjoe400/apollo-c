@@ -769,3 +769,10 @@
             and embeds yaAGC's engine; route is WSL interop to the host
             (10b study first, 10c build/run if feasible). PLAN item 10
             rewritten; assignments written.
+2026-10-12  Host (Windows, via WSL interop/mnt): user installed Orbiter 2016 at
+            C:\Orbiter2016; lead downloaded NASSP V8.0 Beta Orbiter2016-2651
+            (287 MB, GitHub release) to C:\Users\cnama\Downloads\nassp and
+            unpacked it over C:\Orbiter2016 (1,601 files: Modules/
+            ProjectApollo, Scenarios/Project Apollo - NASSP, Doc). Missing:
+            the D3D9 graphics client (forum download, manual). NASSP's
+            default branch is Orbiter2016 (so 2016, not 2024).
