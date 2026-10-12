@@ -527,3 +527,14 @@
 2026-10-11  Cutoff killed status-handling-2 mid-pass (classifier done: 1,309 of
             2,285 guards GUARANTEED; deletion partly applied, hard count
             2,317 -> 1,015; make lib OK). Relaunched with resume.
+2026-10-11  status-handling-2 ran its end-of-pass EVA (34 entries OK, sim
+            TIMEOUT at 60 min: the unbounded clock loop with unknown argv
+            has no cheap fixpoint). User: EVA is cleanup, not a
+            working-code step -- it belongs after all reviews and the
+            GUI-verified sim. Re-sequenced: no further EVA runs until the
+            tree is frozen; the run's alarms (two INVALID verdicts, the
+            uninitialised-struct reads in programs/targeting, two signed
+            overflows) are recorded as bug leads per lane in
+            review_items.md. Lead also stopped three duplicate waiters the
+            agent had stacked on the one EVA process (rule for agents:
+            one waiter per event).

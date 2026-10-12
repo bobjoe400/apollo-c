@@ -3,21 +3,26 @@
 Updated: 2026-10-11
 
 ## Running agents (max 2)
-- status-handling-2 (Opus, runs ALONE): guards by dataflow/EVA, fallible ->
-  status returns, one-liner inlining, label-rule collapse, dead returns, then
-  ONE EVA run on the finished tree (`make prove`, deferred verdicts in the
-  five unreviewed lanes). Note: docs/modules/status-handling-2.md.
+- status-handling-2 (Opus, runs ALONE): finishing. Steps 1-8 done (guards,
+  status returns, one-liners, label-rule collapse, returns; tree green,
+  check_rules 0 hard). The EVA run it made (34 entries OK, sim TIMEOUT) is
+  kept on disk; its alarms go to docs/agents/review_items.md as bug leads.
+  Note: docs/modules/status-handling-2.md.
 
 ## Queue after it (two at a time; sim first)
 1. sim (docs/agents/sim.md): agc_sim as drop-in for yaAGC under the
    VirtualAGC GUI; no device models; headless scenarios via tools/sim_client.py.
 2. review-exec-sched, review-prog-align, review-sys-misc,
    review-guid-powered, review-nav-integ (resume) -- items in
-   docs/agents/review_items.md; each ends with `make prove-classify`.
+   docs/agents/review_items.md (now including the EVA bug leads).
 3. follow-up-done-lanes (DMP audit + word-pair API adoption for the eight
    early-reviewed lanes).
 4. Lead: rename include/agc/core/assert.h -> agc_assert.h (237 includes;
    commands in docs/modules/review-state-flags.md).
+5. ONE EVA run at the very end (after reviews and the GUI-verified sim):
+   cleanup of provably-dead guards, not a working-code step (user,
+   2026-10-11). No EVA runs before that. The sim entry runs unbounded,
+   alone, with no timeout (it converges; memory is the limit).
 5. document (docs/agents/document.md), last.
 Stretch: NASSP integration (docs/PLAN.md item 10). No own world model.
 

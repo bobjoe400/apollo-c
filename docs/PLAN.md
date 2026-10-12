@@ -188,7 +188,12 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
 17. follow-up-done-lanes (nav-aux, io-dsky, state-flags, guid-entry, imu,
     guid-landing, prog-rendz, dap-lm: DMP/DMPR audit where missed, and
     word-level API adoption per review_items.md)
-Then: lead assert.h rename; document wave (1 agent).
+Then: lead assert.h rename; ONE Frama-C EVA run (`make prove`, `make
+    prove-classify`) on the frozen tree -- cleanup, not a working-code step
+    (user, 2026-10-11). The sim entry is the real unbounded agc_sim main,
+    run ALONE with NO timeout (EVA converges by widening; memory, not time,
+    is the only limit: ~7 GB at 60 min on a 15 GB host). Apply proven guard
+    deletions everywhere, triage any alarms; then the document wave.
 
 ## Stretch (not yet in the definition of done; user to decide)
 
