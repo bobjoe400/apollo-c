@@ -16,7 +16,9 @@
  *   --headless  no sockets: run --max-cs centiseconds (default 1000) and
  *               print a summary (the integration-wave driver).
  *   --script F  timed input packets (script.c), in any mode.
- *   --pad F     erasables set before GOJAM (pad.c): REFSMMAT, flagwords.
+ *   --pad F     erasables set before GOJAM (pad.c): REFSMMAT, flagwords,
+ *               state vectors. --resume F does the same when F is a pad
+ *               file (the launcher's "custom core file" start-up).
  *   --core F    (also --exec, --rope, or the first bare word) the rope
  *               image: its name picks the vehicle (Comanche055 -> CSM,
  *               Luminary099 -> LM; others refused) and it becomes the
@@ -29,9 +31,11 @@
  *                --cfg=CM.ini [--resume=CM.core] [--debug ...]
  * from its Resources directory): options take one or two dashes, --cfg
  * names the vehicle when no rope does (CMSIM / LMSIM), --cd changes
- * directory, --quiet drops the banner; --resume, --debug, --symtab,
+ * directory, --quiet drops the banner; --resume=F loads F as a pad file
+ * (pad.c) when it is one, else logs it (a yaAGC core dump cannot be
+ * mapped onto the typed C erasable: fresh start); --debug, --symtab,
  * --directory and the other debugger / alarm / core-dump switches are
- * logged and ignored (always a fresh start, no debugger).
+ * logged and ignored (no debugger).
  *
  * Power-on: agc_power_on (host: vehicle, state, lane erasables, exec),
  * then DOFSTART, the machine fresh start (FRESH_START_AND_RESTART C
@@ -76,6 +80,7 @@ typedef struct sim_opts
     unsigned long max_cs;      /* 0: unbounded (server modes)          */
     const char   *script;
     const char   *pad;         /* --pad: erasable pad load            */
+    const char   *resume;      /* --resume: pad file, or a yaAGC core  */
     const char   *core;        /* --core / --exec / --rope / positional */
     const char   *cfg;         /* --cfg: yaDSKY2 ini (CMSIM / LMSIM)  */
     const char   *cd;          /* --cd: working directory             */
@@ -83,8 +88,8 @@ typedef struct sim_opts
 } sim_opts_t;
 
 /* yaAGC options that mean nothing here (no debugger, no core dumps, no
- * hardware alarms, no erasable resume): accepted, logged, ignored.     */
-static const char *const k_ignored[] = {"-resume", "-debug", "-nodebug", "-directory", "-symtab", "-symbols", "-fullname", "-interlace", "-dump-time", "-cdu-log", "-debug-dsky", "-debug-deda", "-deda-quiet", "-inhibit-alarms", "-show-alarms", "-initialize-sunburst-37", "-no-resume", "-command", "-interpreter", "-nx", "-args", "-version"};
+ * hardware alarms): accepted, logged, ignored.                         */
+static const char *const k_ignored[] = {"-debug", "-nodebug", "-directory", "-symtab", "-symbols", "-fullname", "-interlace", "-dump-time", "-cdu-log", "-debug-dsky", "-debug-deda", "-deda-quiet", "-inhibit-alarms", "-show-alarms", "-initialize-sunburst-37", "-no-resume", "-command", "-interpreter", "-nx", "-args", "-version"};
 
 /* The value of option `name` given as `-name=V` or `-name V` (then
  * *used = 1); NULL when `arg` is not that option. yaAGC accepts one or
@@ -186,6 +191,10 @@ static bool value_option(sim_opts_t *o, const char *arg, const char *next, int *
     {
         o->pad = v;
     }
+    else if ((v = opt_value(arg, "-resume", next, used)) != NULL)
+    {
+        o->resume = v;
+    }
     else if ((v = opt_value(arg, "-core", next, used)) != NULL || (v = opt_value(arg, "-exec", next, used)) != NULL || (v = opt_value(arg, "-rope", next, used)) != NULL)
     {
         o->core = v;
@@ -208,7 +217,7 @@ static bool value_option(sim_opts_t *o, const char *arg, const char *next, int *
 
 /* One argument (and maybe the next); false when it is not understood.
  * Bare words: csm / lm (vehicle), a number (--max-cs), else yaAGC's
- * positional exec-ropes-file, then core-resume-file (ignored).        */
+ * positional exec-ropes-file, then core-resume-file (--resume).       */
 static bool parse_one(sim_opts_t *o, const char *arg, const char *next, int *used)
 {
     const char *a  = (strncmp(arg, "--", 2) == 0) ? &arg[1] : arg; /* -- -> - as yaAGC */
@@ -231,7 +240,7 @@ static bool parse_one(sim_opts_t *o, const char *arg, const char *next, int *use
         }
         else
         {
-            (void) fprintf(stderr, "agc_sim: resume file %s ignored (fresh start)\n", a); /* diagnostic */
+            o->resume = a; /* yaAGC's positional core-resume-file */
         }
     }
     else
@@ -500,6 +509,24 @@ static agc_status_t load_rope(const sim_opts_t *o, const char *argv0)
     return (st);
 }
 
+/* --resume: a pad file is loaded like --pad; anything else (a yaAGC
+ * core dump) is logged and the run is a fresh start.                   */
+static agc_status_t load_resume(const char *path)
+{
+    agc_status_t st = AGC_STATUS_OK;
+
+    if (sim_pad_is_pad(path))
+    {
+        st = sim_pad_load(path);
+    }
+    else
+    {
+        (void) fprintf(stderr, "agc_sim: resume file %s is not a pad file: fresh start\n", path); /* diagnostic */
+    }
+
+    return (st);
+}
+
 static agc_status_t start(const sim_opts_t *o, const char *argv0)
 {
     agc_status_t st = agc_power_on(o->vehicle); /* state, lanes, exec   */
@@ -509,6 +536,11 @@ static agc_status_t start(const sim_opts_t *o, const char *argv0)
     if (st == AGC_STATUS_OK && o->pad != NULL)
     {
         st = sim_pad_load(o->pad); /* before GOJAM, like a core image */
+    }
+
+    if (st == AGC_STATUS_OK && o->resume != NULL)
+    {
+        st = load_resume(o->resume);
     }
 
     st = (st == AGC_STATUS_OK) ? sim_clock_init() : st;

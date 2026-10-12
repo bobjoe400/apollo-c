@@ -22,6 +22,7 @@ the same protocol.
 | TCP server ports 19697..19706, one client each, connect update | yaAGC ChannelRoutineGeneric | socket.c |
 | lockstep: in 0150 = run N cs, out 0151 = ack (sim-only fictitious channels) | -- | socket.c, main.c |
 | --script timed inputs (same semantics as packets), --headless | -- | script.c, main.c |
+| yaAGC command line (--core rope -> vehicle, --port, --cfg, --resume = pad file or logged) | VirtualAGC.cpp FormCommands | main.c, pad.c |
 
 ## Progress
 - DONE design (this note)
@@ -40,7 +41,12 @@ the same protocol.
 - DONE scenario e: sim/scenarios/external_delta_v_burn_csm.txt (P30 + P40). P30: N33/N81 loads, N42 HAPO 109.6 / HPER 101.0 nmi / DELVSIN 10.0 ft/s (the old DELVSIN 0 is gone), V16N45 live (B4 fixed), V37. P40: R60 V50N18 (ENTER: attitude accepted), V50N25 00204 (ENTER: no gimbal test), V06N40 countdown, TIGBLNK blank at TIG-35 and back at TIG-30. From TIG-5: flight bug B6 (V99 answered as ENTER at once: SPS bypassed); the V99 flash, ENGINE ON and N85-near-zero lines are xexpect B6; the PIPA feed (44 x / 28 y PINC after ENGINE ON, no physics) is in place for when B6 is fixed. 35 checks, 0 failed, 5 xfail.
 - DONE scenario f (LM P63) decision: SKIPPED. A scripted counter feed cannot make it meaningful: P63 is a closed loop (throttle commands -> DPS thrust -> PIPA counts; trajectory -> landing-radar returns via RADARUPT); an open-loop feed diverges from guidance within seconds, so "throttle plausible / no 1201-1202" would test the feed, not the AGC. Needs a vehicle model, which is out of scope (no device models): NASSP / LM_Simulator (PLAN item 10 stretch).
 - DONE step 4 (yaAGC drop-in): the launcher (VirtualAGC.cpp FormCommands/FormScript) writes Resources/simulate and runs `../bin/yaAGC --core="source/<rope>/<rope>.bin" --port=<19697|19797> --cfg=<CM|LM>.ini [--resume=CM.core] [--debug --directory=...]` from the Resources directory, then yaDSKY2 0.2 s later, then SimStop (kills all when one exits). agc_sim accepts that line (see main.c), loads the rope from --core, logs --resume. Initial state on connect = yaAGC UpdateAgcPeripheralConnect (relay rows + every non-zero channel 011-0177: 030 = 037777, 031-033 = 077777, 0163 RESTART). RESTART lamp: power-on GOJAM, reset by RSET / ch11 bit 10; STBY lamp + EL-off in standby. Verified: from a scratch install tree (sim/vagc_tree: bin/yaAGC -> build/agc_sim) the exact command line + sim_client --connect --realtime fresh_start_csm passes.
-- TODO step 5 GUI: VirtualAGC launcher (built in scratch, sim/build/vagc) -> agc_sim + yaDSKY2 + yaTelemetry, both vehicles; sequences fresh start, V35, V16N36, CSM P52, P40; screenshots docs/modules/sim/; close windows. Then Lessons, MODULE_STATUS row.
+- DONE step 5 prep (2026-10-12): `--resume=F` loads F as a pad file when it is one (pad.c sim_pad_is_pad), else logs "fresh start": the launcher's "custom core file" start-up option carries the P52/P40 pads (REFSMMAT, state vector) into the GUI run. B5 now XPASS (fixed by a review lane): show_banksum_* flipped to expect.
+- DONE GUI CSM DSKY sequence (2026-10-12): stock VirtualAGC launcher (scratch build sim/build/vagc with the stock -DYADSKY2 -DYADEDA2, install tree sim/vagc_tree, bin/yaAGC -> build/agc_sim), Apollo 11 Command Module, DSKY + Telemetry Downlink Monitor, Run!: the launcher's simulate script started agc_sim, yaDSKY2 and yaTelemetry (port 19700). Clicked on yaDSKY2: power-on RESTART lamp; RSET + V37E00E -> PROG 00; V05N09E + V36E -> all blank; V35 -> all 88 / lamps; V16N36 -> clock 47.57 s; yaTelemetry Coast and Align list live. docs/modules/sim/gui_csm_dsky_sequence.png, gui_csm_telemetry.png, gui_launcher_csm.png, gui_csm_simstatus.png. Windows closed.
+- DONE GUI LM DSKY sequence (2026-10-12): same launcher, Apollo 11 Lunar Module (agc_sim --core Luminary099 --port 19797, yaDSKY2 LM.ini, yaTelemetry 19800): power-on RESTART, P00, V36 blank, V35 (ALT/VEL lamps too), V16N36 clock 40.00 s; yaTelemetry LM Coast and Align. gui_lm_dsky_sequence.png, gui_lm_telemetry.png. Windows closed.
+- DONE GUI CSM P52 (2026-10-12): launcher with AGC Startup "Custom" core file = the scenario's pad (--resume=imu_realign_csm.pad: yaTelemetry shows RN 6563000, VN+2 77.933, REFSMMAT diagonal 1); keys, IMU-operate discrete, sextant CDU drives and the two marks from tools/sim_client.py --connect localhost:19701 --realtime (a second peripheral, like the LEB DSKY) running sim/scenarios/imu_realign_csm.txt with three screenshot holds: 40 checks, 0 failed, in real time. yaDSKY2: V22N06 option 3, V01N70 star 10, V06N05 +00000, V06N93 -0.008/-0.005/+0.005 deg, V50N25 00014. gui_csm_p52.png, gui_csm_p52_telemetry.png. Windows closed.
+- DONE GUI CSM P30 + P40 (2026-10-12): same set-up with the scenario-e pad as the Custom core file; sim_client --connect runs sim/scenarios/external_delta_v_burn_csm.txt (+ four 4 s screenshot holds): 35 checks, 0 failed, 5 xfail (B6), the same as headless. yaDSKY2: V06N42 HAPO 109.6 / HPER 101.0 / DELVSIN 10.0, V16N45 (TFI counting, MGA), V50N18 burn attitude, V06N40 countdown, TIGBLNK at TIG-35, and at TIG-5 B6 in the GUI too: no V99 flash, V16N85 with the full 8.4 / 5.4 / 0.7 ft/s. gui_csm_p30_p40.png. Windows closed.
+- DONE step 5: every GUI sequence (fresh start, V35, V16N36 both vehicles; CSM P52; CSM P30/P40) also runs headless under `make scenarios` (fresh_start_*, lights_test_*, clock_*, imu_realign_csm, external_delta_v_burn_csm): 13/13 pass, 5 xfail (B6). LM P63 not run (f decision: skipped). The paced GUI copies of the scenarios (holds only) and the launcher/click helpers live in the scratchpad sim/gui/, not in the repo.
 - DONE re-run 2026-10-11 on the status-handling-2 tree (a02850c/826f7e5): `make` and `make sim` up to date, `make scenarios` green: all 7 (fresh_start, lights_test, clock x csm/lm; p52_realign_csm) pass, 0 failed, 0 xfail, 0 xpass, 0 errors/restarts. agc_sim_debug on fresh_start csm/lm and LM headless 2000 cs: no assertion reports.
 - STOPPED here (coordinator, 2026-10-11: sim lane moved to the end of the project, after all reviews). No file edited in this resume; tree as found. Next on resume: (1) B4 fix in src/exec/waitlist.c wait2() (plan below, not started), (2) scenario e file, (3) f decision, (4) yaAGC-launcher drop-in (END GOAL), (5) GUI checks.
 - DONE acceptance pass step 1 (2026-10-12, tree at c9fdc11 + follow-up edits): `make`, `make sim`, `make scenarios` green: 8/8 (incl. sys-misc's p07_systems_test_lm), 0 failed, 0 xfail.
@@ -50,6 +56,40 @@ the same protocol.
 - DONE renamed scenarios to NAMING.md stems: p52_realign_csm -> imu_realign_csm, p07_systems_test_lm -> systems_test_lm.
 - DONE yaAGC command line in main.c (step 4, part 1): one or two dashes, --core/--exec/positional rope -> vehicle (Comanche055 CSM, Luminary099 LM, others refused), --cfg CMSIM/LMSIM, --port, --cd, --quiet; --resume/--debug/--symtab/--directory/... logged and ignored.
 - State (older): src/sim compiles with -Werror (all files, incl. pad.c with its prototype in internal.h). `make` currently fails in flight code edited by review agents (src/guidance/burn_steering.c:295 earlier, src/csm/prelaunch_align.c now), not in src/sim. No file mid-edit.
+
+## How to run it
+`ln -sf $PWD/build/agc_sim ~/VirtualAGC/bin/yaAGC && ~/VirtualAGC/bin/VirtualAGC`
+(stock Virtual AGC install; pick Apollo 11 Command Module or Lunar Module,
+DSKY + Telemetry Downlink Monitor, Run!). For a P52 / P40 start, put a pad
+file (pad.c format) in the launcher's AGC Startup "Custom" core-file box:
+it arrives as `--resume=FILE`. A scripted second peripheral (keys,
+discretes, CDU / PIPA counts) can join on any free port of the ten:
+`tools/sim_client.py --connect localhost:19701 --realtime --scenario F`.
+
+## Lessons
+- The launcher has no "AGC binary" setting: it always writes
+  `../bin/yaAGC ...` into Resources/simulate, so the drop-in is a link at
+  bin/yaAGC. Everything else (rope path -> vehicle, --port, --cfg, the
+  --resume core file) comes from that one command line.
+- Build the launcher the way the top-level virtualagc Makefile does
+  (`-DYADSKY2 -DYADEDA2`, from YADSKY_SUFFIX=2); without it the launcher
+  runs the retired GTK `yaDSKY`, which a modern install does not have.
+  Do not add AUTO_MISSION_ENABLE on a partial install: the dropdown then
+  asserts on an invalid index.
+- The launcher's mission choice lives in Resources/VirtualAGC.cfg as 50
+  anonymous `missionRadioButtons[...]` lines in table order (Apollo 11 CM
+  = 16, LM = 21); writing that file is a reliable way to preselect a run.
+- XTest clicks on wx/GTK buttons need a pointer motion into the button
+  (enter-notify) some 0.2 s before the press; a bare press on a freshly
+  mapped window is dropped.
+- yaAGC's core file cannot map onto the typed C erasable, but its
+  command-line slot can carry our pad file; that keeps the GUI start-up
+  path (Custom core file) identical to yaAGC's.
+- Real-time scenario runs compress: `until` returns as soon as a display
+  appears, so a 2 s screenshot loop misses most of a P52; add holds (run N)
+  where the AGC waits for the crew anyway (flashing V06/V50 displays).
+- `pkill -f PATTERN` from a shell whose own command line contains the
+  pattern kills that shell; stop the peripherals with `pkill -x NAME`.
 
 ## Bugs found (flight code; not fixed here -- the collapse lane owns src/)
 Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
@@ -85,14 +125,14 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
   queues MONREQ (1 cs) in the same cs; CLOKTASK re-queues itself every
   second ahead of MONREQ, so MONREQ never runs and V16N45 stays blank
   (yaAGC: marks +00 00, TFI counting, MGA). Scenario e xexpects it.
-- B5 src/io/verbs/extended_verbs.c:541-546 banksum_display(): SHOW-BANKSUM
+- B5 FIXED (2026-10-12, a review lane; V91 R1-R3 show SKEEP1-3, scenarios show_banksum_* flipped to expect). Original entry: src/io/verbs/extended_verbs.c:541-546 banksum_display(): SHOW-BANKSUM
   (V91) flashes V05N01 without the noun address. SDISPLAY/NOKILL
   (EXTENDED_VERBS.agc C p.263 / L p.290) puts ADRS1 = ECADR SKEEP1 in
   MPAC+2 before GOXDSPF, so N01 shows SKEEP1-3 (sum, bank, bugger word);
   the C call passes no address (agc_dsky_nvsub_mctbs exists for this) and
   SKEEP1-3 are not readable through the ECADR image (src/core/ecadr.c), so
   R1-R3 show 00000 for every bank. Scenarios show_banksum_* xexpect B5.
-- B6 src/csm/burns/sps/clock.c:156,163 cknvwrd1(): the CLOCKJOB shows the
+- B6 STILL STANDS (2026-10-12: now clock.c:156,163, unchanged). src/csm/burns/sps/clock.c:156,163 cknvwrd1(): the CLOCKJOB shows the
   engine-on enable / engine-fail flashes as CLOCPLAY of V99N40 / V97N40.
   The AGC (ENGREQST / FAILDSP, P40-P47.agc C p.705) does CAF V06N40,
   CLOCPLAY: the first part is V06N40 and the flashing V99/V97 is pasted

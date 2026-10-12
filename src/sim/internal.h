@@ -99,6 +99,7 @@ void         sim_clock_stats(sim_stats_t *out);
 
 /* ---- erasable pad load at power-on (pad.c) ---------------------------- */
 agc_status_t sim_pad_load(const char *path);
+bool         sim_pad_is_pad(const char *path);
 
 /* ---- rope image as fixed memory (rope.c) ------------------------------ */
 agc_status_t sim_rope_vehicle(const char *path, agc_vehicle_t *vehicle);

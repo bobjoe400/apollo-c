@@ -18,6 +18,10 @@
  *         TDELTAV = TNUV = TC = XKEP = 0 (a freshly rectified state).
  *
  * Unknown keywords and malformed lines are reported and fail start-up.
+ *
+ * The same file is accepted as yaAGC's --resume core file (the launcher's
+ * "custom core file" start-up option): sim_pad_is_pad() tells a pad file
+ * from a yaAGC core dump, which the typed C erasable cannot take.
  */
 #include <stdio.h>
 #include <string.h>
@@ -159,6 +163,42 @@ static bool pad_line(char *buf)
     }
 
     return (false);
+}
+
+/* True when the first item of the file at `path` is a pad keyword (a
+ * yaAGC core dump starts with octal numbers instead).                  */
+bool sim_pad_is_pad(const char *path)
+{
+    char  buf[PAD_LINE];
+    char  key[32];
+    bool  pad  = false;
+    bool  seen = false;
+    FILE *f    = fopen(path, "r");
+
+    if (f == NULL)
+    {
+        return (false);
+    }
+
+    for (int i = 1; i <= PAD_LINES_MAX && !seen && fgets(buf, (int) sizeof (buf), f) != NULL; i++)
+    {
+        char *hash = strchr(buf, '#');
+
+        if (hash != NULL)
+        {
+            *hash = '\0';
+        }
+
+        if (sscanf(buf, "%31s", key) == 1)
+        {
+            seen = true;
+            pad  = strcmp(key, "refsmmat") == 0 || strcmp(key, "flagword") == 0 || strcmp(key, "sv") == 0;
+        }
+    }
+
+    (void) fclose(f); /* read-only file: nothing to lose */
+
+    return (pad);
 }
 
 agc_status_t sim_pad_load(const char *path)

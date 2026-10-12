@@ -9,7 +9,7 @@
 # * V33 (NXTBNK) sums the next bank; V34 ends (SKEEP1 = SELFADRS, ENDEXT).
 # The harness loads tools/oracle/ropes/Luminary099.bin as fixed memory
 # (src/sim/rope.c); the bugger words are the rope's own.
-# The display is "Bugs found" B5 (no noun address: R1-R3 show 00000).
+# The display was "Bugs found" B5 (fixed: R1-R3 now show SKEEP1-3).
 vehicle lm
 run 300
 keys R V37E00E
@@ -20,13 +20,13 @@ run 100
 expect NOUN 01
 expect FLASH on
 expect R2 00000
-xexpect B5 R1 77777
-xexpect B5 R3 77716
+expect R1 77777
+expect R3 77716
 keys V33E                       # next bank
 run 200
-xexpect B5 R1 00001
-xexpect B5 R2 00001
-xexpect B5 R3 55151
+expect R1 00001
+expect R2 00001
+expect R3 55151
 keys V34E                       # terminate
 run 200
 expect FLASH off

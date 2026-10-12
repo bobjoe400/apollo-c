@@ -37,3 +37,20 @@ Per-module working notes: `docs/modules/<module>.md`.
     make check      # check_rules.py (Power of Ten), format-check, style
     make format     # tools/format.sh: fix_comments.py + uncrustify over src include tests (docs/STYLE.md)
     make style      # tools/check_style.py report (NASA SEL-94-003 rules)
+
+## Run it
+
+    make sim && make scenarios      # build/agc_sim; headless scenarios (sim/scenarios, tools/sim_client.py)
+
+`build/agc_sim` is a drop-in for Virtual AGC's `yaAGC`: same command line,
+same peripheral sockets. The stock VirtualAGC launcher always starts
+`../bin/yaAGC`, so point that name at our binary and run the launcher
+(Apollo 11 Command Module or Lunar Module, DSKY, Telemetry, Run!):
+
+    ln -sf $PWD/build/agc_sim ~/VirtualAGC/bin/yaAGC && ~/VirtualAGC/bin/VirtualAGC
+
+Without the launcher, from a Virtual AGC `Resources` directory:
+`$REPO/build/agc_sim --core=source/Comanche055/Comanche055.bin --port=19697 &
+../bin/yaDSKY2 --cfg=CM.ini --port=19697` (LM: Luminary099, 19797, LM.ini).
+Details, the pad files the launcher's "Custom" core-file option accepts,
+and screenshots: `docs/modules/sim.md`.
