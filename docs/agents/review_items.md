@@ -62,3 +62,8 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - imu: src/imu/maneuver.c:874 leftover assertion guard with no return; branch can never run: delete or make fallible.
 - document lane: 82 function headers still say "BAD_ARG for a NULL ctx" on functions without ctx; inline_one.py pasted 77 helper header blocks into caller bodies: rewrite as section comments.
 - tools/prove/manual.tsv: the "why" column is one boilerplate text per directory; it records the decision, not the evidence (lesson for the end-of-project EVA pass: per-row evidence or none).
+
+## From review-exec-sched (2026-10-11; note docs/modules/review-exec-sched.md)
+- follow-up-done-lanes (guid-entry): preset PHSPRDT5 with agc_phase_set_priority(5, PRIO16) in reentry.c where the AGC does `TS PHSPRDT5`.
+- follow-up-done-lanes (prog-rendz): add the PHSPRDT2 presets (R22LEM3 PRIO26, P23 PRIO13, CSM R22 PRIO26) via agc_phase_set_priority.
+- nav-integ + prog-rendz: plain type-C PHASCHNG calls (GRP2PC 04022 family) made from a running job now store the current job segment as the restart point and a group-2 restart reruns that segment from its top (DEVIATION in exec): check each such segment in your files is safe to rerun.

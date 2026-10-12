@@ -571,3 +571,11 @@
             routed in review_items.md.
 2026-10-11  Launched review-prog-align (resume, Opus) in verify-collapse's
             slot, alongside review-exec-sched.
+2026-10-11  review-exec-sched done and committed (155178d): WAIT2 both
+            branches (B4), LM restart calls the DAP restart (R12), RDOT
+            noun, JOBWAKE(NONE) NOT_FOUND, GRP2PC restart points
+            (DEVIATION: segment rerun from top), BAD_ARG filters repaired
+            (ENEMA/GOPOODOO under INHINT, GOPROG3 BAILOUT), REFAZE10
+            renamed, style 1917 -> 0. Requests routed in review_items.md.
+            Launched review-sys-misc (resume, Opus) alongside
+            review-prog-align.

@@ -3,16 +3,15 @@
 Updated: 2026-10-11
 
 ## Running agents (max 2)
-- review-exec-sched (Opus, resume): B4 WAIT2 fix, phase-code test by
-  status, R12 LM DAP restart, RDOT noun, EVA leads in executive.c/restarts.c,
-  renames, collapse-diff check, then style debt. Note:
-  docs/modules/review-exec-sched.md.
+- review-sys-misc (Opus, resume): self_check, interbank, telemetry,
+  extended verbs, uplink, P07 fidelity; collapse-diff check; test hygiene;
+  style debt. Note: docs/modules/review-sys-misc.md.
 - review-prog-align (Opus, resume): align_dot_shl sites, DMP/DMPR audit,
   P51-P53/SXTMARK/AOTMARK/P57 fidelity with oracle cases, collapse-diff
   check, style debt. Note: docs/modules/review-prog-align.md.
 
 ## Queue after it (two at a time)
-1. review-sys-misc, review-guid-powered, review-nav-integ (resume) -- items in docs/agents/review_items.md
+1. review-guid-powered, review-nav-integ (resume) -- items in docs/agents/review_items.md
    (now including the EVA bug leads).
 2. follow-up-done-lanes (DMP audit + word-pair API adoption for the eight
    early-reviewed lanes).
