@@ -40,7 +40,9 @@ the same protocol.
 - PARTIAL scenario e (P30 + P40): P30 explored in scratch (sim/e1.txt), no file in sim/scenarios yet. P30 works through V06N33 (TIG load), V06N81 (DV load), V06N42 (HAPO/HPER right; R3 VGDISP shows 0, DELVSIN = 0 in S30.1 -- investigating, maybe a flight bug), V16N45 blank (B4, xexpect). Left: write sim/scenarios/p30_p40_csm.txt; P40 needs a client feed of PIPA counts gated on the engine-on bit (ch 11 bit 13) -- not started
 - TODO scenario f (P63): decide run vs. documented skip (no radar/PIPA physics)
 - TODO GUI re-check of yaDSKY2 with the current build (windows closed after), final note Lessons, MODULE_STATUS row
-- State: src/sim compiles with -Werror (all files, incl. pad.c with its prototype in internal.h). `make` currently fails in flight code edited by review agents (src/guidance/burn_steering.c:295 earlier, src/csm/prelaunch_align.c now), not in src/sim. No file mid-edit.
+- DONE re-run 2026-10-11 on the status-handling-2 tree (a02850c/826f7e5): `make` and `make sim` up to date, `make scenarios` green: all 7 (fresh_start, lights_test, clock x csm/lm; p52_realign_csm) pass, 0 failed, 0 xfail, 0 xpass, 0 errors/restarts. agc_sim_debug on fresh_start csm/lm and LM headless 2000 cs: no assertion reports.
+- STOPPED here (coordinator, 2026-10-11: sim lane moved to the end of the project, after all reviews). No file edited in this resume; tree as found. Next on resume: (1) B4 fix in src/exec/waitlist.c wait2() (plan below, not started), (2) scenario e file, (3) f decision, (4) yaAGC-launcher drop-in (END GOAL), (5) GUI checks.
+- State (older): src/sim compiles with -Werror (all files, incl. pad.c with its prototype in internal.h). `make` currently fails in flight code edited by review agents (src/guidance/burn_steering.c:295 earlier, src/csm/prelaunch_align.c now), not in src/sim. No file mid-edit.
 
 ## Bugs found (flight code; not fixed here -- the collapse lane owns src/)
 Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
@@ -53,12 +55,16 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
   are not sent by the 20 quick passes: VERB 36 / PROG 00 stay lit until the
   next key press. yaAGC blanks them within 0.3 s. Fix: QUIKDSP should call
   the DSPOUTSB part without the DSKYFLAG test.
-- B2 LM power-on: job AGC_JOB_JET_ACCEL_RESET (1/ACCS, src/lm/dap/accs.c
+- B2 NO LONGER REPRODUCES (2026-10-11): after the guard pass, AGC_JOB_JET_ACCEL_RESET
+  (agc_job_jet_accel_reset, src/lm/dap/accs.c:565) returns AGC_STATUS_OK at LM power-on (checked
+  with gdb on agc_sim_debug); no assertion reports. Original entry:
+  LM power-on: job AGC_JOB_JET_ACCEL_RESET (1/ACCS, src/lm/dap/accs.c
   :191,:391, accont.c:74,:99, arith.c:116 assertions) returns BAD_ARG at
   3 cs with the zero erasable of agc_power_on (mass, inertia 0). The AGC
   would compute with overflowed values and carry on; the job just ends
   here. Harmless for the DSKY scenarios; matters for any LM DAP scenario.
-- B3 src/io/service/t4rupt.c:127 chan_clear(): `AGC_ASSERT(v <= 0xFFFFFFu)`
+- B3 FIXED (guard pass): chan_clear() (src/io/service/t4rupt.c:163) now masks
+  `~bits & WORD15`, no assertion. Original entry: src/io/service/t4rupt.c:127 chan_clear(): `AGC_ASSERT(v <= 0xFFFFFFu)`
   with v = ~(uint32_t)bits is always false (debug builds print it every
   IMU-monitor pass). Intended `bits <= WORD15`.
 - B4 src/exec/waitlist.c:152-163 wait2(): the DEVIATION "the TIME3
@@ -72,3 +78,11 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
   queues MONREQ (1 cs) in the same cs; CLOKTASK re-queues itself every
   second ahead of MONREQ, so MONREQ never runs and V16N45 stays blank
   (yaAGC: marks +00 00, TFI counting, MGA). Scenario e xexpects it.
+- B4 STILL STANDS (2026-10-11): src/exec/waitlist.c:195 wait2() still has the
+  DEVIATION and computes a = dt - (16384 - time3) + 1 unconditionally. Fix plan
+  (not started): when time3 < 128 (octal 200) TIME3 = T - T1 (post-overflow,
+  RUPTAGN chain) and a = dt + time3 + 1 (the OCT40001/CS/OCT40201 path of
+  WAIT2, C p.1225 / L p.1121); unambiguous because DTMAX 16250 keeps a normal
+  TIME3 >= 134. Test in tests/exec/exec.c: two tasks due in the same cs, the
+  first queues a 1 cs task from inside the chain; the queued task must run
+  1 cs later and the second chained task must not be pushed back 163.84 s.
