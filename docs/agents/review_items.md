@@ -91,3 +91,8 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - exec-sched (open): src/exec/waitlist.c rejects a delay above 16250 cs; the AGC's WAITLIST rejects only a delay <= 0 (fix-b6 note, Open questions).
 - sim (open): a pad.c keyword for EK1VAL-EK3VAL / FANG / EMDOT would let scenario e fly the impulsive-burn path.
 - exec-sched (observation): the LM systems-test scenario hits the 64-jobs-per-call executive limit 1,817 times; harmless (jobs continue next call) but worth a look at the limit's rationale.
+
+## From the document wave's first pass (2026-10-12; routed to loose-ends)
+- exec-sched (BUG): src/exec/change_program/lm.c exec_cp_cleanup_lm has an empty body but its header lists five flag resets (3AXISFLG, FLGWRD11=LRBYBIT, R04FLAG, MUNFLAG, XOVINFLG): check the rope (Luminary V37 / CANV37 cleanup) and restore the resets if the body was lost (collapse or guard deletion), with a test.
+- exec-sched (comment): agc_power_on's header says the caller next calls agc_fresh_dofstart(); src/sim/main.c calls agc_rupt_go(). Make the comment match.
+- exec-sched (comment): src/exec/waitlist.c agc_waitlist_time3 / agc_waitlist_entry comments describe failure returns the code no longer has.
