@@ -6,9 +6,8 @@ Updated: 2026-10-12
 - sim (Opus, acceptance pass): rope image + scaler channels, scenario e,
   f decision, yaAGC command-line drop-in, GUI verification last; records
   flight bugs, does not edit flight code. Note: docs/modules/sim.md.
-- follow-up-done-lanes (Opus): every routed item in review_items.md owned
-  by a closed lane (docs/agents/follow-up-done-lanes.md); keeps out of
-  src/nav/integration. Note: docs/modules/follow-up-done-lanes.md.
+- (slot free: nothing left to launch until sim finishes; the assert.h
+  rename touches src/sim includes and the EVA run needs the frozen tree)
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md

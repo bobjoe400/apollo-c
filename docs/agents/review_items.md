@@ -82,3 +82,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - DONE one word vector type and API in core (nav-integ's local copy replaced); docs/modules/follow-up-done-lanes.md items 2.3, 5.3.
 - DONE agc_integ_svdwn / agc_integ_rectify void; nav-integ public renames with callers and registry; docs/modules/follow-up-done-lanes.md item 5.4.
 - DONE INTWAKEU 04026 restarts at UPOUT +1 (named), not the P27 segment top; docs/modules/follow-up-done-lanes.md item 5.5.
+
+## Open residuals after follow-up-done-lanes (2026-10-12; all routed items closed)
+- guid-entry: DOWNCNTL stays on values (F3): its DREF words match the rope only if D is kept as stored words, i.e. the entry erasables converted to agc_dp_words_t; would close oracle entry L/D 9 and L/D1 8. Recorded as a deviation for the document wave unless a later pass converts the erasables.
+- prog-align note: Progress row "item 2b" still reads PARTIAL but its remaining files were done in resume 3 (a); note-only staleness.

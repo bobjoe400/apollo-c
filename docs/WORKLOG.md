@@ -655,3 +655,11 @@
             landing TBUP/TGO, nav-aux NODI/ASIN word-level); sim had done
             steps 1-4 (rope image, scalers, scenario e, launcher
             drop-in). Both relaunched from their Progress sections.
+2026-10-12  follow-up-done-lanes DONE and committed (9b0936b): word-level
+            adoption in nav-aux/landing/entry fixed 1-38 LSB errors in
+            LAT, LALOTORV, TFF/TFFX, VSUN, AT, TTOGO, PRATE/YRATE, UNFC/2,
+            VL, A1, RDOT; oracle tolerances to 0 across nav_aux, landing
+            ascent, entry; AOTMARK flow confirmed. Open residual: entry
+            DOWNCNTL on values (F3). Every routed review item is closed.
+            Only sim (GUI step) running; then lead assert.h rename, ONE
+            EVA run, document wave.
