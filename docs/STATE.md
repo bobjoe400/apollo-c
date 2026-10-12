@@ -3,19 +3,13 @@
 Updated: 2026-10-12
 
 ## Running agents (max 2)
-- loose-ends: DONE (96b2f01), all ten items; review_items.md has no open
-  line except the two always-ok ones.
-- always-ok (Opus, ALONE, whole tree): the always-OK status functions made
-  void with callers' plumbing removed (`make always-ok-report` to 0), the
-  leadin.c silent skip + check_rules pattern, returns-extra in
-  prolog_check.py. Note: docs/modules/always-ok.md. When it reports with
-  gates green and both reports at 0: FREEZE, then EVA.
-- prolog-consistency: DONE (95ddc59); 6 findings left in loose-ends'
-  directories, handed to loose-ends.
-- document: STOPPED (launched too early, user 2026-10-12); resumes from
-  docs/modules/document.md Progress AFTER the EVA pass.
-- EVA: STOPPED (same reason). Runs ONLY when every open item is closed and
-  the tree is 100% working and frozen.
+- NONE. TREE FROZEN at the EVA start commit (see WORKLOG). EVA (process):
+  `python3 -I tools/prove/eva_run.py --jobs 1 --timeout 2592000`, progress
+  in tools/prove/progress.log, logs tools/prove/runs/. When done: `make
+  prove-classify`, apply VALID deletions (tools/prove/apply.py --match),
+  the 21 post-eva setter guards per review_items.md, triage alarms, fix
+  the check_rules silent-skip rule, gates, commit; then resume `document`
+  from docs/modules/document.md.
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md

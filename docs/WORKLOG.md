@@ -730,3 +730,11 @@
             justified (CHECKG1 PIPA poll; AGC < 17 jobs/cs); LM GET+MGA
             unitizes twice as Luminary does; prolog-report 0 tree-wide.
             always-ok now has the whole tree.
+2026-10-12  always-ok DONE and committed (3a0f68d): 136 always-OK functions
+            void, ~250 call sites, 34 dispatch arms, three dropped
+            statuses exposed; prolog-report and always-ok-report 0
+            tree-wide. 21 positive-assertion setter guards: classifier
+            blocked the lane's deletion; user: leave them for EVA. The
+            lane's new check_rules silent-skip rule does not fire on them
+            (recorded for after the apply step). Tree FROZEN; EVA started
+            (jobs 1, no effective timeout, sim entry unbounded).

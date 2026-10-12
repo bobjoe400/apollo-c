@@ -101,3 +101,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - DONE loose-ends GET+MGA: second UNIT on the LM as in Luminary (no oracle case exists) + test; prolog-report 6 -> 0 in src/exec and src/csm/entry; docs/modules/loose-ends.md items 9, 10.
 - ~~always-ok: src/lm/radar/leadin.c agc_job_radar_sample_done skips a store silently when its assertion fails (check_rules misses the pattern: an assertion whose false branch skips a statement without a status); fix per rule 7 and teach check_rules the pattern.~~ DONE (always-ok: 22 other silent-skip sites open, see docs/modules/always-ok.md)
 - ~~always-ok: returns-extra (body returns a status the prolog does not name) is described in tools/prolog_check.py but not implemented (~172 functions); implement it and fix the prologs.~~ DONE (always-ok)
+
+## After the EVA pass (2026-10-12)
+- post-eva: 21 positive-assertion setter guards (`if (AGC_ASSERT(c)) { store; }`, 16 in src/lm/dap/state.c, imu/compensation.c x2, lm/dap/rcs/t6rupt.c, csm/navigation/tracking_data.c, csm/entry/dap.c) left for EVA by user decision (classifier blocked the lane's deletion; per-site reasoning in docs/modules/always-ok.md): delete those EVA proves VALID in the apply step, convert the rest to status returns.
+- post-eva: tools/check_rules.py "silent skip" rule (added by always-ok) reports 0 on those 21 sites although they match its description; also the rule-5 density print says "0/1" (function tracking broken). Fix the checker after the apply step so the rule bites, then re-run `make check`.
