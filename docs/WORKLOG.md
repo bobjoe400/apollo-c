@@ -745,3 +745,11 @@
             this session were vacuous; every lane ran `make check`, and
             `make check-rules` now reports exactly the 21 silent-skip
             sites left for EVA and nothing else.
+2026-10-12  EVA pass: 36 entries in 47 min, 33 OK, 3 crashed (sim, io_dsky,
+            guidance_guidance) with a Frama-C 25.0-beta internal assertion
+            at locsam.c:545 (the picapar_search_t initializer; reproduced
+            single-file with -main agc_align_picapar; `= {0}` crashes too,
+            plain declaration + assignments does not). Workaround applied
+            (one statement, behaviour unchanged); the three entries rerun.
+            INVALID 2 at the two known fallible guards (SPECTEST CCSHOLE,
+            start_job with no stored point) reached by tests on purpose.
