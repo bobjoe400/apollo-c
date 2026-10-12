@@ -41,6 +41,8 @@ def check_file(path):
     code_lines = 0
     for i, raw in enumerate(lines, 1):
         s = raw.strip()
+        if re.match(r'^ {3,}/\*{10,}\s*$', raw):
+            HARD.append(f'{path}:{i}: comment: boxed prolog inside a function body; use a block comment (tools/unpaste_prologs.py)')
         if re.search(r'\bgoto\b|\bsetjmp\b|\blongjmp\b', s) and not s.startswith(('/*', '*', '//')):
             HARD.append(f'{path}:{i}: rule 1: goto/setjmp/longjmp')
         if re.search(r'\b(malloc|calloc|realloc|free|strdup)\s*\(', s) and not s.startswith(('/*', '*', '//')):

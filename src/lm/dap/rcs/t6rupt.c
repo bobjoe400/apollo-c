@@ -280,11 +280,6 @@ agc_status_t lm_dap_jtlst(void)
  **********************************************************************/
 agc_status_t agc_lm_dap_t6jobchk(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG); /* TIME6 belongs to the LM DAP */
-    }
-
     uint16_t raw = agc_rupt_time(6); /* TIME6 register */
 
     if (raw > 0u && raw <= LM_T6_POSMAX)

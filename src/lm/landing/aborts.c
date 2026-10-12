@@ -196,11 +196,6 @@ static agc_status_t ab_abrtjask(bool aps_abort)
  **********************************************************************/
 agc_status_t agc_lm_abort_monitor_resume(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* LM only   */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if ((agc_erase_imodes33() & 1u) == 0u)
     { /* not a lamp test         */
         if (agc_flag_test(AGC_FLAG_HFLSHFLG))
@@ -267,11 +262,6 @@ static bool ab_legal(agc_sp_t mm)
  **********************************************************************/
 static agc_status_t ab_abortalm(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* LM only   */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_falton();
     agc_status_t st = agc_dsky_releasedsp(); /* step status */
 

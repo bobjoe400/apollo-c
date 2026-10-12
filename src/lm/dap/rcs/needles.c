@@ -118,11 +118,6 @@ agc_status_t lm_dap_altdsply(void)
  **********************************************************************/
 agc_status_t lm_dap_needler(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     lm_dap_t *d    = lm_dap_state();                          /* DAP erasables */
     uint16_t  pass = (uint16_t) (d->rcsflags & NDL_PASSBITS); /* ALTDSPLY pass bits of RCSFLAGS */
 
@@ -176,11 +171,6 @@ agc_status_t lm_dap_needler(void)
     /* NEEDLES / DACLOOP (p.1419): meter the change of each display into the
      * IMU error counter, limited to +-384 bits. */
     {
-        if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         if (!AGC_ASSERT(d != 0))
         {
             return (AGC_STATUS_BAD_ARG);

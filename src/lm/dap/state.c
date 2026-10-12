@@ -87,11 +87,6 @@ agc_status_t agc_lm_dap_restart(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG); /* LM rope only */
-    }
-
     d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_ACCSET); /* DAPIDLER calls 1/ACCS */
     d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;                   /* a pending T6RUPT is made     */
     agc_chan_and(013, LM_T6_POSMAX);                             /* ineffectual        */
@@ -117,11 +112,6 @@ agc_status_t agc_lm_dap_restart(void)
 agc_status_t agc_lm_dap_fresh_start(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
-
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG); /* LM rope only */
-    }
 
     d->rcsflags                 = FS_RCSFLAGS;
     agc_guid_state()->lm.abdelv = 0; /* ABDELV: DAP initialisation     */

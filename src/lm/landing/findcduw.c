@@ -492,11 +492,6 @@ static void fc_fetch_basic(uint16_t yzx[3])
  **********************************************************************/
 static agc_status_t fc_noattcnt(bool alarm)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* LM DAP */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (alarm)
     {
         agc_alarm(AGC_ALARM_00402); /* alarm is recorded; go on  */

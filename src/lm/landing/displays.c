@@ -425,11 +425,6 @@ static agc_status_t ld_disindat(void)
  **********************************************************************/
 agc_status_t agc_lm_landisp(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM)) /* R10: LM only */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_guid_state()->avg.pipctr = agc_lm_pipctr1(); /* PHSPRDT2       */
 
     /* DEVIATION: TBASE2 = TIME1 via NEWPHASE of the current group 2 phase */

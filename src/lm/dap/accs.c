@@ -453,11 +453,6 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
  **********************************************************************/
 agc_status_t agc_lm_dap_jet_accel_update(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG); /* LM rope only */
-    }
-
     lm_dap_t *d    = lm_dap_state();                   /* DAP erasables */
     bool      dock = agc_flag_test(AGC_FLAG_CSMDKFLG); /* DOCKTEMP       */
 
@@ -556,11 +551,6 @@ agc_status_t agc_job_jet_accel_reset(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t lm_dap_accfix(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG); /* LM rope only */
-    }
-
     agc_status_t st = agc_exec_novac(AC_PRIO27, AGC_JOB_JET_ACCEL_UPDATE); /* NOVAC 1/ACCS */
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))

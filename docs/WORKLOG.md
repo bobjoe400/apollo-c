@@ -676,3 +676,13 @@
             compile_commands` (tools/compile_commands.py) + .vscode config
             (compileCommands, build/ excluded) added so editors use
             include/ with the Makefile's flags.
+2026-10-12  User found a helper prolog pasted inside lm_dap_needler and
+            then SN1's ARGUMENTS/RETURNS box inside a body: 135 such
+            boxes (inline_one.py artefact; 77 had been routed to the
+            document lane) rewritten as block comments by
+            tools/unpaste_prologs.py; check_rules now rejects an indented
+            box; rule in CODING_STANDARD. The 22 vehicle assertions at the
+            top of LM-only routines (src/lm/dap, src/lm/landing) deleted
+            by tools/cocci/vehicle_guard.cocci (guaranteed by construction:
+            LM dispatch only); exec_up_servidle's stays (reached from the
+            shared POODOO path, caller checks the status).

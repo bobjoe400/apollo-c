@@ -131,6 +131,11 @@ Language: C11, no extensions. Build flags (Makefile):
 
 ## Comment placement and wrapping (user direction, 2026-10-11)
 
+* A boxed prolog (`/****...` with FUNCTION NAME / ARGUMENTS / RETURNS)
+  belongs to a function, at column 0, never inside a body. A section
+  inside a body (an inlined helper's AGC label, a routine's phase) gets a
+  plain block comment with the label and page. check_rules rejects an
+  indented box; `tools/unpaste_prologs.py` rewrites one.
 * A comment never sits inside an expression: not between `=` and the
   initializer, not inside an argument list, not between operands. Scale and
   meaning notes for a statement go trailing after the `;` (the statement

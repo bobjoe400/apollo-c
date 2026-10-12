@@ -512,11 +512,6 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
  **********************************************************************/
 agc_status_t lm_dap_pretimck(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     if (d->qgimtimr > 0)

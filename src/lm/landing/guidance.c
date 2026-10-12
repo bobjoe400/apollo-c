@@ -876,11 +876,6 @@ agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
     if (l->wchvert > 0)
@@ -914,11 +909,6 @@ agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  **********************************************************************/
 agc_status_t agc_lm_start_approach_phase(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t  st = agc_phase_newmode(64); /* NEWMODEX         */
     agc_lm_ldg_t *l  = agc_lm_ldg();          /* landing erasables */
 
@@ -1197,11 +1187,6 @@ agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry)
  **********************************************************************/
 agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_phaschng(00035);
     const agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_LUNLAND, AGC_TASK_NONE, 021, false, 0U };
 
