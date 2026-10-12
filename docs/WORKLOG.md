@@ -698,3 +698,9 @@
             only recorded. Launched loose-ends (Opus) for the five open
             items alongside document; EVA runs on its snapshot so small
             code edits are safe (apply matches guards by condition).
+2026-10-12  User: EVA and docs run only on a 100% working, final codebase.
+            Lead had started both with five loose ends open and then
+            launched a code lane under them: EVA killed, document agent
+            stopped at a checkpoint (its output kept for re-check on
+            resume). Order fixed: loose-ends -> frozen tree -> EVA ->
+            apply -> document wave.

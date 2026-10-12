@@ -3,20 +3,14 @@
 Updated: 2026-10-12
 
 ## Running agents (max 2)
-- sim (Opus, acceptance pass): rope image + scaler channels, scenario e,
-  f decision, yaAGC command-line drop-in, GUI verification last; records
-  flight bugs, does not edit flight code. Note: docs/modules/sim.md.
-- EVA (process, not an agent): `python3 -I tools/prove/eva_run.py --jobs 1
-  --timeout 2592000` started 2026-10-12 on the frozen tree (HEAD 54fd81b);
-  progress in tools/prove/progress.log, per-entry logs tools/prove/runs/.
-  When done: `make prove-classify`, apply VALID deletions everywhere
-  (tools/prove/apply.py), triage alarms, commit. src/ is FROZEN until then.
-- document (Opus): docs/agents/document.md deliverables a-e; docs and
-  tools/{depgraph,xref}.py only, no src/ edits.
-- loose-ends (Opus): the five open items in review_items.md (entry DOWNCNTL
-  words, waitlist delay bound, pad keyword for the impulsive burn, the
-  64-jobs limit rationale, prog-align note row); no guard add/delete while
-  EVA runs on its snapshot.
+- loose-ends (Opus, ALONE): the five open items in review_items.md (entry
+  DOWNCNTL words, waitlist delay bound, pad keyword for the impulsive burn,
+  the 64-jobs limit rationale, prog-align note row). Note:
+  docs/modules/loose-ends.md.
+- document: STOPPED (launched too early, user 2026-10-12); resumes from
+  docs/modules/document.md Progress AFTER the EVA pass.
+- EVA: STOPPED (same reason). Runs ONLY when every open item is closed and
+  the tree is 100% working and frozen.
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md
@@ -25,7 +19,8 @@ Updated: 2026-10-12
    early-reviewed lanes).
 3. Lead: rename include/agc/core/assert.h -> agc_assert.h (237 includes;
    commands in docs/modules/review-state-flags.md).
-3. ONE EVA run at the very end (after reviews and the GUI-verified sim):
+3. ORDER (user, 2026-10-12): (a) loose ends closed, gates green, tree
+   frozen; (b) ONE EVA run at the very end (after reviews and the GUI-verified sim):
    cleanup of provably-dead guards, not a working-code step (user,
    2026-10-11). No EVA runs before that. The sim entry runs unbounded,
    alone, with no timeout (it converges; memory is the limit).
