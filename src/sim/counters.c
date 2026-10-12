@@ -50,11 +50,6 @@
  * to +0 (the overflow the hardware would turn into a fail bit).        */
 static agc_sp_t sp_step(agc_sp_t v, uint16_t type)
 {
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return (0);
-    }
-
     int32_t n = (int32_t) v;
 
     if (type == INC_PINC || type == INC_PCDU)

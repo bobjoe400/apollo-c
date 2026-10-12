@@ -732,10 +732,6 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(const agc_dp_t desired[3]
     t         = agc_tp_add(ip, agc_dp_mul_tp(cx, d[1]), agc_tp_from_dp(agc_dp_neg(q)));
     ak_out[2] = agc_dp_high(entry_tp_shl(ip, t, 1)); /* 18D       */
 
-    if (!AGC_ASSERT(ak_out[0] >= AGC_SP_MIN))
-    {
-        return;
-    }
 } /* agc_earth_orbit_insertion_monitor_attitude_errors */
 
 /**********************************************************************

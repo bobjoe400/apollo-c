@@ -252,6 +252,8 @@ def tmap_of(n, ctx, out=None):
     """canon -> declared type spelling for every subexpression of n."""
     out = {} if out is None else out
     for x in walk(n):
+        if x.kind in cgast.SKIP:
+            continue  # implicit conversions: the operand's own type counts
         if x.kind.is_expression() and x.kind != K.CALL_EXPR or x.kind in (K.CALL_EXPR, K.DECL_REF_EXPR, K.MEMBER_REF_EXPR):
             try:
                 c = cgast.canon(x, ctx)

@@ -163,17 +163,7 @@ static agc_sp_t ld_quadruple_high(agc_dp_t x)
     agc_ovf_t ovf = 0;                          /* overflow of the doubling (wrapped) */
     agc_dp_t  d   = agc_dp_shl_raw(x, 2, &ovf); /* 4x, DP, 2^(S-2) */
 
-    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_sp_t hi = agc_dp_high(d); /* high word of 4x, 2^(S-2) */
-
-    if (!AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
 
     return (hi);
 }

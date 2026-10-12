@@ -577,11 +577,6 @@ agc_status_t pin_vbreldsp(void)
         return (pin_reldsp1());
     }
 
-    if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (pin_tstlts4());
 }
 

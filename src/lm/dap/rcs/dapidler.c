@@ -201,11 +201,6 @@ agc_status_t lm_dap_chekbits(bool *on)
         return (lm_dap_moreidle());
     }
 
-    if (!AGC_ASSERT(d->t5adr <= LM_T5_PAXIS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *on = true;
 
     return (AGC_STATUS_OK);

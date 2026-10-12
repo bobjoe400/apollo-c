@@ -378,11 +378,6 @@ static agc_status_t tvcx_run(tvcx_step_t from)
     for (int i = 0; (i < TVCX_MAX_STEPS) && (s != TVCX_FIN); i++)
     {
         s = tvcx_step(s);
-
-        if (!AGC_ASSERT((s >= TVCX_EXEC_COPY) && (s <= TVCX_FIN)))
-        {
-            return (AGC_STATUS_NO_CONVERGE);
-        }
     }
 
     if (!AGC_ASSERT(s == TVCX_FIN))

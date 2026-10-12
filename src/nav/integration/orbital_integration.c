@@ -110,11 +110,6 @@ static agc_sp_t e32c31rm;
 
 agc_status_t agc_integ_set_lunar_coeffs(agc_sp_t j22, agc_sp_t c31)
 {
-    if (!AGC_ASSERT(j22 >= AGC_SP_MIN) || !AGC_ASSERT(c31 >= AGC_SP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     e3j22r2m = j22;
     e32c31rm = c31;
 

@@ -98,69 +98,6 @@ static uint16_t  g_failreg[FAILREG_WORDS]; /* FAILREG, octal alarm codes */
 static uint16_t  g_thetad[THETAD_WORDS];   /* THETAD, raw words, 2^15 = 1 rev */
 
 /**********************************************************************
- * AGC: none (helper) -- true when the vehicle selector holds a vehicle
- *
- * FUNCTION NAME: sane
- *
- * RETURNS: bool -- true for AGC_VEHICLE_CSM or AGC_VEHICLE_LM (the
- *          state was initialised by agc_state_init and is not corrupt)
- **********************************************************************/
-static bool sane(void)
-{
-    const agc_vehicle_t v = agc_state_vehicle(); /* selected vehicle */
-
-    return ((v == AGC_VEHICLE_CSM) || (v == AGC_VEHICLE_LM));
-}
-
-/**********************************************************************
- * AGC: none (helper) -- true when every component is a legal DP value
- *
- * FUNCTION NAME: vec_ok
- *
- * ARGUMENTS:
- *   Argument  Type               I/O  Description (scale)
- *   --------  -----------------  ---  ------------------------------
- *   v         const agc_vec_t *  I    vector to check (any scale)
- *
- * RETURNS: bool -- true when all three components are in range
- **********************************************************************/
-static bool vec_ok(const agc_vec_t *v)
-{
-    bool ok = true; /* all components checked so far are legal */
-
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-        ok = ok && (v->c[i] >= AGC_DP_MIN) && (v->c[i] <= AGC_DP_MAX);
-    }
-
-    return (ok);
-}
-
-/**********************************************************************
- * AGC: none (helper) -- true when every element is a legal DP value
- *
- * FUNCTION NAME: mat_ok
- *
- * ARGUMENTS:
- *   Argument  Type               I/O  Description (scale)
- *   --------  -----------------  ---  ------------------------------
- *   m         const agc_mat_t *  I    matrix to check (any scale)
- *
- * RETURNS: bool -- true when all nine elements are in range
- **********************************************************************/
-static bool mat_ok(const agc_mat_t *m)
-{
-    bool ok = true; /* all rows checked so far are legal */
-
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-        ok = ok && vec_ok(&m->row[i]);
-    }
-
-    return (ok);
-}
-
-/**********************************************************************
  * AGC: MODREG (ERASABLE_ASSIGNMENTS.agc C p. 76, L p. 101) -- read
  *   MODREG: major mode (program number) shown in PROG
  *
@@ -187,11 +124,6 @@ agc_sp_t agc_erase_modreg(void)
  **********************************************************************/
 void agc_erase_set_modreg(agc_sp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
-    {
-        return;
-    }
-
     g_modreg = v;
 }
 
@@ -310,11 +242,6 @@ agc_dp_t agc_erase_tgo(void)
  **********************************************************************/
 void agc_erase_set_tgo(agc_dp_t v)
 {
-    if (!AGC_ASSERT(sane()))
-    {
-        return;
-    }
-
     g_tgo = v;
 }
 
@@ -374,11 +301,6 @@ agc_dp_t agc_erase_tevent(void)
  **********************************************************************/
 void agc_erase_set_tevent(agc_dp_t v)
 {
-    if (!AGC_ASSERT(sane()))
-    {
-        return;
-    }
-
     g_tevent = v;
 }
 
@@ -453,13 +375,6 @@ void agc_erase_set_tetlem(agc_dp_t v)
  **********************************************************************/
 agc_vec_t agc_erase_rn(void)
 {
-    const agc_vec_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(vec_ok(&g_rn)))
-    {
-        return (zero);
-    }
-
     return (g_rn);
 }
 
@@ -476,11 +391,6 @@ agc_vec_t agc_erase_rn(void)
  **********************************************************************/
 void agc_erase_set_rn(agc_vec_t v)
 {
-    if (!AGC_ASSERT(vec_ok(&v)))
-    {
-        return;
-    }
-
     g_rn = v;
 }
 
@@ -495,13 +405,6 @@ void agc_erase_set_rn(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_erase_vn(void)
 {
-    const agc_vec_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(vec_ok(&g_vn)))
-    {
-        return (zero);
-    }
-
     return (g_vn);
 }
 
@@ -519,11 +422,6 @@ agc_vec_t agc_erase_vn(void)
  **********************************************************************/
 void agc_erase_set_vn(agc_vec_t v)
 {
-    if (!AGC_ASSERT(vec_ok(&v)))
-    {
-        return;
-    }
-
     g_vn = v;
 }
 
@@ -538,13 +436,6 @@ void agc_erase_set_vn(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_erase_rrectcsm(void)
 {
-    const agc_vec_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(vec_ok(&g_rrectcsm)))
-    {
-        return (zero);
-    }
-
     return (g_rrectcsm);
 }
 
@@ -561,11 +452,6 @@ agc_vec_t agc_erase_rrectcsm(void)
  **********************************************************************/
 void agc_erase_set_rrectcsm(agc_vec_t v)
 {
-    if (!AGC_ASSERT(vec_ok(&v)))
-    {
-        return;
-    }
-
     g_rrectcsm = v;
 }
 
@@ -580,13 +466,6 @@ void agc_erase_set_rrectcsm(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_erase_vrectcsm(void)
 {
-    const agc_vec_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(vec_ok(&g_vrectcsm)))
-    {
-        return (zero);
-    }
-
     return (g_vrectcsm);
 }
 
@@ -604,11 +483,6 @@ agc_vec_t agc_erase_vrectcsm(void)
  **********************************************************************/
 void agc_erase_set_vrectcsm(agc_vec_t v)
 {
-    if (!AGC_ASSERT(vec_ok(&v)))
-    {
-        return;
-    }
-
     g_vrectcsm = v;
 }
 
@@ -623,13 +497,6 @@ void agc_erase_set_vrectcsm(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_erase_rrectlem(void)
 {
-    const agc_vec_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(vec_ok(&g_rrectlem)))
-    {
-        return (zero);
-    }
-
     return (g_rrectlem);
 }
 
@@ -646,11 +513,6 @@ agc_vec_t agc_erase_rrectlem(void)
  **********************************************************************/
 void agc_erase_set_rrectlem(agc_vec_t v)
 {
-    if (!AGC_ASSERT(vec_ok(&v)))
-    {
-        return;
-    }
-
     g_rrectlem = v;
 }
 
@@ -665,13 +527,6 @@ void agc_erase_set_rrectlem(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_erase_vrectlem(void)
 {
-    const agc_vec_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(vec_ok(&g_vrectlem)))
-    {
-        return (zero);
-    }
-
     return (g_vrectlem);
 }
 
@@ -689,11 +544,6 @@ agc_vec_t agc_erase_vrectlem(void)
  **********************************************************************/
 void agc_erase_set_vrectlem(agc_vec_t v)
 {
-    if (!AGC_ASSERT(vec_ok(&v)))
-    {
-        return;
-    }
-
     g_vrectlem = v;
 }
 
@@ -708,13 +558,6 @@ void agc_erase_set_vrectlem(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_erase_delv(void)
 {
-    const agc_vec_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(vec_ok(&g_delv)))
-    {
-        return (zero);
-    }
-
     return (g_delv);
 }
 
@@ -731,11 +574,6 @@ agc_vec_t agc_erase_delv(void)
  **********************************************************************/
 void agc_erase_set_delv(agc_vec_t v)
 {
-    if (!AGC_ASSERT(vec_ok(&v)))
-    {
-        return;
-    }
-
     g_delv = v;
 }
 
@@ -750,13 +588,6 @@ void agc_erase_set_delv(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_erase_vgtig(void)
 {
-    const agc_vec_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(vec_ok(&g_vgtig)))
-    {
-        return (zero);
-    }
-
     return (g_vgtig);
 }
 
@@ -773,11 +604,6 @@ agc_vec_t agc_erase_vgtig(void)
  **********************************************************************/
 void agc_erase_set_vgtig(agc_vec_t v)
 {
-    if (!AGC_ASSERT(vec_ok(&v)))
-    {
-        return;
-    }
-
     g_vgtig = v;
 }
 
@@ -792,13 +618,6 @@ void agc_erase_set_vgtig(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_erase_rls(void)
 {
-    const agc_vec_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(vec_ok(&g_rls)))
-    {
-        return (zero);
-    }
-
     return (g_rls);
 }
 
@@ -815,11 +634,6 @@ agc_vec_t agc_erase_rls(void)
  **********************************************************************/
 void agc_erase_set_rls(agc_vec_t v)
 {
-    if (!AGC_ASSERT(vec_ok(&v)))
-    {
-        return;
-    }
-
     g_rls = v;
 }
 
@@ -834,13 +648,6 @@ void agc_erase_set_rls(agc_vec_t v)
  **********************************************************************/
 agc_mat_t agc_erase_refsmmat(void)
 {
-    const agc_mat_t zero = {0}; /* returned on a failed check */
-
-    if (!AGC_ASSERT(mat_ok(&g_refsmmat)))
-    {
-        return (zero);
-    }
-
     return (g_refsmmat);
 }
 
@@ -857,11 +664,6 @@ agc_mat_t agc_erase_refsmmat(void)
  **********************************************************************/
 void agc_erase_set_refsmmat(agc_mat_t v)
 {
-    if (!AGC_ASSERT(mat_ok(&v)))
-    {
-        return;
-    }
-
     g_refsmmat = v;
 }
 
@@ -922,11 +724,6 @@ agc_sp_t agc_erase_csmmass(void)
  **********************************************************************/
 void agc_erase_set_csmmass(agc_sp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
-    {
-        return;
-    }
-
     g_csmmass = v;
 }
 
@@ -957,11 +754,6 @@ agc_sp_t agc_erase_lemmass(void)
  **********************************************************************/
 void agc_erase_set_lemmass(agc_sp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
-    {
-        return;
-    }
-
     g_lemmass = v;
 }
 
@@ -992,11 +784,6 @@ agc_sp_t agc_erase_pipax(void)
  **********************************************************************/
 void agc_erase_set_pipax(agc_sp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
-    {
-        return;
-    }
-
     g_pipax = v;
 }
 
@@ -1027,11 +814,6 @@ agc_sp_t agc_erase_pipay(void)
  **********************************************************************/
 void agc_erase_set_pipay(agc_sp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
-    {
-        return;
-    }
-
     g_pipay = v;
 }
 
@@ -1062,11 +844,6 @@ agc_sp_t agc_erase_pipaz(void)
  **********************************************************************/
 void agc_erase_set_pipaz(agc_sp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
-    {
-        return;
-    }
-
     g_pipaz = v;
 }
 
@@ -1097,11 +874,6 @@ uint16_t agc_erase_cdux(void)
  **********************************************************************/
 void agc_erase_set_cdux(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= AGC_WORD15_MAX))
-    {
-        return;
-    }
-
     g_cdux = v;
 }
 
@@ -1132,11 +904,6 @@ uint16_t agc_erase_cduy(void)
  **********************************************************************/
 void agc_erase_set_cduy(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= AGC_WORD15_MAX))
-    {
-        return;
-    }
-
     g_cduy = v;
 }
 
@@ -1167,11 +934,6 @@ uint16_t agc_erase_cduz(void)
  **********************************************************************/
 void agc_erase_set_cduz(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= AGC_WORD15_MAX))
-    {
-        return;
-    }
-
     g_cduz = v;
 }
 
@@ -1348,11 +1110,6 @@ uint16_t agc_erase_dapdatr1(void)
  **********************************************************************/
 void agc_erase_set_dapdatr1(uint16_t v)
 {
-    if (!AGC_ASSERT(v <= AGC_WORD15_MAX))
-    {
-        return;
-    }
-
     g_dapdatr1 = v;
 }
 

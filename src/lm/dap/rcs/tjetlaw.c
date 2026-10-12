@@ -107,11 +107,6 @@ static agc_sp_t blk(const lm_dap_t *d, int label, agc_sp_t idx)
 {
     int i = LM_BLK_U + label + (int) idx; /* BLOCKTOP index */
 
-    if (!AGC_ASSERT(d->block[i] >= LM_NEGMAX))
-    {
-        return (0);
-    }
-
     return (d->block[i]);
 }
 

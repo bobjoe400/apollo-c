@@ -272,11 +272,6 @@ agc_tp_t agc_tp_mul_sp(agc_tp_t v, agc_sp_t k)
     agc_w2_t acc;                   /* DAS accumulator pair */
     int      o = 0;                 /* DAS overflow, the carry into MPAC */
 
-    if (!AGC_ASSERT((k >= AGC_SP_MIN) && (k <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     acc.hi = 0;                                     /* XCH MPAC +1      */
     acc.lo = agc_w_mp(k, m.m2).hi;                  /* TS MPAC +2       */
     acc    = agc_w_das(acc, agc_w_mp(m.m1, k), &o); /* DAS MPAC +1      */

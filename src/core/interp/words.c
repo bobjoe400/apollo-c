@@ -52,16 +52,6 @@ agc_tp_words_t agc_mpac_dload(agc_dp_words_t x)
 {
     agc_tp_words_t m = {x.hi, x.lo, 0};
 
-    if (!AGC_ASSERT((x.hi >= AGC_SP_MIN) && (x.hi <= AGC_SP_MAX)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
-
-    if (!AGC_ASSERT((x.lo >= AGC_SP_MIN) && (x.lo <= AGC_SP_MAX)))
-    {
-        return ((agc_tp_words_t){0, 0, 0});
-    }
-
     return (m);
 }
 
@@ -77,16 +67,6 @@ agc_tp_words_t agc_mpac_dload(agc_dp_words_t x)
 agc_dp_words_t agc_mpac_store(agc_tp_words_t m)
 {
     agc_dp_words_t x = {m.hi, m.mid};
-
-    if (!AGC_ASSERT((m.hi >= AGC_SP_MIN) && (m.hi <= AGC_SP_MAX)))
-    {
-        return ((agc_dp_words_t){0, 0});
-    }
-
-    if (!AGC_ASSERT((m.mid >= AGC_SP_MIN) && (m.mid <= AGC_SP_MAX)))
-    {
-        return ((agc_dp_words_t){0, 0});
-    }
 
     return (x);
 }
@@ -338,11 +318,6 @@ agc_tp_words_t agc_mpac_bddv(agc_interp_t *ip, agc_tp_words_t m, agc_dp_words_t 
     agc_tp_words_t dividend = {x.hi, x.lo, m.lo}; /* MPAC after DXCH */
     agc_dp_words_t divisor  = {m.hi, m.mid};      /* BUF            */
 
-    if (!AGC_ASSERT((x.hi >= AGC_SP_MIN) && (x.hi <= AGC_SP_MAX)))
-    {
-        return (m);
-    }
-
     return (agc_mpac_ddv(ip, dividend, divisor));
 }
 
@@ -468,16 +443,6 @@ agc_tp_words_t agc_mpac_dcomp(agc_tp_words_t m)
 {
     agc_tp_words_t r; /* complemented words */
 
-    if (!AGC_ASSERT((m.hi >= AGC_SP_MIN) && (m.hi <= AGC_SP_MAX)))
-    {
-        return (m);
-    }
-
-    if (!AGC_ASSERT((m.mid >= AGC_SP_MIN) && (m.lo >= AGC_SP_MIN)))
-    {
-        return (m);
-    }
-
     r.hi  = (agc_sp_t) -m.hi;
     r.mid = (agc_sp_t) -m.mid;
     r.lo  = (agc_sp_t) -m.lo;
@@ -498,11 +463,6 @@ agc_tp_words_t agc_mpac_abs(agc_tp_words_t m)
 {
     int sign = agc_w_branch(agc_w3_from_words(m)); /* BRANCH */
 
-    if (!AGC_ASSERT((m.hi >= AGC_SP_MIN) && (m.hi <= AGC_SP_MAX)))
-    {
-        return (m);
-    }
-
     return ((sign < 0) ? agc_mpac_dcomp(m) : m); /* TCF COMP on negative */
 }
 
@@ -519,16 +479,6 @@ agc_tp_words_t agc_mpac_abs(agc_tp_words_t m)
 agc_tp_words_t agc_mpac_sign(agc_tp_words_t m, agc_dp_words_t x)
 {
     bool negative = (x.hi < 0) || ((x.hi == 0) && (x.lo < 0)); /* CCS 0 / CCSL */
-
-    if (!AGC_ASSERT((x.hi >= AGC_SP_MIN) && (x.hi <= AGC_SP_MAX)))
-    {
-        return (m);
-    }
-
-    if (!AGC_ASSERT((x.lo >= AGC_SP_MIN) && (x.lo <= AGC_SP_MAX)))
-    {
-        return (m);
-    }
 
     return (negative ? agc_mpac_dcomp(m) : m); /* TCF COMP */
 }

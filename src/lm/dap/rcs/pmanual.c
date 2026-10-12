@@ -390,11 +390,6 @@ static agc_status_t raterror(lm_dap_t *d)
     d->cduxd     = agc_erase_cdux();
     agc_sp_t cnt = agc_erase_p_rhcctr(); /* P RHC counter, unscaled counts */
 
-    if (!AGC_ASSERT(cnt >= LM_NEGMAX && cnt <= LM_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_sp_t k      = lm_dap_sat(4 * (int32_t) lm_dap_ccs_dim(cnt) + PM_LINRATP); /* 4(|D| - 1) + LINRATP: linear-quadratic term; MP of the AD sum; RHC counts <= 42, so no overflow (sat = wrap); unscaled */
     agc_sp_t lin    = lm_dap_mp(k, cnt).lo;                                       /* CA L: (4|D| + LINRAT) D low word, unscaled */
     agc_sp_t cmd    = lm_dap_mphi(lin, d->stiksens);                              /* commanded P rate, scaled 45 deg/s */

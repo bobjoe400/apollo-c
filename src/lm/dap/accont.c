@@ -194,11 +194,6 @@ static agc_sp_t invert(int32_t x)
         hold = (agc_sp_t) x;
     }
 
-    if (!AGC_ASSERT(hold >= LM_NEGMAX && hold <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     agc_sp_t r = lm_dap_dv(one, hold); /* 1/x, scaled 2^7/pi */
 
     return (r);

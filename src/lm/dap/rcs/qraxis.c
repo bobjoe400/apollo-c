@@ -88,16 +88,6 @@ agc_status_t lm_dap_qerrcalc(void)
     d->qerror = lm_dap_wrap(q); /* XCH QERROR     */
     d->rerror = lm_dap_wrap(r);
 
-    if (!AGC_ASSERT(d->qerror >= LM_NEGMAX && d->qerror <= LM_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d->rerror >= LM_NEGMAX && d->rerror <= LM_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -118,16 +108,6 @@ agc_status_t lm_dap_stillrcs(void)
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     lm_dap_rot_touv(d->qerror, d->rerror, &d->uerror, &d->verror);
-
-    if (!AGC_ASSERT(d->uerror >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d->verror >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (lm_dap_uvloop(LM_UV_TJLAW, 1));
 }
@@ -329,11 +309,6 @@ agc_status_t lm_dap_qraxis(void)
         {
             return (AGC_STATUS_BAD_ARG);
         }
-    }
-
-    if (!AGC_ASSERT(d->edotq >= LM_NEGMAX && d->edotr >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     if (d->cotroler > 0)

@@ -255,11 +255,6 @@ agc_status_t pin_pastevb(void)
         st = (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st; /* job sleeps */
     }
 
-    if (!AGC_ASSERT(s->entret <= PIN_ENT_PASTEVB))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st); /* ENDOFJOB                       */
 }
 

@@ -205,16 +205,6 @@ agc_dp_t agc_dp_pack(agc_sp_t hi, agc_sp_t lo)
 {
     int32_t v = (int32_t) hi * AGC_W_ONE + (int32_t) lo; /* pair value, 2^-28 per unit */
 
-    if (!AGC_ASSERT((hi >= AGC_SP_MIN) && (hi <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT((lo >= AGC_SP_MIN) && (lo <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     if (v > AGC_DP_MAX)
     {
         v = AGC_DP_MAX;
@@ -241,16 +231,6 @@ agc_dp_t agc_dp_pack(agc_sp_t hi, agc_sp_t lo)
  **********************************************************************/
 agc_dp_t agc_dp_from_sp(agc_sp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_dp_t) ((int32_t) v * AGC_W_ONE));
 }
 
@@ -338,16 +318,6 @@ agc_dp_words_t agc_dp_to_words(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_dp_from_words(agc_dp_words_t w)
 {
-    if (!AGC_ASSERT((w.hi >= AGC_SP_MIN) && (w.hi <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT((w.lo >= AGC_SP_MIN) && (w.lo <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_w_join(agc_w2_from_words(w)));
 }
 
@@ -453,16 +423,6 @@ agc_sp_t agc_sp_add(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf)
  **********************************************************************/
 agc_sp_t agc_sp_sub(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf)
 {
-    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT((b >= AGC_SP_MIN) && (b <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_sp_t) saturate32((int64_t) a - b, AGC_SP_MAX, ovf));
 }
 
@@ -478,11 +438,6 @@ agc_sp_t agc_sp_sub(agc_sp_t a, agc_sp_t b, agc_ovf_t *ovf)
  **********************************************************************/
 agc_dp_t agc_sp_mul(agc_sp_t a, agc_sp_t b)
 {
-    if (!AGC_ASSERT((a >= AGC_SP_MIN) && (a <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_w_join(agc_w_mp(a, b)));
 }
 

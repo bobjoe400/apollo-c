@@ -300,11 +300,6 @@ static agc_sp_t sp_of_word(uint16_t w)
 
     agc_sp_t v = ((w & SIGN15) != 0u) ? (agc_sp_t) -(int32_t) ((uint16_t) ~w & 037777u) : (agc_sp_t) w;
 
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return (0);
-    }
-
     return (v);
 }
 
@@ -326,11 +321,6 @@ static void rhc_latch(void)
     agc_erase_set_q_rhcctr(q); /* pitch */
     agc_erase_set_p_rhcctr(p); /* yaw, as yaAGC stores it at 043 */
     agc_erase_set_r_rhcctr(r);
-
-    if (!AGC_ASSERT(q >= AGC_SP_MIN && r >= AGC_SP_MIN))
-    {
-        return;
-    }
 }
 
 void sim_channels_tick(uint32_t cs)

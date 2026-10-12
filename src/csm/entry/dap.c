@@ -221,11 +221,6 @@ agc_sp_t entry_sp_mp(agc_sp_t a, agc_sp_t b)
     agc_sp_t x = (a < AGC_SP_MIN) ? AGC_SP_MIN : a; /* a limited to -1.0, B0 */
     agc_sp_t y = (b < AGC_SP_MIN) ? AGC_SP_MIN : b; /* b limited, B0 */
 
-    if (!AGC_ASSERT(x <= AGC_SP_MAX && y <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (agc_dp_high(agc_sp_mul(x, y)));
 }
 
@@ -688,11 +683,6 @@ static agc_status_t dap_bodyrate(void)
     jet    = agc_dp_high(j);
     rrel   = dap_rateavg(oldelr, jet);
     oldelr = jet;
-
-    if (!AGC_ASSERT(ovf >= -1 && ovf <= 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     dap_bodyrate_p();
 
@@ -1594,11 +1584,6 @@ agc_status_t agc_task_attrates(void)
     es->roll_180 = entry_angle_wrap((int32_t) phidot + es->roll_180);
     es->rolltm   = es->roll_180;
     raxerr       = entry_sp_sat((int32_t) es->betacom - (int32_t) es->beta_180);
-
-    if (!AGC_ASSERT(es->calfa >= -16384))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (agc_flag_test(AGC_FLAG__05GSW))
     {

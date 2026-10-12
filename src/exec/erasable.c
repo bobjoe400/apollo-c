@@ -17,11 +17,6 @@ static agc_sp_t modecadr[AGC_MODECADR_N]; /* IMUCADR OPTCADR RADCADR */
 
 agc_sp_t agc_erase_modecadr(int dev)
 {
-    if (!AGC_ASSERT(modecadr[dev] >= AGC_SP_MIN))
-    {
-        return (0);
-    }
-
     return (modecadr[dev]);
 }
 

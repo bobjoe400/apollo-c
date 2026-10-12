@@ -83,16 +83,6 @@ agc_w2_t agc_w_split(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_w_join(agc_w2_t p)
 {
-    if (!AGC_ASSERT(agc_w_ok(p.hi)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(p.lo)))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_dp_t) (p.hi * AGC_W_ONE + p.lo));
 }
 
@@ -131,16 +121,6 @@ agc_w3_t agc_w3_from_tp(agc_tp_t v)
  **********************************************************************/
 agc_tp_t agc_w3_value(agc_w3_t m)
 {
-    if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(m.m2)))
-    {
-        return (0); /* no valid result */
-    }
-
     return (((agc_tp_t) m.m0 * AGC_W_ONE + m.m1) * AGC_W_ONE + m.m2);
 }
 
@@ -156,16 +136,6 @@ agc_tp_t agc_w3_value(agc_w3_t m)
 agc_w2_t agc_w3_top(agc_w3_t m)
 {
     agc_w2_t p; /* MPAC, MPAC+1 */
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(m.m1)))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
 
     p.hi = m.m0;
     p.lo = m.m1;
@@ -186,16 +156,6 @@ int agc_w_branch(agc_w3_t m)
 {
     int32_t w = m.m0; /* first non-zero word, or 0 */
 
-    if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(m.m2)))
-    {
-        return (0); /* no valid result */
-    }
-
     if (w == 0)
     {
         w = (m.m1 != 0) ? m.m1 : m.m2; /* CCS MPAC +1, then MPAC +2 */
@@ -215,11 +175,6 @@ int agc_w_branch(agc_w3_t m)
 agc_w2_t agc_w2_from_words(agc_dp_words_t w)
 {
     agc_w2_t p = {w.hi, w.lo};
-
-    if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
 
     return (p);
 }
@@ -254,11 +209,6 @@ agc_w3_t agc_w3_from_words(agc_tp_words_t m)
 {
     agc_w3_t r = {m.hi, m.mid, m.lo};
 
-    if (!AGC_ASSERT(agc_w_ok(r.m0) && agc_w_ok(r.m1) && agc_w_ok(r.m2)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -273,11 +223,6 @@ agc_w3_t agc_w3_from_words(agc_tp_words_t m)
 agc_tp_words_t agc_w3_to_words(agc_w3_t m)
 {
     agc_tp_words_t r = {0, 0, 0};
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0) && agc_w_ok(m.m1) && agc_w_ok(m.m2)))
-    {
-        return (r);
-    }
 
     r.hi  = (agc_sp_t) m.m0;
     r.mid = (agc_sp_t) m.m1;
@@ -302,18 +247,8 @@ agc_w2_t agc_w_mp(int32_t a, int32_t b)
 {
     agc_w2_t r = {0, 0};
 
-    if (!AGC_ASSERT(agc_w_ok(a)) || !AGC_ASSERT(agc_w_ok(b)))
-    {
-        return (r);
-    }
-
     r.hi = (a * b) / AGC_W_ONE;
     r.lo = (a * b) % AGC_W_ONE;
-
-    if (!AGC_ASSERT(agc_w_ok(r.hi)))
-    {
-        return (r);
-    }
 
     return (r);
 }
@@ -331,11 +266,6 @@ agc_w2_t agc_w_mp(int32_t a, int32_t b)
 int32_t agc_w_ts(int32_t a16, int *ovf)
 {
     int o = 0; /* overflow of the TS, +-1 or 0 */
-
-    if (!AGC_ASSERT((a16 > -2 * AGC_W_ONE) && (a16 < 2 * AGC_W_ONE)))
-    {
-        return (0); /* no valid result */
-    }
 
     if (a16 >= AGC_W_ONE)
     {
@@ -367,16 +297,6 @@ int32_t agc_w_ts(int32_t a16, int *ovf)
  **********************************************************************/
 int agc_w_ovf(int32_t a16)
 {
-    if (!AGC_ASSERT(a16 > -2 * AGC_W_ONE))
-    {
-        return (0); /* below the 16-bit accumulator: no carry */
-    }
-
-    if (!AGC_ASSERT(a16 < 2 * AGC_W_ONE))
-    {
-        return (0); /* above the 16-bit accumulator: no carry */
-    }
-
     if (a16 >= AGC_W_ONE)
     {
         return (1);
@@ -403,11 +323,6 @@ agc_w2_t agc_w_das(agc_w2_t x, agc_w2_t y, int *ovf)
     agc_w2_t r;         /* stored sum */
     int      carry = 0; /* minor-word overflow into the major word */
 
-    if (!AGC_ASSERT(agc_w_ok(x.lo) && agc_w_ok(y.lo)))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
-
     r.lo = agc_w_ts(x.lo + y.lo, &carry);
     r.hi = agc_w_ts(x.hi + y.hi + carry, ovf);
 
@@ -431,18 +346,8 @@ agc_w2_t agc_w_dv(int32_t a, int32_t l, int32_t k)
     agc_w2_t r        = {AGC_W_POSMAX, 0};
     int32_t  dividend = a * AGC_W_ONE + l; /* A, L value, 2^-28 per unit */
 
-    if (!AGC_ASSERT(k != 0) || !AGC_ASSERT(agc_w_ok(l)))
-    {
-        return (r);
-    }
-
     r.hi = dividend / k;
     r.lo = dividend % k;
-
-    if (!AGC_ASSERT(agc_w_ok(r.hi)))
-    {
-        return (r);
-    }
 
     return (r);
 }
@@ -458,16 +363,6 @@ agc_w2_t agc_w_dv(int32_t a, int32_t l, int32_t k)
 agc_w2_t agc_w_dcs(agc_w2_t p)
 {
     agc_w2_t r; /* complemented pair */
-
-    if (!AGC_ASSERT(agc_w_ok(p.hi)))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(p.lo)))
-    {
-        return ((agc_w2_t){0}); /* no valid result */
-    }
 
     r.hi = -p.hi;
     r.lo = -p.lo;
@@ -548,16 +443,6 @@ agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x)
     agc_w2_t acc;   /* DAS accumulator pair */
     int      o = 0; /* net DAS overflow, the carry into MPAC */
 
-    if (!AGC_ASSERT(agc_w_ok(mpac.hi) && agc_w_ok(mpac.lo)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(agc_w_ok(x.hi) && agc_w_ok(x.lo)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     acc.hi = 0;                                           /* MPAC+1 := 0    */
     acc.lo = agc_w_mp(mpac.lo, x.lo).hi;                  /* MPAC+2         */
     acc    = agc_w_das(acc, agc_w_mp(x.lo, mpac.hi), &o); /* no overflow    */
@@ -586,11 +471,6 @@ agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x)
 agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind)
 {
     int o = 0; /* rounding carry, then TS overflow */
-
-    if (!AGC_ASSERT(agc_w_ok(m.m2)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
 
     o    = agc_w_ovf(2 * m.m2); /* DOUBLE; TS L   */
     m.m2 = 0;
@@ -631,11 +511,6 @@ agc_w3_t agc_w_dsqsub(agc_w2_t p)
     agc_w2_t cross; /* 2 hi lo cross term */
     int      o = 0; /* DAS overflow, the carry into MPAC */
 
-    if (!AGC_ASSERT(agc_w_ok(p.hi) && agc_w_ok(p.lo)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
-
     acc.hi   = 0;
     acc.lo   = agc_w_mp(p.lo, p.lo).hi;                  /* MPAC+2         */
     cross    = agc_w_mp(p.lo, p.hi);
@@ -649,11 +524,6 @@ agc_w3_t agc_w_dsqsub(agc_w2_t p)
     acc      = agc_w_das(acc, agc_w_mp(p.hi, p.hi), &o); /* SQUARE; DAS    */
     m.m0     = acc.hi;
     m.m1     = acc.lo;
-
-    if (!AGC_ASSERT(o == 0))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
 
     return (m);
 }
@@ -784,11 +654,6 @@ agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf)
 {
     agc_w2_t lo2   = {m.m1, m.m2};
     int      carry = 0; /* minor-pair carry into the major word */
-
-    if (!AGC_ASSERT(agc_w_ok(m.m0)))
-    {
-        return ((agc_w3_t){0}); /* no valid result */
-    }
 
     lo2  = agc_w_das(lo2, lo2, &carry);
     m.m1 = lo2.hi;

@@ -333,11 +333,6 @@ void agc_imu_set_gcompsw(agc_sp_t v)
  **********************************************************************/
 agc_sp_t agc_imu_pipa_interval(void)
 {
-    if (!AGC_ASSERT(one_pipadt >= AGC_SP_MIN && one_pipadt <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT(one_pipadt >= 0)) /* cs x 2^8 or a TIME1 snapshot */
     {
         return (0); /* no valid result */
@@ -653,11 +648,6 @@ static agc_sp_t nbd_signed(int axis)
     agc_sp_t n = comp.nbd[axis];              /* NBD for this gyro, pulses/cs x 2^-5 */
     agc_sp_t r = (axis == 2) ? n : sp_neg(n); /* -NBDX, -NBDY, +NBDZ, 2^-5 */
 
-    if (!AGC_ASSERT(r >= AGC_SP_MIN && r <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -720,11 +710,6 @@ static agc_status_t comp_irig_words(const word_pair_t delv[3])
 agc_status_t agc_imu_comp_irig(agc_vec_t delv)
 {
     const word_pair_t dw[3] = {pair_of(delv.c[0]), pair_of(delv.c[1]), pair_of(delv.c[2])}; /* PIPA pulses x 2^14 */
-
-    if (!AGC_ASSERT(dw[0].hi >= AGC_SP_MIN && dw[2].hi <= AGC_SP_MAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (!AGC_ASSERT(pair_value(dw[1]) == delv.c[1]))
     {

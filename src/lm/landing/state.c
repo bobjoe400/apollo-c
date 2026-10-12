@@ -86,16 +86,6 @@ agc_lm_ldg_t *agc_lm_ldg(void)
  **********************************************************************/
 agc_lm_thr_t *agc_lm_thr(void)
 {
-    if (!AGC_ASSERT(lm_thr.fcold >= AGC_SP_MIN)) /* FCOLD is a word      */
-    {
-        return (&lm_thr);
-    }
-
-    if (!AGC_ASSERT(lm_thr.fweight.hi >= AGC_SP_MIN && lm_thr.fweight.lo >= AGC_SP_MIN)) /* FWEIGHT words */
-    {
-        return (&lm_thr);
-    }
-
     return (&lm_thr);
 }
 
@@ -301,16 +291,6 @@ agc_lm_words_t agc_lm_words(agc_dp_t v)
  **********************************************************************/
 agc_dp_t agc_lm_words_value(agc_lm_words_t w)
 {
-    if (!AGC_ASSERT(w.hi >= AGC_SP_MIN && w.lo >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(w.hi <= AGC_SP_MAX && w.lo <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_dp_t) w.hi * LM_WORD + (agc_dp_t) w.lo);
 }
 

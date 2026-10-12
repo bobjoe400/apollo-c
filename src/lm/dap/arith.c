@@ -57,16 +57,6 @@
  **********************************************************************/
 int32_t lm_dap_dpval(lm_dp_pair_t x)
 {
-    if (!AGC_ASSERT(x.hi >= -ARITH_MAXMAG && x.hi <= ARITH_MAXMAG))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(x.lo >= -ARITH_MAXMAG && x.lo <= ARITH_MAXMAG))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((int32_t) x.hi * ARITH_WORD + (int32_t) x.lo);
 }
 
@@ -101,11 +91,6 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v)
     r.hi = (agc_sp_t) hi;
     r.lo = (agc_sp_t) (v - hi * ARITH_WORD);
 
-    if (!AGC_ASSERT(r.lo > -ARITH_WORD && r.lo < ARITH_WORD))
-    {
-        return ((lm_dp_pair_t){0}); /* no valid result */
-    }
-
     return (r);
 }
 
@@ -125,11 +110,6 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v)
  **********************************************************************/
 lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
 {
-    if (!AGC_ASSERT(a >= -ARITH_MAXMAG && a <= ARITH_MAXMAG))
-    {
-        return ((lm_dp_pair_t){0}); /* no valid result */
-    }
-
     return (lm_dap_dpmake((int32_t) a * (int32_t) b));
 }
 
@@ -148,11 +128,6 @@ lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
  **********************************************************************/
 agc_sp_t lm_dap_mphi(agc_sp_t a, agc_sp_t b)
 {
-    if (!AGC_ASSERT(a >= -ARITH_MAXMAG && a <= ARITH_MAXMAG && b >= -ARITH_MAXMAG && b <= ARITH_MAXMAG))
-    {
-        return (0); /* operands must be words */
-    }
-
     lm_dp_pair_t p = lm_dap_mp(a, b); /* A,L product, same scale as a b */
 
     return (p.hi);
@@ -250,11 +225,6 @@ static uint16_t arith_add16(uint16_t a, uint16_t b)
  **********************************************************************/
 static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
 {
-    if (!AGC_ASSERT(n.hi >= -ARITH_MAXMAG && n.hi <= ARITH_MAXMAG && n.lo >= -ARITH_MAXMAG && n.lo <= ARITH_MAXMAG))
-    {
-        return ((lm_dp_pair_t){0}); /* A, L must be words */
-    }
-
     uint16_t a       = arith_reg16(n.hi); /* A register */
     uint16_t l       = arith_reg16(n.lo); /* L register */
     uint16_t div     = arith_reg16(d);    /* divisor register */
@@ -402,11 +372,6 @@ agc_sp_t lm_dap_dv(lm_dp_pair_t n, agc_sp_t d)
 {
     lm_dp_pair_t r = lm_dap_dvqr(n, d); /* quotient and remainder */
 
-    if (!AGC_ASSERT(r.lo >= -ARITH_MAXMAG && r.lo <= ARITH_MAXMAG))
-    {
-        return (0); /* remainder (L) must be a word */
-    }
-
     return (r.hi);
 }
 
@@ -520,11 +485,6 @@ bool lm_dap_ovf(int32_t v)
  **********************************************************************/
 lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y)
 {
-    if (!AGC_ASSERT(x.lo >= -ARITH_MAXMAG && x.lo <= ARITH_MAXMAG && y.lo >= -ARITH_MAXMAG && y.lo <= ARITH_MAXMAG))
-    {
-        return ((lm_dp_pair_t){0}); /* minor words must be words */
-    }
-
     int32_t lo    = (int32_t) x.lo + (int32_t) y.lo; /* minor-word sum, scaled 2^-14 of the major word */
     int32_t carry = 0;                               /* carry into the major word: -1, 0, +1 */
 

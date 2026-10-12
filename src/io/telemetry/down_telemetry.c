@@ -85,11 +85,6 @@ static uint16_t      dntmbuff[DNTMBUFF_WORDS]; /* DNTMBUFF snapshot buffer    */
 /* A signed SP value as the 15-bit ones'-complement word the AGC sends.    */
 static uint16_t sp_word(agc_sp_t v)
 {
-    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     int32_t w = (v >= 0) ? (int32_t) v : (int32_t) WORD15 + (int32_t) v;
     if (!AGC_ASSERT(w >= 0 && w <= (int32_t) WORD15))
     {

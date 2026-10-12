@@ -93,11 +93,6 @@ static const uint16_t r_drive[3] = {GT_BIT11, 0u, GT_BIT12};
  **********************************************************************/
 static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
 {
-    if (!AGC_ASSERT(k >= LM_NEGMAX && k <= LM_POSMAX && x.hi >= LM_NEGMAX && x.hi <= LM_POSMAX))
-    {
-        return ((lm_dp_pair_t){0}); /* operands must be words */
-    }
-
     lm_dp_pair_t hi = lm_dap_mp(x.hi, k); /* x.hi k, same scale as x k */
     lm_dp_pair_t lo = {0, lm_dap_mphi(x.lo, k)};
     lm_dp_pair_t r  = lm_dap_das(hi, lo); /* x k with the minor product carried */

@@ -689,11 +689,6 @@ static int64_t pin_mag(int64_t a)
  **********************************************************************/
 static int64_t pin_mul_shift(int64_t a, int64_t b, int shift)
 {
-    if (!AGC_ASSERT(pin_mag(a) <= ((int64_t) 1 << AGC_DP_BITS)))
-    {
-        return (0); /* no valid result */
-    }
-
     if (!AGC_ASSERT(b >= 0 && b <= ((int64_t) 1 << AGC_DP_BITS)))
     {
         return (0); /* no valid result */

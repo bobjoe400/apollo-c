@@ -352,10 +352,5 @@ static agc_status_t rcs_fdaitotl(void)
     c->ak[1] = csm_dap_ads(c->ak[1], csm_dap_mp_hi(t, r->amgb5));
     c->ak[2] = csm_dap_ads(c->ak[2], csm_dap_mp_hi(t, r->amgb8));
 
-    if (!AGC_ASSERT(c->ak[2] >= AGC_SP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK); /* RESUME: end phase 1 of RCS DAP           */
 }

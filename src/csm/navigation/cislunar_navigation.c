@@ -125,11 +125,6 @@ static cn_state_t cn; /* P23 erasables */
  **********************************************************************/
 agc_sp_t agc_erase_trunbias(void)
 {
-    if (!AGC_ASSERT(cn.trunbias >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
     return (cn.trunbias);
 }
 

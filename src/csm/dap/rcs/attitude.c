@@ -164,11 +164,6 @@ agc_status_t csm_rcs_ahfnorot(void)
         return (rcs_holdfunc()); /* MASK BIT13; BZMF HOLDFUNC            */
     }
 
-    if (!AGC_ASSERT(r->holdflag >= AGC_SP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (r->holdflag <= 0)
     { /* AUTOCONT: HOLDFLAG +0, -0, - (BZMF) */
         return (rcs_atthold());
@@ -228,11 +223,6 @@ static agc_status_t rcs_freecont(void)
 static agc_status_t rcs_holdfunc(void)
 {
     const agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables    */
-
-    if (!AGC_ASSERT(r->holdflag >= AGC_SP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (r->holdflag == 0)
     {

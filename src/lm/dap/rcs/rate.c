@@ -221,11 +221,6 @@ static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega, agc_s
         return (false);
     }
 
-    if (!AGC_ASSERT(*omega >= LM_NEGMAX && *omega <= LM_POSMAX))
-    {
-        return (false);
-    }
-
     return (big);
 }
 

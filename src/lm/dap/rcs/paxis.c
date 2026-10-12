@@ -317,11 +317,6 @@ agc_status_t lm_dap_calcperr(void)
     d->e      = lm_dap_wrap((int32_t) e + x); /* ADS E: may wrap */
     d->perror = d->e;                         /* eight-ball     */
 
-    if (!AGC_ASSERT(d->perror >= LM_NEGMAX && d->perror <= LM_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(d->cduxd <= 077777u))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -413,11 +408,6 @@ agc_status_t lm_dap_purgency(void)
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->omegapd); /* EDOTP     */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d->edot >= LM_NEGMAX && d->edot <= LM_POSMAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }

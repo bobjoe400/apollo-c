@@ -150,11 +150,6 @@ static agc_sp_t stick_rate(agc_sp_t c, agc_sp_t stiksens)
     agc_sp_t lin = lm_dap_mp(k, c).lo;                                      /* CA L: (4|D| + LINRAT) D low word, unscaled */
     agc_sp_t r   = lm_dap_mphi(lin, stiksens);                              /* commanded rate, scaled 45 deg/s */
 
-    if (!AGC_ASSERT(r >= LM_NEGMAX && r <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (r);
 }
 

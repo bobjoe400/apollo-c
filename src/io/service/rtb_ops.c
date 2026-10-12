@@ -212,11 +212,6 @@ int agc_rtb_sgnagree(agc_mpac_tp_t *mpac)
 {
     for (int i = 0; i < 3; i++)
     {
-        if (!AGC_ASSERT(mpac->w[i] >= AGC_SP_MIN && mpac->w[i] <= AGC_SP_MAX))
-        {
-            return (0);
-        }
-
     }
 
     int64_t v    = ((int64_t) mpac->w[0] * SP_RANGE * SP_RANGE) + ((int64_t) mpac->w[1] * SP_RANGE) + (int64_t) mpac->w[2]; /* V, units of 2^-42 */
@@ -394,11 +389,6 @@ uint16_t agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc)
 {
     int32_t a = cdu_pattern_value(angle_pattern); /* angle, 2^-14 half-rev */
 
-    if (!AGC_ASSERT(inc >= AGC_SP_MIN && inc <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
-    }
-
     uint16_t r = cdu_value_pattern(a + (int32_t) inc); /* new pattern */
 
     if (!AGC_ASSERT(r <= CDU_MASK))
@@ -462,16 +452,6 @@ agc_vec_t agc_rtb_readpips(void)
     agc_sp_t z = agc_erase_pipaz(); /* PIPAZ, pulses, 2^0 */
 
     agc_relint();
-
-    if (!AGC_ASSERT(x >= AGC_SP_MIN && x <= AGC_SP_MAX))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(y >= AGC_SP_MIN && z >= AGC_SP_MIN))
-    {
-        return (agc_vec_zero()); /* no valid result */
-    }
 
     agc_vec_t v; /* VMODE result, 2^14 pulses */
 

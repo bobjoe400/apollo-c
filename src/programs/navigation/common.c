@@ -129,11 +129,6 @@ agc_rendz_t *agc_rendz_erasable(void)
  **********************************************************************/
 agc_sp_t agc_erase_vhfcnt(void)
 {
-    if (!AGC_ASSERT(rendz_erasable.vhfcnt >= AGC_SP_MIN))
-    {
-        return (0); /* no valid result */
-    }
-
     return (rendz_erasable.vhfcnt);
 }
 

@@ -370,19 +370,9 @@ agc_sp_t align_word_to_sp(uint16_t w)
 /* A signed SP as the raw 15-bit 1's complement word. */
 uint16_t align_sp_to_word(agc_sp_t v)
 {
-    if (!AGC_ASSERT((v >= AGC_SP_MIN) && (v <= AGC_SP_MAX)))
-    {
-        return (0); /* no valid result */
-    }
-
     if (v < 0)
     {
         return ((uint16_t) ((int32_t) v + WORD_ONES_NEG));
-    }
-
-    if (!AGC_ASSERT(v <= AGC_SP_MAX))
-    {
-        return (0); /* no valid result */
     }
 
     return ((uint16_t) v);
@@ -393,11 +383,6 @@ agc_dp_t align_dsptem1(void)
 {
     const agc_sp_t hi = align_word_to_sp(agc_dsky_dsptem(0));
     const agc_sp_t lo = align_word_to_sp(agc_dsky_dsptem(1));
-
-    if (!AGC_ASSERT((hi >= AGC_SP_MIN) && (lo >= AGC_SP_MIN)))
-    {
-        return (0); /* no valid result */
-    }
 
     return (agc_dp_pack(hi, lo));
 }

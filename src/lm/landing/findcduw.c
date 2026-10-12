@@ -635,11 +635,6 @@ static void fc_rates(const agc_cdutrig_t *trig)
     agc_erase_set_omegapd(p);
     agc_erase_set_omegaqd(q);
     agc_erase_set_omegard(r);
-
-    if (!AGC_ASSERT(p >= AGC_SP_MIN && q >= AGC_SP_MIN && r >= AGC_SP_MIN))
-    {
-        return;
-    }
 }
 
 /**********************************************************************
@@ -659,11 +654,6 @@ static void fc_transfer(void)
         /* ONESTO2S         */
         /* DELCDUX, DELCDUY, DELCDUZ by index (INDEX TEM2 / TS DELCDUX). */
         if (!AGC_ASSERT(i >= 0 && i <= 2))
-        {
-            return;
-        }
-
-        if (!AGC_ASSERT(inc >= AGC_SP_MIN && inc <= AGC_SP_MAX))
         {
             return;
         }

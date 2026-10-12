@@ -91,16 +91,6 @@ agc_status_t lm_dap_altdsply(void)
     d->ak[2] = (agc_sp_t) -d->rerror;
     d->ak[0] = (agc_sp_t) -d->perror;
 
-    if (!AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -126,16 +116,6 @@ agc_status_t lm_dap_dsplytot(void)
     d->ak[1] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m21()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m22()));
     d->ak[2] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m31()) + (int32_t) lm_dap_mphi(zdif, agc_erase_m32()));
     d->ak[0] = lm_dap_sat((int32_t) lm_dap_mphi(ydif, agc_erase_m11()) + (int32_t) xdif);
-
-    if (!AGC_ASSERT(d->ak[0] >= LM_NEGMAX && d->ak[0] <= LM_POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(d->ak[1] >= LM_NEGMAX && d->ak[2] >= LM_NEGMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }

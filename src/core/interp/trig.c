@@ -683,11 +683,6 @@ static agc_tp_words_t arc_mpac(agc_interp_t *ip, agc_tp_words_t m, bool asin)
  **********************************************************************/
 agc_tp_words_t agc_mpac_asin(agc_interp_t *ip, agc_tp_words_t m)
 {
-    if (!AGC_ASSERT((m.hi >= AGC_SP_MIN) && (m.hi <= AGC_SP_MAX)))
-    {
-        return (m);
-    }
-
     return (arc_mpac(ip, m, true));
 }
 
@@ -702,10 +697,5 @@ agc_tp_words_t agc_mpac_asin(agc_interp_t *ip, agc_tp_words_t m)
  **********************************************************************/
 agc_tp_words_t agc_mpac_acos(agc_interp_t *ip, agc_tp_words_t m)
 {
-    if (!AGC_ASSERT((m.hi >= AGC_SP_MIN) && (m.hi <= AGC_SP_MAX)))
-    {
-        return (m);
-    }
-
     return (arc_mpac(ip, m, false));
 }

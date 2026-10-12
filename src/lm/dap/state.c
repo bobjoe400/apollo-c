@@ -716,11 +716,6 @@ agc_dp_t agc_erase_aosq(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(p.hi >= LM_NEGMAX && p.hi <= LM_POSMAX && p.lo >= LM_NEGMAX && p.lo <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return ((agc_dp_t) lm_dap_dpval(p));
 }
 
@@ -739,11 +734,6 @@ agc_dp_t agc_erase_aosr(void)
     lm_dp_pair_t    p = {d->aosr, d->aosr_lo}; /* AOSR words, DP scaled pi/2 rad/s^2 */
 
     if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(p.hi >= LM_NEGMAX && p.hi <= LM_POSMAX && p.lo >= LM_NEGMAX && p.lo <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
@@ -874,11 +864,6 @@ agc_sp_t agc_erase_1jacc(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -897,11 +882,6 @@ agc_sp_t agc_erase_1jaccq(void)
     agc_sp_t        v = d->jacc[1];     /* 1JACCQ, scaled pi/4 rad/s^2 */
 
     if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
@@ -928,11 +908,6 @@ agc_sp_t agc_erase_1jaccr(void)
         return (0); /* no valid result */
     }
 
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
-    {
-        return (0); /* no valid result */
-    }
-
     return (v);
 }
 
@@ -951,11 +926,6 @@ agc_sp_t agc_erase_stiksens(void)
     agc_sp_t        v = d->stiksens;    /* STIKSENS, scaled 1 */
 
     if (!AGC_ASSERT(dap_valid(d)))
-    {
-        return (0); /* no valid result */
-    }
-
-    if (!AGC_ASSERT(v >= LM_NEGMAX && v <= LM_POSMAX))
     {
         return (0); /* no valid result */
     }
