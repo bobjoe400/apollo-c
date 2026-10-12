@@ -3,18 +3,16 @@
 Updated: 2026-10-12
 
 ## Running agents (max 2)
-- finish (Opus, ALONE): apply the EVA pass on disk (33 entries: VALID 100,
-  INVALID 2, UNKNOWN 146, DEAD 644): delete VALID guards, convert the 21
-  setter guards, check_rules bare invocation, drop the unbounded sim entry
-  from eva_run, all gates green incl. `make check`. Note: docs/modules/finish.md.
-- lm-simulator (Opus): PLAN 10a, LM Simulator closed loop vs yaAGC
-  (docs/agents/lm-simulator.md). Note: docs/modules/lm-simulator.md.
-- After finish: nassp-study (10b, reading only; docs/agents/nassp-study.md),
-  then document wave resumes from docs/modules/document.md; then 10c if
-  feasible; then the lead ticks the definition of done in PLAN.md.
-- EVA: FINISHED (user, 2026-10-12: stop here). The unbounded sim entry
-  exhausted memory (14.4 GB at 78 % coverage); sim_harness covers src/sim.
-  No further runs; proof harnesses (coverage-shaped) deliberately not built.
+- lm-simulator (Opus): PLAN 10a, Virtual AGC LM Simulator closed loop vs
+  yaAGC. Note: docs/modules/lm-simulator.md.
+- document (Opus, resumed): deliverables a-e on the FINAL code (d53337b).
+  Note: docs/modules/document.md.
+- Queued: nassp-study (10b, reading only). Host side (Windows via WSL
+  interop): Orbiter 2016 / 2024 / nightly installs with NASSP beta 2651
+  under C:\; stock NASSP Apollo 11 launch still crashing in Saturn5.dll
+  on the 2024 release, nightly being tried (worklog).
+- CODE IS FINAL: finish lane applied the EVA pass (d53337b); all gates
+  green; nothing under src/ include/ tests/ tools/prove changes any more.
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md

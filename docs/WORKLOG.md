@@ -784,3 +784,11 @@
             it (3,912 files), Orbiter.exe exports the symbol, D3D9Client
             bundled and activated in Orbiter_NG.cfg. C:\Orbiter2016 left
             as is.
+2026-10-12  finish DONE and committed (d53337b): 100 EVA-VALID guards
+            deleted (manual.tsv rows), 20 setter guards fallible, 51 more
+            void, check_rules bare invocation fixed, sim entry dropped
+            from eva_run. CODE FINAL. Document wave relaunched on it.
+            Host: NASSP beta crashes in Saturn5.dll on Orbiter 2024
+            release after scene init (first frame); Orbiter nightly x86
+            (single exe, Orbiter.cfg ACTIVE_MODULES block) installed as
+            C:\Orbiter-nightly with NASSP, user to try.
