@@ -69,6 +69,12 @@ Phases (checkpoint docs/modules/nassp-integration.md Progress after each):
    bug (file:line, AGC page) in docs/modules/nassp-integration.md; fix
    flight bugs in src/ with tests (the Linux gates must stay green:
    make, make test, make check).
+HARD RULE (user, 2026-10-12): every host run completes UNATTENDED. Crew
+actions (UP TLM ACCEPT, CAPCOM menu answers, DSKY keys, checklist
+switches) are driven by NASSP's checklist auto-execute mode and injected
+key presses from the script; a run that waits on a person is invalid.
+What cannot be automated is listed per milestone for the user, never
+waited for silently. Prove one unattended stock run before comparing.
 Order: 1 and 2 first (2 can run while 1 is read); 3-5 only after 1 and 2
 report. If 2 fails for toolchain reasons, report exactly what is missing
 (winget ids) and stop there. GUI: Orbiter must run on the host display;
