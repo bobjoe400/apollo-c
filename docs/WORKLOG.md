@@ -704,3 +704,12 @@
             stopped at a checkpoint (its output kept for re-check on
             resume). Order fixed: loose-ends -> frozen tree -> EVA ->
             apply -> document wave.
+2026-10-12  User: the document wave's read found inconsistencies, so that
+            check belongs before EVA. Its exec_cp_cleanup_lm "empty body"
+            was a misread (body intact); the two comment findings stand.
+            Lead wrote tools/prolog_check.py (libclang: RETURNS vs actual
+            returns with propagation, ARGUMENTS vs parameters, flags and
+            calls named in a prolog vs the body, empty bodies): 118
+            findings (lm/dap 46, csm/burns 14, nav/aux 11, ...), `make
+            prolog-report`. Launched prolog-consistency (Opus) on them,
+            excluding loose-ends' directories; those follow after it.

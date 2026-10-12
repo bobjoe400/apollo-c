@@ -7,6 +7,10 @@ Updated: 2026-10-12
   DOWNCNTL words, waitlist delay bound, pad keyword for the impulsive burn,
   the 64-jobs limit rationale, prog-align note row). Note:
   docs/modules/loose-ends.md.
+- prolog-consistency (Opus): the 118 `make prolog-report` findings (stale
+  RETURNS/ARGUMENTS/calls/flags in prologs after the rewrite passes), all
+  directories except src/exec, src/csm/entry, src/sim while loose-ends is
+  in them. Note: docs/modules/prolog-consistency.md.
 - document: STOPPED (launched too early, user 2026-10-12); resumes from
   docs/modules/document.md Progress AFTER the EVA pass.
 - EVA: STOPPED (same reason). Runs ONLY when every open item is closed and
@@ -19,8 +23,8 @@ Updated: 2026-10-12
    early-reviewed lanes).
 3. Lead: rename include/agc/core/assert.h -> agc_assert.h (237 includes;
    commands in docs/modules/review-state-flags.md).
-3. ORDER (user, 2026-10-12): (a) loose ends closed, gates green, tree
-   frozen; (b) ONE EVA run at the very end (after reviews and the GUI-verified sim):
+3. ORDER (user, 2026-10-12): (a) loose ends closed AND `make
+   prolog-report` at 0, gates green, tree frozen; (b) ONE EVA run at the very end (after reviews and the GUI-verified sim):
    cleanup of provably-dead guards, not a working-code step (user,
    2026-10-11). No EVA runs before that. The sim entry runs unbounded,
    alone, with no timeout (it converges; memory is the limit).

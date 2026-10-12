@@ -23,7 +23,7 @@ UNCRUSTIFY     ?= uncrustify
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands clean
+.PHONY: all lib lib-debug sim sim-debug scenarios test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -160,3 +160,8 @@ clean:
 # under build/).  Flags mirror the object rules above.
 compile_commands:
 	@python3 -I tools/compile_commands.py "$(CC) $(CSTD) $(WARN) $(CFLAGS) $(CPPFLAGS) -DAGC_HOST_DEBUG" $(LIB_SRCS) $(SIM_SRCS) $(TEST_SRCS)
+
+# Prolog-versus-body consistency (report only): stale RETURNS/ARGUMENTS
+# text, flags or calls a prolog names that the body no longer has.
+prolog-report:
+	@python3 -I tools/prolog_check.py --tsv $(BUILD)/prolog_findings.tsv | tail -1
