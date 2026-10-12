@@ -198,11 +198,26 @@ Then: lead assert.h rename; ONE Frama-C EVA run (`make prove`, `make
 
 ## Stretch (not yet in the definition of done; user to decide)
 
-10. Full-mission closed loop via NASSP (Apollo add-on for the Orbiter
-    simulator): it embeds yaAGC's engine behind the same channel interface
-    our socket layer implements; replace that engine with libagc. This is
-    the ONLY closed-loop route (user, 2026-10-11): we do not build a world
-    model of our own. Timing: after item 7.
+10. Full-mission closed loop (user, 2026-10-12: "a good final test would
+    be to run the entire Apollo 11 mission in the CSM and LM using our
+    backend"; everything runs from this Linux/WSL host). Phases:
+    a. LM Simulator (Virtual AGC Contributed/LM_Simulator, Tcl/Tk): the
+       one closed-loop flight test available with an existing proven tool
+       on Linux; LM only; compared side by side with yaAGC on the same
+       sequence (docs/agents/lm-simulator.md).
+    b. NASSP integration study (docs/agents/nassp-study.md): NASSP embeds
+       yaAGC's engine and reads/writes erasable directly; inventory of
+       its AGC interface, the erasable map onto our typed storage, the
+       shim design, the build/run plan. NASSP/Orbiter are Windows
+       programs: the build and run go through WSL interop to the Windows
+       host (powershell.exe, winget, MSBuild) if interop is enabled, else
+       the study stands as the documented next step.
+    c. If (b) is feasible from here: build NASSP with libagc behind the
+       engine shim on the host, run Apollo 11 with NASSP's MCC/checklist
+       automation, script what can be scripted, verify milestones against
+       the stock NASSP run. Expected to be multi-day; the erasable map and
+       mission scripting are the risks.
+    This is the ONLY closed-loop route: we do not build a world model.
 
 ## Principle: build only the AGC software (user, 2026-10-11)
 

@@ -7,8 +7,11 @@ Updated: 2026-10-12
   INVALID 2, UNKNOWN 146, DEAD 644): delete VALID guards, convert the 21
   setter guards, check_rules bare invocation, drop the unbounded sim entry
   from eva_run, all gates green incl. `make check`. Note: docs/modules/finish.md.
-- After it: document wave resumes ALONE from docs/modules/document.md
-  Progress; then the lead ticks the definition of done in PLAN.md.
+- lm-simulator (Opus): PLAN 10a, LM Simulator closed loop vs yaAGC
+  (docs/agents/lm-simulator.md). Note: docs/modules/lm-simulator.md.
+- After finish: nassp-study (10b, reading only; docs/agents/nassp-study.md),
+  then document wave resumes from docs/modules/document.md; then 10c if
+  feasible; then the lead ticks the definition of done in PLAN.md.
 - EVA: FINISHED (user, 2026-10-12: stop here). The unbounded sim entry
   exhausted memory (14.4 GB at 78 % coverage); sim_harness covers src/sim.
   No further runs; proof harnesses (coverage-shaped) deliberately not built.

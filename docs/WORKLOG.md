@@ -761,3 +761,11 @@
             stopped; verdicts merged from the 33 completed entries
             (VALID 100, INVALID 2, UNKNOWN 146, DEAD 644). Launched
             finish (Opus) to apply them and close the gates.
+2026-10-12  User: final test = the whole Apollo 11 mission (CSM + LM) on our
+            backend via VirtualAGC and NASSP, all from this Linux/WSL
+            host. Virtual AGC alone has no spacecraft; its LM Simulator
+            (Tcl/Tk) is the one closed-loop tool: tcl/tk installed by the
+            user, lm-simulator lane launched (10a). NASSP is Windows-only
+            and embeds yaAGC's engine; route is WSL interop to the host
+            (10b study first, 10c build/run if feasible). PLAN item 10
+            rewritten; assignments written.
