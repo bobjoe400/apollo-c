@@ -496,7 +496,7 @@ static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
 
             if (write)
             {
-                return (agc_selfcheck_set_smode((uint16_t) (*v & 077777)));
+                agc_selfcheck_set_smode((uint16_t) (*v & 077777));
             }
 
             *v = (agc_dp_t) agc_selfcheck_smode();

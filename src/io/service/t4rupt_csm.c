@@ -188,9 +188,8 @@ agc_sp_t agc_erase_swsample(void)
  * ARGUMENTS:
  *   fresh  bool  I   true for a fresh start, false for a restart
  *
- * RETURNS: AGC_STATUS_OK, or BAD_ARG if the state is out of range
  **********************************************************************/
-agc_status_t agc_t4_optics_reset(bool fresh)
+void agc_t4_optics_reset(bool fresh)
 {
     if (fresh)
     {
@@ -202,18 +201,6 @@ agc_status_t agc_t4_optics_reset(bool fresh)
     {
         optmodes = (uint16_t) ((optmodes & OPTINITR) + BIT7);
     }
-
-    if (!AGC_ASSERT(optmodes <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(optics_ok()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

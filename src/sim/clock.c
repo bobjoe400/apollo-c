@@ -31,6 +31,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
+#include "agc/io/service.h"
 #include "internal.h"
 
 #define SIM_JOBS_PER_CS 64      /* executive bound per centisecond      */
@@ -355,7 +356,8 @@ static void clock_exec(void)
 
         if (st == AGC_STATUS_NOT_FOUND)
         {
-            break; /* idle */
+            agc_selfcheck_idle_pass(); /* DUMMYJOB -> ADVAN -> SELFRET */
+            break;                     /* idle */
         }
 
         g_stats.jobs++;

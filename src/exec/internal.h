@@ -129,12 +129,14 @@ void exec_vac5stor(void); /* CSM debug copy of tables  */
  * The AGC restart code calls routines that apollo-c places above exec
  * (DAP, IMU, SERVICER). These few calls are collected in
  * change_program/, the layering exception next to dispatch.c.         */
-void         exec_up_stoprate(void);       /* CSM GOPROG3 / INITSUB: STOPRATE */
-agc_status_t exec_up_servidle(void);       /* LM STRTIDLE: SERVIDLE          */
-void         exec_up_setcoars(void);       /* CSM GOPROG: SETCOARS (NO ATT)  */
-agc_status_t exec_up_startsb2(void);       /* STARTSB2: other modules' resets */
-agc_status_t exec_up_dofstart(bool slap1); /* DOFSTART: other modules' resets */
-agc_status_t exec_up_goprog_optics(void);  /* CSM GOPROG: OPTMODES       */
+void         exec_up_stoprate(void);        /* CSM GOPROG3 / INITSUB: STOPRATE */
+agc_status_t exec_up_servidle(void);        /* LM STRTIDLE: SERVIDLE          */
+void         exec_up_setcoars(void);        /* CSM GOPROG: SETCOARS (NO ATT)  */
+void         exec_up_startsub(void);        /* STARTSUB: DNTMGOTO, LM RADMODES */
+agc_status_t exec_up_startsb2(void);        /* STARTSB2: other modules' resets */
+agc_status_t exec_up_dofstart(bool slap1);  /* DOFSTART: other modules' resets */
+void         exec_up_goprog_optics(void);   /* CSM GOPROG: OPTMODES           */
+void         exec_up_goprog_downlist(void); /* LM GOPROG: DNLSTCOD = AGSWORD  */
 
 void exec_initsub_csm(void); /* INITSUB / RAKE (CSM)           */
 

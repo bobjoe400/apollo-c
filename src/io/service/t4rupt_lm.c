@@ -64,6 +64,8 @@
 #define RCDUFBIT          000100u                    /* BIT7: RR CDU OK                   */
 #define REPOSBIT          002000u                    /* BIT11: reposition in progress     */
 #define WORD15            077777u                    /* one AGC word, 15 bits             */
+#define BIT6              000040u                    /* channel 33 bit 6: LR position 2   */
+#define RMODINIT          000102u                    /* RMODINIT: bits 7 and 2            */
 #define OCT05776          005776u                    /* keeps all but CDES/REMODE/REPOS.. */
 #define OCT10001          010001u                    /* RRCDUZRO and TURNON bits          */
 #define OCT32002          032002u                    /* remode, zeroing, monitor, no auto */
@@ -114,30 +116,36 @@ static bool matrix_consistent(void)
  * RADMODES (ERASABLE_ASSIGNMENTS; EQUALS FLGWRD12, FLAGWORD_ASSIGNMENTS
  * p.85) -- the radar mode bit word, read
  *
- * RETURNS: RADMODES (15 bits), or 0 in a CSM build
+ * RETURNS: uint16_t -- RADMODES (15 bits)
  **********************************************************************/
 uint16_t agc_erase_radmodes(void)
 {
-    uint16_t v = 0; /* RADMODES bits */
-
-    v = agc_flagword_get(RADMODES_WORD);
-
-    return (v);
+    return (agc_flagword_get(RADMODES_WORD));
 }
 
 /**********************************************************************
  * RADMODES (FLGWRD12, FLAGWORD_ASSIGNMENTS p.85) -- the radar mode bit
- * word, written
+ * word, written (TS RADMODES: every caller forms a 15-bit word)
  *
  * ARGUMENTS:
  *   v  uint16_t  I   new RADMODES, 15 bits
  **********************************************************************/
 void agc_erase_set_radmodes(uint16_t v)
 {
-    if (AGC_ASSERT(v <= WORD15))
-    {
-        agc_flagword_set(RADMODES_WORD, v);
-    }
+    agc_flagword_set(RADMODES_WORD, v);
+}
+
+/**********************************************************************
+ * STARTSUB (FRESH_START_AND_RESTART.agc L p.219): CAF BIT6, RAND CHAN33,
+ * AD RMODINIT, TS RADMODES -- on every fresh start and hardware restart
+ * the radar modes restart from RMODINIT (RR not in auto, bit 2; RR CDU
+ * OK, bit 7) plus the LR position bit as channel 33 reads it.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+void agc_t4_radmodes_init(void)
+{
+    agc_erase_set_radmodes((uint16_t) ((agc_chan_read((int) AGC_CHAN_CHAN33) & BIT6) + RMODINIT));
 }
 
 /**********************************************************************

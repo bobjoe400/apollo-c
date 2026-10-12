@@ -582,3 +582,10 @@
 2026-10-11  User: usage limit approaching, pause one lane. review-sys-misc
             (the newer of the two) told to checkpoint and stop;
             review-prog-align keeps running. One lane running.
+2026-10-11  review-sys-misc checkpoint committed: self_check.c to the rope
+            (ROPECHK one bank per idle pass, SCOUNT, the three error
+            paths; both ropes' bank sums pass; the sim now runs it when
+            idle), N08 ALMCADR closed, restart resets wired (DNTMGOTO,
+            LM RADMODES, AGSWORD downlist, DUMPCNT on V36 only). Stopped
+            in down_telemetry.c. Requests routed in review_items.md.
+            prog-align's in-progress files left uncommitted.

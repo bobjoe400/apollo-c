@@ -307,22 +307,15 @@ agc_status_t agc_svc_delay_wake(int slot)
 /**********************************************************************
  * STARTSB2 (FRESH_START_AND_RESTART.agc p.184 CM) -- DELAYLOC +0..+3 = 0
  *
- * RETURNS: AGC_STATUS_OK
+ * ARGUMENTS: none
  **********************************************************************/
-agc_status_t agc_svc_startsub_reset(void)
+void agc_svc_startsub_reset(void)
 {
     for (int i = 0; i < DELAYNUM; i++)
     {
         delayloc[i] = AGC_JOB_NONE;
         delaydue[i] = 0;
     }
-
-    if (!AGC_ASSERT(delayloc[0] == AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

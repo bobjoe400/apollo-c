@@ -13,22 +13,64 @@ RADMODES one word; sysmisc test free of scratch stand-ins.
 
 ## Progress
 (Per file "DONE" = AGC fidelity checked side by side, check_style clean,
-check_rules clean incl. rule-5 density >= 2.0, compiles, sysmisc test passes.)
+check_rules clean, compiles, sysmisc test passes. Resumed 2026-10-11: the
+density criterion is obsolete (rule 5 by spirit); the earlier DONE files
+still need the status-handling-2 diff check and a sweep for assertions
+that cannot fail (assert-after-assign, vehicle asserts on vehicle-only
+paths) -- tracked as "S-H2" below.)
 * DONE t4rupt_lm.c
 * DONE t4rupt.c
 * DONE t4rupt_csm.c (agc_t4_optics_cmd wrapper removed from it and service.h)
 * DONE rtb_ops.c (1TO2SUB/1STO2S, CDUINC, CDULOGIC checked against the rope
   in yaAGC: 33 cases bit-exact; spec in SCRATCH/review-sys-misc/rtb*.spec)
 * DONE service.c
-* TODO self_check.c, interbank.c
+* DONE self_check.c (fidelity pass 2: one bank per idle pass, SCOUNT
+  counting, -0/- option error paths, set_rope validates, void resets;
+  real Comanche055/Luminary099 ropes pass ROPECHK in test_sysmisc;
+  idle hook in src/sim/clock.c; STARTSB2 SELFRET via exec_up_startsb2)
+* DONE N08 ALMCADR orphans (exec/nouns.c: R1 agc_alarm_almcadr job,
+  R2 +0 DEVIATION, R3 ERCOUNT; duplicate ERCOUNT in fresh_start.c removed)
+* DONE STARTSUB delegations wired: exec_up_startsub (DNTMGOTO, LM
+  RADMODES = ch33 bit6 + RMODINIT), exec_up_goprog_downlist (LM
+  DNLSTCOD = AGSWORD); LM DUMPCNT moved to SLAP1 (agc_telem_slap1)
+* DONE interbank.c (file prolog; style clean)
+* PAUSED 2026-10-11 (lead: usage limit) IN down_telemetry.c. Done there:
+  DOFSTART part (agc_telem_fresh_start(void): DNLSTCOD=0, LM AGSWORD=0),
+  agc_telem_slap1 (LM DUMPCNT=BIT12, was wrongly on every DOFSTART),
+  agc_telem_restart void. Verified vs rope: DODNCHAN sends DNTM1 = ch n,
+  DNTM2 = ch n+1 (oracle run, SCRATCH/review-sys-misc/dnchan.spec); NEWLIST
+  ID, SENDID, snapshot (last entry sent now, rest to DNTMBUFF), FETCH2WD,
+  TIME2 word-order test only for control entries, ERASID CSM 1777 / LM
+  1776: all match. RADMODES,DAPBOOLS k==1 already = FLGWRD13 (DAPBOOLS
+  EQUALS FLGWRD13 confirmed) -> RADMODES one word DONE.
+  NEXT in down_telemetry.c: (a) dumped words: read agc_erase_read_ecadr(
+  DUMPLOC & 03777) and +1 instead of 0,0 (DNDUMP1/DNDUMP2), (b) delete
+  cannot-fail asserts (dndump_id LOW8, dnphase1 !active, start_dump,
+  `&sub != NULL`), (c) agc_erase_set_agsword silent assert, (d) prologs.
+  Then downlink_lists_{csm,lm}.c, extended_verbs*.c, uplink_update.c,
+  systems_test.c.
+* Rule-5 sweep still owed in the earlier DONE files: t4rupt_lm.c
+  (gimbal_matrix LM assert + matrix_consistent quota check, rr_monitor
+  post-XOR assert), t4rupt_csm.c optics_ok asserts, set_optind /
+  set_upsvflag silent `if (AGC_ASSERT) store` setters.
+* Cross-lane edits made (callers of changed lane API): src/exec/
+  {alarm.c (agc_alarm_almcadr), nouns.c (N08), fresh_start.c (STARTSUB
+  hook, dup ERCOUNT removed), change_program/idle.c (exec_up_startsub,
+  exec_up_goprog_downlist, void resets), internal.h}, include/agc/exec/
+  exec.h, src/io/dsky/nouns/data.c (set_smode void), src/sim/clock.c
+  (idle self-check hook), tests/io/nouns.c (N08 now resolves).
+  NOTE: one `tools/format.sh` call also ran over review-prog-align's
+  modified files (whitespace-only formatter, fixed point).
+* Requests: io-dsky: display requests carry no MPAC+2 (MPAC2SAV/MARK2PAC),
+  so SHOW-BANKSUM's V05N01 at SKEEP1 cannot show SKEEP1-3
+  (agc_selfcheck_showsum_words holds them). sim: register the rope image
+  (agc_selfcheck_set_rope; yaYUL .bin order 2,3,0,1,4.., word>>1) so
+  ROPECHK/SHOW-BANKSUM run on real fixed memory.
 * TODO down_telemetry.c (check RADMODES,DAPBOOLS entry: k==1 returns 0,
   should be FLGWRD13/DAPBOOLS), downlink_lists_csm.c, downlink_lists_lm.c
 * TODO extended_verbs.c, extended_verbs_csm.c, extended_verbs_lm.c,
   extended_verbs_lm_radar.c, uplink_update.c
 * TODO systems_test.c: P07 fixed-memory part translated
-* PARTIAL RADMODES one word: agc_erase_radmodes = flagword 12 verified; no
-  other copy in src (grep); finish with the downlist DAPBOOLS fix
-* TODO N08 ALMCADR orphans
 * TODO tests/io/sysmisc.c free of scratch stand-ins; style for it
 * TODO include/agc/io/service.h style (8 findings)
 * No file is mid-edit; every touched file compiles (-Werror) and is clean.

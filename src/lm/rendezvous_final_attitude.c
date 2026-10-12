@@ -48,14 +48,16 @@ agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
  */
 agc_status_t agc_job_rendezvous_final_attitude(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
+    const agc_status_t st = agc_imu_status_check(); /* R02BOTH */
+
+    if (st == AGC_STATUS_POODOO)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (AGC_STATUS_OK); /* alarm 220/210, P00 started */
     }
 
-    if (agc_imu_status_check() != AGC_STATUS_OK)
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_OK); /* alarm 220/210, ended  */
+        return (st);
     }
 
     agc_erase_set_optionx(0, OPTION_CODE);
@@ -217,10 +219,5 @@ agc_status_t agc_job_rendezvous_final_attitude_maneuver(agc_job_ctx_t *ctx)
 /* ENDEXT: the extended verb is over. */
 agc_status_t agc_job_rendezvous_final_attitude_end(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_endmark());
 }

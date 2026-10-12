@@ -116,6 +116,7 @@ void         agc_alarm(agc_alarm_code_t code);     /* ALARM: light, store   */
 void         agc_prioalarm(agc_alarm_code_t code); /* PRIOLARM              */
 agc_status_t agc_bailout(agc_alarm_code_t code);   /* BAILOUT -> restart    */
 agc_status_t agc_poodoo(agc_alarm_code_t code);    /* POODOO  -> P00        */
+agc_job_id_t agc_alarm_almcadr(void);              /* ALMCADR: alarming job */
 agc_status_t agc_abort_restart(void);              /* ABORT                 */
 
 /* Phase table maintenance (PHASE_TABLE_MAINTENANCE.agc pp. 1404-1413).    */

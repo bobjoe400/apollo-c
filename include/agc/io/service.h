@@ -223,8 +223,9 @@ agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words);
 /* ======================================================================
  * Down-telemetry program (telemetry.c; DOWN_TELEMETRY_PROGRAM.agc pp.988-997)
  * ==================================================================== */
-agc_status_t agc_telem_fresh_start(int dnlstcod);     /* DNLSTCOD, DNTMGOTO init */
-agc_status_t agc_telem_restart(void);                 /* STARTSUB: restart list  */
+void         agc_telem_fresh_start(void);             /* DOFSTART: DNLSTCOD = 0  */
+void         agc_telem_slap1(void);                   /* LM SLAP1: DUMPCNT       */
+void         agc_telem_restart(void);                 /* STARTSUB: restart list  */
 void         agc_telem_select_list(int dnlstcod);     /* TS DNLSTCOD             */
 int          agc_telem_list_code(void);               /* C(DNLSTCOD)             */
 agc_status_t agc_telem_downrupt(void);                /* DODOWNTM, every 20 ms   */
@@ -243,7 +244,7 @@ agc_status_t agc_svc_upent2(uint16_t arg);                               /* UPEN
 agc_status_t agc_svc_downent2(uint16_t arg);                             /* DOWNENT2                 */
 agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as);  /* DELAYJOB */
 agc_status_t agc_svc_delay_wake(int slot);                               /* WAKER task body (-1)     */
-agc_status_t agc_svc_startsub_reset(void);                               /* DELAYLOC = 0             */
+void         agc_svc_startsub_reset(void);                               /* DELAYLOC = 0             */
 agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n); /* GENTRAN */
 agc_status_t agc_svc_b5off(void);                                        /* B5OFF                    */
 agc_status_t agc_svc_trfailof(void);                                     /* TRFAILOF (CM)            */
@@ -256,8 +257,8 @@ agc_status_t agc_svc_trfailon(void);                                     /* TRFA
  * the next T4RUPT: 2 for the 20 ms DSKY relay passes, 12 otherwise).     */
 agc_status_t agc_t4rupt(uint16_t *next_cs);
 agc_status_t agc_t4rupt_rupt(void);           /* rupt entry: + TIME4      */
-agc_status_t agc_t4_startsub_reset(void);     /* STARTSUB: DSRUPTSW = +0  */
-agc_status_t agc_t4_fresh_start_flush(void);  /* SLAP1: DSRUPTSW = -PRIO12 */
+void         agc_t4_startsub_reset(void);     /* STARTSUB: DSRUPTSW = +0  */
+void         agc_t4_fresh_start_flush(void);  /* SLAP1: DSRUPTSW = -PRIO12 */
 agc_status_t agc_t4_task(agc_task_id_t task); /* ENDTNON UNZ2 ISSUP ENDZOPT */
 void         agc_t4_setissw(void);            /* SETISSW (called by imu)  */
 void         agc_t4_cagesub(void);            /* CAGESUB                  */
@@ -273,7 +274,7 @@ agc_status_t agc_t4_glockmon(void);           /* GLOCKMON                 */
 agc_status_t agc_t4_optics_monitor(void);            /* OPTMON                   */
 agc_status_t agc_t4_optics_drive(void);              /* OPTDRIVE                 */
 agc_status_t agc_t4_optics_task(agc_task_id_t task); /* ENDZOPT              */
-agc_status_t agc_t4_optics_reset(bool fresh);        /* OPTIND/OPTMODES init     */
+void         agc_t4_optics_reset(bool fresh);        /* OPTIND/OPTMODES init     */
 uint16_t     agc_erase_optmodes(void);               /* OPTMODES (CM)            */
 void         agc_erase_set_optmodes(uint16_t v);
 agc_sp_t     agc_erase_optind(void);                 /* OPTIND (CM)              */
@@ -285,6 +286,7 @@ agc_status_t agc_t4_rr_monitor(void);    /* RRAUTCHK..RRGIMON+GPMATRIX */
 agc_status_t agc_t4_gimbal_matrix(void); /* GPMATRIX / DAPT4S        */
 uint16_t     agc_erase_radmodes(void);   /* RADMODES (LM)            */
 void         agc_erase_set_radmodes(uint16_t v);
+void         agc_t4_radmodes_init(void); /* STARTSUB: RADMODES = RMODINIT */
 agc_sp_t     agc_erase_m11(void);        /* SIN(MG), scaled at 1     */
 agc_sp_t     agc_erase_m21(void);        /* COS(OG)COS(MG)           */
 agc_sp_t     agc_erase_m22(void);        /* SIN(OG)                  */
@@ -432,7 +434,7 @@ void     agc_erase_set_rfailcnt(agc_sp_t v);
  * UPVERB, UPCOUNT, UPBUFF +0..+19D are downlinked (index 0..23).          */
 agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb); /* V70..V73 */
 uint16_t     agc_uplink_update_dnword(int idx);
-agc_status_t agc_uplink_update_fresh_start(void);                   /* UPSVFLAG etc.   */
+void         agc_uplink_update_fresh_start(void);                   /* UPSVFLAG etc.   */
 
 /* The word an ECADR load/write puts into COMPNUMB..UPBUFF +19D (0..23) or
  * UPTEMP (24); agc_uplink_update_target() = the index the V21N01/N02 on
@@ -455,22 +457,22 @@ agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx);              /* restart 6.5 *
 #define AGC_ROPE_BANKS      044   /* banks 0..43 octal                  */
 
 /* The sim's fixed-memory image: nbanks banks of 1024 words, bank b at
- * rope[b * 1024], 15-bit words.  NULL = no rope (all words zero).         */
+ * rope[b * 1024], 15-bit words.  NULL (nbanks 0) = no rope: every bank
+ * passes ROPECHK.                                                         */
 agc_status_t agc_selfcheck_set_rope(const uint16_t *rope, int nbanks);
 
 /* Sum one bank as ROPECHK / SHOWSUM do: sum = the ones'-complement sum
  * with end-around carry up to the two TC SELF words and the bugger word. */
 agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger);
-bool         agc_selfcheck_bank_ok(int bank);        /* |sum| = bank    */
-agc_status_t agc_selfcheck_set_smode(uint16_t word); /* N27 load (SMODE, raw; 077777 = -0) */
-uint16_t     agc_selfcheck_smode(void);
-agc_status_t agc_selfcheck_idle_pass(void);          /* SMODECHK, one pass */
-agc_status_t agc_selfcheck_fresh_start(bool slap1);  /* SMODE = 0; SLAP1: ERCOUNT = 0 */
-agc_status_t agc_selfcheck_showsum_start(void);      /* V91 STSHOSUM    */
-agc_status_t agc_selfcheck_showsum_next(void);       /* V33 NXTBNK      */
-agc_status_t agc_selfcheck_showsum_end(void);        /* V34             */
-uint16_t     agc_selfcheck_skeep(int i);             /* SKEEP1..3 (N01) */
-uint16_t     agc_selfcheck_error_count(void);        /* ERCOUNT         */
+void         agc_selfcheck_set_smode(uint16_t word);     /* N27 load (SMODE, raw; 077777 = -0) */
+uint16_t     agc_selfcheck_smode(void);                  /* SMODE                              */
+void         agc_selfcheck_idle_pass(void);              /* ADVAN -> SELFRET: one idle pass    */
+void         agc_selfcheck_fresh_start(bool slap1);      /* SMODE = 0; SLAP1: ERCOUNT = 0      */
+void         agc_selfcheck_restart(void);                /* STARTSB2: SELFRET = SELFCHK        */
+void         agc_selfcheck_showsum_start(void);          /* V91 STSHOSUM                       */
+void         agc_selfcheck_showsum_next(void);           /* V33 NXTBNK                         */
+void         agc_selfcheck_showsum_words(uint16_t w[3]); /* SKEEP1..3 (V05 N01)               */
+uint16_t     agc_selfcheck_error_count(void);            /* ERCOUNT (ALMCADR +2)               */
 
 /* ======================================================================
  * P07 IMU performance tests (src/lm/systems_test.c; Luminary099

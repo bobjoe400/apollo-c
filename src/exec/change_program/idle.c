@@ -229,30 +229,40 @@ agc_status_t agc_job_go_idle_fix_reflash(agc_job_ctx_t *ctx)
 }
 
 /**********************************************************************
+ * STARTSUB's resets of the erasables other modules own (C p.190 / L
+ * p.219): DNTMGOTO = DNPHASE1 (the next DOWNRUPT restarts the current
+ * downlist); LM RADMODES = channel 33 bit 6 + RMODINIT.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+void exec_up_startsub(void)
+{
+    agc_telem_restart();
+
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        agc_t4_radmodes_init();
+    }
+}
+
+/**********************************************************************
  * STARTSB2's resets of the erasables other modules own (C pp.190-192 /
  * L pp.220-222): the DSKY / pinball state (DELAYLOC .. DSPCOUNT, NOUT,
  * MONSAVE, VERBREG, NOUNREG, DSPLIST), DELAYJOB's DELAYLOC, T4RUPT's
- * DSRUPTSW and EXTVBACT.
+ * DSRUPTSW, SELFRET (the self-check restarts at SELFCHK) and EXTVBACT.
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the first failing reset status, else OK; BAD_ARG when
- *          called with interrupts enabled
+ * RETURNS: agc_status_t -- the DSKY reset status; BAD_ARG when called
+ *          with interrupts enabled
  **********************************************************************/
 agc_status_t exec_up_startsb2(void)
 {
-    agc_status_t st = agc_dsky_init(); /* first failing reset outcome */
+    agc_status_t st = agc_dsky_init(); /* DSKY reset outcome */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_svc_startsub_reset(); /* DELAYLOC = 0      */
-    }
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_t4_startsub_reset(); /* DSRUPTSW = +0     */
-    }
-
+    agc_svc_startsub_reset();  /* DELAYLOC = 0      */
+    agc_t4_startsub_reset();   /* DSRUPTSW = +0     */
+    agc_selfcheck_restart();   /* SELFRET = SELFCHK */
     agc_erase_set_extvbact(0); /* EXTVBACT = 0      */
 
     if (!AGC_ASSERT(agc_interrupts_inhibited()))
@@ -273,40 +283,38 @@ agc_status_t exec_up_startsb2(void)
  * ARGUMENTS:
  *   slap1 -- true for the V36 SLAP1 fresh start (ERCOUNT, DSRUPTSW)
  *
- * RETURNS: agc_status_t -- the first failing reset status, else OK
+ * RETURNS: agc_status_t -- the LM DAP reset status, else OK
  **********************************************************************/
 agc_status_t exec_up_dofstart(bool slap1)
 {
-    agc_status_t st = agc_selfcheck_fresh_start(slap1); /* first failing reset outcome */
+    agc_status_t st = AGC_STATUS_OK; /* LM DAP reset outcome */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_uplink_update_fresh_start();
-    }
+    agc_selfcheck_fresh_start(slap1);
+    agc_uplink_update_fresh_start();
+    agc_telem_fresh_start(); /* DNLSTCOD = COSTALIN */
 
-    if (st == AGC_STATUS_OK)
+    if (slap1)
     {
-        st = agc_telem_fresh_start(0); /* DNLSTCOD = COSTALIN */
-    }
+        agc_t4_fresh_start_flush(); /* DSRUPTSW = -PRIO12 */
 
-    if (st == AGC_STATUS_OK && slap1)
-    {
-        st = agc_t4_fresh_start_flush(); /* DSRUPTSW = -PRIO12 */
+        if (agc_state_vehicle() == AGC_VEHICLE_LM)
+        {
+            agc_telem_slap1(); /* DUMPCNT = BIT12 */
+        }
     }
 
     agc_erase_set_trkmkcnt(0);
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        return (agc_lm_dap_fresh_start());
+        st = agc_lm_dap_fresh_start();
+    }
+    else
+    {
+        agc_t4_optics_reset(true);
     }
 
-    return (agc_t4_optics_reset(true));
+    return (st);
 }
 
 /**********************************************************************
@@ -314,17 +322,21 @@ agc_status_t exec_up_dofstart(bool slap1)
  * (OPTMODES & OPTINITR) + BIT7.
  *
  * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- the optics reset status; BAD_ARG for the LM
  **********************************************************************/
-agc_status_t exec_up_goprog_optics(void)
+void exec_up_goprog_optics(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    agc_t4_optics_reset(false);
+}
 
-    return (agc_t4_optics_reset(false));
+/**********************************************************************
+ * LM GOPROG (FRESH_START_AND_RESTART.agc L p.217): CA AGSWORD, TS
+ * DNLSTCOD -- be sure of the correct downlist after a hardware restart.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+void exec_up_goprog_downlist(void)
+{
+    agc_telem_select_list((int) agc_erase_agsword());
 }
 
 /* ---- host power-on --------------------------------------------------- */

@@ -626,35 +626,32 @@ agc_status_t agc_telem_downrupt(void)
     return (AGC_STATUS_BAD_ARG);
 }
 
-/* Fresh start (DOFSTART): DNLSTCOD (and AGSWORD on the LM) = the P00
- * downlist; LM DUMPCNT = BIT12 (one pass); DNTMGOTO = DNPHASE1.          */
-agc_status_t agc_telem_fresh_start(int code)
+/* DOFSTART (FRESH_START_AND_RESTART C p.184 / L p.212): TS DNLSTCOD
+ * with +0, the P00 downlist; the LM also zeroes AGSWORD (allow AGS
+ * initialization). DNTMGOTO is STARTSUB's (agc_telem_restart).           */
+void agc_telem_fresh_start(void)
 {
-    agc_telem_select_list(code);
+    agc_telem_select_list(0);
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        agc_erase_set_agsword((uint16_t) code);
-        dumpcnt = 004000u; /* BIT12: dump for one pass */
+        agc_erase_set_agsword(0);
     }
-
-    dumploc = 0;
-
-    return (agc_telem_restart());
 }
 
-/* STARTSUB: the next DOWNRUPT restarts the current downlist.              */
-agc_status_t agc_telem_restart(void)
+/* SLAP1 (L p.211): CA BIT12, TS DUMPCNT -- initialize the downlink
+ * erasable memory dump for one pass (LM).                                 */
+void agc_telem_slap1(void)
+{
+    dumpcnt = 004000u; /* BIT12 */
+}
+
+/* STARTSUB (FRESH_START_AND_RESTART C p.190 / L p.219): CAF LDNPHAS1, TS
+ * DNTMGOTO -- the next DOWNRUPT restarts the current downlist.            */
+void agc_telem_restart(void)
 {
     dntmgoto = TM_PHASE1;
     dn_left  = 0;
-
-    if (!AGC_ASSERT(dntmgoto == TM_PHASE1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /* TS DNLSTCOD: select the list sent from the next NEWLIST on.            */

@@ -471,20 +471,13 @@ agc_status_t agc_t4rupt_rupt(void)
 /**********************************************************************
  * STARTSUB (FRESH_START C p.191): TS DSRUPTSW with +0.
  *
- * RETURNS: AGC_STATUS_OK
+ * ARGUMENTS: none
  **********************************************************************/
-agc_status_t agc_t4_startsub_reset(void)
+void agc_t4_startsub_reset(void)
 {
     t4_phase       = 0;
     t4_quick_left  = 0;
     t4_quick_wrote = false;
-
-    if (!AGC_ASSERT(t4_quick_left == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -492,20 +485,13 @@ agc_status_t agc_t4_startsub_reset(void)
  * passes to flush the freshly blanked display (magnitude bit 14 clear:
  * the first pass tries to display).
  *
- * RETURNS: AGC_STATUS_OK
+ * ARGUMENTS: none
  **********************************************************************/
-agc_status_t agc_t4_fresh_start_flush(void)
+void agc_t4_fresh_start_flush(void)
 {
     t4_phase       = 0;
     t4_quick_left  = T4_FLUSH_PASSES;
     t4_quick_wrote = false;
-
-    if (!AGC_ASSERT(t4_quick_left == T4_FLUSH_PASSES))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /* ======================================================================

@@ -67,3 +67,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - follow-up-done-lanes (guid-entry): preset PHSPRDT5 with agc_phase_set_priority(5, PRIO16) in reentry.c where the AGC does `TS PHSPRDT5`.
 - follow-up-done-lanes (prog-rendz): add the PHSPRDT2 presets (R22LEM3 PRIO26, P23 PRIO13, CSM R22 PRIO26) via agc_phase_set_priority.
 - nav-integ + prog-rendz: plain type-C PHASCHNG calls (GRP2PC 04022 family) made from a running job now store the current job segment as the restart point and a group-2 restart reruns that segment from its top (DEVIATION in exec): check each such segment in your files is safe to rerun.
+
+## From review-sys-misc checkpoint (2026-10-11; note docs/modules/review-sys-misc.md)
+- io-dsky: V91 SHOW-BANKSUM needs the display to carry the MPAC+2 address the AGC passes; the noun/display path cannot yet, so V91 cannot show bank sums.
+- sim: load the real rope image (Comanche055 / Luminary099 binary from tools/oracle) as fixed memory so the idle self-check (ROPECHK) and SHOW-BANKSUM run on real bank sums; data only, no model.

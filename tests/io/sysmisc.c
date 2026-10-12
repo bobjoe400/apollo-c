@@ -17,6 +17,7 @@
  */
 #include <stdio.h>
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "agc/core/assert.h"
@@ -92,7 +93,8 @@ static void test_downrupt_sequence(void)
     agc_state_init(AGC_VEHICLE_CSM);
     agc_chan_reset();
     agc_time_set_cs(01234567u);
-    CHECK(agc_telem_fresh_start(0) == AGC_STATUS_OK);
+    agc_telem_fresh_start();
+    agc_telem_restart();
     CHECK(agc_telem_downrupt() == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_DNTM1) == 077777u); /* -DNLSTCOD         */
     CHECK(agc_chan_read(AGC_CHAN_DNTM2) == AGC_DN_LOWIDCOD);
@@ -116,7 +118,7 @@ static void test_downrupt_sequence(void)
     CHECK(agc_chan_read(AGC_CHAN_DNTM1) == 077777u);
     CHECK(agc_chan_read(AGC_CHAN_DNTM2) == AGC_DN_LOWIDCOD);
     agc_telem_select_list(1);                     /* UPDNLIST          */
-    CHECK(agc_telem_restart() == AGC_STATUS_OK);
+    agc_telem_restart();
     CHECK(agc_telem_downrupt() == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_DNTM1) == 077776u);
 }
@@ -149,12 +151,23 @@ static void test_sgnagree(void)
 
 /* ROPECHK / SHOWSUM on a synthetic rope: bank 5 holds a sum word that
  * makes the bank sum +5, then two TC SELF words and a bugger word.       */
-static uint16_t g_rope[6 * AGC_ROPE_BANK_WORDS];
+static uint16_t g_rope[AGC_ROPE_BANKS * AGC_ROPE_BANK_WORDS];
+
+/* Run idle passes until the self-check is back at SELFCHK (at most one
+ * pass per bank plus the SMODECHK passes).                               */
+static void run_selfcheck(int passes)
+{
+    for (int i = 0; i < passes; i++)
+    {
+        agc_selfcheck_idle_pass();
+    }
+}
 
 static void test_banksum(void)
 {
     uint16_t *b5 = &g_rope[5 * AGC_ROPE_BANK_WORDS];
 
+    agc_state_init(AGC_VEHICLE_CSM);
     b5[0]        = 012345u;
     b5[1]        = 070000u;                    /* negative: overflow paths */
     b5[2]        = 070000u;
@@ -175,24 +188,127 @@ static void test_banksum(void)
     CHECK(agc_selfcheck_banksum(5, &sum, &bug) == AGC_STATUS_OK);
     CHECK(bug == need);
     CHECK(sum == 5u || sum == (uint16_t) (077777u - 5u));
-    CHECK(agc_selfcheck_bank_ok(5));
-    CHECK(agc_selfcheck_bank_ok(0));  /* all +0: sum +0 = bank 0 */
-    CHECK(!agc_selfcheck_bank_ok(4)); /* +0 sum, bank 4: error  */
-    CHECK(agc_selfcheck_showsum_start() == AGC_STATUS_OK);
-    CHECK(agc_selfcheck_skeep(2) == 0u);
+    CHECK(agc_selfcheck_banksum(044, &sum, &bug) == AGC_STATUS_BAD_ARG);
+    CHECK(agc_selfcheck_set_rope(NULL, 3) == AGC_STATUS_BAD_ARG);
+
+    /* SHOW-BANKSUM: bank 0, then five NXTBNKs to bank 5.                   */
+    uint16_t w[3] = {0, 0, 0};
+
+    agc_selfcheck_showsum_start();
+    agc_selfcheck_showsum_words(w);
+    CHECK(w[0] == 0u && w[1] == 0u);
 
     for (int i = 0; i < 5; i++)
     {
-        CHECK(agc_selfcheck_showsum_next() == AGC_STATUS_OK);
+        agc_selfcheck_showsum_next();
     }
 
-    CHECK(agc_selfcheck_skeep(2) == 5u && agc_selfcheck_skeep(3) == need);
-    CHECK(agc_selfcheck_set_smode(5) == AGC_STATUS_OK); /* ROPECHK, + option */
+    agc_selfcheck_showsum_words(w);
+    CHECK(w[1] == 5u && w[2] == need && w[0] == sum);
+
+    /* ROPECHK, + option: bank 0 (sum +0) passes, bank 1 (sum +0) fails:
+     * ERCOUNT +1, alarm 01102, SMODE = +0 (idle loop).                    */
+    agc_selfcheck_restart();
+    agc_selfcheck_set_smode(5);
     uint16_t errs = agc_selfcheck_error_count();
 
-    CHECK(agc_selfcheck_idle_pass() == AGC_STATUS_ALARM); /* bank 1 fails  */
+    run_selfcheck(3);                                             /* SMODECHK, bank 0, bank 1 */
     CHECK(agc_selfcheck_error_count() == (uint16_t) (errs + 1u));
-    CHECK(agc_selfcheck_smode() == 0u);                   /* + option: idle loop    */
+    CHECK(agc_erase_failreg(0) == 01102u);
+    CHECK(agc_selfcheck_smode() == 0u);
+    run_selfcheck(AGC_ROPE_BANKS + 2);
+    CHECK(agc_selfcheck_error_count() == (uint16_t) (errs + 1u)); /* idle */
+
+    /* -0: every bad bank counts (banks 1-4 and 6-43: all +0 sums).       */
+    agc_selfcheck_restart();
+    agc_selfcheck_set_smode(077777u);
+    errs = agc_selfcheck_error_count();
+    run_selfcheck(1 + AGC_ROPE_BANKS);
+    CHECK(agc_selfcheck_error_count() == (uint16_t) (errs + AGC_ROPE_BANKS - 2u));
+    CHECK(agc_selfcheck_smode() == 077777u);
+
+    /* - option: restart at SELFCHK after each error, SMODE kept.          */
+    agc_selfcheck_restart();
+    agc_selfcheck_set_smode(077772u); /* -5 */
+    errs = agc_selfcheck_error_count();
+    run_selfcheck(6);                 /* (SMODECHK, bank 0, bank 1) twice */
+    CHECK(agc_selfcheck_error_count() == (uint16_t) (errs + 2u));
+    CHECK(agc_selfcheck_smode() == 077772u);
+
+    /* option > 10 octal: BNKOPTN, the idle loop.                          */
+    agc_selfcheck_restart();
+    agc_selfcheck_set_smode(011u);
+    run_selfcheck(1);
+    CHECK(agc_selfcheck_smode() == 0u);
+
+    /* no rope: the C program has no fixed memory to test, all pass.      */
+    CHECK(agc_selfcheck_set_rope(NULL, 0) == AGC_STATUS_OK);
+    agc_selfcheck_restart();
+    agc_selfcheck_set_smode(5);
+    errs = agc_selfcheck_error_count();
+    run_selfcheck(1 + AGC_ROPE_BANKS);
+    CHECK(agc_selfcheck_error_count() == errs && agc_selfcheck_smode() == 5u);
+    agc_selfcheck_fresh_start(true);
+    CHECK(agc_selfcheck_smode() == 0u && agc_selfcheck_error_count() == 0u);
+}
+
+/* ROPECHK over the real Apollo 11 ropes (tools/oracle/ropes/<rope>.bin,
+ * yaYUL order: banks 2, 3, 0, 1, 4..43, each word shifted left by one):
+ * every bank sums to +-its number, so ROPECHK runs a full cycle with no
+ * 01102 alarm.  SKIP when the rope is not found (run from the root).     */
+static void test_ropechk_real(const char *name)
+{
+    char  path[128];
+    FILE *f = NULL;
+
+    for (int k = 0; k < 3 && f == NULL; k++)
+    {
+        (void) snprintf(path, sizeof path, "%stools/oracle/ropes/%s.bin", (k == 0) ? "" : ((k == 1) ? "../" : "../../"), name);
+        f = fopen(path, "rb");
+    }
+
+    if (f == NULL)
+    {
+        (void) printf("test_sysmisc: SKIP %s rope (not found)\n", name);
+
+        return;
+    }
+
+    bool ok = true;
+
+    for (int fb = 0; fb < AGC_ROPE_BANKS && ok; fb++)
+    {
+        int           bank = (fb < 4) ? (fb ^ 2) : fb; /* file order 2, 3, 0, 1, 4.. */
+        unsigned char b[2 * AGC_ROPE_BANK_WORDS];
+
+        ok = fread(b, 1, sizeof b, f) == sizeof b;
+
+        for (int r = 0; r < AGC_ROPE_BANK_WORDS; r++)
+        {
+            g_rope[bank * AGC_ROPE_BANK_WORDS + r] = (uint16_t) ((((unsigned) b[2 * r] << 8) | b[2 * r + 1]) >> 1);
+        }
+    }
+
+    (void) fclose(f);
+    CHECK(ok);
+    CHECK(agc_selfcheck_set_rope(g_rope, AGC_ROPE_BANKS) == AGC_STATUS_OK);
+
+    for (int bank = 0; bank < AGC_ROPE_BANKS; bank++)
+    {
+        uint16_t sum = 0;
+        uint16_t bug = 0;
+
+        CHECK(agc_selfcheck_banksum(bank, &sum, &bug) == AGC_STATUS_OK);
+        CHECK(sum == (uint16_t) bank || sum == (uint16_t) (077777u - (unsigned) bank));
+    }
+
+    agc_selfcheck_restart();
+    agc_selfcheck_set_smode(5);
+    uint16_t errs = agc_selfcheck_error_count();
+
+    run_selfcheck(2 * (1 + AGC_ROPE_BANKS));
+    CHECK(agc_selfcheck_error_count() == errs && agc_selfcheck_smode() == 5u);
+    agc_selfcheck_set_smode(0);
     CHECK(agc_selfcheck_set_rope(NULL, 0) == AGC_STATUS_OK);
 }
 
@@ -283,6 +399,8 @@ int main(void)
     test_loadtime();
     test_sgnagree();
     test_banksum();
+    test_ropechk_real("Comanche055");
+    test_ropechk_real("Luminary099");
     test_service();
     test_t4rupt_gimbal_matrix();
     test_radar_verbs();

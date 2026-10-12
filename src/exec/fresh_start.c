@@ -99,7 +99,6 @@
 
 static uint16_t   redoctr; /* REDOCTR: restarts since fresh start     */
 static agc_prio_t restreg; /* RESTREG: display restart priority       */
-static uint16_t   ercount; /* ERCOUNT: self-check error counter       */
 
 /**********************************************************************
  * AGC: none -- true for the Luminary rope (agc_state_vehicle)
@@ -245,8 +244,8 @@ static agc_status_t startsb1(void)
 }
 
 /**********************************************************************
- * STARTSUB (FRESH_START_AND_RESTART C p.190 / L p.220): STARTSB1 (the
- * downlist pointer and LM RADMODES are delegated).
+ * STARTSUB (FRESH_START_AND_RESTART C p.190 / L p.219): DNTMGOTO =
+ * DNPHASE1 and LM RADMODES (exec_up_startsub), then STARTSB1.
  *
  * ARGUMENTS: none
  *
@@ -254,8 +253,7 @@ static agc_status_t startsb1(void)
  **********************************************************************/
 static agc_status_t startsub(void)
 {
-    /* delegated (sys-misc): DNTMGOTO = DNPHASE1, restart the downlist.
-     * LM, delegated (prog-rendz): RADMODES = chan 33 bit 6 + RMODINIT.  */
+    exec_up_startsub(); /* DNTMGOTO, LM RADMODES */
 
     return (startsb1());
 }
@@ -583,8 +581,8 @@ static agc_status_t goprog3(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, the optics reset status, or the WAITLIST
- *          status of CA+ECE
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the WAITLIST status of
+ *          CA+ECE
  **********************************************************************/
 static agc_status_t goprog_csm_tail(void)
 {
@@ -595,15 +593,10 @@ static agc_status_t goprog_csm_tail(void)
     unsigned int               sel        = (unsigned int) (agc_flagword_get(6) >> 13) & 3u; /* FLAGWRD6 bits 15,14: DAP in T5 */
 
     agc_rupt_set_t5_task(t5idler[sel]); /* T5LOC     */
-    agc_status_t st = AGC_STATUS_OK;    /* optics reset / CA+ECE outcome */
+    agc_status_t st = AGC_STATUS_OK;    /* CA+ECE outcome */
 
     agc_flag_clear(AGC_FLAG_INTFLAG); /* RASFLAG INTFLBIT     */
-    st = exec_up_goprog_optics();     /* OPTMODES = (OPTMODES & OPTINITR) + BIT7 */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    exec_up_goprog_optics();          /* OPTMODES = (OPTMODES & OPTINITR) + BIT7 */
 
     agc_erase_set_imodes33((uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
     uint16_t old = agc_erase_dsptab(FS_LAMPWORD); /* DSPTAB +11D at the restart */
@@ -693,7 +686,7 @@ agc_status_t agc_restart_goprog(void)
             set_lampword((uint16_t) ((old & FS_LAMPS_964) | FS_BIT15));
             agc_erase_set_imodes30((uint16_t) ((agc_erase_imodes30() & FS_IFAILINH) | FS_IM30INIR));
 
-            /* delegated (sys-misc): DNLSTCOD = AGSWORD                         */
+            exec_up_goprog_downlist();             /* DNLSTCOD = AGSWORD   */
             agc_chan_or(AGC_CHAN_CHAN14, FS_BIT4); /* throttle counter on  */
 
             if (agc_flag_test(AGC_FLAG_ENGONFLG))
@@ -803,8 +796,8 @@ agc_status_t agc_fresh_start_slap1(void)
 
         set_lampword((uint16_t) ((lamps & FS_BITS4_6) | FS_BIT15));
 
-        /* delegated: LM DUMPCNT = BIT12 (sys-misc); DSRUPTSW = -PRIO12.    */
-        ercount = 0;
+        /* ERCOUNT, LM DUMPCNT = BIT12 and DSRUPTSW = -PRIO12: DOFSTART's
+         * resets with slap1 (exec_up_dofstart).                          */
 
         for (int i = 0; i < 3; i++)
         {

@@ -412,12 +412,7 @@ static agc_status_t verb_show_banksum(agc_job_ctx_t *ctx)
         agc_exec_prio_change(PRIO7);
     }
 
-    st = agc_selfcheck_showsum_start(); /* SKEEP6 = +1, SMODE = 0 */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    agc_selfcheck_showsum_start(); /* SKEEP6 = +1, SMODE = 0 */
 
     return (banksum_display(ctx));
 }
@@ -684,26 +679,15 @@ agc_status_t agc_job_show_banksum_display(agc_job_ctx_t *ctx)
  * with SKEEP6 = +1 -> STSHOSUM) and show it.                              */
 agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx)
 {
-    agc_status_t st = agc_selfcheck_showsum_next();
-
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (agc_dsky_endmark());
-    }
+    agc_selfcheck_showsum_next();
 
     return (banksum_display(ctx));
 }
 
-/* V34: SKEEP1 = SELFADRS (self-check restarts from SELFCHK), ENDEXT.     */
+/* V34: SKEEP1 = SELFADRS (the self-check restarts from SELFCHK, as
+ * SHOWSUM already arranged), ENDEXT.                                     */
 agc_status_t agc_job_show_banksum_end(void)
 {
-    agc_status_t st = agc_selfcheck_showsum_end();
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_endmark());
 }
 

@@ -33,6 +33,7 @@
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 #include "agc/io/nouns.h"
+#include "agc/io/service.h"
 
 static int g_checks;   /* checks run                        */
 static int g_failures; /* checks failed                     */
@@ -321,6 +322,8 @@ static void test_data(void)
     CHECK(agc_noun_write(AGC_DATA_HAPO, 123456789) == AGC_STATUS_OK);
     CHECK(agc_noun_read(AGC_DATA_HAPO, &v) == AGC_STATUS_OK && v == 123456789 && agc_guid_state()->burn.hapo == 123456789);
 
-    /* ALMCADR (the AGC alarm return address) has no owner in C.        */
-    CHECK(agc_noun_read(AGC_DATA_ALMCADR, &v) == AGC_STATUS_NOT_FOUND);
+    /* N08: ALMCADR = the alarming job, +1 = +0 (no banks), +2 = ERCOUNT. */
+    CHECK(agc_noun_read(AGC_DATA_ALMCADR, &v) == AGC_STATUS_OK);
+    CHECK(agc_noun_read(AGC_DATA_ALMCADR_P1, &v) == AGC_STATUS_OK && v == 0);
+    CHECK(agc_noun_read(AGC_DATA_ALMCADR_P2, &v) == AGC_STATUS_OK && v == (agc_dp_t) agc_selfcheck_error_count());
 }

@@ -129,17 +129,10 @@ void agc_erase_set_upsvflag(agc_sp_t v)
 }
 
 /* Fresh start (DOFSTART): UPSVFLAG = 0.                                   */
-agc_status_t agc_uplink_update_fresh_start(void)
+void agc_uplink_update_fresh_start(void)
 {
     upsvflag = 0;
     stage    = UP_COUNT;
-
-    if (!AGC_ASSERT(upsvflag == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /* Signed value of a 15-bit ones'-complement word.                        */

@@ -43,9 +43,9 @@
  *   erasables in the high word (agc_dp_from_sp), raw words (octal, CDU
  *   angles) as the 15-bit word. A vector component is one DP.
  *
- *   Erasables with no owner in the C translation (ALMCADR +0..+2: the AGC
- *   alarm return address, bank and ERCOUNT) stay NOT_FOUND; see
- *   docs/modules/integrate.md.  LM AOTCODE +1/+2 (N70/N71 R2, R3) are
+ *   Noun 08 (ALMCADR +0..+2): R1 is the job that raised the last alarm
+ *   (the AGC shows its return address), R2 +0 (the AGC shows the bank;
+ *   DEVIATION: one flat address space), R3 ERCOUNT.  LM AOTCODE +1/+2 (N70/N71 R2, R3) are
  *   SINCDUY (docs/modules/review-prog-align.md).
  **********************************************************************/
 #include <stdbool.h>
@@ -59,6 +59,7 @@
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/nouns.h"
+#include "agc/io/service.h"
 #include "agc/lm/landing.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
@@ -411,6 +412,18 @@ static agc_status_t noun_derived(uint16_t id, bool lm, agc_dp_t *v)
             return (AGC_STATUS_OK);
         case AGC_DATA_FUNNYDSP: /* LM N64: TREDES, LOOKANGL (DELTAH +2) */
             *v = agc_dp_pack(agc_lm_ldg()->tredes, agc_lm_ldg()->lookangl);
+
+            return (AGC_STATUS_OK);
+        case AGC_DATA_ALMCADR: /* N08 R1: the job that raised the alarm   */
+            *v = (agc_dp_t) agc_alarm_almcadr();
+
+            return (AGC_STATUS_OK);
+        case AGC_DATA_ALMCADR_P1: /* N08 R2: bank of the alarm (DEVIATION: +0, one flat address space) */
+            *v = 0;
+
+            return (AGC_STATUS_OK);
+        case AGC_DATA_ALMCADR_P2: /* N08 R3: ERCOUNT                        */
+            *v = (agc_dp_t) agc_selfcheck_error_count();
 
             return (AGC_STATUS_OK);
         default:
