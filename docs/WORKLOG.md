@@ -623,3 +623,5 @@
             test_sysmisc checks statuses. Requests routed. Seven files
             carrying review-guid-powered's in-progress *NBSM* void
             change left uncommitted for that lane's commit.
+2026-10-12  Launched review-nav-integ (resume, Opus) in sys-misc's slot,
+            alongside review-guid-powered. These are the last two reviews.

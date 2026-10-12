@@ -1,17 +1,17 @@
 # STATE.md -- current state in one page (lead keeps this current)
 
-Updated: 2026-10-11
+Updated: 2026-10-12
 
 ## Running agents (max 2)
-- review-sys-misc (Opus, resumed): down_telemetry leftovers, downlink
-  lists, extended verbs, uplink, P07, never-fail sweep, collapse-diff
-  check, test hygiene, style. Note: docs/modules/review-sys-misc.md.
+- review-nav-integ (Opus, resume): DMP/DMPR and shift-rounding audits,
+  collapse-diff and GRP2PC rerun checks, word-level adoption, style debt.
+  Note: docs/modules/review-nav-integ.md.
 - review-guid-powered (Opus, resume): R10 CALCGRAV RTX2 test, *NBSM*
   word-level form (clears align KNOWN PA-W4), collapse-diff check,
   word-level adoption, style debt. Note: docs/modules/review-guid-powered.md.
 
 ## Queue after it (two at a time)
-1. review-nav-integ (resume) -- items in docs/agents/review_items.md
+1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md
    (now including the EVA bug leads).
 2. follow-up-done-lanes (DMP audit + word-pair API adoption for the eight
    early-reviewed lanes).
