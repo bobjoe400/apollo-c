@@ -1,0 +1,54 @@
+# Scenario (LM): P07 IMU performance test (V92), Luminary099
+# IMU_PERFORMANCE_TEST_2 / _TESTS_4 (pp. 373-389).
+#
+# AGC behaviour checked:
+# * REDO (p.373): V92 sets MM 07, IMUZERO, then LATAZCHK flashes V06N41
+#   (R1 azimuth as a CDU angle, R2 latitude), here both zero.
+# * PRO: POSGMBL coarse aligns to the navigation base (CALCGA, IMUCOARS),
+#   FINIMUDD fine aligns, LONGCALL PERFDLAY wakes ESTIMS; ALLOOP / ALFLT
+#   run LENGTHOT passes once per 1SECXT; SETUPER1 torques the gyros by the
+#   drift angles; TORQUE flashes V06N98 (R3 = POSITON).  The ground-loaded
+#   test words are set first with V21 N01 (ECADR of PERFDLAY +1 2575 =
+#   512 cs, 1SECXT 2572 = 100 cs, LENGTHOT 2412 = 3 passes, POSITON 2416
+#   = 2); the filter gains (ALFDK) and the erasable program at ATIGINC are
+#   not loaded, so the drift angles stay zero.
+# * PRO: PIPACHK counts PIPA X pulses (CHECKG catches the first pulse,
+#   PIPATASK waits 58 x 5.12 s, CHECKG the last), PIPJOBB flashes the
+#   rate on V06N98 again.  The sim does not drive the scaler channels 3/4,
+#   so the rate in R1 is the DDV overflow value and is not checked.
+vehicle lm
+run 300
+keys R V37E00E
+until PROG 00 within 300
+input 30 0 0400                  # IMU operate
+run 11000                        # IMU turn-on (90 s)
+keys V21N01E 2575E 1000E         # PERFDLAY +1: 512 cs
+run 100
+keys V21N01E 2572E 144E          # 1SECXT: 100 cs
+run 100
+keys V21N01E 2412E 3E            # LENGTHOT: 3 passes
+run 100
+keys V21N01E 2416E 2E            # POSITON: 2
+run 100
+keys V92E
+until PROG 07 within 300
+until NOUN 41 within 6000
+expect VERB 06
+expect FLASH on
+pro                              # site accepted: align, drift test
+until NOUN 98 within 9000
+expect VERB 06
+expect FLASH on
+run 200
+expect R3 +00002
+pro                              # PIPA test
+run 200
+counter 37 PINC 1                # first pulse (CHECKG)
+run 30000                        # 58 x 5.12 s
+counter 37 PINC 3                # the pulse PIPJOBB catches
+until NOUN 98 within 3000
+expect VERB 06
+expect FLASH on
+keys V34E                        # ENDTEST1
+run 300
+expect FLASH off                  # MODREG -0: PROG blank

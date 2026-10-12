@@ -1,29 +1,47 @@
-/*
- * downlink_lists_csm.c -- Comanche055 DOWNLINK_LISTS.agc, pp. 170-180.
+/**********************************************************************
+ * FILE NAME: downlink_lists_csm.c
  *
- * Each AGC list word becomes one agc_dn_entry_t:
- *   { op, neg, ref, offset }
- *   op     1..6 = 1DNADR..6DNADR (n DP words), AGC_DN_OP_CHAN (DNCHAN),
- *          AGC_DN_OP_PTR (DNPTR, ref = sublist id below)
- *   neg    the AGC wrote the entry negated (-1DNADR, -DNCHAN ...): end of
- *          list, or (first entry of a sublist) a snapshot sublist
- *   ref    agc_dn_item_t / channel number / sublist id
- *   offset SP-word offset (RN +2 -> 2; STATE +10D -> 10)
+ * PURPOSE:
+ *   The CSM downlists as data: DNTABLE (control list per DNLSTCOD) and the
+ *   sublists the control lists point at, read by the down-telemetry
+ *   program (src/io/telemetry/down_telemetry.c).
  *
- * Downlist rules (from the AGC header):
- * 1. END OF A LIST = -XDNADR (X = 1 TO 6), -DNPTR, OR -DNCHAN.
- * 2. SNAPSHOT SUBLIST = LIST WHICH STARTS WITH A -1DNADR.
- * 3. SNAPSHOT SUBLIST CAN ONLY CONTAIN 1DNADRS.
- * 4. TIME2 1DNADR MUST BE LOCATED IN THE CONTROL LIST OF A DOWNLIST.
- * 6. ... IN THE SNAPSHOT SUBLISTS THE DATA REPRESENTED BY THE FIRST 11
- *    1DNADRS IS PRESERVED (IN ORDER) IN DNTMBUFF AND SENT BY THE NEXT 11
- *    DOWNRUPTS.
+ * AGC SOURCE:
+ *   Comanche055 DOWNLINK_LISTS.agc pp.170-180
  *
- * The "(28-29)"-style numbers in the AGC comments are DP word positions in
- * the 100-word downlist; word 1 is the ID/sync pair sent by NEWLIST.
- * The EQUALS aliases (CMCSTA01 EQUALS CMPOWE01 etc.) become references to
- * the same sublist id.
- */
+ * EXTERNAL VARIABLES:
+ *   none (const tables)
+ *
+ * EXTERNAL REFERENCES:
+ *   none
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none; a list code or sublist id out of range is refused (BAD_ARG).
+ *
+ * NOTES:
+ *   Each AGC list word becomes one agc_dn_entry_t:
+ *     { op, neg, ref, offset }
+ *     op     1..6 = 1DNADR..6DNADR (n DP words), AGC_DN_OP_CHAN (DNCHAN),
+ *            AGC_DN_OP_PTR (DNPTR, ref = sublist id below)
+ *     neg    the AGC wrote the entry negated (-1DNADR, -DNCHAN ...): end of
+ *            list, or (first entry of a sublist) a snapshot sublist
+ *     ref    agc_dn_item_t / channel number / sublist id
+ *     offset SP-word offset (RN +2 -> 2; STATE +10D -> 10)
+ *
+ *   Downlist rules (from the AGC header):
+ *   1. END OF A LIST = -XDNADR (X = 1 TO 6), -DNPTR, OR -DNCHAN.
+ *   2. SNAPSHOT SUBLIST = LIST WHICH STARTS WITH A -1DNADR.
+ *   3. SNAPSHOT SUBLIST CAN ONLY CONTAIN 1DNADRS.
+ *   4. TIME2 1DNADR MUST BE LOCATED IN THE CONTROL LIST OF A DOWNLIST.
+ *   6. ... IN THE SNAPSHOT SUBLISTS THE DATA REPRESENTED BY THE FIRST 11
+ *      1DNADRS IS PRESERVED (IN ORDER) IN DNTMBUFF AND SENT BY THE NEXT 11
+ *      DOWNRUPTS.
+ *
+ *   The "(28-29)"-style numbers in the AGC comments are DP word
+ *   positions in the 100-word downlist; word 1 is the ID/sync pair sent
+ *   by NEWLIST. The EQUALS aliases (CMCSTA01 EQUALS CMPOWE01 etc.)
+ *   become references to the same sublist id.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -40,12 +58,12 @@ enum
     CMPOWE06,
     CMPOWE07,
     CMENTR05,
-    CM_ORBITAL_NAV_LIST05,
+    CM_LANDMARK_SNAPSHOT,
     CM_SUB_COUNT
 };
 
-#define PTR AGC_DN_OP_PTR
-#define CHN AGC_DN_OP_CHAN
+#define PTR AGC_DN_OP_PTR  /* DNPTR: a sublist        */
+#define CHN AGC_DN_OP_CHAN /* DNCHAN: channels n, n+1 */
 
 /* ---------------- CSM POWERED FLIGHT DOWNLIST (CMPOWEDL), p.171 -------- */
 static const agc_dn_entry_t cmpowedl[] = {
@@ -71,7 +89,7 @@ static const agc_dn_entry_t cmpowedl[] = {
     {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT             */
     {PTR, false, CMPOWE02, 0},      /* COLLECT SNAPSHOT          */
     {4, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT             */
-    {PTR, false, CMPOWE03, 0},
+    {PTR, false, CMPOWE03, 0},      /* CMPOWE03: COMMON DATA */
     {PTR, false, CMPOWE06, 0},      /* COMMON DATA               */
     {1, false, AGC_DN_ELEV, 0},     /* ELEV,+1                   */
     {1, false, AGC_DN_CENTANG, 0},  /* CENTANG,+1                */
@@ -96,6 +114,7 @@ static const agc_dn_entry_t cmpowe01[] = {
     {1, false, AGC_DN_PIPTIME, 0}, /* PIPTIME,+1                */
     {1, true, AGC_DN_RN, 0}        /* RN,+1                     */
 };
+
 static const agc_dn_entry_t cmpowe02[] = {
     /* SNAPSHOT DATA              */
     {1, true, AGC_DN_CDUZ, 0},  /* CDUZ,CDUT                 */
@@ -104,16 +123,19 @@ static const agc_dn_entry_t cmpowe02[] = {
     {1, false, AGC_DN_ADOT, 4}, /* ADOT+4,+5/OMEGAB+4,+5     */
     {1, true, AGC_DN_CDUX, 0}   /* CDUX,CDUY                 */
 };
+
 static const agc_dn_entry_t cmpowe03[] = {
     /* COMMON DATA                */
     {2, false, AGC_DN_AK, 0},    /* AK,AK1,AK2,RCSFLAGS       */
     {2, true, AGC_DN_THETADX, 0} /* THETADX,Y,Z,GARBAGE       */
 };
+
 static const agc_dn_entry_t cmpowe04[] = {
     /* COMMON DATA                */
     {5, false, AGC_DN_STATE, 0}, /* FLAGWRD0 THRU FLAGWRD9    */
     {6, true, AGC_DN_DSPTAB, 0}  /* DISPLAY TABLES            */
 };
+
 static const agc_dn_entry_t cmpowe05[] = {
     /* SNAPSHOT DATA              */
     {1, true, AGC_DN_R_OTHER, 2},  /* R-OTHER+2,+3              */
@@ -124,12 +146,14 @@ static const agc_dn_entry_t cmpowe05[] = {
     {1, false, AGC_DN_T_OTHER, 0}, /* T-OTHER,+1                */
     {1, true, AGC_DN_R_OTHER, 0}   /* R-OTHER,+1                */
 };
+
 static const agc_dn_entry_t cmpowe06[] = {
     /* COMMON DATA                */
     {1, false, AGC_DN_RSBBQ, 0},    /* RSBBQ,+1                  */
     {3, false, AGC_DN_CADRFLSH, 0}, /* CADRFLSH,+1,+2,FAILREG..  */
     {2, true, AGC_DN_CDUS, 0}       /* CDUS,PIPAX,PIPAY,PIPAZ    */
 };
+
 static const agc_dn_entry_t cmpowe07[] = {
     /* COMMON DATA                */
     {1, false, AGC_DN_LEMMASS, 0},  /* LEMMASS,CSMMASS           */
@@ -147,9 +171,9 @@ static const agc_dn_entry_t cmpowe07[] = {
 /* ---------------- CSM COAST AND ALIGNMENT DOWNLIST (CMCSTADL), p.173 --- */
 static const agc_dn_entry_t cmcstadl[] = {
     {PTR, false, CMPOWE01, 0},      /* CMCSTA01: COLLECT SNAPSHOT */
-    {6, false, AGC_DN_DNTMBUFF, 0},
+    {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
     {PTR, false, CMPOWE02, 0},      /* CMCSTA02                  */
-    {4, false, AGC_DN_DNTMBUFF, 0},
+    {4, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
     {PTR, false, CMPOWE03, 0},      /* CMCSTA03                  */
     {1, false, AGC_DN_TIG, 0},      /* TIG,+1                    */
     {1, false, AGC_DN_BESTI, 0},    /* BESTI,BESTJ               */
@@ -162,10 +186,10 @@ static const agc_dn_entry_t cmcstadl[] = {
     {PTR, false, CMPOWE04, 0},      /* CMCSTA04                  */
     {1, false, AGC_DN_TIME2, 0},    /* TIME2,TIME1               */
     {PTR, false, CMPOWE05, 0},      /* CMCSTA05                  */
-    {6, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE02, 0},
-    {4, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE03, 0},
+    {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE02, 0},      /* CMCSTA02: COLLECT SNAPSHOT */
+    {4, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE03, 0},      /* CMCSTA03: COMMON DATA */
     {PTR, false, CMPOWE06, 0},      /* CMCSTA06                  */
     {3, false, AGC_DN_OGC, 0},      /* OGC,+1,IGC,+1,MGC,+1      */
     {1, false, AGC_DN_STATE, 10},   /* FLAGWRDS 10 AND 11        */
@@ -178,11 +202,11 @@ static const agc_dn_entry_t cmcstadl[] = {
 
 /* ---------------- CSM RENDEZVOUS AND PRETHRUST LIST (CMRENDDL), p.175 -- */
 static const agc_dn_entry_t cmrenddl[] = {
-    {PTR, false, CMPOWE01, 0},
-    {6, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE02, 0},
-    {4, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE03, 0},
+    {PTR, false, CMPOWE01, 0},      /* CMREND01: COLLECT SNAPSHOT */
+    {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE02, 0},      /* CMREND02: COLLECT SNAPSHOT */
+    {4, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE03, 0},      /* CMREND03: COMMON DATA */
     {1, false, AGC_DN_TIG, 0},      /* TIG,+1                    */
     {1, false, AGC_DN_DELLT4, 0},   /* DELLT4,+1                 */
     {3, false, AGC_DN_RTARG, 0},    /* RTARG,+1,...+4,+5         */
@@ -196,20 +220,20 @@ static const agc_dn_entry_t cmrenddl[] = {
     {1, false, AGC_DN_TPASS4, 0},   /* TPASS4,+1                 */
     {3, false, AGC_DN_DELVSLV, 0},  /* DELVSLV,+1...+4,+5        */
     {2, false, AGC_DN_RANGE, 0},    /* RANGE,+1,RRATE,+1         */
-    {PTR, false, CMPOWE04, 0},
+    {PTR, false, CMPOWE04, 0},      /* CMREND04: COMMON DATA */
     {1, false, AGC_DN_TIME2, 0},    /* TIME2,TIME1               */
-    {PTR, false, CMPOWE05, 0},
-    {6, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE02, 0},
-    {4, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE03, 0},
-    {PTR, false, CMPOWE06, 0},
+    {PTR, false, CMPOWE05, 0},      /* CMREND05: COLLECT SNAPSHOT */
+    {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE02, 0},      /* CMREND02: COLLECT SNAPSHOT */
+    {4, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE03, 0},      /* CMREND03: COMMON DATA */
+    {PTR, false, CMPOWE06, 0},      /* CMREND06: COMMON DATA */
     {1, false, AGC_DN_DIFFALT, 0},  /* CDH DELTA ALTITUDE        */
     {1, false, AGC_DN_CENTANG, 0},  /* CENTANG,+1                */
     {1, false, AGC_DN_DELTAR, 0},   /* DELTAR,+1                 */
     {3, false, AGC_DN_DELVEET3, 0}, /* DELVEET3,+1,...+4,+5      */
     {1, false, AGC_DN_OPTMODES, 0}, /* OPTMODES,HOLDFLAG         */
-    {PTR, false, CMPOWE07, 0},
+    {PTR, false, CMPOWE07, 0},      /* CMREND07: COMMON DATA */
     {1, false, AGC_DN_RTHETA, 0},   /* RTHETA,+1                 */
     {2, false, AGC_DN_LAT_SPL, 0},  /* LAT(SPL),LNG(SPL),+1      */
     {2, false, AGC_DN_VPRED, 0},    /* VPRED,+1,GAMMAEI,+1       */
@@ -219,9 +243,9 @@ static const agc_dn_entry_t cmrenddl[] = {
 /* ---------------- CSM ENTRY AND UPDATE DOWNLIST (CMENTRDL), p.177 ------ */
 static const agc_dn_entry_t cmentrdl[] = {
     {PTR, false, CMPOWE01, 0},      /* CMENTR01                  */
-    {6, false, AGC_DN_DNTMBUFF, 0},
+    {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
     {PTR, false, CMPOWE02, 0},      /* CMENTR02                  */
-    {4, false, AGC_DN_DNTMBUFF, 0},
+    {4, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
     {PTR, false, CMPOWE03, 0},      /* CMENTR03                  */
     {2, false, AGC_DN_CMDAPMOD, 0}, /* CMDAPMOD,PREL,QREL,RREL   */
     {1, false, AGC_DN_L_D1, 0},     /* L/D1,+1                   */
@@ -235,9 +259,9 @@ static const agc_dn_entry_t cmentrdl[] = {
     {PTR, false, CMPOWE04, 0},      /* CMENTR04                  */
     {1, false, AGC_DN_TIME2, 0},    /* TIME2,TIME1               */
     {PTR, false, CMENTR05, 0},      /* COLLECT SNAPSHOT          */
-    {6, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE02, 0},
-    {4, false, AGC_DN_DNTMBUFF, 0},
+    {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE02, 0},      /* CMENTR02: COLLECT SNAPSHOT */
+    {4, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
     {2, false, AGC_DN_AK, 0},       /* AK,AK1,AK2,RCSFLAGS       */
     {3, false, AGC_DN_ERRORX, 0},   /* ERRORX/Y/Z,THETADX/Y/Z    */
     {2, false, AGC_DN_CMDAPMOD, 0}, /* CMDAPMOD,PREL,QREL,RREL   */
@@ -259,6 +283,7 @@ static const agc_dn_entry_t cmentrdl[] = {
     {1, false, AGC_DN_STATE, 10},   /* FLAGWRDS 10 AND 11        */
     {1, true, AGC_DN_GAMMAEI, 0}    /* GAMMAEI,+1                */
 };
+
 static const agc_dn_entry_t cmentr05[] = {
     /* SNAPSHOT DATA, p.178       */
     {1, true, AGC_DN_DELV, 0},    /* DELV,+1                   */
@@ -271,45 +296,46 @@ static const agc_dn_entry_t cmentr05[] = {
 };
 
 /* ---------------- P22 DOWNLIST (CMPG22DL), p.179 ---------------------- */
-static const agc_dn_entry_t cmpg22dl[]              = {
-    {PTR, false, CMPOWE01, 0},              /* CMPG2201                  */
-                 {6, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE02, 0},              /* CMPG2202                  */
-                 {4, false, AGC_DN_DNTMBUFF, 0},
-    {PTR, false, CMPOWE03, 0},              /* CMPG2203                  */
-    {6, false, AGC_DN_SVMRKDAT, 0},         /* LANDING SITE MARK DATA    */
-    {6, false, AGC_DN_SVMRKDAT, 12},        /* SVMRKDAT+0...+34          */
-    {6, false, AGC_DN_SVMRKDAT, 24},        /* LANDING SITE MARK DATA    */
-    {1, false, AGC_DN_LANDMARK, 0},         /* LANDMARK,GARBAGE          */
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, false, AGC_DN_SPARE, 0},
-    {PTR, false, CMPOWE04, 0},              /* CMPG2204                  */
-    {1, false, AGC_DN_TIME2, 0},            /* TIME2,TIME1               */
-    {PTR, false, CM_ORBITAL_NAV_LIST05, 0}, /* COLLECT SNAPSHOT          */
-    {2, false, AGC_DN_DNTMBUFF, 0},         /* SEND SNAPSHOT             */
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, false, AGC_DN_SPARE, 0},
-                 {PTR, false, CMPOWE02, 0},
-                 {4, false, AGC_DN_DNTMBUFF, 0},
-                 {PTR, false, CMPOWE03, 0},
-    {PTR, false, CMPOWE06, 0},              /* CMPG2206                  */
-    {1, false, AGC_DN_8NN, 0},              /* 8NN,GARBAGE               */
-    {1, false, AGC_DN_STATE, 10},           /* FLAGWRDS 10 AND 11        */
-    {3, false, AGC_DN_RLS, 0},              /* RLS,+1,...+4,+5           */
-                 {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_OPTMODES, 0},         /* OPTMODES,HOLDFLAG         */
-    {PTR, false, CMPOWE07, 0},              /* CMPG2207                  */
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, false, AGC_DN_SPARE, 0},
-                 {1, true, AGC_DN_SPARE, 0}
-             };
-static const agc_dn_entry_t cm_orbital_nav_list05[] = {
+static const agc_dn_entry_t cmpg22dl[] = {
+    {PTR, false, CMPOWE01, 0},             /* CMPG2201                  */
+    {6, false, AGC_DN_DNTMBUFF, 0},        /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE02, 0},             /* CMPG2202                  */
+    {4, false, AGC_DN_DNTMBUFF, 0},        /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE03, 0},             /* CMPG2203                  */
+    {6, false, AGC_DN_SVMRKDAT, 0},        /* LANDING SITE MARK DATA    */
+    {6, false, AGC_DN_SVMRKDAT, 12},       /* SVMRKDAT+0...+34          */
+    {6, false, AGC_DN_SVMRKDAT, 24},       /* LANDING SITE MARK DATA    */
+    {1, false, AGC_DN_LANDMARK, 0},        /* LANDMARK,GARBAGE          */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {PTR, false, CMPOWE04, 0},             /* CMPG2204                  */
+    {1, false, AGC_DN_TIME2, 0},           /* TIME2,TIME1               */
+    {PTR, false, CM_LANDMARK_SNAPSHOT, 0}, /* COLLECT SNAPSHOT          */
+    {2, false, AGC_DN_DNTMBUFF, 0},        /* SEND SNAPSHOT             */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {PTR, false, CMPOWE02, 0},             /* CMPG2202: COLLECT SNAPSHOT */
+    {4, false, AGC_DN_DNTMBUFF, 0},        /* SEND SNAPSHOT */
+    {PTR, false, CMPOWE03, 0},             /* CMPG2203: COMMON DATA */
+    {PTR, false, CMPOWE06, 0},             /* CMPG2206                  */
+    {1, false, AGC_DN_8NN, 0},             /* 8NN,GARBAGE               */
+    {1, false, AGC_DN_STATE, 10},          /* FLAGWRDS 10 AND 11        */
+    {3, false, AGC_DN_RLS, 0},             /* RLS,+1,...+4,+5           */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_OPTMODES, 0},        /* OPTMODES,HOLDFLAG         */
+    {PTR, false, CMPOWE07, 0},             /* CMPG2207                  */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},           /* SPARE */
+    {1, true, AGC_DN_SPARE, 0}             /* SPARE */
+};
+
+static const agc_dn_entry_t cm_landmark_snapshot[] = {
     /* SNAPSHOT DATA, p.180       */
     {1, true, AGC_DN_LONG, 0}, /* LONG,+1                   */
     {1, false, AGC_DN_ALT, 0}, /* ALT,+1                    */
@@ -321,33 +347,36 @@ static const agc_dn_entry_t cm_orbital_nav_list05[] = {
 
 /* DNTABLE (p.180): index = DNLSTCOD.                                      */
 static const agc_dn_list_t dntable[AGC_DNLIST_CSM_COUNT] = {
-    {cmcstadl, (uint8_t) (sizeof cmcstadl / sizeof cmcstadl[0]),
-     false}, /* 0 NOMDNLST */
-    {cmentrdl, (uint8_t) (sizeof cmentrdl / sizeof cmentrdl[0]),
-     false}, /* 1 UPDNLIST */
-    {cmrenddl, (uint8_t) (sizeof cmrenddl / sizeof cmrenddl[0]),
-     false}, /* 2          */
-    {cmpowedl, (uint8_t) (sizeof cmpowedl / sizeof cmpowedl[0]),
-     false}, /* 3          */
-    {cmpg22dl, (uint8_t) (sizeof cmpg22dl / sizeof cmpg22dl[0]),
-     false}  /* 4          */
+    {cmcstadl, (uint8_t) (sizeof (cmcstadl) / sizeof (cmcstadl[0])), false}, /* 0 NOMDNLST */
+    {cmentrdl, (uint8_t) (sizeof (cmentrdl) / sizeof (cmentrdl[0])), false}, /* 1 UPDNLIST */
+    {cmrenddl, (uint8_t) (sizeof (cmrenddl) / sizeof (cmrenddl[0])), false}, /* 2          */
+    {cmpowedl, (uint8_t) (sizeof (cmpowedl) / sizeof (cmpowedl[0])), false}, /* 3          */
+    {cmpg22dl, (uint8_t) (sizeof (cmpg22dl) / sizeof (cmpg22dl[0])), false}  /* 4          */
 };
 
 static const agc_dn_list_t sublists[CM_SUB_COUNT] = {
-    {cmpowe01, (uint8_t) (sizeof cmpowe01 / sizeof cmpowe01[0]), true},
-    {cmpowe02, (uint8_t) (sizeof cmpowe02 / sizeof cmpowe02[0]), true},
-    {cmpowe03, (uint8_t) (sizeof cmpowe03 / sizeof cmpowe03[0]), false},
-    {cmpowe04, (uint8_t) (sizeof cmpowe04 / sizeof cmpowe04[0]), false},
-    {cmpowe05, (uint8_t) (sizeof cmpowe05 / sizeof cmpowe05[0]), true},
-    {cmpowe06, (uint8_t) (sizeof cmpowe06 / sizeof cmpowe06[0]), false},
-    {cmpowe07, (uint8_t) (sizeof cmpowe07 / sizeof cmpowe07[0]), false},
-    {cmentr05, (uint8_t) (sizeof cmentr05 / sizeof cmentr05[0]), true},
-    {cm_orbital_nav_list05,
-     (uint8_t) (sizeof cm_orbital_nav_list05 / sizeof cm_orbital_nav_list05[0]),
-     true}
+    {cmpowe01, (uint8_t) (sizeof (cmpowe01) / sizeof (cmpowe01[0])), true},
+    {cmpowe02, (uint8_t) (sizeof (cmpowe02) / sizeof (cmpowe02[0])), true},
+    {cmpowe03, (uint8_t) (sizeof (cmpowe03) / sizeof (cmpowe03[0])), false},
+    {cmpowe04, (uint8_t) (sizeof (cmpowe04) / sizeof (cmpowe04[0])), false},
+    {cmpowe05, (uint8_t) (sizeof (cmpowe05) / sizeof (cmpowe05[0])), true},
+    {cmpowe06, (uint8_t) (sizeof (cmpowe06) / sizeof (cmpowe06[0])), false},
+    {cmpowe07, (uint8_t) (sizeof (cmpowe07) / sizeof (cmpowe07[0])), false},
+    {cmentr05, (uint8_t) (sizeof (cmentr05) / sizeof (cmentr05[0])), true},
+    {cm_landmark_snapshot, (uint8_t) (sizeof (cm_landmark_snapshot) / sizeof (cm_landmark_snapshot[0])), true}
 };
 
-/* DNTABLE lookup: control list for downlist code CODE (DNLSTCOD).         */
+/**********************************************************************
+ * DNTABLE (Comanche055 DOWNLINK_LISTS.agc pp.170-180) -- INDEX DNLSTCOD,
+ * CA DNTABLE: the control list of a downlist
+ *
+ * ARGUMENTS:
+ *   code  int              I   DNLSTCOD, 0..AGC_DNLIST_CSM_COUNT-1
+ *   out   agc_dn_list_t *  O   the list
+ *
+ * RETURNS: AGC_STATUS_OK, BAD_ARG for a code outside DNTABLE (DNLSTCOD
+ *          comes from erasable: V21, AGSWORD)
+ **********************************************************************/
 agc_status_t agc_dnlist_csm_control(int code, agc_dn_list_t *out)
 {
     if (!AGC_ASSERT(code >= 0 && code < AGC_DNLIST_CSM_COUNT))
@@ -360,7 +389,16 @@ agc_status_t agc_dnlist_csm_control(int code, agc_dn_list_t *out)
     return (AGC_STATUS_OK);
 }
 
-/* DNPTR target: sublist SUB.                                              */
+/**********************************************************************
+ * DNPTR (Comanche055 DOWNLINK_LISTS.agc pp.170-180) -- the sublist a
+ * DNPTR entry names
+ *
+ * ARGUMENTS:
+ *   sub  int              I   sublist id (enum above)
+ *   out  agc_dn_list_t *  O   the list
+ *
+ * RETURNS: AGC_STATUS_OK, BAD_ARG for an id outside the sublist table
+ **********************************************************************/
 agc_status_t agc_dnlist_csm_sublist(int sub, agc_dn_list_t *out)
 {
     if (!AGC_ASSERT(sub >= 0 && sub < CM_SUB_COUNT))

@@ -63,7 +63,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
@@ -110,16 +109,6 @@ static int      zone;                /* ZONE, CDUS ones', 2^14 = pi       */
 static int      commando[2];         /* COMMANDO T, S, CDU pulses         */
 
 /**********************************************************************
- * AGC: none (ranges of the optics erasables, p.160-169)
- *
- * RETURNS: true when every optics erasable owned here is in range
- **********************************************************************/
-static bool optics_ok(void)
-{
-    return ((optmodes <= WORD15) && (optind >= AGC_OPTIND_NEG0) && (optind <= 1) && (swsample >= -1) && (swsample <= 1) && (desopmod >= -1) && (desopmod <= 1) && (wtoption >= 0) && (wtoption <= WTOPT_RETURN) && (zoptcnt >= 0) && (zoptcnt <= ZOPT_SAMPLES) && (zone >= -(int) POSMAX) && (zone <= (int) POSMAX));
-}
-
-/**********************************************************************
  * OPTMODES (ERASABLE_ASSIGNMENTS.agc, CM) -- the optics mode bit word, read
  *
  * RETURNS: OPTMODES, 15 bits (0 in an LM build)
@@ -138,10 +127,7 @@ uint16_t agc_erase_optmodes(void)
  **********************************************************************/
 void agc_erase_set_optmodes(uint16_t v)
 {
-    if (AGC_ASSERT(v <= WORD15))
-    {
-        optmodes = v;
-    }
+    optmodes = v; /* every caller ORs / masks a 15-bit OPTMODES */
 }
 
 /**********************************************************************
@@ -163,10 +149,7 @@ agc_sp_t agc_erase_optind(void)
  **********************************************************************/
 void agc_erase_set_optind(agc_sp_t v)
 {
-    if (AGC_ASSERT(v >= AGC_OPTIND_NEG0 && v <= 1))
-    {
-        optind = v;
-    }
+    optind = v; /* every caller stores a constant state */
 }
 
 /**********************************************************************
@@ -217,8 +200,8 @@ static void ch_clear(int chan, uint16_t bits)
 }
 
 /**********************************************************************
- * AGC: none (CA / CCS of a CDU counter) -- a CDU counter word read as
- * the AGC's ones' complement SP value
+ * OZONE / CMDSETUP / TRUNCMD (T4RUPT_PROGRAM.agc pp.166-168) -- CA of a
+ * CDU counter: the two's complement word read as a ones' complement SP
  *
  * ARGUMENTS:
  *   cdu  uint16_t  I   CDU counter word, 15 bits, 2's complement, 2^0 pi
@@ -227,15 +210,12 @@ static void ch_clear(int chan, uint16_t bits)
  **********************************************************************/
 static int cdu_ones(uint16_t cdu)
 {
-    int v = 0; /* ones' complement value, 2^14 = pi */
-
-    v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu; /* negative */
-
-    return (v);
+    return (((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu); /* negative: -(77777 - cdu) */
 }
 
 /**********************************************************************
- * AGC: none (the CCS magnitude used before AD 13,14,15 / AD NEG1/2)
+ * OZONE / CMDSETUP (T4RUPT_PROGRAM.agc pp.166-168) -- the magnitude CCS
+ * forms before AD 13,14,15 / AD NEG1/2
  *
  * ARGUMENTS:
  *   v  int  I   ones' complement value, |v| <= 2^15
@@ -244,11 +224,7 @@ static int cdu_ones(uint16_t cdu)
  **********************************************************************/
 static int iabs(int v)
 {
-    int a = 0; /* |v| */
-
-    a = (v < 0) ? -v : v; /* magnitude */
-
-    return (a);
+    return ((v < 0) ? -v : v); /* CCS: |v| */
 }
 
 /**********************************************************************
@@ -290,24 +266,10 @@ static void t4_initzopt(void)
 
 /**********************************************************************
  * SETDESMD (p.163) -- remember the current switch setting, then RESUME
- *
- * RETURNS: AGC_STATUS_OK, or BAD_ARG on an out-of-range state
  **********************************************************************/
-static agc_status_t t4_setdesmd(void)
+static void t4_setdesmd(void)
 {
-    if (!AGC_ASSERT(optics_ok()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    desopmod = swsample;
-
-    if (!AGC_ASSERT(desopmod >= -1 && desopmod <= 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
+    desopmod = swsample; /* -1, 0 or +1 (OPTMON's sample) */
 }
 
 /**********************************************************************
@@ -317,16 +279,9 @@ static agc_status_t t4_setdesmd(void)
  * ARGUMENTS:
  *   full  bool  I   true at MANTOCSC (cancel WTOPTION and ZOPTCNT),
  *                   false at MANTOCSC +3
- *
- * RETURNS: the SETDESMD status
  **********************************************************************/
-static agc_status_t t4_mantocsc(bool full)
+static void t4_mantocsc(bool full)
 {
-    if (!AGC_ASSERT(optics_ok()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (full)
     {
         wtoption = 0;
@@ -339,32 +294,19 @@ static agc_status_t t4_mantocsc(bool full)
         agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT2);
     }
 
-    return (t4_setdesmd());
+    t4_setdesmd();
 }
 
 /**********************************************************************
  * CANCOARS (p.163) -- switch left CMC: kill coarse optics, disable the
  * OCDU error counters, set the return-to-coarse bit
- *
- * RETURNS: the SETDESMD status
  **********************************************************************/
-static agc_status_t t4_cancoars(void)
+static void t4_cancoars(void)
 {
     optind   = -1;
     ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT2);
     optmodes = (uint16_t) (optmodes | BIT9); /* CS / MASK BIT9 / ADS */
-
-    if (!AGC_ASSERT(optind == -1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((optmodes & BIT9) != 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (t4_setdesmd());
+    t4_setdesmd();
 }
 
 /**********************************************************************
@@ -375,17 +317,8 @@ static agc_status_t t4_cancoars(void)
  **********************************************************************/
 static agc_status_t t4_zoptdes(void)
 {
-    int z = t4_zopfini(); /* ZOPFINI result */
-
-    if (!AGC_ASSERT(desopmod < 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(z >= 0 && z <= 2))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    int          z  = t4_zopfini();  /* ZOPFINI: 0 idle, 1 ENDZOPT working, 2 processing */
+    agc_status_t st = AGC_STATUS_OK; /* SETZOEND WAITLIST */
 
     if (z == 1)
     {
@@ -394,66 +327,50 @@ static agc_status_t t4_zoptdes(void)
 
     if (swsample < 0)
     {
-        if (z == 0)
-        {
-            return (t4_setdesmd()); /* ZOPT not processing */
-        }
-
-        if (zoptcnt > 0)
+        if (z == 2 && zoptcnt > 0)
         {
             zoptcnt--; /* SETCNT: 32-sample wait not over */
-
-            return (t4_setdesmd());
         }
-
-        /**********************************************************************
-         * SETZOEND (p.163) -- send ZERO OCDU and hold it 200 ms (task ENDZOPT)
-         *
-         * RETURNS: the SETDESMD status, or BAD_ARG when the waitlist refuses
-         **********************************************************************/
-        agc_status_t st = AGC_STATUS_OK; /* WAITLIST result */
-
-        agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT1);
-        st = agc_waitlist_call(ZOPT_HOLD_CS, AGC_TASK_ENDZOPT);
-
-        if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+        else if (z == 2)
         {
-            return (AGC_STATUS_BAD_ARG);
+            /* SETZOEND (p.163): send ZERO OCDU and hold it 200 ms (task
+             * ENDZOPT); a full waitlist is the AGC's BAILOUT 1203.            */
+            agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BIT1);
+            st = agc_waitlist_call(ZOPT_HOLD_CS, AGC_TASK_ENDZOPT);
+
+            if (st != AGC_STATUS_OK)
+            {
+                return (st);
+            }
+
+            optmodes = (uint16_t) (optmodes | BIT1); /* ZOPT task working */
         }
 
-        optmodes = (uint16_t) (optmodes | BIT1); /* ZOPT task working */
-
-        if (!AGC_ASSERT((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT1) != 0u))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        return (t4_setdesmd());
+        t4_setdesmd(); /* z == 0: ZOPT not processing */
     }
-
-    if (swsample == 0)
+    else if (swsample == 0)
     {
-        if (z == 0)
+        if (z != 0)
         {
-            return (t4_setdesmd()); /* ZTOMAN: ZOPT done */
+            agc_alarm(ALARM_ZOPT_SWITCH); /* ZOPALARM */
+            wtoption = WTOPT_RETURN;
+            t4_canzopt();
         }
 
-        agc_alarm(ALARM_ZOPT_SWITCH); /* ZOPALARM */
-        wtoption = WTOPT_RETURN;
+        t4_setdesmd(); /* ZTOMAN */
+    }
+    else if (z == 0)
+    {
+        t4_mantocsc(false); /* ZTOCSC: no ZOPT */
+    }
+    else
+    {
+        agc_alarm(ALARM_ZOPT_SWITCH);
         t4_canzopt();
-
-        return (t4_setdesmd());
+        t4_mantocsc(true);
     }
 
-    if (z == 0)
-    {
-        return (t4_mantocsc(false)); /* ZTOCSC: no ZOPT */
-    }
-
-    agc_alarm(ALARM_ZOPT_SWITCH);
-    t4_canzopt();
-
-    return (t4_mantocsc(true));
+    return (st);
 } /* t4_zoptdes */
 
 /**********************************************************************
@@ -504,11 +421,6 @@ agc_status_t agc_t4_optics_monitor(void)
     uint16_t chg     = 0; /* RUPTREG1: changed inbits             */
     uint16_t present = 0; /* switch bits now set (inverted input) */
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     chg = (uint16_t) ((optmodes ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & BIT7);
 
     if (chg != 0u)
@@ -525,11 +437,6 @@ agc_status_t agc_t4_optics_monitor(void)
     optmodes = (uint16_t) (optmodes ^ chg);
     present  = (uint16_t) (~(uint32_t) optmodes & OCTHIRTY);
 
-    if (!AGC_ASSERT(((optmodes ^ agc_chan_read((int) AGC_CHAN_CHAN33)) & OCTHIRTY) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (present == 0u)
     {
         swsample = 0; /* manual */
@@ -541,88 +448,56 @@ agc_status_t agc_t4_optics_monitor(void)
 
     if (desopmod > 0)
     {
-        /**********************************************************************
-         * CSCDES / CSCTOZOP / CSCTOMAN (p.162) -- previous switch setting was
-         * CMC
-         *
-         * RETURNS: the status of the branch taken
-         **********************************************************************/
-        if (!AGC_ASSERT(desopmod > 0))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        if (!AGC_ASSERT(optics_ok()))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        if (swsample > 0)
-        {
-            return (t4_setdesmd());
-        }
-
+        /* CSCDES / CSCTOZOP / CSCTOMAN (p.162): the previous setting was CMC. */
         if (swsample < 0)
         {
             zoptcnt = ZOPT_SAMPLES; /* CSCTOZOP, then on into CSCTOMAN */
             t4_initzopt();
         }
 
-        if (optind >= 0)
+        if (swsample <= 0 && optind >= 0)
         {
-            return (t4_cancoars()); /* coarse optics working */
+            t4_cancoars(); /* coarse optics working */
+        }
+        else
+        {
+            t4_setdesmd();
         }
 
-        return (t4_setdesmd());
+        return (AGC_STATUS_OK);
     }
 
-    if (desopmod == 0)
+    if (desopmod < 0)
     {
-        /**********************************************************************
-         * MANUDES / MANTOMAN / OPTZERO (p.162) -- previous switch setting was
-         * manual
-         *
-         * RETURNS: the status of the branch taken
-         **********************************************************************/
-        if (!AGC_ASSERT(wtoption >= 0))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
+        return (t4_zoptdes());
+    }
 
-        if (!AGC_ASSERT(desopmod == 0))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        if (swsample > 0)
-        {
-            return (t4_mantocsc(true));
-        }
-
-        if (swsample == 0)
-        {
-            if (wtoption > 0)
-            {
-                wtoption--; /* MANTOMAN: count the return option down */
-            }
-
-            return (t4_setdesmd());
-        }
-
+    /* MANUDES / MANTOMAN / OPTZERO (p.162): the previous setting was manual. */
+    if (swsample > 0)
+    {
+        t4_mantocsc(true);
+    }
+    else if (swsample == 0)
+    {
         if (wtoption > 0)
         {
-            t4_initzopt(); /* 5 s return good: continue ZOPT */
-
-            return (t4_setdesmd());
+            wtoption--; /* MANTOMAN: count the return option down */
         }
 
-        t4_initzopt(); /* OPTZERO: start anew */
-        zoptcnt = ZOPT_SAMPLES;
+        t4_setdesmd();
+    }
+    else
+    {
+        if (wtoption <= 0)
+        {
+            zoptcnt = ZOPT_SAMPLES; /* OPTZERO: start anew (INITZOPT clears WTOPTION) */
+        }
 
-        return (t4_setdesmd());
+        t4_initzopt(); /* with WTOPTION: 5 s return good, continue ZOPT */
+        t4_setdesmd();
     }
 
-    return (t4_zoptdes());
+    return (AGC_STATUS_OK);
 } /* agc_t4_optics_monitor */
 
 /**********************************************************************
@@ -637,7 +512,7 @@ agc_status_t agc_t4_optics_monitor(void)
  *   task  agc_task_id_t  I   AGC_TASK_ENDZOPT or AGC_TASK_ENDZOPT2
  *
  * RETURNS: the VARDELAY status (ENDZOPT), AGC_STATUS_OK (ENDZOPT2,
- *          TASKOVER), BAD_ARG for another task
+ *          TASKOVER)
  **********************************************************************/
 agc_status_t agc_t4_optics_task(agc_task_id_t task)
 {
@@ -648,26 +523,12 @@ agc_status_t agc_t4_optics_task(agc_task_id_t task)
         agc_erase_set_cdut((uint16_t) (WORD15 - DEG20_CDU)); /* CS 20DEGS */
         ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT1);
 
-        if (!AGC_ASSERT(agc_erase_cdus() == 0u))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         return (agc_waitlist_vardelay(ZOPT_HOLD_CS, AGC_TASK_ENDZOPT2));
     }
 
-    if (!AGC_ASSERT(task == AGC_TASK_ENDZOPT2))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
+    /* ENDZOPT2 (the dispatcher passes only these two ids).                */
     optmodes = (uint16_t) ((optmodes | BIT10) & ~(uint32_t) OPT_SEVEN);
     t4_ocduftst(); /* OCDUFAIL after enable */
-
-    if (!AGC_ASSERT((optmodes & OPT_SEVEN) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }
@@ -761,16 +622,11 @@ static void t4_opt_send(void)
  * if the optics were never zeroed, enable the error counters (one pass)
  * and then drive.
  *
- * RETURNS: AGC_STATUS_OK (RESUME), BAD_ARG on an out-of-range state
+ * (RESUME.)
  **********************************************************************/
-agc_status_t agc_t4_optics_drive(void)
+void agc_t4_optics_drive(void)
 {
     int cdus = cdu_ones(agc_erase_cdus()); /* CDUS, ones', 2^14 = pi */
-
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (iabs(cdus) <= DEG45_CDU)
     {
@@ -779,11 +635,6 @@ agc_status_t agc_t4_optics_drive(void)
     else if (zone == 0)
     {
         zone = cdus;
-    }
-
-    if (!AGC_ASSERT(iabs(zone) <= (int) POSMAX))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     if (!((optind < 0) || (swsample <= 0))) /* no coarse optics / switch not at CMC */
@@ -799,15 +650,12 @@ agc_status_t agc_t4_optics_drive(void)
         }
         else
         {
-            /**********************************************************************
-             * OPT2 / GETOPCMD / STORCMD / TRUNCMD and the shaft stop avoidance
-             * (pp.167-168) -- fill COMMANDO
-             *
-             * Shaft first (OPTIND 1), then trunnion: a trunnion difference that
-             * overflows (TS Q skips) commands +-POSMAX.  With the shaft beyond 90
-             * deg in a ZONE whose sign agrees with the command and DESOPTS within
-             * 90 deg, the shaft command is reversed to keep off the stops.
-             **********************************************************************/
+            /* OPT2 / GETOPCMD / STORCMD / TRUNCMD and the shaft stop avoidance
+             * (pp.167-168): shaft first (OPTIND 1), then trunnion; a trunnion
+             * difference that overflows (TS Q skips) commands +-POSMAX.  With the
+             * shaft beyond 90 deg in a ZONE whose sign agrees with the command
+             * and DESOPTS within 90 deg, the shaft command is reversed to keep
+             * off the stops.                                                     */
             const agc_align_ram_t *ar            = agc_align_ram(); /* DESOPTT, DESOPTS */
             int                    tdiff         = 0;               /* DESOPTT - CDUT, ones', 2^14 = pi */
             int                    cdus_commands = 0;               /* CDUS, ones', 2^14 = pi           */
@@ -829,7 +677,7 @@ agc_status_t agc_t4_optics_drive(void)
 
             if (!((iabs(cdus_commands) - 1 - DEG90_CDU <= 0) || (zone == 0))) /* CMDSETUP: within 90 deg or ZONE zero */
             {
-                if ((zone < 0) == (commando[1] < 0)) /* sign of ZONE differs from the command */
+                if ((zone < 0) == (commando[1] < 0)) /* ZONE sign agrees with the command */
                 {
                     if (iabs(cdu_ones(ar->desopts)) - 1 - DEG90_CDU <= 0)
                     {
@@ -840,7 +688,5 @@ agc_status_t agc_t4_optics_drive(void)
 
             t4_opt_send();
         }
-    }
-
-    return (AGC_STATUS_OK);
+    } /* if (!((optind < 0) || (swsample <= 0))) */
 } /* agc_t4_optics_drive */

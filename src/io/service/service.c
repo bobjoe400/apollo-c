@@ -54,7 +54,6 @@
 #define OCT40200          040200u                    /* lamp word send bit + TRACKER (bit 8) */
 #define BIT5              000020u                    /* BIT5 */
 #define BIT7              000100u                    /* BIT7 */
-#define BIT8              000200u                    /* BIT8: TRACKER lamp */
 #define BIT15             040000u                    /* BIT15: lamp word send bit */
 #define LAMPWORD          11                         /* DSPTAB +11D */
 #define DELAYNUM          4                          /* DELAYLOC +0..+3                            */
@@ -106,7 +105,7 @@ uint16_t agc_svc_downflag(agc_flag_id_t f)
  *                         4-15; LM: flag bits in 4-15 (FLAGWRD4)
  *   bits  uint16_t *  O   the flag bits (arg & 77770)
  *
- * RETURNS: the flagword index, or -1 on a NULL pointer
+ * RETURNS: the flagword index (LM 4, CSM 0..7)
  **********************************************************************/
 static int ent2_word(uint16_t arg, uint16_t *bits)
 {
@@ -124,28 +123,16 @@ static int ent2_word(uint16_t arg, uint16_t *bits)
  *   arg  uint16_t  I   flagword number (CSM, bits 1-3) and the bits to
  *                      set (4-15)
  *
- * RETURNS: AGC_STATUS_OK (return to L+2), BAD_ARG on a bad flagword
+ * (Returns to L+2.)
  **********************************************************************/
-agc_status_t agc_svc_upent2(uint16_t arg)
+void agc_svc_upent2(uint16_t arg)
 {
     uint16_t bits = 0;                     /* bits 4-15 of the argument */
     int      word = ent2_word(arg, &bits); /* flagword index */
 
-    if (!AGC_ASSERT(word >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_flagword_set(word, (uint16_t) (agc_flagword_get(word) | bits));
     agc_relint();
-
-    if (!AGC_ASSERT((agc_flagword_get(word) & bits) == bits))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -155,28 +142,16 @@ agc_status_t agc_svc_upent2(uint16_t arg)
  *   arg  uint16_t  I   flagword number (CSM, bits 1-3) and the bits to
  *                      clear (4-15)
  *
- * RETURNS: AGC_STATUS_OK (return to L+2), BAD_ARG on a bad flagword
+ * (Returns to L+2.)
  **********************************************************************/
-agc_status_t agc_svc_downent2(uint16_t arg)
+void agc_svc_downent2(uint16_t arg)
 {
     uint16_t bits = 0;                     /* bits 4-15 of the argument */
     int      word = ent2_word(arg, &bits); /* flagword index */
 
-    if (!AGC_ASSERT(word >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_flagword_set(word, (uint16_t) (agc_flagword_get(word) & ~(uint32_t) bits & WORD15));
     agc_relint();
-
-    if (!AGC_ASSERT((agc_flagword_get(word) & bits) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -201,14 +176,8 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as)
     if (slot < 0)
     {
         agc_relint();
-        agc_status_t bst = agc_bailout(ALARM_NO_DELAYLOC); /* restart requested */
 
-        if (!AGC_ASSERT(bst == AGC_STATUS_BAILOUT))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        return (bst);
+        return (agc_bailout(ALARM_NO_DELAYLOC)); /* restart requested */
     }
 
     delayloc[slot]  = wake_as;
@@ -296,11 +265,6 @@ agc_status_t agc_svc_delay_wake(int slot)
 
     delayloc[slot] = AGC_JOB_NONE; /* make DELAYLOC available */
 
-    if (!AGC_ASSERT(job != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_exec_job_wake(job));
 } /* agc_svc_delay_wake */
 
@@ -326,9 +290,9 @@ void agc_svc_startsub_reset(void)
  *   to    uint16_t *        O   words M .. M+N-1 (ADRES M)
  *   n     int               I   N, 1..256 (the AGC passes N-1 in A)
  *
- * RETURNS: AGC_STATUS_OK (return to Q+2), BAD_ARG on a bad argument
+ * (Returns to Q+2.)
  **********************************************************************/
-agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
+void agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
 {
     agc_inhint(); /* no RELINT (MOD 2)      */
 
@@ -336,32 +300,20 @@ agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
     {
         to[i] = from[i];
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
  * B5OFF (p.1491): clear EXTVBACT bit 5 (set by TESTXACT); the caller then
  * ends its job.
  *
- * RETURNS: AGC_STATUS_OK (the caller then does ENDOFJOB), BAD_ARG on a
- *          bad EXTVBACT
+ * RETURNS: AGC_STATUS_OK (the caller then does ENDOFJOB; kept as a
+ *          status for its callers in other lanes, see the note)
  **********************************************************************/
 agc_status_t agc_svc_b5off(void)
 {
     uint16_t x = agc_erase_extvbact(); /* EXTVBACT bits */
 
-    if (!AGC_ASSERT(x <= WORD15))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_erase_set_extvbact((uint16_t) (x & ~(uint32_t) BIT5));
-
-    if (!AGC_ASSERT((agc_erase_extvbact() & BIT5) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }
@@ -370,15 +322,11 @@ agc_status_t agc_svc_b5off(void)
  * TRFAILOF (C p.1492): TRACKER lamp off (DSPTAB +11D bit 8) and re-arm
  * the OCDU fail lamp (OPTMODES bit 7).
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG in an LM build
+ * RETURNS: AGC_STATUS_OK (kept as a status for the callers in other
+ *          lanes; CSM code only calls it)
  **********************************************************************/
 agc_status_t agc_svc_trfailof(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     uint16_t w = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D */
 
@@ -386,36 +334,22 @@ agc_status_t agc_svc_trfailof(void)
     agc_erase_set_optmodes((uint16_t) (agc_erase_optmodes() | BIT7));
     agc_relint();
 
-    if (!AGC_ASSERT((agc_erase_dsptab(LAMPWORD) & BIT8) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
  * TRFAILON (C p.1492): TRACKER lamp on.
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG in an LM build
+ * RETURNS: AGC_STATUS_OK (kept as a status for the callers in other
+ *          lanes; CSM code only calls it)
  **********************************************************************/
 agc_status_t agc_svc_trfailon(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     uint16_t w = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D */
 
     agc_erase_set_dsptab(LAMPWORD, (uint16_t) (w | OCT40200));
     agc_relint();
-
-    if (!AGC_ASSERT((agc_erase_dsptab(LAMPWORD) & OCT40200) == OCT40200))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }

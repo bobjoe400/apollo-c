@@ -613,3 +613,13 @@
             Requests routed. review-sys-misc still running.
 2026-10-11  Launched review-guid-powered (resume, Opus) in prog-align's
             slot, alongside review-sys-misc.
+2026-10-12  review-sys-misc DONE and committed: S10-S18 fixed with tests
+            (LM R03 empty-mass constants 4x off, V73 clock increment never
+            applied, V74 dump sent zeros, V71/V72 address masking, V43
+            ones' complement, two dropped WAITLIST/INTSTALL errors, one
+            DMP as DMPR); LM P07 translated from a stub (416 words
+            yaAGC-exact; scenario p07_systems_test_lm); never-fail
+            assertions and ctx removed, no BAD_ARG filters left, style 0,
+            test_sysmisc checks statuses. Requests routed. Seven files
+            carrying review-guid-powered's in-progress *NBSM* void
+            change left uncommitted for that lane's commit.

@@ -79,3 +79,9 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 ## From review-prog-align final (2026-10-11; note docs/modules/review-prog-align.md, findings A1-A15, C1-C10)
 - guid-entry (follow-up-done-lanes): entry_earrot duplicates EARROT1/2 (now agc_csm_earrot2 in the alignment lane); use one.
 - prog-align residual: AOTMARK's job and button-handling flow was not re-read line by line (arithmetic is oracle-verified); a later pass or the document wave should read it against the listing.
+
+## From review-sys-misc final (2026-10-12; note docs/modules/review-sys-misc.md, findings S10-S18)
+- guid-powered: src/csm/burns/sps/clock.c:464 stores OPTIND = -1 where the AGC stores -0.
+- follow-up-done-lanes: make agc_svc_b5off, trfailof, trfailon void (callers in other lanes); fold agc_svc_set_extvbact into agc_erase_set_extvbact.
+- io-dsky: P27 cannot receive data until something calls agc_uplink_update_write (wire the uplink path from the UPRUPT handler / V71-V73 flow).
+- sim: drive the scaler channels 3 and 4 (the AGC's SCALER1/SCALER2 read-back) as yaAGC does.

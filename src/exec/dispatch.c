@@ -204,11 +204,11 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_AVGEND:
             return (agc_job_avgend_csm(ctx));
         case AGC_JOB_CALC_DELTA_V_BODY:
-            return (agc_job_calc_delta_v_body_csm(ctx));
+            return (agc_job_calc_delta_v_body_csm());
         case AGC_JOB_CALC_DELTA_V_RESTART:
-            return (agc_job_calc_delta_v_restart(ctx));
+            return (agc_job_calc_delta_v_restart());
         case AGC_JOB_CALC_VG_BODY:
-            return (agc_job_calc_vg_body_csm(ctx));
+            return (agc_job_calc_vg_body_csm());
         case AGC_JOB_CLOCKJOB:
             return (agc_job_clockjob(ctx));
         case AGC_JOB_COPY40_9:
@@ -232,33 +232,33 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_ENDLAMB:
             return (agc_job_endlamb());
         case AGC_JOB_ENGINE_ENABLE_BYPASS:
-            return (agc_job_engine_enable_bypass(ctx));
+            return (agc_job_engine_enable_bypass());
         case AGC_JOB_ENGINE_ENABLE_PROCEED:
             return (agc_job_engine_enable_proceed());
         case AGC_JOB_ENGINE_ENABLE_TERMINATE:
-            return (agc_job_engine_enable_terminate(ctx));
+            return (agc_job_engine_enable_terminate());
         case AGC_JOB_ENGINE_FAIL_PROCEED:
-            return (agc_job_engine_fail_proceed(ctx));
+            return (agc_job_engine_fail_proceed());
         case AGC_JOB_ENGINE_FAIL_REIGNITE:
-            return (agc_job_engine_fail_reignite(ctx));
+            return (agc_job_engine_fail_reignite());
         case AGC_JOB_ENGINE_FAIL_TERMINATE:
-            return (agc_job_engine_fail_terminate(ctx));
+            return (agc_job_engine_fail_terminate());
         case AGC_JOB_EXTERNAL_DELTA_V_REFTEST:
             return (agc_job_external_delta_v_reftest(ctx));
         case AGC_JOB_GIMBAL_TEST_AND_TRIM:
-            return (agc_job_gimbal_test_and_trim(ctx));
+            return (agc_job_gimbal_test_and_trim());
         case AGC_JOB_GIMBAL_TRIM_ONLY:
-            return (agc_job_gimbal_trim_only(ctx));
+            return (agc_job_gimbal_trim_only());
         case AGC_JOB_MARKS_TFI_MGA_DISPLAY:
             return (agc_job_marks_tfi_mga_display(ctx));
         case AGC_JOB_MARKS_TFI_MGA_DONE:
-            return (agc_job_marks_tfi_mga_done(ctx));
+            return (agc_job_marks_tfi_mga_done());
         case AGC_JOB_MATRXJOB:
-            return (agc_job_matrxjob(ctx));
+            return (agc_job_matrxjob());
         case AGC_JOB_NORMLIZE:
-            return (agc_job_normlize_csm(ctx));
+            return (agc_job_normlize_csm());
         case AGC_JOB_POST41:
-            return (agc_job_post41(ctx));
+            return (agc_job_post41());
         case AGC_JOB_POSTBURN:
             return (agc_job_postburn_csm(ctx));
         case AGC_JOB_PREBURN_BLANK_DSKY:
@@ -304,15 +304,15 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RETURN_TO_EARTH_TRANSIT_DISPLAY:
             return (agc_job_return_to_earth_transit_display(ctx));
         case AGC_JOB_SERVEXIT:
-            return (agc_job_servexit(ctx));
+            return (agc_job_servexit());
         case AGC_JOB_SERVICER:
-            return (agc_job_servicer_csm(ctx));
+            return (agc_job_servicer_csm());
         case AGC_JOB_SERV_AVERAGEG:
-            return (agc_job_serv_averageg_csm(ctx));
+            return (agc_job_serv_averageg_csm());
         case AGC_JOB_SERV_COPY:
-            return (agc_job_serv_copy_csm(ctx));
+            return (agc_job_serv_copy_csm());
         case AGC_JOB_SERV_DVTOTUP:
-            return (agc_job_serv_dvtotup_csm(ctx));
+            return (agc_job_serv_dvtotup_csm());
         case AGC_JOB_SERV_EXIT:
             return (agc_csm_avgexit());
         case AGC_JOB_SPS_BURN_AFTER_MANEUVER:
@@ -320,11 +320,11 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_SPS_BURN_MIN_DEADBAND:
             return (agc_job_sps_burn_min_deadband(ctx));
         case AGC_JOB_SPS_BURN_RCS_TRIM:
-            return (agc_job_sps_burn_rcs_trim(ctx));
+            return (agc_job_sps_burn_rcs_trim());
         case AGC_JOB_STEERING:
-            return (agc_job_steering_csm(ctx));
+            return (agc_job_steering_csm());
         case AGC_JOB_STEERING_RESTART:
-            return (agc_job_steering_restart(ctx));
+            return (agc_job_steering_restart());
         case AGC_JOB_SURELY9_RESTART:
             return (agc_job_cross_product_restart(ctx));
         case AGC_JOB_THRUST_MONITOR:
@@ -638,7 +638,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_EXTERNAL_DELTA_V:
             return (agc_job_external_delta_v(ctx));
         case AGC_JOB_EXTERNAL_DELTA_V_ACCEPT:
-            return (agc_job_external_delta_v_accept(ctx));
+            return (agc_job_external_delta_v_accept());
         case AGC_JOB_EXTERNAL_DELTA_V_COMPUTE:
             return (agc_job_external_delta_v_compute(ctx));
         case AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV:
@@ -1158,15 +1158,15 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_AVGEND:
             return (agc_job_avgend_lm(ctx));
         case AGC_JOB_CALC_DELTA_V_BODY:
-            return (agc_job_calc_delta_v_body_lm(ctx));
+            return (agc_job_calc_delta_v_body_lm());
         case AGC_JOB_CALC_VG_BODY:
-            return (agc_job_calc_vg_body_lm(ctx));
+            return (agc_job_calc_vg_body_lm());
         case AGC_JOB_CLOCKJOB:
             return (agc_job_clokjob(ctx));
         case AGC_JOB_DYNDISP:
             return (agc_job_dynmdisp());
         case AGC_JOB_NORMLIZE:
-            return (agc_job_normlize_lm(ctx));
+            return (agc_job_normlize_lm());
         case AGC_JOB_POSTBURN:
             return (agc_job_postburn_lm(ctx));
         case AGC_JOB_PREBURN_STATE_VECTOR:
@@ -1174,7 +1174,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RCS_BURN:
             return (agc_job_rcs_burn_lm(ctx));
         case AGC_JOB_SERVEXIT:
-            return (agc_job_servexit(ctx));
+            return (agc_job_servexit());
         case AGC_JOB_SERVICER:
             return (agc_job_servicer_lm(ctx));
         case AGC_JOB_SERV_COPY:
@@ -1184,7 +1184,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_SERV_EXIT:
             return (agc_job_serv_resume_lm(ctx));
         case AGC_JOB_STEERING:
-            return (agc_job_steering_lm(ctx));
+            return (agc_job_steering_lm());
         case AGC_JOB_THRUST_MONITOR:
             return (agc_job_thrust_monitor_lm(ctx));
         case AGC_JOB_THRUST_MONITOR_DISPLAY:
@@ -1224,7 +1224,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_EXTERNAL_DELTA_V:
             return (agc_job_external_delta_v(ctx));
         case AGC_JOB_EXTERNAL_DELTA_V_ACCEPT:
-            return (agc_job_external_delta_v_accept(ctx));
+            return (agc_job_external_delta_v_accept());
         case AGC_JOB_EXTERNAL_DELTA_V_COMPUTE:
             return (agc_job_external_delta_v_compute(ctx));
         case AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV:
@@ -1668,11 +1668,11 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_HIGATJOB_DONE:
             return (agc_job_higatjob_done(ctx));
         case AGC_JOB_LRHJOB:
-            return (agc_job_lrhjob(ctx));
+            return (agc_job_lrhjob());
         case AGC_JOB_LRHJOB_DONE:
             return (agc_job_lrhjob_done());
         case AGC_JOB_LRVJOB:
-            return (agc_job_lrvjob(ctx));
+            return (agc_job_lrvjob());
         case AGC_JOB_LRVJOB_DONE:
             return (agc_job_lrvjob_done());
         case AGC_JOB_POSALARM_PRO:
@@ -1690,7 +1690,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RESTORE_BURN_DISPLAY:
             return (agc_job_restore_burn_display(ctx));
         case AGC_JOB_SERVIDLE:
-            return (agc_job_servidle(ctx));
+            return (agc_job_servidle());
         case AGC_JOB_SERV_COPYCYC1:
             return (agc_job_serv_resume_lm(ctx));
         case AGC_JOB_SERV_DECCNTR:

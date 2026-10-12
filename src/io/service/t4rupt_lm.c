@@ -50,7 +50,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
@@ -75,42 +74,12 @@
 #define DORREPOS_DELAY_CS 2u                         /* CAF TWO: DORREPOS in 20 ms        */
 #define ALARM_RR_CDU_FAIL ((agc_alarm_code_t) 00515) /* in P20/P22     */
 
-/* sin^2 + cos^2 = 1 at 2^28; SPSIN/SPCOS are good to a few LSB of 2^14 */
-#define UNIT_SQ_TOL ((agc_dp_t) 0x00100000) /* 2^20 = 2^-8 of 1  */
-
-static agc_sp_t m11;          /* M11 = SIN(MG), scaled at 1             */
-static agc_sp_t m21;          /* M21 = COS(OG)COS(MG), scaled at 1      */
-static agc_sp_t m22;          /* M22 = SIN(OG) (also MR22), scaled at 1 */
-static agc_sp_t m31;          /* M31 = -SIN(OG)COS(MG), scaled at 1     */
-static agc_sp_t m32;          /* M32 = COS(OG) (also MR23), scaled at 1 */
-static agc_sp_t cosmg;        /* COSMG = COS(MG), scaled at 1           */
-static bool     matrix_valid; /* GPMATRIX has run since power-on        */
-
-/**********************************************************************
- * AGC: none (invariants of the GPMATRIX outputs, p.188)
- *
- * |M21| and |M31| never exceed |COSMG| (each is COSMG times a sine or a
- * cosine), and SIN^2 + COS^2 is 1 for both gimbal angles.  Before the
- * first GPMATRIX the elements are the power-on zeros.
- *
- * RETURNS: true when the stored matrix satisfies the invariants
- **********************************************************************/
-static bool matrix_consistent(void)
-{
-    agc_dp_t one = (agc_dp_t) 1 << 28;                              /* 1 at 2^28 */
-    agc_dp_t mg  = agc_sp_mul(m11, m11) + agc_sp_mul(cosmg, cosmg); /* 2^28 */
-    agc_dp_t og  = agc_sp_mul(m22, m22) + agc_sp_mul(m32, m32);     /* 2^28 */
-    int      cm  = (cosmg < 0) ? -cosmg : cosmg;                    /* |COSMG|   */
-    int      a21 = (m21 < 0) ? -m21 : m21;                          /* |M21|     */
-    int      a31 = (m31 < 0) ? -m31 : m31;                          /* |M31|     */
-
-    if (!matrix_valid)
-    {
-        return (true);
-    }
-
-    return ((a21 <= cm + 1) && (a31 <= cm + 1) && (mg > one - UNIT_SQ_TOL) && (mg < one + UNIT_SQ_TOL) && (og > one - UNIT_SQ_TOL) && (og < one + UNIT_SQ_TOL));
-}
+static agc_sp_t m11;   /* M11 = SIN(MG), scaled at 1             */
+static agc_sp_t m21;   /* M21 = COS(OG)COS(MG), scaled at 1      */
+static agc_sp_t m22;   /* M22 = SIN(OG) (also MR22), scaled at 1 */
+static agc_sp_t m31;   /* M31 = -SIN(OG)COS(MG), scaled at 1     */
+static agc_sp_t m32;   /* M32 = COS(OG) (also MR23), scaled at 1 */
+static agc_sp_t cosmg; /* COSMG = COS(MG), scaled at 1           */
 
 /**********************************************************************
  * RADMODES (ERASABLE_ASSIGNMENTS; EQUALS FLGWRD12, FLAGWORD_ASSIGNMENTS
@@ -223,9 +192,7 @@ agc_sp_t agc_erase_cosmg(void)
  **********************************************************************/
 static agc_sp_t cdu_sp(uint16_t cdu)
 {
-    int v = 0; /* signed reading, LSB 2^-14 pi */
-
-    v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu; /* 1s */
+    int v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu; /* ones' complement, LSB 2^-14 pi */
 
     return ((agc_sp_t) v);
 }
@@ -244,46 +211,26 @@ static agc_sp_t mp_hi(agc_sp_t a, agc_sp_t b)
 {
     agc_dp_t p = agc_sp_mul(a, b); /* A,L product, scaled at 1 */
 
-    agc_sp_t hi = 0; /* high word, scaled at 1 */
-
-    hi = agc_dp_high(p);
-
-    /* |a b| <= |a| for |b| <= 1 */
-
-    return (hi);
+    return (agc_dp_high(p));
 }
 
 /**********************************************************************
  * GPMATRIX = DAPT4S = NORRGMON (T4RUPT_PROGRAM.agc pp.188-189) -- the SP
  * gimbal-to-pilot matrix elements for the LM DAP
  *
- * RETURNS: AGC_STATUS_OK (ENDDAPT4 = RESUME), or BAD_ARG if the result
- *          breaks the matrix invariants
+ * (ENDDAPT4 = RESUME.)
  **********************************************************************/
-agc_status_t agc_t4_gimbal_matrix(void)
+void agc_t4_gimbal_matrix(void)
 {
     agc_sp_t mg = cdu_sp(agc_erase_cduz()); /* AMG, scaled at pi */
     agc_sp_t og = cdu_sp(agc_erase_cdux()); /* AOG, scaled at pi */
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    m11          = agc_sp_sin(mg);                /* SIN(MG)          */
-    cosmg        = agc_sp_cos(mg);                /* COS(MG)          */
-    m22          = agc_sp_sin(og);                /* SIN(OG)          */
-    m31          = mp_hi((agc_sp_t) -m22, cosmg); /* CS M22, MP COSMG */
-    m32          = agc_sp_cos(og);                /* COS(OG)          */
-    m21          = mp_hi(m32, cosmg);             /* MP COSMG         */
-    matrix_valid = true;
-
-    if (!AGC_ASSERT(matrix_consistent()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
+    m11   = agc_sp_sin(mg);                /* SIN(MG)          */
+    cosmg = agc_sp_cos(mg);                /* COS(MG)          */
+    m22   = agc_sp_sin(og);                /* SIN(OG)          */
+    m31   = mp_hi((agc_sp_t) -m22, cosmg); /* CS M22, MP COSMG */
+    m32   = agc_sp_cos(og);                /* COS(OG)          */
+    m21   = mp_hi(m32, cosmg);             /* MP COSMG         */
 }
 
 /**********************************************************************
@@ -373,28 +320,17 @@ static bool t4_rrcduchk(void)
  * skipping the two monitors this pass.  Switched off: disable the RR CDU
  * error counters (channel 12 bit 2, RRCDUCHK -3).
  *
- * RETURNS: AGC_STATUS_OK, the WAITLIST status, or the GPMATRIX
- *          status
+ * RETURNS: AGC_STATUS_OK or the WAITLIST status
  **********************************************************************/
 agc_status_t agc_t4_rr_monitor(void)
 {
     agc_status_t st  = AGC_STATUS_OK;                                                                         /* WAITLIST  */
     uint16_t     chg = (uint16_t) ((agc_erase_radmodes() ^ agc_chan_read((int) AGC_CHAN_CHAN33)) & AUTOMBIT); /* changed */
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (chg != 0u)
     {
         /* LXCH RADMODES / RXOR LCHAN / MASK OCT05776 / TS RADMODES */
         agc_erase_set_radmodes((uint16_t) ((agc_erase_radmodes() ^ chg) & OCT05776));
-
-        if (!AGC_ASSERT(((agc_erase_radmodes() ^ agc_chan_read((int) AGC_CHAN_CHAN33)) & AUTOMBIT) == 0u))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
 
         if ((agc_erase_radmodes() & AUTOMBIT) == 0u)
         {
@@ -407,7 +343,9 @@ agc_status_t agc_t4_rr_monitor(void)
                 return (st); /* waitlist full: BAILOUT */
             }
 
-            return (agc_t4_gimbal_matrix()); /* TCF NORRGMON */
+            agc_t4_gimbal_matrix(); /* TCF NORRGMON */
+
+            return (AGC_STATUS_OK);
         }
 
         ch_clear((int) AGC_CHAN_CHAN12, (uint16_t) AUTOMBIT);
@@ -418,10 +356,10 @@ agc_status_t agc_t4_rr_monitor(void)
         st = t4_rrgimon();
     }
 
-    if (st != AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK)
     {
-        return (st);
+        agc_t4_gimbal_matrix(); /* NORRGMON */
     }
 
-    return (agc_t4_gimbal_matrix());
+    return (st);
 } /* agc_t4_rr_monitor */

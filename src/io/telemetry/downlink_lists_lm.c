@@ -1,20 +1,39 @@
-/*
- * downlink_lists_lm.c -- Luminary099 DOWNLINK_LISTS.agc (pp. 193-205).
+/**********************************************************************
+ * FILE NAME: downlink_lists_lm.c
  *
- * Same entry encoding as src/io/downlink_lists_csm.c:
- *   { op, neg, ref, offset }
- *   op     1..6 = 1DNADR..6DNADR (n DP words), AGC_DN_OP_CHAN (DNCHAN),
- *          AGC_DN_OP_PTR (DNPTR, ref = sublist id below)
- *   neg    the AGC wrote the entry negated: end of list, or (first entry of
- *          a sublist) a snapshot sublist
- *   ref    agc_dn_item_t / channel number / sublist id
- *   offset SP-word offset from the item (RN +2 -> 2, UPBUFF +8D -> 8)
+ * PURPOSE:
+ *   The LM downlists as data: DNTABLE (control list per DNLSTCOD) and the
+ *   sublists the control lists point at, read by the down-telemetry
+ *   program (src/io/telemetry/down_telemetry.c).
  *
- * The AGC's EQUALS aliases (LMCSTA01 EQUALS LMORBM01 etc.) become
- * references to the same sublist id.  LMDSAS08 is a plain (non-snapshot)
- * sublist that sends the 11-word snapshot buffer of LMDSAS07.
- * UNKNOWN and SPARE both equal ERASZERO (register 7, always zero).
- */
+ * AGC SOURCE:
+ *   Luminary099 DOWNLINK_LISTS.agc pp.193-205
+ *
+ * EXTERNAL VARIABLES:
+ *   none (const tables)
+ *
+ * EXTERNAL REFERENCES:
+ *   none
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   none; a list code or sublist id out of range is refused (BAD_ARG).
+ *
+ * NOTES:
+ *   Same entry encoding as src/io/telemetry/downlink_lists_csm.c:
+ *     { op, neg, ref, offset }
+ *     op     1..6 = 1DNADR..6DNADR (n DP words), AGC_DN_OP_CHAN (DNCHAN),
+ *            AGC_DN_OP_PTR (DNPTR, ref = sublist id below)
+ *     neg    the AGC wrote the entry negated: end of list, or (first entry of
+ *            a sublist) a snapshot sublist
+ *     ref    agc_dn_item_t / channel number / sublist id
+ *     offset SP-word offset from the item (RN +2 -> 2, UPBUFF +8D -> 8)
+ *
+ *   The AGC's EQUALS aliases (LMCSTA01 EQUALS LMORBM01 etc.) become
+ *   references to the same sublist id.  LMDSAS08 is a plain
+ *   (non-snapshot) sublist that sends the 11-word snapshot buffer of
+ *   LMDSAS07. UNKNOWN and SPARE both equal ERASZERO (register 7, always
+ *   zero).
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -37,8 +56,8 @@ enum
     LM_SUB_COUNT
 };
 
-#define PTR AGC_DN_OP_PTR
-#define CHN AGC_DN_OP_CHAN
+#define PTR AGC_DN_OP_PTR  /* DNPTR: a sublist        */
+#define CHN AGC_DN_OP_CHAN /* DNCHAN: channels n, n+1 */
 
 /* ---------------- LM ORBITAL MANEUVERS LIST (LMORBMDL), p.194 ---------- */
 static const agc_dn_entry_t lmorbmdl[] = {
@@ -60,7 +79,7 @@ static const agc_dn_entry_t lmorbmdl[] = {
     {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT             */
     {PTR, false, LMORBM04, 0},      /* COMMON DATA               */
     {2, false, AGC_DN_POSTORKU, 0}, /* POSTORKU,NEGTORKU,..V     */
-    {1, false, AGC_DN_SPARE, 0},
+    {1, false, AGC_DN_SPARE, 0},    /* SPARE */
     {1, false, AGC_DN_TCDH, 0},     /* TCDH,+1                   */
     {3, false, AGC_DN_DELVEET2, 0}, /* DELVEET2 +0...+5          */
     {1, false, AGC_DN_TTPI, 0},     /* TTPI,+1                   */
@@ -88,6 +107,7 @@ static const agc_dn_entry_t lmorbm01[] = {
     {1, false, AGC_DN_T_OTHER, 0}, /* T-OTHER,+1                */
     {1, true, AGC_DN_R_OTHER, 0}   /* R-OTHER +0,+1             */
 };
+
 static const agc_dn_entry_t lmorbm02[] = {
     /* COMMON DATA                */
     {2, false, AGC_DN_REDOCTR, 0}, /* REDOCTR,THETAD,+1,+2      */
@@ -98,6 +118,7 @@ static const agc_dn_entry_t lmorbm02[] = {
     {6, false, AGC_DN_STATE, 0},   /* STATE +0...+11D           */
     {6, true, AGC_DN_DSPTAB, 0}    /* DSPTAB TABLES             */
 };
+
 static const agc_dn_entry_t lmorbm03[] = {
     /* SNAPSHOT                   */
     {1, true, AGC_DN_RN, 2},       /* RN +2,+3                  */
@@ -108,12 +129,14 @@ static const agc_dn_entry_t lmorbm03[] = {
     {1, false, AGC_DN_PIPTIME, 0}, /* PIPTIME,+1                */
     {1, true, AGC_DN_RN, 0}        /* RN,+1                     */
 };
+
 static const agc_dn_entry_t lmorbm04[] = {
     /* COMMON DATA                */
     {2, false, AGC_DN_OMEGAPD, 0},  /* OMEGAPD,QD,RD,GARBAGE     */
     {3, false, AGC_DN_CADRFLSH, 0}, /* CADRFLSH,+1,+2,FAILREG..  */
     {1, true, AGC_DN_RADMODES, 0}   /* RADMODES,DAPBOOLS         */
 };
+
 static const agc_dn_entry_t lmorbm05[] = {
     /* COMMON DATA                */
     {2, false, AGC_DN_OMEGAP, 0},   /* OMEGAP,Q,R,GARBAGE        */
@@ -126,6 +149,7 @@ static const agc_dn_entry_t lmorbm05[] = {
     {CHN, false, 030, 0},           /* CHANNELS 30,31            */
     {CHN, true, 032, 0}             /* CHANNELS 32,33            */
 };
+
 static const agc_dn_entry_t lmorbm06[] = {
     /* COMMON DATA                */
     {1, false, AGC_DN_PIPTIME1, 0}, /* PIPTIME,+1                */
@@ -161,11 +185,13 @@ static const agc_dn_entry_t lmcstadl[] = {
     {PTR, false, LMORBM05, 0},      /* LMCSTA05: COMMON DATA     */
     {6, true, AGC_DN_DSPTAB, 0}     /* DSPTAB +0...+11D TABLE    */
 };
+
 static const agc_dn_entry_t lmcsta06[] = {
     /* COMMON DATA, p.196         */
     {2, false, AGC_DN_X789, 0},   /* X789 +0...+3              */
     {1, true, AGC_DN_LASTYCMD, 0} /* LASTYCMD,LASTXCMD         */
 };
+
 static const agc_dn_entry_t lmcsta07[] = {
     /* COMMON DATA                */
     {3, false, AGC_DN_OGC, 0},      /* OGC,+1,IGC,+1,MGC,+1      */
@@ -185,7 +211,7 @@ static const agc_dn_entry_t lmrenddl[] = {
     {3, false, AGC_DN_DELVSLV, 0},  /* DELVSLV +0...+5           */
     {1, false, AGC_DN_TCSI, 0},     /* TCSI,+1                   */
     {3, false, AGC_DN_DELVEET1, 0}, /* DELVEET +0...+5           */
-    {1, false, AGC_DN_SPARE, 0},
+    {1, false, AGC_DN_SPARE, 0},    /* SPARE */
     {1, false, AGC_DN_TPASS4, 0},   /* TPASS4,+1                 */
     {PTR, false, LMCSTA06, 0},      /* LMREND06: COMMON DATA     */
     {PTR, false, LMORBM02, 0},      /* LMREND02: COMMON DATA     */
@@ -194,7 +220,7 @@ static const agc_dn_entry_t lmrenddl[] = {
     {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT             */
     {PTR, false, LMORBM04, 0},      /* LMREND04: COMMON DATA     */
     {2, false, AGC_DN_POSTORKU, 0}, /* POSTORKU,NEGTORKU,..V     */
-    {1, false, AGC_DN_SPARE, 0},
+    {1, false, AGC_DN_SPARE, 0},    /* SPARE */
     {1, false, AGC_DN_TCDH, 0},     /* TCDH,+1                   */
     {3, false, AGC_DN_DELVEET2, 0}, /* DELVEET2 +0...+5          */
     {1, false, AGC_DN_TTPI, 0},     /* TTPI,+1                   */
@@ -211,8 +237,9 @@ static const agc_dn_entry_t lmrenddl[] = {
     {1, false, AGC_DN_NN, 0},       /* NN,+1                     */
     {1, false, AGC_DN_DIFFALT, 0},  /* DIFFALT,+1                */
     {1, false, AGC_DN_DELVTPF, 0},  /* DELVTPF,+1                */
-    {1, true, AGC_DN_SPARE, 0}
+    {1, true, AGC_DN_SPARE, 0}      /* SPARE */
 };
+
 static const agc_dn_entry_t lmrend07[] = {
     /* SNAPSHOT, p.199            */
     {1, true, AGC_DN_AIG, 0},     /* AIG,AMG                   */
@@ -232,7 +259,7 @@ static const agc_dn_entry_t lmdsasdl[] = {
     {1, false, AGC_DN_TTF_8, 0},    /* TTF/8,+1                  */
     {1, false, AGC_DN_DELTAH, 0},   /* DELTAH,+1                 */
     {3, false, AGC_DN_RLS, 0},      /* RLS +0...+5               */
-    {1, false, AGC_DN_SPARE, 0},
+    {1, false, AGC_DN_SPARE, 0},    /* SPARE */
     {PTR, false, LMCSTA06, 0},      /* LMDSAS09: COMMON DATA     */
     {PTR, false, LMORBM02, 0},      /* LMDSAS02: COMMON DATA     */
     {1, false, AGC_DN_TIME2, 0},    /* TIME2/1                   */
@@ -255,6 +282,7 @@ static const agc_dn_entry_t lmdsasdl[] = {
     {1, false, AGC_DN_PSEUDO55, 0}, /* PSEUDO55,GARBAGE          */
     {1, true, AGC_DN_TTOGO, 0}      /* TTOGO,+1                  */
 };
+
 static const agc_dn_entry_t lmdsas07[] = {
     /* SNAPSHOT, p.200            */
     {1, true, AGC_DN_LRZCDUDL, 0},  /* LRZCDUDL,GARBAGE          */
@@ -270,9 +298,10 @@ static const agc_dn_entry_t lmdsas07[] = {
     {1, false, AGC_DN_MKTIME, 0},   /* MKTIME,+1                 */
     {1, true, AGC_DN_LRXCDUDL, 0}   /* LRXCDUDL,LRYCDUDL         */
 };
+
 static const agc_dn_entry_t lmdsas08[] = { /* SEND SNAPSHOT              */
-    {6, false, AGC_DN_DNTMBUFF, 0},
-    {5, true, AGC_DN_DNTMBUFF, 12}
+    {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT */
+    {5, true, AGC_DN_DNTMBUFF, 12}  /* SEND SNAPSHOT */
 };
 
 /* ---------------- LM LUNAR SURFACE ALIGN LIST (LMLSALDL), p.202 -------- */
@@ -320,14 +349,14 @@ static const agc_dn_entry_t lmagsidl[] = {
     {6, false, AGC_DN_DNTMBUFF, 0}, /* SEND SNAPSHOT             */
     {PTR, false, LMORBM04, 0},      /* LMAGSI04: COMMON DATA     */
     {2, false, AGC_DN_POSTORKU, 0}, /* POSTORKU,NEGTORKU,..V     */
-    {1, false, AGC_DN_SPARE, 0},
-    {1, false, AGC_DN_SPARE, 0},
+    {1, false, AGC_DN_SPARE, 0},    /* SPARE */
+    {1, false, AGC_DN_SPARE, 0},    /* SPARE */
     {1, false, AGC_DN_AGSK, 0},     /* AGSK,+1                   */
     {6, false, AGC_DN_UPBUFF, 0},   /* UPBUFF +0...+11D          */
     {4, false, AGC_DN_UPBUFF, 12},  /* UPBUFF +12D...+19D        */
     {1, false, AGC_DN_LEMMASS, 0},  /* LEMMASS,CSMMASS           */
     {1, false, AGC_DN_IMODES30, 0}, /* IMODES30,IMODES33         */
-    {1, false, AGC_DN_SPARE, 0},
+    {1, false, AGC_DN_SPARE, 0},    /* SPARE */
     {PTR, false, LMORBM05, 0},      /* LMAGSI05: COMMON DATA     */
     {6, true, AGC_DN_DSPTAB, 0}     /* DSPTAB +0...+11D          */
 };
@@ -337,35 +366,39 @@ static const agc_dn_entry_t lmagsidl[] = {
 
 /* DNTABLE (p.204): index = DNLSTCOD.                                      */
 static const agc_dn_list_t dntable[AGC_DNLIST_LM_COUNT] = {
-    {lmcstadl, (uint8_t) (sizeof lmcstadl / sizeof lmcstadl[0]),
-     false}, /* 0 COAST/ALIGN (NOMDNLST) */
-    {lmagsidl, (uint8_t) (sizeof lmagsidl / sizeof lmagsidl[0]),
-     false}, /* 1 AGS INIT/UPDATE (UPDNLIST) */
-    {lmrenddl, (uint8_t) (sizeof lmrenddl / sizeof lmrenddl[0]),
-     false}, /* 2 RENDEZVOUS/PRETHRUST */
-    {lmorbmdl, (uint8_t) (sizeof lmorbmdl / sizeof lmorbmdl[0]),
-     false}, /* 3 ORBITAL MANEUVERS */
-    {lmdsasdl, (uint8_t) (sizeof lmdsasdl / sizeof lmdsasdl[0]),
-     false}, /* 4 DESCENT/ASCENT */
-    {lmlsaldl, (uint8_t) (sizeof lmlsaldl / sizeof lmlsaldl[0]),
-     false}  /* 5 SURFACE ALIGN */
+    {lmcstadl, (uint8_t) (sizeof (lmcstadl) / sizeof (lmcstadl[0])), false}, /* 0 COAST/ALIGN (NOMDNLST) */
+    {lmagsidl, (uint8_t) (sizeof (lmagsidl) / sizeof (lmagsidl[0])), false}, /* 1 AGS INIT/UPDATE (UPDNLIST) */
+    {lmrenddl, (uint8_t) (sizeof (lmrenddl) / sizeof (lmrenddl[0])), false}, /* 2 RENDEZVOUS/PRETHRUST */
+    {lmorbmdl, (uint8_t) (sizeof (lmorbmdl) / sizeof (lmorbmdl[0])), false}, /* 3 ORBITAL MANEUVERS */
+    {lmdsasdl, (uint8_t) (sizeof (lmdsasdl) / sizeof (lmdsasdl[0])), false}, /* 4 DESCENT/ASCENT */
+    {lmlsaldl, (uint8_t) (sizeof (lmlsaldl) / sizeof (lmlsaldl[0])), false}  /* 5 SURFACE ALIGN */
 };
 
 static const agc_dn_list_t sublists[LM_SUB_COUNT] = {
-    {lmorbm01, (uint8_t) (sizeof lmorbm01 / sizeof lmorbm01[0]), true},
-    {lmorbm02, (uint8_t) (sizeof lmorbm02 / sizeof lmorbm02[0]), false},
-    {lmorbm03, (uint8_t) (sizeof lmorbm03 / sizeof lmorbm03[0]), true},
-    {lmorbm04, (uint8_t) (sizeof lmorbm04 / sizeof lmorbm04[0]), false},
-    {lmorbm05, (uint8_t) (sizeof lmorbm05 / sizeof lmorbm05[0]), false},
-    {lmorbm06, (uint8_t) (sizeof lmorbm06 / sizeof lmorbm06[0]), false},
-    {lmcsta06, (uint8_t) (sizeof lmcsta06 / sizeof lmcsta06[0]), false},
-    {lmcsta07, (uint8_t) (sizeof lmcsta07 / sizeof lmcsta07[0]), false},
-    {lmrend07, (uint8_t) (sizeof lmrend07 / sizeof lmrend07[0]), true},
-    {lmdsas07, (uint8_t) (sizeof lmdsas07 / sizeof lmdsas07[0]), true},
-    {lmdsas08, (uint8_t) (sizeof lmdsas08 / sizeof lmdsas08[0]), false}
+    {lmorbm01, (uint8_t) (sizeof (lmorbm01) / sizeof (lmorbm01[0])), true},
+    {lmorbm02, (uint8_t) (sizeof (lmorbm02) / sizeof (lmorbm02[0])), false},
+    {lmorbm03, (uint8_t) (sizeof (lmorbm03) / sizeof (lmorbm03[0])), true},
+    {lmorbm04, (uint8_t) (sizeof (lmorbm04) / sizeof (lmorbm04[0])), false},
+    {lmorbm05, (uint8_t) (sizeof (lmorbm05) / sizeof (lmorbm05[0])), false},
+    {lmorbm06, (uint8_t) (sizeof (lmorbm06) / sizeof (lmorbm06[0])), false},
+    {lmcsta06, (uint8_t) (sizeof (lmcsta06) / sizeof (lmcsta06[0])), false},
+    {lmcsta07, (uint8_t) (sizeof (lmcsta07) / sizeof (lmcsta07[0])), false},
+    {lmrend07, (uint8_t) (sizeof (lmrend07) / sizeof (lmrend07[0])), true},
+    {lmdsas07, (uint8_t) (sizeof (lmdsas07) / sizeof (lmdsas07[0])), true},
+    {lmdsas08, (uint8_t) (sizeof (lmdsas08) / sizeof (lmdsas08[0])), false}
 };
 
-/* DNTABLE lookup: control list for downlist code CODE (DNLSTCOD).         */
+/**********************************************************************
+ * DNTABLE (Luminary099 DOWNLINK_LISTS.agc pp.193-205) -- INDEX DNLSTCOD,
+ * CA DNTABLE: the control list of a downlist
+ *
+ * ARGUMENTS:
+ *   code  int              I   DNLSTCOD, 0..AGC_DNLIST_LM_COUNT-1
+ *   out   agc_dn_list_t *  O   the list
+ *
+ * RETURNS: AGC_STATUS_OK, BAD_ARG for a code outside DNTABLE (DNLSTCOD
+ *          comes from erasable: V21, AGSWORD)
+ **********************************************************************/
 agc_status_t agc_dnlist_lm_control(int code, agc_dn_list_t *out)
 {
     if (!AGC_ASSERT(code >= 0 && code < AGC_DNLIST_LM_COUNT))
@@ -378,7 +411,16 @@ agc_status_t agc_dnlist_lm_control(int code, agc_dn_list_t *out)
     return (AGC_STATUS_OK);
 }
 
-/* DNPTR target: sublist SUB.                                              */
+/**********************************************************************
+ * DNPTR (Luminary099 DOWNLINK_LISTS.agc pp.193-205) -- the sublist a
+ * DNPTR entry names
+ *
+ * ARGUMENTS:
+ *   sub  int              I   sublist id (enum above)
+ *   out  agc_dn_list_t *  O   the list
+ *
+ * RETURNS: AGC_STATUS_OK, BAD_ARG for an id outside the sublist table
+ **********************************************************************/
 agc_status_t agc_dnlist_lm_sublist(int sub, agc_dn_list_t *out)
 {
     if (!AGC_ASSERT(sub >= 0 && sub < LM_SUB_COUNT))

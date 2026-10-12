@@ -221,7 +221,7 @@ agc_dp_t agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo)
     m.w[2]       = 0;
     const int sg = agc_rtb_sgnagree(&m); /* signum of the agreed pair: 0 gives +0 */
 
-    return ((sg == 0) ? 0 : (agc_dp_t) ((int32_t) m.w[0] * (int32_t) SP_RANGE + (int32_t) m.w[1]));
+    return ((sg == 0) ? 0 : (agc_dp_t) ((int32_t) m.w[0] * (int32_t) SP_RANGE + (int32_t) m.w[1])); /* +0 when both words are zero */
 }
 
 /**********************************************************************
@@ -288,24 +288,11 @@ void agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3])
  *   out    uint16_t []  O   the two 2's complement patterns,
  *                           half-revolutions
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL out
  **********************************************************************/
-agc_status_t agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2])
+void agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2])
 {
-    if (!AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     out[0] = one_to_two(a_rev);
     out[1] = one_to_two(b_rev);
-
-    if (!AGC_ASSERT(out[0] <= CDU_MASK && out[1] <= CDU_MASK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -344,29 +331,15 @@ uint16_t agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc)
  *   incr    agc_vec_t    I   MPAC vector; the high word of each component
  *                            is the SP increment
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL pointer or an out-of-range
- *          component
  **********************************************************************/
-agc_status_t agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr)
+void agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr)
 {
-    if (!AGC_ASSERT(thetad != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        int32_t hi = incr.c[i] / (int32_t) SP_RANGE; /* MPAC, MPAC+3, +5  */
+        agc_sp_t hi = agc_dp_high(incr.c[i]); /* MPAC, MPAC+3, +5 high words: CDU counts 2^0 */
 
-        if (!AGC_ASSERT(hi >= AGC_SP_MIN && hi <= AGC_SP_MAX))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        thetad[i] = agc_rtb_cduinc(thetad[i], (agc_sp_t) hi);
+        thetad[i] = agc_rtb_cduinc(thetad[i], hi);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -407,14 +380,7 @@ agc_vec_t agc_rtb_readpips(void)
  **********************************************************************/
 agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds)
 {
-    agc_status_t st = agc_imu_pulse(gyro_cmds.c); /* OGC buffer */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
+    return (agc_imu_pulse(gyro_cmds.c)); /* OGC buffer */
 }
 
 /**********************************************************************
@@ -424,15 +390,9 @@ agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds)
  * ARGUMENTS:
  *   m  agc_mat_t *  I/O XNB or XNB1, transposed in place
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL matrix
  **********************************************************************/
-agc_status_t agc_rtb_transp(agc_mat_t *m)
+void agc_rtb_transp(agc_mat_t *m)
 {
-    if (!AGC_ASSERT(m != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     static const int swap_r[3] = {0, 0, 1};
     static const int swap_c[3] = {1, 2, 2};
 
@@ -441,18 +401,11 @@ agc_status_t agc_rtb_transp(agc_mat_t *m)
         int r = swap_r[k]; /* row of the swap */
         int c = swap_c[k]; /* column of the swap */
 
-        if (!AGC_ASSERT(r < c && c < AGC_VEC_N))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         agc_dp_t t = m->row[r].c[c]; /* DXCH temporary, scale of XNB */
 
         m->row[r].c[c] = m->row[c].c[r];
         m->row[c].c[r] = t;
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -571,8 +524,8 @@ agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
     agc_dp_t              y2           = agc_dp_sq(urpv.c[1]);   /* B2              */
     agc_dp_t              d            = agc_dp_sub(ip, y2, x2); /* DSU, B2         */
 
-    d           = agc_dp_mul(ip, d, five_eighths); /* DMP 5/8, B5     */
-    agc_vec_t v = agc_vec_scale(ip, urpv, d);      /* VXSC, B6        */
+    d           = agc_dp_mul_trunc(d, five_eighths); /* DMP 5/8 (truncating), B5 */
+    agc_vec_t v = agc_vec_scale(ip, urpv, d);        /* VXSC, B6        */
 
     v      = agc_vec_shl(ip, v, 3);                            /* VSL3, B3        */
     v.c[0] = agc_dp_add(ip, agc_dp_shr(urpv.c[0], 1), v.c[0]); /* SR1 DAD  */
@@ -593,16 +546,10 @@ agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
  *   e3j22r2m  agc_sp_t        I   SP coefficient E3J22R2M, B58
  *   out       agc_vec_t *     O   the J22 term, B61, when moonflag is set
  *
- * RETURNS: AGC_STATUS_OK, NOT_FOUND when MOONFLAG is clear (NBRANCH),
- *          BAD_ARG on a NULL pointer
+ * RETURNS: AGC_STATUS_OK, NOT_FOUND when MOONFLAG is clear (NBRANCH)
  **********************************************************************/
 agc_status_t agc_rtb_quality1(agc_interp_t *ip, agc_vec_t urpv, bool moonflag, agc_sp_t e3j22r2m, agc_vec_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!moonflag)
     {
         return (AGC_STATUS_NOT_FOUND); /* BOF -> NBRANCH  */

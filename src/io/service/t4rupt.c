@@ -140,16 +140,6 @@ static int  t4_phase;       /* RUPTREG1 / low part of DSRUPTSW, 0..7     */
 static int  t4_quick_left;  /* quick (20 ms) passes still to come        */
 static bool t4_quick_wrote; /* last quick pass wrote a relay word        */
 
-/**********************************************************************
- * AGC: none (range of DSRUPTSW, see the DEVIATION above)
- *
- * RETURNS: true when the phase and the quick-pass count are in range
- **********************************************************************/
-static bool t4_seq_ok(void)
-{
-    return ((t4_phase >= 0) && (t4_phase < T4_PHASES) && (t4_quick_left >= 0) && (t4_quick_left <= T4_FLUSH_PASSES));
-}
-
 /* ---- small helpers -------------------------------------------------- */
 
 /**********************************************************************
@@ -351,17 +341,7 @@ static agc_status_t t4_proceede(void)
  **********************************************************************/
 static agc_status_t t4_jump(int phase)
 {
-    if (!AGC_ASSERT(phase >= 0 && phase < T4_PHASES))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int slot = phase & 3; /* table repeats after 4   */
-
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM || agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (slot == 2)
     {
@@ -372,7 +352,9 @@ static agc_status_t t4_jump(int phase)
     {
         if (slot == 0)
         {
-            return (agc_t4_optics_drive()); /* OPTTEST -> OPTDRIVE     */
+            agc_t4_optics_drive(); /* OPTTEST -> OPTDRIVE     */
+
+            return (AGC_STATUS_OK);
         }
 
         if (slot == 1)
@@ -396,7 +378,9 @@ static agc_status_t t4_jump(int phase)
         return (agc_t4_rr_monitor()); /* TCF RRAUTCHK */
     }
 
-    return (agc_t4_gimbal_matrix()); /* slot 3: TCF DAPT4S */
+    agc_t4_gimbal_matrix(); /* slot 3: TCF DAPT4S */
+
+    return (AGC_STATUS_OK);
 } /* t4_jump */
 
 /**********************************************************************
@@ -406,8 +390,8 @@ static agc_status_t t4_jump(int phase)
  *   next_cs  uint16_t *  O   delay to the next T4RUPT, cs (2 or 12, or 2
  *                            x passes)
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL pointer, or the T4JUMP
- *          activity's status
+ * RETURNS: AGC_STATUS_OK, or the status of the display pass, PROCEEDE or
+ *          the T4JUMP activity
  **********************************************************************/
 agc_status_t agc_t4rupt(uint16_t *next_cs)
 {
@@ -419,7 +403,7 @@ agc_status_t agc_t4rupt(uint16_t *next_cs)
     }
 
     t4_phase        = (t4_phase > 0) ? (t4_phase - 1) : (T4_PHASES - 1); /* CCS  */
-    agc_status_t st = t4_display_pass(next_cs);
+    agc_status_t st = t4_display_pass(next_cs);                          /* display pass / PROCEEDE status */
 
     if (st == AGC_STATUS_OK)
     {
@@ -431,11 +415,6 @@ agc_status_t agc_t4rupt(uint16_t *next_cs)
         return (st);
     }
 
-    if (!AGC_ASSERT(*next_cs >= T4_20MS_CS) || !AGC_ASSERT(t4_seq_ok()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (t4_jump(t4_phase));
 }
 
@@ -444,24 +423,12 @@ agc_status_t agc_t4rupt(uint16_t *next_cs)
  * INTERRUPT_LEAD_INS) -- run T4RUPT and reload TIME4 so it overflows
  * after the returned delay (the AGC's TS TIME4 of 20MRUPT / 120MRUPT)
  *
- * RETURNS: the status of agc_t4rupt, or BAD_ARG for a delay outside TIME4
+ * RETURNS: the status of agc_t4rupt
  **********************************************************************/
 agc_status_t agc_t4rupt_rupt(void)
 {
-    uint16_t     dt = 0;             /* TIME4 delay, cs */
-    agc_status_t st = AGC_STATUS_OK; /* T4RUPT result   */
-
-    if (!AGC_ASSERT(t4_seq_ok()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    st = agc_t4rupt(&dt);
-
-    if (!AGC_ASSERT(dt > 0u && dt < T4_TIME4_OVF))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    uint16_t     dt = 0;               /* TIME4 delay, cs: set on every path (2, 12, 2 x passes) */
+    agc_status_t st = agc_t4rupt(&dt); /* T4RUPT result   */
 
     agc_rupt_set_time(4, (uint16_t) (T4_TIME4_OVF - dt));
 
@@ -838,7 +805,7 @@ agc_status_t agc_t4_tnontest(void)
 
     if ((im30 & BIT7) != 0u && (im30 & BIT8) != 0u)
     {
-        agc_status_t st = t4_proctnon();
+        agc_status_t st = t4_proctnon(); /* PROCTNON status */
 
         if (st != AGC_STATUS_OK)
         {
@@ -881,15 +848,9 @@ agc_status_t agc_t4_c33test(void)
 
             if ((changes & mask) != 0u)
             {
-                /**********************************************************************
-                 * C33JMP: PIPFAIL (p.155), DNTMFAST / UPTMFAST (p.156).
-                 *
-                 * ARGUMENTS:
-                 *   bit     int       I   AGC bit number of the changed channel 33 bit,
-                 *                         11..13
-                 *   newbit  uint16_t  I   its new value in IMODES33 (masked, not shifted)
-                 **********************************************************************/
-                uint16_t newbit = (uint16_t) (agc_erase_imodes33() & mask);
+                /* C33JMP: PIPFAIL (p.155), DNTMFAST / UPTMFAST (p.156) for
+                 * the changed bit, with its new value in IMODES33.             */
+                uint16_t newbit = (uint16_t) (agc_erase_imodes33() & mask); /* new value of the bit in IMODES33 */
 
                 if (bit == 12 || bit == 11)
                 {
@@ -918,7 +879,7 @@ agc_status_t agc_t4_c33test(void)
     }
 
     return (agc_t4_glockmon());
-}
+} /* agc_t4_c33test */
 
 /**********************************************************************
  * SETGLOCK / GLINVERT / GLAMPTST (p.148): make the gimbal lock lamp
@@ -1000,19 +961,10 @@ static agc_status_t t4_unz2(void)
  **********************************************************************/
 agc_status_t agc_t4_task(agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (task == AGC_TASK_ENDTNON)
     {
-        /**********************************************************************
-         * ENDTNON (p.142): end of the 90 s ISS turn-on delay.
-         *
-         * RETURNS: AGC_STATUS_OK (TASKOVER), the VARDELAY status (RETNON, UNZ2)
-         *          or the IMUBAD status (failed turn-on)
-         **********************************************************************/
+        /* ENDTNON (p.142): end of the 90 s ISS turn-on delay; TASKOVER, the
+         * VARDELAY of RETNON / UNZ2, or IMUBAD on a failed turn-on.          */
         uint16_t old = agc_erase_imodes30(); /* IMODES30 before ENDTNON */
 
         agc_erase_set_imodes30((uint16_t) (old & ~(uint32_t) BIT2));
@@ -1046,12 +998,9 @@ agc_status_t agc_t4_task(agc_task_id_t task)
 
     if (task == AGC_TASK_ISSUP)
     {
-        /**********************************************************************
-         * ISSUP (p.143): caging and fail inhibits removed, DAP enabled; LM also
-         * starts free-fall IMU compensation (DRIFTFLG, 1/PIPADT = TIME1).
-         *
-         * RETURNS: AGC_STATUS_OK (TASKOVER), or the WAITLIST status of PFAILOK
-         **********************************************************************/
+        /* ISSUP (p.143): caging and fail inhibits removed, DAP enabled; the
+         * LM also starts free-fall IMU compensation (DRIFTFLG, 1/PIPADT =
+         * TIME1); then PFAILOK by WAITLIST.                                  */
         agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() & ~(uint32_t) OCT54));
         agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() & ~(uint32_t) BIT6));
 
@@ -1069,13 +1018,8 @@ agc_status_t agc_t4_task(agc_task_id_t task)
 
     if (task == AGC_TASK_ENDZOPT || task == AGC_TASK_ENDZOPT2)
     {
-        if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
-        return (agc_t4_optics_task(task));
+        return (agc_t4_optics_task(task)); /* CM tasks (CSM dispatch only) */
     }
 
     return (AGC_STATUS_NOT_FOUND);
-}
+} /* agc_t4_task */

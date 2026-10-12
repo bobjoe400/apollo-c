@@ -1,11 +1,28 @@
-/*
- * sysmisc.h -- public interface of the sys-misc lane (T4RUPT, extended verbs,
- * downlink lists and down-telemetry, P27 update program, service routines,
- * self-check / show-banksum, RTB op codes, LM P07 IMU tests).
+/**********************************************************************
+ * FILE NAME: service.h
  *
- * Promoted from src/io/sysmisc.h by the restructure; owned by the sys-misc
- * lane (docs/modules/sys-misc.md).
- */
+ * PURPOSE:
+ *   Public interface of the sys-misc lane: RTB op codes, T4RUPT (both
+ *   vehicles), the downlink lists and the down-telemetry program, the
+ *   extended verbs and the P27 update program, the service routines, the
+ *   self-check / show-banksum and the LM P07 IMU performance tests.
+ *   Called by the executive (dispatch, restarts, interrupts), pinball and
+ *   the programs that use the service routines.
+ *
+ * AGC SOURCE:
+ *   RTB_OP_CODES.agc, T4RUPT_PROGRAM.agc, DOWNLINK_LISTS.agc,
+ *   DOWN-TELEMETRY_PROGRAM.agc, EXTENDED_VERBS.agc, UPDATE_PROGRAM.agc,
+ *   SERVICE_ROUTINES.agc, AGC_BLOCK_TWO_SELF-CHECK.agc, INTER-BANK_
+ *   COMMUNICATION.agc (both ropes); LM SYSTEM_TEST_STANDARD_LEAD_INS,
+ *   IMU_PERFORMANCE_TEST_2, IMU_PERFORMANCE_TESTS_4.  Pages per section.
+ *
+ * REQUIRES:
+ *   none (self-contained; includes what it uses)
+ *
+ * GLOBAL VARIABLES:
+ *   none (the lane's erasables are reached through accessors; struct
+ *   members below carry their scale in a short comment)
+ **********************************************************************/
 #ifndef AGC_SYSMISC_H
 #define AGC_SYSMISC_H
 
@@ -26,7 +43,7 @@
  * 14 bits each).  Used only where sign disagreement must be expressible.  */
 typedef struct agc_mpac_tp
 {
-    agc_sp_t w[3];
+    agc_sp_t w[3]; /* MPAC, MPAC +1, MPAC +2: 2^0, 2^-14, 2^-28 of the scale */
 } agc_mpac_tp_t;
 
 agc_dp_t     agc_rtb_loadtime(void);                                                                      /* LOADTIME, cs 2^28 */
@@ -35,12 +52,12 @@ int          agc_rtb_sgnagree(agc_mpac_tp_t *mpac);                             
 agc_dp_t     agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo);
 uint16_t     agc_rtb_1sto2s(agc_dp_t angle_rev);                                                          /* 1STO2S            */
 void         agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3]);                                      /* V1STO2S  */
-agc_status_t agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2]);
+void         agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2]);
 uint16_t     agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc);                                        /* CDUINC   */
-agc_status_t agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr);                                        /* INCRCDUS */
+void         agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr);                                        /* INCRCDUS */
 agc_vec_t    agc_rtb_readpips(void);                                                                      /* READPIPS */
 agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds);                                                       /* PULSEIMU */
-agc_status_t agc_rtb_transp(agc_mat_t *m);                                                                /* TRANSP1/TRANSP2  */
+void         agc_rtb_transp(agc_mat_t *m);                                                                /* TRANSP1/TRANSP2  */
 agc_dp_t     agc_rtb_signmpac(agc_dp_t mpac);                                                             /* SIGNMPAC         */
 agc_vec_t    agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift, agc_dp_t *abval, agc_dp_t *vsq); /* NORMUNIT/NORMUNX1 */
 agc_vec_t    agc_rtb_vecsgnag(agc_vec_t v);                                                               /* VECSGNAG         */
@@ -187,8 +204,8 @@ typedef enum agc_dn_item
 } agc_dn_item_t;
 
 /* Entry op codes: 1..6 = 1DNADR..6DNADR (n DP words), DNCHAN, DNPTR.      */
-#define AGC_DN_OP_CHAN 7
-#define AGC_DN_OP_PTR  8
+#define AGC_DN_OP_CHAN 7 /* DNCHAN: channels n, n+1          */
+#define AGC_DN_OP_PTR  8 /* DNPTR: a sublist                   */
 
 typedef struct agc_dn_entry
 {
@@ -200,8 +217,8 @@ typedef struct agc_dn_entry
 
 typedef struct agc_dn_list
 {
-    const agc_dn_entry_t *entry;
-    uint8_t               count;
+    const agc_dn_entry_t *entry;    /* the list words in AGC order     */
+    uint8_t               count;    /* number of entries               */
     bool                  snapshot; /* sublist starting with -1DNADR      */
 } agc_dn_list_t;
 
@@ -223,16 +240,13 @@ agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words);
 /* ======================================================================
  * Down-telemetry program (telemetry.c; DOWN_TELEMETRY_PROGRAM.agc pp.988-997)
  * ==================================================================== */
-void         agc_telem_fresh_start(void);             /* DOFSTART: DNLSTCOD = 0  */
-void         agc_telem_slap1(void);                   /* LM SLAP1: DUMPCNT       */
-void         agc_telem_restart(void);                 /* STARTSUB: restart list  */
-void         agc_telem_select_list(int dnlstcod);     /* TS DNLSTCOD             */
-int          agc_telem_list_code(void);               /* C(DNLSTCOD)             */
-agc_status_t agc_telem_downrupt(void);                /* DODOWNTM, every 20 ms   */
-agc_status_t agc_telem_start_dump(void);              /* V74: DNTMGOTO = DNDUMPI */
-agc_status_t agc_telem_set_dumpcnt(uint16_t dumpcnt); /* DUMPCNT (V21N01)      */
-uint16_t     agc_telem_dumpcnt(void);
-uint16_t     agc_erase_agsword(void);                 /* AGSWORD (LM): saved list */
+void         agc_telem_fresh_start(void);         /* DOFSTART: DNLSTCOD = 0  */
+void         agc_telem_slap1(void);               /* LM SLAP1: DUMPCNT       */
+void         agc_telem_restart(void);             /* STARTSUB: restart list  */
+void         agc_telem_select_list(int dnlstcod); /* TS DNLSTCOD             */
+agc_status_t agc_telem_downrupt(void);            /* DODOWNTM, every 20 ms   */
+void         agc_telem_start_dump(void);          /* V74: DNTMGOTO = DNDUMPI */
+uint16_t     agc_erase_agsword(void);             /* AGSWORD (LM): saved list */
 void         agc_erase_set_agsword(uint16_t v);
 
 /* ======================================================================
@@ -240,12 +254,12 @@ void         agc_erase_set_agsword(uint16_t v);
  * ==================================================================== */
 uint16_t     agc_svc_upflag(agc_flag_id_t f);                            /* UPFLAG: returns flagword */
 uint16_t     agc_svc_downflag(agc_flag_id_t f);                          /* DOWNFLAG                 */
-agc_status_t agc_svc_upent2(uint16_t arg);                               /* UPENT2 (FLAGWRD4 on LM)  */
-agc_status_t agc_svc_downent2(uint16_t arg);                             /* DOWNENT2                 */
+void         agc_svc_upent2(uint16_t arg);                               /* UPENT2 (FLAGWRD4 on LM)  */
+void         agc_svc_downent2(uint16_t arg);                             /* DOWNENT2                 */
 agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as);  /* DELAYJOB */
 agc_status_t agc_svc_delay_wake(int slot);                               /* WAKER task body (-1)     */
 void         agc_svc_startsub_reset(void);                               /* DELAYLOC = 0             */
-agc_status_t agc_svc_gentran(const uint16_t *from, uint16_t *to, int n); /* GENTRAN */
+void         agc_svc_gentran(const uint16_t *from, uint16_t *to, int n); /* GENTRAN */
 agc_status_t agc_svc_b5off(void);                                        /* B5OFF                    */
 agc_status_t agc_svc_trfailof(void);                                     /* TRFAILOF (CM)            */
 agc_status_t agc_svc_trfailon(void);                                     /* TRFAILON (CM)            */
@@ -270,9 +284,9 @@ agc_status_t agc_t4_c33test(void);            /* C33TEST                  */
 agc_status_t agc_t4_glockmon(void);           /* GLOCKMON                 */
 
 /* CSM optics (src/io/service/t4rupt_csm.c). OPTIND -0 is AGC_OPTIND_NEG0.      */
-#define AGC_OPTIND_NEG0 ((agc_sp_t) -2)
+#define AGC_OPTIND_NEG0 ((agc_sp_t) -2)              /* OPTIND -0: optics reserved (TVC) */
 agc_status_t agc_t4_optics_monitor(void);            /* OPTMON                   */
-agc_status_t agc_t4_optics_drive(void);              /* OPTDRIVE                 */
+void         agc_t4_optics_drive(void);              /* OPTDRIVE                 */
 agc_status_t agc_t4_optics_task(agc_task_id_t task); /* ENDZOPT              */
 void         agc_t4_optics_reset(bool fresh);        /* OPTIND/OPTMODES init     */
 uint16_t     agc_erase_optmodes(void);               /* OPTMODES (CM)            */
@@ -283,7 +297,7 @@ agc_sp_t     agc_erase_swsample(void);               /* SWSAMPLE (CM) +1 CSC, 0 
 
 /* LM radar monitor and DAP matrix (src/io/service/t4rupt_lm.c).                 */
 agc_status_t agc_t4_rr_monitor(void);    /* RRAUTCHK..RRGIMON+GPMATRIX */
-agc_status_t agc_t4_gimbal_matrix(void); /* GPMATRIX / DAPT4S        */
+void         agc_t4_gimbal_matrix(void); /* GPMATRIX / DAPT4S        */
 uint16_t     agc_erase_radmodes(void);   /* RADMODES (LM)            */
 void         agc_erase_set_radmodes(uint16_t v);
 void         agc_t4_radmodes_init(void); /* STARTSUB: RADMODES = RMODINIT */
@@ -321,10 +335,10 @@ agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t n
 agc_status_t agc_extverb_redisplay(const agc_job_ctx_t *ctx, uint8_t verb, agc_job_id_t next);
 
 /* LM radar verb entries (extended_verbs_lm_radar.c)                       */
-agc_status_t agc_extverb_rr_zero(agc_job_ctx_t *ctx);          /* V40 N72 */
+agc_status_t agc_extverb_rr_zero(void);                        /* V40 N72 */
 agc_status_t agc_extverb_rr_designate(agc_job_ctx_t *ctx);     /* V41 N72 */
 agc_status_t agc_extverb_rr_designate_end(void);               /* V44     */
-agc_status_t agc_extverb_lr_position_two(agc_job_ctx_t *ctx);  /* V60     */
+agc_status_t agc_extverb_lr_position_two(void);                /* V60     */
 agc_status_t agc_extverb_radar_test(agc_job_ctx_t *ctx);       /* V63 R04 */
 agc_status_t agc_extverb_lr_spurious_test(agc_job_ctx_t *ctx); /* V78 R77 */
 agc_status_t agc_extverb_lr_spurious_test_end(void);           /* V79    */
@@ -337,8 +351,8 @@ agc_status_t agc_extverb_lm_attck2(void);                    /* LM V43 ATTCK2 (t
  * extended_verbs.c pick one by vehicle)                                   */
 agc_status_t agc_job_attitude_error_load_csm(void);
 agc_status_t agc_job_attitude_error_load_lm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_tracking_terminate_csm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_tracking_terminate_lm(agc_job_ctx_t *ctx);
+agc_status_t agc_job_tracking_terminate_csm(void);
+agc_status_t agc_job_tracking_terminate_lm(void);
 agc_status_t agc_job_dap_data_load_noun46_csm(agc_job_ctx_t *ctx);
 agc_status_t agc_job_dap_data_load_noun46_lm(agc_job_ctx_t *ctx);
 agc_status_t agc_job_dap_data_load_config_csm(agc_job_ctx_t *ctx);
@@ -367,11 +381,11 @@ agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx);         /* LST2FAN   */
 agc_status_t agc_job_extended_verb_end(void);                   /* ENDEXT    */
 agc_status_t agc_job_extended_verb_gopin(void);                 /* GOPIN     */
 agc_status_t agc_job_keyboard_coarse_align(agc_job_ctx_t *ctx); /* V41 ICORK2 */
-agc_status_t agc_job_keyboard_coarse_drive(agc_job_ctx_t *ctx); /* V41 IMUCOARS */
+agc_status_t agc_job_keyboard_coarse_drive(void);               /* V41 IMUCOARS */
 agc_status_t agc_job_keyboard_fine_align(agc_job_ctx_t *ctx);   /* V42       */
-agc_status_t agc_job_keyboard_fine_mode(agc_job_ctx_t *ctx);    /* V42 IMUFINE */
-agc_status_t agc_job_keyboard_gyro_torque(agc_job_ctx_t *ctx);  /* V42 FINEK2 */
-agc_status_t agc_job_clock_align_update(agc_job_ctx_t *ctx);    /* V55 UPDATIME */
+agc_status_t agc_job_keyboard_fine_mode(void);                  /* V42 IMUFINE */
+agc_status_t agc_job_keyboard_gyro_torque(void);                /* V42 FINEK2 */
+agc_status_t agc_job_clock_align_update(void);                  /* V55 UPDATIME */
 agc_status_t agc_job_show_banksum_display(agc_job_ctx_t *ctx);  /* V91 NOKILL */
 agc_status_t agc_job_show_banksum_next(agc_job_ctx_t *ctx);     /* V91 NXTBNK */
 agc_status_t agc_job_show_banksum_end(void);                    /* V91 V34   */
@@ -386,36 +400,36 @@ agc_status_t agc_job_dap_data_load_noun48(agc_job_ctx_t *ctx);  /* R03 N48   */
 agc_status_t agc_job_dap_data_load_trim(void);                  /* LM DPDAT3 */
 agc_status_t agc_job_dap_data_load_end(void);                   /* LM ENDR03 */
 agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx);              /* LM TRIMDONE */
-agc_status_t agc_job_state_vector_copy(agc_job_ctx_t *ctx);     /* V66 / CSM V47 */
-agc_status_t agc_job_tracking_terminate(agc_job_ctx_t *ctx);    /* CSM V56 */
-agc_status_t agc_job_attitude_error_enable(agc_job_ctx_t *ctx); /* LM V43 */
+agc_status_t agc_job_state_vector_copy(void);                   /* V66 / CSM V47 */
+agc_status_t agc_job_tracking_terminate(void);                  /* CSM V56 */
+agc_status_t agc_job_attitude_error_enable(void);               /* LM V43 */
 agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx);   /* CSM V41 N91 OPTC1 */
 agc_status_t agc_job_optics_coarse_start(void);                 /* CSM V41 N91 OPTIND */
 
 /* LM radar verbs (src/io/verbs/extended_verbs_lm_radar.c)                */
-agc_status_t agc_job_lr_position_two_check(void);                     /* V60 LRP2ALM */
-agc_status_t agc_job_rr_designate_load(agc_job_ctx_t *ctx);           /* V41N72 V24N73 */
-agc_status_t agc_job_rr_lockon_query(agc_job_ctx_t *ctx);             /* AURLOKON  */
-agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx);           /* AURLOKON V04N12 */
-agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx);            /* AURLOKON +5 */
-agc_status_t agc_job_rr_designate_schedule(agc_job_ctx_t *ctx);       /* RRDESNBK end */
-agc_status_t agc_job_rr_designate_drive(void);                        /* RRDESK2   */
-agc_status_t agc_job_rr_designate_result(void);                       /* RRDESK2 alarm 503 */
-agc_status_t agc_job_rr_designate_end_monitor(agc_job_ctx_t *ctx);    /* V44 NORRMON */
-agc_status_t agc_job_rr_los_display(agc_job_ctx_t *ctx);              /* V85 RRLOSDSP */
-agc_status_t agc_job_rr_los_display_next(agc_job_ctx_t *ctx);         /* RRLOSDSP loop */
-agc_status_t agc_job_rr_los_display_stop(void);                       /* V85 B5OFF */
-agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx);   /* R04A V04N12 */
-agc_status_t agc_job_radar_test_select(agc_job_ctx_t *ctx);           /* R04 RTSTDEX */
-agc_status_t agc_job_radar_test_auto_check(agc_job_ctx_t *ctx);       /* R04B      */
-agc_status_t agc_job_radar_test_auto_request(agc_job_ctx_t *ctx);     /* R04B V50N25 */
-agc_status_t agc_job_radar_test_first_display(agc_job_ctx_t *ctx);    /* R04RR/R04LR */
-agc_status_t agc_job_radar_test_second_display(agc_job_ctx_t *ctx);   /* N78/N67 */
-agc_status_t agc_job_radar_test_switch(void);                         /* R04Y      */
-agc_status_t agc_job_radar_test_switch_resume(agc_job_ctx_t *ctx);    /* R04Y +2 s */
-agc_status_t agc_job_radar_test_end(void);                            /* R04END    */
-agc_status_t agc_job_radar_test_end_resume(agc_job_ctx_t *ctx);       /* R04END +1.28 s */
-agc_status_t agc_job_lr_spurious_test_end_resume(agc_job_ctx_t *ctx); /* R77END */
+agc_status_t agc_job_lr_position_two_check(void);                   /* V60 LRP2ALM */
+agc_status_t agc_job_rr_designate_load(agc_job_ctx_t *ctx);         /* V41N72 V24N73 */
+agc_status_t agc_job_rr_lockon_query(agc_job_ctx_t *ctx);           /* AURLOKON  */
+agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx);         /* AURLOKON V04N12 */
+agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx);          /* AURLOKON +5 */
+agc_status_t agc_job_rr_designate_schedule(void);                   /* RRDESNBK end */
+agc_status_t agc_job_rr_designate_drive(void);                      /* RRDESK2   */
+agc_status_t agc_job_rr_designate_result(void);                     /* RRDESK2 alarm 503 */
+agc_status_t agc_job_rr_designate_end_monitor(void);                /* V44 NORRMON */
+agc_status_t agc_job_rr_los_display(void);                          /* V85 RRLOSDSP */
+agc_status_t agc_job_rr_los_display_next(void);                     /* RRLOSDSP loop */
+agc_status_t agc_job_rr_los_display_stop(void);                     /* V85 B5OFF */
+agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx); /* R04A V04N12 */
+agc_status_t agc_job_radar_test_select(agc_job_ctx_t *ctx);         /* R04 RTSTDEX */
+agc_status_t agc_job_radar_test_auto_check(agc_job_ctx_t *ctx);     /* R04B      */
+agc_status_t agc_job_radar_test_auto_request(agc_job_ctx_t *ctx);   /* R04B V50N25 */
+agc_status_t agc_job_radar_test_first_display(agc_job_ctx_t *ctx);  /* R04RR/R04LR */
+agc_status_t agc_job_radar_test_second_display(agc_job_ctx_t *ctx); /* N78/N67 */
+agc_status_t agc_job_radar_test_switch(void);                       /* R04Y      */
+agc_status_t agc_job_radar_test_switch_resume(agc_job_ctx_t *ctx);  /* R04Y +2 s */
+agc_status_t agc_job_radar_test_end(void);                          /* R04END    */
+agc_status_t agc_job_radar_test_end_resume(void);                   /* R04END +1.28 s */
+agc_status_t agc_job_lr_spurious_test_end_resume(void);             /* R77END */
 
 /* R04/R77 radar test storage (owned here; RADSAMP/DORSAMP read and write
  * them).  SP integers.                                                    */
@@ -442,12 +456,12 @@ void         agc_uplink_update_fresh_start(void);                   /* UPSVFLAG 
 agc_status_t agc_uplink_update_write(int idx, uint16_t word);
 int          agc_uplink_update_target(void);
 agc_sp_t     agc_erase_upsvflag(void);                          /* UPSVFLAG: 0, +-1 earth, +-2 moon (+CSM -LM) */
-void         agc_erase_set_upsvflag(agc_sp_t v);
+agc_status_t agc_erase_set_upsvflag(agc_sp_t v);                /* BAD_ARG outside -2..2 */
 agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx);    /* after V21N01 */
-agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx); /* UPJOB  */
+agc_status_t agc_job_uplink_update_execute(void);               /* UPJOB  */
 agc_status_t agc_job_uplink_update_terminate(void);             /* UPOUT +1 */
 agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx); /* V33 on a load */
-agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx);              /* restart 6.5 */
+agc_status_t agc_job_timedidr(void);                            /* restart 6.5 */
 
 /* ======================================================================
  * Self-check and show-banksum (src/io/service/self_check.c;
@@ -478,9 +492,29 @@ uint16_t     agc_selfcheck_error_count(void);            /* ERCOUNT (ALMCADR +2)
  * P07 IMU performance tests (src/lm/systems_test.c; Luminary099
  * SYSTEM_TEST_STANDARD_LEAD_INS, IMU_PERFORMANCE_TEST_2, _TESTS_4)
  * ==================================================================== */
-agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);        /* ZEROING  */
-agc_status_t agc_systems_test_finetime(agc_dp_t *t);                  /* FINETIME */
-agc_dp_t     agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a); /* OVERFFIX */
-agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx);                /* REDO (V92) */
+agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);          /* ZEROING  */
+agc_status_t agc_systems_test_finetime(agc_dp_t *t);                    /* FINETIME */
+agc_dp_t     agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a);   /* OVERFFIX */
+agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx);                  /* REDO (V92) */
+agc_status_t agc_job_systems_test_imu_zeroed(agc_job_ctx_t *ctx);       /* IMUBACK          */
+agc_status_t agc_job_systems_test_site_display(agc_job_ctx_t *ctx);     /* LATAZCHK V06N41  */
+agc_status_t agc_job_systems_test_site_loaded(agc_job_ctx_t *ctx);      /* POSGMBL          */
+agc_status_t agc_job_systems_test_end(agc_job_ctx_t *ctx);              /* ENDTEST1         */
+agc_status_t agc_job_systems_test_coarse_aligned(agc_job_ctx_t *ctx);   /* POSGMBL stall    */
+agc_status_t agc_job_systems_test_fine_aligned(agc_job_ctx_t *ctx);     /* FINIMUDD stall   */
+agc_status_t agc_job_systems_test_drift_start(agc_job_ctx_t *ctx);      /* ESTIMS           */
+agc_status_t agc_job_systems_test_resume(agc_job_ctx_t *ctx);           /* TC QPLACE        */
+agc_status_t agc_job_systems_test_earth_rate_retry(agc_job_ctx_t *ctx); /* PULSEIMU again   */
+agc_status_t agc_job_systems_test_earth_rate_done(agc_job_ctx_t *ctx);  /* TC QPLACES       */
+agc_status_t agc_job_systems_test_pip_catch(agc_job_ctx_t *ctx);        /* CHECKG1          */
+agc_status_t agc_job_systems_test_pip_result(agc_job_ctx_t *ctx);       /* PIPJOBB          */
+agc_status_t agc_job_systems_test_filter(agc_job_ctx_t *ctx);           /* ALFLT            */
+agc_status_t agc_job_systems_test_torque_retry(agc_job_ctx_t *ctx);     /* IMUPULSE again   */
+agc_status_t agc_job_systems_test_torqued(agc_job_ctx_t *ctx);          /* GEOSTRT4         */
+agc_status_t agc_job_systems_test_gimbals_zeroed(agc_job_ctx_t *ctx);   /* COAALIGN stall   */
+agc_status_t agc_job_systems_test_show(agc_job_ctx_t *ctx);             /* SHOW1 V06N98     */
+agc_status_t agc_task_systems_test_drift_wake(void);                    /* GOESTIMS         */
+agc_status_t agc_task_systems_test_pip_timer(void);                     /* PIPATASK         */
+agc_status_t agc_task_systems_test_sample(void);                        /* ALLOOP           */
 
 #endif /* AGC_SYSMISC_H */

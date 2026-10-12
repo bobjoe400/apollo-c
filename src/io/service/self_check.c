@@ -260,12 +260,11 @@ static void sum_bank(int bank, uint16_t *sum, uint16_t *bugger)
  *   sum     uint16_t *  O  the raw sum
  *   bugger  uint16_t *  O  the bugger word
  *
- * RETURNS: agc_status_t -- OK; BAD_ARG for a bank out of range or a NULL
- *          pointer
+ * RETURNS: agc_status_t -- OK; BAD_ARG for a bank out of range
  **********************************************************************/
 agc_status_t agc_selfcheck_banksum(int bank, uint16_t *sum, uint16_t *bugger)
 {
-    if (!AGC_ASSERT(sum != NULL && bugger != NULL) || !AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
+    if (!AGC_ASSERT(bank >= 0 && bank <= LSTBNKCH))
     {
         return (AGC_STATUS_BAD_ARG);
     }

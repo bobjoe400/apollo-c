@@ -1,29 +1,67 @@
-/*
- * uplink_update.c -- P27 UPLINK UPDATE (UPDATE_PROGRAM.agc, Comanche055
- * pp. 1491-1500 region / Luminary099 pp. 1379-1388), verbs 70-73:
- *   V70  liftoff time increment: TEPHEM +delta, clock/TETCSM/TETLEM -delta
- *   V71  contiguous block update at an ECADR (3 <= II <= 20D components)
- *   V72  scatter update, (II-1)/2 address/word pairs (II odd)
- *   V73  octal AGC clock increment (the octal equivalent of V55).
- * Every component arrives as a V21N01 load into UPBUFF; V21N02 lets the
- * ground correct component UPTEMP; V33 on the V21N02 stores the update
- * (VERIFLAG is inverted so the ground sees the V33 arrive).  P27 runs only
- * in P00 (LM) or P00/P02/fresh start (CSM, FLAGWRD5 COMPUTER bit set).
+/**********************************************************************
+ * FILE NAME: uplink_update.c
  *
- * The only vehicle difference: Luminary has no CKMDMORE (any mode other
- * than P00 is an error), and names BIT3 of FLAGWRD7 VERIFBIT.
+ * PURPOSE:
+ *   P27 UPLINK UPDATE, verbs 70-73: the ground (or crew) loads the update
+ *   word by word with V21 N01, verifies it with V21 N02 / V33, and P27
+ *   stores it: liftoff time (V70), a block of erasable (V71), scattered
+ *   words (V72) or the AGC clock (V73).
  *
- * DEVIATION (MPAC+2): the AGC passes the UPBUFF/UPTEMP ECADR to pinball in
- * MPAC+2 for the V21N01/N02 load.  The display interface does not carry
- * MPAC+2 yet (docs/modules/io-pinball.md), so the index of the word being
- * loaded is kept here (load_target) and the loaded word must reach
- * agc_uplink_update_write(), the routine the ECADR write of COMPNUMB ..
- * UPTEMP is to be mapped onto (requested from state-flags / io-pinball).
+ * AGC SOURCE:
+ *   Comanche055 UPDATE_PROGRAM.agc pp.1491-1500 region (V70UPDAT .. UPACTOFF)
+ *   Luminary099 UPDATE_PROGRAM.agc pp.1379-1388 (no CKMDMORE)
  *
- * DEVIATION (clock): TIMEDIDL zeroes TIME2,TIME1 and adds the incremented
- * old time back so no count is lost; in C the clock is read and set in one
- * step under INHINT, which has the same result.
- */
+ * EXTERNAL VARIABLES:
+ *   (AGC erasables reached through accessors)
+ *   Name           Type      I/O  Scale     Description
+ *   -------------  --------  ---  --------  ------------------------------
+ *   MODREG         agc_sp_t  I/O  unscaled  major mode (saved in UPOLDMOD)
+ *   TIME2, TIME1   uint32_t  I/O  cs 2^28   the AGC clock (V70, V73)
+ *   TETCSM/TETLEM  agc_dp_t  I/O  cs 2^28   state vector times (V70)
+ *   TEPHEM         agc_tp_t  I/O  cs 2^42   ephemeris time (V70)
+ *   any erasable   uint16_t  O    words     V71 / V72 targets (ECADR image)
+ *   VERIFLAG       flag      I/O  -         inverted on V33 (FLAGWRD7 bit 3)
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                     Description
+ *   -----------------------  ------------------------------------------
+ *   agc_extverb_testxact     TESTXACT
+ *   agc_dsky_display         GOXDSPF V21N01 / V21N02
+ *   agc_integ_install/       INTSTALL, INTWAKEU
+ *    intwakeu
+ *   agc_phase_*              PHASCHNG group 6, NEWMODEX
+ *   agc_erase_write_ecadr    the V71 / V72 stores
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Operator error light (FALTON) for a mode that may not be interrupted,
+ *   a V71 block that would cross an EBANK, an even V72 count, or a clock
+ *   increment that overflows; no restart group is left set after an error.
+ *
+ * NOTES:
+ *     V70  liftoff time increment: TEPHEM +delta, clock/TETCSM/TETLEM -delta
+ *     V71  contiguous block update at an ECADR (3 <= II <= 20D components)
+ *     V72  scatter update, (II-1)/2 address/word pairs (II odd)
+ *     V73  octal AGC clock increment (the octal equivalent of V55).
+ *   Every component arrives as a V21N01 load into UPBUFF; V21N02 lets the
+ *   ground correct component UPTEMP; V33 on the V21N02 stores the update
+ *   (VERIFLAG is inverted so the ground sees the V33 arrive).  P27 runs only
+ *   in P00 (LM) or P00/P02/fresh start (CSM, FLAGWRD5 COMPUTER bit set).
+ *
+ *   The only vehicle difference: Luminary has no CKMDMORE (any mode
+ *   other than P00 is an error), and names BIT3 of FLAGWRD7 VERIFBIT.
+ *
+ *   DEVIATION (MPAC+2): the AGC passes the UPBUFF/UPTEMP ECADR to
+ *   pinball in MPAC+2 for the V21N01/N02 load.  The display interface
+ *   does not carry MPAC+2 yet (docs/modules/io-pinball.md), so the index
+ *   of the word being loaded is kept here (load_target) and the loaded
+ *   word must reach agc_uplink_update_write(), the routine the ECADR
+ *   write of COMPNUMB .. UPTEMP is to be mapped onto (requested from
+ *   state-flags / io-pinball).
+ *
+ *   DEVIATION (clock): TIMEDIDL zeroes TIME2,TIME1 and adds the
+ *   incremented old time back so no count is lost; in C the clock is
+ *   read and set in one step under INHINT, which has the same result.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -35,12 +73,13 @@
 #include "agc/io/service.h"
 #include "agc/nav/integration.h"
 
-#define WORD15         077777u
-#define LOW8           000377u
-#define BIT1           000001u
-#define BIT3           000004u
-#define BIT8           000200u
-#define BIT9           000400u
+#define WORD15         077777u            /* one AGC word */
+#define LOW8           000377u            /* relative address in an EBANK */
+#define ECADR_MASK     003777u            /* TS EBANK, MASK LOW8: the erasable reached */
+#define BIT1           000001u            /* BIT1: odd component count */
+#define BIT3           000004u            /* BIT3: uplink activity lamp (channel 11), VERIFLAG */
+#define BIT8           000200u            /* BIT8: FLAGWRD5 COMPUTER (CMC) */
+#define BIT9           000400u            /* BIT9: carry into the next EBANK */
 #define UP_BLOCK       24                 /* COMPNUMB, UPOLDMOD, UPVERB, UPCOUNT, UPBUFF 20D */
 #define UP_UPBUFF      4                  /* index of UPBUFF +0 in the block           */
 #define UP_UPTEMP      24                 /* agc_uplink_update_write index of UPTEMP   */
@@ -54,7 +93,7 @@
 #define UP_MODE        27                 /* NEWMODEX 27                               */
 #define UP_PRIO        ((agc_prio_t) 030) /* CHRPRIO                          */
 #define MODREG_NEG0    (-1)               /* exec's -0 MODREG (fresh start)            */
-#define RECYCLE_VERB   32
+#define RECYCLE_VERB   32                 /* V32: recycle */
 #define INSTALL_AREA   0                  /* INTSTALL                                  */
 
 /* COMPNUMB .. UPBUFF +19D, in the AGC's erasable order.                    */
@@ -66,10 +105,10 @@ enum
     UP_UPCOUNT  = 3
 };
 
-static uint16_t up[UP_BLOCK];
-static uint16_t uptemp;   /* UPTEMP: component to correct        */
-static uint16_t upverbsv; /* UPVERBSV                            */
-static agc_sp_t upsvflag; /* UPSVFLAG, B(1)PRM (state vector id) */
+static uint16_t up[UP_BLOCK]; /* COMPNUMB .. UPBUFF +19D, AGC words */
+static uint16_t uptemp;       /* UPTEMP: component to correct        */
+static uint16_t upverbsv;     /* UPVERBSV                            */
+static agc_sp_t upsvflag;     /* UPSVFLAG, B(1)PRM state vector id, unscaled */
 
 /* Which load the V21N01/N02 on the DSKY is for.                           */
 typedef enum up_stage
@@ -79,18 +118,36 @@ typedef enum up_stage
     UP_VERIFY
 } up_stage_t;
 
-static up_stage_t stage;
+static up_stage_t stage;       /* which load is on the DSKY */
 static int        load_target; /* MPAC+2: block index or UP_UPTEMP     */
 
 /* ---- erasables ---------------------------------------------------------- */
 
+/**********************************************************************
+ * AGC: none -- COMPNUMB .. UPBUFF +19D as the downlist reads them
+ * (UPDNLIST)
+ *
+ * ARGUMENTS:
+ *   idx  int  I   0..23: COMPNUMB, UPOLDMOD, UPVERB, UPCOUNT, UPBUFF
+ *                 +0..+19D
+ *
+ * RETURNS: the word, 15 bits
+ **********************************************************************/
 uint16_t agc_uplink_update_dnword(int idx)
 {
     return (up[idx]);
 }
 
-/* Target of an ECADR load/write into COMPNUMB..UPBUFF +19D (0..23) or
- * UPTEMP (24).                                                            */
+/**********************************************************************
+ * AGC: none -- the target of a V21N01/N02 load or an ECADR write into
+ * COMPNUMB .. UPBUFF +19D (0..23) or UPTEMP (24)
+ *
+ * ARGUMENTS:
+ *   idx   int       I   0..23 (COMPNUMB .. UPBUFF +19D) or 24 (UPTEMP)
+ *   word  uint16_t  I   the loaded word, 15 bits
+ *
+ * RETURNS: AGC_STATUS_OK, BAD_ARG for an index or word out of range
+ **********************************************************************/
 agc_status_t agc_uplink_update_write(int idx, uint16_t word)
 {
     if (!AGC_ASSERT(idx >= 0 && idx <= UP_UPTEMP) || !AGC_ASSERT(word <= WORD15))
@@ -110,57 +167,111 @@ agc_status_t agc_uplink_update_write(int idx, uint16_t word)
     return (AGC_STATUS_OK);
 }
 
+/**********************************************************************
+ * AGC: none -- the load MPAC +2 names (UPDATE_PROGRAM OHWELL1 / OHWELL2 /
+ * UPVERIFY)
+ *
+ * RETURNS: the index agc_uplink_update_write takes for the V21N01/N02 on
+ *          the DSKY
+ **********************************************************************/
 int agc_uplink_update_target(void)
 {
     return (load_target);
 }
 
+/**********************************************************************
+ * UPSVFLAG (UPDATE_PROGRAM.agc, INTWAKEU) -- the state vector a P27
+ * update replaced
+ *
+ * RETURNS: UPSVFLAG: 0, +-1 earth, +-2 moon (+ CSM, - LM)
+ **********************************************************************/
 agc_sp_t agc_erase_upsvflag(void)
 {
     return (upsvflag);
 }
 
-void agc_erase_set_upsvflag(agc_sp_t v)
+/**********************************************************************
+ * AGC: none -- UPSVFLAG, written (the ground's V71 load before a state vector update)
+ *
+ * ARGUMENTS:
+ *   v  agc_sp_t  I   -2..2
+ *
+ * RETURNS: AGC_STATUS_OK, BAD_ARG outside -2..2
+ **********************************************************************/
+agc_status_t agc_erase_set_upsvflag(agc_sp_t v)
 {
-    if (AGC_ASSERT(v >= -2 && v <= 2))
+    if (!AGC_ASSERT(v >= -2 && v <= 2))
     {
-        upsvflag = v;
+        return (AGC_STATUS_BAD_ARG); /* not a state vector id     */
     }
+
+    upsvflag = v;
+
+    return (AGC_STATUS_OK);
 }
 
-/* Fresh start (DOFSTART): UPSVFLAG = 0.                                   */
+/**********************************************************************
+ * AGC: none -- Fresh start (DOFSTART): UPSVFLAG = 0.
+ **********************************************************************/
 void agc_uplink_update_fresh_start(void)
 {
     upsvflag = 0;
     stage    = UP_COUNT;
 }
 
-/* Signed value of a 15-bit ones'-complement word.                        */
+/**********************************************************************
+ * AGC: none -- Signed value of a 15-bit ones'-complement word.
+ *
+ * ARGUMENTS:
+ *   w  uint16_t  I   a 15-bit ones' complement word
+ *
+ * RETURNS: its value
+ **********************************************************************/
 static int32_t ones_value(uint16_t w)
 {
-    return (((w & 040000u) != 0u) ? -(int32_t) (WORD15 - w) : (int32_t) w);
+    return (((w & 040000u) != 0u) ? -(int32_t) (WORD15 - w) : (int32_t) w); /* negative: -(77777 - w) */
 }
 
-/* DP value (cs, 2^28) of UPBUFF +k, +k+1.                                 */
+/**********************************************************************
+ * AGC: none -- DP value (cs, 2^28) of UPBUFF +k, +k+1.
+ *
+ * ARGUMENTS:
+ *   k  int  I   UPBUFF word offset of the major word
+ *
+ * RETURNS: the DP value, cs 2^28
+ **********************************************************************/
 static int32_t upbuff_dp(int k)
 {
     return (ones_value(up[UP_UPBUFF + k]) * 040000 + ones_value(up[UP_UPBUFF + k + 1]));
 }
 
-/* Store a DP value into UPBUFF +k, +k+1 (both words take its sign).      */
+/**********************************************************************
+ * AGC: none -- Store a DP value into UPBUFF +k, +k+1 (both words take its sign).
+ *
+ * ARGUMENTS:
+ *   k  int      I   UPBUFF word offset of the major word
+ *   v  int32_t  I   DP value, cs 2^28
+ **********************************************************************/
 static void set_upbuff_dp(int k, int32_t v)
 {
-    int32_t  m  = (v < 0) ? -v : v;
-    uint16_t hi = (uint16_t) ((m >> 14) & 037777);
-    uint16_t lo = (uint16_t) (m & 037777);
+    int32_t  m  = (v < 0) ? -v : v;                /* |v|, cs */
+    uint16_t hi = (uint16_t) ((m >> 14) & 037777); /* major word magnitude */
+    uint16_t lo = (uint16_t) (m & 037777);         /* minor word magnitude */
 
-    up[UP_UPBUFF + k]     = (v < 0) ? (uint16_t) (WORD15 - hi) : hi;
-    up[UP_UPBUFF + k + 1] = (v < 0) ? (uint16_t) (WORD15 - lo) : lo;
+    up[UP_UPBUFF + k]     = (v < 0) ? (uint16_t) (WORD15 - hi) : hi; /* both words take the sign */
+    up[UP_UPBUFF + k + 1] = (v < 0) ? (uint16_t) (WORD15 - lo) : lo; /* (ones' complement) */
 }
 
 /* ---- displays ------------------------------------------------------------ */
 
-/* GOXDSPF V21N01 (load target) or V21N02 (UPTEMP).                        */
+/**********************************************************************
+ * AGC: none -- GOXDSPF V21N01 (load target) or V21N02 (UPTEMP).
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I   the running job
+ *
+ * RETURNS: the display request status
+ **********************************************************************/
 static agc_status_t up_display(agc_job_ctx_t *ctx)
 {
     agc_dsky_cont_t cont = {AGC_JOB_UPLINK_UPDATE_TERMINATE,
@@ -171,42 +282,52 @@ static agc_status_t up_display(agc_job_ctx_t *ctx)
     return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(21, noun), &cont));
 }
 
-/* OHWELL2: request component UPCOUNT (UPBUFF +UPCOUNT-1).                 */
+/**********************************************************************
+ * AGC: none -- OHWELL2: request component UPCOUNT (UPBUFF +UPCOUNT-1).
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I   the running job
+ *
+ * RETURNS: the display request status
+ **********************************************************************/
 static agc_status_t request_component(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(up[UP_UPCOUNT] >= 1u && up[UP_UPCOUNT] <= UP_MAX_COMP))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    stage       = UP_DATA;
+    stage       = UP_DATA; /* UPCOUNT 1..COMPNUMB (<= 20D) */
     load_target = UP_UPBUFF + (int) up[UP_UPCOUNT] - 1;
 
     return (up_display(ctx));
 }
 
-/* UPVERIFY: flash V21N02 for a correction index or V33.                  */
+/**********************************************************************
+ * AGC: none -- UPVERIFY: flash V21N02 for a correction index or V33.
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I   the running job
+ *
+ * RETURNS: the display request status
+ **********************************************************************/
 static agc_status_t request_verify(agc_job_ctx_t *ctx)
 {
     stage       = UP_VERIFY;
     load_target = UP_UPTEMP;
 
-    if (!AGC_ASSERT(up[UP_COMPNUMB] >= 2u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (up_display(ctx));
 }
 
-/* UPACTOFF: uplink activity light off (channel 11 bit 3).                 */
+/**********************************************************************
+ * AGC: none -- UPACTOFF: uplink activity light off (channel 11 bit 3).
+ **********************************************************************/
 static void upactoff(void)
 {
     agc_chan_and((int) AGC_CHAN_DSALMOUT, (uint16_t) (WORD15 & ~BIT3));
 }
 
-/* UPERROUT +2: operator error, uplink light off, ENDEXT (no restart group
- * is touched).                                                            */
+/**********************************************************************
+ * AGC: none -- UPERROUT +2: operator error, uplink light off, ENDEXT (no restart group
+ * is touched).
+ *
+ * RETURNS: the ENDEXT status
+ **********************************************************************/
 static agc_status_t up_error_exit(void)
 {
     agc_dsky_falton();
@@ -217,10 +338,14 @@ static agc_status_t up_error_exit(void)
 
 /* ---- entry --------------------------------------------------------------- */
 
-/* CKMDMORE (CSM only): the CMC accepts P27 in P00 and P02 as well.       */
+/**********************************************************************
+ * AGC: none -- CKMDMORE (CSM only): the CMC accepts P27 in P00 and P02 as well.
+ *
+ * RETURNS: true when P27 may run (P00 or fresh start; CMC also P02)
+ **********************************************************************/
 static bool update_allowed(void)
 {
-    agc_sp_t mm = agc_erase_modreg();
+    agc_sp_t mm = agc_erase_modreg(); /* MODREG, unscaled: MODREG */
 
     if (mm == 0 || mm == MODREG_NEG0)
     {
@@ -236,17 +361,26 @@ static bool update_allowed(void)
     return ((agc_flagword_get(5) & BIT8) != 0u && mm == 2);
 }
 
-/* V70UPDAT .. V73UPDAT (C p.1491): UPVERB = verb - 70.                    */
+/**********************************************************************
+ * V70UPDAT .. V73UPDAT (C p.1491): UPVERB = verb - 70.
+ *
+ * ARGUMENTS:
+ *   ctx   agc_job_ctx_t *  I   the extended-verb job
+ *   verb  int              I   70..73
+ *
+ * RETURNS: the TESTXACT, NEWMODEX or display status; BAD_ARG for another
+ *          verb
+ **********************************************************************/
 agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(verb >= 70 && verb <= 73))
+    if (!AGC_ASSERT(verb >= 70 && verb <= 73))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
     upverbsv        = (uint16_t) (verb - 70);
-    bool         ok = false;
-    agc_status_t st = agc_extverb_testxact(&ok);
+    bool         ok = false;                     /* TESTXACT got the display */
+    agc_status_t st = agc_extverb_testxact(&ok); /* TESTXACT / NEWMODEX status */
 
     if (!ok)
     {
@@ -258,7 +392,7 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
         return (up_error_exit());
     }
 
-    agc_sp_t mm = agc_erase_modreg();
+    agc_sp_t mm = agc_erase_modreg(); /* MODREG, unscaled: MODREG to save in UPOLDMOD */
 
     up[UP_UPOLDMOD] = (uint16_t) ((mm < 0) ? WORD15 : (uint16_t) mm); /* -0 kept as -0 */
     up[UP_UPVERB]   = upverbsv;
@@ -269,14 +403,12 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_TERMINATE, AGC_TASK_NONE, 030, false, 0};
 
     agc_phase_change_var(UP_PHASE_EXIT, &v);
-    agc_status_t st_uppart2 = AGC_STATUS_OK;
-
     agc_telem_select_list(UP_DNLIST);
-    st_uppart2 = agc_phase_newmode(UP_MODE); /* NEWMODEX 27         */
+    st = agc_phase_newmode(UP_MODE); /* NEWMODEX 27         */
 
-    if (!AGC_ASSERT(st_uppart2 == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if (up[UP_UPVERB] == 1u || up[UP_UPVERB] == 2u)
@@ -290,12 +422,19 @@ agc_status_t agc_uplink_update_start(agc_job_ctx_t *ctx, int verb)
     up[UP_COMPNUMB] = 2; /* V70, V73            */
 
     return (request_component(ctx));
-}
+} /* agc_uplink_update_start */
 
 /* ---- operator responses ------------------------------------------------- */
 
-/* V33 on a load: COUNT/DATA ask again (OHWELL1 +2, OHWELL2 +3); on the
- * V21N02 the update is verified: UPSTORE.                                 */
+/**********************************************************************
+ * AGC: none -- V33 on a load: COUNT/DATA ask again (OHWELL1 +2, OHWELL2 +3); on the
+ * V21N02 the update is verified: UPSTORE.
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I   the job
+ *
+ * RETURNS: the display, UPEND73 or FINDVAC status
+ **********************************************************************/
 agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
 {
     if (stage != UP_VERIFY)
@@ -311,23 +450,30 @@ agc_status_t agc_job_uplink_update_proceed(agc_job_ctx_t *ctx)
     agc_relint();
 
     if (up[UP_UPVERB] == 3u)
-    { /* UPEND73             */
-        return (agc_job_timedidr(ctx));
+    {
+        /* UPEND73: DCA UPBUFF, DXCH UPBUFF +8D -- the octal clock increment
+         * becomes the incrementer TIMEDIDR adds.                              */
+        up[UP_UPBUFF + 8] = up[UP_UPBUFF];
+        up[UP_UPBUFF + 9] = up[UP_UPBUFF + 1];
+
+        return (agc_job_timedidr());
     }
 
     return (agc_extverb_schedule(UP_PRIO, AGC_JOB_UPLINK_UPDATE_EXECUTE, true)); /* UPFNDVAC */
 }
 
-/* Data or V32 on a load (CK4V32 and the branch after it).                */
+/**********************************************************************
+ * AGC: none -- Data or V32 on a load (CK4V32 and the branch after it).
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I   the job
+ *
+ * RETURNS: the display status
+ **********************************************************************/
 agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
 {
-    uint8_t verb = 0;
-    uint8_t noun = 0;
-
-    if (!AGC_ASSERT(ctx != NULL))
-    {
-        return (up_error_exit());
-    }
+    uint8_t verb = 0; /* the response verb (MPAC) */
+    uint8_t noun = 0; /* the response noun */
 
     agc_dsky_response(&verb, &noun);
 
@@ -339,7 +485,7 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
     if (stage == UP_COUNT)
     {
         /* Data on the V21N01 (count): 3 <= II <= 20D, else ask again.            */
-        int32_t ii = ones_value(up[UP_UPBUFF]);
+        int32_t ii = ones_value(up[UP_UPBUFF]); /* II, number of components */
 
         if (ii < UP_MIN_COMP || ii > UP_MAX_COMP)
         {
@@ -355,7 +501,7 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
     if (stage == UP_VERIFY)
     {
         /* Data on the V21N02: a legal component index -> reload that component. */
-        int32_t k = ones_value(uptemp);
+        int32_t k = ones_value(uptemp); /* component index to correct */
 
         if (k <= 0 || k > (int32_t) up[UP_COMPNUMB])
         {
@@ -376,20 +522,24 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
     up[UP_UPCOUNT]++;
 
     return (request_component(ctx));
-}
+} /* agc_job_uplink_update_load */
 
 /* ---- the update ------------------------------------------------------- */
 
-/* UPOUT +1: restore the old mode and downlist, light off, kill group 6,
- * ENDEXT.  Also the V34 return and the group 6 restart point.             */
+/**********************************************************************
+ * AGC: none -- UPOUT +1: restore the old mode and downlist, light off, kill group 6,
+ * ENDEXT.  Also the V34 return and the group 6 restart point.
+ *
+ * RETURNS: the NEWMODEX or ENDEXT status
+ **********************************************************************/
 agc_status_t agc_job_uplink_update_terminate(void)
 {
-    agc_sp_t     mm = (up[UP_UPOLDMOD] == WORD15) ? (agc_sp_t) MODREG_NEG0 : (agc_sp_t) up[UP_UPOLDMOD];
-    agc_status_t st = agc_phase_newmode(mm); /* NEWMODEX +3         */
+    agc_sp_t     mm = (up[UP_UPOLDMOD] == WORD15) ? (agc_sp_t) MODREG_NEG0 : (agc_sp_t) up[UP_UPOLDMOD]; /* MODREG, unscaled: UPOLDMOD (-0 kept as -0) */
+    agc_status_t st = agc_phase_newmode(mm);                                                             /* NEWMODEX +3         */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     agc_telem_select_list(0);
@@ -399,24 +549,32 @@ agc_status_t agc_job_uplink_update_terminate(void)
     return (agc_dsky_endmark());
 }
 
-/* UPOUT: release INTSTALL (INTWAKEU, which also finishes a state vector
- * update named by UPSVFLAG), then UPOUT +1.                               */
+/**********************************************************************
+ * AGC: none -- UPOUT: release INTSTALL (INTWAKEU, which also finishes a state vector
+ * update named by UPSVFLAG), then UPOUT +1.
+ *
+ * RETURNS: the INTWAKEU status, or that of UPOUT +1
+ **********************************************************************/
 static agc_status_t upout(void)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_integ_intwakeu(&ip, agc_integ_shared_ctx(), &upsvflag);
+    agc_status_t st = agc_integ_intwakeu(&ip, agc_integ_shared_ctx(), &upsvflag); /* INTWAKEU status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (agc_job_uplink_update_terminate());
 }
 
-/* UPERROUT: operator error, then UPOUT.                                    */
+/**********************************************************************
+ * AGC: none -- UPERROUT: operator error, then UPOUT.
+ *
+ * RETURNS: the UPOUT status
+ **********************************************************************/
 static agc_status_t up_error_out(void)
 {
     agc_dsky_falton();
@@ -424,16 +582,21 @@ static agc_status_t up_error_out(void)
     return (upout());
 }
 
-/* TIMEDIDR: add the incrementer in UPBUFF +8D (zeroed so a restart does
- * not add it twice) to the clock.  False on DP overflow (clock kept).     */
+/**********************************************************************
+ * AGC: none -- TIMEDIDR: add the incrementer in UPBUFF +8D (zeroed so a restart does
+ * not add it twice) to the clock.  False on DP overflow (clock kept).
+ *
+ * RETURNS: true when the clock was changed (false: DP overflow, clock
+ *          kept)
+ **********************************************************************/
 static bool timedidr(void)
 {
     agc_inhint();
-    int32_t inc = upbuff_dp(8);
+    int32_t inc = upbuff_dp(8); /* incrementer, cs */
 
     set_upbuff_dp(8, 0);
-    int64_t t  = (int64_t) agc_time_now_cs() + (int64_t) inc;
-    bool    ok = (t > -(int64_t) AGC_TIME_MODULUS_CS && t < (int64_t) AGC_TIME_MODULUS_CS);
+    int64_t t  = (int64_t) agc_time_now_cs() + (int64_t) inc;                               /* new clock, cs */
+    bool    ok = (t > -(int64_t) AGC_TIME_MODULUS_CS && t < (int64_t) AGC_TIME_MODULUS_CS); /* no DP overflow */
 
     if (ok)
     { /* DELTATOK, TPAGREE   */
@@ -447,8 +610,12 @@ static bool timedidr(void)
     return (ok);
 }
 
-/* TIMEDIDL: old clock into UPBUFF +18D (kept for the restart), quick
- * PHASCHNG to 6.5, then TIMEDIDR.                                          */
+/**********************************************************************
+ * AGC: none -- TIMEDIDL: old clock into UPBUFF +18D (kept for the restart), quick
+ * PHASCHNG to 6.5, then TIMEDIDR.
+ *
+ * RETURNS: TIMEDIDR's result
+ **********************************************************************/
 static bool timedidl(void)
 {
     set_upbuff_dp(18, (int32_t) agc_time_now_cs() & (int32_t) 037777777);
@@ -457,17 +624,16 @@ static bool timedidl(void)
     return (timedidr());
 }
 
-/* V70 after the clock: TETCSM, TETLEM -= delta; TEPHEM += delta.         */
+/**********************************************************************
+ * AGC: none -- V70 after the clock: TETCSM, TETLEM -= delta; TEPHEM += delta.
+ *
+ * RETURNS: the UPOUT status
+ **********************************************************************/
 static agc_status_t v70_tail(void)
 {
-    int32_t  delta = upbuff_dp(0);
-    agc_dp_t tc    = agc_erase_tetcsm();
-    agc_dp_t tl    = agc_erase_tetlem();
-
-    if (!AGC_ASSERT(delta > -(int32_t) AGC_TIME_MODULUS_CS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    int32_t  delta = upbuff_dp(0);       /* liftoff time increment, cs 2^28 */
+    agc_dp_t tc    = agc_erase_tetcsm(); /* TETCSM, cs 2^28 */
+    agc_dp_t tl    = agc_erase_tetlem(); /* TETLEM, cs 2^28 */
 
     agc_erase_set_tetcsm((agc_dp_t) (tc - delta));               /* DAS TETCSM          */
     agc_erase_set_tetlem((agc_dp_t) (tl - delta));               /* DAS TETLEM          */
@@ -478,16 +644,15 @@ static agc_status_t v70_tail(void)
     return (upout());
 }
 
-/* Restart 6.5 (TIMEDIDR): finish the clock change, then the rest of the
- * verb (V73 exits, V70 updates the state vector times).                  */
-agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx)
+/**********************************************************************
+ * AGC: none -- Restart 6.5 (TIMEDIDR): finish the clock change, then the rest of the
+ * verb (V73 exits, V70 updates the state vector times).
+ *
+ * RETURNS: the UPOUT +1 / UPOUT status
+ **********************************************************************/
+agc_status_t agc_job_timedidr(void)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(up[UP_UPVERB] == 0u || up[UP_UPVERB] == 3u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    bool ok = (up[UP_UPVERB] == 3u) ? timedidl() : timedidr();
+    bool ok = (up[UP_UPVERB] == 3u) ? timedidl() : timedidr(); /* clock changed */
 
     if (up[UP_UPVERB] == 3u)
     { /* UPEND73             */
@@ -499,20 +664,19 @@ agc_status_t agc_job_timedidr(agc_job_ctx_t *ctx)
         return (agc_job_uplink_update_terminate());
     }
 
-    return (ok ? v70_tail() : up_error_out());
+    return (ok ? v70_tail() : up_error_out()); /* clock changed: V70's state vector times */
 }
 
-/* UPEND71: II-2 words from UPBUFF +2 into consecutive registers from the
- * ECADR in UPBUFF +1, which may not run into the next EBANK.              */
+/**********************************************************************
+ * AGC: none -- UPEND71: II-2 words from UPBUFF +2 into consecutive registers from the
+ * ECADR in UPBUFF +1, which may not run into the next EBANK.
+ *
+ * RETURNS: the UPOUT / UPERROUT status
+ **********************************************************************/
 static agc_status_t upend71(void)
 {
-    uint16_t ecadr = up[UP_UPBUFF + 1];
-    int      n     = (int) up[UP_COMPNUMB] - 2;
-
-    if (!AGC_ASSERT(n >= 1 && n <= UP_MAX_COMP - 2))
-    {
-        return (up_error_out());
-    }
+    uint16_t ecadr = (uint16_t) (up[UP_UPBUFF + 1] & ECADR_MASK); /* ECADR of the first register */
+    int      n     = (int) up[UP_COMPNUMB] - 2;                   /* COMPNUMB 3..20D: 1..18 words */
 
     if ((((ecadr & LOW8) + (uint16_t) (n - 1)) & BIT9) != 0u)
     {
@@ -521,7 +685,7 @@ static agc_status_t upend71(void)
 
     for (int i = n - 1; i >= 0; i--)
     { /* STORLP71            */
-        agc_status_t st = agc_erase_write_ecadr((uint16_t) (ecadr + (uint16_t) i), up[UP_UPBUFF + 2 + i]);
+        agc_status_t st = agc_erase_write_ecadr((uint16_t) (ecadr + (uint16_t) i), up[UP_UPBUFF + 2 + i]); /* store status */
 
         if (st != AGC_STATUS_OK)
         {
@@ -532,7 +696,11 @@ static agc_status_t upend71(void)
     return (upout());
 }
 
-/* UPEND72: (II-1)/2 pairs ECADR, word from UPBUFF +1; II must be odd.     */
+/**********************************************************************
+ * AGC: none -- UPEND72: (II-1)/2 pairs ECADR, word from UPBUFF +1; II must be odd.
+ *
+ * RETURNS: the UPOUT / UPERROUT status
+ **********************************************************************/
 static agc_status_t upend72(void)
 {
     if ((up[UP_COMPNUMB] & BIT1) == 0u)
@@ -540,16 +708,12 @@ static agc_status_t upend72(void)
         return (up_error_out());
     }
 
-    int pairs = ((int) up[UP_COMPNUMB] - 1) / 2;
-
-    if (!AGC_ASSERT(pairs >= 1 && pairs <= UP_MAX_COMP / 2))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    int pairs = ((int) up[UP_COMPNUMB] - 1) / 2; /* COMPNUMB 3..19 odd: 1..9 */
 
     for (int j = pairs - 1; j >= 0; j--)
     { /* LDLOOP72            */
-        agc_status_t st = agc_erase_write_ecadr(up[UP_UPBUFF + 1 + 2 * j], up[UP_UPBUFF + 2 + 2 * j]);
+        uint16_t     ecadr = (uint16_t) (up[UP_UPBUFF + 1 + 2 * j] & ECADR_MASK);     /* ECADR of the register */
+        agc_status_t st    = agc_erase_write_ecadr(ecadr, up[UP_UPBUFF + 2 + 2 * j]); /* store status */
 
         if (st != AGC_STATUS_OK)
         {
@@ -560,25 +724,30 @@ static agc_status_t upend72(void)
     return (upout());
 }
 
-/* UPJOB / UPWAKE / UPPART3: hold INTSTALL (a state vector may change),
- * restart-protect, REINTFLG, then the verb's store.                      */
-agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx)
+/**********************************************************************
+ * AGC: none -- UPJOB / UPWAKE / UPPART3: hold INTSTALL (a state vector may change),
+ * restart-protect, REINTFLG, then the verb's store.
+ *
+ * RETURNS: AGC_STATUS_OK (asleep in INTSTALL), the INTSTALL status, or
+ *          that of the store
+ **********************************************************************/
+agc_status_t agc_job_uplink_update_execute(void)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(up[UP_UPVERB] <= 3u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (up[UP_UPVERB] == 3u)
     { /* restart in UPEND73  */
-        return (agc_job_timedidr(ctx));
+        return (agc_job_timedidr());
     }
 
-    agc_status_t st = agc_integ_install(INSTALL_AREA, AGC_JOB_UPLINK_UPDATE_EXECUTE);
+    agc_status_t st = agc_integ_install(INSTALL_AREA, AGC_JOB_UPLINK_UPDATE_EXECUTE); /* INTSTALL status */
 
     if (st == AGC_STATUS_BUSY)
     {
         return (AGC_STATUS_OK); /* sleeps in INTSTALL  */
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
     }
 
     agc_phase_change(UP_PHASE_STORE);
@@ -588,8 +757,8 @@ agc_status_t agc_job_uplink_update_execute(agc_job_ctx_t *ctx)
     { /* UPEND70             */
         set_upbuff_dp(8, -upbuff_dp(0));
 
-        return (timedidl() ? v70_tail() : up_error_out());
+        return (timedidl() ? v70_tail() : up_error_out()); /* TC TIMEDIDL; error: UPERROUT */
     }
 
-    return ((up[UP_UPVERB] == 1u) ? upend71() : upend72());
+    return ((up[UP_UPVERB] == 1u) ? upend71() : upend72()); /* UPEND71 / UPEND72 */
 }
