@@ -104,4 +104,4 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 
 ## After the EVA pass (2026-10-12)
 - post-eva: 21 positive-assertion setter guards (`if (AGC_ASSERT(c)) { store; }`, 16 in src/lm/dap/state.c, imu/compensation.c x2, lm/dap/rcs/t6rupt.c, csm/navigation/tracking_data.c, csm/entry/dap.c) left for EVA by user decision (classifier blocked the lane's deletion; per-site reasoning in docs/modules/always-ok.md): delete those EVA proves VALID in the apply step, convert the rest to status returns.
-- post-eva: tools/check_rules.py "silent skip" rule (added by always-ok) reports 0 on those 21 sites although they match its description; also the rule-5 density print says "0/1" (function tracking broken). Fix the checker after the apply step so the rule bites, then re-run `make check`.
+- post-eva: `make check` fails on exactly those 21 (check-rules "silent skip") until they are resolved; note `python3 tools/check_rules.py` run bare reports 0 and "density 0/1" (it does not scan the same set as the Makefile's check-rules target): make the bare invocation match the target.

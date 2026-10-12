@@ -734,7 +734,8 @@
             void, ~250 call sites, 34 dispatch arms, three dropped
             statuses exposed; prolog-report and always-ok-report 0
             tree-wide. 21 positive-assertion setter guards: classifier
-            blocked the lane's deletion; user: leave them for EVA. The
-            lane's new check_rules silent-skip rule does not fire on them
-            (recorded for after the apply step). Tree FROZEN; EVA started
+            blocked the lane's deletion; user: leave them for EVA. `make
+            check` fails on exactly those 21 (silent-skip rule) until the
+            apply step; the bare check_rules.py invocation scans a
+            different set (recorded). Tree FROZEN; EVA started
             (jobs 1, no effective timeout, sim entry unbounded).
