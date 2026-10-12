@@ -348,6 +348,113 @@ agc_status_t agc_job_optical_verification_target_loaded(agc_job_ctx_t *ctx)
 }
 
 /**********************************************************************
+ * NEXTBNKS / NEXBNKSS (IMU_CALIBRATION_AND_ALIGNMENT.agc pp. 450-451) --
+ * target 1 marked: STARAD = XSM PD06 VSL1, STARAD +6 = XSM PD12 VSL1,
+ * LOSVEC = LITTLSUB; MKRELEAS; then drive to target 2 (STARCODE 2,
+ * TARGDRVE 6)
+ *
+ * FUNCTION NAME: target1_marked
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of LITTLSUB, MKRELEAS or TARGDRVE
+ **********************************************************************/
+static agc_status_t target1_marked(void)
+{
+    agc_align_ram_t     *ar = agc_align_ram(); /* alignment erasables */
+    agc_interp_t         ip;                   /* interpreter state           */
+    agc_vec_t            tar[TARGETS];         /* PD06, PD12: B1 (half-unit)  */
+    agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)     */
+
+    agc_interp_init(&ip);
+    agc_status_t st = target_vectors(&ip, tar); /* CALL TAR/EREF       */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    for (int i = 0; i < TARGETS; i++) /* VLOAD MXV, VSL1, STORE STARAD */
+    {
+        ar->starad[i] = agc_vec_shl(&ip, agc_mat_vec(&ip, &ar->xsm, tar[i]), 1);
+    }
+
+    st = agc_sxtmark_mark(0, &m); /* LITTLSUB: LXC,1 MARKSTAT        */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    st = agc_csm_sxtsm(&ip, &m, &prelaunch_ram()->losvec); /* STORE LOSVEC */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS                  */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    return (targdrve(2, TARG_TARGET2)); /* NEXBNKSS                    */
+} /* target1_marked */
+
+/**********************************************************************
+ * NEXBNKSS +5 (IMU_CALIBRATION_AND_ALIGNMENT.agc p. 451) -- target 2
+ * marked: 12D = LITTLSUB, 6D = LOSVEC, AXISGEN (STARAD expected, 6D/12D
+ * marked), CALCGTA into OGC, IGC, MGC; then GCOMP4
+ *
+ * FUNCTION NAME: target2_marked
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    the P03 job (the V06N93 flash)
+ *
+ * RETURNS: agc_status_t -- the status of LITTLSUB, AXISGEN or the flash
+ **********************************************************************/
+static agc_status_t target2_marked(agc_job_ctx_t *ctx)
+{
+    agc_align_ram_t     *ar = agc_align_ram(); /* alignment erasables */
+    agc_interp_t         ip;                   /* interpreter state             */
+    agc_vec_t            marked[2];            /* 6D, 12D: marked LOS, B1 */
+    agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)       */
+    agc_mat_t            xdc;                  /* XDC..ZDC, half-unit           */
+
+    agc_interp_init(&ip);
+    agc_status_t st = agc_sxtmark_mark(0, &m); /* CALL LITTLSUB        */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    st = agc_csm_sxtsm(&ip, &m, &marked[1]); /* STOVL 12D             */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    marked[0] = prelaunch_ram()->losvec;                        /* LOSVEC, STCALL 06D        */
+    st        = agc_imu_axisgen(&ip, ar->starad, marked, &xdc); /* AXISGEN */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    ar->xdc = xdc;
+    agc_imu_calcgta(&ip, &xdc, ar->ogc); /* CALL CALCGTA               */
+
+    return (agc_job_optical_verification_torque_display(ctx)); /* GCOMP4 */
+}
+
+/**********************************************************************
  * RETARG +4 (IMU_CALIBRATION_AND_ALIGNMENT.agc p.453) -- after OPTSTALL:
  * bad -> GTSOPTCS (ALARM 1602, GCOMP5); TRM03FLG -> GCOMP5; no mark ->
  * RETARG1 (free the VAC, mark again); else back to QPLAC
@@ -387,105 +494,10 @@ agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx)
 
     if (targ == 0)
     {
-        /* TC QPLAC: NEXTBNKS              */
-        /**********************************************************************
-         * NEXTBNKS / NEXBNKSS (IMU_CALIBRATION_AND_ALIGNMENT.agc pp.450-451) --
-         * target 1 marked: STARAD = XSM PD06 VSL1, STARAD +6 = XSM PD12 VSL1,
-         * LOSVEC = LITTLSUB; MKRELEAS; then drive to target 2 (STARCODE 2,
-         * TARGDRVE 6)
-         *
-         * RETURNS: agc_status_t of LITTLSUB, MKRELEAS or TARGDRVE
-         **********************************************************************/
-        {
-            agc_align_ram_t     *ar = agc_align_ram(); /* alignment erasables */
-            agc_interp_t         ip;                   /* interpreter state           */
-            agc_vec_t            tar[TARGETS];         /* PD06, PD12: B1 (half-unit)  */
-            agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)     */
-
-            agc_interp_init(&ip);
-            agc_status_t st = target_vectors(&ip, tar); /* CALL TAR/EREF       */
-
-            if (st != AGC_STATUS_OK)
-            {
-                return (st);
-            }
-
-            for (int i = 0; i < TARGETS; i++) /* VLOAD MXV, VSL1, STORE STARAD */
-            {
-                ar->starad[i] = agc_vec_shl(&ip, agc_mat_vec(&ip, &ar->xsm, tar[i]), 1);
-            }
-
-            st = agc_sxtmark_mark(0, &m); /* LITTLSUB: LXC,1 MARKSTAT        */
-
-            if (st != AGC_STATUS_OK)
-            {
-                return (st);
-            }
-
-            st = agc_csm_sxtsm(&ip, &m, &prelaunch_ram()->losvec); /* STORE LOSVEC */
-
-            if (st != AGC_STATUS_OK)
-            {
-                return (st);
-            }
-
-            st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS                  */
-
-            if (st != AGC_STATUS_OK)
-            {
-                return (st);
-            }
-
-            return (targdrve(2, TARG_TARGET2)); /* NEXBNKSS                    */
-        }
+        return (target1_marked()); /* TC QPLAC: NEXTBNKS */
     }
 
-    /* TC QPLAC: NEXBNKSS +5            */
-    /**********************************************************************
-     * NEXBNKSS +5 (IMU_CALIBRATION_AND_ALIGNMENT.agc p.451) -- target 2
-     * marked: 12D = LITTLSUB, 6D = LOSVEC, AXISGEN (STARAD expected, 6D/12D
-     * marked), CALCGTA into OGC, IGC, MGC; then GCOMP4
-     *
-     * ARGUMENTS:
-     *   ctx  agc_job_ctx_t *  I  the P03 job
-     *
-     * RETURNS: agc_status_t of LITTLSUB, AXISGEN or the V06N93 flash
-     **********************************************************************/
-    {
-        agc_align_ram_t     *ar = agc_align_ram(); /* alignment erasables */
-        agc_interp_t         ip;                   /* interpreter state             */
-        agc_vec_t            marked[2];            /* 6D, 12D: marked LOS, B1 */
-        agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)       */
-        agc_mat_t            xdc;                  /* XDC..ZDC, half-unit           */
-
-        agc_interp_init(&ip);
-        agc_status_t st = agc_sxtmark_mark(0, &m); /* CALL LITTLSUB        */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
-
-        st = agc_csm_sxtsm(&ip, &m, &marked[1]); /* STOVL 12D             */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
-
-        marked[0] = prelaunch_ram()->losvec;                        /* LOSVEC, STCALL 06D        */
-        st        = agc_imu_axisgen(&ip, ar->starad, marked, &xdc); /* AXISGEN */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
-
-        ar->xdc = xdc;
-        agc_imu_calcgta(&ip, &xdc, ar->ogc); /* CALL CALCGTA               */
-
-        return (agc_job_optical_verification_torque_display(ctx)); /* GCOMP4 */
-    }
+    return (target2_marked(ctx)); /* TC QPLAC: NEXBNKSS +5 */
 }
 
 /**********************************************************************

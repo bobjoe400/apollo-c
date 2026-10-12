@@ -1040,7 +1040,7 @@ agc_status_t agc_job_optics_calibration_bias(void);
 agc_status_t agc_job_optics_calibration_end(void);
 agc_status_t agc_job_optics_calibration_end_mark(void);
 agc_status_t agc_job_cislunar_midcourse_navigation(agc_job_ctx_t *ctx);
-agc_status_t agc_job_cislunar_midcourse_navigation_sight(agc_job_ctx_t *ctx);
+agc_status_t agc_job_cislunar_midcourse_navigation_sight(void);
 agc_status_t agc_job_cislunar_midcourse_navigation_ident(agc_job_ctx_t *ctx);
 agc_status_t agc_job_cislunar_midcourse_navigation_ident_check(agc_job_ctx_t *ctx);
 agc_status_t agc_job_cislunar_midcourse_navigation_star(agc_job_ctx_t *ctx);

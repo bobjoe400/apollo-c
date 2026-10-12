@@ -393,6 +393,23 @@ job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_LM_STATE	-	agc_job_rendezvous_final_attitu
 job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER	-	agc_job_rendezvous_final_attitude_maneuver	lm	
 job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_OPTION	-	agc_job_rendezvous_final_attitude_option	lm	
 job	AGC_JOB_SYSTEMS_TEST	-	agc_job_systems_test	lm	REDO (V92, P07)
+job	AGC_JOB_SYSTEMS_TEST_IMU_ZEROED	-	agc_job_systems_test_imu_zeroed	lm	IMUBACK after IMUZERR (P07)
+job	AGC_JOB_SYSTEMS_TEST_SITE_DISPLAY	-	agc_job_systems_test_site_display	lm	LATAZCHK V06N41 (P07)
+job	AGC_JOB_SYSTEMS_TEST_SITE_LOADED	-	agc_job_systems_test_site_loaded	lm	LATAZCHK V33 -> POSGMBL (P07)
+job	AGC_JOB_SYSTEMS_TEST_END	-	agc_job_systems_test_end	lm	ENDTEST1 (P07 V34)
+job	AGC_JOB_SYSTEMS_TEST_COARSE_ALIGNED	-	agc_job_systems_test_coarse_aligned	lm	POSGMBL IMUSLLLG (P07)
+job	AGC_JOB_SYSTEMS_TEST_FINE_ALIGNED	-	agc_job_systems_test_fine_aligned	lm	FINIMUDD IMUSTALL (P07)
+job	AGC_JOB_SYSTEMS_TEST_DRIFT_START	-	agc_job_systems_test_drift_start	lm	ESTICADR: GOESTIMS JOBWAKE (P07)
+job	AGC_JOB_SYSTEMS_TEST_RESUME	-	agc_job_systems_test_resume	lm	TC QPLACE: SHOW V33, CHECKG (P07)
+job	AGC_JOB_SYSTEMS_TEST_EARTH_RATE_RETRY	-	agc_job_systems_test_earth_rate_retry	lm	EARTHR PULSEIMU after GYROBUSY (P07)
+job	AGC_JOB_SYSTEMS_TEST_EARTH_RATE_DONE	-	agc_job_systems_test_earth_rate_done	lm	EARTHR* IMUSLLLG -> TC QPLACES (P07)
+job	AGC_JOB_SYSTEMS_TEST_PIP_CATCH	-	agc_job_systems_test_pip_catch	lm	CHECKG1 CHANG1 loop (P07)
+job	AGC_JOB_SYSTEMS_TEST_PIP_RESULT	-	agc_job_systems_test_pip_result	lm	PIPJOBB (P07)
+job	AGC_JOB_SYSTEMS_TEST_FILTER	-	agc_job_systems_test_filter	lm	ALFLT (P07 SPECSTS)
+job	AGC_JOB_SYSTEMS_TEST_TORQUE_RETRY	-	agc_job_systems_test_torque_retry	lm	SETUPER1 IMUPULSE after GYROBUSY (P07)
+job	AGC_JOB_SYSTEMS_TEST_TORQUED	-	agc_job_systems_test_torqued	lm	GEOSTRT4 after IMUSLLLG (P07)
+job	AGC_JOB_SYSTEMS_TEST_GIMBALS_ZEROED	-	agc_job_systems_test_gimbals_zeroed	lm	COAALIGN IMUSTALL (P07)
+job	AGC_JOB_SYSTEMS_TEST_SHOW	-	agc_job_systems_test_show	lm	SHOW1 V06N98 (P07)
 job	AGC_JOB_TERMASC	-	agc_lm_job_termasc	lm	TERMASC
 job	AGC_JOB_LM_AUTO_OPTICS_AZ_EL_DISPLAY	-	agc_job_lm_auto_optics_az_el_display	lm/alignment	
 job	AGC_JOB_LM_AUTO_OPTICS_AZ_EL_LOADED	-	agc_job_lm_auto_optics_az_el_loaded	lm/alignment	
@@ -828,6 +845,9 @@ task	AGC_TASK_ISSUP	expr:agc_t4_task(task)	expr:agc_t4_task(task)	io/service	T4R
 task	AGC_TASK_UNZ2	expr:agc_t4_task(task)	expr:agc_t4_task(task)	io/service	T4RUPT UNZ2
 task	AGC_TASK_WAKER	expr:agc_svc_delay_wake(-1)	expr:agc_svc_delay_wake(-1)	io/service	DELAYJOB WAKER
 task	AGC_TASK_ATTITUDE_ERROR_OUTPUT	agc_task_attitude_error_output	agc_task_attitude_error_output	io/verbs	V43 ATTCK1 / ATTCK2
+task	AGC_TASK_SYSTEMS_TEST_DRIFT_WAKE	-	agc_task_systems_test_drift_wake	lm	GOESTIMS (P07)
+task	AGC_TASK_SYSTEMS_TEST_PIP_TIMER	-	agc_task_systems_test_pip_timer	lm	PIPATASK (P07)
+task	AGC_TASK_SYSTEMS_TEST_SAMPLE	-	agc_task_systems_test_sample	lm	ALLOOP (P07)
 task	AGC_TASK_ASCENT_ENGINE_OFF	-	agc_lm_task_ascent_engine_off	lm	ENGOFF1
 task	AGC_TASK_LUNAR_GRAVITY_SAMPLE	-	agc_task_lunar_gravity_sample	lm/alignment	
 task	AGC_TASK_BIBIBIAS	-	agc_task_bibibias	lm/burns	5.7

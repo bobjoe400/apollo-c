@@ -36,7 +36,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "agc/core/assert.h"
 #include "agc/core/interp_words.h"
 #include "agc/imu/imu.h"
 #include "agc/programs/alignment.h"
@@ -44,8 +43,7 @@
 #define WORD_MAX 16383 /* largest 14-bit magnitude                    */
 #define CDU_MOD  32768 /* one revolution in CDU counts                 */
 
-/* QTSN45 2DEC .1768 (= sin 45 deg / 4), Luminary099 rope 05520 26075.   */
-#define QTSN45 ((agc_dp_t) 47459389)
+#define QTSN45 ((agc_dp_t) 47459389) /* QTSN45 2DEC .1768 (sin 45 deg / 4), rope 05520 26075 */
 
 /**********************************************************************
  * ARCTRIG (INFLIGHT_ALIGNMENT_ROUTINES.agc p. 1349) on the MPAC words
@@ -68,9 +66,9 @@
  **********************************************************************/
 agc_dp_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh)
 {
-    const agc_dp_words_t sw = agc_dp_to_words(sinth);
-    const agc_tp_words_t d  = agc_mpac_dsu(ip, agc_mpac_abs(agc_mpac_dload(sw)), agc_dp_to_words(QTSN45));
-    agc_tp_words_t       m;
+    const agc_dp_words_t sw = agc_dp_to_words(sinth);                                                      /* SINTH as MPAC words, revs 2^0 */
+    const agc_tp_words_t d  = agc_mpac_dsu(ip, agc_mpac_abs(agc_mpac_dload(sw)), agc_dp_to_words(QTSN45)); /* |SINTH| - QTSN45 (TP words), revs 2^0 */
+    agc_tp_words_t       m;                                                                                /* the mark */
 
     if (agc_tp_from_words(d) >= 0)
     {
@@ -85,7 +83,7 @@ agc_dp_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t co
         if (costh < 0)
         {
             /* TRIG2: DLOAD HIDPHALF, SIGN SINTH, DSU THETA.             */
-            const agc_dp_words_t theta = agc_mpac_store(m);
+            const agc_dp_words_t theta = agc_mpac_store(m); /* ASIN result stored as THETA, revs 2^0 */
 
             m = agc_mpac_dsu(ip, agc_mpac_sign(agc_mpac_dload(agc_dp_to_words(AGC_DP_HALF)), sw), theta);
         }
@@ -142,7 +140,7 @@ uint16_t align_words_to_cdu(agc_dp_words_t w)
         /* in range */
     }
 
-    return ((uint16_t) ((a < 0) ? (a + CDU_MOD) : a));
+    return ((uint16_t) ((a < 0) ? (a + CDU_MOD) : a)); /* negative counts as the 2s complement pattern */
 }
 
 /**********************************************************************
@@ -167,8 +165,8 @@ agc_dp_t align_dot_shl(agc_interp_t *ip, agc_vec_t u, agc_vec_t v, int n)
 }
 
 /**********************************************************************
- * DMP then SLn (TSSL on the DMPSUB product) -- as align_dot_shl for a
- * scalar product
+ * DMP then SLn (INTERPRETER.agc TSSL on the DMPSUB product) -- as
+ * align_dot_shl for a scalar product
  *
  * FUNCTION NAME: align_dmp_shl
  *

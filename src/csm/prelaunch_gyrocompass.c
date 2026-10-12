@@ -537,64 +537,46 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
 
-    /**********************************************************************
-     * NORMLOP (IMU_CALIBRATION_AND_ALIGNMENT.agc p.438) -- level PIPA
-     * increments: (DELV VXM XSM) VSL1, DPIPAY = -Y, DPIPAZ = Z
-     *
-     * ARGUMENTS:
-     *   ip  agc_interp_t *  I/O  interpreter state
-     **********************************************************************/
-    prelaunch_ram_t *r_normlop = prelaunch_ram(); /* AINLA overlay */
+    /*
+     * NORMLOP (IMU_CALIBRATION_AND_ALIGNMENT.agc p. 438): the level PIPA
+     * increments (DELV VXM XSM) VSL1; DPIPAY = -Y, DPIPAZ = Z.
+     */
+    const agc_vec_t v = agc_vec_shl(&ip, agc_vec_mat(&ip, agc_erase_delv(), &agc_align_ram()->xsm), 1); /* level PIPA increments, B14 */
 
-    agc_vec_t v = agc_vec_shl(&ip, agc_vec_mat(&ip, agc_erase_delv(), &agc_align_ram()->xsm), 1); /* level PIPA increments, B14 */
-
-    r_normlop->dpipa[0] = agc_dp_neg(v.c[1]); /* DLOAD DCOMP MPAC +3       */
-    r_normlop->dpipa[1] = v.c[2];             /* MPAC +5                   */
+    r->dpipa[0] = agc_dp_neg(v.c[1]); /* DLOAD DCOMP MPAC +3       */
+    r->dpipa[1] = v.c[2];             /* MPAC +5                   */
 
     if (r->geocomp1 <= 0)
     {
-        /* BMN ALWAYSG not taken            */
-        /**********************************************************************
-         * ALCGKK (IMU_CALIBRATION_AND_ALIGNMENT.agc pp.439-441) -- the IMU
-         * performance test drift filter.  Stub: it ends in the erasable-memory
-         * program LAT(SPL) (see prelaunch_align.c).
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: AGC_STATUS_UNIMPLEMENTED
-         **********************************************************************/
+        /*
+         * BMN ALWAYSG not taken: ALCGKK (IMU_CALIBRATION_AND_ALIGNMENT.agc
+         * pp. 439-441), the IMU performance test drift filter.  Not
+         * translated: it ends in the erasable-memory program LAT(SPL)
+         * (see prelaunch_align.c).
+         */
         return (AGC_STATUS_UNIMPLEMENTED);
     }
 
     alwaysg(&ip, term);
     compgs(&ip, term);
 
-    /* ADDINDRF EXIT                         */
-    /**********************************************************************
-     * ENDGTSAL / LASTGTS (IMU_CALIBRATION_AND_ALIGNMENT.agc p.445) -- after
-     * ten passes torque the platform, unless the gyros are still busy
-     *
-     * ARGUMENTS:
-     *   ctx  agc_job_ctx_t *  I  the filter job
-     *
-     * RETURNS: agc_status_t of SLEEPIE, CHKCOMED/P11 or RESTAIER
-     **********************************************************************/
-    prelaunch_ram_t *r_endgtsal       = prelaunch_ram(); /* AINLA overlay */
-    bool             liftoff_endgtsal = false;           /* CHKCOMED went to P11        */
-    agc_dp_t         buf[3];                             /* ERCOMP1, rev 2^0            */
-
-    if (r_endgtsal->lengthot > 0)
+    /*
+     * ADDINDRF EXIT; ENDGTSAL / LASTGTS (IMU_CALIBRATION_AND_ALIGNMENT.agc
+     * p. 445): after ten passes torque the platform, unless the gyros are
+     * still busy.
+     */
+    if (r->lengthot > 0)
     {
-        r_endgtsal->lengthot = (agc_sp_t) (r_endgtsal->lengthot - 1); /* SLEEPIE: TS     */
+        r->lengthot = (agc_sp_t) (r->lengthot - 1); /* SLEEPIE: TS     */
 
         return (sleepie_next(ctx));
     }
 
-    agc_status_t st_endgtsal = chkcomed(ctx, &liftoff_endgtsal); /* status of the call */
+    agc_status_t st = chkcomed(ctx, &liftoff); /* status of the call */
 
-    if (liftoff_endgtsal || (st_endgtsal != AGC_STATUS_OK))
+    if (liftoff || (st != AGC_STATUS_OK))
     {
-        return (st_endgtsal);
+        return (st);
     }
 
     if (agc_imu_gyros_busy())
@@ -602,14 +584,17 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
         return (sleepie_next(ctx)); /* CCS LGYRO: .5 s from now     */
     }
 
-    st_endgtsal              = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* LASTGTS   */
-    r_endgtsal->filt.thetax1 = agc_vec_make(buf[0], buf[1], buf[2]);
-    r_endgtsal->alk          = prelaunch_tmark();                              /* DLOAD TMARK, STORE ALK    */
+    agc_dp_t buf[3]; /* ERCOMP1, rev 2^0            */
 
-    if (st_endgtsal != AGC_STATUS_OK)
+    st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* LASTGTS   */
+
+    if (st != AGC_STATUS_OK)
     {
-        return (st_endgtsal);
+        return (st);
     }
+
+    r->filt.thetax1 = agc_vec_make(buf[0], buf[1], buf[2]);
+    r->alk          = prelaunch_tmark(); /* DLOAD TMARK, STORE ALK    */
 
     return (agc_job_gyrocompassing_torque(ctx));
 } /* agc_job_gyrocompassing_filter_restart */

@@ -654,18 +654,12 @@ agc_status_t agc_job_prelaunch_imu_coarse_aligned(void)
 
     if (pl.ndxctr > 0)
     {
-        /* CCS NDXCTR: TC PIPACHK              */
-        /**********************************************************************
-         * PIPACHK (IMU_CALIBRATION_AND_ALIGNMENT.agc pp.425-426) -- PIPA test of
-         * the IMU performance test (taken when the coarse align ran into gimbal
-         * lock).  Stub: the test's display and drift loop are not translated
-         * (see the file prolog).
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: AGC_STATUS_UNIMPLEMENTED
-         **********************************************************************/
-
+        /*
+         * CCS NDXCTR: TC PIPACHK, the PIPA test of the IMU performance test
+         * (IMU_CALIBRATION_AND_ALIGNMENT.agc pp. 425-426), taken when the
+         * coarse align ran into gimbal lock.  Not translated: its display
+         * and drift loop belong to the performance test (file prolog).
+         */
         return (AGC_STATUS_UNIMPLEMENTED);
     }
 

@@ -603,3 +603,11 @@
 2026-10-11  User: resume. Relaunched review-prog-align and review-sys-misc
             (Opus) from their checkpoints; each told to format only its
             own files. Two lanes running.
+2026-10-11  review-prog-align DONE and committed: ~70 guaranteed guards
+            deleted, stall-outcome callers propagate, PICAPAR loads the
+            catalogue instead of a zero vector, SXTMARK/P51-P53/P57/R59
+            confirmed with three bugs fixed (LM P51 THETAD never zeroed;
+            MFREF/REFMF/ADVTRACK body chosen from LUNAFLAG instead of the
+            time in the accumulator; P52 zero-time test on the high word),
+            prelaunch header blocks -> section comments, style 2,275 -> 0.
+            Requests routed. review-sys-misc still running.

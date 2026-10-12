@@ -706,20 +706,13 @@ agc_status_t agc_job_cislunar_midcourse_navigation(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_cislunar_midcourse_navigation_sight
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
+ * RETURNS: agc_status_t -- the status of R53 (SXTMARK, OPTSTALL)
  **********************************************************************/
-agc_status_t agc_job_cislunar_midcourse_navigation_sight(agc_job_ctx_t *ctx)
+agc_status_t agc_job_cislunar_midcourse_navigation_sight(void)
 {
-    agc_job_id_t next = AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARKED; /* next */
-
-    return (agc_csm_sighting_mark(ctx, next));
+    return (agc_csm_sighting_mark(AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MARKED));
 }
 
 /**********************************************************************

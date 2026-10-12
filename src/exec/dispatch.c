@@ -442,7 +442,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SAVE:
             return (agc_job_cislunar_midcourse_navigation_save(ctx));
         case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_SIGHT:
-            return (agc_job_cislunar_midcourse_navigation_sight(ctx));
+            return (agc_job_cislunar_midcourse_navigation_sight());
         case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_STAR:
             return (agc_job_cislunar_midcourse_navigation_star(ctx));
         case AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_UPDATE:
@@ -592,7 +592,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_AUTO_OPTICS_POSITIONING_WAIT:
             return (agc_job_auto_optics_positioning_wait());
         case AGC_JOB_AUTO_OPTICS_SIGHTING:
-            return (agc_job_auto_optics_sighting(ctx));
+            return (agc_job_auto_optics_sighting());
         case AGC_JOB_ENTANSWR:
             return (agc_job_entanswr());
         case AGC_JOB_MARK_COMPLETE_DISPLAY:
@@ -720,13 +720,13 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
 
         /* src/io/verbs */
         case AGC_JOB_ATTITUDE_ERROR_ENABLE:
-            return (agc_job_attitude_error_enable(ctx));
+            return (agc_job_attitude_error_enable());
         case AGC_JOB_ATTITUDE_ERROR_LOAD:
             return (agc_job_attitude_error_load(ctx));
         case AGC_JOB_ATTITUDE_ERROR_TERMINATE:
             return (agc_job_attitude_error_terminate());
         case AGC_JOB_CLOCK_ALIGN_UPDATE:
-            return (agc_job_clock_align_update(ctx));
+            return (agc_job_clock_align_update());
         case AGC_JOB_DAP_DATA_LOAD_CONFIG:
             return (agc_job_dap_data_load_config(ctx));
         case AGC_JOB_DAP_DATA_LOAD_END:
@@ -750,17 +750,17 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_KEYBOARD_COARSE_ALIGN:
             return (agc_job_keyboard_coarse_align(ctx));
         case AGC_JOB_KEYBOARD_COARSE_DRIVE:
-            return (agc_job_keyboard_coarse_drive(ctx));
+            return (agc_job_keyboard_coarse_drive());
         case AGC_JOB_KEYBOARD_FINE_ALIGN:
             return (agc_job_keyboard_fine_align(ctx));
         case AGC_JOB_KEYBOARD_FINE_MODE:
-            return (agc_job_keyboard_fine_mode(ctx));
+            return (agc_job_keyboard_fine_mode());
         case AGC_JOB_KEYBOARD_GYRO_TORQUE:
-            return (agc_job_keyboard_gyro_torque(ctx));
+            return (agc_job_keyboard_gyro_torque());
         case AGC_JOB_LR_POSITION_TWO_CHECK:
             return (agc_job_lr_position_two_check());
         case AGC_JOB_LR_SPURIOUS_TEST_END_RESUME:
-            return (agc_job_lr_spurious_test_end_resume(ctx));
+            return (agc_job_lr_spurious_test_end_resume());
         case AGC_JOB_OPTICS_COARSE_DRIVE:
             return (agc_job_optics_coarse_drive(ctx));
         case AGC_JOB_OPTICS_COARSE_START:
@@ -772,7 +772,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RADAR_TEST_END:
             return (agc_job_radar_test_end());
         case AGC_JOB_RADAR_TEST_END_RESUME:
-            return (agc_job_radar_test_end_resume(ctx));
+            return (agc_job_radar_test_end_resume());
         case AGC_JOB_RADAR_TEST_FIRST_DISPLAY:
             return (agc_job_radar_test_first_display(ctx));
         case AGC_JOB_RADAR_TEST_OPTION_DISPLAY:
@@ -788,13 +788,13 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RR_DESIGNATE_DRIVE:
             return (agc_job_rr_designate_drive());
         case AGC_JOB_RR_DESIGNATE_END_MONITOR:
-            return (agc_job_rr_designate_end_monitor(ctx));
+            return (agc_job_rr_designate_end_monitor());
         case AGC_JOB_RR_DESIGNATE_LOAD:
             return (agc_job_rr_designate_load(ctx));
         case AGC_JOB_RR_DESIGNATE_RESULT:
             return (agc_job_rr_designate_result());
         case AGC_JOB_RR_DESIGNATE_SCHEDULE:
-            return (agc_job_rr_designate_schedule(ctx));
+            return (agc_job_rr_designate_schedule());
         case AGC_JOB_RR_LOCKON_ANSWER:
             return (agc_job_rr_lockon_answer(ctx));
         case AGC_JOB_RR_LOCKON_DISPLAY:
@@ -802,9 +802,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RR_LOCKON_QUERY:
             return (agc_job_rr_lockon_query(ctx));
         case AGC_JOB_RR_LOS_DISPLAY:
-            return (agc_job_rr_los_display(ctx));
+            return (agc_job_rr_los_display());
         case AGC_JOB_RR_LOS_DISPLAY_NEXT:
-            return (agc_job_rr_los_display_next(ctx));
+            return (agc_job_rr_los_display_next());
         case AGC_JOB_RR_LOS_DISPLAY_STOP:
             return (agc_job_rr_los_display_stop());
         case AGC_JOB_SHOW_BANKSUM_DISPLAY:
@@ -814,15 +814,15 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_SHOW_BANKSUM_NEXT:
             return (agc_job_show_banksum_next(ctx));
         case AGC_JOB_STATE_VECTOR_COPY:
-            return (agc_job_state_vector_copy(ctx));
+            return (agc_job_state_vector_copy());
         case AGC_JOB_TIMEDIDR:
-            return (agc_job_timedidr(ctx));
+            return (agc_job_timedidr());
         case AGC_JOB_TRACKING_TERMINATE:
-            return (agc_job_tracking_terminate(ctx));
+            return (agc_job_tracking_terminate());
         case AGC_JOB_TRIMDONE:
             return (agc_job_trimdone(ctx));
         case AGC_JOB_UPLINK_UPDATE_EXECUTE:
-            return (agc_job_uplink_update_execute(ctx));
+            return (agc_job_uplink_update_execute());
         case AGC_JOB_UPLINK_UPDATE_LOAD:
             return (agc_job_uplink_update_load(ctx));
         case AGC_JOB_UPLINK_UPDATE_PROCEED:
@@ -1306,13 +1306,13 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
 
         /* src/io/verbs */
         case AGC_JOB_ATTITUDE_ERROR_ENABLE:
-            return (agc_job_attitude_error_enable(ctx));
+            return (agc_job_attitude_error_enable());
         case AGC_JOB_ATTITUDE_ERROR_LOAD:
             return (agc_job_attitude_error_load(ctx));
         case AGC_JOB_ATTITUDE_ERROR_TERMINATE:
             return (agc_job_attitude_error_terminate());
         case AGC_JOB_CLOCK_ALIGN_UPDATE:
-            return (agc_job_clock_align_update(ctx));
+            return (agc_job_clock_align_update());
         case AGC_JOB_DAP_DATA_LOAD_CONFIG:
             return (agc_job_dap_data_load_config(ctx));
         case AGC_JOB_DAP_DATA_LOAD_END:
@@ -1336,17 +1336,17 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_KEYBOARD_COARSE_ALIGN:
             return (agc_job_keyboard_coarse_align(ctx));
         case AGC_JOB_KEYBOARD_COARSE_DRIVE:
-            return (agc_job_keyboard_coarse_drive(ctx));
+            return (agc_job_keyboard_coarse_drive());
         case AGC_JOB_KEYBOARD_FINE_ALIGN:
             return (agc_job_keyboard_fine_align(ctx));
         case AGC_JOB_KEYBOARD_FINE_MODE:
-            return (agc_job_keyboard_fine_mode(ctx));
+            return (agc_job_keyboard_fine_mode());
         case AGC_JOB_KEYBOARD_GYRO_TORQUE:
-            return (agc_job_keyboard_gyro_torque(ctx));
+            return (agc_job_keyboard_gyro_torque());
         case AGC_JOB_LR_POSITION_TWO_CHECK:
             return (agc_job_lr_position_two_check());
         case AGC_JOB_LR_SPURIOUS_TEST_END_RESUME:
-            return (agc_job_lr_spurious_test_end_resume(ctx));
+            return (agc_job_lr_spurious_test_end_resume());
         case AGC_JOB_OPTICS_COARSE_DRIVE:
             return (agc_job_optics_coarse_drive(ctx));
         case AGC_JOB_OPTICS_COARSE_START:
@@ -1358,7 +1358,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RADAR_TEST_END:
             return (agc_job_radar_test_end());
         case AGC_JOB_RADAR_TEST_END_RESUME:
-            return (agc_job_radar_test_end_resume(ctx));
+            return (agc_job_radar_test_end_resume());
         case AGC_JOB_RADAR_TEST_FIRST_DISPLAY:
             return (agc_job_radar_test_first_display(ctx));
         case AGC_JOB_RADAR_TEST_OPTION_DISPLAY:
@@ -1374,13 +1374,13 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RR_DESIGNATE_DRIVE:
             return (agc_job_rr_designate_drive());
         case AGC_JOB_RR_DESIGNATE_END_MONITOR:
-            return (agc_job_rr_designate_end_monitor(ctx));
+            return (agc_job_rr_designate_end_monitor());
         case AGC_JOB_RR_DESIGNATE_LOAD:
             return (agc_job_rr_designate_load(ctx));
         case AGC_JOB_RR_DESIGNATE_RESULT:
             return (agc_job_rr_designate_result());
         case AGC_JOB_RR_DESIGNATE_SCHEDULE:
-            return (agc_job_rr_designate_schedule(ctx));
+            return (agc_job_rr_designate_schedule());
         case AGC_JOB_RR_LOCKON_ANSWER:
             return (agc_job_rr_lockon_answer(ctx));
         case AGC_JOB_RR_LOCKON_DISPLAY:
@@ -1388,9 +1388,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RR_LOCKON_QUERY:
             return (agc_job_rr_lockon_query(ctx));
         case AGC_JOB_RR_LOS_DISPLAY:
-            return (agc_job_rr_los_display(ctx));
+            return (agc_job_rr_los_display());
         case AGC_JOB_RR_LOS_DISPLAY_NEXT:
-            return (agc_job_rr_los_display_next(ctx));
+            return (agc_job_rr_los_display_next());
         case AGC_JOB_RR_LOS_DISPLAY_STOP:
             return (agc_job_rr_los_display_stop());
         case AGC_JOB_SHOW_BANKSUM_DISPLAY:
@@ -1400,15 +1400,15 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_SHOW_BANKSUM_NEXT:
             return (agc_job_show_banksum_next(ctx));
         case AGC_JOB_STATE_VECTOR_COPY:
-            return (agc_job_state_vector_copy(ctx));
+            return (agc_job_state_vector_copy());
         case AGC_JOB_TIMEDIDR:
-            return (agc_job_timedidr(ctx));
+            return (agc_job_timedidr());
         case AGC_JOB_TRACKING_TERMINATE:
-            return (agc_job_tracking_terminate(ctx));
+            return (agc_job_tracking_terminate());
         case AGC_JOB_TRIMDONE:
             return (agc_job_trimdone(ctx));
         case AGC_JOB_UPLINK_UPDATE_EXECUTE:
-            return (agc_job_uplink_update_execute(ctx));
+            return (agc_job_uplink_update_execute());
         case AGC_JOB_UPLINK_UPDATE_LOAD:
             return (agc_job_uplink_update_load(ctx));
         case AGC_JOB_UPLINK_UPDATE_PROCEED:
@@ -1475,6 +1475,40 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_rendezvous_final_attitude_option(ctx));
         case AGC_JOB_SYSTEMS_TEST:
             return (agc_job_systems_test(ctx));
+        case AGC_JOB_SYSTEMS_TEST_IMU_ZEROED:
+            return (agc_job_systems_test_imu_zeroed(ctx));
+        case AGC_JOB_SYSTEMS_TEST_SITE_DISPLAY:
+            return (agc_job_systems_test_site_display(ctx));
+        case AGC_JOB_SYSTEMS_TEST_SITE_LOADED:
+            return (agc_job_systems_test_site_loaded(ctx));
+        case AGC_JOB_SYSTEMS_TEST_END:
+            return (agc_job_systems_test_end(ctx));
+        case AGC_JOB_SYSTEMS_TEST_COARSE_ALIGNED:
+            return (agc_job_systems_test_coarse_aligned(ctx));
+        case AGC_JOB_SYSTEMS_TEST_FINE_ALIGNED:
+            return (agc_job_systems_test_fine_aligned(ctx));
+        case AGC_JOB_SYSTEMS_TEST_DRIFT_START:
+            return (agc_job_systems_test_drift_start(ctx));
+        case AGC_JOB_SYSTEMS_TEST_RESUME:
+            return (agc_job_systems_test_resume(ctx));
+        case AGC_JOB_SYSTEMS_TEST_EARTH_RATE_RETRY:
+            return (agc_job_systems_test_earth_rate_retry(ctx));
+        case AGC_JOB_SYSTEMS_TEST_EARTH_RATE_DONE:
+            return (agc_job_systems_test_earth_rate_done(ctx));
+        case AGC_JOB_SYSTEMS_TEST_PIP_CATCH:
+            return (agc_job_systems_test_pip_catch(ctx));
+        case AGC_JOB_SYSTEMS_TEST_PIP_RESULT:
+            return (agc_job_systems_test_pip_result(ctx));
+        case AGC_JOB_SYSTEMS_TEST_FILTER:
+            return (agc_job_systems_test_filter(ctx));
+        case AGC_JOB_SYSTEMS_TEST_TORQUE_RETRY:
+            return (agc_job_systems_test_torque_retry(ctx));
+        case AGC_JOB_SYSTEMS_TEST_TORQUED:
+            return (agc_job_systems_test_torqued(ctx));
+        case AGC_JOB_SYSTEMS_TEST_GIMBALS_ZEROED:
+            return (agc_job_systems_test_gimbals_zeroed(ctx));
+        case AGC_JOB_SYSTEMS_TEST_SHOW:
+            return (agc_job_systems_test_show(ctx));
         case AGC_JOB_TERMASC:
             return (agc_lm_job_termasc());
 
@@ -2555,6 +2589,12 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
             return (agc_task_attitude_error_output());
 
         /* src/lm */
+        case AGC_TASK_SYSTEMS_TEST_DRIFT_WAKE:
+            return (agc_task_systems_test_drift_wake());
+        case AGC_TASK_SYSTEMS_TEST_PIP_TIMER:
+            return (agc_task_systems_test_pip_timer());
+        case AGC_TASK_SYSTEMS_TEST_SAMPLE:
+            return (agc_task_systems_test_sample());
         case AGC_TASK_ASCENT_ENGINE_OFF:
             return (agc_lm_task_ascent_engine_off());
 

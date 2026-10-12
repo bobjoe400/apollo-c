@@ -75,3 +75,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 ## From review-prog-align checkpoint (2026-10-11; note docs/modules/review-prog-align.md)
 - follow-up-done-lanes (radar, navigation, displays, io): agc_csm_sxtnb, agc_lm_rrnb, agc_lm_rrangles cannot fail any more; make them void and drop the callers' status plumbing.
 - guid-powered: give TRG*NBSM / *NBSM* a word-level form (agc_dp_words_t out) so a component can stay as sign-disagreeing words; clears oracle KNOWN PA-W4 (AVEIT VSR3 rounding of an exact half).
+
+## From review-prog-align final (2026-10-11; note docs/modules/review-prog-align.md, findings A1-A15, C1-C10)
+- guid-entry (follow-up-done-lanes): entry_earrot duplicates EARROT1/2 (now agc_csm_earrot2 in the alignment lane); use one.
+- prog-align residual: AOTMARK's job and button-handling flow was not re-read line by line (arithmetic is oracle-verified); a later pass or the document wave should read it against the listing.
