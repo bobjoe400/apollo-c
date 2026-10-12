@@ -524,3 +524,6 @@
             an existing proven tool (yaAGC, VirtualAGC GUI/peripherals,
             NASSP). Own world model dropped; NASSP is the only closed-loop
             route (after item 7). Sim lane: no device models.
+2026-10-11  Cutoff killed status-handling-2 mid-pass (classifier done: 1,309 of
+            2,285 guards GUARANTEED; deletion partly applied, hard count
+            2,317 -> 1,015; make lib OK). Relaunched with resume.
