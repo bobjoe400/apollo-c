@@ -27,7 +27,8 @@ Scenario language (one command per line, `#` comments; times in cs):
   vehicle csm|lm              must match --vehicle (or sets it)
   pad ITEM ...                erasable pad load before power-on: the pad
                               lines are passed to agc_sim --pad (src/sim/
-                              pad.c: refsmmat, flagword, sv); not
+                              pad.c: refsmmat, flagword, sv,
+                              sps_impulse); not
                               available
                               with --connect
   run N                       advance N centiseconds

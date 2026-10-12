@@ -159,9 +159,7 @@ static agc_sp_t dp_sign(agc_dp_words_t x)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t lm_dap_gimbal_drive_update(void)
 {
@@ -367,9 +365,7 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
  *   i         int         I    axis: 0 = Q, 1 = R (QRCNTR / QRNDXER / 2)
  *   newneg    agc_sp_t    I    new NEGU = SGN(NEGUSUM): -1, 0, +1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 {
@@ -417,9 +413,8 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always: gts_drive() and
+ *          lm_dap_closeout() cannot fail)
  **********************************************************************/
 agc_status_t lm_dap_gts(void)
 {
@@ -584,9 +579,8 @@ static void timegmbl_axis(lm_dap_t *d, int i)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
+ * RETURNS: agc_status_t -- the status of lm_dap_gimbal_drive_update() (always
+ *          AGC_STATUS_OK)
  **********************************************************************/
 agc_status_t agc_lm_dap_timegmbl(void)
 {

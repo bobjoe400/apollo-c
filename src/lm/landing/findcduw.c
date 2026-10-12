@@ -351,8 +351,7 @@ static agc_sp_t fc_dvbycosm(agc_dp_t op, agc_sp_t tem5)
  *                                stable member axes, 2^1
  *   cdu  agc_sp_t 3         O    CDU angles X, Y, Z, 2's, scale pi
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 static agc_status_t fc_nb2cdusp(agc_interp_t *ip, const agc_mat_t *nb, agc_sp_t cdu[3])
 {
@@ -487,8 +486,7 @@ static void fc_fetch_basic(uint16_t yzx[3])
  * ARGUMENTS:
  *   alarm  bool  I    true: alarm 00402 (NORMUNIT overflow)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 static agc_status_t fc_noattcnt(bool alarm)
 {
@@ -657,8 +655,8 @@ static void fc_transfer(void)
  *   unz   agc_vec_t *      O    unit window command, half unit 2^1
  *   trig  agc_cdutrig_t *  O    CDU sines and cosines, 2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NOT_FOUND when NORMUNIT
+ *          of a command vector overflows (BOVB NOATTCNT)
  **********************************************************************/
 static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx, agc_vec_t *unz, agc_cdutrig_t *trig)
 {

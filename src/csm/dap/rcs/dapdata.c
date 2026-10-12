@@ -182,8 +182,8 @@ void agc_csm_dap_rcs_gains(void)
  * ARGUMENTS:
  *   time5_word  uint16_t  I  TIME5, 10 ms counts to overflow, > 0
  *
- * RETURNS: agc_status_t -- the T5 set-up status; AGC_STATUS_BAD_ARG for
- *          a word outside 1 .. 037777
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always: csm_dap_set_t5() cannot
+ *          fail)
  **********************************************************************/
 agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
 {

@@ -578,13 +578,10 @@ agc_status_t agc_job_external_delta_v_display_parameters(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_external_delta_v_accept
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  ----------------------------------
- *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
- *          otherwise the status of the routine it continues in
+ * RETURNS: agc_status_t -- the status of agc_exec_job_yield() (OK; BAD_ARG
+ *          when not called from a running job)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_accept(void)
 {

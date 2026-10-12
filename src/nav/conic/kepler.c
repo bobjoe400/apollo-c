@@ -30,7 +30,7 @@
  *   none in the AGC. AGC_STATUS_OVERFLOW when T overflows until DELX
  *   halves to zero (KEPRTN without a new state); AGC_STATUS_NO_CONVERGE
  *   when the 20 passes run out (the state is still computed, as in the
- *   AGC); AGC_STATUS_BAD_ARG for a NULL pointer or an unknown body.
+ *   AGC).
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   Runs in the caller's job, both vehicles. KEPLOOP is bounded by
@@ -410,9 +410,9 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx, kepler_
  *                                           debris (see conic.h)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NO_CONVERGE after 20
- *          passes (state still computed); AGC_STATUS_OVERFLOW for KEPRTN
- *          from TIMEOVFL (RCV/VCV = RRECT/VRECT); AGC_STATUS_BAD_ARG for a
- *          NULL pointer or an unknown body
+ *          passes (state still computed) or when PERIODCH reaches its pass
+ *          bound in kepler_period(); AGC_STATUS_OVERFLOW for KEPRTN from
+ *          TIMEOVFL (RCV/VCV = RRECT/VRECT)
  *********************************************************************/
 agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in, agc_kepler_out_t *out)
 {
@@ -543,8 +543,7 @@ static agc_dp_words_t kepprep_series(agc_interp_t *ip, const agc_kepler_in_t *in
  *                                           TAU., TC, XKEP (xprev), body
  *   xkepnew   agc_dp_t *               O    XKEPNEW, 2^17 / 2^16 sqrt(m)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
- *          NULL pointer or an unknown body
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  *********************************************************************/
 agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in, agc_dp_t *xkepnew)
 {

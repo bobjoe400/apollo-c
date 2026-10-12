@@ -62,8 +62,7 @@ static const agc_sp_t fcard_bursts[3] = {6, 5, 4};
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG without a
- *          context
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
  **********************************************************************/
 agc_status_t agc_job_strktsti(void)
 {

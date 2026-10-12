@@ -45,8 +45,7 @@
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB); AGC_STATUS_BAD_ARG
- *          without a context
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
  **********************************************************************/
 agc_status_t agc_job_ambgupdt(void)
 {

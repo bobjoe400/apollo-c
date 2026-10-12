@@ -71,8 +71,8 @@ static const agc_dp_words_t mutable_tab[8] = {
  *   ctx       agc_conic_ctx_t *  O    zeroed; 1/MU, ROOTMU, 1/ROOTMU
  *   body      agc_conic_body_t   I    AGC_CONIC_EARTH or AGC_CONIC_MOON
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for an
- *          unknown body (the caller's input)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always; any body other than
+ *          AGC_CONIC_EARTH loads the moon's constants)
  *********************************************************************/
 agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
 {

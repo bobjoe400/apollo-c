@@ -455,8 +455,7 @@ static agc_status_t gamdv_start(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t 
  *   dv_prev   agc_dp_t          I    DV, of the previous step, m/cs B7
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK with DX(T1) set;
- *          AGC_STATUS_NOT_FOUND when |DVERR| < EPC10RTE (GAMDVX: done);
- *          AGC_STATUS_BAD_ARG on a failed assertion
+ *          AGC_STATUS_NOT_FOUND when |DVERR| < EPC10RTE (GAMDVX: done)
  **********************************************************************/
 static agc_status_t gamdv_secant(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl, agc_dp_t x_prev, agc_dp_t dv_prev)
 {
@@ -511,8 +510,7 @@ static agc_status_t gamdv_secant(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t
  *                                    TPMODE search
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK with DX(T1) kept in bounds;
- *          AGC_STATUS_NOT_FOUND when |DX(T1)| < EPC9RTE (GAMDVX: done);
- *          AGC_STATUS_BAD_ARG on a failed assertion
+ *          AGC_STATUS_NOT_FOUND when |DX(T1)| < EPC9RTE (GAMDVX: done)
  **********************************************************************/
 static agc_status_t gamdv_bound(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl)
 {
@@ -683,9 +681,7 @@ static agc_status_t v2t_setup(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *p
  *   start_high  bool *            O    true: start the search at X(T1)MAX
  *                                      (V2T145), else at X(T1)MIN (V2T140)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
- *          or state assertion fails; otherwise the status of the first
- *          service call that failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl, bool *start_high)
 {

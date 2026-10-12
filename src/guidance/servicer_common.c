@@ -113,8 +113,7 @@ static const agc_dp_t TWOSEC_22 = (agc_dp_t) (200 * 64); /* cs 2^22 */
  *   set_piptime1  bool           I    also latch PIPTIME1 = TIME2,1
  *                                     (PIPASR, not PIPASR +3)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
- *          precondition failed)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
 {

@@ -120,9 +120,8 @@ static void serv_phase(uint16_t code, agc_job_id_t job)
  *   a         agc_avg_g_t *  I/O  average-G block (DELV, RN1, VN1, GDT1/2,
  *                                 PIPAGE...)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
- *          precondition failed); otherwise the status of the routine it
- *          continues in
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always: agc_guid_pipasr() cannot
+ *          fail)
  **********************************************************************/
 static agc_status_t preread1(agc_avg_g_t *a)
 {
@@ -149,8 +148,7 @@ static agc_status_t preread1(agc_avg_g_t *a)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
- *          otherwise the status of the routine it continues in
+ * RETURNS: agc_status_t -- the status of preread1() (always AGC_STATUS_OK)
  **********************************************************************/
 agc_status_t agc_guid_preread1_csm(void)
 {
@@ -511,14 +509,10 @@ agc_status_t agc_task_onmnitor(void)
  *
  * FUNCTION NAME: agc_job_normlize_csm
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  ----------------------------------
- *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
- *          precondition failed); otherwise the status of the routine it
- *          continues in
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB); otherwise the failing
+ *          status of agc_guid_calcgrav() (BAD_ARG)
  **********************************************************************/
 agc_status_t agc_job_normlize_csm(void)
 {
@@ -579,13 +573,12 @@ static bool pipas_saturated(agc_vec_t delv)
  *
  * FUNCTION NAME: agc_job_servicer_csm
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  ----------------------------------
- *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
- *          otherwise the status of the routine it continues in
+ * RETURNS: agc_status_t -- the failing status of agc_imu_one_over_pipa()
+ *          (BAILOUT 1202 from NOVAC, BAD_ARG); otherwise the status of the
+ *          routine it continues in, agc_job_serv_dvtotup_csm() or (saturated
+ *          PIPA) agc_job_serv_averageg_csm() (OK, BAD_ARG)
  **********************************************************************/
 agc_status_t agc_job_servicer_csm(void)
 {
@@ -621,13 +614,10 @@ agc_status_t agc_job_servicer_csm(void)
  *
  * FUNCTION NAME: agc_job_serv_dvtotup_csm
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  ----------------------------------
- *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
- *          otherwise the status of the routine it continues in
+ * RETURNS: agc_status_t -- the status of agc_job_serv_averageg_csm() (OK,
+ *          BAD_ARG)
  **********************************************************************/
 agc_status_t agc_job_serv_dvtotup_csm(void)
 {
@@ -648,13 +638,11 @@ agc_status_t agc_job_serv_dvtotup_csm(void)
  *
  * FUNCTION NAME: agc_job_serv_averageg_csm
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  ----------------------------------
- *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
- *          otherwise the status of the routine it continues in
+ * RETURNS: agc_status_t -- the failing status of agc_guid_calcrvg()
+ *          (BAD_ARG); otherwise the status of agc_job_serv_copy_csm() (OK,
+ *          BAD_ARG)
  **********************************************************************/
 agc_status_t agc_job_serv_averageg_csm(void)
 {
@@ -684,13 +672,9 @@ agc_status_t agc_job_serv_averageg_csm(void)
  *
  * FUNCTION NAME: agc_job_serv_copy_csm
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  ----------------------------------
- *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
- *          otherwise the status of the routine it continues in
+ * RETURNS: agc_status_t -- the status of agc_csm_avgexit() (OK, BAD_ARG)
  **********************************************************************/
 agc_status_t agc_job_serv_copy_csm(void)
 {
@@ -798,13 +782,10 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_servexit
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  ----------------------------------
- *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
- *          precondition failed)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when AVGEXIT
+ *          holds no job
  **********************************************************************/
 agc_status_t agc_job_servexit(void)
 {

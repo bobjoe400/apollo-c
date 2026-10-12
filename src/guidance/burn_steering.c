@@ -766,8 +766,7 @@ agc_status_t agc_guid_steering_tgo_lm(agc_interp_t *ip, const agc_tgo_in_t *in, 
  *   omegac    agc_vec_t *             O    commanded rate OMEGAC, control
  *                                          axes
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
- *          precondition failed)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_guid_steering_cross_product(agc_interp_t         *ip,
                                              const agc_xprod_in_t *in,

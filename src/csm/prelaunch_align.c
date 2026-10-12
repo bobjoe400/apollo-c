@@ -189,7 +189,7 @@ agc_dp_t prelaunch_tmark(void)
  *   azimuth  agc_dp_t        I    NEWAZ1, rev 2^0 (clockwise from north)
  *   xsm      agc_mat_t *     O    rows XSM, YSM, ZSM, half-unit
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL argument
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm)
 {
@@ -474,9 +474,9 @@ agc_status_t prelaunch_somerr2(void)
  * XNB = (1/2, 0, 0), YNB = (0, sin AZ, cos AZ)/2, ZNB = (0, -cos AZ,
  * sin AZ)/2 (ZEROING clears the 18 words first).
  *
- * ARGUMENTS:
+ * ARGUMENTS: none
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL argument
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t prelaunch_nbpospl(void)
 {

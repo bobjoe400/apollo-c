@@ -1223,8 +1223,7 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
  *   m         agc_mat_t *          O    rows -URA1 x UP1, -UP1, -URA1, unit
  *                                       2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL
- *          pointer
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m)
 {

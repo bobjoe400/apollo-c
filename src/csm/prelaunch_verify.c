@@ -95,7 +95,7 @@
  *   tar  agc_vec_t[2]    O    PD06 (target 1), PD12 (target 2),
  *                             half-unit
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG on a NULL argument
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
 {

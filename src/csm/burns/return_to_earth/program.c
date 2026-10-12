@@ -890,7 +890,7 @@ agc_status_t agc_job_return_to_earth_target_store(agc_job_ctx_t *ctx)
  *                              or revs B0)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NOT_FOUND when data_id
- *          is not a P37 erasable; AGC_STATUS_BAD_ARG on a failed assertion
+ *          is not a P37 erasable
  **********************************************************************/
 agc_status_t agc_return_to_earth_noun(uint16_t data_id, bool write, agc_dp_t *value)
 {

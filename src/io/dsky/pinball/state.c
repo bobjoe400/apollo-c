@@ -985,7 +985,7 @@ void agc_dsky_response(uint8_t *verb, uint8_t *noun)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_dsky_init(void)
 {

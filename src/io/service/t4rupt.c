@@ -337,7 +337,10 @@ static agc_status_t t4_proceede(void)
  * ARGUMENTS:
  *   phase  int  I   T4RUPT phase, 7..0 (RUPTREG1)
  *
- * RETURNS: the status of the activity run (AGC_STATUS_OK when none)
+ * RETURNS: agc_status_t -- the status of the activity run in the slot:
+ *          agc_t4_imumon(), agc_t4_optics_monitor(), agc_lm_dap_rcsmon() or
+ *          agc_t4_rr_monitor() (OK, BAILOUT, BAD_ARG); AGC_STATUS_OK after
+ *          OPTDRIVE, DAPT4S or the CSM's empty slot 3
  **********************************************************************/
 static agc_status_t t4_jump(int phase)
 {

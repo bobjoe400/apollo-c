@@ -341,8 +341,7 @@ agc_status_t agc_lm_calcrgvg(agc_interp_t *ip)
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
 {
@@ -386,8 +385,9 @@ agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
  *   root_hi   agc_sp_t *        I/O  stored high word of guess / root
  *   passes    int *             O    Newton passes made (MODE), 1..8
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when |DX| <= DXCRIT within eight
+ *          passes; AGC_STATUS_NO_CONVERGE after eight passes (BADROOT;
+ *          outputs as the last pass left them)
  **********************************************************************/
 agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, agc_sp_t precroot, agc_dp_t *root, agc_sp_t *root_hi, int *passes)
 {
@@ -622,8 +622,7 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_lm_cgcalc(agc_interp_t *ip)
 {
@@ -795,8 +794,7 @@ agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
  **********************************************************************/
 agc_status_t agc_lm_job_approach_phase_proceed(void)
 {

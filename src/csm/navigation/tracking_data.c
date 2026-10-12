@@ -937,9 +937,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(void)
 {
@@ -956,9 +954,7 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(void)
 {
@@ -1067,8 +1063,8 @@ void rz_set_csm_residuals(int index, agc_dp_t v)
  *   data_id   uint16_t    I    noun data id
  *   v         agc_dp_t *  O    the value at its noun scale
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_NOT_FOUND when not a
- *          noun 49 item, AGC_STATUS_BAD_ARG on a bad argument
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NOT_FOUND when data_id
+ *          is not a noun 49 item
  **********************************************************************/
 agc_status_t agc_csm_rendz_noun_read(uint16_t data_id, agc_dp_t *v)
 {

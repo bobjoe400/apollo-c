@@ -108,9 +108,8 @@ static agc_navaux_padload_t padload; /* AZO AXO -AYO 504LM, see type */
  *   pad       const agc_navaux_padload_t *  I    pad load (scales in
  *                                                the type, auxiliary.h)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL or
- *          out-of-range TEPHEM / 504LM.  TEPHEM and RLS go to their core
- *          erasables (their only store), the rest to the module static.
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always). TEPHEM and RLS go to their
+ *          core erasables (their only store), the rest to the module static.
  **********************************************************************/
 agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
 {
@@ -132,7 +131,7 @@ agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
  *   out       agc_navaux_padload_t *  O    pad load; TEPHEM and RLS from
  *                                          the core erasables
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
 {
@@ -320,8 +319,7 @@ agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pa
  *   pad       const agc_navaux_padload_t *  I    AXO, -AYO, 2^0 rad
  *   l         agc_vec_t *                   O    L (504LPL), 2^0 rad
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL or
- *          out-of-range angles
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l)
 {

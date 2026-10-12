@@ -1106,8 +1106,8 @@ agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r
  *   v         agc_vec_t              I    velocity, m/cs 2^7
  *   out       agc_rendz_periapo_t *  O    apsides and altitudes, body scale
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the APSIDES status
+ * RETURNS: agc_status_t -- the status of agc_rendz_periapo() (always
+ *          AGC_STATUS_OK)
  **********************************************************************/
 agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out)
 {
@@ -1132,8 +1132,8 @@ agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *r
  *   vvec      agc_vec_t              I    velocity, body scale
  *   out       agc_rendz_periapo_t *  O    apsides and altitudes, body scale
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the APSIDES status
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always: agc_conic_apsides() cannot
+ *          fail)
  **********************************************************************/
 agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t rvec, agc_vec_t vvec, agc_rendz_periapo_t *out)
 {
@@ -1215,8 +1215,7 @@ agc_status_t agc_rendz_los_and_normal(agc_interp_t *ip, agc_rendz_t *rz)
  *   rz        const agc_rendz_t *  I    rendezvous erasables
  *   m         agc_mat_t *          O    LV matrix rows, 2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL
- *          pointer
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m)
 {
@@ -1279,8 +1278,8 @@ agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit, agc_vec_t vini
  *   refsmmat  const agc_mat_t *  I    REFSMMAT, 2^1
  *   mga       agc_dp_t *         O    +MGA, revolutions 0 .. 1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
- *          argument
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always; MGLVFLAG cleared to mark a
+ *          +MGA result)
  **********************************************************************/
 agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, const agc_mat_t *refsmmat, agc_dp_t *mga)
 {

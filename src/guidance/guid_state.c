@@ -80,8 +80,7 @@ agc_guid_t *agc_guid_state(void)
  *   veh       agc_vehicle_t  I    vehicle: AGC_VEHICLE_CSM or
  *                                 AGC_VEHICLE_LM
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed),
- *          AGC_STATUS_OK
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_guid_init(agc_vehicle_t veh)
 {

@@ -131,8 +131,7 @@ agc_dp_t agc_tff_poly(agc_dp_t x)
  *                                  tffalfa, tffrtalf, na, tff1_alf
  *                                  (scales in the type, auxiliary.h)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL or
- *          out-of-range RONE/VONE
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
 {
@@ -283,7 +282,8 @@ static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_words
  *   q2        agc_dp_t        I    Q2, E 2^16, M 2^15
  *   t_cs      agc_dp_t *      O    TFF, cs scale 2^28
  *
- * RETURNS: agc_status_t -- status of ENDTFF, AGC_STATUS_BAD_ARG on NULL
+ * RETURNS: agc_status_t -- the status of ENDTFF, tff_end() (always
+ *          AGC_STATUS_OK)
  **********************************************************************/
 static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn, agc_dp_t q2, agc_dp_t *t_cs)
 {

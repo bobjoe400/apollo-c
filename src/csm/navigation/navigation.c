@@ -260,14 +260,13 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(void)
  *
  * FUNCTION NAME: agc_job_rendezvous_navigation_csm
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
+ * RETURNS: agc_status_t -- the failing status of agc_imu_status_check()
+ *          (POODOO after GOTOPOOH, BAILOUT, BAD_ARG); otherwise the status of
+ *          agc_job_rendezvous_navigation_csm_integrate(): OK when the step
+ *          ended or queued its successor, else the status of the executive,
+ *          display or navigation call that failed
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_csm(void)
 {

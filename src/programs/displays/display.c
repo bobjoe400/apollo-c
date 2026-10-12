@@ -690,8 +690,9 @@ agc_status_t rz_prio_alarm(const agc_job_ctx_t *ctx, agc_alarm_code_t code, agc_
  *   cont      agc_job_id_t  I    job restarted at the return (PRIO13, group
  *                                4)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG for
- *          AGC_JOB_NONE, else the waitlist status (AGC_STATUS_FULL)
+ * RETURNS: agc_status_t -- the status of agc_waitlist_call() for CLOKTASK:
+ *          AGC_STATUS_OK, or AGC_STATUS_BAILOUT (1203) when the waitlist is
+ *          full
  **********************************************************************/
 agc_status_t rz_comptgo(agc_job_id_t cont)
 {

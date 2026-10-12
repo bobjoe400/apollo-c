@@ -172,9 +172,9 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
  *   half_sin_lat  agc_dp_t                      I    1/2 sin L, 2^1
  *   eradm         agc_dp_t *                    O    ERADM, 2^29 m
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL or
- *          out-of-range RLS.  Earth: ERADFLAG = 0 -> ERAD, 1 -> GETERAD.
- *          Moon: ERADFLAG = 1 -> 504RM, 0 -> |RLS| (TSTRLSRM, SR2R).
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always). Earth: ERADFLAG = 0 ->
+ *          ERAD, 1 -> GETERAD. Moon: ERADFLAG = 1 -> 504RM, 0 -> |RLS|
+ *          (TSTRLSRM, SR2R).
  **********************************************************************/
 agc_status_t agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_dp_t half_sin_lat, agc_dp_t *eradm)
 {
@@ -382,8 +382,7 @@ agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
  *   --------  ---------------------  ---  -------------------------------
  *   ll        const agc_latlong_t *  I    LAT, LONG 2^0 rev, ALT 2^29 m
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL or
- *          out-of-range values
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll)
 {
@@ -405,7 +404,7 @@ agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll)
  *   ll        agc_latlong_t *  O    LAT, LONG 2^0 rev, ALT 2^29 m
  *                                   (eradm copied as stored, 0)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll)
 {

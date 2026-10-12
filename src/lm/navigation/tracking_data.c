@@ -584,9 +584,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(void)
 {
@@ -603,9 +601,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_residuals_recycle(void)
 {

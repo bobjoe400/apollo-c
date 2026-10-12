@@ -83,8 +83,8 @@ agc_status_t agc_job_lambert_aimpoint_guidance_lm(agc_job_ctx_t *ctx)
  *   rz        const agc_rendz_t *  I    RTIG, VIPRIME (post-burn state at
  *                                       TIG)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always:
+ *          agc_rendz_periapo_body_scale() cannot fail)
  **********************************************************************/
 static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
 {

@@ -348,15 +348,13 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: matrx_tail
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   ctx       agc_job_ctx_t *  I    job context of the running job (display
- *                                   and DELAYJOB continuations)
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
- *          or state assertion fails; otherwise the status of the first
- *          service call that failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; the failing status of
+ *          agc_waitlist_call() for READACCS (BAILOUT 1203 when the waitlist
+ *          is full, BAD_ARG); AGC_STATUS_BAD_ARG when the READACCS delay is
+ *          not positive; otherwise the status of agc_job_normlize_csm()
+ *          (BAD_ARG from CALCGRAV)
  **********************************************************************/
 static agc_status_t matrx_tail(void)
 {
@@ -441,15 +439,12 @@ static agc_status_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down, agc_mat_t 
  *
  * FUNCTION NAME: agc_job_matrxjob
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   ctx       agc_job_ctx_t *  I    job context of the running job (display
- *                                   and DELAYJOB continuations)
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
- *          or state assertion fails; otherwise the status of the first
- *          service call that failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; the failing status (BAD_ARG) of
+ *          agc_latlong_to_r(), agc_planet_rp_to_r() (GETDOWN) or
+ *          launch_refsmmat(); otherwise the status of matrx_tail() (BAILOUT
+ *          1203, BAD_ARG)
  **********************************************************************/
 agc_status_t agc_job_matrxjob(void)
 {
@@ -564,8 +559,7 @@ void agc_csm_velocity_altitude_rate(agc_interp_t *ip)
  *   hdot      agc_dp_t *  O    HDOT, rate of change of altitude, m/cs B7
  *   alti      agc_dp_t *  O    H, altitude above the pad radius, m B29
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG when a
- *          pointer is NULL
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
                                                        agc_dp_t *hdot,

@@ -187,13 +187,10 @@ agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
  *
  * FUNCTION NAME: agc_job_marks_tfi_mga_done
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  ----------------------------------
- *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
- *          otherwise the status of the routine it continues in
+ * RETURNS: agc_status_t -- the status of agc_exec_gotopooh() (OK, BAILOUT
+ *          from NOVAC, BAD_ARG)
  **********************************************************************/
 agc_status_t agc_job_marks_tfi_mga_done(void)
 {

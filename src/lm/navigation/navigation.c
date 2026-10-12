@@ -1082,8 +1082,8 @@ agc_status_t agc_task_preferred_tracking_attitude_wait(void)
  *   data_id   uint16_t    I    noun data id
  *   v         agc_dp_t *  O    the value at its noun scale
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_NOT_FOUND when not an
- *          LM navigation item, AGC_STATUS_BAD_ARG on a bad argument
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NOT_FOUND when data_id
+ *          is not an LM navigation item
  **********************************************************************/
 agc_status_t agc_lm_rendz_noun_read(uint16_t data_id, agc_dp_t *v)
 {

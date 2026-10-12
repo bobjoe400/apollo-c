@@ -93,8 +93,7 @@ static agc_ephem_csm_t csm_data; /* CM uplink, scales in the type */
  *   --------  -----------------------  ---  ---------------------------
  *   eph       const agc_ephem_csm_t *  I    uplink (scales in the type)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL or
- *          out-of-range TIMEMO/RESO/VESO
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_ephem_set_csm_data(const agc_ephem_csm_t *eph)
 {
@@ -113,7 +112,7 @@ agc_status_t agc_ephem_set_csm_data(const agc_ephem_csm_t *eph)
  *   --------  -----------------  ---  ---------------------------------
  *   out       agc_ephem_csm_t *  O    uplink (scales in the type)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t agc_ephem_get_csm_data(agc_ephem_csm_t *out)
 {
@@ -138,8 +137,8 @@ agc_status_t agc_ephem_get_csm_data(agc_ephem_csm_t *out)
  *   t_cs      agc_dp_t                 I    T, scale 2^28 cs
  *   t26       agc_dp_t *               O    t, cs scale 2^26
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_OVERFLOW outside the
- *          fit span, AGC_STATUS_BAD_ARG on NULL or bad input
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_OVERFLOW when t lies
+ *          outside the ephemeris fit span
  **********************************************************************/
 static agc_status_t ephem_lstime(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_dp_t *t26)
 {

@@ -159,8 +159,7 @@ static void tvc_loadcoef(tvc_coef_set_t set)
  * ARGUMENTS:
  *   full  bool  I  true: entry at S40.15; false: entry at S40.15 +7
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG when IXX or
- *          IAVG/TLX is negative
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t csm_tvc_gains(bool full)
 {
@@ -191,8 +190,8 @@ agc_status_t csm_tvc_gains(bool full)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG when the T5
- *          set-up fails
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always: csm_dap_set_t5() cannot
+ *          fail)
  **********************************************************************/
 agc_status_t csm_tvc_mrclean(void)
 {
@@ -473,8 +472,8 @@ agc_status_t csm_tvc_init_complete(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of S40.15 +7, or AGC_STATUS_BAD_ARG
- *          when the restored TVCPHASE is out of range
+ * RETURNS: agc_status_t -- the status of S40.15 +7, csm_tvc_gains() (always
+ *          AGC_STATUS_OK)
  **********************************************************************/
 agc_status_t csm_tvc_swichovr_body(void)
 {

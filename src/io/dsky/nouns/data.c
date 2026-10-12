@@ -449,8 +449,8 @@ static agc_status_t noun_raw_write(uint16_t data_id, agc_dp_t value)
  *                              it
  *   v         agc_dp_t *  I/O  value read or written
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
- *          NOT_FOUND; else the status of the routine it calls
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NOT_FOUND when id is not
+ *          one of these five words
  **********************************************************************/
 static agc_status_t noun_access_core2(uint16_t id, bool write, agc_dp_t *v)
 {

@@ -320,8 +320,8 @@ static bool nd_raw(uint16_t id, uint16_t *w)
  *   value     agc_dp_t *  O    the value (DP raw, SP in the upper word,
  *                              words raw)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_NOT_FOUND for an id
- *          not owned here, AGC_STATUS_BAD_ARG for a bad argument
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NOT_FOUND for an id not
+ *          owned here
  **********************************************************************/
 agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
 {
@@ -363,8 +363,8 @@ agc_status_t agc_rendz_noun_read(uint16_t data_id, agc_dp_t *value)
  *   value     agc_dp_t  I    the loaded value, same representation as the
  *                            read
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_NOT_FOUND for an id
- *          not loadable here, AGC_STATUS_BAD_ARG for a bad argument
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_NOT_FOUND for an id not
+ *          loadable here
  **********************************************************************/
 agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
 {

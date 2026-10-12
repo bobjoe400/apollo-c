@@ -21,8 +21,7 @@
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   none; RA is LDPOSMAX (INFINAPO) when it overflows the position
- *   scale or the conic is not an ellipse. AGC_STATUS_BAD_ARG for a
- *   NULL pointer or an unknown body.
+ *   scale or the conic is not an ellipse. Always AGC_STATUS_OK.
  *
  * ALGORITHM:
  *   ECC = sqrt(1 - P R1A), RP = R1 P / (1 + ECC), RA = 2 R1/R1A - RP.
@@ -47,8 +46,8 @@
  *                                      2^29 / 2^27 m, ecc 2^3, and the
  *                                      PARAM debris
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
- *          NULL pointer or an unknown body
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always: agc_conic_ctx_init_()
+ *          cannot fail; any body other than AGC_CONIC_EARTH is the moon)
  **********************************************************************/
 agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_apsides_out_t *out)
 {

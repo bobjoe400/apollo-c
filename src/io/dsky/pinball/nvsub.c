@@ -188,7 +188,7 @@ agc_status_t agc_dsky_releasedsp(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
  **********************************************************************/
 agc_status_t pin_reldsp1(void)
 {

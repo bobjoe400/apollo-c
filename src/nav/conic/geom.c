@@ -27,7 +27,7 @@
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   none; GETX reports a conic that would have to close through infinity
  *   by INFINFLG (callers then ABTCONIC or retreat). The public PARAM
- *   returns AGC_STATUS_BAD_ARG for a NULL pointer or an unknown body.
+ *   always returns AGC_STATUS_OK.
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   WLOOP and 1/WLOOP run exactly three passes (TIX,2 with X2 = 3,
@@ -504,8 +504,8 @@ void agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t mpac
  *   out       agc_conic_param_out_t *  O    P, R1A, COGA, SNGAMMA and the
  *                                           GEOM debris
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
- *          NULL pointer or an unknown body
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (always: agc_conic_ctx_init_()
+ *          cannot fail; any body other than AGC_CONIC_EARTH is the moon)
  *********************************************************************/
 agc_status_t agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_conic_param_out_t *out)
 {
