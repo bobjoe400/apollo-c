@@ -3,9 +3,9 @@
 Updated: 2026-10-12
 
 ## Running agents (max 2)
-- review-nav-integ (Opus, resume): DMP/DMPR and shift-rounding audits,
-  collapse-diff and GRP2PC rerun checks, word-level adoption, style debt.
-  Note: docs/modules/review-nav-integ.md.
+- sim (Opus, acceptance pass): rope image + scaler channels, scenario e,
+  f decision, yaAGC command-line drop-in, GUI verification last; records
+  flight bugs, does not edit flight code. Note: docs/modules/sim.md.
 - follow-up-done-lanes (Opus): every routed item in review_items.md owned
   by a closed lane (docs/agents/follow-up-done-lanes.md); keeps out of
   src/nav/integration. Note: docs/modules/follow-up-done-lanes.md.
@@ -17,10 +17,7 @@ Updated: 2026-10-12
    early-reviewed lanes).
 3. Lead: rename include/agc/core/assert.h -> agc_assert.h (237 includes;
    commands in docs/modules/review-state-flags.md).
-4. sim (resume; docs/agents/sim.md END GOAL): acceptance work -- yaAGC
-   command-line drop-in, scenario e, GUI runs -- AFTER all reviews (user,
-   2026-10-11), so it is done once on settled flight code.
-5. ONE EVA run at the very end (after reviews and the GUI-verified sim):
+3. ONE EVA run at the very end (after reviews and the GUI-verified sim):
    cleanup of provably-dead guards, not a working-code step (user,
    2026-10-11). No EVA runs before that. The sim entry runs unbounded,
    alone, with no timeout (it converges; memory is the limit).

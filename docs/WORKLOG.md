@@ -647,3 +647,5 @@
             longer ignore POODOO; GRP2PC rerun: INTSTALL takes the area
             over (DEVIATION, test); style 859 -> 0. All sixteen reviews
             are now closed. Requests routed to follow-up-done-lanes.
+2026-10-12  Launched sim (acceptance pass, Opus) in nav-integ's slot,
+            alongside follow-up-done-lanes. Sim records flight bugs only.
