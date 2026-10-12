@@ -3,22 +3,22 @@
 Updated: 2026-10-11
 
 ## Running agents (max 2)
-- sim (Opus, resume): agc_sim as drop-in for yaAGC under the VirtualAGC GUI
-  (docs/agents/sim.md END GOAL); scenario e, GUI re-check; may fix flight
-  bugs that block a scenario (B2, B4 in its note) with AGC reference + test.
-  Note: docs/modules/sim.md.
+- review-exec-sched (Opus, resume): docs/agents/review_items.md exec-sched
+  line + EVA bug leads; note docs/modules/review-exec-sched.md.
 - verify-collapse (Opus): independent check of the status-handling-2 diff
   (docs/agents/verify-collapse.md). Note: docs/modules/verify-collapse.md.
 
 ## Queue after it (two at a time)
-1. (sim running)
-2. review-exec-sched, review-prog-align, review-sys-misc,
-   review-guid-powered, review-nav-integ (resume) -- items in
-   docs/agents/review_items.md (now including the EVA bug leads).
-3. follow-up-done-lanes (DMP audit + word-pair API adoption for the eight
+1. review-prog-align, review-sys-misc, review-guid-powered,
+   review-nav-integ (resume) -- items in docs/agents/review_items.md
+   (now including the EVA bug leads).
+2. follow-up-done-lanes (DMP audit + word-pair API adoption for the eight
    early-reviewed lanes).
-4. Lead: rename include/agc/core/assert.h -> agc_assert.h (237 includes;
+3. Lead: rename include/agc/core/assert.h -> agc_assert.h (237 includes;
    commands in docs/modules/review-state-flags.md).
+4. sim (resume; docs/agents/sim.md END GOAL): acceptance work -- yaAGC
+   command-line drop-in, scenario e, GUI runs -- AFTER all reviews (user,
+   2026-10-11), so it is done once on settled flight code.
 5. ONE EVA run at the very end (after reviews and the GUI-verified sim):
    cleanup of provably-dead guards, not a working-code step (user,
    2026-10-11). No EVA runs before that. The sim entry runs unbounded,

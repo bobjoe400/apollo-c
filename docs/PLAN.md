@@ -182,9 +182,10 @@ for the remaining review lanes (fidelity-bearing first, style-debt last):
 13. review-prog-align   (oracle test additions in progress)
 14. review-sys-misc     (t4rupt_csm.c rewrite in progress)
 15. review-guid-powered (ZOOM; style debt; prologs in progress)
-16. sim  -- PROMOTED: runs alongside the remaining reviews as soon as the
-    alone pass finishes (it is the end-goal deliverable: VirtualAGC GUI on
-    our C backend)
+16. sim  -- runs AFTER all reviews and follow-ups (user, 2026-10-11): what
+    remains is acceptance work (yaAGC command-line drop-in, GUI runs) and
+    is done once, on settled flight code. It is still the end-goal
+    deliverable (VirtualAGC GUI on our C backend).
 17. follow-up-done-lanes (nav-aux, io-dsky, state-flags, guid-entry, imu,
     guid-landing, prog-rendz, dap-lm: DMP/DMPR audit where missed, and
     word-level API adoption per review_items.md)

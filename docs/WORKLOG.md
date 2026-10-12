@@ -547,3 +547,8 @@
             in code no test reaches, manual.tsv sample, status chains,
             inlinings, returns, void conversions). Two-lane cap holds.
             review-exec-sched follows whichever finishes first.
+2026-10-11  User: sim lane goes to the end, after all reviews (remaining
+            work is acceptance: drop-in command line, GUI runs; doing it
+            while reviews change flight code means doing it twice). Sim
+            agent stopped at a checkpoint; review-exec-sched takes its
+            slot next to verify-collapse.
