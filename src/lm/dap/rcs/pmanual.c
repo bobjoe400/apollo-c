@@ -416,22 +416,9 @@ agc_status_t lm_dap_detentck(void)
     }
     else if ((d->rcsflags & (LM_RCS_PBIT | LM_RCS_QRBIT)) == 0u)
     { /* RUTH */
-        /**********************************************************************
-         * RATEDONE (p.1433): manual command and damping finished in all axes.
+        /* RATEDONE (p.1433): manual command and damping finished in all axes.
          * Rate command off; desired attitude = present (CDUXD only in auto,
-         * X-axis override; all three via ZATTEROR in attitude hold).
-         *
-         * FUNCTION NAME: ratedone
-         *
-         * ARGUMENTS:
-         *   Argument  Type        I/O  Description (scale)
-         *   --------  ----------  ---  --------------------
-         *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
-         *          failed assertion, else the status of the routine it
-         *          ends in
-         **********************************************************************/
+         * X-axis override; all three via ZATTEROR in attitude hold). */
         if (!AGC_ASSERT(d != 0))
         {
             return (AGC_STATUS_BAD_ARG);

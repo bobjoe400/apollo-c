@@ -304,24 +304,10 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta
     agc_vec_t delcdu; /* DELCDU, scale 180 deg */
     agc_vec_t wbody;  /* WBODY, scale 450 deg/s */
 
-    /**********************************************************************
-     * CRS61.2: LOS rate OMEGA = ((-UNIT DV) x UNIT LOS) |DV| / |LOS|
+    /* CRS61.2: LOS rate OMEGA = ((-UNIT DV) x UNIT LOS) |DV| / |LOS|
      * (100/2PI), normalized (X1); in SM axes, 0.1 s of it to CDU increments
      * (SMCDURES); in NB then control axes (MBDYTCTL) x .8 for WBODY.
-     * AGC: CRS61.2 (P20-P25.agc pp.594-596)
-     *
-     * FUNCTION NAME: ta_rates
-     *
-     * ARGUMENTS:
-     *   Argument  Type            I/O  Description (scale)
-     *   --------  --------------  ---  --------------------------------
-     *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
-     *   delcdu    agc_vec_t *     O    DELCDU: 0.1 s CDU increments, 180 deg
-     *   wbody     agc_vec_t *     O    WBODY: LOS rate in control axes, 450
-     *                                  deg/s
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, else the SMCDURES status
-     **********************************************************************/
+     * AGC: CRS61.2 (P20-P25.agc pp.594-596) */
     agc_dp_t  absdv = 0;                                                                                 /* |DV|, m/cs 2^7 */
     agc_vec_t u     = agc_vec_neg(agc_vec_unit(ip, agc_vec_sub(ip, ta.vlem, ta.savevel), &absdv, NULL)); /* -UNIT DV, 2^1 */
     agc_vec_t cross;                                                                                     /* 2^6 */
@@ -368,18 +354,8 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta
     if (st == AGC_STATUS_OK)
     {
         /* CRS61.2A */
-        /**********************************************************************
-         * CRS61.2A: the DAP inputs under INHINT; HOLDFLAG = -1.
-         * AGC: CRS61.2A (P20-P25.agc p.596)
-         *
-         * FUNCTION NAME: ta_feed_dap
-         *
-         * ARGUMENTS:
-         *   Argument  Type       I/O  Description (scale)
-         *   --------  ---------  ---  -------------------------------------
-         *   delcdu    agc_vec_t  I    DELCDU, 180 deg
-         *   wbody     agc_vec_t  I    WBODY, 450 deg/s
-         **********************************************************************/
+        /* CRS61.2A: the DAP inputs under INHINT; HOLDFLAG = -1.
+         * AGC: CRS61.2A (P20-P25.agc p.596) */
         agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* DAP erasables */
 
         agc_inhint();

@@ -667,17 +667,7 @@ agc_status_t agc_task_readgymb(void)
         return (st);
     }
 
-    /**********************************************************************
-     * BODYRATE end (p. 1072): with CMDAPARM set, ATTRATES via T5RUPT soon.
-     *
-     * FUNCTION NAME: dap_bodyrate
-     *
-     * ARGUMENTS: none
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
-     *          or state assertion fails; otherwise the status of the first
-     *          service call that failed
-     **********************************************************************/
+    /* BODYRATE end (p. 1072): with CMDAPARM set, ATTRATES via T5RUPT soon. */
     /* BODYRATE pitch and yaw (pp. 1070-1071):
      *   Q = IDOT CO CM + MDOT SO,   R = -IDOT CM SO + MDOT CO.               */
     agc_sp_t  cosm = agc_sp_cos(amg); /* COS AMG, B0 */
@@ -770,20 +760,8 @@ static uint16_t dap_exdap(agc_entry_state_t *es)
 
     if (dap_dz(es->calfa, AGC_ENTRY_C45LIM) == 0)
     {
-        /**********************************************************************
-         * EXDAP2 (pp. 1078-1079): |cos alfa| <= .707, CMDAPMOD = +1. Beta is
-         * controlled with the roll jets, roll held with the yaw jets.
-         *
-         * FUNCTION NAME: dap_exdap_beta_roll_hold
-         *
-         * ARGUMENTS:
-         *   Argument  Type                 I/O  Description (scale)
-         *   --------  -------------------  ---  ---------------------------------
-         *   es        agc_entry_state_t *  IO   entry erasables (ENTRY_LEXICON
-         *                                       names)
-         *
-         * RETURNS: uint16_t -- uint16_t -- channel 5 jet bits (EXDAP1)
-         **********************************************************************/
+        /* EXDAP2 (pp. 1078-1079): |cos alfa| <= .707, CMDAPMOD = +1. Beta is
+         * controlled with the roll jets, roll held with the yaw jets. */
         agc_sp_t err;  /* error /180, B0 */
         agc_sp_t rate; /* rate, B0 */
         int      tag;  /* jet tag */
@@ -1060,23 +1038,8 @@ static void dap_phase_plane(agc_sp_t lcx_in, agc_sp_t mvt2, agc_entry_roll_cmd_t
 
     if (!dz)
     {
-        /**********************************************************************
-         * MAXVTEST / MAXVTIM1 / GETON1 / OVRLINE (pp. 1084-1085): first burn to the
-         * drift velocity VDT (or the limit VM), and its duration TON1.
-         *
-         * FUNCTION NAME: pp_maxvtest
-         *
-         * ARGUMENTS:
-         *   Argument  Type                    I/O  Description (scale)
-         *   --------  ----------------------  ---  ------------------------------
-         *   lcx       agc_sp_t                I    X/360 roll error, B0
-         *   mvt       agc_sp_t                I    -VT/180 roll rate, B0
-         *   vsq       agc_sp_t                I    V^2 term, B0
-         *   o         agc_entry_roll_cmd_t *  IO   TON1 and jet indices
-         *   vdt       agc_sp_t *              O    drift velocity VDT/180, B0
-         *
-         * RETURNS: none
-         **********************************************************************/
+        /* MAXVTEST / MAXVTIM1 / GETON1 / OVRLINE (pp. 1084-1085): first burn to the
+         * drift velocity VDT (or the limit VM), and its duration TON1. */
         agc_sp_t xd;          /* XD - XS, B0 */
         bool     qpos = true; /* Q tag from TC GETON1   */
 
@@ -1631,17 +1594,8 @@ agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx)
 
     agc_inhint();
 
-    /**********************************************************************
-     * CM/DAP2C (p. 1068): time from PIPTIME to the next READGYMB slot, 5 cs
-     * after a multiple of .1 s from PIPTIME; never 0.
-     *
-     * FUNCTION NAME: dapic_first_dt
-     *
-     * ARGUMENTS: none
-     *
-     * RETURNS: agc_sp_t -- agc_sp_t -- delay to the first READGYMB, cs (1..10,
-     *          never 0)
-     **********************************************************************/
+    /* CM/DAP2C (p. 1068): time from PIPTIME to the next READGYMB slot, 5 cs
+     * after a multiple of .1 s from PIPTIME; never 0. */
     int32_t delta = (int32_t) (((uint32_t) agc_erase_time1() - (uint32_t) agc_dp_low(agc_erase_piptime())) & 037777u); /* TIME1 - PIPTIME, cs B14 */
     int32_t x     = delta - 5;                                                                                         /* JETEM - 5, cs */
     int     n;                                                                                                         /* loop bound */

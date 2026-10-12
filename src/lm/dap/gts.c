@@ -446,20 +446,9 @@ agc_status_t lm_dap_gts(void)
         { /* else POSDRIVE +1 */
             gts_first_terms(d, i, &w);
 
-            /**********************************************************************
-             * HAVEQUOT .. FUNCT3 (pp.1474-1475): DEL, K2CNTRAL = DEL OMEGA +
+            /* HAVEQUOT .. FUNCT3 (pp.1474-1475): DEL, K2CNTRAL = DEL OMEGA +
              * ALPHA^2/(2K), and the ALPHA (DEL OMEGA + ALPHA^2/(3K)) term of
-             * NEGUSUM.
-             *
-             * FUNCTION NAME: gts_middle_terms
-             *
-             * ARGUMENTS:
-             *   Argument  Type       I/O  Description (scale)
-             *   --------  ---------  ---  --------------------
-             *   w         gts_w_t *  I/O  working cells of this computation
-             *
-             * RETURNS: none
-             **********************************************************************/
+             * NEGUSUM. */
             w.k2             = lm_dap_mp(w.omega, (agc_sp_t) 256);                                      /* OMEGA at 16 pi */
             agc_dp_words_t f = (w.alpha > 0) ? lm_dap_das(w.k2, w.a2) : lm_dap_das(w.k2, dp_neg(w.a2)); /* DEL OMEGA + SGN(ALPHA) ALPHA^2/(2K), DP at 16 pi */
 
@@ -480,19 +469,8 @@ agc_status_t lm_dap_gts(void)
             w.a2      = lm_dap_das(w.a2, w.k2);
             w.k2theta = lm_dap_das(w.k2theta, dp_x_sp(w.a2, w.alpha));
 
-            /**********************************************************************
-             * GETROOT .. ADDITIN (pp.1475-1483): add DEL K^(1/2) (K2CNTRAL)^(3/2)
-             * using GTSQRT of K K2CNTRAL and the shift it reports.
-             *
-             * FUNCTION NAME: gts_root_term
-             *
-             * ARGUMENTS:
-             *   Argument  Type       I/O  Description (scale)
-             *   --------  ---------  ---  --------------------
-             *   w         gts_w_t *  I/O  working cells of this computation
-             *
-             * RETURNS: none
-             **********************************************************************/
+            /* GETROOT .. ADDITIN (pp.1475-1483): add DEL K^(1/2) (K2CNTRAL)^(3/2)
+             * using GTSQRT of K K2CNTRAL and the shift it reports. */
             w.fn = dp_x_sp(w.k2, w.k); /* at pi^2/16     */
 
             if (w.del != 0) /* NEGUSUM        */

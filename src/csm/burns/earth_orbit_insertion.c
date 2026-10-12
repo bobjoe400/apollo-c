@@ -475,23 +475,8 @@ agc_status_t agc_job_matrxjob(void)
 
     if (st == AGC_STATUS_OK)
     {
-        /**********************************************************************
-         * GETDOWN (p. 540): LALOTORV +5 with time 0 and GAMMA = 1: the geodetic
-         * vertical at the pad, negated (VCOMP).
-         *
-         * FUNCTION NAME: getdown
-         *
-         * ARGUMENTS:
-         *   Argument  Type            I/O  Description (scale)
-         *   --------  --------------  ---  --------------------------------------
-         *   ip        agc_interp_t *  IO   interpreter state of the job: OVFIND,
-         *                                  DVSIGN, alarms
-         *   down      agc_vec_t *     O    the negated pad position at T = 0 (down
-         *                                  direction), m B29
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG on a failed
-         *          assertion; else the pad load or RP-TO-R status
-         **********************************************************************/
+        /* GETDOWN (p. 540): LALOTORV +5 with time 0 and GAMMA = 1: the geodetic
+         * vertical at the pad, negated (VCOMP). */
         agc_navaux_padload_t pad_getdown;                                       /* pad loads (earth radius) */
         agc_dp_t             cl         = agc_dp_cos(insertion_pad.latitude);   /* COS LAT /2, B1 */
         agc_vec_t            rp;                                                /* unit RP, B2 */
@@ -871,17 +856,8 @@ agc_status_t agc_job_aterjob(void)
         return (AGC_STATUS_OK); /* Saturn stick: end   */
     }
 
-    /**********************************************************************
-     * ATERJOB, STRSAT, ATRESET (pp. 541, 546): which way this cycle goes.
-     * Returns true when the needles are re-initialised (ATRESET).
-     *
-     * FUNCTION NAME: aterjob_needs_reset
-     *
-     * ARGUMENTS: none
-     *
-     * RETURNS: bool -- bool -- true when this cycle goes to ATRESET (NEEDLER
-     *          init and 60 ms)
-     **********************************************************************/
+    /* ATERJOB, STRSAT, ATRESET (pp. 541, 546): which way this cycle goes.
+     * Returns true when the needles are re-initialised (ATRESET). */
     bool switch_on = (agc_chan_read(030) & AGC_CH030_SCCTLSATURN) == 0u; /* S/C control of Saturn switch on */
 
     /* STRSAT: SATSW <= 0 -> ATTDISP, else ATRESET. Switch off: CCS

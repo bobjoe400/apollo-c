@@ -384,24 +384,8 @@ agc_status_t agc_entry_targeting(void)
     agc_sv_get(AGC_SV_THIS, &sv);
 
     /* GETVEL .. DSTORE  */
-    /**********************************************************************
-     * GETVEL / GETUNITV / DSTORE (p. 848): velocity (inertial, or relative once
-     * RELVELSW is set), VSQUARE, LEQ, V, RDOT, D and UNI.
-     *
-     * FUNCTION NAME: targ_velocity
-     *
-     * ARGUMENTS:
-     *   Argument  Type                        I/O  Description (scale)
-     *   --------  --------------------------  ---  --------------------------
-     *   ip        agc_interp_t *              IO   interpreter state of the
-     *                                              job: OVFIND, DVSIGN, alarms
-     *   es        agc_entry_state_t *         IO   entry erasables
-     *                                              (ENTRY_LEXICON names)
-     *   sv        const agc_state_vector_t *  I    state vector this vehicle
-     *                                              (V, m/cs B7)
-     *
-     * RETURNS: none
-     **********************************************************************/
+    /* GETVEL / GETUNITV / DSTORE (p. 848): velocity (inertial, or relative once
+     * RELVELSW is set), VSQUARE, LEQ, V, RDOT, D and UNI. */
     agc_vec_t unitr_velocity = agc_guid_state()->avg.unitr; /* UNITR, B1        */
     agc_dp_t  abval          = 0;                           /* |V|/2VS, B1      */
     agc_dp_t  vsq            = 0;                           /* VSQ/4VS^2, B2    */
@@ -447,23 +431,9 @@ agc_status_t agc_entry_targeting(void)
         agc_flag_set(AGC_FLAG_GONEBY); /* have gone past target  */
     }
 
-    /**********************************************************************
-     * GETANGLE / TINYTHET / THETDONE (pp. 849, 852): THETAH = ARCCOS(RT.UNITR)
+    /* GETANGLE / TINYTHET / THETDONE (pp. 849, 852): THETAH = ARCCOS(RT.UNITR)
      * in revs; near zero the arccos is replaced by 32 sqrt(2 (1/4 - x)) KACOS.
-     * RTGON67 = -THETAH before the target is passed, +THETAH after.
-     *
-     * FUNCTION NAME: targ_range_angle
-     *
-     * ARGUMENTS:
-     *   Argument  Type                 I/O  Description (scale)
-     *   --------  -------------------  ---  ---------------------------------
-     *   ip        agc_interp_t *       IO   interpreter state of the job:
-     *                                       OVFIND, DVSIGN, alarms
-     *   es        agc_entry_state_t *  IO   entry erasables (ENTRY_LEXICON
-     *                                       names)
-     *
-     * RETURNS: none
-     **********************************************************************/
+     * RTGON67 = -THETAH before the target is passed, +THETAH after. */
     agc_dp_t x = agc_vec_dot(ip, es->rt, agc_guid_state()->avg.unitr); /* RT.UNITR, B2 */
     agc_dp_t m = agc_dp_sub(ip, x, AGC_ENTRY_NEAR1_4);                 /* x - NEAR1/4, B2 */
 
@@ -737,23 +707,9 @@ static agc_entry_hunt_result_t entry_huntest_core(agc_interp_t      *ip,
                                                   agc_entry_state_t *es,
                                                   agc_dp_t          *gammal)
 {
-    /**********************************************************************
-     * HUNTEST .. V1LEAD (p. 855): A1 = D, TEM1B, V1 = V + RDOT/TEM1B, A0 =
+    /* HUNTEST .. V1LEAD (p. 855): A1 = D, TEM1B, V1 = V + RDOT/TEM1B, A0 =
      * (V1/V)^2 (D + RDOT^2/(2 C1 HS TEM1B)), A1 = A0 if RDOT < 0, and V1 = V1 -
-     * VQUIT when L/D < 0.
-     *
-     * FUNCTION NAME: hunt_a0calc
-     *
-     * ARGUMENTS:
-     *   Argument  Type                 I/O  Description (scale)
-     *   --------  -------------------  ---  ---------------------------------
-     *   ip        agc_interp_t *       IO   interpreter state of the job:
-     *                                       OVFIND, DVSIGN, alarms
-     *   es        agc_entry_state_t *  IO   entry erasables (ENTRY_LEXICON
-     *                                       names)
-     *
-     * RETURNS: none
-     **********************************************************************/
+     * VQUIT when L/D < 0. */
     es->a1    = es->d;
     es->tem1b = (es->rdot < 0) ? es->lad : es->lewd; /* RDOT sign */
 
@@ -836,22 +792,8 @@ static agc_entry_hunt_result_t entry_huntest_core(agc_interp_t      *ip,
         es->vs1 = es->v1;
     }
 
-    /**********************************************************************
-     * GETDHOOK .. HUNTEST3 (pp. 857-858): DHOOK, AHOOKDV, GAMMAL, and the
-     * smoothed GAMMAL1 = GAMMAL1 + Q19 (GAMMAL - GAMMAL1).
-     *
-     * FUNCTION NAME: hunt_getdhook
-     *
-     * ARGUMENTS:
-     *   Argument  Type                 I/O  Description (scale)
-     *   --------  -------------------  ---  ---------------------------------
-     *   ip        agc_interp_t *       IO   interpreter state of the job:
-     *                                       OVFIND, DVSIGN, alarms
-     *   es        agc_entry_state_t *  IO   entry erasables (ENTRY_LEXICON
-     *                                       names)
-     *
-     * RETURNS: agc_dp_t -- agc_dp_t -- GAMMAL, revs B0
-     **********************************************************************/
+    /* GETDHOOK .. HUNTEST3 (pp. 857-858): DHOOK, AHOOKDV, GAMMAL, and the
+     * smoothed GAMMAL1 = GAMMAL1 + Q19 (GAMMAL - GAMMAL1). */
     agc_dp_t m_getdhook; /* MPAC, scale per step */
     agc_dp_t g;          /* GAMMAL, revs B0 */
 
@@ -865,24 +807,9 @@ static agc_entry_hunt_result_t entry_huntest_core(agc_interp_t      *ip,
 
     if (g < 0)
     {
-        /**********************************************************************
-         * NEGAMA (p. 862): GAMMAL < 0. Move VL so that GAMMAL = 0: VL = VL +
+        /* NEGAMA (p. 862): GAMMAL < 0. Move VL so that GAMMAL = 0: VL = VL +
          * (GAMMAL VL/3) / (LEWD/3 - DVL (AHOOKDV + 1/24) CH1/DHOOK VL), Q7 =
-         * DHOOKYQ7(VL), VBARS = VL^2; returns GAMMAL = 0.
-         *
-         * FUNCTION NAME: hunt_negama
-         *
-         * ARGUMENTS:
-         *   Argument  Type                 I/O  Description (scale)
-         *   --------  -------------------  ---  ---------------------------------
-         *   ip        agc_interp_t *       IO   interpreter state of the job:
-         *                                       OVFIND, DVSIGN, alarms
-         *   es        agc_entry_state_t *  IO   entry erasables (ENTRY_LEXICON
-         *                                       names)
-         *   gammal    agc_dp_t             I    GAMMAL (< 0), revs B0
-         *
-         * RETURNS: agc_dp_t -- agc_dp_t -- the new GAMMAL, 0
-         **********************************************************************/
+         * DHOOKYQ7(VL), VBARS = VL^2; returns GAMMAL = 0. */
         agc_dp_t num; /* GAMMAL VL/3, B0 */
         agc_dp_t den; /* LEWD/3 - ..., B0 */
 
@@ -1438,21 +1365,8 @@ static entry_step_t step_final_predict(entry_pass_t *p)
         return (ST_STEEROFF);
     }
 
-    /**********************************************************************
-     * BACK2 (pp. 870-871): GRAD and the six interpolated functions FX+5..FX+0 =
-     * F1, F2, RDOTREF, RTOGO, -AREF, F3 (SP).
-     *
-     * FUNCTION NAME: predict_interp
-     *
-     * ARGUMENTS:
-     *   Argument  Type                 I/O  Description (scale)
-     *   --------  -------------------  ---  ---------------------------------
-     *   es        agc_entry_state_t *  IO   entry erasables (ENTRY_LEXICON
-     *                                       names)
-     *   tem1b     agc_sp_t             I    V - VREF(JJ), B0
-     *
-     * RETURNS: none
-     **********************************************************************/
+    /* BACK2 (pp. 870-871): GRAD and the six interpolated functions FX+5..FX+0 =
+     * F1, F2, RDOTREF, RTOGO, -AREF, F3 (SP). */
     agc_sp_t tem1b = predict_find_jj(es, agc_dp_high(es->v));
 
     int      mm;                                                                      /* table column */
@@ -1752,22 +1666,8 @@ static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
     switch ((int) s)
     {
         case ST_INITROLL:
-            /**********************************************************************
-             * INITROLL (p. 853): hold the HEADSUP roll until .05 g; at .05 g (P64) KAT
-             * = min(LEQ^3 KA1 + KA2, KALIM), then D0EQ or (V < VFINAL1) KEP2.
-             *
-             * FUNCTION NAME: step_initroll
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* INITROLL (p. 853): hold the HEADSUP roll until .05 g; at .05 g (P64) KAT
+             * = min(LEQ^3 KA1 + KA2, KALIM), then D0EQ or (V < VFINAL1) KEP2. */
         {
             agc_interp_t      *ip = p->ip; /* interpreter state */
             agc_entry_state_t *es = p->es; /* entry erasables */
@@ -1811,23 +1711,9 @@ static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
             return (ST_INROLOUT);
         }
         case ST_D0EQ:
-            /**********************************************************************
-             * D0EQ (pp. 853-854): constant drag level D0 = KA3 LEQ + KA4, C/D0 = (-4/25
+            /* D0EQ (pp. 853-854): constant drag level D0 = KA3 LEQ + KA4, C/D0 = (-4/25
              * g)/D0 B-8; L/D = LAD, or -LAD when V - VFINAL + (RDOT/V)^3 / K44 is
-             * negative.
-             *
-             * FUNCTION NAME: step_d0eq
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+             * negative. */
         {
             agc_interp_t      *ip = p->ip; /* interpreter state */
             agc_entry_state_t *es = p->es; /* entry erasables */
@@ -1857,40 +1743,12 @@ static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
         case ST_INROLOUT:
             return (step_inrolout());
         case ST_KATEST:
-            /**********************************************************************
-             * KATEST (p. 854): if KAT - D >= 0 keep the roll (LIMITL/D), else CONSTD.
-             *
-             * FUNCTION NAME: step_katest
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* KATEST (p. 854): if KAT - D >= 0 keep the roll (LIMITL/D), else CONSTD. */
         {
             return ((agc_dp_sub(p->ip, p->es->kat, p->es->d) >= 0) ? ST_LIMITLD : ST_CONSTD); /* KAT test */
         }
         case ST_HUNT_TRIGGER:
-            /**********************************************************************
-             * INITRL1 (p. 854): when RDOT + VRCONT >= 0 start HUNTEST, else KATEST.
-             *
-             * FUNCTION NAME: step_hunt_trigger
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* INITRL1 (p. 854): when RDOT + VRCONT >= 0 start HUNTEST, else KATEST. */
         {
             agc_entry_state_t *es = p->es; /* entry erasables */
 
@@ -1936,22 +1794,8 @@ static entry_step_t entry_huntest_step(entry_pass_t *p, entry_step_t s)
         case ST_HUNTEST:
             return (step_huntest(p));
         case ST_RANGER:
-            /**********************************************************************
-             * RANGER step (p. 860): DIFF, then UPSY (|DIFF| < 25 NM), GETDLEWD (HIND
-             * set or DIFF < 0) or DCONSTD.
-             *
-             * FUNCTION NAME: step_ranger
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* RANGER step (p. 860): DIFF, then UPSY (|DIFF| < 25 NM), GETDLEWD (HIND
+             * set or DIFF < 0) or DCONSTD. */
         {
             agc_entry_state_t *es = p->es; /* entry erasables */
 
@@ -1970,22 +1814,8 @@ static entry_step_t entry_huntest_step(entry_pass_t *p, entry_step_t s)
             return ((es->diff >= 0) ? ST_DCONSTD : ST_GETDLEWD); /* DIFF sign */
         }
         case ST_GETDLEWD:
-            /**********************************************************************
-             * GETDLEWD / LWDSTORE / LEWDPTR / LEWDOVFL (pp. 860-861): secant step on
-             * LEWD, DLEWD = DLEWD DIFF/(DIFFOLD - DIFF).
-             *
-             * FUNCTION NAME: step_getdlewd
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* GETDLEWD / LWDSTORE / LEWDPTR / LEWDOVFL (pp. 860-861): secant step on
+             * LEWD, DLEWD = DLEWD DIFF/(DIFFOLD - DIFF). */
         {
             agc_interp_t      *ip = p->ip; /* interpreter state */
             agc_entry_state_t *es = p->es; /* entry erasables */
@@ -2012,26 +1842,12 @@ static entry_step_t entry_huntest_step(entry_pass_t *p, entry_step_t s)
             return (ST_SIDETRAK);
         }
         case ST_SIDETRAK:
-            /**********************************************************************
-             * SIDETRAK (p. 861): the iteration continues below SERVICER priority while
+            /* SIDETRAK (p. 861): the iteration continues below SERVICER priority while
              * the next passes go to ENDEXIT; restart group 4 at PRE-HUNT. DEVIATION:
              * the C pass runs the whole iteration in one call (bounded by
              * AGC_ENTRY_HUNTEST_MAX_ITER); PRIOCHNG lowers the priority but no
              * pre-emption point is taken. If the bound is hit, the pass ends and the
-             * next pass resumes HUNTEST from the current LEWD/DLEWD.
-             *
-             * FUNCTION NAME: step_sidetrak
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+             * next pass resumes HUNTEST from the current LEWD/DLEWD. */
         {
             agc_entry_state_t *es = p->es; /* entry erasables */
 
@@ -2083,22 +1899,8 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
     switch ((int) s)
     {
         case ST_GOTOUPSY:
-            /**********************************************************************
-             * GOTOUPSY (p. 864): RTB P65 (mode, N69 display job), GOTOADDR = UPCONTRL,
-             * REFAZE10 -> UPCONTRL.
-             *
-             * FUNCTION NAME: step_gotoupsy
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* GOTOUPSY (p. 864): RTB P65 (mode, N69 display job), GOTOADDR = UPCONTRL,
+             * REFAZE10 -> UPCONTRL. */
         {
             p->status = entry_upcontrol(p->es); /* still OK on entry to a step */
 
@@ -2107,21 +1909,7 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
         case ST_UPCONTRL:
             return (step_upcontrl(p));
         case ST_UPCONTROL_DRAG_TEST:
-            /**********************************************************************
-             * CONT1 (p. 864): L/D = LAD while D >= A0.
-             *
-             * FUNCTION NAME: step_upcontrol_drag_test
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* CONT1 (p. 864): L/D = LAD while D >= A0. */
         {
             if (agc_dp_sub(p->ip, p->es->d, p->es->a0) < 0)
             {
@@ -2135,21 +1923,7 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
         case ST_UPCONTROL_REFERENCE:
             return (step_upcontrol_reference(p));
         case ST_UPCONTROL_Q7MIN_TEST:
-            /**********************************************************************
-             * CONTINU2 (p. 865): FACTOR = (D - Q7)/(A1 - Q7) when D >= Q7MIN.
-             *
-             * FUNCTION NAME: step_upcontrol_q7min_test
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* CONTINU2 (p. 865): FACTOR = (D - Q7)/(A1 - Q7) when D >= Q7MIN. */
         {
             agc_interp_t      *ip = p->ip;                                /* interpreter state */
             agc_entry_state_t *es = p->es;                                /* entry erasables */
@@ -2173,21 +1947,7 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
         case ST_DCONSTD:
             return (step_dconstd(p));
         case ST_BECONSTD:
-            /**********************************************************************
-             * BECONSTD (p. 867): GOTOADDR = HUNTEST, RTB KILLGRP4.
-             *
-             * FUNCTION NAME: step_beconstd
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* BECONSTD (p. 867): GOTOADDR = HUNTEST, RTB KILLGRP4. */
         {
             p->es->gotoaddr = AGC_ENTRY_GOTO_HUNTEST;
 
@@ -2203,22 +1963,8 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
             return (ST_CONSTD);
         }
         case ST_CONSTD:
-            /**********************************************************************
-             * CONSTD (p. 867): RDOTREF = -2 HS D0/V, L/D = (C/D0 LEQ + K2D (RDOT -
-             * RDOTREF) + K1D (D - D0)) 2^8.
-             *
-             * FUNCTION NAME: step_constd
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* CONSTD (p. 867): RDOTREF = -2 HS D0/V, L/D = (C/D0 LEQ + K2D (RDOT -
+             * RDOTREF) + K1D (D - D0)) 2^8. */
         {
             agc_interp_t      *ip = p->ip; /* interpreter state */
             agc_entry_state_t *es = p->es; /* entry erasables */
@@ -2237,21 +1983,7 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
             return (ST_CONSTANT_DRAG_LD);
         }
         case ST_CONSTANT_DRAG_LD:
-            /**********************************************************************
-             * CONSTD1 (p. 867): L/D = (K1D (D - DREF) + push) SL 8, then NEGTESTS.
-             *
-             * FUNCTION NAME: step_constant_drag_ld
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* CONSTD1 (p. 867): L/D = (K1D (D - DREF) + push) SL 8, then NEGTESTS. */
         {
             agc_interp_t *ip = p->ip; /* interpreter state */
 
@@ -2295,21 +2027,7 @@ static entry_step_t entry_ballistic_step(entry_pass_t *p, entry_step_t s)
     switch ((int) s)
     {
         case ST_KEP:
-            /**********************************************************************
-             * KEP (p. 869): RTB P66, GOTOADDR = KEP2.
-             *
-             * FUNCTION NAME: step_kep
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* KEP (p. 869): RTB P66, GOTOADDR = KEP2. */
         {
             const agc_status_t st = entry_ballistic(p->es);
 
@@ -2368,21 +2086,7 @@ static entry_step_t entry_final_phase_step(entry_pass_t *p, entry_step_t s)
         case ST_GLIMITER:
             return (step_glimiter(p));
         case ST_GOPOSLAD:
-            /**********************************************************************
-             * GOPOSLAD (p. 872): L/D = LAD.
-             *
-             * FUNCTION NAME: step_goposlad
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* GOPOSLAD (p. 872): L/D = LAD. */
         {
             p->es->l_d = p->es->lad;
 
@@ -2391,22 +2095,8 @@ static entry_step_t entry_final_phase_step(entry_pass_t *p, entry_step_t s)
         case ST_LIMITLD:
             return (step_limitld(p));
         case ST_LATERAL_SWITCH:
-            /**********************************************************************
-             * L353 (p. 873): switch K2ROLL when LATANG SIGN(K2ROLL) - Y >= 0, unless
-             * NOSWITCH (BONCLR: tested and cleared).
-             *
-             * FUNCTION NAME: step_lateral_switch
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* L353 (p. 873): switch K2ROLL when LATANG SIGN(K2ROLL) - Y >= 0, unless
+             * NOSWITCH (BONCLR: tested and cleared). */
         {
             agc_entry_state_t *es = p->es; /* entry erasables */
             agc_dp_t           m;          /* MPAC, B0 */
@@ -2432,43 +2122,15 @@ static entry_step_t entry_final_phase_step(entry_pass_t *p, entry_step_t s)
         case ST_ROLL_COMMAND:
             return (step_roll_command(p));
         case ST_LATERAL_MIN_LD:
-            /**********************************************************************
-             * L357 (p. 875): L/D1 = L/DCMINR SIGN(L/D).
-             *
-             * FUNCTION NAME: step_lateral_min_ld
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* L357 (p. 875): L/D1 = L/DCMINR SIGN(L/D). */
         {
             p->es->l_d1 = agc_dp_sign(p->es->l_dcminr, p->es->l_d);
 
             return (ST_ROLL_COMMAND);
         }
         case ST_STEEROFF:
-            /**********************************************************************
-             * STEEROFF (p. 875): V < VQUIT. Start P67.1 (N67 flashing), restart 4.41
-             * and 5.3, GOTOADDR = P67.2 and continue there.
-             *
-             * FUNCTION NAME: step_steeroff
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* STEEROFF (p. 875): V < VQUIT. Start P67.1 (N67 flashing), restart 4.41
+             * and 5.3, GOTOADDR = P67.2 and continue there. */
         {
             agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REESTABLISH_ENTRY_SEQUENCER, AGC_TASK_NONE, 0, false, 0U };
 
@@ -2485,22 +2147,8 @@ static entry_step_t entry_final_phase_step(entry_pass_t *p, entry_step_t s)
             return (ST_FINAL_PHASE_LATLONG);
         }
         case ST_FINAL_PHASE_LATLONG:
-            /**********************************************************************
-             * P67.2 (P61-P67.agc p. 802): present LAT, LONG, ALT (pad radius, earth),
-             * then P67.3: SERVNOUT without display.
-             *
-             * FUNCTION NAME: step_final_phase_latlong
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------------
-             *   p         entry_pass_t *  IO   state of this guidance pass:
-             *                                  interpreter, entry erasables, MPAC and
-             *                                  push-down words
-             *
-             * RETURNS: entry_step_t -- the step the AGC branches to next (its label),
-             *          or ST_ERROR when an assertion fails
-             **********************************************************************/
+            /* P67.2 (P61-P67.agc p. 802): present LAT, LONG, ALT (pad radius, earth),
+             * then P67.3: SERVNOUT without display. */
         {
             p->status = agc_entry_final_phase_latlong();
 

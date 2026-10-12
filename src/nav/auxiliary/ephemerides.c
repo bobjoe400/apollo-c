@@ -281,23 +281,10 @@ agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph, 
         return (st);
     }
 
-    /**********************************************************************
-     * VEM / VEMA (Comanche055 LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc
+    /* VEM / VEMA (Comanche055 LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES.agc
      *   p. 787, labels VEM, VEMA) -- moon velocity, the derivative of the
      *   REM polynomial: ((9 a9 t + 8 a8) t + ... ) t + 1 a1, multipliers n
-     *   at scale 2^4 (NINEB4 counting down by ONEB4), then VSL2
-     *
-     * FUNCTION NAME: ephem_vem
-     *
-     * ARGUMENTS:
-     *   Argument  Type                     I/O  Description (scale)
-     *   --------  -----------------------  ---  ---------------------------
-     *   ip        agc_interp_t *           I/O  interpreter state
-     *   eph       const agc_ephem_csm_t *  I    VECOEM (scales in the type)
-     *   t26       agc_dp_t                 I    t, cs scale 2^26
-     *
-     * RETURNS: agc_vec_t -- moon velocity, earth-centred, scale 2^7 m/cs
-     **********************************************************************/
+     *   at scale 2^4 (NINEB4 counting down by ONEB4), then VSL2 */
     agc_dp_t  n = NINEB4;                               /* n, scale 2^4 */
     agc_vec_t v = agc_vec_scale(ip, eph->vecoem[0], n); /* sum, 2^9 m/cs */
 

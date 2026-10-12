@@ -169,18 +169,10 @@ agc_status_t agc_radar_powered_flight_designate(void)
         return (st);
     }
 
-    /**********************************************************************
-     * R29.LOS / SETUP29D (pp.597-598): LOS = R(CSM) - R + (V(CSM) - V)(T -
+    /* R29.LOS / SETUP29D (pp.597-598): LOS = R(CSM) - R + (V(CSM) - V)(T -
      * PIPTIME), handed to the designate loop when it is ready for new data
      * (LOSCMFLG off); start the loop (BEGDES29) if it is not requested.
-     * AGC: R29.LOS, SETUP29D (P20-P25.agc pp.597-598)
-     *
-     * FUNCTION NAME: pfd_los
-     *
-     * ARGUMENTS: none
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, else the waitlist status
-     **********************************************************************/
+     * AGC: R29.LOS, SETUP29D (P20-P25.agc pp.597-598) */
     {
         agc_guid_t *g  = agc_guid_state();                                                             /* servicer erasables */
         uint32_t    dt = (agc_time_now_cs() - (uint32_t) agc_erase_piptime()) & (uint32_t) AGC_DP_MAX; /* cs */
@@ -490,21 +482,11 @@ agc_status_t agc_job_powered_flight_designate(void)
         return (st);
     }
 
-    /**********************************************************************
-     * R29DPAS2: commands to null half the error in .5 s:
+    /* R29DPAS2: commands to null half the error in .5 s:
      *   shaft    = ULOSNB' . (cos S, 0, -sin S)
      *   trunnion = ULOSNB' . (sin S sin T, cos T, cos S sin T), both x
      *   RR29GAIN.
-     * AGC: R29DPAS2 (P20-P25.agc p.603)
-     *
-     * FUNCTION NAME: pfd_commands
-     *
-     * ARGUMENTS:
-     *   Argument  Type                I/O  Description (scale)
-     *   --------  ------------------  ---  ----------------------------
-     *   t         const pfd_trig_t *  I    SP sines and cosines of the RR CDUs
-     *   u         const agc_sp_t      I    ULOSNB of the advanced LOS, 2^1
-     **********************************************************************/
+     * AGC: R29DPAS2 (P20-P25.agc p.603) */
     agc_dp_t shaft; /* 2^2 */
 
     shaft         = agc_sp_mul(t.cos_s, u[0]) + agc_sp_mul((agc_sp_t) -t.sin_s, u[2]);
@@ -513,17 +495,9 @@ agc_status_t agc_job_powered_flight_designate(void)
     agc_erase_set_tang(0, agc_dp_high(agc_sp_mul(agc_dp_high(trun), PFD_GAIN)));
     agc_erase_set_tang(1, agc_dp_high(agc_sp_mul(agc_dp_high(shaft), PFD_GAIN)));
 
-    /**********************************************************************
-     * DGOOD? / R29LOKON / END29DOD (p.604): on RR data good stop designating
+    /* DGOOD? / R29LOKON / END29DOD (p.604): on RR data good stop designating
      * and start the reading task; else send the commands.
-     * AGC: DGOOD?, R29LOKON, END29DOD (P20-P25.agc p.604)
-     *
-     * FUNCTION NAME: pfd_lock_check
-     *
-     * ARGUMENTS: none
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, else the waitlist status
-     **********************************************************************/
+     * AGC: DGOOD?, R29LOKON, END29DOD (P20-P25.agc p.604) */
     agc_status_t st_check = AGC_STATUS_OK; /* status of the last step */
 
     agc_inhint();

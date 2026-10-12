@@ -286,22 +286,10 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
 
-    /**********************************************************************
-     * LRS22.1 conversions: RDOTM = count SL14 x RDOTCONV, RM = count x
+    /* LRS22.1 conversions: RDOTM = count SL14 x RDOTCONV, RM = count x
      * RANGCONV SL2R, RRTRUN / RRSHAFT (CDULOGIC), RRBORSIT = RRNB(TANGNB),
      * and the downlink copy (RANGRDOT, TANGNB).
-     * AGC: LRS22.1 conversions (P20-P25.agc p.570)
-     *
-     * FUNCTION NAME: td_convert
-     *
-     * ARGUMENTS:
-     *   Argument  Type             I/O  Description (scale)
-     *   --------  ---------------  ---  -------------------------------
-     *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
-     *   n         lmnav_state_t *  I/O  the mark data
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, else the RRNB status
-     **********************************************************************/
+     * AGC: LRS22.1 conversions (P20-P25.agc p.570) */
     rr_state_t *s = rr_state(); /* radar erasables */
 
     agc_inhint();

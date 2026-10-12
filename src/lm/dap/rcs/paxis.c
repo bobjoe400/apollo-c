@@ -479,18 +479,7 @@ agc_status_t lm_dap_chkvisfz(bool *policy)
             break; /* ABORTYZ        */
         }
 
-        /**********************************************************************
-         * ALTERYZ (p.1430): flip RCSFLAGS bit 1 and move to a diagonal policy.
-         *
-         * FUNCTION NAME: alteryz
-         *
-         * ARGUMENTS:
-         *   Argument  Type        I/O  Description (scale)
-         *   --------  ----------  ---  --------------------
-         *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-         *
-         * RETURNS: none
-         **********************************************************************/
+        /* ALTERYZ (p.1430): flip RCSFLAGS bit 1 and move to a diagonal policy. */
         d->rcsflags = (uint16_t) (d->rcsflags ^ LM_RCS_ZEROOR1);
         d->rotindex = (agc_sp_t) (d->rotindex + 4 + (int) (d->rcsflags & LM_RCS_ZEROOR1));
     }

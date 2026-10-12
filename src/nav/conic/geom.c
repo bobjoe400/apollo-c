@@ -310,21 +310,8 @@ static getx_next_t getx_inv_wloop(agc_interp_t *ip, const agc_conic_ctx_t *ctx, 
 {
     agc_dp_words_t inv_w_sq = AGC_CONIC_KEPZERO; /* 34D (1/W)^2, 2^-2 */
 
-    /**********************************************************************
-     * 360CHECK / INVRSEQN (CONIC_SUBROUTINES.agc p. 1294) -- near-360-degree
-     * form: 1/W = SNTH / (sqrt(P) (1 + CSTH - SNTH COGA)) and its square
-     *
-     * FUNCTION NAME: getx_invrseqn
-     *
-     * ARGUMENTS:
-     *   Argument  Type                     I/O  Description (scale)
-     *   --------  -----------------------  ---  ---------------------------
-     *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
-     *   ctx       const agc_conic_ctx_t *  I    P, SNTH, CSTH, COGA
-     *   inv_w_sq  agc_dp_words_t *         O    34D (1/W)^2, 2^-2
-     *
-     * RETURNS: agc_dp_words_t -- 0D 1/W, 2^-1
-     *********************************************************************/
+    /* 360CHECK / INVRSEQN (CONIC_SUBROUTINES.agc p. 1294) -- near-360-degree
+     * form: 1/W = SNTH / (sqrt(P) (1 + CSTH - SNTH COGA)) and its square */
     agc_tp_words_t m_invrseqn = agc_mpac_sqrt(agc_mpac_dload(ctx->p)); /* DLOAD P SQRT, 2^2 */
 
     const agc_dp_words_t sqrtp = agc_mpac_store(m_invrseqn); /* PDDL: 0D SQRT P, 2^2 */
@@ -473,20 +460,8 @@ void agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t mpac
         return;
     }
 
-    /**********************************************************************
-     * XCOMMON (CONIC_SUBROUTINES.agc pp. 1293-1294) -- XI, X, XSQ, KEPC1,
-     * KEPC2 from x', and CLEAR INFINFLG
-     *
-     * FUNCTION NAME: getx_xcommon
-     *
-     * ARGUMENTS:
-     *   Argument  Type               I/O  Description (scale)
-     *   --------  -----------------  ---  ---------------------------------
-     *   ip        agc_interp_t *     I/O  interpreter state (OVFIND)
-     *   ctx       agc_conic_ctx_t *  I/O  XI 2^6, X 2^17 / 2^16, XSQ
-     *                                     2^(34-N1), KEPC1 2^17, KEPC2 2^6
-     *   xprime    agc_tp_words_t           I    0D x' from POLYCOEF
-     *********************************************************************/
+    /* XCOMMON (CONIC_SUBROUTINES.agc pp. 1293-1294) -- XI, X, XSQ, KEPC1,
+     * KEPC2 from x', and CLEAR INFINFLG */
     const agc_dp_words_t xp        = agc_mpac_store(xprime); /* 0D x' as pushed */
     int                  n         = 0;                      /* NORM X1 count */
     agc_tp_words_t       m_xcommon = agc_mpac_dsq(xprime);   /* DSQ: x'^2, 2^12 */

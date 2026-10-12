@@ -833,26 +833,8 @@ agc_status_t rte_post_impulse_velocity(agc_interp_t *ip, rte_erasable_t *rs)
         return (st); /* minimum fuel  */
     }
 
-    /**********************************************************************
-     * V2T150 .. V2T300 (pp. 921-923) after the first iterator pass, when a DV
-     * is desired (RTEDVD non-zero).
-     *
-     * FUNCTION NAME: v2t_desired_dv
-     *
-     * ARGUMENTS:
-     *   Argument  Type              I/O  Description (scale)
-     *   --------  ----------------  ---  ------------------------------------
-     *   ip        agc_interp_t *    IO   interpreter state of the job: OVFIND,
-     *                                    DVSIGN, alarms
-     *   rs        rte_erasable_t *  IO   P37 erasables (RTE names, scales in
-     *                                    internal.h)
-     *   pl        rte_v2t_t *       IO   P37 push-down list of the V2(T1) /
-     *                                    TPMODE search
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
-     *          or state assertion fails; otherwise the status of the first
-     *          service call that failed
-     **********************************************************************/
+    /* V2T150 .. V2T300 (pp. 921-923) after the first iterator pass, when a DV
+     * is desired (RTEDVD non-zero). */
     agc_status_t st_dv = AGC_STATUS_OK; /* iterator status */
 
     if (agc_dp_sub(ip, rs->rtedvd, rs->dv) < 0)

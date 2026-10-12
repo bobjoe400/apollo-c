@@ -409,43 +409,17 @@ agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    /**********************************************************************
-     * CM/ATUP, CMTR1, CMTR2 (pp. 887-888): GAMA, GAMDOT, and the body angles
-     * brought from PIPA time to now; restart group 5 at REDOPOSE.
-     *
-     * FUNCTION NAME: entry_cm_atup
-     *
-     * ARGUMENTS:
-     *   Argument  Type            I/O  Description (scale)
-     *   --------  --------------  ---  --------------------------------------
-     *   angles    const agc_dp_t  I    CM/TRIO angles (see agc_entry_cm_trio),
-     *                                  revs B0
-     *
-     * RETURNS: none
-     **********************************************************************/
+    /* CM/ATUP, CMTR1, CMTR2 (pp. 887-888): GAMA, GAMDOT, and the body angles
+     * brought from PIPA time to now; restart group 5 at REDOPOSE. */
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
     agc_phase_var_t    v  = { AGC_RESTART_JOB, AGC_JOB_REDOPOSE, AGC_TASK_NONE, 0, false, 0U };
 
     agc_inhint(); /* until the body angles are updated     */
 
     /* CS 10D */
-    /**********************************************************************
-     * CMTR1 GAMDOT part (p. 887): GAMA = new flight path angle; GAMDOT = (GAMA
+    /* CMTR1 GAMDOT part (p. 887): GAMA = new flight path angle; GAMDOT = (GAMA
      * - old GAMA) TCDU, set to +0 on the first pass (GAMDIFSW clear, then set)
-     * or when below 5 bits (about .5 deg/s).
-     *
-     * FUNCTION NAME: atup_gamdot
-     *
-     * ARGUMENTS:
-     *   Argument  Type                 I/O  Description (scale)
-     *   --------  -------------------  ---  ---------------------------------
-     *   es        agc_entry_state_t *  IO   entry erasables (ENTRY_LEXICON
-     *                                       names)
-     *   gama_new  agc_sp_t             I    new flight path angle (GAMA/180)/2,
-     *                                       B0
-     *
-     * RETURNS: none
-     **********************************************************************/
+     * or when below 5 bits (about .5 deg/s). */
     agc_sp_t gama_new = (agc_sp_t) (-agc_dp_high(angles[3]));
 
     agc_sp_t old = es->gama; /* old GAMA, B0 */

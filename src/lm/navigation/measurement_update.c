@@ -724,20 +724,9 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
             return (mu_rate(ip));
         case MU_SHAFT:
         { /* Shaft (SHAFTBQ p.580): angle = ARCTAN(ULC . MX, ULC . MZ); B0 = UNIT(ULC x MY), complemented if the CSM is corrected. */
-            /**********************************************************************
-             * MXMYMZ (p.579): the NB unit axes at the mark (CDUs AIG AMG AOG) in
+            /* MXMYMZ (p.579): the NB unit axes at the mark (CDUs AIG AMG AOG) in
              * reference axes: M = (UNIT NB ->SM) x REFSMMAT, VSL1.
-             * AGC: MXMYMZ (P20-P25.agc p.579)
-             *
-             * FUNCTION NAME: mu_mxmymz
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------
-             *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
-             *
-             * RETURNS: none (TRG*NBSM cannot fail)
-             **********************************************************************/
+             * AGC: MXMYMZ (P20-P25.agc p.579) */
             lmnav_state_t *n        = lmnav_state();        /* LM navigation erasables */
             agc_mat_t      refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
             agc_cdutrig_t  trig;                            /* CDUTRIG sines / cosines */

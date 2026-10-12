@@ -735,18 +735,9 @@ static agc_status_t td_passes(agc_interp_t *ip, bool at_incorp2)
             if (agc_flag_test(AGC_FLAG_SOURCFLG))
             {
                 /* REND14   */
-                /**********************************************************************
-                 * REND14: the VHF range: B0 = UNIT(RCLP) (complemented if the CSM is
+                /* REND14: the VHF range: B0 = UNIT(RCLP) (complemented if the CSM is
                  * corrected), DELTAQ = VHFRANGE (SR2 in earth orbit) - |RCLP|.
-                 * AGC: REND14, REND14A (P20-P25.agc p.583)
-                 *
-                 * FUNCTION NAME: td_vhf_mark
-                 *
-                 * ARGUMENTS:
-                 *   Argument  Type            I/O  Description (scale)
-                 *   --------  --------------  ---  --------------------------------
-                 *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
-                 **********************************************************************/
+                 * AGC: REND14, REND14A (P20-P25.agc p.583) */
                 agc_dp_t  absr = 0;                                      /* |RCLP|, body scale */
                 agc_vec_t u    = agc_vec_unit(ip, td.rclp, &absr, NULL); /* 2^1 */
 

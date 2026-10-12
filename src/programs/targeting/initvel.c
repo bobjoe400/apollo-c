@@ -327,19 +327,8 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, ag
     { /* INITVEL2     */
         if (w.cozy4 < 0)
         {
-            /**********************************************************************
-             * INITVEL2 rotation (p.488): RC into the RI, VI plane, |RC| kept.
-             * AGC: INITVEL2 (P34-35_P74-75.agc p.488)
-             *
-             * FUNCTION NAME: iv_rotate
-             *
-             * ARGUMENTS:
-             *   Argument  Type            I/O  Description (scale)
-             *   --------  --------------  ---  --------------------------------
-             *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
-             *   w         iv_work_t *     I/O  R2VEC rotated (RTARG1 too on the first
-             *                                  pass), NORMSW set
-             **********************************************************************/
+            /* INITVEL2 rotation (p.488): RC into the RI, VI plane, |RC| kept.
+             * AGC: INITVEL2 (P34-35_P74-75.agc p.488) */
             w.normsw     = true;
             agc_dp_t  rc = rz_abval(ip, w.r2vec); /* |RC|, body scale (m 2^29/27) */
             agc_vec_t p;                          /* RC . UN UN, body scale */
@@ -373,27 +362,9 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, ag
 
         agc_vec_t rend; /* RATT1, body scale */
 
-        /**********************************************************************
-         * INITVEL5 (pp.489-490): precision integration of RINIT, VIPRIME over
+        /* INITVEL5 (pp.489-490): precision integration of RINIT, VIPRIME over
          * DELLT4; VTARGET = VATT1; *rend = RATT1 (body scale).
-         * AGC: INITVEL5 (P34-35_P74-75.agc pp.489-490)
-         *
-         * FUNCTION NAME: iv_integrate
-         *
-         * ARGUMENTS:
-         *   Argument  Type                 I/O  Description (scale)
-         *   --------  -------------------  ---  ---------------------------
-         *   ip        agc_interp_t *       I/O  interpreter state (OVFIND)
-         *   rz        const agc_rendz_t *  I    rendezvous erasables
-         *   w         iv_work_t *          I/O  RINIT, VIPRIME in; VTARGET = VATT1
-         *                                       out
-         *   resume    agc_job_id_t         I    job that continues the caller
-         *   rend      agc_vec_t *          O    RATT1, the integrated end position,
-         *                                       body scale
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status of rz_integrvs
-         *          (sleep, restart)
-         **********************************************************************/
+         * AGC: INITVEL5 (P34-35_P74-75.agc pp.489-490) */
         rz_integrvs_in_t in; /* INTEGRVS inputs */
 
         in.moon  = (rz->body.rtx2 != 0);

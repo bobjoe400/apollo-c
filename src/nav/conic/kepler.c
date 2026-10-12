@@ -344,23 +344,9 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx, kepler_
 
     if (agc_interp_test_ovf(ip))
     { /* BOV TIMEOVFL   */
-        /**********************************************************************
-         * TIMEOVFL, NEGTOVFL, CMNTOVFL (CONIC_SUBROUTINES.agc p. 1281) -- T
+        /* TIMEOVFL, NEGTOVFL, CMNTOVFL (CONIC_SUBROUTINES.agc p. 1281) -- T
          * overflowed, so X was too big: make X a bound, halve DELX and back X
-         * off by it
-         *
-         * FUNCTION NAME: kepler_timeovfl
-         *
-         * ARGUMENTS:
-         *   Argument  Type               I/O  Description (scale)
-         *   --------  -----------------  ---  ---------------------------------
-         *   ip        agc_interp_t *     I/O  interpreter state (OVFIND)
-         *   ctx       agc_conic_ctx_t *  I/O  X backed off; T = TC
-         *   ks        kepler_state_t *   I/O  XMIN or XMAX, DELX halved
-         *
-         * RETURNS: kepler_step_t -- KEPLER_CONTINUE (to BRNCHCTR), or
-         *          KEPLER_KEPRTN when DELX has halved to zero
-         *********************************************************************/
+         * off by it */
         if (agc_conic_mbmn_(agc_mpac_dload(ctx->x)))
         { /* DLOAD X BMN NEGTOVFL */
             ks->xmin = ctx->x;

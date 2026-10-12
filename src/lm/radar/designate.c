@@ -186,23 +186,11 @@ agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *re
 
     if (along_y)
     {
-        /**********************************************************************
-         * RRANGLES failed (LOS along the navigation-base Y axis): LUNDESCH. On
+        /* RRANGLES failed (LOS along the navigation-base Y axis): LUNDESCH. On
          * the surface: no coverage. In rendezvous: NODESSM, maneuver required;
          * else (R29) the job ends. Note: NODESSM re-inverts the mode bit
          * although this path never inverted it (as in the AGC).
-         * AGC: LUNDESCH, NODESSM (P20-P25.agc p.542)
-         *
-         * FUNCTION NAME: rr_lundesch
-         *
-         * ARGUMENTS:
-         *   Argument  Type                         I/O  Description (scale)
-         *   --------  ---------------------------  ---  -------------------
-         *   res       agc_rr_designate_result_t *  O    NO_COVERAGE, MANEUVER or
-         *                                               END_JOB
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK
-         **********************************************************************/
+         * AGC: LUNDESCH, NODESSM (P20-P25.agc p.542) */
         if (agc_flag_test(AGC_FLAG_SURFFLAG))
         {
             rr_nordstal();

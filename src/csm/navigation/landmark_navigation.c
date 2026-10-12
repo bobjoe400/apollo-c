@@ -997,22 +997,9 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
             return (ln_next());
         }
 
-        /**********************************************************************
-         * S22BOX22, a known landmark: the landmark rows of W from S22WSUBL; RL
+        /* S22BOX22, a known landmark: the landmark rows of W from S22WSUBL; RL
          * from LAT LONG ALT at TF (LALOTORV, SL2 in the moon's sphere).
-         * AGC: S22BOX22, S22BX22B (P20-P25.agc p.604)
-         *
-         * FUNCTION NAME: ln_known_landmark
-         *
-         * ARGUMENTS:
-         *   Argument  Type            I/O  Description (scale)
-         *   --------  --------------  ---  --------------------------------
-         *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
-         *   rl        agc_vec_t *     O    RL from LAT LONG ALT, body scale
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, else the pad, LAT-LONG or
-         *          LALOTORV status
-         **********************************************************************/
+         * AGC: S22BOX22, S22BX22B (P20-P25.agc p.604) */
         agc_incorp_w_t *w = &agc_integ_shared_ctx()->w; /* W matrix */
 
         for (int m = 0; m < LN_ROWS; m++)
@@ -1059,21 +1046,9 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (st);
     }
 
-    /**********************************************************************
-     * S22BOX32: X789 = RL; first pass; RCLP = RL - RC; USTAR =
+    /* S22BOX32: X789 = RL; first pass; RCLP = RL - RC; USTAR =
      * UNIT(UNIT(RCLP) x UM). False on an overflow (the mark is skipped).
-     * AGC: S22BOX32 (P20-P25.agc p.605)
-     *
-     * FUNCTION NAME: ln_landmark_first_pass
-     *
-     * ARGUMENTS:
-     *   Argument  Type            I/O  Description (scale)
-     *   --------  --------------  ---  --------------------------------
-     *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
-     *   rl        agc_vec_t       I    RL, the landmark, body scale
-     *
-     * RETURNS: bool -- false on an overflow (the mark is skipped)
-     **********************************************************************/
+     * AGC: S22BOX32 (P20-P25.agc p.605) */
     agc_erase_set_x789(rl);
     rz_flag_put(AGC_FLAG_INCORFLG, true);
     agc_interp_clear_ovf(ip);

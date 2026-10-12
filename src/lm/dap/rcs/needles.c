@@ -84,18 +84,8 @@ agc_status_t lm_dap_altdsply(void)
 
     if (agc_flag_test(AGC_FLAG_NEEDLFLG))
     { /* total attitude error   */
-        /**********************************************************************
-         * DSPLYTOT (pp.1415-1416): desired minus present gimbal angles resolved
-         * into pilot axes (M13 = 1), each limited by OVERSUB2. At pi rad.
-         *
-         * FUNCTION NAME: lm_dap_dsplytot
-         *
-         * ARGUMENTS: none
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
-         *          failed assertion, else the status of the routine it
-         *          ends in
-         **********************************************************************/
+        /* DSPLYTOT (pp.1415-1416): desired minus present gimbal angles resolved
+         * into pilot axes (M13 = 1), each limited by OVERSUB2. At pi rad. */
         lm_dap_t *d_dsplytot = lm_dap_state();                                    /* DAP erasables */
         agc_sp_t  ydif       = lm_dap_msu(agc_erase_thetad(1), agc_erase_cduy()); /* CTHETA-CDUY, scaled pi rad */
         agc_sp_t  zdif       = lm_dap_msu(agc_erase_thetad(2), agc_erase_cduz()); /* CPSI-CDUZ, scaled pi rad */
@@ -142,21 +132,8 @@ agc_status_t lm_dap_needler(void)
         { /* first pass         */
             agc_chan_and(012, (uint16_t) ~NDL_IMUERR & 077777u);
 
-            /**********************************************************************
-             * NEEDLE11 (p.1418): first pass -- zero inputs, display registers and
-             * the error counters; next pass enables the counters.
-             *
-             * FUNCTION NAME: needles_first_pass
-             *
-             * ARGUMENTS:
-             *   Argument  Type        I/O  Description (scale)
-             *   --------  ----------  ---  --------------------
-             *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-             *
-             * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
-             *          failed assertion, else the status of the routine it
-             *          ends in
-             **********************************************************************/
+            /* NEEDLE11 (p.1418): first pass -- zero inputs, display registers and
+             * the error counters; next pass enables the counters. */
             agc_status_t st = AGC_STATUS_OK; /* a failing CDU drive status replaces st */
 
             for (int i = 0; i < 3; i++)
@@ -196,21 +173,8 @@ agc_status_t lm_dap_needler(void)
         return (AGC_STATUS_OK);
     }
 
-    /**********************************************************************
-     * NEEDLES / DACLOOP (p.1419): meter the change of each display into the
-     * IMU error counter, limited to +-384 bits.
-     *
-     * FUNCTION NAME: needles
-     *
-     * ARGUMENTS:
-     *   Argument  Type        I/O  Description (scale)
-     *   --------  ----------  ---  --------------------
-     *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
-     *          failed assertion, else the status of the routine it
-     *          ends in
-     **********************************************************************/
+    /* NEEDLES / DACLOOP (p.1419): meter the change of each display into the
+     * IMU error counter, limited to +-384 bits. */
     {
         if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
         {

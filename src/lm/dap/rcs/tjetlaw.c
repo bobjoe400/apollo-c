@@ -272,21 +272,9 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
     if (g > 0)
     {
         /* ZONE4          */
-        /**********************************************************************
-         * ZONE4 / JETSON / DRIFT/ON (p.1463): the coast region, but jets already
+        /* ZONE4 / JETSON / DRIFT/ON (p.1463): the coast region, but jets already
          * firing toward the target stay on if the target (axis strip when
-         * drifting, parabola when powered) can still be reached.
-         *
-         * FUNCTION NAME: zone_coast_jets_on
-         *
-         * ARGUMENTS:
-         *   Argument  Type              I/O  Description (scale)
-         *   --------  ----------------  ---  --------------------
-         *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-         *   w         tjl_t *           I/O  working cells of this computation
-         *
-         * RETURNS: agc_sp_t -- jet time, scaled 4 s
-         **********************************************************************/
+         * drifting, parabola when powered) can still be reached. */
         agc_sp_t tj = d->tj[d->axisctr + 1]; /* TJ of the axis now, scaled 0.625 ms per count */
 
         if (lm_dap_mphi((agc_sp_t) -tj, w->rotsense) <= 0)
@@ -316,22 +304,8 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
 
     /* ZONE5: TS L of an overflowed A would store the wrapped word and skip;
      * unreachable (rough law takes large E, EDOT), so sat = wrap here.     */
-    /**********************************************************************
-     * ZONE5 (pp.1463-1465): between the coast and fire curves; TJET from
-     * H = 4 f ACCFCTZ5 and TTOAXIS = 1/ANET2 EDOT by FORMULA1/2 or FULLTIME.
-     *
-     * FUNCTION NAME: zone_between_curves
-     *
-     * ARGUMENTS:
-     *   Argument  Type              I/O  Description (scale)
-     *   --------  ----------------  ---  --------------------
-     *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-     *   w         tjl_t *           I/O  working cells of this computation
-     *   f         agc_sp_t          I    distance below the coast curve, scaled
-     *                                    pi/4
-     *
-     * RETURNS: agc_sp_t -- jet time, scaled 4 s
-     **********************************************************************/
+    /* ZONE5 (pp.1463-1465): between the coast and fire curves; TJET from
+     * H = 4 f ACCFCTZ5 and TTOAXIS = 1/ANET2 EDOT by FORMULA1/2 or FULLTIME. */
     agc_sp_t f_curves = lm_dap_sat(g);
 
     if (w->rotsense < 0)
@@ -545,20 +519,8 @@ agc_status_t lm_dap_tjetlaw(void)
 
         if (pd.hi != 0)
         {
-            /**********************************************************************
-             * RUFLAW3 (p.1469): |EDOT| >= pi/32 rad/s, E at pi/4. Fire full time if
-             * above the switch curve 1/ANET EDOT^2 + E - FIREDB = 0, else coast.
-             *
-             * FUNCTION NAME: rough_law_large_rate
-             *
-             * ARGUMENTS:
-             *   Argument  Type        I/O  Description (scale)
-             *   --------  ----------  ---  --------------------
-             *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-             *   w         tjl_t *     I/O  working cells of this computation
-             *
-             * RETURNS: agc_sp_t -- jet time: FULLTIME or 0, scaled 4 s
-             **********************************************************************/
+            /* RUFLAW3 (p.1469): |EDOT| >= pi/32 rad/s, E at pi/4. Fire full time if
+             * above the switch curve 1/ANET EDOT^2 + E - FIREDB = 0, else coast. */
             rufsetup(d, &w, true);
             agc_sp_t dist = lm_dap_wrap((int32_t) d->e - blk(d, LM_BK_FIREDB, w.adr1)); /* E - FIREDB, scaled pi/4 rad */
             agc_sp_t t    = lm_dap_mphi(dist, TJ_BIT11);                                /* distance from the switch curve, scaled 4 pi rad */

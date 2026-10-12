@@ -255,23 +255,9 @@ agc_status_t agc_job_csi_after_tcsi(agc_job_ctx_t *ctx)
 
     if (!rz_is_csm() && agc_dp_neg(rz->tcsi) >= 0)
     {
-        /**********************************************************************
-         * LM VN0611 (p.~): TCSI <= 0 -> TCSI = time of the next apocenter of the
+        /* LM VN0611 (p.~): TCSI <= 0 -> TCSI = time of the next apocenter of the
          * LM state (PRECSET at TETLEM, TIMERAD to DPPOSMAX), V06N11 again.
-         * AGC: VN0611 (P32-P35_P72-P75.agc p.621)
-         *
-         * FUNCTION NAME: csi_lm_auto_tcsi
-         *
-         * ARGUMENTS:
-         *   Argument  Type             I/O  Description (scale)
-         *   --------  ---------------  ---  -------------------------------
-         *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
-         *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
-         *   rz        agc_rendz_t *    I/O  rendezvous erasables
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
-         *          argument, else the status of the call that failed
-         **********************************************************************/
+         * AGC: VN0611 (P32-P35_P72-P75.agc p.621) */
         agc_status_t st; /* PRECSET */
 
         st = rz_precset(&ip, rz, agc_erase_tetlem(), AGC_JOB_CSI_AFTER_TCSI);
@@ -456,23 +442,9 @@ agc_status_t agc_job_csi_compute(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    /**********************************************************************
-     * P32/P72C .. P32/P72F (pp.653-654): UPDATFLG unless final, the times
+    /* P32/P72C .. P32/P72F (pp.653-654): UPDATFLG unless final, the times
      * modulo one hour, V06N75.
-     * AGC: P32/P72C .. P32/P72F (P32-P33_P72-P73.agc pp.653-654)
-     *
-     * FUNCTION NAME: csi_results
-     *
-     * ARGUMENTS:
-     *   Argument  Type             I/O  Description (scale)
-     *   --------  ---------------  ---  -------------------------------
-     *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
-     *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
-     *   rz        agc_rendz_t *    I/O  rendezvous erasables
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
-     *          argument, else the status of the call that failed
-     **********************************************************************/
+     * AGC: P32/P72C .. P32/P72F (P32-P33_P72-P73.agc pp.653-654) */
     if (!agc_flag_test(AGC_FLAG_FINALFLG))
     {
         agc_flag_set(AGC_FLAG_UPDATFLG);

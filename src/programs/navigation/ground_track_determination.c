@@ -200,24 +200,8 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
 
     if (rz_vflag_test(RZ_VF_GROUND_TRACK))
     { /* BON P21CONT   */
-        /**********************************************************************
-         * P21CONT (p.457-458): INTEGRVS from the saved base vector.
-         * AGC: P21CONT (GROUND_TRACKING_DETERMINATION_PROGRAM.agc pp.457-458)
-         *
-         * FUNCTION NAME: gtd_from_base
-         *
-         * ARGUMENTS:
-         *   Argument  Type                 I/O  Description (scale)
-         *   --------  -------------------  ---  ---------------------------
-         *   ip        agc_interp_t *       I/O  interpreter state (OVFIND)
-         *   ic        agc_integ_ctx_t *    I/O  integration erasables (RCV VCV TET
-         *                                       in)
-         *   rz        const agc_rendz_t *  I    rendezvous erasables
-         *   tdec1     agc_dp_t             I    TDEC1, time to integrate to, cs
-         *                                       2^28
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, else the INTEGRVS status
-         **********************************************************************/
+        /* P21CONT (p.457-458): INTEGRVS from the saved base vector.
+         * AGC: P21CONT (GROUND_TRACKING_DETERMINATION_PROGRAM.agc pp.457-458) */
         ic->sv.rcv = rz->ground_track_base_r;
         ic->sv.vcv = rz->ground_track_base_v;
         ic->sv.tet = rz->ground_track_time;
@@ -245,20 +229,9 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
 
     agc_integ_out_t o = ic->out; /* integration result */
 
-    /**********************************************************************
-     * P21VSAVE (p.458): save the base vector, |V|, gamma, P21ORIG; P21FLAG
+    /* P21VSAVE (p.458): save the base vector, |V|, gamma, P21ORIG; P21FLAG
      * set (LM: not for its own state on the surface).
-     * AGC: P21VSAVE (GROUND_TRACKING_DETERMINATION_PROGRAM.agc p.458)
-     *
-     * FUNCTION NAME: gtd_save_base
-     *
-     * ARGUMENTS:
-     *   Argument  Type                     I/O  Description (scale)
-     *   --------  -----------------------  ---  -----------------------
-     *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
-     *   rz        agc_rendz_t *            I/O  rendezvous erasables
-     *   o         const agc_integ_out_t *  I    the integration result
-     **********************************************************************/
+     * AGC: P21VSAVE (GROUND_TRACKING_DETERMINATION_PROGRAM.agc p.458) */
     rz->ground_track_time   = o.tat;
     rz->ground_track_base_r = o.ratt1;
     rz->ground_track_base_v = o.vatt1;
@@ -273,25 +246,9 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
         rz_vflag_set(RZ_VF_GROUND_TRACK, true);
     }
 
-    /**********************************************************************
-     * P21DSP (p.458): LAT-LONG of RATT at TAT (LUNAFLAG from X2, ERADFLAG
+    /* P21DSP (p.458): LAT-LONG of RATT at TAT (LUNAFLAG from X2, ERADFLAG
      * clear), P21ALT = ALT x .01; V06N43 flashing.
-     * AGC: P21DSP (GROUND_TRACKING_DETERMINATION_PROGRAM.agc p.458)
-     *
-     * FUNCTION NAME: gtd_display
-     *
-     * ARGUMENTS:
-     *   Argument  Type                     I/O  Description (scale)
-     *   --------  -----------------------  ---  -----------------------
-     *   ctx       const agc_job_ctx_t *    I    job context of the calling job
-     *   ip        agc_interp_t *           I/O  interpreter state (OVFIND)
-     *   rz        agc_rendz_t *            I/O  rendezvous erasables
-     *   o         const agc_integ_out_t *  I    the integration result (RATT,
-     *                                           TAT, X2)
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
-     *          argument, else the status of the call that failed
-     **********************************************************************/
+     * AGC: P21DSP (GROUND_TRACKING_DETERMINATION_PROGRAM.agc p.458) */
     agc_latlong_opt_t opt; /* LUNAFLAG ERADFLAG */
 
     opt.lunar                       = (o.x2 != 0);

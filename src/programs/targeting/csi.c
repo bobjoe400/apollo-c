@@ -1012,21 +1012,11 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
         switch (l)
         {
             case CSI_L_B:
-                /**********************************************************************
-                 * CSI/B (p.665): first estimate of the CSI horizontal delta V
+                /* CSI/B (p.665): first estimate of the CSI horizontal delta V
                  * DELVCSI = sqrt(2 MU / ((1 + RA1/RP3) RA1)) - VA1 . UH1, DELDV = 10 fps.
                  * (Velocity at RA1 of an ellipse with apocenter RP3, minus the present
                  * horizontal velocity.)
-                 * AGC: CSI/B (P32-P33_P72-P73.agc p.665)
-                 *
-                 * FUNCTION NAME: csi_b
-                 *
-                 * ARGUMENTS:
-                 *   Argument  Type            I/O  Description (scale)
-                 *   --------  --------------  ---  --------------------------------
-                 *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
-                 *   rz        agc_rendz_t *   I/O  rendezvous erasables
-                 **********************************************************************/
+                 * AGC: CSI/B (P32-P33_P72-P73.agc p.665) */
             {
                 agc_dp_t ra1  = rz_abval(ip, rz->ract1);                /* 0D B29     */
                 int      x2   = 0;                                      /* NORM index, -(left shifts) */

@@ -553,16 +553,10 @@ static agc_status_t rd_scaled(uint16_t scale_bit, bool lr)
     { /* SCALADJ: high scale  */
         if (lr)
         {
-            /**********************************************************************
-             * LRSCK (p.559): LR altitude on high scale: SCALBAD when the reading is
+            /* LRSCK (p.559): LR altitude on high scale: SCALBAD when the reading is
              * below 2481.7 ft (the low scale discrete should be present); the high
              * scale reading is 5 times the low scale count.
-             * AGC: LRSCK (P20-P25.agc p.559)
-             *
-             * FUNCTION NAME: rd_lr_scale
-             *
-             * ARGUMENTS: none
-             **********************************************************************/
+             * AGC: LRSCK (P20-P25.agc p.559) */
             {
                 bool low; /* SCALBAD */
 

@@ -302,22 +302,9 @@ agc_status_t agc_lm_dap_t6jobchk(void)
         return (AGC_STATUS_BAD_ARG); /* DEVIATION: AGC hangs here */
     }
 
-    /**********************************************************************
-     * T6JOB (p.1404): a T6RUPT is due. Shift the list up one, restart TIME6
+    /* T6JOB (p.1404): a T6RUPT is due. Shift the list up one, restart TIME6
      * if the next entry is a real time (<= 511 counts), then write the queued
-     * jets of the axis whose firing just ended.
-     *
-     * FUNCTION NAME: t6job
-     *
-     * ARGUMENTS:
-     *   Argument  Type        I/O  Description (scale)
-     *   --------  ----------  ---  --------------------
-     *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
-     *          failed assertion, else the status of the routine it
-     *          ends in
-     **********************************************************************/
+     * jets of the axis whose firing just ended. */
     lm_dap_t *d = lm_dap_state();
 
     agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */

@@ -514,22 +514,11 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
     }
     else
     {
-        /**********************************************************************
-         * LM NTARGCHK: add the differences of the six words of DELVLVC and its
+        /* LM NTARGCHK: add the differences of the six words of DELVLVC and its
          * saved copy GDT/2. DEVIATION: the AGC sums ones' complement SP words
          * with ADS (overflow wraps); here the sum is exact, which only differs
          * when the word differences overflow 14 bits and cancel.
-         * AGC: NTARGCHK (Luminary099 P32-P35_P72-P75.agc)
-         *
-         * FUNCTION NAME: rz_ntargchk
-         *
-         * ARGUMENTS:
-         *   Argument  Type                 I/O  Description (scale)
-         *   --------  -------------------  ---  ---------------------------
-         *   rz        const agc_rendz_t *  I    rendezvous erasables
-         *
-         * RETURNS: bool -- true when the crew changed DELVLVC (word sum non-zero)
-         **********************************************************************/
+         * AGC: NTARGCHK (Luminary099 P32-P35_P72-P75.agc) */
         int32_t sum = 0; /* word differences */
 
         for (int i = 0; i < AGC_VEC_N; i++)

@@ -119,22 +119,10 @@ static void iterator_run(agc_interp_t *ip, agc_iterator_t *it)
     { /* BONCLR SLOPESW */
         it->slopesw = false;
 
-        /**********************************************************************
-         * FIRSTIME (CONIC_SUBROUTINES.agc pp. 1285-1286) -- first step
+        /* FIRSTIME (CONIC_SUBROUTINES.agc pp. 1285-1286) -- first step
          * (MAX - MIN) TWEEKIT with the sign of DELDEP. TWEEKIT is read as a DP
          * word: 40D = TWEEKIT and 41D = S2, which GETX has just set to 1 ("S2(41D)
-         * SHOULDNT CONTAIN HI ORDER ONES").
-         *
-         * FUNCTION NAME: iterator_firstime
-         *
-         * ARGUMENTS:
-         *   Argument  Type                    I/O  Description (scale)
-         *   --------  ----------------------  ---  -----------------------------
-         *   ip        agc_interp_t *          I/O  interpreter state (OVFIND)
-         *   it        const agc_iterator_t *  I    MAX, MIN, TWEEKIT, DELDEP
-         *
-         * RETURNS: agc_tp_words_t -- trial DELINDEP, scale of INDEP
-         *********************************************************************/
+         * SHOULDNT CONTAIN HI ORDER ONES"). */
         const agc_dp_words_t tw         = {it->tweekit, 1};                          /* (TWEEKIT, S2), 2^0 */
         agc_tp_words_t       m_firstime = agc_mpac_dmp(agc_mpac_dload(it->min), tw); /* DMP: scale of INDEP */
         const agc_dp_words_t lo         = agc_mpac_store(m_firstime);                /* 0D MIN TWEEKIT, scale of INDEP */

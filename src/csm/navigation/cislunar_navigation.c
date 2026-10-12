@@ -566,21 +566,10 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
 
     if (st == AGC_STATUS_OK)
     {
-        /**********************************************************************
-         * RECT.1 (p.630): the CSM state from the permanent conic + deviation
+        /* RECT.1 (p.630): the CSM state from the permanent conic + deviation
          * at 2^29 / 2^7 (SR2 from the moon scale); ZMEASURE when the measured
          * body is not the primary body.
-         * AGC: RECT.1 (P20-P25.agc p.630)
-         *
-         * FUNCTION NAME: cn_rect
-         *
-         * ARGUMENTS:
-         *   Argument  Type            I/O  Description (scale)
-         *   --------  --------------  ---  --------------------------------
-         *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
-         *
-         * RETURNS: agc_status_t -- the permanent state status
-         **********************************************************************/
+         * AGC: RECT.1 (P20-P25.agc p.630) */
         bool moon_rect = agc_flag_test(AGC_FLAG_CMOONFLG); /* moon sphere */
         int  x2        = 0;                                /* X2: earth */
 
@@ -1201,26 +1190,14 @@ agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ct
 
     if (st == AGC_STATUS_OK) /* BUSY: asleep in INTSTALL  */
     {
-        /**********************************************************************
-         * R23.55 .. R23.53 (pp.625-626)
+        /* R23.55 .. R23.53 (pp.625-626)
          * The star-landmark (horizon) angle corrected for aberration: UCLSTAR =
          * UNIT(UNIT(RCLL) + VZC/c), USSTAR = UNIT(US + (VZC - VESO)/c); B0 =
          * UNIT(USSTAR - cos(Q) UCLSTAR); DELTAQ = (trunnion - TRUNBIAS (SR3) +
          * 19.77 deg - Q) |RCLL| PI/4 SL3 (SL2 more in the moon's sphere);
          * VARIANCE = |RCLL|^2 TRUNVAR + VARSUBL3; INCORP1 (6x6) and the noun 49
          * values.
-         * AGC: R23.55 .. R23.53 (P20-P25.agc pp.625-626)
-         *
-         * FUNCTION NAME: cn_measure
-         *
-         * ARGUMENTS:
-         *   Argument  Type            I/O  Description (scale)
-         *   --------  --------------  ---  --------------------------------
-         *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, else the ephemeris or INCORP1
-         *          status
-         **********************************************************************/
+         * AGC: R23.55 .. R23.53 (P20-P25.agc pp.625-626) */
         agc_dp_t  r2 = 0; /* 32D |RCLL|^2, m^2 2^58 */
         agc_dp_t  r1 = 0; /* 30D |RCLL|, m 2^29 */
         agc_vec_t u;      /* UNIT RCLL, 2^1 */

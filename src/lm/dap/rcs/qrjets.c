@@ -352,24 +352,10 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
 
     if (d->abstj - QJ_150MS <= 0)
     {
-        /**********************************************************************
-         * DOSKIP / NOTMIN (pp.1453-1455): a firing of 150 ms or less is timed by
+        /* DOSKIP / NOTMIN (pp.1453-1455): a firing of 150 ms or less is timed by
          * JTLST and the next pass of this axis is skipped. Under 14 ms becomes a
          * one-jet 14 ms minimum impulse, on the side translation prefers (or
-         * chosen by the low bit of LOSCALAR).
-         *
-         * FUNCTION NAME: doskip
-         *
-         * ARGUMENTS:
-         *   Argument  Type        I/O  Description (scale)
-         *   --------  ----------  ---  --------------------
-         *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-         *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
-         *          failed assertion, else the status of the routine it
-         *          ends in
-         **********************************************************************/
+         * chosen by the low bit of LOSCALAR). */
         if (!AGC_ASSERT(axis == 0 || axis == 1))
         {
             return (AGC_STATUS_BAD_ARG); /* U or V only */
@@ -603,22 +589,7 @@ agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
                 st = body_backhand(d, axis, &end);
                 break;
             case LM_UV_MINRTN:
-                /**********************************************************************
-                 * MINRTN / MIMRET (pp.1445-1446): minimum impulse; 60 ms when docked.
-                 *
-                 * FUNCTION NAME: body_minrtn
-                 *
-                 * ARGUMENTS:
-                 *   Argument  Type        I/O  Description (scale)
-                 *   --------  ----------  ---  --------------------
-                 *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-                 *   axis      int         I    U,V axis: 0 = U, 1 = V (AXISCTR)
-                 *   end       bool *      O    true when XTRANS has already ended the pass
-                 *
-                 * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
-                 *          failed assertion, else the status of the routine it
-                 *          ends in
-                 **********************************************************************/
+                /* MINRTN / MIMRET (pp.1445-1446): minimum impulse; 60 ms when docked. */
             {
                 if (!AGC_ASSERT(axis == 0 || axis == 1))
                 {

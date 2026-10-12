@@ -606,27 +606,9 @@ agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t t
         return (AGC_STATUS_BAD_ARG);
     }
 
-    /**********************************************************************
-     * RTEDISP .. RTD18 (pp. 902-903): VPRED, T3TOT4, GAMMAEI at R(T2) and the
+    /* RTEDISP .. RTD18 (pp. 902-903): VPRED, T3TOT4, GAMMAEI at R(T2) and the
      * delta V in local vertical coordinates (X forward, Z down; X negated for a
-     * retrograde orbit).
-     *
-     * FUNCTION NAME: display_entry
-     *
-     * ARGUMENTS:
-     *   Argument  Type                    I/O  Description (scale)
-     *   --------  ----------------------  ---  ------------------------------
-     *   ip        agc_interp_t *          IO   interpreter state of the job:
-     *                                          OVFIND, DVSIGN, alarms
-     *   rs        const rte_erasable_t *  I    P37 erasables (RTE names, scales
-     *                                          in internal.h)
-     *   tig       agc_dp_t                I    time of ignition, cs B28
-     *   out       rte_display_t *         O    display values (VPRED, T3TOT4,
-     *                                          GAMMAEI, DELVLVC, VGDISP)
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a failed
-     *          assertion
-     **********************************************************************/
+     * retrograde orbit). */
     agc_vec_t uv2 = agc_vec_unit(ip, rs->v_t2v, &out->vpred, NULL); /* UNIT(V(T2)/), B1 */
 
     out->t3tot4   = agc_dp_sub(ip, rs->t2, tig);                                     /* T21           */

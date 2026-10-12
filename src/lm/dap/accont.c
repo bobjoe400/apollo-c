@@ -522,23 +522,11 @@ agc_status_t lm_dap_switch_curves(void)
     lm_dap_rot_touv(d->aosq, d->aosr, &d->aosu, &d->aosv);
     agc_relint();
 
-    /**********************************************************************
-     * GETAOSUV (p.1497): which of the ROT-TOUV results AOSU (A), AOSV (L) the
+    /* GETAOSUV (p.1497): which of the ROT-TOUV results AOSU (A), AOSV (L) the
      * AGC leaves as -0. A ones'-complement sum of zero is -0 unless both terms
      * are +0: V = COEFFQ AOSQ + COEFFR AOSR, U = -COEFFQ AOSQ + COEFFR AOSR.
      * With AOSQ = AOSR = +0 (COEFFQ < 0) this makes AOSV = -0, which BOTHAXES
-     * takes as a negative offset (CCS fourth branch: SIGNAOS = 1).
-     *
-     * FUNCTION NAME: aos_negzero
-     *
-     * ARGUMENTS:
-     *   Argument  Type              I/O  Description (scale)
-     *   --------  ----------------  ---  --------------------
-     *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-     *   w         acc_work_t *      I/O  working cells of this computation
-     *
-     * RETURNS: none
-     **********************************************************************/
+     * takes as a negative offset (CCS fourth branch: SIGNAOS = 1). */
     agc_sp_t tq = lm_dap_mphi(d->aosq, d->coeffq);             /* COEFFQ AOSQ, scaled pi/2 rad/s^2 */
     agc_sp_t tr = lm_dap_mphi(d->aosr, d->coeffr);             /* COEFFR AOSR, scaled pi/2 rad/s^2 */
     bool     nq = (tq == 0) && mp_negzero(d->aosq, d->coeffq); /* that product is -0 */
@@ -561,18 +549,7 @@ agc_status_t lm_dap_switch_curves(void)
         w.t[T_Z3] = (w.drifter != 0) ? AA_ZONE3MAX : 0; /* ZONE3LIM: 17.5 ms drifting, 0 in GTS */
     }
 
-    /**********************************************************************
-     * DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN.
-     *
-     * FUNCTION NAME: p_axis
-     *
-     * ARGUMENTS:
-     *   Argument  Type        I/O  Description (scale)
-     *   --------  ----------  ---  --------------------
-     *   d         lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-     *
-     * RETURNS: none
-     **********************************************************************/
+    /* DOPAXIS (pp.1497-1498): P axis, 2 jets, no AOS: ACOAST = AMIN. */
     agc_sp_t funtem = lm_dap_wrap((int32_t) d->jacc[0] + AA_BIT9); /* FUNTEM = 1 + ANET/ACOAST, scaled 2^6 */
     agc_sp_t inv    = invert(d->jacc[0]);                          /* 1/ANETP, scaled 2^7/pi */
 
@@ -607,20 +584,8 @@ agc_status_t lm_dap_switch_curves(void)
             return (st);
         }
 
-        /**********************************************************************
-         * FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
-         * pair; AXISDIST from the deadbands and FLAT.
-         *
-         * FUNCTION NAME: axis_fail_dist
-         *
-         * ARGUMENTS:
-         *   Argument  Type              I/O  Description (scale)
-         *   --------  ----------------  ---  --------------------
-         *   d         const lm_dap_t *  I/O  DAP erasables (lm_dap_state())
-         *   w         acc_work_t *      I/O  working cells of this computation
-         *
-         * RETURNS: none
-         **********************************************************************/
+        /* FAIL- .. DBFUN (p.1502): one-jet values replace those of a failed jet
+         * pair; AXISDIST from the deadbands and FLAT. */
         if ((uvmask[2 + w.uv] & d->ch5mask) != 0u)
         { /* +U (+V) failed */
             w.t[T_ATEM2 + 2] = w.t[T_ATEM2];

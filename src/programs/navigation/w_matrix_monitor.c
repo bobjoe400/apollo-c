@@ -246,19 +246,9 @@ agc_status_t agc_job_w_matrix_monitor_proceed(void)
             return (agc_dsky_endmark());
         }
 
-        /**********************************************************************
-         * CM V06N9933 / V6N99INP: option 0 changes nothing; else the pad pair
+        /* CM V06N9933 / V6N99INP: option 0 changes nothing; else the pad pair
          * of the option gets the high words of WWPOS, WWVEL.
-         * AGC: V06N9933, V6N99INP (P20-P25.agc pp.632-633)
-         *
-         * FUNCTION NAME: wm_load_csm
-         *
-         * ARGUMENTS:
-         *   Argument  Type                   I/O  Description (scale)
-         *   --------  ---------------------  ---  -------------------------
-         *   rz        const agc_rendz_t *    I    rendezvous erasables
-         *   p         agc_rendz_nav_pad_t *  O    the pad pair of the option
-         **********************************************************************/
+         * AGC: V06N9933, V6N99INP (P20-P25.agc pp.632-633) */
         agc_sp_t opt = agc_dp_high(rz->rtheta); /* WWOPT, unscaled */
         agc_sp_t x1  = agc_dp_high(rz->range);  /* LXA,1, pad scale */
         agc_sp_t x2  = agc_dp_high(rz->rrate);  /* LXA,2, pad scale */
@@ -293,20 +283,9 @@ agc_status_t agc_job_w_matrix_monitor_proceed(void)
             return (agc_dsky_endmark());
         }
 
-        /**********************************************************************
-         * LM V06N9933: WWPOS SL5 and WWVEL to WRENDPOS/WRENDVEL (WSURF.. on the
+        /* LM V06N9933: WWPOS SL5 and WWVEL to WRENDPOS/WRENDVEL (WSURF.. on the
          * surface), WWBIAS SL10 to WTRUN and WSHAFT.
-         * AGC: Luminary099 V06N9933 (P20-P25.agc p.609)
-         *
-         * FUNCTION NAME: wm_load_lm
-         *
-         * ARGUMENTS:
-         *   Argument  Type                   I/O  Description (scale)
-         *   --------  ---------------------  ---  -------------------------
-         *   ip        agc_interp_t *         I/O  interpreter state (OVFIND)
-         *   rz        const agc_rendz_t *    I    rendezvous erasables
-         *   p         agc_rendz_nav_pad_t *  O    WREND / WSURF pair, WTRUN, WSHAFT
-         **********************************************************************/
+         * AGC: Luminary099 V06N9933 (P20-P25.agc p.609) */
         agc_sp_t pos; /* SL5, pad scale */
 
         pos          = agc_dp_high(agc_dp_shl(&ip, agc_dp_shl(&ip, rz->range, 4), 1));

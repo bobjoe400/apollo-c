@@ -308,26 +308,9 @@ static agc_status_t prec_angle_not_met(agc_interp_t *ip, rte_erasable_t *rs)
 
     agc_tp_t rf = agc_tp_shift(ip, agc_dp_mul_tp(beta4, rs->rpre), 1); /* RF B29 */
 
-    /**********************************************************************
-     * PREC170 .. PREC174 (pp. 910-911): time DT21 from R(T2)/ to the new radius
+    /* PREC170 .. PREC174 (pp. 910-911): time DT21 from R(T2)/ to the new radius
      * RF on the osculating conic (TIMERAD, time only, backwards when BETA12 <
-     * 0), limited to DT21PR (forward) or -.6 DT21PR (reversal).
-     *
-     * FUNCTION NAME: prec_time_step
-     *
-     * ARGUMENTS:
-     *   Argument  Type              I/O  Description (scale)
-     *   --------  ----------------  ---  ------------------------------------
-     *   ip        agc_interp_t *    IO   interpreter state of the job: OVFIND,
-     *                                    DVSIGN, alarms
-     *   rs        rte_erasable_t *  IO   P37 erasables (RTE names, scales in
-     *                                    internal.h)
-     *   rf        agc_dp_t          I    new radius RF, m B29
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
-     *          or state assertion fails; otherwise the status of the first
-     *          service call that failed
-     **********************************************************************/
+     * 0), limited to DT21PR (forward) or -.6 DT21PR (reversal). */
     agc_dp_t rf_step = agc_tp_to_dp(rf);
 
     agc_timerad_in_t     in;     /* TIMERAD inputs (R, V, RF, SGNRDOT) */

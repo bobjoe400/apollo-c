@@ -185,21 +185,8 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in, agc
 
     if (agc_interp_test_ovf(ip))
     { /* BOV CIRCULAR   */
-        /**********************************************************************
-         * CIRCULAR (CONIC_SUBROUTINES.agc p. 1302) -- SETPD 0, SETGO SOLNSW
-         * ABTCONIC: the eccentricity vector is too short to define the apsides
-         *
-         * FUNCTION NAME: timerad_circular
-         *
-         * ARGUMENTS:
-         *   Argument  Type                    I/O  Description (scale)
-         *   --------  ----------------------  ---  ----------------------------
-         *   ctx       agc_conic_ctx_t *       I    conic erasables (debris)
-         *   out       agc_conic_time_out_t *  O    debris, solnsw set
-         *
-         * RETURNS: agc_status_t -- AGC_STATUS_POODOO or AGC_STATUS_BAILOUT
-         *          (ABTCONIC)
-         *********************************************************************/
+        /* CIRCULAR (CONIC_SUBROUTINES.agc p. 1302) -- SETPD 0, SETGO SOLNSW
+         * ABTCONIC: the eccentricity vector is too short to define the apsides */
         agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, true);
         agc_conic_time_out_fill_(&ctx, out);
         out->solnsw = true;
@@ -213,21 +200,8 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in, agc
 
     agc_conic_mirror_flag_(AGC_CONIC_FLAG_APSESW, apsesw); /* SET/CLEAR */
 
-    /**********************************************************************
-     * TERMNVEC (CONIC_SUBROUTINES.agc p. 1302) -- terminal unit vector and
-     * the CSTH, SNTH of the transfer angle from UR1
-     *
-     * FUNCTION NAME: timerad_termnvec
-     *
-     * ARGUMENTS:
-     *   Argument  Type               I/O  Description (scale)
-     *   --------  -----------------  ---  ---------------------------------
-     *   ip        agc_interp_t *     I/O  interpreter state (OVFIND cleared)
-     *   ctx       agc_conic_ctx_t *  I/O  UN, UR1 in; CSTH, SNTH 2^1 out
-     *   uecc      agc_vec_t          I    unit eccentricity vector, 2^1
-     *   cosf      agc_dp_words_t     I    COSF, 2^1
-     *   sinf      agc_dp_words_t     I    MPAC sin f, 2^1
-     *********************************************************************/
+    /* TERMNVEC (CONIC_SUBROUTINES.agc p. 1302) -- terminal unit vector and
+     * the CSTH, SNTH of the transfer angle from UR1 */
     agc_vec_t w = agc_vec_shl(ip, agc_conic_vxsc_(ip, agc_mpac_dload(sinf), ctx.un), 1); /* VXSC UN VSL1, 2^1 */
 
     w            = agc_vec_cross(ip, w, uecc);                                          /* VXV 0D, PDVL: 2^2 */
