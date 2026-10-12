@@ -1,0 +1,106 @@
+# Scenario (CSM): P30 external delta-V, then a P40 SPS burn short enough
+# for S40.13 TIMEBURN's impulsive path (the companion of
+# external_delta_v_burn_csm.txt, which flies the steered path).
+#
+# AGC behaviour checked (Comanche055 P30-P37.agc, P40-P47.agc):
+# * P30 and P40 up to ignition as in external_delta_v_burn_csm.txt.
+# * The P40 pad loads (`pad sps_impulse`, src/sim/pad.c): EK1VAL =
+#   102308 N s (the 1-s impulse), EK2VAL = -11120 N s, EK3VAL = FANG =
+#   91188 N (SPS thrust), EMDOT = 29.5 kg/s. Representative SPS values
+#   chosen so that K1 = K3 x 1 s - K2 (a 1-s burn is the boundary); the
+#   flown Apollo 11 pad values are not in the listing.
+# * S40.13 (p.726): |VGTIG| = 10 ft/s = 3.048 m/s and WEIGHT/G = 26000 kg
+#   give m v = 79248 N s < K1, so S40.131: TGO = (m v + K2) / K3 =
+#   0.747 s; IMPULSW stays set (attitude hold, no steering) and IGNITION
+#   (p.695) sets up ENGINOFF at TIG + TGO: the engine goes off about
+#   75 cs after ENGINE ON whatever the PIPAs show. (With the steered
+#   path the engine stays on until S40.8 finds TGO < 4 s, seconds later.)
+# * The burn (scripted PIPA counts, no physics): the whole 10 ft/s (44 x,
+#   28 y pulses) in one burst at ignition. POSTBURN (p.686) flashes
+#   V16N40; PRO = P40RCS: V16N85 residuals near zero.
+#
+# Set-up as in external_delta_v_burn_csm.txt plus the pad line.
+vehicle csm
+pad refsmmat 1 0 0  0 1 0  0 0 1
+pad sv csm 0 -6563000 0  7793.3 0 0  0
+pad sps_impulse 102308 -11120 91188 91188 29.5
+run 300
+keys R V37E00E
+until PROG 00 within 300
+input 30 0 0400                  # IMU operate
+run 11000                        # IMU turn-on (90 s)
+keys V25N07E 77E 10000E 1E       # REFSMFLG
+run 100
+keys V48E                        # R03: DAP data load
+until NOUN 46 within 300
+keys V21E 11102E V22E 01111E     # DAPDATR1 (config 1, CSM alone), DAPDATR2
+pro
+until NOUN 47 within 300
+keys V21E +57320E                # CSM weight 57320 lb (26000 kg): WEIGHT/G
+pro
+until NOUN 48 within 300
+pro                              # trims as they are; end of R03
+until VERB blank within 300
+keys V37E30E                     # P30
+until NOUN 33 within 500
+run 50                           # let the display settle (one relay word per T4RUPT)
+expect VERB 06
+expect FLASH on
+keys V25E +00000E +00008E +00000E # TIG 0:08:00
+run 100
+expect R2 +00008
+pro
+until NOUN 81 within 500
+run 50
+expect FLASH on
+keys V25E +00100E +00000E +00000E # DV 10.0 ft/s along the velocity
+run 100
+expect R1 +00100
+pro
+until NOUN 42 within 2000
+run 50
+expect R3 +00100                 # DELVSIN 10.0 ft/s
+expect R1 +01096 ~3              # HAPO 109.6 nmi
+expect R2 +01010 ~3              # HPER 101.0 nmi
+pro
+until NOUN 45 within 2000
+run 50
+expect VERB 16
+expect R1 +00 00                 # no marks
+pro
+until VERB 37 within 2000        # GOTOPOOH
+keys 40E                         # P40
+until NOUN 18 within 600
+run 50
+expect VERB 50
+expect FLASH on
+keys E                           # attitude accepted (no physics to move it)
+until R1 00204 within 600        # gimbal actuator test option
+run 50
+expect VERB 50
+expect NOUN 25
+keys E                           # skip the test
+until NOUN 40 within 600
+run 50
+expect VERB 06
+expect R2 +00100                 # VG 10.0 ft/s
+until R1 -00 38 within 40000     # TFI counts down to TIG-38 s
+until VERB blank within 1000     # TIGBLNK
+until NOUN 40 within 700         # TIGAVEG: display back at TIG-30
+until VERB 99 within 2600        # TIG-5: engine-on enable request
+expect FLASH on
+pro                              # V99P
+until LAMP ENGINEON on within 700 # TIG-0: IGNITION, SPSON
+# 10 ft/s at 32.66 deg from X = 44 x, 28 y pulses, all at ignition.
+counter 37 PINC 44
+counter 40 PINC 28
+until LAMP ENGINEON off within 90 # ENGINOFF at TIG + TGO (0.75 s)
+until VERB 16 within 1000        # POSTBURN (p.686): V16N40 final values
+run 50
+expect NOUN 40
+expect FLASH on
+pro                              # P40RCS
+until NOUN 85 within 1500        # V16N85 residuals
+run 50
+expect R1 +00000 ~5          # residuals near zero (0.5 ft/s)
+expect R2 +00000 ~5

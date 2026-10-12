@@ -346,7 +346,10 @@ void exec_up_goprog_downlist(void)
  * real AGC keeps its contents through a fresh start). Core state and
  * channels for vehicle `v`, the erasable blocks the program lanes own
  * (alignment, rendezvous, landing / ascent, entry), then the executive
- * and the waitlist. The caller follows with agc_fresh_dofstart().
+ * and the waitlist. The caller (src/sim/main.c start) then loads the
+ * rope, the pad and the channels and raises GOJAM through agc_rupt_go,
+ * whose GOPROG takes the fresh start (DOFSTART) or the restart the
+ * phase tables call for, as the AGC does at power-on.
  *
  * ARGUMENTS:
  *   v -- AGC_VEHICLE_CSM or AGC_VEHICLE_LM

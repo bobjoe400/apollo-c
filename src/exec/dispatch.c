@@ -212,7 +212,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_CLOCKJOB:
             return (agc_job_clockjob(ctx));
         case AGC_JOB_COPY40_9:
-            return (agc_job_copy40_9());
+            agc_job_copy40_9();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_CROSS_PRODUCT_RESTART:
             return (agc_job_cross_product_restart(ctx));
         case AGC_JOB_DAPFIG:
@@ -270,7 +272,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RCS_BURN:
             return (agc_job_rcs_burn_csm(ctx));
         case AGC_JOB_REDO40_9:
-            return (agc_job_redo40_9());
+            agc_job_redo40_9();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RETURN_TO_EARTH:
             return (agc_job_return_to_earth(ctx));
         case AGC_JOB_RETURN_TO_EARTH_ALARM_DISPLAY:
@@ -346,7 +350,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
 
         /* src/csm/dap */
         case AGC_JOB_AMBGUPDT:
-            return (agc_job_ambgupdt());
+            agc_job_ambgupdt();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_STRKTSTI:
             return (agc_job_strktsti());
 
@@ -540,9 +546,13 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS:
             return (agc_job_rendezvous_tracking_data_csm_residuals(ctx));
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_PROCEED:
-            return (agc_job_rendezvous_tracking_data_csm_residuals_proceed());
+            agc_job_rendezvous_tracking_data_csm_residuals_proceed();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_RECYCLE:
-            return (agc_job_rendezvous_tracking_data_csm_residuals_recycle());
+            agc_job_rendezvous_tracking_data_csm_residuals_recycle();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RESIDUALS_WAIT:
             return (agc_job_rendezvous_tracking_data_csm_residuals_wait());
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM_RANGE:
@@ -608,7 +618,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_SBANDANT_CM_RECYCLE:
             return (agc_job_sbandant_cm_recycle(ctx));
         case AGC_JOB_SBAND_B5OFF:
-            return (agc_job_sband_b5off());
+            agc_job_sband_b5off();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_SIGHTING_MARK_CODE_CLEAN:
             return (agc_job_sighting_mark_code_clean(ctx));
         case AGC_JOB_SIGHTING_MARK_CODE_DISPLAY:
@@ -792,7 +804,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RR_DESIGNATE_LOAD:
             return (agc_job_rr_designate_load(ctx));
         case AGC_JOB_RR_DESIGNATE_RESULT:
-            return (agc_job_rr_designate_result());
+            agc_job_rr_designate_result();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RR_DESIGNATE_SCHEDULE:
             return (agc_job_rr_designate_schedule());
         case AGC_JOB_RR_LOCKON_ANSWER:
@@ -806,7 +820,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RR_LOS_DISPLAY_NEXT:
             return (agc_job_rr_los_display_next());
         case AGC_JOB_RR_LOS_DISPLAY_STOP:
-            return (agc_job_rr_los_display_stop());
+            agc_job_rr_los_display_stop();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_SHOW_BANKSUM_DISPLAY:
             return (agc_job_show_banksum_display(ctx));
         case AGC_JOB_SHOW_BANKSUM_END:
@@ -938,7 +954,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RENDZ_CLUPDATE:
             return (agc_job_rendz_clupdate());
         case AGC_JOB_RENDZ_DISPLAY_TERMINATE:
-            return (agc_job_rendz_display_terminate());
+            agc_job_rendz_display_terminate();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RENDZ_ENDEXT:
             return (agc_job_rendz_endext());
         case AGC_JOB_RENDZ_FINAL_DV_CHECKED:
@@ -1204,7 +1222,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
 
         /* src/csm/optics */
         case AGC_JOB_SBAND_B5OFF:
-            return (agc_job_sband_b5off());
+            agc_job_sband_b5off();
+
+            return (AGC_STATUS_OK);
 
         /* src/exec */
         case AGC_JOB_DUMMY:
@@ -1378,7 +1398,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RR_DESIGNATE_LOAD:
             return (agc_job_rr_designate_load(ctx));
         case AGC_JOB_RR_DESIGNATE_RESULT:
-            return (agc_job_rr_designate_result());
+            agc_job_rr_designate_result();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RR_DESIGNATE_SCHEDULE:
             return (agc_job_rr_designate_schedule());
         case AGC_JOB_RR_LOCKON_ANSWER:
@@ -1392,7 +1414,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RR_LOS_DISPLAY_NEXT:
             return (agc_job_rr_los_display_next());
         case AGC_JOB_RR_LOS_DISPLAY_STOP:
-            return (agc_job_rr_los_display_stop());
+            agc_job_rr_los_display_stop();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_SHOW_BANKSUM_DISPLAY:
             return (agc_job_show_banksum_display(ctx));
         case AGC_JOB_SHOW_BANKSUM_END:
@@ -1654,7 +1678,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_CLOKJOB_ENGINE_ENABLE_BYPASS:
             return (agc_job_clokjob_engine_enable_bypass(ctx));
         case AGC_JOB_CLOKJOB_ENGINE_FAIL:
-            return (agc_job_clokjob_engine_fail());
+            agc_job_clokjob_engine_fail();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_CLOKJOB_ENGINE_FAIL_SHUTDOWN:
             return (agc_job_clokjob_engine_fail_shutdown());
         case AGC_JOB_CLOKJOB_EVENT_TIMER_PROCEED:
@@ -1674,7 +1700,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_LRVJOB:
             return (agc_job_lrvjob());
         case AGC_JOB_LRVJOB_DONE:
-            return (agc_job_lrvjob_done());
+            agc_job_lrvjob_done();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_POSALARM_PRO:
             return (agc_job_posalarm_pro(ctx));
         case AGC_JOB_RCS_BURN_AFTER_MANEUVER:
@@ -1730,7 +1758,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_APPROACH_PHASE_DISPLAY:
             return (agc_lm_job_approach_phase_display(ctx));
         case AGC_JOB_APPROACH_PHASE_PROCEED:
-            return (agc_lm_job_approach_phase_proceed());
+            agc_lm_job_approach_phase_proceed();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_APS_ABORT:
             return (agc_lm_job_aps_abort());
         case AGC_JOB_APS_ABORT_COMMANDED:
@@ -1826,9 +1856,13 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS:
             return (agc_job_rendezvous_tracking_data_residuals(ctx));
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_PROCEED:
-            return (agc_job_rendezvous_tracking_data_residuals_proceed());
+            agc_job_rendezvous_tracking_data_residuals_proceed();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_RECYCLE:
-            return (agc_job_rendezvous_tracking_data_residuals_recycle());
+            agc_job_rendezvous_tracking_data_residuals_recycle();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_WAIT:
             return (agc_job_rendezvous_tracking_data_residuals_wait(ctx));
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_NEXT:
@@ -1898,7 +1932,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RADAR_SAMPLE:
             return (agc_job_radar_sample());
         case AGC_JOB_RADAR_SAMPLE_DONE:
-            return (agc_job_radar_sample_done());
+            agc_job_radar_sample_done();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RADAR_SEARCH:
             return (agc_job_radar_search(ctx));
         case AGC_JOB_RADAR_SEARCH_ACCEPT:
@@ -2046,7 +2082,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RENDZ_CLUPDATE:
             return (agc_job_rendz_clupdate());
         case AGC_JOB_RENDZ_DISPLAY_TERMINATE:
-            return (agc_job_rendz_display_terminate());
+            agc_job_rendz_display_terminate();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_RENDZ_ENDEXT:
             return (agc_job_rendz_endext());
         case AGC_JOB_RENDZ_FINAL_DV_CHECKED:
@@ -2276,7 +2314,9 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
         case AGC_TASK_DOSPSOFF:
             return (agc_task_dospsoff());
         case AGC_TASK_DOSTRULL:
-            return (agc_task_dostrull());
+            agc_task_dostrull();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_DOTVCON:
             return (agc_task_dotvcon());
         case AGC_TASK_DOTVCRCS:
@@ -2286,7 +2326,9 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
         case AGC_TASK_ENGINE_FAIL_RCS_DAP:
             return (agc_task_engine_fail_rcs_dap());
         case AGC_TASK_ENGINE_FAIL_REENABLE:
-            return (agc_task_engine_fail_reenable());
+            agc_task_engine_fail_reenable();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_ENGINE_FAIL_REIGNITE_PREP:
             return (agc_task_engine_fail_reignite_prep());
         case AGC_TASK_ENGINE_FAIL_REIGNITE_TRIM:
@@ -2358,7 +2400,9 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
         case AGC_TASK_EXRSTRT:
             return (agc_task_exrstrt());
         case AGC_TASK_HACKWLST:
-            return (agc_task_hackwlst());
+            agc_task_hackwlst();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_JETSLECT:
             return (agc_task_jetslect());
         case AGC_TASK_ROLL_JETS_OFF:
@@ -2376,7 +2420,9 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
         case AGC_TASK_ROLLDAP:
             return (agc_task_rolldap());
         case AGC_TASK_T6START:
-            return (agc_task_t6start());
+            agc_task_t6start();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_TVCDAPON:
             return (agc_task_tvcdapon());
         case AGC_TASK_TVCEXEC:
@@ -2620,11 +2666,15 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
         case AGC_TASK_IGNITION_IF_ENABLED:
             return (agc_task_ignition_if_enabled());
         case AGC_TASK_IMPLBURN2:
-            return (agc_task_implburn2());
+            agc_task_implburn2();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_PITCHOFF:
             return (agc_task_pitchoff());
         case AGC_TASK_RDGIMS:
-            return (agc_task_rdgims());
+            agc_task_rdgims();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_REDO2_17:
             return (agc_task_redo2_17());
         case AGC_TASK_REDO4_2:
@@ -2644,11 +2694,17 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
         case AGC_TASK_TRIMGIMB2:
             return (agc_task_trimgimb2());
         case AGC_TASK_ULLAGOFF:
-            return (agc_task_ullagoff());
+            agc_task_ullagoff();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_ULLGTASK:
-            return (agc_task_ullgtask());
+            agc_task_ullgtask();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_ZOOM:
-            return (agc_task_zoom());
+            agc_task_zoom();
+
+            return (AGC_STATUS_OK);
 
         /* src/lm/dap */
         case AGC_TASK_DAPIDLER:

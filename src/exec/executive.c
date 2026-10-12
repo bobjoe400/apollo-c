@@ -737,10 +737,10 @@ agc_status_t agc_exec_vac_release(int vac_index)
 /**********************************************************************
  * PRIOCHNG / PRIOCH2 (C pp.1210,1217 / L pp.1105,1112): give the running
  * job a new priority, keeping its VAC bits. If a waiting job is now
- * strictly higher (BUF > 0), NEWJOB names it: agc_exec_newjob() > 0. The
- * AGC changes job inside PRIOCHNG; in C the caller that must give way
- * tests agc_exec_newjob() and does agc_exec_job_yield() and returns.
- * Bad arguments are programming errors (asserted), so this is void.
+ * strictly higher (BUF > 0), NEWJOB names it (agc_exec_newjob then
+ * returns > 0). The AGC changes job inside PRIOCHNG; in C the caller that
+ * must give way tests agc_exec_newjob, yields with agc_exec_job_yield and
+ * returns. Nothing here can fail, so this is void.
  *
  * ARGUMENTS:
  *   new_prio -- new priority number, 1..037

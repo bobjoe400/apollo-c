@@ -76,7 +76,7 @@ B6 fixed the scenario reached code it had never run, and needed:
   delay <= AGC_WAITLIST_MAX_DELAY and returns an error, which IGNITION
   passes up (sim "2 errors"). Seen only with WEIGHT/G = 0; not changed
   here (exec lane).
-* A pad keyword for the SPS impulse data (EK1VAL-EK3VAL, FANG, EMDOT) in
+* DONE by loose-ends (`pad sps_impulse`, scenario external_delta_v_impulsive_burn_csm.txt). Was: a pad keyword for the SPS impulse data (EK1VAL-EK3VAL, FANG, EMDOT) in
   src/sim/pad.c would let the scenario run the impulsive-burn path
   (IMPLBURN, ENGINOFF at TIG + TGO) as a real 10 ft/s SPS burn would.
 

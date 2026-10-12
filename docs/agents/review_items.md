@@ -98,6 +98,6 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - DONE exec-sched agc_waitlist_time3 / agc_waitlist_entry comments; docs/modules/loose-ends.md item 8.
 
 ## From prolog-consistency (2026-10-12)
-- loose-ends (fidelity): the LM's GET+MGA unitizes twice where the C unitizes once for both vehicles (prolog-consistency note); check Luminary and match.
+- DONE loose-ends GET+MGA: second UNIT on the LM as in Luminary (no oracle case exists) + test; prolog-report 6 -> 0 in src/exec and src/csm/entry; docs/modules/loose-ends.md items 9, 10.
 - always-ok: src/lm/radar/leadin.c agc_job_radar_sample_done skips a store silently when its assertion fails (check_rules misses the pattern: an assertion whose false branch skips a statement without a status); fix per rule 7 and teach check_rules the pattern.
 - always-ok: returns-extra (body returns a status the prolog does not name) is described in tools/prolog_check.py but not implemented (~172 functions); implement it and fix the prologs.

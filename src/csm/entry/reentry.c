@@ -286,6 +286,11 @@ void entry_earrot(agc_interp_t *ip, agc_entry_state_t *es, bool first)
  *
  * FUNCTION NAME: targ_geteta
  *
+ * On the MPAC words: RDOT and D as DSTORE stored them; the DAD of the
+ * pushed -RDOT/HS and the DMP D DAD D leave words that may disagree in
+ * sign, and the D they store is exact only this way (oracle entry D
+ * 38925744 / 38925745 with the values, follow-up-done-lanes F3).
+ *
  * ARGUMENTS:
  *   Argument  Type                 I/O  Description (scale)
  *   --------  -------------------  ---  ---------------------------------
@@ -293,19 +298,21 @@ void entry_earrot(agc_interp_t *ip, agc_entry_state_t *es, bool first)
  *                                       OVFIND, DVSIGN, alarms
  *   es        agc_entry_state_t *  IO   entry erasables (ENTRY_LEXICON
  *                                       names)
+ *   rdot      agc_dp_words_t       I    RDOT as stored, /2VS
+ *   d         agc_dp_words_t       I    D as stored by DSTORE, /805 B0
  *
  * RETURNS: agc_dp_t -- agc_dp_t -- time-of-flight estimate to the target,
  *          cs B28
  **********************************************************************/
-static agc_dp_t targ_geteta(agc_interp_t *ip, agc_entry_state_t *es)
+static agc_dp_t targ_geteta(agc_interp_t *ip, agc_entry_state_t *es, agc_dp_words_t rdot, agc_dp_words_t d)
 {
-    agc_dp_t t; /* -RDOT/HS, B0 */
-    agc_dp_t u; /* D term, B0 */
+    /* DLOAD RDOT DDV -HSCALED PDDL (push) D DMP -KSCALE DDV V DAD (pop)
+     * DMP D DAD D STORE D.                                               */
+    const agc_dp_words_t t = agc_mpac_store(agc_mpac_ddv(ip, agc_mpac_dload(rdot), agc_dp_to_words(AGC_ENTRY_MINUS_HSCALED)));                   /* -RDOT/HS, B0 */
+    agc_tp_words_t       m = agc_mpac_ddv(ip, agc_mpac_dmp(agc_mpac_dload(d), agc_dp_to_words(AGC_ENTRY_MINUS_KSCALE)), agc_dp_to_words(es->v)); /* -2D/V term, B0 */
 
-    t     = agc_dp_div(ip, es->rdot, AGC_ENTRY_MINUS_HSCALED); /* -RDOT/HS */
-    u     = agc_dp_div(ip, agc_dp_mul_trunc(es->d, AGC_ENTRY_MINUS_KSCALE), es->v);
-    u     = agc_dp_add(ip, u, t);
-    es->d = agc_dp_add(ip, agc_dp_mul_trunc(u, es->d), es->d);
+    m     = agc_mpac_dad(ip, m, t);
+    es->d = agc_dp_from_words(agc_mpac_store(agc_mpac_dad(ip, agc_mpac_dmp(m, d), d))); /* STORE D */
 
     if (!agc_flag_test(AGC_FLAG_EGSW))
     {
@@ -386,10 +393,11 @@ agc_status_t agc_entry_targeting(void)
     /* GETVEL .. DSTORE  */
     /* GETVEL / GETUNITV / DSTORE (p. 848): velocity (inertial, or relative once
      * RELVELSW is set), VSQUARE, LEQ, V, RDOT, D and UNI. */
-    agc_vec_t unitr_velocity = agc_guid_state()->avg.unitr; /* UNITR, B1        */
-    agc_dp_t  abval          = 0;                           /* |V|/2VS, B1      */
-    agc_dp_t  vsq            = 0;                           /* VSQ/4VS^2, B2    */
-    agc_dp_t  dmag;                                         /* D/805, B0        */
+    agc_vec_t      unitr_velocity = agc_guid_state()->avg.unitr; /* UNITR, B1        */
+    agc_dp_t       abval          = 0;                           /* |V|/2VS, B1      */
+    agc_dp_t       vsq            = 0;                           /* VSQ/4VS^2, B2    */
+    agc_dp_words_t rdot_w;                                       /* RDOT as stored, /2VS */
+    agc_dp_words_t d_w;                                          /* D as stored, /805 B0 */
 
     if (agc_flag_test(AGC_FLAG_RELVELSW))
     {
@@ -400,24 +408,26 @@ agc_status_t agc_entry_targeting(void)
         es->vel = agc_vec_scale(ip, sv.v, AGC_ENTRY_KVSCALE); /* V/2VS   */
     }
 
-    es->unitv   = agc_vec_unit(ip, es->vel, &abval, &vsq);                                                             /* GETUNITV  */
-    es->vsquare = vsq;                                                                                                 /* VSQ/4, 34D */
-    es->leq     = agc_dp_sub(ip, vsq, AGC_ENTRY_FOURTH);                                                               /* LEQ/4      */
-    es->v       = abval;                                                                                               /* V/2VS, 36D */
-    es->rdot    = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dot(ip, es->vel, unitr_velocity), 1))); /* DOT SL1 on the MPAC words */
-    dmag        = entry_tp_shl(ip, agc_dp_mul_tp(agc_vec_abval(ip, agc_erase_delv()), AGC_ENTRY_KASCALE), 1);          /* ABVAL DMP SL1  */
-    es->d       = dmag;
+    es->unitv   = agc_vec_unit(ip, es->vel, &abval, &vsq);                                                                                                                       /* GETUNITV  */
+    es->vsquare = vsq;                                                                                                                                                           /* VSQ/4, 34D */
+    es->leq     = agc_dp_sub(ip, vsq, AGC_ENTRY_FOURTH);                                                                                                                         /* LEQ/4      */
+    es->v       = abval;                                                                                                                                                         /* V/2VS, 36D */
+    rdot_w      = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dot(ip, es->vel, unitr_velocity), 1));                                                                              /* DOT SL1 on the MPAC words */
+    es->rdot    = agc_dp_from_words(rdot_w);
+    d_w         = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(agc_vec_abval(ip, agc_erase_delv()))), agc_dp_to_words(AGC_ENTRY_KASCALE)), 1)); /* ABVAL DMP SL1 */
+    es->d       = agc_dp_from_words(d_w);
 
-    if (dmag == 0)
+    if (es->d == 0)
     {
         es->d = AGC_ENTRY_ONEBIT_DP; /* SETMIND          */
+        d_w   = agc_dp_to_words(es->d);
     }
 
     es->uni = agc_vec_unit(ip, agc_vec_cross(ip, es->vel, unitr_velocity), NULL, NULL);
 
     if (!agc_flag_test(AGC_FLAG_RELVELSW))
     {
-        mpac = targ_geteta(ip, es); /* else 3ZEROS          */
+        mpac = targ_geteta(ip, es, rdot_w, d_w); /* else 3ZEROS          */
     }
 
     /* UPDATERT: DTEAROT = estimate + (PIPTIME - TIME/RTO)                 */
@@ -739,7 +749,7 @@ static agc_entry_hunt_result_t entry_huntest_core(agc_interp_t      *ip,
         v1 = agc_mpac_store(agc_mpac_dsu(ip, agc_mpac_dload(v1), agc_dp_to_words(AGC_ENTRY_VQUIT)));
     }
 
-    es->v1 = agc_dp_from_words(v1);
+    es->v1 = v1; /* STORE V1: the words as the DAD / DSU left them */
 
     /* HUNTEST1 (p. 856): ALP = 2 C1 HS A0/LEWD V1 V1 (DMP DDV DDV DDV).    */
     m = agc_mpac_ddv(ip, agc_mpac_dmp(agc_mpac_dload(a0), c1hs), v1);
@@ -786,10 +796,10 @@ static agc_entry_hunt_result_t entry_huntest_core(agc_interp_t      *ip,
 
     es->vs1 = AGC_ENTRY_HALVE; /* VS1 = VSAT  */
 
-    if (agc_dp_sub(ip, AGC_ENTRY_HALVE, es->v1) < 0)
+    if (agc_dp_sub(ip, AGC_ENTRY_HALVE, agc_dp_from_words(es->v1)) < 0)
     {
-        es->dvl = agc_dp_sub(ip, es->v1, es->vl); /* V1 - VL     */
-        es->vs1 = es->v1;
+        es->dvl = agc_dp_sub(ip, agc_dp_from_words(es->v1), es->vl); /* V1 - VL     */
+        es->vs1 = agc_dp_from_words(es->v1);
     }
 
     /* GETDHOOK .. HUNTEST3 (pp. 857-858): DHOOK, AHOOKDV, GAMMAL, and the
@@ -863,7 +873,7 @@ static agc_dp_t entry_ranger_core(agc_interp_t *ip, agc_entry_state_t *es, agc_d
     m          = agc_dp_mul_trunc(agc_dp_mul_trunc(es->vbars, es->cosg_2), gammal);
     es->askep  = agc_dp_shl(ip, agc_dp_asin(ip, agc_dp_div(ip, m, e4)), 1);
     es->asp1   = agc_dp_add(ip, agc_dp_mul_trunc(es->vl, AGC_ENTRY_Q3), es->q2);
-    m          = agc_dp_div(ip, agc_dp_mul_trunc(agc_dp_sq(es->v1), es->q7), es->vbars);
+    m          = agc_dp_div(ip, agc_dp_mul_trunc(agc_dp_sq(agc_dp_from_words(es->v1)), es->q7), es->vbars);
     m          = entry_log(ip, agc_dp_div(ip, m, es->a0)); /* -LOG/32      */
     es->aspup  = agc_dp_div(ip, agc_dp_mul_trunc(m, AGC_ENTRY_C12), es->gammal1);
     m          = agc_dp_mul_trunc(agc_dp_mul_trunc(AGC_ENTRY_KC3, es->rdot), es->v);
@@ -982,7 +992,7 @@ static entry_step_t step_upcontrl(entry_pass_t *p)
         agc_flag_set(AGC_FLAG_NOSWITCH); /* suppress lat switch */
     }
 
-    if (agc_dp_sub(ip, es->v, es->v1) >= 0)
+    if (agc_dp_sub(ip, es->v, agc_dp_from_words(es->v1)) >= 0)
     {
         return (ST_DOWNCNTL);
     }
@@ -1030,7 +1040,7 @@ static entry_step_t step_upcontrol_reference(entry_pass_t *p)
     m           = agc_tp_sqrt(agc_tp_add(ip, agc_dp_mul_tp(es->d, es->fact2), agc_tp_from_dp(es->alp)));
     m           = agc_dp_sub(ip, AGC_ENTRY_NEARONE, m);
     es->vref    = agc_dp_mul_trunc(m, es->fact1);
-    es->rdotref = agc_dp_mul_trunc(agc_dp_sub(ip, es->v1, es->vref), es->lewd);
+    es->rdotref = agc_dp_mul_trunc(agc_dp_sub(ip, agc_dp_from_words(es->v1), es->vref), es->lewd);
     dv          = agc_dp_sub(ip, es->vs1, es->vref);
 
     if (dv >= 0)
@@ -1166,6 +1176,10 @@ static entry_step_t step_dconstd(entry_pass_t *p)
  * DOWNCNTL (pp. 867-868): initial part of up control (V > V1): RDTR = LAD
  * (V1 - V), push = LAD/256 + K2D (RDOT - RDTR), DREF = (V/V1)^2 A0 - (V -
  * V1)^2 LAD/(2 C1 HS).
+ * On the MPAC words, with V1 as HUNTEST stored it: the DSU/DSQ chain and
+ * BDDV A0 DSU leave DREF in words whose signs may disagree, and CONSTD1's
+ * BDSU D DMP K1D reads them so (oracle entry L/D and L/D1 exact; with
+ * the values 1-9 LSB, with V1 canonical 256 LSB: follow-up-done-lanes F3).
  *
  * FUNCTION NAME: step_downcntl
  *
@@ -1181,20 +1195,29 @@ static entry_step_t step_dconstd(entry_pass_t *p)
  **********************************************************************/
 static entry_step_t step_downcntl(entry_pass_t *p)
 {
-    agc_interp_t      *ip = p->ip; /* interpreter state */
-    agc_entry_state_t *es = p->es; /* entry erasables */
-    agc_dp_t           m;          /* MPAC, scale per step */
-    agc_dp_t           q;          /* DOWNCNTL term, B0 */
+    agc_interp_t        *ip  = p->ip;                    /* interpreter state */
+    agc_entry_state_t   *es  = p->es;                    /* entry erasables */
+    const agc_dp_words_t lad = agc_dp_to_words(es->lad); /* LAD, B0 */
+    const agc_dp_words_t v   = agc_dp_to_words(es->v);   /* V, /2VS */
 
-    agc_interp_clear_ovf(ip);                         /* BOVB TCDANZIG    */
-    m        = agc_dp_mul_trunc(agc_dp_sub(ip, es->v, es->v1), es->lad);
-    m        = agc_dp_mul_trunc(agc_dp_add(ip, m, es->rdot), AGC_ENTRY_K2D);
-    p->pd_ld = agc_dp_to_words(agc_dp_add(ip, m, agc_dp_shr(es->lad, 8)));
-    q        = agc_dp_mul_trunc(agc_dp_sq(agc_dp_sub(ip, es->v1, es->v)), es->lad);
-    q        = agc_dp_div(ip, q, AGC_ENTRY_TWO_C1_HS);
-    m        = agc_dp_div(ip, agc_dp_sq(es->v1), es->vsquare);
-    m        = agc_dp_div(ip, es->a0, m);             /* BDDV A0           */
-    p->dref  = agc_dp_to_words(agc_dp_sub(ip, m, q)); /* DREF              */
+    agc_interp_clear_ovf(ip); /* BOVB TCDANZIG    */
+
+    /* DLOAD LAD SR 8D PDDL V DSU V1 DMP LAD DAD RDOT DMP K2D DAD (pop):
+     * LAD/256 + K2D (RDOT - RDTR) into PD.                               */
+    const agc_dp_words_t lad8 = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dload(lad), -8));    /* LAD/256 */
+    agc_tp_words_t       m    = agc_mpac_dmp(agc_mpac_dsu(ip, agc_mpac_dload(v), es->v1), lad); /* (V - V1) LAD */
+
+    m        = agc_mpac_dmp(agc_mpac_dad(ip, m, agc_dp_to_words(es->rdot)), agc_dp_to_words(AGC_ENTRY_K2D));
+    p->pd_ld = agc_mpac_store(agc_mpac_dad(ip, m, lad8));
+
+    /* PDDL V1 DSU V DSQ DMP LAD DDV 2C1HS: (V1 - V)^2 LAD/(2 C1 HS) into
+     * PD; PDDL V1 DSQ DDV VSQUARE BDDV A0 DSU (pop): DREF in MPAC.        */
+    m = agc_mpac_dmp(agc_mpac_dsq(agc_mpac_dsu(ip, agc_mpac_dload(es->v1), v)), lad);
+
+    const agc_dp_words_t q = agc_mpac_store(agc_mpac_ddv(ip, m, agc_dp_to_words(AGC_ENTRY_TWO_C1_HS))); /* PD: the (V1 - V)^2 term */
+
+    m       = agc_mpac_ddv(ip, agc_mpac_dsq(agc_mpac_dload(es->v1)), agc_dp_to_words(es->vsquare));
+    p->dref = agc_mpac_store(agc_mpac_dsu(ip, agc_mpac_bddv(ip, m, agc_dp_to_words(es->a0)), q)); /* DREF */
 
     return (ST_CONSTANT_DRAG_LD);
 }

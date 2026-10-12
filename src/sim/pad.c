@@ -17,6 +17,12 @@
  *   FLAGWRDn    uint16_t        I/O  bits              agc_flagword_set
  *   RRECT,      agc_integ_sv_t  O    2^29 m, 2^7 m/cs, agc_integ_perm_set
  *   VRECT, TET                       2^28 cs
+ *   EK1VAL,     agc_dp_t        O    2^23 N-s/100      agc_guid_state()->csm
+ *   EK2VAL
+ *   EK3VAL      agc_dp_t        O    2^9 N/10^4 (with  agc_guid_state()->csm
+ *                                    FANG as low word)
+ *   FANG        agc_sp_t        O    2^7 N/10^4        agc_guid_state()->csm
+ *   EMDOT       agc_sp_t        O    2^3 kg/cs         agc_csm_dap_com()
  *
  * EXTERNAL REFERENCES:
  *   Name                  Description
@@ -48,6 +54,15 @@
  *         reference frame, at time T s (default 0): RRECT = RCV at 2^29 m,
  *         VRECT = VCV at 2^7 m/cs, TET at 2^28 cs, TDELTAV = TNUV = TC =
  *         XKEP = 0 (a freshly rectified state).
+ *     sps_impulse K1 K2 K3 F MDOT
+ *         CSM only: the P40 pad loads S40.13 TIMEBURN reads (P40-P47
+ *         C p.726, ERASABLE_ASSIGNMENTS C p.87) and EMDOT (C p.68):
+ *         EK1VAL = K1 (N s, the 1-s SPS impulse) and EK2VAL = K2 (N s,
+ *         signed) at 2^23 N-s/100, EK3VAL = K3 (N, SPS thrust) at
+ *         2^9 N/10^4, FANG = F (N, the thrust TEMP2 uses) at 2^7 N/10^4,
+ *         EMDOT = MDOT (kg/s, SPS flow) at 2^3 kg/cs. EK3VAL is one word
+ *         followed by FANG, and S40.131's DDV K3VAL reads the two as a DP
+ *         divisor, so the C's DP EK3VAL is stored as (EK3VAL, FANG).
  *   The same file is accepted as yaAGC's --resume core file (the
  *   launcher's "custom core file" start-up option): sim_pad_is_pad()
  *   tells a pad file from a yaAGC core dump, which the typed C erasable
@@ -63,6 +78,8 @@
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/word.h"
+#include "agc/csm/dap.h"
+#include "agc/guidance/guidance.h"
 #include "agc/nav/integration.h"
 #include "internal.h"
 
@@ -80,6 +97,17 @@
 #define PAD_T_MAX       2.6e6 /* s, < 2^28 cs                         */
 #define PAD_CS_PER_S    100.0 /* centiseconds per second              */
 #define PAD_SV_FIELDS   7     /* vehicle and six components, at least */
+#define PAD_SPS_FIELDS  5     /* K1 K2 K3 F MDOT                      */
+#define PAD_SCALE_EK    23    /* EK1VAL, EK2VAL: 2^23 N-s/100         */
+#define PAD_SCALE_EK3   9     /* EK3VAL: 2^9 N/10^4                   */
+#define PAD_SCALE_FANG  7     /* FANG: 2^7 N/10^4 (m.newton)          */
+#define PAD_SCALE_EMDOT 3     /* EMDOT: 2^3 kg/cs                     */
+#define PAD_NS_UNIT     100.0 /* N s per EK1VAL/EK2VAL unit           */
+#define PAD_N_UNIT      1.0e4 /* N per m.newton (EK3VAL, FANG)        */
+#define PAD_EK_MAX      8.3e8 /* |K1|, |K2| N s, < 2^23 x 100         */
+#define PAD_EK3_MAX     5.1e6 /* K3 N, < 2^9 x 10^4                   */
+#define PAD_FANG_MAX    1.2e6 /* F N, < 2^7 x 10^4                    */
+#define PAD_EMDOT_MAX   790.0 /* MDOT kg/s, < 2^3 kg/cs               */
 
 /**********************************************************************
  * AGC: none -- `refsmmat`: nine unit-vector components into REFSMMAT.
@@ -167,6 +195,40 @@ static bool pad_state_vector(const char *args)
 }
 
 /**********************************************************************
+ * AGC: none -- `sps_impulse K1 K2 K3 F MDOT`: the CSM's P40 pad loads
+ * EK1VAL, EK2VAL, EK3VAL, FANG (S40.13 TIMEBURN, P40-P47 C pp.726-727)
+ * and EMDOT, in N s, N s, N, N and kg/s.
+ *
+ * ARGUMENTS:
+ *   args  const char *  I  the text after the keyword
+ *
+ * RETURNS: bool -- false on the LM, for a malformed line, or a value out
+ *          of its erasable's range (also NaN; K1, K3, F, MDOT >= 0)
+ **********************************************************************/
+static bool pad_sps_impulse(const char *args)
+{
+    double x[PAD_SPS_FIELDS] = {0.0, 0.0, 0.0, 0.0, 0.0};                                                                                                          /* K1 K2 K3 F MDOT */
+    bool   ok                = agc_state_vehicle() == AGC_VEHICLE_CSM && sscanf(args, "%lf %lf %lf %lf %lf", &x[0], &x[1], &x[2], &x[3], &x[4]) == PAD_SPS_FIELDS; /* CSM, well formed */
+
+    ok = ok && x[0] >= 0.0 && x[0] <= PAD_EK_MAX && x[1] >= -PAD_EK_MAX && x[1] <= PAD_EK_MAX; /* false for NaN too */
+    ok = ok && x[2] >= 0.0 && x[2] <= PAD_EK3_MAX && x[3] >= 0.0 && x[3] <= PAD_FANG_MAX && x[4] >= 0.0 && x[4] <= PAD_EMDOT_MAX;
+
+    if (ok)
+    {
+        agc_guid_csm_t *c    = &agc_guid_state()->csm;                                /* EK1VAL..FANG */
+        agc_sp_t        fang = agc_sp_from_double(x[3] / PAD_N_UNIT, PAD_SCALE_FANG); /* m.newton 2^7 */
+
+        c->ek1val                = agc_dp_from_double(x[0] / PAD_NS_UNIT, PAD_SCALE_EK);                    /* N-s/100 2^23 */
+        c->ek2val                = agc_dp_from_double(x[1] / PAD_NS_UNIT, PAD_SCALE_EK);                    /* N-s/100 2^23 */
+        c->ek3val                = agc_dp_pack(agc_sp_from_double(x[2] / PAD_N_UNIT, PAD_SCALE_EK3), fang); /* (EK3VAL, FANG) as DDV reads them */
+        c->fang                  = fang;
+        agc_csm_dap_com()->emdot = agc_sp_from_double(x[4] / PAD_CS_PER_S, PAD_SCALE_EMDOT);                /* kg/cs 2^3 */
+    }
+
+    return (ok);
+}
+
+/**********************************************************************
  * AGC: none -- the first word of a line, after cutting a `#` comment.
  *
  * ARGUMENTS:
@@ -218,6 +280,10 @@ static bool pad_line(char *buf)
     {
         ok = pad_state_vector(&buf[used]);
     }
+    else if (strcmp(key, "sps_impulse") == 0)
+    {
+        ok = pad_sps_impulse(&buf[used]);
+    }
     else
     {
         ok = false; /* unknown keyword */
@@ -248,7 +314,7 @@ bool sim_pad_is_pad(const char *path)
     for (int i = 1; i <= PAD_LINES_MAX && f != NULL && !seen && fgets(buf, (int) sizeof (buf), f) != NULL; i++)
     {
         seen = pad_keyword(buf, key, &used);
-        pad  = seen && (strcmp(key, "refsmmat") == 0 || strcmp(key, "flagword") == 0 || strcmp(key, "sv") == 0);
+        pad  = seen && (strcmp(key, "refsmmat") == 0 || strcmp(key, "flagword") == 0 || strcmp(key, "sv") == 0 || strcmp(key, "sps_impulse") == 0);
     }
 
     if (f != NULL)

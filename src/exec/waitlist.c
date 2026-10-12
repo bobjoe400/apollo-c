@@ -257,6 +257,18 @@ static agc_status_t wait2(uint16_t dt, agc_task_id_t task)
 /**********************************************************************
  * WAITLIST / TWIDDLE (C p.1223 / L p.1119): call `task` in dt centiseconds
  * (1 <= dt <= 16250). dt = 0 is POODOO 1204 (WATLST0- / WAITPOOH).
+ * DEVIATION: the AGC checks only DT <= 0 at run time (Comanche BZMF
+ * WATLST0- in WAITLIST, Luminary BZMF WAITPOOH in WAIT2); the 16250 cs
+ * maximum is a documented input restriction (WARNINGS 1, C p.1221 /
+ * L p.1117), not a test. The C refuses a larger delay with BAD_ARG
+ * because the AGC's result there is a misscheduled task, not a defined
+ * behaviour: DTMAX keeps a normal TIME3 >= 134, which is what lets WAIT2's
+ * 200 - C(TIME3) test tell a post-overflow TIME3 from a normal one (with
+ * dt = 16383 the new TIME3 is 1 and the next insertion is placed
+ * 163.84 s late), and a delay above 16383 is a negative AGC word (POODOO
+ * in the AGC, a wrapped TIME3 in the C). Refusing it makes the failure
+ * visible to the caller, which propagates it (IGNITION with a TGO of
+ * 16383 cs reports the error instead of losing ENGINOFF silently).
  *
  * ARGUMENTS:
  *   delay_cs -- delay from now, centiseconds
@@ -278,6 +290,7 @@ agc_status_t agc_waitlist_call(uint16_t delay_cs, agc_task_id_t task)
         return (agc_poodoo(AGC_ALARM_01204));
     }
 
+    /* DTMAX: a documented restriction the AGC does not test (DEVIATION above). */
     if (!AGC_ASSERT(delay_cs <= AGC_WAITLIST_MAX_DELAY))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -726,7 +739,7 @@ agc_status_t agc_waitlist_tick(uint16_t elapsed_cs)
  *
  * ARGUMENTS: none
  *
- * RETURNS: uint16_t -- C(TIME3), cs; 0 on a failed precondition
+ * RETURNS: uint16_t -- C(TIME3), cs (no failure case)
  **********************************************************************/
 uint16_t agc_waitlist_time3(void)
 {
@@ -736,13 +749,15 @@ uint16_t agc_waitlist_time3(void)
 /**********************************************************************
  * AGC: none -- Inspection: entry i (0..8) of the list. *lst1 receives LST1 +i-1, the
  * delta that precedes task i+1 (for i = 0, -(T1 - T) + 1 from TIME3).
+ * Host inspection only (tests): the caller passes i in 0..8 and two
+ * valid pointers; nothing is checked.
  *
  * ARGUMENTS:
  *   i -- list entry, 0..8
  *   lst1_out -- receives the delta that precedes task i+1, cs
  *   lst2_out -- receives task i+1 (LST2 +2i)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a bad index or NULL pointer
+ * RETURNS: agc_status_t -- always AGC_STATUS_OK (no failure case)
  **********************************************************************/
 agc_status_t agc_waitlist_entry(int i, int16_t *lst1_out, agc_task_id_t *lst2_out)
 {

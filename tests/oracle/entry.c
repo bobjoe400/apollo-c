@@ -263,8 +263,8 @@ static void compare(const char *t, long int tol)
     (void) oracle_cmp(t, "THETAH", e->thetah, oracle_out_dp(t, "THETAH"), 3);
     (void) oracle_cmp(t, "LATANG", e->latang, oracle_out_dp(t, "LATANG"), tol);
     (void) oracle_cmp(t, "ROLLC", e->rollc, oracle_out_dp(t, "ROLLC"), 6);
-    (void) oracle_cmp(t, "L/D", e->l_d, oracle_out_dp(t, "L/D"), 9);
-    (void) oracle_cmp(t, "L/D1", e->l_d1, oracle_out_dp(t, "L/D1"), 8);
+    (void) oracle_cmp(t, "L/D", e->l_d, oracle_out_dp(t, "L/D"), 0);
+    (void) oracle_cmp(t, "L/D1", e->l_d1, oracle_out_dp(t, "L/D1"), 0);
     (void) oracle_cmp(t, "K2ROLL", e->k2roll, oracle_out_dp(t, "K2ROLL"), 0);
     (void) oracle_cmp(t, "GOTOADDR", goto_word(e->gotoaddr), (long int) oracle_out_raw(t, "GOTOADDR"), 0);
     (void) oracle_cmp(t, "A1", e->a1, oracle_out_dp(t, "A1"), tol);

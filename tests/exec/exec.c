@@ -69,6 +69,7 @@ static void test_waitlist_order(void);
 static void test_waitlist_ruptagn_insert(void);
 static void test_waitlist_overflow(void);
 static void test_waitlist_zero_delay(void);
+static void test_waitlist_delay_bound(void);
 static void test_longcall(void);
 static void test_phase_codes(void);
 static void test_restart_table_task_timing(void);
@@ -76,6 +77,7 @@ static void test_restart_variable(void);
 static void test_restart_return_point(void);
 static void test_lm_tables(void);
 static void test_kleans(void);
+static void test_change_program_cleanup_lm(void);
 static void test_goprog(void);
 static void test_poodoo_lm(void);
 static void test_inhint(void);
@@ -101,6 +103,7 @@ int main(void)
     test_waitlist_ruptagn_insert();
     test_waitlist_overflow();
     test_waitlist_zero_delay();
+    test_waitlist_delay_bound();
     test_longcall();
     test_phase_codes();
     test_restart_table_task_timing();
@@ -108,6 +111,7 @@ int main(void)
     test_restart_return_point();
     test_lm_tables();
     test_kleans();
+    test_change_program_cleanup_lm();
     test_goprog();
     test_poodoo_lm();
     test_inhint();
@@ -682,6 +686,29 @@ static void test_waitlist_zero_delay(void)
 }
 
 /**********************************************************************
+ * AGC: none (test) -- WAITLIST at DTMAX (16250 cs, WARNINGS 1, C p.1221)
+ * is accepted; one cs more is refused with
+ * BAD_ARG (DEVIATION: the AGC documents the maximum but does not test
+ * it) and leaves the list and FAILREG untouched.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_waitlist_delay_bound(void)
+{
+    reset(AGC_VEHICLE_CSM);
+    CHECK(agc_waitlist_call(AGC_WAITLIST_MAX_DELAY, TT_A) == AGC_STATUS_OK);
+    CHECK(task_queued(TT_A));
+
+    uint16_t t3 = agc_waitlist_time3(); /* C(TIME3) before the refused call */
+
+    CHECK(agc_waitlist_call(AGC_WAITLIST_MAX_DELAY + 1, TT_B) == AGC_STATUS_BAD_ARG);
+    CHECK(!task_queued(TT_B));
+    CHECK(agc_waitlist_time3() == t3);
+    CHECK(agc_erase_failreg(0) == 0);
+    CHECK(!agc_exec_restart_pending());
+}
+
+/**********************************************************************
  * AGC: none (test) -- LONGCALL of 200 s through LONGCYCL and GETCADR
  *
  * ARGUMENTS: none
@@ -858,6 +885,30 @@ static void test_kleans(void)
         agc_phase_mr_klean();
         CHECK(agc_phase_get(2) == 0U);
     }
+}
+
+/**********************************************************************
+ * AGC: none (test) -- LM R00 after INTSTALL (FRESH_START_AND_RESTART
+ * L p.229), reached as V37's CANV37 with MMNUMBER = 0 (POOH): 3AXISFLG,
+ * R04FLAG, MUNFLAG and XOVINFLG down; FLGWRD11 = LRBYBIT (TS, so every
+ * other R12 bit is cleared too).
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_change_program_cleanup_lm(void)
+{
+    reset(AGC_VEHICLE_LM);
+    agc_flag_set(AGC_FLAG_3AXISFLG);
+    agc_flag_set(AGC_FLAG_ALARM_521_SUPPRESSED); /* R04FLAG */
+    agc_flag_set(AGC_FLAG_MUNFLAG);
+    agc_flag_set(AGC_FLAG_XOVINFLG);
+    agc_flag_set(AGC_FLAG_LRINH);                /* another FLGWRD11 bit */
+    CHECK(agc_job_change_program_continue() == AGC_STATUS_OK);
+    CHECK(!agc_flag_test(AGC_FLAG_3AXISFLG));
+    CHECK(!agc_flag_test(AGC_FLAG_ALARM_521_SUPPRESSED));
+    CHECK(!agc_flag_test(AGC_FLAG_MUNFLAG));
+    CHECK(!agc_flag_test(AGC_FLAG_XOVINFLG));
+    CHECK(agc_flagword_get(agc_flag_word(AGC_FLAG_LRBYPASS)) == agc_flag_mask(AGC_FLAG_LRBYPASS));
 }
 
 /**********************************************************************

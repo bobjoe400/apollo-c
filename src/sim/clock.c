@@ -92,7 +92,7 @@
 #include "agc/io/service.h"
 #include "internal.h"
 
-#define SIM_JOBS_PER_CALL 64          /* executive bound per call               */
+#define SIM_JOBS_PER_CALL 64          /* executive bound per call (clock_exec) */
 #define SIM_OVF           040000u     /* 15-bit counter overflow (PINC)         */
 #define SIM_NEG0          077777u     /* ones'-complement -0                    */
 #define SIM_TIME3_LAST    037777u     /* the next PINC overflows TIME3          */
@@ -609,6 +609,21 @@ static bool clock_rupts(void)
 /**********************************************************************
  * AGC: none -- the executive until DUMMYJOB would run (EXECUTIVE C
  * p.1220, NEWJOB), at most SIM_JOBS_PER_CALL jobs.
+ * The bound (rule 2) exists because a C job segment takes no AGC time:
+ * a job that polls (CHECKG1, IMU_PERFORMANCE_TEST_2 L p.378: sample
+ * PIPAX, CHANG1, sample again until a pulse comes) never lets the
+ * executive reach DUMMYJOB, and without a bound the centisecond would
+ * never end. 64 is above anything the AGC could finish in the time one
+ * call stands for (the next call is at most one scaler count, 1/3200 s,
+ * later): an empty job costs NOVAC's core-set scan, ENDOFJOB's EJSCAN
+ * over the 7 core sets and CHANJOB, well over 50 MCT (EXECUTIVE C
+ * pp.1208-1220), so the AGC's 853 MCT per centisecond complete fewer
+ * than 17 jobs per cs. A burst cut at 64 therefore still runs earlier
+ * than in the AGC; only a job that never ends reaches the bound, and
+ * sim_stats_t.busy_ticks counts those calls (the AGC's processor is
+ * then 100% busy too). systems_test_lm: all 1,817 hits are CHECKG1
+ * polling for the first and the last PIPA pulse (cs 15746-16004 and
+ * 45195-46004).
  *
  * ARGUMENTS:
  *   idle_pass  bool  I  run one pass of the idle loop (DUMMYJOB ->

@@ -19,7 +19,8 @@
 #   10 ft/s along the velocity at TIG in stable-member axes (REFSMMAT =
 #   identity, IMU CDUs 0) as PINC on PIPAX / PIPAY at 5.85 cm/s per pulse,
 #   at a constant rate over 8 s. The pad has no SPS impulse data (EK1VAL-
-#   EK3VAL, FANG are 0), so S40.13 (p.726) finds the burn non-impulsive and
+#   EK3VAL, FANG are 0; external_delta_v_impulsive_burn_csm.txt loads them
+#   and flies the impulsive path), so S40.13 (p.726) finds the burn non-impulsive and
 #   the AGC steers: DOSTRULL sets STEERSW, S40.8 TGOCALC (p.720) measures
 #   the thrust from the PIPAs and, with TGO < 4 s, S40.81 sets up ENGINOFF
 #   (SPSOFF p.698: bit 13 off). POSTBURN (p.686) flashes V16N40; PRO =

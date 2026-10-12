@@ -723,3 +723,10 @@
             routed (LM GET+MGA double unitize -> loose-ends; leadin.c
             silent skip and returns-extra -> always-ok). Launched
             always-ok (Opus) alongside loose-ends.
+2026-10-12  loose-ends DONE and committed: entry L/D and L/D1 at 0 (cause was
+            V1's stored words + GETETA on values, not D); waitlist 16250 cs
+            bound kept as a documented DEVIATION; pad sps_impulse + a second
+            burn scenario (engine on 0.75 s, residuals 0); 64-jobs bound
+            justified (CHECKG1 PIPA poll; AGC < 17 jobs/cs); LM GET+MGA
+            unitizes twice as Luminary does; prolog-report 0 tree-wide.
+            always-ok now has the whole tree.

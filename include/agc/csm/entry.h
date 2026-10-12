@@ -96,60 +96,60 @@ typedef struct agc_entry_state
     agc_vec_t ubz;    /* UBZ/2   CM body triad Z, B1                   */
 
     /* -- guidance scalars (DP) ------------------------------------------ */
-    agc_dp_t vsquare;         /* VSQUARE V^2/VS^2, scale 4                     */
-    agc_dp_t leq;             /* LEQ  (VSQ-1) g, scale 4 g (128.8 fpss)        */
-    agc_dp_t v;               /* V    velocity magnitude, scale 2VS            */
-    agc_dp_t rdot;            /* RDOT altitude rate, scale 2VS                 */
-    agc_dp_t d;               /* D    drag acceleration, scale 805 fpss        */
-    agc_dp_t a0;              /* A0   initial drag for upcontrol, scale 805    */
-    agc_dp_t a1;              /* A1   drag in FACTOR, scale 805 fpss           */
-    agc_dp_t alp;             /* ALP  upcontrol constant, scale 1              */
-    agc_dp_t askep;           /* ASKEP  Kepler range, revs B0                  */
-    agc_dp_t asp1;            /* ASP1   final phase range, revs B0             */
-    agc_dp_t aspup;           /* ASPUP  up-range, revs B0                      */
-    agc_dp_t asp3;            /* ASP3   gamma correction, revs B0              */
-    agc_dp_t aspdwn;          /* ASPDWN range down to pull-up, revs B0         */
-    agc_dp_t cosg_2;          /* COSG/2 cosine(GAMMAL), scale 2                */
-    agc_dp_t c_d0;            /* C/D0 = (-4/D0) B-8, scale 64/fpss             */
-    agc_dp_t d0;              /* D0   controlled constant drag, scale 805      */
-    agc_dp_t dhook;           /* DHOOK GAMMAL term, scale 805 fpss             */
-    agc_dp_t diff;            /* DIFF (THETNM - ASP), revs B0                  */
-    agc_dp_t diffold;         /* DIFFOLD previous DIFF, revs B0                */
-    agc_dp_t dlewd;           /* DLEWD change in LEWD, scale 1                 */
-    agc_dp_t dvl;             /* DVL  VS1 - VL, scale 2VS                      */
-    agc_dp_t fact1;           /* FACT1 upcontrol constant, scale 2VS           */
-    agc_dp_t fact2;           /* FACT2 upcontrol constant, scale 1/805 fpss    */
-    agc_dp_t factor;          /* FACTOR upcontrol, scale 1                     */
-    agc_dp_t gammal;          /* GAMMAL flight path angle at VL, scale 1 rad   */
-    agc_dp_t gammal1;         /* GAMMAL1 simple form, scale 1 rad              */
-    agc_dp_t kat;             /* KAT  drag to lift up if down, scale 805       */
-    agc_dp_t klat;            /* KLAT lateral switch gain, scale 1             */
-    agc_dp_t k2roll;          /* K2ROLL roll switch indicator, +-DPOSMAX, B0   */
-    agc_dp_t lad;             /* LAD  max L/D, scale 1                         */
-    agc_dp_t lod;             /* LOD  final phase L/D, scale 1                 */
-    agc_dp_t l_d;             /* L/D  desired L/D (vertical plane), scale 1    */
-    agc_dp_t l_d1;            /* L/D1 temp L/D in lateral, scale 1             */
-    agc_dp_t l_dcminr;        /* L/DCMINR LAD cos 15, scale 1                  */
-    agc_dp_t l_dcalc;         /* L/DCALC measured L/D (TM), scale 1            */
-    agc_dp_t latang;          /* LATANG lateral range, scale 4 rad             */
-    agc_dp_t lewd;            /* LEWD upcontrol reference L/D, scale 1         */
-    agc_dp_t q2;              /* Q2   final phase range term, revs B0          */
-    agc_dp_t q7;              /* Q7   min drag for upcontrol, scale 805        */
-    agc_dp_t rdotref;         /* RDOTREF reference RDOT, scale 2VS             */
-    agc_dp_t vref;            /* VREF reference velocity, scale 2VS            */
-    agc_dp_t rollc;           /* ROLLC roll command, revs B0                   */
-    agc_dp_t thetah;          /* THETAH desired range, revs B0                 */
-    agc_dp_t v1;              /* V1   initial upcontrol velocity, scale 2VS    */
-    agc_dp_t vl;              /* VL   exit velocity, scale 2VS                 */
-    agc_dp_t vs1;             /* VS1  VSAT or V1, scale 2VS                    */
-    agc_dp_t vbars;           /* VBARS VL^2/VS^2, scale 4                      */
-    agc_dp_t tem1b;           /* TEM1B (HUNTEST) L/D, scale 1                  */
-    agc_dp_t ahookdv;         /* AHOOKDV AHOOK DVL, scale 16                   */
-    agc_dp_t time_rto;        /* TIME/RTO time of RTINIT, cs B28               */
-    agc_dp_t dtearot;         /* DTEAROT time RTINIT -> RT, cs B28             */
-    agc_dp_t range_to_target; /* RTGON67 range to go, revs B0       */
-    agc_dp_t dnrngerr;        /* DNRNGERR (PREDANG - THETAH), revs B0          */
-    agc_sp_t asps_tm[5];      /* ASPS(TM) high words of ASKEP..ASPDWN, B0    */
+    agc_dp_t       vsquare;         /* VSQUARE V^2/VS^2, scale 4                     */
+    agc_dp_t       leq;             /* LEQ  (VSQ-1) g, scale 4 g (128.8 fpss)        */
+    agc_dp_t       v;               /* V    velocity magnitude, scale 2VS            */
+    agc_dp_t       rdot;            /* RDOT altitude rate, scale 2VS                 */
+    agc_dp_t       d;               /* D    drag acceleration, scale 805 fpss; DEVIATION: kept as a value (the noun tables point at it), so CONSTD1 and PREDICT3 read GETETA's STORE D in the canonical split; no oracle case differs */
+    agc_dp_t       a0;              /* A0   initial drag for upcontrol, scale 805    */
+    agc_dp_t       a1;              /* A1   drag in FACTOR, scale 805 fpss           */
+    agc_dp_t       alp;             /* ALP  upcontrol constant, scale 1              */
+    agc_dp_t       askep;           /* ASKEP  Kepler range, revs B0                  */
+    agc_dp_t       asp1;            /* ASP1   final phase range, revs B0             */
+    agc_dp_t       aspup;           /* ASPUP  up-range, revs B0                      */
+    agc_dp_t       asp3;            /* ASP3   gamma correction, revs B0              */
+    agc_dp_t       aspdwn;          /* ASPDWN range down to pull-up, revs B0         */
+    agc_dp_t       cosg_2;          /* COSG/2 cosine(GAMMAL), scale 2                */
+    agc_dp_t       c_d0;            /* C/D0 = (-4/D0) B-8, scale 64/fpss             */
+    agc_dp_t       d0;              /* D0   controlled constant drag, scale 805      */
+    agc_dp_t       dhook;           /* DHOOK GAMMAL term, scale 805 fpss             */
+    agc_dp_t       diff;            /* DIFF (THETNM - ASP), revs B0                  */
+    agc_dp_t       diffold;         /* DIFFOLD previous DIFF, revs B0                */
+    agc_dp_t       dlewd;           /* DLEWD change in LEWD, scale 1                 */
+    agc_dp_t       dvl;             /* DVL  VS1 - VL, scale 2VS                      */
+    agc_dp_t       fact1;           /* FACT1 upcontrol constant, scale 2VS           */
+    agc_dp_t       fact2;           /* FACT2 upcontrol constant, scale 1/805 fpss    */
+    agc_dp_t       factor;          /* FACTOR upcontrol, scale 1                     */
+    agc_dp_t       gammal;          /* GAMMAL flight path angle at VL, scale 1 rad   */
+    agc_dp_t       gammal1;         /* GAMMAL1 simple form, scale 1 rad              */
+    agc_dp_t       kat;             /* KAT  drag to lift up if down, scale 805       */
+    agc_dp_t       klat;            /* KLAT lateral switch gain, scale 1             */
+    agc_dp_t       k2roll;          /* K2ROLL roll switch indicator, +-DPOSMAX, B0   */
+    agc_dp_t       lad;             /* LAD  max L/D, scale 1                         */
+    agc_dp_t       lod;             /* LOD  final phase L/D, scale 1                 */
+    agc_dp_t       l_d;             /* L/D  desired L/D (vertical plane), scale 1    */
+    agc_dp_t       l_d1;            /* L/D1 temp L/D in lateral, scale 1             */
+    agc_dp_t       l_dcminr;        /* L/DCMINR LAD cos 15, scale 1                  */
+    agc_dp_t       l_dcalc;         /* L/DCALC measured L/D (TM), scale 1            */
+    agc_dp_t       latang;          /* LATANG lateral range, scale 4 rad             */
+    agc_dp_t       lewd;            /* LEWD upcontrol reference L/D, scale 1         */
+    agc_dp_t       q2;              /* Q2   final phase range term, revs B0          */
+    agc_dp_t       q7;              /* Q7   min drag for upcontrol, scale 805        */
+    agc_dp_t       rdotref;         /* RDOTREF reference RDOT, scale 2VS             */
+    agc_dp_t       vref;            /* VREF reference velocity, scale 2VS            */
+    agc_dp_t       rollc;           /* ROLLC roll command, revs B0                   */
+    agc_dp_t       thetah;          /* THETAH desired range, revs B0                 */
+    agc_dp_words_t v1;              /* V1   initial upcontrol velocity, scale 2VS, as stored by HUNTEST's DAD/DSU (DOWNCNTL DSQs the words) */
+    agc_dp_t       vl;              /* VL   exit velocity, scale 2VS                 */
+    agc_dp_t       vs1;             /* VS1  VSAT or V1, scale 2VS                    */
+    agc_dp_t       vbars;           /* VBARS VL^2/VS^2, scale 4                      */
+    agc_dp_t       tem1b;           /* TEM1B (HUNTEST) L/D, scale 1                  */
+    agc_dp_t       ahookdv;         /* AHOOKDV AHOOK DVL, scale 16                   */
+    agc_dp_t       time_rto;        /* TIME/RTO time of RTINIT, cs B28               */
+    agc_dp_t       dtearot;         /* DTEAROT time RTINIT -> RT, cs B28             */
+    agc_dp_t       range_to_target; /* RTGON67 range to go, revs B0       */
+    agc_dp_t       dnrngerr;        /* DNRNGERR (PREDANG - THETAH), revs B0          */
+    agc_sp_t       asps_tm[5];      /* ASPS(TM) high words of ASKEP..ASPDWN, B0    */
 
     /* -- final phase table look-up (SP) -------------------------------- */
     agc_sp_t predang; /* PREDANG predicted range, scale 2700 NM        */

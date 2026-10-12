@@ -95,8 +95,7 @@ static uint16_t cdu_pattern(agc_sp_t a)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a failed
- *          assertion
+ * RETURNS: agc_status_t -- always AGC_STATUS_OK (no failure case)
  **********************************************************************/
 agc_status_t agc_entry_cm_pose_triad(void)
 {
@@ -250,15 +249,12 @@ static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
  *
  * FUNCTION NAME: entry_servnout
  *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   ctx       agc_job_ctx_t *  I    job context of the running job (display
- *                                   and DELAYJOB continuations)
+ * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
- *          or state assertion fails; otherwise the status of the first
- *          service call that failed
+ * RETURNS: agc_status_t -- the CHANG1 status (agc_exec_job_yield) when a
+ *          higher job waits, else the SERVEXIT status; AGC_STATUS_BAD_ARG
+ *          from the NEWJOB assertion (cannot fail after the CCS test; kept
+ *          while the EVA run is in progress)
  **********************************************************************/
 agc_status_t entry_servnout(void)
 {

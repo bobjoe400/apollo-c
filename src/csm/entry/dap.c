@@ -1094,8 +1094,7 @@ static void dap_phase_plane(agc_sp_t lcx_in, agc_sp_t mvt2, agc_entry_roll_cmd_t
  *   out       agc_entry_roll_cmd_t *  O    TON1 TOFF TON2 (cs) and the jet
  *                                          indices
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG when out is
- *          NULL
+ * RETURNS: agc_status_t -- always AGC_STATUS_OK (no failure case)
  **********************************************************************/
 agc_status_t agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, agc_entry_roll_cmd_t *out)
 {
