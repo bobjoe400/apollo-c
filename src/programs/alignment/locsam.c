@@ -542,7 +542,16 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls, c
     agc_cdutrig_t trig; /* CDUTRIG sines and cosines */
     agc_mat_t     nb;   /* XNB, YNB, ZNB, half-unit rows */
 
-    picapar_search_t s = {.ip = ip, .ls = ls, .vflag = true, .besti = 0, .bestj = 0 };
+    /* Field assignments, not an initializer: Frama-C 25 (the proof tool)
+     * fails internally on an initializer of this struct; cat is filled by
+     * catlog_load and sax computed below before either is read.         */
+    picapar_search_t s;
+
+    s.ip    = ip;
+    s.ls    = ls;
+    s.vflag = true;
+    s.besti = 0;
+    s.bestj = 0;
 
     agc_align_cdutrig(cdu, &trig);                        /* CDUTRIG  */
     agc_status_t st = agc_align_calcsmsc(ip, &trig, &nb); /* CALCSMSC */
