@@ -799,3 +799,8 @@
             Orbiter 2024 x64 + NASSP-V9.0-Orbiter2024-437 (D3D9Client +
             XRSound active, D3DCompiler_47 x64, Modules/Server junctions).
             Integration target switched to NASSP 9.
+2026-10-12  User: stock NASSP 9 (C:\NASSP9, Orbiter 2024 x64 +
+            NASSP-V9.0-Orbiter2024-437) loads "Apollo 11 - Launch". This
+            is the full-mission baseline for PLAN 10c. nassp-study
+            launches in the next free slot (lm-simulator and document
+            hold both).

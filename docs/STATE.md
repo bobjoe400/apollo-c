@@ -7,10 +7,11 @@ Updated: 2026-10-12
   yaAGC. Note: docs/modules/lm-simulator.md.
 - document (Opus, resumed): deliverables a-e on the FINAL code (d53337b).
   Note: docs/modules/document.md.
-- Queued: nassp-study (10b, reading only). Host side (Windows via WSL
-  interop): Orbiter 2016 / 2024 / nightly installs with NASSP beta 2651
-  under C:\; stock NASSP Apollo 11 launch still crashing in Saturn5.dll
-  on the 2024 release, nightly being tried (worklog).
+- Queued: nassp-study (10b, reading only; target NASSP 9 = rcflyinghokie/
+  NASSP CMake x64 for Orbiter 2024). Host: C:\NASSP9 (Orbiter 2024 x64 +
+  NASSP-V9.0-Orbiter2024-437) loads Apollo 11 at the pad = the stock
+  baseline for 10c. C:\Orbiter2016, C:\Orbiter2024, C:\Orbiter-nightly
+  are dead ends (NASSP 8 needs Orbiter Beta R90) and can be deleted.
 - CODE IS FINAL: finish lane applied the EVA pass (d53337b); all gates
   green; nothing under src/ include/ tests/ tools/prove changes any more.
 
