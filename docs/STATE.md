@@ -6,8 +6,13 @@ Updated: 2026-10-12
 - sim (Opus, acceptance pass): rope image + scaler channels, scenario e,
   f decision, yaAGC command-line drop-in, GUI verification last; records
   flight bugs, does not edit flight code. Note: docs/modules/sim.md.
-- NOTHING RUNNING. Tree frozen for the EVA run (next: lead runs
-  `make prove` once, unbounded sim entry, alone; then document wave).
+- EVA (process, not an agent): `python3 -I tools/prove/eva_run.py --jobs 1
+  --timeout 2592000` started 2026-10-12 on the frozen tree (HEAD 54fd81b);
+  progress in tools/prove/progress.log, per-entry logs tools/prove/runs/.
+  When done: `make prove-classify`, apply VALID deletions everywhere
+  (tools/prove/apply.py), triage alarms, commit. src/ is FROZEN until then.
+- document (Opus): docs/agents/document.md deliverables a-e; docs and
+  tools/{depgraph,xref}.py only, no src/ edits.
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md

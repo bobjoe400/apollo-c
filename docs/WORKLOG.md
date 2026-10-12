@@ -691,3 +691,6 @@
             fix-b6 DONE (CLOCPLAY two-part display; scenario e runs the
             whole burn, 0 xfail; LM had the same defect). Committed. No
             open flight bugs. Tree frozen: next the single EVA run.
+2026-10-12  Started the single EVA run on the frozen tree (jobs 1, no
+            effective timeout, sim entry unbounded as the real main).
+            Launched the document wave (Opus) alongside: docs only.
