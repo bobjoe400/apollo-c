@@ -6,12 +6,12 @@ Updated: 2026-10-11
 - review-sys-misc (Opus, resumed): down_telemetry leftovers, downlink
   lists, extended verbs, uplink, P07, never-fail sweep, collapse-diff
   check, test hygiene, style. Note: docs/modules/review-sys-misc.md.
-- review-prog-align (Opus, resumed): guard review of sxtmark/sighting_mark/
-  programs/alignment, SXTMARK compare, P51-P53/P57 pass, prelaunch header
-  blocks, style. Note: docs/modules/review-prog-align.md.
+- review-guid-powered (Opus, resume): R10 CALCGRAV RTX2 test, *NBSM*
+  word-level form (clears align KNOWN PA-W4), collapse-diff check,
+  word-level adoption, style debt. Note: docs/modules/review-guid-powered.md.
 
 ## Queue after it (two at a time)
-1. review-guid-powered, review-nav-integ (resume) -- items in docs/agents/review_items.md
+1. review-nav-integ (resume) -- items in docs/agents/review_items.md
    (now including the EVA bug leads).
 2. follow-up-done-lanes (DMP audit + word-pair API adoption for the eight
    early-reviewed lanes).

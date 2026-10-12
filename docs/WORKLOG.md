@@ -611,3 +611,5 @@
             time in the accumulator; P52 zero-time test on the high word),
             prelaunch header blocks -> section comments, style 2,275 -> 0.
             Requests routed. review-sys-misc still running.
+2026-10-11  Launched review-guid-powered (resume, Opus) in prog-align's
+            slot, alongside review-sys-misc.
