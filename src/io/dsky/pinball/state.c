@@ -387,9 +387,9 @@ int pin_getinrel(void)
  *   mag       uint16_t  I    new relay magnitude (stored negative: to be
  *                            sent)
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition
+ * RETURNS: none
  **********************************************************************/
-agc_status_t pin_dsptab_store(int rel, uint16_t mag)
+void pin_dsptab_store(int rel, uint16_t mag)
 {
     agc_inhint();
     uint16_t old = agc_erase_dsptab(rel); /* previous DSPTAB word */
@@ -404,12 +404,6 @@ agc_status_t pin_dsptab_store(int rel, uint16_t mag)
     agc_relint();
 
     /* NOUT counts at most the eleven panel words still to send          */
-    if (!AGC_ASSERT(g_pin.nout <= PIN_DSPTAB_PANEL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -425,33 +419,28 @@ agc_status_t pin_dsptab_store(int rel, uint16_t mag)
  *                            sign on, 3 sign off
  *   code      uint16_t  I    5-bit relay code (or BIT11 for a sign)
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
- *          status of the routine it calls
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t pin_dspin1(int rel, int sel, uint16_t code)
+static void pin_dspin1(int rel, int sel, uint16_t code)
 {
     /* the new code fits the selected relay field                        */
 
     uint16_t cur = agc_erase_dsptab(rel); /* current DSPTAB word */
 
     /* A DSPTAB entry of +0 is a CCSHOLE in the AGC.                     */
-    if (!AGC_ASSERT(cur != 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     uint16_t mag = pin_ones_mag(cur); /* magnitude, unscaled */
 
     if ((uint16_t) (mag & k_dsmsk[sel]) == code)
     {
-        return (AGC_STATUS_OK); /* DSLV: same                 */
+        return; /* DSLV: same                 */
     }
 
     uint16_t nmag; /* new relay magnitude */
 
     nmag = (uint16_t) ((mag & (uint16_t) ~k_dsmsk[sel]) + code);
 
-    return (pin_dsptab_store(rel, nmag)); /* DFRNT                      */
+    pin_dsptab_store(rel, nmag); /* DFRNT */
 }
 
 /**********************************************************************
@@ -466,21 +455,22 @@ static agc_status_t pin_dspin1(int rel, int sel, uint16_t code)
  *                            blank the sign)
  *   code      uint16_t  I    5-bit relay code of the character
  *
- * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
- *          status of the routine it calls
+ * RETURNS: none
  **********************************************************************/
-agc_status_t pin_dspin(int16_t count, uint16_t code)
+void pin_dspin(int16_t count, uint16_t code)
 {
     int rel = (count & 037) >> 1; /* SR                         */
 
     if ((count & 1) == 0)
     {
-        return (pin_dspin1(rel, 0, code)); /* right char                 */
+        pin_dspin1(rel, 0, code);
+
+        return; /* right char                 */
     }
 
     int sel = ((uint16_t) count & PIN_BIT14) != 0u ? 3 : 1; /* left (+sign) */
 
-    return (pin_dspin1(rel, sel, (uint16_t) (code << 5))); /* SLEFT5       */
+    pin_dspin1(rel, sel, (uint16_t) (code << 5)); /* SLEFT5 */
 }
 
 /**********************************************************************
@@ -492,12 +482,11 @@ agc_status_t pin_dspin(int16_t count, uint16_t code)
  *   rel       int   I    DSPTAB index 0..10 (relay word)
  *   on        bool  I    true to light the sign, false to turn it off
  *
- * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
- *          status of the routine it calls
+ * RETURNS: none
  **********************************************************************/
-agc_status_t pin_11dspin(int rel, bool on)
+void pin_11dspin(int rel, bool on)
 {
-    return (pin_dspin1(rel, 2, on ? (uint16_t) PIN_BIT11 : 0u)); /* sign bit on / off */
+    pin_dspin1(rel, 2, on ? (uint16_t) PIN_BIT11 : 0u); /* sign bit on / off */
 }
 
 /**********************************************************************
@@ -505,14 +494,13 @@ agc_status_t pin_11dspin(int rel, bool on)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- BAD_ARG on a failed precondition; else the
- *          status of the routine it calls
+ * RETURNS: none
  **********************************************************************/
-agc_status_t pin_2blank(void)
+void pin_2blank(void)
 {
     int rel = (g_pin.dspcount & 037) >> 1; /* DSPTAB index of the pair */
 
-    return (pin_dsptab_store(rel, (uint16_t) PIN_BIT12)); /* CS BLANKCON    */
+    pin_dsptab_store(rel, (uint16_t) PIN_BIT12); /* CS BLANKCON */
 }
 
 /**********************************************************************
@@ -548,11 +536,6 @@ agc_status_t pin_5blank_rel(int inrel)
     static const int16_t doublk[3]   = {015, 011, 003}; /* DOUBLK       */
     static const int16_t rxd1[3]     = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
 
-    if (!AGC_ASSERT(inrel >= PIN_INREL_X) || !AGC_ASSERT(inrel <= PIN_INREL_Z))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
 
     g_pin.xyz_oct[k]     = 0;
@@ -561,23 +544,13 @@ agc_status_t pin_5blank_rel(int inrel)
     g_pin.xyz_negzero[k] = false;
 
     /* zero pertinent dec comp bit (bit 5 R1, 4 R2, 3 R3) and low 2 bits */
-    g_pin.decbrnch  &= (uint16_t) ~((uint16_t) (020u >> k) | 3u);
-    agc_status_t st = pin_dspin(sinblank[k], 0); /* status so far */
-
+    g_pin.decbrnch &= (uint16_t) ~((uint16_t) (020u >> k) | 3u);
+    pin_dspin(sinblank[k], 0);
     pin_set_dspcount(doublk[k]);
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = pin_2blank();
-    }
-
+    pin_2blank();
     pin_set_dspcount((int16_t) (doublk[k] - 2));
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = pin_2blank();
-    }
-
+    pin_2blank();
     pin_set_dspcount(rxd1[k]);
 
     /* DSPCOUNT left at the left-most digit of the register              */
@@ -586,7 +559,7 @@ agc_status_t pin_5blank_rel(int inrel)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st);
+    return (AGC_STATUS_OK);
 } /* pin_5blank_rel */
 
 /* ---- DSPOUT (T4RUPT p. 133) ------------------------------------------ */

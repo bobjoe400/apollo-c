@@ -1399,12 +1399,8 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc, bool moonthis
     agc_vehicle_t    veh = csm ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM; /* corrected */
     agc_status_t     st  = agc_incorp_update_w(ip, inc, &ctx->w);  /* W update */
 
-    agc_phase_change(04022); /* FAZC     */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_integ_perm_get(veh, &ctx->sv); /* MOVEP..  */
-    }
+    agc_phase_change(04022);           /* FAZC     */
+    agc_integ_perm_get(veh, &ctx->sv); /* MOVEP..  */
 
     agc_incorp_sv_t sv; /* state for the update */
 
@@ -1436,8 +1432,15 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc, bool moonthis
     agc_phase_change(04022); /* FAZAB3   */
 
     if (st == AGC_STATUS_OK)
-    {
-        st = csm ? agc_integ_atopcsm(ip, ctx, ctx->pbody) : agc_integ_atoplem(ip, ctx, ctx->pbody); /* MOVEA.. */
+    { /* MOVEA..  */
+        if (csm)
+        {
+            agc_integ_atopcsm(ip, ctx, ctx->pbody);
+        }
+        else
+        {
+            agc_integ_atoplem(ip, ctx, ctx->pbody);
+        }
     }
 
     if (inc->dim9)
@@ -1568,11 +1571,6 @@ static rz_integ_kind_t rz_resolve_kind(rz_integ_kind_t kind)
  **********************************************************************/
 agc_status_t rz_integ(agc_interp_t *ip, rz_integ_kind_t kind, agc_dp_t tdec1, agc_job_id_t resume, agc_integ_out_t *out)
 {
-    if (!AGC_ASSERT(ip != NULL && out != NULL) || !AGC_ASSERT((int) kind >= 0 && kind < RZ_INTEG_KIND_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx(); /* integration erasables */
     agc_status_t     st;                           /* integration status */
 

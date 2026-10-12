@@ -526,11 +526,6 @@ static agc_status_t dif_oktocopy(const dif_req_t *rq, agc_prio_t userprio)
  **********************************************************************/
 static agc_status_t dif_markplay(void)
 {
-    if (!AGC_ASSERT(pin_invariants()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     agc_flagword_set(DIF_F4, (uint16_t) ((f4() & ~05u) | DIF_XDSPFLAG));
     agc_relint();
@@ -538,11 +533,6 @@ static agc_status_t dif_markplay(void)
     if ((g_cls[DIF_MARKC].flags & DIF_PERFORM) != 0u)
     { /* GOGOMARK */
         g_cls[DIF_MARKC].nvword = pin_ones_neg(g_cls[DIF_MARKC].nvword);
-    }
-
-    if (!AGC_ASSERT((f4() & DIF_XDSPFLAG) != 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (dif_nvdsp(DIF_MARKC, g_cls[DIF_MARKC].userprio)); /* MARKCOP */
@@ -699,11 +689,6 @@ static agc_status_t dif_makeprio(const dif_req_t *rq, agc_prio_t userprio)
  **********************************************************************/
 static agc_status_t dif_makemark(const dif_req_t *rq, agc_prio_t userprio)
 {
-    if (!AGC_ASSERT(pin_invariants()) || !AGC_ASSERT(rq != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     dif_copies(DIF_MARKC, rq, userprio);
     uint16_t f = f4(); /* C(FLAGWRD4) */
 
@@ -1423,10 +1408,6 @@ agc_status_t agc_dsky_endmark(void)
     agc_dsky_clearmrk();
 
     /* CLEARMRK: no extended verb active and the mark display released    */
-    if (!AGC_ASSERT(agc_erase_extvbact() == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if ((f4() & DIF_PRIO30) != 0u)
     { /* normal or prio in ENDIDLE */
@@ -1653,25 +1634,15 @@ agc_status_t agc_dsky_display_ecadr(const agc_job_ctx_t *ctx, agc_dsky_disp_t ki
                             {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE},
                             ecadr};
 
-    if (!AGC_ASSERT(ecadr <= PIN_WORD))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (cont != NULL)
     {
         rq.cadr = *cont;
     }
 
-    /* Flashing displays need the three astronaut returns; GODSPRET and
+    /* Flashing displays carry the three astronaut returns; GODSPRET and
      * EXDSPRET return to call CADR +1 (terminate). CLEANDSP and KLEENEX
      * (VN forced to +0) have no return slots in their AGC calling
      * sequence ("TC BANKCALL / CADR CLEANDSP"): they return to the user. */
-    if (((k->flags & DIF_FLASH) != 0u && k->src != 1u && !AGC_ASSERT(rq.cadr.terminate != AGC_JOB_NONE && rq.cadr.proceed != AGC_JOB_NONE && rq.cadr.enter != AGC_JOB_NONE)) || ((k->flags & DIF_GODSPRET) != 0u && !AGC_ASSERT(rq.cadr.terminate != AGC_JOB_NONE)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (k->src == 1u)
     {
         rq.vn = 0; /* CAF ZERO       */

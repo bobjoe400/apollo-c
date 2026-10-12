@@ -362,7 +362,14 @@ static agc_status_t matrx_tail(void)
 
     agc_phase_change_var(004023, &v);
     agc_guid_state()->avg.avgexit = AGC_JOB_VHHDOT; /* P11SCADR      */
-    agc_imu_set_pipa_interval((agc_sp_t) 031000);   /* PRIO31: 2 s   */
+
+    const agc_status_t sp = agc_imu_set_pipa_interval((agc_sp_t) 031000); /* PRIO31: 2 s   */
+
+    if (sp != AGC_STATUS_OK)
+    {
+        return (sp);
+    }
+
     agc_inhint();
 
     /* CS ZERO / TS TBASE5: READACCS restarts relative to liftoff (no exec

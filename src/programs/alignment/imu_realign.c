@@ -97,18 +97,22 @@ static bool is_csm(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- the SET1/PDT or NCOARSE status
  **********************************************************************/
-static void drift_compensation_restart(void)
+static agc_status_t drift_compensation_restart(void)
 {
+    agc_status_t st; /* SET1/PDT or NCOARSE status */
+
     if (is_csm())
     {
-        align_set1_pdt();
+        st = align_set1_pdt();
     }
     else
     {
-        align_ncoarse();
+        st = align_ncoarse();
     }
+
+    return (st);
 }
 
 /**********************************************************************
@@ -535,7 +539,12 @@ agc_status_t agc_job_coarse_align(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_coarse_align_coarsed(agc_job_ctx_t *ctx)
 {
-    drift_compensation_restart();
+    const agc_status_t st = drift_compensation_restart(); /* SET1/PDT, NCOARSE */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
 
     return (agc_job_coarse_align_fineonly(ctx));
 }
@@ -716,7 +725,13 @@ agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx)
     agc_erase_set_refsmmat(ram->xsmd); /* MATMOVE   */
     agc_flag_clear(AGC_FLAG_PFRATFLG);
     agc_flag_set(AGC_FLAG_REFSMFLG);
-    drift_compensation_restart();
+
+    const agc_status_t st = drift_compensation_restart(); /* SET1/PDT, NCOARSE */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
 
     if (is_csm())
     {

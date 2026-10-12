@@ -556,7 +556,14 @@ static agc_status_t list_lookup(bool sub, int ref, agc_dn_list_t *out)
         return (sub ? agc_dnlist_lm_sublist(ref, out) : agc_dnlist_lm_control(ref, out)); /* DNPTR / DNTABLE */
     }
 
-    return (sub ? agc_dnlist_csm_sublist(ref, out) : agc_dnlist_csm_control(ref, out)); /* DNPTR / DNTABLE */
+    if (sub)
+    {
+        return (agc_dnlist_csm_sublist(ref, out)); /* DNPTR */
+    }
+
+    agc_dnlist_csm_control(ref, out); /* DNTABLE */
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -951,20 +958,13 @@ static agc_status_t sublist_words(int ref, int *words)
  * AGC: none -- Number of DP words a downlist sends, the ID word included.
  *
  * ARGUMENTS:
- *   v      agc_vehicle_t  I   the vehicle flown (asserted)
  *   code   int            I   DNLSTCOD
  *   words  int *          O   DP words of the downlist, ID included
  *
- * RETURNS: AGC_STATUS_OK, BAD_ARG for a NULL words or another vehicle, or
- *          the lookup status
+ * RETURNS: AGC_STATUS_OK, or the lookup status
  **********************************************************************/
-agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words)
+agc_status_t agc_dnlist_word_count(int code, int *words)
 {
-    if (!AGC_ASSERT(words != NULL) || !AGC_ASSERT(v == agc_state_vehicle()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dn_list_t list;                                 /* the control list */
     agc_status_t  st = list_lookup(false, code, &list); /* lookup status */
 

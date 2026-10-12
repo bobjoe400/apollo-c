@@ -371,22 +371,15 @@ static void targ_ldcalc(agc_interp_t *ip, agc_entry_state_t *es)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
- *          or state assertion fails; otherwise the status of the first
- *          service call that failed
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_entry_targeting(void)
+void agc_entry_targeting(void)
 {
     agc_interp_t      *ip    = entry_ip();                  /* entry job interpreter state */
     agc_entry_state_t *es    = agc_entry_state();           /* entry erasables */
     agc_vec_t          unitr = agc_guid_state()->avg.unitr; /* UNITR, B1 */
     agc_state_vector_t sv;                                  /* state vector (PIPTIME, V) */
     agc_dp_t           mpac  = 0;                           /* ETA estimate, cs B28 */
-
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_sv_get(AGC_SV_THIS, &sv);
 
@@ -470,14 +463,7 @@ agc_status_t agc_entry_targeting(void)
     {
         agc_flag_set(AGC_FLAG__05GSW);
         targ_ldcalc(ip, es);
-
-        if (!AGC_ASSERT(agc_flag_test(AGC_FLAG__05GSW)))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
     }
-
-    return (AGC_STATUS_OK);
 } /* agc_entry_targeting */
 
 /* ======================================================================
@@ -556,11 +542,6 @@ agc_status_t agc_entry_startent(void)
     agc_status_t       st;                     /* STARTEN1 status */
     agc_dp_t           m;                      /* MPAC, scale per step */
 
-    if (!AGC_ASSERT(es != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_sv_get(AGC_SV_THIS, &sv);
 
     /* STARTENT entry-switch initialisation (p. 844): clear ENTMASK =
@@ -581,11 +562,6 @@ agc_status_t agc_entry_startent(void)
     agc_flag_set(AGC_FLAG_GONEPAST);
     agc_flag_set(AGC_FLAG_LATSW);
     agc_relint();
-
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_LATSW)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     es->lod      = agc_dp_from_sp(es->lodpad); /* SLOAD LODPAD */
     es->lad      = agc_dp_from_sp(es->ladpad);
@@ -1968,15 +1944,7 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
             /* BECONSTD (p. 867): GOTOADDR = HUNTEST, RTB KILLGRP4. */
         {
             p->es->gotoaddr = AGC_ENTRY_GOTO_HUNTEST;
-
-            const agc_status_t st = entry_disable_restart_group();
-
-            if (st != AGC_STATUS_OK)
-            {
-                p->status = st;
-
-                return (ST_ERROR);
-            }
+            entry_disable_restart_group();
 
             return (ST_CONSTD);
         }
@@ -2351,15 +2319,9 @@ agc_status_t agc_entry_reestablish_sequencer(bool *display)
  **********************************************************************/
 agc_status_t agc_entry_scalepop(bool *display)
 {
-    agc_status_t st; /* TARGETNG status */
-
     *display = false;
-    st       = agc_entry_targeting();
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_entry_targeting();
 
     return (agc_entry_reestablish_sequencer(display));
 }

@@ -40,8 +40,8 @@
 #include "agc/exec/exec.h"
 
 /* ---- fresh start / restart (FRESH_START_AND_RESTART.agc pp. 212-219) -- */
-agc_status_t agc_lm_dap_fresh_start(void); /* DAP erasables on fresh start   */
-void         agc_lm_dap_restart(void);     /* STARTSB1 DAP part (both)        */
+void agc_lm_dap_fresh_start(void); /* DAP erasables on fresh start   */
+void agc_lm_dap_restart(void);     /* STARTSB1 DAP part (both)        */
 
 /* ---- alarm codes (octal, as in the listing) ----------------------------- */
 #define AGC_ALARM_02000 \
@@ -85,42 +85,42 @@ agc_status_t agc_lm_dap_needles_init(void); /* set RCSFLAGS bit 3 (FDAI init)  *
 
 /* ---- erasables owned by the LM DAP and shared with other modules ------- */
 /* KALCMANU / FINDCDUW interface (ERASABLE_ASSIGNMENTS p. 134)              */
-uint16_t agc_erase_cduxd(void);              /* desired CDU X, 2's comp at pi */
-uint16_t agc_erase_cduyd(void);
-uint16_t agc_erase_cduzd(void);
-void     agc_erase_set_cduxd(uint16_t v);
-void     agc_erase_set_cduyd(uint16_t v);
-void     agc_erase_set_cduzd(uint16_t v);
-void     agc_erase_set_delcdux(agc_sp_t v);  /* -desired 100 ms CDU increment, at pi */
-void     agc_erase_set_delcduy(agc_sp_t v);
-void     agc_erase_set_delcduz(agc_sp_t v);
-agc_sp_t agc_erase_omegapd(void);            /* desired body rates, at pi/4     */
-agc_sp_t agc_erase_omegaqd(void);
-agc_sp_t agc_erase_omegard(void);
-void     agc_erase_set_omegapd(agc_sp_t v);
-void     agc_erase_set_omegaqd(agc_sp_t v);
-void     agc_erase_set_omegard(agc_sp_t v);
-void     agc_erase_set_delperor(agc_sp_t v); /* KALCMANU command lags, at pi */
-void     agc_erase_set_delqeror(agc_sp_t v);
-void     agc_erase_set_delreror(agc_sp_t v);
+uint16_t     agc_erase_cduxd(void);              /* desired CDU X, 2's comp at pi */
+uint16_t     agc_erase_cduyd(void);
+uint16_t     agc_erase_cduzd(void);
+agc_status_t agc_erase_set_cduxd(uint16_t v);
+agc_status_t agc_erase_set_cduyd(uint16_t v);
+agc_status_t agc_erase_set_cduzd(uint16_t v);
+agc_status_t agc_erase_set_delcdux(agc_sp_t v);  /* -desired 100 ms CDU increment, at pi */
+agc_status_t agc_erase_set_delcduy(agc_sp_t v);
+agc_status_t agc_erase_set_delcduz(agc_sp_t v);
+agc_sp_t     agc_erase_omegapd(void);            /* desired body rates, at pi/4     */
+agc_sp_t     agc_erase_omegaqd(void);
+agc_sp_t     agc_erase_omegard(void);
+agc_status_t agc_erase_set_omegapd(agc_sp_t v);
+agc_status_t agc_erase_set_omegaqd(agc_sp_t v);
+agc_status_t agc_erase_set_omegard(agc_sp_t v);
+agc_status_t agc_erase_set_delperor(agc_sp_t v); /* KALCMANU command lags, at pi */
+agc_status_t agc_erase_set_delqeror(agc_sp_t v);
+agc_status_t agc_erase_set_delreror(agc_sp_t v);
 
 /* estimator outputs                                                        */
-agc_sp_t agc_erase_omegap(void); /* body rates, at pi/4             */
-agc_sp_t agc_erase_omegaq(void);
-agc_sp_t agc_erase_omegar(void);
-agc_dp_t agc_erase_aosq(void);   /* offset accel, DP at pi/2        */
-agc_dp_t agc_erase_aosr(void);
-void     agc_erase_set_aosq(agc_dp_t v);
-void     agc_erase_set_aosr(agc_dp_t v);
-agc_sp_t agc_erase_alphaq(void); /* downlink copies of AOSQ/R       */
-agc_sp_t agc_erase_alphar(void);
-agc_sp_t agc_erase_1jacc(void);  /* 1-jet P accel, at pi/4          */
-agc_sp_t agc_erase_1jaccq(void); /* 1-jet Q accel, at pi/4          */
-agc_sp_t agc_erase_1jaccr(void); /* 1-jet R accel, at pi/4          */
+agc_sp_t     agc_erase_omegap(void); /* body rates, at pi/4             */
+agc_sp_t     agc_erase_omegaq(void);
+agc_sp_t     agc_erase_omegar(void);
+agc_dp_t     agc_erase_aosq(void);   /* offset accel, DP at pi/2        */
+agc_dp_t     agc_erase_aosr(void);
+agc_status_t agc_erase_set_aosq(agc_dp_t v);
+agc_status_t agc_erase_set_aosr(agc_dp_t v);
+agc_sp_t     agc_erase_alphaq(void); /* downlink copies of AOSQ/R       */
+agc_sp_t     agc_erase_alphar(void);
+agc_sp_t     agc_erase_1jacc(void);  /* 1-jet P accel, at pi/4          */
+agc_sp_t     agc_erase_1jaccq(void); /* 1-jet Q accel, at pi/4          */
+agc_sp_t     agc_erase_1jaccr(void); /* 1-jet R accel, at pi/4          */
 
 /* crew/pad-load parameters                                                 */
-agc_sp_t agc_erase_stiksens(void);             /* RHC sensitivity                 */
-void     agc_erase_set_stiksens(agc_sp_t v);
-void     agc_erase_set_neg_ratedb(agc_sp_t v); /* -RATEDB, rate deadband (neg) */
+agc_sp_t     agc_erase_stiksens(void);             /* RHC sensitivity                 */
+agc_status_t agc_erase_set_stiksens(agc_sp_t v);
+agc_status_t agc_erase_set_neg_ratedb(agc_sp_t v); /* -RATEDB, rate deadband (neg) */
 
 #endif /* AGC_LM_DAP_H */

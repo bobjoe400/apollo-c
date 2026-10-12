@@ -378,7 +378,7 @@ static void test_sidetrak_restart_priority(void)
     bool               display = false;             /* ENDEXIT display */
     bool               found   = false;             /* restart job seen at PRIO16 */
 
-    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    agc_power_on(AGC_VEHICLE_CSM);
     set_nominal_upcontrol_state();
     es->gotoaddr = AGC_ENTRY_GOTO_HUNTEST;
     es->thetah   = agc_dp_from_double(2000.0 / REV_NM, 0); /* range to go far beyond the up-control range */

@@ -236,10 +236,15 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
     if (agc_dp_sub(&ip, v.c[2], TA_COS15DEG) >= 0)
     { /* R61LEM2  */
         agc_inhint();
-        agc_erase_set_cduxd(gimbal[0]);
-        agc_erase_set_cduyd(gimbal[1]);
-        agc_erase_set_cduzd(gimbal[2]);
+        st = agc_erase_set_cduxd(gimbal[0]);                              /* CDUXD.. store status */
+        st = (st == AGC_STATUS_OK) ? agc_erase_set_cduyd(gimbal[1]) : st; /* if OK */
+        st = (st == AGC_STATUS_OK) ? agc_erase_set_cduzd(gimbal[2]) : st; /* if OK */
         agc_relint();
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
 
         return (ta_next());
     }

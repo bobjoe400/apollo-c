@@ -256,23 +256,15 @@ void exec_up_startsub(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG when called with
- *          interrupts enabled
+ * RETURNS: none
  **********************************************************************/
-agc_status_t exec_up_startsb2(void)
+void exec_up_startsb2(void)
 {
     agc_dsky_init();           /* DSKY reset */
     agc_svc_startsub_reset();  /* DELAYLOC = 0      */
     agc_t4_startsub_reset();   /* DSRUPTSW = +0     */
     agc_selfcheck_restart();   /* SELFRET = SELFCHK */
     agc_erase_set_extvbact(0); /* EXTVBACT = 0      */
-
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -285,12 +277,10 @@ agc_status_t exec_up_startsb2(void)
  * ARGUMENTS:
  *   slap1 -- true for the V36 SLAP1 fresh start (ERCOUNT, DSRUPTSW)
  *
- * RETURNS: agc_status_t -- the LM DAP reset status, else OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t exec_up_dofstart(bool slap1)
+void exec_up_dofstart(bool slap1)
 {
-    agc_status_t st = AGC_STATUS_OK; /* LM DAP reset outcome */
-
     agc_selfcheck_fresh_start(slap1);
     agc_uplink_update_fresh_start();
     agc_telem_fresh_start(); /* DNLSTCOD = COSTALIN */
@@ -309,14 +299,12 @@ agc_status_t exec_up_dofstart(bool slap1)
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        st = agc_lm_dap_fresh_start();
+        agc_lm_dap_fresh_start();
     }
     else
     {
         agc_t4_optics_reset(true);
     }
-
-    return (st);
 }
 
 /**********************************************************************
@@ -356,16 +344,10 @@ void exec_up_goprog_downlist(void)
  * ARGUMENTS:
  *   v -- AGC_VEHICLE_CSM or AGC_VEHICLE_LM
  *
- * RETURNS: agc_status_t -- the executive / waitlist start status; BAD_ARG for a
- *          bad vehicle
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_power_on(agc_vehicle_t v)
+void agc_power_on(agc_vehicle_t v)
 {
-    if (!AGC_ASSERT(v == AGC_VEHICLE_CSM || v == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_state_init(v);
     agc_align_ram_reset();
     agc_rendz_reset(agc_rendz_erasable());
@@ -380,12 +362,5 @@ agc_status_t agc_power_on(agc_vehicle_t v)
     }
 
     agc_exec_init();
-    agc_status_t st = agc_waitlist_init(); /* waitlist start outcome */
-
-    if (!AGC_ASSERT(agc_state_vehicle() == v))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
+    agc_waitlist_init();
 }

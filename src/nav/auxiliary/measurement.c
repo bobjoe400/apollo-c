@@ -372,11 +372,6 @@ agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc, agc_
             agc_vec_t omegam_wrow = omegam[b];    /* scale of W          */
             int       normgam     = inc->normgam; /* AGC index value     */
 
-            if (!AGC_ASSERT((normgam <= NAVAUX_MAX_SHIFT) && (normgam >= -NAVAUX_MAX_SHIFT)))
-            {
-                return (AGC_STATUS_BAD_ARG);
-            }
-
             int       s  = 0;                                  /* NORM S2   */
             agc_dp_t  nz = agc_dp_norm(agc_dp_neg(zim), &s);   /* -ZI 2^s   */
             agc_vec_t d  = agc_vec_scale(ip, omegam_wrow, nz); /* W 2^-sh   */

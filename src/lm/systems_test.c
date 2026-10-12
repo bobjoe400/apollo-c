@@ -693,13 +693,8 @@ static agc_status_t earthr(agc_interp_t *ip, agc_job_id_t busy_wake)
 
     agc_vec_t v = agc_vec_scale(ip, er, agc_dp_shl(ip, d, 9)); /* ERTHR: SL 9D, VXSC: rev 2^0 */
 
-    v               = agc_mat_vec(ip, &agc_align_ram()->xsm, v);
-    agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, ercomp); /* gyro buffer status */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    v = agc_mat_vec(ip, &agc_align_ram()->xsm, v);
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, ercomp);
 
     for (int i = 0; i < 3; i++)
     {
@@ -1119,7 +1114,13 @@ static agc_status_t estims(void)
         w[W_ALX1S + i] = intval_words[i]; /* STOVL ALX1S: INTVAL +2 */
     }
 
-    agc_imu_set_gcompsw(0); /* STOVL GCOMPSW -1      */
+    st = agc_imu_set_gcompsw(0); /* STOVL GCOMPSW -1      */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     agc_erase_set_delv(agc_vec_zero());
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, zero);
 
@@ -1130,7 +1131,7 @@ static agc_status_t estims(void)
     }
 
     return (sleepie_tail());
-}
+} /* estims */
 
 /**********************************************************************
  * GUESS1 (p.377): only the south gyro gets earth rate; TORQNDX = POSMAX
@@ -1171,13 +1172,8 @@ static agc_status_t vertdrft(agc_sp_t lengthot)
     }
 
     w_set_sp(W_LENGTHOT, lengthot);
-    w[W_DRIFTT]     = (uint16_t) (WORD15 - w[k]);                    /* INDEX POSITON, CS SOUTHDR -2 */
-    agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, er); /* gyro buffer status */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    w[W_DRIFTT] = (uint16_t) (WORD15 - w[k]); /* INDEX POSITON, CS SOUTHDR -2 */
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, er);
 
     /* CCS PIPINDEX: Z up in position 4 (PON4) or X up (PON2).            */
     int up = (w_sp(W_PIPINDEX) > 0) ? 0 : 2; /* ERCOMP component of the up axis */

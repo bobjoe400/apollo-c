@@ -677,15 +677,22 @@ void align_set_dsptem1(agc_dp_t v)
  *
  * ARGUMENTS: none
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG when 1/PIPADT refuses TIME1
  **********************************************************************/
-void align_set1_pdt(void)
+agc_status_t align_set1_pdt(void)
 {
-    const agc_dp_t zero3[3] = {0, 0, 0};
+    const agc_dp_t     zero3[3] = {0, 0, 0};
+    const agc_status_t st       = agc_imu_set_pipa_interval(agc_erase_time1()); /* 1/PIPADT store status */
 
-    agc_imu_set_pipa_interval(agc_erase_time1());
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, zero3);
     agc_flag_set(AGC_FLAG_DRIFTFLG);
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -716,14 +723,15 @@ void align_phase4(uint16_t code)
  *
  * ARGUMENTS: none
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- the SET1/PDT status (align_set1_pdt)
  **********************************************************************/
-void align_ncoarse(void)
+agc_status_t align_ncoarse(void)
 {
     agc_erase_set_pipax(0);
     agc_erase_set_pipay(0);
     agc_erase_set_pipaz(0);
-    align_set1_pdt();
+
+    return (align_set1_pdt());
 }
 
 /**********************************************************************

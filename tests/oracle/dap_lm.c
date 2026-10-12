@@ -219,9 +219,9 @@ static void fresh(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
     agc_exec_init();
-    (void) agc_waitlist_init();
+    agc_waitlist_init();
     agc_guid_init(AGC_VEHICLE_LM);
-    (void) agc_lm_dap_fresh_start();
+    agc_lm_dap_fresh_start();
 
     /* The AGC runs start from zeroed erasable: drop the fresh-start pad
      * values (1/ACCSET block, gains) the C keeps in lm_dap_t.            */

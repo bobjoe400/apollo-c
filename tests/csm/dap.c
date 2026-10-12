@@ -352,7 +352,7 @@ static void test_rolldap(void)
     CHECK(t->temreg > 24);                           /* > TMINFIRE      */
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 012u); /* jets 12, 10     */
     CHECK(t->rollword == 2u);
-    CHECK(agc_task_roll_jets_off() == AGC_STATUS_OK);
+    agc_task_roll_jets_off();
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u);
 
     t->temreg = 0;

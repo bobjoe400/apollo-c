@@ -278,18 +278,10 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
  *                                                axes as TRG*NBSM leaves
  *                                                its words, half-unit (2^1)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
- *          its successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check);
- *          AGC_STATUS_BAD_ARG on a failed precondition
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_words_t *star_sm)
+void agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_words_t *star_sm)
 {
-    if (!AGC_ASSERT((ip != NULL) && (m != NULL)) || !AGC_ASSERT(star_sm != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t yrot = agc_align_cdulogic(m->ycdu[0]); /* CURSOR, revs 2^0 */
     const agc_dp_t srot = agc_align_cdulogic(m->ycdu[1]); /* SPIRAL, revs 2^0 */
     agc_vec_t      v    = oa;                             /* OA (YSZERO), then the star in NB, half-unit (2^1) */
@@ -319,8 +311,6 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, a
     }
 
     agc_guid_trg_nbsm_words(&t, m->xcdu, star_sm); /* STCALL 24D keeps VBUF's words */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -338,18 +328,10 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, a
  *                                  (words), half-unit (2^1)
  *   ave       agc_vec_t *     IO   running average star vector, half-unit
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
- *          its successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check);
- *          AGC_STATUS_BAD_ARG on a failed precondition
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, agc_vec_t *ave)
+void agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, agc_vec_t *ave)
 {
-    if (!AGC_ASSERT((ip != NULL) && (ave != NULL)) || !AGC_ASSERT((n >= 1) && (n <= AGC_ALIGN_AOT_PAIRS)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t n8 = (agc_dp_t) n * DP_ONE_EIGHTH; /* MKDEX / 8, scale 2^0 */
     agc_vec_t      sr3;                               /* STAR VSR3 (rounds on the stored words), scale 2^4 */
 
@@ -362,8 +344,6 @@ agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, a
     const agc_dp_t  keep = agc_dp_div(ip, agc_dp_sub(ip, n8, DP_ONE_EIGHTH), n8); /* (n/8 - 1/8) / (n/8): (n-1)/n, scale 2^0 */
 
     *ave = agc_vec_add(ip, agc_vec_scale(ip, *ave, keep), part);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -727,7 +707,7 @@ static agc_status_t average_marks(agc_interp_t *ip)
 
         if (surface_marks())
         {
-            st = agc_aot_surfstar(ip, m, ram->scaxis, ram->xpnb, ram->ypnb, &v);
+            agc_aot_surfstar(ip, m, ram->scaxis, ram->xpnb, ram->ypnb, &v);
         }
         else
         {
@@ -743,7 +723,7 @@ static agc_status_t average_marks(agc_interp_t *ip)
 
         if (st == AGC_STATUS_OK)
         {
-            st = agc_aot_aveit(ip, ram->mkdex, v, &ram->starad[1]);
+            agc_aot_aveit(ip, ram->mkdex, v, &ram->starad[1]);
         }
 
         ram->starsav2 = ram->starad[1];

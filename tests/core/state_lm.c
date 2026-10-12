@@ -204,7 +204,7 @@ static void test_lm_state(void)
     in.moon   = true;
 
     /* LM build: the OTHER vehicle is the CSM */
-    CHECK(agc_sv_set(AGC_SV_OTHER, &in) == AGC_STATUS_OK);
+    agc_sv_set(AGC_SV_OTHER, &in);
     CHECK(agc_erase_rrectcsm().c[2] == 33);
     CHECK(agc_erase_vrectcsm().c[0] == -1);
     CHECK(agc_erase_tetcsm() == 4242);
@@ -212,7 +212,7 @@ static void test_lm_state(void)
     CHECK(!agc_flag_test(AGC_FLAG_LMOONFLG));
     agc_sv_get(AGC_SV_OTHER, &out);
     CHECK(out.moon && (out.t == 4242) && (out.r.c[1] == 22));
-    CHECK(agc_sv_set(AGC_SV_THIS, &in) == AGC_STATUS_OK);
+    agc_sv_set(AGC_SV_THIS, &in);
     CHECK(agc_erase_rn().c[0] == 11);
     CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));
 

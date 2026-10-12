@@ -52,6 +52,10 @@ excluded while loose-ends ran (wave 1); the lead lifted that mid-run.
   `make prolog-report` 0 tree-wide.
 
 ## Open: silent-skip sites (check_rules hard, 22)
+RESOLVED (finish lane, 2026-10-12, docs/modules/finish.md): EVA proved
+end_of_job VALID (deleted); the other 20 return agc_status_t (BAD_ARG,
+nothing stored) and every caller handles it. `make check-rules` 0.
+
 All are `if (AGC_ASSERT(c)) { store; }` with no else. Why each holds by
 construction (so the fix is deleting the guard):
 * src/lm/dap/state.c setters cduxd/cduyd/cduzd (<= 077777): callers

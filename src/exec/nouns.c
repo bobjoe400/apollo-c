@@ -657,15 +657,10 @@ static agc_status_t noun_by_function(uint16_t id, bool lm, bool write, agc_dp_t 
  *   value -- the value, at the noun's scale (read: receives it)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND when no owner holds
- *          the id; the owner's status; BAD_ARG for an id out of range
+ *          the id; the owner's status
  **********************************************************************/
 agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
 {
-    if (!AGC_ASSERT(data_id > AGC_DATA_NONE && data_id < AGC_DATA_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     bool         lm = agc_state_vehicle() == AGC_VEHICLE_LM; /* Luminary rope */
     agc_dp_t    *dp = NULL;                                  /* DP erasable, NULL none */
     agc_sp_t    *sp = noun_sp(data_id);                      /* SP erasable, NULL none */

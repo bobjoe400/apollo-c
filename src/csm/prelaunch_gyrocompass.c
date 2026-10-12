@@ -324,9 +324,16 @@ agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx)
         r->dpipa[k]         = 0;
     }
 
-    r->altim             = 0;
-    r->altims            = 0;
-    agc_imu_set_gcompsw(0);                      /* STOVL GCOMPSW -1                      */
+    r->altim  = 0;
+    r->altims = 0;
+
+    const agc_status_t sg = agc_imu_set_gcompsw(0); /* STOVL GCOMPSW -1                      */
+
+    if (sg != AGC_STATUS_OK)
+    {
+        return (sg);
+    }
+
     r->alx1s             = INTVAL_ALX1S;         /* INTVAL +2: initial drift gains        */
     r->cmpx1             = INTVAL_CMPX1;
     r->alk               = SOUPLY;
@@ -350,7 +357,7 @@ agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_imu_pipuse(); /* PIPA fail -> ISS alarm             */
+        agc_imu_pipuse(); /* PIPA fail -> ISS alarm             */
     }
 
     if (st != AGC_STATUS_OK)
@@ -589,12 +596,7 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
 
     agc_dp_t buf[3]; /* ERCOMP1, rev 2^0            */
 
-    st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* LASTGTS   */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* LASTGTS */
 
     r->filt.thetax1 = agc_vec_make(buf[0], buf[1], buf[2]);
     r->alk          = prelaunch_tmark(); /* DLOAD TMARK, STORE ALK    */
@@ -763,14 +765,9 @@ agc_status_t agc_job_gyrocompassing_azimuth_check(agc_job_ctx_t *ctx)
         return (nochorld(ctx));
     }
 
-    r->premtrxc     = (agc_sp_t) (r->premtrxc + 1);                   /* SLOAD DAD, STODL  */
-    r->newazmth     = r->launchaz;
-    agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* status of the call */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    r->premtrxc = (agc_sp_t) (r->premtrxc + 1); /* SLOAD DAD, STODL  */
+    r->newazmth = r->launchaz;
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);
 
     buf[2] = d; /* ADERCOMP: STORE ERCOMP +4                         */
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);

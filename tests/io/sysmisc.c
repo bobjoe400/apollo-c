@@ -161,13 +161,13 @@ static void test_downlist_word_counts(void)
     int words = 0; /* DP words of a list */
 
     agc_state_init(AGC_VEHICLE_CSM);
-    CHECK(agc_dnlist_word_count(AGC_VEHICLE_CSM, 0, &words) == AGC_STATUS_OK);
+    CHECK(agc_dnlist_word_count(0, &words) == AGC_STATUS_OK);
     CHECK(words == AGC_DNLIST_WORDS); /* CM coast and align  */
 
     for (int code = 1; code < AGC_DNLIST_CSM_COUNT; code++)
     {
         words = 0;
-        CHECK(agc_dnlist_word_count(AGC_VEHICLE_CSM, code, &words) == AGC_STATUS_OK);
+        CHECK(agc_dnlist_word_count(code, &words) == AGC_STATUS_OK);
         CHECK(words == AGC_DNLIST_WORDS);
     }
 
@@ -176,13 +176,13 @@ static void test_downlist_word_counts(void)
     for (int code = 0; code < AGC_DNLIST_LM_COUNT; code++)
     {
         words = 0;
-        CHECK(agc_dnlist_word_count(AGC_VEHICLE_LM, code, &words) == AGC_STATUS_OK);
+        CHECK(agc_dnlist_word_count(code, &words) == AGC_STATUS_OK);
         CHECK(words == AGC_DNLIST_WORDS);
     }
 
     /* out-of-range list code: refused (the library is built without
      * AGC_HOST_DEBUG, so its AGC_ASSERTs do not reach agc_assert_report) */
-    CHECK(agc_dnlist_word_count(AGC_VEHICLE_LM, AGC_DNLIST_LM_COUNT, &words) != AGC_STATUS_OK);
+    CHECK(agc_dnlist_word_count(AGC_DNLIST_LM_COUNT, &words) != AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -229,7 +229,15 @@ static void test_downlist_tables(void)
         {
             agc_dn_list_t list = {NULL, 0, false};
 
-            CHECK(((v == AGC_VEHICLE_LM) ? agc_dnlist_lm_control(code, &list) : agc_dnlist_csm_control(code, &list)) == AGC_STATUS_OK); /* DNTABLE of the vehicle */
+            /* DNTABLE of the vehicle */
+            if (v == AGC_VEHICLE_LM)
+            {
+                CHECK(agc_dnlist_lm_control(code, &list) == AGC_STATUS_OK);
+            }
+            else
+            {
+                agc_dnlist_csm_control(code, &list);
+            }
 
             for (int i = 0; i < list.count; i++)
             {
@@ -383,9 +391,9 @@ static void test_showsum_display(void)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_exec_init();
-    CHECK(agc_waitlist_init() == AGC_STATUS_OK);
+    agc_waitlist_init();
     agc_dsky_init();
-    CHECK(agc_selfcheck_set_rope(g_rope, 6) == AGC_STATUS_OK);
+    agc_selfcheck_set_rope(g_rope, 6);
     agc_erase_set_extvbact(0);
     CHECK(agc_dsky_keys("V91E") == AGC_STATUS_OK);
 
@@ -423,7 +431,7 @@ static void test_banksum(void)
     b5[11]       = (uint16_t) (002000u + 11u); /* TC SELF at 2013       */
     b5[12]       = 0;                          /* bugger word (set below) */
     b5[13]       = 077777u;                    /* not summed            */
-    CHECK(agc_selfcheck_set_rope(g_rope, 6) == AGC_STATUS_OK);
+    agc_selfcheck_set_rope(g_rope, 6);
     uint16_t sum = 0;                          /* bank sum */
     uint16_t bug = 0;                          /* bugger word */
 
@@ -437,7 +445,6 @@ static void test_banksum(void)
     CHECK(bug == need);
     CHECK(sum == 5u || sum == (uint16_t) (077777u - 5u));
     CHECK(agc_selfcheck_banksum(044, &sum, &bug) == AGC_STATUS_BAD_ARG);
-    CHECK(agc_selfcheck_set_rope(NULL, 3) == AGC_STATUS_BAD_ARG);
 
     /* SHOW-BANKSUM: bank 0, then five NXTBNKs to bank 5.                   */
     uint16_t w[3] = {0, 0, 0};
@@ -490,7 +497,7 @@ static void test_banksum(void)
     CHECK(agc_selfcheck_smode() == 0u);
 
     /* no rope: the C program has no fixed memory to test, all pass.      */
-    CHECK(agc_selfcheck_set_rope(NULL, 0) == AGC_STATUS_OK);
+    agc_selfcheck_set_rope(NULL, 0);
     agc_selfcheck_restart();
     agc_selfcheck_set_smode(5);
     errs = agc_selfcheck_error_count();
@@ -546,7 +553,7 @@ static void test_ropechk_real(const char *name)
 
     (void) fclose(f);
     CHECK(ok);
-    CHECK(agc_selfcheck_set_rope(g_rope, AGC_ROPE_BANKS) == AGC_STATUS_OK);
+    agc_selfcheck_set_rope(g_rope, AGC_ROPE_BANKS);
 
     for (int bank = 0; bank < AGC_ROPE_BANKS; bank++)
     {
@@ -564,7 +571,7 @@ static void test_ropechk_real(const char *name)
     run_selfcheck(2 * (1 + AGC_ROPE_BANKS));
     CHECK(agc_selfcheck_error_count() == errs && agc_selfcheck_smode() == 5u);
     agc_selfcheck_set_smode(0);
-    CHECK(agc_selfcheck_set_rope(NULL, 0) == AGC_STATUS_OK);
+    agc_selfcheck_set_rope(NULL, 0);
 } /* test_ropechk_real */
 
 /**********************************************************************
@@ -650,7 +657,7 @@ static void test_uplink_clock_increment(void)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_exec_init();
-    CHECK(agc_waitlist_init() == AGC_STATUS_OK);
+    agc_waitlist_init();
     agc_dsky_init();
     agc_erase_set_extvbact(0);
     agc_time_set_cs(01000000u);
@@ -678,7 +685,7 @@ static void test_dap_data_mass(void)
 
     agc_state_init(AGC_VEHICLE_LM);
     agc_exec_init();
-    CHECK(agc_waitlist_init() == AGC_STATUS_OK);
+    agc_waitlist_init();
     agc_dsky_init();
     agc_erase_set_lemmass(1000);
     agc_guid_state()->lm.mass = 0;
@@ -787,7 +794,7 @@ static void oracle_fresh(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
     agc_exec_init();
-    CHECK(agc_waitlist_init() == AGC_STATUS_OK);
+    agc_waitlist_init();
     agc_dsky_init();
     agc_erase_reset_ecadr();
 }

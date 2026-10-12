@@ -546,7 +546,7 @@ static void ejscan_change(void)
  **********************************************************************/
 static void end_of_job(void)
 {
-    if (core[0].vac >= 0 && AGC_ASSERT(core[0].vac < AGC_EXEC_MAX_VACS))
+    if (core[0].vac >= 0)
     {
         vac_used[core[0].vac] = false; /* INDEX A / TS 0      */
     }
@@ -657,11 +657,6 @@ agc_status_t agc_exec_job_wake_if_asleep(agc_job_id_t job)
  **********************************************************************/
 agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
 {
-    if (!AGC_ASSERT(new_loc != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_exec_job_wake(loc); /* JOBWAKE outcome */
 
     if (st != AGC_STATUS_OK)
@@ -683,7 +678,7 @@ agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
  *   vac_index -- VAC area index, 0..4
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_FULL when every VAC area is in use
- *          (*vac_index = -1); BAD_ARG on a failed precondition
+ *          (*vac_index = -1)
  **********************************************************************/
 agc_status_t agc_exec_vac_claim(int *vac_index)
 {
@@ -696,11 +691,6 @@ agc_status_t agc_exec_vac_claim(int *vac_index)
             vac_used[v] = true; /* store +0 in VACnUSE */
             *vac_index  = v;
         }
-    }
-
-    if (!AGC_ASSERT(*vac_index < AGC_EXEC_MAX_VACS))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return ((*vac_index < 0) ? AGC_STATUS_FULL : AGC_STATUS_OK); /* FULL when no VAC area was free */
@@ -717,11 +707,6 @@ agc_status_t agc_exec_vac_claim(int *vac_index)
  **********************************************************************/
 agc_status_t agc_exec_vac_release(int vac_index)
 {
-    if (!AGC_ASSERT(vac_index >= 0 && vac_index < AGC_EXEC_MAX_VACS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(vac_used[vac_index]))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -764,11 +749,6 @@ void agc_exec_prio_change(agc_prio_t new_prio)
  **********************************************************************/
 agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
 {
-    if (!AGC_ASSERT(resume_as != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(newjob >= 0 && core[0].state == AGC_CORE_ACTIVE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -793,11 +773,6 @@ agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
  **********************************************************************/
 agc_status_t agc_exec_run_one(void)
 {
-    if (!AGC_ASSERT(newjob >= EXEC_NEWJOB_IDLE && newjob < AGC_EXEC_MAX_JOBS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (newjob == EXEC_NEWJOB_IDLE)
     {
         return (AGC_STATUS_NOT_FOUND); /* DUMMYJOB            */
@@ -849,10 +824,6 @@ agc_status_t agc_exec_run_one(void)
     else if (gen == generation)
     {
         /* What the job's exit did in the AGC: JOBSLP1, CHANG1 or ENDOFJOB.     */
-        if (!AGC_ASSERT(!in_job))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
 
         if (core[0].state == AGC_CORE_SLEEPING)
         {
@@ -868,11 +839,6 @@ agc_status_t agc_exec_run_one(void)
         else
         {
             end_of_job(); /* ENDOFJOB            */
-        }
-
-        if (!AGC_ASSERT(newjob <= 0 || core[0].state == AGC_CORE_ACTIVE))
-        {
-            return (AGC_STATUS_BAD_ARG);
         }
     }
     else

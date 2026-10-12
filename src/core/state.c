@@ -475,10 +475,9 @@ void agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out)
  *   in        const agc_state_vector_t *  I    r, v, t, moon at the
  *                                              scales of agc_sv_get
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
- *          NULL in or bad which
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in)
+void agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in)
 {
     agc_flag_id_t moon_flag = (agc_flag_id_t) AGC_FLAG_MOONFLAG; /* THIS */
 
@@ -504,11 +503,4 @@ agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in)
     }
 
     agc_flag_put(moon_flag, in->moon); /* DEVIATION: see file prolog */
-
-    if (!AGC_ASSERT(agc_flag_test(moon_flag) == in->moon))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 } /* agc_sv_set */

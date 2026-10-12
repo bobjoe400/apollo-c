@@ -136,11 +136,6 @@ static agc_status_t start_job(int16_t prdt, agc_job_id_t job)
  **********************************************************************/
 static agc_status_t start_long(uint32_t dt_cs, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE) || !AGC_ASSERT(dt_cs < AGC_TIME_MODULUS_CS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint32_t     elapsed = (agc_time_now_cs() - phase_longbase()) & (AGC_TIME_MODULUS_CS - 1U); /* TIME2,1 - LONGBASE, cs */
     int64_t      left    = (int64_t) dt_cs - (int64_t) elapsed;                                 /* LONGTIME, cs           */
     agc_status_t st;                                                                            /* LONGCALL / WAITLIST outcome */
@@ -250,16 +245,10 @@ static agc_status_t restart_entry(int group, const rst_entry_t *e)
  *   phase -- the table phase, 1..0177
  *   first_only -- type B: only the first entry of an even phase
  *
- * RETURNS: agc_status_t -- the first failing restart status, else OK;
- *          BAD_ARG for phase 0 (a CCS hole)
+ * RETURNS: agc_status_t -- the first failing restart status, else OK
  **********************************************************************/
 static agc_status_t restart_table(int group, int phase, bool first_only)
 {
-    if (!AGC_ASSERT(phase >= 1 && phase <= (int) RS_LOW7))
-    {
-        return (AGC_STATUS_BAD_ARG); /* phase 0: CCS hole */
-    }
-
     rst_entry_t  e;  /* the table entry */
     agc_status_t st; /* first restart outcome */
 
@@ -269,21 +258,13 @@ static agc_status_t restart_table(int group, int phase, bool first_only)
     }
     else
     {
-        st = rst_table_lookup(group, phase, 0, &e);
-
-        if (st == AGC_STATUS_OK)
-        {
-            st = restart_entry(group, &e);
-        }
+        rst_table_lookup(group, phase, 0, &e);
+        st = restart_entry(group, &e);
 
         if ((phase % 2) == 0 && !first_only)
         {
-            agc_status_t st2 = rst_table_lookup(group, phase, 1, &e); /* second entry outcome */
-
-            if (st2 == AGC_STATUS_OK)
-            {
-                st2 = restart_entry(group, &e);
-            }
+            rst_table_lookup(group, phase, 1, &e);
+            agc_status_t st2 = restart_entry(group, &e); /* second entry outcome */
 
             if (st == AGC_STATUS_OK)
             {
@@ -346,11 +327,6 @@ static agc_status_t restart_variable(int group, uint16_t tempphs, const phase_va
  **********************************************************************/
 agc_status_t agc_restart_group(int group)
 {
-    if (!AGC_ASSERT(group >= 1 && group <= AGC_RESTART_GROUPS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     uint16_t     tempphs = agc_phase_get(group); /* TEMPPHS = C(PHASEn) */
     agc_status_t st      = AGC_STATUS_NOT_FOUND; /* restart outcome; group inactive */
 

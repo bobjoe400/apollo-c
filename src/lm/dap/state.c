@@ -101,11 +101,9 @@ void agc_lm_dap_restart(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_dap_fresh_start(void)
+void agc_lm_dap_fresh_start(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -130,13 +128,6 @@ agc_status_t agc_lm_dap_fresh_start(void)
     d->dkdb                     = FS_DKDB;
 
     agc_lm_dap_restart(); /* STARTSB1 */
-
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_ACCOKFLG)))
-    {
-        return (AGC_STATUS_BAD_ARG); /* ACCSOKAY cleared: DAPIDLER runs 1/ACCS */
-    }
-
-    return (AGC_STATUS_OK);
 } /* agc_lm_dap_fresh_start */
 
 /* ---- accessors of DAP erasables shared with other modules -------------- */
@@ -201,16 +192,21 @@ uint16_t agc_erase_cduzd(void)
  *   --------  --------  ---  --------------------
  *   v         uint16_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v <= 077777u`
  **********************************************************************/
-void agc_erase_set_cduxd(uint16_t v)
+agc_status_t agc_erase_set_cduxd(uint16_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v <= 077777u))
+    if (!AGC_ASSERT(v <= 077777u))
     {
-        d->cduxd = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->cduxd = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -223,16 +219,21 @@ void agc_erase_set_cduxd(uint16_t v)
  *   --------  --------  ---  --------------------
  *   v         uint16_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v <= 077777u`
  **********************************************************************/
-void agc_erase_set_cduyd(uint16_t v)
+agc_status_t agc_erase_set_cduyd(uint16_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v <= 077777u))
+    if (!AGC_ASSERT(v <= 077777u))
     {
-        d->cduyd = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->cduyd = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -245,16 +246,21 @@ void agc_erase_set_cduyd(uint16_t v)
  *   --------  --------  ---  --------------------
  *   v         uint16_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v <= 077777u`
  **********************************************************************/
-void agc_erase_set_cduzd(uint16_t v)
+agc_status_t agc_erase_set_cduzd(uint16_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v <= 077777u))
+    if (!AGC_ASSERT(v <= 077777u))
     {
-        d->cduzd = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->cduzd = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -267,16 +273,21 @@ void agc_erase_set_cduzd(uint16_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= LM_NEGMAX`
  **********************************************************************/
-void agc_erase_set_delcdux(agc_sp_t v)
+agc_status_t agc_erase_set_delcdux(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= LM_NEGMAX))
+    if (!AGC_ASSERT(v >= LM_NEGMAX))
     {
-        d->delcdux = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->delcdux = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -289,16 +300,21 @@ void agc_erase_set_delcdux(agc_sp_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= LM_NEGMAX`
  **********************************************************************/
-void agc_erase_set_delcduy(agc_sp_t v)
+agc_status_t agc_erase_set_delcduy(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= LM_NEGMAX))
+    if (!AGC_ASSERT(v >= LM_NEGMAX))
     {
-        d->delcduy = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->delcduy = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -311,16 +327,21 @@ void agc_erase_set_delcduy(agc_sp_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= LM_NEGMAX`
  **********************************************************************/
-void agc_erase_set_delcduz(agc_sp_t v)
+agc_status_t agc_erase_set_delcduz(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= LM_NEGMAX))
+    if (!AGC_ASSERT(v >= LM_NEGMAX))
     {
-        d->delcduz = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->delcduz = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -384,16 +405,21 @@ agc_sp_t agc_erase_omegard(void)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= LM_NEGMAX`
  **********************************************************************/
-void agc_erase_set_omegapd(agc_sp_t v)
+agc_status_t agc_erase_set_omegapd(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= LM_NEGMAX))
+    if (!AGC_ASSERT(v >= LM_NEGMAX))
     {
-        d->omegapd = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->omegapd = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -406,16 +432,21 @@ void agc_erase_set_omegapd(agc_sp_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= LM_NEGMAX`
  **********************************************************************/
-void agc_erase_set_omegaqd(agc_sp_t v)
+agc_status_t agc_erase_set_omegaqd(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= LM_NEGMAX))
+    if (!AGC_ASSERT(v >= LM_NEGMAX))
     {
-        d->omegaqd = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->omegaqd = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -428,16 +459,21 @@ void agc_erase_set_omegaqd(agc_sp_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= LM_NEGMAX`
  **********************************************************************/
-void agc_erase_set_omegard(agc_sp_t v)
+agc_status_t agc_erase_set_omegard(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= LM_NEGMAX))
+    if (!AGC_ASSERT(v >= LM_NEGMAX))
     {
-        d->omegard = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->omegard = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -450,16 +486,21 @@ void agc_erase_set_omegard(agc_sp_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= LM_NEGMAX`
  **********************************************************************/
-void agc_erase_set_delperor(agc_sp_t v)
+agc_status_t agc_erase_set_delperor(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= LM_NEGMAX))
+    if (!AGC_ASSERT(v >= LM_NEGMAX))
     {
-        d->delperor = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->delperor = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -472,16 +513,21 @@ void agc_erase_set_delperor(agc_sp_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= LM_NEGMAX`
  **********************************************************************/
-void agc_erase_set_delqeror(agc_sp_t v)
+agc_status_t agc_erase_set_delqeror(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= LM_NEGMAX))
+    if (!AGC_ASSERT(v >= LM_NEGMAX))
     {
-        d->delqeror = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->delqeror = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -494,16 +540,21 @@ void agc_erase_set_delqeror(agc_sp_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= LM_NEGMAX`
  **********************************************************************/
-void agc_erase_set_delreror(agc_sp_t v)
+agc_status_t agc_erase_set_delreror(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= LM_NEGMAX))
+    if (!AGC_ASSERT(v >= LM_NEGMAX))
     {
-        d->delreror = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->delreror = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -603,19 +654,24 @@ agc_dp_t agc_erase_aosr(void)
  *   --------  --------  ---  --------------------
  *   v         agc_dp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= AGC_DP_MIN && v <= AGC_DP_MAX`
  **********************************************************************/
-void agc_erase_set_aosq(agc_dp_t v)
+agc_status_t agc_erase_set_aosq(agc_dp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
-        agc_dp_words_t p = lm_dap_dpmake((int32_t) v); /* AOSQ words, scaled pi/2 rad/s^2 */
-
-        d->aosq    = p.hi;
-        d->aosq_lo = p.lo;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    agc_dp_words_t p = lm_dap_dpmake((int32_t) v); /* AOSQ words, scaled pi/2 rad/s^2 */
+
+    d->aosq    = p.hi;
+    d->aosq_lo = p.lo;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -628,19 +684,24 @@ void agc_erase_set_aosq(agc_dp_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_dp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= AGC_DP_MIN && v <= AGC_DP_MAX`
  **********************************************************************/
-void agc_erase_set_aosr(agc_dp_t v)
+agc_status_t agc_erase_set_aosr(agc_dp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
+    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
-        agc_dp_words_t p = lm_dap_dpmake((int32_t) v); /* AOSR words, scaled pi/2 rad/s^2 */
-
-        d->aosr    = p.hi;
-        d->aosr_lo = p.lo;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    agc_dp_words_t p = lm_dap_dpmake((int32_t) v); /* AOSR words, scaled pi/2 rad/s^2 */
+
+    d->aosr    = p.hi;
+    d->aosr_lo = p.lo;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -755,16 +816,21 @@ agc_sp_t agc_erase_stiksens(void)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= 0`
  **********************************************************************/
-void agc_erase_set_stiksens(agc_sp_t v)
+agc_status_t agc_erase_set_stiksens(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v >= 0))
+    if (!AGC_ASSERT(v >= 0))
     {
-        d->stiksens = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->stiksens = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -777,14 +843,19 @@ void agc_erase_set_stiksens(agc_sp_t v)
  *   --------  --------  ---  --------------------
  *   v         agc_sp_t  I    new value, at the scale of the erasable
  *
- * RETURNS: none
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v <= 0`
  **********************************************************************/
-void agc_erase_set_neg_ratedb(agc_sp_t v)
+agc_status_t agc_erase_set_neg_ratedb(agc_sp_t v)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    if (AGC_ASSERT(v <= 0))
+    if (!AGC_ASSERT(v <= 0))
     {
-        d->neg_ratedb = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    d->neg_ratedb = v;
+
+    return (AGC_STATUS_OK);
 }

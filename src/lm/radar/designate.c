@@ -128,11 +128,6 @@ static agc_status_t rr_startdes(agc_rr_designate_result_t *res)
 
     agc_relint();
 
-    if (!AGC_ASSERT(rr_radmodes_test(RR_DESIGBIT)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 

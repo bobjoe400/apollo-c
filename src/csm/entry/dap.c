@@ -864,21 +864,17 @@ static agc_status_t dap_fdai(bool integrate)
         sw_ndx = (agc_sp_t) (sw_ndx + 3);
     }
 
-    idx = (13 + (int) sw_ndx) / 3; /* -13..-1 -> 0..4 */
-
-    if (AGC_ASSERT(idx >= 0 && idx < 5))
-    { /* SAVENDX        */
-        endbuf[3 * idx]     = prel;
-        endbuf[3 * idx + 1] = qrel;
-        endbuf[3 * idx + 2] = rrel;
-    }
-
-    agc_rupt_set_t5_task(AGC_TASK_T5IDLOC);
-
-    if (!AGC_ASSERT(sw_ndx >= -13 && sw_ndx <= -1)) /* TM file index */
+    /* TM file index: SW/NDX cycles -13, -10, -7, -4, -1 */
+    if (!AGC_ASSERT(sw_ndx >= -13 && sw_ndx <= -1))
     {
         return (AGC_STATUS_BAD_ARG);
     }
+
+    idx                 = (13 + (int) sw_ndx) / 3; /* -13..-1 -> 0..4 */
+    endbuf[3 * idx]     = prel;                    /* SAVENDX        */
+    endbuf[3 * idx + 1] = qrel;
+    endbuf[3 * idx + 2] = rrel;
+    agc_rupt_set_t5_task(AGC_TASK_T5IDLOC);
 
     return (AGC_STATUS_OK); /* CM/END        */
 } /* dap_fdai */

@@ -311,7 +311,7 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
  **********************************************************************/
 static void wl_clean(void)
 {
-    (void) agc_waitlist_init();
+    agc_waitlist_init();
     (void) agc_waitlist_tick(1);
     task_n = 0;
 }
@@ -362,7 +362,7 @@ static void reset(agc_vehicle_t v)
     }
 
     (void) agc_chan_set_signal(AGC_CHAN_CHAN33, 060000u, false);
-    (void) agc_fresh_start_slap1();
+    agc_fresh_start_slap1();
     agc_exec_init();
     wl_clean();
     job_n = 0;

@@ -273,14 +273,9 @@ static agc_status_t earthr_at(agc_interp_t *ip, agc_dp_t temptime, agc_job_id_t 
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_vec_t    inc = agc_vec_scale(ip, ervector, agc_dp_shl(ip, dt, TEMPTIME_SHIFT)); /* increment, rev 2^0 */
-    agc_dp_t     buf[3];                                                                /* ERCOMP1, rev 2^0              */
-    agc_status_t st  = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);                  /* status of the call */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_vec_t inc = agc_vec_scale(ip, ervector, agc_dp_shl(ip, dt, TEMPTIME_SHIFT)); /* increment, rev 2^0 */
+    agc_dp_t  buf[3];                                                                /* ERCOMP1, rev 2^0              */
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);
 
     agc_vec_t er = agc_vec_add(ip, agc_mat_vec(ip, &agc_align_ram()->xsm, inc), agc_vec_make(buf[0], buf[1], buf[2])); /* earth-rate commands, rev 2^0 */
 
@@ -313,13 +308,8 @@ agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip, agc_dp_t tlif
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t     buf[3];                                              /* ERCOMP, rev 2^0                              */
-    agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* status of the call */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_dp_t buf[3]; /* ERCOMP, rev 2^0                              */
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);
 
     const agc_mat_t *xsm = &agc_align_ram()->xsm;                                                                                            /* XSM..ZSM, B1 */
     agc_vec_t        er  = agc_vec_add(ip, agc_vec_shl(ip, agc_mat_vec(ip, xsm, pl.filt.thetan1), 1), agc_vec_make(buf[0], buf[1], buf[2])); /* earth-rate commands, rev 2^0 */
@@ -531,14 +521,20 @@ agc_status_t agc_job_prelaunch_initialization(agc_job_ctx_t *ctx)
         return (agc_poodoo(ALARM_NO_P01)); /* P11 already done      */
     }
 
-    pl.geocomp1  = 1;                          /* GTSCPSSA: lead-in for compass             */
-    agc_imu_set_pipa_interval(COMPASS_PIPADT); /* 1/PIPADT = 1/PIPAGT */
-    pl.lengthot  = COMPASS_PASSES;             /* NXXTENN: CA BIT8              */
-    pl.onesecxt1 = COMPASS_PERIOD;             /* compass is a .5 s loop        */
+    const agc_status_t st = agc_imu_set_pipa_interval(COMPASS_PIPADT); /* 1/PIPADT = 1/PIPAGT */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    pl.geocomp1  = 1;              /* GTSCPSSA: lead-in for compass             */
+    pl.lengthot  = COMPASS_PASSES; /* NXXTENN: CA BIT8              */
+    pl.onesecxt1 = COMPASS_PERIOD; /* compass is a .5 s loop        */
     pl.premtrxc  = 1;
     pl.perfdlay  = COMPASS_DELAY;
-    pl.newazmth  = pl.launchaz;                /* DCA LUNCHAZ1, DXCH NEWAZ1         */
-    pl.oldazmth  = pl.launchaz;                /* DCA LUNCHAZ1, DXCH OLDAZMTH       */
+    pl.newazmth  = pl.launchaz;    /* DCA LUNCHAZ1, DXCH NEWAZ1         */
+    pl.oldazmth  = pl.launchaz;    /* DCA LUNCHAZ1, DXCH OLDAZMTH       */
 
     for (int r = 0; r < 3; r++)
     {
@@ -775,8 +771,13 @@ agc_status_t agc_job_imu_test_coarse_aligned(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    pl.onesecxt1 = TEST_PERIOD;             /* CAF 1SECX, TS 1SECXT1              */
-    agc_imu_set_pipa_interval(TEST_PIPADT); /* CA OC14400            */
+    pl.onesecxt1 = TEST_PERIOD;                            /* CAF 1SECX, TS 1SECXT1              */
+    st           = agc_imu_set_pipa_interval(TEST_PIPADT); /* CA OC14400            */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
 
     return (agc_job_imu_test_site_display(ctx)); /* GUESS: LATAZCHK  */
 }

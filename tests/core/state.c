@@ -410,7 +410,7 @@ static void test_state_vectors(void)
     in.v    = vec3(-1, 2, -3);
     in.t    = 123456;
     in.moon = true;
-    CHECK(agc_sv_set(AGC_SV_THIS, &in) == AGC_STATUS_OK);
+    agc_sv_set(AGC_SV_THIS, &in);
     agc_sv_get(AGC_SV_THIS, &out);
     CHECK(vec_eq(out.r, in.r) && vec_eq(out.v, in.v) && (out.t == in.t) && out.moon);
     CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));
@@ -425,7 +425,7 @@ static void test_state_vectors(void)
     in.v    = vec3(10, 11, 12);
     in.t    = 99;
     in.moon = false;
-    CHECK(agc_sv_set(AGC_SV_OTHER, &in) == AGC_STATUS_OK);
+    agc_sv_set(AGC_SV_OTHER, &in);
     CHECK(vec_eq(agc_erase_rrectlem(), in.r));
     CHECK(vec_eq(agc_erase_vrectlem(), in.v));
     CHECK(agc_erase_tetlem() == 99);
@@ -433,7 +433,7 @@ static void test_state_vectors(void)
     CHECK(agc_flag_test(AGC_FLAG_MOONFLAG)); /* THIS flag untouched */
     CHECK(!agc_flag_test(AGC_FLAG_LMOONFLG));
     in.moon = true;
-    CHECK(agc_sv_set(AGC_SV_OTHER, &in) == AGC_STATUS_OK);
+    agc_sv_set(AGC_SV_OTHER, &in);
     CHECK(agc_flag_test(AGC_FLAG_LMOONFLG));
     CHECK(!agc_flag_test(AGC_FLAG_CMOONFLG));
 

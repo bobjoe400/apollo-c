@@ -271,8 +271,9 @@ static agc_status_t nav_uppsv(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t res
         {
             agc_integ_sv_t sv; /* LM permanent state */
 
-            st          = agc_integ_perm_get(AGC_VEHICLE_LM, &sv);
+            agc_integ_perm_get(AGC_VEHICLE_LM, &sv);
             lmnav.lmpos = agc_vec_shr(sv.rcv, 2); /* VSR2     */
+
             lmnav.lmvel = agc_vec_shr(sv.vcv, 2);
         }
     }
@@ -532,19 +533,13 @@ static agc_status_t nav_orbit_change(agc_interp_t *ip)
 
     agc_integ_ctx_t *ctx = agc_integ_shared_ctx(); /* integration erasables */
 
-    ctx->sv.tet     = agc_dp_sub(ip, lmnav.lnchtm, o.t); /* TET      */
-    ctx->sv.rcv     = o.rnew;
-    ctx->sv.rrect   = o.rnew;
-    agc_integ_minirect(ctx, ncsmvel);                    /* VRECT    */
-    st              = agc_integ_atopcsm(ip, ctx, 2);     /* X2 = 2   */
-    agc_status_t sw = agc_integ_intwake_release();       /* INTWAKE0 */
+    ctx->sv.tet   = agc_dp_sub(ip, lmnav.lnchtm, o.t); /* TET      */
+    ctx->sv.rcv   = o.rnew;
+    ctx->sv.rrect = o.rnew;
+    agc_integ_minirect(ctx, ncsmvel);                  /* VRECT    */
+    agc_integ_atopcsm(ip, ctx, 2);                     /* X2 = 2   */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st); /* the first failure */
-    }
-
-    return (sw);
+    return (agc_integ_intwake_release()); /* INTWAKE0 */
 } /* nav_orbit_change */
 
 /**********************************************************************

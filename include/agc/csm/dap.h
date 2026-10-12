@@ -302,7 +302,7 @@ agc_status_t agc_task_yawdap(void);
 agc_status_t agc_task_redotvc(void);
 agc_status_t agc_task_optics_counter_enable(void);
 agc_status_t agc_task_cmdsout(void);
-agc_status_t agc_task_roll_jets_off(void);
+void         agc_task_roll_jets_off(void);
 void         agc_task_rcsup(void); /* RCSUP (P40-P47 p.736)     */
 
 /* ---- waitlist tasks and jobs ------------------------------------------ */

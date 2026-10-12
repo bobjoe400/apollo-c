@@ -204,7 +204,9 @@ and delete). The tree is kept at PLAIN 0.
   the code and entry points it analysed: rerun `make prove` after any
   review or change that alters control flow, and in a lane not yet
   reviewed record an EVA-only proof as `eva-valid-deferred` instead of
-  deleting the guard.
+  deleting the guard. In this project EVA ran once, as the end-of-project
+  cleanup (2026-10-12, user decision); its entry points are the test
+  mains, not agc_sim's unbounded main (tools/prove/eva_run.py says why).
 
 ## Returns (guide 5.6, user direction 2026-10-11)
 

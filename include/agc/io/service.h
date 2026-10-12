@@ -229,13 +229,13 @@ typedef struct agc_dn_list
 #define AGC_DNLIST_WORDS 100     /* DP words per downlist (2 s at 50 words/s) */
 #define AGC_DN_LOWIDCOD  077340u /* LOWIDCOD, the sync word             */
 
-agc_status_t agc_dnlist_csm_control(int code, agc_dn_list_t *out);
+void         agc_dnlist_csm_control(int code, agc_dn_list_t *out);
 agc_status_t agc_dnlist_csm_sublist(int sub, agc_dn_list_t *out);
 agc_status_t agc_dnlist_lm_control(int code, agc_dn_list_t *out);
 agc_status_t agc_dnlist_lm_sublist(int sub, agc_dn_list_t *out);
 
 /* Number of DP downlink words a control list produces, ID word included.  */
-agc_status_t agc_dnlist_word_count(agc_vehicle_t v, int code, int *words);
+agc_status_t agc_dnlist_word_count(int code, int *words);
 
 /* ======================================================================
  * Down-telemetry program (telemetry.c; DOWN_TELEMETRY_PROGRAM.agc pp.988-997)
@@ -472,7 +472,7 @@ agc_status_t agc_job_timedidr(void);                            /* restart 6.5 *
 /* The sim's fixed-memory image: nbanks banks of 1024 words, bank b at
  * rope[b * 1024], 15-bit words.  NULL (nbanks 0) = no rope: every bank
  * passes ROPECHK.                                                         */
-agc_status_t agc_selfcheck_set_rope(const uint16_t *rope, int nbanks);
+void agc_selfcheck_set_rope(const uint16_t *rope, int nbanks);
 
 /* Sum one bank as ROPECHK / SHOWSUM do: sum = the ones'-complement sum
  * with end-around carry up to the two TC SELF words and the bugger word. */

@@ -416,8 +416,14 @@ agc_status_t agc_task_rereadac_csm(void)
         return (AGC_STATUS_OK); /* TASKOVER               */
     }
 
-    agc_imu_set_pipa_interval(ONEPIPADT_2S);             /* PRIO31 = 2.0 SEC B+8CS */
-    agc_status_t st = agc_guid_rereadac_resume(&g->avg); /* status of agc_guid_rereadac_resume */
+    agc_status_t st = agc_imu_set_pipa_interval(ONEPIPADT_2S); /* PRIO31 = 2.0 SEC B+8CS */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    st = agc_guid_rereadac_resume(&g->avg); /* status of agc_guid_rereadac_resume */
 
     if (st == AGC_STATUS_NOT_FOUND)
     {
@@ -709,7 +715,13 @@ agc_status_t agc_csm_avgexit(void)
 agc_status_t agc_job_avgend_csm(agc_job_ctx_t *ctx)
 {
     /* CA PIPTIME +1 / TS OLDBT1 (= 1/PIPADT): time of the last reading.    */
-    agc_imu_set_pipa_interval(agc_dp_low(agc_erase_piptime()));
+    const agc_status_t st = agc_imu_set_pipa_interval(agc_dp_low(agc_erase_piptime())); /* 1/PIPADT store status */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     agc_flag_set(AGC_FLAG_DRIFTFLG);
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_AVETOMID, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 

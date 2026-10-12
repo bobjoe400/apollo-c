@@ -513,20 +513,12 @@ agc_status_t agc_task_rolldap(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (NOQRSM); AGC_STATUS_BAD_ARG on
- *          a failed precondition
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_roll_jets_off(void)
+void agc_task_roll_jets_off(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     t->rollfire = 0;
     agc_chan_write(AGC_CHAN_ROLLJETS, 0u); /* WRITE CHAN6              */
-
-    if (!AGC_ASSERT(agc_chan_read(AGC_CHAN_ROLLJETS) == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }

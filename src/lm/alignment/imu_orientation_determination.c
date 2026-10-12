@@ -249,7 +249,14 @@ agc_status_t agc_job_lm_orientation_coarse_done(agc_job_ctx_t *ctx)
 agc_status_t agc_job_lm_orientation_mark_setup(void)
 {
     align_phase4(PH_ORIENTATION_RESTART);
-    align_ncoarse();
+
+    const agc_status_t st = align_ncoarse(); /* NCOARSE */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     agc_align_ram()->starind = 0;
 
     return (agc_job_lm_orientation_mark_star());

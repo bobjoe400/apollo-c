@@ -313,16 +313,10 @@ void agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v)
  *   ctx       agc_integ_ctx_t *  I/O  integration erasables (TAU., the conic)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of KEPPREP /
- *          KEPLER other than NO_CONVERGE and OVERFLOW; AGC_STATUS_BAD_ARG
- *          on a failed precondition
+ *          KEPLER other than NO_CONVERGE and OVERFLOW
  *********************************************************************/
 agc_status_t agc_integ_kepprep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_kepler_in_t in; /* KEPPREP / KEPLER inputs */
 
     in.rrect      = ctx->sv.rcv;
@@ -1615,16 +1609,10 @@ agc_integ_next_t agc_integ_timestep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  *   test      agc_dp_t *         O    the test value, m 2^29: >= 0 stay, < 0
  *                                     change origin
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG for a NULL
- *                          pointer, or the LUNPOS status
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the LUNPOS status
  *********************************************************************/
 agc_status_t agc_integ_chkswtch(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t *test)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(test != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const bool moon = agc_flag_test(AGC_FLAG_MOONFLAG); /* moon primary */
 
     if (agc_flag_test(AGC_FLAG_RPQFLAG))

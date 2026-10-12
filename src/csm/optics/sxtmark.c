@@ -545,11 +545,6 @@ agc_status_t agc_sxtmark_mark2(void)
     ms = (uint16_t) ((ms - MS_WANTED_ONE) | MS_REJECT_OK);
     agc_erase_set_markstat(ms);
 
-    if (!AGC_ASSERT((ram->qpret >= 0) && (ram->qpret < AGC_ALIGN_SXT_MARKS)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     ram->sxt[ram->qpret] = mk; /* VACSTOR  */
     ram->qpret++;
 
@@ -847,19 +842,9 @@ agc_sp_t agc_sxtmark_marks_made(void)
  *   mark      int                     I    mark slot, 0 = first
  *   out       agc_align_sxt_mark_t *  O    the mark
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
- *          its successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check);
- *          AGC_STATUS_BAD_ARG on a failed precondition
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out)
+void agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out)
 {
-    if (!AGC_ASSERT((mark >= 0) && (mark < AGC_ALIGN_SXT_MARKS)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *out = agc_align_ram()->sxt[mark];
-
-    return (AGC_STATUS_OK);
 }

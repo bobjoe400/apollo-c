@@ -657,11 +657,6 @@ agc_status_t fresh_mmdsplay(void)
  **********************************************************************/
 agc_status_t agc_phase_newmode(agc_sp_t mode)
 {
-    if (!AGC_ASSERT(mode >= EXEC_MODREG_NEG0 && mode <= 0177))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_erase_set_modreg(mode); /* TS MODREG         */
 
     return (fresh_mmdsplay());

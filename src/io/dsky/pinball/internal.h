@@ -250,12 +250,12 @@ void         pin_set_dspcount(int16_t n);             /* TS DSPCOUNT (positive) 
 void         pin_block_dspcount(int16_t n);           /* CS n; TS DSPCOUNT            */
 int          pin_getinrel(void);                      /* GETINREL                     */
 int          pin_inrel_of(int16_t dspcount);          /* INRELTAB lookup              */
-agc_status_t pin_dspin(int16_t count, uint16_t code); /* DSPIN            */
-agc_status_t pin_11dspin(int rel, bool on);           /* 11DSPIN          */
-agc_status_t pin_2blank(void);                        /* 2BLANK           */
+void         pin_dspin(int16_t count, uint16_t code); /* DSPIN            */
+void         pin_11dspin(int rel, bool on);           /* 11DSPIN          */
+void         pin_2blank(void);                        /* 2BLANK           */
 agc_status_t pin_5blank(void);                        /* 5BLANK           */
 agc_status_t pin_5blank_rel(int inrel);               /* 5BLANK +2        */
-agc_status_t pin_dsptab_store(int rel, uint16_t mag); /* -mag, NOUT bump  */
+void         pin_dsptab_store(int rel, uint16_t mag); /* -mag, NOUT bump  */
 
 /* ---- word display (display.c) ---------------------------------- */
 agc_status_t pin_plus_on(void);                      /* +ON              */
@@ -264,10 +264,10 @@ agc_status_t pin_dspdecwd(agc_dp_t v, bool negzero); /* DSPDECWD         */
 agc_status_t pin_dspdecnr(agc_dp_t v, bool negzero); /* DSPDECNR         */
 agc_status_t pin_dspdc2nr(agc_dp_t v, bool negzero); /* DSPDC2NR         */
 agc_status_t pin_dsp2dec(agc_dp_t v);                /* DSP2DEC          */
-agc_status_t pin_dspdecvn(int n);                    /* DSPDECVN         */
-agc_status_t pin_dspoctwo(uint16_t w);               /* DSPOCTWO         */
+void         pin_dspdecvn(int n);                    /* DSPDECVN         */
+void         pin_dspoctwo(uint16_t w);               /* DSPOCTWO         */
 agc_status_t pin_dsp2bit(uint16_t w);                /* DSP2BIT          */
-agc_status_t pin_updatvb(uint8_t verb);              /* UPDATVB -1       */
+void         pin_updatvb(uint8_t verb);              /* UPDATVB -1       */
 agc_status_t pin_updatnn(uint8_t noun);              /* UPDATNN -1       */
 
 /* ---- keyboard (keys.c) ----------------------------------------- */

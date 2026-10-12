@@ -298,18 +298,17 @@ static const rst_group_tab_t lm_tab[AGC_RESTART_GROUPS]  = {
  *
  * ARGUMENTS:
  *   group -- restart group, 1..6 (agc_restart_group checked it)
- *   phase -- the table phase, 2..0177 (restart_table checked it)
+ *   phase -- the table phase, 2..0177; the phase codes the programs
+ *            set lie inside their group's tables (EVA, 2026-10-12)
  *   part -- 0, or 1 for the second entry of an even phase
  *   out -- receives the entry
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; NOT_FOUND for an index past the
- *          end of the table (the AGC would read the next table)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
+void rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
 {
     const rst_group_tab_t *t = &csm_tab[group - 1]; /* the group's even and odd tables */
     int                    idx;                     /* entry index in the table */
-    int                    n;                       /* entries in the table */
     const rst_entry_t     *base;                    /* the even or the odd table */
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
@@ -320,24 +319,15 @@ agc_status_t rst_table_lookup(int group, int phase, int part, rst_entry_t *out)
     if ((phase % 2) == 0)
     {
         idx  = (phase - 2) + part; /* 2 entries per even phase      */
-        n    = t->n_even;
         base = t->even;
     }
     else
     {
         idx  = (phase - 3) / 2;
-        n    = t->n_odd;
         base = t->odd;
     }
 
-    if (!AGC_ASSERT(idx >= 0 && idx < n))
-    {
-        return (AGC_STATUS_NOT_FOUND);
-    }
-
     *out = base[idx];
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

@@ -146,11 +146,6 @@ agc_status_t rte_initial_vectors(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t
 {
     agc_vec_t n; /* orbit normal N/, B1 */
 
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT((x2 == 0) || (x2 == 2)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rs->r_t1v = ratt;
     rs->p_t1  = (agc_sp_t) x2; /* SXA,2 P(T1)   */
     rs->v_t1v = vatt;
@@ -307,17 +302,12 @@ agc_status_t rte_time_radius(agc_interp_t *ip, rte_erasable_t *rs, agc_vec_t rve
  * RETURNS: agc_status_t -- AGC_STATUS_OK after a correction (or BOV
  *          RTE360); AGC_STATUS_NOT_FOUND when RCON and X(T2) converged
  *          (P37E); AGC_STATUS_ALARM with rs->alarm_code 605 when NN1A ran
- *          out; AGC_STATUS_BAD_ARG on a failed assertion
+ *          out
  **********************************************************************/
 static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t xd)
 {
     int      n1 = 0; /* NORM shift count (X1) */
     agc_dp_t dx;     /* DX(T2) correction, B0 */
-
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(rs->nn1a < 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_dp_t  xerr  = agc_dp_sub(ip, xd, rs->x_t2);                             /* X(T2)ERR 00D, B0 */
     agc_vec_t ur2   = agc_vec_unit(ip, rs->r_t2v, NULL, NULL);                  /* ALPHAV, B1 */
@@ -385,11 +375,6 @@ static agc_status_t conic_correct(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t
  **********************************************************************/
 agc_status_t rte_conic_search(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t rted1)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(rs != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* RTE317 .. RTE350 (pp. 892-893): MAMAX2 from R(T1), NN1A = -9, RCON = K2,
      * and the first X(T2): COT(90 deg - GAMMA) of the input angle, else K3RTE
      * (R(T1) < K1RTE) or K4RTE.                                          */
@@ -601,11 +586,6 @@ agc_status_t rte_augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t abs_gamma, agc_
  **********************************************************************/
 agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t tig, agc_sp_t range_override, rte_display_t *out)
 {
-    if (!AGC_ASSERT((ip != NULL) && (rs != NULL)) || !AGC_ASSERT(out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* RTEDISP .. RTD18 (pp. 902-903): VPRED, T3TOT4, GAMMAEI at R(T2) and the
      * delta V in local vertical coordinates (X forward, Z down; X negated for a
      * retrograde orbit). */

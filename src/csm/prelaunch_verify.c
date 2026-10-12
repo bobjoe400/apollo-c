@@ -351,16 +351,10 @@ static agc_status_t target1_marked(void)
         ar->starad[i] = agc_vec_shl(&ip, agc_mat_vec(&ip, &ar->xsm, tar[i]), 1);
     }
 
-    agc_status_t st = agc_sxtmark_mark(0, &m); /* LITTLSUB: LXC,1 MARKSTAT        */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
+    agc_sxtmark_mark(0, &m); /* LITTLSUB: LXC,1 MARKSTAT */
     agc_csm_sxtsm(&ip, &m, &prelaunch_ram()->losvec);
 
-    st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS                  */
+    agc_status_t st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS                  */
 
     if (st != AGC_STATUS_OK)
     {
@@ -393,17 +387,12 @@ static agc_status_t target2_marked(agc_job_ctx_t *ctx)
     agc_mat_t            xdc;                  /* XDC..ZDC, half-unit           */
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_sxtmark_mark(0, &m); /* CALL LITTLSUB        */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
+    agc_sxtmark_mark(0, &m); /* CALL LITTLSUB */
     agc_csm_sxtsm(&ip, &m, &marked[1]);
 
-    marked[0] = prelaunch_ram()->losvec;                        /* LOSVEC, STCALL 06D        */
-    st        = agc_imu_axisgen(&ip, ar->starad, marked, &xdc); /* AXISGEN */
+    marked[0] = prelaunch_ram()->losvec; /* LOSVEC, STCALL 06D        */
+
+    agc_status_t st = agc_imu_axisgen(&ip, ar->starad, marked, &xdc); /* AXISGEN */
 
     if (st != AGC_STATUS_OK)
     {
@@ -496,12 +485,7 @@ agc_status_t agc_job_optical_verification_torque_accepted(void)
     agc_interp_t           ip;                   /* interpreter state (VAD)         */
     agc_dp_t               buf[3];               /* ERCOMP1, rev 2^0                */
 
-    agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* status of the call */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);
 
     agc_interp_init(&ip);
     const agc_vec_t sum = agc_vec_add(&ip, agc_vec_make(ar->ogc[0], ar->ogc[1], ar->ogc[2]), agc_vec_make(buf[0], buf[1], buf[2])); /* OGC + ERCOMP1, rev 2^0; VLOAD VAD */

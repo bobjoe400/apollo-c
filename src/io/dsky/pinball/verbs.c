@@ -162,11 +162,6 @@ agc_status_t pin_predspal(void)
 {
     pin_block_dspcount(PIN_VD1);
 
-    if (!AGC_ASSERT(pin_st()->dspcount_neg))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (pin_dspalarm());
 }
 
@@ -197,11 +192,11 @@ agc_status_t pin_almcycle(void)
     }
 
     agc_dsky_falton();
-    s->reqret       = PIN_REQ_PASS0;            /* set for ENTPAS0        */
-    s->reqret_neg   = false;
-    agc_status_t st = pin_updatvb(s->verbsave); /* status so far */
+    s->reqret     = PIN_REQ_PASS0; /* set for ENTPAS0        */
+    s->reqret_neg = false;
+    pin_updatvb(s->verbsave);
 
-    return ((st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st); /* if OK */
+    return (PIN_STATUS_RECYCLE);
 }
 
 /**********************************************************************
@@ -326,13 +321,18 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
         st = pin_comp_octal(first + i, &buf[i]); /* TSTFORDP, CHANDSP */
     }
 
-    for (int i = count - 1; i >= 0 && st == AGC_STATUS_OK; i--)
-    { /* DSPCOM3 */
-        pin_set_dspcount(rnd1[i]);
-        st = pin_dspoctwo(buf[i]);
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
     }
 
-    return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* if OK */
+    for (int i = count - 1; i >= 0; i--)
+    { /* DSPCOM3 */
+        pin_set_dspcount(rnd1[i]);
+        pin_dspoctwo(buf[i]);
+    }
+
+    return (pin_entexit());
 } /* pin_dsp_octal */
 
 /* ---- noun test and machine address (pp. 324-325) --------------------- */
@@ -399,13 +399,8 @@ static agc_status_t pin_intmctbs(bool from_mpac2)
 
     if (s->verbreg != 5u)
     {
-        pin_set_dspcount(PIN_R3D1);                  /* VB not = 05: display CADR */
-        agc_status_t st = pin_dspoctwo(s->nouncadr); /* status so far */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        pin_set_dspcount(PIN_R3D1); /* VB not = 05: display CADR */
+        pin_dspoctwo(s->nouncadr);
     }
 
     return (pin_verbfan());
@@ -612,11 +607,13 @@ static agc_status_t pin_vbfandir(uint8_t verb)
             case 35:
                 return (pin_vbtstlts());                      /* test lights            */
             case 36:
-                return (agc_fresh_start_slap1());             /* SLAP1 fresh start      */
+                agc_fresh_start_slap1();
+
+                return (AGC_STATUS_OK);  /* SLAP1 fresh start      */
             case 37:
-                return (pin_reqmm());                         /* MMCHANG: TC REQMM      */
+                return (pin_reqmm());    /* MMCHANG: TC REQMM      */
             default:
-                return (pin_dspalarm());                      /* spare                  */
+                return (pin_dspalarm()); /* spare                  */
         }
     }
 

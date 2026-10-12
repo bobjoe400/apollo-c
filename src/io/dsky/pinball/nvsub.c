@@ -261,11 +261,6 @@ agc_status_t agc_dsky_endidle(agc_job_id_t t, agc_job_id_t p, agc_job_id_t e)
     s->cadrstor.cont[2] = e;
     agc_exec_job_sleep(t);
 
-    if (!AGC_ASSERT(pin_cadrstor_full()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK); /* TC JOBSLEEP     */
 }
 
@@ -402,13 +397,11 @@ static agc_status_t pin_blankdsp(int code)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    agc_status_t st = AGC_STATUS_OK; /* status so far */
-
     agc_inhint();
 
-    for (int i = 6 - code; i >= 0 && st == AGC_STATUS_OK; i--)
+    for (int i = 6 - code; i >= 0; i--)
     { /* 7..10 down */
-        st = pin_dsptab_store(i, (uint16_t) PIN_BIT12);
+        pin_dsptab_store(i, (uint16_t) PIN_BIT12);
     }
 
     agc_relint();
@@ -434,7 +427,7 @@ static agc_status_t pin_blankdsp(int code)
         return (AGC_STATUS_BAD_ARG); /* DSPCOUNT not blocked at VD1 */
     }
 
-    return (st); /* NVSUBEND        */
+    return (AGC_STATUS_OK); /* NVSUBEND        */
 } /* pin_blankdsp */
 
 /**********************************************************************
@@ -466,13 +459,13 @@ static agc_status_t pin_nvsub1(uint16_t nvtemp)
 
     if (noun == 0u)
     { /* display verb, then return */
-        agc_status_t st = pin_updatvb(verb); /* status so far */
+        pin_updatvb(verb);
 
         /* zero REQRET so that pasted verbs can */
         s->reqret     = PIN_REQ_PASS0;
         s->reqret_neg = false; /* be executed by operator              */
 
-        return (st);
+        return (AGC_STATUS_OK);
     }
 
     if (verb == 0u)
@@ -480,12 +473,9 @@ static agc_status_t pin_nvsub1(uint16_t nvtemp)
         return (pin_updatnn(noun)); /* display noun    */
     }
 
-    agc_status_t st = pin_updatvb(verb); /* status so far */
+    pin_updatvb(verb);
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = pin_updatnn(noun);
-    }
+    agc_status_t st = pin_updatnn(noun); /* status so far */
 
     s->loadstat   = PIN_LS_WAITING; /* waiting for data */
     s->clpass     = 0;

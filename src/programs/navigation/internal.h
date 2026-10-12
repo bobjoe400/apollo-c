@@ -270,8 +270,8 @@ agc_status_t rz_setintg(agc_job_id_t resume); /* SETINTG            */
 agc_status_t rz_waitone(agc_job_id_t pointex);
 
 /* N49DISP +index (CSM R22, noun 49).                                     */
-agc_dp_t rz_csm_residuals(int index);
-void     rz_set_csm_residuals(int index, agc_dp_t v); /* P23 R23.53 */
+agc_dp_t     rz_csm_residuals(int index);
+agc_status_t rz_set_csm_residuals(int index, agc_dp_t v); /* P23 R23.53 */
 
 /* S22.1 (csm/navigation/landmark_navigation.c): nmarks marks of the
  * sighting, the caller continues as ret; CXOFF of the landmark code.  */

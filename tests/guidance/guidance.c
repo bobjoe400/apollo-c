@@ -398,7 +398,7 @@ static void test_splash_error(void)
  **********************************************************************/
 static void test_tvc_optics_reserved(void)
 {
-    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    agc_power_on(AGC_VEHICLE_CSM);
     agc_inhint(); /* a task runs inside T3RUPT */
     CHECK(agc_task_gimbal_test_trim() == AGC_STATUS_OK);
     agc_relint();
@@ -487,7 +487,7 @@ static bool dsky_shows(int verb, int noun, bool flash)
  **********************************************************************/
 static void test_engine_enable_request_csm(void)
 {
-    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    agc_power_on(AGC_VEHICLE_CSM);
     agc_dsky_init();
     run_jobs();
     agc_guid_state()->csm.nvword1 = (agc_sp_t) -0400;                   /* -BIT9: V99 flash */
@@ -518,7 +518,7 @@ static void test_engine_enable_request_csm(void)
  **********************************************************************/
 static void test_engine_fail_csm(void)
 {
-    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    agc_power_on(AGC_VEHICLE_CSM);
     agc_dsky_init();
     run_jobs();
     agc_guid_state()->csm.nvword1 = (agc_sp_t) -1; /* the AGC's -0: V97 flash */
@@ -544,7 +544,7 @@ static void test_engine_fail_csm(void)
  **********************************************************************/
 static void test_engine_enable_request_lm(void)
 {
-    CHECK(agc_power_on(AGC_VEHICLE_LM) == AGC_STATUS_OK);
+    agc_power_on(AGC_VEHICLE_LM);
     agc_dsky_init();
     run_jobs();
     agc_guid_state()->lm.which   = (agc_sp_t) AGC_LM_WHICH_DPS_BURN; /* P40TABLE: noun 40 */

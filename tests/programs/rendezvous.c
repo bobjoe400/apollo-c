@@ -419,7 +419,7 @@ static void test_group2_restart_priority(void)
     const agc_phase_var_t p23 = {AGC_RESTART_JOB, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION, AGC_TASK_NONE, 0, false, 0U}; /* D clear */
     const agc_phase_var_t r22 = {AGC_RESTART_JOB, AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM, AGC_TASK_NONE, 0, false, 0U};  /* D clear */
 
-    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    agc_power_on(AGC_VEHICLE_CSM);
     agc_dsky_init();
     agc_flag_set(AGC_FLAG_REFSMFLG);
     agc_exec_init();                                                         /* only the job under test */
@@ -433,7 +433,7 @@ static void test_group2_restart_priority(void)
     agc_phase_change_var(06022, &r22);
     CHECK(group2_restarts_at(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM, 026));
 
-    CHECK(agc_power_on(AGC_VEHICLE_LM) == AGC_STATUS_OK);
+    agc_power_on(AGC_VEHICLE_LM);
     agc_dsky_init();
     agc_exec_init();
     agc_phase_set_priority(2, 026);

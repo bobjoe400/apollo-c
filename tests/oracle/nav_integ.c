@@ -170,7 +170,7 @@ static void fresh(void)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_exec_init();
-    (void) agc_waitlist_init();
+    agc_waitlist_init();
     agc_erase_set_modreg(0);
     agc_navaux_set_padload(&pad);
     agc_erase_set_tephem(0);
@@ -195,7 +195,7 @@ static void run_integ(const run_case_t *k)
 
     fresh();
     agc_interp_init(&ip);
-    (void) agc_integ_ctx_init(&ctx);
+    agc_integ_ctx_init(&ctx);
     (void) agc_integ_install(0, AGC_JOB_NONE);
     agc_integ_set_lunar_coeffs((agc_sp_t) oracle_in(t, "E3J22R2M", 0), (agc_sp_t) oracle_in(t, "E32C31RM", 0));
     ctx.sv.rcv            = oracle_in_vec(t, "RCV");
@@ -243,7 +243,7 @@ static void run_step(const step_case_t *k)
 
     fresh();
     agc_interp_init(&ip);
-    (void) agc_integ_ctx_init(&ctx);
+    agc_integ_ctx_init(&ctx);
     (void) agc_integ_install(0, AGC_JOB_NONE);
     agc_integ_set_lunar_coeffs((agc_sp_t) oracle_in(t, "E3J22R2M", 0), (agc_sp_t) oracle_in(t, "E32C31RM", 0));
     ctx.sv.rcv = oracle_in_vec(t, "RCV");
@@ -253,7 +253,7 @@ static void run_step(const step_case_t *k)
     agc_flag_put(AGC_FLAG_STATEFLG, true);
     agc_flag_put(AGC_FLAG_VINTFLAG, true);
     (void) agc_integ_integrvs(&ip, &ctx, oracle_in_dp(t, "VAC1+32", 0));
-    (void) agc_integ_perm_get(AGC_VEHICLE_CSM, &sv);
+    agc_integ_perm_get(AGC_VEHICLE_CSM, &sv);
     oracle_require_ok(t, "PHASCHNG");
     oracle_cmp_vec(t, "TDELTAV", sv.deltav, oracle_out_vec(t, "TDELTAV"), k->tol_dv);
     oracle_cmp_vec(t, "TNUV", sv.nuv, oracle_out_vec(t, "TNUV"), k->tol_dv);
@@ -282,7 +282,7 @@ static void run_rectify(const char *t)
 
     fresh();
     agc_interp_init(&ip);
-    (void) agc_integ_ctx_init(&ctx);
+    agc_integ_ctx_init(&ctx);
     ctx.pbody     = oracle_in(t, "PBODY", 0);
     ctx.sv.rcv    = oracle_in_vec(t, "RCV");
     ctx.sv.vcv    = oracle_in_vec(t, "VCV");
@@ -322,7 +322,7 @@ static void run_origchng(const char *t)
 
     fresh();
     agc_interp_init(&ip);
-    (void) agc_integ_ctx_init(&ctx);
+    agc_integ_ctx_init(&ctx);
     (void) agc_integ_install(0, AGC_JOB_NONE);
     pattern               = oracle_in_vec(t, "RN");
     agc_erase_set_rn(pattern);
@@ -383,7 +383,7 @@ static void run_third(const char *t, bool moon, long int tol_r, long int tol_v, 
     agc_ephem_set_csm_data(&e);
     agc_erase_set_tephem(oracle_in_tp(t, "TEPHEM", 0));
     agc_interp_init(&ip);
-    (void) agc_integ_ctx_init(&ctx);
+    agc_integ_ctx_init(&ctx);
     (void) agc_integ_install(0, AGC_JOB_NONE);
     agc_integ_set_lunar_coeffs((agc_sp_t) oracle_in(t, "E3J22R2M", 0), (agc_sp_t) oracle_in(t, "E32C31RM", 0));
     ctx.sv.rcv            = oracle_in_vec(t, "RCV");
@@ -426,14 +426,14 @@ static void run_wmatrix(const char *t, long int tol_w)
 
     fresh();
     agc_interp_init(&ip);
-    (void) agc_integ_ctx_init(&ctx);
+    agc_integ_ctx_init(&ctx);
     agc_erase_set_modreg((agc_sp_t) oracle_in(t, "MODREG", 0));
     sv                    = ctx.sv;
     sv.rrect              = oracle_in_vec(t, "RRECTCSM");
     sv.vrect              = oracle_in_vec(t, "RRECTCSM+6");
     sv.rcv                = oracle_in_vec(t, "RRECTCSM+26");
     sv.vcv                = oracle_in_vec(t, "RRECTCSM+32");
-    (void) agc_integ_perm_set(AGC_VEHICLE_CSM, &sv);
+    agc_integ_perm_set(AGC_VEHICLE_CSM, &sv);
     ctx.w.blk[0][0]       = oracle_in_vec(t, "W");
     ctx.w.blk[1][3]       = oracle_in_vec(t, "W+72");
     (void) agc_integ_install(0, AGC_JOB_NONE);
@@ -459,7 +459,7 @@ static void run_wmatrix(const char *t, long int tol_w)
         oracle_cmp_vec(t, name, ctx.w.blk[1][m], oracle_out_vec(t, name), tol_w);
     }
 
-    (void) agc_integ_perm_get(AGC_VEHICLE_CSM, &sv);
+    agc_integ_perm_get(AGC_VEHICLE_CSM, &sv);
     oracle_cmp_vec(t, "RRECTCSM", sv.rrect, oracle_out_vec(t, "RRECTCSM"), 0);
     oracle_cmp_vec(t, "VRECTCSM", sv.vrect, oracle_out_vec(t, "VRECTCSM"), 0);
     (void) oracle_cmp(t, "TETCSM", sv.tet, oracle_out_dp(t, "TETCSM"), 0);

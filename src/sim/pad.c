@@ -191,7 +191,12 @@ static bool pad_state_vector(const char *args)
     sv.vcv = sv.vrect;
     sv.tet = agc_dp_from_double(ok ? x[6] * PAD_CS_PER_S : 0.0, PAD_SCALE_T); /* 0 when refused */
 
-    return (ok && agc_integ_perm_set(lm ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM, &sv) == AGC_STATUS_OK); /* vehicle from the line */
+    if (ok)
+    {
+        agc_integ_perm_set(lm ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM, &sv); /* vehicle from the line */
+    }
+
+    return (ok);
 }
 
 /**********************************************************************

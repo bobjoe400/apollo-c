@@ -295,16 +295,16 @@ agc_status_t agc_sxtmark_markcont(void);   /* MARKCONT      */
 agc_status_t agc_sxtmark_mark2(void);      /* MARK2/VACSTOR */
 agc_status_t agc_sxtmark_mkreject(void);   /* MKREJECT      */
 agc_sp_t     agc_sxtmark_marks_made(void); /* QPRET count   */
-agc_status_t agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out);
+void         agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out);
 
 /* ---- AOTMARK (LM, src/lm/optics/aotmark.c) -------------------------------------- */
 agc_status_t agc_aotmark(void);          /* AOTMARK       */
 agc_status_t agc_aotmark_markrupt(void); /* MARKRUPT      */
 void         agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp);
 void         agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb);
-agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_words_t *star_sm);
+void         agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_words_t *star_sm);
 agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm);
-agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, agc_vec_t *ave);
+void         agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, agc_vec_t *ave);
 
 /* ---- CSM sighting and optics routines (src/csm/optics/) ---------------- */
 /* SXTSM line of sight of one mark (half-unit, SM axes).                   */
@@ -644,7 +644,7 @@ void align_clear_ovf(agc_interp_t *ip);
 void align_phase4(uint16_t code);
 
 /* NCOARSE (Luminary p. 951): SET1/PDT plus PIPAX/Y/Z = -0.               */
-void align_ncoarse(void);
+agc_status_t align_ncoarse(void);
 
 /* COARSE (Luminary p. 951; the same sequence is inline in the Comanche
  * callers): IMUCOARS to THETAD, IMUSTALL, IMUFINE, IMUSTALL, then the job
@@ -688,7 +688,7 @@ agc_status_t align_nb_present(agc_interp_t *ip, agc_cdutrig_t *t, agc_mat_t *nb)
 
 /* SET1/PDT (CM) / the NCOARSE preamble (LM): 1/PIPADT = TIME1, GCOMP = 0,
  * DRIFTFLG set.                                                          */
-void align_set1_pdt(void);
+agc_status_t align_set1_pdt(void);
 
 /* The VN pseudo-op: verb and noun as decimal pairs packed 0VVVVVVVNNNNNNN
  * (same packing as agc_dsky_vn(), usable in constant expressions).       */

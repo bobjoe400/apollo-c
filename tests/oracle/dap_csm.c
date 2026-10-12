@@ -217,7 +217,7 @@ static void fresh(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
     agc_exec_init();
-    (void) agc_waitlist_init();
+    agc_waitlist_init();
     agc_guid_init(AGC_VEHICLE_CSM);
     (void) memset(agc_csm_dap_tvc(), 0, sizeof (agc_csm_tvc_t));
     (void) memset(agc_csm_dap_rcs(), 0, sizeof (agc_csm_rcs_t));

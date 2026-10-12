@@ -177,7 +177,9 @@ agc_status_t sim_rope_load(const char *path)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_selfcheck_set_rope(g_rope, AGC_ROPE_BANKS));
+    agc_selfcheck_set_rope(g_rope, AGC_ROPE_BANKS);
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

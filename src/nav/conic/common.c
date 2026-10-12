@@ -288,17 +288,7 @@ agc_status_t agc_conic_abtconic_(void)
 {
     _Static_assert(AGC_CONIC_ALARM_ABTCONIC == 0607, "AGC constant");
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM || agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_poodoo(AGC_CONIC_ALARM_ABTCONIC); /* TC POODOO */
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (st == AGC_STATUS_BAILOUT)
     { /* CSM POODOO with average G on: WHIMPER */

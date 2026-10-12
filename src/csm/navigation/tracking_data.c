@@ -156,16 +156,14 @@ static int td_shiftndx(void)
  *   pos       agc_vec_t *     O    its position (conic + deviation), body
  *                                  scale
  *
- * RETURNS: agc_status_t -- the permanent state status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t td_pos(agc_interp_t *ip, agc_vehicle_t v, agc_vec_t *pos)
+static void td_pos(agc_interp_t *ip, agc_vehicle_t v, agc_vec_t *pos)
 {
-    agc_integ_sv_t sv;                              /* permanent state */
-    agc_status_t   st = agc_integ_perm_get(v, &sv); /* state */
+    agc_integ_sv_t sv; /* permanent state */
 
+    agc_integ_perm_get(v, &sv); /* state */
     *pos = agc_vec_add(ip, rz_vshift(ip, sv.deltav, -(7 - td.x2)), sv.rcv);
-
-    return (st);
 }
 
 /**********************************************************************
@@ -692,14 +690,14 @@ static agc_status_t td_integrate(agc_interp_t *ip)
 
         if (st == AGC_STATUS_OK)
         {
-            st = td_pos(ip, AGC_VEHICLE_CSM, &td.csmpos); /* CMPOS    */
+            td_pos(ip, AGC_VEHICLE_CSM, &td.csmpos); /* CMPOS    */
         }
 
         rz_flag_put(AGC_FLAG_INCORFLG, true);
 
         if (st == AGC_STATUS_OK)
         {
-            st = td_pos(ip, AGC_VEHICLE_LM, &td.lempos); /* LMPOS    */
+            td_pos(ip, AGC_VEHICLE_LM, &td.lempos); /* LMPOS    */
         }
     }
 
@@ -812,21 +810,16 @@ static agc_status_t td_passes(agc_interp_t *ip, bool at_incorp2)
 
         if (agc_flag_test(AGC_FLAG_VEHUPFLG))
         {
-            st = td_pos(ip, AGC_VEHICLE_CSM, &td.csmpos); /* REND18   */
+            td_pos(ip, AGC_VEHICLE_CSM, &td.csmpos); /* REND18   */
         }
         else
         {
-            st = td_pos(ip, AGC_VEHICLE_LM, &td.lempos);
+            td_pos(ip, AGC_VEHICLE_LM, &td.lempos);
         }
 
         agc_phase_change(04022); /* REND13   */
         td.rclp = agc_vec_sub(ip, td.lempos, td.csmpos);
         rz_flag_put(AGC_FLAG_INCORFLG, false);
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
     } /* for (int i = 0; i < TD_PASSES; i++) */
 
     return (AGC_STATUS_NO_CONVERGE); /* step bound exhausted */
@@ -1038,13 +1031,20 @@ agc_dp_t rz_csm_residuals(int index)
  *   --------  --------  ---  --------------------------------------
  *   index     int       I    0 |dR|, 1 |dV|, 2 source code
  *   v         agc_dp_t  I    the value (m 2^29, m/cs 2^7 or a code)
+ *
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `index >= 0 && index < 3`
  **********************************************************************/
-void rz_set_csm_residuals(int index, agc_dp_t v)
+agc_status_t rz_set_csm_residuals(int index, agc_dp_t v)
 {
-    if (AGC_ASSERT(index >= 0 && index < 3))
+    if (!AGC_ASSERT(index >= 0 && index < 3))
     {
-        td.n49disp[index] = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    td.n49disp[index] = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

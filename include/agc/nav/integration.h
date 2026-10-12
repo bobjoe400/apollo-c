@@ -149,12 +149,12 @@ typedef struct agc_integ_midtoav_out
 
 /* ---- context and permanent state ------------------------------------ */
 agc_integ_ctx_t *agc_integ_shared_ctx(void);
-agc_status_t     agc_integ_ctx_init(agc_integ_ctx_t *ctx);
+void             agc_integ_ctx_init(agc_integ_ctx_t *ctx);
 
 /* Permanent state vector of `veh` (RRECTCSM.. / RRECTLEM..). get reads the
  * RRECT/VRECT/TET part through agc_erase_rrectcsm() etc.; set writes both. */
-agc_status_t agc_integ_perm_get(agc_vehicle_t veh, agc_integ_sv_t *out);
-agc_status_t agc_integ_perm_set(agc_vehicle_t veh, const agc_integ_sv_t *in);
+void agc_integ_perm_get(agc_vehicle_t veh, agc_integ_sv_t *out);
+void agc_integ_perm_set(agc_vehicle_t veh, const agc_integ_sv_t *in);
 
 /* Lunar potential pad loads used by QUALITY2/3 (SP):
  * E3J22R2M (J22 term, B61 x R^4 product) and E32C31RM (C31 term).       */
@@ -200,14 +200,14 @@ agc_status_t agc_integ_integrv(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t 
 /* ATOPCSM/ATOPLEM: temporary -> permanent, C/LMOONFLG from MOONFLAG,
  * SVDWN downlink copy. x2 = the AGC X2 used by SVDWN: 0 or 2 (PBODY), or
  * AGC_INTEG_X2_ORIGEX right after an origin change in A-PCHK.           */
-agc_status_t agc_integ_atopcsm(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2);
-agc_status_t agc_integ_atoplem(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2);
+void agc_integ_atopcsm(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2);
+void agc_integ_atoplem(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2);
 
 /* PTOACSM/PTOALEM: permanent -> temporary, MOONFLAG and PBODY set. For
  * the LM on the surface (SURFFLAG) PTOALEM goes to USEPIOS instead and
  * *surface is true: the state was built from RLS at ctx->tdec1 and the
  * integration must continue at A-PCHK. surface may be NULL for PTOACSM. */
-agc_status_t agc_integ_ptoacsm(agc_integ_ctx_t *ctx);
+void         agc_integ_ptoacsm(agc_integ_ctx_t *ctx);
 agc_status_t agc_integ_ptoalem(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool *surface);
 
 /* RECTIFY: new conic through RCV + TDELTAV, VCV + TNUV (uses ctx->pbody). */

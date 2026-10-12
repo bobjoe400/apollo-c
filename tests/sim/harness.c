@@ -110,7 +110,7 @@ static void check(bool ok, int line, const char *text)
  **********************************************************************/
 static void power_on(agc_vehicle_t v)
 {
-    CHECK(agc_power_on(v) == AGC_STATUS_OK);
+    agc_power_on(v);
     sim_clock_init();
     CHECK(agc_rupt_go() == AGC_STATUS_OK);
     CHECK(sim_channels_init() == AGC_STATUS_OK);

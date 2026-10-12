@@ -97,20 +97,12 @@ static int             show_bank;              /* SKEEP4 during SHOW-BANKSUM */
  *                                words; NULL with nbanks 0 = no rope
  *   nbanks  int               I  0..44 octal banks
  *
- * RETURNS: agc_status_t -- OK; BAD_ARG for a bank count out of range or
- *          a NULL image with banks
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_selfcheck_set_rope(const uint16_t *image, int nbanks)
+void agc_selfcheck_set_rope(const uint16_t *image, int nbanks)
 {
-    if (!AGC_ASSERT(nbanks >= 0 && nbanks <= AGC_ROPE_BANKS) || !AGC_ASSERT(image != NULL || nbanks == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     rope       = image;
     rope_banks = nbanks;
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

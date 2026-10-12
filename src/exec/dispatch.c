@@ -680,7 +680,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_ENDMANUV:
             return (agc_job_endmanuv(ctx));
         case AGC_JOB_GYRO_COMMAND_PULSED:
-            return (agc_job_gyro_command_pulsed());
+            agc_job_gyro_command_pulsed();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_GYRO_COMMAND_PULSE:
             return (agc_job_gyro_command_pulse());
         case AGC_JOB_GYRO_COMMAND_RETRY:
@@ -702,7 +704,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_CHARIN:
             return (agc_job_charin(ctx));
         case AGC_JOB_DSPMMJB:
-            return (agc_job_dspmmjb(ctx));
+            agc_job_dspmmjb();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_IDLERET3:
             return (agc_job_idleret3(ctx));
         case AGC_JOB_INITDSP:
@@ -1274,7 +1278,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_ENDMANUV:
             return (agc_job_endmanuv(ctx));
         case AGC_JOB_GYRO_COMMAND_PULSED:
-            return (agc_job_gyro_command_pulsed());
+            agc_job_gyro_command_pulsed();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_GYRO_COMMAND_PULSE:
             return (agc_job_gyro_command_pulse());
         case AGC_JOB_GYRO_COMMAND_RETRY:
@@ -1296,7 +1302,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_CHARIN:
             return (agc_job_charin(ctx));
         case AGC_JOB_DSPMMJB:
-            return (agc_job_dspmmjb(ctx));
+            agc_job_dspmmjb();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_IDLERET3:
             return (agc_job_idleret3(ctx));
         case AGC_JOB_INITDSP:
@@ -2410,7 +2418,9 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
         case AGC_TASK_JETSLECT:
             return (agc_task_jetslect());
         case AGC_TASK_ROLL_JETS_OFF:
-            return (agc_task_roll_jets_off());
+            agc_task_roll_jets_off();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_PITCHDAP:
             return (agc_task_pitchdap());
         case AGC_TASK_RCSATT:
@@ -2857,11 +2867,6 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_dispatch_task(agc_task_id_t task)
 {
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(task > AGC_TASK_NONE && task < AGC_TASK_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);

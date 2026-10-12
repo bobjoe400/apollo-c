@@ -164,14 +164,7 @@ static agc_status_t pin_num(void)
         s->clpass = 0; /* if CLPASS is + or +0, make it +0 */
     }
 
-    agc_status_t st; /* status so far */
-
-    st = pin_dspin(s->dspcount, agc_dsky_relay_code(s->chr));
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    pin_dspin(s->dspcount, agc_dsky_relay_code(s->chr));
 
     /* +0 octal, +1 + decimal, +2 - decimal.                                */
     /* Accumulate one character into VERBREG, NOUNREG or X/Y/ZREG: octal by
@@ -262,7 +255,7 @@ static agc_status_t pin_nvcom(bool verb)
         pin_set_dspcount(PIN_ND1); /* ND1, OCT 21 (DEC 17)              */
     }
 
-    agc_status_t st = pin_2blank(); /* status so far */
+    pin_2blank();
 
     s->decbrnch   = 1u;            /* set for dec V/N code              */
     s->reqret     = PIN_REQ_PASS0; /* set for ENTPAS0                   */
@@ -277,7 +270,7 @@ static agc_status_t pin_nvcom(bool verb)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /* ---- + and - (pp. 319-320) -------------------------------------------- */
@@ -679,12 +672,7 @@ static agc_status_t pin_clear_key(void)
             s_key->verbreg--; /* DIM VERBREG  */
         }
 
-        agc_status_t st = pin_updatvb(s_key->verbreg); /* status */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        pin_updatvb(s_key->verbreg);
     }
     else if (!pin_legaltst(inrel))
     {

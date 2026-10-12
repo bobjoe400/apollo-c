@@ -174,10 +174,9 @@ static void startsb2_outbits(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the first failing status of the routines
- *          it calls
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t startsb2(void)
+static void startsb2(void)
 {
     startsb2_outbits();
     waitlist_clear_lists(); /* LST1 = NEG1/2, LST2 = ENDTASK */
@@ -193,12 +192,7 @@ static agc_status_t startsb2(void)
      * DSPCOUNT; sys-misc DELAYLOC, DSRUPTSW, EXTVBACT (exec_up_startsb2).
      * Not reset here (no C storage of their own): SELFRET, ATTCADR, LGYRO,
      * SAMPLIM.                                                          */
-    agc_status_t su = exec_up_startsb2(); /* other modules' STARTSB2 resets */
-
-    if (su != AGC_STATUS_OK)
-    {
-        return (su);
-    }
+    exec_up_startsb2(); /* other modules' STARTSB2 resets */
 
     agc_erase_set_markstat(0);
     exec_clear_modecadr();  /* IMUCADR OPTCADR RADCADR */
@@ -208,8 +202,6 @@ static agc_status_t startsb2(void)
     { /* leave bit 6 unchanged   */
         agc_erase_set_imodes33((uint16_t) ((agc_erase_imodes33() & FS_BIT6) | FS_IM33INIT));
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -220,9 +212,9 @@ static agc_status_t startsb2(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the STARTSB2 status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t startsb1(void)
+static void startsb1(void)
 {
     waitlist_reset_time3();
     rupt_reset_timers();
@@ -232,7 +224,7 @@ static agc_status_t startsb1(void)
         agc_lm_dap_restart();
     }
 
-    return (startsb2());
+    startsb2();
 }
 
 /**********************************************************************
@@ -241,13 +233,13 @@ static agc_status_t startsb1(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the STARTSB1 status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t startsub(void)
+static void startsub(void)
 {
     exec_up_startsub(); /* DNTMGOTO, LM RADMODES */
 
-    return (startsb1());
+    startsb1(); /* TC STARTSB1 */
 }
 
 /**********************************************************************
@@ -397,10 +389,9 @@ static void dofstrt1_lm(void)
  *   slap1 -- true for the V36 SLAP1 fresh start (also the SLAP1-only resets)
  *   engine_off -- true: DOFSTART turns the engine off; LM false = DOFSTRT1
  *
- * RETURNS: agc_status_t -- the status of the other modules' resets
- *          (exec_up_dofstart)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t dofstart(bool slap1, bool engine_off)
+static void dofstart(bool slap1, bool engine_off)
 {
     if (is_lm())
     {
@@ -417,24 +408,22 @@ static agc_status_t dofstart(bool slap1, bool engine_off)
         dofstart_csm();
     }
 
-    return (exec_up_dofstart(slap1)); /* other modules' erasables */
+    exec_up_dofstart(slap1); /* other modules' erasables */
 }
 
 /**********************************************************************
  * LIGHTSET (C p.189 / L p.219): MARK REJECT together with ERROR LIGHT
- * RESET forces a fresh start; *done is true when it did one. Returns
- * the status of the fresh start.
+ * RESET forces a fresh start; *done is true when it did one.
  *
  * ARGUMENTS:
  *   done -- set true when LIGHTSET did a fresh start
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the fresh start
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t lightset(bool *done)
+static void lightset(bool *done)
 {
-    uint16_t     nav         = agc_chan_read(AGC_CHAN_NAVKEYIN); /* channel 16, nav DSKY / MARK keys */
-    uint16_t     mark_reject = FS_BIT7;                          /* CSM: channel 16 bit 7 */
-    agc_status_t st          = AGC_STATUS_OK;                    /* fresh start outcome */
+    uint16_t nav         = agc_chan_read(AGC_CHAN_NAVKEYIN); /* channel 16, nav DSKY / MARK keys */
+    uint16_t mark_reject = FS_BIT7;                          /* CSM: channel 16 bit 7 */
 
     if (is_lm())
     {
@@ -455,16 +444,10 @@ static agc_status_t lightset(bool *done)
         if (elr)
         {
             *done = true;
-            st    = startsub();
-
-            if (st == AGC_STATUS_OK)
-            {
-                st = dofstart(false, true);
-            }
+            startsub();
+            dofstart(false, true); /* DOFSTART */
         }
     }
-
-    return (st);
 }
 
 /**********************************************************************
@@ -475,12 +458,11 @@ static agc_status_t lightset(bool *done)
  * ARGUMENTS:
  *   ok_out -- set true when every -PHASEn is the complement of PHASEn
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the PTBAD fresh start
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t phase_tables_ok(bool *ok_out)
+static void phase_tables_ok(bool *ok_out)
 {
-    bool         ok = true;          /* -PHASEn = complement of PHASEn so far */
-    agc_status_t st = AGC_STATUS_OK; /* PTBAD fresh start outcome */
+    bool ok = true; /* -PHASEn = complement of PHASEn so far */
 
     for (int g = AGC_RESTART_GROUPS; g >= 1 && ok; g--)
     {
@@ -491,11 +473,9 @@ static agc_status_t phase_tables_ok(bool *ok_out)
 
     if (!ok)
     {
-        agc_alarm(AGC_ALARM_01107);  /* PTBAD        */
-        st = dofstart(false, false); /* LM DOFSTRT1, CSM DOFSTART */
+        agc_alarm(AGC_ALARM_01107); /* PTBAD        */
+        dofstart(false, false);     /* LM DOFSTRT1, CSM DOFSTART */
     }
-
-    return (st);
 }
 
 /**********************************************************************
@@ -510,20 +490,16 @@ static agc_status_t phase_tables_ok(bool *ok_out)
  **********************************************************************/
 static agc_status_t goprog3(void)
 {
-    bool         ok = false;                /* phase tables agree */
-    agc_status_t st = phase_tables_ok(&ok); /* PCLOOP; PTBAD's fresh start */
+    bool ok = false; /* phase tables agree */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    phase_tables_ok(&ok); /* PCLOOP; PTBAD's fresh start */
 
     if (!ok)
     {
         return (AGC_STATUS_ALARM);
     }
 
-    st = fresh_mmdsplay(); /* TC MMDSPLAY          */
+    agc_status_t st = fresh_mmdsplay(); /* TC MMDSPLAY          */
 
     if (st != AGC_STATUS_OK)
     {
@@ -633,16 +609,11 @@ agc_status_t agc_restart_goprog(void)
 
         if ((ch33 & FS_BIT15) != 0U && (ch33 & FS_BIT14) == 0U)
         {
-            agc_status_t sf = startsub(); /* fresh start outcome */
-
-            if (sf == AGC_STATUS_OK)
-            {
-                sf = dofstart(false, true);
-            }
-
+            startsub();
+            dofstart(false, true);
             agc_relint();
 
-            return (sf);
+            return (AGC_STATUS_OK);
         }
     }
     else if ((agc_erase_dsptab(FS_LAMPWORD) & FS_BIT4) != 0U)
@@ -654,14 +625,16 @@ agc_status_t agc_restart_goprog(void)
         /* LM, NO ATT lamp off */
     }
 
-    bool         done = false;           /* LIGHTSET did a fresh start */
-    agc_status_t st   = lightset(&done); /* BUTTONS              */
+    bool         done = false;         /* LIGHTSET did a fresh start */
+    agc_status_t st   = AGC_STATUS_OK; /* restart outcome */
 
-    if (st == AGC_STATUS_OK && !done)
+    lightset(&done); /* BUTTONS              */
+
+    if (!done)
     {
-        st = startsub(); /* ERESTORE = +0        */
+        startsub(); /* ERESTORE = +0        */
 
-        if (st == AGC_STATUS_OK && is_lm())
+        if (is_lm())
         {
             /* SETINFL .. GOPROG3 (L p.217): the LM hardware-restart part.         */
             agc_flag_clear(AGC_FLAG_INTFLAG);
@@ -682,13 +655,9 @@ agc_status_t agc_restart_goprog(void)
                 agc_chan_or(AGC_CHAN_DSALMOUT, FS_BIT14); /* turn engine off      */
             }
         }
-        else if (st == AGC_STATUS_OK)
-        {
-            st = goprog_csm_tail();
-        }
         else
         {
-            /* STARTSUB failed: its status is returned */
+            st = goprog_csm_tail();
         }
 
         if (st == AGC_STATUS_OK)
@@ -719,24 +688,20 @@ agc_status_t fresh_enema(void)
 
     if (is_lm())
     {
-        st = startsb1(); /* TC STARTSB1          */
-
-        if (st == AGC_STATUS_OK)
-        {
-            st = lightset(&done); /* GOPROG2A             */
-        }
+        startsb1();      /* TC STARTSB1          */
+        lightset(&done); /* GOPROG2A             */
     }
     else
     {
-        st = lightset(&done);
+        lightset(&done);
 
-        if (st == AGC_STATUS_OK && !done)
+        if (!done)
         {
-            st = startsb2();
+            startsb2();
         }
     }
 
-    if (st == AGC_STATUS_OK && !done)
+    if (!done)
     {
         flagword_init(10, (uint16_t) ~FS_INTMASK & 077777u, 0u); /* RSFLGBTS / INTMASK */
 
@@ -761,39 +726,29 @@ agc_status_t fresh_enema(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the first failing status of the routines
- *          it calls
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_fresh_start_slap1(void)
+void agc_fresh_start_slap1(void)
 {
     agc_inhint();
-    agc_status_t st = startsub(); /* STARTSUB outcome */
+    startsub(); /* STARTSUB */
 
-    if (st != AGC_STATUS_OK)
+    /* STARTSW: TCF SKIPSIM (the simulation start patch is not used).   */
+    uint16_t lamps = agc_erase_dsptab(FS_LAMPWORD); /* DSPTAB +11D at the fresh start */
+
+    set_lampword((uint16_t) ((lamps & FS_BITS4_6) | FS_BIT15));
+
+    /* ERCOUNT, LM DUMPCNT = BIT12 and DSRUPTSW = -PRIO12: DOFSTART's
+     * resets with slap1 (exec_up_dofstart).                          */
+
+    for (int i = 0; i < 3; i++)
     {
-        agc_relint();
-    }
-    else
-    {
-        /* STARTSW: TCF SKIPSIM (the simulation start patch is not used).   */
-        uint16_t lamps = agc_erase_dsptab(FS_LAMPWORD); /* DSPTAB +11D at the fresh start */
-
-        set_lampword((uint16_t) ((lamps & FS_BITS4_6) | FS_BIT15));
-
-        /* ERCOUNT, LM DUMPCNT = BIT12 and DSRUPTSW = -PRIO12: DOFSTART's
-         * resets with slap1 (exec_up_dofstart).                          */
-
-        for (int i = 0; i < 3; i++)
-        {
-            agc_erase_set_failreg(i, 0);
-        }
-
-        redoctr = 0;
-        st      = dofstart(true, true);
-        agc_relint();
+        agc_erase_set_failreg(i, 0);
     }
 
-    return (st);
+    redoctr = 0;
+    dofstart(true, true);
+    agc_relint();
 }
 
 /**********************************************************************
@@ -802,16 +757,13 @@ agc_status_t agc_fresh_start_slap1(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the DOFSTART status
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_fresh_dofstart(void)
+void agc_fresh_dofstart(void)
 {
     agc_inhint();
-    agc_status_t st = dofstart(false, true); /* DOFSTART outcome */
-
+    dofstart(false, true);
     agc_relint();
-
-    return (st);
 }
 
 /**********************************************************************

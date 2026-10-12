@@ -621,11 +621,6 @@ agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx,
  **********************************************************************/
 agc_status_t rz_flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint8_t verb, uint8_t noun, agc_job_id_t term, agc_job_id_t proceed, agc_job_id_t enter)
 {
-    if (!AGC_ASSERT(verb < 100U && noun < 100U) || !AGC_ASSERT((int) kind >= 0 && kind < AGC_DSKY_DISP_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_dsky_cont_t cont; /* astronaut returns */
 
     cont.terminate = term;

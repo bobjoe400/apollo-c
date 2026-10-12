@@ -449,8 +449,7 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, a
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition);
- *          AGC_STATUS_NO_CONVERGE when ROOTPSRS fails (WHATALM)
+ *          failed; AGC_STATUS_NO_CONVERGE when ROOTPSRS fails (WHATALM)
  **********************************************************************/
 agc_status_t agc_lm_ttf8cl(agc_interp_t *ip)
 {
@@ -474,11 +473,6 @@ agc_status_t agc_lm_ttf8cl(agc_interp_t *ip)
     l->ttf_8    = root; /* corrected TTF/8  */
     l->ttf_8_hi = root_hi;
     agc_lm_tdispset();
-
-    if (!AGC_ASSERT(passes >= 1 && passes <= AGC_LM_ROOT_MAX_PASSES))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }

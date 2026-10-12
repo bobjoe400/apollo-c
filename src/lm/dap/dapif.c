@@ -103,11 +103,6 @@ agc_status_t agc_lm_dap_setmaxdb(void)
 
     d->db = DB_WIDE;
 
-    if (!AGC_ASSERT(d->db > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (lm_dap_callaccs());
 }
 
@@ -128,11 +123,6 @@ agc_status_t agc_lm_dap_setmindb(void)
 
     d->db = DB_NARROW;
 
-    if (!AGC_ASSERT(d->db > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (lm_dap_callaccs());
 }
 
@@ -151,11 +141,6 @@ agc_status_t agc_lm_dap_setmindb(void)
 agc_status_t agc_lm_dap_restordb(void)
 {
     bool wide = agc_flag_test(AGC_FLAG_DBSELFLG); /* DBSELECT: wide deadband */
-
-    if (!AGC_ASSERT(agc_flag_valid(AGC_FLAG_DBSELFLG)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (wide ? agc_lm_dap_setmaxdb() : agc_lm_dap_setmindb()); /* 5 deg or 0.3 deg */
 }

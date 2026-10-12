@@ -85,7 +85,7 @@ int main(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
     agc_exec_init();
-    (void) agc_waitlist_init();
+    agc_waitlist_init();
     agc_imu_mode_init();
     test_arctrig();
     test_calcgta_identity();
@@ -240,7 +240,7 @@ static void test_calcgta_identity(void)
     CHECK(gyro[0] == 0 && gyro[1] == 0 && gyro[2] == 0);
     agc_dp_t buf[3]; /* gyro buffer, rev 2^0 */
 
-    CHECK(agc_imu_gyro_buf_get(AGC_IMU_GBUF_OGC, buf) == AGC_STATUS_OK);
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_OGC, buf);
     CHECK(buf[0] == 0 && buf[1] == 0 && buf[2] == 0);
 }
 
@@ -301,7 +301,7 @@ static void test_pipa_zero_comp(void)
 
     CHECK(agc_imu_comp_load(&p) == AGC_STATUS_OK);
     agc_imu_gcompzer();
-    agc_imu_set_pipa_interval((agc_sp_t) (200 * 64));                                              /* 2 s, cs x 2^8        */
+    CHECK(agc_imu_set_pipa_interval((agc_sp_t) (200 * 64)) == AGC_STATUS_OK);                      /* 2 s, cs x 2^8        */
     agc_vec_t in   = agc_vec_make(agc_dp_pack(123, 0), agc_dp_pack(-45, 0), agc_dp_pack(7000, 0)); /* DELV, PIPA pulses x 2^14 */
     agc_vec_t delv = in;                                                                           /* DELV, PIPA pulses x 2^14 */
 
@@ -314,7 +314,7 @@ static void test_pipa_zero_comp(void)
 
     agc_dp_t g[3]; /* gyro angles, rev 2^0 */
 
-    CHECK(agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g) == AGC_STATUS_OK);
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g);
     CHECK(g[0] == 0 && g[1] == 0 && g[2] == 0); /* no gyro compensation */
     CHECK(agc_imu_gcompsw() == 0);
 }
@@ -379,7 +379,7 @@ static void test_gyro_pulse(void)
     CHECK(agc_imu_gyrocmd() == 1000u);           /* +.215 pulse: 78/128 */
     agc_dp_t buf[3];                             /* gyro buffer, rev 2^0 */
 
-    CHECK(agc_imu_gyro_buf_get(AGC_IMU_GBUF_OGC, buf) == AGC_STATUS_OK);
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_OGC, buf);
     CHECK(buf[1] == 78);                         /* unsent fraction  */
     CHECK(agc_imu_gyros_busy());
     CHECK(agc_task_strtgyro() == AGC_STATUS_OK); /* Z, X: nothing    */
@@ -441,7 +441,7 @@ static void test_lastbias_pipuse(void)
 {
     agc_erase_set_pipax(5);
     agc_erase_set_pipaz(-3);
-    agc_imu_set_gcompsw(0);
+    CHECK(agc_imu_set_gcompsw(0) == AGC_STATUS_OK);
     (void) agc_job_lastbias();
     CHECK(agc_erase_pipax() == 0 && agc_erase_pipaz() == 0);
 }
@@ -537,7 +537,7 @@ static void test_optical_verification(void)
     }
 
     CHECK(agc_job_optical_verification_torque_accepted() == AGC_STATUS_OK);
-    CHECK(agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, erc) == AGC_STATUS_OK);
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, erc);
     CHECK(erc[0] == ar->ogc[0] && erc[2] == ar->ogc[2]);
     CHECK(agc_phase_checkmm(2)); /* GCOMP5: back to P02 */
 } /* test_optical_verification */

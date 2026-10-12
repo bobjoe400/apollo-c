@@ -81,7 +81,7 @@ void agc_imu_mode_init(void); /* restart state  */
 agc_status_t agc_imu_zero(void);                       /* IMUZERO        */
 agc_status_t agc_imu_coarse(const uint16_t thetad[3]); /* IMUCOARS       */
 agc_status_t agc_imu_fine(void);                       /* IMUFINE/IMUFIN20 */
-agc_status_t agc_imu_pipuse(void);                     /* PIPUSE         */
+void         agc_imu_pipuse(void);                     /* PIPUSE         */
 void         agc_imu_pipa_fail_enable(void);           /* PIPUSE1        */
 void         agc_imu_pipfree(void);                    /* PIPFREE        */
 void         agc_imu_rndrefdr(void);                   /* RNDREFDR       */
@@ -95,7 +95,7 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as);
 
 /* IMUPULSE on the OGC buffer after loading it with gyro[0..2] (X,Y,Z).    */
 agc_status_t agc_imu_pulse(const agc_dp_t gyro[3]);
-agc_status_t agc_imu_gyro_buf_get(agc_imu_gyro_buf_t buf, agc_dp_t out[3]);
+void         agc_imu_gyro_buf_get(agc_imu_gyro_buf_t buf, agc_dp_t out[3]);
 void         agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3]);
 bool         agc_imu_gyros_busy(void); /* LGYRO != 0     */
 uint16_t     agc_imu_gyrocmd(void);    /* GYROCMD counter (pulses)      */
@@ -175,9 +175,9 @@ typedef struct agc_imu_comp_params
 agc_status_t agc_imu_comp_load(const agc_imu_comp_params_t *p);
 void         agc_imu_comp_get(agc_imu_comp_params_t *p);
 agc_sp_t     agc_imu_gcompsw(void);       /* GCOMPSW        */
-void         agc_imu_set_gcompsw(agc_sp_t v);
+agc_status_t agc_imu_set_gcompsw(agc_sp_t v);
 agc_sp_t     agc_imu_pipa_interval(void); /* 1/PIPADT, cs x 2^8 (or TIME1)   */
-void         agc_imu_set_pipa_interval(agc_sp_t v);
+agc_status_t agc_imu_set_pipa_interval(agc_sp_t v);
 
 /* 1/PIPA: compensate the PIPA counts DELV (pulses x 2^14, X Y Z) in place
  * for scale factor and bias, then IRIGCOMP the gyros.                     */
@@ -188,7 +188,7 @@ agc_status_t agc_imu_comp_irig(agc_vec_t delv);
 void         agc_imu_gcompzer(void);                         /* GCOMPZER       */
 agc_status_t agc_job_gyro_command_pulse(void);               /* 1/GYRO         */
 agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx); /* 1/GYRO retry   */
-agc_status_t agc_job_gyro_command_pulsed(void);              /* GCOMP1         */
+void         agc_job_gyro_command_pulsed(void);              /* GCOMP1         */
 agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx);            /* NBDONLY        */
 agc_status_t agc_job_lastbias(void);                         /* LASTBIAS       */
 

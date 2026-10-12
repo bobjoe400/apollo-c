@@ -781,11 +781,6 @@ agc_status_t agc_scale_sfconst(agc_vehicle_t veh, uint8_t sf_code, agc_dp_t *sf_
 {
     if (veh == AGC_VEHICLE_CSM)
     {
-        if (!AGC_ASSERT(sf_code < SF_COUNT_CSM))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         *sf_in  = sf_pair_value(&sfintab_csm[sf_code]);
         *sf_out = sf_pair_value(&sfoutab_csm[sf_code]);
     }

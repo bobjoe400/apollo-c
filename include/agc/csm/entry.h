@@ -225,7 +225,7 @@ agc_status_t agc_entry_scalepop(bool *display);
 
 /* REFAZE10: GOTO GOTOADDR */
 agc_status_t agc_entry_reestablish_sequencer(bool *display);
-agc_status_t agc_entry_targeting(void);                               /* TARGETNG */
+void         agc_entry_targeting(void);                               /* TARGETNG */
 agc_status_t agc_job_pre_hunt(agc_job_ctx_t *ctx);                    /* PRE-HUNT  4.47 restart */
 agc_status_t agc_job_reestablish_entry_sequencer(agc_job_ctx_t *ctx); /* REFAZE10  5.3 restart  */
 
@@ -449,7 +449,7 @@ agc_status_t entry_post_0_05g(agc_entry_state_t *es);
 agc_status_t entry_upcontrol(agc_entry_state_t *es);
 agc_status_t entry_ballistic(agc_entry_state_t *es);
 agc_status_t entry_final_phase(agc_entry_state_t *es);
-agc_status_t entry_disable_restart_group(void);
+void         entry_disable_restart_group(void);
 
 /* reentry.c: SL n on the TP MPAC a DMP or DOT leaves (MPAC+2 bits move
  * up into MPAC+1), stored as DP: the AGC "DMP ... SL1" / "DOT SL1".     */

@@ -239,16 +239,14 @@ agc_status_t pin_pastevb(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = pin_updatvb((uint8_t) verb); /* status so far */
+    pin_updatvb((uint8_t) verb);
 
     s->reqret     = PIN_REQ_PASS0;
     s->reqret_neg = false;
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_dsky_blanksub(s->monsave2);               /* either return goes on (TC +1) */
-        st = (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st; /* job sleeps */
-    }
+    agc_status_t st = agc_dsky_blanksub(s->monsave2); /* either return goes on (TC +1) */
+
+    st = (st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st; /* job sleeps */
 
     return (st); /* ENDOFJOB                       */
 }
@@ -408,21 +406,15 @@ agc_status_t pin_reqmm(void)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->reqret       = PIN_REQ_MM;
-    s->reqret_neg   = true;
+    s->reqret     = PIN_REQ_MM;
+    s->reqret_neg = true;
     pin_set_dspcount(PIN_ND1);
-    s->nounreg      = 0;
-    agc_status_t st = pin_2blank(); /* status so far */
-
+    s->nounreg    = 0;
+    pin_2blank();
     pin_flashon();
-    s->decbrnch = 1u; /* set for dec                   */
+    s->decbrnch   = 1u; /* set for dec                   */
 
-    if (!AGC_ASSERT(s->dspcount == PIN_ND1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return ((st == AGC_STATUS_OK) ? pin_entexit() : st); /* if OK */
+    return (pin_entexit());
 }
 
 /**********************************************************************
@@ -452,15 +444,14 @@ agc_status_t pin_mmchang_resume(void)
 
     uint8_t mm = s->nounreg; /* major mode keyed */
 
-    s->nounreg      = 0;
+    s->nounreg = 0;
     pin_set_dspcount(PIN_ND1);
-    agc_status_t st = pin_2blank(); /* status so far */
-
+    pin_2blank();
     pin_block_dspcount(PIN_VD1); /* block num char in             */
 
-    if (!AGC_ASSERT(mm <= 99u) || st != AGC_STATUS_OK)
+    if (!AGC_ASSERT(mm <= 99u))
     {
-        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG); /* or BAD_ARG */
+        return (AGC_STATUS_BAD_ARG);
     }
 
     return (agc_change_program(mm));

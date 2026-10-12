@@ -250,13 +250,19 @@ agc_status_t agc_job_dap_data_load_config_lm(agc_job_ctx_t *ctx)
         ratedb = RATEDB_CSM;
     }
 
-    agc_erase_set_stiksens(sens);
-    agc_erase_set_neg_ratedb(ratedb);
+    agc_status_t ss = agc_erase_set_stiksens(sens); /* STIKSENS, -RATEDB store status */
+
+    ss = (ss == AGC_STATUS_OK) ? agc_erase_set_neg_ratedb(ratedb) : ss; /* if OK */
     agc_relint();
 
     if (sr != AGC_STATUS_OK)
     {
         return (sr);
+    }
+
+    if (ss != AGC_STATUS_OK)
+    {
+        return (ss);
     }
 
     return (agc_job_dap_data_load_noun47_lm(ctx));

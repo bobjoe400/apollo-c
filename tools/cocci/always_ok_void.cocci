@@ -14,7 +14,7 @@
 // 1. The definition and its prototypes: agc_status_t -> void.
 @def@
 typedef agc_status_t;
-identifier f =~ "^(laim_apsides)$";
+identifier f =~ "^(pin_updatvb|agc_job_dspmmjb)$";
 parameter list ps;
 @@
 - agc_status_t
@@ -26,7 +26,7 @@ parameter list ps;
 
 @proto@
 typedef agc_status_t;
-identifier f =~ "^(laim_apsides)$";
+identifier f =~ "^(pin_updatvb|agc_job_dspmmjb)$";
 parameter list ps;
 @@
 - agc_status_t
@@ -38,7 +38,7 @@ parameter list ps;
 //    also delete early returns: every return reaches the end of the
 //    function).
 @ret@
-identifier f =~ "^(laim_apsides)$";
+identifier f =~ "^(pin_updatvb|agc_job_dspmmjb)$";
 @@
 void f(...)
 {
@@ -55,7 +55,7 @@ void f(...)
 
 // 3. Callers.
 @voidcast@
-identifier f =~ "^(laim_apsides)$";
+identifier f =~ "^(pin_updatvb|agc_job_dspmmjb)$";
 expression list es;
 @@
 - (void) f(es);
@@ -63,7 +63,7 @@ expression list es;
 
 @retvoid@
 identifier fn;
-identifier f =~ "^(laim_apsides)$";
+identifier f =~ "^(pin_updatvb|agc_job_dspmmjb)$";
 expression list es;
 @@
 void fn(...)
@@ -82,7 +82,7 @@ void fn(...)
 }
 
 @retok@
-identifier f =~ "^(laim_apsides)$";
+identifier f =~ "^(pin_updatvb|agc_job_dspmmjb)$";
 expression list es;
 @@
 (
@@ -97,7 +97,7 @@ expression list es;
 
 @checked@
 identifier st;
-identifier f =~ "^(laim_apsides)$";
+identifier f =~ "^(pin_updatvb|agc_job_dspmmjb)$";
 expression list es;
 type T;
 @@
@@ -114,14 +114,14 @@ type T;
 - }
 
 @test1@
-identifier f =~ "^(laim_apsides)$";
+identifier f =~ "^(pin_updatvb|agc_job_dspmmjb)$";
 expression list es;
 @@
 - CHECK(f(es) == AGC_STATUS_OK);
 + f(es);
 
 @test2@
-identifier f =~ "^(laim_apsides)$";
+identifier f =~ "^(pin_updatvb|agc_job_dspmmjb)$";
 expression list es;
 expression E;
 @@

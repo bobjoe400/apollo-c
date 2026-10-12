@@ -228,13 +228,20 @@ agc_sp_t agc_imu_gcompsw(void)
  *
  * ARGUMENTS:
  *   v  agc_sp_t  I    GCOMPSW, B0
+ *
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= AGC_SP_MIN && v <= AGC_SP_MAX`
  **********************************************************************/
-void agc_imu_set_gcompsw(agc_sp_t v)
+agc_status_t agc_imu_set_gcompsw(agc_sp_t v)
 {
-    if (AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
-        gcompsw = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    gcompsw = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -252,13 +259,20 @@ agc_sp_t agc_imu_pipa_interval(void)
  *
  * ARGUMENTS:
  *   v  agc_sp_t  I    1/PIPADT, cs x 2^8
+ *
+ * RETURNS: agc_status_t -- OK; BAD_ARG (nothing stored) when the
+ *          value fails `v >= AGC_SP_MIN && v <= AGC_SP_MAX`
  **********************************************************************/
-void agc_imu_set_pipa_interval(agc_sp_t v)
+agc_status_t agc_imu_set_pipa_interval(agc_sp_t v)
 {
-    if (AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
+    if (!AGC_ASSERT(v >= AGC_SP_MIN && v <= AGC_SP_MAX))
     {
-        one_pipadt = v;
+        return (AGC_STATUS_BAD_ARG);
     }
+
+    one_pipadt = v;
+
+    return (AGC_STATUS_OK);
 }
 
 /* ---- GCOMP access (the GCOMP gyro buffer lives in mode.c) ----------- */
@@ -276,17 +290,13 @@ static agc_dp_words_t gcomp_words[3]; /* GCOMP words, gyro pulses x 2^14 */
  * ARGUMENTS:
  *   g  agc_dp_words_t [3]  O    GCOMP X, Y, Z words, gyro pulses x 2^14
  *
- * RETURNS: agc_status_t -- OK or BAD_ARG
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t gcomp_read(agc_dp_words_t g[3])
+static void gcomp_read(agc_dp_words_t g[3])
 {
-    agc_dp_t     v[3];                                             /* GCOMP buffer, gyro pulses x 2^14     */
-    agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, v); /* status of the call */
+    agc_dp_t v[3]; /* GCOMP buffer, gyro pulses x 2^14     */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, v);
 
     for (int k = 0; k < 3; k++)
     {
@@ -297,8 +307,6 @@ static agc_status_t gcomp_read(agc_dp_words_t g[3])
 
         g[k] = gcomp_words[k];
     }
-
-    return (st);
 }
 
 /**********************************************************************
@@ -553,17 +561,7 @@ static agc_status_t comp_irig_words(const agc_dp_words_t delv[3])
 {
     agc_dp_words_t g[3]; /* GCOMP words, gyro pulses x 2^14           */
 
-    if (!AGC_ASSERT(delv != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    const agc_status_t st = gcomp_read(g); /* GCOMP read status */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    gcomp_read(g);
 
     gcompsw = 0; /* indicate commands 2 pulses or less */
 
@@ -657,7 +655,9 @@ static agc_status_t one_gyro_pulse(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_job_gyro_command_pulsed());
+    agc_job_gyro_command_pulsed();
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -673,13 +673,9 @@ static agc_status_t one_gyro_pulse(void)
  **********************************************************************/
 agc_status_t agc_job_gyro_command_pulse(void)
 {
-    agc_dp_words_t     g[3];               /* GCOMP words, gyro pulses x 2^14 */
-    const agc_status_t st = gcomp_read(g); /* GCOMP read status */
+    agc_dp_words_t g[3]; /* GCOMP words, gyro pulses x 2^14 */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    gcomp_read(g);
 
     for (int axis = 2; axis >= 0; axis--)
     { /* PIPAZ, Y, X        */
@@ -727,19 +723,14 @@ agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_gyro_command_pulsed(void)
+void agc_job_gyro_command_pulsed(void)
 {
     if (agc_imu_stall_outcome(AGC_IMU_DEV_IMU) == AGC_IMU_STALL_GOOD) /* L+2: TCF ENDOFJOB      */
     {
-        agc_dp_words_t     g[3];               /* GCOMP words after IMUPULSE */
-        const agc_status_t st = gcomp_read(g); /* GCOMP read status */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        agc_dp_words_t g[3]; /* GCOMP words after IMUPULSE */
+        gcomp_read(g);
 
         for (int axis = 2; axis >= 0; axis--)
         {
@@ -749,8 +740,6 @@ agc_status_t agc_job_gyro_command_pulsed(void)
 
         gcomp_write(g);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /* ---- NBDONLY / FBIASSUB / LASTBIAS -------------------------------------- */
@@ -832,14 +821,10 @@ static agc_dp_words_t fbiassub(agc_dp_words_t g, agc_sp_t nbd, agc_dp_t deltat)
  **********************************************************************/
 static agc_status_t bias_drift_compensate(agc_sp_t dt, bool surface)
 {
-    agc_dp_t           deltat = agc_sp_mul(dt, BIT10); /* cs x 2^19 (SR 5)    */
-    agc_dp_words_t     g[3];                           /* GCOMP words, gyro pulses x 2^14 */
-    const agc_status_t st     = gcomp_read(g);         /* GCOMP read status */
+    agc_dp_t       deltat = agc_sp_mul(dt, BIT10); /* cs x 2^19 (SR 5)    */
+    agc_dp_words_t g[3];                           /* GCOMP words, gyro pulses x 2^14 */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    gcomp_read(g);
 
     const agc_vec_t      dv      = agc_erase_delv();                                                               /* PIPA pulses x 2^14 */
     const agc_dp_words_t delv[3] = {agc_dp_to_words(dv.c[0]), agc_dp_to_words(dv.c[1]), agc_dp_to_words(dv.c[2])}; /* DELVX..Z words */
@@ -936,12 +921,7 @@ agc_status_t agc_job_lastbias(void)
 {
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
-        agc_status_t pu = agc_imu_pipuse(); /* CM: BANKCALL PIPUSE */
-
-        if (pu != AGC_STATUS_OK)
-        {
-            return (pu);
-        }
+        agc_imu_pipuse(); /* CM: BANKCALL PIPUSE */
     }
     else
     {

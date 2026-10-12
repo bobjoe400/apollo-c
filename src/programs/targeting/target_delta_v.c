@@ -305,11 +305,14 @@ agc_status_t agc_job_target_delta_v_store(void)
     agc_integ_minirect(ic, ic->out.vatt1);
     agc_phase_change(TDV_PHASE_04024);
     agc_flag_set(AGC_FLAG_REINTFLG);
-    st           = rz_is_csm() ? agc_integ_atoplem(&ip, ic, tdv_work.x2) : agc_integ_atopcsm(&ip, ic, tdv_work.x2); /* ATOPOTH */
 
-    if (st != AGC_STATUS_OK)
+    if (rz_is_csm())
     {
-        return (st);
+        agc_integ_atoplem(&ip, ic, tdv_work.x2); /* ATOPOTH */
+    }
+    else
+    {
+        agc_integ_atopcsm(&ip, ic, tdv_work.x2);
     }
 
     st = agc_integ_intwake_release(); /* INTWAKE1      */

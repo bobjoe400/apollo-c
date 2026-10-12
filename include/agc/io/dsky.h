@@ -280,7 +280,7 @@ agc_status_t agc_dsky_initdsp(void);          /* INITDSP (.1 restarts)     */
 agc_status_t agc_job_charin(agc_job_ctx_t *ctx);   /* CHARIN              */
 agc_status_t agc_job_prockey(void);                /* PROCKEY             */
 agc_status_t agc_job_mondo(void);                  /* MONDO               */
-agc_status_t agc_job_dspmmjb(agc_job_ctx_t *ctx);  /* DSPMMJB             */
+void         agc_job_dspmmjb(void);                /* DSPMMJB             */
 agc_status_t agc_job_tstlts3(void);                /* TSTLTS3             */
 agc_status_t agc_job_makeplay(agc_job_ctx_t *ctx); /* MAKEPLAY (R kinds)  */
 agc_status_t agc_job_playjum1(void);               /* PLAYJUM1            */

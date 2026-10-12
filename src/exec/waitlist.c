@@ -109,21 +109,14 @@ void waitlist_reset_time3(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG on a failed postcondition
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_waitlist_init(void)
+void agc_waitlist_init(void)
 {
     waitlist_reset_time3();
     waitlist_clear_lists();
     pending_longtime = 0;
     pending_longcadr = AGC_TASK_NONE;
-
-    if (!AGC_ASSERT(lst2[0] == AGC_TASK_ENDTASK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -359,11 +352,6 @@ agc_status_t agc_waitlist_fixdelay(uint16_t delay_cs, agc_task_id_t task)
  **********************************************************************/
 static agc_status_t longcycl(void)
 {
-    if (!AGC_ASSERT(pending_longcadr != AGC_TASK_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     int64_t rem = (int64_t) pending_longtime - WL_BIT14; /* DCS DPBIT14 / DAS    */
 
     if (rem > 0)
@@ -374,11 +362,6 @@ static agc_status_t longcycl(void)
     }
 
     rem += WL_BIT14; /* LASTTIME: ADS BIT14 */
-
-    if (!AGC_ASSERT(rem >= 0 && rem <= WL_BIT14))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     pending_longtime = (uint32_t) rem;
 
@@ -400,11 +383,6 @@ static agc_status_t longcycl(void)
  **********************************************************************/
 agc_status_t agc_waitlist_longcall(uint32_t delay_cs, agc_task_id_t task)
 {
-    if (!AGC_ASSERT(task != AGC_TASK_NONE) || !AGC_ASSERT(delay_cs < AGC_TIME_MODULUS_CS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (delay_cs == 0 && agc_state_vehicle() == AGC_VEHICLE_LM)
     {
         return (agc_poodoo(AGC_ALARM_01204)); /* LONGPOOH            */
@@ -433,11 +411,6 @@ agc_status_t agc_waitlist_longcall(uint32_t delay_cs, agc_task_id_t task)
  **********************************************************************/
 static agc_status_t svct3(void)
 {
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_DRIFTFLG))
     {
         return (AGC_STATUS_OK); /* TCF TASKOVER        */
@@ -489,16 +462,6 @@ void agc_waitlist_kill(agc_task_id_t task)
  **********************************************************************/
 agc_status_t agc_task_endtask(void)
 {
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(lst2[0] != AGC_TASK_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (svct3());
 }
 
@@ -537,11 +500,6 @@ agc_status_t agc_task_svct3(void)
  **********************************************************************/
 agc_status_t agc_task_longcycl(void)
 {
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(pending_longcadr != AGC_TASK_NONE))
     {
         return (AGC_STATUS_BAD_ARG);
@@ -612,11 +570,6 @@ agc_status_t agc_waitlist_t3rupt(void)
     agc_status_t result  = AGC_STATUS_OK;             /* first non-OK task status */
     uint16_t     gen     = exec_restart_generation(); /* STARTSB2 count at entry */
     bool         ruptagn = true;                      /* RUPTAGN: next task due now */
-
-    if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_inhint();
 

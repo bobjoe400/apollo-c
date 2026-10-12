@@ -173,18 +173,15 @@ static void ln_flags(void)
  *   --------  --------------  ---  --------------------------------
  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
  *
- * RETURNS: agc_status_t -- the permanent state status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t ln_calrc(agc_interp_t *ip)
+static void ln_calrc(agc_interp_t *ip)
 {
     agc_integ_sv_t sv; /* permanent state */
-    agc_status_t   st; /* CSM state */
 
-    st = agc_integ_perm_get(AGC_VEHICLE_CSM, &sv);
+    agc_integ_perm_get(AGC_VEHICLE_CSM, &sv);
 
     ln.csmpos = agc_vec_add(ip, rz_vshift(ip, sv.deltav, -(7 - ln.eorm)), sv.rcv);
-
-    return (st);
 }
 
 /**********************************************************************
@@ -648,15 +645,10 @@ agc_status_t agc_job_orbital_navigation_marks(agc_job_ctx_t *ctx)
 
     for (int k = 0; k < 5; k++)
     { /* S22.111  */
-        agc_align_sxt_mark_t m;                            /* the mark */
-        agc_status_t         st = agc_sxtmark_mark(k, &m); /* mark k */
-        uint16_t            *d;                            /* SVMRKDAT words */
+        agc_align_sxt_mark_t m; /* the mark */
+        uint16_t            *d; /* SVMRKDAT words */
 
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
-
+        agc_sxtmark_mark(k, &m); /* mark k */
         d = &ln.svmrkdat[LN_MARK_WORDS * k];
 
         d[0] = rz_word_of(agc_dp_high(m.t));
@@ -895,15 +887,12 @@ static agc_status_t ln_incorporate(agc_job_ctx_t *ctx, agc_interp_t *ip, bool at
         at_box42 = false;
         st       = rz_incorp2(ip, &ln.inc, agc_flag_test(AGC_FLAG_CMOONFLG)); /* S22BOX42 */
 
-        if (st == AGC_STATUS_OK)
-        {
-            st = ln_calrc(ip);
-        }
-
         if (st != AGC_STATUS_OK)
         {
             return (st);
         }
+
+        ln_calrc(ip);
 
         if (!agc_flag_test(AGC_FLAG_INCORFLG))
         { /* DMPINCP2 */
@@ -1071,15 +1060,12 @@ agc_status_t agc_job_orbital_navigation_mark(agc_job_ctx_t *ctx)
     ln_w_setup();
     st = agc_integ_integrv(&ip, agc_integ_shared_ctx(), ln_gettf()); /* S22NXTIN */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = ln_calrc(&ip);
-    }
-
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    ln_calrc(&ip);
 
     ln_getum(&ip); /* S2GETUM  */
 

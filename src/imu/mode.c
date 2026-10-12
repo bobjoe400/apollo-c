@@ -1137,23 +1137,15 @@ agc_status_t agc_task_pfailok(void)
  * PIPUSE (IMU_MODE_SWITCHING_ROUTINES.agc p.1429) -- PIPAX..Z = -0,
  * then PIPUSE1
  *
- * RETURNS: agc_status_t -- OK; AGC_STATUS_BAD_ARG on a failed
- *          precondition
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_imu_pipuse(void)
+void agc_imu_pipuse(void)
 {
     agc_erase_set_pipax(0); /* CS ZERO: -0      */
     agc_erase_set_pipay(0);
     agc_erase_set_pipaz(0);
 
-    if (!AGC_ASSERT(agc_erase_pipax() == 0 && agc_erase_pipaz() == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_imu_pipa_fail_enable();
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -1419,11 +1411,6 @@ agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as, agc_i
 agc_status_t agc_imu_stall(agc_job_id_t wake_as, agc_imu_stall_result_t *result)
 {
     agc_status_t st = agc_imu_stall_dev(AGC_IMU_DEV_IMU, wake_as, result); /* status of the call */
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }

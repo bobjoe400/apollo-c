@@ -80,7 +80,7 @@ int main(void)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_exec_init();
-    (void) agc_waitlist_init();
+    agc_waitlist_init();
     agc_guid_init(AGC_VEHICLE_CSM);
     agc_navaux_set_padload(&pad);
     agc_entry_lexicon_reset();
@@ -186,7 +186,7 @@ static void avg_in(const char *t)
     sv.v                          = oracle_in_vec(t, "VN");
     sv.t                          = oracle_in_dp(t, "PIPTIME", 0);
     sv.moon                       = false;
-    (void) agc_sv_set(AGC_SV_THIS, &sv);
+    agc_sv_set(AGC_SV_THIS, &sv);
     agc_guid_state()->avg.unitr   = oracle_in_vec(t, "UNITR");
     agc_guid_state()->avg.delvref = oracle_in_vec(t, "DELVREF");
     agc_erase_set_delv(oracle_in_vec(t, "DELV"));
@@ -394,7 +394,7 @@ static void cm_pose(const char *t, long int tol)
     sv.v                        = oracle_in_vec(t, "VN");
     sv.t                        = 0;
     sv.moon                     = false;
-    (void) agc_sv_set(AGC_SV_THIS, &sv);
+    agc_sv_set(AGC_SV_THIS, &sv);
     agc_guid_state()->avg.unitr = oracle_in_vec(t, "UNITR");
     agc_guid_state()->avg.unitw = oracle_in_vec(t, "UNITW");
     agc_erase_set_refsmmat(mat_in(t, "REFSMMAT"));

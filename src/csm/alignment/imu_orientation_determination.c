@@ -330,8 +330,15 @@ agc_status_t agc_job_csm_orientation_mark_setup(agc_job_ctx_t *ctx)
     agc_align_ram_t *ram = agc_align_ram(); /* alignment erasables */
 
     align_phase4(PH_ORIENTATION_RESTART);
-    ram->starind  = 0;
-    align_set1_pdt();
+    ram->starind = 0;
+
+    const agc_status_t st = align_set1_pdt(); /* SET1/PDT */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     agc_flag_clear(AGC_FLAG_TARG2FLG);
     ram->markindx = 1;
 

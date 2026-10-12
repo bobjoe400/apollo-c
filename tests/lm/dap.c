@@ -185,7 +185,7 @@ static void check(bool ok, int line, const char *text)
  **********************************************************************/
 static agc_status_t setup_descent(int32_t kg)
 {
-    CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
+    agc_lm_dap_fresh_start();
     agc_flag_clear(AGC_FLAG_CSMDKFLG);
     agc_flag_clear(AGC_FLAG_APSFLAG);
     agc_flag_set(AGC_FLAG_DRIFTDFL);
@@ -348,7 +348,7 @@ static void test_rate_estimator(void)
  **********************************************************************/
 static void test_rcsmon(void)
 {
-    CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
+    agc_lm_dap_fresh_start();
     const lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     agc_chan_set_input(032, 077777u); /* all valves open (inverted) */
@@ -375,7 +375,7 @@ static void test_rcsmon(void)
  **********************************************************************/
 static void test_spsrcs(void)
 {
-    CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
+    agc_lm_dap_fresh_start();
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     agc_flag_clear(AGC_FLAG_DRIFTDFL);
@@ -429,7 +429,7 @@ static void test_rot_touv(void)
  **********************************************************************/
 static void test_zero_erasable(void)
 {
-    CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
+    agc_lm_dap_fresh_start();
     (void) memset(lm_dap_state(), 0, sizeof (lm_dap_t));
     agc_flag_clear(AGC_FLAG_CSMDKFLG);
     agc_flag_clear(AGC_FLAG_APSFLAG);

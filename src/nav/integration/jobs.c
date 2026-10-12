@@ -355,21 +355,18 @@ static agc_status_t int_w(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  *                                     guards)
  *   moon      bool               I    the state is moon-centred (2^27, 2^5)
  *
- * RETURNS: agc_status_t -- the status of MOVEACSM / MOVEALEM
+ * RETURNS: none
  *********************************************************************/
-static agc_status_t move_this(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool moon)
+static void move_this(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool moon)
 {
     const int x2 = moon ? INTEG_PBODY_MOON : INTEG_PBODY_EARTH; /* X2 of RN, VN: 2 moon, 0 earth */
 
-    ctx->sv.rrect         = agc_vec_shl(ip, agc_erase_rn(), x2);               /* VSR* 0,2 */
-    ctx->sv.rcv           = ctx->sv.rrect;
-    ctx->sv.tet           = agc_erase_piptime();
+    ctx->sv.rrect = agc_vec_shl(ip, agc_erase_rn(), x2); /* VSR* 0,2 */
+    ctx->sv.rcv   = ctx->sv.rrect;
+    ctx->sv.tet   = agc_erase_piptime();
     agc_integ_minirect(ctx, agc_vec_shl(ip, agc_erase_vn(), x2));
-    const agc_status_t st = agc_integ_perm_set(agc_state_vehicle(), &ctx->sv); /* status of MOVEACSM / MOVEALEM */
-
-    agc_erase_set_trkmkcnt(0); /* SSP TRKMKCNT 0 */
-
-    return (st);
+    agc_integ_perm_set(agc_state_vehicle(), &ctx->sv);   /* MOVEACSM / MOVEALEM */
+    agc_erase_set_trkmkcnt(0);                           /* SSP TRKMKCNT 0 */
 }
 
 /**********************************************************************
@@ -392,13 +389,9 @@ static agc_status_t move_this(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool moon)
  *********************************************************************/
 static agc_status_t setcoast(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    const bool         moon = agc_integ_csm_amoonflg(); /* AMOONFLG: RN, VN moon-centred */
-    const agc_status_t st   = move_this(ip, ctx, moon); /* status of MOVATHIS */
+    const bool moon = agc_integ_csm_amoonflg(); /* AMOONFLG: RN, VN moon-centred */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    move_this(ip, ctx, moon); /* MOVATHIS */
 
     agc_flag_put(AGC_FLAG_CMOONFLG, moon);
 
@@ -450,10 +443,9 @@ static agc_status_t others(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_job_id_t 
         return (st);
     }
 
-    st                    = move_this(ip, ctx, agc_flag_test(AGC_FLAG_LMOONFLG)); /* MOONTHIS */
-    const agc_status_t sw = agc_integ_intwake();                                  /* FAZAB5   */
+    move_this(ip, ctx, agc_flag_test(AGC_FLAG_LMOONFLG)); /* MOONTHIS */
 
-    return ((st == AGC_STATUS_OK) ? sw : st); /* MOVATHIS failure first */
+    return (agc_integ_intwake()); /* FAZAB5   */
 }
 
 /**********************************************************************
@@ -837,8 +829,7 @@ agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t
         agc_relint(); /* RELINT        */
     }
 
-    agc_status_t   st = AGC_STATUS_OK; /* status of ATOPCSM / ATOPLEM */
-    const agc_sp_t u  = *upsvflag;     /* UPSVFLAG, integer 2^14 */
+    const agc_sp_t u = *upsvflag; /* UPSVFLAG, integer 2^14 */
 
     if (u != 0)
     {
@@ -851,11 +842,11 @@ agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t
 
         if (u < 0)
         {
-            st = agc_integ_atoplem(ip, ctx, x2); /* INTWAKLM      */
+            agc_integ_atoplem(ip, ctx, x2); /* INTWAKLM      */
         }
         else
         {
-            st = agc_integ_atopcsm(ip, ctx, x2);
+            agc_integ_atopcsm(ip, ctx, x2);
             agc_flag_put(AGC_FLAG_ORBWFLAG, false);
         }
 
@@ -869,5 +860,5 @@ agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t
 
     agc_phase_change_var(04026, &v); /* TC INTWAKUQ: the return address */
 
-    return ((st == AGC_STATUS_OK) ? sw : st); /* ATOP failure first */
+    return (sw);
 } /* agc_integ_intwakeu */

@@ -410,10 +410,18 @@ void agc_lm_tmptospt(void)
  **********************************************************************/
 agc_status_t agc_job_servicer_lm(agc_job_ctx_t *ctx)
 {
-    agc_lm_serv_quikfaz5(AGC_JOB_SERV_DVTOTUP);       /* PHASCHNG 16035 GETABVAL */
-    agc_imu_set_pipa_interval(ONEPIPADT_2S);          /* IN CASE LASTBIAS SKIPPED */
-    agc_vec_t    delv = agc_erase_delv();             /* DELV, PIPA counts in the high words (2^14 pulses) */
-    agc_status_t st   = agc_imu_one_over_pipa(&delv); /* PIPA COMPENSATION      */
+    agc_lm_serv_quikfaz5(AGC_JOB_SERV_DVTOTUP); /* PHASCHNG 16035 GETABVAL */
+
+    agc_status_t st = agc_imu_set_pipa_interval(ONEPIPADT_2S); /* IN CASE LASTBIAS SKIPPED */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    agc_vec_t delv = agc_erase_delv(); /* DELV, PIPA counts in the high words (2^14 pulses) */
+
+    st = agc_imu_one_over_pipa(&delv); /* PIPA COMPENSATION      */
 
     if (st != AGC_STATUS_OK)
     {
@@ -902,7 +910,13 @@ agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_avgend_lm(agc_job_ctx_t *ctx)
 {
-    agc_imu_set_pipa_interval(agc_dp_low(agc_erase_piptime())); /* CA PIPTIME +1 */
+    const agc_status_t st = agc_imu_set_pipa_interval(agc_dp_low(agc_erase_piptime())); /* CA PIPTIME +1 */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     agc_flag_set(AGC_FLAG_DRIFTFLG);
     agc_imu_pipfree();
     agc_chan_and(011, (uint16_t) ~(uint16_t) AGC_CH011_TESTCONN);

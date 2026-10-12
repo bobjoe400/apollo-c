@@ -82,8 +82,10 @@ test: $(TEST_BINS) scenarios
 # review wave has worked them down (`make style` fails on any finding).
 check: check-rules format-check style-report
 
+# With no argument check_rules.py scans src and include (its DEFAULT_ROOTS),
+# so `make check-rules` and a bare run report the same set.
 check-rules:
-	python3 -I tools/check_rules.py src include
+	python3 -I tools/check_rules.py
 
 # Rewrites files in place: run on a clean tree and rebuild afterwards.
 # tools/format.sh runs tools/fix_comments.py (comments out of expressions,
@@ -133,13 +135,15 @@ $(CG_DIR)/tests/%.ci: tests/%.c
 	$(CC) $(CSTD) $(WARN) -O0 -fno-inline $(CPPFLAGS) -DAGC_HOST_DEBUG -fcallgraph-info=su,da -c -o $(@:.ci=.o) $<
 
 # Boundary-check discipline (docs/modules/status-handling-2.md): Frama-C EVA
-# proves or refutes every AGC_ASSERT, one analysis per entry point (the sim
-# harness and each test main, with the whole library), two at a time, 60 min
-# each; it runs detached.  Watch tools/prove/progress.log (one line per run)
-# and tools/prove/summary.txt (done/total, verdicts, ETA).  When it has
-# finished, `make prove-classify` merges the verdicts with the libclang
-# call-site classification into docs/overview/guards.tsv: a guard left in
-# src/ must be FALLIBLE (classified GUARANTEED means it is dead code).
+# proves or refutes every AGC_ASSERT, one analysis per entry point (each test
+# main, with the whole library; agc_sim's unbounded main is not one, see
+# tools/prove/eva_run.py), two at a time, 60 min each; it runs detached.
+# Here it ran once, as the end-of-project cleanup (2026-10-12).  Watch
+# tools/prove/progress.log (one line per run) and tools/prove/summary.txt
+# (done/total, verdicts, ETA).  When it has finished, `make prove-classify`
+# merges the verdicts with the libclang call-site classification into
+# docs/overview/guards.tsv: a guard left in src/ must be FALLIBLE
+# (classified GUARANTEED means it is dead code).
 prove:
 	@mkdir -p $(BUILD)/prove
 	nohup setsid python3 -I tools/prove/eva_run.py > $(BUILD)/prove/run.txt 2>&1 < /dev/null &

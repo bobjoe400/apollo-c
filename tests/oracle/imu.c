@@ -254,7 +254,7 @@ static void pipa(const char *t)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_exec_init();
-    (void) agc_waitlist_init();
+    agc_waitlist_init();
 
     for (int k = 0; k < 3; k++)
     {
@@ -267,12 +267,12 @@ static void pipa(const char *t)
     }
 
     (void) agc_imu_comp_load(&p);
-    agc_imu_set_pipa_interval((agc_sp_t) oracle_in(t, "1074", 0)); /* 1/PIPADT */
-    agc_imu_set_gcompsw((agc_sp_t) oracle_in(t, "GCOMPSW", 0));
+    (void) oracle_cmp(t, "1/PIPADT stored", (long int) agc_imu_set_pipa_interval((agc_sp_t) oracle_in(t, "1074", 0)), (long int) AGC_STATUS_OK, 0);
+    (void) oracle_cmp(t, "GCOMPSW stored", (long int) agc_imu_set_gcompsw((agc_sp_t) oracle_in(t, "GCOMPSW", 0)), (long int) AGC_STATUS_OK, 0);
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, g);
-    delv = oracle_in_vec(t, "DELVX");                              /* DELVX DELVY DELVZ contiguous */
+    delv = oracle_in_vec(t, "DELVX"); /* DELVX DELVY DELVZ contiguous */
     (void) agc_imu_one_over_pipa(&delv);
-    (void) agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g);
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g);
     oracle_require_ok(t, "SWRETURN");
     (void) oracle_cmp(t, "DELVX", delv.c[0], oracle_out_dp(t, "DELVX"), 0);
     (void) oracle_cmp(t, "DELVY", delv.c[1], oracle_out_dp(t, "DELVY"), 0);

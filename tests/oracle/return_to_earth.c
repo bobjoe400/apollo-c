@@ -117,7 +117,7 @@ static void rte(const char *t, long int tol)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_exec_init();
-    (void) agc_waitlist_init();
+    agc_waitlist_init();
     agc_navaux_set_padload(&pad);
     ip           = rte_ip();
     rs           = rte_state();

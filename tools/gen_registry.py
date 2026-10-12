@@ -167,15 +167,13 @@ def call(handler, kind):
 
 
 def guard(kind):
-    """The preconditions of the public entry: the id is a real one (and a
-    task runs with interrupts inhibited).  The per-vehicle switches are
-    called only from here and do not repeat them; ctx is the executive's
-    own core-set address and is never NULL."""
+    """The precondition of the public entry: the id is a real one.  The
+    per-vehicle switches are called only from here and do not repeat it;
+    ctx is the executive's own core-set address and is never NULL.  (A
+    task runs with interrupts inhibited: EVA proved it VALID on every path,
+    2026-10-12, and the check was deleted.)"""
     k = kind_info(kind)
     out = []
-    if kind == 'task':
-        out += ['    if (!AGC_ASSERT(agc_interrupts_inhibited()))', '    {',
-                '        return (AGC_STATUS_BAD_ARG);', '    }', '']
     out += ['    if (!AGC_ASSERT(%s > %s && %s < %s))' % (k['var'], k['none'], k['var'], k['count']),
             '    {', '        return (AGC_STATUS_BAD_ARG);', '    }', '']
     return out

@@ -427,12 +427,7 @@ agc_status_t pin_load_verb(uint8_t verb)
         return (pin_dspalarm());
     }
 
-    agc_status_t st = pin_updatvb(PIN_VBSP1LD); /* status so far */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    pin_updatvb(PIN_VBSP1LD);
 
     return (pin_reqdat(PIN_INREL_X, (verb == 24u) ? PIN_REQ_AB_X : PIN_REQ_ABC_X)); /* ABLOAD / ABCLOAD */
 } /* pin_load_verb */
@@ -460,9 +455,9 @@ static agc_status_t pin_next_request(uint8_t verb, int inrel, pin_reqret_t step)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = pin_updatvb(verb); /* status so far */
+    pin_updatvb(verb);
 
-    return ((st == AGC_STATUS_OK) ? pin_reqdat(inrel, step) : st); /* if OK */
+    return (pin_reqdat(inrel, step));
 }
 
 /**********************************************************************

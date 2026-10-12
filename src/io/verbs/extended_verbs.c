@@ -385,11 +385,6 @@ static agc_status_t stall_then(agc_job_id_t wake)
  **********************************************************************/
 agc_status_t agc_extverb(int verb, int noun)
 {
-    if (!AGC_ASSERT(verb >= 40 && verb <= 99) || !AGC_ASSERT(noun >= 0 && noun <= 99))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     xv_verb = verb;
     xv_noun = noun;
 
@@ -975,12 +970,8 @@ agc_status_t agc_job_state_vector_copy(void)
     agc_vehicle_t  from  = sv_from_other ? other : self;            /* the vehicle copied from */
     agc_integ_sv_t sv;                                              /* the permanent state vector copied */
 
-    st = agc_integ_perm_get(from, &sv);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_integ_perm_set(sv_from_other ? self : other, &sv); /* LMTOCM: into this vehicle */
-    }
+    agc_integ_perm_get(from, &sv);
+    agc_integ_perm_set(sv_from_other ? self : other, &sv); /* LMTOCM: into this vehicle */
 
     agc_flag_id_t mself = (agc_flag_id_t) (lm ? AGC_FLAG_LMOONFLG : AGC_FLAG_CMOONFLG); /* MOONTHIS */
     agc_flag_id_t moth  = (agc_flag_id_t) (lm ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG); /* MOONOTH */
@@ -991,9 +982,19 @@ agc_status_t agc_job_state_vector_copy(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    bool         surface = false;                                                                                                     /* PTOALEM's surface answer (unused) */
-    agc_status_t sp      = lm ? agc_integ_ptoalem(&ip, agc_integ_shared_ctx(), &surface) : agc_integ_ptoacsm(agc_integ_shared_ctx()); /* PTOACSM / PTOALEM status */
-    agc_status_t sw      = agc_integ_intwake();                                                                                       /* INTWAKE status */
+    bool         surface = false;         /* PTOALEM's surface answer (unused) */
+    agc_status_t sp      = AGC_STATUS_OK; /* PTOALEM status */
+
+    if (lm)
+    {
+        sp = agc_integ_ptoalem(&ip, agc_integ_shared_ctx(), &surface);
+    }
+    else
+    {
+        agc_integ_ptoacsm(agc_integ_shared_ctx());
+    }
+
+    agc_status_t sw = agc_integ_intwake(); /* INTWAKE status */
 
     /* INTWAKE runs whatever happened before it (the integration must be
      * released); the first failure is the one reported.                    */

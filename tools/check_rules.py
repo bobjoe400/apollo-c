@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """check_rules.py -- mechanical checks for the Power of Ten rules.
 
-Usage: python3 -I tools/check_rules.py <dir>...
+Usage: python3 -I tools/check_rules.py [<dir>...]
+With no directory it scans what `make check-rules` scans (DEFAULT_ROOTS:
+src and include of this repository), so a bare run is never a vacuous
+zero; a directory that does not exist is an error, not an empty scan.
 Checks: rule 1 (goto/setjmp/longjmp, direct recursion), rule 3 (heap),
 rule 4 (function length <= 60 code lines), rule 5 (assertion density),
 rule 8 (preprocessor: token pasting, variadic macros, #if count),
@@ -17,6 +20,8 @@ import os
 import re
 import sys
 
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_ROOTS = ('src', 'include')  # the Makefile's check-rules target
 MAX_FUNC_LINES = 60
 STDLIB_VOID_OK = {'fprintf', 'printf', 'snprintf', 'fflush', 'fclose', 'memset', 'memcpy', 'memmove', 'nanosleep', 'setvbuf', 'fputs', 'puts'}
 FUNC_RE = re.compile(r'^[A-Za-z_][\w\s\*]*\s\**([A-Za-z_]\w*)\s*\([^;]*\)\s*\{?\s*$')
@@ -177,8 +182,14 @@ def check_file(path):
 
 
 def main(argv):
-    for root in argv[1:]:
+    roots = argv[1:] or [os.path.relpath(os.path.join(REPO, d)) for d in DEFAULT_ROOTS]
+    missing = [r for r in roots if not os.path.isdir(r)]
+    if missing:
+        print('check_rules: no such directory: ' + ', '.join(missing), file=sys.stderr)
+        return 2
+    for root in roots:
         for dp, _, files in os.walk(root):
+
             for f in sorted(files):
                 if f.endswith(('.c', '.h')):
                     low = f.lower()

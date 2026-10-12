@@ -1010,7 +1010,13 @@ agc_status_t agc_t4_task(agc_task_id_t task)
         if (agc_state_vehicle() == AGC_VEHICLE_LM && !agc_flag_test((agc_flag_id_t) AGC_FLAG_DRIFTFLG))
         {
             agc_flag_set((agc_flag_id_t) AGC_FLAG_DRIFTFLG);
-            agc_imu_set_pipa_interval(agc_erase_time1());
+
+            const agc_status_t sp = agc_imu_set_pipa_interval(agc_erase_time1()); /* 1/PIPADT = TIME1 */
+
+            if (sp != AGC_STATUS_OK)
+            {
+                return (sp);
+            }
         }
 
         agc_t4_setissw();

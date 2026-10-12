@@ -614,25 +614,40 @@ agc_status_t agc_task_tig_0_lm(void)
 
 /**********************************************************************
  * P12IGN (p.740): DAP bias acceleration estimates AOSQ, AOSR = the pad
- * loads IGNAOSQ, IGNAOSR (upper words only: CA / TS), then ABRTIGN.
- * ABRTIGN: CLOKTASK killed, AVEGEXIT = ATMAG (ascent guidance), R10 on.
+ * loads IGNAOSQ, IGNAOSR (upper words only: CA / TS); ABRTIGN follows.
+ *
+ * FUNCTION NAME: ascent_bias_load
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- OK; BAD_ARG when the LM DAP refuses a word
+ **********************************************************************/
+static agc_status_t ascent_bias_load(void)
+{
+    const agc_guid_t *g  = agc_guid_state();                                                             /* guidance erasables */
+    agc_status_t      st = agc_erase_set_aosq(agc_dp_pack(g->lm.ignaosq, agc_dp_low(agc_erase_aosq()))); /* AOSQ store status */
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_erase_set_aosr(agc_dp_pack(g->lm.ignaosr, agc_dp_low(agc_erase_aosr())));
+    }
+
+    return (st);
+}
+
+/**********************************************************************
+ * ABRTIGN (p.740): CLOKTASK killed, AVEGEXIT = ATMAG (ascent guidance),
+ * R10 on.
  *
  * FUNCTION NAME: ascent_ignition
  *
- * ARGUMENTS:
- *   Argument   Type        I/O  Description (scale)
- *   ---------  ----------  ---  --------------------------------------
- *   load_bias  bool        I    load the APS bias
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
  **********************************************************************/
-static void ascent_ignition(bool load_bias)
+static void ascent_ignition(void)
 {
     agc_guid_t *g = agc_guid_state(); /* guidance erasables */
-
-    if (load_bias)
-    {
-        agc_erase_set_aosq(agc_dp_pack(g->lm.ignaosq, agc_dp_low(agc_erase_aosq())));
-        agc_erase_set_aosr(agc_dp_pack(g->lm.ignaosr, agc_dp_low(agc_erase_aosr())));
-    }
 
     g->lm.dispdex  = IGN_DISPDEX_KILL; /* ABRTIGN: KILL CLOKTASK */
     g->avg.avgexit = AGC_JOB_ATMAG;    /* ATMAGADR               */
@@ -737,11 +752,17 @@ static agc_status_t ignition_by_program(ign_kind_t kind)
             st = dps_ignition();
             break;
         case IGN_KIND_ASCENT:
-            ascent_ignition(true);
-            st = agc_task_ignition_finish();
+            st = ascent_bias_load(); /* P12IGN, then ABRTIGN */
+
+            if (st == AGC_STATUS_OK)
+            {
+                ascent_ignition();
+                st = agc_task_ignition_finish();
+            }
+
             break;
         case IGN_KIND_ABORT:
-            ascent_ignition(false);
+            ascent_ignition();
             st = agc_task_ignition_finish();
             break;
         case IGN_KIND_APS:

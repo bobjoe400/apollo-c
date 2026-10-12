@@ -156,7 +156,14 @@ static agc_status_t next_sample(void)
 agc_status_t agc_job_lunar_gravity_coarsed(void)
 {
     agc_align_ram()->gctr = GRAVITY_SAMPLES;
-    agc_imu_set_pipa_interval(PIPA_INTERVAL);
+
+    const agc_status_t st = agc_imu_set_pipa_interval(PIPA_INTERVAL); /* 1/PIPADT store status */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     agc_imu_gcompzer();
     align_phase4(PH_SURFACE_ALIGN);
     read_pipas();
@@ -659,7 +666,12 @@ agc_status_t agc_job_lunar_surface_coarse_trim_go(void)
  **********************************************************************/
 agc_status_t agc_job_lunar_surface_coarse_trimmed(void)
 {
-    align_ncoarse();
+    agc_status_t st = align_ncoarse(); /* NCOARSE, then the step statuses */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
 
     /*
      * GYROTRIM (p. 966): STQ QMIN; with CDUSPOT = THETAD the nav-base X and Y
@@ -681,7 +693,7 @@ agc_status_t agc_job_lunar_surface_coarse_trimmed(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = align_nb_present(&ip, &t, &ram->xnb); /* status of the call */
+    st = align_nb_present(&ip, &t, &ram->xnb); /* status of the call */
 
     const agc_vec_t a[2] = {x, y};
     const agc_vec_t b[2] = {ram->xnb.row[0], ram->xnb.row[1]};

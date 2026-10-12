@@ -158,7 +158,7 @@ static void fresh(agc_vehicle_t veh)
 {
     agc_state_init(veh);
     agc_exec_init();
-    CHECK(agc_waitlist_init() == AGC_STATUS_OK);
+    agc_waitlist_init();
     agc_dsky_init();
 }
 

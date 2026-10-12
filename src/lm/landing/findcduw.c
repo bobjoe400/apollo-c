@@ -559,8 +559,10 @@ static void fc_gimbal_changes(agc_sp_t cdu[3])
  *
  * ARGUMENTS:
  *   trig  const agc_cdutrig_t *  I    CDU sines and cosines (QUICTRIG), 2^1
+ *
+ * RETURNS: agc_status_t -- OK; BAD_ARG when the DAP refuses a rate
  **********************************************************************/
-static void fc_rates(const agc_cdutrig_t *trig)
+static agc_status_t fc_rates(const agc_cdutrig_t *trig)
 {
     agc_sp_t sinz = agc_dp_high(trig->sincdu[AGC_TRIG_Z]); /* sin(CDUZ), 2^1 */
     agc_sp_t cosz = agc_dp_high(trig->coscdu[AGC_TRIG_Z]); /* cos(CDUZ), 2^1 */
@@ -582,22 +584,29 @@ static void fc_rates(const agc_cdutrig_t *trig)
     r = agc_lm_ad(r, agc_lm_mp_hi(gz, cosx));
     r = agc_lm_ad(r, r);
     r = agc_lm_ad(r, r);
-    agc_erase_set_omegapd(p);
-    agc_erase_set_omegaqd(q);
-    agc_erase_set_omegard(r);
+
+    agc_status_t st = agc_erase_set_omegapd(p); /* OMEGAPD.. store status */
+
+    st = (st == AGC_STATUS_OK) ? agc_erase_set_omegaqd(q) : st; /* if OK */
+    st = (st == AGC_STATUS_OK) ? agc_erase_set_omegard(r) : st; /* if OK */
+
+    return (st);
 }
 
 /**********************************************************************
  * CDUWXFR (p. 918): angle interface and lag angles
  * DELxEROR = OMEGA |OMEGA| / (2 * 1JACC), limited to DELERLIM.
+ *
+ * RETURNS: agc_status_t -- OK; BAD_ARG when the DAP refuses a word
  **********************************************************************/
-static void fc_transfer(void)
+static agc_status_t fc_transfer(void)
 {
     const agc_sp_t omega[3] = {agc_erase_omegapd(), agc_erase_omegaqd(), agc_erase_omegard()};
     const agc_sp_t jacc[3]  = {agc_erase_1jacc(), agc_erase_1jaccq(), agc_erase_1jaccr()};
-    agc_sp_t       lag[3]; /* DELPEROR..DELREROR, 1's, scale pi */
+    agc_sp_t       lag[3]   = {0, 0, 0};     /* DELPEROR..DELREROR, 1's, scale pi */
+    agc_status_t   st       = AGC_STATUS_OK; /* DELCDUX.. store status */
 
-    for (int i = 2; i >= 0; i--)
+    for (int i = 2; i >= 0 && st == AGC_STATUS_OK; i--)
     { /* bound 3          */
         agc_sp_t inc = agc_lm_mp_hi(fc_delgmb[i], FC_DT_DELT); /* DELCDUx for 0.1 s, 1's, scale pi */
 
@@ -606,15 +615,15 @@ static void fc_transfer(void)
 
         if (i == 0)
         {
-            agc_erase_set_delcdux(inc);
+            st = agc_erase_set_delcdux(inc);
         }
         else if (i == 1)
         {
-            agc_erase_set_delcduy(inc);
+            st = agc_erase_set_delcduy(inc);
         }
         else
         {
-            agc_erase_set_delcduz(inc);
+            st = agc_erase_set_delcduz(inc);
         }
 
         agc_sp_t aw  = (agc_sp_t) abs(omega[i]);                         /* |OMEGA|, pi/4 rad/s 2^0 */
@@ -635,9 +644,11 @@ static void fc_transfer(void)
         lag[i] = agc_lm_limitsub(q, FC_DELERLIM);
     } /* for each axis, Z Y X */
 
-    agc_erase_set_delperor(lag[0]);
-    agc_erase_set_delqeror(lag[1]);
-    agc_erase_set_delreror(lag[2]);
+    st = (st == AGC_STATUS_OK) ? agc_erase_set_delperor(lag[0]) : st; /* if OK */
+    st = (st == AGC_STATUS_OK) ? agc_erase_set_delqeror(lag[1]) : st; /* if OK */
+    st = (st == AGC_STATUS_OK) ? agc_erase_set_delreror(lag[2]) : st; /* if OK */
+
+    return (st);
 } /* fc_transfer */
 
 /**********************************************************************
@@ -813,12 +824,12 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
     fc_delgmb[0] = (fc_flagoodw != 0) ? (agc_sp_t) -datx : 0; /* good window */
     agc_sp_t c   = fc_mp_dbl((agc_sp_t) -fc_delgmb[1], sinz); /* X change from the new Y, 1's, scale pi */
 
-    fc_delgmb[0] = agc_lm_ad(fc_delgmb[0], c); /* ADS: -DELGMBX     */
-    fc_rates(trig);
-    fc_transfer();
-    agc_relint();                              /* TC INTPRET after TCQCDUW     */
+    fc_delgmb[0] = agc_lm_ad(fc_delgmb[0], c);                 /* ADS: -DELGMBX     */
+    st           = fc_rates(trig);
+    st           = (st == AGC_STATUS_OK) ? fc_transfer() : st; /* if OK */
+    agc_relint();                                              /* TC INTPRET after TCQCDUW     */
 
-    return (AGC_STATUS_OK);
+    return (st);
 } /* agc_lm_findcduw */
 
 /**********************************************************************

@@ -570,7 +570,7 @@ static void fresh(agc_vehicle_t veh)
 {
     agc_state_init(veh);
     agc_exec_init();
-    CHECK(agc_waitlist_init() == AGC_STATUS_OK);
+    agc_waitlist_init();
     agc_erase_set_modreg(0);
 }
 
@@ -598,7 +598,7 @@ static agc_status_t run_body(agc_integ_ctx_t *ctx, dvec_t r, dvec_t v, bool coni
     agc_interp_t ip; /* interpretive state */
 
     agc_interp_init(&ip);
-    CHECK(agc_integ_ctx_init(ctx) == AGC_STATUS_OK);
+    agc_integ_ctx_init(ctx);
     CHECK(agc_integ_install(0, AGC_JOB_NONE) == AGC_STATUS_OK);
     ctx->sv.rcv           = to_agc(r, moon ? 27 : 29);                   /* moon 2^27, earth 2^29 m */
     ctx->sv.vcv           = to_agc(v, moon ? 5 : 7);                     /* moon 2^5, earth 2^7 m/cs */
@@ -684,7 +684,7 @@ static void test_rectify(void)
 
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
-    CHECK(agc_integ_ctx_init(&ctx) == AGC_STATUS_OK);
+    agc_integ_ctx_init(&ctx);
     ctx.sv.rcv     = to_agc(dv(7.0e6, 0.0, 0.0), 29);
     ctx.sv.vcv     = to_agc(dv(0.0, 75.0, 0.0), 7);
     ctx.sv.deltav  = to_agc(dv(1000.0, -500.0, 0.0), 22); /* E 2^22 m    */
@@ -820,7 +820,7 @@ static void test_wmatrix(void)
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(20);
-    CHECK(agc_integ_ctx_init(ctx) == AGC_STATUS_OK);
+    agc_integ_ctx_init(ctx);
     circular(MU_E, 6678137.0, 0.5, 0.0, &r0, &v0);
     agc_integ_sv_t sv = ctx->sv; /* permanent CSM state with W */
 
@@ -829,7 +829,7 @@ static void test_wmatrix(void)
     sv.vrect = to_agc(v0, 7);
     sv.vcv   = sv.vrect;
     sv.tet   = 0;
-    CHECK(agc_integ_perm_set(AGC_VEHICLE_CSM, &sv) == AGC_STATUS_OK);
+    agc_integ_perm_set(AGC_VEHICLE_CSM, &sv);
     agc_flag_clear(AGC_FLAG_CMOONFLG);
 
     /* W column 0: 100 m along x at the stored scale (YV SL3: 2^19 m).    */
@@ -853,7 +853,7 @@ static void test_wmatrix(void)
 
     (void) printf("W column 0 after 10 min: (%.2f %.2f %.2f) want (%.2f %.2f %.2f)\n", got.x, got.y, got.z, want.x, want.y, want.z);
     CHECK(dist(got, want) < 2.0);
-    CHECK(agc_integ_perm_get(AGC_VEHICLE_CSM, &sv) == AGC_STATUS_OK);
+    agc_integ_perm_get(AGC_VEHICLE_CSM, &sv);
     CHECK(sv.tet == (agc_dp_t) TEN_MIN_CS); /* permanent updated */
 } /* test_wmatrix */
 
@@ -1002,7 +1002,7 @@ static void set_perm(agc_vehicle_t veh, dvec_t r, dvec_t v, agc_dp_t t)
     sv.vrect = to_agc(v, 7);
     sv.vcv   = sv.vrect;
     sv.tet   = t;
-    CHECK(agc_integ_perm_set(veh, &sv) == AGC_STATUS_OK);
+    agc_integ_perm_set(veh, &sv);
 }
 
 /**********************************************************************
@@ -1025,8 +1025,8 @@ static void test_stateint(void)
     set_perm(AGC_VEHICLE_LM, r0, v0, 0);
     agc_time_set_cs(300000u);
     CHECK(agc_job_stateint_update() == AGC_STATUS_OK);
-    CHECK(agc_integ_perm_get(AGC_VEHICLE_CSM, &c) == AGC_STATUS_OK);
-    CHECK(agc_integ_perm_get(AGC_VEHICLE_LM, &l) == AGC_STATUS_OK);
+    agc_integ_perm_get(AGC_VEHICLE_CSM, &c);
+    agc_integ_perm_get(AGC_VEHICLE_LM, &l);
     (void) printf("STATEINT: TETCSM = %d cs, TETLEM = %d cs (now 300000)\n", (int) c.tet, (int) l.tet);
     CHECK((c.tet > 200000) && (c.tet <= 300000)); /* last step left out */
     CHECK(l.tet == c.tet);                        /* LM to TETCSM      */
@@ -1060,7 +1060,7 @@ static void test_midtoav(void)
     circular(MU_E, 6678137.0, 0.5, 0.0, &r0, &v0);
     circular(MU_E, 6678137.0, 0.5, 30000.0, &r1, &v1);
     set_perm(AGC_VEHICLE_CSM, r0, v0, 0);
-    CHECK(agc_integ_ctx_init(agc_integ_shared_ctx()) == AGC_STATUS_OK);
+    agc_integ_ctx_init(agc_integ_shared_ctx());
     CHECK(agc_integ_midtoav_at_time(&ip, agc_integ_shared_ctx(), 30000, AGC_JOB_NONE, &out) == AGC_STATUS_OK);
     CHECK(out.piptime1 == 30000);
     CHECK(out.dt == 30000);
@@ -1097,7 +1097,7 @@ static void test_avetomid(void)
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(40);
-    CHECK(agc_integ_ctx_init(ctx) == AGC_STATUS_OK);
+    agc_integ_ctx_init(ctx);
     circular(MU_E, 6678137.0, 0.5, 0.0, &r0, &v0);
     circular(MU_E, 6700000.0, 0.5, 60000.0, &r1, &v1);
     set_perm(AGC_VEHICLE_CSM, r0, v0, 0);
@@ -1108,8 +1108,8 @@ static void test_avetomid(void)
     ctx->w.blk[0][0] = to_agc(dv(100.0, 0.0, 0.0), 19);
     agc_flag_set(AGC_FLAG_ORBWFLAG);
     CHECK(agc_integ_avetomid(&ip, ctx, AGC_JOB_NONE) == AGC_STATUS_OK);
-    CHECK(agc_integ_perm_get(AGC_VEHICLE_CSM, &c) == AGC_STATUS_OK);
-    CHECK(agc_integ_perm_get(AGC_VEHICLE_LM, &l) == AGC_STATUS_OK);
+    agc_integ_perm_get(AGC_VEHICLE_CSM, &c);
+    agc_integ_perm_get(AGC_VEHICLE_LM, &l);
     CHECK(c.tet == 60000);
     CHECK(dist(from_agc(c.rrect, 29), r1) < 4.0);
     CHECK(l.tet == 60000);
@@ -1134,7 +1134,7 @@ static void test_intwakeu(void)
 
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
-    CHECK(agc_integ_ctx_init(ctx) == AGC_STATUS_OK);
+    agc_integ_ctx_init(ctx);
     CHECK(agc_integ_install(0, AGC_JOB_NONE) == AGC_STATUS_OK);
     ctx->sv.rrect = to_agc(dv(7.0e6, 1.0e5, 0.0), 29);
     ctx->sv.vrect = to_agc(dv(0.0, 75.0, 1.0), 7);
@@ -1142,7 +1142,7 @@ static void test_intwakeu(void)
     CHECK(agc_integ_intwakeu(&ip, ctx, &u, AGC_JOB_UPLINK_UPDATE_TERMINATE) == AGC_STATUS_OK);
     CHECK(u == 0);
     CHECK(!agc_integ_area_busy(0));
-    CHECK(agc_integ_perm_get(AGC_VEHICLE_LM, &l) == AGC_STATUS_OK);
+    agc_integ_perm_get(AGC_VEHICLE_LM, &l);
     CHECK(l.tet == 5000);
     CHECK(l.rcv.c[0] == l.rrect.c[0]);
     CHECK(!agc_flag_test(AGC_FLAG_LMOONFLG));

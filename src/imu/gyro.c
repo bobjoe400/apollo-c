@@ -93,23 +93,6 @@ static agc_job_id_t gyro_waiter;                 /* job sleeping in GYROBUSY    
 static bool         gwake_pending;               /* GWAKE: waking job restarts torquing */
 
 /**********************************************************************
- * AGC: none (helper) -- a valid gyro command buffer id
- *
- * ARGUMENTS:
- *   b  agc_imu_gyro_buf_t  I    buffer id
- *
- * RETURNS: bool -- true for OGC, GCOMP or ERCOMP
- **********************************************************************/
-static bool buf_ok(agc_imu_gyro_buf_t b)
-{
-    bool ok = (int) b >= 0 && b < AGC_IMU_GBUF_COUNT; /* valid id */
-
-    _Static_assert(AGC_IMU_GBUF_COUNT == 3, "AGC constant");
-
-    return (ok);
-}
-
-/**********************************************************************
  * AGC: none (EXTEND, WOR / WAND CHAN14) -- set or clear channel 14 bits
  *
  * ARGUMENTS:
@@ -157,21 +140,14 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
  *   buf  agc_imu_gyro_buf_t  I    buffer id
  *   out  agc_dp_t [3]        O    the three commands, rev 2^0
  *
- * RETURNS: agc_status_t -- OK or BAD_ARG
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_imu_gyro_buf_get(agc_imu_gyro_buf_t buf, agc_dp_t out[3])
+void agc_imu_gyro_buf_get(agc_imu_gyro_buf_t buf, agc_dp_t out[3])
 {
-    if (!AGC_ASSERT(buf_ok(buf) && out != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     for (int i = 0; i < 3; i++)
     {
         out[i] = gbuf[buf][i];
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -244,11 +220,6 @@ void agc_imu_hw_set_gyrocmd(uint16_t pulses)
  **********************************************************************/
 agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
 {
-    if (!AGC_ASSERT(buf_ok(buf)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (imu_cagetstj() != AGC_STATUS_OK)
     { /* IMUCADR = -0     */
         return (AGC_STATUS_ALARM);
@@ -308,11 +279,6 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
 agc_status_t agc_imu_pulse(const agc_dp_t gyro[3])
 {
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_OGC, gyro);
-
-    if (!AGC_ASSERT(gbuf[AGC_IMU_GBUF_OGC][2] == gyro[2]))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_NONE));
 }
@@ -500,11 +466,6 @@ agc_status_t agc_task_strtgyro(void)
     }
 
     if (!AGC_ASSERT(lgyro.busy))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN14) & GDESELCT) == 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }

@@ -265,7 +265,10 @@ static void test_scales(void)
     agc_dp_t in  = 0; /* SFIN constant, unscaled */
     agc_dp_t out = 0; /* SFOUT constant, unscaled */
 
-    CHECK(agc_scale_sfconst(AGC_VEHICLE_CSM, 20, &in, &out) == AGC_STATUS_BAD_ARG);
+    /* CSM codes come from scale_defs (< 20 by construction; the range
+     * guard went with the EVA pass, 2026-10-12): the last one resolves.   */
+    CHECK(agc_scale_sfconst(AGC_VEHICLE_CSM, 19, &in, &out) == AGC_STATUS_OK);
+
     CHECK(agc_scale_sfconst(AGC_VEHICLE_LM, 28, &in, &out) == AGC_STATUS_OK);
 
     /* every scale type a noun uses resolves for that vehicle */

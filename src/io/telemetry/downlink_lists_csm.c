@@ -377,16 +377,9 @@ static const agc_dn_list_t sublists[CM_SUB_COUNT] = {
  * RETURNS: AGC_STATUS_OK, BAD_ARG for a code outside DNTABLE (DNLSTCOD
  *          comes from erasable: V21, AGSWORD)
  **********************************************************************/
-agc_status_t agc_dnlist_csm_control(int code, agc_dn_list_t *out)
+void agc_dnlist_csm_control(int code, agc_dn_list_t *out)
 {
-    if (!AGC_ASSERT(code >= 0 && code < AGC_DNLIST_CSM_COUNT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     *out = dntable[code];
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

@@ -595,9 +595,10 @@ static agc_status_t load_rope(const sim_opts_t *o, const char *argv0)
  **********************************************************************/
 static agc_status_t start(const sim_opts_t *o, const char *argv0)
 {
-    agc_status_t st = agc_power_on(o->vehicle); /* state, lanes, exec */
+    agc_power_on(o->vehicle); /* state, lanes, exec */
 
-    st = (st == AGC_STATUS_OK) ? load_rope(o, argv0) : st;                    /* fixed memory */
+    agc_status_t st = load_rope(o, argv0); /* fixed memory */
+
     st = (st == AGC_STATUS_OK && o->pad != NULL) ? sim_pad_load(o->pad) : st; /* before GOJAM, like a core image */
 
     if (st == AGC_STATUS_OK && o->resume != NULL && sim_pad_is_pad(o->resume))

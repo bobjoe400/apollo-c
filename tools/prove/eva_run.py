@@ -8,10 +8,24 @@ Usage (from the repo root; `make prove` runs it detached):
 Every AGC_ASSERT(e) is replaced by `agc_eva_check((e) ? 1 : 0)`, whose ACSL
 precondition `c != 0` EVA checks at each call site
 (tools/prove/eva_assert.h, force-included; the real assert.h is skipped by
-its include guard).  The entry points are the program's boundaries: the
-sim harness (src/sim/*.c, main) and every test program (tests/**/*.c,
+its include guard).  The entry points are the test programs (tests/**/*.c,
 main), each analysed with the whole library, so every assertion is judged
 in the calling contexts that really occur.
+
+EVA is a one-time, end-of-project cleanup in this project, not a working
+step: one pass on the finished tree; the guards it proves VALID are
+deleted (tools/prove/manual.tsv, "EVA VALID 2026-10-12"), and the tree is
+not re-proved after that.  The pass that was applied merged 33 completed
+entry points (build/prove/eva_verdicts.tsv: VALID 100, UNKNOWN 146,
+INVALID 2, DEAD 644 assertion sites).
+
+The agc_sim program's own main (src/sim/*.c) is NOT an entry point.  It
+runs unbounded (argv options, a socket server loop), so EVA never
+converges on it: on 2026-10-12 it was stopped at 14.4 GB of memory and
+78 % coverage on a 15 GB host, after 98 min.  The `sim_harness` entry
+(tests/sim/harness.c) stands in for it; note that it is analysed with the
+library only (lib_sources() leaves src/sim out), so the assertions in
+src/sim itself have no EVA verdict (0 src/sim rows in eva_verdicts.tsv).
 
 The runs analyse a snapshot of src/ include/ tests/ (<out>/tree, commit in
 <out>/tree/COMMIT), so the tree may be edited while EVA runs; file:line in
@@ -58,7 +72,7 @@ SHIM = 'tools/prove/eva_assert.h'
 RANK = {'INVALID': 3, 'UNKNOWN': 2, 'VALID': 1}
 RUNS = os.path.join(ROOT, 'tools', 'prove', 'runs')
 # the slowest entry points first, so the short ones fill the other slot
-SLOW = ('sim', 'exec_exec', 'io_dsky')
+SLOW = ('exec_exec', 'io_dsky')
 
 
 def lib_sources(base):
@@ -72,7 +86,8 @@ def lib_sources(base):
 
 
 def entry_points():
-    eps = [('sim', sorted(glob.glob('src/sim/*.c', root_dir=ROOT)))]
+    """One entry per test program; agc_sim's main is excluded (docstring)."""
+    eps = []
     for t in sorted(glob.glob('tests/**/*.c', root_dir=ROOT, recursive=True)):
         eps.append((t[len('tests/'):-2].replace('/', '_'), [t]))
     eps.sort(key=lambda e: (e[0] not in SLOW, SLOW.index(e[0]) if e[0] in SLOW else 0, e[0]))

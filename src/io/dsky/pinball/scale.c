@@ -501,9 +501,9 @@ agc_status_t pin_comp_read(int k, agc_dp_t *v)
     agc_scale_info_t   info;                          /* scale of the component */
     agc_status_t       st = pin_comp_scale(k, &info); /* status so far */
 
-    if (!AGC_ASSERT(v != NULL) || st != AGC_STATUS_OK)
+    if (st != AGC_STATUS_OK)
     {
-        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG); /* or BAD_ARG */
+        return (st);
     }
 
     uint16_t w = 0; /* 15-bit word */
@@ -622,9 +622,9 @@ agc_status_t pin_comp_octal(int k, uint16_t *word)
     agc_dp_t         v  = 0;                        /* datum, scale of the comp */
     agc_status_t     st = pin_comp_scale(k, &info); /* status so far */
 
-    if (!AGC_ASSERT(word != NULL) || st != AGC_STATUS_OK)
+    if (st != AGC_STATUS_OK)
     {
-        return ((st != AGC_STATUS_OK) ? st : AGC_STATUS_BAD_ARG); /* or BAD_ARG */
+        return (st);
     }
 
     st = pin_comp_read(k, &v);
@@ -967,7 +967,7 @@ static agc_status_t pin_msout(int k, agc_dp_t t)
 
     if (st == AGC_STATUS_OK)
     {
-        st = pin_dspin((int16_t) (k_rnd1[k] - 2), 0); /* blank middle    */
+        pin_dspin((int16_t) (k_rnd1[k] - 2), 0); /* blank middle    */
     }
 
     pin_set_dspcount(k_rnd1[k]);
@@ -1050,14 +1050,16 @@ static agc_status_t pin_2intout(int k, agc_dp_t v)
         st = pin_plus_on(); /* turn on + sign  */
     }
 
-    if (st == AGC_STATUS_OK)
+    if (st != AGC_STATUS_OK)
     {
-        st = pin_dspdecvn(hi); /* 1st integer     */
+        return (st);
     }
 
+    pin_dspdecvn(hi);                            /* 1st integer     */
     pin_set_dspcount((int16_t) (k_rnd1[k] - 3)); /* RXD4            */
+    pin_dspdecvn(lo);                            /* 2nd integer     */
 
-    return ((st == AGC_STATUS_OK) ? pin_dspdecvn(lo) : st); /* 2nd integer */
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

@@ -228,11 +228,6 @@ void agc_rupt_set_t6_task(agc_task_id_t task)
  **********************************************************************/
 static agc_status_t rupt_exit(agc_status_t st)
 {
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_relint();
 
     if (agc_exec_restart_pending())

@@ -158,6 +158,22 @@ static agc_sp_t cdu_signed(uint16_t p)
 }
 
 /**********************************************************************
+ * AGC: none (TS CDUXD, CM) -- the high word of the DP desired angle
+ *
+ * ARGUMENTS:
+ *   axis  int       I    0 X, 1 Y, 2 Z
+ *   p     uint16_t  I    desired CDU pattern
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void set_cdud_csm(int axis, uint16_t p)
+{
+    agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
+
+    rcs->cdud[axis] = (agc_dp_t) cdu_signed(p) * 16384 + agc_dp_low(rcs->cdud[axis]);
+}
+
+/**********************************************************************
  * AGC: none (TS CDUXD) -- one desired CDU angle in the DAP
  *
  * LM: CDUXD.. words; CM: the high word of the DP desired angle.
@@ -165,32 +181,95 @@ static agc_sp_t cdu_signed(uint16_t p)
  * ARGUMENTS:
  *   axis  int       I    0 X, 1 Y, 2 Z
  *   p     uint16_t  I    desired CDU pattern
+ *
+ * RETURNS: agc_status_t -- OK; BAD_ARG when the LM DAP refuses the word
  **********************************************************************/
-static void set_cdud(int axis, uint16_t p)
+static agc_status_t set_cdud(int axis, uint16_t p)
 {
-    if (is_lm())
+    agc_status_t st = AGC_STATUS_OK; /* LM store status */
+
+    if (!is_lm())
     {
-        if (axis == 0)
-        {
-            agc_erase_set_cduxd(p);
-        }
-        else if (axis == 1)
-        {
-            agc_erase_set_cduyd(p);
-        }
-        else
-        {
-            agc_erase_set_cduzd(p);
-        }
+        set_cdud_csm(axis, p);
+    }
+    else if (axis == 0)
+    {
+        st = agc_erase_set_cduxd(p);
+    }
+    else if (axis == 1)
+    {
+        st = agc_erase_set_cduyd(p);
     }
     else
     {
-        /* "TS CDUXD" (CM): the high word of the DP desired angle.               */
-        agc_csm_rcs_t *rcs = agc_csm_dap_rcs(); /* CSM RCS DAP erasables */
-
-        rcs->cdud[axis] = (agc_dp_t) cdu_signed(p) * 16384 + agc_dp_low(rcs->cdud[axis]);
+        st = agc_erase_set_cduzd(p);
     }
+
+    return (st);
 } /* set_cdud */
+
+/**********************************************************************
+ * AGC: none (TS DELCDUX, LM) -- one desired-CDU increment (DELDCDU)
+ *
+ * ARGUMENTS:
+ *   axis  int       I    0 X, 1 Y, 2 Z
+ *   v     agc_sp_t  I    DELCDUX.., CDU B0
+ *
+ * RETURNS: agc_status_t -- OK; BAD_ARG when the LM DAP refuses the word
+ **********************************************************************/
+static agc_status_t set_delcdu_lm(int axis, agc_sp_t v)
+{
+    agc_status_t st; /* store status */
+
+    if (axis == 0)
+    {
+        st = agc_erase_set_delcdux(v);
+    }
+    else if (axis == 1)
+    {
+        st = agc_erase_set_delcduy(v);
+    }
+    else
+    {
+        st = agc_erase_set_delcduz(v);
+    }
+
+    return (st);
+}
+
+/**********************************************************************
+ * AGC: none (TS OMEGAPD, TS DELPEROR, LM) -- one axis's commanded rate
+ * and its KALCMANU lag
+ *
+ * ARGUMENTS:
+ *   axis  int       I    0 P (X), 1 Q (Y), 2 R (Z)
+ *   w     agc_sp_t  I    OMEGAPD.., rate scale of the DAP
+ *   lag   agc_sp_t  I    DELPEROR.., B0
+ *
+ * RETURNS: agc_status_t -- OK; BAD_ARG when the LM DAP refuses a word
+ **********************************************************************/
+static agc_status_t set_rate_lm(int axis, agc_sp_t w, agc_sp_t lag)
+{
+    agc_status_t st; /* store status */
+
+    if (axis == 0)
+    {
+        st = agc_erase_set_omegapd(w);
+        st = (st == AGC_STATUS_OK) ? agc_erase_set_delperor(lag) : st; /* if OK */
+    }
+    else if (axis == 1)
+    {
+        st = agc_erase_set_omegaqd(w);
+        st = (st == AGC_STATUS_OK) ? agc_erase_set_delqeror(lag) : st; /* if OK */
+    }
+    else
+    {
+        st = agc_erase_set_omegard(w);
+        st = (st == AGC_STATUS_OK) ? agc_erase_set_delreror(lag) : st; /* if OK */
+    }
+
+    return (st);
+}
 
 /**********************************************************************
  * AGC: none (accessor) -- CPHI, CTHETA, CPSI
@@ -394,9 +473,9 @@ agc_status_t agc_kalc_zeroerror(void)
     }
     else
     {
-        set_cdud(0, agc_erase_cdux());
-        set_cdud(1, agc_erase_cduy());
-        set_cdud(2, agc_erase_cduz());
+        set_cdud_csm(0, agc_erase_cdux());
+        set_cdud_csm(1, agc_erase_cduy());
+        set_cdud_csm(2, agc_erase_cduz());
 
         if (!AGC_ASSERT(agc_erase_cduz() <= CDU_MASK))
         {
@@ -418,13 +497,19 @@ agc_status_t agc_kalc_zeroerror(void)
  *
  * ARGUMENTS:
  *   first_axis  int  I    0 LOADCDUD (X, Y, Z), 1 LOADYZ (Y, Z)
+ *
+ * RETURNS: agc_status_t -- OK, or the first refused store (set_cdud)
  **********************************************************************/
-static void loadcdud(int first_axis)
+static agc_status_t loadcdud(int first_axis)
 {
-    for (int i = first_axis; i < 3; i++)
+    agc_status_t st = AGC_STATUS_OK; /* store status */
+
+    for (int i = first_axis; i < 3 && st == AGC_STATUS_OK; i++)
     {
-        set_cdud(i, cphi(i));
+        st = set_cdud(i, cphi(i));
     }
+
+    return (st);
 }
 
 /* ======================================================================= */
@@ -491,7 +576,7 @@ static agc_status_t nogo_zero_error(void)
  * task: final angles, rates off
  *
  * RETURNS: agc_status_t -- status of ENDMANU; AGC_STATUS_BAD_ARG on a
- *          failed precondition
+ *          failed precondition or a DAP word the LM DAP refuses
  **********************************************************************/
 agc_status_t agc_task_manustop(void)
 {
@@ -504,25 +589,36 @@ agc_status_t agc_task_manustop(void)
             return (AGC_STATUS_BAD_ARG);
         }
 
-        csm_stopyz(rcs);      /* STOPYZ          */
-        loadcdud(1);          /* LOADYZ          */
-        set_cdud(0, cphi(0)); /* ENDROLL         */
+        csm_stopyz(rcs); /* STOPYZ          */
+
+        for (int i = 1; i < 3; i++)
+        { /* LOADYZ          */
+            set_cdud_csm(i, cphi(i));
+        }
+
+        set_cdud_csm(0, cphi(0)); /* ENDROLL         */
         agc_kalc_stoprate();
 
         return (agc_task_endmanu());
     }
 
-    agc_erase_set_delcduz(0); /* DELDCDU2        */
-    agc_erase_set_omegard(0);
-    agc_erase_set_delreror(0);
-    agc_erase_set_delcduy(0); /* DELDCDU1        */
-    agc_erase_set_omegaqd(0);
-    agc_erase_set_delqeror(0);
-    loadcdud(1);              /* CDUZD, CDUYD    */
-    set_cdud(0, cphi(0));     /* ENDROLL         */
-    agc_erase_set_omegapd(0);
-    agc_erase_set_delcdux(0); /* DELDCDU         */
-    agc_erase_set_delperor(0);
+    agc_status_t st = AGC_STATUS_OK; /* LM DAP stores */
+
+    for (int i = 2; i >= 1 && st == AGC_STATUS_OK; i--)
+    { /* DELDCDU2 (Z), DELDCDU1 (Y): increment, rate and lag off */
+        st = set_delcdu_lm(i, 0);
+        st = (st == AGC_STATUS_OK) ? set_rate_lm(i, 0, 0) : st; /* if OK */
+    }
+
+    st = (st == AGC_STATUS_OK) ? loadcdud(1) : st;          /* CDUZD, CDUYD    */
+    st = (st == AGC_STATUS_OK) ? set_cdud(0, cphi(0)) : st; /* ENDROLL         */
+    st = (st == AGC_STATUS_OK) ? set_rate_lm(0, 0, 0) : st; /* DELDCDU         */
+    st = (st == AGC_STATUS_OK) ? set_delcdu_lm(0, 0) : st;  /* if OK */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
 
     return (agc_task_endmanu()); /* GOODMANU        */
 }
@@ -618,7 +714,9 @@ static uint16_t timechk(void)
  **********************************************************************/
 static agc_status_t incrdcdu_tmanuchk(void)
 {
-    for (int i = 2; i >= 0; i--)
+    agc_status_t st = AGC_STATUS_OK; /* LM DAP stores, then WAITLIST */
+
+    for (int i = 2; i >= 0 && st == AGC_STATUS_OK; i--)
     { /* CAF TWO: Z, Y, X */
         /* INCRDCDU (one axis): CM DELCDUX (DP) = (NCDU - BCDU) x .1;
          * LM DELDCDU (SP) = (BCDU - NCDU) x .1.  CDUXD = old BCDU, BCDU = NCDU. */
@@ -632,18 +730,7 @@ static agc_status_t incrdcdu_tmanuchk(void)
             agc_sp_t inc = agc_dp_high(agc_sp_mul((agc_sp_t) d, DT_TENTH)); /* DELDCDU, CDU B0 */
 
             /* CCS / AD ONE / COM: ones' to two's complement, same value.     */
-            if (i == 0)
-            {
-                agc_erase_set_delcdux(inc);
-            }
-            else if (i == 1)
-            {
-                agc_erase_set_delcduy(inc);
-            }
-            else
-            {
-                agc_erase_set_delcduz(inc);
-            }
+            st = set_delcdu_lm(i, inc);
         }
         else
         {
@@ -656,12 +743,17 @@ static agc_status_t incrdcdu_tmanuchk(void)
         }
 
         bcdu[i] = ncdu[i];
-        set_cdud(i, old);
+        st      = (st == AGC_STATUS_OK) ? set_cdud(i, old) : st; /* if OK */
     } /* end for */
 
     if (agc_interrupts_inhibited())
     {
         agc_relint();
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
     }
 
     uint16_t dt = timechk(); /* delay, cs */
@@ -707,8 +799,8 @@ static agc_status_t incrdcdu_tmanuchk(void)
         return (st_contmanu); /* ENDOFJOB       */
     }
 
-    agc_inhint();                                      /* MANUSTAL         */
-    agc_status_t st = waitlist(dt, AGC_TASK_MANUSTOP); /* status of the call */
+    agc_inhint();                         /* MANUSTAL         */
+    st = waitlist(dt, AGC_TASK_MANUSTOP); /* status of the call */
 
     agc_relint();
 
@@ -796,20 +888,11 @@ static agc_status_t steering_update(agc_interp_t *ip)
 
                     agc_dp_t lag = p / jacc; /* DELxEROR, B0: DV 1JACC */
 
-                    if (i == 0)
+                    st = set_rate_lm(i, w, (agc_sp_t) lag); /* OMEGAPD.., DELPEROR.. */
+
+                    if (st != AGC_STATUS_OK)
                     {
-                        agc_erase_set_omegapd(w);
-                        agc_erase_set_delperor((agc_sp_t) lag);
-                    }
-                    else if (i == 1)
-                    {
-                        agc_erase_set_omegaqd(w);
-                        agc_erase_set_delqeror((agc_sp_t) lag);
-                    }
-                    else
-                    {
-                        agc_erase_set_omegard(w);
-                        agc_erase_set_delreror((agc_sp_t) lag);
+                        return (st);
                     }
                 } /* end for */
             }
@@ -901,12 +984,17 @@ static agc_status_t kalcmanu_start(void)
 
                 agc_inhint();
                 rcs->holdflag = -1;
-                loadcdud(0);
+                st            = loadcdud(0);
                 agc_relint();
             }
             else
             {
-                loadcdud(0);
+                st = loadcdud(0);
+            }
+
+            if (st != AGC_STATUS_OK)
+            {
+                return (st);
             }
 
             if (!AGC_ASSERT(!agc_interrupts_inhibited()))

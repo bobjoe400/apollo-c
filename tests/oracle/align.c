@@ -479,8 +479,8 @@ static void surfstar(const char *t, long int tol)
         m.ycdu[k] = oracle_in_raw(t, "VAC4", (2 * k) + 1);
     }
 
-    (void) agc_aot_surfstar(&ip, &m, oracle_in_vec(t, "SCAXIS"), oracle_in_vec(t, "VAC1+18"), oracle_in_vec(t, "VAC1+12"), &star);
-    (void) agc_aot_aveit(&ip, 1, star, &ave);
+    agc_aot_surfstar(&ip, &m, oracle_in_vec(t, "SCAXIS"), oracle_in_vec(t, "VAC1+18"), oracle_in_vec(t, "VAC1+12"), &star);
+    agc_aot_aveit(&ip, 1, star, &ave);
 
     /* TRG*NBSM leaves its components in the words AX*SR*T's DAS/DDOUBL
      * produce (signs may disagree); AVEIT's VSR3 rounds those words

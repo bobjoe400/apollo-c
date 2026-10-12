@@ -100,8 +100,8 @@ typedef enum agc_vehicle_sv
     AGC_SV_OTHER = 1
 } agc_vehicle_sv_t;
 
-void         agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out); /* RN,VN,PIPTIME / other */
-agc_status_t agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in);
+void agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out); /* RN,VN,PIPTIME / other */
+void agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in);
 
 /* ---- shared erasables: agc_erase_<agcname>() / agc_erase_set_<agcname>() --
  * Names follow the AGC erasable name, lower case. Values are held exactly as

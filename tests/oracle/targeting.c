@@ -124,9 +124,9 @@ static agc_rendz_t *fresh(const char *t)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_exec_init();
-    (void) agc_waitlist_init();
+    agc_waitlist_init();
     agc_navaux_set_padload(&pad);
-    (void) agc_integ_ctx_init(agc_integ_shared_ctx());
+    agc_integ_ctx_init(agc_integ_shared_ctx());
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     agc_rendz_reset(rz);

@@ -825,21 +825,12 @@ agc_status_t agc_job_entry_upcontrol_proceed(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when an input
- *          or state assertion fails; otherwise the status of the first
- *          service call that failed
+ * RETURNS: none
  **********************************************************************/
-agc_status_t entry_disable_restart_group(void)
+void entry_disable_restart_group(void)
 {
     _Static_assert(AGC_RESTART_GROUPS >= 4, "AGC constant");
     agc_phase_change(000004);
-
-    if (!AGC_ASSERT(agc_phase_get(4) == 0u)) /* group 4 inactive */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -863,12 +854,12 @@ agc_status_t entry_ballistic(agc_entry_state_t *es)
 
     agc_flag_set(AGC_FLAG_ENTRYDSP);
 
-    if (!AGC_ASSERT(es->entry_noun == 22)) /* ENTRYVN for OVERNOUT */
+    if (st == AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        entry_disable_restart_group(); /* then the display */
     }
 
-    return ((st == AGC_STATUS_OK) ? entry_disable_restart_group() : st); /* then the display */
+    return (st);
 }
 
 /**********************************************************************
@@ -892,12 +883,12 @@ agc_status_t entry_final_phase(agc_entry_state_t *es)
 
     agc_flag_set(AGC_FLAG_ENTRYDSP);
 
-    if (!AGC_ASSERT(es->entry_noun == 66)) /* ENTRYVN for OVERNOUT */
+    if (st == AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        entry_disable_restart_group(); /* then the display */
     }
 
-    return ((st == AGC_STATUS_OK) ? entry_disable_restart_group() : st); /* then the display */
+    return (st);
 }
 
 /**********************************************************************

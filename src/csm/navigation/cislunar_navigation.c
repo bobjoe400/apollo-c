@@ -569,10 +569,10 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
         }
 
         rz_flag_put(AGC_FLAG_ZMEASURE, moon_rect != agc_flag_test(AGC_FLAG_LUNAFLAG));
-        agc_integ_sv_t sv;                                                 /* permanent state */
-        agc_status_t   st_rect = agc_integ_perm_get(AGC_VEHICLE_CSM, &sv); /* CSM */
-        agc_vec_t      r_rect;                                             /* body scale */
+        agc_integ_sv_t sv;     /* permanent state */
+        agc_vec_t      r_rect; /* body scale */
 
+        agc_integ_perm_get(AGC_VEHICLE_CSM, &sv); /* CSM */
         r_rect = agc_vec_add(ip, rz_vshift(ip, agc_vec_shr(sv.deltav, 7), x2), sv.rcv);
 
         cn.rzc = rz_vshift(ip, r_rect, x2); /* B29      */
@@ -581,7 +581,6 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
         v = agc_vec_add(ip, rz_vshift(ip, agc_vec_shr(sv.nuv, 4), x2), sv.vcv);
 
         cn.vzc = rz_vshift(ip, v, x2); /* B7       */
-        st     = st_rect;
     }
 
     if (st == AGC_STATUS_OK && agc_flag_test(AGC_FLAG_ZMEASURE))
@@ -1078,13 +1077,9 @@ agc_status_t agc_job_cislunar_midcourse_navigation_optics_done(agc_job_ctx_t *ct
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_marked(agc_job_ctx_t *ctx)
 {
-    agc_align_sxt_mark_t m;                            /* the mark */
-    agc_status_t         st = agc_sxtmark_mark(0, &m); /* the mark */
+    agc_align_sxt_mark_t m; /* the mark */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_sxtmark_mark(0, &m); /* the mark */
 
     cn.marktime = m.t;
     cn.trunion  = m.cdut;
@@ -1248,9 +1243,9 @@ agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ct
             k = -2; /* moon: SR2 */
         }
 
-        rz_set_csm_residuals(1, rz_shift(&ip, agc_vec_abval(&ip, cn.inc.deltax[1]), k));
-        rz_set_csm_residuals(0, rz_shift(&ip, agc_vec_abval(&ip, cn.inc.deltax[0]), k));
-        st = st_measure;
+        st = rz_set_csm_residuals(1, rz_shift(&ip, agc_vec_abval(&ip, cn.inc.deltax[1]), k));
+        st = (st == AGC_STATUS_OK) ? rz_set_csm_residuals(0, rz_shift(&ip, agc_vec_abval(&ip, cn.inc.deltax[0]), k)) : st; /* if OK */
+        st = (st == AGC_STATUS_OK) ? st_measure : st;                                                                      /* if OK */
 
         if (st == AGC_STATUS_OK)
         {
