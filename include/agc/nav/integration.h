@@ -1,28 +1,41 @@
-/*
- * agc_integ.h -- orbital integration (agent nav-integ).
+/**********************************************************************
+ * FILE NAME: integration.h
  *
- * Translated from INTEGRATION_INITIALIZATION.agc (Comanche055 pp. 1309-1333,
- * Luminary099 pp. 1203-1226) and ORBITAL_INTEGRATION.agc (Comanche055
- * pp. 1334-1354, Luminary099 pp. 1227-1248), plus STATEUP/THISVINT from
- * FRESH_START_AND_RESTART.agc (the body of the STATEINT job).
+ * PURPOSE:
+ *   The orbital integration (Encke's method): state and W-matrix
+ *   integration, the INTSTALL lock, the permanent state vectors, the
+ *   STATEINT P00 integration and the AVETOMID / MIDTOAV transitions.
+ *   Used by the navigation, targeting, burn and alignment programs.
  *
- * The AGC integrates by Encke's method: the state is a conic (RCV, VCV,
- * found by KEPLER from the rectified state RRECT, VRECT at TET-TC) plus a
- * deviation (TDELTAV, TNUV) driven by the disturbing accelerations (earth
- * J2..J4, lunar J2/J3/J22/C31, and the moon/earth/sun third-body terms
- * outside 800 km altitude) through a Nystrom step.  The W (error
- * transition) matrix is integrated column by column along the same path.
+ * AGC SOURCE:
+ *   Comanche055 INTEGRATION_INITIALIZATION.agc pp. 1309-1333,
+ *   ORBITAL_INTEGRATION.agc pp. 1334-1354, FRESH_START_AND_RESTART.agc
+ *   pp. 209-210 (STATEUP, THISVINT); Luminary099 pp. 1203-1226,
+ *   1227-1248, 236-237
  *
- * Scale notation: "E/M" = earth / moon as primary body (PBODY, MOONFLAG).
- *   position  m     E 2^29  M 2^27     deviation TDELTAV  m    E 2^22  M 2^18
- *   velocity  m/cs  E 2^7   M 2^5      deviation TNUV     m/cs E 2^3   M 2^-1
- *   time      cs    2^28               XKEP sqrt(m) E 2^17 M 2^16
- *   DT/2, H   cs    2^19 (half step; the bits equal the full step at 2^20)
- * RATT/VATT are always at the earth scales (2^29 m, 2^7 m/cs).
+ * REQUIRES:
+ *   agc/core/interp.h, state.h, status.h, word.h, agc/exec/exec.h,
+ *   agc/nav/auxiliary.h, agc/nav/conic.h
  *
- * The single set of AGC integration erasables is one shared context
- * (agc_integ_shared_ctx()); its use is serialised by the INTSTALL lock.
- */
+ * GLOBAL VARIABLES:
+ *   none (the one set of integration erasables is agc_integ_shared_ctx(),
+ *   serialised by INTSTALL; members carry their scale)
+ *
+ * NOTES:
+ *   The state is a conic (RCV, VCV, found by KEPLER from the rectified
+ *   state RRECT, VRECT at TET-TC) plus a deviation (TDELTAV, TNUV)
+ *   driven by the disturbing accelerations (earth J2..J4, lunar
+ *   J2/J3/J22/C31, and the moon/earth/sun third-body terms outside the
+ *   RME / RMM radii) through a Nystrom step.  The W (error transition)
+ *   matrix is integrated column by column along the same path.
+ *   Scale notation: "E/M" = earth / moon as primary body (PBODY,
+ *   MOONFLAG).
+ *     position  m     E 2^29  M 2^27   deviation TDELTAV m    E 2^22  M 2^18
+ *     velocity  m/cs  E 2^7   M 2^5    deviation TNUV    m/cs E 2^3   M 2^-1
+ *     time      cs    2^28             XKEP sqrt(m) E 2^17 M 2^16
+ *     DT/2, H   cs    2^19 (half step; the bits equal the full step at 2^20)
+ *   RATT/VATT are always at the earth scales (2^29 m, 2^7 m/cs).
+ **********************************************************************/
 #ifndef AGC_INTEG_H
 #define AGC_INTEG_H
 
@@ -39,16 +52,16 @@
 /* ---- limits --------------------------------------------------------- */
 #define AGC_INTEG_AREAS_CSM 3 /* INTSTALL, ERASTAL1, ERASTAL2 (CM)     */
 #define AGC_INTEG_AREAS_LM  1 /* INTSTALL only (LM)                    */
-#define AGC_INTEG_AREAS_MAX 3
+#define AGC_INTEG_AREAS_MAX 3 /* stall areas, largest vehicle        */
 
 /* Bound on the TESTLOOP state machine (DEVIATION: the AGC has none).  A
  * step is 2 passes (TESTLOOP, TIMESTEP), 4 with W (WMATRIX, RELOAD).
  * The shortest step (NORFINAL at the earth's surface: .3 sqrt(R^3/MU) =
  * 24192 cs) over the whole TDEC range, 2^28 cs, is 11096 steps = 44384
  * passes with W.                                                         */
-#define AGC_INTEG_MAX_PASSES 60000
-#define AGC_INTEG_W_COLUMNS  9 /* W columns (6 for 6x6, 9 for 9x9)      */
-#define AGC_INTEG_VECTAB     6 /* VECTAB: 3 stages x (R, R - RPQ)       */
+#define AGC_INTEG_MAX_PASSES 60000 /* driver passes before NO_CONVERGE */
+#define AGC_INTEG_W_COLUMNS  9     /* W columns (6 for 6x6, 9 for 9x9)      */
+#define AGC_INTEG_VECTAB     6     /* VECTAB: 3 stages x (R, R - RPQ)       */
 
 /* Octal codes (kept as in the listing). */
 #define AGC_INTEG_ALARM_INT_ABRT \
@@ -97,17 +110,19 @@ typedef struct agc_integ_ctx
     agc_dp_t        tau;                      /* TAU.  Kepler transfer time, cs 2^28     */
     agc_dp_t        dt2;                      /* DT/2  half step, cs 2^19                */
     agc_dp_t        h;                        /* H     time into the step, cs 2^19       */
-    agc_dp_t        dtmax;                    /* 12D   step limit (DT/2 format)          */
+    agc_dp_t        dtmax;                    /* 12D   step limit, cs 2^19 (DT/2 format) */
     agc_dp_t        rc;                       /* 10D   |RCV|, m, E 2^29 M 2^27           */
     int             stage;                    /* DIFEQCNT: Nystrom stage 0, 1, 2         */
     int             colreg;                   /* COLREG: W column being integrated 0..8  */
-    agc_vec_t       alphav;                   /* ALPHAV deviation / unit vector          */
-    agc_dp_t        alpham;                   /* ALPHAM |ALPHAV| / |R|                   */
-    agc_vec_t       betav;                    /* BETAV  R or perturbing-body vector      */
-    agc_dp_t        betam;                    /* BETAM  |BETAV| or MU                    */
-    agc_vec_t phiv, psiv;                     /* PHIV PSIV Nystrom sums                  */
+    agc_vec_t       alphav;                   /* ALPHAV deviation (TDELTAV scale) / unit vector 2^1 */
+    agc_dp_t        alpham;                   /* ALPHAM |deviation| (2^22 / 2^18 m) / |R| (2^29 / 2^27 m) */
+    agc_vec_t       betav;                    /* BETAV  R (2^29 / 2^27 m) or body vector, unit 2^1 after GAMCOMP */
+    agc_dp_t        betam;                    /* BETAM  |BETAV| (scale of BETAV) or MU (2^36 / 2^30 m^3/cs^2) */
+    agc_vec_t       phiv;                     /* PHIV   Nystrom weighted sum of FV, FV scale */
+    agc_vec_t       psiv;                     /* PSIV   Nystrom weighted sum of FV, FV scale */
     agc_vec_t       fv;                       /* FV     disturbing acceleration, m/cs^2 E 2^-16 M 2^-20 (= YV/H^2 scale) */
-    agc_vec_t yv, zv;                         /* YV ZV  deviation pos/vel at step start  */
+    agc_vec_t       yv;                       /* YV     deviation position, m 2^22 / 2^18  */
+    agc_vec_t       zv;                       /* ZV     deviation velocity, m/cs 2^3 / 2^-1 */
     agc_vec_t       vectab[AGC_INTEG_VECTAB]; /* VECTAB: [2k] R at stage k (E 2^29 M 2^27), [2k+1] R - RPQ, 2^29 (W use) */
     agc_vec_t       rpqv;                     /* RPQV primary to secondary body, m 2^29  */
     agc_vec_t       rpsv;                     /* RPSV primary to sun, m 2^38             */
@@ -116,6 +131,7 @@ typedef struct agc_integ_ctx
     agc_dp_t        t_to_add;                 /* T-TO-ADD (CSM MIDTOAV), cs 2^28         */
     bool            notime;                   /* NOTIME taken (IRETURN1 incremented)     */
     agc_integ_out_t out;                      /* RATT .. X2 (push list output)           */
+    agc_status_t    fail;                     /* status of the called routine that failed (C only) */
 } agc_integ_ctx_t;
 
 /* MIDTOAV1/2 output (the AGC leaves it in RN1, VN1, PIPTIME1, MPAC,
@@ -142,7 +158,7 @@ agc_status_t agc_integ_perm_set(agc_vehicle_t veh, const agc_integ_sv_t *in);
 
 /* Lunar potential pad loads used by QUALITY2/3 (SP):
  * E3J22R2M (J22 term, B61 x R^4 product) and E32C31RM (C31 term).       */
-agc_status_t agc_integ_set_lunar_coeffs(agc_sp_t e3j22r2m, agc_sp_t e32c31rm);
+void agc_integ_set_lunar_coeffs(agc_sp_t e3j22r2m, agc_sp_t e32c31rm);
 
 /* ---- INTSTALL lock (p. 1324-1326) ----------------------------------- */
 /* INTSTALL (area 0), ERASTAL1 (1), ERASTAL2 (2; CM only). OK: the area is
@@ -247,7 +263,7 @@ agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs, agc_vec_t *moon_
  * origchng_apchk).  ANDOUT -> ATOPCSM -> SVDWN1 runs before RECTIFY
  * reloads X2 from PBODY, so its indexed shifts VSL* 0-7,2 / 0,2 become
  * right shifts of ~27200 places: RN = VN = 0 (R-OTHER = V-OTHER = 0).     */
-#define AGC_INTEG_X2_ORIGEX 027205
+#define AGC_INTEG_X2_ORIGEX 027205 /* X2 after ORIGCHNG via A-PCHK (its return address) */
 
 /* SVDWN1/SVDWN2 (CSM_GEOMETRY / LEM_GEOMETRY) (src/nav/integration/
  * svdwn.c): the integration package calls it from ATOPCSM / ATOPLEM.

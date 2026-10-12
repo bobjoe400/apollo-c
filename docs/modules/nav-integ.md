@@ -113,14 +113,22 @@ Design notes:
   has no bound). Exceeding it releases INTSTALL and returns NO_CONVERGE.
 * A failure of a called C routine (ephemeris/planetary/conic returning an
   error; cannot happen in the AGC) releases INTSTALL via INTEXIT and
-  returns BAD_ARG. INT-ABRT (POODOO 00430) leaves the lock held, as the AGC.
+  returns that routine's status (ctx->fail). INT-ABRT (POODOO 00430)
+  leaves the lock held, as the AGC.
 * Push-list outputs (RATT..MU(P), X1, X2) are ctx->out; out.valid is false
   when INTEXIT is reached without RECTOUT (QUITFLAG, backward request,
   P00 state younger than 4 steps) -- the AGC leaves stale push-list data.
 * INTSTALL sleepers: the AGC JOBWAKEs every job whose LOC = WAKESTAL; here
   each sleeper names its own continuation job (resume_job) and the lock
   keeps a per-area list that INTWAKE/ERASWAKn wake (bounded by the core-set
-  count). A job whose JOBSLEEP is refused (not inside a job) is not queued.
+  count). A caller with no continuation (AGC_JOB_NONE) is not put to
+  sleep (BUSY only); a full list returns FULL.
+* Restart (review-nav-integ N12): a group-2 restart reruns the running job
+  segment from its top (exec R11) instead of resuming after the GRP2PC.
+  INTSTALL therefore takes over an area a restart left with REINTFLG set
+  and INTFLBIT clear (else the rerun segment slept for ever), STATINT1
+  integrates to a later TDEC1, and W columns not yet integrated when the
+  restart came are re-integrated from the moved state (one step behind).
 * LM OKTOGRAB does INHINT without RELINT; MIDTOAV returns in basic with
   INHINT set: here interrupts are re-enabled before returning.
 * (review) atop(): after an A-PCHK origin change the AGC reaches ATOPCSM
@@ -134,11 +142,13 @@ Design notes:
   MMATRIX R-TO-RP left in the push list (same TET, same matrix).
 * QUALITY3: OVFIND is reset after RP-TO-R explicitly ("OVERFLOW INDICATOR
   RESET IN RP-TO-R") since the nav-aux C routine need not do it.
-* DMP followed by DP use is agc_dp_mul (rounded) except where the AGC
-  normalises or shifts the TP product (GAMCOMP NORM 30D, OBLATE R^4, DOW..
-  R^3, NORFINAL, COMTERM DMP SL1R), which keep the TP via agc_dp_mul_tp,
-  agc_tp_add and a local TP NORM. NORFINAL's SR1R after DMP rounds twice
-  (TP->DP, then SRR 1): at most 1 LSB.
+* (review N8) DMP is DMPSUB without rounding and DMPR rounds, as the
+  listing says at every site; GAMCOMP, COMTERM, QUALITY1-3 and the OBLATE
+  tail run on AGC words (agc_mpac_*, local vec_words_t for VXSC / VAD /
+  VSL / VSR incl. VRIGHT2), so MPAC+2 after SR / DOT / DMP and sign-
+  disagreeing DSU / BDSU / DAD results take part exactly as in the AGC.
+  Not word level: TDELTAV / TNUV between steps (agc_integ_sv_t values,
+  shared with the nav lanes): 1 LSB in VATT after RECTIFY's VSR (N9).
 * LM LUNVEL is a bare RVQ in Luminary099 (MPAC unchanged); unreachable
   (MIDFLAG never set in the LM); C returns a zero vector.
 * TRKMKCNT = 0 in AVETOMID goes to a module static until the accessor

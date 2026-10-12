@@ -638,3 +638,12 @@
             lanes (status propagation, EVA leads, API void conversions,
             DMP/word-level adoption in the eight early-reviewed lanes,
             test hygiene). Keeps out of src/nav/integration.
+2026-10-12  review-nav-integ DONE and committed (its files only; the tree is
+            mid-edit by follow-up-done-lanes): 9 DMP-as-DMPR sites (COMTERM,
+            QUALITY2/3, TIMESTEP DOT) and NORFINAL double rounding fixed;
+            GAMCOMP/COMTERM/QUALITY/OBLATE tail at word level (exact on
+            3,600 probe cases); 45 oracle tolerances tightened; callee
+            statuses carried through ctx->fail, STATEUP/SETCOAST/INT/W no
+            longer ignore POODOO; GRP2PC rerun: INTSTALL takes the area
+            over (DEVIATION, test); style 859 -> 0. All sixteen reviews
+            are now closed. Requests routed to follow-up-done-lanes.

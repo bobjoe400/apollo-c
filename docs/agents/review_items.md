@@ -43,30 +43,30 @@ nav-aux (NODI COS, SR1 ASIN), prog-align (word_forms.c), dap-csm / dap-lm
 
 ## EVA bug leads (status-handling-2, make prove 2026-10-11; run artefacts in build/prove/*.csv, build/prove/eva_verdicts.tsv, build/prove/tree (snapshot), tools/prove/{summary.txt,progress.log,runs/*.log}; positions are the snapshot's = the tree of that date)
 EVA is the project-end cleanup step; these are leads for the owning reviews, not fixes.
-- exec-sched: INVALID executive.c:325 `!AGC_ASSERT(newjob > 0)` in SPECTEST (exec_exec, imu, io_dsky, lm_dap, oracle_entry, programs_rendezvous): EVA reaches NOVAC2 -> SPECTEST with core set 0 free and NEWJOB = +0. The AGC's CCS NEWJOB sends +0 to CCSHOLE; the C relies on "core set 0 free => NEWJOB = -0", which EVA does not track (likely imprecision); confirm the invariant holds after the deferred JOBSLEEP EJSCAN (C runs EJSCAN when the body returns, the AGC at once).
-- exec-sched / nav-integ: INVALID executive.c:598 `!AGC_ASSERT(job != AGC_JOB_NONE)` in JOBWAKE (oracle_targeting, programs_rendezvous, nav_integration, exec, imu, io_dsky), reached from WAKE <- INTWAKE <- agc_integ_run in the CSI/TPI integrations: a sleeper slot holding AGC_JOB_NONE. The AGC's JOBWAKE of a LOC nobody sleeps at is NOT_FOUND (LOCCTR -1), not an error; check INTSTALL never records a NONE resume, or make JOBWAKE(NONE) NOT_FOUND.
-- exec-sched (sim, partial run): restarts.c:54/72 start_job/start_long guards (PRDT 0 / task NONE) reached from a restart of a group whose variable restart point was never stored (type B/C code via the fixed agc_phase_change): check every B/C PHASCHNG stores its point first.
-- guid-landing: INVALID lm/ascent.c:509 (oracle_landing): WAITLIST for ENGOFFDT fails on every EVA path. Fixed the C side (as_engoff now returns the WAITLIST status into the ascent job, BAILOUT 1203); still check ENGOFFDT <= 16250 cs (LONGCALL range) against ASCENT's TGO window.
-- sys-misc / io-dsky (sim, partial run): status guards EVA judged false in some sim context: display_if.c:329 (CONT NONE or RESTREG prio), scale.c:793/829 (-0 with nonzero SP), scale.c:861 (SFOUT < 0), monitor.c:309/344 (MONREFRS prio/job, delay 0): likely imprecision of the unbounded sim analysis; recheck under the bounded sim entry at project end.
-- dap-csm: dapdata.c:167 IXX/IAVG < 0 in EVA's sim context: the CSM mass/inertia pad words (V48 DAP data) can be loaded negative by the crew; decide the AGC's behaviour (it does not check) and the entry check.
-- imu: compensation.c:337 GCOMP word pair read-back; guid-landing: lunar_landing.c:319 (st after a display/waitlist call), throttle.c:173 PIFPSET range: sim-context alarms, recheck at project end.
-- prog-rendz: targeting status guards `!AGC_ASSERT(st == AGC_STATUS_OK)` (tpi.c:224, tpi_tpm_targeting.c:103/619, target_delta_v.c:228, stable_orbit.c:100/512/845, csi_cdh_targeting.c:543/918) return BAD_ARG for any callee failure: propagate the callee's status instead (BAILOUT from FINDVAC/WAITLIST must reach the job). tpi.c:714 / target_delta_v.c:96 (-DPPOSMAX component), lambert_aimpoint_guidance_lm.c:104 (HPER > MAXNM), csi_cdh_targeting.c:386 (alarm code range): recheck. EVA's "uninitialised" reads: initvel.c:235-237 and 359-360 were real (INITVEL copied LAMBERT's outputs and the CSTH/SNTH debris before testing the status, so a LAMBERT entry failure read an unwritten struct): fixed by status-handling-2 (copies only when LAMBERT ran); 276/278 are in iv_finish, reached only on OK. o.x2 (target_delta_v.c:225,276; lambert_aimpoint_guidance_lm.c:154) and o.t (csi_cdh_targeting.c:310) are the non-relational domain's: rz_integ/rz_integrvs copy the whole ctx->out on OK, agc_conic_timerad clears its out first, and the callers return on non-OK: no defect.
-- nav-integ / core-numeric: "signed overflow" at orbital_integration.c:430 (XSUM = XS + ASCALE + N4 + N1, all NORM counts and table shifts < 100) and divide.c:97 (DV remainder + MP high word, both < 2^14 with the normalised divisor GENDDV requires): EVA does not carry those bounds through the out-parameters; no host UB.
+- DONE exec-sched SPECTEST lead: false alarm in flight (every PRIOCHNG caller is a job body); docs/modules/follow-up-done-lanes.md "EVA lead decisions".
+- DONE exec-sched JOBWAKE(NONE) lead: closed by review-exec-sched R12 (nav-integ INTSTALL side stays with nav-integ); docs/modules/follow-up-done-lanes.md.
+- DONE exec-sched restarts.c:54/72 lead: closed by review-exec-sched R11; docs/modules/follow-up-done-lanes.md.
+- DONE guid-landing ENGOFFDT: ENGOFF only after TGO < 4 s (BMN ENGOFF), ENGOFFDT <= ~600 cs; docs/modules/follow-up-done-lanes.md.
+- DONE sys-misc / io-dsky guards: VBRQWAIT hid POODOO 1204 (fixed, test); the others take SFOUTAB constants / pinball-internal values (false alarm); docs/modules/follow-up-done-lanes.md.
+- DONE dap-csm S40.14: the AGC forms signed gains unchecked; guard removed, agc_csm_dap_rcs_gains void, test; docs/modules/follow-up-done-lanes.md.
+- DONE imu GCOMP read-back (status filter, now propagated); guid-landing IGNALOOP dropped an INTSTALL failure (fixed); THROTTLE DOIT refused a PIFPSET the AGC sends (guard removed, TS PSEUDO55 overflow skip modelled, FLATOUT void, test); docs/modules/follow-up-done-lanes.md.
+- DONE prog-rendz targeting: `AGC_ASSERT(st == OK) -> BAD_ARG` propagated (item 1.1); DVLOS / LV-row / HPER postconditions were not the AGC's (deleted, two functions void); ALMXIT code range false alarm; docs/modules/follow-up-done-lanes.md.
+- nav-integ: "signed overflow" at orbital_integration.c:430 (XSUM = XS + ASCALE + N4 + N1, all NORM counts and table shifts < 100): EVA does not carry those bounds through the out-parameters; no host UB. (core-numeric divide.c:97 part DONE: false alarm, docs/modules/follow-up-done-lanes.md.)
 - sim (sim, partial run): clock.c:207/245/251/330, socket.c:138: harness guards reached in EVA's unbounded sim context; the sim entry needs a bounded proof main at project end (agc_sim's own main timed out at 60 min).
 
 ## verify-collapse findings (2026-10-11; nothing shown wrong in the 11 reviewed lanes; note docs/modules/verify-collapse.md)
-- ALL remaining lanes + follow-up-done-lanes: `AGC_ASSERT(st == OK) -> return BAD_ARG` sites replace a callee's FULL/BAILOUT/POODOO status with BAD_ARG (62 in the reviewed lanes, predating the pass). Propagate the callee's status; an assertion there is not a guard.
+- DONE status propagation in all closed lanes (128 sites, filters and remaps); docs/modules/follow-up-done-lanes.md item 1.1.
 - follow-up-done-lanes: tests must not compare assertion-report counts: tests/nav/navaux.c:502, tests/lm/dap.c:444 (check the returned status instead).
-- exec-sched (change_program/idle.c) + prog-rendz: src/programs/navigation/common.c:441 agc_rendz_reset drops agc_rendz_selectmu's status in an empty if-branch (pre-existing); propagate.
+- DONE SELECTMU cannot fail: agc_rendz_selectmu void, empty branch gone; docs/modules/follow-up-done-lanes.md item 1.2.
 - io-dsky: src/io/dsky/display_if.c:1063 agc_dsky_blanksub result stored, never read (its BUSY case cannot happen there): make the call's result meaningful or the callee void.
 - imu: src/imu/maneuver.c:874 leftover assertion guard with no return; branch can never run: delete or make fallible.
 - document lane: 82 function headers still say "BAD_ARG for a NULL ctx" on functions without ctx; inline_one.py pasted 77 helper header blocks into caller bodies: rewrite as section comments.
 - tools/prove/manual.tsv: the "why" column is one boilerplate text per directory; it records the decision, not the evidence (lesson for the end-of-project EVA pass: per-row evidence or none).
 
 ## From review-exec-sched (2026-10-11; note docs/modules/review-exec-sched.md)
-- follow-up-done-lanes (guid-entry): preset PHSPRDT5 with agc_phase_set_priority(5, PRIO16) in reentry.c where the AGC does `TS PHSPRDT5`.
-- follow-up-done-lanes (prog-rendz): add the PHSPRDT2 presets (R22LEM3 PRIO26, P23 PRIO13, CSM R22 PRIO26) via agc_phase_set_priority.
-- nav-integ + prog-rendz: plain type-C PHASCHNG calls (GRP2PC 04022 family) made from a running job now store the current job segment as the restart point and a group-2 restart reruns that segment from its top (DEVIATION in exec): check each such segment in your files is safe to rerun.
+- DONE PHSPRDT5 preset at SIDETRAK + test; docs/modules/follow-up-done-lanes.md item 1.3.
+- DONE PHSPRDT2 presets (R22LEM3, P23, CSM R22) + test; docs/modules/follow-up-done-lanes.md item 1.4.
+- nav-integ: plain type-C PHASCHNG calls (GRP2PC 04022 family) made from a running job now store the current job segment as the restart point and a group-2 restart reruns that segment from its top (DEVIATION in exec): check each such segment in your files is safe to rerun. (prog-rendz part DONE: rz_grp2pc names the restart job at 30 sites; docs/modules/follow-up-done-lanes.md item 1.7.)
 
 ## From review-sys-misc checkpoint (2026-10-11; note docs/modules/review-sys-misc.md)
 - io-dsky: V91 SHOW-BANKSUM needs the display to carry the MPAC+2 address the AGC passes; the noun/display path cannot yet, so V91 cannot show bank sums.
@@ -81,7 +81,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - prog-align residual: AOTMARK's job and button-handling flow was not re-read line by line (arithmetic is oracle-verified); a later pass or the document wave should read it against the listing.
 
 ## From review-sys-misc final (2026-10-12; note docs/modules/review-sys-misc.md, findings S10-S18)
-- guid-powered: src/csm/burns/sps/clock.c:464 stores OPTIND = -1 where the AGC stores -0.
+- DONE S40.6 OPTIND = -0 (AGC_OPTIND_NEG0) + test; docs/modules/follow-up-done-lanes.md item 1.5.
 - follow-up-done-lanes: make agc_svc_b5off, trfailof, trfailon void (callers in other lanes); fold agc_svc_set_extvbact into agc_erase_set_extvbact.
 - io-dsky: P27 cannot receive data until something calls agc_uplink_update_write (wire the uplink path from the UPRUPT handler / V71-V73 flow).
 - sim: drive the scaler channels 3 and 4 (the AGC's SCALER1/SCALER2 read-back) as yaAGC does.
@@ -89,3 +89,10 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 ## From review-guid-powered final (2026-10-12; note docs/modules/review-guid-powered.md, R10-R15)
 - core-numeric (follow-up-done-lanes): a DOT / VXM that takes stored words (last 2 LSB of oracle s40_2); move agc_vec_words_t into include/agc/core/word.h; UNIT-at-B27 behind the radial case's 10 LSB.
 - prog-align: KNOWN PA-W4 closed (oracle_align 570/0 hard at tolerance 0).
+
+## From review-nav-integ final (2026-10-12; note docs/modules/review-nav-integ.md, N8-N12)
+- follow-up-done-lanes (nav-aux): give RP-TO-R a word-level input (N10; moon OBLATE 1-2 LSB).
+- follow-up-done-lanes (nav-conic): KEPPREP 1 LSB (N4).
+- follow-up-done-lanes (core-numeric): public word-level vector API (nav-integ has a local word vector type; guid-powered asked for agc_vec_words_t in word.h: one type, one place).
+- follow-up-done-lanes: make agc_integ_svdwn / agc_integ_rectify void once their callers drop the status check; public renames listed in the nav-integ note (agc_integ_midtoav1/2, agc_integ_intwake0, agc_job_statint1*, AGC_JOB_STATINT1*) per NAMING.md, callers and registry included.
+- follow-up-done-lanes (uplink/P27): the job segment rerun from INTWAKEU's PHASCHNG 04026 after a restart must be safe (nav-integ DEVIATION N12: INTSTALL takes the area over).
