@@ -340,7 +340,7 @@ agc_status_t agc_job_postburn_lm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change((uint16_t)000014);
+    agc_phase_change((uint16_t) 000014);
 
     return (AGC_STATUS_OK); /* P40PHS1                */
 }
@@ -369,7 +369,7 @@ agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change((uint16_t)000014);
+    agc_phase_change((uint16_t) 000014);
 
     return (AGC_STATUS_OK);
 }
@@ -512,7 +512,7 @@ agc_status_t agc_job_thrust_monitor_display_lm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change((uint16_t)000014);
+    agc_phase_change((uint16_t) 000014);
 
     return (AGC_STATUS_OK); /* P40PHS1                */
 }
@@ -541,7 +541,7 @@ agc_status_t agc_task_implburn_lm(void)
     agc_flag_clear(AGC_FLAG_IGNFLAG);
     agc_flag_clear(AGC_FLAG_ASTNFLAG);
     agc_flag_clear(AGC_FLAG_IMPULSW);
-    agc_phase_change((uint16_t)040114); /* ENGOFTSK (ENGINOFF)    */
+    agc_phase_change((uint16_t) 040114); /* ENGOFTSK (ENGINOFF)    */
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_IMPULSW)))
     {
@@ -949,7 +949,7 @@ agc_status_t agc_job_timeburn_lm(void)
         agc_erase_set_tgo((agc_dp_t) agc_dp_high(t14)); /* S40.132*: TGO = (0, MPAC) */
     }
 
-    agc_phase_change((uint16_t)000003);
+    agc_phase_change((uint16_t) 000003);
 
     return (AGC_STATUS_OK); /* S40.134                  */
 }

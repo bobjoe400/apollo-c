@@ -57,10 +57,10 @@ void agc_erase_reset_counters(void)
         g_tem[i] = 0;
     }
 
-    g_rnrad = 0;
+    g_rnrad  = 0;
     g_inlink = 0;
     g_thrust = 0;
-    g_altm = 0;
+    g_altm   = 0;
 }
 
 /* ---- P-, Q-, R-RHCCTR (LM, 042-044) ------------------------------------ */

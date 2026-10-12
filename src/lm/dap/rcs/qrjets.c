@@ -619,30 +619,30 @@ agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
                  *          failed assertion, else the status of the routine it
                  *          ends in
                  **********************************************************************/
+            {
+                if (!AGC_ASSERT(axis == 0 || axis == 1))
                 {
-                    if (!AGC_ASSERT(axis == 0 || axis == 1))
-                    {
-                        return (AGC_STATUS_BAD_ARG);
-                    }
-
-                    if (agc_flag_test(AGC_FLAG_CSMDKFLG))
-                    {
-                        agc_sp_t tj = d->tj[axis + 1]; /* TJU or TJV, scaled 0.625 ms per count */
-
-                        if (tj > 0)
-                        {
-                            d->tj[axis + 1] = QJ_60MS;
-                        }
-                        else if (tj < 0)
-                        {
-                            d->tj[axis + 1] = -QJ_60MS;
-                        }
-                    }
-
-                    d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2; /* B : A     */
-                    st         = aftertj(d, axis, &end);
+                    return (AGC_STATUS_BAD_ARG);
                 }
-                break;
+
+                if (agc_flag_test(AGC_FLAG_CSMDKFLG))
+                {
+                    agc_sp_t tj = d->tj[axis + 1]; /* TJU or TJV, scaled 0.625 ms per count */
+
+                    if (tj > 0)
+                    {
+                        d->tj[axis + 1] = QJ_60MS;
+                    }
+                    else if (tj < 0)
+                    {
+                        d->tj[axis + 1] = -QJ_60MS;
+                    }
+                }
+
+                d->numbert = agc_flag_test(AGC_FLAG_AORBTFLG) ? 3 : 2; /* B : A     */
+                st         = aftertj(d, axis, &end);
+            }
+            break;
             default:
                 st = AGC_STATUS_BAD_ARG;
                 break;

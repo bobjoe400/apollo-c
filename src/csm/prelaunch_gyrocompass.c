@@ -332,12 +332,12 @@ agc_status_t agc_job_gyrocompassing_start(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx)
 {
-    prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
-    const agc_dp_t z[3] = {0, 0, 0};       /* SCHZEROS, rev 2^0           */
-    agc_interp_t ip;                     /* interpreter state           */
+    prelaunch_ram_t *r    = prelaunch_ram(); /* AINLA overlay */
+    const agc_dp_t   z[3] = {0, 0, 0};       /* SCHZEROS, rev 2^0           */
+    agc_interp_t     ip;                     /* interpreter state           */
 
     agc_inhint();
-    r->gtswtlt1 = time1();        /* CA TIME1, TS GTSWTLT1                  */
+    r->gtswtlt1     = time1();        /* CA TIME1, TS GTSWTLT1                  */
     agc_erase_set_pipax(0);
     agc_erase_set_pipay(0);
     agc_erase_set_pipaz(0);
@@ -348,16 +348,16 @@ agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx)
     for (int k = 0; k < 2; k++)
     {
         r->filt.fildelv1[k] = 0;
-        r->filt.intvec1[k] = 0;
-        r->dpipa[k] = 0;
+        r->filt.intvec1[k]  = 0;
+        r->dpipa[k]         = 0;
     }
 
-    r->altim = 0;
-    r->altims = 0;
+    r->altim             = 0;
+    r->altims            = 0;
     agc_imu_set_gcompsw(0);                      /* STOVL GCOMPSW -1                      */
-    r->alx1s = INTVAL_ALX1S;         /* INTVAL +2: initial drift gains        */
-    r->cmpx1 = INTVAL_CMPX1;
-    r->alk = SOUPLY;
+    r->alx1s             = INTVAL_ALX1S;         /* INTVAL +2: initial drift gains        */
+    r->cmpx1             = INTVAL_CMPX1;
+    r->alk               = SOUPLY;
     r->filt.thetax1.c[0] = SOUPLY_ERECT;
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, z); /* STORE GCOMP        */
     agc_erase_set_delv(agc_vec_zero());          /* STORE DELVX        */
@@ -373,7 +373,7 @@ agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx)
     if (st == AGC_STATUS_OK)
     {
         r->erectim1 = r->lengthot;                             /* CA LENGTHOT, TS ERECTIME        */
-        st = agc_phase_newmode(PRELAUNCH_MM_COMPASS); /* MM 02 */
+        st          = agc_phase_newmode(PRELAUNCH_MM_COMPASS); /* MM 02 */
     }
 
     if (st == AGC_STATUS_OK)
@@ -429,14 +429,14 @@ agc_status_t agc_task_gyrocompassing_sample(void)
 agc_status_t agc_task_gyrocompassing_sample_restart(void)
 {
     prelaunch_ram_t *r = prelaunch_ram();  /* AINLA overlay */
-    agc_vec_t d = agc_erase_delv(); /* DELV, PIPA pulses B14 */
+    agc_vec_t        d = agc_erase_delv(); /* DELV, PIPA pulses B14 */
 
     r->altim = r->geosave1; /* CAE GEOSAVE1, TS ALTIM               */
 
     if (r->altim > 0)
     {
         r->altims = (agc_sp_t) (r->altim - 1); /* CA A, TS ALTIMS     */
-        r->altim = (agc_sp_t) (1 - r->altim); /* CS A, TS ALTIM      */
+        r->altim  = (agc_sp_t) (1 - r->altim); /* CS A, TS ALTIM      */
     }
     else if (r->altim == 0)
     {
@@ -516,14 +516,14 @@ static void alwaysg(agc_interp_t *ip, agc_dp_t term[2])
     for (int k = 0; k < 2; k++)
     {
         const agc_dp_t dp = prelaunch_ram()->dpipa[k];          /* PIPA B14     */
-        agc_dp_t x = agc_dp_sub(ip, dp, f->fildelv1[k]); /* DSU*: B14 */
+        agc_dp_t       x  = agc_dp_sub(ip, dp, f->fildelv1[k]); /* DSU*: B14 */
 
-        x = agc_dp_add(ip, agc_dp_mul(ip, x, GEOCONS1), f->fildelv1[k]);
+        x              = agc_dp_add(ip, agc_dp_mul(ip, x, GEOCONS1), f->fildelv1[k]);
         f->fildelv1[k] = x;                                 /* STORE    */
-        f->intvec1[k] = agc_dp_add(ip, x, f->intvec1[k]);  /* DAD*     */
-        x = agc_dp_mul(ip, f->intvec1[k], GEOCONS2);
-        x = agc_dp_add(ip, x, f->fildelv1[k]); /* DAD*     */
-        term[k] = agc_dp_mul(ip, x, GEOCONS5);       /* DMPR, PUSH     */
+        f->intvec1[k]  = agc_dp_add(ip, x, f->intvec1[k]);  /* DAD*     */
+        x              = agc_dp_mul(ip, f->intvec1[k], GEOCONS2);
+        x              = agc_dp_add(ip, x, f->fildelv1[k]); /* DAD*     */
+        term[k]        = agc_dp_mul(ip, x, GEOCONS5);       /* DMPR, PUSH     */
     }
 
     if (!AGC_ASSERT(prelaunch_ram()->erectim1 >= 0))
@@ -546,8 +546,8 @@ static void alwaysg(agc_interp_t *ip, agc_dp_t term[2])
  **********************************************************************/
 static void compgs(agc_interp_t *ip, const agc_dp_t term[2])
 {
-    prelaunch_filter_t *f = &prelaunch_ram()->filt; /* compass filter words */
-    agc_vec_t *th = &f->thetan1;            /* THETAN1, rev 2^0        */
+    prelaunch_filter_t *f  = &prelaunch_ram()->filt; /* compass filter words */
+    agc_vec_t          *th = &f->thetan1;            /* THETAN1, rev 2^0        */
 
     if (prelaunch_ram()->erectim1 != 0)
     { /* ERECTION ONLY                                                */
@@ -556,8 +556,8 @@ static void compgs(agc_interp_t *ip, const agc_dp_t term[2])
     }
     else
     {
-        th->c[0] = agc_dp_add(ip, th->c[0], f->fildelv1[0]);                           /* COMPGS    */
-        th->c[2] = agc_dp_sub(ip, th->c[2], agc_dp_mul(ip, f->fildelv1[0], GEOCONS3));
+        th->c[0]   = agc_dp_add(ip, th->c[0], f->fildelv1[0]);                           /* COMPGS    */
+        th->c[2]   = agc_dp_sub(ip, th->c[2], agc_dp_mul(ip, f->fildelv1[0], GEOCONS3));
         agc_dp_t t = agc_dp_sub(ip, th->c[1], agc_dp_mul(ip, f->fildelv1[1], GEOCONS3)); /* Y torque term, rev 2^0 */
 
         th->c[1] = agc_dp_sub(ip, t, agc_dp_mul(ip, f->intvec1[1], GEOCONS4));
@@ -580,10 +580,10 @@ static void compgs(agc_interp_t *ip, const agc_dp_t term[2])
  **********************************************************************/
 agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
 {
-    prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
-    bool liftoff = false;           /* CHKCOMED went to P11        */
-    agc_dp_t term[2];                   /* ALWAYSG push list, B14      */
-    agc_interp_t ip;                        /* interpreter state           */
+    prelaunch_ram_t *r       = prelaunch_ram(); /* AINLA overlay */
+    bool             liftoff = false;           /* CHKCOMED went to P11        */
+    agc_dp_t         term[2];                   /* ALWAYSG push list, B14      */
+    agc_interp_t     ip;                        /* interpreter state           */
 
     r->filt = r->restarpt; /* LOADSTDT                              */
 
@@ -661,9 +661,9 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
      *
      * RETURNS: agc_status_t of SLEEPIE, CHKCOMED/P11 or RESTAIER
      **********************************************************************/
-    prelaunch_ram_t *r_endgtsal = prelaunch_ram(); /* AINLA overlay */
-    bool liftoff_endgtsal = false;           /* CHKCOMED went to P11        */
-    agc_dp_t buf[3];                             /* ERCOMP1, rev 2^0            */
+    prelaunch_ram_t *r_endgtsal       = prelaunch_ram(); /* AINLA overlay */
+    bool             liftoff_endgtsal = false;           /* CHKCOMED went to P11        */
+    agc_dp_t         buf[3];                             /* ERCOMP1, rev 2^0            */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(r_endgtsal->lengthot >= 0))
     {
@@ -689,9 +689,9 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
         return (sleepie_next(ctx)); /* CCS LGYRO: .5 s from now     */
     }
 
-    st_endgtsal = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* LASTGTS   */
+    st_endgtsal              = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* LASTGTS   */
     r_endgtsal->filt.thetax1 = agc_vec_make(buf[0], buf[1], buf[2]);
-    r_endgtsal->alk = prelaunch_tmark();                              /* DLOAD TMARK, STORE ALK    */
+    r_endgtsal->alk          = prelaunch_tmark();                              /* DLOAD TMARK, STORE ALK    */
 
     if (!AGC_ASSERT(st_endgtsal == AGC_STATUS_OK))
     {
@@ -736,10 +736,10 @@ agc_status_t agc_job_gyrocompassing_filter(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_gyrocompassing_torque(agc_job_ctx_t *ctx)
 {
-    prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
-    bool done = false;           /* torquing already over         */
-    agc_dp_t buf[3];                 /* ERCOMP1, rev 2^0              */
-    agc_interp_t ip;                     /* interpreter state             */
+    prelaunch_ram_t *r    = prelaunch_ram(); /* AINLA overlay */
+    bool             done = false;           /* torquing already over         */
+    agc_dp_t         buf[3];                 /* ERCOMP1, rev 2^0              */
+    agc_interp_t     ip;                     /* interpreter state             */
 
     agc_phase_change(00275);
     agc_interp_init(&ip);
@@ -869,8 +869,8 @@ agc_status_t agc_job_gyrocompassing_erection_check(agc_job_ctx_t *ctx)
 agc_status_t agc_job_gyrocompassing_azimuth_check(agc_job_ctx_t *ctx)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
-    agc_dp_t buf[3];              /* ERCOMP, rev 2^0                      */
-    agc_interp_t ip;                  /* interpreter state                    */
+    agc_dp_t         buf[3];              /* ERCOMP, rev 2^0                      */
+    agc_interp_t     ip;                  /* interpreter state                    */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(r->premtrxc >= 0))
     {
@@ -887,13 +887,13 @@ agc_status_t agc_job_gyrocompassing_azimuth_check(agc_job_ctx_t *ctx)
         return (nochorld(ctx));
     }
 
-    r->premtrxc = (agc_sp_t) (r->premtrxc + 1);                   /* SLOAD DAD, STODL  */
-    r->newazmth = r->launchaz;
+    r->premtrxc     = (agc_sp_t) (r->premtrxc + 1);                   /* SLOAD DAD, STODL  */
+    r->newazmth     = r->launchaz;
     agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* status of the call */
 
     buf[2] = d; /* ADERCOMP: STORE ERCOMP +4                         */
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
-    st = prelaunch_posn17c();
+    st     = prelaunch_posn17c();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -917,11 +917,11 @@ agc_status_t agc_job_gyrocompassing_azimuth_check(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_gyrocompassing_azimuth_slew(agc_job_ctx_t *ctx)
 {
-    prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
-    bool done = false;           /* torquing already over         */
+    prelaunch_ram_t *r    = prelaunch_ram(); /* AINLA overlay */
+    bool             done = false;           /* torquing already over         */
 
-    r->oldazmth = r->newazmth;                                             /* DCA NEWAZMTH, DXCH OLDAZMTH         */
-    r->lengthot = SLEW_PASSES;                                             /* CA BIT7                             */
+    r->oldazmth     = r->newazmth;                                             /* DCA NEWAZMTH, DXCH OLDAZMTH         */
+    r->lengthot     = SLEW_PASSES;                                             /* CA BIT7                             */
     agc_phase_change(00075);
     agc_status_t st = agc_imu_pulse_buf(AGC_IMU_GBUF_ERCOMP, AGC_JOB_RESCHNG); /* status of the call */
 

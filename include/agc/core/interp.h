@@ -89,13 +89,13 @@ typedef struct agc_mat
 typedef struct agc_interp
 {
     agc_ovf_t ovfind;                  /* OVFIND: 0, or +-1 (sign of the overflow)    */
-    agc_sp_t x1;                      /* X1 index register, unscaled (as data)       */
-    agc_sp_t x2;                      /* X2 index register, unscaled                 */
-    agc_sp_t s1;                      /* S1 step register, unscaled                  */
-    agc_sp_t s2;                      /* S2 step register, unscaled                  */
-    bool sw[AGC_INTERP_SWITCHES]; /* interpretive switch bits    */
-    bool dvsign_neg;              /* DVSIGN (= DOTINC) holds -0: last divide gave a negative quotient (see DVOVF) */
-    agc_dp_t mpac;                    /* MPAC as left by a DAD/DDV whose result only sets OVFIND (BOV next) */
+    agc_sp_t  x1;                      /* X1 index register, unscaled (as data)       */
+    agc_sp_t  x2;                      /* X2 index register, unscaled                 */
+    agc_sp_t  s1;                      /* S1 step register, unscaled                  */
+    agc_sp_t  s2;                      /* S2 step register, unscaled                  */
+    bool      sw[AGC_INTERP_SWITCHES]; /* interpretive switch bits    */
+    bool      dvsign_neg;              /* DVSIGN (= DOTINC) holds -0: last divide gave a negative quotient (see DVOVF) */
+    agc_dp_t  mpac;                    /* MPAC as left by a DAD/DDV whose result only sets OVFIND (BOV next) */
 } agc_interp_t;
 
 void agc_interp_init(agc_interp_t *ip);

@@ -183,44 +183,44 @@ typedef enum pin_loadstat
  * RECAL2 reaches by adding 1 or 2 to LOC.                              */
 typedef struct pin_sleeper
 {
-    bool used;    /* a job waits here */
+    bool         used;    /* a job waits here */
     agc_job_id_t cont[3]; /* terminate, proceed, data in */
 } pin_sleeper_t;
 
 typedef struct pin_state
 {
-    int16_t nout;           /* NOUT  activity counter for DSPTAB    */
-    int16_t dspcnt;         /* DSPCNT counter for DSPOUT            */
-    int16_t dspcount;       /* DSPCOUNT magnitude (may carry BIT14) */
-    bool dspcount_neg;   /* DSPCOUNT sign: true = blocked        */
-    uint16_t decbrnch;       /* DECBRNCH                             */
-    uint8_t verbreg;        /* VERBREG                              */
-    uint8_t nounreg;        /* NOUNREG                              */
-    uint8_t chr;            /* CHAR: digit of the key being handled */
-    uint16_t xyz_oct[3];     /* XREG YREG ZREG (octal word)          */
-    int32_t xyz_dec[3];     /* decimal digits entered (integer N)   */
-    agc_dp_t xyz_frac[3];    /* XREG,XREGLP: +-N/10^5, 2^-28     */
-    bool xyz_negzero[3]; /* -00000 typed (ones' complement -0)   */
-    pin_reqret_t reqret;         /* REQRET continuation                  */
-    bool reqret_neg;     /* REQRET negative: waiting for data    */
-    pin_entret_t entret;         /* ENTRET                               */
-    uint8_t verbsave;       /* VERBSAVE (AGC keeps -verb)           */
-    int16_t clpass;         /* CLPASS: 0 pass0, + hipass, - no back */
+    int16_t        nout;           /* NOUT  activity counter for DSPTAB    */
+    int16_t        dspcnt;         /* DSPCNT counter for DSPOUT            */
+    int16_t        dspcount;       /* DSPCOUNT magnitude (may carry BIT14) */
+    bool           dspcount_neg;   /* DSPCOUNT sign: true = blocked        */
+    uint16_t       decbrnch;       /* DECBRNCH                             */
+    uint8_t        verbreg;        /* VERBREG                              */
+    uint8_t        nounreg;        /* NOUNREG                              */
+    uint8_t        chr;            /* CHAR: digit of the key being handled */
+    uint16_t       xyz_oct[3];     /* XREG YREG ZREG (octal word)          */
+    int32_t        xyz_dec[3];     /* decimal digits entered (integer N)   */
+    agc_dp_t       xyz_frac[3];    /* XREG,XREGLP: +-N/10^5, 2^-28     */
+    bool           xyz_negzero[3]; /* -00000 typed (ones' complement -0)   */
+    pin_reqret_t   reqret;         /* REQRET continuation                  */
+    bool           reqret_neg;     /* REQRET negative: waiting for data    */
+    pin_entret_t   entret;         /* ENTRET                               */
+    uint8_t        verbsave;       /* VERBSAVE (AGC keeps -verb)           */
+    int16_t        clpass;         /* CLPASS: 0 pass0, + hipass, - no back */
     pin_loadstat_t loadstat;       /* LOADSTAT                             */
-    bool dsplock;        /* DSPLOCK  (1 = keyboard busy)         */
-    bool old_dsplock;    /* 21/22REG: DSPLOCK before CHARIN      */
-    pin_sleeper_t cadrstor;       /* CADRSTOR (ENDIDLE)                   */
-    pin_sleeper_t dsplist;        /* DSPLIST  (NVSUBUSY)                  */
-    uint16_t monsave;        /* MONSAVE  verb<<7 | noun, +0 = off    */
-    uint16_t monsave1;       /* MONSAVE1 bit15 kill, bit14 external  */
-    uint16_t monsave2;       /* MONSAVE2 NVMONOPT options            */
-    uint16_t nouncadr;       /* NOUNCADR machine address (MCTBS)     */
-    agc_noun_t noun;           /* LODNNTAB result for NOUNREG          */
-    uint8_t nntype;         /* 0 normal, 1 MCTBS, 2 channel, 3 augment */
-    uint16_t dsptem[7];      /* DSPTEM1 +0..+2, DSPTEM2 +0..+2, +3   */
-    uint8_t resp_verb;      /* MPAC at ENDIDLE wake (verb)          */
-    uint8_t resp_noun;      /* MPAC +1 at ENDIDLE wake (noun)       */
-    uint16_t mpac2;          /* MPAC +2: ECADR for internal MCTBS    */
+    bool           dsplock;        /* DSPLOCK  (1 = keyboard busy)         */
+    bool           old_dsplock;    /* 21/22REG: DSPLOCK before CHARIN      */
+    pin_sleeper_t  cadrstor;       /* CADRSTOR (ENDIDLE)                   */
+    pin_sleeper_t  dsplist;        /* DSPLIST  (NVSUBUSY)                  */
+    uint16_t       monsave;        /* MONSAVE  verb<<7 | noun, +0 = off    */
+    uint16_t       monsave1;       /* MONSAVE1 bit15 kill, bit14 external  */
+    uint16_t       monsave2;       /* MONSAVE2 NVMONOPT options            */
+    uint16_t       nouncadr;       /* NOUNCADR machine address (MCTBS)     */
+    agc_noun_t     noun;           /* LODNNTAB result for NOUNREG          */
+    uint8_t        nntype;         /* 0 normal, 1 MCTBS, 2 channel, 3 augment */
+    uint16_t       dsptem[7];      /* DSPTEM1 +0..+2, DSPTEM2 +0..+2, +3   */
+    uint8_t        resp_verb;      /* MPAC at ENDIDLE wake (verb)          */
+    uint8_t        resp_noun;      /* MPAC +1 at ENDIDLE wake (noun)       */
+    uint16_t       mpac2;          /* MPAC +2: ECADR for internal MCTBS    */
 } pin_state_t;
 
 #define PIN_NNTYPE_NORMAL  0 /* NNADTEM +: normal noun */

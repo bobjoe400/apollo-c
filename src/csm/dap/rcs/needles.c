@@ -68,8 +68,8 @@
  **********************************************************************/
 agc_status_t csm_dap_needler(void)
 {
-    agc_csm_dapcom_t *c = agc_csm_dap_com();              /* RCSFLAGS          */
-    uint16_t ch12 = agc_chan_read(AGC_CHAN_CHAN12); /* CAF BIT4; RAND    */
+    agc_csm_dapcom_t *c    = agc_csm_dap_com();              /* RCSFLAGS          */
+    uint16_t          ch12 = agc_chan_read(AGC_CHAN_CHAN12); /* CAF BIT4; RAND    */
 
     if ((ch12 & (uint16_t) AGC_CH012_COARSE) != 0u)
     {
@@ -92,8 +92,8 @@ agc_status_t csm_dap_needler(void)
          *
          * RETURNS: agc_status_t -- AGC_STATUS_OK or the NEEDLES status
          **********************************************************************/
-        agc_csm_dapcom_t *c_needles3 = agc_csm_dap_com();              /* RCSFLAGS          */
-        uint16_t ch12_needles3 = agc_chan_read(AGC_CHAN_CHAN12); /* CAF BIT6; RAND    */
+        agc_csm_dapcom_t *c_needles3    = agc_csm_dap_com();              /* RCSFLAGS          */
+        uint16_t          ch12_needles3 = agc_chan_read(AGC_CHAN_CHAN12); /* CAF BIT6; RAND    */
 
         if ((ch12_needles3 & (uint16_t) AGC_CH012_ENBIMUERR) == 0u)
         {
@@ -112,8 +112,8 @@ agc_status_t csm_dap_needler(void)
          *
          * RETURNS: agc_status_t -- the first CDUXCMD write failure, else OK
          **********************************************************************/
-        agc_csm_dapcom_t *c_needles = agc_csm_dap_com(); /* AK, EDRIVE             */
-        agc_status_t st_needles = AGC_STATUS_OK;     /* first write failure    */
+        agc_csm_dapcom_t *c_needles  = agc_csm_dap_com(); /* AK, EDRIVE             */
+        agc_status_t      st_needles = AGC_STATUS_OK;     /* first write failure    */
 
         for (int i_needles = AGC_CSM_AXES - 1; i_needles >= 0; i_needles--)
         {
@@ -132,11 +132,11 @@ agc_status_t csm_dap_needler(void)
                 /* within the DAC range */
             }
 
-            agc_sp_t inc = (agc_sp_t) (l - c_needles->edrive[i_needles]); /* CS EDRIVEX; AD L, unscaled pulses */
-            agc_sp_t cmd = csm_dap_ads(agc_imu_cducmd(i_needles), inc);   /* ADS CDUXCMD, unscaled pulses     */
+            agc_sp_t     inc       = (agc_sp_t) (l - c_needles->edrive[i_needles]); /* CS EDRIVEX; AD L, unscaled pulses */
+            agc_sp_t     cmd       = csm_dap_ads(agc_imu_cducmd(i_needles), inc);   /* ADS CDUXCMD, unscaled pulses     */
             agc_status_t s_needles = agc_imu_hw_set_cducmd(i_needles, cmd);         /* counter write status */
 
-            st_needles = (st_needles == AGC_STATUS_OK) ? s_needles : st_needles; /* ?: keep the first failure */
+            st_needles                   = (st_needles == AGC_STATUS_OK) ? s_needles : st_needles; /* ?: keep the first failure */
             c_needles->edrive[i_needles] = l;                                                      /* LXCH EDRIVEX             */
         }
 
@@ -161,13 +161,13 @@ agc_status_t csm_dap_needler(void)
          * RETURNS: agc_status_t -- the first CDUXCMD write failure, else OK
          **********************************************************************/
         agc_csm_dapcom_t *c_needle11 = agc_csm_dap_com(); /* AK, EDRIVE, RCSFLAGS   */
-        agc_status_t st = AGC_STATUS_OK;     /* first write failure    */
+        agc_status_t      st         = AGC_STATUS_OK;     /* first write failure    */
 
         for (int i = 0; i < AGC_CSM_AXES; i++)
         {
-            c_needle11->ak[i] = 0;                           /* CS ZERO: -0            */
+            c_needle11->ak[i]     = 0;                           /* CS ZERO: -0            */
             c_needle11->edrive[i] = 0;                           /* TS EDRIVEX             */
-            agc_status_t s = agc_imu_hw_set_cducmd(i, 0); /* TS CDUXCMD..CDUZCMD    */
+            agc_status_t s        = agc_imu_hw_set_cducmd(i, 0); /* TS CDUXCMD..CDUZCMD    */
 
             st = (st == AGC_STATUS_OK) ? s : st; /* ?: keep the first failure */
         }
@@ -210,9 +210,9 @@ agc_status_t agc_dap_needler(agc_sp_t ak, agc_sp_t ak1, agc_sp_t ak2, bool init)
         c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1);
     }
 
-    c->ak[0] = ak;
-    c->ak[1] = ak1;
-    c->ak[2] = ak2;
+    c->ak[0]        = ak;
+    c->ak[1]        = ak1;
+    c->ak[2]        = ak2;
     agc_inhint();
     agc_status_t st = csm_dap_needler(); /* TC IBNKCALL; CADR NEEDLER   */
 

@@ -28,10 +28,10 @@ typedef uint16_t agc_alarm_code_t; /* octal alarm code, e.g. 01201          */
 typedef struct agc_job_ctx
 {
     agc_job_id_t id;
-    agc_prio_t prio;
-    bool has_vac;
-    int vac_index; /* -1 when !has_vac                      */
-    agc_sp_t arg;       /* word passed in A/L on entry, if any   */
+    agc_prio_t   prio;
+    bool         has_vac;
+    int          vac_index; /* -1 when !has_vac                      */
+    agc_sp_t     arg;       /* word passed in A/L on entry, if any   */
 } agc_job_ctx_t;
 
 /* Priorities: agc_prio_t = PRIOnn (octal) >> 9, i.e. the "nn" in octal.     */
@@ -158,14 +158,14 @@ typedef enum agc_core_state
 typedef struct agc_exec_core_info
 {
     agc_core_state_t state;
-    agc_prio_t prio;      /* priority number (PRIOnn >> 9)            */
-    int vac_index; /* 0..4, or -1 for a NOVAC job              */
-    agc_job_id_t loc;       /* LOC: where the job starts / resumes      */
+    agc_prio_t       prio;      /* priority number (PRIOnn >> 9)            */
+    int              vac_index; /* 0..4, or -1 for a NOVAC job              */
+    agc_job_id_t     loc;       /* LOC: where the job starts / resumes      */
 } agc_exec_core_info_t;
 
-int  agc_exec_core_sets(void);         /* 7 CSM, 8 LM            */
+int  agc_exec_core_sets(void); /* 7 CSM, 8 LM            */
 void agc_exec_core_info(int core_set, agc_exec_core_info_t *out);
-int  agc_exec_newjob(void);            /* NEWJOB: -1 idle (-0), 0 run set 0, k change */
+int  agc_exec_newjob(void);    /* NEWJOB: -1 idle (-0), 0 run set 0, k change */
 
 /* Job/task dispatch (src/exec/dispatch.c, the one switch each).          */
 agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx);
@@ -198,11 +198,11 @@ typedef enum agc_restart_kind
 typedef struct agc_phase_var
 {
     agc_restart_kind_t kind;
-    agc_job_id_t job;        /* kind == JOB                              */
-    agc_task_id_t task;       /* kind == TASK or LONGCALL                 */
-    int16_t prio_or_dt; /* D bit set: job +prio FINDVAC / -prio NOVAC (priority number); task delta time cs */
-    bool immediate;  /* task: PHSPRDT = -0, restart immediately  */
-    uint32_t long_dt_cs; /* longcall: DP delta time, cs              */
+    agc_job_id_t       job;        /* kind == JOB                              */
+    agc_task_id_t      task;       /* kind == TASK or LONGCALL                 */
+    int16_t            prio_or_dt; /* D bit set: job +prio FINDVAC / -prio NOVAC (priority number); task delta time cs */
+    bool               immediate;  /* task: PHSPRDT = -0, restart immediately  */
+    uint32_t           long_dt_cs; /* longcall: DP delta time, cs              */
 } agc_phase_var_t;
 
 void         agc_phase_change_var(uint16_t code, const agc_phase_var_t *v);                 /* PHASCHNG type B/C */

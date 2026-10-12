@@ -436,34 +436,34 @@ static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
         case 43:
             /* IMUATTCK (V43, p.272): P00; not with coarse align or zero ICDU; the
              * attitude-indicator mode switch (channel 31 bits 13,14) must be off.     */
+        {
+            bool         xv_ok = false;                       /* CHKPOOH passed */
+            agc_status_t xv_st = agc_extverb_chkpooh(&xv_ok); /* ALM/END outcome otherwise */
+
+            if (!xv_ok)
             {
-                bool         xv_ok = false;                       /* CHKPOOH passed */
-                agc_status_t xv_st = agc_extverb_chkpooh(&xv_ok); /* ALM/END outcome otherwise */
-
-                if (!xv_ok)
-                {
-                    return (xv_st);
-                }
-
-                if ((agc_chan_read((int) AGC_CHAN_CHAN12) & OCT30) != 0u || ((agc_chan_read((int) AGC_CHAN_CHAN31) ^ BIT13_14) & BIT13_14) != 0u)
-                {
-                    return (agc_extverb_alm_end());
-                }
-
-                bool         ok = false;
-                agc_status_t st = agc_extverb_testxact(&ok);
-
-                if (!ok)
-                {
-                    return (st);
-                }
-
-                agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END,
-                                        AGC_JOB_ATTITUDE_ERROR_LOAD,
-                                        AGC_JOB_ATTITUDE_ERROR_LOAD};
-
-                return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22), &cont));
+                return (xv_st);
             }
+
+            if ((agc_chan_read((int) AGC_CHAN_CHAN12) & OCT30) != 0u || ((agc_chan_read((int) AGC_CHAN_CHAN31) ^ BIT13_14) & BIT13_14) != 0u)
+            {
+                return (agc_extverb_alm_end());
+            }
+
+            bool         ok = false;
+            agc_status_t st = agc_extverb_testxact(&ok);
+
+            if (!ok)
+            {
+                return (st);
+            }
+
+            agc_dsky_cont_t cont = {AGC_JOB_EXTENDED_VERB_END,
+                                    AGC_JOB_ATTITUDE_ERROR_LOAD,
+                                    AGC_JOB_ATTITUDE_ERROR_LOAD};
+
+            return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(25, 22), &cont));
+        }
         case 44:
             return (agc_extverb_rr_designate_end());
         case 60:
@@ -475,27 +475,27 @@ static agc_status_t fan_40s_60s(agc_job_ctx_t *ctx, int verb)
         case 48:
             /* DAPDISP (V48): TESTXACT, priority 7, DAPDATA1: DAPDATR1 from DAPBOOLS
              * with bit 14 = not APSFLAG.                                              */
+        {
+            bool         ok = false;
+            agc_status_t st = agc_extverb_testxact(&ok);
+
+            if (!AGC_ASSERT(ctx != NULL) || !ok)
             {
-                bool         ok = false;
-                agc_status_t st = agc_extverb_testxact(&ok);
-
-                if (!AGC_ASSERT(ctx != NULL) || !ok)
-                {
-                    return (st);
-                }
-
-                agc_exec_prio_change(PRIO7);
-                uint16_t d = (uint16_t) (agc_flagword_get(DAPBOOLS_WORD) & BOOLSMSK);
-
-                if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_APSFLAG))
-                {
-                    d = (uint16_t) (d + BIT14);
-                }
-
-                agc_erase_set_dapdatr1(d);
-
-                return (agc_job_dap_data_load_noun46_lm(ctx));
+                return (st);
             }
+
+            agc_exec_prio_change(PRIO7);
+            uint16_t d = (uint16_t) (agc_flagword_get(DAPBOOLS_WORD) & BOOLSMSK);
+
+            if (!agc_flag_test((agc_flag_id_t) AGC_FLAG_APSFLAG))
+            {
+                d = (uint16_t) (d + BIT14);
+            }
+
+            agc_erase_set_dapdatr1(d);
+
+            return (agc_job_dap_data_load_noun46_lm(ctx));
+        }
         case 52:
         case 53:
         case 54:
@@ -546,22 +546,22 @@ static agc_status_t fan_70s_90s(agc_job_ctx_t *ctx, int verb)
             return (xact_findvac(true, PRIO22, AGC_JOB_SYSTEMS_TEST));
         case 93:
             /* WMATRXNG (V93): INHINT, RENDWFLG off.                                    */
-            {
-                agc_inhint();
-                agc_flag_clear((agc_flag_id_t) AGC_FLAG_RENDWFLG);
-                agc_relint();
+        {
+            agc_inhint();
+            agc_flag_clear((agc_flag_id_t) AGC_FLAG_RENDWFLG);
+            agc_relint();
 
-                return (agc_extverb_gopin());
-            }
+            return (agc_extverb_gopin());
+        }
         case 95:
             return (agc_extverb_upflag((agc_flag_id_t) AGC_FLAG_NOUPFLAG));
         case 96:
             /* VERB96: QUITFLAG, V37 to P00.                                           */
-            {
-                agc_flag_set((agc_flag_id_t) AGC_FLAG_QUITFLAG);
+        {
+            agc_flag_set((agc_flag_id_t) AGC_FLAG_QUITFLAG);
 
-                return (agc_change_program(0));
-            }
+            return (agc_change_program(0));
+        }
         default:
             break;
     }

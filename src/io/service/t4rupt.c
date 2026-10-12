@@ -499,11 +499,11 @@ agc_status_t agc_t4_fresh_start_flush(void)
     t4_phase       = 0;
     t4_quick_left  = T4_FLUSH_PASSES;
     t4_quick_wrote = false;
+
     if (!AGC_ASSERT(t4_quick_left == T4_FLUSH_PASSES))
     {
         return (AGC_STATUS_BAD_ARG);
     }
-
 
     return (AGC_STATUS_OK);
 }
@@ -644,6 +644,121 @@ static agc_status_t t4_imucage(uint16_t newbit, bool *stop)
 } /* t4_imucage */
 
 /**********************************************************************
+ * TLIM (p.149): temp caution lamp (channel 11 bit 4) follows channel 30
+ * bit 15 (IMODES30 negative = temperature out of limits).
+ **********************************************************************/
+static void t4_tlim(void)
+{
+    if ((agc_erase_imodes30() & BIT15) != 0u)
+    {
+        agc_chan_or((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT4);
+    }
+    else if (!agc_t4_lamptest())
+    { /* TEMPOK                  */
+        chan_clear((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT4);
+    }
+    else
+    {
+        /* lamp test: the lamp stays on */
+    }
+}
+
+/**********************************************************************
+ * ITURNON (p.150): channel 30 bit 14 (ISS turn-on request) changed.
+ **********************************************************************/
+static void t4_iturnon(void)
+{
+    uint16_t im30 = agc_erase_imodes30(); /* IMODES30 bits */
+
+    if ((im30 & BIT2) != 0u)
+    {
+        /* failed delay: wait for ENDTNON   */
+    }
+    else if ((im30 & BIT14) == 0u)
+    {
+        t4_iturnon2(); /* just on                          */
+    }
+    else if ((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT15) == 0u)
+    { /* delay complete not yet sent      */
+        agc_erase_set_imodes30((uint16_t) (im30 + BIT2));
+        agc_alarm(ALARM_ISS_DELAY_FAIL);
+    }
+    else
+    {
+        /* delay complete already sent */
+    }
+}
+
+/**********************************************************************
+ * IMUOP (p.154): channel 30 bit 9 (ISS operate) changed.
+ *
+ * ARGUMENTS:
+ *   newbit  uint16_t  I   new channel 30 bit 9 (0 = ISS operate on)
+ **********************************************************************/
+static void t4_imuop(uint16_t newbit)
+{
+    if (newbit == 0u)
+    { /* IMUOP2       */
+        if ((agc_erase_imodes30() & BIT2) == 0u)
+        {
+            t4_iturnon2();
+        }
+    }
+    else
+    {
+        /* disable DAP  */
+        agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | BIT6));
+        agc_imu_rndrefdr();
+        bool in_use = agc_flag_test((agc_flag_id_t) AGC_FLAG_IMUSE); /* IMUSE before the knock-down */
+
+        agc_flag_clear((agc_flag_id_t) AGC_FLAG_RNDVZFLG);
+        agc_flag_clear((agc_flag_id_t) AGC_FLAG_IMUSE);
+
+        if (in_use)
+        {
+            agc_alarm(ALARM_ISS_OFF_IN_USE);
+        }
+    }
+}
+
+/**********************************************************************
+ * IFAILJMP (p.159): one changed channel 30 bit.  bit is the AGC bit
+ * number (9..14, from IMUMON's scan).
+ *
+ * ARGUMENTS:
+ *   bit     int       I   AGC bit number of the changed bit, 9..14
+ *   newbit  uint16_t  I   its new value in IMODES30 (masked, not shifted)
+ *   stop    bool *    O   set true when the scan must stop (ISSZERO)
+ *
+ * RETURNS: AGC_STATUS_OK, or the WAITLIST status of ISSZERO
+ **********************************************************************/
+static agc_status_t t4_ifailjmp(int bit, uint16_t newbit, bool *stop)
+{
+    agc_status_t st = AGC_STATUS_OK; /* ISSZERO's WAITLIST status */
+
+    switch (bit)
+    {
+        case 14:
+            t4_iturnon();
+            break;
+        case 13: /* IMUFAIL  EQUALS SETISSW         */
+        case 12: /* ICDUFAIL EQUALS SETISSW         */
+            agc_t4_setissw();
+            break;
+        case 11:
+            st = t4_imucage(newbit, stop);
+            break;
+        case 9:
+            t4_imuop(newbit);
+            break;
+        default: /* bit 10 is not sampled here      */
+            break;
+    }
+
+    return (st);
+}
+
+/**********************************************************************
  * IMUMON (p.139): process changes of channel 30 bits 15,14,13,12,11,9,
  * bit 15 first then from bit 14 down (NXTIFBIT), then TNONTEST.
  *
@@ -661,22 +776,7 @@ agc_status_t agc_t4_imumon(void)
 
         if ((changes & BIT15) != 0u)
         {
-            /**********************************************************************
-             * TLIM (p.149): temp caution lamp (channel 11 bit 4) follows channel 30
-             * bit 15 (IMODES30 negative = temperature out of limits).
-             **********************************************************************/
-            if ((agc_erase_imodes30() & BIT15) != 0u)
-            {
-                agc_chan_or((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT4);
-            }
-            else if (!agc_t4_lamptest())
-            { /* TEMPOK                  */
-                chan_clear((int) AGC_CHAN_DSALMOUT, (uint16_t) BIT4);
-            }
-            else
-            {
-                /* lamp test: the lamp stays on */
-            }
+            t4_tlim();
         }
 
         bool         stop = false;         /* ISSZERO ends the scan */
@@ -688,91 +788,7 @@ agc_status_t agc_t4_imumon(void)
 
             if ((changes & mask) != 0u)
             {
-                /**********************************************************************
-                 * IFAILJMP (p.159): one changed channel 30 bit.  bit is the AGC bit
-                 * number (9..14, from IMUMON's scan).
-                 *
-                 * ARGUMENTS:
-                 *   bit     int       I   AGC bit number of the changed bit, 9..14
-                 *   newbit  uint16_t  I   its new value in IMODES30 (masked, not shifted)
-                 *   stop    bool *    O   set true when the scan must stop (ISSZERO)
-                 *
-                 * RETURNS: AGC_STATUS_OK, or the WAITLIST status of ISSZERO
-                 **********************************************************************/
-                uint16_t newbit = (uint16_t) (agc_erase_imodes30() & mask);
-
-                agc_status_t st_ifailjmp = AGC_STATUS_OK; /* ISSZERO's WAITLIST status */
-
-                switch (bit)
-                {
-                    case 14:
-                        /**********************************************************************
-                         * ITURNON (p.150): channel 30 bit 14 (ISS turn-on request) changed.
-                         **********************************************************************/
-                        {
-                            uint16_t im30_iturnon = agc_erase_imodes30(); /* IMODES30 bits */
-
-                            if ((im30_iturnon & BIT2) == 0u) /* failed delay: wait for ENDTNON   */
-                            {
-                                if ((im30_iturnon & BIT14) == 0u)
-                                {
-                                    t4_iturnon2(); /* just on                          */
-                                }
-                                else if ((agc_chan_read((int) AGC_CHAN_CHAN12) & BIT15) == 0u)
-                                { /* delay complete not yet sent      */
-                                    agc_erase_set_imodes30((uint16_t) (im30_iturnon + BIT2));
-                                    agc_alarm(ALARM_ISS_DELAY_FAIL);
-                                }
-                                else
-                                {
-                                    /* delay complete already sent */
-                                }
-                            }
-                        }
-                        break;
-                    case 13: /* IMUFAIL  EQUALS SETISSW         */
-                    case 12: /* ICDUFAIL EQUALS SETISSW         */
-                        agc_t4_setissw();
-                        break;
-                    case 11:
-                        st_ifailjmp = t4_imucage(newbit, &stop);
-                        break;
-                    case 9:
-                        /**********************************************************************
-                         * IMUOP (p.154): channel 30 bit 9 (ISS operate) changed.
-                         *
-                         * ARGUMENTS:
-                         *   newbit  uint16_t  I   new channel 30 bit 9 (0 = ISS operate on)
-                         **********************************************************************/
-                        {
-                            if (newbit == 0u)
-                            { /* IMUOP2       */
-                                if ((agc_erase_imodes30() & BIT2) == 0u)
-                                {
-                                    t4_iturnon2();
-                                }
-                            }
-                            else
-                            {
-                                /* disable DAP  */
-                                agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | BIT6));
-                                agc_imu_rndrefdr();
-                                bool in_use = agc_flag_test((agc_flag_id_t) AGC_FLAG_IMUSE); /* IMUSE before the knock-down */
-
-                                agc_flag_clear((agc_flag_id_t) AGC_FLAG_RNDVZFLG);
-                                agc_flag_clear((agc_flag_id_t) AGC_FLAG_IMUSE);
-
-                                if (in_use)
-                                {
-                                    agc_alarm(ALARM_ISS_OFF_IN_USE);
-                                }
-                            }
-                        }
-                        break;
-                    default: /* bit 10 is not sampled here      */
-                        break;
-                }
-                st = st_ifailjmp;
+                st = t4_ifailjmp(bit, (uint16_t) (agc_erase_imodes30() & mask), &stop);
             }
         }
 

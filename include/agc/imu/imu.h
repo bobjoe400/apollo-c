@@ -245,13 +245,13 @@ typedef enum agc_kalc_case
 typedef struct agc_kalc_setup
 {
     agc_kalc_case_t kcase;   /* which KALCMAN3 path                   */
-    agc_mat_t mis;     /* initial S/C -> SM, scale 2              */
-    agc_mat_t mfs;     /* final S/C -> SM, scale 2                */
-    agc_mat_t mfi;     /* final -> initial S/C, scale 4           */
-    agc_vec_t cofskew; /* skew part of MFI, scale 4               */
-    agc_dp_t cam;     /* CAM = cos(AM)/2, 2^0                    */
-    agc_dp_t am;      /* AM, rev 2^0                             */
-    agc_vec_t cof;     /* COF, B1                                 */
+    agc_mat_t       mis;     /* initial S/C -> SM, scale 2              */
+    agc_mat_t       mfs;     /* final S/C -> SM, scale 2                */
+    agc_mat_t       mfi;     /* final -> initial S/C, scale 4           */
+    agc_vec_t       cofskew; /* skew part of MFI, scale 4               */
+    agc_dp_t        cam;     /* CAM = cos(AM)/2, 2^0                    */
+    agc_dp_t        am;      /* AM, rev 2^0                             */
+    agc_vec_t       cof;     /* COF, B1                                 */
 } agc_kalc_setup_t;
 
 /* KALCMAN3 .. CHECKMAX/ALTCALC/COFMAXGO: pure computation from the initial

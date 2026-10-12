@@ -200,7 +200,7 @@ void agc_lm_nullclok(void)
     agc_inhint();
     agc_lm_noullage();
     agc_waitlist_kill(AGC_TASK_ULLGTASK);
-    agc_phase_change((uint16_t)000001);
+    agc_phase_change((uint16_t) 000001);
     agc_guid_state()->lm.dispdex = IGN_DISPDEX_KILL;
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_ULLAGFLG)))
@@ -285,7 +285,7 @@ static agc_status_t go_postburn(void)
     }
 
     agc_lm_nullclok();
-    agc_phase_change((uint16_t)000134);
+    agc_phase_change((uint16_t) 000134);
     agc_relint();
 
     if (!AGC_ASSERT(agc_guid_state()->lm.dispdex > 0))
@@ -377,7 +377,7 @@ agc_status_t agc_job_comfail(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_phase_change((uint16_t)000004);
+    agc_phase_change((uint16_t) 000004);
 
     return (AGC_STATUS_OK); /* TURN OFF GROUP 4       */
 }
@@ -409,7 +409,7 @@ agc_status_t agc_job_clokjob_engine_fail(void)
  * the 3.3 restart, not P40ZOOM or P63ZOOM (Luminary 099 as flown).       */
 agc_status_t agc_job_clokjob_engine_fail_shutdown(void)
 {
-    agc_phase_change((uint16_t)000003);
+    agc_phase_change((uint16_t) 000003);
     agc_inhint();
     agc_waitlist_kill(AGC_TASK_ZOOM);
     agc_lm_enginof4();

@@ -407,7 +407,6 @@ static bool gamcomp(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1, int x2)
     g.xs       = ASCALE_S1[x1 / 2] - n2 + n3;                 /* XCHX,2 S1 XAD,2 32D XSU,2 33D */
     g.rho      = agc_integ_dshift(ip, g.rho_q, 1 + g.xs);     /* SR* 0 -1,2  */
 
-
     agc_dp_t       pd6 = agc_dp_shr_round(g.rho, 1); /* 6D   */
     const agc_dp_t dot = agc_dp_shl_round(ip, agc_vec_dot(ip, ctx->alphav, ctx->betav), 1);
 
@@ -679,7 +678,6 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
      * factor.                                                               */
     const int b_tvec = ctx->pbody / 2;
 
-
     agc_dp_t t_tvec = agc_dp_mul(ip, l.p5, J4REQ_J3[b_tvec]); /* DMP*     */
 
     t_tvec                    = agc_dp_add(ip, agc_dp_div(ip, t_tvec, ctx->alpham), l.p4);
@@ -720,7 +718,6 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
      * J22 term x R^4, B61:  E3J22R2M ( 5 (Y^2 - X^2) UR + (X, -Y, 0) ) / 2.  */
     const agc_vec_t u = w.urpv;
 
-
     agc_dp_t t_term = agc_dp_sub(ip, agc_dp_sq(u.c[1]), agc_dp_sq(u.c[0]));
 
     t_term      = agc_dp_mul(ip, t_term, K_5_8);                    /* DMP 5/8  */
@@ -728,6 +725,7 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     q.c[0] = agc_dp_add(ip, agc_dp_shr(u.c[0], 1), q.c[0]); /* SR1 DAD  */
     q.c[1] = agc_dp_sub(ip, q.c[1], agc_dp_shr(u.c[1], 1)); /* SR1 BDSU */
+
     return (lunar_c31_term(ip, ctx, &w, agc_vec_scale(ip, q, agc_dp_from_sp(e3j22r2m))));
 }
 
@@ -799,7 +797,6 @@ static void dow(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     const int p = ctx->pbody;
     const int k = ctx->stage;
 
-
     ctx->betam = agc_integ_mu(p); /* MUEARTH,2   */
     ctx->fv    = body_gravity_gradient(ip, ctx, ctx->vectab[2 * k]);
 
@@ -851,7 +848,6 @@ static void nystrom_stage(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     a           = agc_vec_scale(ip, agc_vec_add(ip, a, ctx->zv), ctx->h);
     ctx->alphav = agc_vec_add(ip, a, ctx->yv);
-
 }
 
 /* DIFEQ+2 (p. 1348): end of the step, YV and ZV updated.                */

@@ -277,7 +277,7 @@ static agc_status_t noun_two_int_write(uint16_t id, agc_dp_t v)
     }
     else
     {
-        agc_lm_ldg()->tredes = agc_dp_high(v);
+        agc_lm_ldg()->tredes   = agc_dp_high(v);
         agc_lm_ldg()->lookangl = agc_dp_low(v);
     }
 
@@ -341,14 +341,14 @@ static agc_sp_t noun_signed_word(agc_dp_t raw)
  */
 static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
 {
-    agc_sp_t *code = &agc_align_ram()->starcode;                 /* STARCODE/AOTCODE */
+    agc_sp_t *code  = &agc_align_ram()->starcode;                 /* STARCODE/AOTCODE */
     agc_dp_t *sin_y = &agc_guid_state()->trig.sincdu[AGC_TRIG_Y]; /* SINCDUY, 2^1 */
 
     switch (id)
     {
         case AGC_DATA_STARCODE:
         case AGC_DATA_AOTCODE:
-            *code = write ? noun_signed_word(*value) : *code;
+            *code  = write ? noun_signed_word(*value) : *code;
             *value = noun_raw_word(*code);
 
             return (AGC_STATUS_OK);
@@ -376,24 +376,24 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+    bool      lm = agc_state_vehicle() == AGC_VEHICLE_LM;
     agc_dp_t *dp = (data_id == AGC_DATA_VMAGI && !lm && agc_erase_modreg() == 11) ? NULL : noun_dp(data_id, lm);
     agc_sp_t *sp = noun_sp(data_id);
-    uint16_t *w = noun_word(data_id);
+    uint16_t *w  = noun_word(data_id);
 
     if (dp != NULL)
     {
-        *dp = write ? *value : *dp;
+        *dp    = write ? *value : *dp;
         *value = *dp;
     }
     else if (sp != NULL)
     {
-        *sp = write ? agc_dp_high(*value) : *sp;
+        *sp    = write ? agc_dp_high(*value) : *sp;
         *value = agc_dp_from_sp(*sp);
     }
     else if (w != NULL)
     {
-        *w = write ? (uint16_t) (*value & 077777) : *w;
+        *w     = write ? (uint16_t) (*value & 077777) : *w;
         *value = (agc_dp_t) *w;
     }
     else
@@ -407,8 +407,8 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
             /* VMAGI, HDOT, ALTI of the P11 monitor (N62).                           */
             {
                 agc_dp_t vmagi = 0;
-                agc_dp_t hdot = 0;
-                agc_dp_t alti = 0;
+                agc_dp_t hdot  = 0;
+                agc_dp_t alti  = 0;
 
                 agc_status_t st = agc_earth_orbit_insertion_monitor_readout(&vmagi, &hdot, &alti);
 
@@ -428,7 +428,7 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value)
             /* LAT, LONG, ALT (noun 43): the nav-aux store.                          */
             {
                 agc_latlong_t ll;
-                agc_status_t st = agc_navaux_get_latlong(&ll);
+                agc_status_t  st = agc_navaux_get_latlong(&ll);
 
                 if (st != AGC_STATUS_OK)
                 {

@@ -228,13 +228,16 @@ static agc_status_t iv_lambert(agc_interp_t *ip, const agc_rendz_t *rz, agc_sp_t
 
     if (st == AGC_STATUS_NO_CONVERGE)
     {
-        st = AGC_STATUS_OK;
+        st = AGC_STATUS_OK; /* SOLNSW set; LAMBERT stored its outputs */
     }
 
-    w->lin.guessw = false;        /* CLEAR GUESSW       */
-    w->lin.coga   = w->lout.coga; /* next guess         */
-    w->viprime    = w->lout.vvec;
-    w->vtarget    = w->lout.vtarget;
+    if (st == AGC_STATUS_OK)
+    { /* the outputs exist only when LAMBERT ran (not on an entry failure) */
+        w->lin.guessw = false;        /* CLEAR GUESSW       */
+        w->lin.coga   = w->lout.coga; /* next guess         */
+        w->viprime    = w->lout.vvec;
+        w->vtarget    = w->lout.vtarget;
+    }
 
     return (st);
 }
@@ -354,10 +357,14 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, ag
             }
         }
 
-        st       = iv_lambert(ip, rz, numit, &w);
-        iv_coga  = w.lin.coga;
-        rz->csth = w.lout.csth; /* debris       */
-        rz->snth = w.lout.snth;
+        st = iv_lambert(ip, rz, numit, &w);
+
+        if (st == AGC_STATUS_OK)
+        {
+            iv_coga  = w.lin.coga;
+            rz->csth = w.lout.csth; /* debris       */
+            rz->snth = w.lout.snth;
+        }
 
         if (st != AGC_STATUS_OK || numit == 0)
         {
@@ -405,6 +412,7 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, ag
             w.vtarget = o.vatt1;
             rend      = o.ratt1;
         }
+
         st = st_integrate;
 
         if (st != AGC_STATUS_OK)

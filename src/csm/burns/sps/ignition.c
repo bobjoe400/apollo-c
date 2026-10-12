@@ -102,8 +102,8 @@ agc_status_t agc_task_dotvcon(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    tvc->tvcphase = -1;                        /* CS BIT1                */
-    tvc->tvcexphs = 0;
+    tvc->tvcphase   = -1;                        /* CS BIT1                */
+    tvc->tvcexphs   = 0;
     agc_flag_set(AGC_FLAG_DAPBIT1);              /* BITS 15,14 = 10        */
     agc_flag_clear(AGC_FLAG_DAPBIT2);
     agc_phase_newphase(6, 3, false);             /* 6.3 = CLOKTASK         */
@@ -212,11 +212,11 @@ void agc_csm_spsoff(void)
     /* MASSBACK (p.702-703): restore the part of the pre-decremented mass not
      * flowed: CSMMASS = MASSTMP + (V97VCNTR EMDOT, low word) * 100 cs (high
      * word); the trims follow DELPBAR/DELYBAR once the TVC DAP is running.   */
-    agc_csm_tvc_t *tvc = agc_csm_dap_tvc();
-    agc_csm_dapcom_t *com = agc_csm_dap_com();
-    int32_t p = (int32_t) tvc->engine_fail_vcntr * (int32_t) com->emdot; /* MP EMDOT */
-    int32_t lo = p % 16384;                                               /* LXCH A   */
-    int32_t corr = (lo * CS_PER_SEC) / 16384;                               /* MP 1SEC  */
+    agc_csm_tvc_t    *tvc  = agc_csm_dap_tvc();
+    agc_csm_dapcom_t *com  = agc_csm_dap_com();
+    int32_t           p    = (int32_t) tvc->engine_fail_vcntr * (int32_t) com->emdot; /* MP EMDOT */
+    int32_t           lo   = p % 16384;                                               /* LXCH A   */
+    int32_t           corr = (lo * CS_PER_SEC) / 16384;                               /* MP 1SEC  */
 
     agc_erase_set_csmmass((agc_sp_t) (tvc->masstmp + corr));
 
@@ -319,7 +319,7 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
     }
 
     agc_integ_midtoav_out_t mo;
-    agc_interp_t ip;
+    agc_interp_t            ip;
 
     agc_interp_init(&ip);
     agc_status_t st = agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo);
@@ -349,7 +349,7 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
 agc_status_t agc_task_tigon(void)
 {
     agc_guid_state()->avg.avgexit = AGC_JOB_CALC_DELTA_V_BODY;
-    agc_status_t st = agc_exec_novac(AGC_PRIO30, AGC_JOB_THRUST_MONITOR_RESET);
+    agc_status_t st               = agc_exec_novac(AGC_PRIO30, AGC_JOB_THRUST_MONITOR_RESET);
 
     if (st != AGC_STATUS_OK)
     {

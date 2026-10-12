@@ -43,10 +43,10 @@
 #define RUPT_TIME5_SB  037774u /* STARTSUB: 37774 to TIME5         */
 #define RUPT_HALF_SEC  50      /* .5SEC DEC 50 (cs)                */
 
-static int inhint_depth;             /* > 0: interrupts inhibited        */
-static uint16_t time4;                    /* TIME4 (T4RUPT every 10-120 ms)   */
-static uint16_t time5;                    /* TIME5 (T5RUPT, autopilot)        */
-static uint16_t time6;                    /* TIME6 (T6RUPT, LM jet timing)    */
+static int           inhint_depth;             /* > 0: interrupts inhibited        */
+static uint16_t      time4;                    /* TIME4 (T4RUPT every 10-120 ms)   */
+static uint16_t      time5;                    /* TIME5 (T5RUPT, autopilot)        */
+static uint16_t      time6;                    /* TIME6 (T6RUPT, LM jet timing)    */
 static agc_task_id_t t5loc = AGC_TASK_T5IDLOC; /* T5LOC / T5ADR          */
 static agc_task_id_t t6loc = AGC_TASK_NONE;    /* T6LOC (CSM)            */
 
@@ -205,8 +205,8 @@ agc_status_t agc_rupt_t6(void)
 agc_status_t agc_rupt_t5(void)
 {
     agc_inhint();
-    agc_status_t st = AGC_STATUS_OK;
-    bool spurious = (agc_state_vehicle() == AGC_VEHICLE_CSM) && (RUPT_HALF_SEC - (int32_t) time5 <= 0);
+    agc_status_t st       = AGC_STATUS_OK;
+    bool         spurious = (agc_state_vehicle() == AGC_VEHICLE_CSM) && (RUPT_HALF_SEC - (int32_t) time5 <= 0);
 
     if (!spurious)
     { /* CSM: BZMF NOQBRSM              */
@@ -311,7 +311,7 @@ agc_status_t agc_task_t5idloc(void)
 /* Interrupt handlers owned by other lanes (INTERRUPT_LEAD_INS).        */
 agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 {
-    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM;
+    bool         lm = agc_state_vehicle() == AGC_VEHICLE_LM;
     agc_status_t st = AGC_STATUS_UNIMPLEMENTED;
 
     if (!AGC_ASSERT(agc_interrupts_inhibited()))

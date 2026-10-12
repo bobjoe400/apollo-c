@@ -306,6 +306,7 @@ agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph, 
         n = agc_dp_sub(ip, n, ONEB4); /* DSU ONEB4      */
         v = agc_vec_add(ip, agc_vec_scale(ip, eph->vecoem[i], n), acc);
     }
+
     *vmoon = agc_vec_shl(ip, v, 2);
 
     return (AGC_STATUS_OK);

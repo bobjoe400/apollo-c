@@ -85,26 +85,26 @@ void         agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb);         
 
 typedef struct agc_avg_g
 {
-    agc_vec_t rn1;        /* RN1      ref, m,    scale 2^29                  */
-    agc_vec_t vn1;        /* VN1      ref, m/cs, scale 2^7                   */
-    agc_dp_t piptime1;   /* PIPTIME1 cs, scale 2^28                         */
-    agc_vec_t gdt_2;      /* GDT/2    ref, m/cs, scale 2^7                   */
-    agc_vec_t gdt1_2;     /* GDT1/2   ref, m/cs, scale 2^7                   */
-    agc_vec_t gobl_2;     /* GOBL/2   (CM) oblateness term, m/cs-ish 2^7     */
-    agc_vec_t gobl1_2;    /* GOBL1/2  (CM) / UNITGOBL (LM), half-unit 2^1    */
-    agc_vec_t unitr;      /* UNITR (CM) / UNIT/R/ (LM), half unit, 2^1       */
-    agc_dp_t rmag;       /* 36D after UNIT: |R|, scale as R                 */
-    agc_dp_t rmagsq;     /* 34D after UNIT: |R|^2, scale (R scale)*2        */
-    agc_dp_t resq_rsq;   /* 32D: (RE/R)^2 /2 (CM) or (RE/R)^2 (LM)          */
-    agc_vec_t delvref;    /* DELVREF  ref, m/cs, scale 2^7                   */
-    agc_dp_t pguide;     /* PGUIDE   (LM) guidance period, cs, 2^28         */
-    agc_dp_t dvtotal;    /* DVTOTAL  m/cs, scale 2^7                        */
-    agc_vec_t unitw;      /* UNITW    (CM) earth rotation axis, full unit 2^0 */
-    agc_sp_t pipage;     /* PIPAGE   +1 pips read, 0/-0 reading in progress */
-    agc_sp_t pipctr;     /* PIPCTR   (CM) ONMNITOR counter / (LM) R10 rate  */
+    agc_vec_t    rn1;        /* RN1      ref, m,    scale 2^29                  */
+    agc_vec_t    vn1;        /* VN1      ref, m/cs, scale 2^7                   */
+    agc_dp_t     piptime1;   /* PIPTIME1 cs, scale 2^28                         */
+    agc_vec_t    gdt_2;      /* GDT/2    ref, m/cs, scale 2^7                   */
+    agc_vec_t    gdt1_2;     /* GDT1/2   ref, m/cs, scale 2^7                   */
+    agc_vec_t    gobl_2;     /* GOBL/2   (CM) oblateness term, m/cs-ish 2^7     */
+    agc_vec_t    gobl1_2;    /* GOBL1/2  (CM) / UNITGOBL (LM), half-unit 2^1    */
+    agc_vec_t    unitr;      /* UNITR (CM) / UNIT/R/ (LM), half unit, 2^1       */
+    agc_dp_t     rmag;       /* 36D after UNIT: |R|, scale as R                 */
+    agc_dp_t     rmagsq;     /* 34D after UNIT: |R|^2, scale (R scale)*2        */
+    agc_dp_t     resq_rsq;   /* 32D: (RE/R)^2 /2 (CM) or (RE/R)^2 (LM)          */
+    agc_vec_t    delvref;    /* DELVREF  ref, m/cs, scale 2^7                   */
+    agc_dp_t     pguide;     /* PGUIDE   (LM) guidance period, cs, 2^28         */
+    agc_dp_t     dvtotal;    /* DVTOTAL  m/cs, scale 2^7                        */
+    agc_vec_t    unitw;      /* UNITW    (CM) earth rotation axis, full unit 2^0 */
+    agc_sp_t     pipage;     /* PIPAGE   +1 pips read, 0/-0 reading in progress */
+    agc_sp_t     pipctr;     /* PIPCTR   (CM) ONMNITOR counter / (LM) R10 rate  */
     agc_job_id_t avgexit;    /* AVGEXIT  2CADR of routine run after AVERAGEG    */
-    uint16_t cdutemp[3]; /* CDUTEMPX/Y/Z CDUs read at PIPTIME (X Y Z)       */
-    agc_sp_t pipatmp[3]; /* PIPATMPX/Y/Z (LM) raw pulses for the DAP        */
+    uint16_t     cdutemp[3]; /* CDUTEMPX/Y/Z CDUs read at PIPTIME (X Y Z)       */
+    agc_sp_t     pipatmp[3]; /* PIPATMPX/Y/Z (LM) raw pulses for the DAP        */
 } agc_avg_g_t;
 
 /* PIPASR (CM p.832, LM p.869): read and zero the PIPAs into the high words
@@ -142,29 +142,29 @@ void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind);
 /* P30-P47 erasables not shared with the rendezvous programs.               */
 typedef struct agc_burn
 {
-    agc_dp_t vgdisp;   /* VGDISP   |VG| m/cs, scale 2^7                   */
-    agc_dp_t hapo;     /* HAPO     apogee altitude m, scale 2^29          */
-    agc_dp_t hper;     /* HPER     perigee altitude m, scale 2^29         */
+    agc_dp_t  vgdisp;   /* VGDISP   |VG| m/cs, scale 2^7                   */
+    agc_dp_t  hapo;     /* HAPO     apogee altitude m, scale 2^29          */
+    agc_dp_t  hper;     /* HPER     perigee altitude m, scale 2^29         */
     agc_vec_t ut;       /* UT       thrust direction, half unit, scale 2^1 */
     agc_vec_t vg;       /* VG       velocity to be gained m/cs, 2^7        */
     agc_vec_t bdt;      /* BDT      m/cs, scale 2^7                        */
-    agc_dp_t csteer;   /* CSTEER   steering-law C, 2^1 (CM) / 2^2 (LM)    */
-    agc_dp_t ecsteer;  /* ECSTEER  pad load (CM), scale 2^1               */
-    agc_dp_t f;        /* F        thrust, m.newton (10^4 N), scale 2^7   */
-    agc_dp_t weight_g; /* WEIGHT/G kg 2^16: copied by the P40 programs from the CSM DAP's WEIGHT/G or the LM's MASS before S40.1 / S40.13 (keeps guidance below the DAPs) */
-    agc_dp_t nomtig;   /* NOMTIG   cs, scale 2^28 (CM)                    */
+    agc_dp_t  csteer;   /* CSTEER   steering-law C, 2^1 (CM) / 2^2 (LM)    */
+    agc_dp_t  ecsteer;  /* ECSTEER  pad load (CM), scale 2^1               */
+    agc_dp_t  f;        /* F        thrust, m.newton (10^4 N), scale 2^7   */
+    agc_dp_t  weight_g; /* WEIGHT/G kg 2^16: copied by the P40 programs from the CSM DAP's WEIGHT/G or the LM's MASS before S40.1 / S40.13 (keeps guidance below the DAPs) */
+    agc_dp_t  nomtig;   /* NOMTIG   cs, scale 2^28 (CM)                    */
     agc_vec_t pointvsm; /* POINTVSM SM, half unit 2^1                      */
     agc_vec_t scaxis;   /* SCAXIS   S/C axes, half unit 2^1                */
     agc_vec_t xscref;   /* XSCREF   ref, half unit 2^1                     */
     agc_vec_t yscref;   /* YSCREF                                          */
     agc_vec_t zscref;   /* ZSCREF                                          */
-    agc_dp_t tnit;     /* TNIT     cs, scale 2^28 (CM)                    */
-    agc_dp_t tnitprev; /* TNITPREV cs, scale 2^28 (CM)                    */
+    agc_dp_t  tnit;     /* TNIT     cs, scale 2^28 (CM)                    */
+    agc_dp_t  tnitprev; /* TNITPREV cs, scale 2^28 (CM)                    */
     agc_vec_t vrprev;   /* VRPREV   m/cs, scale 2^7 (CM)                   */
     agc_vec_t delvsum;  /* DELVSUM  m/cs, scale 2^7 (CM)                   */
     agc_vec_t delvsump; /* DELVSUMP m/cs, scale 2^7 (CM)                   */
-    agc_sp_t nbrcycls; /* NBRCYCLS (CM) 2-s cycles since S40.9; -1 = none */
-    agc_sp_t nbrcyclp; /* NBRCYCLP (CM)                                   */
+    agc_sp_t  nbrcycls; /* NBRCYCLS (CM) 2-s cycles since S40.9; -1 = none */
+    agc_sp_t  nbrcyclp; /* NBRCYCLP (CM)                                   */
     agc_vec_t vgbody;   /* VGBODY   control/body axes m/cs 2^7 (N85)       */
     agc_vec_t delvimu;  /* DELVIMU  m/cs 2^7 (N83)                         */
     agc_vec_t delvctl;  /* DELVCTL  m/cs 2^7                               */
@@ -192,90 +192,90 @@ typedef struct agc_guid_csm
  * DELTAH, HCALC1, WCHPHASE, FLPASS0 are guid-landing's (agc_lm_ldg()).      */
 typedef struct agc_guid_lm
 {
-    agc_dp_t mass;     /* MASS = WEIGHT/G, kg, scale 2^16                 */
-    agc_dp_t mass1;    /* MASS1 kg 2^16 (also DVCNTR1 temporary)          */
-    agc_sp_t abdelv;   /* ABDELV   |DELV| cm/s, scale 2^14                */
-    agc_dp_t abdvconv; /* ABDVCONV |DELV| m/cs, scale 2^5                 */
-    agc_sp_t dvthrush; /* DVTHRUSH DV monitor threshold, PIPA pulses      */
-    agc_sp_t dvcntr;   /* DVCNTR   low-thrust passes left                 */
+    agc_dp_t     mass;     /* MASS = WEIGHT/G, kg, scale 2^16                 */
+    agc_dp_t     mass1;    /* MASS1 kg 2^16 (also DVCNTR1 temporary)          */
+    agc_sp_t     abdelv;   /* ABDELV   |DELV| cm/s, scale 2^14                */
+    agc_dp_t     abdvconv; /* ABDVCONV |DELV| m/cs, scale 2^5                 */
+    agc_sp_t     dvthrush; /* DVTHRUSH DV monitor threshold, PIPA pulses      */
+    agc_sp_t     dvcntr;   /* DVCNTR   low-thrust passes left                 */
     agc_job_id_t outroute; /* OUTROUTE where AVGEND returns                   */
-    agc_vec_t r;        /* R        SM, m, scale 2^24                      */
-    agc_vec_t v;        /* V        SM, m/cs, scale 2^7                    */
-    agc_vec_t r1s;      /* R1S      SM, m, scale 2^24                      */
-    agc_vec_t v1s;      /* V1S      SM, m/cs, scale 2^7                    */
-    agc_vec_t g_csm;    /* G(CSM)   SM, m/cs, scale 2^7                    */
-    agc_vec_t r_csm;    /* R(CSM)   SM, m, scale 2^24                      */
-    agc_vec_t v_csm;    /* V(CSM)   SM, m/cs, scale 2^7                    */
-    agc_dp_t abvel;    /* ABVEL    speed m/cs, scale 2^7                  */
-    agc_dp_t hdotdisp; /* HDOTDISP altitude rate m/cs, scale 2^7          */
-    agc_vec_t delvs;    /* DELVS    lunar rotation correction m/cs 2^5     */
-    agc_dp_t hcalc;    /* HCALC    altitude m, scale 2^24                 */
-    agc_vec_t uhyp;     /* UHYP     cross-range half unit (R10)            */
-    agc_vec_t uhzp;     /* UHZP     downrange half unit (R10)              */
-    agc_dp_t altbits;  /* ALTBITS  altitude, R10 bit units                */
-    agc_sp_t runit[3]; /* RUNIT    SP copy of UNIT/R/ for R10             */
-    agc_sp_t daltrate; /* DALTRATE R10 altitude-rate compensation         */
-    agc_mat_t xnbpip;   /* XNBPIP   NB->SM at PIPTIME, half unit 2^1       */
+    agc_vec_t    r;        /* R        SM, m, scale 2^24                      */
+    agc_vec_t    v;        /* V        SM, m/cs, scale 2^7                    */
+    agc_vec_t    r1s;      /* R1S      SM, m, scale 2^24                      */
+    agc_vec_t    v1s;      /* V1S      SM, m/cs, scale 2^7                    */
+    agc_vec_t    g_csm;    /* G(CSM)   SM, m/cs, scale 2^7                    */
+    agc_vec_t    r_csm;    /* R(CSM)   SM, m, scale 2^24                      */
+    agc_vec_t    v_csm;    /* V(CSM)   SM, m/cs, scale 2^7                    */
+    agc_dp_t     abvel;    /* ABVEL    speed m/cs, scale 2^7                  */
+    agc_dp_t     hdotdisp; /* HDOTDISP altitude rate m/cs, scale 2^7          */
+    agc_vec_t    delvs;    /* DELVS    lunar rotation correction m/cs 2^5     */
+    agc_dp_t     hcalc;    /* HCALC    altitude m, scale 2^24                 */
+    agc_vec_t    uhyp;     /* UHYP     cross-range half unit (R10)            */
+    agc_vec_t    uhzp;     /* UHZP     downrange half unit (R10)              */
+    agc_dp_t     altbits;  /* ALTBITS  altitude, R10 bit units                */
+    agc_sp_t     runit[3]; /* RUNIT    SP copy of UNIT/R/ for R10             */
+    agc_sp_t     daltrate; /* DALTRATE R10 altitude-rate compensation         */
+    agc_mat_t    xnbpip;   /* XNBPIP   NB->SM at PIPTIME, half unit 2^1       */
 
     /* landing radar (LR) update, pp.874-897 */
     agc_vec_t hbeamnb;                       /* HBEAMNB  range beam, NB, half unit              */
     agc_vec_t vbeamnb[3];                    /* VZBEAMNB VYBEAMNB VXBEAMNB, NB half unit         */
-    agc_dp_t hmeas;                         /* HMEAS    LR range, 1.079 ft/bit                 */
-    agc_dp_t vmeas;                         /* VMEAS    LR velocity counts                     */
-    agc_dp_t delqfix;                       /* DELQFIX  m, scale 2^24 (50 ft nominal) (PL)     */
+    agc_dp_t  hmeas;                         /* HMEAS    LR range, 1.079 ft/bit                 */
+    agc_dp_t  vmeas;                         /* VMEAS    LR velocity counts                     */
+    agc_dp_t  delqfix;                       /* DELQFIX  m, scale 2^24 (50 ft nominal) (PL)     */
     agc_sp_t lrlctr, lrrctr, lrmctr, lrsctr; /* LR good/bad counters        */
-    agc_sp_t vselect;                       /* VSELECT  0 Z, 1 Y, 2 X beam                     */
-    agc_sp_t stilbadh;                      /* STILBADH 2-s passes to wait after bad H         */
-    agc_sp_t stilbadv;                      /* STILBADV                                        */
-    agc_dp_t lrvtime;                       /* LRVTIME  cs, scale 2^28                         */
-    uint16_t lrcdu[3];                      /* LRXCDU LRYCDU LRZCDU                            */
-    agc_sp_t piptem[3];                     /* PIPTEM   raw PIPAs at RDGIMS                    */
+    agc_sp_t  vselect;                       /* VSELECT  0 Z, 1 Y, 2 X beam                     */
+    agc_sp_t  stilbadh;                      /* STILBADH 2-s passes to wait after bad H         */
+    agc_sp_t  stilbadv;                      /* STILBADV                                        */
+    agc_dp_t  lrvtime;                       /* LRVTIME  cs, scale 2^28                         */
+    uint16_t  lrcdu[3];                      /* LRXCDU LRYCDU LRZCDU                            */
+    agc_sp_t  piptem[3];                     /* PIPTEM   raw PIPAs at RDGIMS                    */
     agc_vec_t gnur;                          /* GNUR = GNUV updated R1S or V1S                  */
-    agc_dp_t radskal;                       /* RADSKAL  doppler scale (PL)                     */
-    agc_sp_t skalskal;                      /* SKALSKAL low/high altitude scale ratio (PL)     */
-    agc_sp_t lrhmax;                        /* LRHMAX   m, scale 2^14 (PL)                     */
-    agc_sp_t lrwh;                          /* LRWH     altitude weight (PL)                   */
-    agc_sp_t lrvmax;                        /* LRVMAX   m/cs 2^7 (PL)                          */
-    agc_sp_t lrvf;                          /* LRVF     m/cs 2^7 (PL)                          */
-    agc_sp_t lrwv[3];                       /* LRWVZ LRWVY LRWVX (PL)                          */
-    agc_sp_t lrwvf[3];                      /* LRWVFZ LRWVFY LRWVFX (PL)                       */
-    agc_sp_t lrwvff;                        /* LRWVFF   P65-P67 weight (PL)                    */
-    agc_sp_t lralpha[2];                    /* LRALPHA POS1, POS2 (X rotation) (PL)            */
-    agc_sp_t lrbeta[2];                     /* LRBETA  POS1, POS2 (Y rotation) (PL)            */
-    agc_sp_t rpcrtime;                      /* RPCRTIME repositioning criterion, TTF/8 units   */
-    agc_sp_t rpcrtqsw;                      /* RPCRTQSW repositioning criterion (angle)        */
-    agc_dp_t mktime;                        /* MKTIME   cs, scale 2^28                         */
+    agc_dp_t  radskal;                       /* RADSKAL  doppler scale (PL)                     */
+    agc_sp_t  skalskal;                      /* SKALSKAL low/high altitude scale ratio (PL)     */
+    agc_sp_t  lrhmax;                        /* LRHMAX   m, scale 2^14 (PL)                     */
+    agc_sp_t  lrwh;                          /* LRWH     altitude weight (PL)                   */
+    agc_sp_t  lrvmax;                        /* LRVMAX   m/cs 2^7 (PL)                          */
+    agc_sp_t  lrvf;                          /* LRVF     m/cs 2^7 (PL)                          */
+    agc_sp_t  lrwv[3];                       /* LRWVZ LRWVY LRWVX (PL)                          */
+    agc_sp_t  lrwvf[3];                      /* LRWVFZ LRWVFY LRWVFX (PL)                       */
+    agc_sp_t  lrwvff;                        /* LRWVFF   P65-P67 weight (PL)                    */
+    agc_sp_t  lralpha[2];                    /* LRALPHA POS1, POS2 (X rotation) (PL)            */
+    agc_sp_t  lrbeta[2];                     /* LRBETA  POS1, POS2 (Y rotation) (PL)            */
+    agc_sp_t  rpcrtime;                      /* RPCRTIME repositioning criterion, TTF/8 units   */
+    agc_sp_t  rpcrtqsw;                      /* RPCRTQSW repositioning criterion (angle)        */
+    agc_dp_t  mktime;                        /* MKTIME   cs, scale 2^28                         */
     agc_sp_t aig, amg, aog;                  /* gimbal angles at LR altitude measurement     */
 
     /* P40-P47 / BURNBABY */
-    agc_sp_t which;                /* WHICH    ignition table (agc_lm_which_t)        */
-    agc_sp_t dispdex;              /* DISPDEX  CLOKJOB display: >0 none, <0 -index    */
-    agc_dp_t gobltime;             /* GOBLTIME nominal TIG for oblateness, cs 2^28    */
-    agc_dp_t tigsave;              /* TIGSAVE  cs, scale 2^28                         */
-    agc_dp_t tigsavep;             /* TIGSAVEP cs, scale 2^28                         */
-    agc_dp_t tnewa;                /* TNEWA    Lambert cycle, cs 2^28                 */
-    agc_dp_t mdot;                 /* MDOT     kg/cs, scale 2^3                       */
-    agc_dp_t tdecay;               /* TDECAY   cs, scale 2^28                         */
-    agc_dp_t vex;                  /* VEX      exhaust velocity, m/cs 2^6             */
-    agc_sp_t ignaosq;              /* IGNAOSQ  (PL)                                   */
-    agc_sp_t ignaosr;              /* IGNAOSR  (PL)                                   */
-    agc_sp_t pittime;              /* PITTIME  cs                                     */
-    agc_sp_t rolltime;             /* ROLLTIME cs                                     */
-    agc_dp_t rmag;                 /* RMAG     |RN| m (RASTEER1 working scale)        */
-    agc_vec_t ic;                   /* IC       unit(RTARG - RN) (= DELVSIN storage)   */
-    agc_dp_t r1c;                  /* R1C      RMAG * |C|, normalised                 */
-    agc_dp_t ss;                   /* SS       (R1 + R2 + C)/2                        */
-    agc_sp_t muscale;              /* MUSCALE  normalisation shift                    */
+    agc_sp_t     which;                /* WHICH    ignition table (agc_lm_which_t)        */
+    agc_sp_t     dispdex;              /* DISPDEX  CLOKJOB display: >0 none, <0 -index    */
+    agc_dp_t     gobltime;             /* GOBLTIME nominal TIG for oblateness, cs 2^28    */
+    agc_dp_t     tigsave;              /* TIGSAVE  cs, scale 2^28                         */
+    agc_dp_t     tigsavep;             /* TIGSAVEP cs, scale 2^28                         */
+    agc_dp_t     tnewa;                /* TNEWA    Lambert cycle, cs 2^28                 */
+    agc_dp_t     mdot;                 /* MDOT     kg/cs, scale 2^3                       */
+    agc_dp_t     tdecay;               /* TDECAY   cs, scale 2^28                         */
+    agc_dp_t     vex;                  /* VEX      exhaust velocity, m/cs 2^6             */
+    agc_sp_t     ignaosq;              /* IGNAOSQ  (PL)                                   */
+    agc_sp_t     ignaosr;              /* IGNAOSR  (PL)                                   */
+    agc_sp_t     pittime;              /* PITTIME  cs                                     */
+    agc_sp_t     rolltime;             /* ROLLTIME cs                                     */
+    agc_dp_t     rmag;                 /* RMAG     |RN| m (RASTEER1 working scale)        */
+    agc_vec_t    ic;                   /* IC       unit(RTARG - RN) (= DELVSIN storage)   */
+    agc_dp_t     r1c;                  /* R1C      RMAG * |C|, normalised                 */
+    agc_dp_t     ss;                   /* SS       (R1 + R2 + C)/2                        */
+    agc_sp_t     muscale;              /* MUSCALE  normalisation shift                    */
     agc_job_id_t auto_control_recycle; /* TEMPR60: where P40AUTO returns (BANKJUMP)   */
 } agc_guid_lm_t;
 
 typedef struct agc_guid
 {
-    agc_cdutrig_t trig; /* CDUSPOT / SINCDU / COSCDU                       */
-    agc_avg_g_t avg;  /* average-G package                               */
-    agc_burn_t burn; /* P30-P47 targeting and steering                  */
+    agc_cdutrig_t  trig; /* CDUSPOT / SINCDU / COSCDU                       */
+    agc_avg_g_t    avg;  /* average-G package                               */
+    agc_burn_t     burn; /* P30-P47 targeting and steering                  */
     agc_guid_csm_t csm;
-    agc_guid_lm_t lm;
+    agc_guid_lm_t  lm;
 } agc_guid_t;
 
 agc_guid_t *agc_guid_state(void); /* the one guidance block    */
@@ -318,8 +318,8 @@ typedef struct agc_tgo_in
 {
     agc_vec_t vg;      /* m/cs 2^7                                        */
     agc_vec_t delvg;   /* DELVREF - BDT (CM) / -DELVREF (LM), m/cs 2^7    */
-    agc_dp_t vex;     /* 2VEXHUST m/cs 2^7 (CM) or VEX m/cs 2^6 (LM)     */
-    agc_dp_t tailoff; /* -ETDECAY 2^28 (CM) or TDECAY 2^28 (LM), cs      */
+    agc_dp_t  vex;     /* 2VEXHUST m/cs 2^7 (CM) or VEX m/cs 2^6 (LM)     */
+    agc_dp_t  tailoff; /* -ETDECAY 2^28 (CM) or TDECAY 2^28 (LM), cs      */
 } agc_tgo_in_t;
 
 agc_status_t agc_guid_steering_tgo_csm(agc_interp_t *ip, const agc_tgo_in_t *in, agc_dp_t *tgo);
@@ -331,8 +331,8 @@ typedef struct agc_xprod_in
     agc_vec_t vg;       /* m/cs 2^7                                        */
     agc_vec_t delvref;  /* m/cs 2^7                                        */
     agc_vec_t bdt;      /* m/cs 2^7                                        */
-    agc_dp_t csteer;   /* 2^1                                             */
-    agc_dp_t kprimedt; /* pi/8 rad                                        */
+    agc_dp_t  csteer;   /* 2^1                                             */
+    agc_dp_t  kprimedt; /* pi/8 rad                                        */
 } agc_xprod_in_t;
 
 agc_status_t agc_guid_steering_cross_product(agc_interp_t         *ip,

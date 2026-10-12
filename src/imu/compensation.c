@@ -90,8 +90,8 @@
 
 /* Pad-loaded compensation parameters (module-private erasables).         */
 static agc_imu_comp_params_t comp;       /* pad-loaded PIPA and gyro coefficients */
-static agc_sp_t gcompsw;    /* GCOMPSW: <0 bypass, >0 torque, B0     */
-static agc_sp_t one_pipadt; /* 1/PIPADT cs x 2^8, or TIME1 snapshot  */
+static agc_sp_t              gcompsw;    /* GCOMPSW: <0 bypass, >0 torque, B0     */
+static agc_sp_t              one_pipadt; /* 1/PIPADT cs x 2^8, or TIME1 snapshot  */
 
 /* ---- small word-level helpers ------------------------------------------ */
 
@@ -145,18 +145,18 @@ static word_pair_t pair_of(agc_dp_t v)
  **********************************************************************/
 static word_pair_t das(word_pair_t acc, agc_dp_t x)
 {
-    const word_pair_t xw = pair_of(x);     /* words of the addend    */
-    int lo = acc.lo + xw.lo; /* low-word sum           */
-    int carry = 0;              /* overflow of the low sum */
+    const word_pair_t xw    = pair_of(x);     /* words of the addend    */
+    int               lo    = acc.lo + xw.lo; /* low-word sum           */
+    int               carry = 0;              /* overflow of the low sum */
 
     if (lo > AGC_SP_MAX)
     {
-        lo -= AGC_SP_MAX + 1;
+        lo    -= AGC_SP_MAX + 1;
         carry = 1;
     }
     else if (lo < AGC_SP_MIN)
     {
-        lo += AGC_SP_MAX + 1;
+        lo    += AGC_SP_MAX + 1;
         carry = -1;
     }
 
@@ -324,7 +324,7 @@ static word_pair_t gcomp_words[3]; /* GCOMP words, gyro pulses x 2^14 */
  **********************************************************************/
 static agc_status_t gcomp_read(word_pair_t g[3])
 {
-    agc_dp_t v[3];                                             /* GCOMP buffer, gyro pulses x 2^14     */
+    agc_dp_t     v[3];                                             /* GCOMP buffer, gyro pulses x 2^14     */
     agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, v); /* status of the call */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK) || !AGC_ASSERT(g != NULL))
@@ -359,7 +359,7 @@ static void gcomp_write(const word_pair_t g[3])
     for (int k = 0; k < 3; k++)
     {
         gcomp_words[k] = g[k];
-        v[k] = agc_dp_pack(g[k].hi, g[k].lo);
+        v[k]           = agc_dp_pack(g[k].hi, g[k].lo);
     }
 
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, v);
@@ -403,7 +403,7 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
         return (AGC_STATUS_OK); /* TCF IRIG1      */
     }
 
-    bool cm = (agc_state_vehicle() == AGC_VEHICLE_CSM); /* CM: 1/PIPA under INHINT */
+    bool        cm = (agc_state_vehicle() == AGC_VEHICLE_CSM); /* CM: 1/PIPA under INHINT */
     word_pair_t dw[3];                                         /* DELVX..Z as words, PIPA pulses x 2^14  */
 
     if (cm)
@@ -418,21 +418,21 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv)
         agc_dp_t delv_axis = delv->c[axis]; /* DELVX+axis, PIPA pulses x 2^14 */
 
         agc_sp_t pulses = agc_dp_high(delv_axis);                 /* whole PIPA pulses, B0 */
-        agc_dp_t p = agc_sp_mul(comp.pipascf[axis], pulses); /* (PP) x 2^5    */
+        agc_dp_t p      = agc_sp_mul(comp.pipascf[axis], pulses); /* (PP) x 2^5    */
 
         /* Minor part, shifted right 9: fractional PIPA pulses x 2^14.        */
-        agc_sp_t frac = agc_dp_high(agc_sp_mul(agc_dp_low(p), BIT6)); /* SFE fraction, pulses x 2^14 */
-        word_pair_t d = {pulses, frac};                               /* TS DELVX +1    */
+        agc_sp_t    frac = agc_dp_high(agc_sp_mul(agc_dp_low(p), BIT6)); /* SFE fraction, pulses x 2^14 */
+        word_pair_t d    = {pulses, frac};                               /* TS DELVX +1    */
 
         d = das(d, agc_sp_mul(agc_dp_high(p), BIT6)); /* (PIPAI)(SFE)   */
 
         /* -(BIAS)(DELTAT): CS PIPABIAS, MP 1/PIPADT, MP BIT4 (LM) / BIT1 (CM). */
-        agc_dp_t b = agc_sp_mul(sp_neg(comp.pipabias[axis]), one_pipadt);   /* -(BIAS)(DELTAT), pulses x 2^8 */
+        agc_dp_t b     = agc_sp_mul(sp_neg(comp.pipabias[axis]), one_pipadt);   /* -(BIAS)(DELTAT), pulses x 2^8 */
         agc_sp_t shift = (agc_state_vehicle() == AGC_VEHICLE_LM) ? BIT4 : BIT1; /* MP BIT4 (LM) / BIT1 (CM), B0 */
 
         d = das(d, agc_sp_mul(agc_dp_high(b), shift));
 
-        dw[axis] = d;
+        dw[axis]      = d;
         delv->c[axis] = agc_dp_pack(d.hi, d.lo);
     }
 
@@ -472,7 +472,7 @@ static word_pair_t gcompsub(word_pair_t g, word_pair_t mpac, agc_sp_t coef)
     /* VBUF: gyro pulses x 2^11                                         */
     word_pair_t vbuf = pair_of(agc_sp_mul(coef, mpac.hi)); /* VBUF: gyro pulses x 2^11 */
 
-    vbuf = das_low_of_mp(vbuf, mpac.lo, coef);
+    vbuf           = das_low_of_mp(vbuf, mpac.lo, coef);
     agc_sp_t shift = (agc_state_vehicle() == AGC_VEHICLE_LM) ? BIT9 : BIT12; /* MP BIT9 (LM) / BIT12 (CM), B0 */
 
     g = das(g, agc_sp_mul(vbuf.hi, shift)); /* HI(ADIA)(PIPA)         */
@@ -492,7 +492,7 @@ static word_pair_t gcompsub(word_pair_t g, word_pair_t mpac, agc_sp_t coef)
  **********************************************************************/
 static void torque_needed_check(word_pair_t g)
 {
-    int hi = g.hi;                /* CCS GCOMP: the major word as it stands     */
+    int hi  = g.hi;                /* CCS GCOMP: the major word as it stands     */
     int mag = (hi < 0) ? -hi : hi; /* |GCOMP major|, pulses */
 
     if (mag != 0) /* CCS +0: commands less than 1 pulse */
@@ -733,7 +733,7 @@ agc_status_t agc_job_gyro_command_pulse(void)
         /* 1/GYRO scaling (ICP p.333): GCOMP (gyro pulses x 2^14) shifted right 7
          * into the IMUPULSE scale (revolutions, 2^21 pulses per revolution).     */
         const word_pair_t gw = g[axis]; /* GCOMP +2axis, pulses x 2^14 */
-        word_pair_t r = {0, agc_dp_high(agc_sp_mul(gw.lo, BIT8))};
+        word_pair_t       r  = {0, agc_dp_high(agc_sp_mul(gw.lo, BIT8))};
 
         r = das(r, agc_sp_mul(gw.hi, BIT8)); /* XCH GCOMP, MP BIT8, DAS */
 
@@ -877,7 +877,7 @@ static word_pair_t fbiassub(word_pair_t g, agc_sp_t nbd, agc_dp_t deltat)
  **********************************************************************/
 static agc_status_t bias_drift_compensate(agc_sp_t dt, bool surface)
 {
-    agc_dp_t deltat = agc_sp_mul(dt, BIT10); /* cs x 2^19 (SR 5)    */
+    agc_dp_t    deltat = agc_sp_mul(dt, BIT10); /* cs x 2^19 (SR 5)    */
     word_pair_t g[3];                           /* GCOMP words, gyro pulses x 2^14           */
 
     if (gcomp_read(g) != AGC_STATUS_OK)
@@ -885,7 +885,7 @@ static agc_status_t bias_drift_compensate(agc_sp_t dt, bool surface)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_vec_t dv = agc_erase_delv();                                       /* PIPA pulses x 2^14 */
+    const agc_vec_t   dv      = agc_erase_delv();                                       /* PIPA pulses x 2^14 */
     const word_pair_t delv[3] = {pair_of(dv.c[0]), pair_of(dv.c[1]), pair_of(dv.c[2])}; /* DELVX..Z words */
 
     gcompsw = 0; /* indicate commands 2 pulses or less */
@@ -946,7 +946,7 @@ agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
         agc_pipasr_noscale(); /* PIPASR +3: no scaling    */
     }
 
-    int now = (int) (agc_time_now_cs() & (TIME1_MODULUS - 1)); /* TIME1   */
+    int now  = (int) (agc_time_now_cs() & (TIME1_MODULUS - 1)); /* TIME1   */
     int prev = one_pipadt;                                      /* 1/PIPADT: previous TIME1, cs */
 
     one_pipadt = (agc_sp_t) now; /* XCH 1/PIPADT             */
@@ -997,7 +997,7 @@ agc_status_t agc_job_lastbias(void)
     }
 
     bool surface = (agc_state_vehicle() == AGC_VEHICLE_LM) && agc_flag_test(AGC_FLAG_SURFFLAG); /* LM on the lunar surface */
-    int prev = one_pipadt;                                                                  /* 1/PIPADT: previous TIME1, cs */
+    int  prev    = one_pipadt;                                                                  /* 1/PIPADT: previous TIME1, cs */
 
     one_pipadt = PRIO31_2SEC; /* 2 seconds, cs x 2^8      */
 

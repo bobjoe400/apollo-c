@@ -244,7 +244,6 @@ static int cdu_ones(uint16_t cdu)
 
     v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu; /* negative */
 
-
     return (v);
 }
 
@@ -261,7 +260,6 @@ static int iabs(int v)
     int a = 0; /* |v| */
 
     a = (v < 0) ? -v : v; /* magnitude */
-
 
     return (a);
 }
@@ -316,11 +314,11 @@ static agc_status_t t4_setdesmd(void)
     }
 
     desopmod = swsample;
+
     if (!AGC_ASSERT(desopmod >= -1 && desopmod <= 1))
     {
         return (AGC_STATUS_BAD_ARG);
     }
-
 
     return (AGC_STATUS_OK);
 }
@@ -481,7 +479,6 @@ static void t4_ocduftst(void)
     uint16_t w       = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D      */
     bool     lamp_on = (w & BIT8) != 0u;           /* lamp lit now     */
     bool     want_on = false;                      /* desired state    */
-
 
     if ((agc_chan_read((int) AGC_CHAN_CHAN30) & BIT7) != 0u)
     {
@@ -766,7 +763,6 @@ static void t4_opt_send(void)
     {
         agc_chan_or((int) AGC_CHAN_CHAN14, (uint16_t) OCT11_12);
     }
-
 } /* t4_opt_send */
 
 /**********************************************************************
@@ -854,6 +850,7 @@ agc_status_t agc_t4_optics_drive(void)
                     }
                 }
             }
+
             t4_opt_send();
         }
     }

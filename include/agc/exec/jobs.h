@@ -30,10 +30,10 @@ typedef enum agc_job_id
     AGC_JOB_NONE = 0, /* no job (+0 in a 2CADR word) */
 
     /* ---- src/exec */
-    AGC_JOB_CHANGE_PROGRAM_CONTINUE, /* CANV37 (V37 after SERVICER stops / INTSTALL) */
-    AGC_JOB_CHANGE_PROGRAM_JETS_OFF, /* CSM: R00TOP00 after DELAYJOB 5: jets off, P00 */
-    AGC_JOB_CHANGE_PROGRAM_RETURN,   /* LM: V37RET (LM OUTROUTE after AVGEND) */
-    AGC_JOB_CHANGE_PROGRAM_START,    /* V37XEQ (restart point of the V37 software restart) */
+    AGC_JOB_CHANGE_PROGRAM_CONTINUE,     /* CANV37 (V37 after SERVICER stops / INTSTALL) */
+    AGC_JOB_CHANGE_PROGRAM_JETS_OFF,     /* CSM: R00TOP00 after DELAYJOB 5: jets off, P00 */
+    AGC_JOB_CHANGE_PROGRAM_RETURN,       /* LM: V37RET (LM OUTROUTE after AVGEND) */
+    AGC_JOB_CHANGE_PROGRAM_START,        /* V37XEQ (restart point of the V37 software restart) */
     AGC_JOB_DUMMY,
     AGC_JOB_ENDOFJOB,
     AGC_JOB_GOPOODOO,
@@ -42,9 +42,9 @@ typedef enum agc_job_id
     AGC_JOB_GO_IDLE_FIX_REFLASH,
     /* ---- src/io/dsky */
     AGC_JOB_CHARIN,
-    AGC_JOB_DSPMMJB, /* DSPMMJOB = DSPMMJB (pinball) */
+    AGC_JOB_DSPMMJB,                     /* DSPMMJOB = DSPMMJB (pinball) */
     AGC_JOB_IDLERET3,
-    AGC_JOB_INITDSP, /* X.1 display restart (pinball) */
+    AGC_JOB_INITDSP,                     /* X.1 display restart (pinball) */
     AGC_JOB_JAMTERM,
     AGC_JOB_MAKEPLAY,
     AGC_JOB_MARKPLAY,
@@ -136,7 +136,7 @@ typedef enum agc_job_id
 
     /* ---- src/nav/integration */
     AGC_JOB_STATEUP_STALL,
-    AGC_JOB_STATINT1, /* 2.5  nav-integ */
+    AGC_JOB_STATINT1,                            /* 2.5  nav-integ */
     AGC_JOB_STATINT1_STALL,
     /* ---- src/guidance */
     AGC_JOB_EXTERNAL_DELTA_V,                    /* P30 */
@@ -204,14 +204,14 @@ typedef enum agc_job_id
     AGC_JOB_RENDZ_TTOGO_PROCEED,            /* VN1645 PROCEED: N45PROC */
     AGC_JOB_RENDZ_VNPOOH,
     /* ---- src/programs/navigation */
-    AGC_JOB_GROUND_TRACK_COMPUTE,       /* INTSTALL .. V06N43 */
-    AGC_JOB_GROUND_TRACK_DETERMINATION, /* PROG21 */
-    AGC_JOB_GROUND_TRACK_RECYCLE,       /* V32 on V06N43 */
-    AGC_JOB_GROUND_TRACK_TIME,          /* P21PROG1 V06N34 */
+    AGC_JOB_GROUND_TRACK_COMPUTE,           /* INTSTALL .. V06N43 */
+    AGC_JOB_GROUND_TRACK_DETERMINATION,     /* PROG21 */
+    AGC_JOB_GROUND_TRACK_RECYCLE,           /* V32 on V06N43 */
+    AGC_JOB_GROUND_TRACK_TIME,              /* P21PROG1 V06N34 */
     AGC_JOB_GROUND_TRACK_VEHICLE,
-    AGC_JOB_W_MATRIX_MONITOR,           /* V67CALL */
-    AGC_JOB_W_MATRIX_MONITOR_DISPLAY,   /* V06N99DS */
-    AGC_JOB_W_MATRIX_MONITOR_PROCEED,   /* V6N99PRO */
+    AGC_JOB_W_MATRIX_MONITOR,               /* V67CALL */
+    AGC_JOB_W_MATRIX_MONITOR_DISPLAY,       /* V06N99DS */
+    AGC_JOB_W_MATRIX_MONITOR_PROCEED,       /* V6N99PRO */
 
     /* ---- src/programs/targeting */
     AGC_JOB_CDH_AFTER_DV_LV,                      /* after V06N81 */
@@ -825,7 +825,7 @@ typedef enum agc_task_id
     AGC_TASK_GETCADR,
     AGC_TASK_LONGCYCL,
     AGC_TASK_SVCT3,
-    AGC_TASK_T5IDLOC, /* CSM */
+    AGC_TASK_T5IDLOC,  /* CSM */
     AGC_TASK_TASKOVER,
     /* ---- src/io/dsky */
     AGC_TASK_MONREQ,
@@ -842,18 +842,18 @@ typedef enum agc_task_id
     AGC_TASK_ATTITUDE_ERROR_OUTPUT, /* V43 ATTCK1 / ATTCK2 */
 
     /* ---- src/imu */
-    AGC_TASK_CA_ECE,  /* imu: CA+ECE */
+    AGC_TASK_CA_ECE,   /* imu: CA+ECE */
     AGC_TASK_COARSE_ALIGN_CHECK,
     AGC_TASK_COARSE_ALIGN_COMMANDS,
     AGC_TASK_COARSE_ALIGN_PULSES,
-    AGC_TASK_ENDMANU, /* ENDMANU / GOODMANU */
+    AGC_TASK_ENDMANU,  /* ENDMANU / GOODMANU */
     AGC_TASK_GYRO_AUGMENT,
     AGC_TASK_IFAILOK,
     AGC_TASK_IMUFINED,
     AGC_TASK_IMU_ZERO_DONE,
     AGC_TASK_IMU_ZERO_RELEASE,
     AGC_TASK_MANUSTOP,
-    AGC_TASK_PFAILOK, /* imu: PFAILOK */
+    AGC_TASK_PFAILOK,  /* imu: PFAILOK */
     AGC_TASK_STRTGYRO,
     AGC_TASK_UPDTCALL,
     /* ---- src/nav/integration */

@@ -70,9 +70,9 @@ static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
 /* MARKOK / MKVACFND: claim a VAC area for the marks (BAILOUT 01207). */
 static agc_status_t markok(void)
 {
-    agc_align_ram_t *ram = agc_align_ram();
-    int vac = -1;
-    const agc_status_t st = agc_exec_vac_claim(&vac);
+    agc_align_ram_t   *ram = agc_align_ram();
+    int                vac = -1;
+    const agc_status_t st  = agc_exec_vac_claim(&vac);
 
     if (st != AGC_STATUS_OK)
     {
@@ -88,7 +88,7 @@ static agc_status_t markok(void)
 
     ram->mkvac_index = vac;
     agc_erase_set_markstat((uint16_t) (vac + 1));
-    ram->qpret = 0; /* next mark slot       */
+    ram->qpret       = 0; /* next mark slot       */
 
     return (AGC_STATUS_OK);
 }
@@ -155,7 +155,7 @@ agc_status_t agc_sxtmark_reserve(void)
 agc_status_t agc_sxtmark_free_vac(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    const uint16_t old = agc_erase_markstat();
+    const uint16_t   old = agc_erase_markstat();
 
     agc_erase_set_markstat(0);
     agc_status_t st = AGC_STATUS_OK;
@@ -211,18 +211,18 @@ agc_status_t agc_sxtmark_mkreleas(void)
  */
 agc_status_t agc_sxtmark_markrupt(void)
 {
-    mk.cdut = agc_erase_cdut();
-    mk.cdus = agc_erase_cdus();
-    mk.cduy = agc_erase_cduy();
-    mk.cduz = agc_erase_cduz();
-    mk.cdux = agc_erase_cdux();
-    mk.t = align_loadtime();
+    mk.cdut           = agc_erase_cdut();
+    mk.cdus           = agc_erase_cdus();
+    mk.cduy           = agc_erase_cduy();
+    mk.cduz           = agc_erase_cduz();
+    mk.cdux           = agc_erase_cdux();
+    mk.t              = align_loadtime();
     agc_erase_set_samptime(mk.t);
     const uint16_t in = agc_chan_read(016);
 
     if ((in & AGC_CH016_MARK) != 0u)
     {
-        uint16_t dt = MARKDIF_MIN_DT; /* MARKIT   */
+        uint16_t       dt  = MARKDIF_MIN_DT; /* MARKIT   */
         const agc_sp_t chk = agc_erase_cduchkwd();
 
         if (chk > 0)
@@ -342,7 +342,7 @@ agc_status_t agc_sxtmark_markcont(void)
     }
 
     const agc_status_t st = agc_exec_novac(ALIGN_PRIO5, AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY);
-    uint16_t w[MARK_WORDS];
+    uint16_t           w[MARK_WORDS];
 
     mark_words(&mk, w);
 
@@ -364,7 +364,7 @@ agc_status_t agc_sxtmark_markcont(void)
 agc_status_t agc_sxtmark_mark2(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    uint16_t ms = agc_erase_markstat();
+    uint16_t         ms  = agc_erase_markstat();
 
     if ((ms & MS_WANTED_MASK) == 0u)
     {

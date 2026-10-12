@@ -64,9 +64,9 @@
 #define FS_PHASE_4_33       033u    /* GOTOPOOH (LM): 4.33SPOT, GOP00FIX      */
 #define FS_FLAGWORDS_SWINIT 12      /* SWINIT covers STATE .. STATE +11D      */
 
-static uint16_t redoctr; /* REDOCTR: restarts since fresh start     */
+static uint16_t   redoctr; /* REDOCTR: restarts since fresh start     */
 static agc_prio_t restreg; /* RESTREG: display restart priority       */
-static uint16_t ercount; /* ERCOUNT: self-check error counter       */
+static uint16_t   ercount; /* ERCOUNT: self-check error counter       */
 
 static bool is_lm(void)
 {
@@ -380,7 +380,7 @@ static agc_status_t phase_tables_ok(bool *ok_out)
 
     if (!ok)
     {
-        agc_alarm(AGC_ALARM_01107);      /* PTBAD        */
+        agc_alarm(AGC_ALARM_01107); /* PTBAD        */
 
         return (dofstart(false, false)); /* LM DOFSTRT1, CSM DOFSTART */
     }
@@ -391,7 +391,7 @@ static agc_status_t phase_tables_ok(bool *ok_out)
 /* GOPROG3 (C pp.188-189 / L pp.218-219).                              */
 static agc_status_t goprog3(void)
 {
-    bool ok = false;                /* phase tables agree */
+    bool         ok = false;                /* phase tables agree */
     agc_status_t st = phase_tables_ok(&ok); /* PCLOOP; PTBAD's fresh start */
 
     if (st != AGC_STATUS_OK)
@@ -447,7 +447,7 @@ static agc_status_t goprog_csm_tail(void)
         /* T5IDLER 2CADRs       */
         AGC_TASK_T5IDLOC, AGC_TASK_REDORCS, AGC_TASK_REDOTVC, AGC_TASK_REDOSAT
     };
-    unsigned sel = (unsigned) (agc_flagword_get(6) >> 13) & 3u; /* bits 15,14 */
+    unsigned                   sel        = (unsigned) (agc_flagword_get(6) >> 13) & 3u; /* bits 15,14 */
 
     agc_rupt_set_t5_task(t5idler[sel]); /* T5LOC     */
     agc_status_t st = AGC_STATUS_OK;
@@ -530,8 +530,8 @@ agc_status_t agc_restart_goprog(void)
         /* LM, NO ATT lamp off */
     }
 
-    bool done = false;           /* LIGHTSET did a fresh start */
-    agc_status_t st = lightset(&done); /* BUTTONS              */
+    bool         done = false;           /* LIGHTSET did a fresh start */
+    agc_status_t st   = lightset(&done); /* BUTTONS              */
 
     if (st == AGC_STATUS_OK && !done)
     {
@@ -587,8 +587,8 @@ agc_status_t agc_restart_goprog(void)
 agc_status_t fresh_enema(void)
 {
     agc_inhint();
-    bool done = false; /* LIGHTSET did a fresh start */
-    agc_status_t st = AGC_STATUS_OK;
+    bool         done = false; /* LIGHTSET did a fresh start */
+    agc_status_t st   = AGC_STATUS_OK;
 
     if (is_lm())
     {
@@ -676,7 +676,7 @@ agc_status_t agc_fresh_start_slap1(void)
         }
 
         redoctr = 0;
-        st = dofstart(true, true);
+        st      = dofstart(true, true);
         agc_relint();
     }
 

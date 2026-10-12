@@ -1027,33 +1027,33 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
                  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
                  *   rz        agc_rendz_t *   I/O  rendezvous erasables
                  **********************************************************************/
-                {
-                    agc_dp_t ra1  = rz_abval(ip, rz->ract1);                /* 0D B29     */
-                    int      x2   = 0;                                      /* NORM index, -(left shifts) */
-                    agc_dp_t d2   = agc_dp_shr(rz_norm(ra1, &x2), 1);       /* 2D, 2^(30+X2) */
-                    int      x1   = 0;                                      /* NORM index, -(left shifts) */
-                    agc_dp_t rp3n = rz_norm(rz_abval(ip, rz->rpass3), &x1); /* 2^(29+X1) */
-                    agc_dp_t q    = agc_dp_div(ip, d2, rp3n);               /* BDDV, B2 after SR* */
+            {
+                agc_dp_t ra1  = rz_abval(ip, rz->ract1);                /* 0D B29     */
+                int      x2   = 0;                                      /* NORM index, -(left shifts) */
+                agc_dp_t d2   = agc_dp_shr(rz_norm(ra1, &x2), 1);       /* 2D, 2^(30+X2) */
+                int      x1   = 0;                                      /* NORM index, -(left shifts) */
+                agc_dp_t rp3n = rz_norm(rz_abval(ip, rz->rpass3), &x1); /* 2^(29+X1) */
+                agc_dp_t q    = agc_dp_div(ip, d2, rp3n);               /* BDDV, B2 after SR* */
 
-                    x2 = x2 - x1;                                             /* XSU,2 X1   */
-                    q  = rz_sr_star(ip, q, 1, x2);                            /* RA1/RP3 B2 */
-                    q  = agc_dp_mul_trunc(agc_dp_add(ip, q, CSI_1DPB2), ra1); /* B31        */
-                    q  = rz_norm(q, &x1);
-                    agc_dp_t vr;                                              /* 2MU/, B7 below */
+                x2 = x2 - x1;                                             /* XSU,2 X1   */
+                q  = rz_sr_star(ip, q, 1, x2);                            /* RA1/RP3 B2 */
+                q  = agc_dp_mul_trunc(agc_dp_add(ip, q, CSI_1DPB2), ra1); /* B31        */
+                q  = rz_norm(q, &x1);
+                agc_dp_t vr;                                              /* 2MU/, B7 below */
 
-                    vr = agc_dp_div(ip, agc_dp_shr(rz->body.rtmu, 1), q);
+                vr = agc_dp_div(ip, agc_dp_shr(rz->body.rtmu, 1), q);
 
-                    vr = agc_dp_sqrt(rz_sl_star(ip, vr, -7, x1)); /* B7  0D     */
-                    agc_vec_t uh1;                                /* UH1, 2^1 */
+                vr = agc_dp_sqrt(rz_sl_star(ip, vr, -7, x1)); /* B7  0D     */
+                agc_vec_t uh1;                                /* UH1, 2^1 */
 
-                    uh1 = rz_unit(ip, agc_vec_cross(ip, rz->up1, rz_unit(ip, rz->ract1)));
-                    agc_dp_t vh; /* m/cs 2^7 */
+                uh1 = rz_unit(ip, agc_vec_cross(ip, rz->up1, rz_unit(ip, rz->ract1)));
+                agc_dp_t vh; /* m/cs 2^7 */
 
-                    vh = agc_dp_shl(ip, agc_vec_dot(ip, uh1, rz->vact1), 1);
+                vh = agc_dp_shl(ip, agc_vec_dot(ip, uh1, rz->vact1), 1);
 
-                    rz->delvcsi = agc_dp_sub(ip, vr, vh); /* BDSU       */
-                    rz->deldv   = CSI_INITST;
-                }
+                rz->delvcsi = agc_dp_sub(ip, vr, vh); /* BDSU       */
+                rz->deldv   = CSI_INITST;
+            }
                 l = CSI_L_B1;
                 break;
             case CSI_L_B1:

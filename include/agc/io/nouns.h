@@ -390,12 +390,12 @@ typedef enum agc_noun_data
 /* One noun (interface agreed with io-pinball). */
 typedef struct agc_noun
 {
-    uint8_t noun;          /* noun number 00..99                         */
-    uint8_t ncomp;         /* 1..3 components; 0 = spare noun            */
-    uint8_t scale_type[3]; /* agc_scale_t per component                  */
+    uint8_t  noun;          /* noun number 00..99                         */
+    uint8_t  ncomp;         /* 1..3 components; 0 = spare noun            */
+    uint8_t  scale_type[3]; /* agc_scale_t per component                  */
     uint16_t data_id[3];    /* agc_noun_data_t per component              */
-    bool dec_only;      /* component code bit 4: decimal only         */
-    bool no_load;       /* component code bit 5: no load (implies dec)*/
+    bool     dec_only;      /* component code bit 4: decimal only         */
+    bool     no_load;       /* component code bit 5: no load (implies dec)*/
 } agc_noun_t;
 
 /* Static tables, indexed by noun number (entry n has .noun == n).         */
@@ -423,12 +423,12 @@ agc_status_t agc_noun_write(uint16_t data_id, agc_dp_t value);
 typedef struct agc_scale_info
 {
     agc_scale_t scale;   /* scale type looked up */
-    uint8_t routine; /* agc_sf_routine_t code for this vehicle     */
-    uint8_t sf_code; /* SF constant code number (SFINTAB index)    */
-    bool is_dp;   /* erasable is a DP pair (else one SP word)   */
-    bool is_raw;  /* SP word passed raw, 15 bits (see top)      */
-    agc_dp_t sf_in;   /* SFINTAB entry for loads (2DEC, scale 2^28) */
-    agc_dp_t sf_out;  /* SFOUTAB entry, scale per routine           */
+    uint8_t     routine; /* agc_sf_routine_t code for this vehicle     */
+    uint8_t     sf_code; /* SF constant code number (SFINTAB index)    */
+    bool        is_dp;   /* erasable is a DP pair (else one SP word)   */
+    bool        is_raw;  /* SP word passed raw, 15 bits (see top)      */
+    agc_dp_t    sf_in;   /* SFINTAB entry for loads (2DEC, scale 2^28) */
+    agc_dp_t    sf_out;  /* SFOUTAB entry, scale per routine           */
 } agc_scale_info_t;
 
 /* NOT_FOUND if the scale type does not exist in that vehicle's program.   */

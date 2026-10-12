@@ -50,11 +50,11 @@ void agc_erase_reset_display(void)
     }
 
     g_samptime = 0;
-    g_sfail = 0;
+    g_sfail    = 0;
     g_trkmkcnt = 0;
-    g_t3tot4 = 0;
-    g_rr_az = 0;
-    g_rr_elev = 0;
+    g_t3tot4   = 0;
+    g_rr_az    = 0;
+    g_rr_elev  = 0;
 }
 
 agc_sp_t agc_erase_option1(int index)

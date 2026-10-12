@@ -86,8 +86,8 @@ static const agc_dp_t acos_coef[ACOS_DEGREE + 1] = {
  **********************************************************************/
 static agc_w3_t sqrt_words(agc_w3_t m, bool *abort)
 {
-    int shift = 0;                               /* MPTEMP: right shifts owed */
-    agc_w3_t r = agc_w_sqrtsub(m, &shift, abort); /* normalised root, MPAC+2 */
+    int      shift = 0;                               /* MPTEMP: right shifts owed */
+    agc_w3_t r     = agc_w_sqrtsub(m, &shift, abort); /* normalised root, MPAC+2 */
 
     if (shift == 0)
     {
@@ -148,7 +148,7 @@ uint16_t agc_interp_take_alarm(void)
  **********************************************************************/
 agc_status_t agc_dp_sqrt_chk(agc_dp_t a, agc_dp_t *out)
 {
-    bool abort = false; /* SQRTABRT taken */
+    bool     abort = false; /* SQRTABRT taken */
     agc_w2_t r;             /* root words */
 
     r = agc_w3_top(sqrt_words(agc_w3_from_tp(agc_tp_from_dp(a)), &abort));
@@ -198,7 +198,7 @@ agc_dp_t agc_dp_sqrt(agc_dp_t a)
  **********************************************************************/
 agc_dp_t agc_tp_sqrt(agc_tp_t a)
 {
-    bool abort = false; /* SQRTABRT taken */
+    bool     abort = false; /* SQRTABRT taken */
     agc_w2_t r;             /* root words */
 
     r = agc_w3_top(sqrt_words(agc_w3_from_tp(a), &abort));
@@ -227,21 +227,21 @@ agc_dp_t agc_tp_sqrt(agc_tp_t a)
  **********************************************************************/
 static agc_w3_t sine_words(agc_w2_t m)
 {
-    int carry = 0;                          /* minor-word carry of DDOUBL */
-    int s = 0;                          /* overflow of TS / DOUBLE, +-1 or 0 */
-    int32_t lo = agc_w_ts(2 * m.lo, &carry); /* DDOUBL: L        */
-    int32_t a16 = 2 * m.hi + carry;           /* DDOUBL: A        */
+    int      carry = 0;                          /* minor-word carry of DDOUBL */
+    int      s     = 0;                          /* overflow of TS / DOUBLE, +-1 or 0 */
+    int32_t  lo    = agc_w_ts(2 * m.lo, &carry); /* DDOUBL: L        */
+    int32_t  a16   = 2 * m.hi + carry;           /* DDOUBL: A        */
     agc_w2_t x;                                  /* reduced argument, scaled at pi */
 
     if ((a16 >= AGC_W_ONE) || (a16 <= -AGC_W_ONE))
     { /* OVSK: lost pi    */
         a16 = -a16; /* DCOM             */
-        lo = -lo;
+        lo  = -lo;
     }
 
     x.hi = agc_w_ts(a16, &s);   /* DXCH MPAC        */
     x.lo = lo;
-    s = agc_w_ovf(2 * x.hi); /* CA; DOUBLE; TS L */
+    s    = agc_w_ovf(2 * x.hi); /* CA; DOUBLE; TS L */
 
     if (s != 0)
     { /* |x| > pi/2       */
@@ -261,13 +261,13 @@ static agc_w3_t sine_words(agc_w2_t m)
     agc_w3_t sq;    /* x^2 (DSQSUB), scaled at pi^2             */
     agc_w3_t p;     /* Hastings polynomial in x^2, scaled at 1  */
     agc_w3_t r;     /* x P(x^2), then 4 x P = sin(x)/2          */
-    int o = 0; /* shift overflow (none, "NEITHER SHIFT")   */
+    int      o = 0; /* shift overflow (none, "NEITHER SHIFT")   */
 
     sq = agc_w_dsqsub(x);                                  /* TC DSQSUB */
-    p = agc_w_poly(agc_w3_top(sq), sin_coef, SIN_DEGREE); /* POLY      */
-    r = agc_w_dmpsub(agc_w3_top(p), x);                   /* DMPSUB by BUF2 */
-    r = agc_w_tp_shl1(r, &o);                             /* "NEITHER SHIFT   */
-    r = agc_w_tp_shl1(r, &o);                             /*  OVERFLOWS"      */
+    p  = agc_w_poly(agc_w3_top(sq), sin_coef, SIN_DEGREE); /* POLY      */
+    r  = agc_w_dmpsub(agc_w3_top(p), x);                   /* DMPSUB by BUF2 */
+    r  = agc_w_tp_shl1(r, &o);                             /* "NEITHER SHIFT   */
+    r  = agc_w_tp_shl1(r, &o);                             /*  OVERFLOWS"      */
 
     return (r);
 }
@@ -285,7 +285,7 @@ static agc_w3_t sine_words(agc_w2_t m)
 static agc_w3_t cosine_words(agc_w3_t m)
 {
     agc_w2_t x = agc_w3_top(m); /* MPAC, MPAC+1 */
-    int o = 0;             /* ADS overflow (none: x.hi <= 0 here) */
+    int      o = 0;             /* ADS overflow (none: x.hi <= 0 here) */
 
     if (agc_w_branch(m) > 0)
     {
@@ -345,14 +345,14 @@ static agc_w3_t acos_words(agc_w3_t m, bool *alarm)
     agc_w3_t root;          /* sqrt(1/2 - m), normalised */
     agc_w3_t p;             /* P(m) (POLY) */
     agc_w2_t sh;            /* root after ACOSSHR */
-    int shift = 0;     /* MPTEMP: right shifts owed */
-    bool abort = false; /* SQRTABRT (cannot happen: 1/2 - m >= 0) */
+    int      shift = 0;     /* MPTEMP: right shifts owed */
+    bool     abort = false; /* SQRTABRT (cannot happen: 1/2 - m >= 0) */
 
     if ((m.m0 > AGC_W_HALF) || ((m.m0 == AGC_W_HALF) && (m.m1 >= 0)))
     { /* ACOSOVF, or CCS MPAC +1 >= 0: ACOS=0 */
         *alarm = (m.m0 > AGC_W_HALF + 1); /* ACOSABRT 01301   */
-        m.m0 = 0;
-        m.m1 = 0;
+        m.m0   = 0;
+        m.m1   = 0;
 
         return (m);
     }
@@ -364,7 +364,7 @@ static agc_w3_t acos_words(agc_w3_t m, bool *alarm)
 
     if (shift > 0)
     { /* ACOSSHR: VSHRRND   */
-        sh = agc_w_vshrrnd(agc_w3_top(root), shift);
+        sh   = agc_w_vshrrnd(agc_w3_top(root), shift);
         root = (agc_w3_t){sh.hi, sh.lo, 0};
     }
 
@@ -388,8 +388,8 @@ static agc_w3_t acos_words(agc_w3_t m, bool *alarm)
  **********************************************************************/
 static agc_w3_t arc_words(agc_w3_t m, bool asin, bool *alarm)
 {
-    int sign = agc_w_branch(m);       /* BRANCH: sign of the first non-zero word */
-    agc_w3_t r = {AGC_W_QUARTER, 0, 0}; /* ACOSZERO: TS MPAC  */
+    int      sign = agc_w_branch(m);       /* BRANCH: sign of the first non-zero word */
+    agc_w3_t r    = {AGC_W_QUARTER, 0, 0}; /* ACOSZERO: TS MPAC  */
 
     if (sign != 0)
     {
@@ -434,7 +434,7 @@ agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
     bool alarm = false; /* ACOSABRT taken */
 
     ip->dvsign_neg = false; /* TS ESCAPE (= DVSIGN): a return address */
-    *out = agc_w_join(agc_w3_top(arc_words(agc_w3_from_tp(agc_tp_from_dp(a)), false, &alarm)));
+    *out           = agc_w_join(agc_w3_top(arc_words(agc_w3_from_tp(agc_tp_from_dp(a)), false, &alarm)));
 
     if (!AGC_ASSERT((*out >= 0) && (*out <= AGC_DP_HALF)))
     {
@@ -461,7 +461,7 @@ agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
     bool alarm = false; /* ACOSABRT taken */
 
     ip->dvsign_neg = false; /* TS ESCAPE (= DVSIGN): a return address */
-    *out = agc_w_join(agc_w3_top(arc_words(agc_w3_from_tp(agc_tp_from_dp(a)), true, &alarm)));
+    *out           = agc_w_join(agc_w3_top(arc_words(agc_w3_from_tp(agc_tp_from_dp(a)), true, &alarm)));
 
     if (!AGC_ASSERT((*out >= -AGC_DP_QUARTER) && (*out <= AGC_DP_QUARTER)))
     {
@@ -535,7 +535,7 @@ agc_dp_t agc_dp_asin(agc_interp_t *ip, agc_dp_t a)
  **********************************************************************/
 agc_tp_words_t agc_mpac_sqrt(agc_tp_words_t m)
 {
-    bool abort = false; /* SQRTABRT taken */
+    bool     abort = false; /* SQRTABRT taken */
     agc_w3_t r;             /* MPAC after SQRT */
 
     r = sqrt_words(agc_w3_from_words(m), &abort);
@@ -598,11 +598,11 @@ agc_tp_words_t agc_mpac_cos(agc_tp_words_t m)
  **********************************************************************/
 static agc_tp_words_t arc_mpac(agc_interp_t *ip, agc_tp_words_t m, bool asin)
 {
-    bool alarm = false; /* ACOSABRT taken */
+    bool     alarm = false; /* ACOSABRT taken */
     agc_w3_t r;             /* angle words */
 
     ip->dvsign_neg = false; /* TS ESCAPE (= DVSIGN): a return address */
-    r = arc_words(agc_w3_from_words(m), asin, &alarm);
+    r              = arc_words(agc_w3_from_words(m), asin, &alarm);
 
     if (alarm)
     { /* ALARM 01301, raised by exec */

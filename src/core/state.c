@@ -65,8 +65,8 @@
 #define FLAG_BIT_MAX    15      /* AGC bit numbers run 1..15            */
 
 static agc_vehicle_t g_vehicle = AGC_VEHICLE_CSM; /* selected program */
-static uint32_t g_time_cs;                   /* C(TIME2,TIME1), cs, 28 bits        */
-static uint16_t g_flagword[AGC_FLAGWORDS];   /* FLAGWRD0..FLGWRD13 */
+static uint32_t      g_time_cs;                   /* C(TIME2,TIME1), cs, 28 bits        */
+static uint16_t      g_flagword[AGC_FLAGWORDS];   /* FLAGWRD0..FLGWRD13 */
 
 /**********************************************************************
  * AGC: none (power-up: select the rope and zero erasable memory; the
@@ -218,7 +218,7 @@ static int words_for_vehicle(void)
 bool agc_flag_valid(agc_flag_id_t f)
 {
     const int word = (int) (f >> 4);             /* flagword index n */
-    const int bit = (int) (f & FLAG_BIT_FIELD); /* AGC bit 1..15    */
+    const int bit  = (int) (f & FLAG_BIT_FIELD); /* AGC bit 1..15    */
 
     return ((word < words_for_vehicle()) && (bit >= 1) && (bit <= FLAG_BIT_MAX));
 }
@@ -440,23 +440,23 @@ void agc_sv_get(agc_vehicle_sv_t which, agc_state_vector_t *out)
 {
     if (which == AGC_SV_THIS)
     {
-        out->r = agc_erase_rn();
-        out->v = agc_erase_vn();
-        out->t = agc_erase_piptime();
+        out->r    = agc_erase_rn();
+        out->v    = agc_erase_vn();
+        out->t    = agc_erase_piptime();
         out->moon = agc_flag_test(AGC_FLAG_MOONFLAG);
     }
     else if (g_vehicle == AGC_VEHICLE_CSM)
     {
-        out->r = agc_erase_rrectlem(); /* RRECTOTH = RRECTLEM (C)  */
-        out->v = agc_erase_vrectlem();
-        out->t = agc_erase_tetlem();
+        out->r    = agc_erase_rrectlem(); /* RRECTOTH = RRECTLEM (C)  */
+        out->v    = agc_erase_vrectlem();
+        out->t    = agc_erase_tetlem();
         out->moon = agc_flag_test(other_moon_flag());
     }
     else
     {
-        out->r = agc_erase_rrectcsm(); /* RRECTOTH = RRECTCSM (L)  */
-        out->v = agc_erase_vrectcsm();
-        out->t = agc_erase_tetcsm();
+        out->r    = agc_erase_rrectcsm(); /* RRECTOTH = RRECTCSM (L)  */
+        out->v    = agc_erase_vrectcsm();
+        out->t    = agc_erase_tetcsm();
         out->moon = agc_flag_test(other_moon_flag());
     }
 }

@@ -82,7 +82,7 @@ agc_w2_t agc_w_genddv(agc_w2_t ab, agc_w2_t cd, bool maxdv)
 {
     agc_w2_t qr;  /* DV BUF: {Q, R}                    */
     agc_w2_t r = {0, 0};
-    int32_t acc; /* dividend of the minor part        */
+    int32_t  acc; /* dividend of the minor part        */
 
     if (maxdv && (ab.hi == cd.hi))
     { /* MAXDV: (C + sB)/(C + sD) = 37777 + s(C + B - D)/C, B < D */
@@ -92,13 +92,13 @@ agc_w2_t agc_w_genddv(agc_w2_t ab, agc_w2_t cd, bool maxdv)
         return (r);
     }
 
-    qr = agc_w_dv(ab.hi, ab.lo, cd.hi);     /* DV BUF          */
+    qr   = agc_w_dv(ab.hi, ab.lo, cd.hi);     /* DV BUF          */
     r.hi = qr.hi;                             /* Q, major word   */
-    acc = qr.lo + agc_w_mp(-r.hi, cd.lo).hi; /* CS; MP; AD      */
+    acc  = qr.lo + agc_w_mp(-r.hi, cd.lo).hi; /* CS; MP; AD      */
 
     if (acc >= AGC_W_ONE)
     { /* OVSK: + overflow */
-        acc -= cd.hi; /* SU BUF          */
+        acc  -= cd.hi; /* SU BUF          */
         r.hi += 1;     /* INCR MPAC       */
     }
     else if (acc <= 0)
@@ -120,7 +120,7 @@ agc_w2_t agc_w_genddv(agc_w2_t ab, agc_w2_t cd, bool maxdv)
 
     if (acc - cd.hi >= 0)
     { /* +DOWN: SU BUF   */
-        acc -= cd.hi;
+        acc  -= cd.hi;
         r.hi += 1; /* +3: INCR MPAC   */
     }
 
@@ -198,12 +198,12 @@ static agc_w2_t ddv_unit_major(agc_w2_t b)
 static bool ddv_bufzero(agc_w3_t *m, agc_w2_t *b, bool *neg, int *ovf)
 {
     m->m2 = 0;                 /* TS MPAC +2       */
-    *m = agc_w_tpagree(*m); /* TC TPAGREE       */
+    *m    = agc_w_tpagree(*m); /* TC TPAGREE       */
 
     if (m->m0 != 0)
     { /* OVF+ / OVF+ -1: INCR DVSIGN when negative; SGNDVOVF on -BUF+1 */
         *neg = (m->m0 < 0) != (b->lo < 0);
-        *m = ddv_overflow(*m, *neg, ovf);
+        *m   = ddv_overflow(*m, *neg, ovf);
 
         return (true);
     }
@@ -216,7 +216,7 @@ static bool ddv_bufzero(agc_w3_t *m, agc_w2_t *b, bool *neg, int *ovf)
     if (b->hi == 0)
     { /* zero divisor: CS MPAC; SGNDVOVF    */
         *neg = (m->m0 < 0);
-        *m = ddv_overflow(*m, *neg, ovf);
+        *m   = ddv_overflow(*m, *neg, ovf);
 
         return (true);
     }
@@ -288,8 +288,8 @@ static agc_w2_t ddv_normalise(agc_w2_t a, agc_w2_t b, bool maxdv)
  **********************************************************************/
 static agc_w2_t ddv_quotient(agc_w2_t a, agc_w2_t b, int *ovf)
 {
-    agc_w2_t zero = {0, 0};
-    bool maxdv = false; /* MAXDVSW = +0 */
+    agc_w2_t zero  = {0, 0};
+    bool     maxdv = false; /* MAXDVSW = +0 */
 
     if (b.hi - a.hi - 1 <= 0)
     { /* CS MPAC; AD NEGONE; AD BUF; CCS A */
@@ -328,12 +328,12 @@ static agc_w2_t ddv_quotient(agc_w2_t a, agc_w2_t b, int *ovf)
  **********************************************************************/
 agc_w3_t agc_w_ddv(agc_w3_t m, agc_w2_t b, int *ovf, bool *dvsign_neg)
 {
-    bool neg = false; /* DVSIGN: -1 (false) / -0 (true) / +1 (false) */
+    bool     neg = false; /* DVSIGN: -1 (false) / -0 (true) / +1 (false) */
     agc_w2_t a;           /* |dividend| words */
     agc_w2_t q;           /* |quotient| words */
 
     *ovf = 0;
-    b = ddv_unit_major(b); /* CCS BUF          */
+    b    = ddv_unit_major(b); /* CCS BUF          */
 
     if ((b.hi == 0) && ddv_bufzero(&m, &b, &neg, ovf))
     {
@@ -344,19 +344,19 @@ agc_w3_t agc_w_ddv(agc_w3_t m, agc_w2_t b, int *ovf, bool *dvsign_neg)
 
     if (b.hi < 0)
     { /* BUF-             */
-        b = agc_w_dcs(b);
+        b   = agc_w_dcs(b);
         neg = !neg;
     }
 
     *dvsign_neg = neg;
-    a = agc_w3_top(m);
+    a           = agc_w3_top(m);
 
     if (!((a.hi == 0) && (a.lo == 0))) /* zero dividend: TCF DANZIG */
     {
         if ((a.hi < 0) || ((a.hi == 0) && (a.lo < 0)))
         { /* MPAC-            */
-            a = agc_w_dcs(a);
-            neg = !neg;
+            a           = agc_w_dcs(a);
+            neg         = !neg;
             *dvsign_neg = neg;
         }
 
@@ -410,20 +410,20 @@ static agc_w2_t sqrt_half(agc_w2_t p)
  **********************************************************************/
 static agc_w2_t sqrt_newton(agc_w2_t m, int32_t x0h)
 {
-    int32_t buf = x0h; /* BUF: X0/2, then X1 */
-    int32_t q;         /* (MPAC/2)/(X0/2), SP */
+    int32_t  buf = x0h; /* BUF: X0/2, then X1 */
+    int32_t  q;         /* (MPAC/2)/(X0/2), SP */
     agc_w2_t x1h;       /* X1/2 as DP, then X2 */
     agc_w2_t qr;        /* DP quotient major word, remainder */
     agc_w2_t add;       /* (MPAC/2)/X1 as a DP pair */
-    int o = 0;   /* DAS overflow (argument near POSMAX) */
+    int      o   = 0;   /* DAS overflow (argument near POSMAX) */
 
-    q = agc_w_dv(m.hi, 0, buf).hi;   /* (MPAC/2)/(X0/2)  */
-    buf += agc_w_mp(q, AGC_W_HALF).hi; /* X1 = ...         */
-    x1h = agc_w_mp(buf, AGC_W_HALF);   /* X1/2 as DP       */
-    qr = agc_w_dv(m.hi, m.lo, buf);   /* DV BUF           */
+    q      = agc_w_dv(m.hi, 0, buf).hi;   /* (MPAC/2)/(X0/2)  */
+    buf    += agc_w_mp(q, AGC_W_HALF).hi; /* X1 = ...         */
+    x1h    = agc_w_mp(buf, AGC_W_HALF);   /* X1/2 as DP       */
+    qr     = agc_w_dv(m.hi, m.lo, buf);   /* DV BUF           */
     add.hi = qr.hi;
     add.lo = agc_w_dv(qr.lo, 0, buf).hi;  /* minor quotient   */
-    x1h = agc_w_das(x1h, add, &o);     /* X2 = X1/2 + ..   */
+    x1h    = agc_w_das(x1h, add, &o);     /* X2 = X1/2 + ..   */
 
     if (o != 0)
     { /* near POSMAX      */
@@ -477,8 +477,8 @@ static agc_w2_t sqrt_arglo(agc_w2_t m)
  **********************************************************************/
 static agc_w3_t sqrt_positive(agc_w3_t m, int *shift)
 {
-    int pass;  /* NORMTEST passes (two places each) */
-    int o = 0; /* TP shift overflow (never: |m0| < 1/4) */
+    int      pass;  /* NORMTEST passes (two places each) */
+    int      o = 0; /* TP shift overflow (never: |m0| < 1/4) */
     agc_w2_t r;     /* the root (MPAC, MPAC+1) */
 
     if (m.m0 >= AGC_W_QUARTER)
@@ -489,13 +489,13 @@ static agc_w3_t sqrt_positive(agc_w3_t m, int *shift)
     else
     {
         *shift += 1; /* SQRTNORM         */
-        m = agc_w_tp_shl1(m, &o);
+        m      = agc_w_tp_shl1(m, &o);
 
         for (pass = 0; (pass < SQ_NORM_MAX) && (m.m0 < AGC_W_QUARTER / 2); pass++)
         { /* NORMTEST (CYL)   */
-            m = agc_w_tp_shl1(m, &o); /* SQRTNM2          */
+            m      = agc_w_tp_shl1(m, &o); /* SQRTNM2          */
             *shift += 1;
-            m = agc_w_tp_shl1(m, &o);
+            m      = agc_w_tp_shl1(m, &o);
         }
 
         r = (m.m0 >= AGC_W_QUARTER) ? sqrt_arghi(agc_w3_top(m)) : sqrt_arglo(agc_w3_top(m)); /* NORMTEST: CYL */
@@ -524,14 +524,14 @@ static agc_w3_t sqrt_positive(agc_w3_t m, int *shift)
 agc_w3_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
 {
     agc_w3_t zero = {0, 0, 0};
-    int k; /* whole-word left shifts done */
+    int      k; /* whole-word left shifts done */
 
     *shift = 0;
     *abort = false;
 
     if (m.m0 < 0)
     { /* SQRTNEG          */
-        *abort = (m.m0 < -1) || (m.m1 < 0); /* POODOO 01302     */
+        *abort  = (m.m0 < -1) || (m.m1 < 0); /* POODOO 01302     */
         zero.m2 = m.m2;                      /* FIXROOT: MPAC, MPAC+1 only */
 
         return (zero); /* ZEROANS          */
@@ -539,9 +539,9 @@ agc_w3_t agc_w_sqrtsub(agc_w3_t m, int *shift, bool *abort)
 
     for (k = 0; (k < 2) && (m.m0 == 0); k++)
     { /* shift left 14    */
-        m.m0 = m.m1;
-        m.m1 = m.m2;
-        m.m2 = 0;
+        m.m0   = m.m1;
+        m.m1   = m.m2;
+        m.m2   = 0;
         *shift += 7; /* CAF SEVEN        */
 
         if (m.m0 < 0)

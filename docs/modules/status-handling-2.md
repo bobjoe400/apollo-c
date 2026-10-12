@@ -136,7 +136,128 @@ reported as information only.
   type invariant / integration module invariant, 28 status guards
   edited); unused agc_w_ok, agc_tp_to_double, agc_sp_sub deleted. Rule
   and tool added to docs/CODING_STANDARD.md.
-- TODO step 7: refined collapse protection (label entered from >= 2 places) + inline
-- TODO step 8: trailing returns removed; short-tail early returns -> if/else
-- TODO make format, make/test/scenarios, then `make prove` once on the
-  finished tree and `make prove-classify`
+- DONE step 7, refined collapse protection: tools/callgraph.py counts the
+  references of every AGC label in both ropes (operand tokens: TC, TCF,
+  BZF, BZMF, CCS/INDEX tables, CADR/2CADR/ADRES, interpretive operands;
+  the defining label field and comments excluded; the larger rope count)
+  and protects a single-caller helper only when its ENTRY label (the
+  first own label of its comment head; later ones are targets inside the
+  routine) has >= 2 references (collapse_candidates.tsv protection
+  `label<2refs:LABEL=n`, kept rows `label-entered:LABEL=n`).
+  387 helpers lost their protection; 216 inlined: js_acy/js_bdz into
+  js_roll by hand (ACYCHECK=0, BDZCHECK=0; the TAUCHCK early return
+  became if/else), 214 by tools/inline_one.py in fixpoint rounds (before
+  and after step 8); 4 (TLIM, ITURNON, IMUOP, IFAILJMP chain into
+  IMUMON) restored as helpers: the merged IMUMON nested 9 blocks deep
+  (Uncrustify aborts at that depth; inline_one.py now refuses a merge
+  deeper than 5 blocks, "too-deep"). Kept with reason (172): 80
+  multi-exit helpers (early returns that are error paths or carry a
+  value: the collapse lane's rule), 41 multi-site, 34 too long for rule
+  4, 17 other refusals (value-conditional, param-written, compile).
+- DONE step 8, returns: tools/returns.py (libclang; `report`/`fix`):
+  15 trailing `return;` deleted (their comments moved to the statement
+  before); 147 normal-flow early returns rewritten as if/else (void
+  functions, and value/status functions whose early return equals their
+  closing constant return, e.g. `return (AGC_STATUS_OK)`), tail <= 12
+  code lines, conditions negated plainly (`!(c)` only when needed).
+  Early returns kept: error paths (status != OK, failed guards: 11
+  void + every status error return), 46 with longer tails, 50 nested.
+- DONE make format (318 files; format-check clean), make, make test
+  (34/34), make scenarios (7), check_rules 0 hard.
+- DONE one `make prove` on the finished tree (2026-10-11 19:05-20:05,
+  3 at a time): 34 entry points OK, `sim` TIMEOUT at 60 min (agc_sim's
+  own main runs unbounded; no CSV). Per-run sums: VALID 821, UNKNOWN 567,
+  INVALID 4, DEAD 63,174; merged sites INVALID 3. Artefacts kept as
+  produced: build/prove/*.csv, build/prove/eva_verdicts.tsv,
+  build/prove/tree (snapshot, COMMIT), tools/prove/summary.txt,
+  tools/prove/progress.log, tools/prove/runs/*.log (sim.log partial).
+  A bounded headless proof entry for the sim was started and withdrawn
+  on the revised direction (its files and run outputs removed, the run
+  artefacts above restored as they were).
+- DEFERRED (user direction): applying EVA VALID deletions and the
+  eva-valid-deferred marks (`make prove-classify`, apply.py --eva-only)
+  is the project-end cleanup, after all reviews and after the sim runs
+  under the VirtualAGC GUI; EVA reruns then (with a bounded sim entry).
+- DONE EVA findings recorded as bug leads in docs/agents/review_items.md
+  ("EVA bug leads"), one line each under the owning lane. Fixed now
+  (plain C defects): INITVEL read LAMBERT's out-struct before testing
+  the status (initvel.c, uninitialised on a LAMBERT entry failure);
+  LM ASCENT ENGOFF swallowed a WAITLIST failure (as_engoff now returns
+  it, BAILOUT 1203). False alarms (no fix, reasons in review_items):
+  the signed overflows at orbital_integration.c XSUM and divide.c GENDDV
+  (bounded NORM counts / normalised divisor not carried through
+  out-parameters), the uninitialised o.x2/o.t reads (non-relational:
+  status OK <=> out written).
+- DONE check_rules: the silent/sentinel check now reads the whole guard
+  block (it read three lines, so `{ agc_relint(); return; }` passed; a
+  block that raises the AGC's alarm/bailout/poodoo is not silent). It
+  found 2 more: as_engoff (converted) and agc_imu_pipfree (postcondition
+  of the INHINT just before, deleted).
+
+## Counts (rule 7)
+* Start of the lane (commit 1b72892): 2,290 silent/sentinel guards (755
+  void + 1,535 value) + 27 other hard violations = 2,317.
+* Resume: 1,015 hard (413 silent + 575 sentinel + 27).
+* Hand pass after the resume: 990 rule-7 guards resolved (988 + the 2 the
+  widened checker found): ~930 deleted as
+  GUARANTEED (each row in tools/prove/manual.tsv with its reason: 998 rows
+  now), ~60 converted (the guard was the visible end of a real failure:
+  status returned and propagated, value moved behind a status/out-param or
+  the callee made void); 27 other violations fixed. check_rules: 0 hard.
+* Functions changed in signature (all callers updated, ~160 call sites
+  plus tests): agc_exec_job_wake_if_asleep, exec_service_interp_alarm,
+  sim_channels_init, sim_channels_tick, agc_extverb_chkpooh/ckmodcad
+  (status + out-param); fresh-start chain STARTSB2..DOFSTART, LIGHTSET,
+  PTBAD, CSM GOPROG tail, T4RUPT DSPOUT/PROCEEDE/ISSZERO/IMUCAGE/IFAILJMP/
+  PROCTNON/RRGIMON, STARTP66/P67, CHKLINUS, CAGETEST, cdu_drive, LM
+  as_engoff (to status); agc_phase_change (group argument dropped: it is the code's
+  GGG); made void because they cannot fail when called correctly:
+  agc_exec_core_info, agc_erase_set_failreg, agc_erase_set_modecadr,
+  agc_dsky_set_dsptem, agc_dsky_response, agc_sv_get, agc_t4_setissw,
+  agc_t4_cagesub, agc_t4_cagesub2, agc_imu_clear_cmds, agc_imu_comp_get,
+  agc_rtb_v1sto2s, agc_imu_ballangs, agc_rr_settrkf, agc_guid_cdu_nbsm,
+  agc_ground_track_determination_flight_path, align_set_dsptem1,
+  rz_set_dsptem_dp, exec_up_stoprate, exec_up_setcoars.
+* Entry checks added where a value enters: pin_chan_of (DSKY channel
+  noun: 1..037), pin_comp_write (agc_chan_writable), sim pad loader (NaN
+  and per-vehicle flagword count), sim input_channel (non-input channel
+  ignored).
+
+## Lessons
+* Most "fallible" guards the classifier could not prove were module
+  invariants (a static the module alone writes), postconditions of the
+  statement just before, 15-bit erasable words, constant arguments, or
+  arithmetic facts of the AGC routine. Reading the writes of the static
+  settles them faster than any call-site analysis.
+* The real failures hide in `st == OK` / `st != BAD_ARG` guards after a
+  call: WAITLIST full (BAILOUT 1203), NOVAC with no core set (BAILOUT
+  1202), CCSHOLE (POODOO 1103). Those must propagate; tolerating
+  "anything but BAD_ARG" ran on after a BAILOUT the AGC never returns
+  from. A test that pumps T4RUPT without servicing the waitlist now sees
+  BAILOUT, as the AGC would.
+* Once a guard is gone a callee often returns OK on every path: make it
+  void (rule 7 first bullet) and its callers' "st" plumbing disappears.
+* Never delete a guard whose condition mixes an assertion with normal
+  flow (`!AGC_ASSERT(x) || n == 0`, `|| fd < 0`): split it. The deletion
+  helper now refuses mixed conditions; one slipped through before that
+  check (the downlist REFSMMAT word bound) and was restored.
+* A guard condition can carry the side effect (`!AGC_ASSERT(decode(code,
+  &c))`): deleting it deletes the call. Grep deleted conditions for `&`
+  arguments.
+* Interpretive divisions go through DDV, which models a zero divisor as
+  the AGC does; the LM DAP's DV likewise. A `!= 0` guard before them is
+  not protecting C from undefined behaviour. A C `/` is (agc_lm_dv: the
+  zero case is the hardware's, a plain if).
+* Inlining chains can nest beyond what Uncrustify accepts (9 levels):
+  inline_one.py refuses merges deeper than 5 blocks.
+* The returns rewrite needs a plain negation (`x != 0`, not `!(x == 0)`):
+  `->` is not an operator.
+* EVA's "got status invalid" is relative to the analysis' precision: two
+  of the three INVALID sites are invariants between two module statics
+  (core set 0 free <=> NEWJOB -0) or a sleeper list EVA cannot see filled;
+  read the calling context in runs/<entry>.log before calling it a bug.
+  The uninitialised-read alarms after `if (st != OK) return` are the
+  non-relational domain's, except where the out-struct is read BEFORE the
+  status test (INITVEL: a real one).
+* The unbounded harness main (argv options, server loop) is not an EVA
+  entry point; a bounded proof main is needed (project end).

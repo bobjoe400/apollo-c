@@ -999,3 +999,4 @@ src/sim/pad.c	pad_flagword	args != NULL	GUARANTEED	the line parser passes the re
 src/sim/socket.c	client_close	i >= 0 && i < SOCK_SLOTS	GUARANTEED	slot index from loops over SOCK_SLOTS; the fd test stays
 src/sim/socket.c	send_to	i >= 0 && i < SOCK_SLOTS	GUARANTEED	slot index from loops over SOCK_SLOTS; the fd test stays
 src/sim/socket.c	set_nonblocking	fd >= 0	GUARANTEED	called with a descriptor socket()/accept() returned, after its own check; the fcntl test stays
+src/imu/mode.c	agc_imu_pipfree	agc_interrupts_inhibited()	GUARANTEED	postcondition of the agc_inhint() just before

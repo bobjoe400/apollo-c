@@ -31,11 +31,11 @@ void waitlist_reset_time3(void); /* STARTSB1: TIME3 = POSMAX   */
 typedef struct phase_var_store
 {
     agc_restart_kind_t kind;       /* what PHSNAMEn names                    */
-    agc_job_id_t job;        /* PHSNAMEn when it names a job           */
-    agc_task_id_t task;       /* PHSNAMEn when it names a task/longcall */
-    int16_t prdt;       /* PHSPRDTn: +prio FINDVAC / -prio NOVAC, or delta time in cs for a task */
-    bool immediate;  /* PHSPRDTn = -0: immediate task       */
-    uint32_t long_dt_cs; /* DP delta time for a variable LONGCALL (C(-GENADR) at the time of the phase change) */
+    agc_job_id_t       job;        /* PHSNAMEn when it names a job           */
+    agc_task_id_t      task;       /* PHSNAMEn when it names a task/longcall */
+    int16_t            prdt;       /* PHSPRDTn: +prio FINDVAC / -prio NOVAC, or delta time in cs for a task */
+    bool               immediate;  /* PHSPRDTn = -0: immediate task       */
+    uint32_t           long_dt_cs; /* DP delta time for a variable LONGCALL (C(-GENADR) at the time of the phase change) */
 } phase_var_store_t;
 
 bool         phase_group_agrees(int group);                          /* PHASEn vs -PHASEn       */
@@ -71,11 +71,11 @@ typedef enum rst_erasable
 typedef struct rst_entry
 { /* one 3-word restart table entry          */
     agc_restart_kind_t kind; /* NONE for the DEC 0 placeholders         */
-    int16_t prdt; /* job: +prio FINDVAC, -prio NOVAC; task DIRECT: delta time cs */
-    rst_dtsrc_t dtsrc;
-    rst_erasable_t src;  /* for INDIRECT / LONG                     */
-    agc_job_id_t job;
-    agc_task_id_t task;
+    int16_t            prdt; /* job: +prio FINDVAC, -prio NOVAC; task DIRECT: delta time cs */
+    rst_dtsrc_t        dtsrc;
+    rst_erasable_t     src;  /* for INDIRECT / LONG                     */
+    agc_job_id_t       job;
+    agc_task_id_t      task;
 } rst_entry_t;
 
 /* Look up entry `part` (0 or 1; 1 only for even phases) of phase `phase`
@@ -131,9 +131,9 @@ void exec_initsub_csm(void); /* INITSUB / RAKE (CSM)           */
  * field has no meaning in C) and DNLADMM1 (downlist code).            */
 typedef struct exec_cp_mode
 {
-    uint8_t mm;     /* major mode number                         */
-    agc_prio_t prio;   /* PREMM1 bits 15-11                         */
-    int dnlist; /* DNLADMM1: DNLSTCOD for the new program    */
+    uint8_t      mm;     /* major mode number                         */
+    agc_prio_t   prio;   /* PREMM1 bits 15-11                         */
+    int          dnlist; /* DNLADMM1: DNLSTCOD for the new program    */
     agc_job_id_t job;    /* FCADRMM1: the program's first job          */
 } exec_cp_mode_t;
 

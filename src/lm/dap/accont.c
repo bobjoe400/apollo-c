@@ -420,7 +420,6 @@ static void store_deadbands(lm_dap_t *d, const acc_work_t *w)
             d->block[b + LM_BK_FIREDB + i] = v;
         }
     }
-
 } /* store_deadbands */
 
 /**********************************************************************

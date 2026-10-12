@@ -88,7 +88,7 @@ agc_status_t agc_csm_comptgo(void)
 {
     agc_guid_state()->csm.nvword1 = 0;                                       /* NVWORD1 = 0           */
     agc_flag_set(AGC_FLAG_TIMRFLAG);
-    agc_status_t st = agc_waitlist_call(1, AGC_TASK_CLOKTASK); /* status */
+    agc_status_t st               = agc_waitlist_call(1, AGC_TASK_CLOKTASK); /* status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -135,8 +135,8 @@ agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
         agc_interp_t ip; /* interpreter work area */
 
         agc_interp_init(&ip);
-        agc_mat_t refsmmat = agc_erase_refsmmat();                                          /* half-unit rows */
-        agc_status_t st = agc_rendz_get_mga(&ip, rz->delvsin, &refsmmat, &rz->plus_mga); /* status of GET+MGA */
+        agc_mat_t    refsmmat = agc_erase_refsmmat();                                          /* half-unit rows */
+        agc_status_t st       = agc_rendz_get_mga(&ip, rz->delvsin, &refsmmat, &rz->plus_mga); /* status of GET+MGA */
 
         if (st != AGC_STATUS_OK)
         {
@@ -258,8 +258,8 @@ static const delrspl_k_t AUG_K[6] = {
 /* Velocity bands of AUGEKUGL, m/cs B-7: V(21K) 64.000, V(3K) 9.144,
  * V(4K) 12.192, V(400) 1.2192 (subtracted in turn), V(26K) 79.248.      */
 static const agc_dp_t AUG_V21K = 134217728; /* m/cs 2^7 */
-static const agc_dp_t AUG_V3K = 19176358;  /* m/cs 2^7 */
-static const agc_dp_t AUG_V4K = 25568477;  /* m/cs 2^7 */
+static const agc_dp_t AUG_V3K  = 19176358;  /* m/cs 2^7 */
+static const agc_dp_t AUG_V4K  = 25568477;  /* m/cs 2^7 */
 static const agc_dp_t AUG_V400 = 2556848;   /* m/cs 2^7 */
 static const agc_dp_t AUG_V26K = 166195102; /* m/cs 2^7 */
 
@@ -268,7 +268,7 @@ static const agc_dp_t AUG_MAXPHIC = 24855239; /* rev 2^0 */
 
 /* TLESS26 2DEC* 5.70146688 E7 B-35*: 8660 PHI / V below 26000 ft/s;
  * TGR26CON 2DEC 7.2 E5 B-28: PHI/3 above, entry time cs 2^28.            */
-static const agc_dp_t AUG_TLESS26 = 445427; /* scale 2^35 */
+static const agc_dp_t AUG_TLESS26  = 445427; /* scale 2^35 */
 static const agc_dp_t AUG_TGR26CON = 720000; /* cs 2^28 */
 
 /* 1BITDP: one low-order bit; TFF - 1BITDP overflows only for -POSMAX.    */
@@ -293,29 +293,29 @@ static const agc_dp_t DELRSPL_1BITDP = 1; /* 2^-28 */
  **********************************************************************/
 static int augekugl_rows(agc_interp_t *ip, agc_dp_t v, int *k2)
 {
-    agc_dp_t d = agc_dp_sub(ip, v, AUG_V21K); /* V - breakpoints, 2^7 */
-    int x1 = 11;                          /* X1 after INCR,1 (row base + 1 - X1)  */
-    int s1 = 6;                           /* S1, the TIX,1 step to the K2 row     */
-    int band = 0;                           /* band reached: <24K, <28K, above      */
+    agc_dp_t d    = agc_dp_sub(ip, v, AUG_V21K); /* V - breakpoints, 2^7 */
+    int      x1   = 11;                          /* X1 after INCR,1 (row base + 1 - X1)  */
+    int      s1   = 6;                           /* S1, the TIX,1 step to the K2 row     */
+    int      band = 0;                           /* band reached: <24K, <28K, above      */
 
     if (d >= 0)
     {
-        d = agc_dp_sub(ip, d, AUG_V3K);
+        d    = agc_dp_sub(ip, d, AUG_V3K);
         band = 1;
-        x1 = 9;
-        s1 = 4;
+        x1   = 9;
+        s1   = 4;
     }
 
     if (band == 1 && d >= 0)
     {
-        d = agc_dp_sub(ip, d, AUG_V4K);
+        d  = agc_dp_sub(ip, d, AUG_V4K);
         s1 = 6;
         band++;
     }
 
     if (band == 2 && d >= 0)
     {
-        d = agc_dp_sub(ip, d, AUG_V400);
+        d  = agc_dp_sub(ip, d, AUG_V400);
         x1 = 7;
         s1 = (d >= 0) ? 6 : 4; /* SXA,1 S1 only above 28400 ft/s       */
     }
@@ -351,12 +351,12 @@ static int augekugl_rows(agc_interp_t *ip, agc_dp_t v, int *k2)
  **********************************************************************/
 static agc_dp_t augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t gamma, agc_dp_t *phi)
 {
-    int r2 = 0;                                                                                /* K2 row */
-    const delrspl_k_t *a = &AUG_K[augekugl_rows(ip, v, &r2)];                                                /* K1 row */
-    const delrspl_k_t *b = &AUG_K[r2];                                                                       /* K2 row */
-    agc_dp_t k1 = agc_dp_add(ip, agc_dp_mul_trunc(agc_dp_sub(ip, v, a->vbase), a->slope), a->bias); /* K1 (PDL 4), scale per p.646 */
-    agc_dp_t k2 = agc_dp_add(ip, agc_dp_mul_trunc(agc_dp_sub(ip, v, b->vbase), b->slope), b->bias); /* K2 (PDL 6), rev 2^0 like GAMMA */
-    agc_dp_t p = agc_dp_div(ip, k1, agc_dp_sub(ip, gamma, k2));                                    /* PHI, rev 2^0; DSU, BDDV */
+    int                r2 = 0;                                                                                /* K2 row */
+    const delrspl_k_t *a  = &AUG_K[augekugl_rows(ip, v, &r2)];                                                /* K1 row */
+    const delrspl_k_t *b  = &AUG_K[r2];                                                                       /* K2 row */
+    agc_dp_t           k1 = agc_dp_add(ip, agc_dp_mul_trunc(agc_dp_sub(ip, v, a->vbase), a->slope), a->bias); /* K1 (PDL 4), scale per p.646 */
+    agc_dp_t           k2 = agc_dp_add(ip, agc_dp_mul_trunc(agc_dp_sub(ip, v, b->vbase), b->slope), b->bias); /* K2 (PDL 6), rev 2^0 like GAMMA */
+    agc_dp_t           p  = agc_dp_div(ip, k1, agc_dp_sub(ip, gamma, k2));                                    /* PHI, rev 2^0; DSU, BDDV */
 
     if (agc_interp_test_ovf(ip) || p < 0 || agc_dp_sub(ip, p, AUG_MAXPHIC) >= 0)
     {
@@ -393,11 +393,11 @@ static agc_dp_t augekugl(agc_interp_t *ip, agc_dp_t v, agc_dp_t gamma, agc_dp_t 
  **********************************************************************/
 static agc_dp_t delrspl_theta(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t *tent)
 {
-    agc_tff_t t = *tff;                                       /* TFF erasables (copy)                 */
-    agc_dp_t vgam = 0;                                          /* V at 300 kft (PDL 0), m/cs 2^7       */
-    agc_dp_t cdelf2 = 0;                                          /* CDELF/2, .5 cos(theta), scale 2^1    */
-    agc_dp_t phi = 0;                                          /* entry range PHI, rev 2^0             */
-    agc_dp_t gamma = agc_entry_vgamcalc(ip, &t, t.rterm, &vgam); /* GAMMA at 300 kft (PDL 2), rev 2^0 */
+    agc_tff_t t      = *tff;                                       /* TFF erasables (copy)                 */
+    agc_dp_t  vgam   = 0;                                          /* V at 300 kft (PDL 0), m/cs 2^7       */
+    agc_dp_t  cdelf2 = 0;                                          /* CDELF/2, .5 cos(theta), scale 2^1    */
+    agc_dp_t  phi    = 0;                                          /* entry range PHI, rev 2^0             */
+    agc_dp_t  gamma  = agc_entry_vgamcalc(ip, &t, t.rterm, &vgam); /* GAMMA at 300 kft (PDL 2), rev 2^0 */
 
     agc_entry_tff_trig(ip, &t, &cdelf2); /* TFF/TRIG: only COS(theta)/2 is used here; SIN goes to the push list in the AGC */
 
@@ -431,10 +431,10 @@ static agc_dp_t delrspl_theta(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t *
  **********************************************************************/
 agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t tff_cs)
 {
-    agc_rendz_t *rz = agc_rendz_erasable(); /* RONE, TSTART82       */
-    agc_dp_t theta1 = 0;                    /* THETA(1), rev 2^0                         */
-    agc_dp_t tent = 0;                    /* T ENTRY (PDL 6), cs 2^28                  */
-    agc_dp_t tffuse = 0;                    /* 8D: TFF, or 0 for CANTDO; cs 2^28         */
+    agc_rendz_t *rz     = agc_rendz_erasable(); /* RONE, TSTART82       */
+    agc_dp_t     theta1 = 0;                    /* THETA(1), rev 2^0                         */
+    agc_dp_t     tent   = 0;                    /* T ENTRY (PDL 6), cs 2^28                  */
+    agc_dp_t     tffuse = 0;                    /* 8D: TFF, or 0 for CANTDO; cs 2^28         */
 
     if (tff_cs < 0)
     { /* BPL CANTDO: past 300 kft     */
@@ -452,18 +452,18 @@ agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t t
         }
     }
 
-    agc_latlong_t ll = {agc_entry_state()->lat_spl, agc_entry_state()->lng_spl, 0, 0}; /* GETARG */
-    agc_dp_t t = rz->tstart_orbit;                                               /* TIME: TSTART82, cs 2^28 */
+    agc_latlong_t        ll = {agc_entry_state()->lat_spl, agc_entry_state()->lng_spl, 0, 0}; /* GETARG */
+    agc_dp_t             t  = rz->tstart_orbit;                                               /* TIME: TSTART82, cs 2^28 */
     agc_navaux_padload_t pad;                                                                 /* pad loads (LALOTORV) */
-    agc_vec_t r = agc_vec_zero();                                                 /* target, m 2^29       */
-    agc_status_t st = agc_navaux_set_latlong(&ll);                                    /* LAT LONG ALT */
+    agc_vec_t            r  = agc_vec_zero();                                                 /* target, m 2^29       */
+    agc_status_t         st = agc_navaux_set_latlong(&ll);                                    /* LAT LONG ALT */
 
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {
         t = agc_erase_piptime(); /* V37FLAG: average G on, PIPTIME */
     }
 
-    t = agc_dp_add(ip, agc_dp_sub(ip, t, tffuse), tent);
+    t                     = agc_dp_add(ip, agc_dp_sub(ip, t, tffuse), tent);
     agc_flag_clear(AGC_FLAG_ERADFLAG);
     agc_latlong_opt_t opt = {agc_flag_test(AGC_FLAG_LUNAFLAG), false};
 

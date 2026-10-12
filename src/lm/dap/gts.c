@@ -516,6 +516,7 @@ agc_status_t lm_dap_gts(void)
 
                 w.k2theta = lm_dap_das(w.k2theta, w.k2); /* ADDITIN        */
             }
+
             newneg = dp_sign(w.k2theta);
         }
 
@@ -594,7 +595,6 @@ static void timegmbl_axis(lm_dap_t *d, int i)
         d->negur    = negu;
         d->rgimtimr = set_timer ? timer : d->rgimtimr; /* keep the timer when the drive stops now */
     }
-
 } /* timegmbl_axis */
 
 /**********************************************************************

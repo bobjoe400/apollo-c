@@ -84,25 +84,25 @@ typedef enum ph_type
 
 typedef struct ph_code
 {
-    int group; /* 1..6 (GGG)                                  */
-    uint16_t tempp; /* TEMPP: what goes into PHASEn                */
+    int       group; /* 1..6 (GGG)                                  */
+    uint16_t  tempp; /* TEMPP: what goes into PHASEn                */
     ph_type_t type;  /* A, B or C */
-    bool tbit;  /* T: set TBASEG (bit 15) */
-    bool lbit;  /* L: set LONGBASE (bit 14) */
-    bool dbit;  /* D: new priority / delta time given */
+    bool      tbit;  /* T: set TBASEG (bit 15) */
+    bool      lbit;  /* L: set LONGBASE (bit 14) */
+    bool      dbit;  /* D: new priority / delta time given */
 } ph_code_t;
 
 /* Group n is index n; index 0 is unused. A fresh AGC's DOFSTART kills
  * every group, so the static image starts with all groups killed. */
-static uint16_t phase_w[AGC_RESTART_GROUPS + 1]; /* PHASEn      */
-static uint16_t nphase_w[AGC_RESTART_GROUPS + 1] = { /* -PHASEn     */
-    PH_NEG0, PH_NEG0, PH_NEG0,
-    PH_NEG0, PH_NEG0, PH_NEG0,
-    PH_NEG0
-};
-static uint16_t tbase[AGC_RESTART_GROUPS + 1]; /* TIME1 at set, cs     */
+static uint16_t          phase_w[AGC_RESTART_GROUPS + 1]; /* PHASEn      */
+static uint16_t          nphase_w[AGC_RESTART_GROUPS + 1] = { /* -PHASEn     */
+             PH_NEG0, PH_NEG0, PH_NEG0,
+             PH_NEG0, PH_NEG0, PH_NEG0,
+             PH_NEG0
+         };
+static uint16_t          tbase[AGC_RESTART_GROUPS + 1]; /* TIME1 at set, cs     */
 static phase_var_store_t var[AGC_RESTART_GROUPS + 1];   /* PHSNAMEn/PRDTn */
-static uint32_t longbase;                      /* TIME2,TIME1 at set cs */
+static uint32_t          longbase;                      /* TIME2,TIME1 at set cs */
 
 /**********************************************************************
  * Group number check for the PHASEn tables (PHASE_TABLE_MAINTENANCE.agc
@@ -128,7 +128,7 @@ static bool group_ok(int group)
  **********************************************************************/
 void phase_set_fixed(int group, uint16_t phase)
 {
-    phase_w[group] = phase;
+    phase_w[group]  = phase;
     nphase_w[group] = (uint16_t) (~phase & PH_WORD15);
 }
 
@@ -142,7 +142,7 @@ void phase_set_fixed(int group, uint16_t phase)
 void phase_kill(int group)
 {
     nphase_w[group] = PH_NEG0;
-    phase_w[group] = 0;
+    phase_w[group]  = 0;
 }
 
 /**********************************************************************
@@ -194,7 +194,7 @@ void agc_phase_set_tbase(int group)
  **********************************************************************/
 void agc_phase_set_priority(int group, agc_prio_t prio)
 {
-    var[group].prdt = (int16_t) prio;
+    var[group].prdt      = (int16_t) prio;
     var[group].immediate = false;
 }
 
@@ -211,8 +211,8 @@ static void decode(uint16_t code, ph_code_t *out)
 {
     out->group = (int) (code & PH_GROUP);
     out->tempp = (uint16_t) ((code & PH_PMASK) >> PH_PSHIFT);
-    out->tbit = (code & PH_TBIT) != 0U;
-    out->lbit = (code & PH_LBIT) != 0U;
+    out->tbit  = (code & PH_TBIT) != 0U;
+    out->lbit  = (code & PH_LBIT) != 0U;
 
     if ((code & PH_TYPEB) != 0U)
     {
@@ -244,8 +244,8 @@ static void decode(uint16_t code, ph_code_t *out)
  **********************************************************************/
 static agc_restart_kind_t cjw_kind(uint16_t tempp)
 {
-    int cjw = (int) (tempp & PH_GROUP) - 2; /* (CJW) - 2: > 0 LONGCALL, 0 job, < 0 task */
-    agc_restart_kind_t k = AGC_RESTART_TASK;             /* W: waitlist task unless CJW says else */
+    int                cjw = (int) (tempp & PH_GROUP) - 2; /* (CJW) - 2: > 0 LONGCALL, 0 job, < 0 task */
+    agc_restart_kind_t k   = AGC_RESTART_TASK;             /* W: waitlist task unless CJW says else */
 
     if (cjw > 0)
     {
@@ -290,13 +290,13 @@ static void store_var(const ph_code_t *c, const agc_phase_var_t *v)
     if (v != 0)
     {
         s->kind = k;
-        s->job = v->job;
+        s->job  = v->job;
         s->task = v->task;
 
         if (c->dbit)
         {
-            s->prdt = v->prio_or_dt;
-            s->immediate = v->immediate;
+            s->prdt       = v->prio_or_dt;
+            s->immediate  = v->immediate;
             s->long_dt_cs = v->long_dt_cs;
         }
     }
@@ -305,10 +305,10 @@ static void store_var(const ph_code_t *c, const agc_phase_var_t *v)
 /* BELOW1 for 2PHSCHNG: the type A phase of the second group.          */
 typedef struct ph_second
 {
-    bool present; /* 2PHSCHNG: a second group is set */
-    int group;   /* TEMPG2 / 2                                  */
+    bool     present; /* 2PHSCHNG: a second group is set */
+    int      group;   /* TEMPG2 / 2                                  */
     uint16_t phase;   /* TEMPP2                                      */
-    bool tbit;    /* TEMPSW2 = BIT15 of the first code word      */
+    bool     tbit;    /* TEMPSW2 = BIT15 of the first code word      */
 } ph_second_t;
 
 /**********************************************************************

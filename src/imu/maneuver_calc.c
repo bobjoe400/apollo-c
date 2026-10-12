@@ -194,7 +194,7 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_
     /* C2: cos(th) DMP sin(ps) DMP sin(ph) SL1, DAD PD14, SL1            */
     agc_tp_t tp = agc_tp_shift(ip, agc_dp_mul_tp(agc_dp_mul_trunc(cth, sps), sph), 1); /* TP MPAC, 2^0 */
 
-    tp = agc_tp_add(ip, tp, agc_tp_from_dp(pd14));
+    tp             = agc_tp_add(ip, tp, agc_tp_from_dp(pd14));
     m->row[0].c[2] = agc_tp_to_dp(agc_tp_shift(ip, tp, 1));
     m->row[1].c[0] = sps;                                         /* C3: DLOAD 8D  */
     m->row[1].c[1] = dmp_dad_shl(ip, cps, cph, 0, 1);             /* C4: DMP SL1   */
@@ -202,11 +202,11 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_
     m->row[2].c[0] = agc_dp_neg(dmp_dad_shl(ip, sth, cps, 0, 1)); /* C6: DMP DCOMP SL1 */
 
     /* C7: (PD14 DMP sin(ps) SL1) pushed; cos(th) DMP sin(ph), DAD, SL1  */
-    t = dmp_dad_shl(ip, pd14, sps, 0, 1);
+    t              = dmp_dad_shl(ip, pd14, sps, 0, 1);
     m->row[2].c[1] = dmp_dad_shl(ip, cth, sph, t, 1);
 
     /* C8: (PD12 DMP sin(ps) SL1) pushed; cos(th) DMP cos(ph), DSU, SL1  */
-    t = dmp_dad_shl(ip, pd12, sps, 0, 1);
+    t              = dmp_dad_shl(ip, pd12, sps, 0, 1);
     m->row[2].c[2] = dmp_dad_shl(ip, cth, cph, agc_dp_neg(t), 1);
 
     return (AGC_STATUS_OK);
@@ -259,17 +259,17 @@ agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t *
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t psi = agc_dp_asin(ip, m->row[1].c[0]);    /* C3, rev 2^0 */
+    agc_dp_t psi  = agc_dp_asin(ip, m->row[1].c[0]);    /* C3, rev 2^0 */
     agc_dp_t cpsi = agc_dp_shl(ip, agc_dp_cos(psi), 1); /* S1 = COS(MGA), 2^0 */
 
-    cpsi = bovb_signmpac(ip, cpsi);                              /* S1       */
-    agc_dp_t q = agc_dp_div(ip, agc_dp_neg(m->row[2].c[0]), cpsi);     /* -C6 / S1, 2^0 */
+    cpsi           = bovb_signmpac(ip, cpsi);                              /* S1       */
+    agc_dp_t q     = agc_dp_div(ip, agc_dp_neg(m->row[2].c[0]), cpsi);     /* -C6 / S1, 2^0 */
     agc_dp_t theta = dcm_quadrant(ip, agc_dp_asin(ip, q), m->row[0].c[0]); /* THETA, rev 2^0 */
 
-    q = agc_dp_div(ip, agc_dp_neg(m->row[1].c[2]), cpsi);     /* -C5 */
+    q            = agc_dp_div(ip, agc_dp_neg(m->row[1].c[2]), cpsi);     /* -C5 */
     agc_dp_t phi = dcm_quadrant(ip, agc_dp_asin(ip, q), m->row[1].c[1]); /* PHI, rev 2^0 */
 
-    *angles = agc_vec_make(phi, theta, psi); /* VECOFANG */
+    *angles  = agc_vec_make(phi, theta, psi); /* VECOFANG */
     *cos_mga = cpsi;
 
     return (AGC_STATUS_OK);
@@ -445,7 +445,7 @@ static agc_dp_t sload_cdu(uint16_t p)
 agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const uint16_t cphi[3], agc_kalc_setup_t *out)
 {
     out->kcase = AGC_KALC_NORMAL;
-    out->cof = agc_vec_zero();
+    out->cof   = agc_vec_zero();
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM && agc_dp_sub(ip, agc_dp_abs(sload_cdu(cphi[2])), LOCKANGL) >= 0)
     {
@@ -469,7 +469,7 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const ui
     /* MFI, its transpose, COFSKEW and CAM (SECAD, p.399-400).                */
     agc_mat_t tmis = agc_mat_transpose(&out->mis); /* TRANSPOS */
 
-    out->mfi = agc_mat_mul(ip, &tmis, &out->mfs); /* MXM3 $4  */
+    out->mfi           = agc_mat_mul(ip, &tmis, &out->mfs); /* MXM3 $4  */
     const agc_mat_t *f = &out->mfi;                         /* MFI, 2^0 */
 
     out->cofskew = agc_vec_make(agc_dp_sub(ip, f->row[2].c[1], f->row[1].c[2]),
@@ -477,9 +477,9 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const ui
                                 agc_dp_sub(ip, f->row[1].c[0], f->row[0].c[1]));
     agc_dp_t cam = agc_dp_add(ip, f->row[0].c[0], f->row[2].c[2]); /* CAM, 2^0 */
 
-    cam = agc_dp_sub(ip, cam, AGC_DP_QUARTER);
+    cam      = agc_dp_sub(ip, cam, AGC_DP_QUARTER);
     out->cam = agc_dp_add(ip, cam, f->row[1].c[1]); /* (trace - 1)/4      */
-    out->am = agc_dp_acos(ip, out->cam);           /* revolutions        */
+    out->am  = agc_dp_acos(ip, out->cam);           /* revolutions        */
 
     bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM); /* LM rope */
 

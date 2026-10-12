@@ -114,7 +114,6 @@ static bool selectp(lm_dap_t *d)
 {
     for (int tempnum = 6; tempnum >= -1; tempnum--)
     { /* <= 8 tries     */
-
         d->polytemp = (agc_sp_t) (jettab[PX_TYPEP + d->numbert] & jettab[d->rotindex]);
 
         if (((uint16_t) d->polytemp & d->ch6mask) == 0u)

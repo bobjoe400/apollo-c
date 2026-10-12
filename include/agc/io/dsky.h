@@ -93,18 +93,18 @@ int      agc_dsky_relay_digit(uint16_t code); /* -1 for blank/bad  */
 
 typedef struct agc_dsky_state
 {
-    int8_t prog[2];                /* MD1 MD2 (or AGC_DSKY_BLANK)       */
-    int8_t verb[2];                /* VD1 VD2                           */
-    int8_t noun[2];                /* ND1 ND2                           */
-    int8_t r[3][AGC_DSKY_RDIGITS]; /* R1..R3, D1..D5                    */
-    int8_t r_sign[3];              /* +1 plus lit, -1 minus lit, 0 none */
+    int8_t   prog[2];                /* MD1 MD2 (or AGC_DSKY_BLANK)       */
+    int8_t   verb[2];                /* VD1 VD2                           */
+    int8_t   noun[2];                /* ND1 ND2                           */
+    int8_t   r[3][AGC_DSKY_RDIGITS]; /* R1..R3, D1..D5                    */
+    int8_t   r_sign[3];              /* +1 plus lit, -1 minus lit, 0 none */
     uint16_t lamps;                  /* channel 011 image                 */
-    bool flash;                  /* V/N flash (bit 6)                 */
-    bool key_rel;                /* KEY REL lamp (bit 5)              */
-    bool opr_err;                /* OPR ERR lamp (bit 7)              */
-    bool uplink_act;             /* UPLINK ACTY lamp (bit 3)          */
-    uint8_t verbreg;                /* VERBREG (two-digit verb code)     */
-    uint8_t nounreg;                /* NOUNREG                           */
+    bool     flash;                  /* V/N flash (bit 6)                 */
+    bool     key_rel;                /* KEY REL lamp (bit 5)              */
+    bool     opr_err;                /* OPR ERR lamp (bit 7)              */
+    bool     uplink_act;             /* UPLINK ACTY lamp (bit 3)          */
+    uint8_t  verbreg;                /* VERBREG (two-digit verb code)     */
+    uint8_t  nounreg;                /* NOUNREG                           */
 } agc_dsky_state_t;
 
 /* ---- initialisation (part of STARTSUB, FRESH_START_AND_RESTART) ------ */

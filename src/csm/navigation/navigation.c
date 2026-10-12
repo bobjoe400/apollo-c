@@ -66,7 +66,7 @@
 #define NC_MRKBUF_EMPTY 077776u            /* -1: no mark in the buffer  */
 #define NC_MRK_WORDS    7                  /* words per buffer */
 
-static agc_dp_t nc_marktime; /* MARKTIME: cs 2^28          */
+static agc_dp_t     nc_marktime; /* MARKTIME: cs 2^28          */
 static agc_job_id_t nc_pointex;  /* POINTEX: WAITONE return    */
 
 /* ---- vehicle dispatch --------------------------------------------------- */
@@ -311,8 +311,8 @@ agc_status_t agc_job_rendezvous_navigation_csm_integrate(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    nc_marktime = agc_rtb_loadtime();
-    bool csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* CSM corrected */
+    nc_marktime      = agc_rtb_loadtime();
+    bool         csm = agc_flag_test(AGC_FLAG_VEHUPFLG); /* CSM corrected */
     agc_status_t st;                                     /* SETINTG */
 
     st = rz_setintg(AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_INTEGRATE);
@@ -652,7 +652,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_end(agc_job_ctx_t *ctx)
 agc_status_t agc_rendz_llasrd(void)
 {
     agc_latlong_t ll;                               /* LAT LONG ALT */
-    agc_status_t st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
+    agc_status_t  st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
 
     if (st != AGC_STATUS_OK)
     {
@@ -661,8 +661,8 @@ agc_status_t agc_rendz_llasrd(void)
 
     agc_align_ram_t *a = agc_align_ram(); /* LANDLAT .. LANDALT */
 
-    a->landlat = ll.lat;
-    a->landalt = ll.alt;
+    a->landlat  = ll.lat;
+    a->landalt  = ll.alt;
     a->landlong = agc_dp_shr(ll.lon, 1);
 
     return (AGC_STATUS_OK);
@@ -682,7 +682,7 @@ agc_status_t agc_rendz_llasrd(void)
 agc_status_t agc_rendz_llasrda(void)
 {
     agc_latlong_t ll;                               /* LAT LONG ALT */
-    agc_status_t st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
+    agc_status_t  st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
 
     if (st != AGC_STATUS_OK)
     {
@@ -690,7 +690,7 @@ agc_status_t agc_rendz_llasrda(void)
     }
 
     agc_align_ram_t *a = agc_align_ram(); /* LANDLAT .. LANDALT */
-    agc_interp_t ip;                  /* interpreter state */
+    agc_interp_t     ip;                  /* interpreter state */
 
     agc_interp_init(&ip);
     ll.lat = a->landlat;

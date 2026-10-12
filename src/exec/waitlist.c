@@ -66,10 +66,10 @@
 #define WL_SVCT3_DELAY 500     /* SVCT3X: DEC 500 (5 s)                */
 #define WL_TICK_LIMIT  65536   /* bound for agc_waitlist_tick loop     */
 
-static uint16_t time3;                            /* TIME3              */
-static int16_t lst1[WL_LST1_N];                  /* LST1               */
+static uint16_t      time3;                            /* TIME3              */
+static int16_t       lst1[WL_LST1_N];                  /* LST1               */
 static agc_task_id_t lst2[AGC_WAITLIST_MAX_TASKS];     /* LST2 (task ids)    */
-static uint32_t pending_longtime;                 /* LONGTIME B(2) cs   */
+static uint32_t      pending_longtime;                 /* LONGTIME B(2) cs   */
 static agc_task_id_t pending_longcadr = AGC_TASK_NONE; /* LONGCADR           */
 
 /**********************************************************************
@@ -385,7 +385,7 @@ agc_status_t agc_waitlist_longcall(uint32_t delay_cs, agc_task_id_t task)
     agc_inhint();
     pending_longtime = delay_cs;   /* DXCH LONGTIME       */
     pending_longcadr = task;       /* DXCH LONGCADR       */
-    agc_status_t st = longcycl(); /* LONGCYCL outcome */
+    agc_status_t st  = longcycl(); /* LONGCYCL outcome */
 
     agc_relint();
 
@@ -449,7 +449,7 @@ void agc_waitlist_kill(agc_task_id_t task)
         if (lst2[k] == task)
         {
             lst2[k] = AGC_TASK_TASKOVER; /* CA TCTSKOVR / TS LST2  */
-            done = true;
+            done    = true;
         }
     }
 
@@ -586,9 +586,9 @@ agc_status_t agc_task_getcadr(void)
  **********************************************************************/
 agc_status_t agc_waitlist_t3rupt(void)
 {
-    agc_status_t result = AGC_STATUS_OK;             /* first non-OK task status */
-    uint16_t gen = exec_restart_generation(); /* STARTSB2 count at entry */
-    bool ruptagn = true;                      /* RUPTAGN: next task due now */
+    agc_status_t result  = AGC_STATUS_OK;             /* first non-OK task status */
+    uint16_t     gen     = exec_restart_generation(); /* STARTSB2 count at entry */
+    bool         ruptagn = true;                      /* RUPTAGN: next task due now */
 
     if (!AGC_ASSERT(time3 < WL_TIME3_OVF))
     {
@@ -607,10 +607,10 @@ agc_status_t agc_waitlist_t3rupt(void)
         }
 
         lst1[WL_LST1_N - 1] = (int16_t) WL_NEG1_2;             /* 81.91 s for ENDTASK */
-        int32_t sum = (int32_t) time3 + a + WL_POSMAX; /* ADS TIME3      */
+        int32_t sum         = (int32_t) time3 + a + WL_POSMAX; /* ADS TIME3      */
 
-        ruptagn = sum >= WL_TIME3_OVF;                             /* RUPTAGN = +1     */
-        time3 = (uint16_t) (ruptagn ? sum - WL_TIME3_OVF : sum); /* overflow leaves the excess in TIME3 */
+        ruptagn            = sum >= WL_TIME3_OVF;                             /* RUPTAGN = +1     */
+        time3              = (uint16_t) (ruptagn ? sum - WL_TIME3_OVF : sum); /* overflow leaves the excess in TIME3 */
         agc_task_id_t task = lst2[0];                                         /* LST2 +0: the task to run */
 
         for (int k = 0; k < AGC_WAITLIST_MAX_TASKS - 1; k++)
@@ -625,7 +625,7 @@ agc_status_t agc_waitlist_t3rupt(void)
             task = pending_longcadr; /* GETCADR: DXCH LONGCADR */
         }
 
-        agc_status_t st = agc_dispatch_task(task);     /* the task's own status */
+        agc_status_t       st  = agc_dispatch_task(task);     /* the task's own status */
         const agc_status_t sia = exec_service_interp_alarm(); /* 1301 / 1302 raised in the task */
 
         if (st == AGC_STATUS_OK)
@@ -679,7 +679,7 @@ agc_status_t agc_waitlist_tick(uint16_t elapsed_cs)
     }
 
     agc_status_t result = AGC_STATUS_OK;        /* first non-OK T3RUPT status */
-    int32_t left = (int32_t) elapsed_cs; /* cs still to advance */
+    int32_t      left   = (int32_t) elapsed_cs; /* cs still to advance */
 
     for (int i = 0; i < WL_TICK_LIMIT && left > 0; i++)
     {
@@ -688,12 +688,12 @@ agc_status_t agc_waitlist_tick(uint16_t elapsed_cs)
         if (left < to_ovf)
         {
             time3 = (uint16_t) ((int32_t) time3 + left);
-            left = 0;
+            left  = 0;
         }
         else
         {
-            left -= to_ovf;
-            time3 = 0;                     /* overflow -> T3RUPT */
+            left            -= to_ovf;
+            time3           = 0;                     /* overflow -> T3RUPT */
             agc_status_t st = agc_waitlist_t3rupt(); /* T3RUPT outcome */
 
             if (st != AGC_STATUS_OK && result == AGC_STATUS_OK)

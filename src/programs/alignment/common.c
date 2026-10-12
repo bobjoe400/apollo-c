@@ -42,7 +42,6 @@ void agc_align_ram_reset(void)
     align_ram.sighting_mark_return = AGC_JOB_NONE;
     align_ram.planet_ret           = AGC_JOB_NONE;
     align_ram.coarse_ret           = AGC_JOB_NONE;
-
 }
 
 /*
@@ -54,7 +53,6 @@ void agc_align_ram_reset(void)
 agc_dp_t agc_align_cdulogic(uint16_t cdu)
 {
     const agc_dp_t r = agc_guid_cdulogic((uint16_t) (cdu & CDU_WORD_MASK));
-
 
     return (r);
 }
@@ -288,7 +286,6 @@ agc_dp_t align_loadtime(void)
     const uint32_t t = agc_time_now_cs();
 
     const agc_dp_t d = (agc_dp_t) (t & (AGC_TIME_MODULUS_CS - 1u));
-
 
     return (d);
 }

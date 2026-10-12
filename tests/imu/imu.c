@@ -437,7 +437,6 @@ static void test_vecpoint(void)
  **********************************************************************/
 static void test_lastbias_pipuse(void)
 {
-
     agc_erase_set_pipax(5);
     agc_erase_set_pipaz(-3);
     agc_imu_set_gcompsw(0);

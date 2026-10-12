@@ -385,6 +385,7 @@ void sim_clock_tick(void)
     clock_counters();
     clock_rupts();
     clock_exec();
+
     if (sim_channels_tick(g_cs) != AGC_STATUS_OK)
     {
         g_stats.errors++; /* a CDU drive count the IMU refused */

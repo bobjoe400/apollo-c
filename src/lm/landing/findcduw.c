@@ -563,7 +563,6 @@ static void fc_gimbal_changes(agc_sp_t cdu[3])
         fc_delgmb[i] = (agc_sp_t) -d; /* MSU CDUXD, COM               */
         l            = fc_delgmb[i];
     }
-
 } /* fc_gimbal_changes */
 
 /**********************************************************************
@@ -650,7 +649,6 @@ static void fc_transfer(void)
     agc_erase_set_delperor(lag[0]);
     agc_erase_set_delqeror(lag[1]);
     agc_erase_set_delreror(lag[2]);
-
 } /* fc_transfer */
 
 /**********************************************************************

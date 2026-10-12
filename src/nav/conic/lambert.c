@@ -696,7 +696,6 @@ static agc_sp_t  g_geomsgn; /* GEOMSGN SP 2^0: +.5 short / -.5 long way */
  *********************************************************************/
 agc_vec_t agc_erase_un(void)
 {
-
     return (g_un);
 }
 

@@ -99,19 +99,19 @@
 typedef struct core_set
 {
     agc_core_state_t state; /* sign of PRIORITY                        */
-    agc_prio_t prio;  /* PRIORITY bits 10-14                     */
-    int vac;   /* -1 NOVAC, else VAC area 0..4            */
-    agc_job_id_t loc;   /* LOC (the job's 2CADR)                   */
-    agc_sp_t arg;   /* MPAC as loaded by the creator, B0 word  */
+    agc_prio_t       prio;  /* PRIORITY bits 10-14                     */
+    int              vac;   /* -1 NOVAC, else VAC area 0..4            */
+    agc_job_id_t     loc;   /* LOC (the job's 2CADR)                   */
+    agc_sp_t         arg;   /* MPAC as loaded by the creator, B0 word  */
 } core_set_t;
 
 static core_set_t core[AGC_EXEC_MAX_JOBS];     /* PRIORITY, LOC, ... */
-static bool vac_used[AGC_EXEC_MAX_VACS]; /* VACnUSE = +0 in use */
-static int newjob = EXEC_NEWJOB_IDLE;   /* NEWJOB             */
-static int locctr = -1;                 /* LOCCTR             */
-static bool yielded;                     /* CHANG1 this pass   */
-static bool in_job;                      /* job body running   */
-static uint16_t generation;                  /* STARTSB2 count     */
+static bool       vac_used[AGC_EXEC_MAX_VACS]; /* VACnUSE = +0 in use */
+static int        newjob = EXEC_NEWJOB_IDLE;   /* NEWJOB             */
+static int        locctr = -1;                 /* LOCCTR             */
+static bool       yielded;                     /* CHANG1 this pass   */
+static bool       in_job;                      /* job body running   */
+static uint16_t   generation;                  /* STARTSB2 count     */
 
 /**********************************************************************
  * NO.CORES + 1 (EXECUTIVE.agc C p.1211 / L p.1106): the number of core
@@ -148,7 +148,7 @@ int agc_exec_core_sets(void)
 static int32_t prio_word(int i)
 {
     const core_set_t *c = &core[i];                                                        /* core set i */
-    int32_t w = ((int32_t) c->prio << EXEC_PRIO_SHIFT) + (int32_t) (c->vac + 1); /* the priority word, before the sign */
+    int32_t           w = ((int32_t) c->prio << EXEC_PRIO_SHIFT) + (int32_t) (c->vac + 1); /* the priority word, before the sign */
 
     if (!AGC_ASSERT(c->vac >= -1 && c->vac < AGC_EXEC_MAX_VACS))
     {
@@ -206,10 +206,10 @@ void exec_clear_tables(void)
     for (int i = 0; i < AGC_EXEC_MAX_JOBS; i++)
     {
         core[i].state = AGC_CORE_FREE; /* CS ZERO / TS PRIORITY */
-        core[i].prio = 0;
-        core[i].vac = -1;
-        core[i].loc = AGC_JOB_NONE;
-        core[i].arg = 0;
+        core[i].prio  = 0;
+        core[i].vac   = -1;
+        core[i].loc   = AGC_JOB_NONE;
+        core[i].arg   = 0;
     }
 
     for (int v = 0; v < AGC_EXEC_MAX_VACS; v++)
@@ -217,9 +217,9 @@ void exec_clear_tables(void)
         vac_used[v] = false; /* VACnUSE = own address */
     }
 
-    newjob = EXEC_NEWJOB_IDLE; /* TS NEWJOB (-0)        */
-    locctr = -1;
-    yielded = false;
+    newjob     = EXEC_NEWJOB_IDLE; /* TS NEWJOB (-0)        */
+    locctr     = -1;
+    yielded    = false;
     generation = (uint16_t) (generation + 1U);
 }
 
@@ -348,7 +348,7 @@ static agc_status_t spectest(void)
  **********************************************************************/
 static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
 {
-    int n = agc_exec_core_sets(); /* core sets to scan */
+    int n     = agc_exec_core_sets(); /* core sets to scan */
     int found = -1;                   /* first free core set, -1 none */
 
     for (int i = 0; i < n && found < 0; i++)
@@ -365,11 +365,11 @@ static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
     }
 
     core[found].state = AGC_CORE_ACTIVE;
-    core[found].prio = prio;
-    core[found].vac = vac;
-    core[found].loc = job;
-    core[found].arg = 0;
-    locctr = found;
+    core[found].prio  = prio;
+    core[found].vac   = vac;
+    core[found].loc   = job;
+    core[found].arg   = 0;
+    locctr            = found;
 
     if (found == 0)
     {
@@ -446,7 +446,7 @@ agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job)
     else
     {
         vac_used[vac] = true; /* store +0 in VACnUSE */
-        st = novac2(prio, job, vac);
+        st            = novac2(prio, job, vac);
     }
 
     agc_relint();
@@ -494,7 +494,7 @@ static void chanjob(int k)
 
     core[0] = core[k];
     core[k] = tmp;
-    newjob = 0;
+    newjob  = 0;
 }
 
 /**********************************************************************
@@ -509,8 +509,8 @@ static void chanjob(int k)
  **********************************************************************/
 static int ejscan(int32_t floor)
 {
-    int n = agc_exec_core_sets(); /* core sets to scan */
-    int best = -1;                   /* best core set so far, -1 none */
+    int     n    = agc_exec_core_sets(); /* core sets to scan */
+    int     best = -1;                   /* best core set so far, -1 none */
     int32_t high = floor;                /* -BUF +1: priority word to beat */
 
     for (int i = 1; i < n; i++)
@@ -563,8 +563,8 @@ static void end_of_job(void)
     }
 
     core[0].state = AGC_CORE_FREE; /* XCH PRIORITY (-0)   */
-    core[0].vac = -1;
-    core[0].loc = AGC_JOB_NONE;
+    core[0].vac   = -1;
+    core[0].loc   = AGC_JOB_NONE;
     ejscan_change();
 }
 
@@ -578,7 +578,7 @@ static void end_of_job(void)
  **********************************************************************/
 void agc_exec_job_sleep(agc_job_id_t wake_as)
 {
-    core[0].loc = wake_as;           /* TS LOC              */
+    core[0].loc   = wake_as;           /* TS LOC              */
     core[0].state = AGC_CORE_SLEEPING; /* CS PRIORITY         */
 }
 
@@ -601,7 +601,7 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
     }
 
     agc_inhint();
-    int n = agc_exec_core_sets(); /* core sets to scan */
+    int n     = agc_exec_core_sets(); /* core sets to scan */
     int found = -1;                   /* sleeping core set at `job`, -1 none */
 
     for (int i = 0; i < n && found < 0; i++)
@@ -617,12 +617,12 @@ agc_status_t agc_exec_job_wake(agc_job_id_t job)
     if (found < 0)
     {
         locctr = -1; /* CS ONE / TS LOCCTR  */
-        st = AGC_STATUS_NOT_FOUND;
+        st     = AGC_STATUS_NOT_FOUND;
     }
     else
     {
         core[found].state = AGC_CORE_ACTIVE; /* re-complement PRIORITY */
-        locctr = found;
+        locctr            = found;
 
         if (found == 0)
         {
@@ -718,7 +718,7 @@ agc_status_t agc_exec_vac_claim(int *vac_index)
         if (!vac_used[v])
         {
             vac_used[v] = true; /* store +0 in VACnUSE */
-            *vac_index = v;
+            *vac_index  = v;
         }
     }
 
@@ -771,7 +771,7 @@ void agc_exec_prio_change(agc_prio_t new_prio)
 {
     agc_inhint();
     core[0].prio = new_prio;
-    int best = ejscan(prio_word(0)); /* best waiting core set, -1 none */
+    int best     = ejscan(prio_word(0)); /* best waiting core set, -1 none */
 
     newjob = (best > 0) ? best : 0; /* ENDPRCHG -1: TS NEWJOB (+0) */
     agc_relint();
@@ -799,7 +799,7 @@ agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
     }
 
     core[0].loc = resume_as; /* LOC = return point  */
-    yielded = true;
+    yielded     = true;
 
     return (AGC_STATUS_OK);
 }
@@ -840,18 +840,18 @@ agc_status_t agc_exec_run_one(void)
     activity_light(true); /* NUDIRECT            */
     agc_job_ctx_t ctx;    /* the job's context for dispatch */
 
-    ctx.id = core[0].loc;
-    ctx.prio = core[0].prio;
-    ctx.has_vac = core[0].vac >= 0;
+    ctx.id        = core[0].loc;
+    ctx.prio      = core[0].prio;
+    ctx.has_vac   = core[0].vac >= 0;
     ctx.vac_index = core[0].vac;
-    ctx.arg = core[0].arg;
-    yielded = false;
-    uint16_t gen = generation; /* STARTSB2 count before the job runs */
+    ctx.arg       = core[0].arg;
+    yielded       = false;
+    uint16_t gen  = generation; /* STARTSB2 count before the job runs */
 
-    in_job = true;
+    in_job          = true;
     agc_status_t st = agc_dispatch_job(&ctx); /* the job's own status */
 
-    in_job = false;
+    in_job                 = false;
     const agc_status_t sia = exec_service_interp_alarm(); /* 1301 / 1302 of the job's SQRT etc */
 
     if (st == AGC_STATUS_OK)
@@ -990,8 +990,8 @@ int agc_exec_newjob(void)
  **********************************************************************/
 void agc_exec_core_info(int core_set, agc_exec_core_info_t *out)
 {
-    out->state = core[core_set].state;
-    out->prio = core[core_set].prio;
+    out->state     = core[core_set].state;
+    out->prio      = core[core_set].prio;
     out->vac_index = core[core_set].vac;
-    out->loc = core[core_set].loc;
+    out->loc       = core[core_set].loc;
 }

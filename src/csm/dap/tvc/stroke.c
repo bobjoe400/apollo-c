@@ -52,7 +52,7 @@
 /* FCARD1..3: reversals minus 1 for sets 2..4, indexed by CARD -3..-1
  * (INDEX CARD; CAF FCARD +4); FCARD4..6: bursts in 1/2 amplitude
  * (INDEX CARD; CS FCARD +7).                                             */
-static const agc_sp_t fcard_revs[3] = {5, 9, 13};
+static const agc_sp_t fcard_revs[3]   = {5, 9, 13};
 static const agc_sp_t fcard_bursts[3] = {6, 5, 4};
 
 /**********************************************************************
@@ -77,10 +77,10 @@ agc_status_t agc_job_strktsti(void)
      **********************************************************************/
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
-    t->caddy = (agc_sp_t) -FCADDY; /* CS FCADDY; TS CADDY             */
-    t->n = (agc_sp_t) -FCADDY; /* TS N                            */
-    t->revs = FREVS;              /* CAF FREVS; TS REVS              */
-    t->card = (agc_sp_t) -FCARD;  /* CS FCARD; TS CARD               */
+    t->caddy        = (agc_sp_t) -FCADDY; /* CS FCADDY; TS CADDY             */
+    t->n            = (agc_sp_t) -FCADDY; /* TS N                            */
+    t->revs         = FREVS;              /* CAF FREVS; TS REVS              */
+    t->card         = (agc_sp_t) -FCARD;  /* CS FCARD; TS CARD               */
     agc_status_t st = AGC_STATUS_OK;      /* TCR TSTINIT                 */
 
     agc_inhint();
@@ -116,12 +116,12 @@ static void stroke_burst(void)
     {
         if (t->revs > 0)
         { /* CCS REVS: REVUP */
-            t->revs = (agc_sp_t) (t->revs - 1); /* TS REVS                    */
+            t->revs  = (agc_sp_t) (t->revs - 1); /* TS REVS                    */
             t->caddy = csm_dap_ads(t->n, t->n);  /* CA N; DOUBLE: 2 x 1/2 amplitude */
         }
         else if (t->revs == 0)
         { /* REVUP +4: final reversal, this set */
-            t->revs = -1;   /* CS ONE; TS REVS: prepare for a new burst     */
+            t->revs  = -1;   /* CS ONE; TS REVS: prepare for a new burst     */
             t->caddy = t->n; /* CA N: just return to zero                    */
         }
         else
@@ -140,15 +140,15 @@ static void stroke_burst(void)
 
             if (t_set->card >= 0)
             { /* CS CARD; BZF STROKILL: all sets completed */
-                t_set->card = 0; /* (AGC: -0)                                     */
+                t_set->card    = 0; /* (AGC: -0)                                     */
                 t_set->stroker = 0; /* STROKILL: TS STROKER (+0) ends the test       */
             }
             else
             {
                 int k = (int) t_set->card + 3; /* CARD -3, -2, -1 -> 0, 1, 2           */
 
-                t_set->revs = fcard_revs[k];               /* INDEX CARD; CAF FCARD +4 */
-                t_set->n = (agc_sp_t) -fcard_bursts[k]; /* INDEX CARD; CS FCARD +7  */
+                t_set->revs  = fcard_revs[k];               /* INDEX CARD; CAF FCARD +4 */
+                t_set->n     = (agc_sp_t) -fcard_bursts[k]; /* INDEX CARD; CS FCARD +7  */
                 t_set->caddy = t_set->n;                    /* TS N; TS CADDY           */
             }
 
@@ -178,7 +178,7 @@ agc_status_t csm_tvc_hack(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    t->bunker_task = false;                                            /* QXCH BUNKER        */
+    t->bunker_task  = false;                                            /* QXCH BUNKER        */
     agc_status_t st = agc_waitlist_call(HACK_DELAY, AGC_TASK_HACKWLST); /* CAF 20MS; WAITLIST */
 
     stroke_burst();

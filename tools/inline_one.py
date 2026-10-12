@@ -624,7 +624,22 @@ def build(hfile, cfile, helper, caller, max_lines=60):
     n = cgast.body_code_lines(nl, nf[caller])
     if n > max_lines:
         raise Refuse(f'too-long: {caller} would have {n} code lines (> {max_lines})')
+    depth = max_depth(nf[caller])
+    if depth > MAX_DEPTH:
+        raise Refuse(f'too-deep: {caller} would nest {depth} blocks deep (> {MAX_DEPTH})')
     return out, n
+
+
+MAX_DEPTH = 5  # nested blocks below the function body (readability; Uncrustify stops at 9 levels)
+
+
+def max_depth(fn, d=0):
+    """Deepest nesting of compound statements below the function body."""
+    best = d
+    for c in fn.get_children():
+        nd = d + 1 if c.kind == K.COMPOUND_STMT else d
+        best = max(best, max_depth(c, nd))
+    return best - 1 if d == 0 and best > 0 else best
 
 
 def prototypes(htu, ctu, helper):

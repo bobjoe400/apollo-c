@@ -63,7 +63,7 @@ agc_status_t pin_noun_load(void)
 
     if (st == AGC_STATUS_NOT_FOUND || s->noun.ncomp == 0u)
     {
-        s->nntype = PIN_NNTYPE_SPARE;
+        s->nntype   = PIN_NNTYPE_SPARE;
         s->nouncadr = 0;
 
         return (AGC_STATUS_NOT_FOUND);
@@ -77,16 +77,16 @@ agc_status_t pin_noun_load(void)
     switch (s->noun.data_id[0])
     {
         case AGC_DATA_SPECIFY_ADDR:
-            s->nntype = PIN_NNTYPE_MCTBS;
+            s->nntype   = PIN_NNTYPE_MCTBS;
             break;
         case AGC_DATA_SPECIFY_CHANNEL:
-            s->nntype = PIN_NNTYPE_CHAN;
+            s->nntype   = PIN_NNTYPE_CHAN;
             break;
         case AGC_DATA_INCREMENT_ADDR:
-            s->nntype = PIN_NNTYPE_AUGMENT;
+            s->nntype   = PIN_NNTYPE_AUGMENT;
             break;
         default:
-            s->nntype = PIN_NNTYPE_NORMAL;
+            s->nntype   = PIN_NNTYPE_NORMAL;
             s->nouncadr = 0;
             break;
     }
@@ -197,8 +197,8 @@ agc_status_t pin_almcycle(void)
     }
 
     agc_dsky_falton();
-    s->reqret = PIN_REQ_PASS0;            /* set for ENTPAS0        */
-    s->reqret_neg = false;
+    s->reqret       = PIN_REQ_PASS0;            /* set for ENTPAS0        */
+    s->reqret_neg   = false;
     agc_status_t st = pin_updatvb(s->verbsave); /* status so far */
 
     return ((st == AGC_STATUS_OK) ? PIN_STATUS_RECYCLE : st); /* if OK */
@@ -311,15 +311,15 @@ static agc_status_t pin_dsp_octal(uint8_t verb)
     }
 
     int count = (verb <= 3u) ? 1 : (int) verb - 2; /* registers used  */
-    int need = first + count - 1;                 /* highest comp    */
+    int need  = first + count - 1;                 /* highest comp    */
 
     if (!pin_comptest(need) || !pin_dectest())
     {
         return (pin_dspalarm());
     }
 
-    agc_status_t st = AGC_STATUS_OK; /* status so far */
-    uint16_t buf[3] = {0, 0, 0};
+    agc_status_t st     = AGC_STATUS_OK; /* status so far */
+    uint16_t     buf[3] = {0, 0, 0};
 
     for (int i = 0; i < count && st == AGC_STATUS_OK; i++)
     {
@@ -360,8 +360,8 @@ agc_status_t pin_usead(uint16_t ecadr)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    uint16_t keep = ecadr;           /* ECADR to keep in NOUNCADR */
-    agc_status_t st = pin_noun_load(); /* status so far */
+    uint16_t     keep = ecadr;           /* ECADR to keep in NOUNCADR */
+    agc_status_t st   = pin_noun_load(); /* status so far */
 
     s->nouncadr = keep; /* SETNCADR               */
 
@@ -489,7 +489,7 @@ agc_status_t pin_reqadd_resume(void)
  **********************************************************************/
 agc_status_t pin_testnn(void)
 {
-    pin_state_t *s = pin_st();        /* pinball erasables */
+    pin_state_t *s  = pin_st();        /* pinball erasables */
     agc_status_t st = pin_noun_load(); /* status so far */
 
     if (st != AGC_STATUS_OK && st != AGC_STATUS_NOT_FOUND)

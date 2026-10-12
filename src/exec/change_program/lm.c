@@ -195,8 +195,8 @@ static void cp_reset22(bool clear_flags)
 agc_status_t exec_cp_rendezvous_lm(uint8_t mm, bool *statquo)
 {
     agc_sp_t modreg = agc_erase_modreg();
-    bool p20 = agc_flag_test(AGC_FLAG_RNDVZFLG);
-    bool p25 = agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE);
+    bool     p20    = agc_flag_test(AGC_FLAG_RNDVZFLG);
+    bool     p25    = agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE);
 
     *statquo = false;
 

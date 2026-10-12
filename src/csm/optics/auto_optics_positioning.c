@@ -64,11 +64,11 @@ static bool cmc_mode(void)
  */
 agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t angle)
 {
-    const agc_dp_t s = agc_dp_sin(angle); /* 1/2 SIN */
+    const agc_dp_t  s  = agc_dp_sin(angle); /* 1/2 SIN */
     const agc_vec_t t1 = agc_vec_shl(ip, agc_vec_scale(ip, agc_vec_cross(ip, axis, los), s), 2);
-    const agc_dp_t d = agc_vec_dot(ip, axis, los);
+    const agc_dp_t  d  = agc_vec_dot(ip, axis, los);
     const agc_vec_t t2 = agc_vec_shl(ip, agc_vec_scale(ip, axis, d), 2);
-    const agc_dp_t c = agc_dp_cos(angle); /* 1/2 COS */
+    const agc_dp_t  c  = agc_dp_cos(angle); /* 1/2 COS */
     const agc_vec_t t3 = agc_vec_shl(ip, agc_vec_scale(ip, agc_vec_sub(ip, los, t2), c), 1);
 
     return (agc_vec_unit(ip, agc_vec_add(ip, agc_vec_add(ip, t3, t2), t1), NULL, NULL));
@@ -82,11 +82,11 @@ agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t
  */
 agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job, agc_vec_t *los)
 {
-    agc_align_ram_t *ram = agc_align_ram();
+    agc_align_ram_t     *ram = agc_align_ram();
     agc_navaux_padload_t pad;
-    agc_status_t st = agc_navaux_get_padload(&pad);
+    agc_status_t         st  = agc_navaux_get_padload(&pad);
 
-    ram->aoptime = align_loadtime();
+    ram->aoptime       = align_loadtime();
     const agc_vec_t uz = agc_vec_make(0, 0, AGC_DP_HALF); /* UNITZ   */
 
     if (st == AGC_STATUS_OK)
@@ -107,15 +107,15 @@ agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job, agc_vec
     }
 
     const agc_vec_t axis2 = agc_vec_unit(ip, agc_vec_cross(ip, o.vatt, o.ratt), NULL, NULL);
-    agc_vec_t v = agc_vec_neg(agc_vec_unit(ip, o.ratt, NULL, NULL));
-    const agc_sp_t n = (agc_sp_t) (agc_erase_landmark() & LANDMARK_PERIODS);
-    const agc_dp_t n16 = (agc_dp_t) n * (1 << N_OVER_16_SHIFT); /* N/16      */
+    agc_vec_t       v     = agc_vec_neg(agc_vec_unit(ip, o.ratt, NULL, NULL));
+    const agc_sp_t  n     = (agc_sp_t) (agc_erase_landmark() & LANDMARK_PERIODS);
+    const agc_dp_t  n16   = (agc_dp_t) n * (1 << N_OVER_16_SHIFT); /* N/16      */
 
     ram->aoptime = agc_dp_mul(ip, n16, MPERIOD);
-    v = agc_csm_rota(ip, ram->star, v, ram->aoptime);
-    ram->star = axis2;
+    v            = agc_csm_rota(ip, ram->star, v, ram->aoptime);
+    ram->star    = axis2;
     ram->aoptime = agc_dp_sub(ip, DP_ONE_SIXTH, ram->aoptime);
-    *los = agc_csm_rota(ip, ram->star, v, ram->aoptime);
+    *los         = agc_csm_rota(ip, ram->star, v, ram->aoptime);
 
     return (AGC_STATUS_OK);
 }
@@ -149,7 +149,7 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_jo
         ram->aoptime = agc_dp_add(ip, align_loadtime(), AOP_LEAD_CS);
     }
 
-    agc_vec_t los;
+    agc_vec_t    los;
     agc_status_t st = AGC_STATUS_OK;
 
     if (agc_flag_test(AGC_FLAG_TARG1FLG) || (agc_flag_test(AGC_FLAG_TARG2FLG) && !agc_flag_test(AGC_FLAG_ADVTRK)))
@@ -157,12 +157,12 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_jo
         /* LEM52 / LMK52 / LMKLMCOM: the target (LM or landmark) position at
          * AOPTIME, then LOS = UNIT(target - RATT(CSM)).                          */
         agc_align_ram_t *ram_los = agc_align_ram();
-        agc_status_t st_los = AGC_STATUS_OK;
-        agc_integ_out_t o;
+        agc_status_t     st_los  = AGC_STATUS_OK;
+        agc_integ_out_t  o;
 
         if (agc_flag_test(AGC_FLAG_TARG1FLG))
         { /* LEM52   */
-            st_los = align_integ(ip, ALIGN_LEMCONIC, ram_los->aoptime, resume_job, &o);
+            st_los        = align_integ(ip, ALIGN_LEMCONIC, ram_los->aoptime, resume_job, &o);
             ram_los->star = o.ratt;
         }
         else
@@ -172,10 +172,10 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_jo
             st_los = agc_navaux_get_padload(&pad);
             agc_latlong_t ll;
 
-            ll.lat = ram_los->landlat; /* LLASRDA */
-            ll.lon = agc_dp_shl(ip, ram_los->landlong, 1);
-            ll.alt = ram_los->landalt;
-            ll.eradm = 0;
+            ll.lat                      = ram_los->landlat; /* LLASRDA */
+            ll.lon                      = agc_dp_shl(ip, ram_los->landlong, 1);
+            ll.alt                      = ram_los->landalt;
+            ll.eradm                    = 0;
             const agc_latlong_opt_t opt = {
                 .lunar = agc_flag_test(AGC_FLAG_LUNAFLAG),
                 .erad = agc_flag_test(AGC_FLAG_ERADFLAG)
@@ -212,13 +212,13 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_jo
     {
         const agc_mat_t refsmmat = agc_erase_refsmmat();
 
-        ram->star = agc_vec_unit(ip, agc_mat_vec(ip, &refsmmat, los), NULL, NULL); /* COM52 */
+        ram->star          = agc_vec_unit(ip, agc_mat_vec(ip, &refsmmat, los), NULL, NULL); /* COM52 */
         agc_cdutrig_t t;
-        bool cult = false;
+        bool          cult = false;
 
         agc_guid_cdutrig(&t); /* CDUTRIG  */
-        st = AGC_STATUS_OK;
-        st = agc_csm_calcsxa(ip, ram->star, &t, &ram->sac, &ram->pac, &cult);
+        st      = AGC_STATUS_OK;
+        st      = agc_csm_calcsxa(ip, ram->star, &t, &ram->sac, &ram->pac, &cult);
         *result = cult ? SR52_OVER_90 : trunnion_class(ram->pac);
     }
 
@@ -248,7 +248,7 @@ static agc_status_t auto_optics_target(const agc_job_ctx_t *ctx, bool resumed)
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    int r = SR52_OVER_90;
+    int          r  = SR52_OVER_90;
     agc_status_t st = agc_csm_target_optics_angles(&ip, resumed, AGC_JOB_AUTO_OPTICS_POSITIONING_RESUME, &r);
 
     if (st == AGC_STATUS_BUSY)
@@ -340,8 +340,8 @@ static agc_status_t auto_optics_start(const agc_job_ctx_t *ctx, agc_job_id_t ret
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->auto_optics_return = ret; /* SAVQR52  */
-    ram->desoptt = agc_erase_cdut();
-    ram->desopts = agc_erase_cdus();
+    ram->desoptt            = agc_erase_cdut();
+    ram->desopts            = agc_erase_cdus();
     agc_erase_set_optind(0);
     agc_flag_clear(AGC_FLAG_SIGHTING_MARK_REQUESTED);
     agc_flag_set(AGC_FLAG_TRUNFLAG);

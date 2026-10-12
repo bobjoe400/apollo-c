@@ -56,7 +56,7 @@ agc_status_t agc_job_csm_realign_star_selection(agc_job_ctx_t *ctx)
 static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
 
     agc_interp_init(&ip);
     agc_status_t st = agc_align_locsam(&ip, ram->tsight, AGC_JOB_CSM_REALIGN_STARS_LOCATED, &ram->locsam);
@@ -70,7 +70,7 @@ static agc_status_t realign_pick_stars(agc_job_ctx_t *ctx)
 
     align_read_cdus(cdu);
     const agc_mat_t refsmmat = agc_erase_refsmmat();
-    bool found = false;
+    bool            found    = false;
 
     if (st == AGC_STATUS_OK)
     {
@@ -124,9 +124,9 @@ static void landmark_data_from_latlong(const agc_latlong_t *ll)
 {
     agc_align_ram_t *ram = agc_align_ram();
 
-    ram->landalt = ll->alt;                /* LANDALT  */
+    ram->landalt  = ll->alt;                /* LANDALT  */
     ram->landlong = agc_dp_shr(ll->lon, 1); /* SR1      */
-    ram->landlat = ll->lat;
+    ram->landlat  = ll->lat;
 }
 
 /*
@@ -143,7 +143,7 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 
     agc_align_ram_t *ram = agc_align_ram();
 
-    ram->qmaj = AGC_JOB_REALIGN_GIMBAL_DISPLAY; /* QMAJ     */
+    ram->qmaj   = AGC_JOB_REALIGN_GIMBAL_DISPLAY; /* QMAJ     */
     agc_flag_set(AGC_FLAG_LUNAFLAG);
     agc_flag_set(AGC_FLAG_ERADFLAG);
     ram->tsight = align_dsptem1();
@@ -151,17 +151,17 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_navaux_padload_t pad;
-    agc_status_t st = agc_navaux_get_padload(&pad);
-    agc_vec_t r = agc_vec_zero();
+    agc_status_t         st = agc_navaux_get_padload(&pad);
+    agc_vec_t            r  = agc_vec_zero();
 
     if (st == AGC_STATUS_OK)
     {
         st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->tsight, &r);
     }
 
-    const agc_vec_t alphav = agc_vec_shr(r, 2); /* VSR2     */
-    const agc_latlong_opt_t opt = {.lunar = true, .erad = true};
-    agc_latlong_t ll;
+    const agc_vec_t         alphav = agc_vec_shr(r, 2); /* VSR2     */
+    const agc_latlong_opt_t opt    = {.lunar = true, .erad = true};
+    agc_latlong_t           ll;
 
     if (st == AGC_STATUS_OK)
     {
@@ -196,11 +196,11 @@ agc_status_t agc_job_csm_landing_site_display(agc_job_ctx_t *ctx)
 static agc_status_t landing_site_axes(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
 
     agc_interp_init(&ip);
     agc_integ_out_t o;
-    agc_status_t st = align_integ(&ip, ALIGN_CSMPREC, ram->tsight, AGC_JOB_CSM_LANDING_SITE_AXES, &o);
+    agc_status_t    st = align_integ(&ip, ALIGN_CSMPREC, ram->tsight, AGC_JOB_CSM_LANDING_SITE_AXES, &o);
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -227,19 +227,19 @@ static agc_status_t landing_site_axes(void)
 agc_status_t agc_job_csm_landing_site_accepted(void)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
 
     agc_interp_init(&ip);
     agc_latlong_t ll;
 
-    ll.lat = ram->landlat;
-    ll.lon = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
-    ll.alt = ram->landalt;
-    ll.eradm = 0;
-    const agc_latlong_opt_t opt = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG), .erad = agc_flag_test(AGC_FLAG_ERADFLAG)};
-    agc_navaux_padload_t pad;
-    agc_status_t st = agc_navaux_get_padload(&pad);
-    agc_vec_t alphav = agc_vec_zero();
+    ll.lat                         = ram->landlat;
+    ll.lon                         = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
+    ll.alt                         = ram->landalt;
+    ll.eradm                       = 0;
+    const agc_latlong_opt_t opt    = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG), .erad = agc_flag_test(AGC_FLAG_ERADFLAG)};
+    agc_navaux_padload_t    pad;
+    agc_status_t            st     = agc_navaux_get_padload(&pad);
+    agc_vec_t               alphav = agc_vec_zero();
 
     if (st == AGC_STATUS_OK)
     {

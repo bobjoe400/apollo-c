@@ -109,7 +109,6 @@ agc_status_t lm_dap_rateloop(void)
         }
 
         d->downtork[slot] = lm_dap_wrap((int32_t) d->downtork[slot] + t32); /* overflows */
-
     } /* end DAPTEMP6 = 2, 1, 0 */
 
     int32_t usum = (int32_t) d->torque[1] + d->torque[2]; /* U + V torque, scaled 1 jet-s */

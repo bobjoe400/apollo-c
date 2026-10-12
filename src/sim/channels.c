@@ -297,7 +297,6 @@ static bool input_channel(uint16_t chan, uint16_t value, uint16_t mask)
     uint16_t old = agc_chan_read((int) chan);
     uint16_t v   = (uint16_t) ((value & mask) | (old & (uint16_t) ~mask));
 
-
     return (agc_chan_set_input((int) chan, (uint16_t) (v & SIM_WORD_MASK)) == AGC_STATUS_OK);
 }
 

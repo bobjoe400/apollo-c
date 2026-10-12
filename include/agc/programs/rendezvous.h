@@ -84,7 +84,7 @@
 /* ---- primary-body selection, set by SELECTMU ---------------------------- */
 typedef struct agc_rendz_body
 {
-    bool moon;    /* CMOONFLG at SELECTMU time                         */
+    bool     moon;    /* CMOONFLG at SELECTMU time                         */
     agc_sp_t rtx1;    /* RTX1: -2 earth, -10 moon (X1 of conics), unscaled */
     agc_sp_t rtx2;    /* RTX2: 0 earth, 2 moon (VSR* 0,2 shift), unscaled  */
     agc_dp_t rtmu;    /* RTMU: mu, m^3/cs^2, scale 2^36 (moon value SR 6)  */
@@ -123,7 +123,7 @@ typedef struct agc_rendz
     agc_vec_t delveet2; /* DELVEET2: CDH delta V, reference, m/cs 2^7    */
     agc_vec_t delveet3; /* DELVEET3: TPI/TPM delta V, reference, 2^7     */
     agc_vec_t delvsin;  /* DELVSIN: delta V for thrust program, 2^7      */
-    agc_dp_t delvsab;  /* DELVSAB: |DELVSIN|, m/cs 2^7                  */
+    agc_dp_t  delvsab;  /* DELVSAB: |DELVSIN|, m/cs 2^7                  */
     agc_vec_t delvlvc;  /* DELVLVC: delta V local vertical, m/cs 2^7     */
     agc_vec_t dvlos;    /* DVLOS: delta V along LOS frame, m/cs 2^7      */
     agc_vec_t gdt_2;    /* GDT/2 (LM S34/35.5 overwrite copy), m/cs 2^7  */
@@ -183,14 +183,14 @@ typedef struct agc_rendz
     agc_sp_t vhfcnt;  /* VHFCNT (CM): VHF range marks, unscaled          */
 
     /* R36 / R31 / R34 displays */
-    agc_dp_t range;    /* RANGE: m 2^29 (R36: Y out of plane)           */
-    agc_dp_t rrate;    /* RRATE: m/cs 2^7 (R36: YDOT)                   */
-    agc_dp_t rtheta;   /* RTHETA: revolutions 2^0 (R36: PSI)            */
+    agc_dp_t  range;    /* RANGE: m 2^29 (R36: Y out of plane)           */
+    agc_dp_t  rrate;    /* RRATE: m/cs 2^7 (R36: YDOT)                   */
+    agc_dp_t  rtheta;   /* RTHETA: revolutions 2^0 (R36: PSI)            */
     agc_vec_t basethp;  /* BASETHP: this base position, body scale */
     agc_vec_t basethv;  /* BASETHV: this base velocity, body scale */
     agc_vec_t baseotp;  /* BASEOTP: other base position, body scale */
     agc_vec_t baseotv;  /* BASEOTV: other base velocity, body scale */
-    agc_dp_t basetime; /* BASETIME: time of the base vectors, cs 2^28   */
+    agc_dp_t  basetime; /* BASETIME: time of the base vectors, cs 2^28   */
 
     /* P38/P39 stable orbit */
     agc_dp_t deltar;   /* DELTAR: desired separation, m 2^29         */
@@ -198,52 +198,52 @@ typedef struct agc_rendz
     agc_dp_t targtime; /* TARGTIME: passive at the intercept point, cs 2^28 (TINT EQUALS TPASS4 and TINTSOI EQUALS DELTAR in the AGC: rz->tpass4, rz->deltar) */
 
     /* P17 TPI search (Comanche) */
-    agc_dp_t delhite;  /* DELHITE: |RP| - |RA|, m 2^29                   */
+    agc_dp_t  delhite;  /* DELHITE: |RP| - |RA|, m 2^29                   */
     agc_vec_t e2;       /* E2: unit passive orbit normal, 2^1             */
-    agc_dp_t thetzero; /* THETZERO: phase angle, revolutions 2^0         */
-    agc_dp_t tf;       /* TF: transfer time, cs 2^28                     */
-    agc_dp_t hp;       /* HP: pericenter altitude, m 2^29                */
-    agc_dp_t hpermin;  /* HPERMIN: minimum pericenter, m 2^29            */
-    agc_dp_t delvee;   /* DELVEE: total delta V, m/cs 2^7                */
-    agc_dp_t magvtpi;  /* MAGVTPI: |dV| at TPI, m/cs 2^7                 */
-    agc_dp_t reldelv;  /* RELDELV: |dV| at TPF, m/cs 2^7                 */
-    agc_sp_t nn1;      /* NN1: pericenter code for display, unscaled     */
-    agc_dp_t csth;     /* CSTH: cos of the last Lambert transfer angle (INITVEL debris), 2^1 */
-    agc_dp_t snth;     /* SNTH: sin of that angle, 2^1                   */
+    agc_dp_t  thetzero; /* THETZERO: phase angle, revolutions 2^0         */
+    agc_dp_t  tf;       /* TF: transfer time, cs 2^28                     */
+    agc_dp_t  hp;       /* HP: pericenter altitude, m 2^29                */
+    agc_dp_t  hpermin;  /* HPERMIN: minimum pericenter, m 2^29            */
+    agc_dp_t  delvee;   /* DELVEE: total delta V, m/cs 2^7                */
+    agc_dp_t  magvtpi;  /* MAGVTPI: |dV| at TPI, m/cs 2^7                 */
+    agc_dp_t  reldelv;  /* RELDELV: |dV| at TPF, m/cs 2^7                 */
+    agc_sp_t  nn1;      /* NN1: pericenter code for display, unscaled     */
+    agc_dp_t  csth;     /* CSTH: cos of the last Lambert transfer angle (INITVEL debris), 2^1 */
+    agc_dp_t  snth;     /* SNTH: sin of that angle, 2^1                   */
 
     /* P21 ground track determination (P21TIME .. P21ALT) */
-    agc_dp_t ground_track_time;   /* P21TIME: base vector time, cs 2^28   */
+    agc_dp_t  ground_track_time;   /* P21TIME: base vector time, cs 2^28   */
     agc_vec_t ground_track_base_r; /* P21BASER: m 2^29 earth / 2^27 moon   */
     agc_vec_t ground_track_base_v; /* P21BASEV: m/cs 2^7 earth / 2^5 moon  */
-    agc_sp_t ground_track_origin; /* P21ORIG: 0 earth, 2 moon, unscaled   */
-    agc_dp_t ground_track_vel;    /* P21VEL: |V| m/cs 2^7 (noun 73)       */
-    agc_dp_t ground_track_gamma;  /* P21GAM: flight path angle, rev 2^0   */
-    agc_dp_t ground_track_alt;    /* P21ALT: altitude / 100, m 2^29       */
+    agc_sp_t  ground_track_origin; /* P21ORIG: 0 earth, 2 moon, unscaled   */
+    agc_dp_t  ground_track_vel;    /* P21VEL: |V| m/cs 2^7 (noun 73)       */
+    agc_dp_t  ground_track_gamma;  /* P21GAM: flight path angle, rev 2^0   */
+    agc_dp_t  ground_track_alt;    /* P21ALT: altitude / 100, m 2^29       */
 
     /* P76 */
     agc_vec_t delvov; /* DELVOV: other vehicle delta V (LV), 2^7    */
 
     /* working cells */
-    agc_dp_t tdec2;    /* TDEC2: PRECSET time, cs 2^28               */
+    agc_dp_t     tdec2;    /* TDEC2: PRECSET time, cs 2^28               */
     agc_job_id_t qsaved;   /* QSAVED: VN1645 return (job to resume)      */
     agc_job_id_t normex;   /* NORMEX/SUBEXIT: S34/35.5, DISDVLVC return  */
-    agc_dp_t rtmag;    /* RTMAG: |RTARG| (LM INITVEL), m 2^29        */
-    agc_dp_t mu_a;     /* MU/A (LM INITVEL exit), m^2/cs^2 2^?       */
-    agc_dp_t muasteer; /* MUASTEER: MU/A SR 6 (LM INITVEL), MU/A 2^6 */
-    agc_sp_t numit;    /* ITCTR: INITVEL offsets done, unscaled      */
+    agc_dp_t     rtmag;    /* RTMAG: |RTARG| (LM INITVEL), m 2^29        */
+    agc_dp_t     mu_a;     /* MU/A (LM INITVEL exit), m^2/cs^2 2^?       */
+    agc_dp_t     muasteer; /* MUASTEER: MU/A SR 6 (LM INITVEL), MU/A 2^6 */
+    agc_sp_t     numit;    /* ITCTR: INITVEL offsets done, unscaled      */
 
     /* R30 (V82) */
     agc_vec_t rone;                            /* RONE: m 2^29 (moon: SL2)                   */
     agc_vec_t vone;                            /* VONE: m/cs 2^7 (moon: SL2)                 */
-    agc_dp_t hapox;                           /* HAPOX: apogee height, m 2^29               */
-    agc_dp_t hperx;                           /* HPERX: perigee height, m 2^29              */
-    agc_dp_t tff;                             /* TFF: cs 2^28 (negative)                    */
-    agc_dp_t neg_tper;                        /* -TPER: cs 2^28                             */
-    agc_dp_t tstart_orbit;                    /* TSTART82: cs 2^28                          */
-    agc_dp_t rpadtem;                         /* RPADTEM: pad / site radius, m 2^29 / 2^27  */
-    agc_dp_t orbit_parameter_display_hpermin; /* HPERMIN (R30), m 2^29  */
-    agc_dp_t tff_rtmu;                        /* TFF/RTMU: 1/sqrt(mu), 2^17 / 2^14          */
-    agc_sp_t orbit_display_flags;             /* V82FLAGS: tick bits, unscaled      */
+    agc_dp_t  hapox;                           /* HAPOX: apogee height, m 2^29               */
+    agc_dp_t  hperx;                           /* HPERX: perigee height, m 2^29              */
+    agc_dp_t  tff;                             /* TFF: cs 2^28 (negative)                    */
+    agc_dp_t  neg_tper;                        /* -TPER: cs 2^28                             */
+    agc_dp_t  tstart_orbit;                    /* TSTART82: cs 2^28                          */
+    agc_dp_t  rpadtem;                         /* RPADTEM: pad / site radius, m 2^29 / 2^27  */
+    agc_dp_t  orbit_parameter_display_hpermin; /* HPERMIN (R30), m 2^29  */
+    agc_dp_t  tff_rtmu;                        /* TFF/RTMU: 1/sqrt(mu), 2^17 / 2^14          */
+    agc_sp_t  orbit_display_flags;             /* V82FLAGS: tick bits, unscaled      */
 } agc_rendz_t;
 
 /* TRKMKCNT (B(1)PRM, rendezvous tracking marks): owned here, zeroed by
@@ -268,10 +268,10 @@ typedef struct agc_orbit_params_in
 {
     agc_vec_t rone;     /* RONE: m, 2^29 (earth or moon centred)          */
     agc_vec_t vone;     /* VONE: m/cs, 2^7                                */
-    bool moon;     /* V82EMFLG: set = moon (RONE/VONE rescaled SL2)  */
-    agc_dp_t tff_rtmu; /* TFF/RTMU: 1/sqrt(mu) 2^17 earth / 2^14 moon    */
-    agc_dp_t rpadtem;  /* RPADTEM: pad / landing site radius 2^29 / 2^27 */
-    agc_dp_t hpermin;  /* HPERMIN: 300 kft 2^29 earth / 35 kft 2^27 moon */
+    bool      moon;     /* V82EMFLG: set = moon (RONE/VONE rescaled SL2)  */
+    agc_dp_t  tff_rtmu; /* TFF/RTMU: 1/sqrt(mu) 2^17 earth / 2^14 moon    */
+    agc_dp_t  rpadtem;  /* RPADTEM: pad / landing site radius 2^29 / 2^27 */
+    agc_dp_t  hpermin;  /* HPERMIN: 300 kft 2^29 earth / 35 kft 2^27 moon */
 } agc_orbit_params_in_t;
 
 typedef struct agc_orbit_params_out

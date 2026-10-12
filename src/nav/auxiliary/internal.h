@@ -28,7 +28,6 @@
 /* Largest shift count the AGC encodes in a shift address (7 bits).       */
 #define NAVAUX_MAX_SHIFT 60 /* shift count limit */
 
-
 /* SL* / SR* with an indexed count: n > 0 shifts left (SL, overflow sets
  * OVFIND), n < 0 shifts right by -n (SR, truncating).                     */
 agc_dp_t  agc_navaux_dp_shift(agc_interp_t *ip, agc_dp_t a, int n);

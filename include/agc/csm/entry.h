@@ -155,7 +155,7 @@ typedef struct agc_entry_state
     agc_sp_t predang; /* PREDANG predicted range, scale 2700 NM        */
     agc_sp_t fx[6];   /* FX..FX+5: F3 AREF RTOGO RDOTREF F2 F1, scale per entry (ENTRY_LEXICON p. 840) */
     agc_sp_t grad;    /* GRAD interpolation factor, scale 1            */
-    int jj;      /* JJ   table index 0..12                        */
+    int      jj;      /* JJ   table index 0..12                        */
 
     /* -- pad loads and DSKY inputs ------------------------------------- */
     agc_sp_t headsup; /* HEADSUP +1 lift down, -1 lift up, scale 1     */
@@ -167,10 +167,10 @@ typedef struct agc_entry_state
     agc_dp_t emsalt;  /* EMSALT .05 g altitude above Fischer, m B29    */
 
     /* -- sequencing ---------------------------------------------------- */
-    agc_entry_goto_t gotoaddr;   /* GOTOADDR                         */
+    agc_entry_goto_t    gotoaddr;   /* GOTOADDR                         */
     agc_entry_posexit_t posexit;    /* POSEXIT                          */
-    uint8_t entry_verb; /* ENTRYVN verb (entry display)     */
-    uint8_t entry_noun; /* ENTRYVN noun                     */
+    uint8_t             entry_verb; /* ENTRYVN verb (entry display)     */
+    uint8_t             entry_noun; /* ENTRYVN noun                     */
 
     /* -- displays (P61, entry) ----------------------------------------- */
     agc_dp_t vmagi;   /* VMAGI inertial speed, m/cs B7                 */
@@ -201,13 +201,13 @@ typedef struct agc_entry_state
     agc_sp_t rolltm;   /* ROLLTM roll /180 for TM, B0                   */
 
     /* -- entry DAP values shared with guidance and P62 ------------------- */
-    agc_sp_t rollhold;                  /* ROLLHOLD roll /180 for hold, B0     */
-    agc_sp_t wake_separation_interlock; /* P63FLAG, unscaled */
+    agc_sp_t           rollhold;                  /* ROLLHOLD roll /180 for hold, B0     */
+    agc_sp_t           wake_separation_interlock; /* P63FLAG, unscaled */
     agc_entry_dapmod_t cmdapmod;                  /* CMDAPMOD                            */
-    agc_sp_t alfacom;                   /* ALFACOM /180, B0                    */
-    agc_sp_t betacom;                   /* BETACOM /180, B0                    */
-    agc_sp_t calfa;                     /* CALFA cos alfa, scale 1             */
-    agc_sp_t salfa;                     /* SALFA sin alfa, scale 1             */
+    agc_sp_t           alfacom;                   /* ALFACOM /180, B0                    */
+    agc_sp_t           betacom;                   /* BETACOM /180, B0                    */
+    agc_sp_t           calfa;                     /* CALFA cos alfa, scale 1             */
+    agc_sp_t           salfa;                     /* SALFA sin alfa, scale 1             */
 } agc_entry_state_t;
 
 /* ---- lexicon (lexicon.c) ----------------------------------------- */
@@ -329,9 +329,9 @@ typedef struct agc_entry_roll_cmd
     agc_sp_t ton1;        /* TON1 first jet-on interval, cs B14             */
     agc_sp_t toff;        /* TOFF drift interval, cs B14                     */
     agc_sp_t ton2;        /* TON2 second jet-on interval, cs B14             */
-    int jndx;        /* JNDX  -1 = positive roll jets, +1 = negative    */
-    int jndx1;       /* JNDX1 jet index for TON2                        */
-    bool in_deadzone; /* DZCALL taken: all roll jets off                 */
+    int      jndx;        /* JNDX  -1 = positive roll jets, +1 = negative    */
+    int      jndx1;       /* JNDX1 jet index for TON2                        */
+    bool     in_deadzone; /* DZCALL taken: all roll jets off                 */
 } agc_entry_roll_cmd_t;
 
 /* lcx_360: roll error (ROLLC - ROLL)/360, already corrected for cos alfa

@@ -172,10 +172,10 @@ agc_status_t agc_job_csm_orientation_fine_done(agc_job_ctx_t *ctx)
 agc_status_t agc_job_csm_orientation_mark_setup(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    agc_status_t st = align_phase4(PH_ORIENTATION_RESTART);
+    agc_status_t     st  = align_phase4(PH_ORIENTATION_RESTART);
 
     ram->starind = 0;
-    st = align_set1_pdt();
+    st           = align_set1_pdt();
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK))
     {
@@ -236,10 +236,10 @@ static agc_status_t orientation_after_mark(const agc_job_ctx_t *ctx)
 agc_status_t agc_job_csm_orientation_marked(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
 
     agc_interp_init(&ip);
-    agc_vec_t los;
+    agc_vec_t          los;
     const agc_status_t st = agc_csm_sxtsm_marks(&ip, &los);
 
     if (st != AGC_STATUS_OK)
@@ -282,8 +282,8 @@ agc_status_t agc_job_csm_orientation_second_star(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram();
 
-    ram->vac12 = ram->planet_los;
-    ram->vac6 = ram->planvec;
+    ram->vac12     = ram->planet_los;
+    ram->vac6      = ram->planvec;
     ram->starad[0] = ram->starsav1;
     ram->starad[1] = ram->starsav2;
 
@@ -307,12 +307,12 @@ agc_status_t agc_job_csm_orientation_data_checked(agc_job_ctx_t *ctx)
     }
 
     agc_align_ram_t *ram = agc_align_ram();
-    agc_interp_t ip;
+    agc_interp_t     ip;
 
     agc_interp_init(&ip);
     const agc_vec_t a[2] = {ram->starad[0], ram->starad[1]};
     const agc_vec_t b[2] = {ram->vac6, ram->vac12};
-    agc_status_t st = agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
+    agc_status_t    st   = agc_align_fine_solve(&ip, a, b, &ram->xdc); /* AXISGEN */
 
     if (st != AGC_STATUS_OK)
     {

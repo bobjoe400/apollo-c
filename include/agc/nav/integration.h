@@ -64,57 +64,57 @@ typedef struct agc_integ_sv
 {
     agc_vec_t rrect;  /* RRECT   rectified position, m,     E 2^29 M 2^27 */
     agc_vec_t vrect;  /* VRECT   rectified velocity, m/cs,  E 2^7  M 2^5  */
-    agc_dp_t tet;    /* TET     time of the state, cs,     2^28          */
+    agc_dp_t  tet;    /* TET     time of the state, cs,     2^28          */
     agc_vec_t deltav; /* TDELTAV position deviation, m,     E 2^22 M 2^18 */
     agc_vec_t nuv;    /* TNUV    velocity deviation, m/cs,  E 2^3  M 2^-1 */
     agc_vec_t rcv;    /* RCV     conic position, m,         E 2^29 M 2^27 */
     agc_vec_t vcv;    /* VCV     conic velocity, m/cs,      E 2^7  M 2^5  */
-    agc_dp_t tc;     /* TC      time since rectification, cs, 2^28       */
-    agc_dp_t xkep;   /* XKEP    Kepler x, sqrt(m),         E 2^17 M 2^16 */
+    agc_dp_t  tc;     /* TC      time since rectification, cs, 2^28       */
+    agc_dp_t  xkep;   /* XKEP    Kepler x, sqrt(m),         E 2^17 M 2^16 */
 } agc_integ_sv_t;
 
 /* ---- output left in the push-down list (section 3.0, p. 1311) -------- */
 typedef struct agc_integ_out
 {
-    bool valid; /* RECTOUT ran (INTEXIT reached without it leaves the push list untouched: QUITFLAG, backward request) */
+    bool      valid; /* RECTOUT ran (INTEXIT reached without it leaves the push list untouched: QUITFLAG, backward request) */
     agc_vec_t ratt;  /* 0D  RATT  position, m, 2^29 (both bodies)        */
     agc_vec_t vatt;  /* 6D  VATT  velocity, m/cs, 2^7 (both bodies)      */
-    agc_dp_t tat;   /* 12D TAT   time, cs, 2^28                         */
+    agc_dp_t  tat;   /* 12D TAT   time, cs, 2^28                         */
     agc_vec_t ratt1; /* 14D RATT1 position, m, E 2^29 M 2^27             */
     agc_vec_t vatt1; /* 20D VATT1 velocity, m/cs, E 2^7 M 2^5            */
-    agc_dp_t mu_p;  /* 26D MU(P) m^3/cs^2, E 2^36 M 2^30                */
-    int x1;    /* X1  MUTABLE entry: -2 earth, -10 moon            */
-    int x2;    /* X2  coordinate origin: 0 earth, 2 moon           */
+    agc_dp_t  mu_p;  /* 26D MU(P) m^3/cs^2, E 2^36 M 2^30                */
+    int       x1;    /* X1  MUTABLE entry: -2 earth, -10 moon            */
+    int       x2;    /* X2  coordinate origin: 0 earth, 2 moon           */
 } agc_integ_out_t;
 
 /* ---- the integration erasables ------------------------------------- */
 typedef struct agc_integ_ctx
 {
-    agc_integ_sv_t sv;                       /* temporary state vector RRECT..XKEP      */
-    int pbody;                    /* PBODY (X2): 0 earth, 2 moon             */
-    agc_dp_t tdec1;                    /* TDEC1 (PD 32D) time to integrate to, cs 2^28 */
-    agc_dp_t tdec;                     /* TDEC  working target time, cs 2^28      */
-    agc_dp_t tau;                      /* TAU.  Kepler transfer time, cs 2^28     */
-    agc_dp_t dt2;                      /* DT/2  half step, cs 2^19                */
-    agc_dp_t h;                        /* H     time into the step, cs 2^19       */
-    agc_dp_t dtmax;                    /* 12D   step limit (DT/2 format)          */
-    agc_dp_t rc;                       /* 10D   |RCV|, m, E 2^29 M 2^27           */
-    int stage;                    /* DIFEQCNT: Nystrom stage 0, 1, 2         */
-    int colreg;                   /* COLREG: W column being integrated 0..8  */
-    agc_vec_t alphav;                   /* ALPHAV deviation / unit vector          */
-    agc_dp_t alpham;                   /* ALPHAM |ALPHAV| / |R|                   */
-    agc_vec_t betav;                    /* BETAV  R or perturbing-body vector      */
-    agc_dp_t betam;                    /* BETAM  |BETAV| or MU                    */
+    agc_integ_sv_t  sv;                       /* temporary state vector RRECT..XKEP      */
+    int             pbody;                    /* PBODY (X2): 0 earth, 2 moon             */
+    agc_dp_t        tdec1;                    /* TDEC1 (PD 32D) time to integrate to, cs 2^28 */
+    agc_dp_t        tdec;                     /* TDEC  working target time, cs 2^28      */
+    agc_dp_t        tau;                      /* TAU.  Kepler transfer time, cs 2^28     */
+    agc_dp_t        dt2;                      /* DT/2  half step, cs 2^19                */
+    agc_dp_t        h;                        /* H     time into the step, cs 2^19       */
+    agc_dp_t        dtmax;                    /* 12D   step limit (DT/2 format)          */
+    agc_dp_t        rc;                       /* 10D   |RCV|, m, E 2^29 M 2^27           */
+    int             stage;                    /* DIFEQCNT: Nystrom stage 0, 1, 2         */
+    int             colreg;                   /* COLREG: W column being integrated 0..8  */
+    agc_vec_t       alphav;                   /* ALPHAV deviation / unit vector          */
+    agc_dp_t        alpham;                   /* ALPHAM |ALPHAV| / |R|                   */
+    agc_vec_t       betav;                    /* BETAV  R or perturbing-body vector      */
+    agc_dp_t        betam;                    /* BETAM  |BETAV| or MU                    */
     agc_vec_t phiv, psiv;                     /* PHIV PSIV Nystrom sums                  */
-    agc_vec_t fv;                       /* FV     disturbing acceleration, m/cs^2 E 2^-16 M 2^-20 (= YV/H^2 scale) */
+    agc_vec_t       fv;                       /* FV     disturbing acceleration, m/cs^2 E 2^-16 M 2^-20 (= YV/H^2 scale) */
     agc_vec_t yv, zv;                         /* YV ZV  deviation pos/vel at step start  */
-    agc_vec_t vectab[AGC_INTEG_VECTAB]; /* VECTAB: [2k] R at stage k (E 2^29 M 2^27), [2k+1] R - RPQ, 2^29 (W use) */
-    agc_vec_t rpqv;                     /* RPQV primary to secondary body, m 2^29  */
-    agc_vec_t rpsv;                     /* RPSV primary to sun, m 2^38             */
-    agc_vec_t rqvv;                     /* RQVV secondary body to vehicle, m 2^29 (LM only stores it) */
-    agc_incorp_w_t w;                        /* W  error transition matrix: blk[0][m] = position part of column m, blk[1][m] = velocity part (stored at YV/ZV scale x8) */
-    agc_dp_t t_to_add;                 /* T-TO-ADD (CSM MIDTOAV), cs 2^28         */
-    bool notime;                   /* NOTIME taken (IRETURN1 incremented)     */
+    agc_vec_t       vectab[AGC_INTEG_VECTAB]; /* VECTAB: [2k] R at stage k (E 2^29 M 2^27), [2k+1] R - RPQ, 2^29 (W use) */
+    agc_vec_t       rpqv;                     /* RPQV primary to secondary body, m 2^29  */
+    agc_vec_t       rpsv;                     /* RPSV primary to sun, m 2^38             */
+    agc_vec_t       rqvv;                     /* RQVV secondary body to vehicle, m 2^29 (LM only stores it) */
+    agc_incorp_w_t  w;                        /* W  error transition matrix: blk[0][m] = position part of column m, blk[1][m] = velocity part (stored at YV/ZV scale x8) */
+    agc_dp_t        t_to_add;                 /* T-TO-ADD (CSM MIDTOAV), cs 2^28         */
+    bool            notime;                   /* NOTIME taken (IRETURN1 incremented)     */
     agc_integ_out_t out;                      /* RATT .. X2 (push list output)           */
 } agc_integ_ctx_t;
 
@@ -124,11 +124,11 @@ typedef struct agc_integ_midtoav_out
 {
     agc_vec_t rn1;      /* RN1 = RATT, m 2^29                              */
     agc_vec_t vn1;      /* VN1 = VATT, m/cs 2^7                            */
-    agc_dp_t piptime1; /* PIPTIME1 = TAT, cs 2^28                         */
-    agc_dp_t dt;       /* MPAC: TAT - TIME2,1, cs 2^28                    */
-    int rtx1;     /* RTX1 = X1                                       */
-    int rtx2;     /* RTX2 = X2                                       */
-    bool slipped;  /* NOTIME: alarm 1703, return to CALLOC +2         */
+    agc_dp_t  piptime1; /* PIPTIME1 = TAT, cs 2^28                         */
+    agc_dp_t  dt;       /* MPAC: TAT - TIME2,1, cs 2^28                    */
+    int       rtx1;     /* RTX1 = X1                                       */
+    int       rtx2;     /* RTX2 = X2                                       */
+    bool      slipped;  /* NOTIME: alarm 1703, return to CALLOC +2         */
 } agc_integ_midtoav_out_t;
 
 /* ---- context and permanent state ------------------------------------ */

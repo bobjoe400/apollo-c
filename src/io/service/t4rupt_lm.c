@@ -122,7 +122,6 @@ uint16_t agc_erase_radmodes(void)
 
     v = agc_flagword_get(RADMODES_WORD);
 
-
     return (v);
 }
 
@@ -219,7 +218,6 @@ static agc_sp_t cdu_sp(uint16_t cdu)
     int v = 0; /* signed reading, LSB 2^-14 pi */
 
     v = ((cdu & CDU_SIGN) != 0u) ? -(int) (WORD15 - cdu) : (int) cdu; /* 1s */
-
 
     return ((agc_sp_t) v);
 }

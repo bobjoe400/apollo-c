@@ -263,7 +263,6 @@ static void as_rates(agc_interp_t *ip, agc_dp_t d12)
     agc_dp_t d  = agc_tp_to_dp(agc_tp_shift(ip, td, 2));                             /* D21 DYDOT - DY, SL2, 2^22 m */
 
     a->yrate = agc_dp_div(ip, agc_dp_div(ip, d, e), a->tgo);
-
 } /* as_rates */
 
 /**********************************************************************
@@ -310,7 +309,6 @@ static void as_t2test(agc_interp_t *ip)
     agc_dp_t dd = agc_dp_mul_trunc(a->yrate, d12); /* D D12, scale 2^-9 */
 
     a->ycons = agc_dp_sub(ip, agc_dp_shr(agc_dp_div(ip, a->dydot, negl), 2), dd);
-
 } /* as_t2test */
 
 /**********************************************************************
@@ -353,7 +351,6 @@ static void as_cmponent(agc_interp_t *ip)
     agc_vec_t f = agc_vec_shl(ip, agc_vec_scale(ip, a->zaxis1, a->atp), 1); /* ATP ZAXIS1, scale 2^-9 m/cs^2 */
 
     agc_lm_ldg()->unfc_2 = agc_vec_add(ip, f, ah);
-
 } /* as_cmponent */
 
 /**********************************************************************
@@ -498,8 +495,10 @@ static agc_status_t as_exitvr(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  *
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
+ *
+ * RETURNS: agc_status_t -- OK, or the WAITLIST status (BAILOUT 1203)
  **********************************************************************/
-static void as_engoff(agc_interp_t *ip)
+static agc_status_t as_engoff(agc_interp_t *ip)
 {
     agc_lm_asc_t *a  = agc_lm_asc();                                                                               /* ascent erasables */
     agc_dp_t      dt = agc_dp_add(ip, agc_dp_sub(ip, agc_rtb_loadtime(), agc_erase_piptime()), agc_erase_ttogo()); /* DT to engine off, cs 2^28 */
@@ -509,11 +508,11 @@ static void as_engoff(agc_interp_t *ip)
     agc_inhint();
     agc_status_t st = agc_waitlist_call((uint16_t) a->engoffdt, AGC_TASK_ASCENT_ENGINE_OFF); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         agc_relint();
 
-        return;
+        return (st); /* waitlist full: BAILOUT 1203 */
     }
 
     const agc_phase_var_t v = {AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_ASCENT_ENGINE_OFF, a->engoffdt, false, 0U};
@@ -521,6 +520,8 @@ static void as_engoff(agc_interp_t *ip)
     agc_phase_change_var(047014, &v);
     agc_relint();
     agc_flag_set(AGC_FLAG_IDLEFLAG); /* DVMON off     */
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -598,7 +599,12 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (!agc_flag_test(AGC_FLAG_IDLEFLAG) && agc_dp_sub(ip, a->tgo, AS_4SEC17) < 0)
     {
-        as_engoff(ip);
+        agc_status_t st_engoff = as_engoff(ip);
+
+        if (st_engoff != AGC_STATUS_OK)
+        {
+            return (st_engoff);
+        }
     }
 
     as_t2test(ip);

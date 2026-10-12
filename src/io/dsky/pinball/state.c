@@ -171,7 +171,7 @@ bool pin_ones_negative(uint16_t w)
  **********************************************************************/
 uint16_t pin_ones_mag(uint16_t w)
 {
-    uint16_t v = (uint16_t) (w & PIN_WORD);                                 /* 15-bit word */
+    uint16_t v   = (uint16_t) (w & PIN_WORD);                                 /* 15-bit word */
     uint16_t mag = pin_ones_negative(v) ? (uint16_t) ((~v) & PIN_POSMAX) : v; /* |word| */
 
     return (mag);
@@ -319,7 +319,7 @@ void pin_lodsampt(void)
  **********************************************************************/
 void pin_set_dspcount(int16_t n)
 {
-    g_pin.dspcount = n;
+    g_pin.dspcount     = n;
     g_pin.dspcount_neg = false;
 }
 
@@ -335,7 +335,7 @@ void pin_set_dspcount(int16_t n)
  **********************************************************************/
 void pin_block_dspcount(int16_t n)
 {
-    g_pin.dspcount = n;
+    g_pin.dspcount     = n;
     g_pin.dspcount_neg = true;
 }
 
@@ -545,8 +545,8 @@ agc_status_t pin_5blank(void)
 agc_status_t pin_5blank_rel(int inrel)
 {
     static const int16_t sinblank[3] = {016, 005, 004}; /* SINBLANK     */
-    static const int16_t doublk[3] = {015, 011, 003}; /* DOUBLK       */
-    static const int16_t rxd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
+    static const int16_t doublk[3]   = {015, 011, 003}; /* DOUBLK       */
+    static const int16_t rxd1[3]     = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
 
     if (!AGC_ASSERT(inrel >= PIN_INREL_X) || !AGC_ASSERT(inrel <= PIN_INREL_Z))
     {
@@ -555,13 +555,13 @@ agc_status_t pin_5blank_rel(int inrel)
 
     int k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
 
-    g_pin.xyz_oct[k] = 0;
-    g_pin.xyz_dec[k] = 0;
-    g_pin.xyz_frac[k] = 0;
+    g_pin.xyz_oct[k]     = 0;
+    g_pin.xyz_dec[k]     = 0;
+    g_pin.xyz_frac[k]    = 0;
     g_pin.xyz_negzero[k] = false;
 
     /* zero pertinent dec comp bit (bit 5 R1, 4 R2, 3 R3) and low 2 bits */
-    g_pin.decbrnch &= (uint16_t) ~((uint16_t) (020u >> k) | 3u);
+    g_pin.decbrnch  &= (uint16_t) ~((uint16_t) (020u >> k) | 3u);
     agc_status_t st = pin_dspin(sinblank[k], 0); /* status so far */
 
     pin_set_dspcount(doublk[k]);
@@ -619,7 +619,7 @@ static agc_status_t pin_dspoutsb(uint16_t *relay_word)
     for (int n = 0; n < 2 * PIN_DSPTAB_PANEL; n++)
     {
         g_pin.dspcnt = (int16_t) ((g_pin.dspcnt + PIN_DSPTAB_PANEL - 1) % PIN_DSPTAB_PANEL);
-        uint16_t w = agc_erase_dsptab(g_pin.dspcnt); /* DSPTAB word */
+        uint16_t w   = agc_erase_dsptab(g_pin.dspcnt); /* DSPTAB word */
 
         if (pin_ones_negative(w))
         {
@@ -728,7 +728,7 @@ int16_t agc_dsky_nout(void)
  **********************************************************************/
 static int8_t pin_digit_at(int pos)
 {
-    uint16_t mag = pin_ones_mag(agc_erase_dsptab(pos >> 1));                                            /* magnitude */
+    uint16_t mag  = pin_ones_mag(agc_erase_dsptab(pos >> 1));                                            /* magnitude */
     uint16_t code = ((pos & 1) != 0) ? (uint16_t) ((mag >> 5) & PIN_LOW5) : (uint16_t) (mag & PIN_LOW5); /* left / right; relay code of the char */
 
     return ((int8_t) agc_dsky_relay_digit(code));
@@ -766,8 +766,8 @@ static bool pin_sign_lit(int rel)
  **********************************************************************/
 agc_status_t agc_dsky_get_state(agc_dsky_state_t *out)
 {
-    static const int base[3] = {017, 012, 005}; /* RnD1 + 1          */
-    static const int plus_rel[3] = {6, 4, 1};       /* SGNTAB + 1        */
+    static const int base[3]      = {017, 012, 005}; /* RnD1 + 1          */
+    static const int plus_rel[3]  = {6, 4, 1};       /* SGNTAB + 1        */
     static const int minus_rel[3] = {5, 3, 0};       /* SGNTAB            */
 
     if (!AGC_ASSERT(out != NULL) || !AGC_ASSERT(g_pin.nout >= 0))
@@ -801,13 +801,13 @@ agc_status_t agc_dsky_get_state(agc_dsky_state_t *out)
         }
     }
 
-    out->lamps = agc_chan_read((int) AGC_CHAN_DSALMOUT);
-    out->flash = (out->lamps & PIN_CH11_FLASH) != 0u;
-    out->key_rel = (out->lamps & PIN_CH11_KEYREL) != 0u;
-    out->opr_err = (out->lamps & PIN_CH11_OPRERR) != 0u;
+    out->lamps      = agc_chan_read((int) AGC_CHAN_DSALMOUT);
+    out->flash      = (out->lamps & PIN_CH11_FLASH) != 0u;
+    out->key_rel    = (out->lamps & PIN_CH11_KEYREL) != 0u;
+    out->opr_err    = (out->lamps & PIN_CH11_OPRERR) != 0u;
     out->uplink_act = (out->lamps & PIN_CH11_UPACT) != 0u;
-    out->verbreg = g_pin.verbreg;
-    out->nounreg = g_pin.nounreg;
+    out->verbreg    = g_pin.verbreg;
+    out->nounreg    = g_pin.nounreg;
 
     if (!AGC_ASSERT(out->verbreg <= 99u && out->nounreg <= 99u))
     {
@@ -1001,8 +1001,8 @@ agc_status_t agc_dsky_init(void)
         agc_erase_set_dsptab(i, pin_ones_neg((uint16_t) PIN_BIT12));
     }
 
-    g_pin.nout = PIN_DSPTAB_PANEL; /* NOUTCON = ELEVEN       */
-    g_pin.entret = PIN_ENT_ENDOFJOB;
+    g_pin.nout     = PIN_DSPTAB_PANEL; /* NOUTCON = ELEVEN       */
+    g_pin.entret   = PIN_ENT_ENDOFJOB;
     g_pin.loadstat = PIN_LS_WAITING;
     pin_block_dspcount(PIN_VD1);       /* CS VD1; TS DSPCOUNT    */
     agc_flagword_set(4, 0);            /* kill interface displays */

@@ -87,7 +87,6 @@ static uint16_t sp_word(agc_sp_t v)
 {
     int32_t w = (v >= 0) ? (int32_t) v : (int32_t) WORD15 + (int32_t) v;
 
-
     return ((uint16_t) w);
 }
 
@@ -558,11 +557,11 @@ static agc_status_t dndump_id(void)
 agc_status_t agc_telem_downrupt(void)
 {
     agc_chan_or((int) AGC_CHAN_CHAN13, (uint16_t) BIT7); /* WOTEST/WO1 */
+
     if (!AGC_ASSERT(dn_left >= 0 && dn_left <= 6))
     {
         return (AGC_STATUS_BAD_ARG);
     }
-
 
     switch (dntmgoto)
     {
@@ -570,28 +569,28 @@ agc_status_t agc_telem_downrupt(void)
             return (dnphase1());
         case TM_PHASE2:
             /* DNPHASE2: the next word of the downlist.                                */
-            {
-                if (dn_left > 0)
-                { /* CCS DNECADR: in progress */
-                    return (fetch2wd());
-                }
-
-                if (sublist.active)
-                { /* NEXTINSL                 */
-                    agc_dn_entry_t e = cursor_take(&sublist);
-
-                    return (do_entry(e, false));
-                }
-
-                if (!ctlist.active)
-                { /* CHKLIST: end of list     */
-                    return (newlist());
-                }
-
-                agc_dn_entry_t e = cursor_take(&ctlist); /* NEXTINCL                 */
-
-                return (do_entry(e, true));
+        {
+            if (dn_left > 0)
+            { /* CCS DNECADR: in progress */
+                return (fetch2wd());
             }
+
+            if (sublist.active)
+            { /* NEXTINSL                 */
+                agc_dn_entry_t e = cursor_take(&sublist);
+
+                return (do_entry(e, false));
+            }
+
+            if (!ctlist.active)
+            { /* CHKLIST: end of list     */
+                return (newlist());
+            }
+
+            agc_dn_entry_t e = cursor_take(&ctlist); /* NEXTINCL                 */
+
+            return (do_entry(e, true));
+        }
         case TM_DUMP_ID:
             return (dndump_id());
         case TM_DUMP_LOC: /* DUMPLOC and TIME1        */
@@ -605,21 +604,21 @@ agc_status_t agc_telem_downrupt(void)
         case TM_DUMP_NEXT:
             /* DNDUMP: step DUMPLOC by one DP word; at the end of an EBANK either end
              * the dump (DUMPCNT complete dumps) or send the next EBANK's ID.         */
+        {
+            dumploc = (uint16_t) ((dumploc + 2u) & WORD15);
+
+            if ((dumploc & LOW8) != 0u)
             {
-                dumploc = (uint16_t) ((dumploc + 2u) & WORD15);
-
-                if ((dumploc & LOW8) != 0u)
-                {
-                    return (dntmexit(0, 0)); /* DNDUMP2 (DEVIATION: 0)   */
-                }
-
-                if ((dumploc & dumpcnt & PRIO34) != 0u)
-                {
-                    return (dnphase1()); /* resume the downlist      */
-                }
-
-                return (dndump_id());
+                return (dntmexit(0, 0)); /* DNDUMP2 (DEVIATION: 0)   */
             }
+
+            if ((dumploc & dumpcnt & PRIO34) != 0u)
+            {
+                return (dnphase1()); /* resume the downlist      */
+            }
+
+            return (dndump_id());
+        }
         default:
             break;
     }

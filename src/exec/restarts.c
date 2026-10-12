@@ -35,9 +35,9 @@
  * time modulo 2^14 cs, as the AGC's single-word subtraction gives).   */
 static uint16_t findtime(int group, int32_t dt)
 {
-    uint32_t now = agc_time_now_cs() & RS_TIME1;
+    uint32_t now     = agc_time_now_cs() & RS_TIME1;
     uint32_t elapsed = (now - (uint32_t) phase_tbase(group)) & RS_TIME1;
-    int32_t left = dt - (int32_t) elapsed;
+    int32_t  left    = dt - (int32_t) elapsed;
 
     if (left < RS_SOON_CS)
     {
@@ -75,7 +75,7 @@ static agc_status_t start_long(uint32_t dt_cs, agc_task_id_t task)
     }
 
     uint32_t elapsed = (agc_time_now_cs() - phase_longbase()) & (AGC_TIME_MODULUS_CS - 1U);
-    int64_t left = (int64_t) dt_cs - (int64_t) elapsed;
+    int64_t  left    = (int64_t) dt_cs - (int64_t) elapsed;
 
     if (left > 0)
     {
@@ -101,7 +101,7 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
     }
     else if (e->dtsrc == RST_DT_INDIRECT)
     {
-        int16_t dt = 0;
+        int16_t      dt = 0;
         agc_status_t st = rst_read_sp(e->src, &dt);
 
         if (st != AGC_STATUS_OK)
@@ -126,7 +126,7 @@ static agc_status_t start_table_task(int group, const rst_entry_t *e)
 static agc_status_t restart_entry(int group, const rst_entry_t *e)
 {
     agc_status_t st = AGC_STATUS_NOT_FOUND;
-    uint32_t dt = 0;
+    uint32_t     dt = 0;
 
     switch (e->kind)
     {
@@ -176,7 +176,7 @@ static agc_status_t restart_table(int group, int phase, bool first_only)
         return (agc_exec_findvac(RS_PRIO14, AGC_JOB_INITDSP));
     }
 
-    rst_entry_t e;
+    rst_entry_t  e;
     agc_status_t st = rst_table_lookup(group, phase, 0, &e);
 
     if (st == AGC_STATUS_OK)
@@ -220,7 +220,7 @@ agc_status_t agc_restart_group(int group)
     }
 
     phase_var_store_t s;
-    agc_status_t st = phase_var_get(group, &s);
+    agc_status_t      st = phase_var_get(group, &s);
 
     if (st != AGC_STATUS_OK)
     {
@@ -252,7 +252,7 @@ agc_status_t agc_restart_group(int group)
         return (agc_waitlist_call(delay, s.task));
     }
 
-    st = start_job(s.prdt, s.job); /* ITSLIKEB          */
+    st               = start_job(s.prdt, s.job); /* ITSLIKEB          */
     agc_status_t st2 = restart_table(group, (int) (tempphs & RS_LOW7), true);
 
     return ((st == AGC_STATUS_OK) ? st2 : st);
@@ -264,13 +264,13 @@ agc_status_t agc_restart_group(int group)
 agc_status_t agc_phase_restart_all(void)
 {
     agc_status_t result = AGC_STATUS_OK;
-    bool any = false;
+    bool         any    = false;
 
     for (int g = AGC_RESTART_GROUPS; g >= 1; g--)
     {
         if (agc_phase_get(g) != 0U)
         { /* CCS PHASEn: PNZ   */
-            any = true; /* INCR MPAC +6      */
+            any             = true; /* INCR MPAC +6      */
             agc_status_t st = agc_restart_group(g);
 
             if (st != AGC_STATUS_OK && result == AGC_STATUS_OK)

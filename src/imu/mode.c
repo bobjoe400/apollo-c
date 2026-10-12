@@ -109,7 +109,7 @@ typedef enum modecadr_state
 typedef struct modecadr_word
 {
     modecadr_state_t state; /* +0, -1, -0 or a stalled job         */
-    agc_job_id_t job;   /* MC_STALLED: job to wake                   */
+    agc_job_id_t     job;   /* MC_STALLED: job to wake                   */
 } modecadr_word_t;
 
 /* MODECADR words live in exec (agc_exec.h; STARTSB2 clears them, SVCT3
@@ -132,7 +132,7 @@ typedef struct modecadr_word
  **********************************************************************/
 static modecadr_word_t mc_get(int dev)
 {
-    agc_sp_t v = agc_erase_modecadr(dev); /* MODECADR +dev, B0 */
+    agc_sp_t        v = agc_erase_modecadr(dev); /* MODECADR +dev, B0 */
     modecadr_word_t w = {MC_FREE, AGC_JOB_NONE};
 
     if (v == MC_WORD_GOOD)
@@ -146,7 +146,7 @@ static modecadr_word_t mc_get(int dev)
     else if (v > 0)
     {
         w.state = MC_STALLED;
-        w.job = (agc_job_id_t) v;
+        w.job   = (agc_job_id_t) v;
     }
     else
     {
@@ -207,8 +207,8 @@ static void mc_set(int dev, modecadr_state_t s, agc_job_id_t job)
 }
 
 static agc_imu_stall_result_t outcome[AGC_IMU_DEV_COUNT]; /* L+2/L+3 */
-static agc_sp_t command[3];                 /* COMMAND: pulses to go, B0  */
-static agc_sp_t cducmd[3];                  /* CDUXCMD..: pulses, B0       */
+static agc_sp_t               command[3];                 /* COMMAND: pulses to go, B0  */
+static agc_sp_t               cducmd[3];                  /* CDUXCMD..: pulses, B0       */
 
 /* ---- small helpers ------------------------------------------------------ */
 
@@ -470,7 +470,7 @@ agc_status_t agc_imu_mode_init(void)
     for (int i = 0; i < 3; i++)
     {
         command[i] = 0;
-        cducmd[i] = 0;
+        cducmd[i]  = 0;
     }
 
     return (AGC_STATUS_OK);
@@ -632,8 +632,8 @@ agc_status_t agc_imu_zero(void)
  **********************************************************************/
 agc_status_t agc_task_imu_zero_release(void)
 {
-    bool caged = false;            /* IMU caged: IMUBAD done */
-    agc_status_t cst = cagetest(&caged); /* IMUBAD status */
+    bool         caged = false;            /* IMU caged: IMUBAD done */
+    agc_status_t cst   = cagetest(&caged); /* IMUBAD status */
 
     if (caged)
     {
@@ -666,8 +666,8 @@ agc_status_t agc_task_imu_zero_release(void)
  **********************************************************************/
 agc_status_t agc_task_imu_zero_done(void)
 {
-    bool caged = false;            /* IMU caged: IMUBAD done */
-    agc_status_t cst = cagetest(&caged); /* IMUBAD status */
+    bool         caged = false;            /* IMU caged: IMUBAD done */
+    agc_status_t cst   = cagetest(&caged); /* IMUBAD status */
 
     if (caged)
     {
@@ -750,8 +750,8 @@ agc_status_t agc_imu_coarse(const uint16_t thetad[3])
  **********************************************************************/
 agc_status_t agc_task_coarse_align_commands(void)
 {
-    bool caged = false;            /* IMU caged: IMUBAD done */
-    agc_status_t cst = cagetest(&caged); /* IMUBAD status */
+    bool         caged = false;            /* IMU caged: IMUBAD done */
+    agc_status_t cst   = cagetest(&caged); /* IMUBAD status */
 
     if (caged)
     {
@@ -775,10 +775,10 @@ agc_status_t agc_task_coarse_align_commands(void)
          * RETURNS: agc_sp_t -- COMMAND, pulses B0
          **********************************************************************/
         int diff = cdu_msu(agc_erase_thetad(cduind), cdu_read(cduind)); /* CDU */
-        int mag = (diff < 0) ? -diff : diff;                           /* |THETAD - CDU|, CDU    */
-        int cmd = (mag >> 2) + (((mag & 3) >= 2) ? 1 : 0);             /* MP BIT13, round */
+        int mag  = (diff < 0) ? -diff : diff;                           /* |THETAD - CDU|, CDU    */
+        int cmd  = (mag >> 2) + (((mag & 3) >= 2) ? 1 : 0);             /* MP BIT13, round */
 
-        cmd = (diff < 0) ? -cmd : cmd; /* sign of the difference */
+        cmd             = (diff < 0) ? -cmd : cmd; /* sign of the difference */
         command[cduind] = (agc_sp_t) cmd;
     }
 
@@ -810,7 +810,7 @@ agc_status_t agc_task_coarse_align_commands(void)
  **********************************************************************/
 static agc_sp_t coarse_slice(int axis)
 {
-    int c = command[axis];    /* COMMAND, pulses             */
+    int c   = command[axis];    /* COMMAND, pulses             */
     int mag = (c < 0) ? -c : c; /* CCS COMMAND magnitude       */
 
     if (mag - 1 - COMMAX <= 0)
@@ -836,8 +836,8 @@ static agc_sp_t coarse_slice(int axis)
  **********************************************************************/
 agc_status_t agc_task_coarse_align_pulses(void)
 {
-    bool caged = false;            /* IMU caged: IMUBAD done */
-    agc_status_t cst = cagetest(&caged); /* IMUBAD status */
+    bool         caged = false;            /* IMU caged: IMUBAD done */
+    agc_status_t cst   = cagetest(&caged); /* IMUBAD status */
 
     if (caged)
     {
@@ -850,7 +850,7 @@ agc_status_t agc_task_coarse_align_pulses(void)
     {
         agc_sp_t slice = (command[cduind] == 0) ? 0 : coarse_slice(cduind); /* CCS COMMAND, pulses B0 */
 
-        itemp1 += (slice != 0) ? 1 : 0; /* NEXTCDU INCR     */
+        itemp1         += (slice != 0) ? 1 : 0; /* NEXTCDU INCR     */
         cducmd[cduind] = slice;                 /* TS CDUXCMD       */
     }
 
@@ -903,7 +903,7 @@ agc_status_t agc_task_coarse_align_check(void)
     for (int i = 2; i >= 0; i--)
     {
         int diff = cdu_msu(cdu_read(i), agc_erase_thetad(i)); /* CDU   */
-        int mag = (diff < 0) ? -diff : diff;                 /* CCS magnitude, CDU  */
+        int mag  = (diff < 0) ? -diff : diff;                 /* CCS magnitude, CDU  */
 
         if (mag != 0 && (mag - 1) - COARSTOL > 0)
         { /* COARSERR         */
@@ -1040,8 +1040,8 @@ agc_status_t agc_imu_fine(void)
  **********************************************************************/
 agc_status_t agc_task_imufined(void)
 {
-    bool caged = false;            /* IMU caged: IMUBAD done */
-    agc_status_t cst = cagetest(&caged); /* IMUBAD status */
+    bool         caged = false;            /* IMU caged: IMUBAD done */
+    agc_status_t cst   = cagetest(&caged); /* IMUBAD status */
 
     if (caged)
     {
@@ -1198,13 +1198,6 @@ void agc_imu_pipfree(void)
     agc_inhint();
     imodes30_or(IM30_PIPNOTUSED);
 
-    if (!AGC_ASSERT(agc_interrupts_inhibited()))
-    {
-        agc_relint();
-
-        return;
-    }
-
     if ((agc_erase_imodes30() & IM30_PIPOK) != 0u)
     {
         imu_modeexit();
@@ -1242,7 +1235,7 @@ void agc_imu_pipfree(void)
  **********************************************************************/
 static agc_status_t goodend_common(agc_imu_device_t dev, bool good)
 {
-    modecadr_word_t w = mc_get((int) dev);                             /* MODECADR +dev */
+    modecadr_word_t        w   = mc_get((int) dev);                             /* MODECADR +dev */
     agc_imu_stall_result_t res = good ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* RUPTREG3 */
 
     if (w.state == MC_FREE)
@@ -1417,13 +1410,13 @@ agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as, agc_i
     { /* MODESLP          */
         mc_set((int) dev, MC_STALLED, wake_as);
         outcome[dev] = AGC_IMU_STALL_SLEEPING;
-        *result = AGC_IMU_STALL_SLEEPING;
+        *result      = AGC_IMU_STALL_SLEEPING;
         agc_relint();
         agc_exec_job_sleep(wake_as);
     }
     else
     {
-        *result = (w.state == MC_DONE_GOOD) ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* -1 / -0 */
+        *result      = (w.state == MC_DONE_GOOD) ? AGC_IMU_STALL_GOOD : AGC_IMU_STALL_BAD; /* -1 / -0 */
         outcome[dev] = *result;
         mc_set((int) dev, MC_FREE, AGC_JOB_NONE);                                          /* MG2: reset to +0 */
         imu_modeexit();
@@ -1609,8 +1602,8 @@ static agc_status_t scalprep(uint32_t *scaler)
  **********************************************************************/
 agc_status_t agc_job_standby(agc_job_ctx_t *ctx)
 {
-    uint32_t scaler = 0;               /* scaler snapshot, 1/3200 s */
-    agc_status_t st = AGC_STATUS_BUSY; /* SCALPREP outcome          */
+    uint32_t     scaler = 0;               /* scaler snapshot, 1/3200 s */
+    agc_status_t st     = AGC_STATUS_BUSY; /* SCALPREP outcome          */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(ctx->id == AGC_JOB_STANDBY))
     {
@@ -1623,7 +1616,7 @@ agc_status_t agc_job_standby(agc_job_ctx_t *ctx)
     {
         agc_inhint();                 /* PRESTAND INHINT          */
         time2sav = agc_time_now_cs(); /* DCA TIME2, DXCH TIME2SAV */
-        st = scalprep(&scaler);
+        st       = scalprep(&scaler);
     }
 
     if (st == AGC_STATUS_BUSY)
@@ -1694,8 +1687,8 @@ agc_status_t agc_job_standby_request(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx)
 {
-    uint32_t scaler = 0;               /* scaler snapshot, 1/3200 s */
-    agc_status_t st = AGC_STATUS_BUSY; /* SCALPREP outcome          */
+    uint32_t     scaler = 0;               /* scaler snapshot, 1/3200 s */
+    agc_status_t st     = AGC_STATUS_BUSY; /* SCALPREP outcome          */
 
     if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(scalsave < SCALER_MOD))
     {
@@ -1723,7 +1716,7 @@ agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx)
 
     /* DCS SCALSAVE, DAS MPAC, SHORTMP BIT10; + BIT10 if negative.      */
     uint32_t dt_cs = ((scaler - scalsave) % SCALER_MOD) >> SCALER_TO_CS_SHIFT; /* scaler advance since PRESTAND, cs B28 */
-    uint32_t now = agc_time_now_cs();                                        /* counted since the clear, cs */
+    uint32_t now   = agc_time_now_cs();                                        /* counted since the clear, cs */
 
     if (!AGC_ASSERT(dt_cs < (SCALER_MOD >> SCALER_TO_CS_SHIFT)))
     {

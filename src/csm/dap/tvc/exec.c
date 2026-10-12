@@ -109,13 +109,13 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
     if (t->vcntr > 0)
     { /* not yet             */
         t->vcntrtmp = (agc_sp_t) (t->vcntr - 1); /* protect VCNTR and   */
-        t->masstmp = agc_erase_csmmass();       /* CSMMASS (impulsive burn)  */
+        t->masstmp  = agc_erase_csmmass();       /* CSMMASS (impulsive burn)  */
     }
     else
     { /* GAINCHNG                          */
         agc_csm_dap_fixcw();                                                    /* IXX, IAVG, IAVG/TLX               */
-        *st = csm_tvc_gains(true);                                      /* 1/CONACC, VARK             */
-        t->masstmp = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot); /* 2^16 kg    */
+        *st         = csm_tvc_gains(true);                                      /* 1/CONACC, VARK             */
+        t->masstmp  = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot); /* 2^16 kg    */
         t->vcntrtmp = NINETEEN;                                                 /* reset the variable-gain counter      */
     }
 
@@ -137,9 +137,9 @@ static tvcx_step_t tvcx_exec_copy(void)
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     agc_erase_set_csmmass(t->masstmp);  /* CSMMASS, 2^16 kg              */
-    t->vcntr = t->vcntrtmp;
+    t->vcntr             = t->vcntrtmp;
     t->engine_fail_vcntr = t->vcntrtmp; /* V97VCNTR (R41 at SPSOFF)    */
-    t->tvcexphs = 2;           /* INCR: copycycle over (2)    */
+    t->tvcexphs          = 2;           /* INCR: copycycle over (2)    */
 
     return (TVCX_ONE_SHOT_CHECK);
 }
@@ -155,14 +155,14 @@ static tvcx_step_t tvcx_exec_copy(void)
  **********************************************************************/
 static tvcx_step_t tvcx_one_shot_check(void)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
-    tvcx_step_t next = TVCX_ONE_SHOT_OK;  /* CNTR = +0: now          */
+    agc_csm_tvc_t *t    = agc_csm_dap_tvc(); /* TVC DAP erasables       */
+    tvcx_step_t    next = TVCX_ONE_SHOT_OK;  /* CNTR = +0: now          */
 
     if (t->cntr > 0)
     { /* not yet: count down  */
-        t->cntrtmp = (agc_sp_t) (t->cntr - 1);
+        t->cntrtmp  = (agc_sp_t) (t->cntr - 1);
         t->tvcexphs = 6; /* entry at CNTRCOPY    */
-        next = TVCX_CNTRCOPY;
+        next        = TVCX_CNTRCOPY;
     }
     else if (t->cntr < 0)
     {
@@ -194,7 +194,7 @@ static tvcx_step_t tvcx_repchek(void)
     }
 
     t->tempdap[1] = t->repfrac; /* correction fraction, 2^2           */
-    t->tvcexphs = 4;          /* entry at CORSETUP                  */
+    t->tvcexphs   = 4;          /* entry at CORSETUP                  */
 
     return (TVCX_CORSETUP);
 }
@@ -209,7 +209,7 @@ static tvcx_step_t tvcx_repchek(void)
 static void tvcx_corsetup(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
-    agc_sp_t f = t->tempdap[1];     /* TEMPDAP, fraction 2^2      */
+    agc_sp_t       f = t->tempdap[1];     /* TEMPDAP, fraction 2^2      */
 
     if ((agc_erase_dapdatr1() & CSM_DAP_BIT13) != 0u)
     {
@@ -217,7 +217,7 @@ static void tvcx_corsetup(void)
     }
 
     t->tempdap[0] = f;
-    t->cntrtmp = -1;
+    t->cntrtmp    = -1;
 }
 
 /**********************************************************************
@@ -261,8 +261,8 @@ static agc_dp_words_t tvcx_cgcorr(agc_dp_words_t deloff, agc_dp_words_t delbar, 
  **********************************************************************/
 static tvcx_step_t tvcx_step(tvcx_step_t s)
 {
-    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
-    tvcx_step_t next = TVCX_FIN;          /* next step               */
+    agc_csm_tvc_t *t    = agc_csm_dap_tvc(); /* TVC DAP erasables       */
+    tvcx_step_t    next = TVCX_FIN;          /* next step               */
 
     switch (s)
     {
@@ -280,21 +280,21 @@ static tvcx_step_t tvcx_step(tvcx_step_t s)
             if (csm_dap_engine_on())
             {
                 t->tvcexphs = 3; /* INCR TVCEXPHS (3)                   */
-                next = TVCX_TEMPSET;
+                next        = TVCX_TEMPSET;
             }
 
             break;
         case TVCX_TEMPSET:     /* one-shot correction fraction */
             t->tempdap[1] = FCORFRAC;
-            t->tvcexphs = 4; /* INCR (4)                     */
-            next = TVCX_CORSETUP;
+            t->tvcexphs   = 4; /* INCR (4)                     */
+            next          = TVCX_CORSETUP;
             break;
         case TVCX_CORSETUP:
             tvcx_corsetup();
-            t->pacttmp = tvcx_cgcorr(t->pdeloff, t->delpbar, t->tempdap[0]);
-            t->yacttmp = tvcx_cgcorr(t->ydeloff, t->delybar, t->tempdap[0]);
-            t->tvcexphs = 5; /* CORCOPY: INCR (5)            */
-            next = TVCX_CORRECTION_COPY;
+            t->pacttmp    = tvcx_cgcorr(t->pdeloff, t->delpbar, t->tempdap[0]);
+            t->yacttmp    = tvcx_cgcorr(t->ydeloff, t->delybar, t->tempdap[0]);
+            t->tvcexphs   = 5; /* CORCOPY: INCR (5)            */
+            next          = TVCX_CORRECTION_COPY;
             break;
         case TVCX_CORRECTION_COPY:
             /**********************************************************************
@@ -305,16 +305,16 @@ static tvcx_step_t tvcx_step(tvcx_step_t s)
              * ARGUMENTS: none
              **********************************************************************/
         {
-            agc_csm_tvc_t *t_copy = agc_csm_dap_tvc();        /* TVC DAP erasables       */
-            agc_csm_dapcom_t *c = agc_csm_dap_com();          /* PACTOFF, YACTOFF        */
+            agc_csm_tvc_t    *t_copy = agc_csm_dap_tvc(); /* TVC DAP erasables       */
+            agc_csm_dapcom_t *c      = agc_csm_dap_com(); /* PACTOFF, YACTOFF        */
 
-            c->pactoff = t_copy->pacttmp.hi;           /* DCA PACTTMP; TS PACTOFF          */
-            t_copy->pdeloff = t_copy->pacttmp;         /* DXCH PDELOFF                     */
-            c->yactoff = t_copy->yacttmp.hi;
-            t_copy->ydeloff = t_copy->yacttmp;
-            t_copy->tvcexphs = 6;                      /* INCR (6)                         */
+            c->pactoff       = t_copy->pacttmp.hi; /* DCA PACTTMP; TS PACTOFF          */
+            t_copy->pdeloff  = t_copy->pacttmp;    /* DXCH PDELOFF                     */
+            c->yactoff       = t_copy->yacttmp.hi;
+            t_copy->ydeloff  = t_copy->yacttmp;
+            t_copy->tvcexphs = 6;                  /* INCR (6)                         */
         }
-            next = TVCX_CNTRCOPY;
+            next    = TVCX_CNTRCOPY;
             break;
         case TVCX_CNTRCOPY: /* restarts OK, follows copy    */
             t->cntr = t->cntrtmp;
@@ -342,7 +342,7 @@ static tvcx_step_t tvcx_step(tvcx_step_t s)
 static agc_status_t tvcx_run(tvcx_step_t from)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
-    tvcx_step_t s = from;              /* current step               */
+    tvcx_step_t    s = from;              /* current step               */
 
     for (int i = 0; (i < TVCX_MAX_STEPS) && (s != TVCX_FIN); i++)
     {
@@ -418,25 +418,25 @@ agc_status_t agc_task_tvcexec(void)
      *
      * RETURNS: agc_status_t -- the WAITLIST status
      **********************************************************************/
-    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
+    agc_csm_tvc_t    *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* AK, OGAD                */
 
     t->ogapast = t->oganow;                          /* XCH OGANOW; XCH OGAPAST       */
-    t->oganow = agc_erase_cdux();
-    c->ak[0] = csm_dap_msu(c->ogad, t->oganow);    /* MSU: AK, B-1 rev */
-    t->ogaerr = csm_dap_mp_hi(c->ak[0], NEG_BIT14); /* B+0 rev       */
+    t->oganow  = agc_erase_cdux();
+    c->ak[0]   = csm_dap_msu(c->ogad, t->oganow);    /* MSU: AK, B-1 rev */
+    t->ogaerr  = csm_dap_mp_hi(c->ak[0], NEG_BIT14); /* B+0 rev       */
 
     if (!AGC_ASSERT(t->oganow <= CSM_DAP_NEG0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t s2 = agc_waitlist_call(ROLL_DELAY, AGC_TASK_ROLLDAP); /* ROLLPREP               */
-    agc_status_t s3 = csm_dap_needler();                               /* NEEDLEUP               */
-    agc_status_t s4 = AGC_STATUS_OK;                                   /* S40.15 in GAINCHNG     */
-    tvcx_step_t from = tvcx_vargains(&s4);                              /* VARGAINS               */
-    agc_status_t s5 = tvcx_run(from);                                  /* .. TVCEXFIN            */
-    agc_status_t r = st;                                              /* first failure          */
+    agc_status_t s2   = agc_waitlist_call(ROLL_DELAY, AGC_TASK_ROLLDAP); /* ROLLPREP               */
+    agc_status_t s3   = csm_dap_needler();                               /* NEEDLEUP               */
+    agc_status_t s4   = AGC_STATUS_OK;                                   /* S40.15 in GAINCHNG     */
+    tvcx_step_t  from = tvcx_vargains(&s4);                              /* VARGAINS               */
+    agc_status_t s5   = tvcx_run(from);                                  /* .. TVCEXFIN            */
+    agc_status_t r    = st;                                              /* first failure          */
 
     if (r == AGC_STATUS_OK)
     {

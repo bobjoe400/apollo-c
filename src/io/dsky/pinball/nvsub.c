@@ -110,10 +110,10 @@ bool pin_dsplist_full(void)
  **********************************************************************/
 pin_sleeper_t pin_take_sleeper(bool dsplist)
 {
-    pin_state_t *s = pin_st();                             /* pinball erasables */
-    pin_sleeper_t *slot = dsplist ? &s->dsplist : &s->cadrstor; /* the list */
-    pin_sleeper_t taken = *slot;                                /* its contents before */
-    pin_sleeper_t empty = {false, {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
+    pin_state_t   *s     = pin_st();                             /* pinball erasables */
+    pin_sleeper_t *slot  = dsplist ? &s->dsplist : &s->cadrstor; /* the list */
+    pin_sleeper_t  taken = *slot;                                /* its contents before */
+    pin_sleeper_t  empty = {false, {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
 
     *slot = empty; /* XCH with 0      */
 
@@ -160,7 +160,7 @@ static void pin_reldsp2(void)
  **********************************************************************/
 agc_status_t agc_dsky_releasedsp(void)
 {
-    pin_state_t *s = pin_st();      /* pinball erasables */
+    pin_state_t *s  = pin_st();      /* pinball erasables */
     agc_status_t st = AGC_STATUS_OK; /* status so far */
 
     agc_inhint();
@@ -257,7 +257,7 @@ agc_status_t agc_dsky_endidle(agc_job_id_t t, agc_job_id_t p, agc_job_id_t e)
         return (st);
     }
 
-    s->cadrstor.used = true;
+    s->cadrstor.used    = true;
     s->cadrstor.cont[0] = t;
     s->cadrstor.cont[1] = p;
     s->cadrstor.cont[2] = e;
@@ -308,7 +308,7 @@ agc_status_t agc_dsky_nvsubusy(agc_job_id_t wake_as)
     }
 
     pin_reldspon();
-    s->dsplist.used = true;
+    s->dsplist.used    = true;
     s->dsplist.cont[0] = wake_as;
     agc_exec_job_sleep(wake_as); /* ENDNVBSY        */
 
@@ -425,10 +425,10 @@ static agc_status_t pin_blankdsp(int code)
         s->nounreg = 0;
     }
 
-    s->clpass = 0;
+    s->clpass     = 0;
     pin_block_dspcount(PIN_VD1);
     pin_flashoff();
-    s->reqret = PIN_REQ_PASS0; /* ENTSET -2       */
+    s->reqret     = PIN_REQ_PASS0; /* ENTSET -2       */
     s->reqret_neg = false;
 
     if (!AGC_ASSERT(s->dspcount == PIN_VD1 && s->dspcount_neg))
@@ -455,9 +455,9 @@ static agc_status_t pin_blankdsp(int code)
  **********************************************************************/
 static agc_status_t pin_nvsub1(uint16_t nvtemp)
 {
-    pin_state_t *s = pin_st();                             /* pinball erasables */
-    uint8_t noun = (uint8_t) (nvtemp & PIN_LOW7);        /* noun of NVTEMP */
-    uint8_t verb = (uint8_t) ((nvtemp >> 7) & PIN_LOW7); /* verb */
+    pin_state_t *s    = pin_st();                             /* pinball erasables */
+    uint8_t      noun = (uint8_t) (nvtemp & PIN_LOW7);        /* noun of NVTEMP */
+    uint8_t      verb = (uint8_t) ((nvtemp >> 7) & PIN_LOW7); /* verb */
 
     s->entret = PIN_ENT_NVSUBEND; /* set return to NVSUBEND */
 
@@ -471,7 +471,7 @@ static agc_status_t pin_nvsub1(uint16_t nvtemp)
         agc_status_t st = pin_updatvb(verb); /* status so far */
 
         /* zero REQRET so that pasted verbs can */
-        s->reqret = PIN_REQ_PASS0;
+        s->reqret     = PIN_REQ_PASS0;
         s->reqret_neg = false; /* be executed by operator              */
 
         return (st);
@@ -489,9 +489,9 @@ static agc_status_t pin_nvsub1(uint16_t nvtemp)
         st = pin_updatnn(noun);
     }
 
-    s->loadstat = PIN_LS_WAITING; /* waiting for data */
-    s->clpass = 0;
-    s->reqret = PIN_REQ_PASS0;  /* REQRET for pass 0 */
+    s->loadstat   = PIN_LS_WAITING; /* waiting for data */
+    s->clpass     = 0;
+    s->reqret     = PIN_REQ_PASS0;  /* REQRET for pass 0 */
     s->reqret_neg = false;
 
     if (st != AGC_STATUS_OK)
@@ -656,7 +656,7 @@ agc_status_t agc_dsky_nvsub_blank(int code)
 
     pin_st()->monsave2 = 0;
     pin_kilmonon();
-    pin_st()->entret = PIN_ENT_NVSUBEND;
+    pin_st()->entret   = PIN_ENT_NVSUBEND;
 
     return (pin_blankdsp(code));
 }
@@ -713,17 +713,17 @@ agc_status_t agc_dsky_nvsbwait(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t n
 agc_status_t agc_dsky_blanksub(uint16_t code)
 {
     static const int16_t rnd1[3] = {PIN_R1D1, PIN_R2D1, PIN_R3D1};
-    pin_state_t *s = pin_st();               /* pinball erasables */
-    uint16_t nvtemp = (uint16_t) (code & 7u); /* MASK SEVEN      */
+    pin_state_t         *s       = pin_st();               /* pinball erasables */
+    uint16_t             nvtemp  = (uint16_t) (code & 7u); /* MASK SEVEN      */
 
     if (pin_dsp_blocked())
     {
         return (AGC_STATUS_BUSY);
     }
 
-    int16_t save = s->dspcount;     /* BLNKSUB1        */
-    bool save_neg = s->dspcount_neg; /* blocked flag */
-    agc_status_t st = AGC_STATUS_OK;   /* status so far */
+    int16_t      save     = s->dspcount;     /* BLNKSUB1        */
+    bool         save_neg = s->dspcount_neg; /* blocked flag */
+    agc_status_t st       = AGC_STATUS_OK;   /* status so far */
 
     for (int r = 0; r < 3 && st == AGC_STATUS_OK; r++)
     {
@@ -734,7 +734,7 @@ agc_status_t agc_dsky_blanksub(uint16_t code)
         }
     }
 
-    s->dspcount = save; /* restore DSPCOUNT to state it had */
+    s->dspcount     = save; /* restore DSPCOUNT to state it had */
     s->dspcount_neg = save_neg;
 
     return (st);
@@ -766,7 +766,7 @@ static agc_status_t pin_jam(pin_loadstat_t ls)
 
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->reqret = PIN_REQ_PASS0; /* REQRET = 34 / 33 (positive)    */
+    s->reqret     = PIN_REQ_PASS0; /* REQRET = 34 / 33 (positive)    */
     s->reqret_neg = false;
     pin_block_dspcount(PIN_VD1);
 

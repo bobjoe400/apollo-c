@@ -20,10 +20,10 @@ static agc_sp_t g_cm_gymdt; /* CM/GYMDT: 6.11 waitlist dt, cs         */
 
 void agc_erase_reset_restart_delays(void)
 {
-    g_p40tmp = 0;
+    g_p40tmp   = 0;
     g_savet_30 = 0;
     g_zoomtime = 0;
-    g_s61dt = 0;
+    g_s61dt    = 0;
     g_cm_gymdt = 0;
 }
 

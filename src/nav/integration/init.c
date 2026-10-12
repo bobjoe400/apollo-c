@@ -88,7 +88,6 @@ agc_status_t agc_integ_ctx_init(agc_integ_ctx_t *ctx)
 
     *ctx = zero_ctx;
 
-
     return (AGC_STATUS_OK);
 }
 
@@ -177,7 +176,6 @@ agc_status_t agc_integ_perm_set(agc_vehicle_t veh, const agc_integ_sv_t *in)
 static int area_count(void)
 {
     const agc_vehicle_t v = agc_state_vehicle();
-
 
     return ((v == AGC_VEHICLE_CSM) ? AGC_INTEG_AREAS_CSM : AGC_INTEG_AREAS_LM);
 }
@@ -649,7 +647,6 @@ static agc_integ_next_t load_permanent_state(agc_interp_t *ip, agc_integ_ctx_t *
 {
     bool surface = false;
 
-
     const agc_status_t st = agc_flag_test(AGC_FLAG_VINTFLAG) ? agc_integ_ptoacsm(ctx) : agc_integ_ptoalem(ip, ctx, &surface);
 
     if (st != AGC_STATUS_OK)
@@ -716,11 +713,11 @@ agc_status_t agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_integ_nex
             case INTEG_NEXT_RELOAD:
                 /* RELOADSV (p. 1350): reload the temporary state from the permanent one
                  * by TDEC1 = TDEC and INTEGRV2.                                         */
-                {
-                    ctx->tdec1 = ctx->tdec;
-                    next       = load_permanent_state(ip, ctx);
-                }
-                break;
+            {
+                ctx->tdec1 = ctx->tdec;
+                next       = load_permanent_state(ip, ctx);
+            }
+            break;
             case INTEG_NEXT_RVCON:
                 next = rvcon(ip, ctx);
                 break;

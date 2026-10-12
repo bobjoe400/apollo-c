@@ -499,7 +499,7 @@ static agc_status_t lothrust(void)
 
     if (agc_phase_get(4) == 0U)
     { /* COMFAIL JOB ACTIVE?    */
-        agc_phase_change((uint16_t)000374); /* 4.37SPOT FOR COMFAIL   */
+        agc_phase_change((uint16_t) 000374); /* 4.37SPOT FOR COMFAIL   */
         agc_status_t st = agc_exec_novac(AGC_PRIO25, AGC_JOB_COMFAIL);
 
         if (st != AGC_STATUS_OK)

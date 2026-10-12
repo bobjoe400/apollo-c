@@ -96,7 +96,7 @@ static agc_status_t preread1(agc_avg_g_t *a)
         return (st);
     }
 
-    a->pipage = 1;                          /* for REREADAC           */
+    a->pipage  = 1;                          /* for REREADAC           */
     agc_flag_set(AGC_FLAG_AVEGFLAG);         /* SET AVEG FLAG          */
     agc_flag_clear(AGC_FLAG_DRIFTFLG);       /* KNOCK DOWN DRIFT FLAG  */
     agc_flag_set(AGC_FLAG_SERVICER_RUNNING); /* SET V37 FLAG           */
@@ -144,7 +144,7 @@ agc_status_t agc_guid_preread1_csm(void)
  **********************************************************************/
 agc_status_t agc_task_preread_csm(void)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t  *g  = agc_guid_state();
     agc_status_t sw = agc_exec_novac(AGC_PRIO21, AGC_JOB_LASTBIAS);
 
     if (sw != AGC_STATUS_OK)
@@ -197,7 +197,7 @@ agc_status_t agc_task_preread_csm(void)
  **********************************************************************/
 static agc_status_t readaccs_entry(agc_avg_g_t *a)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t        *g = agc_guid_state();
     agc_entry_state_t *e = agc_entry_state();
 
     if (!AGC_ASSERT(e != NULL))
@@ -208,9 +208,9 @@ static agc_status_t readaccs_entry(agc_avg_g_t *a)
     /* DEVIATION: CS PIPTIME1 +1 / TS TBASE6 bases group 6 on the PIPA time;
      * the exec API sets TBASE6 from TIME1, which equals it here.           */
     agc_phase_set_tbase(6);
-    e->aog_pip = agc_erase_aog(); /* DCA AOG DXCH AOG/PIP   */
-    e->aig_pip = agc_erase_aig();
-    e->amg_pip = agc_erase_amg(); /* CA AMG XCH AMG/PIP     */
+    e->aog_pip  = agc_erase_aog(); /* DCA AOG DXCH AOG/PIP   */
+    e->aig_pip  = agc_erase_aig();
+    e->amg_pip  = agc_erase_amg(); /* CA AMG XCH AMG/PIP     */
     e->roll_pip = e->roll_180;     /* DCA ROLL/180           */
     e->alfa_pip = e->alfa_180;
     e->beta_pip = e->beta_180;     /* CA BETA/180            */
@@ -412,7 +412,7 @@ agc_status_t agc_task_chekaveg(void)
  **********************************************************************/
 agc_status_t agc_task_readaccs_csm(void)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t  *g  = agc_guid_state();
     agc_status_t st = agc_guid_pipasr(&g->avg, true);
 
     if (st != AGC_STATUS_OK)
@@ -480,7 +480,7 @@ agc_status_t agc_task_rereadac_csm(void)
  **********************************************************************/
 agc_status_t agc_task_quikread(void)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t    *g       = agc_guid_state();
     const agc_sp_t pipa[3] = {agc_erase_pipax(), agc_erase_pipay(), agc_erase_pipaz()};
 
     for (int i = 2; i >= 0; i--)
@@ -559,7 +559,7 @@ agc_status_t agc_job_normlize_csm(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    g->avg.gdt_2 = g->avg.gdt1_2;  /* STOVL GDT/2            */
+    g->avg.gdt_2  = g->avg.gdt1_2;  /* STOVL GDT/2            */
     g->avg.gobl_2 = g->avg.gobl1_2; /* STORE GOBL/2           */
 
     return (AGC_STATUS_OK); /* ENDOFJOB               */
@@ -608,8 +608,8 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
 
     for (int i = 2; i >= 0; i--)
     { /* RUPTREG1 = 2, 1, 0     */
-        agc_sp_t p = agc_dp_high(delv_saturated.c[i]);
-        int mag = (p < 0) ? -(int) p : (int) p;
+        agc_sp_t p   = agc_dp_high(delv_saturated.c[i]);
+        int      mag = (p < 0) ? -(int) p : (int) p;
 
         if (mag != 0 && (mag - 1 - MAXDELV) > 0)
         {
@@ -630,8 +630,8 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
     }
 
     serv_phase(PH_5_3_BJOB, AGC_JOB_SERV_DVTOTUP);    /* RESTART REREADAC+SERVICER */
-    agc_vec_t delv = agc_erase_delv();
-    agc_status_t st = agc_imu_one_over_pipa(&delv); /* PIPA COMPENSATION      */
+    agc_vec_t    delv = agc_erase_delv();
+    agc_status_t st   = agc_imu_one_over_pipa(&delv); /* PIPA COMPENSATION      */
 
     if (st != AGC_STATUS_OK)
     {
@@ -658,11 +658,11 @@ agc_status_t agc_job_servicer_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_serv_dvtotup_csm(agc_job_ctx_t *ctx)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t  *g = agc_guid_state();
     agc_interp_t ip;
 
     agc_interp_init(&ip);
-    agc_dp_t dv = agc_dp_mul_trunc(agc_vec_abval(&ip, agc_erase_delv()), KPIP1_CM);
+    agc_dp_t  dv  = agc_dp_mul_trunc(agc_vec_abval(&ip, agc_erase_delv()), KPIP1_CM);
     agc_ovf_t ovf = 0;
 
     g->avg.dvtotal = agc_dp_add_raw(g->avg.dvtotal, dv, &ovf); /* DAS DVTOTAL */
@@ -701,7 +701,7 @@ agc_status_t agc_job_serv_averageg_csm(agc_job_ctx_t *ctx)
     agc_state_vector_t sv;
 
     agc_sv_get(AGC_SV_THIS, &sv);
-    agc_mat_t refsmmat = agc_erase_refsmmat();
+    agc_mat_t    refsmmat = agc_erase_refsmmat();
     agc_interp_t ip;
 
     agc_interp_init(&ip);

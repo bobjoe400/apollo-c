@@ -208,7 +208,7 @@ static agc_status_t noun_access_time(uint16_t data_id, bool write, agc_dp_t *val
 static agc_status_t noun_access_sp(uint16_t data_id, bool write, agc_dp_t *value)
 {
     const agc_sp_t w = write ? agc_dp_high(*value) : 0; /* SP scale */
-    agc_sp_t r = 0;                               /* SP word read, SP scale */
+    agc_sp_t       r = 0;                               /* SP word read, SP scale */
 
     switch (data_id)
     {

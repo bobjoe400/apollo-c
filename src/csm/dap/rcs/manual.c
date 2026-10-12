@@ -98,12 +98,12 @@ static const agc_sp_t freetau[4] = {
  **********************************************************************/
 agc_status_t csm_rcs_manual(void)
 {
-    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables       */
+    agc_csm_rcs_t    *r = agc_csm_dap_rcs(); /* RCS DAP erasables       */
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* RCSFLAGS                */
 
-    c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned int) FORCEDBITS); /* CS OCT01760; MASK */
+    c->rcsflags   = (uint16_t) (c->rcsflags & ~(unsigned int) FORCEDBITS); /* CS OCT01760; MASK */
     uint16_t ch31 = agc_chan_read(AGC_CHAN_CHAN31);                        /* READ CHAN31; TS L */
-    uint16_t chg = (uint16_t) ((r->ch31temp ^ ch31) & MANROT);            /* RXOR LCHAN; MASK  */
+    uint16_t chg  = (uint16_t) ((r->ch31temp ^ ch31) & MANROT);            /* RXOR LCHAN; MASK  */
 
     if (chg != 0u)
     {
@@ -121,7 +121,7 @@ agc_status_t csm_rcs_manual(void)
         return (csm_rcs_ahfnorot()); /* BZMF AHFNOROT: no manual commands */
     }
 
-    r->holdflag = (agc_sp_t) cmd;            /* TS HOLDFLAG: +          */
+    r->holdflag     = (agc_sp_t) cmd;            /* TS HOLDFLAG: +          */
     agc_status_t st = agc_csm_dap_stickchk(cmd); /* TC STICKCHK             */
 
     if (st != AGC_STATUS_OK)
@@ -176,9 +176,9 @@ agc_status_t csm_rcs_manual(void)
      * RETURNS: agc_status_t -- the JETS status; AGC_STATUS_BAD_ARG for a
      *          MANTABLE index outside the table
      **********************************************************************/
-    agc_csm_rcs_t *r_setwbody = agc_csm_dap_rcs();                       /* RCS DAP erasables      */
+    agc_csm_rcs_t          *r_setwbody = agc_csm_dap_rcs();                       /* RCS DAP erasables      */
     const agc_csm_dapcom_t *c_setwbody = agc_csm_dap_com();                       /* RCSFLAGS               */
-    bool damped = (c_setwbody->rcsflags & DAMPBITS) == 0u; /* rate damping completed */
+    bool                    damped     = (c_setwbody->rcsflags & DAMPBITS) == 0u; /* rate damping completed */
 
     for (int i_setwbody = AGC_CSM_AXES - 1; i_setwbody >= 0; i_setwbody--)
     {
@@ -238,7 +238,7 @@ agc_status_t agc_csm_dap_stickchk(uint16_t bits)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    r->manndx[1] = (agc_sp_t) (bits & 3u);   /* TS T5TEMP; MASK THREE; TS PMANNDX */
+    r->manndx[1]   = (agc_sp_t) (bits & 3u);   /* TS T5TEMP; MASK THREE; TS PMANNDX */
     unsigned int t = (unsigned int) bits >> 2; /* CA T5TEMP; MP QUARTER          */
 
     r->manndx[2] = (agc_sp_t) (t & 3u); /* MASK THREE; TS YMANNDX            */

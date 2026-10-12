@@ -444,22 +444,22 @@ static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
         case 55:
             /* ALINTIME (V55): load the clock increment by V25N24 (LM: as R33 at
              * priority 7).                                                            */
+        {
+            bool         ok = false;
+            agc_status_t st = agc_extverb_testxact(&ok);
+
+            if (!AGC_ASSERT(ctx != NULL) || !ok)
             {
-                bool         ok = false;
-                agc_status_t st = agc_extverb_testxact(&ok);
-
-                if (!AGC_ASSERT(ctx != NULL) || !ok)
-                {
-                    return (st);
-                }
-
-                if (agc_state_vehicle() == AGC_VEHICLE_LM)
-                {
-                    agc_exec_prio_change(PRIO7);
-                }
-
-                return (agc_extverb_flash(ctx, 25, 24, AGC_JOB_EXTENDED_VERB_END, AGC_JOB_CLOCK_ALIGN_UPDATE));
+                return (st);
             }
+
+            if (agc_state_vehicle() == AGC_VEHICLE_LM)
+            {
+                agc_exec_prio_change(PRIO7);
+            }
+
+            return (agc_extverb_flash(ctx, 25, 24, AGC_JOB_EXTENDED_VERB_END, AGC_JOB_CLOCK_ALIGN_UPDATE));
+        }
         case 64:
             return (xact_and_schedule(true, PRIO4, lm ? AGC_JOB_SBANDANT_LM : AGC_JOB_SBANDANT_CM));
         case 66:
@@ -468,16 +468,16 @@ static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
             return (xact_and_schedule(false, PRIO5, AGC_JOB_W_MATRIX_MONITOR));
         case 69:
             /* VERB69: force a hardware restart (the AGC does TC VERB69, a TC trap).  */
+        {
+            agc_status_t st = agc_rupt_go();
+
+            if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
             {
-                agc_status_t st = agc_rupt_go();
-
-                if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-                {
-                    return (AGC_STATUS_BAD_ARG);
-                }
-
-                return (st);
+                return (AGC_STATUS_BAD_ARG);
             }
+
+            return (st);
+        }
         case 70:
         case 71:
         case 72:
@@ -488,19 +488,19 @@ static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
         case 82:
             /* V82PERF: R30 runs on in this job at priority 7 (V82CALL must not be a
              * FINDVAC job).                                                           */
+        {
+            bool         ok = false;
+            agc_status_t st = agc_extverb_testxact(&ok);
+
+            if (!AGC_ASSERT(ctx != NULL) || !ok)
             {
-                bool         ok = false;
-                agc_status_t st = agc_extverb_testxact(&ok);
-
-                if (!AGC_ASSERT(ctx != NULL) || !ok)
-                {
-                    return (st);
-                }
-
-                agc_exec_prio_change(PRIO7);
-
-                return (agc_job_orbit_parameter_display(ctx)); /* POSTJUMP V82CALL */
+                return (st);
             }
+
+            agc_exec_prio_change(PRIO7);
+
+            return (agc_job_orbit_parameter_display(ctx)); /* POSTJUMP V82CALL */
+        }
         case 89:
             return (xact_and_schedule(true, PRIO10, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE));
         case 90:

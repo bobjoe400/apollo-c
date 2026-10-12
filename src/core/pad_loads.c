@@ -38,9 +38,9 @@ void agc_erase_reset_pad_loads(void)
     }
 
     g_cduchkwd = 0;
-    g_rted1 = 0;
+    g_rted1    = 0;
     g_p37range = 0;
-    g_tland = 0;
+    g_tland    = 0;
 }
 
 uint16_t agc_erase_aotaz(int index)

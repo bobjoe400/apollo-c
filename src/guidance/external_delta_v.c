@@ -97,7 +97,7 @@ static const agc_dp_t EP4_10 = 7456540;  /* 10 deg, rev 2^0 */
 static agc_status_t prec_to(agc_interp_t *ip, bool lm_only, agc_dp_t tdec1, agc_rendz_t *rz)
 {
     agc_integ_ctx_t *ic = agc_integ_shared_ctx(); /* integration area */
-    agc_status_t st;                          /* integration status */
+    agc_status_t     st;                          /* integration status */
 
     if (lm_only)
     {
@@ -149,9 +149,9 @@ static agc_status_t prec_to(agc_interp_t *ip, bool lm_only, agc_dp_t tdec1, agc_
  **********************************************************************/
 static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r, agc_vec_t v)
 {
-    agc_burn_t *b = &agc_guid_state()->burn;                         /* HAPO, HPER      */
+    agc_burn_t         *b  = &agc_guid_state()->burn;                         /* HAPO, HPER      */
     agc_rendz_periapo_t pa;                                                   /* PERIAPO1 output */
-    agc_status_t st = agc_rendz_periapo_body_scale(ip, rz, r, v, &pa); /* status of PERIAPO1 */
+    agc_status_t        st = agc_rendz_periapo_body_scale(ip, rz, r, v, &pa); /* status of PERIAPO1 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -188,18 +188,18 @@ static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r, agc
  **********************************************************************/
 static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    agc_status_t st = prec_to(ip, false, agc_erase_tig(), rz); /* status */
-    const agc_integ_out_t *p = &agc_integ_shared_ctx()->out;            /* RATT VATT */
+    agc_status_t           st = prec_to(ip, false, agc_erase_tig(), rz); /* status */
+    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;            /* RATT VATT */
 
     if (st != AGC_STATUS_OK)
     {
         return (st); /* THISPREC, TDEC1 = TIG */
     }
 
-    rz->vtig = p->vatt;
-    rz->rtig = p->ratt;
+    rz->vtig  = p->vatt;
+    rz->rtig  = p->ratt;
     rz->ract3 = p->ratt;
-    rz->unrm = agc_vec_unit(ip, agc_vec_cross(ip, rz->rtig, rz->vtig), NULL, NULL);
+    rz->unrm  = agc_vec_unit(ip, agc_vec_cross(ip, rz->rtig, rz->vtig), NULL, NULL);
     agc_mat_t m; /* LOMAT rows, half unit (2^1) */
 
     st = agc_rendz_lomat(ip, rz, &m);
@@ -209,7 +209,7 @@ static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip, agc_rendz_t *
         return (st);
     }
 
-    rz->delvsin = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1); /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
+    rz->delvsin                   = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1); /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
     agc_guid_state()->burn.vgdisp = agc_vec_abval(ip, rz->delvsin);                       /* MAG DELV */
 
     return (apo_peri(ip, rz, rz->rtig, agc_vec_add(ip, rz->delvsin, rz->vtig)));
@@ -234,8 +234,8 @@ static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip, agc_rendz_t *
  **********************************************************************/
 static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip, agc_rendz_t *rz)
 {
-    agc_status_t st = prec_to(ip, true, agc_erase_tig(), rz); /* status */
-    const agc_integ_out_t *p = &agc_integ_shared_ctx()->out;           /* RATT VATT */
+    agc_status_t           st = prec_to(ip, true, agc_erase_tig(), rz); /* status */
+    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;           /* RATT VATT */
 
     if (st != AGC_STATUS_OK)
     {
@@ -245,10 +245,10 @@ static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip, agc_rendz_t *r
     rz->rtig = p->ratt;
     agc_mat_t m; /* LV axes X Y Z at TIG, half unit (2^1) */
 
-    m.row[2] = agc_vec_neg(agc_vec_unit(ip, rz->rtig, NULL, NULL));  /* ZRF/LV */
-    rz->vtig = p->vatt;
-    m.row[1] = agc_vec_unit(ip, agc_vec_cross(ip, rz->vtig, rz->rtig), NULL, NULL);
-    m.row[0] = agc_vec_shl(ip, agc_vec_cross(ip, m.row[1], m.row[2]), 1);
+    m.row[2]    = agc_vec_neg(agc_vec_unit(ip, rz->rtig, NULL, NULL));  /* ZRF/LV */
+    rz->vtig    = p->vatt;
+    m.row[1]    = agc_vec_unit(ip, agc_vec_cross(ip, rz->vtig, rz->rtig), NULL, NULL);
+    m.row[0]    = agc_vec_shl(ip, agc_vec_cross(ip, m.row[1], m.row[2]), 1);
     rz->delvsin = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1); /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
     rz->delvsab = agc_vec_abval(ip, rz->delvsin);                       /* DELTA V MAG. */
 
@@ -308,9 +308,9 @@ agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip, agc_vehicle_t v
  **********************************************************************/
 agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv)
 {
-    agc_rendz_t *rz = agc_rendz_erasable();                     /* RINIT VINIT */
-    bool av = agc_flag_test(AGC_FLAG_AVFLAG);           /* AVFLAG      */
-    bool cmc = (agc_state_vehicle() == AGC_VEHICLE_CSM); /* COMPUTER flag    */
+    agc_rendz_t *rz  = agc_rendz_erasable();                     /* RINIT VINIT */
+    bool         av  = agc_flag_test(AGC_FLAG_AVFLAG);           /* AVFLAG      */
+    bool         cmc = (agc_state_vehicle() == AGC_VEHICLE_CSM); /* COMPUTER flag    */
 
     if (av == cmc)
     {
@@ -348,19 +348,19 @@ agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
     /* AGAIN (Comanche P40-P47 p.711): THISPREC to TDEC1, RTIG = RINIT = RATT,
      * VTIG = VINIT = VATT, then INITVEL with NUMIT 0 and EPSILON4 45 degrees
      * (NORMSW: 165-195 degree transfer) or 10 degrees.                        */
-    agc_rendz_t *rz = agc_rendz_erasable();          /* targeting */
-    agc_status_t st = prec_to(ip, false, tdec1, rz); /* status    */
-    const agc_integ_out_t *p = &agc_integ_shared_ctx()->out;  /* RATT VATT */
+    agc_rendz_t           *rz = agc_rendz_erasable();          /* targeting */
+    agc_status_t           st = prec_to(ip, false, tdec1, rz); /* status    */
+    const agc_integ_out_t *p  = &agc_integ_shared_ctx()->out;  /* RATT VATT */
 
     if (st != AGC_STATUS_OK)
     {
         return (st); /* THISPREC */
     }
 
-    rz->rtig = p->ratt;
-    rz->rinit = p->ratt;
-    rz->vtig = p->vatt;
-    rz->vinit = p->vatt;
+    rz->rtig    = p->ratt;
+    rz->rinit   = p->ratt;
+    rz->vtig    = p->vatt;
+    rz->vinit   = p->vatt;
     agc_dp_t e4 = agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45 : EP4_10; /* EPSILON4, rev 2^0; NORMSW: 45 */
 
     if (!AGC_ASSERT(e4 > 0))
@@ -414,7 +414,7 @@ agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
     }
 
     agc_guid_state()->burn.vgdisp = agc_vec_abval(ip, rz->delvlvc);
-    rz->tpass4 = agc_dp_add(ip, rz->dellt4, agc_erase_tig()); /* FOR S40.1     */
+    rz->tpass4                    = agc_dp_add(ip, rz->dellt4, agc_erase_tig()); /* FOR S40.1     */
 
     return (AGC_STATUS_OK);
 }

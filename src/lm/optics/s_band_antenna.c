@@ -43,7 +43,6 @@ static agc_dp_t signed_asin(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 {
     const agc_dp_t m = agc_vec_abval(ip, v);
 
-
     return (agc_dp_asin(ip, agc_dp_sign(m, s)));
 }
 

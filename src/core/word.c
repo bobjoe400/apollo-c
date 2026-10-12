@@ -249,7 +249,7 @@ agc_dp_t agc_tp_to_dp(agc_tp_t v)
 agc_dp_t agc_tp_round_dp(agc_tp_t v)
 {
     agc_ovf_t ovf = 0;                                       /* ROUNDSUB carry out of MPAC */
-    agc_w3_t m = agc_w_roundsub(agc_w3_from_tp(v), &ovf); /* rounded TP MPAC */
+    agc_w3_t  m   = agc_w_roundsub(agc_w3_from_tp(v), &ovf); /* rounded TP MPAC */
 
     if (ovf != 0)
     {
@@ -450,7 +450,7 @@ agc_tp_t agc_dp_mul_tp(agc_dp_t a, agc_dp_t b)
 agc_dp_t agc_dp_mul_raw(agc_dp_t a, agc_dp_t b)
 {
     agc_ovf_t ovf = 0;                                            /* ROUNDSUB carry (none: |a b| < 1) */
-    agc_w3_t m = agc_w_dmpsub(agc_w_split(a), agc_w_split(b)); /* DMPSUB TP product */
+    agc_w3_t  m   = agc_w_dmpsub(agc_w_split(a), agc_w_split(b)); /* DMPSUB TP product */
 
     m = agc_w_roundsub(m, &ovf);
 
@@ -471,8 +471,8 @@ agc_dp_t agc_dp_mul_raw(agc_dp_t a, agc_dp_t b)
  **********************************************************************/
 agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 {
-    int o = 0;     /* OVFIND of DDV: 1 on overflow         */
-    bool dvsign = false; /* DVSIGN, not kept by the raw utility */
+    int      o      = 0;     /* OVFIND of DDV: 1 on overflow         */
+    bool     dvsign = false; /* DVSIGN, not kept by the raw utility */
     agc_dp_t q;              /* quotient, scaled 2^0                */
 
     q = agc_w_join(agc_w3_top(agc_w_ddv(agc_w3_from_tp(agc_tp_from_dp(a)), agc_w_split(b), &o, &dvsign)));
@@ -499,7 +499,7 @@ agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 agc_dp_t agc_dp_shl_raw(agc_dp_t a, int n, agc_ovf_t *ovf)
 {
     int64_t v = a; /* a 2^k, exact */
-    int k;     /* doublings done */
+    int     k;     /* doublings done */
 
     for (k = 0; (k < n) && (k < SHIFT_DP_MAX + 1); k++)
     {
@@ -603,9 +603,9 @@ agc_dp_t agc_dp_abs(agc_dp_t a)
 agc_dp_t agc_dp_round(agc_dp_t a)
 {
     agc_w2_t p = agc_w_split(a); /* MPAC, MPAC+1 of a */
-    int o = 0;              /* rounding carry, +-1 or 0 */
+    int      o = 0;              /* rounding carry, +-1 or 0 */
 
-    o = agc_w_ovf(2 * p.lo); /* DOUBLE; TS L     */
+    o    = agc_w_ovf(2 * p.lo); /* DOUBLE; TS L     */
     p.hi += o;
 
     if (p.hi > AGC_W_POSMAX)
@@ -651,8 +651,8 @@ agc_dp_t agc_dp_sign(agc_dp_t a, agc_dp_t sign_of)
  **********************************************************************/
 static void dp_norm_core(agc_dp_t a, int *shift, agc_dp_t *out)
 {
-    int count = 0;                                 /* left shifts done */
-    agc_w3_t m = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
+    int      count = 0;                                 /* left shifts done */
+    agc_w3_t m     = agc_w3_from_tp(agc_tp_from_dp(a)); /* TP MPAC of a */
 
     m = agc_w_tslc(m, &count);
 

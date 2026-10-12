@@ -192,17 +192,17 @@ typedef enum agc_dn_item
 
 typedef struct agc_dn_entry
 {
-    uint8_t op;     /* 1..6 = nDNADR, AGC_DN_OP_CHAN, AGC_DN_OP_PTR       */
-    bool neg;    /* written negated in the AGC list (-xDNADR etc.)    */
+    uint8_t  op;     /* 1..6 = nDNADR, AGC_DN_OP_CHAN, AGC_DN_OP_PTR       */
+    bool     neg;    /* written negated in the AGC list (-xDNADR etc.)    */
     uint16_t ref;    /* agc_dn_item_t, channel number, or sublist id       */
-    uint8_t offset; /* SP-word offset from the item (e.g. RN +2 -> 2)     */
+    uint8_t  offset; /* SP-word offset from the item (e.g. RN +2 -> 2)     */
 } agc_dn_entry_t;
 
 typedef struct agc_dn_list
 {
     const agc_dn_entry_t *entry;
-    uint8_t count;
-    bool snapshot; /* sublist starting with -1DNADR      */
+    uint8_t               count;
+    bool                  snapshot; /* sublist starting with -1DNADR      */
 } agc_dn_list_t;
 
 #define AGC_DNLIST_CSM_COUNT \

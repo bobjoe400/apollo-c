@@ -37,7 +37,6 @@ static agc_dp_t timedelt(void)
 {
     const agc_vehicle_t v = agc_state_vehicle();
 
-
     _Static_assert(INTEG_TIMEDELT_CSM < INTEG_TIMEDELT_LM, "AGC constant");
 
     return ((v == AGC_VEHICLE_CSM) ? INTEG_TIMEDELT_CSM : INTEG_TIMEDELT_LM);
@@ -525,7 +524,6 @@ static agc_integ_next_t timeinc(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     const agc_dp_t add = csm ? ctx->t_to_add : timedelt();
 
     ctx->tdec = agc_dp_add(ip, agc_integ_loadtime(), add);
-
 
     return (INTEG_NEXT_TESTLOOP);
 }

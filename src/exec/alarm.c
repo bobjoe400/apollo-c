@@ -75,16 +75,16 @@
 
 static agc_job_id_t almcadr;      /* ALMCADR: job that raised the alarm  */
 static agc_job_id_t localarm;     /* LOCALARM (CSM): LOC at the alarm    */
-static bool enema_wanted; /* WHIMPER requested, not yet run      */
-static uint16_t restarts_run; /* software restarts serviced (debug)  */
+static bool         enema_wanted; /* WHIMPER requested, not yet run      */
+static uint16_t     restarts_run; /* software restarts serviced (debug)  */
 
 /* VAC5STOR (C p.204): copy of LOC, PRIORITY of each core set, the phase
  * table and NEWJOB, for post-flight analysis of a restart.            */
 static struct
 {
     agc_exec_core_info_t core[AGC_EXEC_MAX_JOBS];   /* LOC, BANKSET, PRIORITY of each core set */
-    uint16_t phase[AGC_RESTART_GROUPS]; /* PHASE1 .. PHASE6 */
-    int newjob;                    /* NEWJOB */
+    uint16_t             phase[AGC_RESTART_GROUPS]; /* PHASE1 .. PHASE6 */
+    int                  newjob;                    /* NEWJOB */
 } vac5;
 
 /**********************************************************************
@@ -281,8 +281,8 @@ agc_status_t agc_exec_service_restart(void)
         return (AGC_STATUS_OK);
     }
 
-    enema_wanted = false;
-    restarts_run = (uint16_t) (restarts_run + 1U);
+    enema_wanted    = false;
+    restarts_run    = (uint16_t) (restarts_run + 1U);
     agc_status_t st = fresh_enema(); /* ENEMA outcome */
 
     if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT || st == AGC_STATUS_ALARM || st == AGC_STATUS_NOT_FOUND || st == AGC_STATUS_UNIMPLEMENTED))
@@ -403,8 +403,8 @@ static agc_status_t gopoodoo(void)
  **********************************************************************/
 agc_status_t exec_service_interp_alarm(void)
 {
-    uint16_t code = agc_interp_take_alarm(); /* 1301, 1302 or 0 latched by the interpreter */
-    agc_status_t st = AGC_STATUS_OK;
+    uint16_t     code = agc_interp_take_alarm(); /* 1301, 1302 or 0 latched by the interpreter */
+    agc_status_t st   = AGC_STATUS_OK;
 
     if (code == 01301u)
     {

@@ -176,7 +176,6 @@ align_words_t align_asin_words(agc_dp_t v)
     const align_words_t quarter = {QUARTER_HI, 0}; /* QUARTER */
     align_words_t       c;                         /* ARCCOS(|x|) words, positive        */
 
-
     if (v >= 0)
     {
         c = align_words_of((AGC_DP_HALF / 2) - v);
@@ -209,7 +208,6 @@ align_words_t align_asin_words(agc_dp_t v)
  **********************************************************************/
 align_words_t align_acos_words(agc_dp_t v, bool arg_negative)
 {
-
     if (!arg_negative)
     {
         return (align_words_of(v));
@@ -217,7 +215,6 @@ align_words_t align_acos_words(agc_dp_t v, bool arg_negative)
 
     const align_words_t half = {HALF_HI, 0}; /* HALF          */
     const align_words_t c    = align_words_of(AGC_DP_HALF - v);
-
 
     return (align_words_add(align_words_neg(c), half));
 }
@@ -241,7 +238,6 @@ align_words_t align_acos_words(agc_dp_t v, bool arg_negative)
  **********************************************************************/
 align_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh, agc_dp_t theta)
 {
-
     if (agc_dp_sub(ip, agc_dp_abs(sinth), QTSN45) >= 0)
     {
         /* ACOS(2 COSTH) SIGN SINTH: theta = +-ACOS value. */
@@ -289,7 +285,6 @@ uint16_t align_words_to_cdu(align_words_t w)
     int32_t a     = 2 * (int32_t) w.hi; /* DDOUBL major word, counts */
     int32_t carry = 0;                  /* from 2 x minor word       */
 
-
     if (2 * (int32_t) w.lo > WORD_MAX)
     {
         carry = 1;
@@ -318,7 +313,6 @@ uint16_t align_words_to_cdu(align_words_t w)
         /* in range */
     }
 
-
     return ((uint16_t) ((a < 0) ? (a + CDU_MOD) : a));
 }
 
@@ -340,7 +334,6 @@ uint16_t align_words_to_cdu(align_words_t w)
  **********************************************************************/
 agc_dp_t align_dot_shl(agc_interp_t *ip, agc_vec_t u, agc_vec_t v, int n)
 {
-
     return (agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, u, v), n)));
 }
 
@@ -361,6 +354,5 @@ agc_dp_t align_dot_shl(agc_interp_t *ip, agc_vec_t u, agc_vec_t v, int n)
  **********************************************************************/
 agc_dp_t align_dmp_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, int n)
 {
-
     return (agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, b), n)));
 }

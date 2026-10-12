@@ -85,13 +85,13 @@ static void pin_decend(int inrel)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    int k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
+    int     k = inrel - PIN_INREL_X; /* component 0..2 (R1..R3) */
     int64_t n = s->xyz_dec[k];       /* decimal integer keyed so far */
 
-    agc_dp_t frac = (agc_dp_t) ((n * PIN_DECON) >> AGC_SP_BITS); /* 2^-28 */
-    bool minus = (s->decbrnch & 3u) == 2u;                    /* minus sign keyed */
+    agc_dp_t frac  = (agc_dp_t) ((n * PIN_DECON) >> AGC_SP_BITS); /* 2^-28 */
+    bool     minus = (s->decbrnch & 3u) == 2u;                    /* minus sign keyed */
 
-    s->xyz_frac[k] = minus ? -frac : frac; /* DCS     */
+    s->xyz_frac[k]    = minus ? -frac : frac; /* DCS     */
     s->xyz_negzero[k] = minus && frac == 0;
 }
 
@@ -177,7 +177,7 @@ static agc_status_t pin_num(void)
     /* Accumulate one character into VERBREG, NOUNREG or X/Y/ZREG: octal by
      * CYL x3 + CHAR, decimal by DECTOBIN (sum x 10 + CHAR).                 */
     bool decimal = (s->decbrnch & 3u) != 0u; /* a sign made the entry decimal */
-    int chr = s->chr;                   /* the digit keyed (CHAR) */
+    int  chr     = s->chr;                   /* the digit keyed (CHAR) */
 
     pin_state_t *s_accumulate = pin_st(); /* pinball erasables */
 
@@ -264,8 +264,8 @@ static agc_status_t pin_nvcom(bool verb)
 
     agc_status_t st = pin_2blank(); /* status so far */
 
-    s->decbrnch = 1u;            /* set for dec V/N code              */
-    s->reqret = PIN_REQ_PASS0; /* set for ENTPAS0                   */
+    s->decbrnch   = 1u;            /* set for dec V/N code              */
+    s->reqret     = PIN_REQ_PASS0; /* set for ENTPAS0                   */
     s->reqret_neg = false;
 
     /* If DSPALARM occurs before first ENTPAS0 or NVSUB, ENTRET must already
@@ -556,7 +556,7 @@ static agc_status_t pin_tstab(void)
     for (int i = PIN_DSPTAB_PANEL - 1; i >= 0 && st == AGC_STATUS_OK; i--)
     {
         agc_inhint();
-        uint16_t w = agc_erase_dsptab(i);                      /* DSPTAB word */
+        uint16_t w   = agc_erase_dsptab(i);                      /* DSPTAB word */
         uint16_t mag = (uint16_t) (pin_ones_mag(w) | PIN_BIT12); /* magnitude */
 
         agc_erase_set_dsptab(i, pin_ones_negative(w) ? pin_ones_neg(mag) : mag); /* keep the sign */
@@ -653,7 +653,7 @@ static agc_status_t pin_clear_key(void)
     }
 
     pin_state_t *s_key = pin_st();                      /* pinball erasables */
-    int inrel = pin_inrel_of(s_key->dspcount); /* INREL of DSPCOUNT */
+    int          inrel = pin_inrel_of(s_key->dspcount); /* INREL of DSPCOUNT */
 
     if (!AGC_ASSERT(inrel >= 0))
     {
@@ -821,7 +821,7 @@ agc_status_t pin_charin(uint8_t code)
     }
 
     s->old_dsplock = s->dsplock; /* TS 21/22REG            */
-    s->dsplock = true;       /* make DSP syst busy     */
+    s->dsplock     = true;       /* make DSP syst busy     */
 
     if (pin_cadrstor_full() && code != PIN_ELRCODE)
     {
@@ -876,7 +876,7 @@ agc_status_t agc_job_prockey(void)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
-    s->reqret = PIN_REQ_PASS0; /* set REQRET for ENTER pass 0 */
+    s->reqret     = PIN_REQ_PASS0; /* set REQRET for ENTER pass 0 */
     s->reqret_neg = false;
     pin_block_dspcount(PIN_VD1);   /* block num chars, signs, clear */
 
@@ -1040,8 +1040,8 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
 
     pin_lodsampt();
     agc_chan_or((int) AGC_CHAN_DSALMOUT, PIN_CH11_UPACT);   /* UPACT on */
-    uint16_t low = (uint16_t) (inlink & PIN_LOW5);         /* C, bits 1-5 */
-    uint16_t mid = (uint16_t) ((inlink >> 5) & PIN_LOW5);  /* NOT-C */
+    uint16_t low  = (uint16_t) (inlink & PIN_LOW5);         /* C, bits 1-5 */
+    uint16_t mid  = (uint16_t) ((inlink >> 5) & PIN_LOW5);  /* NOT-C */
     uint16_t high = (uint16_t) ((inlink >> 10) & PIN_LOW5); /* C, bits 11-15 */
 
     if (mid != (uint16_t) (~low & PIN_LOW5) || high != low)

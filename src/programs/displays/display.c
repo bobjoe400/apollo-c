@@ -542,6 +542,7 @@ agc_status_t agc_job_rendz_final_dv_checked(agc_job_ctx_t *ctx)
             sum += (int32_t) agc_dp_high(rz->gdt_2.c[i]) - (int32_t) agc_dp_high(rz->delvlvc.c[i]);
             sum += (int32_t) agc_dp_low(rz->gdt_2.c[i]) - (int32_t) agc_dp_low(rz->delvlvc.c[i]);
         }
+
         overwrite = sum != 0;
 
         if (overwrite)

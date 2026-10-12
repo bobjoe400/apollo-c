@@ -88,7 +88,7 @@ const exec_cp_mode_t *exec_cp_modes_csm(int *n)
 agc_status_t exec_cp_engine_off_to_idle(void)
 {
     bool engine = (agc_chan_read(AGC_CHAN_DSALMOUT) & CP_BIT13) != 0U;
-    bool tvc = (agc_flagword_get(6) & CP_F6_DAPBITS) == CP_F6_TVC;
+    bool tvc    = (agc_flagword_get(6) & CP_F6_DAPBITS) == CP_F6_TVC;
 
     if (!engine && !tvc)
     {

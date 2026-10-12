@@ -78,8 +78,20 @@ def check_file(path):
             if s and s not in ('{', '}') and not s.startswith(('/*', '*', '//')):
                 code_lines += 1  # brace-only lines carry no statement (Allman style)
             if s.startswith('if (!AGC_ASSERT') and not func_is_status:
-                nxt = ' '.join(l.strip() for l in lines[i:i + 3])
+                # the whole guard block (to its closing brace), not just the
+                # next line: `{ agc_relint(); return; }` is as silent
+                blk, d, k = [], 0, i - 1
+                while k < len(lines) and k < i + 12:
+                    t = lines[k].strip()
+                    blk.append(t)
+                    d += t.count('{') - t.count('}')
+                    if d <= 0 and '{' in ' '.join(blk) or (d == 0 and t.endswith(';') and k > i - 1):
+                        break
+                    k += 1
+                nxt = ' '.join(blk[1:])
                 rm = re.search(r'return\s*(\(?[^;]*\)?)\s*;', nxt)
+                if rm and re.search(r'agc_(alarm|bailout|poodoo|curtains|ccshole|exec_varalarm|prioalarm)\(', nxt):
+                    rm = None  # the failure is raised as the AGC raises it
                 if rm:
                     if func_is_void:
                         HARD.append(f'{path}:{i}: rule 7: silent failure: void {in_func}() returns on a failed assertion; delete a guaranteed guard or return agc_status_t')
