@@ -84,15 +84,20 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - DONE INTWAKEU 04026 restarts at UPOUT +1 (named), not the P27 segment top; docs/modules/follow-up-done-lanes.md item 5.5.
 
 ## Open residuals after follow-up-done-lanes (2026-10-12; all routed items closed)
-- guid-entry: DOWNCNTL stays on values (F3): its DREF words match the rope only if D is kept as stored words, i.e. the entry erasables converted to agc_dp_words_t; would close oracle entry L/D 9 and L/D1 8. Recorded as a deviation for the document wave unless a later pass converts the erasables.
-- prog-align note: Progress row "item 2b" still reads PARTIAL but its remaining files were done in resume 3 (a); note-only staleness.
+- DONE guid-entry DOWNCNTL / GETETA on the MPAC words, V1 kept as stored words (the cause, not D); oracle entry L/D, L/D1 at 0; docs/modules/loose-ends.md item 1.
+- DONE prog-align item 2b row marked DONE (resume 3 (a)); docs/modules/loose-ends.md item 5.
 
 ## From fix-b6 and review-sim (2026-10-12)
-- exec-sched (open): src/exec/waitlist.c rejects a delay above 16250 cs; the AGC's WAITLIST rejects only a delay <= 0 (fix-b6 note, Open questions).
-- sim (open): a pad.c keyword for EK1VAL-EK3VAL / FANG / EMDOT would let scenario e fly the impulsive-burn path.
-- exec-sched (observation): the LM systems-test scenario hits the 64-jobs-per-call executive limit 1,817 times; harmless (jobs continue next call) but worth a look at the limit's rationale.
+- DONE exec-sched waitlist 16250 cs bound: the AGC only documents it; kept as a DEVIATION with the reason + test; docs/modules/loose-ends.md item 2.
+- DONE sim pad keyword sps_impulse + sim/scenarios/external_delta_v_impulsive_burn_csm.txt (impulsive path); docs/modules/loose-ends.md item 3.
+- DONE exec-sched 64-jobs-per-call bound: all hits are CHECKG1 polling; 64 exceeds the AGC's job rate; rationale in the clock_exec prolog; docs/modules/loose-ends.md item 4.
 
 ## From the document wave's first pass (2026-10-12; routed to loose-ends)
-- exec-sched (BUG): src/exec/change_program/lm.c exec_cp_cleanup_lm has an empty body but its header lists five flag resets (3AXISFLG, FLGWRD11=LRBYBIT, R04FLAG, MUNFLAG, XOVINFLG): check the rope (Luminary V37 / CANV37 cleanup) and restore the resets if the body was lost (collapse or guard deletion), with a test.
-- exec-sched (comment): agc_power_on's header says the caller next calls agc_fresh_dofstart(); src/sim/main.c calls agc_rupt_go(). Make the comment match.
-- exec-sched (comment): src/exec/waitlist.c agc_waitlist_time3 / agc_waitlist_entry comments describe failure returns the code no longer has.
+- DONE exec-sched exec_cp_cleanup_lm: false alarm, body matches L p.229 (test added); docs/modules/loose-ends.md item 6.
+- DONE exec-sched agc_power_on header names agc_rupt_go(); docs/modules/loose-ends.md item 7.
+- DONE exec-sched agc_waitlist_time3 / agc_waitlist_entry comments; docs/modules/loose-ends.md item 8.
+
+## From prolog-consistency (2026-10-12)
+- loose-ends (fidelity): the LM's GET+MGA unitizes twice where the C unitizes once for both vehicles (prolog-consistency note); check Luminary and match.
+- always-ok: src/lm/radar/leadin.c agc_job_radar_sample_done skips a store silently when its assertion fails (check_rules misses the pattern: an assertion whose false branch skips a statement without a status); fix per rule 7 and teach check_rules the pattern.
+- always-ok: returns-extra (body returns a status the prolog does not name) is described in tools/prolog_check.py but not implemented (~172 functions); implement it and fix the prologs.
