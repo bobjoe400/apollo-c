@@ -561,3 +561,11 @@
             current tree; B2 and B3 closed by the guard pass, B4 WAIT2
             still stands -> routed to exec-sched). Launched
             review-exec-sched (resume, Opus) alongside verify-collapse.
+2026-10-11  verify-collapse done (Opus): 11 reviewed lanes, 1b72892..a02850c.
+            41 side-effect/mixed deletions, 1,026 deletions in unreached
+            code, 249 manual.tsv rows, 10 status chains, 52 inlinings, 49
+            return rewrites, 155 void/dropped-param functions checked:
+            agree on all, no src edits. Minor findings and residual doubt
+            (BAD_ARG replacing callee status at 62 sites; two tests still
+            count assertion reports; boilerplate manual.tsv reasons)
+            routed in review_items.md.
