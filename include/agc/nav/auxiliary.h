@@ -79,6 +79,11 @@ agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l);  
 agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t r, agc_dp_t t_cs, agc_vec_t *rp);
 agc_status_t agc_planet_rp_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t rp, agc_dp_t t_cs, agc_vec_t *r);
 
+/* The same on stored words (agc_vec_words_t, core/word.h): VXV, BVSU/VAD,
+ * MXV/VXM and VSL1 see the words of 504RPR as the caller holds them.     */
+agc_status_t agc_planet_r_to_rp_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t r, agc_dp_t t_cs, agc_vec_words_t *rp);
+agc_status_t agc_planet_rp_to_r_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t rp, agc_dp_t t_cs, agc_vec_words_t *r);
+
 /* ======================================================================
  * Latitude / longitude (latlong.c)
  * ==================================================================== */

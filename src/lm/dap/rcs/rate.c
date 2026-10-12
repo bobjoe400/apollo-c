@@ -130,11 +130,11 @@ agc_status_t lm_dap_rateloop(void)
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   om        lm_dp_pair_t  I    CDU difference as a DP pair, scaled pi
+ *   om        agc_dp_words_t  I    CDU difference as a DP pair, scaled pi
  *
  * RETURNS: agc_sp_t -- increment major word, scaled pi
  **********************************************************************/
-static agc_sp_t measured_increment(lm_dp_pair_t om)
+static agc_sp_t measured_increment(agc_dp_words_t om)
 {
     if (om.hi != 0 && (int32_t) lm_dap_ccs_dim(om.hi) - RT_OCT630 > 0)
     {
@@ -156,7 +156,7 @@ static agc_sp_t measured_increment(lm_dp_pair_t om)
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   inc       lm_dp_pair_t  I    measured angle increment, DP scaled pi
+ *   inc       agc_dp_words_t  I    measured angle increment, DP scaled pi
  *   omega     agc_sp_t      I    OMEGAx, rate estimate scaled pi/4 rad/s
  *   traped    agc_sp_t *    I/O  TRAPEDx, accumulated difference scaled pi
  *   err_hi    agc_sp_t *    I/O  DxERROR major word, scaled pi
@@ -165,12 +165,12 @@ static agc_sp_t measured_increment(lm_dp_pair_t om)
  *
  * RETURNS: none
  **********************************************************************/
-static void derive_axis(lm_dp_pair_t inc, agc_sp_t omega, agc_sp_t *traped, agc_sp_t *err_hi, agc_sp_t *err_lo, agc_sp_t last)
+static void derive_axis(agc_dp_words_t inc, agc_sp_t omega, agc_sp_t *traped, agc_sp_t *err_hi, agc_sp_t *err_lo, agc_sp_t last)
 {
     agc_sp_t rate = measured_increment(inc); /* CDU-measured rate, scaled pi/4 rad/s */
 
-    *traped        = lm_dap_sat((int32_t) *traped + rate - omega);
-    lm_dp_pair_t e = {*err_hi, *err_lo};
+    *traped          = lm_dap_sat((int32_t) *traped + rate - omega);
+    agc_dp_words_t e = {*err_hi, *err_lo};
 
     e       = lm_dap_das(e, inc);
     e       = lm_dap_das(e, lm_dap_mp((agc_sp_t) -last, RT_1_40)); /* manual mode */
@@ -204,7 +204,7 @@ static bool trap_axis(agc_sp_t *traped, agc_sp_t *ntraps, agc_sp_t *omega, agc_s
 
     if (big)
     {
-        lm_dp_pair_t n = {0, *traped};
+        agc_dp_words_t n = {0, *traped};
 
         *corr   = lm_dap_dv(n, *ntraps);
         *traped = 0;
@@ -272,8 +272,8 @@ agc_status_t lm_dap_backp(void)
     d->trapedr    = lm_dap_wrap((int32_t) d->trapedr + lm_dap_mphi(jr, (agc_sp_t) -RT_BIT14));
     agc_sp_t ydif = lm_dap_msu(d->dapcdu[1], d->oldyforp); /* CDUY - OLDYFORP, scaled pi rad */
 
-    d->oldyforp      = d->dapcdu[1];
-    lm_dp_pair_t inc = lm_dap_mp(ydif, agc_erase_m11()); /* M11 dCDUY (+ dCDUX below): P increment, DP scaled pi rad */
+    d->oldyforp        = d->dapcdu[1];
+    agc_dp_words_t inc = lm_dap_mp(ydif, agc_erase_m11()); /* M11 dCDUY (+ dCDUX below): P increment, DP scaled pi rad */
 
     inc.hi        = lm_dap_wrap((int32_t) inc.hi + xdif);  /* M13 = 1 */
     derive_axis(inc, d->omegap, &d->trapedp, &d->dxerror, &d->dxerror_lo, d->plast);
@@ -346,14 +346,14 @@ agc_status_t lm_dap_offset_est(void)
         return (AGC_STATUS_OK);
     }
 
-    lm_dp_pair_t q = {d->aosq, d->aosq_lo}; /* WORKTIME */
+    agc_dp_words_t q = {d->aosq, d->aosq_lo}; /* WORKTIME */
 
-    q              = lm_dap_das(q, lm_dap_mp(d->qaccdot, RT_CALLCODE));
-    d->aosq        = q.hi;
-    d->aosq_lo     = q.lo;
-    d->alphaq      = q.hi;
-    d->aosqterm    = lm_dap_mphi(q.hi, RT_200MS);
-    lm_dp_pair_t r = {d->aosr, d->aosr_lo};
+    q                = lm_dap_das(q, lm_dap_mp(d->qaccdot, RT_CALLCODE));
+    d->aosq          = q.hi;
+    d->aosq_lo       = q.lo;
+    d->alphaq        = q.hi;
+    d->aosqterm      = lm_dap_mphi(q.hi, RT_200MS);
+    agc_dp_words_t r = {d->aosr, d->aosr_lo};
 
     r           = lm_dap_das(r, lm_dap_mp(d->raccdot, RT_CALLCODE));
     d->aosr     = r.hi;

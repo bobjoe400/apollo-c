@@ -221,9 +221,9 @@ static agc_status_t tpi_search_pass(agc_interp_t *ip, agc_rendz_t *rz, bool *don
      * horizontal (EA = DPPOSMAX - angle).                                   */
     agc_status_t st = agc_rendz_los_and_normal(ip, rz); /* S34/35.1 */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     agc_vec_t h; /* 0D UNRM x RA, 2^30 */
@@ -672,19 +672,8 @@ agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz, agc
 
 /**********************************************************************
  * S34/35.4 / NOVRWRT (pp.477-478): DVLOS = delta V in the frame
- * (ULOS, (B x ULOS) VSL1, B), B = UNIT(UNRM x ULOS).
- * AGC: S34/35.4, NOVRWRT (P34-35_P74-75.agc pp.477-478)
- *
- * FUNCTION NAME: agc_rendz_tpi_los_delta_v
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- *   rz        agc_rendz_t *   I/O  rendezvous erasables
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL
- *          pointer
+ * (ULOS, (B x ULOS) VSL1, B), B = UNIT(UNRM x ULOS). The AGC stores the
+ * VSL1 result as it comes (an overflow wraps); nothing here can fail.
  * AGC: S34/35.4, NOVRWRT (P34-35_P74-75.agc pp.477-478)
  *
  * FUNCTION NAME: agc_rendz_tpi_los_delta_v
@@ -694,11 +683,8 @@ agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz, agc
  *   --------  --------------  ---  --------------------------------
  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
  *   rz        agc_rendz_t *   I/O  rendezvous erasables
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL
- *          pointer
  **********************************************************************/
-agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz)
+void agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz)
 {
     agc_mat_t m; /* LOMAT / LOS rows, 2^1 */
 
@@ -710,13 +696,6 @@ agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz)
     m.row[1]  = agc_vec_shl(ip, agc_vec_cross(ip, b, rz->ulos), 1); /* 6D   */
     m.row[2]  = b;                                                  /* 12D      */
     rz->dvlos = agc_vec_shl(ip, agc_mat_vec(ip, &m, rz->delveet3), 1);
-
-    if (!AGC_ASSERT(rz->dvlos.c[0] != AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

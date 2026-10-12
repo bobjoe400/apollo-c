@@ -175,9 +175,9 @@ agc_status_t lm_dap_needler(void)
                 return (AGC_STATUS_BAD_ARG);
             }
 
-            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            if (st != AGC_STATUS_OK)
             {
-                return (AGC_STATUS_BAD_ARG);
+                return (st);
             }
 
             return (st);

@@ -106,7 +106,7 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
     agc_navaux_padload_t nav;                               /* pad loads of the auxiliary nav lane */
     agc_status_t         st = agc_navaux_get_padload(&nav); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -115,7 +115,7 @@ agc_status_t agc_lm_guidinit(agc_interp_t *ip)
 
     const agc_status_t st_pole = agc_planet_rp_to_r(ip, &nav, true, agc_vec_make(0, 0, AGC_DP_HALF), agc_rtb_loadtime(), &pole); /* step status */
 
-    if (!AGC_ASSERT(st_pole == AGC_STATUS_OK))
+    if (st_pole != AGC_STATUS_OK)
     {
         return (st_pole);
     }
@@ -393,9 +393,9 @@ static agc_status_t as_ascterm(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     agc_status_t st = agc_lm_findcduw_from_unfc(ip); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (as_ascterm_display(ctx));
@@ -728,16 +728,16 @@ agc_status_t agc_lm_task_ascent_engine_off(void)
 {
     agc_status_t st = agc_lm_enginof2(); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     st = agc_exec_findvac(AS_PRIO17, AGC_JOB_CUTOFF);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_CUTOFF, AGC_TASK_NONE, AS_PRIO17, false, 0U};
@@ -1040,7 +1040,7 @@ agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* asleep        */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }

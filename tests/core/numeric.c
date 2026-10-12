@@ -56,6 +56,7 @@ static void     test_sqrt_trig(void);
 static void     test_vectors(void);
 static void     test_stale_dvsign(void);
 static void     test_mpac_words(void);
+static void     test_vector_words(void);
 static void     test_constants(void);
 
 /**********************************************************************
@@ -73,6 +74,7 @@ int main(void)
     test_vectors();
     test_stale_dvsign();
     test_mpac_words();
+    test_vector_words();
     test_constants();
 
     if (failures != 0)
@@ -471,6 +473,57 @@ static void test_mpac_words(void)
     eq("DDV words = value", agc_dp_from_words(agc_mpac_store(m)), agc_dp_div(&ip, -12345678, 98765432));
     m = agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(-12345678)), agc_dp_to_words(98765432));
     eq("DMP words = value", agc_tp_from_words(m), agc_dp_mul_tp(-12345678, 98765432));
+}
+
+/**********************************************************************
+ * DOT, VXM, MXV, VXV, VXSC, VSL, VSR on agc_vec_words_t
+ * (INTERPRETER.agc pp.1131-1159): with sign-agreeing words they give
+ * the value functions' results; DOT of one non-zero component of
+ * disagreeing words is that component's DMPSUB.
+ **********************************************************************/
+static void test_vector_words(void)
+{
+    agc_interp_t    ip;                                     /* interpreter state */
+    const agc_vec_t u = {{123456789, -98765432, 45678901}}; /* MPAC vector, 2^1 */
+    const agc_vec_t v = {{-87654321, 23456789, 101010101}}; /* operand, 2^1 */
+    const agc_vec_t w = {{11111111, 22222222, -33333333}};  /* third row, 2^1 */
+    const agc_mat_t m = {{u, v, w}};                        /* rows u, v, w */
+    agc_vec_words_t mw[3];                                  /* the rows as words */
+    agc_vec_words_t r;                                      /* word results */
+    agc_vec_t       e;                                      /* value results */
+
+    agc_interp_init(&ip);
+    mw[0] = agc_vec_to_words(u);
+    mw[1] = agc_vec_to_words(v);
+    mw[2] = agc_vec_to_words(w);
+    eq("VDOT = DOT", agc_tp_from_words(agc_mpac_vdot(&ip, mw[0], mw[1])), agc_vec_dot_tp(&ip, u, v));
+    r     = agc_mpac_vxm(&ip, mw[1], mw);
+    e     = agc_vec_mat(&ip, v, &m);
+    eq("VXM x", agc_vec_from_words(r).c[0], e.c[0]);
+    eq("VXM z", agc_vec_from_words(r).c[2], e.c[2]);
+    r     = agc_mpac_mxv(&ip, mw, mw[2]);
+    e     = agc_mat_vec(&ip, &m, w);
+    eq("MXV y", agc_vec_from_words(r).c[1], e.c[1]);
+    r     = agc_mpac_vxv(&ip, mw[0], mw[1]);
+    e     = agc_vec_cross(&ip, u, v);
+    eq("VXV x", agc_vec_from_words(r).c[0], e.c[0]);
+    eq("VXV y", agc_vec_from_words(r).c[1], e.c[1]);
+    eq("VXV z", agc_vec_from_words(r).c[2], e.c[2]);
+    r     = agc_mpac_vxsc(&ip, agc_mpac_dload(agc_dp_to_words(-55555555)), mw[0]);
+    e     = agc_vec_scale(&ip, u, -55555555);
+    eq("VXSC y", agc_vec_from_words(r).c[1], e.c[1]);
+    r     = agc_mpac_vshift(&ip, mw[2], -3);
+    e     = agc_vec_shr(w, 3);
+    eq("VSR3 z", agc_vec_from_words(r).c[2], e.c[2]);
+    r     = agc_mpac_vshift(&ip, mw[2], 1);
+    e     = agc_vec_shl(&ip, w, 1);
+    eq("VSL1 x", agc_vec_from_words(r).c[0], e.c[0]);
+
+    /* Disagreeing words: (1, -100) . (x, 0, 0) is DMPSUB of those words. */
+    agc_vec_words_t a = {{{1, -100}, {0, 0}, {0, 0}}};  /* x = 2^-14 - 100 2^-28 */
+    agc_vec_words_t b = {{mw[1].c[0], {0, 0}, {0, 0}}}; /* operand */
+
+    eq("VDOT words", agc_tp_from_words(agc_mpac_vdot(&ip, a, b)), agc_tp_from_words(agc_mpac_dmp(agc_mpac_dload(a.c[0]), b.c[0])));
 }
 
 /**********************************************************************

@@ -386,12 +386,7 @@ static agc_status_t target1_marked(void)
         return (st);
     }
 
-    st = agc_csm_sxtsm(&ip, &m, &prelaunch_ram()->losvec); /* STORE LOSVEC */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_csm_sxtsm(&ip, &m, &prelaunch_ram()->losvec);
 
     st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS                  */
 
@@ -433,12 +428,7 @@ static agc_status_t target2_marked(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    st = agc_csm_sxtsm(&ip, &m, &marked[1]); /* STOVL 12D             */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_csm_sxtsm(&ip, &m, &marked[1]);
 
     marked[0] = prelaunch_ram()->losvec;                        /* LOSVEC, STCALL 06D        */
     st        = agc_imu_axisgen(&ip, ar->starad, marked, &xdc); /* AXISGEN */

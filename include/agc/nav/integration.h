@@ -170,7 +170,7 @@ agc_status_t agc_integ_install(int area, agc_job_id_t resume_job);
 agc_status_t agc_integ_intwake(void);
 
 /* INTWAKE0/INTWAKE1: release area 0 and wake its sleepers.              */
-agc_status_t agc_integ_intwake0(void);
+agc_status_t agc_integ_intwake_release(void);
 
 /* ERASWAK1/ERASWAK2: release area 1 or 2 (CM).                          */
 agc_status_t agc_integ_eraswake(int area);
@@ -211,7 +211,7 @@ agc_status_t agc_integ_ptoacsm(agc_integ_ctx_t *ctx);
 agc_status_t agc_integ_ptoalem(agc_interp_t *ip, agc_integ_ctx_t *ctx, bool *surface);
 
 /* RECTIFY: new conic through RCV + TDELTAV, VCV + TNUV (uses ctx->pbody). */
-agc_status_t agc_integ_rectify(agc_interp_t *ip, agc_integ_ctx_t *ctx);
+void agc_integ_rectify(agc_interp_t *ip, agc_integ_ctx_t *ctx);
 
 /* MINIRECT: VRECT = VCV = v; TDELTAV = TNUV = 0; TC = XKEP = 0.          */
 void agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v);
@@ -223,13 +223,14 @@ agc_status_t agc_integ_avetomid(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_job_
 
 /* MIDTOAV1: precision-integrate this vehicle to tdec1 (cs 2^28).
  * MIDTOAV2: to now + TIMEDELT steps. BUSY as for INTSTALL.              */
-agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job, agc_integ_midtoav_out_t *out);
-agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_job_id_t resume_job, agc_integ_midtoav_out_t *out);
+agc_status_t agc_integ_midtoav_at_time(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job, agc_integ_midtoav_out_t *out);
+agc_status_t agc_integ_midtoav_now(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_job_id_t resume_job, agc_integ_midtoav_out_t *out);
 
 /* INTWAKEU: finish a P27 state vector update (UPSVFLAG: 0 none, +1 CSM
  * earth, +2 CSM moon, -1 LM earth, -2 LM moon). RRECT/VRECT/TET of the
- * temporary set hold the new state. *upsvflag is zeroed.                 */
-agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t *upsvflag);
+ * temporary set hold the new state. *upsvflag is zeroed. resume: the
+ * group 6 restart point (the caller's continuation, PHASCHNG 04026).    */
+agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t *upsvflag, agc_job_id_t resume);
 
 /* GRP2PC: PHASCHNG OCT 04022 (group 2).                                  */
 void agc_integ_grp2pc(void);
@@ -241,10 +242,10 @@ void agc_integ_setiflgs(void);
 void agc_integ_thisvint(void);
 
 /* ---- STATEINT (periodic P00 integration), jobs and tasks ------------- */
-agc_status_t agc_task_stateint(void);      /* STATEINT task */
-agc_status_t agc_job_statint1(void);       /* STATINT1 job  */
-agc_status_t agc_job_statint1_stall(void); /* INTSTALL +1   */
-agc_status_t agc_job_stateup_stall(void);  /* 2nd INTSTALL  */
+agc_status_t agc_task_stateint(void);             /* STATEINT task */
+agc_status_t agc_job_stateint_update(void);       /* STATINT1 job  */
+agc_status_t agc_job_stateint_update_stall(void); /* INTSTALL +1   */
+agc_status_t agc_job_stateup_stall(void);         /* 2nd INTSTALL  */
 
 /* ---- LM only: SETITCTR (ORBITAL_INTEGRATION LM p. 1245) -------------- */
 /* ITERCTR = 20, or 5 when AVEGFLAG is set, then LAMBERT.                 */
@@ -270,8 +271,8 @@ agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs, agc_vec_t *moon_
  * this_vehicle: RN, VN, PIPTIME (skipped while AVEMIDSW); otherwise
  * R-OTHER, V-OTHER.  x2: 0 earth (B29/B7), 2 moon (B27/B5), or
  * AGC_INTEG_X2_ORIGEX (vectors zeroed).                                  */
-agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2, agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav, agc_vec_t tnuv, agc_dp_t tet);
-agc_vec_t    agc_integ_r_other(void); /* R-OTHER  m B29 (downlink)      */
-agc_vec_t    agc_integ_v_other(void); /* V-OTHER  m/cs B7 (downlink)    */
+void      agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2, agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav, agc_vec_t tnuv, agc_dp_t tet);
+agc_vec_t agc_integ_r_other(void); /* R-OTHER  m B29 (downlink)      */
+agc_vec_t agc_integ_v_other(void); /* V-OTHER  m/cs B7 (downlink)    */
 
 #endif /* AGC_INTEG_H */

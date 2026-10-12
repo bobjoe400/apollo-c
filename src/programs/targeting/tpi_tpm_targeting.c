@@ -96,15 +96,7 @@ static agc_rendz_t *tpi_begin(agc_interp_t *ip)
  **********************************************************************/
 static agc_status_t tpi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t next)
 {
-    agc_status_t st; /* SELECTMU */
-
-    st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
+    agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
     agc_flag_clear(AGC_FLAG_FINALFLG);
 
     return (rz_ttogo_display(ctx, ip, rz, next));
@@ -616,9 +608,9 @@ agc_status_t agc_job_tpm_advance(agc_job_ctx_t *ctx)
 
     st = agc_rendz_los_and_normal(&ip, rz);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     st = agc_rendz_tpi_required_velocity(&ip, rz, AGC_JOB_TPM_ADVANCE);

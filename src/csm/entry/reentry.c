@@ -68,6 +68,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
+#include "agc/programs/alignment.h"
 
 /* Interpreter state shared by the entry interpretive code (OVFIND).        */
 static agc_interp_t entry_interp;               /* entry interpreter state */
@@ -226,10 +227,11 @@ agc_dp_t entry_tp_shl(agc_interp_t *ip, agc_tp_t m, int n)
 }
 
 /**********************************************************************
- * EARROT1 / EARROT2 (CSM_GEOMETRY.agc pp. 293-294): rotate RTINIT about the
- * polar axis UNITW through WIE DTEAROT: RT = UNIT(RTINIT + RTNORM (cos WT -
- * 1) + RTEAST sin WT). first = true is the EARROT1 entry (resolves RTEAST,
- * RTNORM).
+ * EARROT1 / EARROT2 (CSM_GEOMETRY.agc pp. 293-294) on the entry erasables:
+ * the routines themselves are agc_csm_earrot1 / agc_csm_earrot2 (the
+ * alignment lane's CSM_GEOMETRY); this passes RTINIT, UNITW, RTEAST,
+ * RTNORM, DTEAROT in and takes RTEAST, RTNORM, DTEAROT (OVERADAY) and RT
+ * back. first = true is the EARROT1 entry (resolves RTEAST, RTNORM).
  *
  * FUNCTION NAME: entry_earrot
  *
@@ -247,34 +249,28 @@ agc_dp_t entry_tp_shl(agc_interp_t *ip, agc_tp_t m, int n)
  **********************************************************************/
 void entry_earrot(agc_interp_t *ip, agc_entry_state_t *es, bool first)
 {
-    agc_vec_t unitw = agc_guid_state()->avg.unitw; /* UNITW polar axis, B0 */
-    agc_dp_t  wt;                                  /* WIE DTEAROT, revs B0 */
-    agc_vec_t a;                                   /* RTNORM (COS WT - .5), B1 */
-    agc_vec_t b;                                   /* RTEAST SIN WT, B1 */
-    int       days;                                /* OVERADAY count */
+    agc_csm_earrot_t e; /* the CSM_GEOMETRY frame */
+
+    e.rtinit  = es->rtinit;
+    e.unitw   = agc_guid_state()->avg.unitw; /* UNITW polar axis, B0 */
+    e.rteast  = es->rteast;
+    e.rtnorm  = es->rtnorm;
+    e.dtearot = es->dtearot;
+    e.rt      = es->rt;
 
     if (first)
     {
-        es->rteast = agc_vec_cross(ip, unitw, es->rtinit);
-        es->rtnorm = agc_vec_cross(ip, es->rteast, unitw);
+        agc_csm_earrot1(ip, &e);
     }
-
-    agc_interp_clear_ovf(ip);                                 /* BOVB TCDANZIG  */
-    wt = agc_dp_div(ip, es->dtearot, AGC_ENTRY_ONE_OVER_WIE); /* revs  */
-
-    /* OVERADAY: remove whole sidereal days until the divide fits.        */
-    for (days = 0; days < 32 && agc_interp_test_ovf(ip); days++)
+    else
     {
-        agc_dp_t day = agc_dp_sign(AGC_ENTRY_ONE_OVER_WIE, es->dtearot); /* 1/WIE with DTEAROT's sign, cs B28 */
-
-        es->dtearot = agc_dp_sub(ip, es->dtearot, day);
-        wt          = agc_dp_div(ip, es->dtearot, AGC_ENTRY_ONE_OVER_WIE);
+        agc_csm_earrot2(ip, &e);
     }
 
-    a      = agc_vec_scale(ip, es->rtnorm, agc_dp_sub(ip, agc_dp_cos(wt), AGC_ENTRY_HALVE));
-    b      = agc_vec_scale(ip, es->rteast, agc_dp_sin(wt));
-    a      = agc_vec_shl(ip, agc_vec_add(ip, b, a), 1); /* VAD VSL1        */
-    es->rt = agc_vec_unit(ip, agc_vec_add(ip, a, es->rtinit), NULL, NULL);
+    es->rteast  = e.rteast;
+    es->rtnorm  = e.rtnorm;
+    es->dtearot = e.dtearot; /* OVERADAY */
+    es->rt      = e.rt;
 }
 
 /* ======================================================================
@@ -1302,9 +1298,11 @@ static entry_step_t step_kepler_test(entry_pass_t *p)
         es->rollhold = 0;
     }
 
-    if (agc_entry_desired_gimbal_angles() != AGC_STATUS_OK)
+    const agc_status_t st = agc_entry_desired_gimbal_angles();
+
+    if (st != AGC_STATUS_OK)
     {
-        p->status = AGC_STATUS_BAD_ARG;
+        p->status = st;
 
         return (ST_ERROR);
     }
@@ -1335,9 +1333,11 @@ static entry_step_t step_prefinal(entry_pass_t *p)
 {
     p->es->gotoaddr = AGC_ENTRY_GOTO_PREFINAL; /* restart protection */
 
-    if (entry_final_phase(p->es) != AGC_STATUS_OK)
+    const agc_status_t st = entry_final_phase(p->es);
+
+    if (st != AGC_STATUS_OK)
     {
-        p->status = AGC_STATUS_BAD_ARG;
+        p->status = st;
 
         return (ST_ERROR);
     }
@@ -1777,9 +1777,11 @@ static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
             kat = agc_dp_div(ip, kat, AGC_ENTRY_ONE_OVER_KA1);
             kat = agc_dp_add(ip, kat, AGC_ENTRY_KA2);
 
-            if (entry_post_0_05g(es) != AGC_STATUS_OK)
+            const agc_status_t st = entry_post_0_05g(es);
+
+            if (st != AGC_STATUS_OK)
             { /* RTB P64: MM 64, N74   */
-                p->status = AGC_STATUS_BAD_ARG;
+                p->status = st;
 
                 return (ST_ERROR);
             }
@@ -2023,11 +2025,11 @@ static entry_step_t entry_huntest_step(entry_pass_t *p, entry_step_t s)
         {
             agc_entry_state_t *es = p->es; /* entry erasables */
 
-            /* CA PRIO16 / TS PHSPRDT5: group 5 restart priority one below group 4
-             * (no exec API for PHSPRDT5 alone; the restart uses the stored one).  */
-            agc_phase_change(000474);               /* 4.47 PRE-HUNT      */
-            agc_exec_prio_change(AGC_ENTRY_PRIO16); /* BUSY: see above    */
-            es->gotoaddr = AGC_ENTRY_GOTO_ENDEXIT;  /* ADENDEXT           */
+            /* Group 5 restart priority one below group 4 (SIDETRAK p. 861). */
+            agc_phase_set_priority(5, AGC_ENTRY_PRIO16); /* CA PRIO16 / TS PHSPRDT5 */
+            agc_phase_change(000474);                    /* 4.47 PRE-HUNT      */
+            agc_exec_prio_change(AGC_ENTRY_PRIO16);      /* BUSY: see above    */
+            es->gotoaddr = AGC_ENTRY_GOTO_ENDEXIT;       /* ADENDEXT           */
             es->diffold  = es->diff;
             agc_flag_set(AGC_FLAG_HIND);
             es->q7       = AGC_ENTRY_Q7F;
@@ -2088,14 +2090,9 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
              *          or ST_ERROR when an assertion fails
              **********************************************************************/
         {
-            if (entry_upcontrol(p->es) != AGC_STATUS_OK)
-            {
-                p->status = AGC_STATUS_BAD_ARG;
+            p->status = entry_upcontrol(p->es); /* still OK on entry to a step */
 
-                return (ST_ERROR);
-            }
-
-            return (ST_UPCONTRL);
+            return ((p->status == AGC_STATUS_OK) ? ST_UPCONTRL : ST_ERROR);
         }
         case ST_UPCONTRL:
             return (step_upcontrl(p));
@@ -2184,9 +2181,11 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
         {
             p->es->gotoaddr = AGC_ENTRY_GOTO_HUNTEST;
 
-            if (entry_disable_restart_group() != AGC_STATUS_OK)
+            const agc_status_t st = entry_disable_restart_group();
+
+            if (st != AGC_STATUS_OK)
             {
-                p->status = AGC_STATUS_BAD_ARG;
+                p->status = st;
 
                 return (ST_ERROR);
             }
@@ -2298,9 +2297,11 @@ static entry_step_t entry_ballistic_step(entry_pass_t *p, entry_step_t s)
              *          or ST_ERROR when an assertion fails
              **********************************************************************/
         {
-            if (entry_ballistic(p->es) != AGC_STATUS_OK)
+            const agc_status_t st = entry_ballistic(p->es);
+
+            if (st != AGC_STATUS_OK)
             {
-                p->status = AGC_STATUS_BAD_ARG;
+                p->status = st;
 
                 return (ST_ERROR);
             }
@@ -2457,10 +2458,10 @@ static entry_step_t entry_final_phase_step(entry_pass_t *p, entry_step_t s)
         {
             agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_REESTABLISH_ENTRY_SEQUENCER, AGC_TASK_NONE, 0, false, 0U };
 
-            if (agc_exec_novac(AGC_ENTRY_PRIO16, AGC_JOB_ENTRY_FINAL_PHASE_DISPLAY) != AGC_STATUS_OK)
-            {
-                p->status = AGC_STATUS_FULL;
+            p->status = agc_exec_novac(AGC_ENTRY_PRIO16, AGC_JOB_ENTRY_FINAL_PHASE_DISPLAY); /* BAILOUT 1202 when no core set */
 
+            if (p->status != AGC_STATUS_OK)
+            {
                 return (ST_ERROR);
             }
 

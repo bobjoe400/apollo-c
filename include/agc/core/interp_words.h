@@ -93,6 +93,19 @@ agc_tp_words_t agc_mpac_acos(agc_interp_t *ip, agc_tp_words_t m); /* ACOS: ALARM
 agc_tp_words_t agc_mpac_dot(agc_interp_t *ip, agc_vec_t u, agc_vec_t v); /* DOT */
 agc_tp_words_t agc_mpac_vsq(agc_interp_t *ip, agc_vec_t v);              /* VSQ */
 
+/* ---- vectors as stored words (agc_vec_words_t, word.h) -------------------
+ * DOT, VXM, MXV take the components' words into DOTSUB as stored; the
+ * vector results are MPAC, MPAC+1 of each component as held.            */
+agc_vec_words_t agc_vec_to_words(agc_vec_t v);                                                 /* sign-agreeing words */
+agc_vec_t       agc_vec_from_words(agc_vec_words_t v);                                         /* hi 2^14 + lo each   */
+agc_tp_words_t  agc_mpac_vdot(agc_interp_t *ip, agc_vec_words_t u, agc_vec_words_t v);         /* DOT                 */
+agc_vec_words_t agc_mpac_vxm(agc_interp_t *ip, agc_vec_words_t v, const agc_vec_words_t m[3]); /* VXM, m = rows   */
+agc_vec_words_t agc_mpac_mxv(agc_interp_t *ip, const agc_vec_words_t m[3], agc_vec_words_t v); /* MXV, m = rows   */
+agc_vec_words_t agc_mpac_vxv(agc_interp_t *ip, agc_vec_words_t u, agc_vec_words_t v);          /* VXV             */
+agc_vec_words_t agc_mpac_vxsc(agc_interp_t *ip, agc_tp_words_t s, agc_vec_words_t v);          /* VXSC, scalar in MPAC (DVXSC) */
+agc_vec_words_t agc_mpac_vad(agc_interp_t *ip, agc_vec_words_t a, agc_vec_words_t b);          /* VAD                 */
+agc_vec_words_t agc_mpac_vshift(agc_interp_t *ip, agc_vec_words_t v, int n);                   /* VSL n, VSR -n (VRIGHT2) */
+
 /* ---- basic-language DAS on stored words (no OVERFLOW correction): the
  * low-word carry goes into the high word; *ovf = overflow left in A.   */
 agc_dp_words_t agc_dp_words_das(agc_dp_words_t x, agc_dp_words_t y, int *ovf);

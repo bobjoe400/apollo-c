@@ -296,8 +296,8 @@ agc_dp_t agc_orbit_params_maxchk(agc_interp_t *ip, agc_dp_t h);
 agc_status_t agc_orbit_params_select_body(bool moon, agc_dp_t rls_mag_or_rpad, agc_orbit_params_in_t *in);
 
 /* ---- rendezvous subroutines (P34-35_P74-75.agc pp.469-500) ------------- */
-agc_status_t agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg);
-agc_vec_t    agc_rendz_vec_to_body(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t v); /* VSR* 0,2      */
+void      agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg);
+agc_vec_t agc_rendz_vec_to_body(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t v); /* VSR* 0,2      */
 
 /* SHIFTR1 */
 agc_dp_t agc_rendz_scalar_from_body(const agc_rendz_t *rz, agc_dp_t a);
@@ -366,7 +366,7 @@ agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz, agc
 agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
 
 /* S34/35.4 / NOVRWRT (p.477-478): DVLOS from DELVEET3.                  */
-agc_status_t agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz);
+void agc_rendz_tpi_los_delta_v(agc_interp_t *ip, agc_rendz_t *rz);
 
 /* INITVEL (pp.486-491): numit Lambert/precision iterations, cone e4.    */
 agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, agc_dp_t e4, agc_job_id_t resume);
@@ -409,7 +409,7 @@ agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz);
 void agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2, agc_dp_t *vel, agc_dp_t *gamma);
 
 /* ---- P76 ---------------------------------------------------------------- */
-agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t dv_lv, agc_vec_t *v_new);
+void agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t dv_lv, agc_vec_t *v_new);
 
 /* ---- P20-P25 measurement processing -------------------------------------- */
 /* BVECTORS (CSM R22, P20-P25.agc p.576): B vector and DELTAQ for an optics
@@ -898,6 +898,9 @@ agc_status_t agc_job_rendezvous_tracking_data_incorporate(void);
 
 /* RANGEBQ1 */
 agc_status_t agc_job_rendezvous_tracking_data_measure(void);
+
+/* GRP2PC restart point inside the measurement sequence */
+agc_status_t agc_job_rendezvous_tracking_data_measure_continue(void);
 
 /* w_matrix_monitor.c (V67, both vehicles) */
 agc_status_t agc_job_w_matrix_monitor(agc_job_ctx_t *ctx); /* V67CALL */

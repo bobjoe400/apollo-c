@@ -290,7 +290,7 @@ static void run_rectify(const char *t)
     ctx.sv.nuv    = oracle_in_vec(t, "TNUV");
     ctx.sv.tc     = oracle_in_dp(t, "TC", 0);
     ctx.sv.xkep   = oracle_in_dp(t, "XKEP", 0);
-    (void) agc_integ_rectify(&ip, &ctx);
+    agc_integ_rectify(&ip, &ctx);
     oracle_require_ok(t, "POODOO");
     oracle_cmp_vec(t, "RCV", ctx.sv.rcv, oracle_out_vec(t, "RCV"), TOL_RECT);
     oracle_cmp_vec(t, "VCV", ctx.sv.vcv, oracle_out_vec(t, "VCV"), TOL_RECT);

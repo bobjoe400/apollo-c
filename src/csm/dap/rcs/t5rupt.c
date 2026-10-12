@@ -279,7 +279,7 @@ agc_status_t csm_rcs_reinit(void)
  * ARGUMENTS:
  *   fresh  bool  I  true: FRESHDAP, false: REDAP
  *
- * RETURNS: agc_status_t -- the first failure of S41.2, S40.14, ZEROT5
+ * RETURNS: agc_status_t -- the first failure of S41.2 or ZEROT5
  **********************************************************************/
 agc_status_t csm_rcs_freshdap(bool fresh)
 {
@@ -292,17 +292,14 @@ agc_status_t csm_rcs_freshdap(bool fresh)
 
     agc_status_t st = agc_csm_dap_decode_dap_data(); /* IBNKCALL S41.2  */
 
-    if (st == AGC_STATUS_OK)
+    if (st != AGC_STATUS_OK)
     {
-        st = agc_csm_dap_rcs_gains(); /* IBNKCALL S40.14                */
+        return (st);
     }
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = rcs_zerot5();
-    }
+    agc_csm_dap_rcs_gains(); /* IBNKCALL S40.14                */
 
-    return (st);
+    return (rcs_zerot5());
 }
 
 /**********************************************************************

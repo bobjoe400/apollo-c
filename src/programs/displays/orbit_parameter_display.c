@@ -638,9 +638,9 @@ agc_status_t agc_job_orbit_display_update(void)
 
     st = opd_orbit_params(&ip, rz, &in);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if (rz_is_csm() && agc_erase_modreg() == 0)
@@ -688,9 +688,9 @@ agc_status_t agc_job_orbit_display_average_g(void)
 
     st = opd_orbit_params(&ip, rz, &in);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if (rz_is_csm() && agc_phase_checkmm(OPD_MODE_EARTH_ORBIT_INSERTION_MONITOR))
@@ -850,7 +850,9 @@ agc_status_t agc_task_ticktest(void)
  **********************************************************************/
 agc_status_t agc_job_rendz_display_terminate(void)
 {
-    return (agc_svc_b5off());
+    agc_svc_b5off(); /* B5OFF */
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

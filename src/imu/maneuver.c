@@ -232,7 +232,7 @@ static int msu(uint16_t a, uint16_t b)
  *   dt    uint16_t       I    delay, cs
  *   task  agc_task_id_t  I    task to start
  *
- * RETURNS: agc_status_t -- OK, FULL or BAD_ARG
+ * RETURNS: agc_status_t -- OK, BAILOUT (1203 list full) or BAD_ARG
  **********************************************************************/
 static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 {
@@ -242,11 +242,6 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
     }
 
     agc_status_t st = agc_waitlist_call(dt, task); /* status of the call */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }
@@ -479,14 +474,12 @@ static agc_status_t nogo_zero_error(void)
     agc_inhint();
     agc_status_t st = agc_kalc_zeroerror(); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
-    {
-        agc_relint();
-
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_relint();
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
 
     return (nogo());
 }
@@ -552,11 +545,6 @@ agc_status_t agc_task_endmanu(void)
     }
 
     agc_status_t st = agc_exec_findvac(prio, job); /* SPVAC           */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }
@@ -630,11 +618,6 @@ static agc_status_t incrdcdu_tmanuchk(void)
     { /* CAF TWO: Z, Y, X */
         /* INCRDCDU (one axis): CM DELCDUX (DP) = (NCDU - BCDU) x .1;
          * LM DELDCDU (SP) = (BCDU - NCDU) x .1.  CDUXD = old BCDU, BCDU = NCDU. */
-        if (!AGC_ASSERT(i >= 0 && i < 3))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         uint16_t old = bcdu[i]; /* previous desired CDU (BCDU) */
 
         if (is_lm())
@@ -665,25 +648,12 @@ static agc_status_t incrdcdu_tmanuchk(void)
             d                  = (d < AGC_SP_MIN) ? AGC_SP_MIN : d; /* -16384 */
             agc_csm_rcs_t *rcs = agc_csm_dap_rcs();                 /* CSM RCS DAP erasables */
 
-            if (AGC_ASSERT(rcs != NULL))
-            {
-                rcs->delcdu[i] = agc_sp_mul((agc_sp_t) d, DT_TENTH); /* MP QUADROT */
-            }
+            rcs->delcdu[i] = agc_sp_mul((agc_sp_t) d, DT_TENTH); /* MP QUADROT */
         }
 
         bcdu[i] = ncdu[i];
         set_cdud(i, old);
     } /* end for */
-
-    if (!AGC_ASSERT(bcdu[0] == ncdu[0] && bcdu[1] == ncdu[1]))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(bcdu[2] == ncdu[2]))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (agc_interrupts_inhibited())
     {
@@ -869,12 +839,7 @@ static agc_status_t steering_update(agc_interp_t *ip)
             }
         }
 
-        nextime = ((int) agc_erase_time1() + ONESEC_CS) & (TIME1_MOD - 1);
-
-        if (!AGC_ASSERT(tm_hi >= 0 && tm_lo >= -ONESEC_CS))
-        {
-            agc_relint();
-        }
+        nextime = ((int) agc_erase_time1() + ONESEC_CS) & (TIME1_MOD - 1); /* XCH NEXTIME; INHINT held into INCRDCDU */
     }
 
     return (incrdcdu_tmanuchk());
@@ -908,7 +873,7 @@ static agc_status_t kalcmanu_start(void)
     agc_kalc_setup_t k;                                             /* KALCMAN3 results */
     agc_status_t     st     = agc_kalc_compute(&ip, bcdu, fin, &k); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -987,7 +952,7 @@ static agc_status_t kalcmanu_start(void)
 
             agc_status_t st_wcalc = agc_kalc_delcomp(&ip, cof, agc_dp_shr(ar, 4), &del); /* status of the call */
 
-            if (!AGC_ASSERT(st_wcalc == AGC_STATUS_OK))
+            if (st_wcalc != AGC_STATUS_OK)
             {
                 return (st_wcalc);
             }
@@ -1077,11 +1042,6 @@ agc_status_t agc_task_updtcall(void)
     }
 
     agc_status_t st = agc_exec_findvac(PRIO26, AGC_JOB_NEWDELHI); /* status of the call */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }

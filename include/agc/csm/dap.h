@@ -268,7 +268,7 @@ agc_csm_dapcom_t *agc_csm_dap_com(void);
 
 /* ---- entry points used by other lanes -------------------------------- */
 agc_status_t agc_csm_dap_decode_dap_data(void); /* S41.2 decode DAPDATR1/2   */
-agc_status_t agc_csm_dap_rcs_gains(void);       /* S40.14 RCS gains          */
+void         agc_csm_dap_rcs_gains(void);       /* S40.14 RCS gains          */
 agc_status_t agc_csm_dap_rcsdapon(void);        /* RCSDAPON (call under INHINT) */
 void         agc_csm_dap_massprop(void);        /* MASSPROP                  */
 void         agc_csm_dap_fixcw(void);           /* FIXCW (MASSPROP +)        */

@@ -27,7 +27,7 @@
  *   agc_entry_vgamcalc    VGAMCALC (P61-P67.agc p.813, guid-entry)
  *   agc_entry_tff_trig    TFF/TRIG (P61-P67.agc p.815, guid-entry)
  *   agc_latlong_to_r      LALOTORV (nav-aux)
- *   agc_integ_intwake0    INTWAKE0 (nav-integ)
+ *   agc_integ_intwake_release    INTWAKE0 (nav-integ)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   None raised; statuses of LALOTORV, GET+MGA and the displays passed
@@ -466,5 +466,5 @@ agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t t
 
     agc_guid_state()->csm.rsp_rrec = agc_dp_sub(ip, theta1, agc_dp_acos(ip, agc_dp_shl(ip, c, 1)));
 
-    return (agc_integ_intwake0()); /* DELRDONE: STCALL RSP-RREC INTWAKE0 */
+    return (agc_integ_intwake_release()); /* DELRDONE: STCALL RSP-RREC INTWAKE0 */
 } /* agc_guid_delrspl */

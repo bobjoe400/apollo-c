@@ -53,8 +53,8 @@
  *   ephemeris statuses are passed back.
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
- *   Jobs of P23 (CSM). DEVIATION: PHSPRDT2 = PRIO13 and TEMPFLSH = R60ADRS
- *   are not kept (request to exec, review-prog-rendz P3).
+ *   Jobs of P23 (CSM). DEVIATION: TEMPFLSH = R60ADRS is not kept
+ *   (the restart tables of the exec lane own it).
  *
  * NOTES:
  *   Scales: RZC, RCLL m 2^29 (earth centred at the measured body), VZC
@@ -94,6 +94,7 @@
 #define CN_V50N25P    0202U                      /* V50N25P OCT 00202 (GOPERF1)  */
 #define CN_BITS7_9    0700u                      /* C digit */
 #define CN_BITS4_6    0070u                      /* D digit */
+#define CN_PRIO13     ((agc_prio_t) 013)         /* PRIO13 */
 #define CN_PRIO14     ((agc_prio_t) 014)         /* PRIO14 */
 #define CN_ALARM_BUSY ((agc_alarm_code_t) 01211) /* marking system busy    */
 
@@ -659,9 +660,9 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
 /**********************************************************************
  * P23: rendezvous off; group 4 off, group 2 on; one mark; star and
  * landmark target flags off; STARIND, BESTI zero; R57 to be done; V94 not
- * allowed. Without REFSMMAT: R57 and R53 now (P23.00). DEVIATION:
- * PHSPRDT2 = PRIO13 (the group 2 restart priority) and TEMPFLSH = R60ADRS
- * (V94ENTER) are not kept; the restart tables of the exec lane own them.
+ * allowed. Without REFSMMAT: R57 and R53 now (P23.00). PHSPRDT2 = PRIO13
+ * is the group 2 restart priority. DEVIATION: TEMPFLSH = R60ADRS
+ * (V94ENTER) is not kept; the restart tables of the exec lane own it.
  * AGC: P23, P23.05 (P20-P25.agc p.619)
  *
  * FUNCTION NAME: agc_job_cislunar_midcourse_navigation
@@ -680,6 +681,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation(agc_job_ctx_t *ctx)
     rz_flag_put(AGC_FLAG_RNDVZFLG, false);
     agc_phase_change(00004);              /* 2PHSCHNG: leave group 4 */
     agc_phase_change(00012);              /* enter group 2           */
+    agc_phase_set_priority(2, CN_PRIO13); /* CAF PRIO13 / TS PHSPRDT2 */
     agc_align_ram_t *a = agc_align_ram(); /* alignment RAM */
 
     a->markindx = 1;
@@ -1033,7 +1035,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_point_axes(agc_job_ctx_t *ctx
  **********************************************************************/
 agc_status_t agc_job_cislunar_midcourse_navigation_maneuvered(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_MANEUVERED);
 
     if (agc_flag_test(AGC_FLAG_TRUNNION_BIAS_KNOWN))
     {

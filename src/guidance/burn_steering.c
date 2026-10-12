@@ -437,13 +437,15 @@ static agc_vec_t tstrxut(agc_interp_t *ip, agc_vec_t y, agc_dp_t mag)
  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
  *   pactoff   agc_sp_t        I    PACTOFF pitch trim, 85.41 arcsec/bit
  *   yactoff   agc_sp_t        I    YACTOFF yaw trim, 85.41 arcsec/bit
- *   b         agc_burn_t *    O    SCAXIS, XSCREF, YSCREF, ZSCREF
- *                                  (spacecraft axes, scale 2^1)
+ *   b         agc_burn_t *       O    SCAXIS, XSCREF, YSCREF, ZSCREF
+ *                                     (spacecraft axes, scale 2^1)
+ *   axes      agc_vec_words_t *  O    XSCREF, YSCREF, ZSCREF as the VDEF
+ *                                     words (three entries)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (pitch
  *          beyond 90 degrees: cannot happen for 8-bit trims)
  **********************************************************************/
-static agc_status_t sps_bell_axes(agc_interp_t *ip, agc_sp_t pactoff, agc_sp_t yactoff, agc_burn_t *b)
+static agc_status_t sps_bell_axes(agc_interp_t *ip, agc_sp_t pactoff, agc_sp_t yactoff, agc_burn_t *b, agc_vec_words_t axes[3])
 {
     const agc_dp_words_t trimscal = agc_dp_to_words(TRIMSCAL); /* TRIMSCAL, scale 2^1 */
 
@@ -466,15 +468,25 @@ static agc_status_t sps_bell_axes(agc_interp_t *ip, agc_sp_t pactoff, agc_sp_t y
 
     /* The products are DMP SL1 on the TP MPAC; VDEF and the pushes keep
      * MPAC, MPAC+1 as they are.                                           */
-    const agc_dp_t cpcy = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(cp), cy), 1)));                 /* COS P COS Y, 2^1 */
-    const agc_dp_t cpsy = agc_dp_from_words(agc_mpac_store(agc_mpac_dcomp(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(cp), sy), 1)))); /* -SIN Y COS P, 2^1 */
-    const agc_dp_t spsy = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(sp), sy), 1)));                 /* SIN P SIN Y, 2^1 */
-    const agc_dp_t spcy = agc_dp_from_words(agc_mpac_store(agc_mpac_dcomp(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(sp), cy), 1)))); /* -SIN P COS Y, 2^1 */
+    const agc_dp_words_t cpcy = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(cp), cy), 1));                 /* COS P COS Y, 2^1 */
+    const agc_dp_words_t cpsy = agc_mpac_store(agc_mpac_dcomp(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(cp), sy), 1))); /* -SIN Y COS P, 2^1 */
+    const agc_dp_words_t spsy = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(sp), sy), 1));                 /* SIN P SIN Y, 2^1 */
+    const agc_dp_words_t spcy = agc_mpac_store(agc_mpac_dcomp(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(sp), cy), 1))); /* -SIN P COS Y, 2^1 */
+    const agc_dp_words_t zero = {0, 0};                                                                                      /* VDEF 0 */
 
-    b->xscref = agc_vec_make(cpcy, cpsy, agc_dp_from_words(sp));
-    b->zscref = agc_vec_make(spcy, spsy, agc_dp_from_words(cp));
-    b->yscref = agc_vec_make(agc_dp_from_words(sy), agc_dp_from_words(cy), 0);
-    b->scaxis = agc_vec_make(b->xscref.c[0], b->yscref.c[0], b->zscref.c[0]);
+    axes[0].c[0] = cpcy; /* XSC */
+    axes[0].c[1] = cpsy;
+    axes[0].c[2] = sp;
+    axes[1].c[0] = sy;   /* YSC */
+    axes[1].c[1] = cy;
+    axes[1].c[2] = zero;
+    axes[2].c[0] = spcy; /* ZSC */
+    axes[2].c[1] = spsy;
+    axes[2].c[2] = cp;
+    b->xscref    = agc_vec_from_words(axes[0]);
+    b->yscref    = agc_vec_from_words(axes[1]);
+    b->zscref    = agc_vec_from_words(axes[2]);
+    b->scaxis    = agc_vec_make(b->xscref.c[0], b->yscref.c[0], b->zscref.c[0]);
 
     return (AGC_STATUS_OK);
 }
@@ -524,20 +536,24 @@ agc_status_t agc_guid_preferred_thrust_attitude_csm(agc_interp_t *ip, bool rcs, 
     }
     else
     {
-        agc_mat_t    m;                                           /* 2 RF/SC: rows UT, Y, Z (PDL 0, 6, 12D), 2^1 */
-        agc_status_t st = sps_bell_axes(ip, pactoff, yactoff, b); /* status */
+        agc_vec_words_t m[3];                                              /* 2 RF/SC: rows UT, Y, Z (PDL 0, 6, 12D) as stored, 2^1 */
+        agc_vec_words_t axes[3];                                           /* XSC, YSC, ZSC as the VDEF words */
+        agc_status_t    st = sps_bell_axes(ip, pactoff, yactoff, b, axes); /* status */
 
         if (st != AGC_STATUS_OK)
         {
             return (st);
         }
 
-        m.row[0]  = b->ut;
-        m.row[1]  = y;
-        m.row[2]  = agc_vec_shl(ip, agc_vec_cross(ip, b->ut, y), 1);
-        b->xscref = agc_vec_shl(ip, agc_vec_mat(ip, b->xscref, &m), 1);
-        b->yscref = agc_vec_shl(ip, agc_vec_mat(ip, b->yscref, &m), 1);
-        b->zscref = agc_vec_shl(ip, agc_vec_mat(ip, b->zscref, &m), 1);
+        /* VXM takes the VDEF words and the push-down rows into DOTSUB as
+         * stored (the Z row is VXV VSL1's words); VSL1 doubles the words
+         * the VXM leaves.                                                  */
+        m[0]      = agc_vec_to_words(b->ut);
+        m[1]      = agc_vec_to_words(y);
+        m[2]      = agc_mpac_vshift(ip, agc_mpac_vxv(ip, m[0], m[1]), 1);
+        b->xscref = agc_vec_from_words(agc_mpac_vshift(ip, agc_mpac_vxm(ip, axes[0], m), 1));
+        b->yscref = agc_vec_from_words(agc_mpac_vshift(ip, agc_mpac_vxm(ip, axes[1], m), 1));
+        b->zscref = agc_vec_from_words(agc_mpac_vshift(ip, agc_mpac_vxm(ip, axes[2], m), 1));
     }
 
     agc_imu_set_pointvsm(b->pointvsm); /* FOR R60     */

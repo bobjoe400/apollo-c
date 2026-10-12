@@ -381,7 +381,7 @@ agc_status_t agc_job_rendezvous_sighting_mark_alarm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_sighting_mark_verify(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_SIGHTING_MARK_VERIFY);
     agc_dsky_cont_t cont; /* astronaut returns */
 
     cont.terminate = AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE;
@@ -779,7 +779,7 @@ agc_status_t agc_job_manual_acquisition_maneuver(void)
  **********************************************************************/
 agc_status_t agc_job_radar_search(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(04022);          /* R21SRCH  */
+    rz_grp2pc(AGC_JOB_RADAR_SEARCH);  /* R21SRCH  */
     rz_flag_put(AGC_FLAG_SRCHOPTN, true);
     rz_flag_put(AGC_FLAG_LOSCMFLG, false);
     lmnav_state_t *n = lmnav_state(); /* R24LEM1  */
@@ -809,7 +809,7 @@ agc_status_t agc_job_radar_search(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_radar_search_display(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RADAR_SEARCH_DISPLAY);
     agc_dsky_cont_t cont; /* astronaut returns */
 
     cont.terminate = AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE;
@@ -869,7 +869,7 @@ agc_status_t agc_job_radar_search_accept(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_radar_search_maneuver(void)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RADAR_SEARCH_MANEUVER);
     agc_inhint();
     agc_waitlist_kill(AGC_TASK_RADAR_SEARCH_NEXT_POINT); /* CALLDGCH */
     agc_relint();
@@ -1115,15 +1115,15 @@ agc_status_t agc_job_radar_search_los(void)
          * boresight (RRNB of the RR CDUs) and the +Z axis, for R2 of
          * noun 80.                                                    */
         agc_inhint();
-        s->tangnb[0]          = agc_erase_cdut();
-        s->tangnb[1]          = agc_erase_cdus();
+        s->tangnb[0] = agc_erase_cdut();
+        s->tangnb[1] = agc_erase_cdus();
         agc_relint();
-        agc_vec_t    b        = agc_vec_zero();                                   /* boresight, 2^1 */
-        agc_status_t st_omega = agc_lm_rrnb(&ip, s->tangnb[0], s->tangnb[1], &b); /* RRNB */
+        agc_vec_t b  = agc_vec_zero(); /* boresight, 2^1 */
 
+        agc_lm_rrnb(&ip, s->tangnb[0], s->tangnb[1], &b); /* RRNB */
         n->omegad = agc_dp_acos(&ip, b.c[2]);
 
-        return (st_omega);
+        return (AGC_STATUS_OK);
     }
 
     agc_alarm(ACQ_ALARM_SEARCH);                         /* LIMALARM */

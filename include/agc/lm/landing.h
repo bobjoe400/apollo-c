@@ -151,25 +151,18 @@ typedef struct agc_lm_ldg
 } agc_lm_ldg_t;
 
 /* ---- throttle erasables (THROTTLE, p. 793) ------------------------------ */
-/* A DP as the AGC stores it: two words whose signs may disagree after a
- * DAS (oracle finding F9). Basic-language code that reads the high word
- * alone (CA, AD, MP, CCS) sees `hi`, not the high word of the value.
- * Value = hi * 2^14 + lo.                                                */
-typedef struct agc_lm_words
-{
-    agc_sp_t hi; /* major word, scale 2^S                             */
-    agc_sp_t lo; /* minor word, scale 2^(S-14)                        */
-} agc_lm_words_t;
-
+/* DPs the AGC stores as two words whose signs may disagree after a DAS
+ * (oracle finding F9) are agc_dp_words_t (core/word.h): basic-language
+ * code that reads the high word alone (CA, AD, MP, CCS) sees `hi`.       */
 typedef struct agc_lm_thr
 {
-    agc_lm_words_t fp;       /* FP present thrust, hi = pulses (2^14 pulses) */
+    agc_dp_words_t fp;       /* FP present thrust, hi = pulses (2^14 pulses) */
     agc_dp_t       fc;       /* FC thrust desired, hi = pulses 2^14 (TS FC) */
-    agc_lm_words_t fcodd;    /* FCODD what it is going to get, 2^14 pulses   */
+    agc_dp_words_t fcodd;    /* FCODD what it is going to get, 2^14 pulses   */
     agc_sp_t       fcold;    /* FCOLD previous FCODD, pulses 2^14           */
-    agc_lm_words_t pif;      /* PIF = FCODD - FP by DAS, hi = pulses         */
+    agc_dp_words_t pif;      /* PIF = FCODD - FP by DAS, hi = pulses         */
     agc_sp_t       pifpset;  /* PIFPSET offset (FMAXODD-FP, FEXTRA), 2^14   */
-    agc_lm_words_t fweight;  /* FWEIGHT thrust lag weighting, 2^14 pulses  */
+    agc_dp_words_t fweight;  /* FWEIGHT thrust lag weighting, 2^14 pulses  */
     agc_sp_t       tthrot;   /* TTHROT TIME1 of last throttling, cs 2^14       */
     agc_sp_t       pseudo55; /* PSEUDO55 downlink, pulses 2^14 */
 } agc_lm_thr_t;
@@ -227,22 +220,19 @@ agc_lm_asc_t *agc_lm_asc(void);
 void          agc_lm_landing_reset(void);
 
 /* basic-language helpers shared by the lane (state.c) */
-void           agc_lm_phaschng(uint16_t octal_code);                         /* PHASCHNG  */
-void           agc_lm_fastchng(void);                                        /* FASTCHNG  */
-agc_sp_t       agc_lm_time1(void);                                           /* TIME1     */
-agc_sp_t       agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor);               /* DV        */
-agc_sp_t       agc_lm_mp_hi(agc_sp_t a, agc_sp_t b);                         /* MP, high  */
-agc_sp_t       agc_lm_ad(agc_sp_t a, agc_sp_t b);                            /* AD, wraps */
-agc_lm_words_t agc_lm_words(agc_dp_t v);                                     /* sign-agreeing split */
-agc_dp_t       agc_lm_words_value(agc_lm_words_t w);                         /* hi * 2^14 + lo    */
-agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y);               /* DAS     */
-agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y, int *ovf); /* DAS, A = net overflow    */
-bool           agc_lm_chan_bit_present(int chan, uint16_t bit);              /* inverted ch30-33 */
+void           agc_lm_phaschng(uint16_t octal_code);            /* PHASCHNG  */
+void           agc_lm_fastchng(void);                           /* FASTCHNG  */
+agc_sp_t       agc_lm_time1(void);                              /* TIME1     */
+agc_sp_t       agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor);  /* DV        */
+agc_sp_t       agc_lm_mp_hi(agc_sp_t a, agc_sp_t b);            /* MP, high  */
+agc_sp_t       agc_lm_ad(agc_sp_t a, agc_sp_t b);               /* AD, wraps */
+agc_dp_words_t agc_lm_das(agc_dp_words_t x, agc_dp_words_t y);  /* DAS     */
+bool           agc_lm_chan_bit_present(int chan, uint16_t bit); /* inverted ch30-33 */
 
 /* ---- THROTTLE_CONTROL_ROUTINES (throttle.c) ----------------------------- */
 agc_status_t agc_lm_throttle(void);
 agc_status_t agc_lm_throttle_measured(agc_dp_t accel);
-agc_status_t agc_lm_throttle_flatout(void);
+void         agc_lm_throttle_flatout(void);
 
 /* ---- FINDCDUW--GUIDAP_INTERFACE (findcduw.c) ---------------------------- */
 void agc_lm_initcduw(void);

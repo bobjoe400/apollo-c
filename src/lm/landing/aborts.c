@@ -116,9 +116,9 @@ agc_status_t agc_lm_task_abort_monitor(void)
 
     agc_status_t st = agc_waitlist_call(AB_OCT31, AGC_TASK_ABORT_MONITOR); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (agc_lm_abort_monitor_resume());
@@ -272,13 +272,6 @@ static agc_status_t ab_abortalm(void)
     }
 
     agc_dsky_falton();
-    agc_dsky_state_t dsky; /* DSKY lamps after FALTON */
-
-    if (!AGC_ASSERT(agc_dsky_get_state(&dsky) == AGC_STATUS_OK && dsky.opr_err)) /* OPR ERR lit         */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_dsky_releasedsp(); /* step status */
 
     if (st != AGC_STATUS_OK)

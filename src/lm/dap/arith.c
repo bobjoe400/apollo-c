@@ -34,6 +34,7 @@
  *   p.1492-1493 DVOVSUB, FIXED_FIXED_CONSTANT_POOL LIMITS).
  **********************************************************************/
 #include "agc/core/assert.h"
+#include "agc/core/interp_words.h"
 #include "internal.h"
 
 #define ARITH_WORD   16384  /* 2^14: one major-word unit in minor units */
@@ -51,11 +52,11 @@
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   x         lm_dp_pair_t  I    word pair (major, minor), unscaled
+ *   x         agc_dp_words_t  I    word pair (major, minor), unscaled
  *
  * RETURNS: int32_t -- hi x 2^14 + lo, minor-word units
  **********************************************************************/
-int32_t lm_dap_dpval(lm_dp_pair_t x)
+int32_t lm_dap_dpval(agc_dp_words_t x)
 {
     return ((int32_t) x.hi * ARITH_WORD + (int32_t) x.lo);
 }
@@ -72,12 +73,12 @@ int32_t lm_dap_dpval(lm_dp_pair_t x)
  *   v         int32_t  I    value in minor-word units (2^-14 of the major
  *                           word)
  *
- * RETURNS: lm_dp_pair_t -- sign-agreeing pair
+ * RETURNS: agc_dp_words_t -- sign-agreeing pair
  **********************************************************************/
-lm_dp_pair_t lm_dap_dpmake(int32_t v)
+agc_dp_words_t lm_dap_dpmake(int32_t v)
 {
-    lm_dp_pair_t r;                   /* sign-agreeing pair, minor-word units */
-    int32_t      hi = v / ARITH_WORD; /* C truncates toward zero      */
+    agc_dp_words_t r;                   /* sign-agreeing pair, minor-word units */
+    int32_t        hi = v / ARITH_WORD; /* C truncates toward zero      */
 
     if (hi > ARITH_MAXMAG)
     {
@@ -106,9 +107,9 @@ lm_dp_pair_t lm_dap_dpmake(int32_t v)
  *   a         agc_sp_t  I    multiplicand (A), unscaled word
  *   b         agc_sp_t  I    multiplier (memory), unscaled word
  *
- * RETURNS: lm_dp_pair_t -- product A,L
+ * RETURNS: agc_dp_words_t -- product A,L
  **********************************************************************/
-lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
+agc_dp_words_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
 {
     return (lm_dap_dpmake((int32_t) a * (int32_t) b));
 }
@@ -128,7 +129,7 @@ lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b)
  **********************************************************************/
 agc_sp_t lm_dap_mphi(agc_sp_t a, agc_sp_t b)
 {
-    lm_dp_pair_t p = lm_dap_mp(a, b); /* A,L product, same scale as a b */
+    agc_dp_words_t p = lm_dap_mp(a, b); /* A,L product, same scale as a b */
 
     return (p.hi);
 }
@@ -213,12 +214,12 @@ static uint16_t arith_add16(uint16_t a, uint16_t b)
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   n         lm_dp_pair_t  I    dividend A,L as the registers hold it
+ *   n         agc_dp_words_t  I    dividend A,L as the registers hold it
  *   d         agc_sp_t      I    divisor word
  *
- * RETURNS: lm_dp_pair_t -- A (quotient word), L (remainder word)
+ * RETURNS: agc_dp_words_t -- A (quotient word), L (remainder word)
  **********************************************************************/
-static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
+static agc_dp_words_t dv_improper(agc_dp_words_t n, agc_sp_t d)
 {
     uint16_t a       = arith_reg16(n.hi); /* A register */
     uint16_t l       = arith_reg16(n.lo); /* L register */
@@ -280,7 +281,7 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
     }
 
     a = (uint16_t) (qsign | (q & 077777u));
-    lm_dp_pair_t r; /* A (quotient), L (remainder) */
+    agc_dp_words_t r; /* A (quotient), L (remainder) */
 
     r.hi = arith_val16((dvdsign != divsign) ? (uint16_t) ~a : a); /* quotient sign = sign product */
     r.lo = arith_val16((dvdsign != 0u) ? rem : (uint16_t) ~rem);  /* remainder takes the dividend sign */
@@ -303,18 +304,18 @@ static lm_dp_pair_t dv_improper(lm_dp_pair_t n, agc_sp_t d)
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   n         lm_dp_pair_t  I    dividend, DP pair in A,L
+ *   n         agc_dp_words_t  I    dividend, DP pair in A,L
  *   d         agc_sp_t      I    divisor word
  *
- * RETURNS: lm_dp_pair_t -- quotient (A) and remainder (L)
+ * RETURNS: agc_dp_words_t -- quotient (A) and remainder (L)
  **********************************************************************/
-lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
+agc_dp_words_t lm_dap_dvqr(agc_dp_words_t n, agc_sp_t d)
 {
-    lm_dp_pair_t r   = {0, 0};
-    int32_t      num = lm_dap_dpval(n);                         /* dividend, scaled 2^-14 of the major word */
-    lm_dp_pair_t nn  = lm_dap_dpmake(num);                      /* sign-agreeing form  */
-    int32_t      ah  = (nn.hi >= 0) ? nn.hi : -(int32_t) nn.hi; /* |A| of the sign-agreeing dividend */
-    int32_t      ad  = (d >= 0) ? d : -(int32_t) d;             /* |divisor| */
+    agc_dp_words_t r   = {0, 0};
+    int32_t        num = lm_dap_dpval(n);                         /* dividend, scaled 2^-14 of the major word */
+    agc_dp_words_t nn  = lm_dap_dpmake(num);                      /* sign-agreeing form  */
+    int32_t        ah  = (nn.hi >= 0) ? nn.hi : -(int32_t) nn.hi; /* |A| of the sign-agreeing dividend */
+    int32_t        ad  = (d >= 0) ? d : -(int32_t) d;             /* |divisor| */
 
     if (num == 0)
     {
@@ -353,14 +354,14 @@ lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d)
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   n         lm_dp_pair_t  I    dividend, DP pair in A,L
+ *   n         agc_dp_words_t  I    dividend, DP pair in A,L
  *   d         agc_sp_t      I    divisor word
  *
  * RETURNS: agc_sp_t -- quotient (A)
  **********************************************************************/
-agc_sp_t lm_dap_dv(lm_dp_pair_t n, agc_sp_t d)
+agc_sp_t lm_dap_dv(agc_dp_words_t n, agc_sp_t d)
 {
-    lm_dp_pair_t r = lm_dap_dvqr(n, d); /* quotient and remainder */
+    agc_dp_words_t r = lm_dap_dvqr(n, d); /* quotient and remainder */
 
     return (r.hi);
 }
@@ -457,34 +458,17 @@ bool lm_dap_ovf(int32_t v)
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   x         lm_dp_pair_t  I    augend pair
- *   y         lm_dp_pair_t  I    addend pair
+ *   x         agc_dp_words_t  I    augend pair
+ *   y         agc_dp_words_t  I    addend pair
  *
- * RETURNS: lm_dp_pair_t -- sum pair (major word overflow-
+ * RETURNS: agc_dp_words_t -- sum pair (major word overflow-
  *          corrected)
  **********************************************************************/
-lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y)
+agc_dp_words_t lm_dap_das(agc_dp_words_t x, agc_dp_words_t y)
 {
-    int32_t lo    = (int32_t) x.lo + (int32_t) y.lo; /* minor-word sum, scaled 2^-14 of the major word */
-    int32_t carry = 0;                               /* carry into the major word: -1, 0, +1 */
+    int ovf = 0; /* the overflow DAS leaves in A: not used by the DAP */
 
-    if (lo > ARITH_MAXMAG)
-    {
-        lo    -= ARITH_WORD;
-        carry = 1;
-    }
-    else if (lo < -ARITH_MAXMAG)
-    {
-        lo    += ARITH_WORD;
-        carry = -1;
-    }
-
-    lm_dp_pair_t r; /* sum pair */
-
-    r.hi = lm_dap_wrap((int32_t) x.hi + (int32_t) y.hi + carry);
-    r.lo = (agc_sp_t) lo;
-
-    return (r);
+    return (agc_dp_words_das(x, y, &ovf));
 }
 
 /**********************************************************************
@@ -496,11 +480,11 @@ lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y)
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   x         lm_dp_pair_t  I    pair to double
+ *   x         agc_dp_words_t  I    pair to double
  *
- * RETURNS: lm_dp_pair_t -- 2 x
+ * RETURNS: agc_dp_words_t -- 2 x
  **********************************************************************/
-lm_dp_pair_t lm_dap_ddoubl(lm_dp_pair_t x)
+agc_dp_words_t lm_dap_ddoubl(agc_dp_words_t x)
 {
     return (lm_dap_das(x, x));
 }
@@ -630,12 +614,12 @@ agc_sp_t lm_dap_dim(agc_sp_t v)
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   n         lm_dp_pair_t  I    dividend, DP pair in A,L
+ *   n         agc_dp_words_t  I    dividend, DP pair in A,L
  *   d         agc_sp_t      I    divisor word
  *
  * RETURNS: agc_sp_t -- quotient, or POSMAX / NEGMAX
  **********************************************************************/
-agc_sp_t lm_dap_dvovsub(lm_dp_pair_t n, agc_sp_t d)
+agc_sp_t lm_dap_dvovsub(agc_dp_words_t n, agc_sp_t d)
 {
     if (d == 0)
     {

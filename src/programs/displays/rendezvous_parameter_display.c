@@ -160,14 +160,7 @@ static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
 
         if (!rz_vflag_test(RZ_VF_RENDZ_DISPLAY))
         { /* R34       */
-            agc_status_t st; /* SXTNB */
-
-            st = agc_csm_sxtnb(ip, agc_erase_cdut(), agc_erase_cdus(), &a);
-
-            if (st != AGC_STATUS_OK)
-            {
-                return (st);
-            }
+            agc_csm_sxtnb(ip, agc_erase_cdut(), agc_erase_cdus(), &a); /* SXTNB */
         }
     }
 
@@ -223,7 +216,7 @@ static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t ra
         return (agc_dsky_endmark()); /* YES, DIE  */
     }
 
-    agc_svc_set_extvbact((uint16_t) (x | RPD_EXTVBACT_BIT12));
+    agc_erase_set_extvbact((uint16_t) (x | RPD_EXTVBACT_BIT12));
 
     return (rz_continue(AGC_JOB_RENDEZVOUS_PARAMS_UPDATE));
 }

@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "agc/core/state.h"
 #include "agc/core/status.h"
 
 #define SIM_PACKET_BYTES 4
@@ -93,10 +94,16 @@ agc_status_t sim_clock_init(void);
 void         sim_clock_tick(void);
 void         sim_irq_request(sim_irq_t irq);
 uint32_t     sim_clock_cs(void);
+bool         sim_clock_standby(void); /* SBY: only the scaler runs */
 void         sim_clock_stats(sim_stats_t *out);
 
 /* ---- erasable pad load at power-on (pad.c) ---------------------------- */
 agc_status_t sim_pad_load(const char *path);
+
+/* ---- rope image as fixed memory (rope.c) ------------------------------ */
+agc_status_t sim_rope_vehicle(const char *path, agc_vehicle_t *vehicle);
+agc_status_t sim_rope_load(const char *path);
+agc_status_t sim_rope_load_default(agc_vehicle_t vehicle, const char *argv0);
 
 /* ---- timed input script (script.c) ------------------------------------ */
 agc_status_t sim_script_open(const char *path);

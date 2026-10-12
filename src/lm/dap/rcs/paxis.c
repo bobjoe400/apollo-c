@@ -150,9 +150,9 @@ agc_status_t lm_dap_jetsoff(void)
 
     d->tj[0] = 0;
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if (!AGC_ASSERT(d->tj[0] == 0))
@@ -251,9 +251,14 @@ agc_status_t lm_dap_pjetslec(agc_sp_t numbert)
     d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_PSKIP); /* skip next P   */
     agc_status_t sa = altsyst();                                /* ALTSYST: gimbal timers, needles */
 
-    if (!AGC_ASSERT(sj == AGC_STATUS_OK && sa == AGC_STATUS_OK))
+    if (sj != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (sj);
+    }
+
+    if (sa != AGC_STATUS_OK)
+    {
+        return (sa);
     }
 
     if (!AGC_ASSERT(d->abstj >= PX_MINT6))
@@ -342,9 +347,9 @@ agc_status_t lm_dap_purgency_law(void)
     {
         agc_status_t ss = lm_dap_spsrcs(); /* SPSRCS law for P */
 
-        if (!AGC_ASSERT(ss == AGC_STATUS_OK))
+        if (ss != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (ss);
         }
 
         if (d->tj[0] == 0)
@@ -361,9 +366,9 @@ agc_status_t lm_dap_purgency_law(void)
     d->sensetyp     = 0;                /* HEADTJET       */
     agc_status_t st = lm_dap_tjetlaw(); /* TJETLAW for P */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if ((int32_t) -d->firefct - PX_FOURDEG <= 0)
@@ -402,9 +407,9 @@ agc_status_t lm_dap_purgency(void)
 
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->omegapd); /* EDOTP     */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (lm_dap_purgency_law());
@@ -628,7 +633,7 @@ agc_status_t agc_task_paxis(void)
     st          = (st == AGC_STATUS_OK) ? lm_dap_offset_est() : st; /* offset estimator unless an earlier step failed */
     st          = (st == AGC_STATUS_OK) ? lm_dap_pretimck() : st;   /* PRETIMCK unless an earlier step failed */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st); /* DAPZRUPT stays positive   */
     }
@@ -647,9 +652,9 @@ agc_status_t agc_task_paxis(void)
             st_p = lm_dap_pstate();
         }
 
-        if (!AGC_ASSERT(st_p == AGC_STATUS_OK))
+        if (st_p != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st_p);
         }
     }
 

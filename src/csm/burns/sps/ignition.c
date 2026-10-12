@@ -25,7 +25,7 @@
  *   Name                  Description
  *   --------------------  ------------------------------------------
  *   agc_csm_dap_*         TVC and RCS DAP start/stop (csm/dap.h)
- *   agc_integ_midtoav2    MIDTOAV2 (P47, integration.h)
+ *   agc_integ_midtoav_now    MIDTOAV2 (P47, integration.h)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   None raised here; IMU status, integration, display, executive and
@@ -460,7 +460,7 @@ agc_status_t agc_job_thrust_monitor_csm(agc_job_ctx_t *ctx)
     agc_interp_t            ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo); /* status of agc_integ_midtoav2 */
+    agc_status_t st = agc_integ_midtoav_now(&ip, agc_integ_shared_ctx(), ctx->id, &mo); /* status of agc_integ_midtoav_now */
 
     if (st != AGC_STATUS_OK)
     {

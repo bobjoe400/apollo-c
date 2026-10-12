@@ -29,7 +29,9 @@ Scenario language (one command per line, `#` comments; times in cs):
   run N                       advance N centiseconds
   keys V06N36E                key presses: digits, V N E C(LR) R(SET) K(EY REL)
                               + -; spaces ignored; words PRO, KEYREL allowed
-  pro                         press PRO for 0.5 s (T4RUPT samples it)
+  pro [N]                     press PRO for N cs (default 50: T4RUPT samples
+                              it); held >= 192 cs with standby enabled it
+                              is the SBY switch (in or out of standby)
   keygap N                    centiseconds between key presses (default 20)
   input CH VALUE [MASK]       input channel (octal), through a u-bit mask
   counter ADDR TYPE [COUNT]   counter increments (octal addr; TYPE PINC
@@ -85,6 +87,7 @@ LAMPS = {
     'TEMP': (CH_DSKY163, 0o10), 'KEYREL': (CH_LAMPS11, 0o20),
     'FLASH': (CH_LAMPS11, 0o40), 'OPRERR': (CH_LAMPS11, 0o100),
     'RESTART': (CH_DSKY163, 0o200), 'STBY': (CH_DSKY163, 0o400),
+    'ELOFF': (CH_DSKY163, 0o1000),
     'ENGINEON': (CH_LAMPS11, 0o10000), 'ENGINEOFF': (CH_LAMPS11, 0o20000),
 }
 
@@ -304,10 +307,10 @@ class Scenario:
                 raise ValueError('bad key %r' % c)
             self.key(KEY_CODE[c])
 
-    def pro(self):
+    def pro(self, hold=50):
         self.l.send(0o32, 0o20000, ubit=True)   # mask: bit 14 only
         self.l.send(0o32, 0)                    # pressed (inverted input)
-        self.run(50)
+        self.run(hold)
         self.l.send(0o32, 0o20000)              # released
         self.run(self.keygap)
 
@@ -398,7 +401,7 @@ class Scenario:
         elif op == 'keys':
             self.keys(' '.join(w[1:]))
         elif op == 'pro':
-            self.pro()
+            self.pro(int(w[1]) if len(w) > 1 else 50)
         elif op == 'keygap':
             self.keygap = int(w[1])
         elif op == 'input':

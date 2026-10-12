@@ -647,16 +647,6 @@ agc_status_t agc_task_atertask(void)
 
     satsw = 1; /* display      */
 
-    if (!AGC_ASSERT(satsw == 1))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 

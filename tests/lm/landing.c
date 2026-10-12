@@ -166,8 +166,8 @@ static void test_throttle_band(void)
     const double        fc     = mass * a_cmd * BITPERF; /* 1276.7 pulses */
     const double        fp     = mass * a_now * BITPERF; /* 957.6 pulses */
     const agc_lm_thr_t *t      = agc_lm_thr();           /* throttle erasables */
-    double              fc_got = agc_dp_to_double(agc_lm_words_value(t->fcodd), 14);
-    double              fp_got = agc_dp_to_double(agc_lm_words_value(t->fp), 14);
+    double              fc_got = agc_dp_to_double(agc_dp_from_words(t->fcodd), 14);
+    double              fp_got = agc_dp_to_double(agc_dp_from_words(t->fp), 14);
 
     CHECK(fabs(fc_got - fc) < 1.0);
     CHECK(fabs(fp_got - fp) < 1.0);
@@ -190,6 +190,18 @@ static void test_throttle_band(void)
     CHECK(st == AGC_STATUS_OK);
     CHECK(agc_lm_thr()->fcodd.hi == AGC_LM_FMAXPOS);
     CHECK(agc_lm_thr()->pifpset == AGC_LM_FEXTRA);
+
+    /* From the fixed region back below LOWCRIT with a present thrust far
+     * above FSAT: FCOMPSET's PIFPSET = FP - FMAXODD exceeds FEXTRA and
+     * DOIT sends it unchecked, as the AGC does (THRUST = FC - FMAXODD).  */
+    agc_lm_thr()->tthrot = (agc_sp_t) ((agc_lm_time1() + 16384 - 1000) % 16384);
+    agc_lm_thr()->fcold  = 3500;          /* > HIGHCRIT                 */
+    agc_lm_ldg()->afc    = accel_dp(1.0); /* 638 pulses < LOWCRIT       */
+    st                   = agc_lm_throttle_measured(accel_dp(14.0));
+    CHECK(st == AGC_STATUS_OK);
+    CHECK(agc_lm_thr()->pifpset > AGC_LM_FEXTRA);
+    CHECK(agc_erase_thrust() == agc_lm_thr()->pseudo55);
+    CHECK(abs((int) agc_lm_thr()->pseudo55 - ((int) agc_lm_thr()->fcodd.hi - AGC_LM_FMAXODD)) <= 1);
 } /* test_throttle_band */
 
 /* ---- 2. quadratic guidance on the target trajectory --------------------- */

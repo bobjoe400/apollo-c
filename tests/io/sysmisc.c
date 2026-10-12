@@ -66,6 +66,7 @@ static void     test_loadtime(void);
 static void     test_sgnagree(void);
 static void     run_selfcheck(int passes);
 static void     test_banksum(void);
+static void     test_showsum_display(void);
 static void     test_ropechk_real(const char *name);
 static void     test_service(void);
 static void     run_t4rupts(int n);
@@ -95,6 +96,7 @@ int main(void)
     test_loadtime();
     test_sgnagree();
     test_banksum();
+    test_showsum_display();
     test_ropechk_real("Comanche055");
     test_ropechk_real("Luminary099");
     test_service();
@@ -371,6 +373,42 @@ static void run_selfcheck(int passes)
 }
 
 /**********************************************************************
+ * AGC: none (test) -- V91 SDISPLAY: MPAC+2 = ADRS1 (ECADR SKEEP1, 1371)
+ * and V05N01, so the noun shows SKEEP1..3 from that address
+ **********************************************************************/
+static void test_showsum_display(void)
+{
+    uint16_t w[3]  = {0, 0, 0}; /* SKEEP1..3 */
+    uint16_t at[3] = {1, 1, 1}; /* the words at 1371..1373 */
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    CHECK(agc_waitlist_init() == AGC_STATUS_OK);
+    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    CHECK(agc_selfcheck_set_rope(g_rope, 6) == AGC_STATUS_OK);
+    agc_erase_set_extvbact(0);
+    CHECK(agc_dsky_keys("V91E") == AGC_STATUS_OK);
+
+    for (int i = 0; i < 20 && agc_exec_run_one() != AGC_STATUS_NOT_FOUND; i++)
+    {
+        /* CHARIN, the extended verb, the display */
+    }
+
+    agc_selfcheck_showsum_words(w);
+
+    for (int i = 0; i < 3; i++)
+    {
+        CHECK(agc_erase_read_ecadr((uint16_t) (01371u + (uint16_t) i), &at[i]) == AGC_STATUS_OK);
+    }
+
+    CHECK(at[0] == w[0] && at[1] == w[1] && at[2] == w[2]);
+    agc_dsky_state_t s; /* DSKY readout */
+
+    CHECK(agc_dsky_get_state(&s) == AGC_STATUS_OK);
+    CHECK(s.verb[0] == 0 && s.verb[1] == 5 && s.noun[0] == 0 && s.noun[1] == 1);
+}
+
+/**********************************************************************
  * AGC: none (test) -- ROPECHK / SHOWSUM on a synthetic rope
  **********************************************************************/
 static void test_banksum(void)
@@ -548,9 +586,9 @@ static void test_service(void)
     CHECK(to[0] == 1u && to[4] == 5u);
     agc_erase_set_extvbact(024u);
     CHECK(agc_extverb_busy());
-    CHECK(agc_svc_b5off() == AGC_STATUS_OK);
+    agc_svc_b5off();
     CHECK(agc_erase_extvbact() == 004u); /* bit 5 cleared          */
-    agc_svc_set_extvbact(0);
+    agc_erase_set_extvbact(0);
     CHECK(!agc_extverb_busy());
 }
 
@@ -601,8 +639,10 @@ static void test_t4rupt_gimbal_matrix(void)
 /**********************************************************************
  * AGC: none -- V73 (UPEND73): the two words loaded into UPBUFF are the octal clock
  * increment (DCA UPBUFF, DXCH UPBUFF +8D, TIMEDIDL); V33 on the V21N02
- * adds it to TIME2,TIME1.  The ground's V21N01 loads are made with
- * agc_uplink_update_write at the index P27 asks for.
+ * adds it to TIME2,TIME1.  The V21N01 display carries the ECADR of the
+ * word to load in MPAC+2 (UPBUFF = 0304 in Comanche); the ground's word
+ * is stored there as pinball's internal machine-address load does, and
+ * the load job takes it from that address.
  **********************************************************************/
 static void test_uplink_clock_increment(void)
 {
@@ -615,15 +655,16 @@ static void test_uplink_clock_increment(void)
     agc_erase_set_extvbact(0);
     agc_time_set_cs(01000000u);
     CHECK(agc_uplink_update_start(&ctx, 73) == AGC_STATUS_OK);
-    CHECK(agc_uplink_update_target() == 4);          /* UPBUFF +0          */
-    CHECK(agc_uplink_update_write(4, 1u) == AGC_STATUS_OK);
+    CHECK(agc_uplink_update_target() == 4);                   /* UPBUFF +0          */
+    CHECK(agc_erase_write_ecadr(0304u, 1u) == AGC_STATUS_OK); /* V21N01 data at MPAC+2 */
     CHECK(agc_job_uplink_update_load(&ctx) == AGC_STATUS_OK);
-    CHECK(agc_uplink_update_target() == 5);          /* UPBUFF +1          */
-    CHECK(agc_uplink_update_write(5, 2u) == AGC_STATUS_OK);
+    CHECK(agc_uplink_update_target() == 5);                   /* UPBUFF +1          */
+    CHECK(agc_erase_write_ecadr(0305u, 2u) == AGC_STATUS_OK);
     CHECK(agc_job_uplink_update_load(&ctx) == AGC_STATUS_OK);
-    CHECK(agc_uplink_update_target() == 24);         /* UPTEMP (V21N02)    */
+    CHECK(agc_uplink_update_target() == 24);                  /* UPTEMP (V21N02)    */
+    CHECK(agc_uplink_update_dnword(4) == 1u && agc_uplink_update_dnword(5) == 2u);
     CHECK(agc_job_uplink_update_proceed(&ctx) == AGC_STATUS_OK);
-    CHECK(agc_time_now_cs() == 01000000u + 040002u); /* 1 x 2^14 + 2 cs */
+    CHECK(agc_time_now_cs() == 01000000u + 040002u);          /* 1 x 2^14 + 2 cs */
 }
 
 /**********************************************************************

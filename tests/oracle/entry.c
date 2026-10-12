@@ -96,15 +96,15 @@ int main(void)
     (void) agc_entry_startent();
     oracle_require_ok(t, "SERVNOUT");
     compare(t, 4);
-    pass("entry_pass_initroll", 4);
-    pass("entry_pass_initroll2", 4);
-    pass("entry_pass_huntest", 4);
-    pass("entry_pass_next", 4);
-    pass("entry_pass_upcontrl", 4);
-    pass("entry_pass_upcontrl2", 4);
-    pass("entry_pass_kep2", 4);
-    pass("entry_pass_predict3", 4);
-    pass("entry_pass_predict3b", 4);
+    pass("entry_pass_initroll", 1);
+    pass("entry_pass_initroll2", 1);
+    pass("entry_pass_huntest", 1);
+    pass("entry_pass_next", 1);
+    pass("entry_pass_upcontrl", 1);
+    pass("entry_pass_upcontrl2", 1);
+    pass("entry_pass_kep2", 1);
+    pass("entry_pass_predict3", 1);
+    pass("entry_pass_predict3b", 1);
     cm_pose("cm_pose_a", 8);
     cm_pose("cm_pose_b", 8);
     cm_pose("cm_pose_slow", 8);
@@ -231,7 +231,7 @@ static void compare(const char *t, long int tol)
 {
     const agc_entry_state_t *e = agc_entry_state(); /* entry erasables */
 
-    (void) oracle_cmp(t, "D", e->d, oracle_out_dp(t, "D"), 256);
+    (void) oracle_cmp(t, "D", e->d, oracle_out_dp(t, "D"), 160);
     (void) oracle_cmp(t, "V", e->v, oracle_out_dp(t, "V"), tol);
     (void) oracle_cmp(t, "VSQUARE", e->vsquare, oracle_out_dp(t, "VSQUARE"), tol);
 
@@ -260,15 +260,15 @@ static void compare(const char *t, long int tol)
     }
 
     (void) oracle_cmp(t, "RDOT", e->rdot, oracle_out_dp(t, "RDOT"), tol);
-    (void) oracle_cmp(t, "THETAH", e->thetah, oracle_out_dp(t, "THETAH"), 8);
+    (void) oracle_cmp(t, "THETAH", e->thetah, oracle_out_dp(t, "THETAH"), 4);
     (void) oracle_cmp(t, "LATANG", e->latang, oracle_out_dp(t, "LATANG"), tol);
-    (void) oracle_cmp(t, "ROLLC", e->rollc, oracle_out_dp(t, "ROLLC"), 16);
-    (void) oracle_cmp(t, "L/D", e->l_d, oracle_out_dp(t, "L/D"), 320);
-    (void) oracle_cmp(t, "L/D1", e->l_d1, oracle_out_dp(t, "L/D1"), 320);
+    (void) oracle_cmp(t, "ROLLC", e->rollc, oracle_out_dp(t, "ROLLC"), 8);
+    (void) oracle_cmp(t, "L/D", e->l_d, oracle_out_dp(t, "L/D"), 256);
+    (void) oracle_cmp(t, "L/D1", e->l_d1, oracle_out_dp(t, "L/D1"), 256);
     (void) oracle_cmp(t, "K2ROLL", e->k2roll, oracle_out_dp(t, "K2ROLL"), 0);
     (void) oracle_cmp(t, "GOTOADDR", goto_word(e->gotoaddr), (long int) oracle_out_raw(t, "GOTOADDR"), 0);
     (void) oracle_cmp(t, "A1", e->a1, oracle_out_dp(t, "A1"), tol);
-    (void) oracle_cmp(t, "VL", e->vl, oracle_out_dp(t, "VL"), 64);
+    (void) oracle_cmp(t, "VL", e->vl, oracle_out_dp(t, "VL"), 40);
     (void) oracle_cmp(t, "LEWD", e->lewd, oracle_out_dp(t, "LEWD"), tol);
     (void) oracle_cmp(t, "DIFF", e->diff, oracle_out_dp(t, "DIFF"), tol);
     (void) oracle_cmp(t, "Q7", e->q7, oracle_out_dp(t, "Q7"), tol);

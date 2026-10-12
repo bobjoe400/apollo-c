@@ -307,5 +307,7 @@ agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_sband_b5off(void)
 {
-    return (agc_svc_b5off());
+    agc_svc_b5off(); /* B5OFF */
+
+    return (AGC_STATUS_OK);
 }

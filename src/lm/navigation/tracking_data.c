@@ -44,8 +44,7 @@
  *   Display, radar and integration statuses are passed back.
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
- *   Jobs of P20 (LM). DEVIATION (R22LEM3): PHSPRDT2 = PRIO26 is not kept
- *   (request to exec, review-prog-rendz P3).
+ *   Jobs of P20 (LM).
  *
  * NOTES:
  *   Scales: RM m 2^29, RDOTM m/cs 2^7, angles revolutions, times cs
@@ -73,6 +72,7 @@
 #define TD_30DEG         ((agc_dp_t) 22369621)      /* 30DEG 2DEC .083333333       */
 #define TD_1500DEC       1500U                      /* 15 s, cs */
 #define TD_2SECS         200U                       /* 2 s, cs */
+#define TD_PRIO26        ((agc_prio_t) 026)         /* PRIO26 */
 #define TD_PRIO27        ((agc_prio_t) 027)         /* PRIO27 */
 #define TD_ALARM_LOS     ((agc_alarm_code_t) 00525) /* LOS off by > 3 deg */
 #define TD_CH33_RR_AUTO  000002u                    /* chan 33 bit 2 (0 = auto) */
@@ -163,7 +163,7 @@ static agc_status_t td_read_rdot(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA);
 
     if (!agc_flag_test(AGC_FLAG_RNDVZFLG))
     {
@@ -305,22 +305,19 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
     rr_state_t *s = rr_state(); /* radar erasables */
 
     agc_inhint();
-    n->rangrdot[0]       = agc_erase_dnrrange(0);
-    n->rangrdot[1]       = agc_erase_dnrrange(1);
-    s->tangnb[0]         = n->tang[0];
-    s->tangnb[1]         = n->tang[1];
+    n->rangrdot[0] = agc_erase_dnrrange(0);
+    n->rangrdot[1] = agc_erase_dnrrange(1);
+    s->tangnb[0]   = n->tang[0];
+    s->tangnb[1]   = n->tang[1];
     agc_relint();
-    n->rdotm             = agc_dp_mul(&ip, agc_dp_shl(&ip, n->rdotmsav, 14), TD_RDOTCONV);
-    n->rrtrun            = agc_guid_cdulogic(n->tang[0]);
-    n->rrshaft           = agc_guid_cdulogic(n->tang[1]);
-    n->rm                = agc_dp_shl_round(&ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
-    agc_status_t st      = agc_lm_rrnb(&ip, n->tang[0], n->tang[1], &n->rrborsit); /* conversions */
-    bool         too_far = false;                                                  /* range > 400 NM */
+    n->rdotm       = agc_dp_mul(&ip, agc_dp_shl(&ip, n->rdotmsav, 14), TD_RDOTCONV);
+    n->rrtrun      = agc_guid_cdulogic(n->tang[0]);
+    n->rrshaft     = agc_guid_cdulogic(n->tang[1]);
+    n->rm          = agc_dp_shl_round(&ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
+    bool too_far   = false; /* range > 400 NM */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = lmnav_los(&ip, n->cdutime, AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK, &too_far);
-    }
+    agc_lm_rrnb(&ip, n->tang[0], n->tang[1], &n->rrborsit);                                        /* conversions */
+    agc_status_t st = lmnav_los(&ip, n->cdutime, AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK, &too_far); /* LOS check */
 
     if (st != AGC_STATUS_OK)
     {
@@ -394,7 +391,7 @@ agc_status_t agc_job_rendezvous_tracking_data_los_alarm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_DTHETA);
 
     return (rz_flash(ctx, AGC_DSKY_PRIODSP, 6U, 5U, AGC_JOB_RENDEZVOUS_NAVIGATION_TERMINATE, AGC_JOB_RENDEZVOUS_TRACKING_DATA_ACCEPT, AGC_JOB_RENDEZVOUS_NAVIGATION_DESIGNATE));
 }
@@ -417,7 +414,7 @@ agc_status_t agc_job_rendezvous_tracking_data_dtheta(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_accept(void)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_ACCEPT);
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
@@ -461,8 +458,8 @@ agc_status_t agc_job_rendezvous_tracking_data_wait(void)
 
 /**********************************************************************
  * R22LEM3: no update allowed (NOUPFLAG) or wanted (UPDATFLG off): the
- * next mark; else LSR22.3. DEVIATION: PHSPRDT2 = PRIO26 (the restart
- * priority) is not kept; the restart tables of the exec lane own it.
+ * next mark; else PHSPRDT2 = PRIO26 ("insure high prio in restart") and
+ * LSR22.3.
  * AGC: R22LEM3 (P20-P25.agc p.506)
  *
  * FUNCTION NAME: agc_job_rendezvous_tracking_data_update
@@ -481,6 +478,8 @@ agc_status_t agc_job_rendezvous_tracking_data_update(void)
     {
         return (agc_job_rendezvous_tracking_data_next());
     }
+
+    agc_phase_set_priority(2, TD_PRIO26); /* CAF PRIO26 / TS PHSPRDT2 */
 
     return (agc_job_rendezvous_tracking_data_incorporate());
 }
@@ -528,7 +527,7 @@ agc_status_t agc_job_rendezvous_tracking_data_next(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_done(void)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_DONE);
     agc_erase_set_trkmkcnt((agc_sp_t) (agc_erase_trkmkcnt() + 1));
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
@@ -556,7 +555,7 @@ agc_status_t agc_job_rendezvous_tracking_data_done(void)
 agc_status_t lmnav_residuals_display(void)
 {
     lmnav_state()->n49flag = 0;
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE_CONTINUE);
     agc_job_id_t j         = AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS; /* N49DSP */
     agc_status_t st        = agc_exec_novac(TD_PRIO27, j);               /* NOVAC */
 
@@ -655,7 +654,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx)
 
     if (f < 0)
     {
-        agc_phase_change(04022); /* GRP2PC   */
+        rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_WAIT); /* GRP2PC   */
 
         return (lmnav_incorporate_accepted(ctx)); /* ASTOK    */
     }

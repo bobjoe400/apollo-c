@@ -124,9 +124,9 @@ agc_status_t rz_continue(agc_job_id_t next)
 
     agc_status_t st = agc_exec_job_yield(next); /* yield status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -277,18 +277,18 @@ agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_re
 
             st = agc_rendz_get_mga(ip, rz->delvsin, &refsmmat, &rz->plus_mga);
 
-            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            if (st != AGC_STATUS_OK)
             {
-                return (AGC_STATUS_BAD_ARG);
+                return (st);
             }
         }
     }
 
     agc_status_t st = rz_comptgo(AGC_JOB_RENDZ_TTOGO_DISPLAY); /* GET45: COMPTGO */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     rz->qsaved = resume_as; /* TS QSAVED      */
@@ -338,11 +338,6 @@ agc_status_t agc_job_rendz_kilclock(void)
 {
     rz_dispdex_zero();
     agc_status_t st = agc_exec_gotopooh(); /* GOTOPOOH */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_POODOO))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }
@@ -590,12 +585,7 @@ agc_status_t rz_tpi_flagoff(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rend
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_rendz_tpi_los_delta_v(ip, rz); /* S34/35.4 */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    agc_rendz_tpi_los_delta_v(ip, rz); /* S34/35.4 */
 
     return (rz_vnpooh(ctx, 6U, 59U, rz->normex));
 }

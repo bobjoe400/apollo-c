@@ -26,7 +26,7 @@
  * EXTERNAL REFERENCES:
  *   Name                  Description
  *   --------------------  ------------------------------------------
- *   agc_integ_midtoav1    MIDTOAV1 (P41SPOT, integration.h)
+ *   agc_integ_midtoav_at_time    MIDTOAV1 (P41SPOT, integration.h)
  *   agc_lm_mungrav        MUNGRAV (servicer/average_g.c)
  *   ign_start_clock       STCLOK3 (ignition/clock.c)
  *
@@ -277,7 +277,7 @@ agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_integ_midtoav1(&ip, agc_integ_shared_ctx(), tdec1, ctx->id, &mo); /* GOMIDAV */
+        st = agc_integ_midtoav_at_time(&ip, agc_integ_shared_ctx(), tdec1, ctx->id, &mo); /* GOMIDAV */
     }
 
     if (st != AGC_STATUS_OK)
@@ -873,13 +873,8 @@ agc_status_t agc_task_tigtask(void)
  **********************************************************************/
 agc_status_t agc_task_braking_phase_zoom(void)
 {
-    agc_guid_state()->avg.avgexit = AGC_JOB_LUNLAND;           /* LUNLANAD               */
-    agc_status_t st               = agc_lm_throttle_flatout(); /* status of agc_lm_throttle_flatout */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_guid_state()->avg.avgexit = AGC_JOB_LUNLAND; /* LUNLANAD               */
+    agc_lm_throttle_flatout();                       /* FLATOUT: full thrust */
 
     return (agc_task_zoom());
 }

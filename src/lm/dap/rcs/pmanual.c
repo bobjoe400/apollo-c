@@ -236,9 +236,9 @@ static agc_status_t justout(lm_dap_t *d)
     d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_JUSTIN);
     agc_status_t sz = lm_dap_zeroenbl(); /* ZEROENBL status */
 
-    if (!AGC_ASSERT(sz == AGC_STATUS_OK))
+    if (sz != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (sz);
     }
 
     if (!AGC_ASSERT((d->rcsflags & LM_RCS_PBIT) == 0u))
@@ -296,9 +296,9 @@ static agc_status_t pegi(lm_dap_t *d)
     /* PEGI tail (pp.1435-1436): direct-rate jet time. TJP = 25/32 x 2 x
      * (-EDOTP x 1/ANETP), OVERSUB-limited; 4 jets if the rate error exceeds
      * the 2-jet limit, otherwise 2 jets for twice the time.                 */
-    lm_dp_pair_t p     = lm_dap_mp((agc_sp_t) -d->edot, d->block[PM_1ANETP]); /* -EDOTP x 1/ANETP: jet time, DP */
-    int32_t      twice = 2 * lm_dap_dpval(p);                                 /* DAS A          */
-    agc_sp_t     a     = lm_dap_sat(twice / PM_DPWORD);                       /* OVERSUB: jet time, scaled 0.625 ms x 25/32 per count */
+    agc_dp_words_t p     = lm_dap_mp((agc_sp_t) -d->edot, d->block[PM_1ANETP]); /* -EDOTP x 1/ANETP: jet time, DP */
+    int32_t        twice = 2 * lm_dap_dpval(p);                                 /* DAS A          */
+    agc_sp_t       a     = lm_dap_sat(twice / PM_DPWORD);                       /* OVERSUB: jet time, scaled 0.625 ms x 25/32 per count */
 
     d->tj[0] = lm_dap_mphi(a, PM_25_32); /* T6 counts      */
 
@@ -355,9 +355,9 @@ static agc_status_t raterror(lm_dap_t *d)
 
     d->edot = lm_dap_wrap((int32_t) d->omegap - d->plast); /* EDOTP       */
 
-    if (!AGC_ASSERT(sz == AGC_STATUS_OK))
+    if (sz != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (sz);
     }
 
     if (change != 0 && (int32_t) lm_dap_ccs_dim(change) + d->neg_ratedb > 0)

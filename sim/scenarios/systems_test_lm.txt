@@ -14,8 +14,9 @@
 #   not loaded, so the drift angles stay zero.
 # * PRO: PIPACHK counts PIPA X pulses (CHECKG catches the first pulse,
 #   PIPATASK waits 58 x 5.12 s, CHECKG the last), PIPJOBB flashes the
-#   rate on V06N98 again.  The sim does not drive the scaler channels 3/4,
-#   so the rate in R1 is the DDV overflow value and is not checked.
+#   rate on V06N98 again.  The rate in R1 comes from the scaler channels
+#   3/4 (FINETIME, 3200 Hz, src/sim/clock.c) over the 58 x 5.12 s; it is
+#   not checked (no oracle value: yaAGC needs an IMU peripheral to get here).
 vehicle lm
 run 300
 keys R V37E00E

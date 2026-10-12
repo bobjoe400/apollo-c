@@ -15,10 +15,12 @@
  *        States are set as P32/P72B leaves them (ADVANCE, passive INTINT
  *        to TTPI).
  *     3. SELECTMU and PERIAPO1 on the circular orbit: equal apsides.
+ *     4. P23 and R22 preset PHSPRDT2 (PRIO13, PRIO26): a later group 2
+ *        restart of a type C phase with D clear runs at that priority.
  *
  * AGC SOURCE:
  *   Comanche055 R30.agc (SR30.1, MAXCHK), P32-P33_P72-P73.agc (CSI/A),
- *   P34-35_P74-75.agc (SELECTMU, PERIAPO1)
+ *   P34-35_P74-75.agc (SELECTMU, PERIAPO1), P20-P25.agc (P23, R22)
  *
  * EXTERNAL VARIABLES:
  *   TIG, TTPI (agc_erase_*): set for the CSI case
@@ -65,6 +67,8 @@ static void         test_orbit_parameters_eccentric(void);
 static agc_status_t csi_case(double th, agc_dp_t *delvcsi);
 static void         test_csi_coplanar_circular(void);
 static void         test_periapo_circular(void);
+static bool         group2_restarts_at(agc_job_id_t job, agc_prio_t prio);
+static void         test_group2_restart_priority(void);
 
 /**********************************************************************
  * AGC: none (test driver) -- the three tests, CSM build
@@ -81,6 +85,7 @@ int main(void)
     test_orbit_parameters_eccentric();
     test_periapo_circular();
     test_csi_coplanar_circular();
+    test_group2_restart_priority();
     (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks, g_failures);
 
     if (g_failures != 0)
@@ -276,7 +281,7 @@ static agc_status_t csi_case(double th, agc_dp_t *delvcsi)
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     agc_rendz_reset(rz);
-    CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
+    agc_rendz_selectmu(rz, false);
     double ra = R0;                 /* active radius, m  */
     double rp = R0 + 15.0 * 1852.0; /* passive radius, m */
 
@@ -351,7 +356,7 @@ static void test_periapo_circular(void)
     agc_interp_init(&ip);
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
-    CHECK(agc_rendz_selectmu(rz, false) == AGC_STATUS_OK);
+    agc_rendz_selectmu(rz, false);
     agc_rendz_periapo_t pa;                               /* PERIAPO1 */
     agc_vec_t           v = vel(0.0, sqrt(MU / R0), 0.0); /* m/cs 2^7 */
     agc_status_t        st;                               /* PERIAPO1 */
@@ -359,4 +364,77 @@ static void test_periapo_circular(void)
     st = agc_rendz_periapo_body_scale(&ip, rz, pos(R0, 0.0, 0.0), v, &pa);
     CHECK(st == AGC_STATUS_OK);
     CHECK(dp_absdiff(pa.rapo, pa.rperi) < 8192); /* 16 km */
+}
+
+/**********************************************************************
+ * Restart group 2 as GOPROG does after STARTSB2 and look for the restart
+ * job at the expected priority.
+ * AGC: none (test support; RESTARTS ITSLIKEB, FRESH_START_AND_RESTART)
+ *
+ * FUNCTION NAME: group2_restarts_at
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  ----------------------------------------
+ *   job       agc_job_id_t  I    expected restart job
+ *   prio      agc_prio_t    I    expected restart priority
+ *
+ * RETURNS: bool -- the job was started at prio
+ **********************************************************************/
+static bool group2_restarts_at(agc_job_id_t job, agc_prio_t prio)
+{
+    bool found = false; /* job seen */
+
+    CHECK(agc_exec_init() == AGC_STATUS_OK); /* STARTSB2 */
+    CHECK(agc_restart_group(2) == AGC_STATUS_OK);
+
+    for (int i = 0; i < agc_exec_core_sets(); i++)
+    {
+        agc_exec_core_info_t ci; /* core set i */
+
+        agc_exec_core_info(i, &ci);
+        found = found || (ci.loc == job && ci.prio == prio);
+    }
+
+    return (found);
+}
+
+/**********************************************************************
+ * P23 (P20-P25.agc p.619) presets PHSPRDT2 = PRIO13 and R22 (p.576)
+ * PHSPRDT2 = PRIO26: a later group 2 restart of a type C phase with D
+ * clear starts its job at that priority. LM R24LEM (p.515): the GRP2PC
+ * at R24LEM2, reached from R24LEM inside the same job, restarts at
+ * R24LEM2 (its return address), not at R24LEM.
+ * AGC: P23, R22, R24LEM (P20-P25.agc pp.515, 576, 619)
+ *
+ * FUNCTION NAME: test_group2_restart_priority
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_group2_restart_priority(void)
+{
+    const agc_phase_var_t p23 = {AGC_RESTART_JOB, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION, AGC_TASK_NONE, 0, false, 0U}; /* D clear */
+    const agc_phase_var_t r22 = {AGC_RESTART_JOB, AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM, AGC_TASK_NONE, 0, false, 0U};  /* D clear */
+
+    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_flag_set(AGC_FLAG_REFSMFLG);
+    CHECK(agc_exec_init() == AGC_STATUS_OK);                                 /* only the job under test */
+    CHECK(agc_exec_novac(013, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION) == AGC_STATUS_OK);
+    CHECK(agc_exec_run_one() == AGC_STATUS_OK);
+    agc_phase_change_var(06022, &p23);                                       /* type C, 2CADR, job, group 2 */
+    CHECK(group2_restarts_at(AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION, 013));
+    CHECK(agc_exec_novac(026, AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM) == AGC_STATUS_OK);
+    CHECK(agc_exec_run_one() == AGC_STATUS_OK);
+    CHECK(group2_restarts_at(AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK, 026)); /* REND1: WAITONE */
+    agc_phase_change_var(06022, &r22);
+    CHECK(group2_restarts_at(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM, 026));
+
+    CHECK(agc_power_on(AGC_VEHICLE_LM) == AGC_STATUS_OK);
+    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    agc_phase_set_priority(2, 026);
+    CHECK(agc_exec_novac(026, AGC_JOB_RADAR_SEARCH) == AGC_STATUS_OK);
+    CHECK(agc_exec_run_one() == AGC_STATUS_OK); /* V16N80, the search goes on */
+    CHECK(group2_restarts_at(AGC_JOB_RADAR_SEARCH_DISPLAY, 026));
 }

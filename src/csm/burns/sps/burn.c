@@ -24,7 +24,7 @@
  *   --------------------  ------------------------------------------
  *   agc_guid_initial_velocity_to_gain        S40.1 (burn_steering.c)
  *   agc_guid_preferred_thrust_attitude_csm   S40.2,3 (burn_steering.c)
- *   agc_integ_midtoav1    MIDTOAV1 integration to TIG-30 (integration.h)
+ *   agc_integ_midtoav_at_time    MIDTOAV1 integration to TIG-30 (integration.h)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   None raised here; IMU status, integration, display, executive and
@@ -393,7 +393,7 @@ agc_status_t agc_job_preburn_state_vector(agc_job_ctx_t *ctx)
     agc_interp_t            ip;                   /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_integ_midtoav1(&ip, agc_integ_shared_ctx(), agc_erase_tig() - SEC29_96, ctx->id, &mo); /* status of agc_integ_midtoav1 */
+    agc_status_t st = agc_integ_midtoav_at_time(&ip, agc_integ_shared_ctx(), agc_erase_tig() - SEC29_96, ctx->id, &mo); /* status of agc_integ_midtoav_at_time */
 
     if (st != AGC_STATUS_OK)
     {

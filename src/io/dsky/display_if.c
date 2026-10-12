@@ -144,6 +144,7 @@ typedef struct dif_class
     agc_dsky_cont_t cadr;     /* CADRFLSH / CADRMARK / TEMPFLSH           */
     uint16_t        nvword;   /* NVWORD / MARKNV / NVSAVE (ones' compl.)  */
     agc_prio_t      userprio; /* USERPRIO of the requesting job (MODE)    */
+    uint16_t        mpac2;    /* MPAC+2 of the requesting job: ECADR of a machine-address noun */
 } dif_class_t;
 
 typedef struct dif_req
@@ -152,6 +153,7 @@ typedef struct dif_req
     uint16_t        vn;    /* VN: verb x 2^7 + noun */
     uint16_t        flags; /* PLAYTEM3 display flags */
     agc_dsky_cont_t cadr;  /* PLAYTEM4 user returns */
+    uint16_t        mpac2; /* the user's MPAC+2 (INTMCTBS ECADR) */
 } dif_req_t;
 
 typedef struct dif_job
@@ -304,8 +306,9 @@ static void dif_copies(int c, const dif_req_t *rq, agc_prio_t userprio)
         g_cls[c].cadr = rq->cadr; /* CADRFLSH */
     }
 
-    g_cls[c].nvword   = rq->vn; /* NVWORD   */
+    g_cls[c].nvword   = rq->vn;    /* NVWORD   */
     g_cls[c].userprio = userprio;
+    g_cls[c].mpac2    = rq->mpac2; /* the job's MPAC+2 survives its sleeps */
     agc_relint();
 }
 
@@ -820,19 +823,13 @@ static agc_status_t dif_makeplay(const dif_req_t *rq, agc_prio_t userprio)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, FULL;
- *          else the status of the routine it calls
+ * RETURNS: agc_status_t -- OK; else the FINDVAC status (BAILOUT 1201/1202)
  **********************************************************************/
 static agc_status_t dif_cleanend(void)
 {
     agc_status_t st; /* status so far */
 
     st = agc_exec_findvac(PIN_PRIO32, AGC_JOB_JAMTERM);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }
@@ -1045,6 +1042,7 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
 
     for (int part = 0; part < 2; part++)
     { /* NV50DSP  */
+        pin_st()->mpac2 = g_cls[c].mpac2;         /* NVSUB in the user's job: its MPAC+2 */
         agc_status_t st = pin_nvmonopt(vn, opts); /* status so far */
 
         if (st == AGC_STATUS_BUSY)
@@ -1060,7 +1058,12 @@ static agc_status_t dif_nvdsp(int c, agc_prio_t userprio)
         pin_flashoff();                                      /* in case of extended verb non flash */
         j.tempor2 = g_cls[c].flags;                          /* COPYTOGO: MPACS destroyed by NVSUB */
         f4_down(DIF_MRKNVFLG | DIF_NRMNVFLG | DIF_PRONVFLG); /* unset sleeping bits */
-        st        = agc_dsky_blanksub(j.tempor2);            /* BLANKCHK                      */
+        st        = agc_dsky_blanksub(j.tempor2);            /* BLANKCHK: either return goes on */
+
+        if (st != AGC_STATUS_OK && st != AGC_STATUS_BUSY)
+        {
+            return (st); /* a blanking failure, not the busy return */
+        }
 
         if ((j.tempor2 & DIF_PERFORM) == 0u || (j.tempor2 & DIF_SECOND) != 0u)
         {
@@ -1362,11 +1365,6 @@ agc_status_t pin_pinbrnch(void)
 
     agc_status_t st = agc_dsky_nvsub_blank(-3); /* ERASER         */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY || st == AGC_STATUS_POODOO))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st); /* job sleeps */
 }
 
@@ -1588,8 +1586,7 @@ static const dif_kind_t k_kinds[AGC_DSKY_DISP_COUNT] = {
  *                                     PLAYTEM3 flags, PLAYTEM4 CADRs)
  *   prio      agc_prio_t         I    user's job priority
  *
- * RETURNS: agc_status_t -- OK, FULL; else the status of the routine it
- *          calls
+ * RETURNS: agc_status_t -- OK; else the status of the routine it calls
  **********************************************************************/
 static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
 {
@@ -1640,16 +1637,26 @@ static agc_status_t dif_start_makeplay(const dif_req_t *rq, agc_prio_t prio)
  *                                              flashing display; NULL
  *                                              when none
  *
+ *   ecadr        uint16_t                 I    the user's MPAC+2: the
+ *                                              ECADR a machine-address
+ *                                              noun (01-03) takes (INTMCTBS)
+ *
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn_or_value, const agc_dsky_cont_t *cont)
+agc_status_t agc_dsky_display_ecadr(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn_or_value, const agc_dsky_cont_t *cont, uint16_t ecadr)
 {
     const dif_kind_t *k  = &k_kinds[kind]; /* component 0..2 (R1..R3) */
     dif_req_t         rq = {true,
                             vn_or_value,
                             k->flags,
-                            {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE}};
+                            {AGC_JOB_NONE, AGC_JOB_NONE, AGC_JOB_NONE},
+                            ecadr};
+
+    if (!AGC_ASSERT(ecadr <= PIN_WORD))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
 
     if (cont != NULL)
     {
@@ -1695,7 +1702,26 @@ agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, ui
     }
 
     return (dif_makeplay(&rq, ctx->prio)); /* GOFLASH2: SAVELOCS, MAKEPLAY */
-} /* agc_dsky_display */
+} /* agc_dsky_display_ecadr */
+
+/**********************************************************************
+ * AGC: GODSP, GOMARK4 (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1466, 1468)
+ *
+ * The display-interface entries for a display that takes no machine
+ * address from MPAC+2 (agc_dsky_display_ecadr with ECADR 0).
+ *
+ * ARGUMENTS:
+ *   ctx          const agc_job_ctx_t *    I  calling job's context
+ *   kind         agc_dsky_disp_t          I  entry used
+ *   vn_or_value  uint16_t                 I  VN or the GOPERF1/4 datum
+ *   cont         const agc_dsky_cont_t *  I  continuations; NULL when none
+ *
+ * RETURNS: agc_status_t -- the agc_dsky_display_ecadr status
+ **********************************************************************/
+agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn_or_value, const agc_dsky_cont_t *cont)
+{
+    return (agc_dsky_display_ecadr(ctx, kind, vn_or_value, cont, 0u));
+}
 
 /**********************************************************************
  * AGC: BLANKET, LINUS (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1465, 1484)
@@ -1750,7 +1776,7 @@ agc_status_t agc_dsky_initdsp(void)
     }
 
     agc_exec_prio_change(g_restreg);
-    dif_req_t rq = {true, g_cls[DIF_NORMC].nvword, g_cls[DIF_NORMC].flags, g_cls[DIF_NORMC].cadr};
+    dif_req_t rq = {true, g_cls[DIF_NORMC].nvword, g_cls[DIF_NORMC].flags, g_cls[DIF_NORMC].cadr, g_cls[DIF_NORMC].mpac2};
 
     rq.flags = (uint16_t) (rq.flags & ~DIF_SECOND);
 

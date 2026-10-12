@@ -650,7 +650,7 @@ static void test_lock(void)
 
     /* busy: the caller is put to sleep (here not inside a job, so JOBSLEEP
      * only reports its assertion) and must call again when woken.       */
-    CHECK(agc_integ_install(0, AGC_JOB_STATINT1) == AGC_STATUS_BUSY);
+    CHECK(agc_integ_install(0, AGC_JOB_STATEINT_UPDATE) == AGC_STATUS_BUSY);
     CHECK(agc_integ_install(1, AGC_JOB_NONE) == AGC_STATUS_OK); /* ERASTAL1 */
     CHECK(agc_integ_area_busy(1));
     CHECK(agc_integ_eraswake(1) == AGC_STATUS_OK);
@@ -664,7 +664,7 @@ static void test_lock(void)
     CHECK(agc_integ_install(0, AGC_JOB_NONE) == AGC_STATUS_OK);
     agc_flag_set(AGC_FLAG_REINTFLG);
     agc_flag_clear(AGC_FLAG_INTFLAG);
-    CHECK(agc_integ_install(0, AGC_JOB_STATINT1) == AGC_STATUS_OK);
+    CHECK(agc_integ_install(0, AGC_JOB_STATEINT_UPDATE) == AGC_STATUS_OK);
     CHECK(agc_flag_test(AGC_FLAG_INTFLAG) && !agc_flag_test(AGC_FLAG_REINTFLG));
     CHECK(agc_integ_intwake() == AGC_STATUS_OK);
     fresh(AGC_VEHICLE_LM);
@@ -691,7 +691,7 @@ static void test_rectify(void)
     ctx.sv.nuv     = to_agc(dv(0.0, 0.0, 0.05), 3);       /* E 2^3 m/cs  */
     ctx.sv.tc      = 1234;
     ctx.sv.xkep    = 99;
-    CHECK(agc_integ_rectify(&ip, &ctx) == AGC_STATUS_OK);
+    agc_integ_rectify(&ip, &ctx);
     const dvec_t r = from_agc(ctx.sv.rrect, 29);          /* RRECT, m */
     const dvec_t v = from_agc(ctx.sv.vrect, 7);           /* VRECT, m/cs */
 
@@ -1024,7 +1024,7 @@ static void test_stateint(void)
     set_perm(AGC_VEHICLE_CSM, r0, v0, 0);
     set_perm(AGC_VEHICLE_LM, r0, v0, 0);
     agc_time_set_cs(300000u);
-    CHECK(agc_job_statint1() == AGC_STATUS_OK);
+    CHECK(agc_job_stateint_update() == AGC_STATUS_OK);
     CHECK(agc_integ_perm_get(AGC_VEHICLE_CSM, &c) == AGC_STATUS_OK);
     CHECK(agc_integ_perm_get(AGC_VEHICLE_LM, &l) == AGC_STATUS_OK);
     (void) printf("STATEINT: TETCSM = %d cs, TETLEM = %d cs (now 300000)\n", (int) c.tet, (int) l.tet);
@@ -1034,7 +1034,7 @@ static void test_stateint(void)
     CHECK(!agc_flag_test(AGC_FLAG_STATEFLG));
     CHECK(!agc_flag_test(AGC_FLAG_NODOFLAG));
     agc_flag_set(AGC_FLAG_QUITFLAG);              /* V96: NOINT        */
-    CHECK(agc_job_statint1() == AGC_STATUS_OK);
+    CHECK(agc_job_stateint_update() == AGC_STATUS_OK);
     CHECK(!agc_flag_test(AGC_FLAG_QUITFLAG));
 }
 
@@ -1061,7 +1061,7 @@ static void test_midtoav(void)
     circular(MU_E, 6678137.0, 0.5, 30000.0, &r1, &v1);
     set_perm(AGC_VEHICLE_CSM, r0, v0, 0);
     CHECK(agc_integ_ctx_init(agc_integ_shared_ctx()) == AGC_STATUS_OK);
-    CHECK(agc_integ_midtoav1(&ip, agc_integ_shared_ctx(), 30000, AGC_JOB_NONE, &out) == AGC_STATUS_OK);
+    CHECK(agc_integ_midtoav_at_time(&ip, agc_integ_shared_ctx(), 30000, AGC_JOB_NONE, &out) == AGC_STATUS_OK);
     CHECK(out.piptime1 == 30000);
     CHECK(out.dt == 30000);
     CHECK(!out.slipped);
@@ -1069,7 +1069,7 @@ static void test_midtoav(void)
     CHECK(dist(from_agc(out.rn1, 29), r1) < 2000.0);
     CHECK(!agc_flag_test(AGC_FLAG_MIDAVFLG));
     agc_time_set_cs(100000u);
-    CHECK(agc_integ_midtoav1(&ip, agc_integ_shared_ctx(), 100500, AGC_JOB_NONE, &out) == AGC_STATUS_OK);
+    CHECK(agc_integ_midtoav_at_time(&ip, agc_integ_shared_ctx(), 100500, AGC_JOB_NONE, &out) == AGC_STATUS_OK);
     CHECK(out.slipped);            /* ALARM 1703        */
     CHECK(out.piptime1 == 101250); /* now + TIMEDELT    */
     CHECK(out.dt == 1250);
@@ -1139,7 +1139,7 @@ static void test_intwakeu(void)
     ctx->sv.rrect = to_agc(dv(7.0e6, 1.0e5, 0.0), 29);
     ctx->sv.vrect = to_agc(dv(0.0, 75.0, 1.0), 7);
     ctx->sv.tet   = 5000;
-    CHECK(agc_integ_intwakeu(&ip, ctx, &u) == AGC_STATUS_OK);
+    CHECK(agc_integ_intwakeu(&ip, ctx, &u, AGC_JOB_UPLINK_UPDATE_TERMINATE) == AGC_STATUS_OK);
     CHECK(u == 0);
     CHECK(!agc_integ_area_busy(0));
     CHECK(agc_integ_perm_get(AGC_VEHICLE_LM, &l) == AGC_STATUS_OK);
@@ -1148,7 +1148,27 @@ static void test_intwakeu(void)
     CHECK(!agc_flag_test(AGC_FLAG_LMOONFLG));
     u             = 2;
     CHECK(agc_integ_install(0, AGC_JOB_NONE) == AGC_STATUS_OK);
-    CHECK(agc_integ_intwakeu(&ip, ctx, &u) == AGC_STATUS_OK);
+    CHECK(agc_integ_intwakeu(&ip, ctx, &u, AGC_JOB_UPLINK_UPDATE_TERMINATE) == AGC_STATUS_OK);
     CHECK(agc_flag_test(AGC_FLAG_CMOONFLG));
     CHECK(agc_flag_test(AGC_FLAG_MOONFLAG));
+
+    /* PHASCHNG 04026: a group 6 restart resumes at the caller's
+     * continuation (P27: UPOUT +1), at the preset PHSPRDT6.            */
+    bool resumed = false; /* the terminate job was started */
+
+    agc_phase_set_priority(6, 030);
+    CHECK(agc_integ_install(0, AGC_JOB_NONE) == AGC_STATUS_OK);
+    CHECK(agc_integ_intwakeu(&ip, ctx, &u, AGC_JOB_UPLINK_UPDATE_TERMINATE) == AGC_STATUS_OK);
+    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    CHECK(agc_restart_group(6) == AGC_STATUS_OK);
+
+    for (int i = 0; i < agc_exec_core_sets(); i++)
+    {
+        agc_exec_core_info_t ci; /* core set i */
+
+        agc_exec_core_info(i, &ci);
+        resumed = resumed || (ci.loc == AGC_JOB_UPLINK_UPDATE_TERMINATE && ci.prio == 030);
+    }
+
+    CHECK(resumed);
 }

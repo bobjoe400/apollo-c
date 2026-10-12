@@ -263,12 +263,8 @@ agc_status_t agc_job_csm_fine_align_marked(agc_job_ctx_t *ctx)
     agc_interp_t     ip;                    /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_csm_sxtsm_marks(&ip, &ram->starsav2); /* status of the call */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_sxtmark_mkreleas();
-    }
+    agc_csm_sxtsm_marks(&ip, &ram->starsav2);
+    agc_status_t st = agc_sxtmark_mkreleas(); /* MKRELEAS */
 
     if (st != AGC_STATUS_OK)
     {

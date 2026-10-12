@@ -429,8 +429,6 @@ static void test_rot_touv(void)
  **********************************************************************/
 static void test_zero_erasable(void)
 {
-    int reports = g_assert_reports; /* assertion reports before the run */
-
     CHECK(agc_lm_dap_fresh_start() == AGC_STATUS_OK);
     (void) memset(lm_dap_state(), 0, sizeof (lm_dap_t));
     agc_flag_clear(AGC_FLAG_CSMDKFLG);
@@ -440,9 +438,8 @@ static void test_zero_erasable(void)
     agc_guid_state()->lm.abdelv = 0;
     CHECK(agc_lm_dap_jet_accel_update() == AGC_STATUS_OK);
     CHECK(agc_flag_test(AGC_FLAG_ACCOKFLG));
-    CHECK(agc_erase_lemmass() == 438);                                       /* DEC 1750 B-16    */
-    CHECK(g_assert_reports == reports);
-    lm_dp_pair_t q              = lm_dap_dvqr((lm_dp_pair_t){-199, 0}, -85); /* the rope's BIGIQ improper divide */
+    CHECK(agc_erase_lemmass() == 438);                                         /* DEC 1750 B-16    */
+    agc_dp_words_t q            = lm_dap_dvqr((agc_dp_words_t){-199, 0}, -85); /* the rope's BIGIQ improper divide */
 
     CHECK(q.hi == 16383 && q.lo == -85);
 }

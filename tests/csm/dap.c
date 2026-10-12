@@ -26,6 +26,7 @@
  *      with all three intervals expired replaces the roll, pitch and yaw
  *      words (a REPLACE does not end the T6RUPTOR scan), and a positive
  *      interval becomes the next TIME6 wait.
+ *   7. S40.14 (P40-P47 p. 735) forms signed gains from a negative IXX.
  *
  * AGC SOURCE:
  *   Comanche055 JET_SELECTION_LOGIC.agc, TVCDAPS.agc, TVCSTROKETEST.agc,
@@ -71,6 +72,7 @@ static void             test_stroke(void);
 static void             test_rolldap(void);
 static void             test_massprop(void);
 static void             test_t6start(void);
+static void             test_rcs_gains_signed(void);
 
 /**********************************************************************
  * AGC: none -- run every test; the exit status reports failures.
@@ -87,6 +89,7 @@ int main(void)
     test_rolldap();
     test_massprop();
     test_t6start();
+    test_rcs_gains_signed();
     (void) printf("test_csm_dap: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* ?: exit status */
@@ -422,4 +425,23 @@ static void test_t6start(void)
     CHECK(agc_rupt_time(6) == 40u); /* ZBLAST1; ENABT6                 */
     CHECK(r->blast[1].time == 0);
     CHECK(r->blast[2].time == 0);   /* untouched until the next T6RUPT    */
+}
+
+/**********************************************************************
+ * S40.14 (P40-P47.agc p. 735) -- test 7: the RCS gains are formed with
+ * the AGC's signed MP / DV whatever the inertias; a negative IXX (from
+ * nonsense V48 masses) gives negative J/M and KMJ, no refusal.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_rcs_gains_signed(void)
+{
+    agc_csm_dapcom_t    *c = agc_csm_dap_com(); /* IXX, IAVG */
+    const agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* J/M, KMJ  */
+
+    c->ixx  = -4000; /* B+20 kg m^2 */
+    c->iavg = 4000;
+    agc_csm_dap_rcs_gains();
+    CHECK(r->jm[0] < 0 && r->kmj[0] < 0);
+    CHECK(r->jm[1] > 0 && r->kmj[1] > 0 && r->kmj[2] == r->kmj[1]);
 }

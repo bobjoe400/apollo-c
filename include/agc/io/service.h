@@ -260,9 +260,9 @@ agc_status_t agc_svc_delayjob(uint16_t delay_cs, agc_job_id_t wake_as);  /* DELA
 agc_status_t agc_svc_delay_wake(int slot);                               /* WAKER task body (-1)     */
 void         agc_svc_startsub_reset(void);                               /* DELAYLOC = 0             */
 void         agc_svc_gentran(const uint16_t *from, uint16_t *to, int n); /* GENTRAN */
-agc_status_t agc_svc_b5off(void);                                        /* B5OFF                    */
-agc_status_t agc_svc_trfailof(void);                                     /* TRFAILOF (CM)            */
-agc_status_t agc_svc_trfailon(void);                                     /* TRFAILON (CM)            */
+void         agc_svc_b5off(void);                                        /* B5OFF                    */
+void         agc_svc_trfailof(void);                                     /* TRFAILOF (CM)            */
+void         agc_svc_trfailon(void);                                     /* TRFAILON (CM)            */
 
 /* ======================================================================
  * T4RUPT (t4rupt.c + src/io/service/t4rupt_csm.c + src/io/service/t4rupt_lm.c)
@@ -374,7 +374,6 @@ bool agc_extverb_busy(void); /* EXTVBACT != 0   */
  * system in use, bit 5 an extended verb is active, bit 14 P61 lock-out). */
 uint16_t agc_erase_extvbact(void);
 void     agc_erase_set_extvbact(uint16_t v);
-void     agc_svc_set_extvbact(uint16_t v); /* TS EXTVBACT     */
 
 /* jobs and tasks (ids in src/io/verbs/pending.h until integration)       */
 agc_status_t agc_job_extended_verb(agc_job_ctx_t *ctx);         /* LST2FAN   */

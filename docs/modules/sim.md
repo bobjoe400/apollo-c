@@ -37,11 +37,18 @@ the same protocol.
 - DONE sim/scenarios/lights_test_{csm,lm}.txt (b), clock_{csm,lm}.txt (c; client `clockref`, `CLOCK now`); all pass, also against yaAGC
 - DONE src/sim/pad.c (`--pad`: refsmmat, flagword, sv csm|lm), client `pad` lines
 - DONE sim/scenarios/p52_realign_csm.txt (d): option 3, PICAPAR picks stars 8 and 35, sextant CDUs driven to the catalogue LOS, N05 = 0.00 deg, N93 within 0.01 deg, R51K ENTER -> V37 flash (GOP00FIX, same as yaAGC)
-- PARTIAL scenario e (P30 + P40): P30 explored in scratch (sim/e1.txt), no file in sim/scenarios yet. P30 works through V06N33 (TIG load), V06N81 (DV load), V06N42 (HAPO/HPER right; R3 VGDISP shows 0, DELVSIN = 0 in S30.1 -- investigating, maybe a flight bug), V16N45 blank (B4, xexpect). Left: write sim/scenarios/p30_p40_csm.txt; P40 needs a client feed of PIPA counts gated on the engine-on bit (ch 11 bit 13) -- not started
-- TODO scenario f (P63): decide run vs. documented skip (no radar/PIPA physics)
-- TODO GUI re-check of yaDSKY2 with the current build (windows closed after), final note Lessons, MODULE_STATUS row
+- DONE scenario e: sim/scenarios/external_delta_v_burn_csm.txt (P30 + P40). P30: N33/N81 loads, N42 HAPO 109.6 / HPER 101.0 nmi / DELVSIN 10.0 ft/s (the old DELVSIN 0 is gone), V16N45 live (B4 fixed), V37. P40: R60 V50N18 (ENTER: attitude accepted), V50N25 00204 (ENTER: no gimbal test), V06N40 countdown, TIGBLNK blank at TIG-35 and back at TIG-30. From TIG-5: flight bug B6 (V99 answered as ENTER at once: SPS bypassed); the V99 flash, ENGINE ON and N85-near-zero lines are xexpect B6; the PIPA feed (44 x / 28 y PINC after ENGINE ON, no physics) is in place for when B6 is fixed. 35 checks, 0 failed, 5 xfail.
+- DONE scenario f (LM P63) decision: SKIPPED. A scripted counter feed cannot make it meaningful: P63 is a closed loop (throttle commands -> DPS thrust -> PIPA counts; trajectory -> landing-radar returns via RADARUPT); an open-loop feed diverges from guidance within seconds, so "throttle plausible / no 1201-1202" would test the feed, not the AGC. Needs a vehicle model, which is out of scope (no device models): NASSP / LM_Simulator (PLAN item 10 stretch).
+- DONE step 4 (yaAGC drop-in): the launcher (VirtualAGC.cpp FormCommands/FormScript) writes Resources/simulate and runs `../bin/yaAGC --core="source/<rope>/<rope>.bin" --port=<19697|19797> --cfg=<CM|LM>.ini [--resume=CM.core] [--debug --directory=...]` from the Resources directory, then yaDSKY2 0.2 s later, then SimStop (kills all when one exits). agc_sim accepts that line (see main.c), loads the rope from --core, logs --resume. Initial state on connect = yaAGC UpdateAgcPeripheralConnect (relay rows + every non-zero channel 011-0177: 030 = 037777, 031-033 = 077777, 0163 RESTART). RESTART lamp: power-on GOJAM, reset by RSET / ch11 bit 10; STBY lamp + EL-off in standby. Verified: from a scratch install tree (sim/vagc_tree: bin/yaAGC -> build/agc_sim) the exact command line + sim_client --connect --realtime fresh_start_csm passes.
+- TODO step 5 GUI: VirtualAGC launcher (built in scratch, sim/build/vagc) -> agc_sim + yaDSKY2 + yaTelemetry, both vehicles; sequences fresh start, V35, V16N36, CSM P52, P40; screenshots docs/modules/sim/; close windows. Then Lessons, MODULE_STATUS row.
 - DONE re-run 2026-10-11 on the status-handling-2 tree (a02850c/826f7e5): `make` and `make sim` up to date, `make scenarios` green: all 7 (fresh_start, lights_test, clock x csm/lm; p52_realign_csm) pass, 0 failed, 0 xfail, 0 xpass, 0 errors/restarts. agc_sim_debug on fresh_start csm/lm and LM headless 2000 cs: no assertion reports.
 - STOPPED here (coordinator, 2026-10-11: sim lane moved to the end of the project, after all reviews). No file edited in this resume; tree as found. Next on resume: (1) B4 fix in src/exec/waitlist.c wait2() (plan below, not started), (2) scenario e file, (3) f decision, (4) yaAGC-launcher drop-in (END GOAL), (5) GUI checks.
+- DONE acceptance pass step 1 (2026-10-12, tree at c9fdc11 + follow-up edits): `make`, `make sim`, `make scenarios` green: 8/8 (incl. sys-misc's p07_systems_test_lm), 0 failed, 0 xfail.
+- DONE review item "rope image as fixed memory": src/sim/rope.c loads the yaYUL rope (banks 2,3,0,1,4..43, word >> 1) and registers it with agc_selfcheck_set_rope(); --core/--exec/--rope/positional path, else tools/oracle/ropes/<rope>.bin from cwd or <exe>/../; bank sums 0-2 checked = +-bank (CSM 77777/00001/00002, buggers 50114/50017/51322). V91 display blocked by flight bug B5 (scenario show_banksum_*, xexpect B5).
+- DONE review item "scaler channels 3/4": clock.c counts the 3200 Hz scaler (32/cs) into LOSCALAR/HISCALAR in yaAGC's phase (TIME1 at low5 = 020, TIME5 00, TIME4 10; jobs see the TIME4 phase). LM P07 PIPA rate now real: R1 +00928 (was the DDV overflow value).
+- DONE SBY/PRO circuit (yaAGC): PRO held over the 1.28 s sample + 0.64 s decision with ch13 b11 -> standby (GOJAM clears 5,6,010-014,034,035; 0163 STBY + EL-off; only the scaler runs); again -> GOPROG. Scenarios standby_{csm,lm}.txt: P06 V50N25 00062, STBY/ELOFF, POSTAND restores the clock from the scaler, V37 flash. Client: `pro N` hold, lamp ELOFF.
+- DONE renamed scenarios to NAMING.md stems: p52_realign_csm -> imu_realign_csm, p07_systems_test_lm -> systems_test_lm.
+- DONE yaAGC command line in main.c (step 4, part 1): one or two dashes, --core/--exec/positional rope -> vehicle (Comanche055 CSM, Luminary099 LM, others refused), --cfg CMSIM/LMSIM, --port, --cd, --quiet; --resume/--debug/--symtab/--directory/... logged and ignored.
 - State (older): src/sim compiles with -Werror (all files, incl. pad.c with its prototype in internal.h). `make` currently fails in flight code edited by review agents (src/guidance/burn_steering.c:295 earlier, src/csm/prelaunch_align.c now), not in src/sim. No file mid-edit.
 
 ## Bugs found (flight code; not fixed here -- the collapse lane owns src/)
@@ -78,6 +85,27 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
   queues MONREQ (1 cs) in the same cs; CLOKTASK re-queues itself every
   second ahead of MONREQ, so MONREQ never runs and V16N45 stays blank
   (yaAGC: marks +00 00, TFI counting, MGA). Scenario e xexpects it.
+- B5 src/io/verbs/extended_verbs.c:541-546 banksum_display(): SHOW-BANKSUM
+  (V91) flashes V05N01 without the noun address. SDISPLAY/NOKILL
+  (EXTENDED_VERBS.agc C p.263 / L p.290) puts ADRS1 = ECADR SKEEP1 in
+  MPAC+2 before GOXDSPF, so N01 shows SKEEP1-3 (sum, bank, bugger word);
+  the C call passes no address (agc_dsky_nvsub_mctbs exists for this) and
+  SKEEP1-3 are not readable through the ECADR image (src/core/ecadr.c), so
+  R1-R3 show 00000 for every bank. Scenarios show_banksum_* xexpect B5.
+- B6 src/csm/burns/sps/clock.c:156,163 cknvwrd1(): the CLOCKJOB shows the
+  engine-on enable / engine-fail flashes as CLOCPLAY of V99N40 / V97N40.
+  The AGC (ENGREQST / FAILDSP, P40-P47.agc C p.705) does CAF V06N40,
+  CLOCPLAY: the first part is V06N40 and the flashing V99/V97 is pasted
+  as the second part from NVWORD1 (-BIT9 / -0; 1STOR2ND, DISPLAY_INTERFACE
+  _ROUTINES p.1477). The C passes 99 as the verb to execute, so pinball
+  runs extended verb 99 = GOLOADLV -> LOADLV -> RECALTST, which wakes the
+  ENDIDLE at once with the ENTER return (gdb: pin_recaltst <- agc_dsky_loadlv
+  <- agc_extverb_goloadlv <- fan_shared(verb 99)): V99E, SPS bypassed
+  (P40RCS), V16N85 with the full DV at TIG-2.4 s, no V99 flash, no ignition.
+  Fix: pass agc_dsky_vn(6, 40) and give the display NVWORD1
+  (agc_dsky_set_nvword1(csm.nvword1), as src/lm/burns/ignition/clock.c:198
+  does; display_if.c dif_second_vn pastes 97 - NVWORD1). Scenario e
+  xexpects B6.
 - B4 FIXED (review-exec-sched R10, 2026-10-11): wait2() takes both WAIT2
   CCS paths (C(TIME3) < 200: TD - T1 + 1 = DT + C(TIME3) + 1); test
   test_waitlist_ruptagn_insert. Scenario e can `expect` V16N45. Old note:

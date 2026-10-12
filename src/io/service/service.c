@@ -305,27 +305,19 @@ void agc_svc_gentran(const uint16_t *from, uint16_t *to, int n)
 /**********************************************************************
  * B5OFF (p.1491): clear EXTVBACT bit 5 (set by TESTXACT); the caller then
  * ends its job.
- *
- * RETURNS: AGC_STATUS_OK (the caller then does ENDOFJOB; kept as a
- *          status for its callers in other lanes, see the note)
  **********************************************************************/
-agc_status_t agc_svc_b5off(void)
+void agc_svc_b5off(void)
 {
     uint16_t x = agc_erase_extvbact(); /* EXTVBACT bits */
 
     agc_erase_set_extvbact((uint16_t) (x & ~(uint32_t) BIT5));
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
  * TRFAILOF (C p.1492): TRACKER lamp off (DSPTAB +11D bit 8) and re-arm
  * the OCDU fail lamp (OPTMODES bit 7).
- *
- * RETURNS: AGC_STATUS_OK (kept as a status for the callers in other
- *          lanes; CSM code only calls it)
  **********************************************************************/
-agc_status_t agc_svc_trfailof(void)
+void agc_svc_trfailof(void)
 {
     agc_inhint();
     uint16_t w = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D */
@@ -333,23 +325,16 @@ agc_status_t agc_svc_trfailof(void)
     agc_erase_set_dsptab(LAMPWORD, (uint16_t) ((w & ~(uint32_t) OCT40200) + BIT15));
     agc_erase_set_optmodes((uint16_t) (agc_erase_optmodes() | BIT7));
     agc_relint();
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
  * TRFAILON (C p.1492): TRACKER lamp on.
- *
- * RETURNS: AGC_STATUS_OK (kept as a status for the callers in other
- *          lanes; CSM code only calls it)
  **********************************************************************/
-agc_status_t agc_svc_trfailon(void)
+void agc_svc_trfailon(void)
 {
     agc_inhint();
     uint16_t w = agc_erase_dsptab(LAMPWORD); /* DSPTAB +11D */
 
     agc_erase_set_dsptab(LAMPWORD, (uint16_t) (w | OCT40200));
     agc_relint();
-
-    return (AGC_STATUS_OK);
 }

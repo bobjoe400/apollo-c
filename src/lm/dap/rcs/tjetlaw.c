@@ -79,12 +79,12 @@ static const agc_sp_t axisdiff[3] = {-16, 0, 16};
 /* TJETLAW working registers (DAPTEMP1-6, DAPTREG1-4).                    */
 typedef struct tjl
 {
-    agc_sp_t     adr1;     /* ADRSDIF1: axis + sign-of-EDOT indexer (unscaled index) */
-    agc_sp_t     adr2;     /* ADRSDIF2: ADRSDIF1 + max-jet / sense (unscaled index) */
-    agc_sp_t     rotsense; /* ROTSENSE +-SENSOR: 4 s -> T6 scale and sign, scaled 10.24/4 */
-    agc_sp_t     edotsq;   /* EDOTSQ at pi^2/2^8                         */
-    agc_sp_t     ttoaxis;  /* TTOAXIS, scaled 4 s */
-    lm_dp_pair_t hh;       /* HH, DP at 8 s^2                            */
+    agc_sp_t       adr1;     /* ADRSDIF1: axis + sign-of-EDOT indexer (unscaled index) */
+    agc_sp_t       adr2;     /* ADRSDIF2: ADRSDIF1 + max-jet / sense (unscaled index) */
+    agc_sp_t       rotsense; /* ROTSENSE +-SENSOR: 4 s -> T6 scale and sign, scaled 10.24/4 */
+    agc_sp_t       edotsq;   /* EDOTSQ at pi^2/2^8                         */
+    agc_sp_t       ttoaxis;  /* TTOAXIS, scaled 4 s */
+    agc_dp_words_t hh;       /* HH, DP at 8 s^2                            */
 } tjl_t;
 
 /**********************************************************************
@@ -195,8 +195,8 @@ static agc_sp_t zone_fire_to_axis(const lm_dap_t *d, const tjl_t *w)
  **********************************************************************/
 static agc_sp_t zone_beyond_switch(const lm_dap_t *d, tjl_t *w)
 {
-    agc_sp_t     x = lm_dap_wrap((int32_t) d->firefct - blk(d, LM_BK_AXISDIST, w->adr1)); /* FIREFCT - AXISDIST (CAE FIREFCT, SU AXISDIST), scaled pi/4 rad */
-    lm_dp_pair_t p = lm_dap_mp(x, blk(d, LM_BK_ACCFCTZ1, w->adr2));                       /* (..) x ACCFCTZ1: H before DDOUBL, DP */
+    agc_sp_t       x = lm_dap_wrap((int32_t) d->firefct - blk(d, LM_BK_AXISDIST, w->adr1)); /* FIREFCT - AXISDIST (CAE FIREFCT, SU AXISDIST), scaled pi/4 rad */
+    agc_dp_words_t p = lm_dap_mp(x, blk(d, LM_BK_ACCFCTZ1, w->adr2));                       /* (..) x ACCFCTZ1: H before DDOUBL, DP */
 
     w->hh      = lm_dap_ddoubl(lm_dap_ddoubl(p));
     agc_sp_t t = lm_dap_wrap((int32_t) w->ttoaxis + TJ_MTJMAX); /* TTOAXIS - TJMAX, scaled 4 s */
@@ -357,7 +357,7 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
         return (TJ_FULLTIME);
     }
 
-    lm_dp_pair_t k = {TJ_00375HI, TJ_00375LO}; /* FORMULA2       */
+    agc_dp_words_t k = {TJ_00375HI, TJ_00375LO}; /* FORMULA2       */
 
     w->hh       = lm_dap_das(w->hh, k);
     agc_sp_t q2 = lm_dap_dv(w->hh, lm_dap_wrap((int32_t) w->ttoaxis + TJ_1AT4)); /* (HH + .00375) / (TTOAXIS + .1): FORMULA2, scaled 2 s */
@@ -409,8 +409,8 @@ static void rufsetup(lm_dap_t *d, tjl_t *w, bool reverse)
  **********************************************************************/
 static agc_sp_t rough_law_jet_time(const lm_dap_t *d, const tjl_t *w, agc_sp_t a)
 {
-    lm_dp_pair_t p = lm_dap_mp(a, blk(d, LM_BK_1ANET1 + 2, w->adr2)); /* desired change x 1/ANET (2 jets): TJET, DP scaled 32 s */
-    int32_t      x = (int32_t) p.hi + TJ_M1_8;                        /* TJET - 4 s, scaled 32 s */
+    agc_dp_words_t p = lm_dap_mp(a, blk(d, LM_BK_1ANET1 + 2, w->adr2)); /* desired change x 1/ANET (2 jets): TJET, DP scaled 32 s */
+    int32_t        x = (int32_t) p.hi + TJ_M1_8;                        /* TJET - 4 s, scaled 32 s */
 
     if (x >= 0)
     {
@@ -530,9 +530,9 @@ agc_status_t lm_dap_tjetlaw(void)
         w.rotsense = (agc_sp_t) -TJ_SENSOR;
     }
 
-    w.adr2          = w.adr1;
-    agc_sp_t     a;                                   /* jet time from the chosen law, scaled 4 s */
-    lm_dp_pair_t pe = lm_dap_mp(d->e, (agc_sp_t) 16); /* MP BIT5        */
+    w.adr2            = w.adr1;
+    agc_sp_t       a;                                   /* jet time from the chosen law, scaled 4 s */
+    agc_dp_words_t pe = lm_dap_mp(d->e, (agc_sp_t) 16); /* MP BIT5        */
 
     if (pe.hi != 0)
     {
@@ -540,8 +540,8 @@ agc_status_t lm_dap_tjetlaw(void)
     }
     else
     {
-        d->e            = lm_dap_mphi(pe.lo, TJ_BIT13);     /* SCALEE: at pi/4 */
-        lm_dp_pair_t pd = lm_dap_mp(d->edot, (agc_sp_t) 8); /* MP BIT4       */
+        d->e              = lm_dap_mphi(pe.lo, TJ_BIT13);     /* SCALEE: at pi/4 */
+        agc_dp_words_t pd = lm_dap_mp(d->edot, (agc_sp_t) 8); /* MP BIT4       */
 
         if (pd.hi != 0)
         {

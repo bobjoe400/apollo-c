@@ -13,7 +13,7 @@
  *
  *   Forces are DP with the high word in pulses (value / 2^14 = pulses;
  *   BITPERF = 0.0797959872 pulse per newton). FP, FCODD, PIF and FWEIGHT
- *   are kept as the AGC's two words (agc_lm_words_t): DAS leaves them
+ *   are kept as the AGC's two words (agc_dp_words_t): DAS leaves them
  *   sign-disagreeing and the code then reads the high word alone (CA PIF,
  *   AD FP, MP PIF), which is one pulse off the high word of the value
  *   (oracle finding F9). Clock differences are taken in ones' complement
@@ -91,11 +91,11 @@ static int32_t thr_csad(agc_sp_t a, agc_sp_t b, agc_sp_t c)
  * ARGUMENTS:
  *   accel  agc_dp_t  I  acceleration, 2^-4 m/cs^2, >= 0
  *
- * RETURNS: agc_lm_words_t -- force, high word in pulses (2^14 pulses)
+ * RETURNS: agc_dp_words_t -- force, high word in pulses (2^14 pulses)
  **********************************************************************/
-static agc_lm_words_t thr_massmult(agc_dp_t accel)
+static agc_dp_words_t thr_massmult(agc_dp_t accel)
 {
-    agc_lm_words_t force = {AGC_SP_MAX, THR_MASSMULT_L}; /* overflow */
+    agc_dp_words_t force = {AGC_SP_MAX, THR_MASSMULT_L}; /* overflow */
     agc_dp_t       mass  = agc_guid_state()->lm.mass;    /* MASS, 2^16 kg */
 
     /* First DMP leaves a TP in MPAC; the second DMP uses only MPAC,+1. */
@@ -105,7 +105,7 @@ static agc_lm_words_t thr_massmult(agc_dp_t accel)
 
     if (top == 0)
     {
-        force = agc_lm_words((agc_dp_t) f); /* DXCH MPAC +1          */
+        force = agc_dp_to_words((agc_dp_t) f); /* DXCH MPAC +1          */
     }
 
     return (force);
@@ -160,29 +160,27 @@ static agc_sp_t thr_region(agc_lm_thr_t *t, const agc_lm_pad_t *pad)
 /**********************************************************************
  * DOIT (THROTTLE_CONTROL_ROUTINES.agc p. 795) -- send the high word of
  * PIF plus PIFPSET to the THRUST counter, enable the thrust drive
- * (channel 14 bit 4) and note the time of throttling
+ * (channel 14 bit 4) and note the time of throttling. The AGC does not
+ * limit PIFPSET (FP - FMAXODD in FCOMPSET can be any word); an
+ * overflowing CA PIF / AD PIFPSET makes TS PSEUDO55 store the corrected
+ * word and skip TS THRUST.
  *
  * ARGUMENTS:
  *   t  agc_lm_thr_t *  I/O  throttle erasables (PSEUDO55, TTHROT set)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG when
- *          PIFPSET is out of range
  **********************************************************************/
-static agc_status_t thr_doit(agc_lm_thr_t *t)
+static void thr_doit(agc_lm_thr_t *t)
 {
-    if (!AGC_ASSERT(t->pifpset >= -AGC_LM_FEXTRA) || !AGC_ASSERT(t->pifpset <= AGC_LM_FEXTRA))
+    int32_t sum = (int32_t) t->pif.hi + (int32_t) t->pifpset; /* CA PIF, AD PIFPSET: 16-bit A, pulses */
+
+    t->pseudo55 = agc_lm_ad(t->pif.hi, t->pifpset); /* TS PSEUDO55   */
+
+    if (sum >= AGC_SP_MIN && sum <= AGC_SP_MAX)
     {
-        return (AGC_STATUS_BAD_ARG);
+        agc_erase_set_thrust(t->pseudo55); /* TS THRUST, skipped on overflow */
     }
 
-    agc_sp_t cmd = agc_lm_ad(t->pif.hi, t->pifpset); /* pulses, unscaled */
-
-    t->pseudo55 = cmd;
-    agc_erase_set_thrust(cmd);
     agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_THRUSTACT);
-    t->tthrot   = agc_lm_time1();
-
-    return (AGC_STATUS_OK);
+    t->tthrot = agc_lm_time1();
 }
 
 /**********************************************************************
@@ -219,7 +217,7 @@ static void thr_fweight(agc_lm_thr_t *t)
     t->fweight.hi         = (agc_sp_t) (2 * agc_dp_high(first));
     t->fweight.lo         = agc_dp_low(first);
     agc_sp_t       abspif = (agc_sp_t) ((pif < 0) ? -pif : pif);             /* unscaled */
-    agc_lm_words_t second = { agc_lm_dv(agc_sp_mul(abspif, pif), buf1), 0 }; /* DV BUF +1, ZL */
+    agc_dp_words_t second = { agc_lm_dv(agc_sp_mul(abspif, pif), buf1), 0 }; /* DV BUF +1, ZL */
 
     t->fweight = agc_lm_das(t->fweight, second); /* DAS FWEIGHT        */
 }
@@ -251,7 +249,7 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
     }
 
     t->fp                 = thr_massmult(accel);             /* FP = present thrust                */
-    agc_lm_words_t fcfull = thr_massmult(agc_lm_ldg()->afc); /* 2^14 */
+    agc_dp_words_t fcfull = thr_massmult(agc_lm_ldg()->afc); /* 2^14 */
 
     t->fc    = agc_dp_pack(fcfull.hi, agc_dp_low(t->fc)); /* TS FC   */
     t->fcodd = fcfull;                                    /* DXCH    */
@@ -270,17 +268,13 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
     /* DOPIF: PIF = FCODD - FP by DAS, "never equals +0".               */
     agc_lm_fastchng();
     t->fcold                = t->fcodd.hi;
-    agc_lm_words_t minus_fp = {(agc_sp_t) -t->fp.hi, (agc_sp_t) -t->fp.lo}; /* DCS FP        */
+    agc_dp_words_t minus_fp = {(agc_sp_t) -t->fp.hi, (agc_sp_t) -t->fp.lo}; /* DCS FP        */
 
-    t->pif          = agc_lm_das(t->fcodd, minus_fp);
-    agc_status_t st = thr_doit(t); /* DOIT status        */
+    t->pif = agc_lm_das(t->fcodd, minus_fp);
+    thr_doit(t);
+    thr_fweight(t); /* for use next pass                          */
 
-    if (st == AGC_STATUS_OK)
-    {
-        thr_fweight(t); /* for use next pass                          */
-    }
-
-    return (st);
+    return (AGC_STATUS_OK);
 } /* agc_lm_throttle_measured */
 
 /**********************************************************************
@@ -308,10 +302,8 @@ agc_status_t agc_lm_throttle(void)
 /**********************************************************************
  * FLATOUT (THROTTLE_CONTROL_ROUTINES.agc p. 796) -- throttle the descent
  * engine up to full: WHATOUT with BIT13 = 4096 pulses
- *
- * RETURNS: agc_status_t -- status of WHATOUT
  **********************************************************************/
-agc_status_t agc_lm_throttle_flatout(void)
+void agc_lm_throttle_flatout(void)
 {
     /**********************************************************************
      * WHATOUT (THROTTLE_CONTROL_ROUTINES.agc p. 796) -- command a fixed
@@ -320,29 +312,14 @@ agc_status_t agc_lm_throttle_flatout(void)
      *
      * ARGUMENTS:
      *   pulses  agc_sp_t  I  pulses to send, |pulses| <= FEXTRA
-     *
-     * RETURNS: agc_status_t -- status of DOIT, or AGC_STATUS_BAD_ARG
      **********************************************************************/
     agc_sp_t pulses = (agc_sp_t) AGC_LM_FEXTRA;
 
     agc_lm_thr_t *t = agc_lm_thr(); /* throttle erasables             */
 
-    t->pifpset      = pulses;
-    t->fcold        = 0;
-    t->pif.hi       = 0;           /* TS PIF: the high word only      */
-    agc_status_t st = thr_doit(t); /* DOIT status                     */
-
-    if (st == AGC_STATUS_OK)
-    {
-        thr_fweight(t);
-    }
-
-    /* status */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK) || !AGC_ASSERT(agc_lm_thr()->pifpset == AGC_LM_FEXTRA))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
+    t->pifpset = pulses;
+    t->fcold   = 0;
+    t->pif.hi  = 0; /* TS PIF: the high word only      */
+    thr_doit(t);
+    thr_fweight(t);
 }

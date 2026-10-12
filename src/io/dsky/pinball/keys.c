@@ -895,17 +895,11 @@ agc_status_t agc_job_prockey(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, FULL;
- *          else the status of the routine it calls
+ * RETURNS: agc_status_t -- OK; else the NOVAC status (BAILOUT 1202)
  **********************************************************************/
 agc_status_t agc_dsky_prockey_request(void)
 {
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_PROCKEY); /* status */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }

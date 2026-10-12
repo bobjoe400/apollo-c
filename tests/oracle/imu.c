@@ -82,19 +82,19 @@ int main(void)
     pipa("pipa_bypass");
     pipa("pipa_carry");
 
-    /* F5 residuals (review-imu): DELCOMP's 1 - cos A is the word pair
-     * (1, -16336) that DMPSUB truncates by its words, DCMTOCDU shifts the
-     * TP COS result, CDUTODCM's BDSU keeps MPAC+2; agc_dp_t holds values. */
-    kalc("kalc_normal", 4, 0);
-    kalc("kalc_large", 1, 0);
-    kalc("kalc_neg", 4, 0);
-    kalc("kalc_small", 2, 5);
-    delcomp("delcomp_a", 4);
-    delcomp("delcomp_b", 4);
-    delcomp("delcomp_c", 4);
-    dcmtocdu("dcmtocdu_a", 3);
-    dcmtocdu("dcmtocdu_b", 3);
-    dcmtocdu("dcmtocdu_c", 3);
+    /* F5: DELCOMP, CDUTODCM and DCMTOCDU run on the push-down words
+     * (agc_mpac_*) and are exact; the KALCMANU matrix products after
+     * them (MFI, COF, AM) keep 1-5 LSB of value-level words.            */
+    kalc("kalc_normal", 0, 0);
+    kalc("kalc_large", 0, 0);
+    kalc("kalc_neg", 1, 0);
+    kalc("kalc_small", 1, 5);
+    delcomp("delcomp_a", 0);
+    delcomp("delcomp_b", 0);
+    delcomp("delcomp_c", 0);
+    dcmtocdu("dcmtocdu_a", 0);
+    dcmtocdu("dcmtocdu_b", 0);
+    dcmtocdu("dcmtocdu_c", 0);
 
     return (oracle_finish("oracle_imu"));
 }

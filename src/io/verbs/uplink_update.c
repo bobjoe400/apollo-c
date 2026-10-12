@@ -50,13 +50,13 @@
  *   The only vehicle difference: Luminary has no CKMDMORE (any mode
  *   other than P00 is an error), and names BIT3 of FLAGWRD7 VERIFBIT.
  *
- *   DEVIATION (MPAC+2): the AGC passes the UPBUFF/UPTEMP ECADR to
- *   pinball in MPAC+2 for the V21N01/N02 load.  The display interface
- *   does not carry MPAC+2 yet (docs/modules/io-pinball.md), so the index
- *   of the word being loaded is kept here (load_target) and the loaded
- *   word must reach agc_uplink_update_write(), the routine the ECADR
- *   write of COMPNUMB .. UPTEMP is to be mapped onto (requested from
- *   state-flags / io-pinball).
+ *   MPAC+2: the UPBUFF/UPTEMP ECADR goes to pinball with the V21N01/N02
+ *   display (agc_dsky_display_ecadr), so the ground's word lands in the
+ *   erasable image at its assembled address (Comanche COMPNUMB 0300,
+ *   UPTEMP 0330; Luminary COMPNUMB 1170, UPTEMP 1167). DEVIATION: the
+ *   block itself is kept here (up[], uptemp); the load job takes the
+ *   loaded word from the image (load_target) into it, and the program's
+ *   own stores to COMPNUMB .. UPCOUNT do not reach the image.
  *
  *   DEVIATION (clock): TIMEDIDL zeroes TIME2,TIME1 and adds the
  *   incremented old time back so no count is lost; in C the clock is
@@ -95,6 +95,10 @@
 #define MODREG_NEG0    (-1)               /* exec's -0 MODREG (fresh start)            */
 #define RECYCLE_VERB   32                 /* V32: recycle */
 #define INSTALL_AREA   0                  /* INTSTALL                                  */
+#define UP_EC_CSM      00300u             /* COMPNUMB ECADR, Comanche055               */
+#define UP_EC_TEMP_CSM 00330u             /* UPTEMP ECADR, Comanche055                 */
+#define UP_EC_LM       01170u             /* COMPNUMB ECADR, Luminary099               */
+#define UP_EC_TEMP_LM  01167u             /* UPTEMP ECADR, Luminary099                 */
 
 /* COMPNUMB .. UPBUFF +19D, in the AGC's erasable order.                    */
 enum
@@ -265,7 +269,32 @@ static void set_upbuff_dp(int k, int32_t v)
 /* ---- displays ------------------------------------------------------------ */
 
 /**********************************************************************
- * AGC: none -- GOXDSPF V21N01 (load target) or V21N02 (UPTEMP).
+ * AGC: none -- the ECADR of the P27 word at index idx (COMPNUMB ..
+ * UPBUFF +19D, then UPTEMP), as assembled in each rope
+ *
+ * ARGUMENTS:
+ *   idx  int  I   0..23 or UP_UPTEMP
+ *
+ * RETURNS: uint16_t -- the ECADR
+ **********************************************************************/
+static uint16_t up_ecadr(int idx)
+{
+    const bool lm   = (agc_state_vehicle() == AGC_VEHICLE_LM);                   /* the rope */
+    uint16_t   word = (uint16_t) ((lm ? UP_EC_LM : UP_EC_CSM) + (uint16_t) idx); /* COMPNUMB + idx */
+
+    if (idx == UP_UPTEMP)
+    {
+        word = lm ? UP_EC_TEMP_LM : UP_EC_TEMP_CSM;
+    }
+
+    return (word);
+}
+
+/**********************************************************************
+ * AGC: none -- GOXDSPF V21N01 (load target) or V21N02 (UPTEMP) with
+ * MPAC+2 = the ECADR of the word to be loaded (OHWELL1, OHWELL2,
+ * UPVERIFY), so pinball's internal machine-address load (INTMCTBS)
+ * stores the ground's word there.
  *
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I   the running job
@@ -279,7 +308,7 @@ static agc_status_t up_display(agc_job_ctx_t *ctx)
                             AGC_JOB_UPLINK_UPDATE_LOAD};
     uint8_t         noun = (stage == UP_VERIFY) ? 2u : 1u; /* UPVRFYNV / UPLOADNV */
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(21, noun), &cont));
+    return (agc_dsky_display_ecadr(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(21, noun), &cont, up_ecadr(load_target)));
 }
 
 /**********************************************************************
@@ -482,6 +511,19 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
         return (up_display(ctx));
     }
 
+    uint16_t     word = 0;                                                  /* the ground's word as pinball stored it */
+    agc_status_t st   = agc_erase_read_ecadr(up_ecadr(load_target), &word); /* the word at MPAC+2 */
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = agc_uplink_update_write(load_target, word);
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     if (stage == UP_COUNT)
     {
         /* Data on the V21N01 (count): 3 <= II <= 20D, else ask again.            */
@@ -560,7 +602,7 @@ static agc_status_t upout(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_integ_intwakeu(&ip, agc_integ_shared_ctx(), &upsvflag); /* INTWAKEU status */
+    agc_status_t st = agc_integ_intwakeu(&ip, agc_integ_shared_ctx(), &upsvflag, AGC_JOB_UPLINK_UPDATE_TERMINATE); /* INTWAKEU; restart at UPOUT +1 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -750,7 +792,9 @@ agc_status_t agc_job_uplink_update_execute(void)
         return (st);
     }
 
-    agc_phase_change(UP_PHASE_STORE);
+    const agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_UPLINK_UPDATE_EXECUTE, AGC_TASK_NONE, 0, false, 0U}; /* D clear: PHSPRDT6 */
+
+    agc_phase_change_var(UP_PHASE_STORE, &v); /* UPWAKE: redo the store (INTSTALL lets the rerun in, N12) */
     agc_flag_set((agc_flag_id_t) AGC_FLAG_REINTFLG);
 
     if (up[UP_UPVERB] == 0u)

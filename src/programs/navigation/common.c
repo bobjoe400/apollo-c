@@ -437,10 +437,7 @@ void agc_rendz_reset(agc_rendz_t *rz)
     static const agc_rendz_t zero; /* all zero */
 
     *rz = zero;
-
-    if (agc_rendz_selectmu(rz, false) != AGC_STATUS_OK)
-    {
-    }
+    agc_rendz_selectmu(rz, false);
 }
 
 /**********************************************************************
@@ -838,10 +835,9 @@ agc_dp_t agc_rendz_scalar_from_body(const agc_rendz_t *rz, agc_dp_t a)
  *   rz        agc_rendz_t *  I/O  rendezvous erasables
  *   cmoonflg  bool           I    CMOONFLG: the CSM state is moon-centred
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL
- *          pointer
+ * The mu words are rope constants (MUE, MUM), so SELECTMU cannot fail.
  **********************************************************************/
-agc_status_t agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg)
+void agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg)
 {
     rz->body.moon = cmoonflg;
 
@@ -859,13 +855,6 @@ agc_status_t agc_rendz_selectmu(agc_rendz_t *rz, bool cmoonflg)
         rz->body.rtsr1mu = mutable_rtmue_inv; /* 2^17 */
         rz->body.rtmu    = mutable_mue;       /* 2^36 */
     }
-
-    if (!AGC_ASSERT(rz->body.rtmu > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -1387,7 +1376,12 @@ int rz_word_value(uint16_t w)
 /**********************************************************************
  * INCORP2: W update, then the deviation into the corrected vehicle's
  * state (MOVEP.., FAZAB, RECTIFY on overflow, MOVEA.. with SVDWN), X789,
- * INTWAKE. moonthis: CMOONFLG (CM) or LMOONFLG (LM).
+ * INTWAKE. moonthis: CMOONFLG (CM) or LMOONFLG (LM). DEVIATION: the AGC
+ * updates W row by row through HOLDW with a GRP2PC per row (FAZA, FAZB)
+ * so a restart finishes the update; here the update is one call and the
+ * GRP2PCs restart the running job segment. Each caller names its own
+ * restart point after INCORP2 returns (rz_grp2pc), so only a restart
+ * inside this call (a BAILOUT of RECTIFY or INTWAKE) reruns the segment.
  * AGC: INCORP2 (MEASUREMENT_INCORPORATION.agc p.1256)
  *
  * FUNCTION NAME: rz_incorp2
@@ -1441,7 +1435,7 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc, bool moonthis
 
     if (st == AGC_STATUS_OK && sv.rectify)
     {
-        st = agc_integ_rectify(ip, ctx); /* FAZAB2   */
+        agc_integ_rectify(ip, ctx); /* FAZAB2   */
     }
 
     agc_phase_change(04022); /* FAZAB3   */
@@ -1694,4 +1688,29 @@ void rz_phase_job(uint16_t code_a, uint16_t code_c, agc_job_id_t job, int16_t pr
     {
         agc_phase_change2(code_a, code_c, &v);
     }
+}
+
+/**********************************************************************
+ * GRP2PC (TC PHASCHNG, OCT 04022): group 2 phase 2, a type C job phase
+ * with the A and D bits clear, so the AGC restarts at the return address
+ * of PHASCHNG with the preset PHSPRDT2. C cannot name a return address;
+ * plain agc_phase_change(04022) restarts the job segment that is running,
+ * which is wrong when that segment did non-repeatable work (took a mark,
+ * counted, incorporated) before the call or reached the call through
+ * another job's body. The caller names the job whose body starts where
+ * the AGC resumes; the code word, and so PHASE2, stays the AGC's.
+ * AGC: GRP2PC, PHASCHNG (PHASE_TABLE_MAINTENANCE.agc C p.1409, L p.1298)
+ *
+ * FUNCTION NAME: rz_grp2pc
+ *
+ * ARGUMENTS:
+ *   Argument    Type          I/O  Description (scale)
+ *   ----------  ------------  ---  ----------------------------------
+ *   restart_at  agc_job_id_t  I    job resuming where the AGC would
+ **********************************************************************/
+void rz_grp2pc(agc_job_id_t restart_at)
+{
+    const agc_phase_var_t v = {AGC_RESTART_JOB, restart_at, AGC_TASK_NONE, 0, false, 0U}; /* D clear: PHSPRDT2 */
+
+    agc_phase_change_var(04022, &v);
 }

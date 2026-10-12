@@ -76,16 +76,17 @@ agc_w2_t agc_w_dv(int32_t a, int32_t l, int32_t k);   /* DV: {q, r}    */
 agc_w2_t agc_w_dcs(agc_w2_t p);                       /* DCS           */
 
 /* ---- interpreter subroutines -------------------------------------------- */
-agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind);       /* OVERFLOW */
-agc_w2_t agc_w_dad(agc_w2_t m, agc_w2_t x, agc_ovf_t *ovfind);       /* DAS+OVERFLOW */
-agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x);                    /* DMPSUB   */
-agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind);              /* ROUNDSUB */
-agc_w3_t agc_w_dsqsub(agc_w2_t m);                                   /* DSQSUB   */
-agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind); /* DOTSUB middle */
-agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind);  /* DOTSUB */
-agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind);               /* VSQSUB   */
-agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf);                        /* TSSL step */
-agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree);   /* POLY  */
+agc_w2_t agc_w_overflow(agc_w2_t m, int a, agc_ovf_t *ovfind);                                            /* OVERFLOW */
+agc_w2_t agc_w_dad(agc_w2_t m, agc_w2_t x, agc_ovf_t *ovfind);                                            /* DAS+OVERFLOW */
+agc_w3_t agc_w_dmpsub(agc_w2_t mpac, agc_w2_t x);                                                         /* DMPSUB   */
+agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind);                                                   /* ROUNDSUB */
+agc_w3_t agc_w_dsqsub(agc_w2_t m);                                                                        /* DSQSUB   */
+agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind);                                      /* DOTSUB middle */
+agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind);                                       /* DOTSUB */
+agc_w3_t agc_w_dotsub_words(const agc_w2_t u[AGC_VEC_N], const agc_w2_t v[AGC_VEC_N], agc_ovf_t *ovfind); /* DOTSUB, stored words */
+agc_w3_t agc_w_vsqsub(agc_vec_t v, agc_ovf_t *ovfind);                                                    /* VSQSUB   */
+agc_w3_t agc_w_tp_shl1(agc_w3_t m, int *ovf);                                                             /* TSSL step */
+agc_w3_t agc_w_poly(agc_w2_t x, const agc_dp_t *coef, int degree);                                        /* POLY  */
 
 /* SQRTSUB: normalised root (>= .5) of the TP MPAC in m0, m1, with m2 the
  * MPAC+2 SQRTSUB leaves (the argument's, shifted by the normalisation);

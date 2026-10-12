@@ -39,7 +39,7 @@ COGA, X, KEPC2), imu (DELCOMP 1-cos A; replace word_pair_t), guid-landing
 nav-aux (NODI COS, SR1 ASIN), prog-align (word_forms.c), dap-csm / dap-lm
 (their pair types). Lanes already reviewed get this in the follow-up pass.
 
-- imu follow-up (from review-dap-csm): agc_imu_hw_set_cducmd rejects counts beyond +/-192 but a full needle swing writes up to +/-768; widen to the full SP range.
+- DONE agc_imu_hw_set_cducmd widened to the SP range + test; docs/modules/follow-up-done-lanes.md item 2.4.
 
 ## EVA bug leads (status-handling-2, make prove 2026-10-11; run artefacts in build/prove/*.csv, build/prove/eva_verdicts.tsv, build/prove/tree (snapshot), tools/prove/{summary.txt,progress.log,runs/*.log}; positions are the snapshot's = the tree of that date)
 EVA is the project-end cleanup step; these are leads for the owning reviews, not fixes.
@@ -56,10 +56,10 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 
 ## verify-collapse findings (2026-10-11; nothing shown wrong in the 11 reviewed lanes; note docs/modules/verify-collapse.md)
 - DONE status propagation in all closed lanes (128 sites, filters and remaps); docs/modules/follow-up-done-lanes.md item 1.1.
-- follow-up-done-lanes: tests must not compare assertion-report counts: tests/nav/navaux.c:502, tests/lm/dap.c:444 (check the returned status instead).
+- DONE navaux.c / lm dap.c tests check statuses, not assertion-report counts; docs/modules/follow-up-done-lanes.md item 4.1.
 - DONE SELECTMU cannot fail: agc_rendz_selectmu void, empty branch gone; docs/modules/follow-up-done-lanes.md item 1.2.
-- io-dsky: src/io/dsky/display_if.c:1063 agc_dsky_blanksub result stored, never read (its BUSY case cannot happen there): make the call's result meaningful or the callee void.
-- imu: src/imu/maneuver.c:874 leftover assertion guard with no return; branch can never run: delete or make fallible.
+- DONE NVDSP checks the BLANKSUB status; docs/modules/follow-up-done-lanes.md item 4.2.
+- DONE maneuver.c leftover and dead INCRDCDU guards deleted; docs/modules/follow-up-done-lanes.md item 4.2.
 - document lane: 82 function headers still say "BAD_ARG for a NULL ctx" on functions without ctx; inline_one.py pasted 77 helper header blocks into caller bodies: rewrite as section comments.
 - tools/prove/manual.tsv: the "why" column is one boilerplate text per directory; it records the decision, not the evidence (lesson for the end-of-project EVA pass: per-row evidence or none).
 
@@ -69,30 +69,30 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - nav-integ: plain type-C PHASCHNG calls (GRP2PC 04022 family) made from a running job now store the current job segment as the restart point and a group-2 restart reruns that segment from its top (DEVIATION in exec): check each such segment in your files is safe to rerun. (prog-rendz part DONE: rz_grp2pc names the restart job at 30 sites; docs/modules/follow-up-done-lanes.md item 1.7.)
 
 ## From review-sys-misc checkpoint (2026-10-11; note docs/modules/review-sys-misc.md)
-- io-dsky: V91 SHOW-BANKSUM needs the display to carry the MPAC+2 address the AGC passes; the noun/display path cannot yet, so V91 cannot show bank sums.
+- DONE V91 shows the bank sum through MPAC+2 (agc_dsky_display_ecadr); docs/modules/follow-up-done-lanes.md item 2.6.
 - sim: load the real rope image (Comanche055 / Luminary099 binary from tools/oracle) as fixed memory so the idle self-check (ROPECHK) and SHOW-BANKSUM run on real bank sums; data only, no model.
 
 ## From review-prog-align checkpoint (2026-10-11; note docs/modules/review-prog-align.md)
-- follow-up-done-lanes (radar, navigation, displays, io): agc_csm_sxtnb, agc_lm_rrnb, agc_lm_rrangles cannot fail any more; make them void and drop the callers' status plumbing.
+- DONE agc_csm_sxtnb / agc_lm_rrnb / agc_lm_rrangles void (and SXTSM, SXTSM marks, GETUM after them); docs/modules/follow-up-done-lanes.md item 2.1.
 - guid-powered: give TRG*NBSM / *NBSM* a word-level form (agc_dp_words_t out) so a component can stay as sign-disagreeing words; clears oracle KNOWN PA-W4 (AVEIT VSR3 rounding of an exact half).
 
 ## From review-prog-align final (2026-10-11; note docs/modules/review-prog-align.md, findings A1-A15, C1-C10)
-- guid-entry (follow-up-done-lanes): entry_earrot duplicates EARROT1/2 (now agc_csm_earrot2 in the alignment lane); use one.
+- DONE entry uses agc_csm_earrot1/2 (one EARROT); docs/modules/follow-up-done-lanes.md item 4.2.
 - prog-align residual: AOTMARK's job and button-handling flow was not re-read line by line (arithmetic is oracle-verified); a later pass or the document wave should read it against the listing.
 
 ## From review-sys-misc final (2026-10-12; note docs/modules/review-sys-misc.md, findings S10-S18)
 - DONE S40.6 OPTIND = -0 (AGC_OPTIND_NEG0) + test; docs/modules/follow-up-done-lanes.md item 1.5.
-- follow-up-done-lanes: make agc_svc_b5off, trfailof, trfailon void (callers in other lanes); fold agc_svc_set_extvbact into agc_erase_set_extvbact.
-- io-dsky: P27 cannot receive data until something calls agc_uplink_update_write (wire the uplink path from the UPRUPT handler / V71-V73 flow).
+- DONE agc_svc_b5off / trfailof / trfailon void; agc_svc_set_extvbact folded into agc_erase_set_extvbact (3 callers, Coccinelle); docs/modules/follow-up-done-lanes.md item 2.2.
+- DONE P27's loads arrive through the MPAC+2 ECADR of the V21N01/N02 display; docs/modules/follow-up-done-lanes.md item 2.5.
 - sim: drive the scaler channels 3 and 4 (the AGC's SCALER1/SCALER2 read-back) as yaAGC does.
 
 ## From review-guid-powered final (2026-10-12; note docs/modules/review-guid-powered.md, R10-R15)
-- core-numeric (follow-up-done-lanes): a DOT / VXM that takes stored words (last 2 LSB of oracle s40_2); move agc_vec_words_t into include/agc/core/word.h; UNIT-at-B27 behind the radial case's 10 LSB.
+- DONE agc_vec_words_t in word.h, DOT/VXM/MXV/VXV/VXSC/VAD/VSL/VSR on stored words; s40_2 sps 0 LSB; radial 10 LSB remain (word-level UNIT not built); docs/modules/follow-up-done-lanes.md item 2.3.
 - prog-align: KNOWN PA-W4 closed (oracle_align 570/0 hard at tolerance 0).
 
 ## From review-nav-integ final (2026-10-12; note docs/modules/review-nav-integ.md, N8-N12)
-- follow-up-done-lanes (nav-aux): give RP-TO-R a word-level input (N10; moon OBLATE 1-2 LSB).
-- follow-up-done-lanes (nav-conic): KEPPREP 1 LSB (N4).
-- follow-up-done-lanes (core-numeric): public word-level vector API (nav-integ has a local word vector type; guid-powered asked for agc_vec_words_t in word.h: one type, one place).
-- follow-up-done-lanes: make agc_integ_svdwn / agc_integ_rectify void once their callers drop the status check; public renames listed in the nav-integ note (agc_integ_midtoav1/2, agc_integ_intwake0, agc_job_statint1*, AGC_JOB_STATINT1*) per NAMING.md, callers and registry included.
-- follow-up-done-lanes (uplink/P27): the job segment rerun from INTWAKEU's PHASCHNG 04026 after a restart must be safe (nav-integ DEVIATION N12: INTSTALL takes the area over).
+- DONE RP-TO-R / R-TO-RP / MOONMX / NEWANGLE word-level, word-input entry points; latlong_moon exact; docs/modules/follow-up-done-lanes.md item 5.1.
+- DONE KEPPREP: 24 repro runs exact against the DV-patched probe at HEAD (not reproduced); docs/modules/follow-up-done-lanes.md item 5.2.
+- DONE one word vector type and API in core (nav-integ's local copy replaced); docs/modules/follow-up-done-lanes.md items 2.3, 5.3.
+- DONE agc_integ_svdwn / agc_integ_rectify void; nav-integ public renames with callers and registry; docs/modules/follow-up-done-lanes.md item 5.4.
+- DONE INTWAKEU 04026 restarts at UPOUT +1 (named), not the P27 segment top; docs/modules/follow-up-done-lanes.md item 5.5.

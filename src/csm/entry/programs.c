@@ -31,7 +31,7 @@
  *   agc_dsky_display      GOFLASH / GOFLASHR / GOPERF1R / GODSPR
  *   agc_tff_conic, agc_tff_calctff  TFFCONIC / CALCTFF (nav-aux)
  *   agc_latlong_geterad   GETERAD (Fischer radius)
- *   agc_integ_midtoav2    MIDTOAV2 (S61.1)
+ *   agc_integ_midtoav_now    MIDTOAV2 (S61.1)
  *   agc_imu_calcga        CALCGA (S62.3)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -194,7 +194,7 @@ agc_status_t agc_job_entry_preparation(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_svc_set_extvbact(020000);                                    /* CA BIT14 TS EXTVBACT */
+    agc_erase_set_extvbact(020000);                                  /* CA BIT14 TS EXTVBACT */
     es->headsup          = -1;                                       /* preload              */
     imu_check_return_job = AGC_JOB_ENTRY_PREPARATION_TARGET_DISPLAY; /* QXCH 60GENRET        */
 
@@ -1045,7 +1045,7 @@ agc_status_t agc_job_entry_imu_check_extrapolated(void)
     agc_avg_g_t            *avg = &agc_guid_state()->avg; /* average-G data (RN1, VN1) */
     agc_status_t            st;                           /* MIDTOAV2 / WAITLIST status */
 
-    st = agc_integ_midtoav2(entry_ip(), agc_integ_shared_ctx(), AGC_JOB_ENTRY_IMU_CHECK_EXTRAPOLATED, &out);
+    st = agc_integ_midtoav_now(entry_ip(), agc_integ_shared_ctx(), AGC_JOB_ENTRY_IMU_CHECK_EXTRAPOLATED, &out);
 
     if (st == AGC_STATUS_BUSY)
     {

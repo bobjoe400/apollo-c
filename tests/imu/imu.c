@@ -74,6 +74,7 @@ static void      test_lastbias_pipuse(void);
 static void      test_pipfree_alarm(void);
 static void      p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx);
 static void      test_optical_verification(void);
+static void      test_cducmd_needle_range(void);
 
 /**********************************************************************
  * AGC: none (test) -- run every test
@@ -98,6 +99,7 @@ int main(void)
     test_pipfree_alarm();
     test_lastbias_pipuse();
     test_optical_verification();
+    test_cducmd_needle_range();
     (void) printf("test_imu: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -539,3 +541,25 @@ static void test_optical_verification(void)
     CHECK(erc[0] == ar->ogc[0] && erc[2] == ar->ogc[2]);
     CHECK(agc_phase_checkmm(2)); /* GCOMP5: back to P02 */
 } /* test_optical_verification */
+
+/**********************************************************************
+ * CDUXCMD..CDUZCMD take the whole SP word: a full NEEDLES swing (ADS
+ * CDUXCMD, 768 pulses) is stored, not refused at the coarse-align
+ * COMMAX of 192.
+ * AGC: NEEDLES (CM p. 1067, LM p. 1449); IMU_MODE_SWITCHING_ROUTINES
+ *
+ * FUNCTION NAME: test_cducmd_needle_range
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_cducmd_needle_range(void)
+{
+    CHECK(agc_imu_hw_set_cducmd(0, 768) == AGC_STATUS_OK);
+    CHECK(agc_imu_hw_set_cducmd(2, -768) == AGC_STATUS_OK);
+    CHECK(agc_imu_cducmd(0) == 768);
+    CHECK(agc_imu_cducmd(2) == -768);
+    CHECK(agc_imu_hw_set_cducmd(0, 0) == AGC_STATUS_OK);
+    CHECK(agc_imu_hw_set_cducmd(2, 0) == AGC_STATUS_OK);
+}

@@ -73,6 +73,15 @@ typedef struct agc_tp_words
     agc_sp_t lo;  /* MPAC+2, 2^-28 of hi's scale                    */
 } agc_tp_words_t;
 
+/* A vector as the AGC holds it: three components of two words each, the
+ * words of a component free to disagree in sign (after a VAD, VSU, VXSC,
+ * or a VDEF of such scalars). The operations on it are in
+ * include/agc/core/interp_words.h.                                       */
+typedef struct agc_vec_words
+{
+    agc_dp_words_t c[3]; /* X, Y, Z components as stored */
+} agc_vec_words_t;
+
 /* ---- conversions (tests, sim harness, DSKY only) ------------------------ */
 agc_sp_t agc_sp_from_double(double x, int scale_pow2);
 agc_dp_t agc_dp_from_double(double x, int scale_pow2);

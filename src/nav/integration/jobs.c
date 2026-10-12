@@ -94,7 +94,7 @@ agc_status_t agc_task_stateint(void)
 {
     agc_phase_change(00052);
 
-    return (agc_exec_findvac(AGC_INTEG_PRIO5, AGC_JOB_STATINT1));
+    return (agc_exec_findvac(AGC_INTEG_PRIO5, AGC_JOB_STATEINT_UPDATE));
 }
 
 /**********************************************************************
@@ -235,7 +235,7 @@ static agc_status_t state_integration_grab(void)
     agc_interp_t ip; /* interpretive state of this job segment */
 
     agc_interp_init(&ip);
-    const agc_status_t st = agc_integ_install(0, AGC_JOB_STATINT1_STALL); /* status of INTSTALL */
+    const agc_status_t st = agc_integ_install(0, AGC_JOB_STATEINT_UPDATE_STALL); /* status of INTSTALL */
 
     if (st == AGC_STATUS_BUSY)
     {
@@ -257,11 +257,11 @@ static agc_status_t state_integration_grab(void)
  * STATINT1 (INTEGRATION_INITIALIZATION.agc p. 1313) -- job: no integration
  * after V96 (QUITFLAG: NOINT); else TDEC1 = now, CM CLEAR V96ONFLG, INTSTALL
  *
- * FUNCTION NAME: agc_job_statint1
+ * FUNCTION NAME: agc_job_stateint_update
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of STATEUP
  *********************************************************************/
-agc_status_t agc_job_statint1(void)
+agc_status_t agc_job_stateint_update(void)
 {
     if (agc_flag_test(AGC_FLAG_QUITFLAG))
     {
@@ -285,11 +285,11 @@ agc_status_t agc_job_statint1(void)
  * STATINT1 INTSTALL +1 (INTEGRATION_INITIALIZATION.agc p. 1313) -- STATINT1
  * resumed after INTSTALL slept
  *
- * FUNCTION NAME: agc_job_statint1_stall
+ * FUNCTION NAME: agc_job_stateint_update_stall
  *
  * RETURNS: agc_status_t -- the status of state_integration_grab
  *********************************************************************/
-agc_status_t agc_job_statint1_stall(void)
+agc_status_t agc_job_stateint_update_stall(void)
 {
     return (state_integration_grab());
 }
@@ -592,7 +592,7 @@ static agc_status_t midtoav_integrate(agc_interp_t *ip, agc_integ_ctx_t *ctx, ag
  * thrusting: integrate this vehicle to TDEC1 (TIG - 30 s), or, when too late
  * (NOTIME), to now + TIMEDELT in MIDTOAV2 steps
  *
- * FUNCTION NAME: agc_integ_midtoav1
+ * FUNCTION NAME: agc_integ_midtoav_at_time
  *
  * ARGUMENTS:
  *   Argument    Type                       I/O  Description (scale)
@@ -612,7 +612,7 @@ static agc_status_t midtoav_integrate(agc_interp_t *ip, agc_integ_ctx_t *ctx, ag
  *                          INTSTALL), AGC_STATUS_BAD_ARG for a NULL pointer,
  *                          or the integration status
  *********************************************************************/
-agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job, agc_integ_midtoav_out_t *out)
+agc_status_t agc_integ_midtoav_at_time(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job, agc_integ_midtoav_out_t *out)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(out != NULL))
     {
@@ -657,7 +657,7 @@ agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t
  * to now + TIMEDELT (T-TO-ADD in the CM) in steps until the state is ahead of
  * the clock
  *
- * FUNCTION NAME: agc_integ_midtoav2
+ * FUNCTION NAME: agc_integ_midtoav_now
  *
  * ARGUMENTS:
  *   Argument    Type                       I/O  Description (scale)
@@ -675,7 +675,7 @@ agc_status_t agc_integ_midtoav1(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t
  *                          INTSTALL), AGC_STATUS_BAD_ARG for a NULL pointer,
  *                          or the integration status
  *********************************************************************/
-agc_status_t agc_integ_midtoav2(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_job_id_t resume_job, agc_integ_midtoav_out_t *out)
+agc_status_t agc_integ_midtoav_now(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_job_id_t resume_job, agc_integ_midtoav_out_t *out)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(out != NULL))
     {
@@ -803,7 +803,10 @@ agc_integ_next_t agc_integ_midtoav_check(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  * INTWAKEU (INTEGRATION_INITIALIZATION.agc pp. 1332-1333) -- a P27 update left
  * RRECT VRECT (TET) in the temporary set and holds INTSTALL; finish it into
  * the CSM (+1/+2) or LM (-1/-2) permanent state (2 = moon sphere), release
- * INTSTALL, PHASCHNG OCT 04026
+ * INTSTALL, PHASCHNG OCT 04026. The AGC restarts group 6 at the return
+ * address of that PHASCHNG, i.e. back in the caller (UPOUT, then UPOUT
+ * +1); C names that point as the job `resume` (P27: the terminate job),
+ * so a restart does not rerun the P27 segment from its top.
  *
  * FUNCTION NAME: agc_integ_intwakeu
  *
@@ -816,11 +819,13 @@ agc_integ_next_t agc_integ_midtoav_check(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  *                                     guards)
  *   upsvflag  agc_sp_t *         I/O  UPSVFLAG: +1/+2 CSM, -1/-2 LM (2:
  *                                     moon), 0 none; cleared
+ *   resume    agc_job_id_t       I    the caller's continuation after the
+ *                                     return (group 6 restart point)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG for a NULL
  *                          pointer, or the ATOP / INTWAKE0 status
  *********************************************************************/
-agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t *upsvflag)
+agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t *upsvflag, agc_job_id_t resume)
 {
     if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(upsvflag != NULL))
     {
@@ -857,10 +862,12 @@ agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t
         agc_flag_put(AGC_FLAG_RENDWFLG, false); /* INTWAKEX      */
     }
 
-    *upsvflag             = 0;                    /* INTWAKUP      */
-    const agc_status_t sw = agc_integ_intwake0(); /* status of INTWAKE0 */
+    *upsvflag             = 0;                           /* INTWAKUP      */
+    const agc_status_t sw = agc_integ_intwake_release(); /* status of INTWAKE0 */
 
-    agc_phase_change(04026);
+    const agc_phase_var_t v = {AGC_RESTART_JOB, resume, AGC_TASK_NONE, 0, false, 0U}; /* D clear: PHSPRDT6 */
+
+    agc_phase_change_var(04026, &v); /* TC INTWAKUQ: the return address */
 
     return ((st == AGC_STATUS_OK) ? sw : st); /* ATOP failure first */
 } /* agc_integ_intwakeu */

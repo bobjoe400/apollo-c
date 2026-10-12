@@ -1,0 +1,89 @@
+# Scenario e (CSM): P30 external delta-V, then P40 SPS burn to TIG.
+#
+# AGC behaviour checked (Comanche055 P30-P37.agc, P40-P47.agc, R60_62.agc):
+# * P30 / P30/P31 (pp.636-637): V06N33 flashes the TIG (hours, minutes,
+#   seconds), V25 loads it; V06N81 flashes DELVLVC (local vertical, ft/s
+#   xxxx.x), V25 loads it; S30.1 (p.639) forms the impulsive velocity
+#   from the conic at TIG: V06N42 HAPO, HPER (nmi xxxx.x) and DELVSIN
+#   (ft/s); PRO; DISP45 (p.635): V16N45 marks, TFI (mm ss counting up to
+#   TIG, negative before it), MGA; PRO -> GOTOPOOH: V37 flash.
+# * P40CSM (p.684): R60CSM (R60_62.agc p.390): V50N18 flashes the desired gimbal
+#   angles of the burn attitude; ENTER = attitude accepted (ENDMANU1);
+#   V50N25 R1 00204 = gimbal actuator test option, ENTER skips it; V06N40
+#   (TFI, VG, DVM) counts down; TIGBLNK blanks the display at TIG-35 s
+#   (5 s, AVERAGE G starts at TIG-30, TIGAVEG); TIG-5 (p.694) puts -BIT9 in
+#   NVWORD1 and the CLOCKJOB (ENGREQST p.705) flashes V99N40 "engine-on
+#   enable"; PRO = V99P (p.706): V06N40 until TIG-0 (p.695): IGNITION,
+#   SPSON = channel 11 bit 13 (ENGINE ON).
+# * The burn (scripted PIPA counts, no physics): the client feeds the
+#   10 ft/s along the velocity at TIG in stable-member axes (REFSMMAT =
+#   identity, IMU CDUs 0) as PINC on PIPAX / PIPAY at 5.85 cm/s per pulse;
+#   the AGC ends the burn (SPSOFF p.698: bit 13 off) and shows V16N85
+#   residuals (VG body, ft/s) near zero.
+# Everything from the V99N40 flash on is "Bugs found" B6: the C CLOCKJOB
+# executes V99 as an extended verb, which answers the flash with ENTER
+# (V99E, SPS bypassed: P40RCS, V16N85 with the full 10 ft/s at TIG).
+#
+# Set-up: pad REFSMMAT = identity and a 189.7 km circular equatorial orbit
+# moving along +X (prograde = stable-member X at the epoch), IMU operate +
+# 90 s turn-on, REFSMFLG set with V25N07 (as in imu_realign_csm.txt).
+vehicle csm
+pad refsmmat 1 0 0  0 1 0  0 0 1
+pad sv csm 0 -6563000 0  7793.3 0 0  0
+run 300
+keys R V37E00E
+until PROG 00 within 300
+input 30 0 0400                  # IMU operate
+run 11000                        # IMU turn-on (90 s)
+keys V25N07E 77E 10000E 1E       # REFSMFLG
+run 100
+keys V37E30E                     # P30
+until NOUN 33 within 500
+expect VERB 06
+expect FLASH on
+keys V25E +00000E +00008E +00000E # TIG 0:08:00
+run 100
+expect R2 +00008
+pro
+until NOUN 81 within 500
+expect FLASH on
+keys V25E +00100E +00000E +00000E # DV 10.0 ft/s along the velocity
+run 100
+expect R1 +00100
+pro
+until NOUN 42 within 2000
+expect R3 +00100                 # DELVSIN 10.0 ft/s
+expect R1 +01096 ~3              # HAPO 109.6 nmi
+expect R2 +01010 ~3              # HPER 101.0 nmi
+pro
+until NOUN 45 within 2000
+expect VERB 16
+expect R1 +00 00                 # no marks
+pro
+until VERB 37 within 2000        # GOTOPOOH
+keys 40E                         # P40
+until NOUN 18 within 600
+expect VERB 50
+expect FLASH on
+keys E                           # attitude accepted (no physics to move it)
+until R1 00204 within 600        # gimbal actuator test option
+expect VERB 50
+expect NOUN 25
+keys E                           # skip the test
+until NOUN 40 within 600
+expect VERB 06
+expect R2 +00100                 # VG 10.0 ft/s
+until R1 -00 38 within 40000     # TFI counts down to TIG-38 s
+until VERB blank within 1000     # TIGBLNK
+until NOUN 40 within 700         # TIGAVEG: display back at TIG-30
+xuntil B6 VERB 99 within 2600    # TIG-5: engine-on enable request
+xexpect B6 FLASH on
+pro                              # V99P
+xuntil B6 LAMP ENGINEON on within 700  # TIG-0: IGNITION, SPSON
+counter 37 PINC 44               # 10 ft/s at 32.66 deg from X: 44 x, 28 y
+counter 40 PINC 28
+run 100
+until LAMP ENGINEON off within 1000 # SPSOFF (true under B6 too)
+until NOUN 85 within 1500         # V16N85 (also under B6, via V99E)
+xexpect B6 R1 +00000 ~5          # residuals near zero (0.5 ft/s); under
+xexpect B6 R2 +00000 ~5          # B6 R1/R2 keep the 8.4 / 5.4 ft/s

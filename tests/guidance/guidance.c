@@ -15,10 +15,12 @@
  *      trajectory (perigee below 300 kft) the error is the free-fall angle
  *      plus the AUGEKUGL entry range, a positive overshoot of a few degrees
  *      to a few tens of degrees.
+ *   4. S40.6 stores OPTIND = -0 (optics reserved for the TVC).
  *
  * AGC SOURCE:
  *   Luminary099 SERVICER.agc pp. 880-881 (CALCRVG); Comanche055
- *   P40-P47.agc pp. 719-722 (S40.8), P30-P37.agc pp. 643-647 (DELRSPL)
+ *   P40-P47.agc pp. 719-722 (S40.8), p. 730 (S40.6), P30-P37.agc
+ *   pp. 643-647 (DELRSPL)
  *
  * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
  *   Name          Type       I/O  Scale        Description
@@ -59,7 +61,9 @@
 #include "agc/core/state.h"
 #include "agc/core/word.h"
 #include "agc/csm/entry.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/rendezvous.h"
 
@@ -76,9 +80,10 @@ static agc_vec_t steer(agc_vec_t vg, agc_vec_t delvref);
 static void      test_cross_product_steering(void);
 static void      delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo, double hi);
 static void      test_splash_error(void);
+static void      test_tvc_optics_reserved(void);
 
 /**********************************************************************
- * Run the three tests.
+ * Run the four tests.
  * AGC: none (test driver).
  *
  * FUNCTION NAME: main
@@ -92,6 +97,7 @@ int main(void)
     test_average_g_coast();
     test_cross_product_steering();
     test_splash_error();
+    test_tvc_optics_reserved();
     (void) printf("test_guidance: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -360,4 +366,25 @@ static void test_splash_error(void)
 
     delrspl_case(r, v, true, -2e-4, 2e-4); /* CANTDO: -angle to target  */
     delrspl_case(r, v, false, 0.005, 0.3); /* free fall + entry range   */
+}
+
+/**********************************************************************
+ * S40.6 (P40-P47.agc p.730): CS ZERO / TS OPTIND reserves the optics
+ * for the TVC with OPTIND = -0 (AGC_OPTIND_NEG0), which 33OPTMON and V41
+ * test; -1 would mean "coarse optics not working".
+ * AGC: S40.6 (P40-P47.agc p.730)
+ *
+ * FUNCTION NAME: test_tvc_optics_reserved
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_tvc_optics_reserved(void)
+{
+    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    agc_inhint(); /* a task runs inside T3RUPT */
+    CHECK(agc_task_gimbal_test_trim() == AGC_STATUS_OK);
+    agc_relint();
+    CHECK(agc_erase_optind() == AGC_OPTIND_NEG0);
 }

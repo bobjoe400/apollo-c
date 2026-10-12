@@ -68,15 +68,15 @@ int main(void)
     initvel("initvel_earth", 0);
     initvel("initvel_earth_far", 0);
 
-    /* Tolerances = the observed residual (2026-10-11, after the DMP/DMPR
-     * audit), rounded up. They come from the conic word forms (LAMBERT /
-     * GETX R1A, review-prog-rendz P1) and, for _prec, the integration. */
-    initvel("initvel_moon", 32);
-    initvel("initvel_earth_prec", 3400); /* DV bug, integration */
-    cdh("cdh_earth", 520);
-    cdh("cdh_earth_ell", 760);
+    /* Tolerances = the observed residual (2026-10-12, word-exact conics
+     * and integration): VACT3.x / DELVEET2.x (CDH) and DELVLVC.x (TPI)
+     * keep 2-4 LSB from outside the conics, _prec 1 LSB of VTPRIME. */
+    initvel("initvel_moon", 0);
+    initvel("initvel_earth_prec", 1);
+    cdh("cdh_earth", 2);
+    cdh("cdh_earth_ell", 4);
     tpi("tpi_earth", 2);
-    tpi("tpi_earth_b", 760);
+    tpi("tpi_earth_b", 0);
 
     return (oracle_finish("oracle_targeting"));
 }
@@ -132,7 +132,7 @@ static agc_rendz_t *fresh(const char *t)
     agc_rendz_reset(rz);
     agc_flag_put(AGC_FLAG_CMOONFLG, moon);
     agc_flag_put(AGC_FLAG_MOONFLAG, moon);
-    (void) agc_rendz_selectmu(rz, moon);
+    agc_rendz_selectmu(rz, moon);
 
     return (rz);
 }
@@ -196,14 +196,9 @@ static void cdh(const char *t, long int tol)
     (void) agc_rendz_cdhmvr(&ip, rz);
     oracle_require_ok(t, "POODOO");
 
-    /* F13: DIFFALT 31 LSB (62 m) for cdh_earth_ell. Traced (review-
-     * prog-rendz): PARAM leaves R1A as the sign-disagreeing pair
-     * (00401, 40000); GETX's SR4/TAD keep that form and SQRTSUB reads
-     * only MPAC, MPAC+1, so each WLOOP pass differs by 1 LSB (W 20827918
-     * vs 20827920) -> X, XI, XSQC(XI) -> NEWSTATE R2 off 2 LSB at its
-     * own 2^33 scale (32 m per LSB) -> DIFFALT. Same ones'-complement
-     * class as F9/F14; a word-level WLOOP removes it (nav-conic).      */
-    (void) oracle_cmp(t, "DIFFALT", rz->diffalt, oracle_out_dp(t, "DIFFALT"), 32);
+    /* F13 (DIFFALT 62 m) closed by the word-level WLOOP in nav-conic:
+     * DIFFALT is exact.                                                */
+    (void) oracle_cmp(t, "DIFFALT", rz->diffalt, oracle_out_dp(t, "DIFFALT"), 0);
     oracle_cmp_vec(t, "VACT3", rz->vact3, oracle_out_vec(t, "VACT3"), tol);
     oracle_cmp_vec(t, "DELVEET2", rz->delveet2, oracle_out_vec(t, "DELVEET2"), tol);
 }
@@ -234,7 +229,7 @@ static void tpi(const char *t, long int tol)
     rz->intime            = oracle_in_dp(t, "INTIME", 0);
     rz->tpass4            = oracle_in_dp(t, "TPASS4", 0);
     rz->nn                = 0;
-    const agc_status_t st = agc_rendz_tpi_required_velocity(&ip, rz, AGC_JOB_STATINT1); /* S34/35.2 */
+    const agc_status_t st = agc_rendz_tpi_required_velocity(&ip, rz, AGC_JOB_STATEINT_UPDATE); /* S34/35.2 */
 
     oracle_require_ok(t, "POODOO");
     (void) oracle_cmp(t, "status", st, AGC_STATUS_OK, 0);

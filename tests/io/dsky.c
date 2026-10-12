@@ -4,8 +4,9 @@
  * PURPOSE:
  *   io-pinball unit tests: keyboard verb/noun entry, decimal and octal
  *   loads, the relay words of DSPOUT, the alarm light, the monitor, NVSUB
- *   interlocks, the uplink check, HMSIN, machine-address nouns, V35 and
- *   CLEANDSP without a continuation. Links against the whole library
+ *   interlocks, the uplink check, HMSIN, machine-address nouns, V35,
+ *   CLEANDSP without a continuation and V31 with a zero delay (POODOO
+ *   1204 from WAITLIST). Links against the whole library
  *   (PINBALL needs the noun tables, the executive/waitlist and the state
  *   accessors).
  *
@@ -62,6 +63,8 @@ static void             test_hmsin(void);
 static void             test_mctbs(void);
 static void             test_lights(void);
 static void             test_cleandsp_no_continuation(void);
+static void             test_request_waitlist_zero_delay(void);
+static void             test_display_machine_address(void);
 
 /**********************************************************************
  * AGC: none (test driver) -- run every test of this file
@@ -87,6 +90,8 @@ int main(void)
     test_mctbs();
     test_lights();
     test_cleandsp_no_continuation();
+    test_display_machine_address();
+    test_request_waitlist_zero_delay();
     (void) printf("test_dsky: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_asserts);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -576,4 +581,47 @@ static void test_cleandsp_no_continuation(void)
     }
 
     CHECK(makeplay == 1);
+}
+
+/**********************************************************************
+ * AGC: none (test) -- V25N26 then V31 with a zero delay: VBRQWAIT (CM p. 366)
+ *      passes DSPTEM1 to WAITLIST, which gives POODOO 1204 for a zero
+ *      delta time (WAITLIST C p. 1225).
+ *
+ * FUNCTION NAME: test_request_waitlist_zero_delay
+ **********************************************************************/
+static void test_request_waitlist_zero_delay(void)
+{
+    fresh(AGC_VEHICLE_CSM);
+    CHECK(agc_dsky_keys("V25N26E0E1E0E") == AGC_STATUS_OK); /* DSPTEM1: delay 0, task 1, BBCON 0 */
+    CHECK(agc_dsky_dsptem(0) == 0u && agc_dsky_dsptem(1) == 1u);
+    CHECK(agc_dsky_keys("V31E") == AGC_STATUS_POODOO);
+    CHECK(agc_erase_failreg(0) == 01204u);
+}
+
+/**********************************************************************
+ * AGC: none (test) -- a program's V05N01 through the display interface
+ *      with MPAC+2 = 0300: NVSUB's internal machine-address noun takes
+ *      the ECADR from MPAC+2 (INTMCTBS, CM p. 366) and R1 shows the word
+ *      there (the path P27's V21N01 and V91's V05N01 use).
+ *
+ * FUNCTION NAME: test_display_machine_address
+ **********************************************************************/
+static void test_display_machine_address(void)
+{
+    fresh(AGC_VEHICLE_CSM);
+    agc_job_ctx_t ctx = {AGC_JOB_CHARIN, 020, false, -1, 0};
+
+    CHECK(agc_erase_write_ecadr(0300u, 012345u) == AGC_STATUS_OK);
+    CHECK(agc_dsky_display_ecadr(&ctx, AGC_DSKY_GODSPR, agc_dsky_vn(5, 1), NULL, 0300u) == AGC_STATUS_OK);
+
+    for (int i = 0; i < 20 && agc_exec_run_one() != AGC_STATUS_NOT_FOUND; i++)
+    {
+        /* MAKEPLAY and what it starts */
+    }
+
+    agc_dsky_state_t s = state(); /* DSKY readout */
+
+    CHECK(s.verb[0] == 0 && s.verb[1] == 5 && s.noun[0] == 0 && s.noun[1] == 1);
+    CHECK(reg_is(&s, 0, 12345, 0));
 }

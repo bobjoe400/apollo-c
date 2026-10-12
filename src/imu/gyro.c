@@ -135,16 +135,12 @@ static void chan14(uint16_t bits, bool on)
  *   dt    uint16_t       I    delay, cs
  *   task  agc_task_id_t  I    task to start
  *
- * RETURNS: agc_status_t -- OK, FULL, or BAD_ARG on a bad delay
+ * RETURNS: agc_status_t -- OK, BAILOUT (1203 list full), POODOO (1204
+ *          zero delay) or BAD_ARG from WAITLIST
  **********************************************************************/
 static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 {
     agc_status_t st = agc_waitlist_call(dt, task); /* status of the call */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }

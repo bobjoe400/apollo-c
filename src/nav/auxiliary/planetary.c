@@ -50,6 +50,7 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/nav/auxiliary.h"
 #include "internal.h"
@@ -144,7 +145,61 @@ agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
 
 /**********************************************************************
  * NEWANGLE (PLANETARY_INERTIAL_ORIENTATION.agc p. 1248, label NEWANGLE)
- *   -- X = X0 + XDOT (T + T0), revs scale 2^0, modulo one revolution
+ *   -- X = X0 + XDOT (T + T0) on the interpreter's words
+ *
+ * T + T0 is formed in TP (DLOAD SR 14D, TAD TIMSUBO: TIMSUBM, cs 2^42)
+ * and multiplied in two parts, the low two words (TIMSUBM+1, cs 2^28)
+ * and the high word (SLOAD TIMSUBM, SL 9 -> 2^33), each DMP product
+ * shifted to revolutions on the TP MPAC (SL* 5,1 and SL* 10D,1). The
+ * DADs add to the top two words and keep MPAC+2, so X is the TP MPAC
+ * the AGC leaves (its words may disagree in sign; SIN and COS read them
+ * as they are). SL and DAD overflow wraps mod one revolution; the final
+ * BOV clears OVFIND.
+ *
+ * FUNCTION NAME: newangle_words
+ *
+ * ARGUMENTS:
+ *   Argument    Type              I/O  Description (scale)
+ *   ----------  ----------------  ---  --------------------------------
+ *   ip          agc_interp_t *    I/O  interpreter state (OVFIND)
+ *   timsubo     agc_tp_t          I    T0 = TEPHEM, scale 2^42 cs
+ *   t_cs        agc_dp_t          I    T, scale 2^28 cs
+ *   x0          agc_dp_t          I    X0, revs scale 2^0
+ *   xdot        agc_dp_t          I    XDOT, rev/cs at 2^-(23+xdot_shift)
+ *   xdot_shift  int               I    XDOT_SHIFT_* (the AGC's X1), 0..5
+ *   x           agc_tp_words_t *  O    X, the TP MPAC, revs scale 2^0
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG for
+ *          T + T0 < 0 (before the epoch)
+ **********************************************************************/
+static agc_status_t newangle_words(agc_interp_t *ip, agc_tp_t timsubo, agc_dp_t t_cs, agc_dp_t x0, agc_dp_t xdot, int xdot_shift, agc_tp_words_t *x)
+{
+    agc_tp_words_t tsum = agc_mpac_shift(ip, agc_mpac_dload(agc_dp_to_words(t_cs)), -14); /* DLOAD SR 14D, 2^42 cs */
+
+    tsum = agc_mpac_tad(ip, tsum, agc_tp_to_words(timsubo)); /* TAD TIMSUBO: TIMSUBM */
+
+    if (!AGC_ASSERT(agc_tp_from_words(tsum) >= 0))
+    {
+        return (AGC_STATUS_BAD_ARG); /* times before the epoch: not used */
+    }
+
+    const agc_dp_words_t tlow  = {tsum.mid, tsum.lo};                                                         /* DLOAD TIMSUBM +1, 2^28 cs */
+    const agc_dp_words_t thigh = {tsum.hi, 0};                                                                /* SLOAD TIMSUBM, 2^14 */
+    const agc_dp_words_t xdw   = agc_dp_to_words(xdot);
+    agc_tp_words_t       p     = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(tlow), xdw), 5 - xdot_shift); /* DMP, SL* 5,1 */
+    const agc_dp_words_t part  = agc_mpac_store(agc_mpac_dad(ip, p, agc_dp_to_words(x0)));                    /* DAD X0, PUSH */
+
+    p  = agc_mpac_shift(ip, agc_mpac_dload(thigh), 9);              /* SL 9: 2^33 cs */
+    p  = agc_mpac_shift(ip, agc_mpac_dmp(p, xdw), 10 - xdot_shift); /* DMP XDOT, SL* 10D,1 */
+    *x = agc_mpac_dad(ip, p, part);                                 /* DAD partial */
+    agc_interp_clear_ovf(ip);                                       /* BOV +1: leave OVFIND clear */
+
+    return (AGC_STATUS_OK);
+}
+
+/**********************************************************************
+ * NEWANGLE (PLANETARY_INERTIAL_ORIENTATION.agc p. 1248, label NEWANGLE)
+ *   -- X = X0 + XDOT (T + T0), as stored (newangle_words)
  *
  * FUNCTION NAME: agc_planet_newangle
  *
@@ -159,53 +214,71 @@ agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
  *   xdot_shift  int             I    XDOT_SHIFT_* (the AGC's X1), 0..5
  *   x           agc_dp_t *      O    X, revs scale 2^0
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on NULL, a
- *          bad shift or T + T0 < 0
- *
- * T + T0 is formed in TP (cs 2^42) and multiplied in two parts, the low
- * 28 bits (TIMSUBM+1, cs 2^28) and the high word (TIMSUBM, SL 9 -> 2^33),
- * each product shifted to revolutions (SL* 5,1 and SL* 10D,1).  The DMP
- * products stay TP through the shift (MPAC+2), DAD adds to the top two
- * words (no rounding); SL and DAD overflow wraps mod one revolution, and
- * the final BOV clears OVFIND.  Bit-exact against Comanche055 (40 random
- * cases).  The AGC can leave X as a sign-disagreeing word pair, which
- * SIN/COS see (up to 1 LSB in MOONMX, docs/modules/review-nav-aux.md).
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG for
+ *          T + T0 < 0
  **********************************************************************/
 agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo, agc_dp_t t_cs, agc_dp_t x0, agc_dp_t xdot, int xdot_shift, agc_dp_t *x)
 {
-    /* DLOAD SR 6D 14D / TAD TIMSUBO: T+T0, cs scale 2^42 (TIMSUBM).       */
-    agc_tp_t tsum = agc_tp_shift(ip, agc_tp_from_dp(t_cs), -14); /* 2^42 cs */
+    agc_tp_words_t     m;                                                                /* X as the TP MPAC */
+    const agc_status_t st = newangle_words(ip, timsubo, t_cs, x0, xdot, xdot_shift, &m); /* NEWANGLE status */
 
-    tsum = agc_tp_add(ip, tsum, timsubo);
-
-    if (!AGC_ASSERT(tsum >= 0))
+    if (st == AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG); /* times before the epoch: not used */
+        *x = agc_dp_from_words(agc_mpac_store(m));
     }
 
-    /* DLOAD TIMSUBM +1, DMP XDOT, SL* 5,1 (on the TP MPAC), DAD X0 (on its
-     * top two words).                                                      */
-    agc_dp_t t_low = agc_navaux_tp_low_dp(tsum);                                   /* TIMSUBM+1, 2^28 cs */
-    agc_tp_t prod  = agc_tp_shift(ip, agc_dp_mul_tp(t_low, xdot), 5 - xdot_shift); /* XDOT T, 2^0 rev */
-    agc_dp_t part  = agc_dp_add(ip, agc_tp_to_dp(prod), x0);                       /* 2^0 rev */
-
-    /* SLOAD TIMSUBM, SL 9 (cs 2^33), DMP XDOT, SL* 10D,1, DAD partial.     */
-    agc_sp_t t_high = agc_dp_high(agc_tp_to_dp(tsum));           /* TIMSUBM, 2^14 */
-    agc_dp_t t_hi9  = agc_dp_shl(ip, agc_dp_from_sp(t_high), 9); /* 2^33 cs */
-
-    prod = agc_tp_shift(ip, agc_dp_mul_tp(t_hi9, xdot), 10 - xdot_shift);
-    *x   = agc_dp_add(ip, agc_tp_to_dp(prod), part);
-    agc_interp_clear_ovf(ip); /* BOV +1: leave OVFIND clear      */
-
-    return (AGC_STATUS_OK);
+    return (st);
 }
 
 /**********************************************************************
  * EARTHMX (PLANETARY_INERTIAL_ORIENTATION.agc p. 1249, label EARTHMX)
- *   -- earth-fixed rotation matrix
+ *   -- earth-fixed rotation matrix on the push-down words
  *       M = | cos AZ   sin AZ  0 |
  *           | -sin AZ  cos AZ  0 |  scale 2^1,
  *           | 0        0       1 |  AZ = AZO + WEARTH (T + TEPHEM)
+ * The first COS takes NEWANGLE's TP MPAC, the others the pushed 504AZ.
+ *
+ * FUNCTION NAME: earthmx_words
+ *
+ * ARGUMENTS:
+ *   Argument  Type                          I/O  Description (scale)
+ *   --------  ----------------------------  ---  ----------------------
+ *   ip        agc_interp_t *                I/O  interpreter state
+ *   pad       const agc_navaux_padload_t *  I    TEPHEM, AZO
+ *   t_cs      agc_dp_t                      I    T, scale 2^28 cs
+ *   m         agc_vec_words_t [3]           O    MMATRIX rows as stored,
+ *                                                scale 2^1
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the NEWANGLE status
+ **********************************************************************/
+static agc_status_t earthmx_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_vec_words_t m[3])
+{
+    agc_tp_words_t     azm;                                                                                   /* 504AZ as the TP MPAC */
+    const agc_status_t st = newangle_words(ip, pad->tephem, t_cs, pad->azo, WEARTH, XDOT_SHIFT_WEARTH, &azm); /* NEWANGLE status */
+
+    if (st == AGC_STATUS_OK)
+    {
+        const agc_dp_words_t az   = agc_mpac_store(azm);                              /* PUSH: 504AZ */
+        const agc_dp_words_t zero = {0, 0};                                           /* HI6ZEROS */
+        const agc_dp_words_t s    = agc_mpac_store(agc_mpac_sin(agc_mpac_dload(az))); /* SIN, 2^1 */
+
+        m[0].c[0] = agc_mpac_store(agc_mpac_cos(azm));                                /* COS of the TP MPAC */
+        m[0].c[1] = s;
+        m[0].c[2] = zero;
+        m[1].c[0] = agc_mpac_store(agc_mpac_dcomp(agc_mpac_sin(agc_mpac_dload(az)))); /* SIN DCOMP */
+        m[1].c[1] = agc_mpac_store(agc_mpac_cos(agc_mpac_dload(az)));                 /* COS */
+        m[1].c[2] = zero;
+        m[2].c[0] = zero;
+        m[2].c[1] = zero;
+        m[2].c[2] = agc_dp_to_words(AGC_DP_HALF);                                     /* HIDPHALF */
+    }
+
+    return (st);
+}
+
+/**********************************************************************
+ * EARTHMX (PLANETARY_INERTIAL_ORIENTATION.agc p. 1249, label EARTHMX)
+ *   -- earth-fixed rotation matrix (earthmx_words), as values
  *
  * FUNCTION NAME: agc_planet_earthmx
  *
@@ -217,27 +290,22 @@ agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo, agc_dp_t t_
  *   t_cs      agc_dp_t                      I    T, scale 2^28 cs
  *   m         agc_mat_t *                   O    M, scale 2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on NULL
- *          or a NEWANGLE failure
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the NEWANGLE status
  **********************************************************************/
 agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m)
 {
-    agc_dp_t     az = 0;                                                                                    /* 504AZ revs 2^0                  */
-    agc_status_t st = agc_planet_newangle(ip, pad->tephem, t_cs, pad->azo, WEARTH, XDOT_SHIFT_WEARTH, &az); /* NEWANGLE status */
+    agc_vec_words_t    w[3];                                 /* MMATRIX words */
+    const agc_status_t st = earthmx_words(ip, pad, t_cs, w); /* EARTHMX status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st == AGC_STATUS_OK)
     {
-        return (st);
+        for (int i = 0; i < 3; i++)
+        {
+            m->row[i] = agc_vec_from_words(w[i]);
+        }
     }
 
-    agc_dp_t c = agc_dp_cos(az); /* cos AZ, scale 2^1               */
-    agc_dp_t s = agc_dp_sin(az); /* sin AZ, scale 2^1               */
-
-    m->row[0] = agc_vec_make(c, s, 0);
-    m->row[1] = agc_vec_make(agc_dp_neg(s), c, 0);
-    m->row[2] = agc_vec_make(0, 0, AGC_DP_HALF); /* HIDPHALF        */
-
-    return (AGC_STATUS_OK);
+    return (st);
 }
 
 /**********************************************************************
@@ -262,75 +330,137 @@ agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l)
     return (AGC_STATUS_OK);
 }
 
-/* Moon angles B, F, NODI (MOONMX first half, p. 1246). */
-typedef struct moon_angles
-{
-    agc_dp_t cob;  /* COB  cos(B)/2, scale 2^1                          */
-    agc_dp_t sob;  /* SOB  sin(B)/2, scale 2^1                          */
-    agc_dp_t f;    /* 504F revs 2^0                                     */
-    agc_dp_t nodi; /* NODI revs 2^0                                     */
-} moon_angles_t;
-
 /**********************************************************************
- * AGC: MOONMX p. 1246 (DMP SL1R) -- product of two half-scaled values
+ * AGC: MOONMX p. 1247 (DMP SL1R) -- a product of two half-scaled words
  *
- * FUNCTION NAME: mul_half
+ * FUNCTION NAME: dmp_sl1r
  *
  * ARGUMENTS:
  *   Argument  Type            I/O  Description (scale)
  *   --------  --------------  ---  ------------------------------------
  *   ip        agc_interp_t *  I/O  interpreter state (overflow)
- *   a         agc_dp_t        I    factor, scale 2^1
- *   b         agc_dp_t        I    factor, scale 2^1
+ *   a         agc_dp_words_t  I    MPAC as stored, scale 2^1
+ *   b         agc_dp_words_t  I    operand as stored, scale 2^1
  *
- * RETURNS: agc_dp_t -- a b, scale 2^1: TP product shifted, rounded once
+ * RETURNS: agc_dp_words_t -- a b, scale 2^1 (SL1R of the TP product)
  **********************************************************************/
-static agc_dp_t mul_half(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
+static agc_dp_words_t dmp_sl1r(agc_interp_t *ip, agc_dp_words_t a, agc_dp_words_t b)
 {
-    return (agc_tp_round(ip, agc_tp_shift(ip, agc_dp_mul_tp(a, b), 1)));
+    return (agc_mpac_store(agc_mpac_shift_round(ip, agc_mpac_dmp(agc_mpac_dload(a), b), 1)));
 }
 
 /**********************************************************************
- * AGC: MOONMX pp. 1247-1248 (VXSC, VXSC, VSU/VAD, VSL1)
- *   -- u su -+ v sv, back to scale 2^1
+ * AGC: MOONMX pp. 1247-1248 (VXSC, VXSC, VAD/VSU, VSL1) -- u su +- v sv
+ * on the stored words, back to scale 2^1; MPAC holds v sv, the push-down
+ * list u su (VAD: MPAC + PD, VSU: PD - MPAC)
  *
  * FUNCTION NAME: combine
  *
  * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  ------------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (overflow)
- *   u         agc_vec_t       I    first vector, scale 2^1
- *   su        agc_dp_t        I    its scalar, scale 2^1
- *   v         agc_vec_t       I    second vector, scale 2^1
- *   sv        agc_dp_t        I    its scalar, scale 2^1
- *   subtract  bool            I    true: VSU, false: VAD
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ------------------------------------
+ *   ip        agc_interp_t *   I/O  interpreter state (overflow)
+ *   u         agc_vec_words_t  I    pushed vector, scale 2^1
+ *   su        agc_tp_words_t   I    its scalar, scale 2^1
+ *   v         agc_vec_words_t  I    MPAC vector, scale 2^1
+ *   sv        agc_tp_words_t   I    its scalar, scale 2^1
+ *   subtract  bool             I    true: VSU (u su - v sv)
  *
- * RETURNS: agc_vec_t -- (u su -+ v sv) VSL1, scale 2^1
+ * RETURNS: agc_vec_words_t -- (u su +- v sv) VSL1, scale 2^1
  **********************************************************************/
-static agc_vec_t combine(agc_interp_t *ip, agc_vec_t u, agc_dp_t su, agc_vec_t v, agc_dp_t sv, bool subtract)
+static agc_vec_words_t combine(agc_interp_t *ip, agc_vec_words_t u, agc_tp_words_t su, agc_vec_words_t v, agc_tp_words_t sv, bool subtract)
 {
-    agc_vec_t a = agc_vec_scale(ip, u, su); /* scale 2^2           */
-    agc_vec_t b = agc_vec_scale(ip, v, sv); /* scale 2^2           */
-    agc_vec_t c = agc_vec_add(ip, a, b);    /* VAD, scale 2^2      */
+    const agc_vec_words_t pd = agc_mpac_vxsc(ip, su, u); /* pushed, scale 2^2 */
+    agc_vec_words_t       c  = agc_mpac_vxsc(ip, sv, v); /* MPAC, scale 2^2 */
 
-    if (subtract)
+    for (int i = 0; i < 3; i++)
     {
-        c = agc_vec_sub(ip, a, b); /* VSU, scale 2^2 */
+        agc_tp_words_t s = agc_mpac_dload(c.c[i]); /* component */
+
+        s      = subtract ? agc_mpac_bdsu(ip, s, pd.c[i]) : agc_mpac_dad(ip, s, pd.c[i]); /* VSU / VAD */
+        c.c[i] = agc_mpac_store(s);
     }
 
-    return (agc_vec_shl(ip, c, 1)); /* VSL1 -> scale 2^1   */
+    return (agc_mpac_vshift(ip, c, 1)); /* VSL1 -> scale 2^1 */
 }
 
 /**********************************************************************
  * MOONMX (PLANETARY_INERTIAL_ORIENTATION.agc pp. 1246-1248, label
- *   MOONMX) -- moon-fixed rotation matrix
+ *   MOONMX) -- moon-fixed rotation matrix on the push-down words
  *     A = (cos N, sin N cos B, sin N sin B)
  *     B = (-sin N, cos N cos B, cos N sin B)
  *     C = (0, -sin B, cos B)
  *     D = B cos I - C sin I
  *     M0 = -(A cos F + D sin F), M1 = A sin F - D cos F,
  *     M2 = B sin I + C cos I;  all vectors and M scale 2^1
+ * COS of B and of NODI take NEWANGLE's TP MPAC; the other SIN/COS the
+ * stored angle words, as the listing loads them.
+ *
+ * FUNCTION NAME: moonmx_words
+ *
+ * ARGUMENTS:
+ *   Argument  Type                          I/O  Description (scale)
+ *   --------  ----------------------------  ---  ----------------------
+ *   ip        agc_interp_t *                I/O  interpreter state
+ *   pad       const agc_navaux_padload_t *  I    TEPHEM
+ *   t_cs      agc_dp_t                      I    T, scale 2^28 cs
+ *   m         agc_vec_words_t [3]           O    MMATRIX rows as stored,
+ *                                                scale 2^1
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or a NEWANGLE status
+ **********************************************************************/
+static agc_status_t moonmx_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_vec_words_t m[3])
+{
+    agc_tp_words_t bm;                                                                            /* 504B, TP MPAC */
+    agc_tp_words_t fm;                                                                            /* 504F, TP MPAC */
+    agc_tp_words_t nm;                                                                            /* NODI, TP MPAC */
+    agc_status_t   st = newangle_words(ip, pad->tephem, t_cs, BSUBO, BDOT, XDOT_SHIFT_NODE, &bm); /* NEWANGLE status */
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = newangle_words(ip, pad->tephem, t_cs, FSUBO, FDOT, XDOT_SHIFT_F, &fm);
+    }
+
+    if (st == AGC_STATUS_OK)
+    {
+        st = newangle_words(ip, pad->tephem, t_cs, NODIO, NODDOT, XDOT_SHIFT_NODE, &nm);
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    const agc_dp_words_t cob  = agc_mpac_store(agc_mpac_cos(bm));                                                          /* PUSH COS: COB, 2^1 */
+    const agc_dp_words_t sob  = agc_mpac_store(agc_mpac_sin(agc_mpac_dload(agc_mpac_store(bm))));                          /* SIN: SOB, 2^1 */
+    const agc_dp_words_t f    = agc_mpac_store(fm);                                                                        /* 504F, revs 2^0 */
+    const agc_tp_words_t cnm  = agc_mpac_cos(nm);                                                                          /* COS of the TP MPAC */
+    const agc_dp_words_t cosn = agc_mpac_store(cnm);                                                                       /* COS(NODI), 2^1 */
+    const agc_tp_words_t snm  = agc_mpac_sin(agc_mpac_dload(agc_mpac_store(nm)));                                          /* SIN(NODI) */
+    const agc_dp_words_t sinn = agc_mpac_store(snm);                                                                       /* SINNODI, 2^1 */
+    agc_vec_words_t      av   = {{cosn, dmp_sl1r(ip, sinn, cob), dmp_sl1r(ip, sinn, sob)}};                                /* AVECTR */
+    agc_vec_words_t      bv   = {{agc_mpac_store(agc_mpac_dcomp(snm)), dmp_sl1r(ip, cosn, cob), dmp_sl1r(ip, cosn, sob)}}; /* BVECTR */
+    agc_vec_words_t      cv   = {{{0, 0}, agc_mpac_store(agc_mpac_dcomp(agc_mpac_dload(sob))), cob}};                      /* CVECTR */
+    const agc_tp_words_t sini = agc_mpac_dload(agc_dp_to_words(SINI));                                                     /* SINI, 2^1 */
+    const agc_tp_words_t cosi = agc_mpac_dload(agc_dp_to_words(COSI));                                                     /* COSI, 2^1 */
+
+    m[2]                     = combine(ip, bv, sini, cv, cosi, false); /* M2 */
+    const agc_vec_words_t dv = combine(ip, bv, cosi, cv, sini, true);  /* DVECTR */
+
+    m[1] = combine(ip, av, agc_mpac_sin(agc_mpac_dload(f)), dv, agc_mpac_cos(agc_mpac_dload(f)), true);  /* M1 */
+    m[0] = combine(ip, av, agc_mpac_cos(agc_mpac_dload(f)), dv, agc_mpac_sin(agc_mpac_dload(f)), false); /* M0 before VCOMP */
+
+    for (int i = 0; i < 3; i++)
+    {
+        m[0].c[i] = agc_mpac_store(agc_mpac_dcomp(agc_mpac_dload(m[0].c[i]))); /* VCOMP */
+    }
+
+    return (AGC_STATUS_OK);
+} /* moonmx_words */
+
+/**********************************************************************
+ * MOONMX (PLANETARY_INERTIAL_ORIENTATION.agc pp. 1246-1248) -- the
+ * moon-fixed rotation matrix (moonmx_words), as values
  *
  * FUNCTION NAME: agc_planet_moonmx
  *
@@ -342,59 +472,27 @@ static agc_vec_t combine(agc_interp_t *ip, agc_vec_t u, agc_dp_t su, agc_vec_t v
  *   t_cs      agc_dp_t                      I    T, scale 2^28 cs
  *   m         agc_mat_t *                   O    M, scale 2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on NULL
- *          or a NEWANGLE failure
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or a NEWANGLE status
  **********************************************************************/
 agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m)
 {
-    moon_angles_t ang;                 /* COB SOB 504F NODI, see type */
-    agc_tp_t      tsubo = pad->tephem; /* TEPHEM, scale 2^42 cs   */
+    agc_vec_words_t    w[3];                                /* MMATRIX words */
+    const agc_status_t st = moonmx_words(ip, pad, t_cs, w); /* MOONMX status */
 
-    agc_dp_t     b         = 0;                                                                      /* 504B (obliquity), 2^0 rev */
-    agc_status_t st_angles = agc_planet_newangle(ip, tsubo, t_cs, BSUBO, BDOT, XDOT_SHIFT_NODE, &b); /* NEWANGLE status */
-
-    if (st_angles == AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK)
     {
-        st_angles = agc_planet_newangle(ip, tsubo, t_cs, FSUBO, FDOT, XDOT_SHIFT_F, &ang.f);
+        for (int i = 0; i < 3; i++)
+        {
+            m->row[i] = agc_vec_from_words(w[i]);
+        }
     }
 
-    if (st_angles == AGC_STATUS_OK)
-    {
-        st_angles = agc_planet_newangle(ip, tsubo, t_cs, NODIO, NODDOT, XDOT_SHIFT_NODE, &ang.nodi);
-    }
-
-    if (!AGC_ASSERT(st_angles == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    ang.cob = agc_dp_cos(b);
-    ang.sob = agc_dp_sin(b);
-
-    agc_dp_t  cosn   = agc_dp_cos(ang.nodi);                          /* COSNODI, 2^1 */
-    agc_dp_t  sinn   = agc_dp_sin(ang.nodi);                          /* SINNODI, 2^1 */
-    agc_dp_t  sncb   = mul_half(ip, sinn, ang.cob);                   /* sin N cos B, 2^1 */
-    agc_dp_t  snsb   = mul_half(ip, sinn, ang.sob);                   /* sin N sin B, 2^1 */
-    agc_dp_t  cncb   = mul_half(ip, cosn, ang.cob);                   /* cos N cos B, 2^1 */
-    agc_dp_t  cnsb   = mul_half(ip, cosn, ang.sob);                   /* cos N sin B, 2^1 */
-    agc_vec_t avectr = agc_vec_make(cosn, sncb, snsb);                /* AVECTR, 2^1 */
-    agc_vec_t bvectr = agc_vec_make(agc_dp_neg(sinn), cncb, cnsb);    /* 2^1 */
-    agc_vec_t cvectr = agc_vec_make(0, agc_dp_neg(ang.sob), ang.cob); /* 2^1 */
-
-    m->row[2]        = combine(ip, cvectr, COSI, bvectr, SINI, false);
-    agc_vec_t dvectr = combine(ip, bvectr, COSI, cvectr, SINI, true); /* 2^1 */
-    agc_dp_t  cosf   = agc_dp_cos(ang.f);                             /* COS 504F, 2^1 */
-    agc_dp_t  sinf   = agc_dp_sin(ang.f);                             /* SIN 504F, 2^1 */
-
-    m->row[1] = combine(ip, avectr, sinf, dvectr, cosf, true);
-    m->row[0] = agc_vec_neg(combine(ip, avectr, cosf, dvectr, sinf, false));
-
-    return (AGC_STATUS_OK);
-} /* agc_planet_moonmx */
+    return (st);
+}
 
 /**********************************************************************
- * AGC: R-TO-RP / RP-TO-R pp. 1243-1245 (common part)
- *   -- M matrix and the libration/precession vector
+ * AGC: R-TO-RP / RP-TO-R pp. 1243-1245 (common part) -- MMATRIX and the
+ *   libration/precession vector on the words
  *
  * FUNCTION NAME: planet_m_and_l
  *
@@ -408,38 +506,41 @@ agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad
  *   want_lp   bool                          I    false: L (inertial, for
  *                                                R-TO-RP); true: LP
  *                                                (planetary, RP-TO-R)
- *   m         agc_mat_t *                   O    M, scale 2^1
- *   l         agc_vec_t *                   O    L or LP, scale 2^0 rad
+ *   m         agc_vec_words_t [3]           O    MMATRIX words, 2^1
+ *   l         agc_vec_words_t *             O    L or LP, scale 2^0 rad
  *
- * RETURNS: agc_status_t -- status of EARTHMX/MOONMX/EARTHL, or
- *          AGC_STATUS_BAD_ARG on NULL
+ * RETURNS: agc_status_t -- status of EARTHMX/MOONMX/EARTHL
  **********************************************************************/
-static agc_status_t planet_m_and_l(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_dp_t t_cs, bool want_lp, agc_mat_t *m, agc_vec_t *l)
+static agc_status_t planet_m_and_l(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_dp_t t_cs, bool want_lp, agc_vec_words_t m[3], agc_vec_words_t *l)
 {
-    agc_status_t st = AGC_STATUS_OK; /* returned to the caller */
+    agc_status_t st; /* returned to the caller */
 
     if (moon)
     {
-        st = agc_planet_moonmx(ip, pad, t_cs, m);
-        *l = pad->lm504; /* LP = 504LM, moon-fixed */
+        st = moonmx_words(ip, pad, t_cs, m);
+        *l = agc_vec_to_words(pad->lm504); /* LP = 504LM, moon-fixed */
 
-        if (!want_lp)
+        if (st == AGC_STATUS_OK && !want_lp)
         {
-            *l = agc_vec_shl(ip, agc_vec_mat(ip, pad->lm504, m), 1); /* L */
+            *l = agc_mpac_vshift(ip, agc_mpac_vxm(ip, *l, m), 1); /* VXM MMATRIX VSL1: L */
         }
     }
     else
     {
-        st = agc_planet_earthmx(ip, pad, t_cs, m);
+        agc_vec_t lv; /* 504LPL, rad 2^0 */
+
+        st = earthmx_words(ip, pad, t_cs, m);
 
         if (st == AGC_STATUS_OK)
         {
-            st = agc_planet_earthl(pad, l); /* L, rad 2^0     */
+            st = agc_planet_earthl(pad, &lv); /* L, rad 2^0     */
         }
 
-        if (want_lp)
+        *l = agc_vec_to_words(lv);
+
+        if (st == AGC_STATUS_OK && want_lp)
         {
-            *l = agc_vec_shl(ip, agc_mat_vec(ip, m, *l), 1); /* LP = M L   */
+            *l = agc_mpac_vshift(ip, agc_mpac_mxv(ip, m, *l), 1); /* MXV VSL1: LP = M L */
         }
     }
 
@@ -448,7 +549,48 @@ static agc_status_t planet_m_and_l(agc_interp_t *ip, const agc_navaux_padload_t 
 
 /**********************************************************************
  * R-TO-RP (PLANETARY_INERTIAL_ORIENTATION.agc p. 1245, label R-TO-RP)
- *   -- RP = M(T) (R - L x R)
+ *   -- RP = M(T) (R - L x R) on the stored words of R
+ *
+ * FUNCTION NAME: agc_planet_r_to_rp_words
+ *
+ * ARGUMENTS:
+ *   Argument  Type                          I/O  Description (scale)
+ *   --------  ----------------------------  ---  ----------------------
+ *   ip        agc_interp_t *                I/O  interpreter state
+ *   pad       const agc_navaux_padload_t *  I    pad load
+ *   moon      bool                          I    true: moon-fixed frame
+ *   r         agc_vec_words_t               I    R as stored (504RPR),
+ *                                                any scale 2^n
+ *   t_cs      agc_dp_t                      I    T, scale 2^28 cs
+ *   rp        agc_vec_words_t *             O    RP as stored, 2^n
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the matrix
+ *          routines
+ **********************************************************************/
+agc_status_t agc_planet_r_to_rp_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t r, agc_dp_t t_cs, agc_vec_words_t *rp)
+{
+    agc_vec_words_t m[3];                                                   /* MMATRIX words, 2^1 */
+    agc_vec_words_t l;                                                      /* L, scale 2^0 rad */
+    agc_status_t    st = planet_m_and_l(ip, pad, moon, t_cs, false, m, &l); /* returned to the caller */
+
+    if (st == AGC_STATUS_OK)
+    {
+        agc_vec_words_t d = agc_mpac_vxv(ip, l, r); /* VXV 504RPR */
+
+        for (int i = 0; i < 3; i++)
+        {
+            d.c[i] = agc_mpac_store(agc_mpac_bdsu(ip, agc_mpac_dload(d.c[i]), r.c[i])); /* BVSU 504RPR */
+        }
+
+        *rp = agc_mpac_vshift(ip, agc_mpac_mxv(ip, m, d), 1); /* MXV MMATRIX, RPRPXXXX VSL1 */
+    }
+
+    return (st);
+}
+
+/**********************************************************************
+ * R-TO-RP (PLANETARY_INERTIAL_ORIENTATION.agc p. 1245, label R-TO-RP)
+ *   -- RP = M(T) (R - L x R) for a stored value R
  *
  * FUNCTION NAME: agc_planet_r_to_rp
  *
@@ -462,30 +604,61 @@ static agc_status_t planet_m_and_l(agc_interp_t *ip, const agc_navaux_padload_t 
  *   t_cs      agc_dp_t                      I    T, scale 2^28 cs
  *   rp        agc_vec_t *                   O    RP, scale 2^n (of R)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG, or the
- *          status of the matrix routines
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the matrix
+ *          routines
  **********************************************************************/
 agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t r, agc_dp_t t_cs, agc_vec_t *rp)
 {
-    agc_mat_t    m;                                                       /* M(T), scale 2^1  */
-    agc_vec_t    l;                                                       /* L, scale 2^0 rad */
-    agc_status_t st = planet_m_and_l(ip, pad, moon, t_cs, false, &m, &l); /* returned to the caller */
+    agc_vec_words_t    w;                                                                           /* RP words */
+    const agc_status_t st = agc_planet_r_to_rp_words(ip, pad, moon, agc_vec_to_words(r), t_cs, &w); /* R-TO-RP status */
 
-    if (st != AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK)
     {
-        return (st);
+        *rp = agc_vec_from_words(w);
     }
 
-    agc_vec_t d = agc_vec_sub(ip, r, agc_vec_cross(ip, l, r)); /* 2^n */
-
-    *rp = agc_vec_shl(ip, agc_mat_vec(ip, &m, d), 1); /* RPRPXXXX*/
-
-    return (AGC_STATUS_OK);
+    return (st);
 }
 
 /**********************************************************************
  * RP-TO-R (PLANETARY_INERTIAL_ORIENTATION.agc p. 1243, label RP-TO-R)
- *   -- R = MT(T) (RP + LP x RP)
+ *   -- R = MT(T) (RP + LP x RP) on the stored words of RP
+ *
+ * FUNCTION NAME: agc_planet_rp_to_r_words
+ *
+ * ARGUMENTS:
+ *   Argument  Type                          I/O  Description (scale)
+ *   --------  ----------------------------  ---  ----------------------
+ *   ip        agc_interp_t *                I/O  interpreter state
+ *   pad       const agc_navaux_padload_t *  I    pad load
+ *   moon      bool                          I    true: moon-fixed frame
+ *   rp        agc_vec_words_t               I    RP as stored (504RPR),
+ *                                                any scale 2^n
+ *   t_cs      agc_dp_t                      I    T, scale 2^28 cs
+ *   r         agc_vec_words_t *             O    R as stored, 2^n
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the matrix
+ *          routines
+ **********************************************************************/
+agc_status_t agc_planet_rp_to_r_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t rp, agc_dp_t t_cs, agc_vec_words_t *r)
+{
+    agc_vec_words_t m[3];                                                   /* MMATRIX words, 2^1 */
+    agc_vec_words_t lp;                                                     /* LP, scale 2^0 rad */
+    agc_status_t    st = planet_m_and_l(ip, pad, moon, t_cs, true, m, &lp); /* returned to the caller */
+
+    if (st == AGC_STATUS_OK)
+    {
+        const agc_vec_words_t s = agc_mpac_vad(ip, agc_mpac_vxv(ip, lp, rp), rp); /* VXV VAD 504RPR */
+
+        *r = agc_mpac_vshift(ip, agc_mpac_vxm(ip, s, m), 1); /* VXM MMATRIX, RPRPXXXX VSL1 */
+    }
+
+    return (st);
+}
+
+/**********************************************************************
+ * RP-TO-R (PLANETARY_INERTIAL_ORIENTATION.agc p. 1243, label RP-TO-R)
+ *   -- R = MT(T) (RP + LP x RP) for a stored value RP
  *
  * FUNCTION NAME: agc_planet_rp_to_r
  *
@@ -499,23 +672,18 @@ agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pa
  *   t_cs      agc_dp_t                      I    T, scale 2^28 cs
  *   r         agc_vec_t *                   O    R, scale 2^n (of RP)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG, or the
- *          status of the matrix routines
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the matrix
+ *          routines
  **********************************************************************/
 agc_status_t agc_planet_rp_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t rp, agc_dp_t t_cs, agc_vec_t *r)
 {
-    agc_mat_t    m;                                                       /* M(T), scale 2^1   */
-    agc_vec_t    lp;                                                      /* LP, scale 2^0 rad */
-    agc_status_t st = planet_m_and_l(ip, pad, moon, t_cs, true, &m, &lp); /* returned to the caller */
+    agc_vec_words_t    w;                                                                            /* R words */
+    const agc_status_t st = agc_planet_rp_to_r_words(ip, pad, moon, agc_vec_to_words(rp), t_cs, &w); /* RP-TO-R status */
 
-    if (st != AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK)
     {
-        return (st);
+        *r = agc_vec_from_words(w);
     }
 
-    agc_vec_t s = agc_vec_add(ip, agc_vec_cross(ip, lp, rp), rp); /* 2^n */
-
-    *r = agc_vec_shl(ip, agc_vec_mat(ip, s, &m), 1); /* VXM MMATRIX, VSL1 */
-
-    return (AGC_STATUS_OK);
+    return (st);
 }

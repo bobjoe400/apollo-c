@@ -50,6 +50,7 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/interp.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
@@ -115,35 +116,35 @@ static agc_dp_t bovb_signmpac(agc_interp_t *ip, agc_dp_t v)
 }
 
 /**********************************************************************
- * AGC: none (DMP, DAD, SLn, STORE) -- the interpreter's TP sequence
- *
- * The TP product keeps MPAC+2, the DAD adds to MPAC, MPAC+1 only, the
- * shift moves MPAC+2's top bits up and the STORE truncates to two words.
+ * AGC: none (DLOAD x, DMP y, [DCOMP,] SL1, STORE) -- a CDUTODCM element
+ * from two stored words
  *
  * ARGUMENTS:
- *   ip   agc_interp_t *  I/O  interpreter state
- *   a    agc_dp_t        I    multiplicand
- *   b    agc_dp_t        I    multiplier
- *   add  agc_dp_t        I    DAD operand (0 for none)
- *   n    int             I    left shift 0..3
+ *   ip    agc_interp_t *  I/O  interpreter state
+ *   x     agc_dp_words_t  I    multiplicand as stored, 2^0
+ *   y     agc_dp_words_t  I    multiplier as stored, 2^0
+ *   comp  bool            I    DCOMP before the shift
  *
- * RETURNS: agc_dp_t -- the stored two words
+ * RETURNS: agc_dp_t -- the stored element, 2^0
  **********************************************************************/
-static agc_dp_t dmp_dad_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, agc_dp_t add, int n)
+static agc_dp_t kalc_dmp_sl1(agc_interp_t *ip, agc_dp_words_t x, agc_dp_words_t y, bool comp)
 {
-    agc_tp_t m = agc_dp_mul_tp(a, b); /* DMP: TP MPAC, scales add */
+    agc_tp_words_t m = agc_mpac_dmp(agc_mpac_dload(x), y); /* DMP, TP MPAC */
 
-    m = agc_tp_add(ip, m, agc_tp_from_dp(add)); /* DAD: MPAC+2 kept  */
+    if (comp)
+    {
+        m = agc_mpac_dcomp(m); /* DCOMP: all three words */
+    }
 
-    return (agc_tp_to_dp(agc_tp_shift(ip, m, n))); /* SLn, STORE        */
+    return (agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, m, 1))));
 }
 
 /**********************************************************************
  * CDUTODCM (ANGLFIND.agc pp.405-407) -- S/C to SM direction cosines
  *
  * From the CDU angles PHI = OGA (X), THETA = IGA (Y), PSI = MGA (Z);
- * scale 2.  Every product is DMP; C1 loses MPAC+2 at its BDSU
- * (DEVIATION, review-imu F5).
+ * scale 2. Every product is DMP on the push-down words as stored, and the
+ * BDSU / DAD / DSU keep MPAC+2 for the SL1 after them (oracle F5).
  *
  * ARGUMENTS:
  *   ip   agc_interp_t *      I/O  interpreter state
@@ -154,8 +155,8 @@ static agc_dp_t dmp_dad_shl(agc_interp_t *ip, agc_dp_t a, agc_dp_t b, agc_dp_t a
  **********************************************************************/
 agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_t *m)
 {
-    agc_dp_t s[3]; /* SIN / 2 of PHI, THETA, PSI, 2^0 */
-    agc_dp_t c[3]; /* COS / 2 of PHI, THETA, PSI, 2^0 */
+    agc_dp_words_t s[3]; /* PD0, 4, 8: SIN / 2 of PHI, THETA, PSI as stored, 2^0 */
+    agc_dp_words_t c[3]; /* PD2, 6, 10: COS / 2 as stored, 2^0 */
 
     for (int i = 0; i < 3; i++)
     { /* LOOPSIN: X, Y, Z    */
@@ -164,75 +165,98 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_
             return (AGC_STATUS_BAD_ARG);
         }
 
-        agc_dp_t a = agc_rtb_cdulogic(cdu[i]); /* angle, rev 2^0 */
+        const agc_dp_words_t a = agc_dp_to_words(agc_rtb_cdulogic(cdu[i])); /* angle, rev 2^0 */
 
-        s[i] = agc_dp_sin(a); /* sin/2               */
-        c[i] = agc_dp_cos(a); /* cos/2               */
+        s[i] = agc_mpac_store(agc_mpac_sin(agc_mpac_dload(a))); /* SIN PDDL */
+        c[i] = agc_mpac_store(agc_mpac_cos(agc_mpac_dload(a))); /* COS PUSH */
     }
 
-    const agc_dp_t sph = s[0]; /* PD0 SIN(PHI) / 2, 2^0               */
-    const agc_dp_t cph = c[0]; /* PD2 COS(PHI) / 2, 2^0               */
-    const agc_dp_t sth = s[1]; /* PD4 SIN(THETA) / 2, 2^0             */
-    const agc_dp_t cth = c[1]; /* PD6 COS(THETA) / 2, 2^0             */
-    const agc_dp_t sps = s[2]; /* PD8 SIN(PSI) / 2, 2^0               */
-    const agc_dp_t cps = c[2]; /* PD10 COS(PSI) / 2, 2^0              */
+    /* PD12 = sin(th) sin(ph), PD14 = cos(ph) sin(th): DMP then PDDL keeps
+     * the two words; scale 4.                                            */
+    const agc_dp_words_t pd12 = agc_mpac_store(agc_mpac_dmp(agc_mpac_dload(s[1]), s[0])); /* DLOAD 4 DMP 0 */
+    const agc_dp_words_t pd14 = agc_mpac_store(agc_mpac_dmp(agc_mpac_dload(c[0]), s[1])); /* DLOAD 2 DMP 4 */
 
-    /* PD12 = sin(th)sin(ph), PD14 = cos(ph)sin(th): DMP then PDDL keeps
-     * two words; scale 4.                                                */
-    const agc_dp_t pd12 = agc_dp_mul_trunc(sth, sph); /* PD6 sin(th)sin(ph),  2^0 */
-    const agc_dp_t pd14 = agc_dp_mul_trunc(cph, sth); /* PD7 cos(ph)sin(th),  2^0 */
+    m->row[0].c[0] = kalc_dmp_sl1(ip, c[1], c[2], false); /* C0: DLOAD 6 DMP 10D SL1 */
 
-    m->row[0].c[0] = dmp_dad_shl(ip, cth, cps, 0, 1); /* C0: DMP SL1    */
+    /* C1: cos(th) DMP sin(ps) DMP cos(ph) SL1, BDSU PD12, SL1            */
+    agc_tp_words_t t = agc_mpac_dmp(agc_mpac_dmp(agc_mpac_dload(c[1]), s[2]), c[0]); /* TP MPAC, 2^0 */
 
-    /* C1: cos(th) DMP sin(ps) DMP cos(ph) SL1, BDSU PD12, SL1.  The BDSU
-     * leaves MPAC+2 of the product; its top bit is lost here (DEVIATION:
-     * see docs/modules/review-imu.md F5).                               */
-    agc_dp_t t = dmp_dad_shl(ip, agc_dp_mul_trunc(cth, sps), cph, 0, 1); /* product term, 2^0 */
+    t              = agc_mpac_bdsu(ip, agc_mpac_shift(ip, t, 1), pd12);
+    m->row[0].c[1] = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, t, 1)));
 
-    m->row[0].c[1] = agc_dp_shl(ip, agc_dp_sub(ip, pd12, t), 1);
+    /* C2: cos(th) DMP sin(ps) DMP sin(ph) SL1, DAD PD14, SL1             */
+    t              = agc_mpac_dmp(agc_mpac_dmp(agc_mpac_dload(c[1]), s[2]), s[0]);
+    t              = agc_mpac_dad(ip, agc_mpac_shift(ip, t, 1), pd14);
+    m->row[0].c[2] = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, t, 1)));
+    m->row[1].c[0] = agc_dp_from_words(s[2]);             /* C3: DLOAD 8D  */
+    m->row[1].c[1] = kalc_dmp_sl1(ip, c[2], c[0], false); /* C4: DMP SL1   */
+    m->row[1].c[2] = kalc_dmp_sl1(ip, c[2], s[0], true);  /* C5: DMP DCOMP SL1 */
+    m->row[2].c[0] = kalc_dmp_sl1(ip, s[1], c[2], true);  /* C6: DMP DCOMP SL1 */
 
-    /* C2: cos(th) DMP sin(ps) DMP sin(ph) SL1, DAD PD14, SL1            */
-    agc_tp_t tp = agc_tp_shift(ip, agc_dp_mul_tp(agc_dp_mul_trunc(cth, sps), sph), 1); /* TP MPAC, 2^0 */
+    /* C7: (PD14 DMP sin(ps) SL1) pushed; cos(th) DMP sin(ph), DAD, SL1   */
+    agc_dp_words_t pd = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(pd14), s[2]), 1)); /* PDDL: PD14 */
 
-    tp             = agc_tp_add(ip, tp, agc_tp_from_dp(pd14));
-    m->row[0].c[2] = agc_tp_to_dp(agc_tp_shift(ip, tp, 1));
-    m->row[1].c[0] = sps;                                         /* C3: DLOAD 8D  */
-    m->row[1].c[1] = dmp_dad_shl(ip, cps, cph, 0, 1);             /* C4: DMP SL1   */
-    m->row[1].c[2] = agc_dp_neg(dmp_dad_shl(ip, cps, sph, 0, 1)); /* C5: DMP DCOMP SL1 */
-    m->row[2].c[0] = agc_dp_neg(dmp_dad_shl(ip, sth, cps, 0, 1)); /* C6: DMP DCOMP SL1 */
+    t              = agc_mpac_dad(ip, agc_mpac_dmp(agc_mpac_dload(c[1]), s[0]), pd);
+    m->row[2].c[1] = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, t, 1)));
 
-    /* C7: (PD14 DMP sin(ps) SL1) pushed; cos(th) DMP sin(ph), DAD, SL1  */
-    t              = dmp_dad_shl(ip, pd14, sps, 0, 1);
-    m->row[2].c[1] = dmp_dad_shl(ip, cth, sph, t, 1);
-
-    /* C8: (PD12 DMP sin(ps) SL1) pushed; cos(th) DMP cos(ph), DSU, SL1  */
-    t              = dmp_dad_shl(ip, pd12, sps, 0, 1);
-    m->row[2].c[2] = dmp_dad_shl(ip, cth, cph, agc_dp_neg(t), 1);
+    /* C8: (PD12 DMP sin(ps) SL1) pushed; cos(th) DMP cos(ph), DSU, SL1   */
+    pd             = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(pd12), s[2]), 1)); /* PDDL: PD12 */
+    t              = agc_mpac_dsu(ip, agc_mpac_dmp(agc_mpac_dload(c[1]), c[0]), pd);
+    m->row[2].c[2] = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, t, 1)));
 
     return (AGC_STATUS_OK);
 } /* agc_kalc_cdutodcm */
 
 /**********************************************************************
- * SUHALFA / SUHALFAP (ANGLFIND.agc p.410) -- DCMTOCDU quadrant
+ * BOVB SIGNMPAC on the word-level MPAC (ANGLFIND.agc DELCOMP): on an
+ * overflow the stored words are the signed maximum SIGNMPAC leaves.
  *
- * When the cosine term is negative the angle is +-.5 - angle.
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  I/O  interpreter state (OVFIND, cleared)
+ *   m   agc_tp_words_t  I    MPAC
+ *
+ * RETURNS: agc_dp_words_t -- the stored words, 2^0
+ **********************************************************************/
+static agc_dp_words_t store_signmpac(agc_interp_t *ip, agc_tp_words_t m)
+{
+    agc_dp_words_t w = agc_mpac_store(m); /* MPAC, MPAC+1 as held */
+
+    if (agc_interp_test_ovf(ip))
+    {
+        w = agc_dp_to_words(agc_rtb_signmpac(agc_dp_from_words(w))); /* SIGNMPAC */
+    }
+
+    return (w);
+}
+
+/**********************************************************************
+ * SUHALFA / SUHALFAP (ANGLFIND.agc p.410) -- DCMTOCDU quadrant on the
+ * pushed words
+ *
+ * When the cosine term is negative the angle is +-.5 - angle: DLOAD,
+ * DCOMP, BPL (BRANCH: the sign of the first non-zero word), DSU or DAD
+ * DPHALF, PUSH.
  *
  * ARGUMENTS:
  *   ip       agc_interp_t *  I/O  interpreter state
- *   ang      agc_dp_t        I    ARCSIN result, rev 2^0
+ *   ang      agc_dp_words_t  I    ARCSIN result as pushed, rev 2^0
  *   costerm  agc_dp_t        I    cosine element of the matrix
  *
- * RETURNS: agc_dp_t -- angle, rev 2^0
+ * RETURNS: agc_dp_words_t -- angle as stored, rev 2^0
  **********************************************************************/
-static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
+static agc_dp_words_t dcm_quadrant(agc_interp_t *ip, agc_dp_words_t ang, agc_dp_t costerm)
 {
-    if (costerm >= 0)
-    {
-        return (ang); /* OKTHETA / OKPHI    */
-    }
+    agc_dp_words_t r = ang; /* OKTHETA / OKPHI */
 
-    agc_dp_t n = agc_dp_neg(ang);                                                            /* DCOMP, rev 2^0 */
-    agc_dp_t r = (n >= 0) ? agc_dp_sub(ip, n, AGC_DP_HALF) : agc_dp_add(ip, n, AGC_DP_HALF); /* BPL SUHALFA, rev 2^0 */
+    if (costerm < 0)
+    {
+        const agc_dp_words_t half = agc_dp_to_words(AGC_DP_HALF);            /* DPHALF */
+        agc_tp_words_t       n    = agc_mpac_dcomp(agc_mpac_dload(ang));     /* DLOAD DCOMP */
+        const bool           pos  = (n.hi != 0) ? (n.hi > 0) : (n.mid >= 0); /* BPL */
+
+        n = pos ? agc_mpac_dsu(ip, n, half) : agc_mpac_dad(ip, n, half); /* SUHALFA / DAD */
+        r = agc_mpac_store(n);
+    }
 
     return (r);
 }
@@ -241,8 +265,9 @@ static agc_dp_t dcm_quadrant(agc_interp_t *ip, agc_dp_t ang, agc_dp_t costerm)
  * DCMTOCDU (ANGLFIND.agc pp.409-410) -- CDU angles from an S/C to SM
  * matrix
  *
- * cos(MGA), scale 1, is left in *cos_mga (S1).  The AGC's COS ... SL1
- * shifts the TP COS result; agc_dp_cos gives two words (F5 residual).
+ * cos(MGA), scale 1, is left in *cos_mga (S1): ARCSIN, PUSH, COS of the
+ * TP MPAC, SL1 with MPAC+2, BOVB SIGNMPAC. The angles stay the words the
+ * push-down list holds until VDEF.
  *
  * ARGUMENTS:
  *   ip       agc_interp_t *     I/O  interpreter state
@@ -259,18 +284,17 @@ agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t *
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t psi  = agc_dp_asin(ip, m->row[1].c[0]);    /* C3, rev 2^0 */
-    agc_dp_t cpsi = agc_dp_shl(ip, agc_dp_cos(psi), 1); /* S1 = COS(MGA), 2^0 */
+    const agc_tp_words_t psim = agc_mpac_asin(ip, agc_mpac_dload(agc_dp_to_words(m->row[1].c[0])));                           /* DLOAD* ARCSIN C3 */
+    const agc_dp_words_t psi  = agc_mpac_store(psim);                                                                         /* PUSH: PD +0 */
+    const agc_dp_words_t s1   = store_signmpac(ip, agc_mpac_shift(ip, agc_mpac_cos(psim), 1));                                /* COS SL1 BOVB: S1 */
+    agc_tp_words_t       q    = agc_mpac_dcomp(agc_mpac_dload(agc_dp_to_words(m->row[2].c[0])));                              /* -C6 */
+    const agc_dp_words_t th   = dcm_quadrant(ip, agc_mpac_store(agc_mpac_asin(ip, agc_mpac_ddv(ip, q, s1))), m->row[0].c[0]); /* THETA */
 
-    cpsi           = bovb_signmpac(ip, cpsi);                              /* S1       */
-    agc_dp_t q     = agc_dp_div(ip, agc_dp_neg(m->row[2].c[0]), cpsi);     /* -C6 / S1, 2^0 */
-    agc_dp_t theta = dcm_quadrant(ip, agc_dp_asin(ip, q), m->row[0].c[0]); /* THETA, rev 2^0 */
+    q                       = agc_mpac_dcomp(agc_mpac_dload(agc_dp_to_words(m->row[1].c[2])));                              /* -C5 */
+    const agc_dp_words_t ph = dcm_quadrant(ip, agc_mpac_store(agc_mpac_asin(ip, agc_mpac_ddv(ip, q, s1))), m->row[1].c[1]); /* PHI */
 
-    q            = agc_dp_div(ip, agc_dp_neg(m->row[1].c[2]), cpsi);     /* -C5 */
-    agc_dp_t phi = dcm_quadrant(ip, agc_dp_asin(ip, q), m->row[1].c[1]); /* PHI, rev 2^0 */
-
-    *angles  = agc_vec_make(phi, theta, psi); /* VECOFANG */
-    *cos_mga = cpsi;
+    *angles  = agc_vec_make(agc_dp_from_words(ph), agc_dp_from_words(th), agc_dp_from_words(psi)); /* VECOFANG: VDEF */
+    *cos_mga = agc_dp_from_words(s1);
 
     return (AGC_STATUS_OK);
 }
@@ -278,55 +302,63 @@ agc_status_t agc_kalc_dcmtocdu(agc_interp_t *ip, const agc_mat_t *m, agc_vec_t *
 /**********************************************************************
  * DELCOMP diagonal (ANGLFIND.agc p.407) -- u u (1 - cos A) + cos A
  *
- * PDDL COF, DSQ, DMP 4, DAD 2, SL3, BOVB SIGNMPAC; scale 1.
+ * PDDL COF, DSQ, DMP 4, DAD 2, SL3, BOVB SIGNMPAC; scale 1. The DMP takes
+ * PD4 = 1 - cos A as the words BDSU left (signs may disagree).
  *
  * ARGUMENTS:
  *   ip    agc_interp_t *  I/O  interpreter state
  *   u     agc_dp_t        I    axis component, B1
- *   omc2  agc_dp_t        I    (1 - cos A) / 2, 2^0
- *   cos8  agc_dp_t        I    cos A / 8, 2^0
+ *   omc2  agc_dp_words_t  I    (1 - cos A) / 2 as stored (PD4), 2^0
+ *   cos8  agc_dp_words_t  I    cos A / 8 as stored (PD2), 2^0
  *
  * RETURNS: agc_dp_t -- DEL element, 2^0
  **********************************************************************/
-static agc_dp_t del_diag(agc_interp_t *ip, agc_dp_t u, agc_dp_t omc2, agc_dp_t cos8)
+static agc_dp_t del_diag(agc_interp_t *ip, agc_dp_t u, agc_dp_words_t omc2, agc_dp_words_t cos8)
 {
-    agc_dp_t uu = agc_tp_to_dp(agc_dp_sq_tp(u)); /* DSQ, then DMP reads 2 words, 2^0 */
+    agc_tp_words_t m = agc_mpac_dsq(agc_mpac_dload(agc_dp_to_words(u))); /* DSQ, 2^0 */
 
-    return (bovb_signmpac(ip, dmp_dad_shl(ip, uu, omc2, cos8, 3)));
+    m = agc_mpac_dad(ip, agc_mpac_dmp(m, omc2), cos8); /* DMP 4, DAD 2 */
+    m = agc_mpac_shift(ip, m, 3);                      /* SL3          */
+
+    return (agc_dp_from_words(store_signmpac(ip, m)));
 }
 
 /**********************************************************************
  * DELCOMP off-diagonal pair (ANGLFIND.agc pp.408-409)
  *
  * PD6 = ui uj (1-cos A) $4 (DMP, DMP 4, SL1), PD8 = uk sin A $4;
- * out[0] = (PD8 + PD6) SL2, out[1] = (PD6 - PD8) SL2.
+ * out[0] = (PD8 + PD6) SL2, out[1] = (PD6 - PD8) SL2, all on the words
+ * the push-down list holds.
  *
  * ARGUMENTS:
  *   ip    agc_interp_t *  I/O  interpreter state
  *   ui    agc_dp_t        I    axis component i, B1
  *   uj    agc_dp_t        I    axis component j, B1
  *   uk    agc_dp_t        I    axis component k, B1
- *   omc2  agc_dp_t        I    (1 - cos A) / 2, 2^0
- *   sin2  agc_dp_t        I    sin A / 2, 2^0
+ *   omc2  agc_dp_words_t  I    (1 - cos A) / 2 as stored (PD4), 2^0
+ *   sin2  agc_dp_words_t  I    sin A / 2 as stored (PD0), 2^0
  *   out   agc_dp_t [2]    O    the two DEL elements, 2^0
  **********************************************************************/
-static void del_pair(agc_interp_t *ip, agc_dp_t ui, agc_dp_t uj, agc_dp_t uk, agc_dp_t omc2, agc_dp_t sin2, agc_dp_t out[2])
+static void del_pair(agc_interp_t *ip, agc_dp_t ui, agc_dp_t uj, agc_dp_t uk, agc_dp_words_t omc2, agc_dp_words_t sin2, agc_dp_t out[2])
 {
-    agc_dp_t uij = agc_dp_mul_trunc(ui, uj);         /* DMP, next DMP reads 2 words, 2^0 */
-    agc_dp_t pd6 = dmp_dad_shl(ip, uij, omc2, 0, 1); /* SL1, PDDL: $4, 2^0 */
-    agc_dp_t pd8 = agc_dp_mul_trunc(uk, sin2);       /* PUSH: $4, 2^0  */
+    agc_tp_words_t m = agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(ui)), agc_dp_to_words(uj)); /* DLOAD DMP, 2^0 */
 
-    out[0] = bovb_signmpac(ip, dmp_dad_shl(ip, uk, sin2, pd6, 2));
-    out[1] = bovb_signmpac(ip, agc_dp_shl(ip, agc_dp_sub(ip, pd6, pd8), 2));
+    m                         = agc_mpac_shift(ip, agc_mpac_dmp(m, omc2), 1);            /* DMP 4, SL1   */
+    const agc_dp_words_t pd6  = agc_mpac_store(m);                                       /* PDDL: $4     */
+    const agc_tp_words_t ksin = agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(uk)), sin2); /* DMP 0        */
+    const agc_dp_words_t pd8  = agc_mpac_store(ksin);                                    /* PUSH: $4     */
+
+    out[0] = agc_dp_from_words(store_signmpac(ip, agc_mpac_shift(ip, agc_mpac_dad(ip, ksin, pd6), 2)));                 /* DAD 6, SL2 */
+    out[1] = agc_dp_from_words(store_signmpac(ip, agc_mpac_shift(ip, agc_mpac_bdsu(ip, agc_mpac_dload(pd8), pd6), 2))); /* DLOAD, BDSU, SL2 */
 }
 
 /**********************************************************************
  * DELCOMP (ANGLFIND.agc pp.407-409) -- the rotation matrix DEL
  *
  * DEL = I cos(A) + U U^T (1 - cos(A)) + U* sin(A), scale 1, U half-unit
- * along the rotation axis.  Residual vs the rope: BDSU leaves 1 - cos A
- * as a sign-disagreeing word pair that DMPSUB truncates by its words
- * (F5).
+ * along the rotation axis. The push-down cells are kept as the words the
+ * AGC stores: BDSU leaves 1 - cos A as a sign-disagreeing word pair that
+ * DMPSUB multiplies by its words (oracle finding F5).
  *
  * ARGUMENTS:
  *   ip   agc_interp_t *  I/O  interpreter state
@@ -343,10 +375,13 @@ agc_status_t agc_kalc_delcomp(agc_interp_t *ip, agc_vec_t u, agc_dp_t a, agc_mat
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t sin2 = agc_dp_sin(a);                                        /* PD0 $2, 2^0 */
-    agc_dp_t cos2 = agc_dp_cos(a);                                        /* COS(A) / 2, 2^0 */
-    agc_dp_t cos8 = agc_dp_shr(cos2, 2);                                  /* PD2 $8, 2^0 */
-    agc_dp_t omc2 = bovb_signmpac(ip, agc_dp_sub(ip, AGC_DP_HALF, cos2)); /* PD4 (1-cos A)/2, $2 2^0 */
+    const agc_dp_words_t aw   = agc_dp_to_words(a);                                                /* A, rev 2^0 */
+    const agc_dp_words_t sin2 = agc_mpac_store(agc_mpac_sin(agc_mpac_dload(aw)));                  /* SIN PDDL: PD0 $2 */
+    const agc_tp_words_t cosm = agc_mpac_cos(agc_mpac_dload(aw));                                  /* COS, TP MPAC $2 */
+    const agc_dp_words_t cos2 = agc_mpac_store(cosm);                                              /* PUSH: PD2 */
+    const agc_dp_words_t cos8 = agc_mpac_store(agc_mpac_shift(ip, cosm, -2));                      /* SR2 PDDL: PD2 $8 */
+    const agc_dp_words_t half = agc_dp_to_words(AGC_DP_HALF);                                      /* DPHALF */
+    const agc_dp_words_t omc2 = store_signmpac(ip, agc_mpac_bdsu(ip, agc_mpac_dload(cos2), half)); /* BDSU BOVB: PD4 $2 */
 
     del->row[0].c[0] = del_diag(ip, u.c[0], omc2, cos8);
     del->row[1].c[1] = del_diag(ip, u.c[1], omc2, cos8);
@@ -461,7 +496,7 @@ agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const ui
         st = agc_kalc_cdutodcm(ip, cphi, &out->mfs); /* MFS    */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }

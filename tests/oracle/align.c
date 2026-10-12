@@ -309,7 +309,7 @@ static void rrnb(const char *t, long int tol)
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "DSPLY81");
-    (void) agc_lm_rrnb(&ip, oracle_in_raw(t, "TANGNB", 0), oracle_in_raw(t, "TANGNB", 1), &los);
+    agc_lm_rrnb(&ip, oracle_in_raw(t, "TANGNB", 0), oracle_in_raw(t, "TANGNB", 1), &los);
     oracle_cmp_vec(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol);
 }
 
@@ -342,7 +342,7 @@ static void rrangles(const char *t, bool along_y_expected, long int tol)
     los.c[0] = oracle_in_dp(t, "MPAC", 0);
     los.c[1] = oracle_in_dp(t, "MPAC", 3);
     los.c[2] = oracle_in_dp(t, "MPAC", 5);
-    (void) agc_lm_rrangles(&ip, los, oracle_in(t, "RADMODES", 0) != 0, a, b, &along_y);
+    agc_lm_rrangles(&ip, los, oracle_in(t, "RADMODES", 0) != 0, a, b, &along_y);
     (void) oracle_cmp(t, "along_y", (long int) along_y, (long int) along_y_expected, 0); /* bool as 0 / 1 */
 
     if (!along_y_expected)
@@ -657,7 +657,7 @@ static void sxtnb(const char *t, long int tol)
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "POODOO");
-    (void) agc_csm_sxtnb(&ip, oracle_in_raw(t, "VAC4+5", 0), oracle_in_raw(t, "VAC4+3", 0), &los);
+    agc_csm_sxtnb(&ip, oracle_in_raw(t, "VAC4+5", 0), oracle_in_raw(t, "VAC4+3", 0), &los);
 
     /* SIN SL1 on the MPAC words (SIN's MPAC +2 shifted in): exact.  */
     oracle_cmp_vec(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol);

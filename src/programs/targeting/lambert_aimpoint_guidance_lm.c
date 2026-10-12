@@ -101,11 +101,6 @@ static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
     b->hper = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hperi));
     b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hapo));
 
-    if (!AGC_ASSERT(b->hper <= RZ_MAXNM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -151,12 +146,8 @@ agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
     rz->vtig   = o.vatt;
     rz->vinit  = o.vatt;
     rz->tpass4 = agc_dp_add(&ip, rz->dellt4, tig);
-    st         = agc_rendz_selectmu(rz, o.x2 != 0); /* SXA,1 SXA,2   */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_rendz_initvel(&ip, rz, 0, 0, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE);
-    }
+    agc_rendz_selectmu(rz, o.x2 != 0); /* SXA,1 SXA,2   */
+    st         = agc_rendz_initvel(&ip, rz, 0, 0, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE);
 
     if (st != AGC_STATUS_OK)
     {

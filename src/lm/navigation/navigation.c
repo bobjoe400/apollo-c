@@ -537,7 +537,7 @@ static agc_status_t nav_orbit_change(agc_interp_t *ip)
     ctx->sv.rrect   = o.rnew;
     agc_integ_minirect(ctx, ncsmvel);                    /* VRECT    */
     st              = agc_integ_atopcsm(ip, ctx, 2);     /* X2 = 2   */
-    agc_status_t sw = agc_integ_intwake0();              /* INTWAKE0 */
+    agc_status_t sw = agc_integ_intwake_release();       /* INTWAKE0 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -635,7 +635,7 @@ agc_status_t agc_job_rendezvous_navigation_start(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_range_check(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_NAVIGATION_RANGE_CHECK);
     agc_erase_set_trkmkcnt(0); /* MARKCTR  */
     agc_interp_t ip;           /* interpreter state */
 
@@ -715,7 +715,7 @@ agc_status_t agc_job_rendezvous_navigation_terminate(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_attitude(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_NAVIGATION_ATTITUDE);
 
     if (agc_flag_test(AGC_FLAG_SURFFLAG))
     {
@@ -886,7 +886,7 @@ agc_status_t agc_job_rendezvous_navigation_update_states(void)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_designate(void)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_NAVIGATION_DESIGNATE);
 
     if (!agc_flag_test(AGC_FLAG_RNDVZFLG))
     {
@@ -1030,7 +1030,7 @@ agc_status_t agc_job_preferred_tracking_attitude(void)
  **********************************************************************/
 agc_status_t agc_job_preferred_tracking_attitude_check(void)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK);
 
     if (!agc_flag_test(AGC_FLAG_PREFERRED_TRACKING_ATTITUDE_ACTIVE))
     {

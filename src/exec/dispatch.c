@@ -837,10 +837,10 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         /* src/nav/integration */
         case AGC_JOB_STATEUP_STALL:
             return (agc_job_stateup_stall());
-        case AGC_JOB_STATINT1:
-            return (agc_job_statint1());
-        case AGC_JOB_STATINT1_STALL:
-            return (agc_job_statint1_stall());
+        case AGC_JOB_STATEINT_UPDATE:
+            return (agc_job_stateint_update());
+        case AGC_JOB_STATEINT_UPDATE_STALL:
+            return (agc_job_stateint_update_stall());
 
         /* src/programs/alignment */
         case AGC_JOB_ALIGN_COARSE_DONE:
@@ -1821,6 +1821,8 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_rendezvous_tracking_data_mark(ctx));
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE:
             return (agc_job_rendezvous_tracking_data_measure());
+        case AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE_CONTINUE:
+            return (agc_job_rendezvous_tracking_data_measure_continue());
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS:
             return (agc_job_rendezvous_tracking_data_residuals(ctx));
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS_PROCEED:
@@ -1943,10 +1945,10 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         /* src/nav/integration */
         case AGC_JOB_STATEUP_STALL:
             return (agc_job_stateup_stall());
-        case AGC_JOB_STATINT1:
-            return (agc_job_statint1());
-        case AGC_JOB_STATINT1_STALL:
-            return (agc_job_statint1_stall());
+        case AGC_JOB_STATEINT_UPDATE:
+            return (agc_job_stateint_update());
+        case AGC_JOB_STATEINT_UPDATE_STALL:
+            return (agc_job_stateint_update_stall());
 
         /* src/programs/alignment */
         case AGC_JOB_ALIGN_COARSE_DONE:

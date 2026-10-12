@@ -890,7 +890,7 @@ static void test_goprog(void)
     reset(AGC_VEHICLE_CSM);
     agc_phase_newphase(2, 5, false); /* 2.5 */
     CHECK(agc_restart_goprog() == AGC_STATUS_OK);
-    CHECK(job_present(AGC_JOB_STATINT1, 005, 0));
+    CHECK(job_present(AGC_JOB_STATEINT_UPDATE, 005, 0));
     CHECK(agc_rupt_t5_task() == AGC_TASK_T5IDLOC);
 }
 

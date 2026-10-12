@@ -588,13 +588,38 @@ static agc_w3_t end_dot(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
  **********************************************************************/
 agc_w3_t agc_w_dotsub(agc_vec_t u, agc_vec_t v, agc_ovf_t *ovfind)
 {
+    agc_w2_t uw[AGC_VEC_N]; /* u as sign-agreeing words */
+    agc_w2_t vw[AGC_VEC_N]; /* v as sign-agreeing words */
+
+    for (int k = 0; k < AGC_VEC_N; k++)
+    {
+        uw[k] = agc_w_split(u.c[k]);
+        vw[k] = agc_w_split(v.c[k]);
+    }
+
+    return (agc_w_dotsub_words(uw, vw, ovfind));
+}
+
+/**********************************************************************
+ * DOTSUB (INTERPRETER.agc p.1138) on the components as stored: each
+ * DMPSUB takes the two words of a component as the AGC holds them.
+ *
+ * ARGUMENTS:
+ *   u       const agc_w2_t [3]  I  MPAC vector, word pairs
+ *   v       const agc_w2_t [3]  I  operand vector, word pairs; scales add
+ *   ovfind  agc_ovf_t *         O  OVFIND, set to +-1 on overflow
+ *
+ * RETURNS: agc_w3_t -- u . v (TP MPAC)
+ **********************************************************************/
+agc_w3_t agc_w_dotsub_words(const agc_w2_t u[AGC_VEC_N], const agc_w2_t v[AGC_VEC_N], agc_ovf_t *ovfind)
+{
     agc_w3_t buf; /* BUF: x then x + y partial products */
     agc_w3_t t;   /* MPAC: the next partial product */
 
-    buf = agc_w_dmpsub(agc_w_split(u.c[0]), agc_w_split(v.c[0]));
-    t   = agc_w_dmpsub(agc_w_split(u.c[1]), agc_w_split(v.c[1]));
+    buf = agc_w_dmpsub(u[0], v[0]);
+    t   = agc_w_dmpsub(u[1], v[1]);
     buf = agc_w_dot_acc(buf, t, ovfind);
-    t   = agc_w_dmpsub(agc_w_split(u.c[2]), agc_w_split(v.c[2]));
+    t   = agc_w_dmpsub(u[2], v[2]);
     t   = end_dot(buf, t, ovfind);
 
     return (t);

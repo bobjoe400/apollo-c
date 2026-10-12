@@ -621,7 +621,7 @@ static void test_sextant_round_trip(void)
     const uint16_t trun   = cdu_deg(4.0 * ta_deg - 79.1015625); /* trunnion CDU word (SXTLOGIC inverse) */
     agc_vec_t      los;                                         /* SXTNB line of sight (NB), half-unit (2^1) */
 
-    CHECK(agc_csm_sxtnb(&ip, trun, shaft, &los) == AGC_STATUS_OK);
+    agc_csm_sxtnb(&ip, trun, shaft, &los);
     CHECK(near(rev(agc_csm_sxtlogic(trun)) * 360.0, ta_deg, 0.02));
     CHECK(near(agc_dp_to_double(agc_vec_abval(&ip, los), 1), 1.0, 1e-5));
     const agc_mat_t nb   = agc_mat_identity_half(); /* XNB, YNB, ZNB, half-unit rows */
@@ -637,7 +637,7 @@ static void test_sextant_round_trip(void)
     /* A star along the shaft axis: SAC 270 deg, PAC = 20DEGS-. */
     agc_vec_t z1; /* the identity row Z, half-unit (2^1) */
 
-    CHECK(agc_csm_sxtnb(&ip, cdu_deg(-79.1015625), 0, &z1) == AGC_STATUS_OK);
+    agc_csm_sxtnb(&ip, cdu_deg(-79.1015625), 0, &z1);
     agc_csm_sxtang(&ip, z1, &nb, &sac, &pac, &cult);
     CHECK(sac == 060000u);
 }
@@ -662,18 +662,18 @@ static void test_rr_round_trip(void)
     const uint16_t s = cdu_deg(30.0);  /* shaft CDU word */
     agc_vec_t      los;                /* RRNB line of sight (NB), half-unit (2^1) */
 
-    CHECK(agc_lm_rrnb(&ip, t, s, &los) == AGC_STATUS_OK);
+    agc_lm_rrnb(&ip, t, s, &los);
     uint16_t ma[2]   = {0, 0};
     uint16_t mb[2]   = {0, 0};
     bool     along_y = true; /* RRANGLES LUNDESCH case */
 
-    CHECK(agc_lm_rrangles(&ip, los, false, ma, mb, &along_y) == AGC_STATUS_OK);
+    agc_lm_rrangles(&ip, los, false, ma, mb, &along_y);
     CHECK(!along_y);
     CHECK(near(cdu_to_deg(ma[0]), -25.0, 0.03));
     CHECK(near(cdu_to_deg(ma[1]), 30.0, 0.03));
     CHECK(near(cdu_to_deg(mb[0]), -155.0, 0.03)); /* 205 deg        */
     CHECK(near(cdu_to_deg(mb[1]), -150.0, 0.03)); /* 210 deg        */
-    CHECK(agc_lm_rrangles(&ip, half_unit(0.0, 1.0, 0.0), false, ma, mb, &along_y) == AGC_STATUS_OK);
+    agc_lm_rrangles(&ip, half_unit(0.0, 1.0, 0.0), false, ma, mb, &along_y);
     CHECK(along_y);
 }
 
@@ -718,7 +718,7 @@ static void test_misc(void)
     const agc_vec_t dr  = agc_vec_make(agc_dp_from_double(1000.0, 18), 0, 0); /* position update, m 2^18 */
     const agc_vec_t dv  = agc_vec_make(0, agc_dp_from_double(0.01, -1), 0);   /* velocity update, m/cs 2^-1 */
 
-    CHECK(agc_integ_svdwn(&ip, false, 2, rcv, vcv, dr, dv, 0) == AGC_STATUS_OK);
+    agc_integ_svdwn(&ip, false, 2, rcv, vcv, dr, dv, 0);
     CHECK(near(agc_dp_to_double(agc_integ_r_other().c[0], 29), 2.001e6, 2.0));
     CHECK(near(agc_dp_to_double(agc_integ_v_other().c[1], 7), 16.01, 1e-3));
 }

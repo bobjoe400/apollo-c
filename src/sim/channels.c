@@ -12,7 +12,8 @@
  * Fictitious outputs kept as yaAGC computes them (agc_engine.c):
  *   0163       DSKY lamps not wired to a channel bit: KEY REL, OPR ERR and
  *              V/N flash (1.28 s period, off for the first 0.32 s, KEY REL
- *              and OPR ERR flash with it), RESTART, STBY (light test),
+ *              and OPR ERR flash with it), RESTART, STBY (light test, or
+ *              standby with the EL-off bit: clock.c),
  *              TEMP (channel 11 bit 4 or channel 30 bit 15); UpdateDSKY;
  *   0174-0176  IMU CDU coarse-align drive (CDUXCMD..CDUZCMD while channel
  *              14 bits 15-13 are set), at most 192 pulses per burst;
@@ -44,6 +45,7 @@
 #define LAMP_OPER_ERR   000100u
 #define LAMP_RESTART    000200u
 #define LAMP_STBY       000400u
+#define LAMP_EL_OFF     001000u /* yaAGC DSKY_EL_OFF: display blanked  */
 #define CH11_TEMP       000010u
 #define CH11_KEY_REL    000020u
 #define CH11_VN_FLASH   000040u
@@ -167,11 +169,12 @@ static void dsky_lamps(uint32_t cs)
 
     v |= ((c13 & CH13_LAMP_TEST) != 0u) ? (LAMP_RESTART | LAMP_STBY) : 0u;
     v |= g_restart_light ? LAMP_RESTART : 0u;
+    v |= sim_clock_standby() ? (LAMP_STBY | LAMP_EL_OFF) : 0u;
     v |= ((c11 & CH11_TEMP) != 0u || (c30 & CH30_TEMP_BAD) != 0u) ? LAMP_TEMP : 0u;
     v |= ((c11 & CH11_KEY_REL) != 0u) ? LAMP_KEY_REL : 0u;
     v |= ((c11 & CH11_OPER_ERR) != 0u) ? LAMP_OPER_ERR : 0u;
 
-    if (((cs / FLASH_STEP_CS) % FLASH_PERIOD) == 0u)
+    if (((cs / FLASH_STEP_CS) % FLASH_PERIOD) == 0u && !sim_clock_standby())
     { /* the dark quarter of the 1.28 s flash cycle                    */
         v |= ((c11 & CH11_VN_FLASH) != 0u) ? LAMP_VN_FLASH : 0u;
         v &= (uint16_t) ~(LAMP_KEY_REL | LAMP_OPER_ERR);

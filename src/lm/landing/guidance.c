@@ -44,6 +44,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
@@ -178,12 +179,12 @@ static agc_sp_t ldg_raw_high(agc_dp_t v, agc_sp_t hi)
 static agc_dp_t ldg_das(agc_dp_t a, agc_sp_t *a_hi, agc_dp_t b)
 {
     agc_sp_t       hi = ldg_raw_high(a, *a_hi); /* stored major word, 2^S */
-    agc_lm_words_t w  = {hi, (agc_sp_t) (a - (int32_t) hi * 16384)};
+    agc_dp_words_t w  = {hi, (agc_sp_t) (a - (int32_t) hi * 16384)};
 
-    w     = agc_lm_das(w, agc_lm_words(b));
+    w     = agc_lm_das(w, agc_dp_to_words(b));
     *a_hi = w.hi;
 
-    return (agc_lm_words_value(w));
+    return (agc_dp_from_words(w));
 }
 
 /**********************************************************************
@@ -193,21 +194,23 @@ static agc_dp_t ldg_das(agc_dp_t a, agc_sp_t *a_hi, agc_dp_t b)
  * Returns (MPAC, MPAC+1); POLY never reads the MPAC+2 left behind.
  *
  * ARGUMENTS:
- *   m  agc_lm_words_t  I    MPAC words, scale 2^M
- *   x  agc_lm_words_t  I    operand words, scale 2^X
+ *   m  agc_dp_words_t  I    MPAC words, scale 2^M
+ *   x  agc_dp_words_t  I    operand words, scale 2^X
  *
- * RETURNS: agc_lm_words_t -- (MPAC, MPAC+1), scale 2^(M+X)
+ * RETURNS: agc_dp_words_t -- (MPAC, MPAC+1), scale 2^(M+X)
  **********************************************************************/
-static agc_lm_words_t ldg_dmpsub(agc_lm_words_t m, agc_lm_words_t x)
+static agc_dp_words_t ldg_dmpsub(agc_dp_words_t m, agc_dp_words_t x)
 {
     int            ovf = 0; /* net overflow of the middle sums (A)    */
-    agc_lm_words_t mid = {0, agc_dp_high(agc_sp_mul(m.lo, x.lo))};
+    agc_dp_words_t mid = {0, agc_dp_high(agc_sp_mul(m.lo, x.lo))};
 
-    mid                = agc_lm_das(mid, agc_lm_words(agc_sp_mul(m.hi, x.lo))); /* AD */
-    mid                = agc_lm_das_ovf(mid, agc_lm_words(agc_sp_mul(m.lo, x.hi)), &ovf);
-    agc_lm_words_t top = {(agc_sp_t) ovf, mid.hi};                              /* XCH MPAC       */
+    mid                = agc_lm_das(mid, agc_dp_to_words(agc_sp_mul(m.hi, x.lo))); /* AD */
+    mid                = agc_dp_words_das(mid,
+                                          agc_dp_to_words(agc_sp_mul(m.lo, x.hi)),
+                                          &ovf);
+    agc_dp_words_t top = {(agc_sp_t) ovf, mid.hi};                                 /* XCH MPAC       */
 
-    return (agc_lm_das(top, agc_lm_words(agc_sp_mul(m.hi, x.hi))));
+    return (agc_lm_das(top, agc_dp_to_words(agc_sp_mul(m.hi, x.hi))));
 }
 
 /**********************************************************************
@@ -216,22 +219,22 @@ static agc_lm_words_t ldg_dmpsub(agc_lm_words_t m, agc_lm_words_t x)
  * each coefficient ("user's responsibility to assure no overflow").
  *
  * ARGUMENTS:
- *   x       agc_lm_words_t    I    argument words (as stored), 2^X
+ *   x       agc_dp_words_t    I    argument words (as stored), 2^X
  *   coef    const agc_dp_t *  I    coef[0..degree], scale of the result
  *   degree  int               I    polynomial degree, 1..LDG_TTF_DEGREE
  *
  * RETURNS: agc_dp_t -- value of the series, scale of coef
  **********************************************************************/
-static agc_dp_t ldg_powrsers(agc_lm_words_t x, const agc_dp_t *coef, int degree)
+static agc_dp_t ldg_powrsers(agc_dp_words_t x, const agc_dp_t *coef, int degree)
 {
-    agc_lm_words_t m = agc_lm_words(coef[degree]); /* A(N) to MPAC   */
+    agc_dp_words_t m = agc_dp_to_words(coef[degree]); /* A(N) to MPAC   */
 
     for (int i = degree - 1; i >= 0; i--)
     { /* POLY2 / POLYLOOP                                            */
-        m = agc_lm_das(ldg_dmpsub(m, x), agc_lm_words(coef[i]));
+        m = agc_lm_das(ldg_dmpsub(m, x), agc_dp_to_words(coef[i]));
     }
 
-    return (agc_lm_words_value(m));
+    return (agc_dp_from_words(m));
 }
 
 /**********************************************************************
@@ -395,7 +398,7 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, a
     /* ROOTPS = the guess as stored (DCA MPAC); SHORTMP by PRECROOT keeps
      * MPAC, MPAC+1 of the words' products. DEVIATION: the stale MPAC+2
      * product, which can only carry one LSB into DXCRIT, is ignored.   */
-    agc_lm_words_t x = {ldg_raw_high(guess, *root_hi), 0}; /* ROOTPS */
+    agc_dp_words_t x = {ldg_raw_high(guess, *root_hi), 0}; /* ROOTPS */
 
     x.lo            = (agc_sp_t) (guess - (int32_t) x.hi * 16384);
     agc_dp_t gp     = agc_sp_mul(x.hi, precroot) + agc_dp_high(agc_sp_mul(x.lo, precroot)); /* guess precroot, high and low products, 2^X */
@@ -413,7 +416,7 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, a
         agc_dp_t f   = ldg_powrsers(x, coef, degree);    /* residual at x, scale 2^C */
         agc_dp_t mdx = agc_dp_div(&ip, f, d);            /* -DX = residual/derivative, 2^X */
 
-        x = agc_lm_das(x, agc_lm_words(-mdx)); /* DCS MPAC, DAS ROOTPS */
+        x = agc_lm_das(x, agc_dp_to_words(-mdx)); /* DCS MPAC, DAS ROOTPS */
 
         if (mode == AGC_LM_ROOT_MAX_PASSES)
         {
@@ -422,7 +425,7 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, a
 
         if (agc_dp_abs(mdx) <= dxcrit)
         { /* CCS on ABS(DX) - DXCRIT: not positive -> ROOTSTOR          */
-            *root    = agc_lm_words_value(x);
+            *root    = agc_dp_from_words(x);
             *root_hi = x.hi;
             *passes  = mode + 1;
 
@@ -430,7 +433,7 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, a
         }
     }
 
-    *root    = agc_lm_words_value(x);
+    *root    = agc_dp_from_words(x);
     *root_hi = x.hi;
     *passes  = AGC_LM_ROOT_MAX_PASSES;
 
@@ -722,16 +725,16 @@ agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     {
         agc_status_t st = agc_lm_throttle(); /* GDUMP1           */
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st);
         }
 
         const agc_status_t st_cduw = agc_lm_findcduw_from_unfc(ip); /* step status */
 
-        if (!AGC_ASSERT(st_cduw == AGC_STATUS_OK))
+        if (st_cduw != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st_cduw);
         }
     }
 
@@ -784,14 +787,7 @@ agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx)
         return (ldg_display(ctx, AGC_DSKY_REGODSPR, 64)); /* REDES-OK     */
     }
 
-    agc_status_t st = ldg_display(ctx, AGC_DSKY_REFLASHR, 64); /* step status */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st); /* TCF ENDLLJOB; answers start jobs */
+    return (ldg_display(ctx, AGC_DSKY_REFLASHR, 64)); /* TCF ENDLLJOB; answers start jobs */
 }
 
 /**********************************************************************
@@ -934,9 +930,9 @@ agc_status_t agc_lm_start_approach_phase(void)
     agc_chan_or(AGC_CHAN_CHAN13, AGC_CH013_RSTTRAP31A); /* BIT12 */
     agc_flag_clear(AGC_FLAG_REDFLAG);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (AGC_STATUS_OK);
@@ -955,9 +951,9 @@ agc_status_t agc_lm_start_velocity_nulling(void)
     agc_lm_ldg()->wchvert = -2;
     agc_flag_clear(AGC_FLAG_XOVINFLG);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if (!AGC_ASSERT(agc_lm_ldg()->wchvert < 0))
@@ -1001,9 +997,9 @@ static agc_status_t ldg_front(agc_interp_t *ip)
         }
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     st = agc_lm_ttfincr(ip);
@@ -1063,9 +1059,9 @@ static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     st = agc_lm_cgcalc(ip); /* AFTRGUID         */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     agc_sp_t ex = ldg_extlogic(); /* phase of the WHATEXIT entry, unscaled */

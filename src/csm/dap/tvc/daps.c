@@ -546,7 +546,7 @@ agc_status_t agc_task_pitchdap(void)
 
     agc_status_t st = tvcd_entry(TVCD_PITCH); /* one pitch pass        */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -571,7 +571,7 @@ agc_status_t agc_task_yawdap(void)
 
     agc_status_t st = tvcd_entry(TVCD_YAW); /* one yaw pass            */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -604,7 +604,7 @@ agc_status_t agc_task_dapinit(void)
     t->pcduypst = agc_erase_cduy();
     t->pcduzpst = agc_erase_cduz();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }

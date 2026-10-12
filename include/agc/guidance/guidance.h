@@ -73,13 +73,8 @@ typedef struct agc_cdutrig
     agc_dp_t coscdu[3];  /* COSCDU   Y Z X, cos(angle)/2, scale 2^1          */
 } agc_cdutrig_t;
 
-/* A vector as AX*SR*T leaves it in VBUF: three DP components, each as
- * its two stored words (signs may disagree after the DAS/DDOUBL passes).
- * Same scale as the agc_vec_t it stands for.                               */
-typedef struct agc_vec_words
-{
-    agc_dp_words_t c[3]; /* X, Y, Z components as stored */
-} agc_vec_words_t;
+/* AX*SR*T leaves VBUF as agc_vec_words_t (include/agc/core/word.h): the
+ * DAS/DDOUBL passes leave words whose signs may disagree.                  */
 
 /* AX*SR*T direction: A = +3 for NB->SM, -3 for SM->NB.                     */
 typedef enum agc_axisrot_dir

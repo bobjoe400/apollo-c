@@ -437,11 +437,6 @@ static agc_status_t svct3(void)
 
     agc_status_t st = agc_exec_novac(EXEC_PRIO35, AGC_JOB_NBDONLY); /* NOVAC NBDONLY outcome */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 
@@ -666,9 +661,9 @@ agc_status_t agc_waitlist_t3rupt(void)
         /* BAILOUT/POODOO in a task: WHIMPER -> ENEMA after the RUPT. */
         agc_status_t st = agc_exec_service_restart(); /* ENEMA outcome */
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
+        if (st != AGC_STATUS_OK && st != AGC_STATUS_BAILOUT)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st); /* a BAILOUT inside ENEMA is served at the next point */
         }
     }
 

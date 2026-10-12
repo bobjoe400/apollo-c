@@ -1,0 +1,45 @@
+# Scenario (CSM): P06 standby and back, the SBY/PRO circuit and the scaler.
+#
+# AGC behaviour checked (Comanche055, IMU_MODE_SWITCHING_ROUTINES.agc,
+# C pp.1445-1448):
+# * PRESTAND (P06): NODOFLAG set, TIME2/TIME1 and the scaler (channels 3
+#   and 4, FINETIME / SCALPREP) snapshotted into TIME2SAV / SCALSAVE, the
+#   standby enable bit (channel 13 bit 11) set, POSTAND made the group 4
+#   restart point, then V50N25 R1 00062 "please go to standby".
+# * Hardware (yaAGC agc_engine.c SBY/PRO circuit): PRO held across the
+#   scaler's 1.28 s sample and the decision 0.64 s later, with channel 13
+#   bit 11 set, puts the computer in standby: GOJAM, STBY lamp and the
+#   EL-off bit on the fictitious channel 0163 (yaDSKY2 blanks its
+#   display), nothing runs but the scaler. PRO held again (after a
+#   release) brings it back: STBY off, GOJAM -> GOPROG.
+# * POSTAND: TIME2/TIME1 = TIME2SAV + (scaler now - SCALSAVE) / 32, so
+#   the clock (V16N36) shows the time since power-on as if the computer
+#   had never stopped; NODOFLAG cleared, GOTOPOOH flashes V37 (GOP00FIX,
+#   FRESH_START_AND_RESTART p.194) with PROG 06 still up.
+vehicle csm
+run 300                         # power-on: GOJAM -> GOPROG
+keys R V37E00E                  # RSET, P00
+until PROG 00 within 300
+keys V37E06E                    # P06
+until R1 00062 within 500
+expect VERB 50
+expect NOUN 25
+expect FLASH on
+pro 200                         # SBY: held 2 s
+run 50
+expect LAMP STBY on
+expect LAMP ELOFF on
+run 1000                        # 10 s in standby
+expect LAMP STBY on
+expect PROG 06                  # relays hold their last word (EL off)
+pro 200                         # SBY again: out of standby
+run 100
+expect LAMP STBY off
+expect LAMP ELOFF off
+until VERB 37 within 500        # POSTAND -> GOTOPOOH
+expect FLASH on
+keys 00E
+until PROG 00 within 300
+keys V16N36E                    # clock monitor
+run 150
+expect CLOCK now ~110           # monitor refreshes once a second

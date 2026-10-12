@@ -243,29 +243,23 @@ typedef struct lm_dap
 
 lm_dap_t *lm_dap_state(void);
 
-/* ---- word-level arithmetic (arith.c) ----------------------------------- */
-typedef struct lm_dp_pair
-{
-    agc_sp_t hi; /* A / major word, scale of the pair */
-    agc_sp_t lo; /* L / minor word, scaled 2^-14 of the pair */
-} lm_dp_pair_t;
-
-lm_dp_pair_t lm_dap_mp(agc_sp_t a, agc_sp_t b);          /* MP: A,L = a*b     */
-agc_sp_t     lm_dap_mphi(agc_sp_t a, agc_sp_t b);        /* A after MP         */
-agc_sp_t     lm_dap_dv(lm_dp_pair_t n, agc_sp_t d);      /* DV quotient        */
-lm_dp_pair_t lm_dap_dvqr(lm_dp_pair_t n, agc_sp_t d);    /* DV: (A, L)       */
-lm_dp_pair_t lm_dap_das(lm_dp_pair_t x, lm_dp_pair_t y); /* DAS (wraps)    */
-lm_dp_pair_t lm_dap_ddoubl(lm_dp_pair_t x);              /* DDOUBL (wraps)     */
-agc_sp_t     lm_dap_wrap(int32_t v);                     /* ADS/XCH store      */
-agc_sp_t     lm_dap_sat(int32_t v);                      /* OVERSUB / LIMITS   */
-bool         lm_dap_ovf(int32_t v);                      /* TS skip test       */
-agc_sp_t     lm_dap_msu(uint16_t a, uint16_t b);         /* MSU: 1's at pi     */
-uint16_t     lm_dap_ones_to_twos(int32_t v);             /* MSU + 1STOTWOS     */
-agc_sp_t     lm_dap_ccs_dim(agc_sp_t v);                 /* CCS: |v| - 1, >= 0 */
-agc_sp_t     lm_dap_dim(agc_sp_t v);                     /* DIM               */
-agc_sp_t     lm_dap_dvovsub(lm_dp_pair_t n, agc_sp_t d); /* DVOVSUB        */
-int32_t      lm_dap_dpval(lm_dp_pair_t x);               /* hi*2^14 + lo       */
-lm_dp_pair_t lm_dap_dpmake(int32_t v);                   /* sign-agreeing pair */
+/* ---- word-level arithmetic (arith.c) on agc_dp_words_t pairs ----------- */
+agc_dp_words_t lm_dap_mp(agc_sp_t a, agc_sp_t b);              /* MP: A,L = a*b     */
+agc_sp_t       lm_dap_mphi(agc_sp_t a, agc_sp_t b);            /* A after MP         */
+agc_sp_t       lm_dap_dv(agc_dp_words_t n, agc_sp_t d);        /* DV quotient        */
+agc_dp_words_t lm_dap_dvqr(agc_dp_words_t n, agc_sp_t d);      /* DV: (A, L)       */
+agc_dp_words_t lm_dap_das(agc_dp_words_t x, agc_dp_words_t y); /* DAS (wraps)    */
+agc_dp_words_t lm_dap_ddoubl(agc_dp_words_t x);                /* DDOUBL (wraps)     */
+agc_sp_t       lm_dap_wrap(int32_t v);                         /* ADS/XCH store      */
+agc_sp_t       lm_dap_sat(int32_t v);                          /* OVERSUB / LIMITS   */
+bool           lm_dap_ovf(int32_t v);                          /* TS skip test       */
+agc_sp_t       lm_dap_msu(uint16_t a, uint16_t b);             /* MSU: 1's at pi     */
+uint16_t       lm_dap_ones_to_twos(int32_t v);                 /* MSU + 1STOTWOS     */
+agc_sp_t       lm_dap_ccs_dim(agc_sp_t v);                     /* CCS: |v| - 1, >= 0 */
+agc_sp_t       lm_dap_dim(agc_sp_t v);                         /* DIM               */
+agc_sp_t       lm_dap_dvovsub(agc_dp_words_t n, agc_sp_t d);   /* DVOVSUB        */
+int32_t        lm_dap_dpval(agc_dp_words_t x);                 /* hi*2^14 + lo       */
+agc_dp_words_t lm_dap_dpmake(int32_t v);                       /* sign-agreeing pair */
 
 /* ---- DAP interface (dapif.c) -------------------------------------------- */
 agc_status_t lm_dap_callaccs(void);              /* CALLACCS: NOVAC 1/ACCJOB  */
@@ -316,11 +310,11 @@ agc_status_t lm_dap_jtlst(void);                          /* JTLST (input T6FURT
 agc_sp_t     lm_dap_time6_value(void);                    /* TIME6 as a 1's value      */
 
 /* ---- control laws ------------------------------------------------------- */
-agc_status_t lm_dap_tjetlaw(void);                                                   /* TJETLAW (tjetlaw.c)       */
-agc_status_t lm_dap_spsrcs(void);                                                    /* SPSRCS (spsrcs.c)         */
-agc_status_t lm_dap_gts(void);                                                       /* GTS .. CLOSEOUT (gts.c)   */
-agc_status_t lm_dap_gimbal_drive_update(void);                                       /* ACDT+C12 (gts.c)          */
-agc_sp_t     lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex); /* GTSQRT (gts.c)          */
+agc_status_t lm_dap_tjetlaw(void);                                                     /* TJETLAW (tjetlaw.c)       */
+agc_status_t lm_dap_spsrcs(void);                                                      /* SPSRCS (spsrcs.c)         */
+agc_status_t lm_dap_gts(void);                                                         /* GTS .. CLOSEOUT (gts.c)   */
+agc_status_t lm_dap_gimbal_drive_update(void);                                         /* ACDT+C12 (gts.c)          */
+agc_sp_t     lm_dap_gtsqrt(agc_dp_words_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex); /* GTSQRT (gts.c)          */
 
 /* ---- 1/ACCS (accs.c, accont.c) ------------------------------------------ */
 agc_status_t lm_dap_switch_curves(void); /* 1/ACCONT (accont.c)       */

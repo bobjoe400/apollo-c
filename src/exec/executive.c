@@ -843,9 +843,9 @@ agc_status_t agc_exec_run_one(void)
          * job's core set is wiped by STARTSB2, so no ENDOFJOB.        */
         agc_status_t rs = agc_exec_service_restart(); /* ENEMA outcome */
 
-        if (!AGC_ASSERT(rs == AGC_STATUS_OK || rs == AGC_STATUS_BAILOUT))
+        if (rs != AGC_STATUS_OK && rs != AGC_STATUS_BAILOUT)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (rs); /* a BAILOUT inside ENEMA is served at the next point */
         }
     }
     else if (gen == generation)

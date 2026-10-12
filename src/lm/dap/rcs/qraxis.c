@@ -266,9 +266,9 @@ static agc_status_t trygts(lm_dap_t *d)
         agc_relint();
         d->ingts = 0;
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st);
         }
     }
 
@@ -305,9 +305,9 @@ agc_status_t lm_dap_qraxis(void)
     {
         agc_status_t sq = lm_dap_qerrcalc(); /* QERRCALC status */
 
-        if (!AGC_ASSERT(sq == AGC_STATUS_OK))
+        if (sq != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (sq);
         }
     }
 

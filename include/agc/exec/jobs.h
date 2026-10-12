@@ -135,9 +135,9 @@ typedef enum agc_job_id
     AGC_JOB_STANDBY_REQUEST,                 /* P06 GOPERF1 V50N25 R1=00062 */
 
     /* ---- src/nav/integration */
+    AGC_JOB_STATEINT_UPDATE,                     /* 2.5  nav-integ */
+    AGC_JOB_STATEINT_UPDATE_STALL,
     AGC_JOB_STATEUP_STALL,
-    AGC_JOB_STATINT1,                            /* 2.5  nav-integ */
-    AGC_JOB_STATINT1_STALL,
     /* ---- src/guidance */
     AGC_JOB_EXTERNAL_DELTA_V,                    /* P30 */
     AGC_JOB_EXTERNAL_DELTA_V_ACCEPT,
@@ -768,6 +768,7 @@ typedef enum agc_job_id
     AGC_JOB_RENDEZVOUS_TRACKING_DATA_LOS_ALARM,         /* LM: alarm 525 */
     AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK,              /* LM: LRS22.1 after RRRANGE */
     AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE,           /* LM: LSR22.3 RANGEBQ.. after R65 */
+    AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE_CONTINUE,  /* LM: GRP2PC restart point: the measurement WHCHREAD names */
     AGC_JOB_RENDEZVOUS_TRACKING_DATA_NEXT,              /* LM: R22LEM42 */
     AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE,             /* LM: LRS22.1 after RRRDOT */
     AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESIDUALS,         /* LM: N49DSP */

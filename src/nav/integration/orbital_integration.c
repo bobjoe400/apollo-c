@@ -49,7 +49,7 @@
  *
  * NOTES:
  *   GAMCOMP, COMTERM, QUALITY1-3 and the OBLATE tail run on AGC words
- *   (agc_mpac_*, vec_words_t): DSU/BDSU/DAD results whose words disagree
+ *   (agc_mpac_*, agc_vec_words_t): DSU/BDSU/DAD results whose words disagree
  *   in sign feed DMP, DMPR, VXSC and VSR exactly as the AGC holds them
  *   (docs/modules/review-nav-integ.md N8).
  *
@@ -149,8 +149,7 @@ static const int ASCALE_S2[ASCALE_N] = {-6, -4, -12, -2, -6, -2};
 static agc_sp_t e3j22r2m; /* E3J22R2M, SP pad load, 2^58 */
 static agc_sp_t e32c31rm; /* E32C31RM, SP pad load, 2^80 */
 
-#define INTEG_SHIFT_WORDS 3                            /* VRIGHT2 whole-word passes: a DP shifted 42 places is gone */
-#define TP_HALF           ((agc_tp_t) 0x20000000000LL) /* 2^41: TP .5             */
+#define TP_HALF ((agc_tp_t) 0x20000000000LL) /* 2^41: TP .5             */
 
 /**********************************************************************
  * E3J22R2M / E32C31RM (ERASABLE_ASSIGNMENTS.agc, pad loads) -- set the lunar
@@ -260,16 +259,9 @@ void agc_integ_setmoon(agc_integ_ctx_t *ctx, bool moon)
  *   ip        agc_interp_t *     I/O  interpretive state (OVFIND)
  *   ctx       agc_integ_ctx_t *  I/O  integration erasables (the state
  *                                     vector)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL ip
  *********************************************************************/
-agc_status_t agc_integ_rectify(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+void agc_integ_rectify(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ip != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const int p = ctx->pbody; /* PBODY: 0 earth, 2 moon */
 
     ctx->sv.rrect     = agc_vec_add(ip, agc_vec_shr(ctx->sv.deltav, 7 + p), ctx->sv.rcv);
@@ -277,8 +269,6 @@ agc_status_t agc_integ_rectify(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     const agc_vec_t v = agc_vec_add(ip, agc_vec_shr(ctx->sv.nuv, 4 + p), ctx->sv.vcv); /* VRECT, m/cs 2^7 (moon 2^5) */
 
     agc_integ_minirect(ctx, v);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -431,18 +421,14 @@ static agc_integ_next_t gobaque(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     ctx->tau    = agc_dp_sub(ip, ctx->sv.tc, h28);
     ctx->sv.tet = agc_dp_sub(ip, ctx->sv.tet, h28);
 
-    agc_status_t st = agc_integ_kepprep(ip, ctx); /* status of KEPPREP, then RECTIFY */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_integ_rectify(ip, ctx);
-    }
+    agc_status_t st = agc_integ_kepprep(ip, ctx); /* status of KEPPREP */
 
     if (st != AGC_STATUS_OK)
     {
         return (agc_integ_fail(ctx, st));
     }
 
+    agc_integ_rectify(ip, ctx);
     agc_flag_put(AGC_FLAG_RPQFLAG, true);
 
     return (INTEG_NEXT_TESTLOOP);
@@ -505,216 +491,6 @@ static agc_tp_t vsq_tp(agc_interp_t *ip, agc_vec_t v)
     return (s);
 }
 
-/* A vector as the three word pairs the AGC holds after a VXSC or VSU
- * (the words of a component may disagree in sign).                      */
-typedef struct vec_words
-{
-    agc_dp_words_t c[AGC_VEC_N]; /* components, words as held */
-} vec_words_t;
-
-/**********************************************************************
- * VXSC with the scalar in MPAC (DVXSC, INTERPRETER.agc p. 1146) -- DMPSUB and
- * VROUND per component on the words as held, so a DAD result whose words
- * disagree in sign multiplies as the AGC's does
- *
- * FUNCTION NAME: vxsc_mpac
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------------
- *   ip        agc_interp_t *  I/O  interpretive state (OVFIND)
- *   s         agc_tp_words_t  I    scalar MPAC as words (MPAC+2 unused),
- *                                  scale 2^A
- *   v         vec_words_t     I    vector operand as stored words, scale 2^B
- *
- * RETURNS: vec_words_t -- the product as words, scale 2^(A+B)
- *********************************************************************/
-static vec_words_t vxsc_mpac(agc_interp_t *ip, agc_tp_words_t s, vec_words_t v)
-{
-    vec_words_t r; /* product words */
-
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-        r.c[i] = agc_mpac_store(agc_mpac_dmpr(ip, s, v.c[i]));
-    }
-
-    return (r);
-}
-
-/**********************************************************************
- * AGC: none (C only) -- a stored vector's words, sign-agreeing as UNIT and the
- * constants leave them
- *
- * FUNCTION NAME: vec_to_words
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  ------------------------------------------
- *   v         agc_vec_t   I    vector, any scale
- *
- * RETURNS: vec_words_t -- the same vector as word pairs
- *********************************************************************/
-static vec_words_t vec_to_words(agc_vec_t v)
-{
-    vec_words_t r; /* words of v */
-
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-        r.c[i] = agc_dp_to_words(v.c[i]);
-    }
-
-    return (r);
-}
-
-/**********************************************************************
- * AGC: none (C only) -- the value of a word-level vector
- *
- * FUNCTION NAME: vec_from_words
- *
- * ARGUMENTS:
- *   Argument  Type         I/O  Description (scale)
- *   --------  -----------  ---  -----------------------------------------
- *   v         vec_words_t  I    vector as word pairs, any scale
- *
- * RETURNS: agc_vec_t -- the same vector as values
- *********************************************************************/
-static agc_vec_t vec_from_words(vec_words_t v)
-{
-    agc_vec_t r; /* values of v, its scale 2^N */
-
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-        r.c[i] = agc_dp_from_words(v.c[i]);
-    }
-
-    return (r);
-}
-
-/**********************************************************************
- * VSSR / VRIGHT2 / VSHRRND (INTERPRETER.agc pp. 1153, 1159) -- VSR n on one
- * component's words: while 14 or more places remain the words move down one
- * word, rounded by the minor word (SETROUND, DAS); the rest (< 14) rounds as
- * MPACSRND / VSHRRND.
- *
- * FUNCTION NAME: vsr_words
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------------
- *   ip        agc_interp_t *  I/O  interpretive state (OVFIND)
- *   c         agc_dp_words_t  I    component as stored words, scale 2^S
- *   n         int             I    right shift, n >= 1
- *
- * RETURNS: agc_dp_words_t -- the shifted, rounded words, scale 2^(S+n)
- *********************************************************************/
-static agc_dp_words_t vsr_words(agc_interp_t *ip, agc_dp_words_t c, int n)
-{
-    agc_dp_words_t p    = c; /* component words, being shifted */
-    int            left = n; /* places still to shift */
-
-    for (int pass = 0; (pass < INTEG_SHIFT_WORDS) && (left >= AGC_SP_BITS); pass++)
-    {
-        const int            twice = 2 * (int) p.lo; /* the minor word doubled (SETROUND) */
-        const agc_dp_words_t moved = {0, p.hi};
-        agc_dp_words_t       rnd   = {0, 0};         /* SETROUND carry: 0 or +-1 in L */
-
-        if (twice > AGC_SP_MAX)
-        {
-            rnd.lo = 1; /* DOUBLE overflowed: round up */
-        }
-        else if (twice < -AGC_SP_MAX)
-        {
-            rnd.lo = -1; /* negative overflow: round down */
-        }
-        else
-        {
-            /* |minor word| < 1/2: no rounding carry */
-        }
-
-        int ovf = 0; /* DAS of a carry into a zero major word: none */
-
-        p    = agc_dp_words_das(moved, rnd, &ovf); /* XCH MPAC, SETROUND, DAS */
-        left -= AGC_SP_BITS;
-    }
-
-    if (left > 0)
-    {
-        p = agc_mpac_store(agc_mpac_shift_round(ip, agc_mpac_dload(p), -left)); /* VSHRRND */
-    }
-
-    return (p);
-}
-
-/**********************************************************************
- * VSSL / VSSR (INTERPRETER.agc p. 1153) -- VSL* / VSR* on a word-level vector:
- * a left shift doubles each component by DAS (wrapping, OVFIND), a right shift
- * rounds each component's words (vsr_words)
- *
- * FUNCTION NAME: vshift_words
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------------
- *   ip        agc_interp_t *  I/O  interpretive state (OVFIND)
- *   v         vec_words_t     I    vector as word pairs, scale 2^S
- *   n         int             I    shift: > 0 left, < 0 right
- *
- * RETURNS: vec_words_t -- the shifted vector as word pairs, scale 2^(S-n)
- *********************************************************************/
-static vec_words_t vshift_words(agc_interp_t *ip, vec_words_t v, int n)
-{
-    vec_words_t r = v; /* shifted components */
-
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-        if (n < 0)
-        {
-            r.c[i] = vsr_words(ip, v.c[i], -n);
-        }
-
-        for (int k = 0; k < n; k++)
-        {
-            int ovf = 0; /* DAS overflow: +1, -1 or 0 */
-
-            r.c[i] = agc_dp_words_das(r.c[i], r.c[i], &ovf);
-
-            if (ovf != 0)
-            {
-                ip->ovfind = (agc_ovf_t) ovf; /* OVERFLWY */
-            }
-        }
-    }
-
-    return (r);
-}
-
-/**********************************************************************
- * VAD (INTERPRETER.agc p. 1131) -- DAS per component on word-level vectors
- * (overflow as DAD)
- *
- * FUNCTION NAME: vad_words
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------------
- *   ip        agc_interp_t *  I/O  interpretive state (OVFIND)
- *   a         vec_words_t     I    augend as word pairs, scale 2^S
- *   b         vec_words_t     I    addend as word pairs, scale 2^S
- *
- * RETURNS: vec_words_t -- a + b as word pairs, scale 2^S
- *********************************************************************/
-static vec_words_t vad_words(agc_interp_t *ip, vec_words_t a, vec_words_t b)
-{
-    vec_words_t r; /* sum words */
-
-    for (int i = 0; i < AGC_VEC_N; i++)
-    {
-        r.c[i] = agc_mpac_store(agc_mpac_dad(ip, agc_mpac_dload(a.c[i]), b.c[i]));
-    }
-
-    return (r);
-}
-
 /* GAMCOMP push-list work cells, as the words stored there.             */
 typedef struct gam_work
 {
@@ -749,7 +525,7 @@ typedef struct gam_work
  * RETURNS: vec_words_t -- the acceleration term as word pairs, at the
  *                         push-list scale
  *********************************************************************/
-static vec_words_t gamcomp_term(agc_interp_t *ip, const agc_integ_ctx_t *ctx, const gam_work_t *g, int x2, int *n4)
+static agc_vec_words_t gamcomp_term(agc_interp_t *ip, const agc_integ_ctx_t *ctx, const gam_work_t *g, int x2, int *n4)
 {
     const agc_dp_words_t dq = agc_dp_to_words(K_DQUARTER);                                            /* DQUARTER words, .25 */
     agc_tp_words_t       m  = agc_mpac_shift_round(ip, agc_mpac_dot(ip, ctx->alphav, ctx->betav), 1); /* DOT SL1R */
@@ -761,17 +537,19 @@ static vec_words_t gamcomp_term(agc_interp_t *ip, const agc_integ_ctx_t *ctx, co
     const agc_dp_words_t pd12 = agc_mpac_store(agc_mpac_dmpr(ip, agc_mpac_sqrt(agc_mpac_dload(pd10)), pd10));      /* SQRT DMPR PUSH */
     const agc_dp_words_t pd14 = agc_mpac_store(agc_mpac_dad(ip, agc_mpac_shift(ip, agc_mpac_dload(pd12), 1), dq)); /* SL1 DAD PDDL */
 
-    m                    = agc_mpac_dad(ip, agc_mpac_dload(pd10), agc_dp_to_words(K_HALFDP));       /* DLOAD 10D DAD HALFDP */
-    m                    = agc_mpac_shift(ip, agc_mpac_dmpr(ip, m, pd8), 1);                        /* DMPR 8D SL1          */
-    m                    = agc_mpac_ddv(ip, agc_mpac_dad(ip, m, agc_dp_to_words(K_THREE_8)), pd14); /* DAD THREE/8 DDV 14D  */
-    m                    = agc_mpac_dmpr(ip, m, q);                                                 /* G/2: DMPR 6          */
-    const vec_words_t a8 = vshift_words(ip, vec_to_words(ctx->alphav), -3);                         /* PDVL VSR3 ALPHAV     */
-    const vec_words_t v  = vad_words(ip, a8, vxsc_mpac(ip, m, vec_to_words(ctx->betav)));           /* VXSC BETAV, VAD 16D  */
+    m                        = agc_mpac_dad(ip, agc_mpac_dload(pd10), agc_dp_to_words(K_HALFDP));        /* DLOAD 10D DAD HALFDP */
+    m                        = agc_mpac_shift(ip, agc_mpac_dmpr(ip, m, pd8), 1);                         /* DMPR 8D SL1          */
+    m                        = agc_mpac_ddv(ip, agc_mpac_dad(ip, m, agc_dp_to_words(K_THREE_8)), pd14);  /* DAD THREE/8 DDV 14D  */
+    m                        = agc_mpac_dmpr(ip, m, q);                                                  /* G/2: DMPR 6          */
+    const agc_vec_words_t a8 = agc_mpac_vshift(ip,                                                       /* PDVL VSR3 ALPHAV */
+                                               agc_vec_to_words(ctx->alphav),
+                                               -3);
+    const agc_vec_words_t v  = agc_mpac_vad(ip, a8, agc_mpac_vxsc(ip, m, agc_vec_to_words(ctx->betav))); /* VXSC BETAV, VAD 16D  */
 
     m = agc_mpac_round(ip, agc_mpac_norm(agc_mpac_dmp(agc_mpac_dload(g->bsq), pd12), n4)); /* DLOAD 0 DMP 12D NORM ROUND */
     m = agc_mpac_dmp(agc_mpac_bddv(ip, m, g->rho_q), agc_dp_to_words(agc_integ_mu(x2)));   /* BDDV 2 DMP* MUEARTH,2     */
 
-    return (vxsc_mpac(ip, agc_mpac_dcomp(m), v)); /* DCOMP VXSC */
+    return (agc_mpac_vxsc(ip, agc_mpac_dcomp(m), v)); /* DCOMP VXSC */
 }
 
 /**********************************************************************
@@ -817,15 +595,17 @@ static bool gamcomp(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x1, int x2)
 
     /* SR* 0 -1,2 leaves the bits shifted out in MPAC+2; PUSH stores RHO
      * (4D) without them and SR1R rounds them in (6D).                       */
-    m                      = agc_mpac_shift(ip, agc_mpac_dload(g.rho_q), 1 + g.xs); /* SR* 0 -1,2 */
-    g.rho                  = agc_mpac_store(m);                                     /* PUSH 4D    */
-    g.rho4                 = agc_mpac_store(agc_mpac_shift_round(ip, m, -1));       /* SR1R 6D    */
-    int               n4   = 0;                                                     /* NORM count of the f denominator (30D) */
-    const vec_words_t v    = gamcomp_term(ip, ctx, &g, x2, &n4);                    /* acceleration term words */
-    const int         xsum = g.xs + ASCALE_S2[x1 / 2] + n4 + g.n1;                  /* XAD XSU XSU */
+    m                          = agc_mpac_shift(ip, agc_mpac_dload(g.rho_q), 1 + g.xs); /* SR* 0 -1,2 */
+    g.rho                      = agc_mpac_store(m);                                     /* PUSH 4D    */
+    g.rho4                     = agc_mpac_store(agc_mpac_shift_round(ip, m, -1));       /* SR1R 6D    */
+    int                   n4   = 0;                                                     /* NORM count of the f denominator (30D) */
+    const agc_vec_words_t v    = gamcomp_term(ip, ctx, &g, x2, &n4);                    /* acceleration term words */
+    const int             xsum = g.xs + ASCALE_S2[x1 / 2] + n4 + g.n1;                  /* XAD XSU XSU */
 
-    agc_interp_clear_ovf(ip);                                                          /* BOV +1 (reset)   */
-    ctx->fv = agc_vec_add(ip, vec_from_words(vshift_words(ip, v, 1 + xsum)), ctx->fv); /* VSR* 0 -1,2 VAD FV */
+    agc_interp_clear_ovf(ip); /* BOV +1 (reset)   */
+    ctx->fv = agc_vec_add(ip, /* VSR* 0 -1,2 VAD FV */
+                          agc_vec_from_words(agc_mpac_vshift(ip, v, 1 + xsum)),
+                          ctx->fv);
 
     return (agc_interp_test_ovf(ip)); /* BOV -> GOBAQUE   */
 }
@@ -1065,19 +845,19 @@ static agc_status_t moon_axes(agc_interp_t *ip, const agc_integ_ctx_t *ctx, obl_
  * RETURNS: acc_result_t -- ACC_OK, ACC_OVF (GOBAQUE) or ACC_FAIL with
  *                          ctx->fail
  *********************************************************************/
-static acc_result_t lunar_c31_term(agc_interp_t *ip, agc_integ_ctx_t *ctx, const obl_work_t *w, vec_words_t j22)
+static acc_result_t lunar_c31_term(agc_interp_t *ip, agc_integ_ctx_t *ctx, const obl_work_t *w, agc_vec_words_t j22)
 {
-    const vec_words_t    u   = vec_to_words(w->urpv);                                  /* URPV words, 2^1 */
-    const agc_dp_words_t k58 = agc_dp_to_words(K_5_8);                                 /* 5/8 words */
-    const agc_dp_words_t one = agc_dp_to_words(K_D1_32);                               /* D1/32 words */
-    agc_tp_words_t       m   = agc_mpac_dsq(agc_mpac_dload(agc_dp_to_words(w->cphi))); /* DSQ: COSPHI^2 B2 */
-    const agc_dp_words_t c2  = agc_mpac_store(m);                                      /* PUSH 8D          */
-    const agc_dp_words_t c5  = agc_mpac_store(agc_mpac_dmp(m, k58));                   /* DMP 5/8, PDDL 8D */
+    const agc_vec_words_t u   = agc_vec_to_words(w->urpv);                              /* URPV words, 2^1 */
+    const agc_dp_words_t  k58 = agc_dp_to_words(K_5_8);                                 /* 5/8 words */
+    const agc_dp_words_t  one = agc_dp_to_words(K_D1_32);                               /* D1/32 words */
+    agc_tp_words_t        m   = agc_mpac_dsq(agc_mpac_dload(agc_dp_to_words(w->cphi))); /* DSQ: COSPHI^2 B2 */
+    const agc_dp_words_t  c2  = agc_mpac_store(m);                                      /* PUSH 8D          */
+    const agc_dp_words_t  c5  = agc_mpac_store(agc_mpac_dmp(m, k58));                   /* DMP 5/8, PDDL 8D */
 
-    m             = agc_mpac_dad(ip, agc_mpac_shift(ip, agc_mpac_dload(c2), -2), c5); /* SR2 DAD 8D       */
-    m             = agc_mpac_bdsu(ip, m, one);                                        /* BDSU: 1-7c2, B5  */
-    m             = agc_mpac_dmp(agc_mpac_dmp(m, u.c[0]), k58);                       /* DMP DMP URPV 5/8 */
-    vec_words_t v = vshift_words(ip, vxsc_mpac(ip, m, u), 5);                         /* VXSC VSL5 URPV   */
+    m                 = agc_mpac_dad(ip, agc_mpac_shift(ip, agc_mpac_dload(c2), -2), c5); /* SR2 DAD 8D       */
+    m                 = agc_mpac_bdsu(ip, m, one);                                        /* BDSU: 1-7c2, B5  */
+    m                 = agc_mpac_dmp(agc_mpac_dmp(m, u.c[0]), k58);                       /* DMP DMP URPV 5/8 */
+    agc_vec_words_t v = agc_mpac_vshift(ip, agc_mpac_vxsc(ip, m, u), 5);                  /* VXSC VSL5 URPV   */
 
     v.c[0]                   = agc_mpac_store(agc_mpac_dad(ip, agc_mpac_dsu(ip, agc_mpac_dload(c5), one), v.c[0])); /* DSU DAD 8D */
     m                        = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dmp(agc_mpac_dload(u.c[0]), u.c[2]), k58), 1);
@@ -1086,12 +866,12 @@ static acc_result_t lunar_c31_term(agc_interp_t *ip, agc_integ_ctx_t *ctx, const
     agc_tp_words_t       rn  = agc_mpac_norm(agc_mpac_dload(agc_dp_to_words(ctx->alpham)), &n);                     /* NORM X2, PUSH */
     const agc_dp_words_t c31 = {e32c31rm, 0};
 
-    m                      = agc_mpac_ddv(ip, agc_mpac_dload(c31), agc_mpac_store(rn)); /* SLOAD E32C31RM DDV */
-    v                      = vshift_words(ip, vxsc_mpac(ip, m, v), n - 3);              /* VXSC VSL* 0 -3,2   */
-    v                      = vshift_words(ip, vad_words(ip, v, j22), -27 - w->x1);      /* VAD VSL* 0 -27D,1  */
-    const agc_vec_t      q = agc_vec_div(ip, vec_from_words(v), w->r4n);                /* V/SC 0D; C31 + J22 terms / R^4, 2^-20 (moon-fixed axes) */
-    agc_navaux_padload_t pad;                                                           /* lunar pad loads */
-    agc_vec_t            r = agc_vec_zero();                                            /* the term in reference axes, 2^-20 */
+    m                      = agc_mpac_ddv(ip, agc_mpac_dload(c31), agc_mpac_store(rn));  /* SLOAD E32C31RM DDV */
+    v                      = agc_mpac_vshift(ip, agc_mpac_vxsc(ip, m, v), n - 3);        /* VXSC VSL* 0 -3,2   */
+    v                      = agc_mpac_vshift(ip, agc_mpac_vad(ip, v, j22), -27 - w->x1); /* VAD VSL* 0 -27D,1  */
+    const agc_vec_t      q = agc_vec_div(ip, agc_vec_from_words(v), w->r4n);             /* V/SC 0D; C31 + J22 terms / R^4, 2^-20 (moon-fixed axes) */
+    agc_navaux_padload_t pad;                                                            /* lunar pad loads */
+    agc_vec_t            r = agc_vec_zero();                                             /* the term in reference axes, 2^-20 */
 
     agc_status_t st = agc_navaux_get_padload(&pad); /* status of the pad-load read, then RP-TO-R */
 
@@ -1126,21 +906,21 @@ static acc_result_t lunar_c31_term(agc_interp_t *ip, agc_integ_ctx_t *ctx, const
  *
  * RETURNS: vec_words_t -- the J22 term as words, B61
  *********************************************************************/
-static vec_words_t lunar_j22_term(agc_interp_t *ip, const obl_work_t *w)
+static agc_vec_words_t lunar_j22_term(agc_interp_t *ip, const obl_work_t *w)
 {
-    const vec_words_t    u  = vec_to_words(w->urpv);                                      /* URPV words, 2^1 */
-    const agc_dp_words_t x2 = agc_mpac_store(agc_mpac_dsq(agc_mpac_dload(u.c[0])));       /* DLOAD DSQ, PDDL 2D */
-    agc_tp_words_t       m  = agc_mpac_dsu(ip, agc_mpac_dsq(agc_mpac_dload(u.c[1])), x2); /* Y^2 - X^2 (DSQ DSU), 2^2 */
+    const agc_vec_words_t u  = agc_vec_to_words(w->urpv);                                  /* URPV words, 2^1 */
+    const agc_dp_words_t  x2 = agc_mpac_store(agc_mpac_dsq(agc_mpac_dload(u.c[0])));       /* DLOAD DSQ, PDDL 2D */
+    agc_tp_words_t        m  = agc_mpac_dsu(ip, agc_mpac_dsq(agc_mpac_dload(u.c[1])), x2); /* Y^2 - X^2 (DSQ DSU), 2^2 */
 
-    m             = agc_mpac_dmp(m, agc_dp_to_words(K_5_8));  /* DMP 5/8            */
-    vec_words_t q = vshift_words(ip, vxsc_mpac(ip, m, u), 3); /* VXSC URPV VSL3, 2D */
+    m                 = agc_mpac_dmp(m, agc_dp_to_words(K_5_8));         /* DMP 5/8            */
+    agc_vec_words_t q = agc_mpac_vshift(ip, agc_mpac_vxsc(ip, m, u), 3); /* VXSC URPV VSL3, 2D */
 
     q.c[0] = agc_mpac_store(agc_mpac_dad(ip, agc_mpac_shift(ip, agc_mpac_dload(u.c[0]), -1), q.c[0]));  /* SR1 DAD 2D  */
     q.c[1] = agc_mpac_store(agc_mpac_bdsu(ip, agc_mpac_shift(ip, agc_mpac_dload(u.c[1]), -1), q.c[1])); /* SR1 BDSU 4D */
 
     const agc_dp_words_t j22 = {e3j22r2m, 0};
 
-    return (vxsc_mpac(ip, agc_mpac_dload(j22), q)); /* SLOAD VXSC, PDDL 2D */
+    return (agc_mpac_vxsc(ip, agc_mpac_dload(j22), q)); /* SLOAD VXSC, PDDL 2D */
 }
 
 /**********************************************************************
@@ -1201,7 +981,7 @@ static legendre_t legendre_terms(agc_interp_t *ip, agc_dp_t cphi)
  *
  * RETURNS: vec_words_t -- TVEC as words
  *********************************************************************/
-static vec_words_t comterm_tvec(agc_interp_t *ip, const agc_integ_ctx_t *ctx, const obl_work_t *w)
+static agc_vec_words_t comterm_tvec(agc_interp_t *ip, const agc_integ_ctx_t *ctx, const obl_work_t *w)
 {
     const int            b    = ctx->pbody / 2;                           /* PBODY / 2: 0 earth, 1 moon */
     const legendre_t     l    = legendre_terms(ip, w->cphi);              /* P2..P5 words */
@@ -1210,17 +990,17 @@ static vec_words_t comterm_tvec(agc_interp_t *ip, const agc_integ_ctx_t *ctx, co
     const agc_dp_words_t j3_w = agc_dp_to_words(J3RE_J2_2[b]);            /* 2J3RE/J2 words */
     agc_tp_words_t       m    = agc_mpac_dmp(agc_mpac_dload(l.p5), j4_w); /* DMP* J4REQ/J3,2 */
 
-    m                    = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, r_w), l.p4); /* DDV DAD 4      */
-    m                    = agc_mpac_dmpr(ip, m, j3_w);                       /* DMPR* 2J3RE/J2 */
-    m                    = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, r_w), l.p3); /* DDV DAD 2      */
-    const vec_words_t ur = vxsc_mpac(ip, m, vec_to_words(ctx->alphav));      /* VXSC ALPHAV    */
+    m                        = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, r_w), l.p4);    /* DDV DAD 4      */
+    m                        = agc_mpac_dmpr(ip, m, j3_w);                          /* DMPR* 2J3RE/J2 */
+    m                        = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, r_w), l.p3);    /* DDV DAD 2      */
+    const agc_vec_words_t ur = agc_mpac_vxsc(ip, m, agc_vec_to_words(ctx->alphav)); /* VXSC ALPHAV    */
 
-    m              = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(l.p4), j4_w), -1); /* STODL DMP* SR1 */
-    m              = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, r_w), l.p3);                 /* DDV DAD        */
-    m              = agc_mpac_shift(ip, agc_mpac_dmpr(ip, m, j3_w), -3);               /* DMPR* SR3      */
-    m              = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, r_w), l.p2);                 /* DDV DAD        */
-    vec_words_t uz = vxsc_mpac(ip, m, vec_to_words(w->uz));                            /* VXSC UZ        */
-    vec_words_t t;                                                                     /* TVEC words */
+    m                  = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(l.p4), j4_w), -1); /* STODL DMP* SR1 */
+    m                  = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, r_w), l.p3);                 /* DDV DAD        */
+    m                  = agc_mpac_shift(ip, agc_mpac_dmpr(ip, m, j3_w), -3);               /* DMPR* SR3      */
+    m                  = agc_mpac_dad(ip, agc_mpac_ddv(ip, m, r_w), l.p2);                 /* DDV DAD        */
+    agc_vec_words_t uz = agc_mpac_vxsc(ip, m, agc_vec_to_words(w->uz));                    /* VXSC UZ        */
+    agc_vec_words_t t;                                                                     /* TVEC words */
 
     for (int i = 0; i < AGC_VEC_N; i++)
     {
@@ -1280,22 +1060,24 @@ static acc_result_t oblate(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         }
     }
 
-    const vec_words_t tvec = comterm_tvec(ip, ctx, &w); /* TVEC words, before the J2/R^4 factor */
-    int               n    = 0;                         /* NORM count of ALPHAM (X1) */
-    int               n4   = 0;                         /* NORM count of R^4 (S1) */
+    const agc_vec_words_t tvec = comterm_tvec(ip, ctx, &w); /* TVEC words, before the J2/R^4 factor */
+    int                   n    = 0;                         /* NORM count of ALPHAM (X1) */
+    int                   n4   = 0;                         /* NORM count of R^4 (S1) */
 
     /* NORM X1 DSQ DSQ NORM S1: the normalised R^4 (PUSH 0D); BDDV* keeps
      * its MPAC+2 under the dividend J2REQSQ.                                */
     agc_tp_words_t m = agc_mpac_dsq(agc_mpac_norm(agc_mpac_dload(agc_dp_to_words(ctx->alpham)), &n)); /* R normalised, squared (TP) */
 
-    m                   = agc_mpac_norm(agc_mpac_dsq(m), &n4);
-    w.r4n               = agc_dp_from_words(agc_mpac_store(m));                  /* PUSH 0D     */
-    m                   = agc_mpac_bddv(ip, m, agc_dp_to_words(J2REQSQ_TAB[b])); /* BDDV*       */
-    const vec_words_t v = vxsc_mpac(ip, m, tvec);                                /* VXSC TVEC   */
+    m                       = agc_mpac_norm(agc_mpac_dsq(m), &n4);
+    w.r4n                   = agc_dp_from_words(agc_mpac_store(m));                  /* PUSH 0D     */
+    m                       = agc_mpac_bddv(ip, m, agc_dp_to_words(J2REQSQ_TAB[b])); /* BDDV*       */
+    const agc_vec_words_t v = agc_mpac_vxsc(ip, m, tvec);                            /* VXSC TVEC   */
 
-    agc_interp_clear_ovf(ip);                                                            /* BOV +1 (reset) */
-    w.x1    = -(4 * n) - n4;                                                             /* XAD,1 X1 X1 S1 */
-    ctx->fv = agc_vec_add(ip, vec_from_words(vshift_words(ip, v, -22 - w.x1)), ctx->fv); /* VSL* 0 -22D,1 VAD */
+    agc_interp_clear_ovf(ip); /* BOV +1 (reset) */
+    w.x1    = -(4 * n) - n4;  /* XAD,1 X1 X1 S1 */
+    ctx->fv = agc_vec_add(ip, /* VSL* 0 -22D,1 VAD */
+                          agc_vec_from_words(agc_mpac_vshift(ip, v, -22 - w.x1)),
+                          ctx->fv);
 
     if (agc_interp_test_ovf(ip))
     {
@@ -1631,7 +1413,12 @@ static agc_status_t rectest(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         rect = agc_interp_test_ovf(ip) || (e >= 0); /* BOV BMN  */
     }
 
-    return (rect ? agc_integ_rectify(ip, ctx) : AGC_STATUS_OK); /* CALLRECT */
+    if (rect)
+    {
+        agc_integ_rectify(ip, ctx); /* CALLRECT */
+    }
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -1907,12 +1694,7 @@ agc_status_t agc_integ_chkswtch(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t
  *********************************************************************/
 agc_status_t agc_integ_origchng(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    agc_status_t st = agc_integ_rectify(ip, ctx); /* status of RECTIFY, then LUNVEL */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_integ_rectify(ip, ctx);
 
     const int  p    = ctx->pbody;                                              /* PBODY before the change: 0 earth, 2 moon */
     const bool moon = agc_flag_test(AGC_FLAG_MOONFLAG);                        /* moon primary before the change */
@@ -1923,7 +1705,7 @@ agc_status_t agc_integ_origchng(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     ctx->sv.rcv   = r;
     agc_vec_t vm;                              /* moon velocity, m/cs 2^7 */
 
-    st = lunvel(ip, ctx->sv.tet, &vm);
+    const agc_status_t st = lunvel(ip, ctx->sv.tet, &vm); /* LUNVEL */
 
     if (st != AGC_STATUS_OK)
     {

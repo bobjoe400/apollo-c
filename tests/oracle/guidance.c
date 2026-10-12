@@ -85,8 +85,8 @@ int main(void)
      * stored, sign-disagreeing VDEF words into the UT/Y/Z frame needs a
      * DOT on stored words (requested from core) -- 2 LSB. The radial case
      * also UNITs a short UT x UNIT(R) (UNIT at B27, core item) -- 10 LSB. */
-    s40_2("s40_2_sps", 2);
-    s40_2("s40_2_sps_b", 2);
+    s40_2("s40_2_sps", 0);
+    s40_2("s40_2_sps_b", 0);
     s40_2("s40_2_rcs", 0);
     s40_2("s40_2_radial", 10);
     deltime("deltime_ell", 0);

@@ -55,7 +55,7 @@ agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec,
     agc_conic_ctx_t ctx;                                  /* PARAM results */
     agc_status_t    st = agc_conic_ctx_init_(&ctx, body); /* MUTABLE,1     */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }

@@ -207,7 +207,7 @@ static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis, agc_vec_t c
     agc_mat_t    del;                                       /* DEL, 2^0 */
     agc_status_t st = agc_kalc_delcomp(ip, cofv, am, &del); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -231,7 +231,7 @@ static agc_status_t compmatx(agc_interp_t *ip, const agc_mat_t *mis, agc_vec_t c
 
     st = agc_kalc_delcomp(ip, u, ang, &del); /* COMPMFSN */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -316,7 +316,7 @@ static agc_status_t vecpoint_from(agc_interp_t *ip, const uint16_t cdu0[3], uint
     agc_mat_t    mis;                                    /* MIS, B1 */
     agc_status_t st = agc_kalc_cdutodcm(ip, cdu0, &mis); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -358,9 +358,11 @@ agc_status_t agc_imu_vecpoint(agc_interp_t *ip, agc_vec_t pointvsm_in, agc_vec_t
 {
     agc_imu_set_pointvsm(pointvsm_in);
 
-    if (agc_imu_set_scaxis(scaxis_in) != AGC_STATUS_OK)
+    const agc_status_t st_axis = agc_imu_set_scaxis(scaxis_in); /* SCAXIS store status */
+
+    if (st_axis != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st_axis);
     }
 
     agc_inhint();
@@ -391,9 +393,11 @@ agc_status_t agc_imu_vecpoint_from_cdus(agc_interp_t  *ip,
 {
     agc_imu_set_pointvsm(pointvsm_in);
 
-    if (agc_imu_set_scaxis(scaxis_in) != AGC_STATUS_OK)
+    const agc_status_t st_axis = agc_imu_set_scaxis(scaxis_in); /* SCAXIS store status */
+
+    if (st_axis != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st_axis);
     }
 
     return (vecpoint_from(ip, cdu0, gimbal));
@@ -504,9 +508,9 @@ static agc_status_t final_angles(void)
         agc_erase_set_thetad(i, g[i]); /* STORE CPHI     */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -580,9 +584,9 @@ static agc_status_t toballa(const agc_job_ctx_t *ctx)
                                   AGC_JOB_ATTITUDE_MANEUVER_ENTER};
     agc_status_t          st   = agc_dsky_display(ctx, AGC_DSKY_GOPERF2R, agc_dsky_vn(6, 18), &cont); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (chklinus(false)); /* ENDOFJOB      */
@@ -603,9 +607,9 @@ static agc_status_t automanv(const agc_job_ctx_t *ctx)
 {
     agc_status_t st = agc_dsky_display(ctx, AGC_DSKY_GODSPR, agc_dsky_vn(6, 18), NULL); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     st = chklinus(true);
@@ -864,9 +868,9 @@ agc_status_t agc_job_crew_defined_maneuver_display(agc_job_ctx_t *ctx)
                                   AGC_JOB_CREW_DEFINED_MANEUVER_DISPLAY};
     agc_status_t          st   = agc_dsky_display(ctx, AGC_DSKY_GOFLASH, agc_dsky_vn(6, 22), &cont); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);

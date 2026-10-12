@@ -481,11 +481,11 @@ agc_status_t agc_integ_intwake(void)
  * INTWAKE0 (INTEGRATION_INITIALIZATION.agc p. 1325) -- WAKE for stall area 0
  * without the REINTFLG test.
  *
- * FUNCTION NAME: agc_integ_intwake0
+ * FUNCTION NAME: agc_integ_intwake_release
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of WAKE
  *********************************************************************/
-agc_status_t agc_integ_intwake0(void)
+agc_status_t agc_integ_intwake_release(void)
 {
     return (wake(0));
 }
@@ -549,13 +549,13 @@ static agc_status_t atop(agc_interp_t *ip, agc_integ_ctx_t *ctx, int x2, agc_veh
     }
 
     const agc_flag_id_t mflag = (veh == AGC_VEHICLE_CSM) ? AGC_FLAG_CMOONFLG : AGC_FLAG_LMOONFLG; /* CMOONFLG or LMOONFLG */
-    agc_status_t        st    = agc_integ_perm_set(veh, &ctx->sv);                                /* status of MOVEA, then SVDWN */
+    agc_status_t        st    = agc_integ_perm_set(veh, &ctx->sv);                                /* status of MOVEA */
 
     agc_flag_put(mflag, true);
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_integ_svdwn(ip, agc_state_vehicle() == veh, x2, ctx->sv.rcv, ctx->sv.vcv, ctx->sv.deltav, ctx->sv.nuv, ctx->sv.tet);
+        agc_integ_svdwn(ip, agc_state_vehicle() == veh, x2, ctx->sv.rcv, ctx->sv.vcv, ctx->sv.deltav, ctx->sv.nuv, ctx->sv.tet); /* SVDWN */
     }
 
     if (!agc_flag_test(AGC_FLAG_MOONFLAG))
@@ -981,19 +981,12 @@ static agc_integ_next_t a_pchk(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  *   ctx       agc_integ_ctx_t *  I/O  integration erasables (the set INTSTALL
  *                                     guards)
  *
- * RETURNS: agc_integ_next_t -- INTEG_NEXT_INTEXIT, or INTEG_NEXT_FAIL with
- *                              ctx->fail
+ * RETURNS: agc_integ_next_t -- INTEG_NEXT_INTEXIT
  *********************************************************************/
 static agc_integ_next_t rectout(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
-    const agc_status_t st = agc_integ_rectify(ip, ctx); /* status of RECTIFY */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (agc_integ_fail(ctx, st));
-    }
-
-    const int p = ctx->pbody; /* PBODY: 0 earth, 2 moon */
+    agc_integ_rectify(ip, ctx); /* RECTIFY */
+    const int p = ctx->pbody;   /* PBODY: 0 earth, 2 moon */
 
     ctx->out.ratt  = agc_vec_shr(ctx->sv.rrect, p);               /* VSL* 0,2    */
     ctx->out.vatt  = agc_vec_shr(ctx->sv.vrect, p);
@@ -1063,12 +1056,8 @@ static agc_integ_next_t rvcon(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     ctx->tau = agc_dp_sub(ip, ctx->tdec, ctx->sv.tet);
 
-    agc_status_t st = agc_integ_rectify(ip, ctx); /* status of RECTIFY, then KEPPREP */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_integ_kepprep(ip, ctx);
-    }
+    agc_integ_rectify(ip, ctx);                   /* RECTIFY */
+    agc_status_t st = agc_integ_kepprep(ip, ctx); /* status of KEPPREP */
 
     if (st != AGC_STATUS_OK)
     {
@@ -1514,17 +1503,12 @@ agc_status_t agc_integ_integrvs(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t
         return (AGC_STATUS_BAD_ARG);
     }
 
-    ctx->tdec1            = tdec1;
+    ctx->tdec1     = tdec1;
     agc_flag_put(AGC_FLAG_PRECIFLG, true);
-    ctx->pbody            = agc_flag_test(AGC_FLAG_MOONFLAG) ? INTEG_PBODY_MOON : INTEG_PBODY_EARTH; /* PBODY from MOONFLAG */
-    ctx->sv.deltav        = agc_vec_zero();
-    ctx->sv.nuv           = agc_vec_zero();
-    const agc_status_t st = agc_integ_rectify(ip, ctx);                                              /* status of RECTIFY */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    ctx->pbody     = agc_flag_test(AGC_FLAG_MOONFLAG) ? INTEG_PBODY_MOON : INTEG_PBODY_EARTH; /* PBODY from MOONFLAG */
+    ctx->sv.deltav = agc_vec_zero();
+    ctx->sv.nuv    = agc_vec_zero();
+    agc_integ_rectify(ip, ctx);
 
     agc_flag_put(AGC_FLAG_DIM0FLAG, false);
     agc_flag_put(AGC_FLAG_NEWIFLG, true);

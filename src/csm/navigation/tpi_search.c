@@ -189,7 +189,9 @@ agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz, agc_j
     tps_work.xrs[0] = o.x1;              /* XRS        */
     tps_work.xrs[1] = o.x2;
 
-    return (agc_rendz_selectmu(rz, o.x2 != 0)); /* RTX1 RTX2 = XRS (JUNCT3) */
+    agc_rendz_selectmu(rz, o.x2 != 0); /* RTX1 RTX2 = XRS (JUNCT3) */
+
+    return (AGC_STATUS_OK);
 } /* agc_rendz_tpi_search_phase */
 
 /**********************************************************************

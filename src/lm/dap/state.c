@@ -585,7 +585,7 @@ agc_sp_t agc_erase_omegar(void)
 agc_dp_t agc_erase_aosq(void)
 {
     const lm_dap_t *d = lm_dap_state();        /* DAP erasables */
-    lm_dp_pair_t    p = {d->aosq, d->aosq_lo}; /* AOSQ words, DP scaled pi/2 rad/s^2 */
+    agc_dp_words_t  p = {d->aosq, d->aosq_lo}; /* AOSQ words, DP scaled pi/2 rad/s^2 */
 
     return ((agc_dp_t) lm_dap_dpval(p));
 }
@@ -602,7 +602,7 @@ agc_dp_t agc_erase_aosq(void)
 agc_dp_t agc_erase_aosr(void)
 {
     const lm_dap_t *d = lm_dap_state();        /* DAP erasables */
-    lm_dp_pair_t    p = {d->aosr, d->aosr_lo}; /* AOSR words, DP scaled pi/2 rad/s^2 */
+    agc_dp_words_t  p = {d->aosr, d->aosr_lo}; /* AOSR words, DP scaled pi/2 rad/s^2 */
 
     return ((agc_dp_t) lm_dap_dpval(p));
 }
@@ -625,7 +625,7 @@ void agc_erase_set_aosq(agc_dp_t v)
 
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
-        lm_dp_pair_t p = lm_dap_dpmake((int32_t) v); /* AOSQ words, scaled pi/2 rad/s^2 */
+        agc_dp_words_t p = lm_dap_dpmake((int32_t) v); /* AOSQ words, scaled pi/2 rad/s^2 */
 
         d->aosq    = p.hi;
         d->aosq_lo = p.lo;
@@ -650,7 +650,7 @@ void agc_erase_set_aosr(agc_dp_t v)
 
     if (AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
     {
-        lm_dp_pair_t p = lm_dap_dpmake((int32_t) v); /* AOSR words, scaled pi/2 rad/s^2 */
+        agc_dp_words_t p = lm_dap_dpmake((int32_t) v); /* AOSR words, scaled pi/2 rad/s^2 */
 
         d->aosr    = p.hi;
         d->aosr_lo = p.lo;

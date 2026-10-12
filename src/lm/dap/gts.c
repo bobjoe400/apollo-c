@@ -86,16 +86,16 @@ static const uint16_t r_drive[3] = {GT_BIT11, 0u, GT_BIT12};
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   x         lm_dp_pair_t  I    DP multiplicand
+ *   x         agc_dp_words_t  I    DP multiplicand
  *   k         agc_sp_t      I    SP multiplier
  *
- * RETURNS: lm_dp_pair_t -- product, DP
+ * RETURNS: agc_dp_words_t -- product, DP
  **********************************************************************/
-static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
+static agc_dp_words_t dp_x_sp(agc_dp_words_t x, agc_sp_t k)
 {
-    lm_dp_pair_t hi = lm_dap_mp(x.hi, k); /* x.hi k, same scale as x k */
-    lm_dp_pair_t lo = {0, lm_dap_mphi(x.lo, k)};
-    lm_dp_pair_t r  = lm_dap_das(hi, lo); /* x k with the minor product carried */
+    agc_dp_words_t hi = lm_dap_mp(x.hi, k); /* x.hi k, same scale as x k */
+    agc_dp_words_t lo = {0, lm_dap_mphi(x.lo, k)};
+    agc_dp_words_t r  = lm_dap_das(hi, lo); /* x k with the minor product carried */
 
     return (r);
 }
@@ -108,13 +108,13 @@ static lm_dp_pair_t dp_x_sp(lm_dp_pair_t x, agc_sp_t k)
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   x         lm_dp_pair_t  I    DP pair to complement (DCS)
+ *   x         agc_dp_words_t  I    DP pair to complement (DCS)
  *
- * RETURNS: lm_dp_pair_t -- -x
+ * RETURNS: agc_dp_words_t -- -x
  **********************************************************************/
-static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
+static agc_dp_words_t dp_neg(agc_dp_words_t x) /* DCS                  */
 {
-    lm_dp_pair_t r = {(agc_sp_t) -x.hi, (agc_sp_t) -x.lo};
+    agc_dp_words_t r = {(agc_sp_t) -x.hi, (agc_sp_t) -x.lo};
 
     return (r);
 }
@@ -128,11 +128,11 @@ static lm_dp_pair_t dp_neg(lm_dp_pair_t x) /* DCS                  */
  * ARGUMENTS:
  *   Argument  Type          I/O  Description (scale)
  *   --------  ------------  ---  --------------------
- *   x         lm_dp_pair_t  I    DP pair
+ *   x         agc_dp_words_t  I    DP pair
  *
  * RETURNS: agc_sp_t -- -1, 0 or +1
  **********************************************************************/
-static agc_sp_t dp_sign(lm_dp_pair_t x)
+static agc_sp_t dp_sign(agc_dp_words_t x)
 {
     agc_sp_t w = (x.hi != 0) ? x.hi : x.lo; /* sign word: major, or minor when major is 0; unscaled (only its sign is used) */
 
@@ -194,8 +194,8 @@ agc_status_t lm_dap_gimbal_drive_update(void)
  **********************************************************************/
 static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
 {
-    lm_dp_pair_t n = {halfarg, 0};
-    agc_sp_t     q = lm_dap_dv(n, x); /* (ARG/X)/2, scaled 1 (fraction) */
+    agc_dp_words_t n = {halfarg, 0};
+    agc_sp_t       q = lm_dap_dv(n, x); /* (ARG/X)/2, scaled 1 (fraction) */
 
     return (lm_dap_sat((int32_t) (x / 2) + q)); /* SR: X/2; guess >= root, so the sum cannot overflow (sat = wrap) */
 }
@@ -209,7 +209,7 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
  * ARGUMENTS:
  *   Argument  Type            I/O  Description (scale)
  *   --------  --------------  ---  --------------------
- *   fn        lm_dp_pair_t *  I/O  FUNCTION, DP argument; words swapped by
+ *   fn        agc_dp_words_t *  I/O  FUNCTION, DP argument; words swapped by
  *                                  ZEROHIGH
  *   shftflag  agc_sp_t *      O    SHFTFLAG: 7 when the major word was zero
  *   inindex   agc_sp_t *      O    ININDEX: twice the scaling shift
@@ -217,7 +217,7 @@ static agc_sp_t rootcycl(agc_sp_t x, agc_sp_t halfarg)
  * RETURNS: agc_sp_t -- square root before the reported shift,
  *          scaled 1
  **********************************************************************/
-agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
+agc_sp_t lm_dap_gtsqrt(agc_dp_words_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
 {
     *shftflag = 0;
 
@@ -268,14 +268,14 @@ agc_sp_t lm_dap_gtsqrt(lm_dp_pair_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex)
 /* GTS working cells for one axis (GTSTEMPS).                             */
 typedef struct gts_w
 {
-    lm_dp_pair_t k2theta; /* K2THETA: NEGUSUM, DP at 4 pi^2           */
-    lm_dp_pair_t k2;      /* K2CNTRAL, DP at 16 pi                    */
-    lm_dp_pair_t a2;      /* A2CNTRAL, DP at 16 pi                    */
-    lm_dp_pair_t fn;      /* FUNCTION, DP                             */
-    agc_sp_t     k;       /* KCENTRAL at pi/2^8                       */
-    agc_sp_t     omega;   /* WCENTRAL = EDOT, scaled pi/4 rad/s */
-    agc_sp_t     alpha;   /* ACENTRAL = AOS x 2, scaled pi/4 rad/s^2 */
-    agc_sp_t     del;     /* DEL = SGN(K2CNTRAL): +1, 0, -1 (unscaled) */
+    agc_dp_words_t k2theta; /* K2THETA: NEGUSUM, DP at 4 pi^2           */
+    agc_dp_words_t k2;      /* K2CNTRAL, DP at 16 pi                    */
+    agc_dp_words_t a2;      /* A2CNTRAL, DP at 16 pi                    */
+    agc_dp_words_t fn;      /* FUNCTION, DP                             */
+    agc_sp_t       k;       /* KCENTRAL at pi/2^8                       */
+    agc_sp_t       omega;   /* WCENTRAL = EDOT, scaled pi/4 rad/s */
+    agc_sp_t       alpha;   /* ACENTRAL = AOS x 2, scaled pi/4 rad/s^2 */
+    agc_sp_t       del;     /* DEL = SGN(K2CNTRAL): +1, 0, -1 (unscaled) */
 } gts_w_t;
 
 /**********************************************************************
@@ -296,8 +296,8 @@ typedef struct gts_w
  **********************************************************************/
 static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
 {
-    agc_sp_t     aos = (i == 0) ? d->aosq : d->aosr; /* AOSQ or AOSR, scaled pi/2 rad/s^2 */
-    lm_dp_pair_t p   = lm_dap_mp(aos, (agc_sp_t) 2); /* MP BIT2        */
+    agc_sp_t       aos = (i == 0) ? d->aosq : d->aosr; /* AOSQ or AOSR, scaled pi/2 rad/s^2 */
+    agc_dp_words_t p   = lm_dap_mp(aos, (agc_sp_t) 2); /* MP BIT2        */
 
     w->alpha = p.lo; /* AOS x 2 at pi/4 */
 
@@ -328,14 +328,14 @@ static void gts_inputs(const lm_dap_t *d, int i, gts_w_t *w)
  **********************************************************************/
 static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
 {
-    agc_sp_t     err  = (i == 0) ? d->qerror : d->rerror; /* QDIFF or RDIFF, scaled pi rad */
-    lm_dp_pair_t ke   = lm_dap_mp(err, w->k);             /* at pi^2/2^8    */
-    lm_dp_pair_t hi16 = lm_dap_mp(ke.hi, (agc_sp_t) 16);  /* MP BIT5        */
+    agc_sp_t       err  = (i == 0) ? d->qerror : d->rerror; /* QDIFF or RDIFF, scaled pi rad */
+    agc_dp_words_t ke   = lm_dap_mp(err, w->k);             /* at pi^2/2^8    */
+    agc_dp_words_t hi16 = lm_dap_mp(ke.hi, (agc_sp_t) 16);  /* MP BIT5        */
 
-    w->k2theta.hi     = hi16.hi;
-    w->k2theta.lo     = lm_dap_wrap((int32_t) hi16.lo + lm_dap_mphi(ke.lo, (agc_sp_t) 16));
-    agc_sp_t     half = lm_dap_mphi((agc_sp_t) -w->alpha, (agc_sp_t) 8192); /* -ALPHA/2, scaled pi/4 rad/s^2 */
-    lm_dp_pair_t sq   = lm_dap_mp(half, w->alpha);                          /* -ALPHA^2/2     */
+    w->k2theta.hi       = hi16.hi;
+    w->k2theta.lo       = lm_dap_wrap((int32_t) hi16.lo + lm_dap_mphi(ke.lo, (agc_sp_t) 16));
+    agc_sp_t       half = lm_dap_mphi((agc_sp_t) -w->alpha, (agc_sp_t) 8192); /* -ALPHA/2, scaled pi/4 rad/s^2 */
+    agc_dp_words_t sq   = lm_dap_mp(half, w->alpha);                          /* -ALPHA^2/2     */
 
     if ((int32_t) sq.hi + w->k <= 0)
     { /* HUGEQUOT       */
@@ -344,9 +344,9 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
     }
     else
     {
-        lm_dp_pair_t num = dp_neg(sq);             /* ALPHA^2/2      */
-        lm_dp_pair_t q1  = lm_dap_dvqr(num, w->k); /* (ALPHA^2/2)/K: quotient and remainder, DP at 16 pi */
-        lm_dp_pair_t rem = {q1.lo, 0};             /* LXCH 7         */
+        agc_dp_words_t num = dp_neg(sq);             /* ALPHA^2/2      */
+        agc_dp_words_t q1  = lm_dap_dvqr(num, w->k); /* (ALPHA^2/2)/K: quotient and remainder, DP at 16 pi */
+        agc_dp_words_t rem = {q1.lo, 0};             /* LXCH 7         */
 
         w->a2.hi = q1.hi;
         w->a2.lo = lm_dap_dv(rem, w->k);
@@ -460,8 +460,8 @@ agc_status_t lm_dap_gts(void)
              *
              * RETURNS: none
              **********************************************************************/
-            w.k2           = lm_dap_mp(w.omega, (agc_sp_t) 256);                                      /* OMEGA at 16 pi */
-            lm_dp_pair_t f = (w.alpha > 0) ? lm_dap_das(w.k2, w.a2) : lm_dap_das(w.k2, dp_neg(w.a2)); /* DEL OMEGA + SGN(ALPHA) ALPHA^2/(2K), DP at 16 pi */
+            w.k2             = lm_dap_mp(w.omega, (agc_sp_t) 256);                                      /* OMEGA at 16 pi */
+            agc_dp_words_t f = (w.alpha > 0) ? lm_dap_das(w.k2, w.a2) : lm_dap_das(w.k2, dp_neg(w.a2)); /* DEL OMEGA + SGN(ALPHA) ALPHA^2/(2K), DP at 16 pi */
 
             w.del = dp_sign(f);
 
@@ -525,9 +525,9 @@ agc_status_t lm_dap_gts(void)
         st = (s != AGC_STATUS_OK) ? s : st; /* a failing axis status replaces st */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     agc_status_t sc = lm_dap_closeout(); /* CLOSEOUT status */

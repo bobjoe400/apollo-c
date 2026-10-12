@@ -915,3 +915,8 @@ src/programs/rendz_flags_lm.c.
 | csm_dap_pair_neg/_mp/_das/_ddoubl/_smallmp | csm_dap_words_neg/_mp/_das (+ _das_carry)/_ddoubl/_smallmp | DCS, MP, DAS K, DDOUBL, SMALLMP on stored words |
 | csm_dap_pair, csm_dap_pair_value | agc_dp_to_words, agc_dp_from_words (core) | duplicate converters removed |
 | csm_rcs_stickchk | agc_csm_dap_stickchk (public; the forwarding wrapper removed) | STICKCHK |
+| `agc_integ_midtoav1` | `agc_integ_midtoav_at_time` | MIDTOAV1: "precision-integrate this vehicle to TDEC1" (follow-up-done-lanes) |
+| `agc_integ_midtoav2` | `agc_integ_midtoav_now` | MIDTOAV2: "UPDATE THE STATE VECTOR TO PRESENT TIME + TOLERANCE" |
+| `agc_integ_intwake0` | `agc_integ_intwake_release` | INTWAKE0 / INTWAKE1: release area 0 and wake its sleepers (no restart test) |
+| `AGC_JOB_STATINT1`, `agc_job_statint1` | `AGC_JOB_STATEINT_UPDATE`, `agc_job_stateint_update` | STATINT1: the STATEINT job, integrate the permanent states to now |
+| `AGC_JOB_STATINT1_STALL`, `agc_job_statint1_stall` | `AGC_JOB_STATEINT_UPDATE_STALL`, `agc_job_stateint_update_stall` | STATINT1 after INTSTALL +1 |

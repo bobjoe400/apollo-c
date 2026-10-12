@@ -152,22 +152,17 @@ agc_status_t agc_csm_dap_decode_dap_data(void)
 /**********************************************************************
  * S40.14 (P40-P47.agc p. 735) -- RCS gains from IXX, IAVG:
  * J/M = IXX (2PI/M), J/M1 = J/M2 = IAVG (2PI/M);
- * KMJ = .00118 / IXX, KMJ1 = KMJ2 = .00118 / IAVG.
+ * KMJ = .00118 / IXX, KMJ1 = KMJ2 = .00118 / IAVG. The AGC does not
+ * check the inertias (MASSPROP forms them from the crew's V48 masses):
+ * MP and DV are signed, and DV limits an overflow, so the gains are
+ * always formed.
  *
  * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG for a
- *          negative inertia
  **********************************************************************/
-agc_status_t agc_csm_dap_rcs_gains(void)
+void agc_csm_dap_rcs_gains(void)
 {
     agc_csm_rcs_t          *r = agc_csm_dap_rcs(); /* J/M, KMJ           */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* IXX, IAVG          */
-
-    if (!AGC_ASSERT(c->ixx >= 0) || !AGC_ASSERT(c->iavg >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     r->jm[0]  = csm_dap_mp_hi(c->ixx, CONTONE);  /* CAE IXX; MP CONTONE; TS J/M  */
     r->jm[1]  = csm_dap_mp_hi(c->iavg, CONTONE); /* TS J/M1                      */
@@ -175,8 +170,6 @@ agc_status_t agc_csm_dap_rcs_gains(void)
     r->kmj[0] = csm_dap_dv(CONTTWO, c->ixx);     /* DCA CONTTWO; DV IXX; TS KMJ  */
     r->kmj[1] = csm_dap_dv(CONTTWO, c->iavg);    /* DV IAVG; TS KMJ1             */
     r->kmj[2] = r->kmj[1];                       /* TS KMJ2                      */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

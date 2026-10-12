@@ -144,7 +144,7 @@ static agc_status_t ll_ignalg_prec(agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (AGC_STATUS_OK); /* asleep; resumes as IGNALGP    */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -309,6 +309,11 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
             return (AGC_STATUS_OK); /* asleep; resumes IGNALOOP  */
         }
 
+        if (st != AGC_STATUS_OK)
+        {
+            return (st); /* INTSTALL could not sleep the job */
+        }
+
         agc_flag_set(AGC_FLAG_INTYPFLG);
         agc_flag_set(AGC_FLAG_MOONFLAG);
         ic->sv.tet = agc_guid_state()->avg.piptime1;
@@ -316,7 +321,7 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
         ic->sv.vcv = ic->out.vatt1; /* clobber RATT1 and VATT1    */
         st         = agc_integ_integrvs(&ip, ic, ic->tdec1);
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
             return (st);
         }
@@ -366,7 +371,7 @@ agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx)
     agc_navaux_padload_t nav;                                   /* pad loads of the auxiliary nav lane */
     agc_status_t         st_pad = agc_navaux_get_padload(&nav); /* step status */
 
-    if (!AGC_ASSERT(st_pad == AGC_STATUS_OK))
+    if (st_pad != AGC_STATUS_OK)
     {
         return (st_pad);
     }
@@ -374,7 +379,7 @@ agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx)
     agc_vec_t    r  = agc_vec_zero();                                                     /* landing site in SM, 2^24 m */
     agc_status_t st = agc_planet_rp_to_r(&ip, &nav, true, agc_erase_rls(), p->tland, &r); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -448,14 +453,8 @@ agc_status_t agc_lm_job_ignaloop(agc_job_ctx_t *ctx)
 agc_status_t agc_lm_job_ignalgrt(void)
 {
     ll_restart_here(AGC_JOB_IGNALGRT);
-    agc_status_t st = agc_lm_stclok2((agc_sp_t) -LL_ASTNDEX, AGC_JOB_ASTNRET); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK); /* ENDOFJOB    */
+    return (agc_lm_stclok2((agc_sp_t) -LL_ASTNDEX, AGC_JOB_ASTNRET)); /* STCLOK2 continues at ASTNRET */
 }
 
 /**********************************************************************
@@ -498,9 +497,9 @@ agc_status_t agc_lm_job_braking_phase_burn_attitude(agc_job_ctx_t *ctx)
     agc_imu_set_pointvsm(agc_vec_unit(&ip, agc_lm_ldg()->pointvsm_save, NULL, NULL));
     agc_status_t st = agc_imu_set_scaxis(agc_vec_make(AGC_DP_HALF, 0, 0)); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     agc_inhint();
@@ -558,9 +557,9 @@ agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx)
 {
     agc_status_t st = agc_lm_setpos1(); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (agc_lm_burnbaby(ctx));
@@ -600,7 +599,7 @@ static void ll_rate_of_descent_setup(void)
     l->rodscal1           = agc_lm_pad()->rodscale;
     l->lasttpip           = agc_erase_piptime();
     agc_lm_thr()->fcold   = 0;
-    agc_lm_thr()->fweight = agc_lm_words(0);
+    agc_lm_thr()->fweight = agc_dp_to_words(0);
 }
 
 /**********************************************************************
@@ -989,9 +988,9 @@ agc_status_t agc_lm_rate_of_descent_vertical(const agc_job_ctx_t *ctx)
     agc_phase_change(00003);
     agc_status_t st = agc_waitlist_call(LL_1SEC, AGC_TASK_RODTASK); /* TWIDDLE */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (ll_rodcomp(ctx));
@@ -1007,9 +1006,9 @@ agc_status_t agc_lm_task_rodtask(void)
 {
     agc_status_t st = agc_exec_findvac(LL_PRIO22, AGC_JOB_RODCOMP); /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if (!AGC_ASSERT(agc_lm_ldg()->wchphase == AGC_LM_PHASE_VERTICAL))
@@ -1092,9 +1091,9 @@ agc_status_t agc_lm_pitfall(void)
         l->zerlina      = 2;
         agc_status_t st = agc_waitlist_call(5, AGC_TASK_REDESMON); /* step status */
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st);
         }
 
         if (!AGC_ASSERT(l->elvira >= 0))
@@ -1262,7 +1261,7 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
     agc_navaux_padload_t nav;                                   /* pad loads of the auxiliary nav lane */
     agc_status_t         st_pad = agc_navaux_get_padload(&nav); /* step status */
 
-    if (!AGC_ASSERT(st_pad == AGC_STATUS_OK))
+    if (st_pad != AGC_STATUS_OK)
     {
         return (st_pad);
     }
@@ -1281,7 +1280,7 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
 
     /* LAT-LONG has no failure exit in the AGC; it falls straight into
      * R-TO-RP, so a failure here is propagated like R-TO-RP's.         */
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -1290,7 +1289,7 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
 
     st = agc_planet_r_to_rp(ip, &nav, true, agc_vec_shl(ip, rn, 2), t, &rls);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -1362,9 +1361,9 @@ agc_status_t agc_lm_job_landing_confirmation_proceed(void)
     agc_align_ram()->gsav = agc_vec_make(AGC_DP_HALF, 0, 0); /* UNITX  */
     agc_status_t st       = agc_align_refmf(&ip);            /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_UNIMPLEMENTED))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (agc_exec_gotopooh());

@@ -18,7 +18,7 @@ src/core/counters.c:129	agc_erase_tvcyaw	ACCESSOR	1	calls agc_erase_cdutcmd
 src/core/counters.c:134	agc_erase_set_tvcyaw	ACCESSOR	4	calls agc_erase_set_cdutcmd
 src/core/counters.c:139	agc_erase_tvcpitch	ACCESSOR	3	calls agc_erase_cdutcmd
 src/core/counters.c:144	agc_erase_set_tvcpitch	ACCESSOR	6	calls agc_erase_set_cdutcmd
-src/core/counters.c:150	agc_erase_thrust	ACCESSOR	3	reads/writes module state
+src/core/counters.c:150	agc_erase_thrust	ACCESSOR	4	reads/writes module state
 src/core/counters.c:155	agc_erase_set_thrust	ACCESSOR	5	reads/writes module state
 src/core/counters.c:160	agc_erase_altm	ACCESSOR	1	reads/writes module state
 src/core/counters.c:165	agc_erase_set_altm	ACCESSOR	1	reads/writes module state
@@ -119,22 +119,22 @@ src/core/erasable.c:1124	agc_erase_dapdatr2	ACCESSOR	3	reads/writes module state
 src/core/erasable.c:1140	agc_erase_set_dapdatr2	ACCESSOR	1	reads/writes module state
 src/core/erasable.c:1159	agc_erase_dsptab	ACCESSOR	33	reads/writes module state
 src/core/erasable.c:1176	agc_erase_set_dsptab	ACCESSOR	19	reads/writes module state
-src/core/erasable.c:1195	agc_erase_failreg	ACCESSOR	26	reads/writes module state
+src/core/erasable.c:1195	agc_erase_failreg	ACCESSOR	27	reads/writes module state
 src/core/erasable.c:1214	agc_erase_set_failreg	ACCESSOR	11	reads/writes module state
 src/core/erasable.c:1233	agc_erase_thetad	ACCESSOR	35	reads/writes module state
 src/core/erasable.c:1250	agc_erase_set_thetad	ACCESSOR	17	reads/writes module state
 src/core/interp/scalar.c:96	agc_interp_clear_ovf	NAMED	39	AGC label: BOV (INTERPRETER.agc p.1196) used only to reset OVFIND (the AGC idiom
-src/core/interp/scalar.c:114	agc_dp_add	NAMED	238	AGC label: DAD (INTERPRETER.agc pp.1131-1133) -- DAS MPAC; OVERFLOW if A is
+src/core/interp/scalar.c:114	agc_dp_add	NAMED	230	AGC label: DAD (INTERPRETER.agc pp.1131-1133) -- DAS MPAC; OVERFLOW if A is
 src/core/interp/scalar.c:128	agc_dp_add_ovf_only	NAMED	2	AGC label: DAD then BOV (INTERPRETER.agc pp.1131-1133) with the sum never read
-src/core/interp/scalar.c:144	agc_dp_sub	NAMED	459	AGC label: DSU (INTERPRETER.agc pp.1131-1133) -- DCS 0 then ENDVXV. BDSU X is
-src/core/interp/scalar.c:234	agc_dp_sq	NAMED	51	AGC label: DSQ (INTERPRETER.agc p.1180) -- DSQSUB leaves the TP square; as a DP,
+src/core/interp/scalar.c:144	agc_dp_sub	NAMED	451	AGC label: DSU (INTERPRETER.agc pp.1131-1133) -- DCS 0 then ENDVXV. BDSU X is
+src/core/interp/scalar.c:234	agc_dp_sq	NAMED	47	AGC label: DSQ (INTERPRETER.agc p.1180) -- DSQSUB leaves the TP square; as a DP,
 src/core/interp/scalar.c:317	agc_dp_poly	NAMED	8	AGC label: POLY / POWRSERS (INTERPRETER.agc pp.1139-1140) -- Horner evaluation
 src/core/interp/scalar.c:359	agc_dp_div_ovf_only	NAMED	1	AGC label: DDV then BOV (INTERPRETER.agc pp.1162-1170) with the quotient never
 src/core/interp/trig.c:308	agc_dp_sin	NAMED	67	AGC label: SIN (SINE, INTERPRETER.agc p.1187).
 src/core/interp/trig.c:321	agc_dp_cos	NAMED	69	AGC label: COS (COSINE / PRESINE, INTERPRETER.agc p.1187).
 src/core/interp/trig.c:624	agc_mpac_asin	ACCESSOR	5	calls arc_mpac
 src/core/interp/trig.c:638	agc_mpac_acos	ACCESSOR	5	calls arc_mpac
-src/core/interp/vector.c:123	agc_vec_sub	NAMED	95	AGC label: VSU (INTERPRETER.agc p.1131) -- DCS of each component of X, then as
+src/core/interp/vector.c:123	agc_vec_sub	NAMED	94	AGC label: VSU (INTERPRETER.agc p.1131) -- DCS of each component of X, then as
 src/core/interp/vector.c:286	mul_top	NAMED	6	AGC label: DMPSUB (INTERPRETER.agc p.1136) for VXV -- the top two words of
 src/core/mpac.c:69	agc_w_join	NAMED	41	by hand: word structure: the AGC word(s) the value is held in
 src/core/mpac.c:107	agc_w3_value	NAMED	10	by hand: word structure: the AGC word(s) the value is held in
@@ -162,7 +162,7 @@ src/core/restart_delays.c:70	agc_erase_cm_gymdt	ACCESSOR	3	reads/writes module s
 src/core/restart_delays.c:75	agc_erase_set_cm_gymdt	ACCESSOR	3	reads/writes module state
 src/core/sp_trig.c:145	agc_sp_sin	NAMED	14	AGC label: SPSIN (SINGLE_PRECISION_SUBROUTINES.agc p.1207) -- sin(pi a).
 src/core/sp_trig.c:159	agc_sp_cos	NAMED	13	AGC label: SPCOS (SINGLE_PRECISION_SUBROUTINES.agc p.1207) -- AD HALF, then SPSIN:
-src/core/state.c:105	agc_state_vehicle	ACCESSOR	155	reads/writes module state
+src/core/state.c:105	agc_state_vehicle	ACCESSOR	154	reads/writes module state
 src/core/state.c:119	agc_time_now_cs	ACCESSOR	49	reads/writes module state
 src/core/state.c:136	agc_time_set_cs	ACCESSOR	23	reads/writes module state
 src/core/state.c:153	agc_time_advance_cs	ACCESSOR	7	reads/writes module state
@@ -172,8 +172,8 @@ src/core/state.c:238	agc_flag_word	NAMED	7	by hand: flagword index of FLAGWRDn
 src/core/state.c:255	agc_flag_bit	NAMED	2	by hand: AGC bit number of a flag
 src/core/state.c:273	agc_flag_mask	NAMED	16	AGC label: AGC: SWITCHES (INTERPRETER.agc C p. 1197, L p. 1092: the bit of the
 src/core/state.c:291	agc_flag_test	ACCESSOR	611	reads/writes module state
-src/core/state.c:306	agc_flag_set	ACCESSOR	215	reads/writes module state
-src/core/state.c:321	agc_flag_clear	ACCESSOR	249	reads/writes module state
+src/core/state.c:306	agc_flag_set	ACCESSOR	217	reads/writes module state
+src/core/state.c:321	agc_flag_clear	ACCESSOR	250	reads/writes module state
 src/core/state.c:336	agc_flag_invert	ACCESSOR	5	reads/writes module state
 src/core/state.c:379	agc_flagword_get	ACCESSOR	42	reads/writes module state
 src/core/state.c:398	agc_flagword_set	ACCESSOR	29	reads/writes module state
@@ -181,17 +181,17 @@ src/core/word.c:122	agc_sp_to_double	NAMED	2	by hand: scale conversion with its 
 src/core/word.c:136	agc_dp_to_double	NAMED	119	by hand: scale conversion with its scale 2^N
 src/core/word.c:151	agc_dp_high	NAMED	171	by hand: word structure: the AGC word(s) the value is held in
 src/core/word.c:164	agc_dp_low	NAMED	68	by hand: word structure: the AGC word(s) the value is held in
-src/core/word.c:208	agc_dp_from_sp	NAMED	100	by hand: word structure: the AGC word(s) the value is held in
+src/core/word.c:208	agc_dp_from_sp	NAMED	98	by hand: word structure: the AGC word(s) the value is held in
 src/core/word.c:221	agc_tp_from_dp	NAMED	48	by hand: word structure: the AGC word(s) the value is held in
-src/core/word.c:235	agc_tp_to_dp	NAMED	92	by hand: word structure: the AGC word(s) the value is held in
-src/core/word.c:290	agc_dp_from_words	NAMED	74	by hand: word structure: the AGC word(s) the value is held in
+src/core/word.c:235	agc_tp_to_dp	NAMED	91	by hand: word structure: the AGC word(s) the value is held in
+src/core/word.c:290	agc_dp_from_words	NAMED	72	by hand: word structure: the AGC word(s) the value is held in
 src/core/word.c:321	agc_tp_from_words	NAMED	5	by hand: word structure: the AGC word(s) the value is held in
 src/core/word.c:375	agc_sp_add	NAMED	1	by hand: instruction semantics (AD)
 src/core/word.c:390	agc_sp_mul	NAMED	75	by hand: instruction semantics (MP)
 src/core/word.c:405	agc_dp_add_raw	NAMED	11	by hand: instruction semantics (DAS)
 src/core/word.c:420	agc_dp_sub_raw	NAMED	3	by hand: instruction semantics (DAS of the complement)
-src/core/word.c:436	agc_dp_mul_tp	NAMED	91	AGC label: DMP (DMPSUB, INTERPRETER.agc p.1136) -- the TP product as the AGC
-src/core/word.c:574	agc_dp_neg	NAMED	101	AGC label: DCOMP (INTERPRETER.agc p.1151) -- -0 is not represented: DCOMP of 0
+src/core/word.c:436	agc_dp_mul_tp	NAMED	87	AGC label: DMP (DMPSUB, INTERPRETER.agc p.1136) -- the TP product as the AGC
+src/core/word.c:574	agc_dp_neg	NAMED	100	AGC label: DCOMP (INTERPRETER.agc p.1151) -- -0 is not represented: DCOMP of 0
 src/core/word.c:587	agc_dp_abs	NAMED	61	AGC label: ABS (INTERPRETER.agc p.1181) -- BRANCH on the sign, COMP if negative.
 src/core/word.c:637	agc_dp_sign	NAMED	48	AGC label: SIGN X (INTERPRETER.agc p.1151) -- complement MPAC when X is negative
 src/csm/alignment/fine_align.c:409	agc_job_csm_fine_align_recheck	ACCESSOR	3	calls align_flash
@@ -219,11 +219,11 @@ src/csm/burns/sps/ignition.c:358	agc_job_postburn_csm	ACCESSOR	1	calls flash_pos
 src/csm/dap/mysubs.c:222	csm_dap_mp_hi	NAMED	39	by hand: instruction semantics (MP, A)
 src/csm/dap/mysubs.c:237	csm_dap_mp_lo	NAMED	5	by hand: instruction semantics (MP, L)
 src/csm/dap/mysubs.c:338	csm_dap_words_mp	NAMED	19	by hand: instruction semantics (MP, A and L)
-src/csm/dap/rcs/dapdata.c:223	agc_csm_dap_rcsdapon	ACCESSOR	5	calls agc_csm_dap_rcsdapon_t5
-src/csm/dap/rcs/dapdata.c:236	agc_task_rcsup	ACCESSOR	1	calls agc_csm_dap_rcsdapon
-src/csm/dap/state.c:39	agc_csm_dap_rcs	ACCESSOR	56	reads/writes module state
+src/csm/dap/rcs/dapdata.c:216	agc_csm_dap_rcsdapon	ACCESSOR	5	calls agc_csm_dap_rcsdapon_t5
+src/csm/dap/rcs/dapdata.c:229	agc_task_rcsup	ACCESSOR	1	calls agc_csm_dap_rcsdapon
+src/csm/dap/state.c:39	agc_csm_dap_rcs	ACCESSOR	57	reads/writes module state
 src/csm/dap/state.c:52	agc_csm_dap_tvc	ACCESSOR	81	reads/writes module state
-src/csm/dap/state.c:65	agc_csm_dap_com	ACCESSOR	55	reads/writes module state
+src/csm/dap/state.c:65	agc_csm_dap_com	ACCESSOR	56	reads/writes module state
 src/csm/entry/cm_body_attitude.c:84	cdu_pattern	NAMED	3	AGC label: AGC: none (CM_BODY_ATTITUDE.agc p. 884 AOG/PIP words) -- the 15-bit CDU
 src/csm/entry/dap.c:460	agc_erase_aog	ACCESSOR	1	reads/writes module state
 src/csm/entry/dap.c:475	agc_erase_aig	ACCESSOR	1	reads/writes module state
@@ -231,11 +231,11 @@ src/csm/entry/dap.c:490	agc_erase_amg	ACCESSOR	1	reads/writes module state
 src/csm/entry/programs.c:164	headsup_roll	NAMED	2	AGC label: AGC: none (CCS HEADSUP / CA BIT14, P61-P67.agc pp. 790, 793) -- ROLLC
 src/csm/entry/reentry.c:166	entry_signmpac	NAMED	2	AGC label: SIGNMPAC (RT8_OP_CODES.agc p. 1386): MPAC = +DPOSMAX if the high word of
 src/csm/entry/reentry.c:223	entry_tp_shl	NAMED	19	AGC label: AGC: none (SL n of the interpreter, INTERPRETER.agc p. 1154 TSSL) -- SL n
-src/csm/navigation/cislunar_navigation.c:126	agc_erase_trunbias	ACCESSOR	0	reads/writes module state
-src/csm/navigation/cislunar_navigation.c:307	agc_job_optics_calibration_end_mark	ACCESSOR	1	calls agc_dsky_endmark
-src/csm/navigation/cislunar_navigation.c:713	agc_job_cislunar_midcourse_navigation_sight	ACCESSOR	1	calls agc_csm_sighting_mark
-src/csm/navigation/cislunar_navigation.c:733	agc_job_cislunar_midcourse_navigation_ident	ACCESSOR	3	calls rz_flash
-src/csm/navigation/cislunar_navigation.c:1146	agc_job_cislunar_midcourse_navigation_mark_display	ACCESSOR	2	calls rz_flash
+src/csm/navigation/cislunar_navigation.c:127	agc_erase_trunbias	ACCESSOR	0	reads/writes module state
+src/csm/navigation/cislunar_navigation.c:308	agc_job_optics_calibration_end_mark	ACCESSOR	1	calls agc_dsky_endmark
+src/csm/navigation/cislunar_navigation.c:715	agc_job_cislunar_midcourse_navigation_sight	ACCESSOR	1	calls agc_csm_sighting_mark
+src/csm/navigation/cislunar_navigation.c:735	agc_job_cislunar_midcourse_navigation_ident	ACCESSOR	3	calls rz_flash
+src/csm/navigation/cislunar_navigation.c:1148	agc_job_cislunar_midcourse_navigation_mark_display	ACCESSOR	2	calls rz_flash
 src/csm/navigation/landmark_navigation.c:143	ln_gettf	ACCESSOR	7	reads/writes module state
 src/csm/navigation/landmark_navigation.c:1185	agc_job_orbital_navigation_marks_exit	ACCESSOR	1	reads/writes module state
 src/csm/navigation/landmark_navigation.c:1201	rz_landmark_set_offset	ACCESSOR	1	reads/writes module state
@@ -247,13 +247,13 @@ src/csm/navigation/orbital_navigation.c:403	agc_job_orbital_navigation_landing_s
 src/csm/navigation/orbital_navigation.c:498	agc_job_orbital_navigation_optics	ACCESSOR	1	calls on_optics
 src/csm/navigation/orbital_navigation.c:518	agc_job_orbital_navigation_advanced_optics	ACCESSOR	2	calls on_optics
 src/csm/navigation/orbital_navigation.c:558	agc_job_orbital_navigation_process	ACCESSOR	1	calls agc_sxtmark_marks_made, rz_landmark_marks_start
-src/csm/navigation/tpi_search.c:818	agc_job_tpi_search_display	ACCESSOR	2	reads/writes module state
+src/csm/navigation/tpi_search.c:820	agc_job_tpi_search_display	ACCESSOR	2	reads/writes module state
 src/csm/navigation/tracking_attitude.c:115	agc_erase_r61cntr	ACCESSOR	1	reads/writes module state
 src/csm/navigation/tracking_attitude.c:131	agc_erase_set_r61cntr	ACCESSOR	1	reads/writes module state
 src/csm/navigation/tracking_attitude.c:560	agc_job_rendezvous_final_attitude_csm_option	ACCESSOR	2	calls rz_flash
 src/csm/navigation/tracking_data.c:254	td_bvectors	ACCESSOR	1	reads/writes module state
-src/csm/navigation/tracking_data.c:958	agc_job_rendezvous_tracking_data_csm_residuals	ACCESSOR	1	calls rz_flash
-src/csm/navigation/tracking_data.c:1063	rz_csm_residuals	ACCESSOR	3	reads/writes module state
+src/csm/navigation/tracking_data.c:960	agc_job_rendezvous_tracking_data_csm_residuals	ACCESSOR	1	calls rz_flash
+src/csm/navigation/tracking_data.c:1065	rz_csm_residuals	ACCESSOR	3	reads/writes module state
 src/csm/optics/auto_optics_positioning.c:111	cmc_mode	ACCESSOR	2	calls agc_erase_swsample
 src/csm/optics/auto_optics_positioning.c:353	auto_optics_wait	ACCESSOR	4	calls agc_svc_delayjob
 src/csm/optics/auto_optics_positioning.c:589	agc_job_auto_optics_positioning_resume	ACCESSOR	1	calls auto_optics_target
@@ -300,7 +300,7 @@ src/exec/executive.c:909	exec_running_job_loc	ACCESSOR	2	reads/writes module sta
 src/exec/executive.c:941	agc_exec_idle	ACCESSOR	6	reads/writes module state
 src/exec/executive.c:954	agc_exec_newjob	ACCESSOR	7	reads/writes module state
 src/exec/fresh_start.c:841	agc_restart_redoctr	ACCESSOR	3	reads/writes module state
-src/exec/interrupts.c:87	agc_inhint	ACCESSOR	250	reads/writes module state
+src/exec/interrupts.c:87	agc_inhint	ACCESSOR	251	reads/writes module state
 src/exec/interrupts.c:114	agc_interrupts_inhibited	ACCESSOR	28	reads/writes module state
 src/exec/interrupts.c:190	agc_rupt_set_t5_task	ACCESSOR	18	reads/writes module state
 src/exec/interrupts.c:202	agc_rupt_t5_task	ACCESSOR	6	reads/writes module state
@@ -325,7 +325,7 @@ src/exec/phase_table.c:557	phase_longbase	ACCESSOR	1	reads/writes module state
 src/exec/phase_table.c:570	phase_debug_set_negative	ACCESSOR	1	reads/writes module state
 src/exec/waitlist.c:101	waitlist_reset_time3	ACCESSOR	2	reads/writes module state
 src/exec/waitlist.c:331	agc_waitlist_fixdelay	ACCESSOR	30	calls agc_waitlist_vardelay
-src/exec/waitlist.c:736	agc_waitlist_time3	ACCESSOR	2	reads/writes module state
+src/exec/waitlist.c:731	agc_waitlist_time3	ACCESSOR	2	reads/writes module state
 src/guidance/external_delta_v.c:491	agc_job_external_delta_v	ACCESSOR	2	calls ignition_time_entry
 src/guidance/external_delta_v.c:509	agc_job_external_delta_v_display_dv	ACCESSOR	2	calls flash
 src/guidance/external_delta_v.c:609	agc_job_lambert_aimpoint_guidance_csm	ACCESSOR	1	calls ignition_time_entry
@@ -342,21 +342,21 @@ src/imu/attitude_maneuver.c:255	dmp_shl	NAMED	5	by hand: instruction semantics (
 src/imu/compensation.c:255	agc_imu_comp_get	ACCESSOR	1	reads/writes module state
 src/imu/compensation.c:265	agc_imu_gcompsw	ACCESSOR	4	reads/writes module state
 src/imu/compensation.c:289	agc_imu_pipa_interval	ACCESSOR	0	reads/writes module state
-src/imu/compensation.c:841	cm_no_time_elapsed	ACCESSOR	2	calls agc_state_vehicle
-src/imu/gyro.c:201	agc_imu_gyros_busy	ACCESSOR	4	reads/writes module state
-src/imu/gyro.c:211	agc_imu_gyrocmd	ACCESSOR	2	reads/writes module state
-src/imu/gyro.c:222	agc_imu_hw_set_gyrocmd	ACCESSOR	3	reads/writes module state
-src/imu/maneuver.c:319	agc_kalc_active	ACCESSOR	2	reads/writes module state
-src/imu/maneuver.c:332	agc_kalc_outcome	ACCESSOR	0	calls agc_kalc_active
+src/imu/compensation.c:838	cm_no_time_elapsed	ACCESSOR	2	calls agc_state_vehicle
+src/imu/gyro.c:197	agc_imu_gyros_busy	ACCESSOR	4	reads/writes module state
+src/imu/gyro.c:207	agc_imu_gyrocmd	ACCESSOR	2	reads/writes module state
+src/imu/gyro.c:218	agc_imu_hw_set_gyrocmd	ACCESSOR	3	reads/writes module state
+src/imu/maneuver.c:314	agc_kalc_active	ACCESSOR	2	reads/writes module state
+src/imu/maneuver.c:327	agc_kalc_outcome	ACCESSOR	0	calls agc_kalc_active
 src/imu/mode.c:236	imodes30_or	ACCESSOR	5	calls agc_erase_imodes30, agc_erase_set_imodes30
 src/imu/mode.c:247	imodes30_clear	ACCESSOR	3	calls agc_erase_imodes30, agc_erase_set_imodes30
 src/imu/mode.c:273	iss_lamps_write	ACCESSOR	2	calls agc_erase_set_dsptab
 src/imu/mode.c:294	setissw	ACCESSOR	4	calls agc_t4_setissw
-src/imu/mode.c:523	agc_imu_cducmd	ACCESSOR	3	reads/writes module state
-src/imu/mode.c:1459	agc_imu_stall_outcome	ACCESSOR	18	reads/writes module state
+src/imu/mode.c:518	agc_imu_cducmd	ACCESSOR	3	reads/writes module state
+src/imu/mode.c:1429	agc_imu_stall_outcome	ACCESSOR	18	reads/writes module state
 src/io/dsky/display_if.c:189	f4	ACCESSOR	18	calls agc_flagword_get
 src/io/dsky/display_if.c:240	dif_priobort	ACCESSOR	3	calls agc_poodoo
-src/io/dsky/display_if.c:1775	agc_dsky_set_nvword1	ACCESSOR	2	reads/writes module state
+src/io/dsky/display_if.c:1763	agc_dsky_set_nvword1	ACCESSOR	2	reads/writes module state
 src/io/dsky/nouns/data.c:625	agc_noun_read	ACCESSOR	15	calls noun_data_access
 src/io/dsky/nouns/scales.c:761	sf_pair_value	NAMED	4	AGC label: AGC: GTSFIN, GTSFOUT (PINBALL_NOUN_TABLES.agc, CM p. 271)
 src/io/dsky/nouns/scales.c:871	agc_scale_info	ACCESSOR	2	calls agc_state_vehicle
@@ -381,7 +381,7 @@ src/io/dsky/pinball/state.c:498	pin_11dspin	ACCESSOR	4	calls pin_dspin1
 src/io/dsky/pinball/state.c:527	pin_5blank	ACCESSOR	2	calls pin_5blank_rel, pin_getinrel
 src/io/dsky/pinball/state.c:710	agc_dsky_nout	ACCESSOR	4	reads/writes module state
 src/io/dsky/pinball/state.c:749	pin_sign_lit	ACCESSOR	2	calls agc_erase_dsptab
-src/io/dsky/pinball/state.c:834	agc_dsky_dsptem	ACCESSOR	18	reads/writes module state
+src/io/dsky/pinball/state.c:834	agc_dsky_dsptem	ACCESSOR	20	reads/writes module state
 src/io/dsky/pinball/state.c:850	agc_dsky_set_dsptem	ACCESSOR	22	reads/writes module state
 src/io/dsky/pinball/state.c:872	agc_erase_set_dsptem1	ACCESSOR	5	calls agc_dsky_set_dsptem
 src/io/dsky/pinball/state.c:889	agc_erase_optionx	ACCESSOR	3	reads/writes module state
@@ -400,7 +400,7 @@ src/io/service/t4rupt.c:179	call_wait	ACCESSOR	4	calls agc_waitlist_call
 src/io/service/t4rupt.c:190	agc_t4_lamptest	ACCESSOR	3	calls agc_erase_imodes33
 src/io/service/t4rupt_csm.c:116	agc_erase_optmodes	ACCESSOR	5	reads/writes module state
 src/io/service/t4rupt_csm.c:128	agc_erase_set_optmodes	ACCESSOR	4	reads/writes module state
-src/io/service/t4rupt_csm.c:138	agc_erase_optind	ACCESSOR	1	reads/writes module state
+src/io/service/t4rupt_csm.c:138	agc_erase_optind	ACCESSOR	2	reads/writes module state
 src/io/service/t4rupt_csm.c:150	agc_erase_set_optind	ACCESSOR	9	reads/writes module state
 src/io/service/t4rupt_csm.c:161	agc_erase_swsample	ACCESSOR	2	reads/writes module state
 src/io/service/t4rupt_csm.c:211	cdu_ones	NAMED	5	AGC label: OZONE / CMDSETUP / TRUNCMD (T4RUPT_PROGRAM.agc pp.166-168) -- CA of a
@@ -446,7 +446,7 @@ src/io/verbs/extended_verbs.c:1096	agc_job_dap_data_load_noun48	ACCESSOR	2	calls
 src/io/verbs/extended_verbs_csm.c:129	agc_job_attitude_error_terminate	ACCESSOR	3	calls after_liftoff, agc_dsky_endmark, agc_extverb_gopin
 src/io/verbs/extended_verbs_csm.c:188	agc_job_dap_data_load_noun46_csm	ACCESSOR	2	calls dap_data_display
 src/io/verbs/extended_verbs_csm.c:224	agc_job_dap_data_load_noun47_csm	ACCESSOR	2	calls dap_data_display
-src/io/verbs/extended_verbs_csm.c:268	agc_job_dap_data_load_noun48_csm	ACCESSOR	2	calls dap_data_display
+src/io/verbs/extended_verbs_csm.c:261	agc_job_dap_data_load_noun48_csm	ACCESSOR	2	calls dap_data_display
 src/io/verbs/extended_verbs_lm.c:110	agc_job_attitude_error_load_lm	ACCESSOR	1	calls agc_extverb_redisplay
 src/io/verbs/extended_verbs_lm.c:273	agc_job_dap_data_load_noun47_lm	ACCESSOR	3	calls dap_data_display
 src/io/verbs/extended_verbs_lm.c:355	agc_job_dap_data_load_noun48_lm	ACCESSOR	2	calls dap_data_display
@@ -493,8 +493,8 @@ src/lm/burns/dps_burn.c:830	agc_task_engoftsk	ACCESSOR	1	calls agc_lm_enginoff
 src/lm/burns/dps_burn.c:935	agc_task_coastset	ACCESSOR	1	calls agc_lm_dap_allcoast
 src/lm/burns/ignition/burnbaby.c:131	agc_lm_onullage	ACCESSOR	1	calls agc_flag_set
 src/lm/burns/ignition/burnbaby.c:369	agc_task_restore_burn_display	ACCESSOR	1	calls agc_exec_novac
-src/lm/burns/ignition/burnbaby.c:935	agc_job_rcs_burn_blank_dsky	ACCESSOR	1	calls agc_dsky_display
-src/lm/burns/ignition/burnbaby.c:952	agc_job_restore_burn_display	ACCESSOR	1	calls agc_dsky_display
+src/lm/burns/ignition/burnbaby.c:930	agc_job_rcs_burn_blank_dsky	ACCESSOR	1	calls agc_dsky_display
+src/lm/burns/ignition/burnbaby.c:947	agc_job_restore_burn_display	ACCESSOR	1	calls agc_dsky_display
 src/lm/burns/ignition/clock.c:675	agc_job_auto_control_recycle	ACCESSOR	1	calls agc_guid_state, auto_control_check
 src/lm/burns/servicer/average_g.c:95	gnufaze5	ACCESSOR	5	calls agc_phase_newphase
 src/lm/burns/servicer/average_g.c:290	agc_task_redo5_5_lm	ACCESSOR	1	calls agc_guid_state, redo5_5
@@ -508,10 +508,10 @@ src/lm/dap/rcs/qrmanual.c:170	beyond	NAMED	4	by hand: ENTERQR breakout test
 src/lm/dap/state.c:70	lm_dap_state	ACCESSOR	101	reads/writes module state
 src/lm/landing/aborts.c:75	agc_lm_pipctr1	ACCESSOR	1	reads/writes module state
 src/lm/landing/aborts.c:255	ab_legal	ACCESSOR	2	calls agc_erase_modreg, agc_flag_test
-src/lm/landing/lunar_landing.c:1032	agc_lm_job_rodcomp	ACCESSOR	2	calls ll_rodcomp
+src/lm/landing/lunar_landing.c:1031	agc_lm_job_rodcomp	ACCESSOR	2	calls ll_rodcomp
 src/lm/landing/state.c:47	agc_lm_pad	ACCESSOR	25	reads/writes module state
-src/lm/landing/state.c:57	agc_lm_ldg	ACCESSOR	89	reads/writes module state
-src/lm/landing/state.c:67	agc_lm_thr	ACCESSOR	15	reads/writes module state
+src/lm/landing/state.c:57	agc_lm_ldg	ACCESSOR	90	reads/writes module state
+src/lm/landing/state.c:67	agc_lm_thr	ACCESSOR	20	reads/writes module state
 src/lm/landing/state.c:77	agc_lm_asc	ACCESSOR	26	reads/writes module state
 src/lm/landing/state.c:103	agc_lm_phaschng	ACCESSOR	3	calls agc_phase_change
 src/lm/landing/state.c:115	agc_lm_fastchng	ACCESSOR	9	calls agc_phase_change
@@ -526,7 +526,7 @@ src/lm/navigation/navigation.c:695	agc_job_rendezvous_navigation_terminate	ACCES
 src/lm/navigation/tracking_data.c:119	td_good	ACCESSOR	3	calls agc_imu_stall_outcome
 src/lm/navigation/tracking_data.c:371	agc_job_rendezvous_tracking_data_los_alarm	ACCESSOR	2	calls rz_prio_alarm
 src/lm/navigation/tracking_data.c:457	agc_job_rendezvous_tracking_data_wait	ACCESSOR	1	calls lmnav_wait
-src/lm/navigation/tracking_data.c:587	agc_job_rendezvous_tracking_data_residuals	ACCESSOR	1	calls rz_flash
+src/lm/navigation/tracking_data.c:589	agc_job_rendezvous_tracking_data_residuals	ACCESSOR	1	calls rz_flash
 src/lm/optics/aotmark.c:144	surface_marks	ACCESSOR	5	calls agc_flag_test
 src/lm/optics/aotmark.c:518	request_marks	ACCESSOR	2	calls align_flash
 src/lm/optics/aotmark.c:667	agc_job_aot_mark_coas_display	ACCESSOR	2	calls align_flash
@@ -585,21 +585,24 @@ src/nav/conic/common.c:150	agc_conic_mbmn_	NAMED	28	AGC label: BMN (INTERPRETER.
 src/nav/conic/common.c:167	agc_conic_mbze_	NAMED	7	AGC label: BZE (INTERPRETER.agc p. 1128) -- branch if MPAC,+1 is zero
 src/nav/conic/lambert.c:697	agc_erase_un	ACCESSOR	1	reads/writes module state
 src/nav/conic/lambert.c:713	agc_erase_geomsgn	ACCESSOR	1	reads/writes module state
-src/nav/integration/flags_csm.c:12	agc_integ_csm_resume_idle_integration	ACCESSOR	1	calls agc_flag_put
-src/nav/integration/flags_csm.c:17	agc_integ_csm_amoonflg	ACCESSOR	1	calls agc_flag_test
-src/nav/integration/flags_csm.c:22	agc_integ_csm_set_amoonflg	ACCESSOR	1	calls agc_flag_put
-src/nav/integration/init.c:75	agc_integ_shared_ctx	ACCESSOR	64	reads/writes module state
-src/nav/integration/init.c:95	agc_integ_grp2pc	ACCESSOR	7	calls agc_phase_change
-src/nav/integration/init.c:183	agc_integ_area_busy	ACCESSOR	16	calls agc_flagword_get
-src/nav/integration/init.c:329	agc_integ_atopcsm	ACCESSOR	6	calls atop
-src/nav/integration/init.c:334	agc_integ_atoplem	ACCESSOR	5	calls atop
-src/nav/integration/init.c:790	agc_integ_csmprec	ACCESSOR	4	calls special_entry
-src/nav/integration/init.c:811	agc_integ_lemprec	ACCESSOR	6	calls special_entry
-src/nav/integration/init.c:816	agc_integ_csmconic	ACCESSOR	2	calls special_entry
-src/nav/integration/init.c:821	agc_integ_lemconic	ACCESSOR	2	calls special_entry
-src/nav/integration/orbital_integration.c:121	agc_integ_mu	NAMED	5	AGC label: MUEARTH - X2: the mu of earth (0), moon (2) or sun (4).
-src/nav/integration/svdwn.c:69	agc_integ_r_other	ACCESSOR	1	reads/writes module state
-src/nav/integration/svdwn.c:75	agc_integ_v_other	ACCESSOR	1	reads/writes module state
+src/nav/integration/flags_csm.c:41	agc_integ_csm_resume_idle_integration	ACCESSOR	1	calls agc_flag_put
+src/nav/integration/flags_csm.c:53	agc_integ_csm_amoonflg	ACCESSOR	1	calls agc_flag_test
+src/nav/integration/flags_csm.c:69	agc_integ_csm_set_amoonflg	ACCESSOR	1	calls agc_flag_put
+src/nav/integration/init.c:130	agc_integ_shared_ctx	ACCESSOR	64	reads/writes module state
+src/nav/integration/init.c:189	agc_integ_grp2pc	ACCESSOR	7	calls agc_phase_change
+src/nav/integration/init.c:341	agc_integ_area_busy	ACCESSOR	13	calls agc_flagword_get
+src/nav/integration/init.c:488	agc_integ_intwake0	ACCESSOR	4	calls wake
+src/nav/integration/init.c:587	agc_integ_atopcsm	ACCESSOR	6	calls atop
+src/nav/integration/init.c:610	agc_integ_atoplem	ACCESSOR	5	calls atop
+src/nav/integration/init.c:1355	agc_integ_csmprec	ACCESSOR	4	calls special_entry
+src/nav/integration/init.c:1435	agc_integ_lemprec	ACCESSOR	6	calls special_entry
+src/nav/integration/init.c:1460	agc_integ_csmconic	ACCESSOR	2	calls special_entry
+src/nav/integration/init.c:1485	agc_integ_lemconic	ACCESSOR	2	calls special_entry
+src/nav/integration/jobs.c:292	agc_job_statint1_stall	ACCESSOR	2	calls state_integration_grab
+src/nav/integration/jobs.c:305	agc_job_stateup_stall	ACCESSOR	2	calls stateup_lm_state
+src/nav/integration/orbital_integration.c:187	agc_integ_mu	NAMED	5	AGC label: MUEARTH,2 (ORBITAL_INTEGRATION.agc p. 1353) -- the gravitational constant
+src/nav/integration/svdwn.c:117	agc_integ_r_other	ACCESSOR	1	reads/writes module state
+src/nav/integration/svdwn.c:130	agc_integ_v_other	ACCESSOR	1	reads/writes module state
 src/programs/alignment/common.c:85	agc_align_ram	ACCESSOR	186	reads/writes module state
 src/programs/alignment/common.c:391	align_show	ACCESSOR	2	calls agc_dsky_display
 src/programs/alignment/common.c:701	align_phase4	ACCESSOR	24	calls agc_phase_change
@@ -620,7 +623,7 @@ src/programs/alignment/sighting_data_and_gyro_torquing.c:385	agc_job_gyro_torqui
 src/programs/alignment/word_forms.c:162	align_dot_shl	NAMED	6	AGC label: DOT then SLn (INTERPRETER.agc TSSL, p. 1154) -- the shift acts on the
 src/programs/alignment/word_forms.c:182	align_dmp_shl	NAMED	6	AGC label: DMP then SLn (INTERPRETER.agc TSSL on the DMPSUB product) -- as
 src/programs/displays/display.c:208	rz_displaye	ACCESSOR	2	calls rz_vnpooh
-src/programs/displays/display.c:780	rz_option	ACCESSOR	9	calls agc_dsky_dsptem
+src/programs/displays/display.c:770	rz_option	ACCESSOR	9	calls agc_dsky_dsptem
 src/programs/displays/orbit_parameter_display.c:380	opd_flash	ACCESSOR	3	calls rz_flash
 src/programs/displays/orbit_parameter_display.c:396	opd_terminated	ACCESSOR	2	calls agc_erase_extvbact
 src/programs/displays/orbit_parameter_display.c:787	agc_job_orbit_display_monitor	ACCESSOR	2	calls opd_flash
@@ -643,40 +646,40 @@ src/programs/navigation/common.c:348	agc_erase_set_landmark	ACCESSOR	3	reads/wri
 src/programs/navigation/common.c:363	agc_erase_horizon	ACCESSOR	5	reads/writes module state
 src/programs/navigation/common.c:379	agc_erase_set_horizon	ACCESSOR	1	reads/writes module state
 src/programs/navigation/common.c:399	agc_rendz_tracking_angles	ACCESSOR	6	reads/writes module state
-src/programs/navigation/common.c:478	rz_vflag	ACCESSOR	2	calls rz_is_csm
-src/programs/navigation/common.c:579	rz_unit	NAMED	59	AGC label: UNIT: half-unit vector (scale 2^1)
-src/programs/navigation/common.c:708	rz_sl_star	NAMED	12	AGC label: SL* addr,X: shift count = addr - C(X); a negative count shifts right.
-src/programs/navigation/common.c:729	rz_sr_star	NAMED	6	AGC label: SR* addr,X: shift right by addr - C(X); a negative count shifts left.
-src/programs/navigation/common.c:781	agc_rendz_vec_to_body	NAMED	8	AGC label: VECSHIFT / VSR* 0,2 (P34-35 p.499): earth scale -> body scale. With
-src/programs/navigation/common.c:801	rz_vec_from_body	NAMED	0	AGC label: VSL* 0,2: body scale -> earth scale (moon: shift right 2).
-src/programs/navigation/common.c:820	agc_rendz_scalar_from_body	NAMED	12	AGC label: SHIFTR1 (P34-35 p.500): SL* 0,2 -- a body-scale scalar to 2^29.
-src/programs/navigation/common.c:1330	agc_rendz_nav_pad	ACCESSOR	17	reads/writes module state
-src/programs/navigation/common.c:1345	agc_erase_x789	ACCESSOR	8	reads/writes module state
-src/programs/navigation/common.c:1361	agc_erase_set_x789	ACCESSOR	3	reads/writes module state
-src/programs/navigation/common.c:1523	rz_word_of	NAMED	11	by hand: word structure: the AGC word(s) the value is held in
+src/programs/navigation/common.c:475	rz_vflag	ACCESSOR	2	calls rz_is_csm
+src/programs/navigation/common.c:576	rz_unit	NAMED	59	AGC label: UNIT: half-unit vector (scale 2^1)
+src/programs/navigation/common.c:705	rz_sl_star	NAMED	12	AGC label: SL* addr,X: shift count = addr - C(X); a negative count shifts right.
+src/programs/navigation/common.c:726	rz_sr_star	NAMED	6	AGC label: SR* addr,X: shift right by addr - C(X); a negative count shifts left.
+src/programs/navigation/common.c:778	agc_rendz_vec_to_body	NAMED	8	AGC label: VECSHIFT / VSR* 0,2 (P34-35 p.499): earth scale -> body scale. With
+src/programs/navigation/common.c:798	rz_vec_from_body	NAMED	0	AGC label: VSL* 0,2: body scale -> earth scale (moon: shift right 2).
+src/programs/navigation/common.c:817	agc_rendz_scalar_from_body	NAMED	12	AGC label: SHIFTR1 (P34-35 p.500): SL* 0,2 -- a body-scale scalar to 2^29.
+src/programs/navigation/common.c:1319	agc_rendz_nav_pad	ACCESSOR	17	reads/writes module state
+src/programs/navigation/common.c:1334	agc_erase_x789	ACCESSOR	8	reads/writes module state
+src/programs/navigation/common.c:1350	agc_erase_set_x789	ACCESSOR	3	reads/writes module state
+src/programs/navigation/common.c:1517	rz_word_of	NAMED	11	by hand: word structure: the AGC word(s) the value is held in
 src/programs/navigation/ground_track_determination.c:132	agc_job_ground_track_time	ACCESSOR	3	calls rz_flash
 src/programs/navigation/w_matrix_monitor.c:216	agc_job_w_matrix_monitor_display	ACCESSOR	3	calls rz_flash
-src/programs/targeting/csi_cdh_targeting.c:187	agc_job_csi_targeting	ACCESSOR	2	calls csi_start
-src/programs/targeting/csi_cdh_targeting.c:206	agc_job_csi_targeting_other_vehicle	ACCESSOR	2	calls csi_start
-src/programs/targeting/csi_cdh_targeting.c:412	agc_job_csi_alarm_display	ACCESSOR	3	calls rz_flash
-src/programs/targeting/csi_cdh_targeting.c:615	agc_job_cdh_targeting	ACCESSOR	2	calls cdh_start
-src/programs/targeting/csi_cdh_targeting.c:634	agc_job_cdh_targeting_other_vehicle	ACCESSOR	2	calls cdh_start
+src/programs/targeting/csi_cdh_targeting.c:179	agc_job_csi_targeting	ACCESSOR	2	calls csi_start
+src/programs/targeting/csi_cdh_targeting.c:198	agc_job_csi_targeting_other_vehicle	ACCESSOR	2	calls csi_start
+src/programs/targeting/csi_cdh_targeting.c:404	agc_job_csi_alarm_display	ACCESSOR	3	calls rz_flash
+src/programs/targeting/csi_cdh_targeting.c:607	agc_job_cdh_targeting	ACCESSOR	2	calls cdh_start
+src/programs/targeting/csi_cdh_targeting.c:626	agc_job_cdh_targeting_other_vehicle	ACCESSOR	2	calls cdh_start
 src/programs/targeting/initvel.c:491	agc_rendz_havegues	ACCESSOR	2	calls iv_run
-src/programs/targeting/lambert_aimpoint_guidance_lm.c:200	agc_job_lambert_aimpoint_apsides	ACCESSOR	2	calls rz_vnpooh
+src/programs/targeting/lambert_aimpoint_guidance_lm.c:191	agc_job_lambert_aimpoint_apsides	ACCESSOR	2	calls rz_vnpooh
 src/programs/targeting/stable_orbit.c:260	agc_job_stable_orbit_rendezvous	ACCESSOR	2	calls so_start
 src/programs/targeting/stable_orbit.c:280	agc_job_stable_orbit_rendezvous_other_vehicle	ACCESSOR	2	calls so_start
 src/programs/targeting/stable_orbit.c:300	agc_job_stable_orbit_tig	ACCESSOR	2	calls rz_vnpooh
 src/programs/targeting/stable_orbit.c:320	agc_job_stable_orbit_centang	ACCESSOR	2	calls so_flashr
 src/programs/targeting/stable_orbit.c:373	agc_job_stable_orbit_option_display	ACCESSOR	3	calls so_flashr
 src/programs/targeting/stable_orbit.c:454	agc_job_stable_orbit_deltar	ACCESSOR	3	calls so_flashr
-src/programs/targeting/stable_orbit.c:667	agc_job_stable_orbit_dv_lv	ACCESSOR	3	calls rz_vnpooh
-src/programs/targeting/stable_orbit.c:762	agc_job_stable_orbit_midcourse	ACCESSOR	2	calls som_start
-src/programs/targeting/stable_orbit.c:782	agc_job_stable_orbit_midcourse_other_vehicle	ACCESSOR	2	calls som_start
-src/programs/targeting/target_delta_v.c:171	agc_job_target_delta_v_display	ACCESSOR	3	calls rz_flash
-src/programs/targeting/target_delta_v.c:191	agc_job_target_delta_v_tig	ACCESSOR	2	calls rz_flash
-src/programs/targeting/tpi_tpm_targeting.c:402	agc_job_tpi_alarm	ACCESSOR	3	calls rz_alarm_flash
-src/programs/targeting/tpi_tpm_targeting.c:527	agc_job_tpm_targeting	ACCESSOR	2	calls tpm_start
-src/programs/targeting/tpi_tpm_targeting.c:547	agc_job_tpm_targeting_other_vehicle	ACCESSOR	2	calls tpm_start
+src/programs/targeting/stable_orbit.c:659	agc_job_stable_orbit_dv_lv	ACCESSOR	3	calls rz_vnpooh
+src/programs/targeting/stable_orbit.c:746	agc_job_stable_orbit_midcourse	ACCESSOR	2	calls som_start
+src/programs/targeting/stable_orbit.c:766	agc_job_stable_orbit_midcourse_other_vehicle	ACCESSOR	2	calls som_start
+src/programs/targeting/target_delta_v.c:162	agc_job_target_delta_v_display	ACCESSOR	3	calls rz_flash
+src/programs/targeting/target_delta_v.c:182	agc_job_target_delta_v_tig	ACCESSOR	2	calls rz_flash
+src/programs/targeting/tpi_tpm_targeting.c:394	agc_job_tpi_alarm	ACCESSOR	3	calls rz_alarm_flash
+src/programs/targeting/tpi_tpm_targeting.c:519	agc_job_tpm_targeting	ACCESSOR	2	calls tpm_start
+src/programs/targeting/tpi_tpm_targeting.c:539	agc_job_tpm_targeting_other_vehicle	ACCESSOR	2	calls tpm_start
 src/sim/clock.c:90	sim_irq_request	ACCESSOR	9	reads/writes module state
 src/sim/clock.c:95	sim_clock_cs	ACCESSOR	3	reads/writes module state
 src/sim/clock.c:100	sim_clock_stats	ACCESSOR	2	reads/writes module state

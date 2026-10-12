@@ -97,9 +97,9 @@ static agc_status_t so_flashr(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t no
     {
         st = agc_dsky_blanket(blank);
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st);
         }
     }
 
@@ -505,15 +505,7 @@ agc_status_t agc_job_stable_orbit_start(agc_job_ctx_t *ctx)
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     rz_flag_put(AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE, false);
-    agc_status_t st; /* SELECTMU */
-
-    st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
+    agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
     rz_flag_put(AGC_FLAG_FINALFLG, false);
 
     return (rz_ttogo_display(ctx, &ip, rz, AGC_JOB_STABLE_ORBIT_RECYCLE));
@@ -565,9 +557,9 @@ agc_status_t agc_job_stable_orbit_recycle(agc_job_ctx_t *ctx)
 
         st = agc_rendz_stable_orbit_deltt(&ip, rz, o.ratt, o.vatt);
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st);
         }
     }
     else
@@ -731,15 +723,7 @@ static agc_status_t som_start(agc_job_ctx_t *ctx, bool this_active)
     rz->kt = this_active ? rz->atiginc : rz->ptiginc; /* ATIGINC / PTIGINC */
     rz_tracking_flags_on();
     rz_flag_put(AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE, true);
-    agc_status_t st;                                  /* SELECTMU */
-
-    st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
+    agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
     rz_flag_put(AGC_FLAG_FINALFLG, false);
 
     return (rz_ttogo_display(ctx, &ip, rz, AGC_JOB_STABLE_ORBIT_MIDCOURSE_COMPUTE));
@@ -842,9 +826,9 @@ agc_status_t agc_job_stable_orbit_midcourse_advance(agc_job_ctx_t *ctx)
 
     st = agc_rendz_los_and_normal(&ip, rz);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (agc_job_stable_orbit_target(ctx));

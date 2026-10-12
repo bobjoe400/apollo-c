@@ -637,13 +637,8 @@ agc_status_t agc_job_rr_los_display(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_vec_t    los = agc_vec_zero();                                             /* RR LOS in NB axes, half-unit, 2^1 */
-    agc_status_t st  = agc_lm_rrnb(&ip, agc_erase_cdut(), agc_erase_cdus(), &los); /* RRNBMPAC status */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_vec_t los = agc_vec_zero(); /* RR LOS in NB axes, half-unit, 2^1 */
+    agc_lm_rrnb(&ip, agc_erase_cdut(), agc_erase_cdus(), &los);
 
     agc_vec_t xz = los; /* LOS projected on the X-Z plane, half-unit, 2^1 */
 
@@ -683,7 +678,9 @@ agc_status_t agc_job_rr_los_display_next(void)
  **********************************************************************/
 agc_status_t agc_job_rr_los_display_stop(void)
 {
-    return (agc_svc_b5off());
+    agc_svc_b5off(); /* B5OFF */
+
+    return (AGC_STATUS_OK);
 }
 
 /* ---- V63 R04, V78/V79 R77 -------------------------------------------------- */

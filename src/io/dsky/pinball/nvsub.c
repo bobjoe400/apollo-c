@@ -840,8 +840,8 @@ agc_status_t agc_job_jamterm(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, FULL;
- *          else the status of the routine it calls
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else
+ *          the NOVAC status (BAILOUT 1202)
  **********************************************************************/
 agc_status_t agc_dsky_dspmm(void)
 {
@@ -854,11 +854,6 @@ agc_status_t agc_dsky_dspmm(void)
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_DSPMMJB); /* status */
 
     agc_relint();
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }

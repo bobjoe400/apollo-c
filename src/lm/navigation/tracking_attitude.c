@@ -210,7 +210,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_TRACKING_ATTITUDE_COMPUTE);
 
     if (!agc_flag_test(AGC_FLAG_TRACKFLG))
     {
@@ -287,7 +287,7 @@ agc_status_t agc_job_tracking_attitude_maneuvered(void)
         return (st);
     }
 
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_TRACKING_ATTITUDE_MANEUVERED);
     rz_flag_put(AGC_FLAG_PDSPFLAG, false);
 
     return (ta_next());

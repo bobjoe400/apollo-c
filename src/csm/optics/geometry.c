@@ -150,12 +150,8 @@ agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
  *   shaft_cdu     uint16_t        I    shaft CDU word (CDUS, 2^15 = 1 rev)
  *   starm_nb      agc_vec_t *     O    STARM in nav-base axes, half-unit
  *                                      (2^1)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb)
+void agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb)
 {
     const agc_dp_t ta = agc_csm_sxtlogic(trunnion_cdu); /* TA, revs 2^0 (PD0) */
     const agc_dp_t sa = agc_align_cdulogic(shaft_cdu);  /* SA, revs 2^0 (PD4) */
@@ -177,8 +173,6 @@ agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t sha
     const agc_mat_t m        = agc_mat_transpose(&m_nb1nb2); /* the mark */
 
     *starm_nb = agc_vec_shl(ip, agc_mat_vec(ip, &m, starm), 1); /* MXV VSL1 */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -384,22 +378,12 @@ agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log)
  *   e         agc_csm_earrot_t *  IO   earth-rotation frame (RTINIT,
  *                                      RTEAST, RTNORM, UNITW)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_csm_earrot1(agc_interp_t *ip, agc_csm_earrot_t *e)
+void agc_csm_earrot1(agc_interp_t *ip, agc_csm_earrot_t *e)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(e != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     e->rteast = agc_vec_cross(ip, e->unitw, e->rtinit); /* .5 UNIT  */
     e->rtnorm = agc_vec_cross(ip, e->rteast, e->unitw); /* .5 UNIT  */
     agc_csm_earrot2(ip, e);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

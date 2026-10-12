@@ -297,17 +297,17 @@ static void throttle(const char *t)
 
     /* FP, FCODD, PIF, FWEIGHT: both words as the AGC stores them (a DAS
      * leaves them sign-disagreeing; THROTTLE reads the high word alone). */
-    (void) oracle_cmp(t, "FP", agc_lm_words_value(h->fp), oracle_out_dp(t, "FP"), 0);
+    (void) oracle_cmp(t, "FP", agc_dp_from_words(h->fp), oracle_out_dp(t, "FP"), 0);
     (void) oracle_cmp(t, "FP hi", h->fp.hi, oracle_out_sp(t, "FP"), 0);
     (void) oracle_cmp(t, "FC", agc_dp_high(h->fc), oracle_out_sp(t, "FC"), 0);
-    (void) oracle_cmp(t, "FCODD", agc_lm_words_value(h->fcodd), oracle_out_dp(t, "FCODD"), 0);
+    (void) oracle_cmp(t, "FCODD", agc_dp_from_words(h->fcodd), oracle_out_dp(t, "FCODD"), 0);
     (void) oracle_cmp(t, "FCOLD", h->fcold, oracle_out_sp(t, "FCOLD"), 0);
-    (void) oracle_cmp(t, "PIF", agc_lm_words_value(h->pif), oracle_out_dp(t, "PIF"), 0);
+    (void) oracle_cmp(t, "PIF", agc_dp_from_words(h->pif), oracle_out_dp(t, "PIF"), 0);
     (void) oracle_cmp(t, "PIF hi", h->pif.hi, oracle_out_sp(t, "PIF"), 0);
     (void) oracle_cmp(t, "PIFPSET", h->pifpset, oracle_out_sp(t, "PIFPSET"), 0);
     (void) oracle_cmp(t, "PSEUDO55", h->pseudo55, oracle_out_sp(t, "PSEUDO55"), 0);
     (void) oracle_cmp(t, "THRUST", agc_erase_thrust(), oracle_out_sp(t, "THRUST"), 0);
-    (void) oracle_cmp(t, "FWEIGHT", agc_lm_words_value(h->fweight), oracle_out_dp(t, "FWEIGHT"), 0);
+    (void) oracle_cmp(t, "FWEIGHT", agc_dp_from_words(h->fweight), oracle_out_dp(t, "FWEIGHT"), 0);
     (void) oracle_cmp(t, "FWEIGHT hi", h->fweight.hi, oracle_out_sp(t, "FWEIGHT"), 0);
 } /* throttle */
 

@@ -713,8 +713,8 @@ static agc_status_t mu_range(agc_interp_t *ip)
  **********************************************************************/
 static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
 {
-    lmnav_state()->whchread = (agc_sp_t) step; /* WHCHREAD */
-    agc_phase_change(04022);                   /* GRP2PC   */
+    lmnav_state()->whchread = (agc_sp_t) step;                    /* WHCHREAD */
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE_CONTINUE); /* GRP2PC   */
 
     switch (step)
     {
@@ -878,7 +878,7 @@ static agc_status_t mu_run(agc_interp_t *ip)
             return (st);
         }
 
-        agc_phase_change(04022);
+        rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE_CONTINUE);
         mu.step = mu_next(mu.step);
     }
 
@@ -917,7 +917,7 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE_CONTINUE);
     mu.step = mu_next(mu.step);
 
     return (mu_run(&ip));
@@ -941,8 +941,8 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_tracking_data_incorporate(void)
 {
-    agc_phase_change(04022); /* GRP2PC   */
-    agc_interp_t ip;         /* interpreter state */
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_INCORPORATE); /* GRP2PC   */
+    agc_interp_t ip;                                         /* interpreter state */
 
     agc_interp_init(&ip);
     agc_status_t st; /* integration status */
@@ -1000,8 +1000,32 @@ agc_status_t agc_job_rendezvous_tracking_data_measure(void)
         mu.x2 = 0; /* moon */
     }
 
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_RENDEZVOUS_TRACKING_DATA_MEASURE);
     mu.step = MU_RANGE;
+    agc_interp_t ip; /* interpreter state */
+
+    agc_interp_init(&ip);
+
+    return (mu_run(&ip));
+}
+
+/**********************************************************************
+ * Restart point of the GRP2PCs inside the measurement sequence (the
+ * AGC's return addresses in RANGEBQ .. TRUNBQ, R22LEM93 and ASTOK): the
+ * sequence continues at the measurement it had reached (WHCHREAD /
+ * mu.step), not from RANGEBQ, so an incorporated measurement is not
+ * incorporated again.
+ * AGC: GRP2PC return addresses (P20-P25.agc pp.575-586)
+ *
+ * FUNCTION NAME: agc_job_rendezvous_tracking_data_measure_continue
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, else the status of the step that failed
+ **********************************************************************/
+agc_status_t agc_job_rendezvous_tracking_data_measure_continue(void)
+{
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);

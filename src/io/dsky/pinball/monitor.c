@@ -133,8 +133,8 @@ agc_status_t pin_monitor(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, FULL;
- *          else the status of the routine it calls
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else
+ *          the WAITLIST / NOVAC status (BAILOUT 1203 / 1202)
  **********************************************************************/
 agc_status_t agc_task_monreq(void)
 {
@@ -162,12 +162,7 @@ agc_status_t agc_task_monreq(void)
 
     st2 = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_MONDO);
 
-    if (!AGC_ASSERT(st2 == AGC_STATUS_OK || st2 == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return ((st == AGC_STATUS_OK) ? st2 : st); /* if OK */
+    return ((st == AGC_STATUS_OK) ? st2 : st); /* the first failure */
 }
 
 /**********************************************************************
@@ -306,7 +301,10 @@ agc_status_t pin_vbrqexec(void)
     agc_job_id_t job  = (agc_job_id_t) s->dsptem[1];         /* job */
     agc_status_t st   = agc_dsky_releasedsp();               /* REQUESTC    */
 
-    if (!AGC_ASSERT(prio >= 1u && prio <= 037u) || !AGC_ASSERT(job != AGC_JOB_NONE))
+    /* DSPTEM1 +1 is crew data (V30): a number that names no job cannot be
+     * dispatched (DEVIATION: the AGC would jump to that address). NOVAC /
+     * FINDVAC check the priority and AGC_JOB_NONE themselves.          */
+    if (!AGC_ASSERT(job < AGC_JOB_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -341,7 +339,11 @@ agc_status_t pin_vbrqwait(void)
     agc_task_id_t task  = (agc_task_id_t) s->dsptem[1]; /* task */
     agc_status_t  st    = agc_dsky_releasedsp();        /* status so far */
 
-    if (!AGC_ASSERT(delay >= 1u) || !AGC_ASSERT(task != AGC_TASK_NONE))
+    /* DSPTEM1 +1 is crew data (V31): a number that names no task cannot be
+     * dispatched (DEVIATION: the AGC would jump to that address). WAITLIST
+     * checks AGC_TASK_NONE and gives POODOO 1204 for a zero delay as the
+     * AGC does.                                                         */
+    if (!AGC_ASSERT(task < AGC_TASK_COUNT))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -533,8 +535,8 @@ agc_status_t pin_vbtstlts(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition, FULL;
- *          else the status of the routine it calls
+ * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else
+ *          the WAITLIST / NOVAC status (BAILOUT 1203 / 1202)
  **********************************************************************/
 agc_status_t agc_task_tstlts2(void)
 {
@@ -544,11 +546,6 @@ agc_status_t agc_task_tstlts2(void)
     }
 
     agc_status_t st = agc_exec_novac(PIN_CHRPRIO, AGC_JOB_TSTLTS3); /* status */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }

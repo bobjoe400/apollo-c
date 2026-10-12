@@ -398,9 +398,9 @@ static agc_status_t ld_disindat(void)
 
             agc_status_t st = agc_waitlist_call(4, AGC_TASK_SPEEDRUN_RESUME); /* VARDELAY */
 
-            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            if (st != AGC_STATUS_OK)
             {
-                return (AGC_STATUS_BAD_ARG);
+                return (st);
             }
 
             return (st);
@@ -638,9 +638,9 @@ agc_status_t agc_lm_task_speedrun_resume(void)
     ld_vel[1]       = ld_mp_dbl(LD_VELCONV, ld_wrap(fwd), 1); /* FORVEL        */
     agc_status_t st = agc_lm_vmonitor();                      /* step status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (ld_continue());

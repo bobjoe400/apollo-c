@@ -643,11 +643,6 @@ agc_status_t fresh_mmdsplay(void)
 
     agc_relint();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BAILOUT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 

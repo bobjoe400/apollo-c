@@ -97,9 +97,11 @@ static const rst_entry_t csm_odd1[]  = {
  };
 static const rst_entry_t csm_odd2[]  = {
     {RST_L, 0, RST_G, RST_E_600SECS, RST_JN, AGC_TASK_STATEINT}, /* 2.3 */
-    {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN},        /* 2.5 */
+     {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATEINT_UPDATE, RST_TN},
+
+     /* 2.5 */
      {RST_J, 010, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA,
-     RST_TN},                                                    /* 2.7 */
+     RST_TN}, /* 2.7 */
      {RST_J, 014, RST_D, RST_E0, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_POINT,
       RST_TN},
 
@@ -208,23 +210,25 @@ static const rst_entry_t lm_odd1[]  = {
  };
 static const rst_entry_t lm_odd2[]  = {
     {RST_L, 0, RST_G, RST_E_600SECS, RST_JN, AGC_TASK_STATEINT}, /* 2.3 */
-    {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATINT1, RST_TN},        /* 2.5 */
+     {RST_J, 05, RST_D, RST_E0, AGC_JOB_STATEINT_UPDATE, RST_TN},
+
+     /* 2.5 */
      {RST_T, 1500, RST_D, RST_E0, RST_JN,
-     AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK},                /* 2.7 */
+     AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK},         /* 2.7 */
      {RST_J, 014, RST_D, RST_E0, AGC_JOB_PREFERRED_TRACKING_ATTITUDE_CHECK,
-     RST_TN},                                                    /* 2.11 */
-    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN},        /* 2.13 */
+     RST_TN},                                             /* 2.11 */
+    {RST_J, 010, RST_D, RST_E0, AGC_JOB_RELINUS, RST_TN}, /* 2.13 */
      {RST_J, 026, RST_D, RST_E0, AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART,
-     RST_TN},                                                    /* 2.15 */
-    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO2_17},        /* 2.17 */
+     RST_TN},                                             /* 2.15 */
+    {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO2_17}, /* 2.17 */
      {RST_T, 25, RST_D, RST_E0, RST_JN,
-     AGC_TASK_ABORT_MONITOR},                                    /* 2.21 */
+     AGC_TASK_ABORT_MONITOR},                             /* 2.21 */
  };
-static const rst_entry_t lm_odd3[]  = {
+static const rst_entry_t lm_odd3[] = {
     {RST_T, 0, RST_X, RST_E_ZOOMTIME, RST_JN, AGC_TASK_ZOOM}, /* 3.3 */
     {RST_J, 020, RST_D, RST_E0, AGC_JOB_TIMEBURN, RST_TN},    /* 3.5 */
- };
-static const rst_entry_t lm_odd4[]  = {
+};
+static const rst_entry_t lm_odd4[] = {
     {RST_J, 025, RST_D, RST_E0, AGC_JOB_GOABORT, RST_TN},      /* 4.3 */
     {RST_T, 50, RST_D, RST_E0, RST_JN, AGC_TASK_ULLAGOFF},     /* 4.5 */
     {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_0},       /* 4.7 */
@@ -232,19 +236,19 @@ static const rst_entry_t lm_odd4[]  = {
     {RST_J, 012, RST_D, RST_E0, AGC_JOB_POSTBURN, RST_TN},     /* 4.13 */
     {RST_T, 500, RST_D, RST_E0, RST_JN, AGC_TASK_TIG_30},      /* 4.15 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_TIG_5},         /* 4.17 */
-     {RST_J, 013, RST_D, RST_E0, AGC_JOB_LM_FINE_ALIGN_PERFORM, RST_TN},
+    {RST_J, 013, RST_D, RST_E0, AGC_JOB_LM_FINE_ALIGN_PERFORM, RST_TN},
 
-     /* 4.21 */
+    /* 4.21 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_IGNITION},       /* 4.23 */
     {RST_L, 0, RST_G, RST_E_SAVET_30, RST_JN, AGC_TASK_TIG_35}, /* 4.25 */
-     {RST_J, -025, RST_D, RST_E0, AGC_JOB_DPS_ABORT_COMMANDED,
+    {RST_J, -025, RST_D, RST_E0, AGC_JOB_DPS_ABORT_COMMANDED,
      RST_TN},                                                   /* 4.27 */
-     {RST_J, -025, RST_D, RST_E0, AGC_JOB_APS_ABORT_COMMANDED,
+    {RST_J, -025, RST_D, RST_E0, AGC_JOB_APS_ABORT_COMMANDED,
      RST_TN},                                                   /* 4.31 */
     {RST_J, -031, RST_D, RST_E0, AGC_JOB_GO_IDLE_FIX, RST_TN},  /* 4.33 */
     {RST_J, -031, RST_D, RST_E0, AGC_JOB_GOPOODOO, RST_TN},     /* 4.35 */
     {RST_J, -025, RST_D, RST_E0, AGC_JOB_COMFAIL, RST_TN},      /* 4.37 */
- };
+};
 static const rst_entry_t lm_odd5[] = {
     {RST_T, 200, RST_D, RST_E0, RST_JN, AGC_TASK_REREADAC}, /* 5.3 */
     {RST_T, 0, RST_I, RST_E0, RST_JN, AGC_TASK_REDO5_5},    /* 5.5 */

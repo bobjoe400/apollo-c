@@ -351,9 +351,9 @@ agc_status_t agc_lm_dap_t6jobchk(void)
         }
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (lm_dap_write_next(done)); /* GOCH56         */

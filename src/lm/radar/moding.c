@@ -491,14 +491,9 @@ agc_status_t agc_task_rr_goodend(void)
 {
     agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_RADAR); /* GOODEND */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (st == AGC_STATUS_NOT_FOUND)
     {
-        return (AGC_STATUS_OK); /* nobody waits in RADSTALL */
+        st = AGC_STATUS_OK; /* nobody waits in RADSTALL */
     }
 
     return (st);
@@ -519,14 +514,9 @@ agc_status_t rr_badend(void)
 {
     agc_status_t st = agc_imu_badend(AGC_IMU_DEV_RADAR); /* BADEND */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (st == AGC_STATUS_NOT_FOUND)
     {
-        return (AGC_STATUS_OK); /* nobody waits in RADSTALL */
+        st = AGC_STATUS_OK; /* nobody waits in RADSTALL */
     }
 
     return (st);

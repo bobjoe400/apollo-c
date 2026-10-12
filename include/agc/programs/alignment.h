@@ -238,7 +238,7 @@ agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin
 
 /* ---- CSM geometry (src/csm/optics/geometry.c) ------------------------------- */
 agc_dp_t     agc_csm_sxtlogic(uint16_t trunnion_cdu);
-agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb);
+void         agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb);
 void         agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t, uint16_t *sac, uint16_t *pac, bool *cult);
 void         agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb, uint16_t *sac, uint16_t *pac, bool *cult);
 agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log);
@@ -253,15 +253,15 @@ typedef struct agc_csm_earrot
     agc_vec_t rt;      /* RT: target vector, half-unit (2^1) */
 } agc_csm_earrot_t;
 
-agc_status_t agc_csm_earrot1(agc_interp_t *ip, agc_csm_earrot_t *e);
-void         agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e);
+void agc_csm_earrot1(agc_interp_t *ip, agc_csm_earrot_t *e);
+void agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e);
 
 /* ---- LM geometry (src/lm/optics/lem_geometry.c) --------------------------------- */
 /* RRANGLES: los_nb half-unit; modea/modeb = (trunnion, shaft) cdu for RR
  * mode 1 and mode 2 (swapped when RADMODES antenna bit says mode 2);
  * *along_y when the LOS is along Y (the AGC's BOVB LUNDESCH).             */
-agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, uint16_t modea[2], uint16_t modeb[2], bool *along_y);
-agc_status_t agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *los_nb);
+void agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, uint16_t modea[2], uint16_t modeb[2], bool *along_y);
+void agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *los_nb);
 
 /* ---- S-band antenna R05 --------------------------------------------------- */
 /* CM: r_nb = vehicle-to-earth vector in NB axes (any scale) -> RHOSB pitch,
@@ -308,10 +308,10 @@ agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, a
 
 /* ---- CSM sighting and optics routines (src/csm/optics/) ---------------- */
 /* SXTSM line of sight of one mark (half-unit, SM axes).                   */
-agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *los_sm); /* SXTSM         */
+void agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *los_sm); /* SXTSM         */
 
 /* SXTSM as called: TSIGHT = first mark time, MARKDOWN / MARK2DWN, LOS.     */
-agc_status_t agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm);
+void agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm);
 
 /* SR52.1: AOPTIME = now + 1.3 s unless resumed after an integration wait;
  * SAC/PAC for the target; result 0 = trunnion > 90 deg, 1 = > 50 deg,

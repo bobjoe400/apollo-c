@@ -14,6 +14,8 @@
  *   3. XT1LIM gives sqrt(BETA10) for a simple case.
  *   4. READGYM1 / EXDAP2 MSU wraps an angle/180 sum through 180 deg (not
  *      a saturation), and an "OVFL OK" store (CM/FDAI PAXERR1) drops 1.0.
+ *   5. SIDETRAK presets PHSPRDT5 = PRIO16, so a group 5 restart after a
+ *      sidetracked HUNTEST pass starts the sequencer at PRIO16.
  *
  * AGC SOURCE:
  *   Comanche055 REENTRY_CONTROL.agc pp. 855-862 (HUNTEST, RANGER),
@@ -44,6 +46,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/state.h"
 #include "agc/csm/entry.h"
+#include "agc/exec/exec.h"
 
 #define CHECK(c) check((c), __LINE__, #c) /* count and report a check */
 
@@ -62,6 +65,7 @@ static void   test_huntest_range(void);
 static void   test_roll_phase_plane(void);
 static void   test_xt1lim(void);
 static void   test_angle_wrap(void);
+static void   test_sidetrak_restart_priority(void);
 
 /**********************************************************************
  * AGC: none -- run the tests; the exit status reports failures.
@@ -79,6 +83,7 @@ int main(void)
     test_roll_phase_plane();
     test_xt1lim();
     test_angle_wrap();
+    test_sidetrak_restart_priority();
     (void) printf("test_entry: %d checks, %d failures, %d assert reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -353,4 +358,44 @@ static void test_angle_wrap(void)
     CHECK(entry_angle_wrap(1000) == 1000);         /* in range: unchanged  */
     CHECK(entry_sp_store_ovf(16384 + 100) == 100); /* OVFL OK store    */
     CHECK(entry_sp_store_ovf(-16384 - 100) == -100);
+}
+
+/**********************************************************************
+ * SIDETRAK (REENTRY_CONTROL.agc p. 861) -- CA PRIO16 / TS PHSPRDT5 before
+ * PHASCHNG OCT 00474: a group 5 restart after a sidetracked HUNTEST pass
+ * starts the entry sequencer (SERVICER 5.3, a type B phase with D clear)
+ * at PRIO16, one below group 4.
+ *
+ * FUNCTION NAME: test_sidetrak_restart_priority
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_sidetrak_restart_priority(void)
+{
+    agc_entry_state_t *es      = agc_entry_state(); /* entry erasables */
+    bool               display = false;             /* ENDEXIT display */
+    bool               found   = false;             /* restart job seen at PRIO16 */
+
+    CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    set_nominal_upcontrol_state();
+    es->gotoaddr = AGC_ENTRY_GOTO_HUNTEST;
+    es->thetah   = agc_dp_from_double(2000.0 / REV_NM, 0); /* range to go far beyond the up-control range */
+    es->dlewd    = agc_dp_from_double(0.01, 0);
+    es->diffold  = agc_dp_from_double(0.5, 0);
+    CHECK(agc_entry_reestablish_sequencer(&display) == AGC_STATUS_OK);
+    CHECK(es->gotoaddr == AGC_ENTRY_GOTO_HUNTEST);         /* sidetracked: the next pass resumes HUNTEST */
+    CHECK(agc_exec_init() == AGC_STATUS_OK);               /* STARTSB2: core sets free, NEWJOB -0 */
+    CHECK(agc_restart_group(5) == AGC_STATUS_OK);
+
+    for (int i = 0; i < agc_exec_core_sets(); i++)
+    {
+        agc_exec_core_info_t ci; /* core set i */
+
+        agc_exec_core_info(i, &ci);
+        found = found || (ci.loc == AGC_JOB_REESTABLISH_ENTRY_SEQUENCER && ci.prio == 016);
+    }
+
+    CHECK(found);
 }

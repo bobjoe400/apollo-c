@@ -233,7 +233,7 @@ agc_status_t agc_job_dap_data_load_noun47_csm(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I   the job
  *
- * RETURNS: the S40.14 status, or the display status
+ * RETURNS: the display status
  **********************************************************************/
 agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx)
 {
@@ -242,16 +242,9 @@ agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx)
     if (cfg != 0u && cfg != PRIO30BITS)
     {
         agc_inhint();
-        agc_csm_dap_massprop();          /* IXX, IAVG, IAVG/TLX */
-        agc_status_t st = AGC_STATUS_OK; /* S40.14 status */
-
+        agc_csm_dap_massprop();  /* IXX, IAVG, IAVG/TLX */
         agc_relint();
-        st = agc_csm_dap_rcs_gains(); /* S40.14              */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        agc_csm_dap_rcs_gains(); /* S40.14              */
     }
 
     return (agc_job_dap_data_load_noun48_csm(ctx));
@@ -775,12 +768,7 @@ static agc_status_t fan_70s_90s(int verb)
             /* V88: VHFRFLAG clear, tracker fail light off.                             */
         {
             agc_flag_clear((agc_flag_id_t) AGC_FLAG_VHFRFLAG);
-            agc_status_t st = agc_svc_trfailof(); /* TRFAILOF status */
-
-            if (st != AGC_STATUS_OK)
-            {
-                return (st);
-            }
+            agc_svc_trfailof(); /* TRFAILOF */
 
             return (agc_extverb_gopin());
         }

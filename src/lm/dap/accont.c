@@ -141,8 +141,8 @@ static bool mp_negzero(agc_sp_t a, agc_sp_t k)
  **********************************************************************/
 static agc_sp_t invert(int32_t x)
 {
-    lm_dp_pair_t one = {AA_BIT9, 0};
-    agc_sp_t     hold; /* HOLD: the divisor word, scaled pi/2 rad/s^2 */
+    agc_dp_words_t one = {AA_BIT9, 0};
+    agc_sp_t       hold; /* HOLD: the divisor word, scaled pi/2 rad/s^2 */
 
     if (lm_dap_ovf(x))
     {

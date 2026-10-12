@@ -179,9 +179,9 @@ agc_status_t lm_dap_xtrans(void)
         }
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if (!AGC_ASSERT(d->skip[0] == QJ_SKIPOFF))
@@ -250,9 +250,9 @@ static agc_status_t norotat(int axis)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -406,12 +406,12 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
         d->skip[axis] = 0;
         feedback(d, axis);
 
-        if (!AGC_ASSERT(sw == AGC_STATUS_OK && sj == AGC_STATUS_OK))
+        if (sw != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (sw);
         }
 
-        return (sw);
+        return (sj);
     }
 
     if (!lm_dap_selctsub())
@@ -510,9 +510,9 @@ static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
         d->numbert = 4; /* 2 jets U,V     */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (aftertj(d, axis, end));
@@ -558,8 +558,8 @@ static agc_status_t body_backhand(lm_dap_t *d, int axis, bool *end)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    lm_dp_pair_t p      = lm_dap_mp((agc_sp_t) -d->block[i], rate); /* -1/ANET2 x rate: jet time, DP */
-    int32_t      triple = (2 * lm_dap_dpval(p)) / 16384 + p.hi;     /* DAS A, AD Q */
+    agc_dp_words_t p      = lm_dap_mp((agc_sp_t) -d->block[i], rate); /* -1/ANET2 x rate: jet time, DP */
+    int32_t        triple = (2 * lm_dap_dpval(p)) / 16384 + p.hi;     /* DAS A, AD Q */
 
     d->tj[axis + 1] = lm_dap_ovf(triple) ? p.hi : (agc_sp_t) triple; /* DAS A, AD Q overflow: keep the major word */
 

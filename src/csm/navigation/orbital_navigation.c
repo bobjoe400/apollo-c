@@ -577,7 +577,7 @@ agc_status_t agc_job_orbital_navigation_process(void)
  **********************************************************************/
 agc_status_t agc_job_orbital_navigation_over(agc_job_ctx_t *ctx)
 {
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_ORBITAL_NAVIGATION_OVER);
 
     return (agc_job_orbital_navigation_landmark(ctx));
 }

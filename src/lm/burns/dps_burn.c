@@ -632,7 +632,7 @@ agc_status_t agc_job_thrust_monitor_lm(agc_job_ctx_t *ctx)
     agc_interp_t            ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo); /* status of agc_integ_midtoav2 */
+    agc_status_t st = agc_integ_midtoav_now(&ip, agc_integ_shared_ctx(), ctx->id, &mo); /* status of agc_integ_midtoav_now */
 
     if (st != AGC_STATUS_OK)
     {

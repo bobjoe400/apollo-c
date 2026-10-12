@@ -131,15 +131,7 @@ static agc_dp_t csi_mod_hour(agc_interp_t *ip, agc_dp_t x)
  **********************************************************************/
 static agc_status_t csi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t next)
 {
-    agc_status_t st; /* SELECTMU */
-
-    st = agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
+    agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
     agc_flag_clear(AGC_FLAG_FINALFLG);
 
     return (rz_ttogo_display(ctx, ip, rz, next));
@@ -540,9 +532,9 @@ agc_status_t agc_job_csi_after_dv_lv(agc_job_ctx_t *ctx)
 
     st = agc_rendz_csi_cdh_dv_to_reference(&ip, rz, &dv);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     rz->delveet1 = dv;
@@ -915,9 +907,9 @@ agc_status_t agc_job_cdh_after_dv_lv(agc_job_ctx_t *ctx)
 
     st = agc_rendz_csi_cdh_dv_to_reference(&ip, rz, &dv);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     rz->delveet2 = dv;

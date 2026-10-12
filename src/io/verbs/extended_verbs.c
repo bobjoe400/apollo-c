@@ -78,6 +78,7 @@
 #define WORD15                    077777u            /* one AGC word */
 #define BIT6                      000040u            /* DSALMOUT bit 6: flash */
 #define OCT24                     000024u            /* EXTVBACT: bits 3 and 5                     */
+#define ADRS1_SKEEP1              001371u            /* ADRS1: ECADR SKEEP1 (both ropes)           */
 #define OC24100                   024100u            /* FLAGWRD4: priority displays use the DSKY   */
 #define PRIO4                     ((agc_prio_t) 004) /* PRIO4 */
 #define PRIO5                     ((agc_prio_t) 005) /* PRIO5 */
@@ -116,17 +117,6 @@ uint16_t agc_erase_extvbact(void)
 void agc_erase_set_extvbact(uint16_t v)
 {
     extvbact = v; /* callers store 15-bit masks */
-}
-
-/**********************************************************************
- * AGC: none -- TS EXTVBACT by another program (P61 locks out the extended verbs).
- *
- * ARGUMENTS:
- *   v  uint16_t  I   new EXTVBACT, 15 bits
- **********************************************************************/
-void agc_svc_set_extvbact(uint16_t v)
-{
-    extvbact = v;
 }
 
 /**********************************************************************
@@ -541,8 +531,12 @@ static agc_status_t verb_erasable_dump(void)
 }
 
 /**********************************************************************
- * AGC: none -- SDISPLAY / NOKILL: flash V05N01 with R1-R3 = SKEEP1-3 (sum, bank,
- * bugger word).  V34 ends, V33 sums the next bank, ENTER shows it again.
+ * SDISPLAY / NOKILL (EXTENDED_VERBS.agc C p.258, L p.288): CA ADRS1 /
+ * TS MPAC +2, then GOXDSPF V05N01: the machine-address noun shows the
+ * three words from SKEEP1 (sum, bank, bugger word). V34 ends, V33 sums
+ * the next bank, ENTER shows it again. DEVIATION: SKEEP1-3 live in the
+ * self-check's storage; they are copied to the erasable image at their
+ * address (1371-1373 in both ropes) for the noun to read.
  *
  * ARGUMENTS:
  *   ctx  const agc_job_ctx_t *  I   the running job
@@ -552,8 +546,22 @@ static agc_status_t verb_erasable_dump(void)
 static agc_status_t banksum_display(const agc_job_ctx_t *ctx)
 {
     agc_dsky_cont_t cont = {AGC_JOB_SHOW_BANKSUM_END, AGC_JOB_SHOW_BANKSUM_NEXT, AGC_JOB_SHOW_BANKSUM_DISPLAY};
+    uint16_t        w[3];                 /* SKEEP1..3 */
+    agc_status_t    st   = AGC_STATUS_OK; /* image store status */
 
-    return (agc_dsky_display(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(5, 1), &cont));
+    agc_selfcheck_showsum_words(w);
+
+    for (int i = 0; i < 3 && st == AGC_STATUS_OK; i++)
+    {
+        st = agc_erase_write_ecadr((uint16_t) (ADRS1_SKEEP1 + (uint16_t) i), w[i]);
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    return (agc_dsky_display_ecadr(ctx, AGC_DSKY_GOMARKF, agc_dsky_vn(5, 1), &cont, ADRS1_SKEEP1)); /* MPAC+2 = ADRS1 */
 }
 
 /**********************************************************************

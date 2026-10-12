@@ -303,17 +303,12 @@ static void setissw(void)
  *   dt    uint16_t       I    delay, cs, 1..AGC_WAITLIST_MAX_DELAY
  *   task  agc_task_id_t  I    task to start
  *
- * RETURNS: agc_status_t -- OK, FULL when the waitlist is full, BAD_ARG
- *          on a bad delay
+ * RETURNS: agc_status_t -- OK, BAILOUT (1203) when the waitlist is full,
+ *          POODOO (1204) or BAD_ARG on a bad delay
  **********************************************************************/
 static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 {
     agc_status_t st = agc_waitlist_call(dt, task); /* status of the call */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }
@@ -526,17 +521,21 @@ agc_sp_t agc_imu_cducmd(int axis)
 }
 
 /**********************************************************************
- * AGC: none (sim hook) -- the counter as the CDU hardware left it
+ * AGC: none (sim hook) -- the counter as the CDU hardware left it, or
+ * a program's write: the whole SP word (coarse align sends <= COMMAX =
+ * 192 a time, but NEEDLES' ADS CDUXCMD and V41 write up to +-768 and
+ * more: the counter is an erasable word).
  *
  * ARGUMENTS:
  *   axis    int       I    0 X, 1 Y, 2 Z
- *   pulses  agc_sp_t  I    pulses still to send, |p| <= 192, B0
+ *   pulses  agc_sp_t  I    pulses still to send, SP range, B0
  *
- * RETURNS: agc_status_t -- OK, BAD_ARG for a bad axis or count
+ * RETURNS: agc_status_t -- OK, BAD_ARG for a bad axis or a value
+ *          outside the SP word
  **********************************************************************/
 agc_status_t agc_imu_hw_set_cducmd(int axis, agc_sp_t pulses)
 {
-    if (!AGC_ASSERT(pulses >= -COMMAX_ && pulses <= COMMAX_))
+    if (!AGC_ASSERT(axis >= 0 && axis < 3) || !AGC_ASSERT(pulses >= AGC_SP_MIN && pulses <= AGC_SP_MAX))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -649,11 +648,6 @@ agc_status_t agc_task_imu_zero_release(void)
     }
 
     agc_status_t st = agc_waitlist_vardelay(DT_ZERO_SETTLE, AGC_TASK_IMU_ZERO_DONE); /* status of the call */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }
@@ -789,11 +783,6 @@ agc_status_t agc_task_coarse_align_commands(void)
 
     agc_status_t st = agc_waitlist_vardelay(DT_PULSES_START, AGC_TASK_COARSE_ALIGN_PULSES); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 
@@ -869,11 +858,6 @@ agc_status_t agc_task_coarse_align_pulses(void)
     else
     {
         st = agc_waitlist_fixdelay(DT_SETTLE, AGC_TASK_COARSE_ALIGN_CHECK);
-    }
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (st);
@@ -1276,11 +1260,6 @@ agc_status_t agc_imu_goodend(agc_imu_device_t dev)
 {
     agc_status_t st = goodend_common(dev, true); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (st);
 }
 
@@ -1301,11 +1280,6 @@ agc_status_t agc_imu_badend(agc_imu_device_t dev)
     }
 
     agc_status_t st = goodend_common(dev, false); /* status of the call */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (st);
 }
@@ -1624,7 +1598,7 @@ agc_status_t agc_job_standby(agc_job_ctx_t *ctx)
         return (agc_exec_job_yield(AGC_JOB_STANDBY)); /* TC PRESTAND */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -1709,7 +1683,7 @@ agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx)
         return (agc_exec_job_yield(AGC_JOB_STANDBY_RECOVERY));
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }

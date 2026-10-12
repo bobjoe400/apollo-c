@@ -69,7 +69,7 @@ agc_status_t pin_noun_load(void)
         return (AGC_STATUS_NOT_FOUND);
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -365,7 +365,7 @@ agc_status_t pin_usead(uint16_t ecadr)
 
     s->nouncadr = keep; /* SETNCADR               */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }

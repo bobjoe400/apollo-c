@@ -664,6 +664,11 @@ agc_status_t agc_job_orbital_navigation_marks(agc_job_ctx_t *ctx)
         agc_status_t         st = agc_sxtmark_mark(k, &m); /* mark k */
         uint16_t            *d;                            /* SVMRKDAT words */
 
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
+
         d = &ln.svmrkdat[LN_MARK_WORDS * k];
 
         d[0] = rz_word_of(agc_dp_high(m.t));
@@ -673,11 +678,6 @@ agc_status_t agc_job_orbital_navigation_marks(agc_job_ctx_t *ctx)
         d[4] = m.cduz;
         d[5] = m.cdut;
         d[6] = m.cdux;
-
-        if (!AGC_ASSERT(st == AGC_STATUS_OK || k >= ln.n))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
     }
 
     rz_flag_put(AGC_FLAG_ORBITAL_NAVIGATION_MARK_TAKEN, true); /* P22MKFLG */
@@ -764,10 +764,8 @@ static void ln_w_setup(void)
  *   Argument  Type            I/O  Description (scale)
  *   --------  --------------  ---  --------------------------------
  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- *
- * RETURNS: agc_status_t -- the SXTNB / NBSM status
  **********************************************************************/
-static agc_status_t ln_getum(agc_interp_t *ip)
+static void ln_getum(agc_interp_t *ip)
 {
     const uint16_t      *d = &ln.svmrkdat[ln.loc]; /* mark I words */
     agc_align_sxt_mark_t m;                        /* the mark */
@@ -784,13 +782,11 @@ static agc_status_t ln_getum(agc_interp_t *ip)
         agc_erase_set_markdown(k, d[k]);
     }
 
-    agc_vec_t    los      = agc_vec_zero();              /* SM LOS, 2^1 */
-    agc_status_t st       = agc_csm_sxtsm(ip, &m, &los); /* SXTNB, NBSM */
-    agc_mat_t    refsmmat = agc_erase_refsmmat();        /* REFSMMAT, 2^1 */
+    agc_vec_t los      = agc_vec_zero();       /* SM LOS, 2^1 */
+    agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
 
+    agc_csm_sxtsm(ip, &m, &los); /* SXTNB, NBSM */
     ln.um = agc_vec_shl(ip, agc_vec_mat(ip, los, &refsmmat), 1);
-
-    return (st);
 }
 
 /**********************************************************************
@@ -856,8 +852,8 @@ static bool ln_variance_and_incorporate(agc_interp_t *ip, agc_status_t *st)
  **********************************************************************/
 static agc_status_t ln_next(void)
 {
-    ln.tprim = ln_gettf(); /* S22SAVET */
-    agc_phase_change(04022);
+    ln.tprim = ln_gettf();                      /* S22SAVET */
+    rz_grp2pc(AGC_JOB_ORBITAL_NAVIGATION_SITE); /* the next GRP2PC renames it when a mark follows */
 
     if (ln.i >= ln.n)
     {
@@ -867,7 +863,7 @@ static agc_status_t ln_next(void)
     ln.i++;
     ln.loc   += LN_MARK_WORDS;
     ln.first = false;
-    agc_phase_change(04022);
+    rz_grp2pc(AGC_JOB_ORBITAL_NAVIGATION_MARK); /* S2INTS1: the next mark */
 
     return (rz_continue(AGC_JOB_ORBITAL_NAVIGATION_MARK));
 }
@@ -1133,15 +1129,12 @@ agc_status_t agc_job_orbital_navigation_mark(agc_job_ctx_t *ctx)
         st = ln_calrc(&ip);
     }
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = ln_getum(&ip); /* S2GETUM  */
-    }
-
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    ln_getum(&ip); /* S2GETUM  */
 
     return (ln_dmpinteg(ctx, &ip));
 }

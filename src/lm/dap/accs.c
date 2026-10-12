@@ -186,9 +186,9 @@ static bool lem_mass(lm_dap_t *d, bool docked)
  **********************************************************************/
 static agc_sp_t fit_row(int k, agc_sp_t *rem)
 {
-    lm_dp_pair_t a   = {inercona_hi[k], inercona_lo[k]};
-    agc_sp_t     div = (agc_sp_t) (agc_erase_lemmass() + inerconc[k]); /* LEMMASS + C, scaled 2^16 kg */
-    lm_dp_pair_t q   = lm_dap_dvqr(a, div);                            /* (A,L) / (LEMMASS + C): quotient and remainder, scale per row */
+    agc_dp_words_t a   = {inercona_hi[k], inercona_lo[k]};
+    agc_sp_t       div = (agc_sp_t) (agc_erase_lemmass() + inerconc[k]); /* LEMMASS + C, scaled 2^16 kg */
+    agc_dp_words_t q   = lm_dap_dvqr(a, div);                            /* (A,L) / (LEMMASS + C): quotient and remainder, scale per row */
 
     *rem = q.lo;
 
@@ -313,9 +313,9 @@ static agc_status_t docked(lm_dap_t *d)
      * complement 1 + -1), so CCS COEFCTR takes its fourth branch over
      * the TORQCONS words to CA MPAC (saves the inertia in MPAC +1); the
      * CG pass leaves COEFCTR = 6 and exits. Traced in the rope.          */
-    agc_sp_t     inertia = docked_fit(0); /* docked inertia, scaled 2^38 kg cm^2 */
-    agc_sp_t     cg      = docked_fit(6); /* CG x DELDOT, scaled 4 pi rad cm/s */
-    lm_dp_pair_t con     = {AC_1JACCCON, 0};
+    agc_sp_t       inertia = docked_fit(0); /* docked inertia, scaled 2^38 kg cm^2 */
+    agc_sp_t       cg      = docked_fit(6); /* CG x DELDOT, scaled 4 pi rad cm/s */
+    agc_dp_words_t con     = {AC_1JACCCON, 0};
 
     d->jacc[0]              = lm_dap_dvovsub(con, mass_hi());
     d->block[2]             = LM_POSMAX; /* 1/ANETP        */
@@ -323,7 +323,7 @@ static agc_status_t docked(lm_dap_t *d)
     d->block[LM_BLK_U + 3]  = LM_POSMAX;
     d->block[LM_BLK_U + 18] = LM_POSMAX; /* +17D, +18D     */
     d->block[LM_BLK_U + 19] = LM_POSMAX;
-    lm_dp_pair_t torq       = {0, AC_TORQ_LO};
+    agc_dp_words_t torq     = {0, AC_TORQ_LO};
 
     if (!AGC_ASSERT(inertia > 0))
     {
@@ -389,7 +389,7 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
      *
      * RETURNS: none
      **********************************************************************/
-    lm_dp_pair_t diff = {lm_dap_wrap((int32_t) d->jacc[1] - d->jacc[2]), rem};
+    agc_dp_words_t diff = {lm_dap_wrap((int32_t) d->jacc[1] - d->jacc[2]), rem};
 
     if (diff.hi > 0)
     {

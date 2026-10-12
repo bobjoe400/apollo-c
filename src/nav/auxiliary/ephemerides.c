@@ -242,7 +242,7 @@ agc_status_t agc_ephem_csm_lunpos(agc_interp_t *ip, const agc_ephem_csm_t *eph, 
     agc_dp_t     t26 = 0;                                         /* 2^26 cs */
     agc_status_t st  = ephem_lstime(ip, eph, tephem, t_cs, &t26); /* LSTIME  */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -274,7 +274,7 @@ agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph, 
     agc_dp_t     t26 = 0;                                         /* 2^26 cs */
     agc_status_t st  = ephem_lstime(ip, eph, tephem, t_cs, &t26); /* LSTIME  */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -339,7 +339,7 @@ agc_status_t agc_ephem_csm_solpos(agc_interp_t *ip, const agc_ephem_csm_t *eph, 
     agc_dp_t     t26 = 0;                                         /* 2^26 cs */
     agc_status_t st  = ephem_lstime(ip, eph, tephem, t_cs, &t26); /* LSTIME  */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -372,7 +372,7 @@ agc_status_t agc_ephem_csm_lspos(agc_interp_t *ip, const agc_ephem_csm_t *eph, a
     agc_dp_t     t26 = 0;                                         /* 2^26 cs */
     agc_status_t st  = ephem_lstime(ip, eph, tephem, t_cs, &t26); /* LSTIME  */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }

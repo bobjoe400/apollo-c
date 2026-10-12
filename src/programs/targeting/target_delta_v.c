@@ -77,10 +77,8 @@ static tdv_work_t tdv_work; /* state between the jobs */
  *   v_new     agc_vec_t *     O    VATT + delta V in reference axes, m/cs
  *                                  2^7
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
  **********************************************************************/
-agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t dv_lv, agc_vec_t *v_new)
+void agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t dv_lv, agc_vec_t *v_new)
 {
     agc_mat_t m; /* LV -> reference rows, unit 2^1 */
 
@@ -92,13 +90,6 @@ agc_status_t agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_
     dv = agc_vec_shl(ip, agc_vec_mat(ip, dv_lv, &m), 1); /* VSL1 */
 
     *v_new = agc_vec_add(ip, dv, vatt);
-
-    if (!AGC_ASSERT(m.row[2].c[0] != AGC_DP_MIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -223,12 +214,7 @@ agc_status_t agc_job_target_delta_v_update(void)
 
     tdv_work.ratt = o.ratt;
     tdv_work.x2   = o.x2;
-    st            = agc_target_delta_v_lv_to_ref(&ip, o.ratt, o.vatt, agc_rendz_erasable()->delvov, &tdv_work.vnew);
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    agc_target_delta_v_lv_to_ref(&ip, o.ratt, o.vatt, agc_rendz_erasable()->delvov, &tdv_work.vnew);
 
     return (agc_job_target_delta_v_integrate());
 }
@@ -326,7 +312,7 @@ agc_status_t agc_job_target_delta_v_store(void)
         return (st);
     }
 
-    st = agc_integ_intwake0(); /* INTWAKE1      */
+    st = agc_integ_intwake_release(); /* INTWAKE1      */
 
     if (st != AGC_STATUS_OK)
     {

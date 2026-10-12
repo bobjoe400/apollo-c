@@ -256,6 +256,10 @@ bool rz_active_vehicle_program(void);
 /* Continue the running job at another entry (agc_exec_job_yield).        */
 agc_status_t rz_continue(agc_job_id_t next);
 
+/* GRP2PC (TC PHASCHNG, OCT 04022) with the restart point the AGC takes
+ * from the return address named as the job that resumes there.          */
+void rz_grp2pc(agc_job_id_t restart_at);
+
 /* ---- CSM P20 helpers (csm/navigation/navigation.c) ------------------- */
 agc_dp_t     rz_marktime(void);               /* MARKTIME           */
 void         rz_set_marktime(agc_dp_t t);

@@ -27,6 +27,7 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/lm/landing.h"
@@ -204,105 +205,20 @@ agc_sp_t agc_lm_ad(agc_sp_t a, agc_sp_t b)
 }
 
 /**********************************************************************
- * AGC: none -- sign-agreeing split of a DP value (what MP, DMP and
- * TPAGREE store)
- *
- * ARGUMENTS:
- *   v  agc_dp_t  I  DP value, any scale 2^S
- *
- * RETURNS: agc_lm_words_t -- the two words, scale 2^S
- **********************************************************************/
-agc_lm_words_t agc_lm_words(agc_dp_t v)
-{
-    agc_lm_words_t w = {agc_dp_high(v), agc_dp_low(v)}; /* 2^S       */
-
-    if (!AGC_ASSERT(v >= AGC_DP_MIN && v <= AGC_DP_MAX))
-    {
-        w.hi = 0;
-        w.lo = 0;
-    }
-    else if (!AGC_ASSERT(agc_lm_words_value(w) == v))
-    {
-        w.lo = (agc_sp_t) (v - (int32_t) w.hi * LM_WORD); /* exact */
-    }
-
-    return (w);
-}
-
-/**********************************************************************
- * AGC: none -- value of a stored word pair, whatever the signs
- *
- * ARGUMENTS:
- *   w  agc_lm_words_t  I  major and minor word, scale 2^S
- *
- * RETURNS: agc_dp_t -- hi * 2^14 + lo, scale 2^S
- **********************************************************************/
-agc_dp_t agc_lm_words_value(agc_lm_words_t w)
-{
-    return ((agc_dp_t) w.hi * LM_WORD + (agc_dp_t) w.lo);
-}
-
-/**********************************************************************
- * AGC: none (DAS instruction) -- add the low words, carry a low-word
- * overflow (+-1) into the high sum, never re-sign the pair
- *
- * ARGUMENTS:
- *   x    agc_lm_words_t  I  augend words, scale 2^S
- *   y    agc_lm_words_t  I  addend words, same scale
- *   ovf  int *           O  net overflow DAS leaves in A (+1, 0, -1)
- *
- * RETURNS: agc_lm_words_t -- sum words, the high word overflow-corrected
- **********************************************************************/
-agc_lm_words_t agc_lm_das_ovf(agc_lm_words_t x, agc_lm_words_t y, int *ovf)
-{
-    int32_t lo = (int32_t) x.lo + (int32_t) y.lo; /* minor sum, 2^S-14 */
-    int32_t hi = (int32_t) x.hi + (int32_t) y.hi; /* major sum, 2^S    */
-    int     a  = 0;                               /* net overflow      */
-
-    if (lo > AGC_SP_MAX)
-    {
-        lo -= LM_WORD;
-        hi += 1;
-    }
-    else if (lo < AGC_SP_MIN)
-    {
-        lo += LM_WORD;
-        hi -= 1;
-    }
-
-    if (hi > AGC_SP_MAX)
-    {
-        hi -= LM_WORD;
-        a  = 1;
-    }
-    else if (hi < AGC_SP_MIN)
-    {
-        hi += LM_WORD;
-        a  = -1;
-    }
-
-    *ovf             = a;
-    agc_lm_words_t r = {(agc_sp_t) hi, (agc_sp_t) lo}; /* result, 2^S */
-
-    return (r);
-} /* agc_lm_das_ovf */
-
-/**********************************************************************
  * AGC: none (DAS instruction) -- DAS where the caller guarantees that
  * the sum does not overflow (asserted)
  *
  * ARGUMENTS:
- *   x  agc_lm_words_t  I  augend words, scale 2^S
- *   y  agc_lm_words_t  I  addend words, same scale
+ *   x  agc_dp_words_t  I  augend words, scale 2^S
+ *   y  agc_dp_words_t  I  addend words, same scale
  *
- * RETURNS: agc_lm_words_t -- sum words, scale 2^S
+ * RETURNS: agc_dp_words_t -- sum words, scale 2^S
  **********************************************************************/
-agc_lm_words_t agc_lm_das(agc_lm_words_t x, agc_lm_words_t y)
+agc_dp_words_t agc_lm_das(agc_dp_words_t x, agc_dp_words_t y)
 {
-    int            ovf = 0;                          /* net overflow  */
-    agc_lm_words_t r   = agc_lm_das_ovf(x, y, &ovf); /* sum, 2^S      */
+    int ovf = 0; /* net overflow, not used: the caller's sum cannot overflow */
 
-    return (r);
+    return (agc_dp_words_das(x, y, &ovf));
 }
 
 /**********************************************************************

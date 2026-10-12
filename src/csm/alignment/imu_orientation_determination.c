@@ -433,13 +433,8 @@ agc_status_t agc_job_csm_orientation_marked(agc_job_ctx_t *ctx)
     agc_interp_t     ip;                    /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_vec_t          los;                                 /* SXTSM line of sight, present SM, half-unit (2^1) */
-    const agc_status_t st = agc_csm_sxtsm_marks(&ip, &los); /* status of the call */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_vec_t los; /* SXTSM line of sight, present SM, half-unit (2^1) */
+    agc_csm_sxtsm_marks(&ip, &los);
 
     if (ram->starind != 0)
     {

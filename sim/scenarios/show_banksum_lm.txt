@@ -1,0 +1,32 @@
+# Scenario (LM): V91 SHOW-BANKSUM over the real Luminary099 rope image.
+#
+# AGC behaviour checked (EXTENDED_VERBS.agc SHOWSUM / SDISPLAY / NOKILL,
+# L p.290; AGC_BLOCK_TWO_SELF-CHECK.agc STSHOSUM, ADSUM):
+# * V91 (P00 only): self-check off, bank 0 summed with end-around carry up
+#   to the two TC SELF words and the bugger word; V05N01 flashes SKEEP1-3
+#   = sum, bank number, bugger word (R1-R3 octal). Every bank of a good
+#   rope sums to +-its number: bank 0 -> 77777 (-0), bank 1 -> 00001.
+# * V33 (NXTBNK) sums the next bank; V34 ends (SKEEP1 = SELFADRS, ENDEXT).
+# The harness loads tools/oracle/ropes/Luminary099.bin as fixed memory
+# (src/sim/rope.c); the bugger words are the rope's own.
+# The display is "Bugs found" B5 (no noun address: R1-R3 show 00000).
+vehicle lm
+run 300
+keys R V37E00E
+until PROG 00 within 300
+keys V91E
+until VERB 05 within 300
+run 100
+expect NOUN 01
+expect FLASH on
+expect R2 00000
+xexpect B5 R1 77777
+xexpect B5 R3 77716
+keys V33E                       # next bank
+run 200
+xexpect B5 R1 00001
+xexpect B5 R2 00001
+xexpect B5 R3 55151
+keys V34E                       # terminate
+run 200
+expect FLASH off

@@ -74,10 +74,8 @@ static agc_vec_t v_other; /* V-OTHER, m/cs 2^7  */
  *   tdeltav       agc_vec_t       I    TDELTAV, m 2^22 (moon 2^18)
  *   tnuv          agc_vec_t       I    TNUV, m/cs 2^3 (moon 2^-1)
  *   tet           agc_dp_t        I    TET, cs 2^28
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (it cannot fail)
  **********************************************************************/
-agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2, agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav, agc_vec_t tnuv, agc_dp_t tet)
+void agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2, agc_vec_t rcv, agc_vec_t vcv, agc_vec_t tdeltav, agc_vec_t tnuv, agc_dp_t tet)
 {
     if (!(this_vehicle && agc_flag_test(AGC_FLAG_AVEMIDSW))) /* BOF AVEMIDSW; RVQ */
     {
@@ -102,8 +100,6 @@ agc_status_t agc_integ_svdwn(agc_interp_t *ip, bool this_vehicle, int x2, agc_ve
             v_other = v; /* STORE V-OTHER     */
         }
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

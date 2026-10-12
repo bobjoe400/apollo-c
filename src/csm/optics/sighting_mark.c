@@ -482,26 +482,16 @@ agc_status_t agc_job_alternate_los_remark(agc_job_ctx_t *ctx)
  *   m         const agc_align_sxt_mark_t *  I    the stored mark
  *   los_sm    agc_vec_t *                   O    line of sight in SM axes,
  *                                                half-unit (2^1)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *los_sm)
+void agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *los_sm)
 {
-    agc_vec_t    v;                                            /* SXTNB line of sight (NB), then SM, half-unit (2^1) */
-    agc_status_t st = agc_csm_sxtnb(ip, m->cdut, m->cdus, &v); /* SXTNB */
+    agc_vec_t      v;                                    /* SXTNB line of sight (NB), then SM, half-unit (2^1) */
+    const uint16_t yzx[3] = {m->cduy, m->cduz, m->cdux}; /* CDUY, CDUZ, CDUX of the mark */
+    agc_cdutrig_t  t;                                    /* CDUTRIG sines and cosines */
 
-    if (st == AGC_STATUS_OK)
-    {
-        const uint16_t yzx[3] = {m->cduy, m->cduz, m->cdux};
-        agc_cdutrig_t  t; /* CDUTRIG sines and cosines */
-
-        agc_guid_trg_nbsm(&t, yzx, &v); /* NBSM  */
-        *los_sm = v;
-    }
-
-    return (st);
+    agc_csm_sxtnb(ip, m->cdut, m->cdus, &v); /* SXTNB */
+    agc_guid_trg_nbsm(&t, yzx, &v);          /* NBSM  */
+    *los_sm = v;
 }
 
 /**********************************************************************
@@ -543,12 +533,8 @@ static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
  *   ip        agc_interp_t *  IO   interpreter state (OVFIND, MPAC words)
  *   los_sm    agc_vec_t *     O    line of sight in SM axes, half-unit
  *                                  (2^1)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm)
+void agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm)
 {
     agc_align_ram_t           *ram = agc_align_ram(); /* alignment erasables */
     const agc_align_sxt_mark_t m   = ram->sxt[0];     /* the mark */
@@ -570,5 +556,5 @@ agc_status_t agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm)
         }
     }
 
-    return (agc_csm_sxtsm(ip, &m, los_sm));
+    agc_csm_sxtsm(ip, &m, los_sm);
 }

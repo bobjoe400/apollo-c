@@ -610,7 +610,7 @@ agc_status_t agc_task_gimbal_trim_restart(void)
  **********************************************************************/
 agc_status_t agc_task_gimbal_test_trim(void)
 {
-    agc_erase_set_optind(-1);                     /* CS ZERO (-0 modelled -1) */
+    agc_erase_set_optind(AGC_OPTIND_NEG0);        /* CS ZERO / TS OPTIND: -0, optics reserved */
     agc_chan_and(012, (uint16_t) ~(uint16_t) 02); /* WAND CHAN12 ~BIT2      */
     agc_chan_or(012, AGC_CSM_TVCOPTEN);           /* OCT02200               */
 

@@ -33,7 +33,8 @@ words. Where an oracle case shows such a residual, keep the value as
 `agc_dp_words_t` / `agc_tp_words_t` (include/agc/core/word.h) and use the
 per-instruction `agc_mpac_*` functions in include/agc/core/interp_words.h
 (DLOAD STORE DAD DSU BDSU TAD DMP DMPR DSQ DDV BDDV SQRT ROUND SL SR SLR
-SRR NORM DCOMP ABS SIGN SIN COS ASIN ACOS DOT VSQ, plus DAS). Convert at
+SRR NORM DCOMP ABS SIGN SIN COS ASIN ACOS DOT VSQ, plus DAS; and on
+`agc_vec_words_t` vectors DOT VXM MXV VXV VXSC VAD VSL VSR). Convert at
 the boundary with the value API. Default to `agc_dp_t`; go word-level only
 where the AGC's behaviour depends on the split.
 

@@ -168,7 +168,7 @@ static void rr_nordstal(void)
  *   res       agc_rr_designate_result_t *  O    designate result
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the RRANGLES or waitlist status
+ *          argument, else the waitlist status
  **********************************************************************/
 agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *res)
 {
@@ -179,17 +179,10 @@ agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *re
     agc_vec_t     los = s->rrtarget; /* LOS, 2^1 */
 
     agc_guid_cdutrig(&trig);
-    agc_status_t st = AGC_STATUS_OK; /* status of the last step */
-
     agc_guid_smnb(&trig, &los);
     bool along_y = false; /* LOS along NB Y */
 
-    st = agc_lm_rrangles(ip, los, rr_mode2(), s->modea, s->modeb, &along_y);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_lm_rrangles(ip, los, rr_mode2(), s->modea, s->modeb, &along_y);
 
     if (along_y)
     {
@@ -359,14 +352,9 @@ agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion, uint16_t s
         return (AGC_STATUS_OK); /* avoid the 503 alarm      */
     }
 
-    s->tangnb[0]    = trunnion;                                       /* OKDESNB */
-    s->tangnb[1]    = shaft;
-    agc_status_t st = agc_lm_rrnb(ip, trunnion, shaft, &s->rrtarget); /* RRNB */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    s->tangnb[0] = trunnion; /* OKDESNB */
+    s->tangnb[1] = shaft;
+    agc_lm_rrnb(ip, trunnion, shaft, &s->rrtarget);
 
     rz_flag_put(AGC_FLAG_RRNBSW, true);
     agc_inhint();

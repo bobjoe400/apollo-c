@@ -140,14 +140,14 @@ agc_status_t lm_dap_moreidle(void)
     agc_status_t sq = lm_dap_qerrcalc(); /* QERRCALC, RERRCALC */
     agc_status_t sp = lm_dap_calcperr(); /* CALCPERR */
 
-    if (!AGC_ASSERT(sq == AGC_STATUS_OK))
+    if (sq != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (sq);
     }
 
-    if (!AGC_ASSERT(sp == AGC_STATUS_OK))
+    if (sp != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (sp);
     }
 
     return (lm_dap_shutdown());
@@ -191,7 +191,7 @@ agc_status_t lm_dap_chekbits(bool *on)
 
     agc_status_t st = lm_dap_altdsply(); /* JUMPDSP             */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -289,9 +289,9 @@ agc_status_t lm_dap_startdap(void)
     d->nrtraps      = STARTDAP_TRAPS;
     agc_status_t s5 = lm_dap_set_t5adr(LM_T5_PAXIS); /* T5ADR = PAXIS */
 
-    if (!AGC_ASSERT(s5 == AGC_STATUS_OK))
+    if (s5 != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (s5);
     }
 
     return (settime5());

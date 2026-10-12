@@ -266,6 +266,10 @@ uint16_t agc_dsky_vn(uint8_t verb, uint8_t noun);
  * immediate return, call CADR +4) and the display runs as job MAKEPLAY
  * at the caller's priority. cont may be NULL for non-flashing kinds.   */
 agc_status_t agc_dsky_display(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn_or_value, const agc_dsky_cont_t *cont);
+
+/* The same with the user's MPAC+2 (the ECADR a machine-address noun,
+ * 01-03, takes when NVSUB is called from a program: INTMCTBS).           */
+agc_status_t agc_dsky_display_ecadr(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint16_t vn_or_value, const agc_dsky_cont_t *cont, uint16_t ecadr);
 agc_status_t agc_dsky_blanket(uint16_t bits); /* BLANKET after an R call  */
 agc_status_t agc_dsky_endmark(void);          /* ENDMARK (ENDEXT EQUALS it) */
 void         agc_dsky_clearmrk(void);         /* CLEARMRK                  */

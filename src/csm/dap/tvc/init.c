@@ -230,9 +230,9 @@ agc_status_t csm_tvc_mrclean(void)
     t->cntr         = 0;                                                  /* CNTR, the loop counter, ends at +0           */
     agc_status_t st = csm_dap_set_t5(AGC_TASK_TVC_INITIALIZE, T5_POSMAX); /* T5 status */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st); /* ENDMRC: RESUME                                     */
@@ -256,7 +256,7 @@ agc_status_t agc_task_tvcdapon(void)
 
     agc_status_t st = csm_tvc_mrclean(); /* MRCLEAN                    */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
