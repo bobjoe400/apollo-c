@@ -8,7 +8,7 @@ CFLAGS  ?= -O2 -g
 CPPFLAGS := -Iinclude
 BUILD   := build
 
-LIB_SRCS := $(shell find src -name '*.c' -not -path 'src/sim/*' | sort)
+LIB_SRCS := $(shell find src -name '*.c' -not -path 'src/sim/*' -not -path 'src/nassp/*' | sort)
 LIB_OBJS := $(patsubst %.c,$(BUILD)/%.o,$(LIB_SRCS))
 # The same sources with -DAGC_HOST_DEBUG: a failed AGC_ASSERT inside the
 # library is reported (agc_assert_report), so unit tests see it.

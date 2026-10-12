@@ -810,3 +810,10 @@
             10 flowcharts, xref 3,067 labels) to free the slot; launched
             nassp-integration (Opus) alongside lm-simulator. Document
             wave's five code/comment findings filed in review_items.md.
+2026-10-12  lm-simulator DONE (b0a29df): IMU loops close as yaAGC; L1-L3
+            flight bugs, 00211 alarm, PROG-after-POODOO, S-L1/S-L2 harness
+            findings; make lm-sim. That commit also swept in
+            nassp-integration's in-progress src/core/ecadr.c (address map,
+            112 checks) and src/sim changes (lead's mistake; harmless).
+            src/nassp (host-only shim) excluded from the Linux build.
+            Launched closed-loop-fixes (Opus) alongside nassp-integration.
