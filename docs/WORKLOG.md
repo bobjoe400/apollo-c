@@ -569,3 +569,5 @@
             (BAD_ARG replacing callee status at 62 sites; two tests still
             count assertion reports; boilerplate manual.tsv reasons)
             routed in review_items.md.
+2026-10-11  Launched review-prog-align (resume, Opus) in verify-collapse's
+            slot, alongside review-exec-sched.
