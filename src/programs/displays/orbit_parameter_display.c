@@ -199,15 +199,12 @@ static agc_status_t opd_compute(agc_interp_t *ip, const agc_orbit_params_in_t *i
 {
     agc_tff_t tff = {0};
 
-    tff.rone        = in->moon ? agc_vec_shl(ip, in->rone, 2) : in->rone; /* VSL2 */
-    tff.vone        = in->moon ? agc_vec_shl(ip, in->vone, 2) : in->vone; /* VSL2 */
-    tff.rtmu        = in->tff_rtmu;
-    agc_status_t st = agc_tff_conic(ip, &tff);                            /* TFFCONMU      */
+    tff.rone = in->moon ? agc_vec_shl(ip, in->rone, 2) : in->rone; /* VSL2 */
+    tff.vone = in->moon ? agc_vec_shl(ip, in->vone, 2) : in->vone; /* VSL2 */
+    tff.rtmu = in->tff_rtmu;
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_tff_rp_ra(ip, &tff); /* TFFRP/RA      */
-    }
+    agc_tff_conic(ip, &tff);
+    agc_status_t st = agc_tff_rp_ra(ip, &tff); /* TFFRP/RA      */
 
     if (st != AGC_STATUS_OK)
     {
@@ -799,9 +796,10 @@ agc_status_t agc_job_orbit_display_monitor(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_ticktest(void)
 {
@@ -844,13 +842,11 @@ agc_status_t agc_task_ticktest(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_rendz_display_terminate(void)
+void agc_job_rendz_display_terminate(void)
 {
     agc_svc_b5off(); /* B5OFF */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

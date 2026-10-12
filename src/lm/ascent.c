@@ -108,13 +108,9 @@ static const agc_dp_t as_logcoef[8] = {2, -8388994, -4179185, -3019954, -497816,
  **********************************************************************/
 agc_status_t agc_lm_guidinit(agc_interp_t *ip)
 {
-    agc_navaux_padload_t nav;                               /* pad loads of the auxiliary nav lane */
-    agc_status_t         st = agc_navaux_get_padload(&nav); /* step status */
+    agc_navaux_padload_t nav; /* pad loads of the auxiliary nav lane */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_navaux_get_padload(&nav);
 
     agc_vec_t pole = agc_vec_zero(); /* moon's pole in SM, half unit 2^1 */
 

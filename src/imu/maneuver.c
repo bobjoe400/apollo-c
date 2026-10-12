@@ -383,7 +383,8 @@ void agc_kalc_stoprate(void)
  * ZEROERROR (KALCMANU_STEERING.agc p.419 CM; LM ZATTEROR) -- CDUXD.. =
  * CDUX..
  *
- * RETURNS: agc_status_t -- OK
+ * RETURNS: agc_status_t -- OK; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_kalc_zeroerror(void)
 {
@@ -434,7 +435,8 @@ static void loadcdud(int first_axis)
  * NOGO (ANGLFIND.agc p.411 CM; LM p.363) -- stop any rate, ENDMANU in
  * 20 ms
  *
- * RETURNS: agc_status_t -- waitlist status (ENDOFJOB)
+ * RETURNS: agc_status_t -- waitlist status (ENDOFJOB); AGC_STATUS_BAD_ARG
+ *          on a failed precondition
  **********************************************************************/
 static agc_status_t nogo(void)
 {
@@ -488,7 +490,8 @@ static agc_status_t nogo_zero_error(void)
  * MANUSTOP / ENDROLL (KALCMANU_STEERING.agc p.417 CM; LM p.368) --
  * task: final angles, rates off
  *
- * RETURNS: agc_status_t -- status of ENDMANU
+ * RETURNS: agc_status_t -- status of ENDMANU; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_task_manustop(void)
 {
@@ -610,7 +613,8 @@ static uint16_t timechk(void)
  * SP = (BCDU - NCDU) .1), CDUXD = old BCDU, BCDU = NCDU; then the time
  * check: CONTMANU or MANUSTOP.
  *
- * RETURNS: agc_status_t -- status of CONTMANU or of the MANUSTOP call
+ * RETURNS: agc_status_t -- status of CONTMANU or of the MANUSTOP call;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t incrdcdu_tmanuchk(void)
 {
@@ -720,7 +724,8 @@ static agc_status_t incrdcdu_tmanuchk(void)
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state
  *
- * RETURNS: agc_status_t -- status of INCRDCDU / TMANUCHK
+ * RETURNS: agc_status_t -- status of INCRDCDU / TMANUCHK;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t steering_update(agc_interp_t *ip)
 {
@@ -780,15 +785,16 @@ static agc_status_t steering_update(agc_interp_t *ip)
                         jacc = agc_erase_1jaccr();
                     }
 
-                    agc_sp_t a   = (agc_sp_t) ((w > 0) ? -w : w);           /* -|W|, B0          */
-                    agc_sp_t q   = agc_dp_high(agc_sp_mul(a, BIASCALE_LM)); /* |W|/16, B0 */
-                    agc_dp_t p   = agc_sp_mul(q, w);                        /* MP BRATE: W|W|/16, B14 */
-                    agc_dp_t lag = 0;                                       /* DELxEROR, B0 */
+                    agc_sp_t a = (agc_sp_t) ((w > 0) ? -w : w);           /* -|W|, B0          */
+                    agc_sp_t q = agc_dp_high(agc_sp_mul(a, BIASCALE_LM)); /* |W|/16, B0 */
+                    agc_dp_t p = agc_sp_mul(q, w);                        /* MP BRATE: W|W|/16, B14 */
 
-                    if (AGC_ASSERT(jacc != 0 && agc_dp_high(p) < (jacc < 0 ? -jacc : jacc))) /* DV no overflow */
+                    if (!AGC_ASSERT(jacc != 0 && agc_dp_high(p) < (jacc < 0 ? -jacc : jacc))) /* DV no overflow */
                     {
-                        lag = p / jacc; /* DV 1JACC         */
+                        return (AGC_STATUS_BAD_ARG);
                     }
+
+                    agc_dp_t lag = p / jacc; /* DELxEROR, B0: DV 1JACC */
 
                     if (i == 0)
                     {
@@ -847,7 +853,8 @@ static agc_status_t steering_update(agc_interp_t *ip)
  * CDUs (READCDUK).  Small (< .25 deg): attitude hold on the commanded
  * angles; LM |CPSI| >= 70 deg: ALARM 00401 (TOOBADF).
  *
- * RETURNS: agc_status_t -- status of NOGO or WCALC
+ * RETURNS: agc_status_t -- status of NOGO or WCALC; AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 static agc_status_t kalcmanu_start(void)
 {
@@ -966,7 +973,8 @@ static agc_status_t kalcmanu_start(void)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I    the job
  *
- * RETURNS: agc_status_t -- status of KALCMAN3
+ * RETURNS: agc_status_t -- status of KALCMAN3; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_job_kalcmanu_start(agc_job_ctx_t *ctx)
 {
@@ -990,7 +998,8 @@ agc_status_t agc_job_kalcmanu_start(agc_job_ctx_t *ctx)
  *   wake_as  agc_job_id_t           I    the user's continuation
  *                                        (ATTCADR)
  *
- * RETURNS: agc_status_t -- status of KALCMAN3, or POODOO
+ * RETURNS: agc_status_t -- status of KALCMAN3, or POODOO;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
 {
@@ -1014,7 +1023,8 @@ agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as)
  * UPDTCALL (KALCMANU_STEERING.agc p.417 CM; LM p.368) -- task: FINDVAC
  * NEWDELHI at PRIO26
  *
- * RETURNS: agc_status_t -- status of FINDVAC
+ * RETURNS: agc_status_t -- status of FINDVAC; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_task_updtcall(void)
 {
@@ -1037,7 +1047,8 @@ agc_status_t agc_task_updtcall(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- status of NOGO -2 or NEWANGL
+ * RETURNS: agc_status_t -- status of NOGO -2 or NEWANGL;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_job_newdelhi(void)
 {

@@ -511,13 +511,10 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
         return (up_display(ctx));
     }
 
-    uint16_t     word = 0;                                                  /* the ground's word as pinball stored it */
-    agc_status_t st   = agc_erase_read_ecadr(up_ecadr(load_target), &word); /* the word at MPAC+2 */
+    uint16_t word = 0; /* the ground's word as pinball stored it */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_uplink_update_write(load_target, word);
-    }
+    agc_erase_read_ecadr(up_ecadr(load_target), &word); /* the word at MPAC+2 */
+    agc_status_t st = agc_uplink_update_write(load_target, word);
 
     if (st != AGC_STATUS_OK)
     {

@@ -272,15 +272,14 @@ static agc_vec_t steer(agc_vec_t vg, agc_vec_t delvref)
     const agc_mat_t refsmmat = identity_half(); /* REFSMMAT = I, half-unit rows (2^1) */
     agc_xprod_in_t  in;                         /* XPRODUCT inputs */
 
-    in.vg               = vg;
-    in.delvref          = delvref;
-    in.bdt              = agc_vec_zero();
-    in.csteer           = AGC_DP_HALF;                                                          /* CSTEER = 1, 2^1    */
-    in.kprimedt         = agc_dp_from_double(0.1, 0);                                           /* arbitrary gain     */
-    agc_vec_t    omegac = agc_vec_zero();                                                       /* OMEGAC, commanded rates; scale of OMEGAC */
-    agc_status_t st     = agc_guid_steering_cross_product(&ip, &in, &refsmmat, &trig, &omegac); /* status of agc_guid_steering_cross_product */
+    in.vg            = vg;
+    in.delvref       = delvref;
+    in.bdt           = agc_vec_zero();
+    in.csteer        = AGC_DP_HALF;                /* CSTEER = 1, 2^1    */
+    in.kprimedt      = agc_dp_from_double(0.1, 0); /* arbitrary gain     */
+    agc_vec_t omegac = agc_vec_zero();             /* OMEGAC, commanded rates; scale of OMEGAC */
 
-    CHECK(st == AGC_STATUS_OK);
+    agc_guid_steering_cross_product(&ip, &in, &refsmmat, &trig, &omegac);
 
     return (omegac);
 }
@@ -348,16 +347,16 @@ static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo, double 
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_interp_init(&ip);
-    CHECK(agc_guid_init(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
+    agc_guid_init(AGC_VEHICLE_CSM);
     agc_flag_clear(AGC_FLAG_SERVICER_RUNNING);
     agc_rendz_erasable()->rone         = r;
     agc_rendz_erasable()->tstart_orbit = 0;
     tff.rone                           = r;
     tff.vone                           = v;
     tff.rtmu                           = (agc_dp_t) 176229826;                     /* 1/RTMUE, 2^17 (R30)             */
-    CHECK(agc_tff_conic(&ip, &tff) == AGC_STATUS_OK);
+    agc_tff_conic(&ip, &tff);
     CHECK(agc_tff_calctff(&ip, &tff, agc_dp_from_double(6373338.0 + 91440.0, 29), &t) == AGC_STATUS_OK);
-    CHECK(agc_navaux_get_padload(&pad) == AGC_STATUS_OK);
+    agc_navaux_get_padload(&pad);
     CHECK(agc_latlong_from_r(&ip, &pad, opt, r, 0, &ll) == AGC_STATUS_OK);
     agc_entry_state()->lat_spl         = ll.lat;                                   /* target under RONE at TIME 0 */
     agc_entry_state()->lng_spl         = ll.lon;
@@ -489,7 +488,7 @@ static bool dsky_shows(int verb, int noun, bool flash)
 static void test_engine_enable_request_csm(void)
 {
     CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_dsky_init();
     run_jobs();
     agc_guid_state()->csm.nvword1 = (agc_sp_t) -0400;                   /* -BIT9: V99 flash */
     agc_inhint();
@@ -520,7 +519,7 @@ static void test_engine_enable_request_csm(void)
 static void test_engine_fail_csm(void)
 {
     CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_dsky_init();
     run_jobs();
     agc_guid_state()->csm.nvword1 = (agc_sp_t) -1; /* the AGC's -0: V97 flash */
     agc_inhint();
@@ -546,7 +545,7 @@ static void test_engine_fail_csm(void)
 static void test_engine_enable_request_lm(void)
 {
     CHECK(agc_power_on(AGC_VEHICLE_LM) == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_dsky_init();
     run_jobs();
     agc_guid_state()->lm.which   = (agc_sp_t) AGC_LM_WHICH_DPS_BURN; /* P40TABLE: noun 40 */
     agc_guid_state()->lm.dispdex = (agc_sp_t) -013;                  /* -VB99DEX           */

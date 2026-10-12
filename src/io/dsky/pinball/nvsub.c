@@ -188,9 +188,9 @@ agc_status_t agc_dsky_releasedsp(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t pin_reldsp1(void)
+void pin_reldsp1(void)
 {
     pin_state_t *s = pin_st(); /* pinball erasables */
 
@@ -202,8 +202,6 @@ agc_status_t pin_reldsp1(void)
     {
         s->dsplock = false;
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /* ---- sleepers (pp. 372-373, 382) -------------------------------------- */
@@ -780,7 +778,8 @@ static agc_status_t pin_jam(pin_loadstat_t ls)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK; else the status of the routine it calls
+ * RETURNS: agc_status_t -- OK; else the status of the routine it calls;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_dsky_jamterm(void)
 {
@@ -799,7 +798,8 @@ agc_status_t agc_dsky_jamterm(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- OK; else the status of the routine it calls
+ * RETURNS: agc_status_t -- OK; else the status of the routine it calls;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_dsky_jamproc(void)
 {

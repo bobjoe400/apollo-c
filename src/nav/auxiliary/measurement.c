@@ -416,12 +416,12 @@ agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc, agc_
  *   sv        agc_incorp_sv_t *     I/O  integration temporaries
  *                                        (scales in the type)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always). On overflow of either sum
+ * RETURNS: none. On overflow of either sum
  *          (FAZAB1 / FAZAB2) the correction goes into the conic RCV / VCV
  *          instead and sv->rectify asks the caller to CALL RECTIFY with PBODY
  *          = 0 (earth) or 2 (moon). X789 += DELTAX[2] if DMENFLG.
  **********************************************************************/
-agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_sv_t *sv)
+void agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_sv_t *sv)
 {
     agc_vec_t tx789 = sv->x789; /* TX789, scale of X789 */
 
@@ -468,6 +468,4 @@ agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc, 
     { /* BOFF DMENFLG   */
         sv->x789 = tx789;
     }
-
-    return (AGC_STATUS_OK);
 } /* agc_incorp_update_state */

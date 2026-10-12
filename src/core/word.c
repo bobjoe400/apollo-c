@@ -354,10 +354,7 @@ static int32_t saturate32(int64_t v, int32_t max, agc_ovf_t *ovf)
         /* in range */
     }
 
-    if (AGC_ASSERT(ovf != 0))
-    {
-        *ovf = o;
-    }
+    *ovf = o;
 
     return ((int32_t) v);
 }
@@ -477,10 +474,7 @@ agc_dp_t agc_dp_div_raw(agc_dp_t a, agc_dp_t b, agc_ovf_t *ovf)
 
     q = agc_w_join(agc_w3_top(agc_w_ddv(agc_w3_from_tp(agc_tp_from_dp(a)), agc_w_split(b), &o, &dvsign)));
 
-    if (AGC_ASSERT(ovf != 0))
-    {
-        *ovf = (agc_ovf_t) o;
-    }
+    *ovf = (agc_ovf_t) o;
 
     return (q);
 }

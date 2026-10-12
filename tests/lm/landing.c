@@ -116,7 +116,7 @@ static void check(bool ok, int line, const char *text)
 static void fresh_lm(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
-    (void) agc_exec_init();
+    agc_exec_init();
     agc_lm_landing_reset();
 }
 

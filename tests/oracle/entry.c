@@ -79,10 +79,10 @@ int main(void)
     }
 
     agc_state_init(AGC_VEHICLE_CSM);
-    (void) agc_exec_init();
+    agc_exec_init();
     (void) agc_waitlist_init();
-    (void) agc_guid_init(AGC_VEHICLE_CSM);
-    (void) agc_navaux_set_padload(&pad);
+    agc_guid_init(AGC_VEHICLE_CSM);
+    agc_navaux_set_padload(&pad);
     agc_entry_lexicon_reset();
     agc_entry_state_t *e = agc_entry_state(); /* entry erasables */
 
@@ -388,7 +388,7 @@ static void cm_pose(const char *t, long int tol)
     agc_state_vector_t sv;                         /* state vector (VN), m/cs B7 */
 
     agc_state_init(AGC_VEHICLE_CSM);
-    (void) agc_guid_init(AGC_VEHICLE_CSM);
+    agc_guid_init(AGC_VEHICLE_CSM);
     agc_entry_lexicon_reset();
     sv.r                        = agc_vec_zero();
     sv.v                        = oracle_in_vec(t, "VN");
@@ -402,7 +402,7 @@ static void cm_pose(const char *t, long int tol)
     e->aog_pip                  = cdu2s(oracle_in_raw(t, "AOG/PIP", 0));
     e->aig_pip                  = cdu2s(oracle_in_raw(t, "AOG/PIP", 1));
     e->amg_pip                  = cdu2s(oracle_in_raw(t, "AOG/PIP", 2));
-    (void) agc_entry_cm_pose_triad();
+    agc_entry_cm_pose_triad();
     (void) agc_entry_cm_trio(ang);
     oracle_require_ok(t, "CM/ATUP");
     oracle_cmp_vec(t, "-VREL", e->mvrel, oracle_out_vec(t, "-VREL"), tol);

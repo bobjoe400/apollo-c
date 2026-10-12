@@ -416,13 +416,9 @@ static kepler_step_t kepler_pass(agc_interp_t *ip, agc_conic_ctx_t *ctx, kepler_
  *********************************************************************/
 agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in, agc_kepler_out_t *out)
 {
-    agc_conic_ctx_t ctx;                                      /* conic erasables */
-    agc_status_t    st = agc_conic_ctx_init_(&ctx, in->body); /* VLOAD* MUTABLE,1 */
+    agc_conic_ctx_t ctx; /* conic erasables */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_ctx_init_(&ctx, in->body);
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
     kepler_state_t ks = {0};  /* KEPLER erasables */
@@ -431,7 +427,7 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in, agc_k
     ks.tc  = agc_dp_to_words(in->tc);
 
     kepler_setup(ip, &ctx, in, &ks);
-    st = kepler_period(ip, &ctx, &ks); /* STOREMAX, PERIODCH */
+    agc_status_t st = kepler_period(ip, &ctx, &ks); /* STOREMAX, PERIODCH */
 
     if (st != AGC_STATUS_OK)
     {
@@ -543,9 +539,9 @@ static agc_dp_words_t kepprep_series(agc_interp_t *ip, const agc_kepler_in_t *in
  *                                           TAU., TC, XKEP (xprev), body
  *   xkepnew   agc_dp_t *               O    XKEPNEW, 2^17 / 2^16 sqrt(m)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  *********************************************************************/
-agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in, agc_dp_t *xkepnew)
+void agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in, agc_dp_t *xkepnew)
 {
     agc_dp_words_t cell[KEPPREP_CELLS]; /* push-down cells, 2^N per kepprep_cell */
     agc_dp_t       r = 0;               /* 36D |R| from UNIT, 2^29 / 2^27 m */
@@ -575,6 +571,4 @@ agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in, agc_
     m        = agc_mpac_shift(ip, m, 1 + n1 - n2);                                  /* SL* 1,1  */
     agc_interp_clear_ovf(ip);                                                       /* BOVB TCDANZIG */
     *xkepnew = agc_dp_from_words(agc_mpac_store(agc_mpac_dad(ip, m, sum)));         /* DAD STORE XKEPNEW */
-
-    return (AGC_STATUS_OK);
 } /* agc_conic_kepprep */

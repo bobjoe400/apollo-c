@@ -148,9 +148,9 @@ agc_status_t agc_rendezvous_parameter_display_compdisp(agc_interp_t *ip, agc_ren
  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
  *   axis_sm   agc_vec_t *     O    the vehicle axis in SM axes, unit 2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the SXTNB or NBSM status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
+static void rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
 {
     agc_vec_t a = agc_vec_make(0, 0, AGC_DP_HALF); /* UNITZ, 2^1 */
 
@@ -168,8 +168,6 @@ static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
 
     agc_guid_cdu_nbsm(&t, &a); /* CDU*NBSM  */
     *axis_sm = a;
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -192,17 +190,13 @@ static agc_status_t rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
  **********************************************************************/
 static agc_status_t rpd_compdisp(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t ratt, agc_vec_t vatt)
 {
-    agc_vec_t    axis;                     /* SM axis, 2^1 */
-    agc_status_t st = rpd_axis(ip, &axis); /* axis */
+    agc_vec_t axis; /* SM axis, 2^1 */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    rpd_axis(ip, &axis);
 
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
 
-    st = agc_rendezvous_parameter_display_compdisp(ip, rz, rz->rone, rz->vone, ratt, vatt, axis, &refsmmat);
+    agc_status_t st = agc_rendezvous_parameter_display_compdisp(ip, rz, rz->rone, rz->vone, ratt, vatt, axis, &refsmmat); /* COMPDISP */
 
     if (st != AGC_STATUS_OK)
     {
@@ -608,9 +602,10 @@ agc_status_t agc_job_rendezvous_parameter_display(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rendezvous_parameter_display(void)
 {

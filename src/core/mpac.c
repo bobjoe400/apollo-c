@@ -263,10 +263,7 @@ int32_t agc_w_ts(int32_t a16, int *ovf)
         o   = -1;
     }
 
-    if (AGC_ASSERT(ovf != 0))
-    {
-        *ovf = o;
-    }
+    *ovf = o;
 
     return (a16);
 }
@@ -468,7 +465,7 @@ agc_w3_t agc_w_roundsub(agc_w3_t m, agc_ovf_t *ovfind)
         {
             m.m0 = agc_w_ts(m.m0 + o, &o);
 
-            if ((o != 0) && AGC_ASSERT(ovfind != 0))
+            if (o != 0)
             {
                 *ovfind = (agc_ovf_t) o; /* SETOVF2        */
             }
@@ -534,7 +531,7 @@ agc_w3_t agc_w_dot_acc(agc_w3_t buf, agc_w3_t t, agc_ovf_t *ovfind)
     buf.m2 = lo2.lo;
     buf.m0 = agc_w_ts(o + t.m0 + buf.m0, &o);
 
-    if ((o != 0) && AGC_ASSERT(ovfind != 0))
+    if (o != 0)
     {
         *ovfind = (agc_ovf_t) o;
     }

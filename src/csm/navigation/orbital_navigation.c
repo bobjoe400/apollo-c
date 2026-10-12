@@ -262,15 +262,12 @@ static agc_status_t on_site_from_rls(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_navaux_padload_t pad;                               /* pad loads */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
-    agc_dp_t             t  = agc_rtb_loadtime();           /* now, cs 2^28 */
-    agc_vec_t            r  = agc_vec_zero();               /* RLS reference, 2^27 */
+    agc_navaux_padload_t pad;                    /* pad loads */
+    agc_dp_t             t = agc_rtb_loadtime(); /* now, cs 2^28 */
+    agc_vec_t            r = agc_vec_zero();     /* RLS reference, 2^27 */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_rp_to_r(&ip, &pad, true, pad.rls, t, &r);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_planet_rp_to_r(&ip, &pad, true, pad.rls, t, &r); /* status of the last step */
 
     agc_latlong_opt_t opt = {agc_flag_test(AGC_FLAG_LUNAFLAG), agc_flag_test(AGC_FLAG_ERADFLAG)};
     agc_latlong_t     ll; /* LAT LONG ALT */
@@ -285,7 +282,9 @@ static agc_status_t on_site_from_rls(void)
         return (st);
     }
 
-    return (agc_navaux_set_latlong(&ll));
+    agc_navaux_set_latlong(&ll);
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -432,12 +431,7 @@ agc_status_t agc_job_orbital_navigation_site_check(agc_job_ctx_t *ctx)
         return (agc_job_orbital_navigation_landing_site(ctx));
     }
 
-    agc_status_t st = agc_rendz_llasrda(); /* LLASRDA */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_rendz_llasrda();
 
     return (rz_continue(on.ret));
 }

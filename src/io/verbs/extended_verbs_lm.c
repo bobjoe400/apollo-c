@@ -461,7 +461,9 @@ agc_status_t agc_job_tracking_terminate_lm(void)
         return (st);
     }
 
-    return (agc_exec_enema()); /* GOPROG2                 */
+    agc_exec_enema();
+
+    return (AGC_STATUS_OK); /* GOPROG2                 */
 }
 
 /**********************************************************************

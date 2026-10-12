@@ -271,9 +271,9 @@ static agc_mat_t ln_outer(agc_interp_t *ip, agc_vec_t a, agc_vec_t b)
  *   u         const agc_mat_t *  I    U, B-3
  *   eradm     agc_dp_t           I    R0, m 2^29
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t eradm)
+static void ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t eradm)
 {
     agc_dp_t rho = ln.rho; /* RHO, B-30 */
 
@@ -377,8 +377,6 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
     { /* S22SCLW  */
         w->blk[2][m] = agc_vec_shr(w->blk[2][m], 1);
     }
-
-    return (AGC_STATUS_OK);
 } /* ln_e_matrix */
 
 /**********************************************************************
@@ -396,32 +394,22 @@ static agc_status_t ln_e_matrix(agc_interp_t *ip, const agc_mat_t *u, agc_dp_t e
  *   --------  --------------  ---  --------------------------------
  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the pad or SETRE status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t ln_unknown_landmark(agc_interp_t *ip)
+static void ln_unknown_landmark(agc_interp_t *ip)
 {
-    agc_navaux_padload_t pad;                                /* pad loads */
-    agc_status_t         st  = agc_navaux_get_padload(&pad); /* pad loads */
+    agc_navaux_padload_t pad; /* pad loads */
     agc_latlong_opt_t    opt = {agc_flag_test(AGC_FLAG_CMOONFLG), true};
 
+    agc_navaux_get_padload(&pad);
     rz_flag_put(AGC_FLAG_LUNAFLAG, opt.lunar);
     agc_vec_t alphav; /* ALPHAV, 2^1 */
 
-    alphav         = agc_vec_unit(ip, ln.csmpos, NULL, NULL);
-    agc_dp_t eradm = 0; /* R0, m 2^29 */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_setre(ip, &pad, opt, alphav.c[2], &eradm); /* SETRE */
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
+    alphav          = agc_vec_unit(ip, ln.csmpos, NULL, NULL);
+    agc_dp_t  eradm = 0;                                   /* R0, m 2^29 */
+    agc_latlong_setre(ip, &pad, opt, alphav.c[2], &eradm); /* SETRE */
     ln_landmark_on_surface(ip, eradm);
-    agc_vec_t rl = agc_erase_x789(); /* RL, body scale */
+    agc_vec_t rl    = agc_erase_x789();                    /* RL, body scale */
 
     if (ln.eorm != 0)
     {
@@ -447,7 +435,7 @@ static agc_status_t ln_unknown_landmark(agc_interp_t *ip)
         w->blk[2][m] = agc_vec_shl(ip, agc_mat_vec(ip, &u, w->blk[0][m]), 3);
     }
 
-    return (ln_e_matrix(ip, &u, eradm));
+    ln_e_matrix(ip, &u, eradm);
 } /* ln_unknown_landmark */
 
 /* ---- 9DWTO6DW / ROWDOT (pp.610-614) ------------------------------------ */
@@ -884,8 +872,9 @@ static agc_status_t ln_next(void)
  *   at_box42  bool             I    true: start at S22BOX42 (after a noun
  *                                   49 PROCEED)
  *
- * RETURNS: agc_status_t -- the status of the next step, the display, or the
- *          step that failed
+ * RETURNS: agc_status_t -- the status of the next step, the display, or
+ *          the step that failed; AGC_STATUS_NO_CONVERGE when its step
+ *          bound is exhausted
  **********************************************************************/
 static agc_status_t ln_incorporate(agc_job_ctx_t *ctx, agc_interp_t *ip, bool at_box42)
 {
@@ -965,12 +954,8 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
         agc_vec_t            rp;                    /* RP, planet fixed, body scale */
         bool                 moon = (ln.eorm != 0); /* moon sphere */
 
-        st = agc_navaux_get_padload(&pad);
-
-        if (st == AGC_STATUS_OK)
-        {
-            st = agc_planet_r_to_rp(ip, &pad, moon, rl, ln.tprim, &rp);
-        }
+        agc_navaux_get_padload(&pad);
+        st = agc_planet_r_to_rp(ip, &pad, moon, rl, ln.tprim, &rp);
 
         if (st == AGC_STATUS_OK)
         {
@@ -987,12 +972,7 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
 
         if (!agc_flag_test(AGC_FLAG_KNOWNFLG))
         {
-            st = ln_unknown_landmark(ip);
-
-            if (st != AGC_STATUS_OK)
-            {
-                return (st);
-            }
+            ln_unknown_landmark(ip);
 
             return (ln_next());
         }
@@ -1017,21 +997,13 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
         bool moon_landmark = agc_flag_test(AGC_FLAG_CMOONFLG); /* moon sphere */
 
         rz_flag_put(AGC_FLAG_LUNAFLAG, moon_landmark);
-        agc_navaux_padload_t pad_landmark;                                        /* pad loads */
-        agc_latlong_t        ll;                                                  /* LAT LONG ALT */
-        agc_status_t         st_landmark = agc_navaux_get_padload(&pad_landmark); /* pad loads */
+        agc_navaux_padload_t pad_landmark; /* pad loads */
+        agc_latlong_t        ll;           /* LAT LONG ALT */
 
-        if (st_landmark == AGC_STATUS_OK)
-        {
-            st_landmark = agc_navaux_get_latlong(&ll);
-        }
-
-        agc_latlong_opt_t opt = {moon_landmark, agc_flag_test(AGC_FLAG_ERADFLAG)};
-
-        if (st_landmark == AGC_STATUS_OK)
-        {
-            st_landmark = agc_latlong_to_r(ip, &pad_landmark, opt, &ll, ln_gettf(), &rl, NULL);
-        }
+        agc_navaux_get_padload(&pad_landmark);
+        agc_navaux_get_latlong(&ll);
+        agc_latlong_opt_t opt         = {moon_landmark, agc_flag_test(AGC_FLAG_ERADFLAG)};
+        agc_status_t      st_landmark = agc_latlong_to_r(ip, &pad_landmark, opt, &ll, ln_gettf(), &rl, NULL); /* LALOTORV */
 
         if (moon_landmark)
         {
@@ -1242,21 +1214,13 @@ agc_status_t agc_job_orbital_navigation_site(agc_job_ctx_t *ctx)
     agc_latlong_t        ll;  /* LAT LONG ALT */
     agc_latlong_opt_t    opt = {moon, agc_flag_test(AGC_FLAG_ERADFLAG)};
 
-    st = agc_navaux_get_padload(&pad);
+    agc_navaux_get_padload(&pad);
+    st = agc_latlong_from_r(&ip, &pad, opt, alphav, ln.toff, &ll);
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_latlong_from_r(&ip, &pad, opt, alphav, ln.toff, &ll);
-    }
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_navaux_set_latlong(&ll);
-    }
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_rendz_llasrd();
+        agc_navaux_set_latlong(&ll);
+        agc_rendz_llasrd();
     }
 
     if (st != AGC_STATUS_OK)
@@ -1285,23 +1249,17 @@ agc_status_t agc_job_orbital_navigation_site_accept(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_navaux_padload_t pad;                               /* pad loads */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
+    agc_navaux_padload_t pad; /* pad loads */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_r_to_rp(&ip, &pad, true, agc_erase_x789(), ln.toff, &pad.rls);
-    }
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_navaux_set_padload(&pad);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_planet_r_to_rp(&ip, &pad, true, agc_erase_x789(), ln.toff, &pad.rls); /* R-TO-RP */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    agc_navaux_set_padload(&pad);
 
     return (agc_job_orbital_navigation_site_done());
 }

@@ -78,14 +78,12 @@ agc_status_t lm_dap_callaccs(void)
  *   --------  --------------  ---  --------------------
  *   a         lm_dap_t5adr_t  I    next T5RUPT program: DAPIDLER or PAXIS
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a)
+void lm_dap_set_t5adr(lm_dap_t5adr_t a)
 {
     lm_dap_state()->t5adr = a;
     agc_rupt_set_t5_task((a == LM_T5_PAXIS) ? AGC_TASK_PAXIS : AGC_TASK_DAPIDLER); /* PAXIS or DAPIDLER */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

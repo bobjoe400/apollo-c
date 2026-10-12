@@ -101,9 +101,9 @@ void agc_csm_dap_setmaxdb(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_csm_dap_decode_dap_data(void)
+void agc_csm_dap_decode_dap_data(void)
 {
     agc_csm_rcs_t *r  = agc_csm_dap_rcs();    /* RCS DAP erasables    */
     uint16_t       d1 = agc_erase_dapdatr1(); /* N46 R1               */
@@ -145,8 +145,6 @@ agc_status_t agc_csm_dap_decode_dap_data(void)
     {
         r->rbdfail = ((d2 & CSM_DAP_BIT1) == 0u) ? -1 : 0; /* ?: D failed */
     }
-
-    return (AGC_STATUS_OK);
 } /* agc_csm_dap_decode_dap_data */
 
 /**********************************************************************
@@ -182,27 +180,19 @@ void agc_csm_dap_rcs_gains(void)
  * ARGUMENTS:
  *   time5_word  uint16_t  I  TIME5, 10 ms counts to overflow, > 0
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always: csm_dap_set_t5() cannot
- *          fail)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
+void agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
 {
     agc_csm_rcs_t    *r = agc_csm_dap_rcs(); /* T5PHASE                 */
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* RCSFLAGS                */
 
-    r->t5phase      = AGC_CSM_T5P_INIT;                                /* TS T5PHASE (+)          */
-    c->rcsflags     = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1); /* CS; MASK BIT3; ADS      */
-    agc_status_t st = csm_dap_set_t5(AGC_TASK_RCSATT, time5_word);     /* DCA RCSADDR; DXCH T5LOC */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    r->t5phase  = AGC_CSM_T5P_INIT;                                /* TS T5PHASE (+)          */
+    c->rcsflags = (uint16_t) (c->rcsflags | AGC_CSM_RCSF_NEEDLE1); /* CS; MASK BIT3; ADS      */
+    csm_dap_set_t5(AGC_TASK_RCSATT, time5_word);
 
     agc_flag_clear(AGC_FLAG_DAPBIT1); /* CS OCT60000; MASK FLAGWRD6; AD BIT14 */
     agc_flag_set(AGC_FLAG_DAPBIT2);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -211,11 +201,11 @@ agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the RCSDAPON +1 status
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_csm_dap_rcsdapon(void)
+void agc_csm_dap_rcsdapon(void)
 {
-    return (agc_csm_dap_rcsdapon_t5(T5_06SEC)); /* CAF 0.6SECT5           */
+    agc_csm_dap_rcsdapon_t5(T5_06SEC); /* CAF 0.6SECT5 */
 }
 
 /**********************************************************************
@@ -224,9 +214,9 @@ agc_status_t agc_csm_dap_rcsdapon(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the RCSDAPON status
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_rcsup(void)
+void agc_task_rcsup(void)
 {
-    return (agc_csm_dap_rcsdapon());
+    agc_csm_dap_rcsdapon();
 }

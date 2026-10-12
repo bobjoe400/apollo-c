@@ -630,7 +630,7 @@ static int run_kepler(const oracle_row_t *r, agc_dp_t got[10])
 
     if (prep)
     {
-        (void) agc_conic_kepprep(&ip, &in, &in.xkepnew);
+        agc_conic_kepprep(&ip, &in, &in.xkepnew);
     }
 
     (void) agc_conic_kepler(&ip, &in, &o);
@@ -812,8 +812,8 @@ static void check_row(const oracle_row_t *r)
         agc_apsides_out_t o;  /* APSIDES outputs   */
 
         agc_interp_init(&ip);
-        (void) agc_conic_apsides(&ip, vec3(&r->in[1]), vec3(&r->in[4]), (r->in[0] != 0) ? AGC_CONIC_MOON : AGC_CONIC_EARTH, &o); /* moon row */
-        agc_dp_t v[5] = {o.rapo, o.rperi, o.ecc, o.p, o.r1a};                                                                    /* outputs in exp[] order */
+        agc_conic_apsides(&ip, vec3(&r->in[1]), vec3(&r->in[4]), (r->in[0] != 0) ? AGC_CONIC_MOON : AGC_CONIC_EARTH, &o); /* moon row */
+        agc_dp_t v[5] = {o.rapo, o.rperi, o.ecc, o.p, o.r1a};                                                             /* outputs in exp[] order */
 
         memcpy(got, v, sizeof (v));
         n = 5;

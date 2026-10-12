@@ -83,25 +83,18 @@ agc_status_t agc_job_lambert_aimpoint_guidance_lm(agc_job_ctx_t *ctx)
  *   rz        const agc_rendz_t *  I    RTIG, VIPRIME (post-burn state at
  *                                       TIG)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always:
- *          agc_rendz_periapo_body_scale() cannot fail)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
+static void laim_apsides(agc_interp_t *ip, const agc_rendz_t *rz)
 {
-    agc_rendz_periapo_t pa;                                                                    /* PERIAPO1 apsides, body scale */
-    agc_status_t        st = agc_rendz_periapo_body_scale(ip, rz, rz->rtig, rz->viprime, &pa); /* status */
+    agc_rendz_periapo_t pa; /* PERIAPO1 apsides, body scale */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_rendz_periapo_body_scale(ip, rz, rz->rtig, rz->viprime, &pa);
 
     agc_burn_t *b = &agc_guid_state()->burn; /* HAPO, HPER, VGDISP */
 
     b->hper = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hperi));
     b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hapo));
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -159,15 +152,12 @@ agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
     agc_flag_clear(AGC_FLAG_XDELVFLG);
     st                            = agc_rendz_get_lvc(&ip, rz->rinit, rz->vinit, rz->delveet3, &rz->delvlvc);
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = laim_apsides(&ip, rz);
-    }
-
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    laim_apsides(&ip, rz);
 
     return (rz_vnpooh(ctx, 6U, 81U, AGC_JOB_LAMBERT_AIMPOINT_APSIDES));
 } /* agc_job_lambert_aimpoint_compute_lm */

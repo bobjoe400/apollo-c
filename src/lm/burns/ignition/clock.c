@@ -514,17 +514,15 @@ agc_status_t agc_job_comfail(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_clokjob_engine_fail(void)
+void agc_job_clokjob_engine_fail(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm; /* LM guidance erasables */
 
     lm->dispdex = ign_table()->comfail_kill ? (agc_sp_t) IGN_DISPDEX_KILL : (agc_sp_t) -IGN_CNTDNDEX; /* COMFAIL3 kills the clock, COMFAIL4 restores the countdown */
     agc_flag_clear(AGC_FLAG_IDLEFLAG);                                                                /* RECONNECT DV MONITOR   */
     agc_flag_clear(AGC_FLAG_FLUNDISP);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

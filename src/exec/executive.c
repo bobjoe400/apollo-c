@@ -256,16 +256,14 @@ int exec_running_job_prio(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_exec_init(void)
+void agc_exec_init(void)
 {
     _Static_assert(AGC_EXEC_CORE_SETS_CSM <= AGC_EXEC_MAX_JOBS && AGC_EXEC_CORE_SETS_LM <= AGC_EXEC_MAX_JOBS, "core sets fit");
 
     exec_clear_tables();
     activity_light(false);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

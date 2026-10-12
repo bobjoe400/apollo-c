@@ -182,7 +182,9 @@ static agc_status_t ab_abrtjask(bool aps_abort)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_exec_enema());
+    agc_exec_enema();
+
+    return (AGC_STATUS_OK);
 } /* ab_abrtjask */
 
 /**********************************************************************

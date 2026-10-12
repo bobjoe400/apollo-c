@@ -546,7 +546,8 @@ static agc_sp_t nbd_signed(int axis)
  *   delv  const agc_dp_words_t [3]  I    DELVX..Z as 1/PIPA left them,
  *                                     PIPA pulses x 2^14
  *
- * RETURNS: agc_status_t -- OK, or the NOVAC status
+ * RETURNS: agc_status_t -- OK, or the NOVAC status; AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 static agc_status_t comp_irig_words(const agc_dp_words_t delv[3])
 {
@@ -589,7 +590,8 @@ static agc_status_t comp_irig_words(const agc_dp_words_t delv[3])
  * ARGUMENTS:
  *   delv  agc_vec_t  I    DELVX..Z, PIPA pulses x 2^14
  *
- * RETURNS: agc_status_t -- status of IRIGCOMP
+ * RETURNS: agc_status_t -- status of IRIGCOMP; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_imu_comp_irig(agc_vec_t delv)
 {
@@ -607,16 +609,14 @@ agc_status_t agc_imu_comp_irig(agc_vec_t delv)
  * GCOMPZER (IMU_COMPENSATION_PACKAGE.agc p.337 LM) -- GCOMP and GCOMPSW
  * = 0
  *
- * RETURNS: agc_status_t -- OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_imu_gcompzer(void)
+void agc_imu_gcompzer(void)
 {
     const agc_dp_words_t zero[3] = {{0, 0}, {0, 0}, {0, 0}}; /* GCOMP = 0 */
 
     gcompsw = 0;
     gcomp_write(zero);
-
-    return (AGC_STATUS_OK);
 }
 
 /* ---- 1/GYRO and GCOMP1 --------------------------------------------------- */
@@ -625,7 +625,8 @@ agc_status_t agc_imu_gcompzer(void)
  * 1/GYRO +n (IMU_COMPENSATION_PACKAGE.agc p.303) -- IMUPULSE on GCOMP,
  * IMUSTALL, GCOMP1
  *
- * RETURNS: agc_status_t -- OK (asleep or done), or ALARM when caged
+ * RETURNS: agc_status_t -- OK (asleep or done), or ALARM when caged;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t one_gyro_pulse(void)
 {
@@ -704,7 +705,8 @@ agc_status_t agc_job_gyro_command_pulse(void)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I    the woken job
  *
- * RETURNS: agc_status_t -- status of the torquing
+ * RETURNS: agc_status_t -- status of the torquing; AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx)
 {
@@ -875,7 +877,8 @@ static agc_status_t bias_drift_compensate(agc_sp_t dt, bool surface)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I    the NBDONLY job
  *
- * RETURNS: agc_status_t -- OK or the 1/GYRO status
+ * RETURNS: agc_status_t -- OK or the 1/GYRO status; AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 agc_status_t agc_job_nbdonly(agc_job_ctx_t *ctx)
 {

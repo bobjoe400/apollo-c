@@ -120,25 +120,17 @@ static void serv_phase(uint16_t code, agc_job_id_t job)
  *   a         agc_avg_g_t *  I/O  average-G block (DELV, RN1, VN1, GDT1/2,
  *                                 PIPAGE...)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always: agc_guid_pipasr() cannot
- *          fail)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t preread1(agc_avg_g_t *a)
+static void preread1(agc_avg_g_t *a)
 {
-    agc_status_t st = agc_guid_pipasr(a, true); /* CLEAR + READ PIPS      */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_guid_pipasr(a, true);
 
     a->pipage  = 1;                          /* for REREADAC           */
     agc_flag_set(AGC_FLAG_AVEGFLAG);         /* SET AVEG FLAG          */
     agc_flag_clear(AGC_FLAG_DRIFTFLG);       /* KNOCK DOWN DRIFT FLAG  */
     agc_flag_set(AGC_FLAG_SERVICER_RUNNING); /* SET V37 FLAG           */
     a->dvtotal = 0;                          /* CLEAR DVTOTAL          */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -148,11 +140,11 @@ static agc_status_t preread1(agc_avg_g_t *a)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of preread1() (always AGC_STATUS_OK)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_guid_preread1_csm(void)
+void agc_guid_preread1_csm(void)
 {
-    return (preread1(&agc_guid_state()->avg));
+    preread1(&agc_guid_state()->avg);
 }
 
 /**********************************************************************
@@ -177,14 +169,9 @@ agc_status_t agc_task_preread_csm(void)
         return (sw);
     }
 
-    agc_status_t st = preread1(&g->avg); /* status of preread1 */
+    preread1(&g->avg);
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    st = agc_exec_findvac(AGC_PRIO32, AGC_JOB_NORMLIZE); /* NORMLIZE job    */
+    agc_status_t st = agc_exec_findvac(AGC_PRIO32, AGC_JOB_NORMLIZE); /* NORMLIZE job    */
 
     if (st != AGC_STATUS_OK)
     {
@@ -401,13 +388,9 @@ agc_status_t agc_task_chekaveg(void)
  **********************************************************************/
 agc_status_t agc_task_readaccs_csm(void)
 {
-    agc_guid_t  *g  = agc_guid_state();               /* guidance erasables */
-    agc_status_t st = agc_guid_pipasr(&g->avg, true); /* status of agc_guid_pipasr */
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_guid_pipasr(&g->avg, true);
 
     return (pipsdone(&g->avg));
 }

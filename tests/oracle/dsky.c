@@ -285,9 +285,9 @@ static void one(const char *t, bool lm)
 
     oracle_require_ok(t, "ENDOFJOB");
     agc_state_init(lm ? AGC_VEHICLE_LM : AGC_VEHICLE_CSM); /* vehicle */
-    (void) agc_exec_init();
+    agc_exec_init();
     (void) agc_waitlist_init();
-    (void) agc_dsky_init();
+    agc_dsky_init();
 
     if (noun == 0)
     {

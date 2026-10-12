@@ -17,6 +17,8 @@
  *     3. SELECTMU and PERIAPO1 on the circular orbit: equal apsides.
  *     4. P23 and R22 preset PHSPRDT2 (PRIO13, PRIO26): a later group 2
  *        restart of a type C phase with D clear runs at that priority.
+ *     5. GET+MGA: Comanche unitizes delta V once, Luminary twice
+ *        (VLOAD UNIT / UNIT); each vehicle follows its rope.
  *
  * AGC SOURCE:
  *   Comanche055 R30.agc (SR30.1, MAXCHK), P32-P33_P72-P73.agc (CSI/A),
@@ -69,6 +71,8 @@ static void         test_csi_coplanar_circular(void);
 static void         test_periapo_circular(void);
 static bool         group2_restarts_at(agc_job_id_t job, agc_prio_t prio);
 static void         test_group2_restart_priority(void);
+static agc_dp_t     mga_expected(agc_vec_t dv, agc_vec_t ysm, bool twice);
+static void         test_get_mga_per_rope(void);
 
 /**********************************************************************
  * AGC: none (test driver) -- the three tests, CSM build
@@ -86,6 +90,7 @@ int main(void)
     test_periapo_circular();
     test_csi_coplanar_circular();
     test_group2_restart_priority();
+    test_get_mga_per_rope();
     (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks, g_failures);
 
     if (g_failures != 0)
@@ -359,10 +364,8 @@ static void test_periapo_circular(void)
     agc_rendz_selectmu(rz, false);
     agc_rendz_periapo_t pa;                               /* PERIAPO1 */
     agc_vec_t           v = vel(0.0, sqrt(MU / R0), 0.0); /* m/cs 2^7 */
-    agc_status_t        st;                               /* PERIAPO1 */
 
-    st = agc_rendz_periapo_body_scale(&ip, rz, pos(R0, 0.0, 0.0), v, &pa);
-    CHECK(st == AGC_STATUS_OK);
+    agc_rendz_periapo_body_scale(&ip, rz, pos(R0, 0.0, 0.0), v, &pa);
     CHECK(dp_absdiff(pa.rapo, pa.rperi) < 8192); /* 16 km */
 }
 
@@ -385,7 +388,7 @@ static bool group2_restarts_at(agc_job_id_t job, agc_prio_t prio)
 {
     bool found = false; /* job seen */
 
-    CHECK(agc_exec_init() == AGC_STATUS_OK); /* STARTSB2 */
+    agc_exec_init(); /* STARTSB2 */
     CHECK(agc_restart_group(2) == AGC_STATUS_OK);
 
     for (int i = 0; i < agc_exec_core_sets(); i++)
@@ -417,9 +420,9 @@ static void test_group2_restart_priority(void)
     const agc_phase_var_t r22 = {AGC_RESTART_JOB, AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM, AGC_TASK_NONE, 0, false, 0U};  /* D clear */
 
     CHECK(agc_power_on(AGC_VEHICLE_CSM) == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_dsky_init();
     agc_flag_set(AGC_FLAG_REFSMFLG);
-    CHECK(agc_exec_init() == AGC_STATUS_OK);                                 /* only the job under test */
+    agc_exec_init();                                                         /* only the job under test */
     CHECK(agc_exec_novac(013, AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION) == AGC_STATUS_OK);
     CHECK(agc_exec_run_one() == AGC_STATUS_OK);
     agc_phase_change_var(06022, &p23);                                       /* type C, 2CADR, job, group 2 */
@@ -431,10 +434,90 @@ static void test_group2_restart_priority(void)
     CHECK(group2_restarts_at(AGC_JOB_RENDEZVOUS_TRACKING_DATA_CSM, 026));
 
     CHECK(agc_power_on(AGC_VEHICLE_LM) == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
-    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    agc_dsky_init();
+    agc_exec_init();
     agc_phase_set_priority(2, 026);
     CHECK(agc_exec_novac(026, AGC_JOB_RADAR_SEARCH) == AGC_STATUS_OK);
     CHECK(agc_exec_run_one() == AGC_STATUS_OK); /* V16N80, the search goes on */
     CHECK(group2_restarts_at(AGC_JOB_RADAR_SEARCH_DISPLAY, 026));
+}
+
+/**********************************************************************
+ * GET+MGA by hand: UNIT once (Comanche) or twice (Luminary), DOT the
+ * REFSMMAT Y row, SL1, ARCSIN, plus one revolution when negative.
+ * AGC: GET+MGA (P34-35_P74-75.agc C line 1336 / L line 1406)
+ *
+ * FUNCTION NAME: mga_expected
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  ----------------------------------------
+ *   dv        agc_vec_t  I    delta V, m/cs 2^7
+ *   ysm       agc_vec_t  I    REFSMMAT +6, 2^1
+ *   twice     bool       I    Luminary's second UNIT
+ *
+ * RETURNS: agc_dp_t -- +MGA, revolutions 0 .. 1
+ **********************************************************************/
+static agc_dp_t mga_expected(agc_vec_t dv, agc_vec_t ysm, bool twice)
+{
+    agc_interp_t ip; /* interpreter state */
+
+    agc_interp_init(&ip);
+    agc_vec_t u = agc_vec_unit(&ip, dv, NULL, NULL); /* UNIT, 2^1 */
+
+    if (twice)
+    {
+        u = agc_vec_unit(&ip, u, NULL, NULL);
+    }
+
+    agc_dp_t a = agc_dp_asin(&ip, agc_dp_shl(&ip, agc_vec_dot(&ip, u, ysm), 1)); /* MGA, rev */
+
+    if (a < 0)
+    {
+        a = agc_dp_add(&ip, agc_dp_add(&ip, a, AGC_DP_HALF), AGC_DP_HALF); /* + 1 rev */
+    }
+
+    return (a);
+}
+
+/**********************************************************************
+ * GET+MGA unitizes once on the CSM and twice on the LM: for a set of
+ * delta-V directions each vehicle's +MGA equals its own rope's sequence,
+ * and at least one direction shows the second UNIT moving the result.
+ * AGC: GET+MGA (P34-35_P74-75.agc C line 1336 / L line 1406)
+ *
+ * FUNCTION NAME: test_get_mga_per_rope
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_get_mga_per_rope(void)
+{
+    agc_mat_t refsmmat;      /* REFSMMAT, 2^1: a skewed orthonormal frame */
+    bool      moved = false; /* a direction where the second UNIT matters */
+
+    refsmmat.row[0] = agc_vec_make(agc_dp_from_double(0.6, 1), agc_dp_from_double(0.8, 1), 0);
+    refsmmat.row[1] = agc_vec_make(agc_dp_from_double(-0.8, 1), agc_dp_from_double(0.6, 1), 0);
+    refsmmat.row[2] = agc_vec_make(0, 0, agc_dp_from_double(1.0, 1));
+
+    for (int i = 0; i < 64; i++)
+    {
+        double    t  = 0.1 * (double) i;                                          /* direction parameter */
+        agc_vec_t dv = vel(3.0 * cos(t), 2.0 * sin(1.7 * t) + 0.3, 1.1 * sin(t)); /* m/s */
+        agc_dp_t  m[2];                                                           /* +MGA CSM, LM */
+
+        for (int k = 0; k < 2; k++)
+        {
+            agc_interp_t ip; /* interpreter state */
+
+            agc_state_init((k == 0) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM);
+            agc_interp_init(&ip);
+            agc_rendz_get_mga(&ip, dv, &refsmmat, &m[k]);
+            CHECK(m[k] == mga_expected(dv, refsmmat.row[1], k == 1));
+        }
+
+        moved = moved || m[0] != m[1];
+    }
+
+    CHECK(moved);
+    agc_state_init(AGC_VEHICLE_CSM);
 }

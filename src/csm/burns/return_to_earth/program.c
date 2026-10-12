@@ -208,7 +208,8 @@ static agc_status_t rte_alarm(const agc_job_ctx_t *ctx, const rte_erasable_t *rs
  *                                          AGC_STATUS_OK)
  *
  * RETURNS: agc_status_t -- the V05N09 display status after an ALARM; st
- *          itself otherwise (POODOO, BUSY)
+ *          itself otherwise (POODOO, BUSY); AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 static agc_status_t rte_failed(const agc_job_ctx_t *ctx, const rte_erasable_t *rs, agc_status_t st)
 {

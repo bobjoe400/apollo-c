@@ -206,7 +206,8 @@ agc_status_t agc_job_burnbaby_countdown(void)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
  *          precondition failed); otherwise the status of the routine it
- *          continues in
+ *          continues in; AGC_STATUS_NOT_FOUND when the integration left
+ *          no RECTOUT state
  **********************************************************************/
 static agc_status_t csm_state_for_munrvg(agc_interp_t *ip, agc_job_id_t self, agc_dp_t *tdec1)
 {
@@ -481,15 +482,13 @@ agc_status_t agc_task_tig_30(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_ullgtask(void)
+void agc_task_ullgtask(void)
 {
     agc_lm_onullage();
 
     agc_phase_change((uint16_t) 000001);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -721,7 +720,8 @@ static agc_status_t dps_ignition(void)
  *   --------  ----------  ---  ---------------------------------------
  *   kind      ign_kind_t  I    ignition kind of the BURNBABY table
  *
- * RETURNS: agc_status_t -- the status of the routine it continues in
+ * RETURNS: agc_status_t -- the status of the routine it continues in;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t ignition_by_program(ign_kind_t kind)
 {
@@ -827,15 +827,13 @@ agc_status_t agc_task_ignition_finish(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_ullagoff(void)
+void agc_task_ullagoff(void)
 {
     agc_lm_noullage();
 
-    agc_phase_kill(4);
-
-    return (AGC_STATUS_OK); /* WAITABIT               */
+    agc_phase_kill(4); /* WAITABIT */
 }
 
 /**********************************************************************
@@ -869,14 +867,14 @@ agc_status_t agc_task_tigtask(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the routine it continues in
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_braking_phase_zoom(void)
+void agc_task_braking_phase_zoom(void)
 {
     agc_guid_state()->avg.avgexit = AGC_JOB_LUNLAND; /* LUNLANAD               */
     agc_lm_throttle_flatout();                       /* FLATOUT: full thrust */
 
-    return (agc_task_zoom());
+    agc_task_zoom();
 }
 
 /**********************************************************************
@@ -887,14 +885,14 @@ agc_status_t agc_task_braking_phase_zoom(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the routine it continues in
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_dps_burn_zoom(void)
+void agc_task_dps_burn_zoom(void)
 {
     agc_erase_set_thrust((agc_sp_t) BIT13);
     agc_chan_or(014, (uint16_t) AGC_CH014_THRUSTACT);
 
-    return (agc_task_zoom());
+    agc_task_zoom();
 }
 
 /**********************************************************************
@@ -906,13 +904,11 @@ agc_status_t agc_task_dps_burn_zoom(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_zoom(void)
+void agc_task_zoom(void)
 {
     agc_phase_change((uint16_t) 000003);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

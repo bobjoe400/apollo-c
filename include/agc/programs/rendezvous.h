@@ -315,14 +315,14 @@ typedef struct agc_rendz_periapo
 } agc_rendz_periapo_t;
 
 /* PERIAPO1: r, v at earth scale (shifted to body scale first).             */
-agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out);
+void agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out);
 
 /* PERIAPO: r, v already at body scale (RVEC, VVEC).                        */
-agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out);
+void         agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out);
 agc_status_t agc_rendz_los_and_normal(agc_interp_t *ip, agc_rendz_t *rz);
-agc_status_t agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m);
+void         agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m);
 agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit, agc_vec_t vinit, agc_vec_t dv, agc_vec_t *delvlvc);
-agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, const agc_mat_t *refsmmat, agc_dp_t *mga);
+void         agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, const agc_mat_t *refsmmat, agc_dp_t *mga);
 
 /* ---- CSI / CDH (P32-P33_P72-P73.agc pp.663-682) ------------------------ */
 agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v, agc_vec_t *out);
@@ -337,7 +337,7 @@ agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t r
  * returns AGC_STATUS_ALARM with *alarm = 00600..00606.                    */
 agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm, agc_job_id_t resume);
 agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz);
-agc_status_t agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m);
+void         agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m);
 
 /* S32/33.1 after the V06N81 display: DELVSIN = M^T DELVLVC, DELVSAB.      */
 agc_status_t agc_rendz_csi_cdh_dv_to_reference(agc_interp_t *ip,
@@ -496,8 +496,8 @@ agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion, uint16_t s
 agc_status_t agc_rendz_goto_terminate_tracking(void); /* GOTOV56       */
 
 /* read lead-ins (one sample; LRVEL five), RADAREAD, SAMPLSUM            */
-agc_status_t agc_radar_rrrange(void);                                 /* RRRANGE       */
-agc_status_t agc_radar_rrrdot(void);                                  /* RRRDOT        */
+void         agc_radar_rrrange(void);                                 /* RRRANGE       */
+void         agc_radar_rrrdot(void);                                  /* RRRDOT        */
 void         agc_radar_lralt(void);                                   /* LRALT         */
 void         agc_radar_lrvel(agc_sp_t beam2);                         /* LRVEL 0,2,4 = Z,Y,X */
 void         agc_radar_lr_velocity_beam(int beam, agc_sp_t nsamples); /* LRVELZ/Y/X */
@@ -528,7 +528,7 @@ agc_status_t agc_task_lr_position_settled(void); /* LASTLRDT      */
 
 agc_status_t agc_task_radsamp(void);      /* RADSAMP       */
 agc_status_t agc_job_radar_sample(void);  /* DORSAMP       */
-agc_status_t agc_job_radar_sample_done(void);
+void         agc_job_radar_sample_done(void);
 agc_dp_t     agc_erase_rstack(int index); /* RSTACK, 0..3  */
 void         agc_erase_set_rstack(int index, agc_dp_t v);
 
@@ -596,8 +596,8 @@ agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx,
                                            agc_job_id_t         resume_as);
 
 /* LLASRD / LLASRDA (P22): LAT, LONG, ALT <-> the noun 89 registers.    */
-agc_status_t agc_rendz_llasrd(void);
-agc_status_t agc_rendz_llasrda(void);
+void agc_rendz_llasrd(void);
+void agc_rendz_llasrda(void);
 
 /* ---- job entry points (generated list follows) ---- */
 /* imu_realign.c */
@@ -670,7 +670,7 @@ agc_status_t agc_job_orbit_display_average_g(void);
 agc_status_t agc_job_orbit_display_repeat(void);
 agc_status_t agc_job_orbit_display_splash(void);
 agc_status_t agc_job_orbit_display_monitor(agc_job_ctx_t *ctx);
-agc_status_t agc_job_rendz_display_terminate(void);
+void         agc_job_rendz_display_terminate(void);
 agc_status_t agc_job_rendz_endext(void);
 agc_status_t agc_task_ticktest(void);
 
@@ -885,8 +885,8 @@ agc_status_t agc_job_rendezvous_tracking_data_done(void);
 
 /* N49DSP */
 agc_status_t agc_job_rendezvous_tracking_data_residuals(agc_job_ctx_t *ctx);
-agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(void);
-agc_status_t agc_job_rendezvous_tracking_data_residuals_recycle(void);
+void         agc_job_rendezvous_tracking_data_residuals_proceed(void);
+void         agc_job_rendezvous_tracking_data_residuals_recycle(void);
 agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx);
 
 /* R22RSTRT */
@@ -978,8 +978,8 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_incorporate(void); /* REND4 */
 /* RENDISP */
 agc_status_t agc_job_rendezvous_tracking_data_csm_display(void);
 agc_status_t agc_job_rendezvous_tracking_data_csm_residuals(agc_job_ctx_t *ctx);
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(void);
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(void);
+void         agc_job_rendezvous_tracking_data_csm_residuals_proceed(void);
+void         agc_job_rendezvous_tracking_data_csm_residuals_recycle(void);
 agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(void);
 agc_status_t agc_rendz_vhf_read(void); /* VHFREAD (rupt) */
 

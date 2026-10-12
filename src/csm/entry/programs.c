@@ -971,16 +971,11 @@ agc_status_t agc_entry_final_phase_latlong(void)
     agc_entry_state_t      *es  = agc_entry_state(); /* entry erasables */
     agc_navaux_padload_t    pad;                     /* pad loads (earth) */
     agc_latlong_t           ll;                      /* LAT LONG ALT of RN */
-    agc_status_t            st;                      /* status */
 
     agc_flag_clear(AGC_FLAG_ERADFLAG);
     agc_flag_clear(AGC_FLAG_LUNAFLAG);
-    st = agc_navaux_get_padload(&pad);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_from_r(entry_ip(), &pad, opt, agc_erase_rn(), agc_erase_piptime(), &ll);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_latlong_from_r(entry_ip(), &pad, opt, agc_erase_rn(), agc_erase_piptime(), &ll); /* status */
 
     if (st == AGC_STATUS_OK)
     {
@@ -1445,10 +1440,9 @@ agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam, agc_dp_t *gmax)
  **********************************************************************/
 static agc_status_t ems_altitude_range(agc_interp_t *ip, agc_entry_state_t *es, agc_dp_t *eradm)
 {
-    agc_dp_t     c = 0; /* CDELF/2, B1 */
-    agc_dp_t     t = 0; /* TFF time, cs B28 */
-    agc_dp_t     a;     /* SDELF/2 then angles, B1 */
-    agc_status_t st;    /* TFF status */
+    agc_dp_t c = 0; /* CDELF/2, B1 */
+    agc_dp_t t = 0; /* TFF time, cs B28 */
+    agc_dp_t a;     /* SDELF/2 then angles, B1 */
 
     if (!AGC_ASSERT(ip != NULL && es != NULL) || !AGC_ASSERT(eradm != NULL))
     {
@@ -1456,12 +1450,8 @@ static agc_status_t ems_altitude_range(agc_interp_t *ip, agc_entry_state_t *es, 
     }
 
     entry_preparation_tff.rtmu = (agc_dp_sub(ip, es->emsalt, AGC_ENTRY_KFT290) >= 0) ? AGC_ENTRY_RTMU_INV_LUNENT : AGC_ENTRY_RTMU_INV_EARTH; /* LUNENT */
-    st                         = agc_tff_conic(ip, &entry_preparation_tff);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_tff_calctff(ip, &entry_preparation_tff, AGC_ENTRY_RTRIAL, &t);
-    }
+    agc_tff_conic(ip, &entry_preparation_tff);
+    agc_status_t st            = agc_tff_calctff(ip, &entry_preparation_tff, AGC_ENTRY_RTRIAL, &t);                                          /* TFF status */
 
     if (st != AGC_STATUS_OK)
     {

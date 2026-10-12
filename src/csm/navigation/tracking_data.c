@@ -722,7 +722,8 @@ static agc_status_t td_integrate(agc_interp_t *ip)
  *                                     49 PROCEED)
  *
  * RETURNS: agc_status_t -- the status of the next look (WAITONE), the
- *          display, or the step that failed
+ *          display, or the step that failed; AGC_STATUS_NO_CONVERGE when
+ *          its step bound is exhausted
  **********************************************************************/
 static agc_status_t td_passes(agc_interp_t *ip, bool at_incorp2)
 {
@@ -937,13 +938,11 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(void)
+void agc_job_rendezvous_tracking_data_csm_residuals_proceed(void)
 {
-    td.tempor1 = -1;
-
-    return (AGC_STATUS_OK); /* ENDOFJOB */
+    td.tempor1 = -1; /* ENDOFJOB */
 }
 
 /**********************************************************************
@@ -954,13 +953,11 @@ agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_proceed(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_recycle(void)
+void agc_job_rendezvous_tracking_data_csm_residuals_recycle(void)
 {
-    td.tempor1 = 1;
-
-    return (AGC_STATUS_OK); /* ENDOFJOB */
+    td.tempor1 = 1; /* ENDOFJOB */
 }
 
 /**********************************************************************

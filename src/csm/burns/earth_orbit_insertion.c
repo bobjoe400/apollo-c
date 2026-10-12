@@ -216,12 +216,11 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_ephemeris(agc_job_ctx_t *ctx)
 agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx)
 {
     agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_SETUP, AGC_TASK_NONE, (int16_t) 022, false, 0U };
-    agc_status_t    st; /* PREREAD1 status */
 
     agc_inhint();
     agc_erase_set_tephem(tephem1);
     agc_relint();
-    st = agc_guid_preread1_csm(); /* zero PIPs, AVERAGEG */
+    agc_guid_preread1_csm(); /* zero PIPs, AVERAGEG */
     agc_phase_change_var(005023, &v);
 
     if (!AGC_ASSERT(agc_erase_tephem() == tephem1))
@@ -229,7 +228,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? agc_job_earth_orbit_insertion_monitor_setup(ctx) : st); /* go on if OK */
+    return (agc_job_earth_orbit_insertion_monitor_setup(ctx));
 }
 
 /**********************************************************************
@@ -461,32 +460,24 @@ agc_status_t agc_job_matrxjob(void)
     ogc_lo[1] = agc_guid_cdulogic(agc_erase_cduy());
     ogc_lo[2] = agc_guid_cdulogic(agc_erase_cduz());
     agc_flag_clear(AGC_FLAG_ERADFLAG);
-    st        = agc_navaux_get_padload(&pad);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_to_r(ip, &pad, opt, &ll, 0, &avg->rn1, NULL);
-    }
+    agc_navaux_get_padload(&pad);
+    st        = agc_latlong_to_r(ip, &pad, opt, &ll, 0, &avg->rn1, NULL);
 
     if (st == AGC_STATUS_OK)
     {
         /* GETDOWN (p. 540): LALOTORV +5 with time 0 and GAMMA = 1: the geodetic
          * vertical at the pad, negated (VCOMP). */
-        agc_navaux_padload_t pad_getdown;                                       /* pad loads (earth radius) */
-        agc_dp_t             cl         = agc_dp_cos(insertion_pad.latitude);   /* COS LAT /2, B1 */
-        agc_vec_t            rp;                                                /* unit RP, B2 */
-        agc_status_t         st_getdown = agc_navaux_get_padload(&pad_getdown); /* status */
+        agc_navaux_padload_t pad_getdown;                             /* pad loads (earth radius) */
+        agc_dp_t             cl = agc_dp_cos(insertion_pad.latitude); /* COS LAT /2, B1 */
+        agc_vec_t            rp;                                      /* unit RP, B2 */
 
-        if (st_getdown == AGC_STATUS_OK)
-        {
-            /* LALOTORV +5 multiplies with DMPR (rounded); GAMMA = DPHALF (1 B-1). */
-            rp         = agc_vec_make(agc_dp_mul(ip, agc_dp_cos(insertion_pad.padlong), cl), agc_dp_mul(ip, agc_dp_sin(insertion_pad.padlong), cl), agc_dp_mul(ip, INSERTION_HALFREV, agc_dp_sin(insertion_pad.latitude)));
-            rp         = agc_vec_unit(ip, rp, NULL, NULL);
-            st_getdown = agc_planet_rp_to_r(ip, &pad_getdown, false, rp, 0, &down);
-            down       = agc_vec_neg(down);
-        }
+        agc_navaux_get_padload(&pad_getdown);
 
-        st = st_getdown;
+        /* LALOTORV +5 multiplies with DMPR (rounded); GAMMA = DPHALF (1 B-1). */
+        rp   = agc_vec_make(agc_dp_mul(ip, agc_dp_cos(insertion_pad.padlong), cl), agc_dp_mul(ip, agc_dp_sin(insertion_pad.padlong), cl), agc_dp_mul(ip, INSERTION_HALFREV, agc_dp_sin(insertion_pad.latitude)));
+        rp   = agc_vec_unit(ip, rp, NULL, NULL);
+        st   = agc_planet_rp_to_r(ip, &pad_getdown, false, rp, 0, &down);
+        down = agc_vec_neg(down);
     }
 
     if (st != AGC_STATUS_OK)
@@ -559,17 +550,15 @@ void agc_csm_velocity_altitude_rate(agc_interp_t *ip)
  *   hdot      agc_dp_t *  O    HDOT, rate of change of altitude, m/cs B7
  *   alti      agc_dp_t *  O    H, altitude above the pad radius, m B29
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
-                                                       agc_dp_t *hdot,
-                                                       agc_dp_t *alti)
+void agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
+                                               agc_dp_t *hdot,
+                                               agc_dp_t *alti)
 {
     *vmagi = insertion_vmagi;
     *hdot  = insertion_hdot;
     *alti  = insertion_alti;
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

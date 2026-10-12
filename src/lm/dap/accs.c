@@ -240,8 +240,6 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
         }
     }
 
-    agc_status_t st = AGC_STATUS_OK; /* status of CHKINGTS */
-
     if (agc_flag_test(AGC_FLAG_USEQRFLG) || d->t5adr != LM_T5_PAXIS)
     {
         d->allowgts = 0; /* DOWNGTS        */
@@ -249,7 +247,7 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
     }
     else if (d->ingts <= 0)
     {
-        st = agc_lm_dap_timegmbl(); /* null offset    */
+        agc_lm_dap_timegmbl(); /* null offset    */
     }
 
     if (!AGC_ASSERT(d->kq >= 0 || d->accdotq < 0))
@@ -257,7 +255,7 @@ static agc_status_t spscont(lm_dap_t *d, agc_sp_t accdotq)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st);
+    return (AGC_STATUS_OK);
 } /* spscont */
 
 /**********************************************************************

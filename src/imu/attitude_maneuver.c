@@ -652,7 +652,8 @@ static bool in_auto(void)
  *   ret_job  agc_job_id_t           I    job to continue the caller
  *                                        (TEMPR60)
  *
- * RETURNS: agc_status_t -- status of the display
+ * RETURNS: agc_status_t -- status of the display; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_imu_attitude_maneuver(const agc_job_ctx_t *ctx, agc_job_id_t ret_job)
 {
@@ -709,7 +710,8 @@ agc_status_t agc_job_redomanc(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I    the R60 job
  *
- * RETURNS: agc_status_t -- status of the display
+ * RETURNS: agc_status_t -- status of the display; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_job_endmanuv(agc_job_ctx_t *ctx)
 {
@@ -728,7 +730,8 @@ agc_status_t agc_job_endmanuv(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   ctx  const agc_job_ctx_t *  I    the R60 job
  *
- * RETURNS: agc_status_t -- status of the user's continuation
+ * RETURNS: agc_status_t -- status of the user's continuation;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t maneuver_return(const agc_job_ctx_t *ctx)
 {
@@ -757,7 +760,8 @@ static agc_status_t maneuver_return(const agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I    the R60 job
  *
- * RETURNS: agc_status_t -- status of ENDMANU1
+ * RETURNS: agc_status_t -- status of ENDMANU1; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_job_attitude_maneuver_enter(agc_job_ctx_t *ctx)
 {
@@ -897,7 +901,8 @@ agc_status_t agc_job_crew_defined_maneuver_gomove(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I    the V49 job
  *
- * RETURNS: agc_status_t -- status of ENDEXT
+ * RETURNS: agc_status_t -- status of ENDEXT; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_job_crew_defined_maneuver_terminate(agc_job_ctx_t *ctx)
 {

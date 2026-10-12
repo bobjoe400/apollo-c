@@ -159,9 +159,9 @@ static void tvc_loadcoef(tvc_coef_set_t set)
  * ARGUMENTS:
  *   full  bool  I  true: entry at S40.15; false: entry at S40.15 +7
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t csm_tvc_gains(bool full)
+void csm_tvc_gains(bool full)
 {
     agc_csm_tvc_t          *t = agc_csm_dap_tvc(); /* TVC DAP erasables */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* IXX, IAVG/TLX     */
@@ -178,8 +178,6 @@ agc_status_t csm_tvc_gains(bool full)
 
     v       = csm_dap_ddoubl(csm_dap_ddoubl(v));
     t->vark = agc_dp_high(v); /* TS VARK, B+3 ascrev                   */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -190,10 +188,9 @@ agc_status_t csm_tvc_gains(bool full)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always: csm_dap_set_t5() cannot
- *          fail)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t csm_tvc_mrclean(void)
+void csm_tvc_mrclean(void)
 {
     agc_csm_tvc_t       *t    = agc_csm_dap_tvc(); /* TVC erasables  */
     const agc_dp_words_t zero = {0, 0};            /* +0, +0         */
@@ -215,26 +212,19 @@ agc_status_t csm_tvc_mrclean(void)
         t->ytmp[i] = zero;
     }
 
-    t->rollfire     = 0;
-    t->rollword     = 0u;
-    t->temreg       = 0;
-    t->stroker      = 0;
-    t->perrb        = zero;
-    t->yerrb        = zero;
-    t->delpbar      = zero;
-    t->delybar      = zero;
-    t->pdeloff      = zero;
-    t->ydeloff      = zero;
-    t->ttmp1        = 0;
-    t->cntr         = 0;                                                  /* CNTR, the loop counter, ends at +0           */
-    agc_status_t st = csm_dap_set_t5(AGC_TASK_TVC_INITIALIZE, T5_POSMAX); /* T5 status */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    return (st); /* ENDMRC: RESUME                                     */
+    t->rollfire = 0;
+    t->rollword = 0u;
+    t->temreg   = 0;
+    t->stroker  = 0;
+    t->perrb    = zero;
+    t->yerrb    = zero;
+    t->delpbar  = zero;
+    t->delybar  = zero;
+    t->pdeloff  = zero;
+    t->ydeloff  = zero;
+    t->ttmp1    = 0;
+    t->cntr     = 0;                                    /* CNTR, the loop counter, ends at +0           */
+    csm_dap_set_t5(AGC_TASK_TVC_INITIALIZE, T5_POSMAX); /* ENDMRC: RESUME */
 } /* csm_tvc_mrclean */
 
 /**********************************************************************
@@ -253,14 +243,9 @@ agc_status_t agc_task_tvcdapon(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = csm_tvc_mrclean(); /* MRCLEAN                    */
+    csm_tvc_mrclean();
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -399,12 +384,8 @@ agc_status_t agc_task_tvc_initialize(void)
 
     tvc_loadcoef((lem != 0) ? TVC_COEF_HB : TVC_COEF_CSM); /* ?: LM   */
     t->ktlx_i       = c->ektlx_i[lem];                     /* 1/(8 ascrev) scale        */
-    agc_status_t st = csm_tvc_gains(true);                 /* 1/CONACC, VARK           */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = tvc_init_filter_timing(lem);
-    }
+    csm_tvc_gains(true);                                   /* 1/CONACC, VARK           */
+    agc_status_t st = tvc_init_filter_timing(lem);         /* filter timing status     */
 
     tvc_init_trims();
     tvc_attinit();
@@ -451,7 +432,7 @@ agc_status_t csm_tvc_init_complete(void)
 
     if (st == AGC_STATUS_OK)
     { /* DAPINIT after T5TVCDT: time for restart computations */
-        st = csm_dap_set_t5(AGC_TASK_DAPINIT, (uint16_t) t->t5tvcdt);
+        csm_dap_set_t5(AGC_TASK_DAPINIT, (uint16_t) t->t5tvcdt);
     }
 
     if (!AGC_ASSERT(t->t5tvcdt > 0))
@@ -472,10 +453,9 @@ agc_status_t csm_tvc_init_complete(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of S40.15 +7, csm_tvc_gains() (always
- *          AGC_STATUS_OK)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t csm_tvc_swichovr_body(void)
+void csm_tvc_swichovr_body(void)
 {
     agc_csm_tvc_t          *t    = agc_csm_dap_tvc(); /* TVC erasables  */
     const agc_csm_dapcom_t *c    = agc_csm_dap_com(); /* EKTLX/I +2     */
@@ -489,10 +469,10 @@ agc_status_t csm_tvc_swichovr_body(void)
         t->ytmp[i] = zero;
     }
 
-    t->cntrtmp      = 1;                    /* the zeroing loop's counter ends at 1           */
+    t->cntrtmp = 1;             /* the zeroing loop's counter ends at 1           */
     agc_flag_set(AGC_FLAG_SWTOVER);
-    t->ktlx_i       = c->ektlx_i[2];        /* low-bandwidth DAP gain   */
-    agc_status_t st = csm_tvc_gains(false); /* S40.15 +7: VARK only     */
+    t->ktlx_i  = c->ektlx_i[2]; /* low-bandwidth DAP gain   */
+    csm_tvc_gains(false);       /* S40.15 +7: VARK only     */
 
     t->kprimedt = agc_dp_pack(FKPRIMDT, agc_dp_low(t->kprimedt)); /* steering, pi/8 */
     t->repfrac  = FREPFRAC;                                       /* TMC loop, 2^2                        */
@@ -500,8 +480,6 @@ agc_status_t csm_tvc_swichovr_body(void)
     t->ydeloff  = t->delybar;
     tvc_loadcoef(TVC_COEF_LB);
     t->tvcphase = t->phasetmp;                                    /* restore TVCPHASE                    */
-
-    return (st);
 }
 
 /**********************************************************************
@@ -512,18 +490,15 @@ agc_status_t csm_tvc_swichovr_body(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of SWICHOVR +5
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_csm_tvc_preswtch(void)
+void agc_csm_tvc_preswtch(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
     agc_inhint();
-    t->phasetmp     = t->tvcphase;             /* save TVCPHASE                         */
-    t->tvcphase     = -2;
-    agc_status_t st = csm_tvc_swichovr_body(); /* SWICHOVR +5          */
-
-    agc_relint(); /* POSTJUMP PINBRNCH                                 */
-
-    return (st);
+    t->phasetmp = t->tvcphase; /* save TVCPHASE                         */
+    t->tvcphase = -2;
+    csm_tvc_swichovr_body();   /* SWICHOVR +5          */
+    agc_relint();              /* POSTJUMP PINBRNCH                                 */
 }

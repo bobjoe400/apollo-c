@@ -248,7 +248,7 @@ agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx);  /* CM/POSE (AVGEXIT)    */
 agc_status_t agc_job_redopose(agc_job_ctx_t *ctx); /* REDOPOSE 5.x restart */
 
 /* CM/POSE, CM/POSE2: trajectory triad UXA UYA UZA and -VREL (no CDUs).    */
-agc_status_t agc_entry_cm_pose_triad(void);
+void agc_entry_cm_pose_triad(void);
 
 /* CM/TRIO: body triad and -(ROLL, BETA, ALFA)/180 /2 at PIPA time, and
  * -GAMA/180 /2, from AOG/AIG/AMG at PIP and REFSMMAT; angles[0..3] DP.    */
@@ -336,9 +336,9 @@ typedef struct agc_entry_roll_cmd
 
 /* lcx_360: roll error (ROLLC - ROLL)/360, already corrected for cos alfa
  * (COMPAT); mvt_180: -2 V T/180 as formed at CM/RCS entry.                */
-agc_status_t agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, agc_entry_roll_cmd_t *out);
-uint16_t     agc_entry_dap_roll_jet_bits(int jndx); /* P/RJCODE[jndx]           */
-uint16_t     agc_entry_dap_yaw_jet_bits(int jndx);  /* YJETCODE[jndx]           */
+void     agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, agc_entry_roll_cmd_t *out);
+uint16_t agc_entry_dap_roll_jet_bits(int jndx); /* P/RJCODE[jndx]           */
+uint16_t agc_entry_dap_yaw_jet_bits(int jndx);  /* YJETCODE[jndx]           */
 
 /* Entry DAP erasables other lanes read (AOG = BCDU in EBANK6, CM/GYMDT). */
 agc_sp_t agc_erase_aog(void); /* AOG outer gimbal /180, 2s comp  */
@@ -387,10 +387,10 @@ agc_status_t agc_csm_satstkon(void);                                            
 /* S11.1: VMAGI = |VN| (m/cs B7), HDOT = UNIT(RN).VN (B7), ALTI = |RN| -
  * RPAD (earth) or - |RLS| (moon, AMOONFLG) (m B29), stored for N62;
  * agc_earth_orbit_insertion_monitor_readout reads the stored values.    */
-void         agc_csm_velocity_altitude_rate(agc_interp_t *ip);
-agc_status_t agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
-                                                       agc_dp_t *hdot,
-                                                       agc_dp_t *alti);
+void agc_csm_velocity_altitude_rate(agc_interp_t *ip);
+void agc_earth_orbit_insertion_monitor_readout(agc_dp_t *vmagi,
+                                               agc_dp_t *hdot,
+                                               agc_dp_t *alti);
 agc_status_t agc_job_earth_orbit_insertion_monitor_preread(agc_job_ctx_t *ctx); /* P11 TEPHEM restart */
 agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx);   /* P11 after PREREAD1 */
 agc_status_t agc_job_atreset_after_delay(void);                                 /* ATRESET +5 */

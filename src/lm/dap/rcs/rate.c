@@ -66,9 +66,9 @@
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t lm_dap_rateloop(void)
+void lm_dap_rateloop(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -114,8 +114,6 @@ agc_status_t lm_dap_rateloop(void)
 
     d->jetrate[2] = lm_dap_mphi(lm_dap_wrap(usum), d->jacc[2]); /* JETRATER */
     d->jetrate[1] = lm_dap_mphi(lm_dap_wrap(udif), d->jacc[1]); /* JETRATEQ */
-
-    return (AGC_STATUS_OK);
 } /* lm_dap_rateloop */
 
 /**********************************************************************

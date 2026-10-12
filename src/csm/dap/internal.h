@@ -79,7 +79,7 @@ void           csm_dap_words_das(agc_dp_words_t *k, agc_dp_words_t al);       /*
 agc_dp_words_t csm_dap_words_ddoubl(agc_dp_words_t p);                        /* DDOUBL    */
 agc_dp_words_t csm_dap_words_smallmp(agc_dp_words_t in, agc_sp_t n);
 uint16_t       csm_dap_cdu(int axis);                                         /* CDUX, CDUY, CDUZ raw    */
-agc_status_t   csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word);
+void           csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word);
 agc_status_t   csm_dap_set_time5(uint16_t time5_word);
 bool           csm_dap_engine_on(void);                                       /* channel 11 bit 13       */
 agc_status_t   csm_dap_needler(void);                                         /* NEEDLER on AK..AK2      */
@@ -93,15 +93,15 @@ agc_status_t csm_rcs_ratefilt(void);               /* DRHOLOOP, ADOTLOOP        
 agc_status_t csm_rcs_attitude_control_phase(void); /* T5PHASE2 .. T6PROG          */
 agc_status_t csm_rcs_manual(void);                 /* MANUAL ROTATION COMMANDS    */
 agc_status_t csm_rcs_ahfnorot(void);               /* AHFNOROT                    */
-agc_status_t csm_rcs_jets(void);                   /* JETS .. JTIME .. T6PROG     */
-agc_status_t csm_rcs_t6prog_manual(void);          /* T6PROGM: zero errors, T6PROG*/
+void         csm_rcs_jets(void);                   /* JETS .. JTIME .. T6PROG     */
+void         csm_rcs_t6prog_manual(void);          /* T6PROGM: zero errors, T6PROG*/
 bool         csm_rcs_rate_init_pending(void);      /* RCSFLAGS BIT14 (NORATE)     */
 
 /* ---- TVC DAP (tvc_*.c) -------------------------------------------------- */
-agc_status_t csm_tvc_mrclean(void);                   /* MRCLEAN .. ENDMRC           */
+void         csm_tvc_mrclean(void);                   /* MRCLEAN .. ENDMRC           */
 agc_status_t csm_tvc_init_complete(void);             /* TVCINIT4 .. ENDTVCIN        */
-agc_status_t csm_tvc_swichovr_body(void);             /* SWICHOVR +5 .. TC RTRNLOC   */
-agc_status_t csm_tvc_gains(bool full);                /* S40.15 (full) or S40.15 +7  */
+void         csm_tvc_swichovr_body(void);             /* SWICHOVR +5 .. TC RTRNLOC   */
+void         csm_tvc_gains(bool full);                /* S40.15 (full) or S40.15 +7  */
 agc_status_t csm_tvc_pcopy(bool restart);             /* PCOPY (restart: PCOPY +1)   */
 agc_status_t csm_tvc_ycopy(bool restart);             /* YCOPY (restart: YCOPY +1)   */
 agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs); /* EXRSTRT targets    */

@@ -206,14 +206,14 @@ agc_status_t agc_align_calcsmsc(agc_interp_t *ip, const agc_cdutrig_t *t, agc_ma
 agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, const uint16_t cdu[3], agc_mat_t *xsm, agc_mat_t *xnb, uint16_t thetad[3]);
 
 /* S52.3 axes from a state (r m, v m/cs, any common scale).                */
-agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v, agc_mat_t *smd);
+void agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v, agc_mat_t *smd);
 
 /* S52.3 with the CSMPREC (CM) / LEMCONIC (LM) call; BUSY = job asleep in
  * INTSTALL and resumed as resume_job.                                     */
 agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign, agc_job_id_t resume_job, agc_mat_t *smd);
-agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd, agc_vec_t rcsm, agc_vec_t vcsm, agc_mat_t *smd);
+void         agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd, agc_vec_t rcsm, agc_vec_t vcsm, agc_mat_t *smd);
 bool         agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3]);
-agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, agc_mat_t *xdc);
+void         agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, agc_mat_t *xdc);
 
 /* LOCSAM from an integrated state and LSPOS output (pure).               */
 void         agc_align_locsam_from(agc_interp_t *ip, const agc_state_vector_t *sv, agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *out);
@@ -274,7 +274,7 @@ agc_dp_t agc_sband_pitchang(void); /* PITCHANG (LM N51), revs        */
 agc_dp_t agc_sband_yawang(void);   /* YAWANG   (LM N51), revs        */
 
 /* ---- R63 (LM) ------------------------------------------------------------ */
-agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm, agc_vec_t rlem, const agc_mat_t *refsmmat, agc_vec_t *pointvsm);
+void agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm, agc_vec_t rlem, const agc_mat_t *refsmmat, agc_vec_t *pointvsm);
 
 /* ---- R47 AGS initialisation (LM) ----------------------------------------- */
 /* SCALEVEC: RATT1/VATT1 (moon sphere m B27, m/cs B5) -> SM axes (half-
@@ -401,7 +401,7 @@ agc_status_t agc_job_auto_optics_positioning_terminate(agc_job_ctx_t *ctx);
 /* src/csm/optics/s_band_antenna.c */
 agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_sband_b5off(void);
+void         agc_job_sband_b5off(void);
 
 /* src/csm/optics/sighting_mark.c */
 agc_status_t agc_job_sighting_mark_marked(agc_job_ctx_t *ctx);

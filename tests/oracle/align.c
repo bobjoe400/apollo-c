@@ -511,10 +511,7 @@ static void code1to6(const char *t)
 
     oracle_require_ok(t, "GETMKS");
 
-    if (agc_dsky_init() != AGC_STATUS_OK)
-    {
-        (void) oracle_cmp(t, "agc_dsky_init", 1, 0, 0);
-    }
+    agc_dsky_init();
 
     for (int k = 0; k < 6; k++)
     {

@@ -731,28 +731,17 @@ static void dndump_id(void)
  * pair (high word = E,1400 +R to channel 34, the next one to 35).  The
  * AGC MASKs with -0 so editing registers 20-23 are not altered.
  *
- * RETURNS: AGC_STATUS_OK, or the ECADR image's read status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t dndump2(void)
+static void dndump2(void)
 {
-    uint16_t     ecadr = (uint16_t) (dumploc & ECADR_MASK);  /* ECADR of the high register */
-    uint16_t     high  = 0;                                  /* E,1400 +R */
-    uint16_t     low   = 0;                                  /* E,1401 +R */
-    agc_status_t st    = agc_erase_read_ecadr(ecadr, &high); /* image read status */
+    uint16_t ecadr = (uint16_t) (dumploc & ECADR_MASK); /* ECADR of the high register */
+    uint16_t high  = 0;                                 /* E,1400 +R */
+    uint16_t low   = 0;                                 /* E,1401 +R */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_erase_read_ecadr((uint16_t) (ecadr + 1u), &low);
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
+    agc_erase_read_ecadr(ecadr, &high);
+    agc_erase_read_ecadr((uint16_t) (ecadr + 1u), &low);
     dntmexit(high, low);
-
-    return (AGC_STATUS_OK);
 }
 
 /* ---- public ------------------------------------------------------------ */
@@ -811,7 +800,9 @@ agc_status_t agc_telem_downrupt(void)
         case TM_DUMP_FIRST: /* DNDUMP1 -> DNDUMP2       */
             dntmgoto = TM_DUMP_NEXT;
 
-            return (dndump2());
+            dndump2();
+
+            return (AGC_STATUS_OK);
         case TM_DUMP_NEXT:
             /* DNDUMP: step DUMPLOC by one DP word; at the end of an EBANK either end
              * the dump (DUMPCNT complete dumps) or send the next EBANK's ID.         */
@@ -820,7 +811,9 @@ agc_status_t agc_telem_downrupt(void)
 
             if ((dumploc & LOW8) != 0u)
             {
-                return (dndump2());
+                dndump2();
+
+                return (AGC_STATUS_OK);
             }
 
             if ((dumploc & dumpcnt & PRIO34) != 0u)

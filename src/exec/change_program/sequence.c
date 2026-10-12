@@ -254,9 +254,9 @@ agc_status_t exec_cp_after_engine_off(void)
  * ARGUMENTS:
  *   execute_immediately -- true: group 4 restarts V37XEQ (a new program)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (the ENEMA request)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t cp_gogoprog(bool execute_immediately)
+static void cp_gogoprog(bool execute_immediately)
 {
     if (execute_immediately)
     {
@@ -265,7 +265,7 @@ static agc_status_t cp_gogoprog(bool execute_immediately)
         agc_phase_change_var(CP_GROUP4_JOB, &v); /* TEMPFLSH = V37QCAD */
     }
 
-    return (agc_exec_enema()); /* TC POSTJUMP CADR GOPROG2 */
+    agc_exec_enema(); /* TC POSTJUMP CADR GOPROG2 */
 }
 
 /**********************************************************************
@@ -312,7 +312,9 @@ static agc_status_t cp_pooh(void)
     agc_phase_idle_klean();           /* P00KLEAN (group 4)  */
     agc_erase_set_modreg(0);          /* GOMOD: CA MMNUMBER TS MODREG */
 
-    return (cp_gogoprog(false));
+    cp_gogoprog(false);
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -377,7 +379,7 @@ static agc_status_t cp_nouveau(void)
             agc_erase_set_modreg((agc_sp_t) mmnumber); /* STATQUO .. GOMOD */
         }
 
-        st = cp_gogoprog(!statquo); /* else REV37 / P00FIZZ: V37XEQ */
+        cp_gogoprog(!statquo); /* else REV37 / P00FIZZ: V37XEQ */
     }
 
     return (st);

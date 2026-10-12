@@ -513,7 +513,8 @@ agc_status_t agc_task_rolldap(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (NOQRSM)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK (NOQRSM); AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 agc_status_t agc_task_roll_jets_off(void)
 {

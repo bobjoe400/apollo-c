@@ -339,9 +339,10 @@ void agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb, uint1
  *   x         agc_dp_t        I    argument, 0 < x < 1, scale 2^0
  *   neg_log   agc_dp_t *      O    -ln(x)/32, 2^5
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log)
 {

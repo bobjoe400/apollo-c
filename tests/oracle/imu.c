@@ -253,7 +253,7 @@ static void pipa(const char *t)
     agc_dp_t              g[3]; /* gyro angles, rev 2^0 */
 
     agc_state_init(AGC_VEHICLE_CSM);
-    (void) agc_exec_init();
+    agc_exec_init();
     (void) agc_waitlist_init();
 
     for (int k = 0; k < 3; k++)

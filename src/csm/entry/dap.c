@@ -1094,9 +1094,9 @@ static void dap_phase_plane(agc_sp_t lcx_in, agc_sp_t mvt2, agc_entry_roll_cmd_t
  *   out       agc_entry_roll_cmd_t *  O    TON1 TOFF TON2 (cs) and the jet
  *                                          indices
  *
- * RETURNS: agc_status_t -- always AGC_STATUS_OK (no failure case)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, agc_entry_roll_cmd_t *out)
+void agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, agc_entry_roll_cmd_t *out)
 {
     agc_sp_t vdt = 0; /* drift velocity, B0 */
 
@@ -1107,8 +1107,6 @@ agc_status_t agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, 
     out->jndx1       = 1;
     out->in_deadzone = false;
     dap_phase_plane(lcx_360, mvt_180, out, &vdt);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

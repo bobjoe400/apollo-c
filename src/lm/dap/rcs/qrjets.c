@@ -131,15 +131,13 @@ bool lm_dap_selctsub(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t lm_dap_closeout(void)
+void lm_dap_closeout(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->dapzrupt = LM_NEGMAX;
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -187,9 +185,9 @@ agc_status_t lm_dap_xtrans(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t sc = lm_dap_closeout(); /* CLOSEOUT status */
+    lm_dap_closeout();
 
-    return ((st != AGC_STATUS_OK) ? st : sc); /* first failure wins */
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -473,9 +471,9 @@ static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
         return (AGC_STATUS_OK);
     }
 
-    d->e    = (axis == 0) ? d->uerror : d->verror; /* U or V attitude error */
-    d->edot = (axis == 0) ? d->omegau : d->omegav; /* U or V rate */
-    agc_status_t st;                               /* status of this axis' body */
+    d->e            = (axis == 0) ? d->uerror : d->verror; /* U or V attitude error */
+    d->edot         = (axis == 0) ? d->omegau : d->omegav; /* U or V rate */
+    agc_status_t st = AGC_STATUS_OK;                       /* status of this axis' body */
 
     if (!agc_flag_test(AGC_FLAG_CSMDKFLG))
     {
@@ -489,8 +487,9 @@ static agc_status_t body_tjlaw(lm_dap_t *d, int axis, bool *end)
         }
 
         agc_inhint();
-        st         = lm_dap_spsrcs();
+        lm_dap_spsrcs();
         agc_relint();
+
         d->numbert = 4; /* 2 jets U,V     */
     }
 
@@ -623,5 +622,7 @@ agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
         }
     }
 
-    return (lm_dap_closeout());
+    lm_dap_closeout();
+
+    return (AGC_STATUS_OK);
 }

@@ -386,7 +386,7 @@ void     agc_erase_set_tland(agc_dp_t v);
  * Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074)
  * map onto agc_flagword_*; other addresses use a raw image (no map to the
  * typed erasables yet; fixed memory holds no rope).                        */
-agc_status_t agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word);
+void         agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word);
 agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word);
 
 /* ---- restart-table delay times (src/core/restart_delays.c) ---------------

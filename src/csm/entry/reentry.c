@@ -513,12 +513,7 @@ agc_status_t entry_initial_target(agc_interp_t *ip, agc_entry_state_t *es)
     agc_status_t            st;                   /* status */
 
     agc_sv_get(AGC_SV_THIS, &sv);
-    st = agc_navaux_get_padload(&pad);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_navaux_get_padload(&pad);
 
     agc_flag_clear(AGC_FLAG_ERADFLAG);                                   /* use pad radius        */
     agc_flag_clear(AGC_FLAG_LUNAFLAG);                                   /* earth lat-long        */

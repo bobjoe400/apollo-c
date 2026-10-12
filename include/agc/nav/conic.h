@@ -98,7 +98,7 @@ agc_status_t agc_conic_kepler(agc_interp_t *ip, const agc_kepler_in_t *in, agc_k
 
 /* KEPPREP: first guess XKEPNEW (2^17 / 2^16) from in->rrect, vrect, tau,
  * tc and xprev (= XKEP). in->xkepnew is ignored.                          */
-agc_status_t agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in, agc_dp_t *xkepnew);
+void agc_conic_kepprep(agc_interp_t *ip, const agc_kepler_in_t *in, agc_dp_t *xkepnew);
 
 /* ---- LAMBERT, pp. 1266-1268 ------------------------------------------ */
 typedef struct agc_lambert_in
@@ -223,7 +223,7 @@ typedef struct agc_apsides_out
     agc_vec_t un;      /* UN, 2^1                                      */
 } agc_apsides_out_t;
 
-agc_status_t agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_apsides_out_t *out);
+void agc_conic_apsides(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_apsides_out_t *out);
 
 /* PARAM (also called directly by P37). Leaves OVFIND set in *ip if COGA
  * overflowed (the caller's BOV), exactly as the AGC does.                 */
@@ -240,7 +240,7 @@ typedef struct agc_conic_param_out
     agc_vec_t un;      /* UN, 2^1                                      */
 } agc_conic_param_out_t;
 
-agc_status_t agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_conic_param_out_t *out);
+void agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_conic_param_out_t *out);
 
 /* Body from RTX1 (the integrator's X1): -2 earth, -10 moon.             */
 agc_conic_body_t agc_conic_body_of_x1(int x1);

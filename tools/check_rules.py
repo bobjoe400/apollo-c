@@ -5,7 +5,11 @@ Usage: python3 -I tools/check_rules.py <dir>...
 Checks: rule 1 (goto/setjmp/longjmp, direct recursion), rule 3 (heap),
 rule 4 (function length <= 60 code lines), rule 5 (assertion density),
 rule 8 (preprocessor: token pasting, variadic macros, #if count),
-rule 9 (function pointers, double dereference).
+rule 9 (function pointers, double dereference), rule 7 (a (void)-cast
+status; a failed assertion that returns silently or a sentinel; a
+positive assertion -- `if (AGC_ASSERT(c)) {...}`, `x && AGC_ASSERT(c)`,
+`AGC_ASSERT(c) ? a : b` -- whose false branch skips work without
+producing a status).
 Exit status 1 if any hard violation is found. Density is reported as a
 warning per file (rule 5 is an average, not a per-function rule).
 """
@@ -23,6 +27,54 @@ HARD = []
 WARN = []
 TOTAL_FUNCS = 0
 TOTAL_ASSERTS = 0
+
+
+def positive_assert(s):
+    """An AGC_ASSERT used as a plain truth value (not `!AGC_ASSERT`) in an
+    if/while condition or a ?: test: its false branch is the failure."""
+    for m in re.finditer(r'\bAGC_ASSERT\(', s):
+        if not re.search(r'!\s*\(*\s*$', s[:m.start()]):
+            return True
+    return False
+
+
+def skip_without_status(lines, k, s):
+    """What the false branch of a positive assertion does when it produces
+    no status, or None when it returns, raises an alarm or sets a status.
+    `k` is the 0-based index of the line holding the assertion."""
+    if re.search(r'\bAGC_ASSERT\(.*\)\s*\?', s) and not re.match(r'^(\}\s*)?(else\s+)?(if|while)\s*\(', s):
+        return 'yields a substitute value from ?:'
+    if not re.match(r'^(\}\s*)?(else\s+)?(if|while)\s*\(', s):
+        return None
+    if re.match(r'^(\}\s*)?while\b', s):
+        return 'ends the loop early'
+    # find the end of the guarded statement (a block or one statement)
+    d, j, opened = 0, k, False
+    while j < len(lines) and j < k + 400:
+        t = lines[j].split('/*')[0]
+        d += t.count('{') - t.count('}')
+        opened = opened or '{' in t
+        if (opened and d <= 0) or (not opened and j > k and t.strip().endswith(';')):
+            break
+        j += 1
+    j += 1
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    if j >= len(lines) or not lines[j].strip().startswith('else'):
+        return 'skips the guarded statement'
+    blk, d, opened = [], 0, False
+    while j < len(lines) and len(blk) < 400:
+        t = lines[j].split('/*')[0]
+        blk.append(t)
+        d += t.count('{') - t.count('}')
+        opened = opened or '{' in t
+        if (opened and d <= 0) or (not opened and t.strip().endswith(';')):
+            break
+        j += 1
+    text = ' '.join(blk)
+    if re.search(r'\breturn\b|AGC_STATUS_[A-Z]|agc_(alarm|bailout|poodoo|curtains|prioalarm|exec_varalarm)\(', text):
+        return None
+    return 'takes an else branch that produces no status'
 
 
 def check_file(path):
@@ -99,6 +151,10 @@ def check_file(path):
                         HARD.append(f'{path}:{i}: rule 7: silent failure: void {in_func}() returns on a failed assertion; delete a guaranteed guard or return agc_status_t')
                     else:
                         HARD.append(f'{path}:{i}: rule 7: sentinel failure: {in_func}() returns {rm.group(1) or "a value"} on a failed assertion; delete a guaranteed guard or return agc_status_t with an out-parameter')
+            if not s.startswith(('/*', '*', '//')) and positive_assert(s):
+                why = skip_without_status(lines, i - 1, s)
+                if why:
+                    HARD.append(f'{path}:{i}: rule 7: silent skip: {in_func}() {why} when an assertion fails; delete a guaranteed guard or return agc_status_t and handle it')
             am = re.search(r'AGC_ASSERT\((.*)\)\s*\)?\s*$', s)
             if am and s.startswith('if (!AGC_ASSERT'):
                 cond = re.sub(r'\s+', '', am.group(1))

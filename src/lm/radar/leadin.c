@@ -54,8 +54,7 @@
 #include "agc/imu/imu.h"
 #include "radar.h"
 
-#define LEADIN_PRIO25   ((agc_prio_t) 025) /* DORSAMP job priority */
-#define LEADIN_RSTACK_N 4                  /* RSTACK: B(8), four DP readings          */
+#define LEADIN_PRIO25 ((agc_prio_t) 025) /* DORSAMP job priority */
 
 /**********************************************************************
  * RADSAMP (p.490): recall in RSAMPDT - 1 cs, start DORSAMP, and for
@@ -65,9 +64,10 @@
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_radsamp(void)
 {
@@ -120,9 +120,13 @@ static agc_status_t leadin_varadar(agc_sp_t dex)
     switch (dex)
     {
         case 0:
-            return (agc_radar_rrrange());
+            agc_radar_rrrange();
+
+            return (AGC_STATUS_OK);
         case 1:
-            return (agc_radar_rrrdot());
+            agc_radar_rrrdot();
+
+            return (AGC_STATUS_OK);
         case 2:
             agc_radar_lr_velocity_beam(2, 1);
 
@@ -182,16 +186,18 @@ agc_status_t agc_job_radar_sample(void)
  * DORSAMP after RADSTALL / DORSAMP2: a bad reading advances RFAILCNT but
  * is accepted; RSTACK is not updated in R77; RTSTLOC cycles through the
  * DP slots up to RTSTMAX ("continuous sampling and 2N tries - gone").
+ * RTSTLOC is in RSTACK by construction: R04 sets it to 0 whenever it sets
+ * RTSTMAX (2 RR, 6 LR), and only this routine advances it, by 2 and back
+ * to 0 at RTSTMAX, so RTSTLOC / 2 is 0 .. 3.
  * AGC: DORSAMP (RADAR_LEADIN_ROUTINES.agc p.490)
  *
  * FUNCTION NAME: agc_job_radar_sample_done
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always; an RTSTLOC
- *          outside RSTACK skips the store)
+ * RETURNS: none (ENDOFJOB)
  **********************************************************************/
-agc_status_t agc_job_radar_sample_done(void)
+void agc_job_radar_sample_done(void)
 {
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) != AGC_IMU_STALL_GOOD)
     {
@@ -201,13 +207,11 @@ agc_status_t agc_job_radar_sample_done(void)
     agc_inhint();
     agc_sp_t loc = agc_erase_rtstloc(); /* RTSTLOC offset (unscaled) */
 
-    if (!agc_flag_test(AGC_FLAG_RADAR_ALARMS_SUPPRESSED) && AGC_ASSERT(loc >= 0 && loc / 2 < LEADIN_RSTACK_N))
+    if (!agc_flag_test(AGC_FLAG_RADAR_ALARMS_SUPPRESSED))
     {
         agc_erase_set_rstack(loc / 2, agc_radar_samplsum());
     }
 
     agc_erase_set_rtstloc((loc == agc_erase_rtstmax()) ? 0 : (agc_sp_t) (loc + 2)); /* wrap to 0 */
-    agc_relint();
-
-    return (AGC_STATUS_OK); /* ENDOFJOB */
+    agc_relint();                                                                   /* ENDOFJOB */
 }

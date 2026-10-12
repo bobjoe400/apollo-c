@@ -95,9 +95,9 @@
  *   tar  agc_vec_t[2]    O    PD06 (target 1), PD12 (target 2),
  *                             half-unit
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
+static void target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
 {
     const prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
@@ -116,8 +116,6 @@ static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
                               agc_dp_neg(c_az),
                               s_az);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -128,9 +126,9 @@ static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
  * ARGUMENTS:
  *   run  agc_sp_t  I  RUN: 0 target 1, 2 target 2
  *
- * RETURNS: agc_status_t of the DSPTEM1 stores
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t optdata_load(agc_sp_t run)
+static void optdata_load(agc_sp_t run)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
@@ -141,8 +139,6 @@ static agc_status_t optdata_load(agc_sp_t run)
     {
         agc_dsky_set_dsptem(i, w[i]); /* DSPTEM1 +i */
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -168,12 +164,7 @@ agc_status_t agc_job_optical_verification(agc_job_ctx_t *ctx)
     }
 
     agc_interp_init(&ip);
-    st = prelaunch_nbpospl(); /* SETNBPOS: TC NBPOSPL              */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    prelaunch_nbpospl();
 
     return (prelaunch_verify_start(ctx)); /* CHECKMM 03: SETNBPOS +1 */
 }
@@ -196,12 +187,7 @@ agc_status_t prelaunch_verify_start(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    st = optdata_load(0); /* OPTDATA: CAF BIT1, ZL, LXCH RUN          */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    optdata_load(0);
 
     return (agc_job_optical_verification_target_show(ctx));
 }
@@ -232,7 +218,8 @@ agc_status_t agc_job_optical_verification_target_show(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I  the P03 job
  *
- * RETURNS: agc_status_t of GOFLASH
+ * RETURNS: agc_status_t of GOFLASH; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_job_optical_verification_target_flash(agc_job_ctx_t *ctx)
 {
@@ -296,15 +283,10 @@ static agc_status_t targdrve(agc_sp_t starcode, agc_sp_t targ)
     agc_vec_t        tar[TARGETS];           /* PD06, PD12: B1 (half-unit)  */
     bool             cult = false;           /* CULTFLAG (not tested here)  */
 
-    ar->starcode          = starcode;                 /* TS STARCODE                 */
-    prelaunch_ram()->targ = targ;                     /* QXCH QPLAC, TS TARG1/2      */
+    ar->starcode          = starcode; /* TS STARCODE                 */
+    prelaunch_ram()->targ = targ;     /* QXCH QPLAC, TS TARG1/2      */
     agc_interp_init(&ip);
-    agc_status_t st       = target_vectors(&ip, tar); /* CALL TAR/EREF       */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    target_vectors(&ip, tar);
 
     ar->star = tar[(targ == 0) ? 0 : 1]; /* VLOAD* 6D,1; STCALL STAR    */
     agc_csm_sxtang(&ip, ar->star, &ar->xnb, &ar->sac, &ar->pac, &cult);
@@ -334,12 +316,7 @@ agc_status_t agc_job_optical_verification_target_loaded(agc_job_ctx_t *ctx)
 
     if (r->run == 0) /* CCS RUN: +0                                   */
     {
-        agc_status_t st = optdata_load(RUN_TARGET2); /* TCF OPTDATA +2 */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        optdata_load(RUN_TARGET2);
 
         return (agc_job_optical_verification_target_show(ctx));
     }
@@ -367,19 +344,14 @@ static agc_status_t target1_marked(void)
     agc_align_sxt_mark_t m;                    /* the mark (VAC +2 .. +6)     */
 
     agc_interp_init(&ip);
-    agc_status_t st = target_vectors(&ip, tar); /* CALL TAR/EREF       */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    target_vectors(&ip, tar);
 
     for (int i = 0; i < TARGETS; i++) /* VLOAD MXV, VSL1, STORE STARAD */
     {
         ar->starad[i] = agc_vec_shl(&ip, agc_mat_vec(&ip, &ar->xsm, tar[i]), 1);
     }
 
-    st = agc_sxtmark_mark(0, &m); /* LITTLSUB: LXC,1 MARKSTAT        */
+    agc_status_t st = agc_sxtmark_mark(0, &m); /* LITTLSUB: LXC,1 MARKSTAT        */
 
     if (st != AGC_STATUS_OK)
     {

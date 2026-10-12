@@ -223,7 +223,8 @@ static agc_status_t ll_ign_guidance(agc_job_ctx_t *ctx, agc_interp_t *ip)
  *   from_install  bool             I    resuming after INTSTALL was busy
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ *          failed (AGC_STATUS_BAD_ARG on a failed precondition);
+ *          AGC_STATUS_NO_CONVERGE when its step bound is exhausted
  **********************************************************************/
 static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
 {
@@ -353,15 +354,10 @@ agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state (OVFIND) */
 
     agc_interp_init(&ip);
-    agc_lm_ldg_t        *l      = agc_lm_ldg();                 /* landing erasables */
-    const agc_lm_pad_t  *p      = agc_lm_pad();                 /* pad loads */
-    agc_navaux_padload_t nav;                                   /* pad loads of the auxiliary nav lane */
-    agc_status_t         st_pad = agc_navaux_get_padload(&nav); /* step status */
-
-    if (st_pad != AGC_STATUS_OK)
-    {
-        return (st_pad);
-    }
+    agc_lm_ldg_t        *l = agc_lm_ldg(); /* landing erasables */
+    const agc_lm_pad_t  *p = agc_lm_pad(); /* pad loads */
+    agc_navaux_padload_t nav;              /* pad loads of the auxiliary nav lane */
+    agc_navaux_get_padload(&nav);
 
     agc_vec_t    r  = agc_vec_zero();                                                     /* landing site in SM, 2^24 m */
     agc_status_t st = agc_planet_rp_to_r(&ip, &nav, true, agc_erase_rls(), p->tland, &r); /* step status */
@@ -542,12 +538,7 @@ agc_status_t agc_lm_job_braking_phase_antenna_check(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx)
 {
-    agc_status_t st = agc_lm_setpos1(); /* step status */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_lm_setpos1();
 
     return (agc_lm_burnbaby(ctx));
 }
@@ -720,7 +711,9 @@ agc_status_t agc_lm_redesig(agc_interp_t *ip)
 
     if (!agc_flag_test(AGC_FLAG_REDFLAG) || l->tredes == 0)
     {
-        return (agc_lm_rgvgcalc(ip)); /* skip redesignation logic  */
+        agc_lm_rgvgcalc(ip);
+
+        return (AGC_STATUS_OK); /* skip redesignation logic  */
     }
 
     agc_inhint();
@@ -759,7 +752,9 @@ agc_status_t agc_lm_redesig(agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_lm_rgvgcalc(ip));
+    agc_lm_rgvgcalc(ip);
+
+    return (AGC_STATUS_OK);
 } /* agc_lm_redesig */
 
 /* ======================================================================
@@ -1232,13 +1227,8 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
     agc_flag_clear(AGC_FLAG_LETABORT);
     agc_flag_set(AGC_FLAG_APSFLAG);
     agc_flag_set(AGC_FLAG_LUNAFLAG);
-    agc_navaux_padload_t nav;                                   /* pad loads of the auxiliary nav lane */
-    agc_status_t         st_pad = agc_navaux_get_padload(&nav); /* step status */
-
-    if (st_pad != AGC_STATUS_OK)
-    {
-        return (st_pad);
-    }
+    agc_navaux_padload_t nav; /* pad loads of the auxiliary nav lane */
+    agc_navaux_get_padload(&nav);
 
     agc_vec_t         rn  = agc_erase_rn();      /* RN at PIPTIME (ALPHAV), 2^29 m */
     agc_dp_t          t   = agc_erase_piptime(); /* PIPTIME, cs 2^28 */
@@ -1249,7 +1239,7 @@ static agc_status_t ll_landjunk(agc_interp_t *ip)
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_navaux_set_latlong(&ll); /* N43 data     */
+        agc_navaux_set_latlong(&ll); /* N43 data     */
     }
 
     /* LAT-LONG has no failure exit in the AGC; it falls straight into

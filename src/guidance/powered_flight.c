@@ -566,9 +566,9 @@ void agc_guid_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_ve
  *   dthetasm  agc_vec_t              I    SM attitude increments, rev 2^0
  *   dcdu      agc_vec_t *            O    CDU increments, rev 2^0
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu)
+void agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu)
 {
     const agc_dp_t sy = t->sincdu[AGC_TRIG_Y]; /* sin IGA / 2, scale 2^1 */
     const agc_dp_t cy = t->coscdu[AGC_TRIG_Y]; /* cos IGA / 2, scale 2^1 */
@@ -591,8 +591,6 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec
     agc_tp_t z = agc_tp_add(ip, agc_dp_mul_tp(dthetasm.c[2], cy), agc_tp_from_dp(pd0)); /* DCDU(Z) / 2, rev 2^1 (TP) */
 
     dcdu->c[2] = agc_tp_to_dp(agc_tp_shift(ip, z, 1)); /* STORE DCDU +4  */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

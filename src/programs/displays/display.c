@@ -272,15 +272,9 @@ agc_status_t rz_ttogo_display(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_re
 
         if (agc_flag_test(AGC_FLAG_REFSMFLG) && rz_active_vehicle_program())
         {
-            agc_mat_t    refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
-            agc_status_t st;                              /* GET+MGA */
+            agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
 
-            st = agc_rendz_get_mga(ip, rz->delvsin, &refsmmat, &rz->plus_mga);
-
-            if (st != AGC_STATUS_OK)
-            {
-                return (st);
-            }
+            agc_rendz_get_mga(ip, rz->delvsin, &refsmmat, &rz->plus_mga); /* GET+MGA */
         }
     }
 
@@ -419,14 +413,9 @@ agc_status_t rz_disdvlvc(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t
         return (AGC_STATUS_BAD_ARG);
     }
 
-    rz->delvlvc     = dv;                                      /* STORE      */
-    agc_mat_t    m;                                            /* matrix rows, unit 2^1 */
-    agc_status_t st = agc_rendz_csi_cdh_lv_matrix(ip, rz, &m); /* S32/33.X */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    rz->delvlvc = dv; /* STORE      */
+    agc_mat_t m;      /* matrix rows, unit 2^1 */
+    agc_rendz_csi_cdh_lv_matrix(ip, rz, &m);
 
     rz->delvlvc = agc_vec_shl(ip, agc_mat_vec(ip, &m, rz->delvlvc), 1);
 

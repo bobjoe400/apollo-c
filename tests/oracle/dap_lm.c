@@ -218,9 +218,9 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 static void fresh(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
-    (void) agc_exec_init();
+    agc_exec_init();
     (void) agc_waitlist_init();
-    (void) agc_guid_init(AGC_VEHICLE_LM);
+    agc_guid_init(AGC_VEHICLE_LM);
     (void) agc_lm_dap_fresh_start();
 
     /* The AGC runs start from zeroed erasable: drop the fresh-start pad
@@ -471,7 +471,7 @@ static void kalman(const char *t, const char *gp, long int tol)
     }
 
     agc_flagword_set(DAPBOOLS_WORD, oracle_in_raw(t, "DAPBOOLS", 0));
-    (void) lm_dap_rateloop();
+    lm_dap_rateloop();
     (void) lm_dap_backp();
     (void) lm_dap_offset_est();
     oracle_require_ok(t, "PRETIMCK");
@@ -591,7 +591,7 @@ static void gts(const char *t)
     d->krdap  = (agc_sp_t) oracle_in(t, "KQ", 2);
     d->qerror = (agc_sp_t) oracle_in(t, "DXERROR", 2);
     d->rerror = (agc_sp_t) oracle_in(t, "DXERROR", 4);
-    (void) lm_dap_gts();
+    lm_dap_gts();
     oracle_require_ok(t, "CLOSEOUT");
     gts_outputs(t, d);
     cmp_sp(t, "COTROLER", d->cotroler, "COTROLER", 0);
@@ -621,7 +621,7 @@ static void timegmbl(const char *t)
     gts_inputs(t, d);
     d->qgimtimr = (agc_sp_t) oracle_in(t, "QGIMTIMR", 0);
     d->rgimtimr = (agc_sp_t) oracle_in(t, "QGIMTIMR", 2);
-    (void) agc_lm_dap_timegmbl();
+    agc_lm_dap_timegmbl();
     oracle_require_ok(t, "ENDOFJOB");
     gts_outputs(t, d);
 }

@@ -406,8 +406,9 @@ void imu_modeexit(void)
  * If the IMU is being caged, IMUCADR = -0 (complete but failed) and
  * MODEEXIT.
  *
- * RETURNS: agc_status_t -- OK to go on, BUSY when the caller must
- *          return at once (MODEEXIT done)
+ * RETURNS: agc_status_t -- OK to go on, BUSY when the caller must return
+ *          at once (MODEEXIT done); AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t imu_cagetstj(void)
 {
@@ -452,9 +453,9 @@ static agc_status_t cagetest(bool *caged)
 /**********************************************************************
  * AGC: none (fresh start) -- MODECADR words +0, no pulses outstanding
  *
- * RETURNS: agc_status_t -- OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_imu_mode_init(void)
+void agc_imu_mode_init(void)
 {
     for (int d = 0; d < AGC_IMU_DEV_COUNT; d++)
     {
@@ -467,8 +468,6 @@ agc_status_t agc_imu_mode_init(void)
         command[i] = 0;
         cducmd[i]  = 0;
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -558,8 +557,9 @@ agc_status_t agc_imu_hw_set_cducmd(int axis, agc_sp_t pulses)
  * off, IMU and ICDU fail inhibited, ZERO ICDU on, IMUZERO2 in 320 ms;
  * ALARM 00210 if the IMU is not operating.
  *
- * RETURNS: agc_status_t -- OK (the outcome is reported through
- *          IMUCADR), or the waitlist status
+ * RETURNS: agc_status_t -- OK (the outcome is reported through IMUCADR),
+ *          or the waitlist status; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_imu_zero(void)
 {
@@ -627,7 +627,8 @@ agc_status_t agc_imu_zero(void)
  * Zero CDUX..Z again, drop channel 12 bit 5, VARDELAY 10.24 s for the
  * counters to find the gimbals.
  *
- * RETURNS: agc_status_t -- VARDELAY status
+ * RETURNS: agc_status_t -- VARDELAY status; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_task_imu_zero_release(void)
 {
@@ -656,7 +657,8 @@ agc_status_t agc_task_imu_zero_release(void)
  * IMUZERO3 (IMU_MODE_SWITCHING_ROUTINES.agc p.1422) -- task: remove the
  * fail inhibits, DAP on, ENDIMU
  *
- * RETURNS: agc_status_t -- ENDIMU status
+ * RETURNS: agc_status_t -- ENDIMU status; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_imu_zero_done(void)
 {
@@ -701,8 +703,8 @@ agc_status_t agc_task_imu_zero_done(void)
  * ARGUMENTS:
  *   thetad  const uint16_t [3]  I    THETAD X, Y, Z, CDU patterns
  *
- * RETURNS: agc_status_t -- OK (outcome through IMUCADR), or the
- *          waitlist status
+ * RETURNS: agc_status_t -- OK (outcome through IMUCADR), or the waitlist
+ *          status; AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_imu_coarse(const uint16_t thetad[3])
 {
@@ -740,7 +742,8 @@ agc_status_t agc_imu_coarse(const uint16_t thetad[3])
  * COARS (IMU_MODE_SWITCHING_ROUTINES.agc p.1423) -- task: enable the
  * CDU error counters, COMMAND
  *
- * RETURNS: agc_status_t -- VARDELAY status
+ * RETURNS: agc_status_t -- VARDELAY status; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_task_coarse_align_commands(void)
 {
@@ -813,7 +816,8 @@ static agc_sp_t coarse_slice(int axis)
  * Every 600 ms until the commands are used up, then FIXDELAY 1.5 s for
  * the gimbals to settle and CHKCORS.
  *
- * RETURNS: agc_status_t -- VARDELAY / FIXDELAY status
+ * RETURNS: agc_status_t -- VARDELAY / FIXDELAY status; AGC_STATUS_BAD_ARG
+ *          on a failed precondition
  **********************************************************************/
 agc_status_t agc_task_coarse_align_pulses(void)
 {
@@ -862,7 +866,8 @@ agc_status_t agc_task_coarse_align_pulses(void)
  * ALARM 00211 and IMUBAD when a gimbal is more than COARSTOL from
  * THETAD, else ENDIMU.
  *
- * RETURNS: agc_status_t -- IMUBAD or ENDIMU status
+ * RETURNS: agc_status_t -- IMUBAD or ENDIMU status; AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 agc_status_t agc_task_coarse_align_check(void)
 {
@@ -896,7 +901,8 @@ agc_status_t agc_task_coarse_align_check(void)
  * CA+ECE (IMU_MODE_SWITCHING_ROUTINES.agc p.1425) -- task: enable the
  * three ISS CDU error counters
  *
- * RETURNS: agc_status_t -- OK (TASKOVER)
+ * RETURNS: agc_status_t -- OK (TASKOVER); AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_ca_ece(void)
 {
@@ -955,8 +961,8 @@ void agc_imu_rndrefdr(void)
  * Zero and coarse off, DAP auto/hold on, NO ATT off; IFAILOK in 5.12 s
  * (IMU fail stays inhibited), IMUFINED (ENDIMU) in 2 s.
  *
- * RETURNS: agc_status_t -- OK (outcome through IMUCADR), or the
- *          waitlist status
+ * RETURNS: agc_status_t -- OK (outcome through IMUCADR), or the waitlist
+ *          status; AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_imu_fine(void)
 {
@@ -1012,7 +1018,8 @@ agc_status_t agc_imu_fine(void)
  * IMUFINED (IMU_MODE_SWITCHING_ROUTINES.agc p.1427) -- task: not caged,
  * then ENDIMU
  *
- * RETURNS: agc_status_t -- ENDIMU status
+ * RETURNS: agc_status_t -- ENDIMU status; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_imufined(void)
 {
@@ -1039,7 +1046,8 @@ agc_status_t agc_task_imufined(void)
  * ARGUMENTS:
  *   clear_bits  uint16_t  I    IMODES30 bit 4 (IMU) or bit 5 (PIPA)
  *
- * RETURNS: agc_status_t -- OK (TASKOVER)
+ * RETURNS: agc_status_t -- OK (TASKOVER); AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 static agc_status_t fail_inhibit_remove(uint16_t clear_bits)
 {
@@ -1061,7 +1069,8 @@ static agc_status_t fail_inhibit_remove(uint16_t clear_bits)
  *
  * Not when caged or when someone has gone into coarse align again.
  *
- * RETURNS: agc_status_t -- OK (TASKOVER)
+ * RETURNS: agc_status_t -- OK (TASKOVER); AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_ifailok(void)
 {
@@ -1094,7 +1103,8 @@ agc_status_t agc_task_ifailok(void)
  * PFAILOK (IMU_MODE_SWITCHING_ROUTINES.agc p.1428) -- task: enable the
  * PIPA fail program alarm
  *
- * RETURNS: agc_status_t -- OK (TASKOVER)
+ * RETURNS: agc_status_t -- OK (TASKOVER); AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_pfailok(void)
 {
@@ -1127,7 +1137,8 @@ agc_status_t agc_task_pfailok(void)
  * PIPUSE (IMU_MODE_SWITCHING_ROUTINES.agc p.1429) -- PIPAX..Z = -0,
  * then PIPUSE1
  *
- * RETURNS: agc_status_t -- OK
+ * RETURNS: agc_status_t -- OK; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_imu_pipuse(void)
 {
@@ -1207,7 +1218,8 @@ void agc_imu_pipfree(void)
  *   good  bool              I    true at GOODEND (RUPTREG3 = -1), false
  *                                at BADEND (-0)
  *
- * RETURNS: agc_status_t -- OK, or the JOBWAKE status
+ * RETURNS: agc_status_t -- OK, or the JOBWAKE status; AGC_STATUS_BAD_ARG
+ *          on a failed precondition
  **********************************************************************/
 static agc_status_t goodend_common(agc_imu_device_t dev, bool good)
 {
@@ -1262,7 +1274,8 @@ agc_status_t agc_imu_goodend(agc_imu_device_t dev)
  * ARGUMENTS:
  *   dev  agc_imu_device_t  I    device index
  *
- * RETURNS: agc_status_t -- OK or NOT_FOUND (no such job to wake)
+ * RETURNS: agc_status_t -- OK or NOT_FOUND (no such job to wake);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_imu_badend(agc_imu_device_t dev)
 {
@@ -1323,7 +1336,8 @@ agc_status_t agc_imu_endimu(void)
  * ARGUMENTS:
  *   dev  agc_imu_device_t  I    device whose MODECADR holds a stalled job
  *
- * RETURNS: agc_status_t -- POODOO or BAILOUT status
+ * RETURNS: agc_status_t -- POODOO or BAILOUT status; AGC_STATUS_BAD_ARG
+ *          on a failed precondition
  **********************************************************************/
 static agc_status_t modabort(agc_imu_device_t dev)
 {
@@ -1399,7 +1413,8 @@ agc_status_t agc_imu_stall_dev(agc_imu_device_t dev, agc_job_id_t wake_as, agc_i
  *                                           operation ends
  *   result   agc_imu_stall_result_t *  O    SLEEPING, GOOD or BAD
  *
- * RETURNS: agc_status_t -- OK, or MODABORT status
+ * RETURNS: agc_status_t -- OK, or MODABORT status; AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 agc_status_t agc_imu_stall(agc_job_id_t wake_as, agc_imu_stall_result_t *result)
 {
@@ -1437,7 +1452,8 @@ agc_imu_stall_result_t agc_imu_stall_outcome(agc_imu_device_t dev)
  * REFSMMAT known: R02ZERO.  Otherwise ALARM 00220 (REFSMMAT unknown) or
  * 00210 (IMU not operating) by VARALARM, then GOTOPOOH.
  *
- * RETURNS: agc_status_t -- R02ZERO status, or POODOO after GOTOPOOH
+ * RETURNS: agc_status_t -- R02ZERO status, or POODOO after GOTOPOOH;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_imu_status_check(void)
 {
@@ -1467,7 +1483,8 @@ agc_status_t agc_imu_status_check(void)
 /**********************************************************************
  * R02ZERO (IMU_MODE_SWITCHING_ROUTINES.agc p.1444) -- UPFLAG IMUSE
  *
- * RETURNS: agc_status_t -- OK
+ * RETURNS: agc_status_t -- OK; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_imu_set_in_use(void)
 {
@@ -1514,7 +1531,8 @@ static uint32_t scalsave; /* SCALSAVE: scaler at PRESTAND, 1/3200 s B28    */
  *                          1/3200 s, modulo 2^28 (MPAC,MPAC+1)
  *
  * RETURNS: AGC_STATUS_OK when the reading agrees with TIME1 (L+2),
- *          AGC_STATUS_BUSY when it must be read again (L+1)
+ *          AGC_STATUS_BUSY when it must be read again (L+1);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t scalprep(uint32_t *scaler)
 {
@@ -1564,7 +1582,9 @@ static agc_status_t scalprep(uint32_t *scaler)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I  the P06 job (AGC_JOB_STANDBY)
  *
- * RETURNS: agc_status_t from the GOPERF1 request, or the yield status
+ * RETURNS: agc_status_t from the GOPERF1 request, or the yield status;
+ *          AGC_STATUS_BAD_ARG on a failed precondition; a BUSY from
+ *          SCALPREP becomes a yield, never the result
  **********************************************************************/
 agc_status_t agc_job_standby(agc_job_ctx_t *ctx)
 {
@@ -1616,7 +1636,8 @@ agc_status_t agc_job_standby(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I  the P06 job
  *
- * RETURNS: agc_status_t from agc_dsky_display
+ * RETURNS: agc_status_t from agc_dsky_display; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_job_standby_request(agc_job_ctx_t *ctx)
 {
@@ -1649,7 +1670,9 @@ agc_status_t agc_job_standby_request(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I  the restart job (group 4, PRIO20)
  *
- * RETURNS: agc_status_t from GOTOPOOH, or the yield status
+ * RETURNS: agc_status_t from GOTOPOOH, or the yield status;
+ *          AGC_STATUS_BAD_ARG on a failed precondition; a BUSY from
+ *          SCALPREP becomes a yield, never the result
  **********************************************************************/
 agc_status_t agc_job_standby_recovery(agc_job_ctx_t *ctx)
 {

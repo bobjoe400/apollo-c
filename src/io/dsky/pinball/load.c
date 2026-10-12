@@ -364,24 +364,19 @@ static agc_status_t pin_putn(int first, int ncomp)
         }
 
         agc_inhint();
-        agc_status_t st_bits = agc_erase_read_ecadr(ecadr, &word); /* status */
+        agc_erase_read_ecadr(ecadr, &word);
 
-        if (st_bits == AGC_STATUS_OK)
+        if (s->xyz_oct[2] != 0u && s->xyz_oct[2] != PIN_NEGZERO)
         {
-            if (s->xyz_oct[2] != 0u && s->xyz_oct[2] != PIN_NEGZERO)
-            {
-                word = (uint16_t) (word | bits); /* set bits */
-            }
-            else
-            {
-                word = (uint16_t) (word & ~bits & PIN_WORD); /* BITSOFF */
-            }
-
-            st_bits = agc_erase_write_ecadr(ecadr, word);
+            word = (uint16_t) (word | bits); /* set bits */
+        }
+        else
+        {
+            word = (uint16_t) (word & ~bits & PIN_WORD); /* BITSOFF */
         }
 
+        st = agc_erase_write_ecadr(ecadr, word);
         agc_relint();
-        st = st_bits;
     }
 
     return ((st == AGC_STATUS_OK) ? agc_dsky_loadlv() : st); /* if OK */

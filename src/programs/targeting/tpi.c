@@ -381,7 +381,9 @@ static agc_status_t tpi_goint(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t re
  *   resume       agc_job_id_t    I    job that continues the caller
  *
  * RETURNS: agc_status_t -- the status of the exiting pass (OK or
- *          AGC_STATUS_ALARM), else the integration status (INTSTALL sleep)
+ *          AGC_STATUS_ALARM), else the integration status (INTSTALL
+ *          sleep); AGC_STATUS_NO_CONVERGE if the TITER bound were passed
+ *          (not reached)
  **********************************************************************/
 static agc_status_t tpi_search_loop(agc_interp_t *ip, agc_rendz_t *rz, bool goint_first, agc_job_id_t resume)
 {
@@ -470,7 +472,8 @@ agc_status_t agc_rendz_tpi_time_search(agc_interp_t *ip, agc_rendz_t *rz, agc_jo
  *   rz        agc_rendz_t *   I/O  rendezvous erasables
  *   resume    agc_job_id_t    I    job that continues the caller
  *
- * RETURNS: agc_status_t -- as agc_rendz_tpi_time_search
+ * RETURNS: agc_status_t -- as agc_rendz_tpi_time_search;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
@@ -599,7 +602,7 @@ agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz, agc
     {
         agc_mat_t m; /* LOMAT / LOS rows, 2^1 */
 
-        st          = agc_rendz_lomat(ip, rz, &m);
+        agc_rendz_lomat(ip, rz, &m);
         rz->delvlvc = agc_vec_shl(ip, agc_mat_vec(ip, &m, rz->delveet3), 1);
     }
 
@@ -646,18 +649,14 @@ agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz, agc
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_mat_t    m;                                /* LOMAT / LOS rows, 2^1 */
-    agc_status_t st = agc_rendz_lomat(ip, rz, &m); /* LOMAT status */
+    agc_mat_t m; /* LOMAT / LOS rows, 2^1 */
 
-    rz->delveet3   = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
-    agc_vec_t vnew = agc_vec_add(ip, rz->delveet3, rz->vact3); /* m/cs 2^7 */
-    agc_vec_t r;                                               /* position, m 2^29 */
-    agc_vec_t v;                                               /* velocity, m/cs 2^7 */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = rz_intint(ip, rz, rz->ract3, vnew, agc_erase_tig(), rz->tpass4, true, resume, &r, &v);
-    }
+    agc_rendz_lomat(ip, rz, &m);
+    rz->delveet3      = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
+    agc_vec_t    vnew = agc_vec_add(ip, rz->delveet3, rz->vact3);                                              /* m/cs 2^7 */
+    agc_vec_t    r;                                                                                            /* position, m 2^29 */
+    agc_vec_t    v;                                                                                            /* velocity, m/cs 2^7 */
+    agc_status_t st   = rz_intint(ip, rz, rz->ract3, vnew, agc_erase_tig(), rz->tpass4, true, resume, &r, &v); /* INTINT status */
 
     if (st != AGC_STATUS_OK)
     {
@@ -758,7 +757,7 @@ agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id
             rz->delvtpf = rz_abval(ip, agc_vec_sub(ip, rz->vpass4, rz->vtprime));
             agc_rendz_periapo_t pa; /* PERIAPO1 results */
 
-            st          = agc_rendz_periapo_body_scale(ip, rz, rz->ract3, rz->viprime, &pa);
+            agc_rendz_periapo_body_scale(ip, rz, rz->ract3, rz->viprime, &pa);
             rz->posttpi = agc_rendz_scalar_from_body(rz, pa.hperi);
             agc_erase_set_tig(ttpi);
         }

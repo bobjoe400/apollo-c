@@ -728,9 +728,9 @@ agc_status_t agc_lm_lrhtask(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_rdgims(void)
+void agc_task_rdgims(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm; /* LM guidance erasables */
 
@@ -741,8 +741,6 @@ agc_status_t agc_task_rdgims(void)
     lm->piptem[0] = agc_erase_pipax();
     lm->piptem[1] = agc_erase_pipay();
     lm->piptem[2] = agc_erase_pipaz();
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -776,7 +774,9 @@ agc_status_t agc_job_lrvjob(void)
         return (st);
     }
 
-    return (agc_job_lrvjob_done());
+    agc_job_lrvjob_done();
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -787,9 +787,9 @@ agc_status_t agc_job_lrvjob(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_lrvjob_done(void)
+void agc_job_lrvjob_done(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm; /* LM guidance erasables */
 
@@ -810,8 +810,6 @@ agc_status_t agc_job_lrvjob_done(void)
     }
 
     lm->vselect = (lm->vselect > 0) ? (agc_sp_t) (lm->vselect - 1) : 2; /* ENDLRV */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -903,9 +901,9 @@ agc_status_t agc_job_lrhjob_done(void)
  *   --------  ----------  ---  ---------------------------------------
  *   pos       int         I    LR antenna position (1 or 2)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t setpos(int pos)
+static void setpos(int pos)
 {
     agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
@@ -926,8 +924,6 @@ static agc_status_t setpos(int pos)
 
     agc_guid_smnb(&g->trig, &h);
     g->lm.hbeamnb = h;
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -938,9 +934,9 @@ static agc_status_t setpos(int pos)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the routine it continues in
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_setpos1(void)
+void agc_lm_setpos1(void)
 {
     agc_guid_lm_t *lm = &agc_guid_state()->lm; /* LM guidance erasables */
 
@@ -952,7 +948,7 @@ agc_status_t agc_lm_setpos1(void)
     lm->lrsctr   = 0;
     lm->vselect  = 0;
 
-    return (setpos(0));
+    setpos(0);
 }
 
 /**********************************************************************
@@ -972,7 +968,9 @@ agc_status_t agc_lm_setpos2(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (setpos(1));
+    setpos(1);
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

@@ -182,7 +182,8 @@ void agc_imu_calcgta(agc_interp_t *ip, const agc_mat_t *dc, agc_dp_t gyro[3])
  *   thetad  uint16_t [3]       O    X (outer), Y (inner), Z (middle)
  *                                   CDU patterns
  *
- * RETURNS: agc_status_t -- OK, or the V1STO2S status
+ * RETURNS: agc_status_t -- OK, or the V1STO2S status; AGC_STATUS_BAD_ARG
+ *          on a failed precondition
  **********************************************************************/
 agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb, const agc_mat_t *sm, uint16_t thetad[3])
 {

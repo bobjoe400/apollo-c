@@ -159,9 +159,9 @@ static agc_sp_t dp_sign(agc_dp_words_t x)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t lm_dap_gimbal_drive_update(void)
+void lm_dap_gimbal_drive_update(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -173,8 +173,6 @@ agc_status_t lm_dap_gimbal_drive_update(void)
 
     agc_chan_write(012, (uint16_t) (c12 + bits));
     d->rcsflags = (uint16_t) (d->rcsflags & ~LM_RCS_CALLGMBL);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -365,9 +363,9 @@ static void gts_first_terms(const lm_dap_t *d, int i, gts_w_t *w)
  *   i         int         I    axis: 0 = Q, 1 = R (QRCNTR / QRNDXER / 2)
  *   newneg    agc_sp_t    I    new NEGU = SGN(NEGUSUM): -1, 0, +1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
+static void gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 {
     agc_sp_t old = (i == 0) ? d->neguq : d->negur; /* previous NEGU of the axis, unscaled sign */
 
@@ -400,8 +398,6 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
 
         d->rcsflags = (uint16_t) (d->rcsflags | LM_RCS_CALLGMBL); /* ZEROLOUP  */
     }
-
-    return (AGC_STATUS_OK);
 } /* gts_drive */
 
 /**********************************************************************
@@ -413,10 +409,9 @@ static agc_status_t gts_drive(lm_dap_t *d, int i, agc_sp_t newneg)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always: gts_drive() and
- *          lm_dap_closeout() cannot fail)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t lm_dap_gts(void)
+void lm_dap_gts(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -428,8 +423,6 @@ agc_status_t lm_dap_gts(void)
     d->rgimtimr = GT_TWO;
 
     /* DEVIATION: SAVESR (the editing shift register) is not modelled.   */
-    agc_status_t st = AGC_STATUS_OK; /* first failing status of the two axes */
-
     for (int i = 1; i >= 0; i--)
     { /* R, then Q      */
         gts_w_t w = {{0, 0}, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0, 0};
@@ -493,19 +486,10 @@ agc_status_t lm_dap_gts(void)
             newneg = dp_sign(w.k2theta);
         }
 
-        agc_status_t s = gts_drive(d, i, newneg); /* status of this axis */
-
-        st = (s != AGC_STATUS_OK) ? s : st; /* a failing axis status replaces st */
+        gts_drive(d, i, newneg);
     }
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    agc_status_t sc = lm_dap_closeout(); /* CLOSEOUT status */
-
-    return ((st != AGC_STATUS_OK) ? st : sc); /* first failure wins */
+    lm_dap_closeout();
 } /* lm_dap_gts */
 
 /**********************************************************************
@@ -579,10 +563,9 @@ static void timegmbl_axis(lm_dap_t *d, int i)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of lm_dap_gimbal_drive_update() (always
- *          AGC_STATUS_OK)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_dap_timegmbl(void)
+void agc_lm_dap_timegmbl(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -590,5 +573,5 @@ agc_status_t agc_lm_dap_timegmbl(void)
     timegmbl_axis(d, 1); /* R axis first   */
     timegmbl_axis(d, 0);
 
-    return (lm_dap_gimbal_drive_update());
+    lm_dap_gimbal_drive_update();
 }

@@ -237,14 +237,11 @@ agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
     agc_interp_t ip;                              /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_navaux_padload_t pad;                               /* pad loads (ephemeris, RLS) */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* status of the call */
-    agc_vec_t            r  = agc_vec_zero();               /* RP-TO-R of RLS, m 2^27 */
+    agc_navaux_padload_t pad;                /* pad loads (ephemeris, RLS) */
+    agc_vec_t            r = agc_vec_zero(); /* RP-TO-R of RLS, m 2^27 */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->tsight, &r);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->tsight, &r); /* status of the call */
 
     const agc_vec_t         alphav = agc_vec_shr(r, 2); /* VSR2: ALPHAV, m 2^29 */
     const agc_latlong_opt_t opt    = {.lunar = true, .erad = true};
@@ -315,15 +312,12 @@ static agc_status_t landing_site_axes(void)
         return (AGC_STATUS_OK); /* INTSTALL */
     }
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_align_lsorient(&ip, ram->xsmd.row[0], o.ratt, o.vatt, &ram->xsmd);
-    }
-
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    agc_align_lsorient(&ip, ram->xsmd.row[0], o.ratt, o.vatt, &ram->xsmd);
 
     return (align_goto(ram->qmaj)); /* GOTO QMAJ */
 }
@@ -356,13 +350,10 @@ agc_status_t agc_job_csm_landing_site_accepted(void)
     ll.eradm                       = 0;
     const agc_latlong_opt_t opt    = {.lunar = agc_flag_test(AGC_FLAG_LUNAFLAG), .erad = agc_flag_test(AGC_FLAG_ERADFLAG)};
     agc_navaux_padload_t    pad;                                        /* pad loads (ephemeris, RLS) */
-    agc_status_t            st     = agc_navaux_get_padload(&pad);      /* status of the call */
     agc_vec_t               alphav = agc_vec_zero();                    /* LALOTORV result, m 2^29 */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_to_r(&ip, &pad, opt, &ll, ram->tsight, &alphav, NULL);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_latlong_to_r(&ip, &pad, opt, &ll, ram->tsight, &alphav, NULL); /* status of the call */
 
     if (st != AGC_STATUS_OK)
     {

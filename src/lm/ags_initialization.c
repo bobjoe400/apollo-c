@@ -512,9 +512,10 @@ agc_status_t agc_job_ags_initialization_sent(agc_job_ctx_t *ctx)
  *   ctx       agc_job_ctx_t *  I    the running job (display continuations,
  *                                   priority)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx)
 {

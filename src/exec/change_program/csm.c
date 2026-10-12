@@ -133,15 +133,9 @@ agc_status_t exec_cp_engine_off_to_idle(void)
     agc_inhint();
     agc_csm_spsoff();
     agc_csm_dap_massprop();
-    agc_status_t st = agc_csm_dap_rcsdapon_t5(CP_T5_3_1SEC); /* RCSDAPON outcome */
-
-    agc_csm_tvczap(); /* DISABLE TVC         */
+    agc_csm_dap_rcsdapon_t5(CP_T5_3_1SEC); /* RCSDAPON */
+    agc_csm_tvczap();                      /* DISABLE TVC         */
     agc_relint();
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
 
     return (agc_svc_delayjob(CP_ENGINE_OFF_DELAY, AGC_JOB_CHANGE_PROGRAM_JETS_OFF));
 }

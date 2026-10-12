@@ -76,7 +76,7 @@ typedef enum agc_imu_gyro_buf
     AGC_IMU_GBUF_COUNT  = 3
 } agc_imu_gyro_buf_t;
 
-agc_status_t agc_imu_mode_init(void); /* restart state  */
+void agc_imu_mode_init(void); /* restart state  */
 
 agc_status_t agc_imu_zero(void);                       /* IMUZERO        */
 agc_status_t agc_imu_coarse(const uint16_t thetad[3]); /* IMUCOARS       */
@@ -185,7 +185,7 @@ agc_status_t agc_imu_one_over_pipa(agc_vec_t *delv);
 
 /* IRIGCOMP: gyro compensation from compensated DELV (pulses x 2^14).     */
 agc_status_t agc_imu_comp_irig(agc_vec_t delv);
-agc_status_t agc_imu_gcompzer(void);                         /* GCOMPZER       */
+void         agc_imu_gcompzer(void);                         /* GCOMPZER       */
 agc_status_t agc_job_gyro_command_pulse(void);               /* 1/GYRO         */
 agc_status_t agc_job_gyro_command_retry(agc_job_ctx_t *ctx); /* 1/GYRO retry   */
 agc_status_t agc_job_gyro_command_pulsed(void);              /* GCOMP1         */
@@ -320,7 +320,7 @@ agc_status_t agc_csm_prelaunch_set_pad(agc_dp_t latitude, agc_dp_t azimuth, agc_
 
 /* POSN17C: XSM, YSM, ZSM for the compass position (Z down, X downrange)
  * from azimuth (revolutions from north, clockwise); rows half-unit.      */
-agc_status_t agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm);
+void agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm);
 
 /* ERTHRVSE: ERVECTOR = (sin LAT, -cos LAT, 0) OMEG/MS; TMARK = now;
  * ERCOMP1 = 0.  latitude in revolutions.                                 */

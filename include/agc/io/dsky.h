@@ -108,7 +108,7 @@ typedef struct agc_dsky_state
 } agc_dsky_state_t;
 
 /* ---- initialisation (part of STARTSUB, FRESH_START_AND_RESTART) ------ */
-agc_status_t agc_dsky_init(void);
+void agc_dsky_init(void);
 
 /* ---- keyboard / uplink ------------------------------------------------ */
 /* Sim convenience: KEYRUPT1 + immediate CHARIN for one key code.       */

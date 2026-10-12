@@ -95,9 +95,9 @@ static uint16_t cdu_pattern(agc_sp_t a)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- always AGC_STATUS_OK (no failure case)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_entry_cm_pose_triad(void)
+void agc_entry_cm_pose_triad(void)
 {
     agc_interp_t      *ip   = entry_ip();             /* entry job interpreter state */
     agc_entry_state_t *es   = agc_entry_state();      /* entry erasables */
@@ -120,8 +120,6 @@ agc_status_t agc_entry_cm_pose_triad(void)
 
     es->uya = es->olduya; /* CM/POSE2  */
     es->uza = agc_vec_shl(ip, agc_vec_neg(agc_vec_cross(ip, es->uya, es->uxa)), 1);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -390,15 +388,10 @@ static agc_status_t entry_redopose_tail(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
 {
-    agc_dp_t     angles[4] = {0, 0, 0, 0};
-    agc_status_t st; /* step status */
+    agc_dp_t angles[4] = {0, 0, 0, 0};
 
-    st = agc_entry_cm_pose_triad();
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_entry_cm_trio(angles);
-    }
+    agc_entry_cm_pose_triad();
+    agc_status_t st = agc_entry_cm_trio(angles); /* step status */
 
     if (st != AGC_STATUS_OK)
     {

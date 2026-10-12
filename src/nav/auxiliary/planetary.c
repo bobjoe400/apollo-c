@@ -108,16 +108,14 @@ static agc_navaux_padload_t padload; /* AZO AXO -AYO 504LM, see type */
  *   pad       const agc_navaux_padload_t *  I    pad load (scales in
  *                                                the type, auxiliary.h)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always). TEPHEM and RLS go to their
- *          core erasables (their only store), the rest to the module static.
+ * RETURNS: none. TEPHEM and RLS go to their core erasables (their only
+ *          store), the rest to the module static.
  **********************************************************************/
-agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
+void agc_navaux_set_padload(const agc_navaux_padload_t *pad)
 {
     padload = *pad;
     agc_erase_set_tephem(pad->tephem); /* one TEPHEM: core erasable */
     agc_erase_set_rls(pad->rls);       /* one RLS: core erasable    */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -131,15 +129,13 @@ agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad)
  *   out       agc_navaux_padload_t *  O    pad load; TEPHEM and RLS from
  *                                          the core erasables
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out)
+void agc_navaux_get_padload(agc_navaux_padload_t *out)
 {
     *out        = padload;
     out->tephem = agc_erase_tephem(); /* P11 / V70 may have moved it */
     out->rls    = agc_erase_rls();
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -319,13 +315,11 @@ agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pa
  *   pad       const agc_navaux_padload_t *  I    AXO, -AYO, 2^0 rad
  *   l         agc_vec_t *                   O    L (504LPL), 2^0 rad
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l)
+void agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l)
 {
     *l = agc_vec_make(agc_dp_neg(pad->axo), pad->neg_ayo, 0); /* 504LPL  */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -528,12 +522,7 @@ static agc_status_t planet_m_and_l(agc_interp_t *ip, const agc_navaux_padload_t 
         agc_vec_t lv; /* 504LPL, rad 2^0 */
 
         st = earthmx_words(ip, pad, t_cs, m);
-
-        if (st == AGC_STATUS_OK)
-        {
-            st = agc_planet_earthl(pad, &lv); /* L, rad 2^0     */
-        }
-
+        agc_planet_earthl(pad, &lv); /* L, rad 2^0     */
         *l = agc_vec_to_words(lv);
 
         if (st == AGC_STATUS_OK && want_lp)

@@ -73,9 +73,9 @@
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t lm_dap_qerrcalc(void)
+void lm_dap_qerrcalc(void)
 {
     lm_dap_t *d    = lm_dap_state();                                                                                  /* DAP erasables */
     agc_sp_t  ydif = lm_dap_msu(agc_erase_cduy(), d->cduyd);                                                          /* DAPTEMP1: CDUY-CDUYD, scaled pi rad */
@@ -85,8 +85,6 @@ agc_status_t lm_dap_qerrcalc(void)
 
     d->qerror = lm_dap_wrap(q); /* XCH QERROR     */
     d->rerror = lm_dap_wrap(r);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -253,21 +251,17 @@ static agc_status_t trygts(lm_dap_t *d)
 
     if (agc_chan_read(005) == 0u)
     {
-        return (lm_dap_gts()); /* GOTOGTS        */
+        lm_dap_gts();
+
+        return (AGC_STATUS_OK); /* GOTOGTS        */
     }
 
     if (d->ingts != 0)
     { /* CHKINGTS       */
         agc_inhint();
-        agc_status_t st = agc_lm_dap_timegmbl(); /* TIMEGMBL status */
-
+        agc_lm_dap_timegmbl(); /* TIMEGMBL */
         agc_relint();
         d->ingts = 0;
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
     }
 
     if (!AGC_ASSERT(d->ingts == 0))
@@ -301,17 +295,14 @@ agc_status_t lm_dap_qraxis(void)
 
     if (automatic || !agc_flag_test(AGC_FLAG_OURRCFLG))
     {
-        agc_status_t sq = lm_dap_qerrcalc(); /* QERRCALC status */
-
-        if (sq != AGC_STATUS_OK)
-        {
-            return (sq);
-        }
+        lm_dap_qerrcalc();
     }
 
     if (d->cotroler > 0)
     {
-        return (lm_dap_gts());
+        lm_dap_gts();
+
+        return (AGC_STATUS_OK);
     }
 
     return ((d->cotroler == 0) ? trygts(d) : lm_dap_rcs()); /* COTROLER = 0: try GTS */

@@ -494,21 +494,17 @@ static agc_status_t prec_radius_check(agc_interp_t *ip, rte_erasable_t *rs)
  *   rs        rte_erasable_t *  IO   P37 erasables (RTE names, scales in
  *                                    internal.h)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK to integrate again (rs->prec_step
- *          says which); AGC_STATUS_NOT_FOUND when the iteration is done;
- *          AGC_STATUS_ALARM (605, 613) or the status of PARAM / TIMERAD /
- *          V2T100 otherwise
+ * RETURNS: agc_status_t -- AGC_STATUS_OK to integrate again
+ *          (rs->prec_step says which); AGC_STATUS_NOT_FOUND when the
+ *          iteration is done; AGC_STATUS_ALARM (605, 613) or the status
+ *          of PARAM / TIMERAD / V2T100 otherwise; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 static agc_status_t prec_after_integration(agc_interp_t *ip, rte_erasable_t *rs)
 {
     agc_conic_param_out_t po; /* PARAM of R(T2)/, V(T2)/ */
 
-    agc_status_t st = agc_conic_param(ip, rs->r_t2v, rs->v_t2v, AGC_CONIC_EARTH, &po); /* status of PARAM, then PREC130 */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_param(ip, rs->r_t2v, rs->v_t2v, AGC_CONIC_EARTH, &po);
 
     if (!AGC_ASSERT(po.r1 > 0))
     {
@@ -525,7 +521,7 @@ static agc_status_t prec_after_integration(agc_interp_t *ip, rte_erasable_t *rs)
 
     if (agc_interp_test_ovf(ip) || (e >= 0))
     { /* PREC130       */
-        st = prec_angle_not_met(ip, rs);
+        agc_status_t st = prec_angle_not_met(ip, rs); /* PREC130 status */
 
         if (st != AGC_STATUS_NOT_FOUND)
         {

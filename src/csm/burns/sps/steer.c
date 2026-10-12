@@ -190,6 +190,11 @@ static agc_status_t steering_after_vg_update(agc_interp_t *ip)
         return (AGC_STATUS_ALARM); /* INCRSVG                */
     }
 
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
     agc_erase_set_tgo(tgo);
     agc_erase_set_tig(agc_dp_add(ip, tgo, agc_erase_piptime()));
 
@@ -204,14 +209,14 @@ static agc_status_t steering_after_vg_update(agc_interp_t *ip)
     agc_mat_t      refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows (2^1) */
     agc_vec_t      om;                              /* OMEGAC commanded rates (XPRODUCT); scale of OMEGAC (csm/dap.h) */
 
-    st = agc_guid_steering_cross_product(ip, &xin, &refsmmat, &g->trig, &om);
+    agc_guid_steering_cross_product(ip, &xin, &refsmmat, &g->trig, &om);
 
     for (int i = 0; i < 3; i++)
     {
         tvc->omegac[i] = om.c[i]; /* OMEGACLC               */
     }
 
-    return (st);
+    return (AGC_STATUS_OK);
 } /* steering_after_vg_update */
 
 /**********************************************************************
@@ -626,7 +631,9 @@ agc_status_t agc_job_vtogain_csm(agc_job_ctx_t *ctx)
 
     agc_phase_change_var((uint16_t) 005021, &v);
 
-    return (agc_job_endlamb());
+    agc_job_endlamb();
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -638,9 +645,9 @@ agc_status_t agc_job_vtogain_csm(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the routine it continues in
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_endlamb(void)
+void agc_job_endlamb(void)
 {
     agc_guid_t  *g  = agc_guid_state();     /* guidance erasables */
     agc_rendz_t *rz = agc_rendz_erasable(); /* targeting erasables */
@@ -671,7 +678,7 @@ agc_status_t agc_job_endlamb(void)
 
     agc_phase_change_var((uint16_t) 004021, &v);
 
-    return (agc_job_copy40_9());
+    agc_job_copy40_9();
 }
 
 /**********************************************************************
@@ -682,9 +689,9 @@ agc_status_t agc_job_endlamb(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_copy40_9(void)
+void agc_job_copy40_9(void)
 {
     agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
@@ -694,8 +701,6 @@ agc_status_t agc_job_copy40_9(void)
     g->burn.nbrcycls = -1;
 
     agc_phase_kill(1);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -705,9 +710,9 @@ agc_status_t agc_job_copy40_9(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_redo40_9(void)
+void agc_job_redo40_9(void)
 {
     agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
@@ -717,8 +722,6 @@ agc_status_t agc_job_redo40_9(void)
     g->burn.nbrcycls               = -1;                /* ENDS40.9 -2 */
 
     agc_phase_kill(1);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

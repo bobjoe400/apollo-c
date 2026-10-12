@@ -145,7 +145,8 @@ agc_sp_t agc_erase_trunbias(void)
  *   ret       agc_job_id_t           I    job the routine returns to
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
+ *          argument, else the status of the call that failed;
+ *          AGC_STATUS_ALARM after an alarm
  **********************************************************************/
 agc_status_t rz_optics_calibration(const agc_job_ctx_t *ctx, agc_job_id_t ret)
 {
@@ -417,15 +418,15 @@ static void cn_tangents(agc_interp_t *ip, agc_vec_t rh, agc_dp_t ah, agc_dp_t bh
  *   out       agc_vec_t *     O    the horizon point, reference axes, m
  *                                  2^29
  *
- * RETURNS: agc_status_t -- the pad status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t cn_horiz(agc_interp_t *ip, agc_vec_t *out)
+static void cn_horiz(agc_interp_t *ip, agc_vec_t *out)
 {
-    agc_navaux_padload_t pad;                               /* pad loads */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
-    agc_vec_t            us = agc_align_ram()->starsav2;    /* US, 2^1 */
-    agc_vec_t            uz;                                /* UZ, B0 */
+    agc_navaux_padload_t pad;                            /* pad loads */
+    agc_vec_t            us = agc_align_ram()->starsav2; /* US, 2^1 */
+    agc_vec_t            uz;                             /* UZ, B0 */
 
+    agc_navaux_get_padload(&pad);
     uz = agc_vec_make(pad.neg_ayo, pad.axo, AGC_DP_MAX);
 
     cn.ubar.row[2] = agc_vec_unit(ip, agc_vec_cross(ip, us, cn.rzc), NULL, NULL);
@@ -470,8 +471,6 @@ static agc_status_t cn_horiz(agc_interp_t *ip, agc_vec_t *out)
     }
 
     *out = agc_vec_shl(ip, agc_vec_mat(ip, th, &cn.ubar), 1); /* HORIZ.5 */
-
-    return (st);
 } /* cn_horiz */
 
 /**********************************************************************
@@ -492,23 +491,14 @@ static agc_status_t cn_horiz(agc_interp_t *ip, agc_vec_t *out)
 static agc_status_t cn_landmark(agc_interp_t *ip, agc_vec_t *r)
 {
     rz_flag_put(AGC_FLAG_ERADFLAG, true);
-    agc_navaux_padload_t pad;                               /* pad loads */
-    agc_latlong_t        ll;                                /* LAT LONG ALT */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* pad loads */
+    agc_navaux_padload_t pad; /* pad loads */
+    agc_latlong_t        ll;  /* LAT LONG ALT */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_navaux_get_latlong(&ll);
-    }
-
+    agc_navaux_get_padload(&pad);
+    agc_navaux_get_latlong(&ll);
     agc_latlong_opt_t opt = {agc_flag_test(AGC_FLAG_LUNAFLAG), true};
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_to_r(ip, &pad, opt, &ll, cn.marktime, r, NULL);
-    }
-
-    return (st);
+    return (agc_latlong_to_r(ip, &pad, opt, &ll, cn.marktime, r, NULL));
 }
 
 /**********************************************************************
@@ -599,23 +589,13 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
         /* ZMEASURE (p.624): RZC from the primary to the measured body:
          * + the moon (LUNPOS) with the moon primary, - the moon with the
          * earth.                                                         */
-        agc_ephem_csm_t      eph;      /* ephemeris */
-        agc_navaux_padload_t pad;      /* pad loads */
-        agc_status_t         st_shift; /* ephemeris */
+        agc_ephem_csm_t      eph; /* ephemeris */
+        agc_navaux_padload_t pad; /* pad loads */
 
-        st_shift = agc_ephem_get_csm_data(&eph);
-
-        if (st_shift == AGC_STATUS_OK)
-        {
-            st_shift = agc_navaux_get_padload(&pad);
-        }
-
-        agc_vec_t moon = agc_vec_zero(); /* LUNPOS, m 2^29 */
-
-        if (st_shift == AGC_STATUS_OK)
-        {
-            st_shift = agc_ephem_csm_lunpos(ip, &eph, pad.tephem, cn.marktime, &moon);
-        }
+        agc_ephem_get_csm_data(&eph);
+        agc_navaux_get_padload(&pad);
+        agc_vec_t    moon     = agc_vec_zero();                                                 /* LUNPOS, m 2^29 */
+        agc_status_t st_shift = agc_ephem_csm_lunpos(ip, &eph, pad.tephem, cn.marktime, &moon); /* ephemeris */
 
         if (!agc_flag_test(AGC_FLAG_CMOONFLG))
         {
@@ -636,7 +616,7 @@ static agc_status_t cn_pointaxs(agc_interp_t *ip, agc_job_id_t resume)
         }
         else
         {
-            st = cn_horiz(ip, &r); /* R23.4 */
+            cn_horiz(ip, &r); /* R23.4 */
         }
     }
 
@@ -1202,10 +1182,11 @@ agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ct
         agc_dp_t  r1 = 0; /* 30D |RCLL|, m 2^29 */
         agc_vec_t u;      /* UNIT RCLL, 2^1 */
 
-        u                          = agc_vec_unit(&ip, cn.rcll, &r1, &r2);
-        agc_ephem_csm_t eph;                                       /* ephemeris */
-        agc_status_t    st_measure = agc_ephem_get_csm_data(&eph); /* ephemeris */
-        agc_vec_t       a;                                         /* VZC/c, 2^1 */
+        u = agc_vec_unit(&ip, cn.rcll, &r1, &r2);
+        agc_ephem_csm_t eph; /* ephemeris */
+
+        agc_ephem_get_csm_data(&eph);
+        agc_vec_t a; /* VZC/c, 2^1 */
 
         a = agc_vec_shr(agc_vec_scale(&ip, cn.vzc, CN_ONE_C), 15);
         agc_vec_t ucl; /* UCLSTAR, 2^1 */
@@ -1257,10 +1238,7 @@ agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ct
         rz_flag_put(AGC_FLAG_DMENFLG, false);
         cn.inc.dim9     = false;
 
-        if (st_measure == AGC_STATUS_OK)
-        {
-            st_measure = agc_incorp_state_deviation(&ip, &agc_integ_shared_ctx()->w, &cn.inc);
-        }
+        agc_status_t st_measure = agc_incorp_state_deviation(&ip, &agc_integ_shared_ctx()->w, &cn.inc); /* INCORP1 */
 
         agc_phase_change(04022);
         int k = 0; /* earth */

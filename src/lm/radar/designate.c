@@ -416,9 +416,10 @@ agc_status_t rr_stdesig(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rr_designate_begin(void)
 {
@@ -443,9 +444,10 @@ agc_status_t agc_task_rr_designate_begin(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rr_designate_loop(void)
 {
@@ -473,9 +475,9 @@ agc_status_t agc_task_rr_designate_loop(void)
  *   trig      agc_cdutrig_t *     O    CDUTRIG of the present CDUs
  *   los       agc_vec_t *         O    the LOS in NB axes, half unit
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t rr_dodes_los(agc_interp_t *ip, const rr_state_t *s, agc_cdutrig_t *trig, agc_vec_t *los)
+static void rr_dodes_los(agc_interp_t *ip, const rr_state_t *s, agc_cdutrig_t *trig, agc_vec_t *los)
 {
     if (agc_flag_test(AGC_FLAG_RRNBSW))
     {
@@ -494,8 +496,6 @@ static agc_status_t rr_dodes_los(agc_interp_t *ip, const rr_state_t *s, agc_cdut
         agc_guid_cdutrig(trig);
         agc_guid_smnb(trig, los);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -660,14 +660,9 @@ agc_status_t agc_job_rr_designate_command(void)
     agc_interp_t ip;             /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_cdutrig_t trig;                                    /* CDUTRIG */
-    agc_vec_t     los = s->rrtarget;                       /* LOS, 2^1 */
-    agc_status_t  st  = rr_dodes_los(&ip, s, &trig, &los); /* NB LOS */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_cdutrig_t trig;              /* CDUTRIG */
+    agc_vec_t     los = s->rrtarget; /* LOS, 2^1 */
+    rr_dodes_los(&ip, s, &trig, &los);
 
     agc_dp_t cos_err = rr_dodes_commands(&ip, s, &trig, los); /* B-2 */
     bool     off     = agc_dp_high(cos_err) < 0;              /* MPAC +1 = 1: not pointed */
@@ -706,7 +701,8 @@ agc_status_t agc_job_rr_designate_command(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the extended verb request
+ * RETURNS: agc_status_t -- the status of the extended verb request;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_rendz_goto_terminate_tracking(void)
 {

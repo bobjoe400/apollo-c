@@ -104,13 +104,11 @@ static agc_status_t lung(agc_job_id_t ret)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t read_pipas(void)
+static void read_pipas(void)
 {
-    return (agc_guid_pipasr(&agc_guid_state()->avg, false));
+    agc_guid_pipasr(&agc_guid_state()->avg, false);
 }
 
 /**********************************************************************
@@ -122,9 +120,10 @@ static agc_status_t read_pipas(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_ALARM after an alarm
  **********************************************************************/
 static agc_status_t next_sample(void)
 {
@@ -158,18 +157,9 @@ agc_status_t agc_job_lunar_gravity_coarsed(void)
 {
     agc_align_ram()->gctr = GRAVITY_SAMPLES;
     agc_imu_set_pipa_interval(PIPA_INTERVAL);
-    agc_status_t st       = agc_imu_gcompzer(); /* status of the call */
-
-    if (st == AGC_STATUS_OK)
-    {
-        align_phase4(PH_SURFACE_ALIGN);
-        st = read_pipas();
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_imu_gcompzer();
+    align_phase4(PH_SURFACE_ALIGN);
+    read_pipas();
 
     return (next_sample());
 }
@@ -189,14 +179,9 @@ agc_status_t agc_job_lunar_gravity_coarsed(void)
  **********************************************************************/
 agc_status_t agc_task_lunar_gravity_sample(void)
 {
-    agc_status_t st = read_pipas(); /* status of the call */
+    read_pipas();
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_exec_findvac(ALIGN_PRIO13, AGC_JOB_LUNAR_GRAVITY_ACCUMULATE);
-    }
-
-    return (st);
+    return (agc_exec_findvac(ALIGN_PRIO13, AGC_JOB_LUNAR_GRAVITY_ACCUMULATE));
 }
 
 /**********************************************************************

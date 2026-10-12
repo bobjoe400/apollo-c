@@ -149,14 +149,10 @@ static agc_status_t prec_to(agc_interp_t *ip, bool lm_only, agc_dp_t tdec1, agc_
  **********************************************************************/
 static agc_status_t apo_peri(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t r, agc_vec_t v)
 {
-    agc_burn_t         *b  = &agc_guid_state()->burn;                         /* HAPO, HPER      */
-    agc_rendz_periapo_t pa;                                                   /* PERIAPO1 output */
-    agc_status_t        st = agc_rendz_periapo_body_scale(ip, rz, r, v, &pa); /* status of PERIAPO1 */
+    agc_burn_t         *b = &agc_guid_state()->burn; /* HAPO, HPER      */
+    agc_rendz_periapo_t pa;                          /* PERIAPO1 output */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_rendz_periapo_body_scale(ip, rz, r, v, &pa);
 
     b->hper = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hperi)); /* HPER B+29 */
     b->hapo = agc_orbit_params_maxchk(ip, agc_rendz_scalar_from_body(rz, pa.hapo));  /* HAPO B+29 */
@@ -202,12 +198,7 @@ static agc_status_t external_delta_v_vectors_csm(agc_interp_t *ip, agc_rendz_t *
     rz->unrm  = agc_vec_unit(ip, agc_vec_cross(ip, rz->rtig, rz->vtig), NULL, NULL);
     agc_mat_t m; /* LOMAT rows, half unit (2^1) */
 
-    st = agc_rendz_lomat(ip, rz, &m);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_rendz_lomat(ip, rz, &m);
 
     rz->delvsin                   = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1); /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
     agc_guid_state()->burn.vgdisp = agc_vec_abval(ip, rz->delvsin);                       /* MAG DELV */
@@ -309,7 +300,9 @@ agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv)
 
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* half-unit rows */
 
-    return (agc_rendz_get_mga(ip, dv, &refsmmat, &rz->plus_mga));
+    agc_rendz_get_mga(ip, dv, &refsmmat, &rz->plus_mga);
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

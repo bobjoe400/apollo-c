@@ -345,12 +345,7 @@ agc_status_t lm_dap_purgency_law(void)
 
     if (agc_flag_test(AGC_FLAG_CSMDKFLG))
     {
-        agc_status_t ss = lm_dap_spsrcs(); /* SPSRCS law for P */
-
-        if (ss != AGC_STATUS_OK)
-        {
-            return (ss);
-        }
+        lm_dap_spsrcs();
 
         if (d->tj[0] == 0)
         { /* DKALT          */
@@ -604,18 +599,17 @@ agc_status_t agc_task_paxis(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = AGC_STATUS_OK; /* the jask's status; a failure stops the chain */
-
     if ((d->rcsflags & LM_RCS_CALLGMBL) != 0u)
     { /* PAXFILT       */
-        st = lm_dap_gimbal_drive_update();
+        lm_dap_gimbal_drive_update();
     }
 
-    d->dapzrupt = 1;                                                /* SUPERJOB: jask running   */
-    st          = (st == AGC_STATUS_OK) ? lm_dap_rateloop() : st;   /* RATELOOP unless an earlier step failed */
-    st          = (st == AGC_STATUS_OK) ? lm_dap_backp() : st;      /* BACKP unless an earlier step failed */
-    st          = (st == AGC_STATUS_OK) ? lm_dap_offset_est() : st; /* offset estimator unless an earlier step failed */
-    st          = (st == AGC_STATUS_OK) ? lm_dap_pretimck() : st;   /* PRETIMCK unless an earlier step failed */
+    d->dapzrupt     = 1;              /* SUPERJOB: jask running   */
+    lm_dap_rateloop();                /* RATELOOP */
+    agc_status_t st = lm_dap_backp(); /* BACKP; a failure stops the chain */
+
+    st = (st == AGC_STATUS_OK) ? lm_dap_offset_est() : st; /* offset estimator unless an earlier step failed */
+    st = (st == AGC_STATUS_OK) ? lm_dap_pretimck() : st;   /* PRETIMCK unless an earlier step failed */
 
     if (st != AGC_STATUS_OK)
     {

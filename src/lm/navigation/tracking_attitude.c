@@ -301,9 +301,10 @@ agc_status_t agc_job_tracking_attitude_maneuvered(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_tracking_attitude_wait(void)
 {

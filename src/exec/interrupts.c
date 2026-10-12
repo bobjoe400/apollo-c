@@ -439,11 +439,10 @@ agc_status_t agc_rupt_rupt10(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_t5idloc(void)
+void agc_task_t5idloc(void)
 {
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -453,8 +452,9 @@ agc_status_t agc_task_t5idloc(void)
  * ARGUMENTS:
  *   rupt -- the interrupt
  *
- * RETURNS: agc_status_t -- the handler's status; BAD_ARG when called
- *          with interrupts enabled or for an unknown id
+ * RETURNS: agc_status_t -- the handler's status; BAD_ARG when called with
+ *          interrupts enabled or for an unknown id; AGC_STATUS_NOT_FOUND
+ *          for T6RUPT on the CSM (no T6 handler)
  **********************************************************************/
 agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 {

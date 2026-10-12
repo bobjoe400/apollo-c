@@ -504,18 +504,13 @@ void agc_conic_getx_(agc_interp_t *ip, agc_conic_ctx_t *ctx, agc_tp_words_t mpac
  *   out       agc_conic_param_out_t *  O    P, R1A, COGA, SNGAMMA and the
  *                                           GEOM debris
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always: agc_conic_ctx_init_()
- *          cannot fail; any body other than AGC_CONIC_EARTH is the moon)
+ * RETURNS: none (any body other than AGC_CONIC_EARTH is the moon)
  *********************************************************************/
-agc_status_t agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_conic_param_out_t *out)
+void agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic_body_t body, agc_conic_param_out_t *out)
 {
-    agc_conic_ctx_t ctx;                                  /* conic erasables */
-    agc_status_t    st = agc_conic_ctx_init_(&ctx, body); /* MUTABLE,1 */
+    agc_conic_ctx_t ctx; /* conic erasables */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_ctx_init_(&ctx, body);
 
     agc_dp_words_t sngamma; /* 36D sin(gamma), 2^1 */
     agc_tp_words_t m;       /* MPAC at RTNPRM (P) */
@@ -531,6 +526,4 @@ agc_status_t agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, a
     out->ur1     = ctx.ur1;
     out->u2      = ctx.u2;
     out->un      = ctx.un;
-
-    return (AGC_STATUS_OK);
 }

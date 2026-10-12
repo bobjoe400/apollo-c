@@ -163,20 +163,13 @@ static agc_status_t earth_vector_sm(agc_interp_t *ip, const agc_integ_out_t *o, 
 
     if (o->x2 != 0)
     { /* moon: LUNPOS */
-        agc_navaux_padload_t pad;                               /* pad loads (ephemeris, RLS) */
-        agc_ephem_csm_t      eph;                               /* the CSM ephemeris pad words */
-        agc_vec_t            rem;                               /* LUNPOS: moon from earth, m 2^29 */
-        agc_status_t         st = agc_navaux_get_padload(&pad); /* status of the call */
+        agc_navaux_padload_t pad; /* pad loads (ephemeris, RLS) */
+        agc_ephem_csm_t      eph; /* the CSM ephemeris pad words */
+        agc_vec_t            rem; /* LUNPOS: moon from earth, m 2^29 */
 
-        if (st == AGC_STATUS_OK)
-        {
-            st = agc_ephem_get_csm_data(&eph);
-        }
-
-        if (st == AGC_STATUS_OK)
-        {
-            st = agc_ephem_csm_lunpos(ip, &eph, pad.tephem, o->tat, &rem);
-        }
+        agc_navaux_get_padload(&pad);
+        agc_ephem_get_csm_data(&eph);
+        agc_status_t st = agc_ephem_csm_lunpos(ip, &eph, pad.tephem, o->tat, &rem); /* status of the call */
 
         if (st != AGC_STATUS_OK)
         {
@@ -301,13 +294,9 @@ agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_sband_b5off(void)
+void agc_job_sband_b5off(void)
 {
     agc_svc_b5off(); /* B5OFF */
-
-    return (AGC_STATUS_OK);
 }

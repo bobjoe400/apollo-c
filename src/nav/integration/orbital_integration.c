@@ -312,8 +312,9 @@ void agc_integ_minirect(agc_integ_ctx_t *ctx, agc_vec_t v)
  *   ip        agc_interp_t *     I/O  interpretive state (OVFIND)
  *   ctx       agc_integ_ctx_t *  I/O  integration erasables (TAU., the conic)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of KEPPREP / KEPLER
- *                          other than NO_CONVERGE and OVERFLOW
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of KEPPREP /
+ *          KEPLER other than NO_CONVERGE and OVERFLOW; AGC_STATUS_BAD_ARG
+ *          on a failed precondition
  *********************************************************************/
 agc_status_t agc_integ_kepprep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
@@ -324,27 +325,22 @@ agc_status_t agc_integ_kepprep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 
     agc_kepler_in_t in; /* KEPPREP / KEPLER inputs */
 
-    in.rrect          = ctx->sv.rcv;
-    in.vrect          = ctx->sv.vcv;
-    in.tau            = ctx->tau;
-    in.xkepnew        = 0;
-    in.tc             = ctx->sv.tc;
-    in.xprev          = ctx->sv.xkep;
-    in.body           = agc_flag_test(AGC_FLAG_MOONFLAG) ? AGC_CONIC_MOON : AGC_CONIC_EARTH; /* MOONFLAG: moon or earth conic */
-    agc_dp_t     xnew = 0;                                                                   /* XKEPNEW, sqrt(m) 2^17 (moon 2^16) */
-    agc_status_t st   = agc_conic_kepprep(ip, &in, &xnew);                                   /* status of KEPPREP, then KEPLER */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    in.rrect      = ctx->sv.rcv;
+    in.vrect      = ctx->sv.vcv;
+    in.tau        = ctx->tau;
+    in.xkepnew    = 0;
+    in.tc         = ctx->sv.tc;
+    in.xprev      = ctx->sv.xkep;
+    in.body       = agc_flag_test(AGC_FLAG_MOONFLAG) ? AGC_CONIC_MOON : AGC_CONIC_EARTH; /* MOONFLAG: moon or earth conic */
+    agc_dp_t xnew = 0;                                                                   /* XKEPNEW, sqrt(m) 2^17 (moon 2^16) */
+    agc_conic_kepprep(ip, &in, &xnew);
 
     in.rrect   = ctx->sv.rrect; /* KEPLERN works from RRECT  */
     in.vrect   = ctx->sv.vrect;
     in.xkepnew = xnew;
     agc_kepler_out_t kout;      /* KEPLER outputs */
 
-    st = agc_conic_kepler(ip, &in, &kout);
+    agc_status_t st = agc_conic_kepler(ip, &in, &kout); /* KEPLER status */
 
     if ((st == AGC_STATUS_OK) || (st == AGC_STATUS_NO_CONVERGE))
     {
@@ -634,13 +630,8 @@ static agc_status_t lunpos(agc_interp_t *ip, agc_dp_t t, agc_vec_t *moon)
         return (agc_lsposition(ip, t, moon, &sun));
     }
 
-    agc_ephem_csm_t    eph;                               /* CM ephemeris pad load */
-    const agc_status_t st = agc_ephem_get_csm_data(&eph); /* status of the ephemeris read */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_ephem_csm_t eph; /* CM ephemeris pad load */
+    agc_ephem_get_csm_data(&eph);
 
     return (agc_ephem_csm_lunpos(ip, &eph, agc_erase_tephem(), t, moon));
 }
@@ -670,13 +661,8 @@ static agc_status_t lunvel(agc_interp_t *ip, agc_dp_t t, agc_vec_t *vmoon)
         return (AGC_STATUS_OK);
     }
 
-    agc_ephem_csm_t    eph;                               /* CM ephemeris pad load */
-    const agc_status_t st = agc_ephem_get_csm_data(&eph); /* status of the ephemeris read */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_ephem_csm_t eph; /* CM ephemeris pad load */
+    agc_ephem_get_csm_data(&eph);
 
     return (agc_ephem_csm_lunvel(ip, &eph, agc_erase_tephem(), t, vmoon));
 }
@@ -801,12 +787,9 @@ static agc_status_t moon_axes(agc_interp_t *ip, const agc_integ_ctx_t *ctx, obl_
     agc_navaux_padload_t pad;                                     /* lunar pad loads (504LM) */
     agc_mat_t            m;                                       /* MOONMX, 2^1 */
     const agc_vec_t      zunit = agc_vec_make(0, 0, AGC_DP_HALF); /* ZUNIT, half unit 2^1 */
-    agc_status_t         st    = agc_navaux_get_padload(&pad);    /* status of the pad-load read, R-TO-RP, MOONMX */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_r_to_rp(ip, &pad, true, ctx->alphav, ctx->sv.tet, &w->urpv);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_planet_r_to_rp(ip, &pad, true, ctx->alphav, ctx->sv.tet, &w->urpv);
 
     if (st == AGC_STATUS_OK)
     {
@@ -873,12 +856,8 @@ static acc_result_t lunar_c31_term(agc_interp_t *ip, agc_integ_ctx_t *ctx, const
     agc_navaux_padload_t pad;                                                            /* lunar pad loads */
     agc_vec_t            r = agc_vec_zero();                                             /* the term in reference axes, 2^-20 */
 
-    agc_status_t st = agc_navaux_get_padload(&pad); /* status of the pad-load read, then RP-TO-R */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_rp_to_r(ip, &pad, true, q, ctx->sv.tet, &r); /* RP-TO-R */
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_planet_rp_to_r(ip, &pad, true, q, ctx->sv.tet, &r); /* RP-TO-R */
 
     if (st != AGC_STATUS_OK)
     {
@@ -1385,9 +1364,9 @@ agc_integ_next_t agc_integ_wcolumns(agc_interp_t *ip, agc_integ_ctx_t *ctx)
  *   ctx       agc_integ_ctx_t *  I/O  integration erasables (the state
  *                                     vector, RC)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or RECTIFY's status
+ * RETURNS: none
  *********************************************************************/
-static agc_status_t rectest(agc_interp_t *ip, agc_integ_ctx_t *ctx)
+static void rectest(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     const int      p    = ctx->pbody;                        /* PBODY: 0 earth, 2 moon */
     const agc_dp_t d    = agc_vec_abval(ip, ctx->sv.deltav); /* |TDELTAV|, m 2^22 (moon 2^18) */
@@ -1417,8 +1396,6 @@ static agc_status_t rectest(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     {
         agc_integ_rectify(ip, ctx); /* CALLRECT */
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -1605,9 +1582,13 @@ agc_integ_next_t agc_integ_timestep(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         }
     }
 
-    if (st == AGC_STATUS_OK)
+    if (st == AGC_STATUS_OK && sw)
     {
-        st = sw ? agc_integ_origchng(ip, ctx) : rectest(ip, ctx); /* DOSWITCH or RECTEST */
+        st = agc_integ_origchng(ip, ctx); /* DOSWITCH */
+    }
+    else if (st == AGC_STATUS_OK)
+    {
+        rectest(ip, ctx); /* RECTEST */
     }
 
     if (st != AGC_STATUS_OK)

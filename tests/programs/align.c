@@ -387,7 +387,7 @@ static void test_realign_refsmmat_option_identity(void)
     /* GYCRS / GYCOARS with XSMD = REFSMMAT rows: XDC identity again. */
     agc_mat_t smd = agc_mat_identity_half(); /* XSMD = identity, half-unit rows */
 
-    CHECK(agc_align_gyro_coarse_dc(&ip, &smd, &refsmmat, &xdc) == AGC_STATUS_OK);
+    agc_align_gyro_coarse_dc(&ip, &smd, &refsmmat, &xdc);
     CHECK(mat_is_identity_half(&xdc, 1e-6));
 }
 
@@ -744,7 +744,7 @@ static void test_nominal_orientation_axes(void)
     const agc_vec_t v = agc_vec_make(0, agc_dp_from_double(75.0, 7), 0);   /* CSM velocity, m/cs 2^7 */
     agc_mat_t       smd;                                                   /* XSMD, YSMD, ZSMD, half-unit rows */
 
-    CHECK(agc_align_nominal_orientation_axes(&ip, r, v, &smd) == AGC_STATUS_OK);
+    agc_align_nominal_orientation_axes(&ip, r, v, &smd);
     CHECK(near(agc_dp_to_double(smd.row[2].c[0], 1), -1.0, 1e-6)); /* ZSMD */
     CHECK(near(agc_dp_to_double(smd.row[1].c[2], 1), -1.0, 1e-6)); /* YSMD */
     CHECK(near(agc_dp_to_double(smd.row[0].c[1], 1), 1.0, 1e-6));  /* XSMD */
@@ -870,7 +870,7 @@ static void test_final_attitude_los(void)
         agc_vec_t       los   = agc_vec_zero();                                                                                                                                                              /* POINTVSM, half-unit (2^1) */
         const double    tol   = 1.0 / range_m[k];                                                                                                                                                            /* allowed LOS error at that range */
 
-        CHECK(agc_rendezvous_final_attitude_los(&ip, rcsm, rlem, &refsmmat, &los) == AGC_STATUS_OK);
+        agc_rendezvous_final_attitude_los(&ip, rcsm, rlem, &refsmmat, &los);
 
         for (int i = 0; i < 3; i++)
         {
@@ -941,7 +941,7 @@ static void test_mfref_uses_moon(void)
     agc_align_ram()->vec1 = v;
     agc_align_ram()->vec2 = v;
     CHECK(agc_align_mfref(&ip) == AGC_STATUS_OK);
-    CHECK(agc_navaux_get_padload(&pad) == AGC_STATUS_OK);
+    agc_navaux_get_padload(&pad);
     CHECK(agc_planet_rp_to_r(&ip, &pad, true, v, agc_align_ram()->tsight, &want) == AGC_STATUS_OK);
     CHECK((agc_align_ram()->vec1.c[0] == want.c[0]) && (agc_align_ram()->vec1.c[1] == want.c[1]) && (agc_align_ram()->vec1.c[2] == want.c[2]));
 }
@@ -959,8 +959,8 @@ static void test_mfref_uses_moon(void)
  **********************************************************************/
 static void test_lm_orientation_zeroes_gimbals(void)
 {
-    CHECK(agc_exec_init() == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_exec_init();
+    agc_dsky_init();
 
     for (int i = 0; i < 3; i++)
     {

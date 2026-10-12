@@ -520,10 +520,10 @@ agc_status_t pin_comp_read(int k, agc_dp_t *v)
 
     if (s->nntype == PIN_NNTYPE_MCTBS || s->nntype == PIN_NNTYPE_AUGMENT)
     {
-        st = agc_erase_read_ecadr((uint16_t) ((s->nouncadr + (uint16_t) k) & PIN_WORD), &w);
+        agc_erase_read_ecadr((uint16_t) ((s->nouncadr + (uint16_t) k) & PIN_WORD), &w);
         *v = pin_value_of_word(&info, w);
 
-        return (st);
+        return (AGC_STATUS_OK);
     }
 
     int      comp = (info.routine == (uint8_t) PIN_SF_HMS) ? 0 : k; /* HMS */

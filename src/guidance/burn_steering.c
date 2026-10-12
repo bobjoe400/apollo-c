@@ -243,7 +243,9 @@ static agc_status_t initial_vg_lambert_csm(agc_interp_t *ip)
  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND, index
  *                                  registers)
  *
- * RETURNS: agc_status_t -- the status of the routine it continues in
+ * RETURNS: agc_status_t -- the status of the routine it continues in;
+ *          AGC_STATUS_NOT_FOUND when the integration left no RECTOUT
+ *          state
  **********************************************************************/
 static agc_status_t initial_vg_lambert_lm(agc_interp_t *ip)
 {
@@ -766,13 +768,13 @@ agc_status_t agc_guid_steering_tgo_lm(agc_interp_t *ip, const agc_tgo_in_t *in, 
  *   omegac    agc_vec_t *             O    commanded rate OMEGAC, control
  *                                          axes
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_guid_steering_cross_product(agc_interp_t         *ip,
-                                             const agc_xprod_in_t *in,
-                                             const agc_mat_t      *refsmmat,
-                                             const agc_cdutrig_t  *trig,
-                                             agc_vec_t            *omegac)
+void agc_guid_steering_cross_product(agc_interp_t         *ip,
+                                     const agc_xprod_in_t *in,
+                                     const agc_mat_t      *refsmmat,
+                                     const agc_cdutrig_t  *trig,
+                                     agc_vec_t            *omegac)
 {
     agc_vec_t a = agc_vec_shl(ip, agc_vec_scale(ip, in->bdt, in->csteer), 2);    /* BDT DT, m/cs 2^7; VSL2 */
     agc_vec_t w = agc_vec_unit(ip, agc_vec_sub(ip, a, in->delvref), NULL, NULL); /* 2^1 */
@@ -781,8 +783,6 @@ agc_status_t agc_guid_steering_cross_product(agc_interp_t         *ip,
     x       = agc_mat_vec(ip, refsmmat, x);       /* REFSMMAT/2  */
     agc_guid_smnb(trig, &x);
     *omegac = agc_vec_scale(ip, x, in->kprimedt); /* OMEGACLC    */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

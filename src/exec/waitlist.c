@@ -757,9 +757,9 @@ uint16_t agc_waitlist_time3(void)
  *   lst1_out -- receives the delta that precedes task i+1, cs
  *   lst2_out -- receives task i+1 (LST2 +2i)
  *
- * RETURNS: agc_status_t -- always AGC_STATUS_OK (no failure case)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_waitlist_entry(int i, int16_t *lst1_out, agc_task_id_t *lst2_out)
+void agc_waitlist_entry(int i, int16_t *lst1_out, agc_task_id_t *lst2_out)
 {
     if (i == 0)
     {
@@ -771,6 +771,4 @@ agc_status_t agc_waitlist_entry(int i, int16_t *lst1_out, agc_task_id_t *lst2_ou
     }
 
     *lst2_out = lst2[i];
-
-    return (AGC_STATUS_OK);
 }

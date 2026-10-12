@@ -177,13 +177,8 @@ agc_status_t agc_conic_commnout_(agc_interp_t *ip, agc_conic_ctx_t *ctx, bool rv
 agc_status_t agc_conic_timethet(agc_interp_t *ip, const agc_timetheta_in_t *in, agc_conic_time_out_t *out)
 {
     agc_conic_time_out_clear_(out);
-    agc_conic_ctx_t ctx;                                      /* conic erasables */
-    agc_status_t    st = agc_conic_ctx_init_(&ctx, in->body); /* MUTABLE,1 */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_ctx_t ctx; /* conic erasables */
+    agc_conic_ctx_init_(&ctx, in->body);
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
     ctx.vvec = in->vvec;

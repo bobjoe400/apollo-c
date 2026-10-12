@@ -79,22 +79,19 @@ lm_dap_t *lm_dap_state(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of lm_dap_set_t5adr() (always
- *          AGC_STATUS_OK)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_dap_restart(void)
+void agc_lm_dap_restart(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    d->rcsflags     = (uint16_t) (d->rcsflags & ~LM_RCS_ACCSET); /* DAPIDLER calls 1/ACCS */
-    d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;                   /* a pending T6RUPT is made     */
-    agc_chan_and(013, LM_T6_POSMAX);                             /* ineffectual        */
-    d->nxt6adr      = 0;
-    d->nextp        = 0;
-    agc_flag_clear(AGC_FLAG_ACCOKFLG);                           /* ACCSOKAY = 0    */
-    agc_status_t ts = lm_dap_set_t5adr(LM_T5_DAPIDLER);          /* T5ADR = DAPIDLER */
-
-    return (ts);
+    d->rcsflags  = (uint16_t) (d->rcsflags & ~LM_RCS_ACCSET); /* DAPIDLER calls 1/ACCS */
+    d->t6next[0] = (agc_sp_t) LM_T6_POSMAX;                   /* a pending T6RUPT is made     */
+    agc_chan_and(013, LM_T6_POSMAX);                          /* ineffectual        */
+    d->nxt6adr   = 0;
+    d->nextp     = 0;
+    agc_flag_clear(AGC_FLAG_ACCOKFLG);                        /* ACCSOKAY = 0    */
+    lm_dap_set_t5adr(LM_T5_DAPIDLER);                         /* T5ADR = DAPIDLER */
 }
 
 /**********************************************************************
@@ -132,14 +129,14 @@ agc_status_t agc_lm_dap_fresh_start(void)
     d->dkomegan                 = FS_DKOMEGAN;
     d->dkdb                     = FS_DKDB;
 
-    agc_status_t st = agc_lm_dap_restart(); /* STARTSB1 */
+    agc_lm_dap_restart(); /* STARTSB1 */
 
     if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_ACCOKFLG)))
     {
         return (AGC_STATUS_BAD_ARG); /* ACCSOKAY cleared: DAPIDLER runs 1/ACCS */
     }
 
-    return (st);
+    return (AGC_STATUS_OK);
 } /* agc_lm_dap_fresh_start */
 
 /* ---- accessors of DAP erasables shared with other modules -------------- */

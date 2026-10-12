@@ -458,10 +458,7 @@ agc_tp_t agc_tp_norm(agc_tp_t v, int *nshift)
     int      count = 0;                                     /* left shifts done */
     agc_w3_t m     = agc_w_tslc(agc_w3_from_tp(v), &count); /* normalised TP MPAC */
 
-    if (AGC_ASSERT(nshift != 0))
-    {
-        *nshift = count;
-    }
+    *nshift = count;
 
     return (agc_w3_value(m));
 }

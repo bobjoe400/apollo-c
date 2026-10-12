@@ -94,7 +94,8 @@ static const agc_sp_t freetau[4] = {
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the branch taken
+ * RETURNS: agc_status_t -- the status of the branch taken;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t csm_rcs_manual(void)
 {
@@ -144,7 +145,9 @@ agc_status_t csm_rcs_manual(void)
             r_freefunc->tau[i] = freetau[r_freefunc->manndx[i] & 3]; /* INDEX RMANNDX; CA FREETAU; TS TAU */
         }
 
-        return (csm_rcs_t6prog_manual());
+        csm_rcs_t6prog_manual();
+
+        return (AGC_STATUS_OK);
     }
 
     if (csm_rcs_rate_init_pending())
@@ -200,7 +203,9 @@ agc_status_t csm_rcs_manual(void)
         r_setwbody->error[i_setwbody] = r_setwbody->merror[i_setwbody].hi; /* SPNDXCHK: high order word of MERRORX */
     }
 
-    return (csm_rcs_jets());
+    csm_rcs_jets();
+
+    return (AGC_STATUS_OK);
 } /* csm_rcs_manual */
 
 /**********************************************************************

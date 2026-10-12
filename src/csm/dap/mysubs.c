@@ -451,14 +451,12 @@ uint16_t csm_dap_cdu(int axis)
  *   task        agc_task_id_t  I  T5LOC
  *   time5_word  uint16_t       I  TIME5, 10 ms counts to overflow
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word)
+void csm_dap_set_t5(agc_task_id_t task, uint16_t time5_word)
 {
     agc_rupt_set_t5_task(task);
     agc_rupt_set_time(CSM_DAP_TIME5, time5_word);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

@@ -109,7 +109,7 @@ agc_status_t pin_monitor(void)
 
     if (!pin_cadrstor_full())
     {
-        st = pin_reldsp1();
+        pin_reldsp1();
     }
 
     agc_inhint();

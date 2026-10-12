@@ -623,12 +623,7 @@ static agc_status_t lambert_entry(agc_interp_t *ip, agc_conic_ctx_t *ctx, const 
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_conic_ctx_init_(ctx, in->body); /* VLOAD* MUTABLE,1 */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_ctx_init_(ctx, in->body);
 
     agc_interp_clear_ovf(ip); /* SETPD 0D, BOV +1 */
     lambert_state_t z = {0};

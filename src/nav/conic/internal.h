@@ -140,7 +140,7 @@ typedef struct agc_conic_ctx
 } agc_conic_ctx_t;
 
 /* ---- common.c: MUTABLE, switches and the MPAC tests ----------------- */
-agc_status_t   agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body);
+void           agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body);
 agc_dp_words_t agc_conic_mu_(agc_conic_body_t body); /* MUEARTH / MUM */
 void           agc_conic_mirror_flag_(agc_conic_flag_t f, bool set);
 agc_status_t   agc_conic_abtconic_(void);            /* ABTCONIC     */

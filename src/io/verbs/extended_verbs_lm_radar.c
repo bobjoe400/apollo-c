@@ -508,23 +508,23 @@ agc_status_t agc_job_rr_designate_drive(void)
         return (st);
     }
 
-    return (agc_job_rr_designate_result());
+    agc_job_rr_designate_result();
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
  * AGC: none -- RRDESK2 after RADSTALL: bad end (no lock-on or out of limits) -> alarm
  * 503 DESIGNATE FAIL; ENDOFJOB either way.
  *
- * RETURNS: AGC_STATUS_OK (ENDOFJOB)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_rr_designate_result(void)
+void agc_job_rr_designate_result(void)
 {
     if (agc_imu_stall_outcome(AGC_IMU_DEV_RADAR) == AGC_IMU_STALL_BAD)
     {
         agc_alarm(ALARM_DESIGNATE_FAIL);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -674,13 +674,11 @@ agc_status_t agc_job_rr_los_display_next(void)
 /**********************************************************************
  * AGC: none -- V16N56 responses: B5OFF (the RRLOSDSP job then ends itself).
  *
- * RETURNS: the B5OFF status
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_rr_los_display_stop(void)
+void agc_job_rr_los_display_stop(void)
 {
     agc_svc_b5off(); /* B5OFF */
-
-    return (AGC_STATUS_OK);
 }
 
 /* ---- V63 R04, V78/V79 R77 -------------------------------------------------- */

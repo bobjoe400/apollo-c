@@ -57,8 +57,8 @@ typedef struct agc_navaux_padload
     agc_vec_t rls;     /* RLS: landing site, moon-fixed, scale 2^27 m          */
 } agc_navaux_padload_t;
 
-agc_status_t agc_navaux_set_padload(const agc_navaux_padload_t *pad);
-agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out);
+void agc_navaux_set_padload(const agc_navaux_padload_t *pad);
+void agc_navaux_get_padload(agc_navaux_padload_t *out);
 
 /* ======================================================================
  * Planetary inertial orientation (planetary.c)
@@ -71,7 +71,7 @@ agc_status_t agc_navaux_get_padload(agc_navaux_padload_t *out);
 agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo, agc_dp_t t_cs, agc_dp_t x0, agc_dp_t xdot, int xdot_shift, agc_dp_t *x);
 agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m); /* EARTHMX */
 agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m);  /* MOONMX  */
-agc_status_t agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l);                                   /* EARTHL  */
+void         agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l);                                   /* EARTHL  */
 
 /* R-TO-RP: RP = M(T) (R - L x R); RP-TO-R: R = MT(T) (RP + LP x RP).
  * Scale preserving: 2^29 m (earth) / 2^27 m (moon) in the AGC callers, or
@@ -103,8 +103,8 @@ typedef struct agc_latlong
 
 /* LAT, LONG, ALT erasables (noun 43; CM LANDLAT/LANDLONG/LANDALT): set by
  * the programs after LAT-LONG, read for LALOTORV. eradm is not stored.    */
-agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll);
-agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll);
+void agc_navaux_set_latlong(const agc_latlong_t *ll);
+void agc_navaux_get_latlong(agc_latlong_t *ll);
 
 /* LAT-LONG: r scale 2^29 m (earth or moon centred).                       */
 agc_status_t agc_latlong_from_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_vec_t r, agc_dp_t t_cs, agc_latlong_t *out);
@@ -123,7 +123,7 @@ agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh);
 agc_dp_t agc_latlong_setgamma(bool lunar);
 
 /* SETRE: radius ERADM scale 2^29 m.                                        */
-agc_status_t agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_dp_t half_sin_lat, agc_dp_t *eradm);
+void agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_dp_t half_sin_lat, agc_dp_t *eradm);
 
 /* ======================================================================
  * Measurement incorporation (measurement.c)
@@ -176,7 +176,7 @@ agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
 agc_status_t agc_incorp_update_w(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_w_t *w);
 
 /* INCORP2 FAZC-FAZAB5 */
-agc_status_t agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_sv_t *sv);
+void agc_incorp_update_state(agc_interp_t *ip, const agc_incorp_t *inc, agc_incorp_sv_t *sv);
 
 /* ======================================================================
  * Time of free fall (free_fall.c).  E = earth scale, M = moon scale.
@@ -215,7 +215,7 @@ typedef struct agc_tff
     agc_dp_t tfftem;  /* TFFTEM P Z^2 sgn or P/alfa sgn E 2^(59-2NR)     */
 } agc_tff_t;
 
-agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff); /* TFFCONIC */
+void         agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff); /* TFFCONIC */
 agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff); /* TFFRP/RA */
 
 /* Returned time: cs scale 2^28; NEARONE (AGC_TFF_NEARONE) = no free fall. */
@@ -240,8 +240,8 @@ typedef struct agc_ephem_csm
     agc_dp_t  omegaes;                 /* OMEGAES rate of RESO, 2^-26 rev/cs   */
 } agc_ephem_csm_t;
 
-agc_status_t agc_ephem_set_csm_data(const agc_ephem_csm_t *eph);
-agc_status_t agc_ephem_get_csm_data(agc_ephem_csm_t *out);
+void agc_ephem_set_csm_data(const agc_ephem_csm_t *eph);
+void agc_ephem_get_csm_data(agc_ephem_csm_t *out);
 
 /* CM: moon position earth-centred 2^29 m; moon velocity 2^7 m/cs; sun
  * position earth-centred 2^38 m.                                          */
@@ -251,7 +251,7 @@ agc_status_t agc_ephem_csm_solpos(agc_interp_t *ip, const agc_ephem_csm_t *eph, 
 agc_status_t agc_ephem_csm_lspos(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *moon, agc_vec_t *sun);
 
 /* LM: unit vectors (scale 2^1) VMOON and VSUN in the basic reference frame. */
-agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *vmoon, agc_vec_t *vsun);
+void agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *vmoon, agc_vec_t *vsun);
 
 /* LSPOS for the vehicle selected by agc_state_vehicle(), using the pad load
  * (agc_navaux_set_padload) and, for the CSM, agc_ephem_set_csm_data().

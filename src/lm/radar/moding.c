@@ -550,7 +550,8 @@ agc_status_t rr_endradar(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the waitlist status
+ * RETURNS: agc_status_t -- the waitlist status; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t rr_radnoop(void)
 {
@@ -649,7 +650,8 @@ void rr_rrout(void)
  *   --------  ----------------  ---  ------------------------------
  *   ret       rr_zero_return_t  I    RRRET: RRTURNON or RRZ2
  *
- * RETURNS: agc_status_t -- the FIXDELAY status
+ * RETURNS: agc_status_t -- the FIXDELAY status; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 static agc_status_t rr_zero_begin(rr_zero_return_t ret)
 {
@@ -675,9 +677,10 @@ static agc_status_t rr_zero_begin(rr_zero_return_t ret)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rr_zero_counters(void)
 {
@@ -740,9 +743,10 @@ agc_status_t agc_task_rr_zero_settled(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rrturnon(void)
 {
@@ -762,9 +766,10 @@ agc_status_t agc_task_rrturnon(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rr_turnon_done(void)
 {
@@ -786,9 +791,10 @@ agc_status_t agc_task_rr_turnon_done(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rr_zero(void)
 {
@@ -1061,7 +1067,8 @@ static bool rr_axis_advance(agc_status_t *st)
  * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
+ *          argument, else the status of the call that failed;
+ *          AGC_STATUS_NO_CONVERGE when its step bound is exhausted
  **********************************************************************/
 static agc_status_t rr_axis_run(void)
 {
@@ -1136,9 +1143,10 @@ agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex, uint1
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rr_one_axis(void)
 {
@@ -1160,9 +1168,10 @@ agc_status_t agc_task_rr_one_axis(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_dorrepos(void)
 {
@@ -1187,9 +1196,10 @@ agc_status_t agc_task_dorrepos(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rr_reposition_drive(void)
 {
@@ -1217,7 +1227,7 @@ agc_status_t agc_task_rr_reposition_drive(void)
  * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status of the first
- *          drive step
+ *          drive step; AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t rr_remode_start(void)
 {
@@ -1243,9 +1253,10 @@ agc_status_t rr_remode_start(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_rr_remode(void)
 {

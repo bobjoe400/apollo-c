@@ -216,9 +216,9 @@ static agc_dp_words_t pair_in(const char *t, const char *n, int idx)
 static void fresh(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
-    (void) agc_exec_init();
+    agc_exec_init();
     (void) agc_waitlist_init();
-    (void) agc_guid_init(AGC_VEHICLE_CSM);
+    agc_guid_init(AGC_VEHICLE_CSM);
     (void) memset(agc_csm_dap_tvc(), 0, sizeof (agc_csm_tvc_t));
     (void) memset(agc_csm_dap_rcs(), 0, sizeof (agc_csm_rcs_t));
     (void) memset(agc_csm_dap_com(), 0, sizeof (agc_csm_dapcom_t));
@@ -493,7 +493,7 @@ static void phase_plane(const char *t)
         r->tau[k]   = (agc_sp_t) oracle_in(t, "TAU", k);
     }
 
-    (void) csm_rcs_jets();
+    csm_rcs_jets();
     oracle_require_ok(t, "T6PROG");
     cmp_sp(t, "TAU", r->tau[0], "TAU");
     cmp_sp(t, "TAU1", r->tau[1], "TAU1");

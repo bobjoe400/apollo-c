@@ -284,12 +284,7 @@ agc_status_t csm_rcs_freshdap(bool fresh)
         r->holdflag = 1; /* CAF ONE; TS HOLDFLAG                        */
     }
 
-    agc_status_t st = agc_csm_dap_decode_dap_data(); /* IBNKCALL S41.2  */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_csm_dap_decode_dap_data();
 
     agc_csm_dap_rcs_gains(); /* IBNKCALL S40.14                */
 

@@ -88,14 +88,12 @@ typedef enum tvcx_step
  * VARGAINS, GAINCHNG (TVCEXECUTIVE.agc pp. 946-947) -- mass and gain
  * updates while the engine is on, prepared for the copycycle.
  *
- * ARGUMENTS:
- *   st  agc_status_t *  O  status of S40.15 (left unchanged when the
- *                          gains are not updated)
+ * ARGUMENTS: none
  *
  * RETURNS: tvcx_step_t -- EXECCOPY +1, or 1SHOTCHK when the engine is
  *          off or VCNTR is -0 (TVCEXPHS = 2)
  **********************************************************************/
-static tvcx_step_t tvcx_vargains(agc_status_t *st)
+static tvcx_step_t tvcx_vargains(void)
 {
     agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
@@ -114,7 +112,7 @@ static tvcx_step_t tvcx_vargains(agc_status_t *st)
     else
     { /* GAINCHNG                          */
         agc_csm_dap_fixcw();                                                    /* IXX, IAVG, IAVG/TLX               */
-        *st         = csm_tvc_gains(true);                                      /* 1/CONACC, VARK             */
+        csm_tvc_gains(true);                                                    /* 1/CONACC, VARK             */
         t->masstmp  = csm_dap_ads(agc_erase_csmmass(), (agc_sp_t) -t->tenmdot); /* 2^16 kg    */
         t->vcntrtmp = NINETEEN;                                                 /* reset the variable-gain counter      */
     }
@@ -385,7 +383,8 @@ agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs)
  * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the first failure of the
- *          WAITLIST calls, NEEDLER, S40.15 or the step sequence
+ *          WAITLIST calls, NEEDLER, S40.15 or the step sequence;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_task_tvcexec(void)
 {
@@ -423,8 +422,7 @@ agc_status_t agc_task_tvcexec(void)
 
     agc_status_t s2   = agc_waitlist_call(ROLL_DELAY, AGC_TASK_ROLLDAP); /* ROLLPREP               */
     agc_status_t s3   = csm_dap_needler();                               /* NEEDLEUP               */
-    agc_status_t s4   = AGC_STATUS_OK;                                   /* S40.15 in GAINCHNG     */
-    tvcx_step_t  from = tvcx_vargains(&s4);                              /* VARGAINS               */
+    tvcx_step_t  from = tvcx_vargains();                                 /* VARGAINS               */
     agc_status_t s5   = tvcx_run(from);                                  /* .. TVCEXFIN            */
     agc_status_t r    = st;                                              /* first failure          */
 
@@ -435,7 +433,7 @@ agc_status_t agc_task_tvcexec(void)
 
     if (r == AGC_STATUS_OK)
     {
-        r = (s4 != AGC_STATUS_OK) ? s4 : s5; /* S40.15, else the steps */
+        r = s5; /* the steps */
     }
 
     return (r);

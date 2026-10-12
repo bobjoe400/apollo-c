@@ -221,7 +221,7 @@ static void tvc_setup(agc_sp_t perrb_hi)
     agc_csm_tvc_t    *t = agc_csm_dap_tvc(); /* TVC DAP erasables       */
     agc_csm_dapcom_t *c = agc_csm_dap_com(); /* pad loads               */
 
-    agc_erase_set_dapdatr1((uint16_t) 020000);      /* 010: CSM/LM     */
+    agc_erase_set_dapdatr1((uint16_t) 020000); /* 010: CSM/LM     */
     c->ektlx_i[2] = 8000;
     c->iavg_tlx   = 4000;
     c->pactoff    = 0;
@@ -229,16 +229,16 @@ static void tvc_setup(agc_sp_t perrb_hi)
     t->tvcphase   = 0;
     t->delpbar.hi = 0;
     t->delpbar.lo = 0;
-    CHECK(agc_csm_tvc_preswtch() == AGC_STATUS_OK); /* LBN10, VARK     */
-    CHECK(t->vark == 7812);                         /* 8000 x 4000 x 4 */
-    CHECK(t->n10[5] == 512);                        /* N20 = .03125    */
+    agc_csm_tvc_preswtch();                    /* LBN10, VARK     */
+    CHECK(t->vark == 7812);                    /* 8000 x 4000 x 4 */
+    CHECK(t->n10[5] == 512);                   /* N20 = .03125    */
     t->t5tvcdt    = 16380;
     t->perrb.hi   = perrb_hi;
     t->perrb.lo   = 0;
     t->omegac[1]  = 0;
     t->pcmd       = 0;
     t->stroker    = 0;
-    t->pcduypst   = agc_erase_cduy();               /* zero CDU rates  */
+    t->pcduypst   = agc_erase_cduy();          /* zero CDU rates  */
     t->pcduzpst   = agc_erase_cduz();
 
     for (int i = 0; i < 6; i++)
@@ -296,7 +296,7 @@ static int stroke_bursts(int count, int pos)
     for (int i = 0; (i < count) && (t->stroker != 0); i++)
     {
         pos += t->stroker;
-        CHECK(agc_task_hackwlst() == AGC_STATUS_OK);
+        agc_task_hackwlst();
         CHECK((pos >= -50) && (pos <= 50)); /* 10 x ESTROKER   */
     }
 
@@ -411,7 +411,7 @@ static void test_t6start(void)
     r->blast[1].axis = AGC_CSM_JET_PITCH;
     r->blast[2].axis = AGC_CSM_JET_YAW;
     agc_rupt_set_time(6, 0u);                         /* TIME6 +0: the T6RUPT happened          */
-    CHECK(agc_task_t6start() == AGC_STATUS_OK);
+    agc_task_t6start();
     CHECK(agc_chan_read(AGC_CHAN_ROLLJETS) == 0120u); /* REPLACER        */
     CHECK(agc_chan_read(AGC_CHAN_PYJETS) == 01005u);  /* REPLACEP, -Y    */
     CHECK(r->blast[0].time == -1);
@@ -421,7 +421,7 @@ static void test_t6start(void)
     r->blast[1].time = 40;          /* pitch interval still to run               */
     r->blast[2].time = 0;
     agc_rupt_set_time(6, 0u);
-    CHECK(agc_task_t6start() == AGC_STATUS_OK);
+    agc_task_t6start();
     CHECK(agc_rupt_time(6) == 40u); /* ZBLAST1; ENABT6                 */
     CHECK(r->blast[1].time == 0);
     CHECK(r->blast[2].time == 0);   /* untouched until the next T6RUPT    */

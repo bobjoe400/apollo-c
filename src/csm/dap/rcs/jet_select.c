@@ -655,9 +655,9 @@ static void t6_replace(agc_csm_jet_axis_t axis)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (RESUME)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_t6start(void)
+void agc_task_t6start(void)
 {
     agc_csm_rcs_t    *r  = agc_csm_dap_rcs();            /* jet words, BLASTs */
     agc_csm_dapcom_t *c  = agc_csm_dap_com();            /* RCSFLAGS          */
@@ -665,7 +665,7 @@ agc_status_t agc_task_t6start(void)
 
     if ((t6 != 0u) && (t6 != CSM_DAP_NEG0))
     {
-        return (AGC_STATUS_OK); /* TIME6 reset after T6RUPT: wait        */
+        return; /* TIME6 reset after T6RUPT: wait        */
     }
 
     if ((c->rcsflags & AGC_CSM_RCSF_T6INIT) == 0u)
@@ -685,7 +685,7 @@ agc_status_t agc_task_t6start(void)
             agc_rupt_set_time(CSM_DAP_TIME6, (uint16_t) b);               /* TS TIME6               */
             agc_chan_or(AGC_CHAN_CHAN13, (uint16_t) AGC_CH013_ENBT6RUPT); /* CAF NEGMAX; WOR CHAN13 */
 
-            return (AGC_STATUS_OK); /* RESUME                           */
+            return; /* RESUME                           */
         }
 
         if (b == 0)
@@ -695,5 +695,5 @@ agc_status_t agc_task_t6start(void)
         }
     }
 
-    return (AGC_STATUS_OK); /* RESUME                                   */
+    /* RESUME */
 }

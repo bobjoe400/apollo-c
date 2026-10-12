@@ -177,20 +177,16 @@ agc_status_t agc_task_preread_lm(void)
  **********************************************************************/
 agc_status_t agc_task_bibibias(void)
 {
-    agc_guid_t  *g  = agc_guid_state();                /* guidance erasables */
-    agc_status_t st = agc_guid_pipasr(&g->avg, false); /* status of agc_guid_pipasr */
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_guid_pipasr(&g->avg, false);
 
-    agc_flag_set(AGC_FLAG_SERVICER_RUNNING); /* SUPER011: BITS 5, 6    */
+    agc_flag_set(AGC_FLAG_SERVICER_RUNNING);                          /* SUPER011: BITS 5, 6    */
     agc_flag_set(AGC_FLAG_AVEGFLAG);
     agc_flag_clear(AGC_FLAG_DRIFTFLG);
-    g->avg.pipage  = 4;                      /* INITIALIZE DV MONITOR  */
-    g->lm.outroute = AGC_JOB_ENDOFJOB;       /* ENDJBCAD               */
-    st             = agc_exec_findvac(AGC_PRIO22, AGC_JOB_NORMLIZE);
+    g->avg.pipage   = 4;                                              /* INITIALIZE DV MONITOR  */
+    g->lm.outroute  = AGC_JOB_ENDOFJOB;                               /* ENDJBCAD               */
+    agc_status_t st = agc_exec_findvac(AGC_PRIO22, AGC_JOB_NORMLIZE); /* NORMLIZE */
 
     if (st != AGC_STATUS_OK)
     {
@@ -323,12 +319,7 @@ agc_status_t agc_task_readaccs_lm(void)
 
     agc_rupt_set_time(5, (uint16_t) (t5 + step)); /* ADS TIME5              */
 
-    agc_status_t st = agc_guid_pipasr(&g->avg, true); /* status of agc_guid_pipasr */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_guid_pipasr(&g->avg, true);
 
     repip4(&g->avg);
 
@@ -534,9 +525,9 @@ static void rvboth_store(agc_guid_t *g)
  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND, index
  *                                  registers)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_munrvg(agc_interp_t *ip)
+void agc_lm_munrvg(agc_interp_t *ip)
 {
     agc_guid_t   *g   = agc_guid_state();                              /* guidance erasables */
     agc_lm_ldg_t *ldg = agc_lm_ldg();                                  /* landing guidance erasables */
@@ -554,8 +545,6 @@ agc_status_t agc_lm_munrvg(agc_interp_t *ip)
     g->lm.hdotdisp = agc_dp_shl(ip, agc_vec_dot(ip, g->avg.unitr, g->lm.v1s), 1);
     g->lm.delvs    = agc_vec_shl(ip, agc_vec_cross(ip, g->lm.r1s, ldg->wm), 2);
     g->lm.hcalc    = agc_dp_sub(ip, g->avg.rmag, ldg->land_mag); /* 36D DSU /LAND/ */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -614,9 +603,9 @@ static agc_status_t getabval(void)
         agc_lm_serv_quikfaz5(AGC_JOB_SERV_RVBOTH2);
         rvboth_store(g);
         agc_lm_serv_quikfaz5(AGC_JOB_SERV_MUNRVG);
-        st = agc_lm_munrvg(&ip);
+        agc_lm_munrvg(&ip);
 
-        return ((st != AGC_STATUS_OK) ? st : agc_lm_serv_munretrn()); /* MUNRETRN if the call worked */
+        return (agc_lm_serv_munretrn()); /* MUNRETRN */
     }
 
     agc_state_vector_t sv; /* state vector (RN, VN, PIPTIME) */
@@ -840,9 +829,9 @@ agc_status_t agc_job_serv_resume_lm(agc_job_ctx_t *ctx)
 
     if (id == AGC_JOB_SERV_RVBOTH2 || id == AGC_JOB_SERV_MUNRVG)
     {
-        agc_status_t st = agc_lm_munrvg(&ip); /* status of agc_lm_munrvg */
+        agc_lm_munrvg(&ip);
 
-        return ((st != AGC_STATUS_OK) ? st : agc_lm_serv_munretrn()); /* MUNRETRN if the call worked */
+        return (agc_lm_serv_munretrn()); /* MUNRETRN */
     }
 
     if (id == AGC_JOB_SERV_COPY)
@@ -975,9 +964,9 @@ agc_status_t agc_job_avetomid_lm(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the routine it continues in
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_servidle(void)
+void agc_lm_servidle(void)
 {
     agc_guid_state()->avg.avgexit = AGC_JOB_SERVEXIT;                                     /* SVEXTADR               */
     agc_flag_set(AGC_FLAG_IDLEFLAG);
@@ -993,7 +982,7 @@ agc_status_t agc_lm_servidle(void)
     agc_phase_kill(6);
     agc_phase_newphase(4, 033, false); /* 4.33SPOT FOR GOP00FIX  */
 
-    return (agc_exec_enema()); /* TCF WHIMPER            */
+    agc_exec_enema(); /* TCF WHIMPER */
 }
 
 /**********************************************************************
@@ -1004,11 +993,11 @@ agc_status_t agc_lm_servidle(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the routine it continues in
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_servidle(void)
+void agc_job_servidle(void)
 {
-    return (agc_lm_servidle());
+    agc_lm_servidle();
 }
 
 /**********************************************************************

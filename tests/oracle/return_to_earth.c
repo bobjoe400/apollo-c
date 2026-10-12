@@ -116,9 +116,9 @@ static void rte(const char *t, long int tol)
     agc_status_t         st;        /* status of the chain        */
 
     agc_state_init(AGC_VEHICLE_CSM);
-    (void) agc_exec_init();
+    agc_exec_init();
     (void) agc_waitlist_init();
-    (void) agc_navaux_set_padload(&pad);
+    agc_navaux_set_padload(&pad);
     ip           = rte_ip();
     rs           = rte_state();
     agc_interp_init(ip);

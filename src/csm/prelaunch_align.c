@@ -189,9 +189,9 @@ agc_dp_t prelaunch_tmark(void)
  *   azimuth  agc_dp_t        I    NEWAZ1, rev 2^0 (clockwise from north)
  *   xsm      agc_mat_t *     O    rows XSM, YSM, ZSM, half-unit
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm)
+void agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm)
 {
     agc_dp_t s = agc_dp_sin(azimuth); /* sin AZ / 2, 2^0           */
     agc_dp_t c = agc_dp_cos(azimuth); /* cos AZ / 2, 2^0           */
@@ -199,8 +199,6 @@ agc_status_t agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm)
     xsm->row[0] = agc_vec_make(0, agc_dp_neg(c), s);
     xsm->row[1] = agc_vec_make(0, s, c);
     xsm->row[2] = agc_vec_make(-AGC_DP_HALF, 0, 0); /* CS HALF      */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -208,18 +206,11 @@ agc_status_t agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm)
  *
  * ARGUMENTS:
  *
- * RETURNS: agc_status_t from agc_csm_prelaunch_posn17c
+ * RETURNS: none
  **********************************************************************/
-agc_status_t prelaunch_posn17c(void)
+void prelaunch_posn17c(void)
 {
-    agc_status_t st = agc_csm_prelaunch_posn17c(pl.newazmth, &agc_align_ram()->xsm); /* status of the call */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    return (AGC_STATUS_OK);
+    agc_csm_prelaunch_posn17c(pl.newazmth, &agc_align_ram()->xsm);
 }
 
 /**********************************************************************
@@ -265,7 +256,8 @@ agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude)
  *   temptime  agc_dp_t        I    TEMPTIME, cs 2^28
  *   wake_as   agc_job_id_t    I    job woken after GYROBUSY, or NONE
  *
- * RETURNS: agc_status_t from IMUPULSE (BUSY: the job sleeps as wake_as)
+ * RETURNS: agc_status_t from IMUPULSE (BUSY: the job sleeps as wake_as);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t earthr_at(agc_interp_t *ip, agc_dp_t temptime, agc_job_id_t wake_as)
 {
@@ -311,7 +303,8 @@ static agc_status_t earthr_at(agc_interp_t *ip, agc_dp_t temptime, agc_job_id_t 
  *   ip        agc_interp_t *  I/O  interpreter state
  *   tliftoff  agc_dp_t        I    TLIFTOFF, cs 2^28
  *
- * RETURNS: agc_status_t from IMUPULSE (not slept on: P11 goes on)
+ * RETURNS: agc_status_t from IMUPULSE (not slept on: P11 goes on);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip, agc_dp_t tliftoff)
 {
@@ -476,9 +469,9 @@ agc_status_t prelaunch_somerr2(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t prelaunch_nbpospl(void)
+void prelaunch_nbpospl(void)
 {
     agc_mat_t *xnb = &agc_align_ram()->xnb;  /* XNB..ZNB, B1 */
     agc_dp_t   s   = agc_dp_sin(pl.azimuth); /* sin AZ / 2, 2^0   */
@@ -487,8 +480,6 @@ agc_status_t prelaunch_nbpospl(void)
     xnb->row[0] = agc_vec_make(AGC_DP_HALF, 0, 0); /* CA HALF, TS XNB  */
     xnb->row[1] = agc_vec_make(0, s, c);
     xnb->row[2] = agc_vec_make(0, agc_dp_neg(c), s);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -555,12 +546,7 @@ agc_status_t agc_job_prelaunch_initialization(agc_job_ctx_t *ctx)
     }
 
     agc_interp_init(&ip);
-    agc_status_t st = prelaunch_posn17c(); /* status of the call */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    prelaunch_posn17c();
 
     return (geoimutt(ctx)); /* GO TO IMU2 FOR FURTHER INITIALIZATION */
 }
@@ -591,7 +577,7 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
 
     pl.ndxctr = 0; /* IMUBACK                                          */
     agc_interp_init(&ip);
-    st        = prelaunch_nbpospl();
+    prelaunch_nbpospl();
 
     if (agc_phase_checkmm(PRELAUNCH_MM_VERIFY))
     {
@@ -639,7 +625,8 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t of the stall, of SOMERR2 or of the next step
+ * RETURNS: agc_status_t of the stall, of SOMERR2 or of the next step;
+ *          AGC_STATUS_UNIMPLEMENTED (not translated; see the body)
  **********************************************************************/
 agc_status_t agc_job_prelaunch_imu_coarse_aligned(void)
 {
@@ -686,7 +673,8 @@ agc_status_t agc_job_prelaunch_imu_coarse_aligned(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t of LONGCALL, or SOMERR2's
+ * RETURNS: agc_status_t of LONGCALL, or SOMERR2's; AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 agc_status_t agc_job_prelaunch_imu_fine_aligned(void)
 {
@@ -850,7 +838,8 @@ agc_status_t agc_job_imu_test_site_flash(agc_job_ctx_t *ctx)
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I  the test job
  *
- * RETURNS: agc_status_t of GEOIMUTT
+ * RETURNS: agc_status_t of GEOIMUTT; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_job_imu_test_site_loaded(agc_job_ctx_t *ctx)
 {

@@ -418,9 +418,11 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
         next = AGC_TASK_YAWDAP; /* CAF YAWT5; TS T5LOC                  */
     }
 
-    agc_status_t st = csm_dap_set_t5(next, (uint16_t) t->t5tvcdt); /* T5 status */
+    agc_status_t st = AGC_STATUS_OK; /* the stroke test's status */
 
-    if ((st == AGC_STATUS_OK) && (t->stroker != 0))
+    csm_dap_set_t5(next, (uint16_t) t->t5tvcdt);
+
+    if (t->stroker != 0)
     { /* (STRKFLG)                                */
         st = csm_tvc_hack();
     }
@@ -578,15 +580,10 @@ agc_status_t agc_task_dapinit(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = csm_dap_set_t5(AGC_TASK_PITCHDAP, (uint16_t) w); /* T5 status */
+    csm_dap_set_t5(AGC_TASK_PITCHDAP, (uint16_t) w);
 
     t->pcduypst = agc_erase_cduy();
     t->pcduzpst = agc_erase_cduz();
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    return (st); /* NOQRSM                                              */
+    return (AGC_STATUS_OK); /* NOQRSM                                              */
 }

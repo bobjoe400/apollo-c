@@ -358,9 +358,9 @@ static uint16_t *noun_word(uint16_t id)
  *   id -- noun data id (AGC_DATA_*)
  *   v -- the value, at the noun's scale
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t noun_two_int_write(uint16_t id, agc_dp_t v)
+static void noun_two_int_write(uint16_t id, agc_dp_t v)
 {
     if (id == AGC_DATA_VHFCNT)
     {
@@ -372,8 +372,6 @@ static agc_status_t noun_two_int_write(uint16_t id, agc_dp_t v)
         agc_lm_ldg()->tredes   = agc_dp_high(v);
         agc_lm_ldg()->lookangl = agc_dp_low(v);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -511,34 +509,29 @@ static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
  *   id -- AGC_DATA_VMAGI, AGC_DATA_HDOT or AGC_DATA_ALTI
  *   value -- receives the value, at the noun's scale
  *
- * RETURNS: agc_status_t -- the readout's status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t noun_p11_readout(uint16_t id, agc_dp_t *value)
+static void noun_p11_readout(uint16_t id, agc_dp_t *value)
 {
-    agc_dp_t     vmagi = 0;                                                               /* VMAGI, 2^7 m/cs */
-    agc_dp_t     hdot  = 0;                                                               /* HDOT, 2^7 m/cs  */
-    agc_dp_t     alti  = 0;                                                               /* ALTI, 2^29 m    */
-    agc_status_t st    = agc_earth_orbit_insertion_monitor_readout(&vmagi, &hdot, &alti); /* readout outcome */
+    agc_dp_t vmagi = 0; /* VMAGI, 2^7 m/cs */
+    agc_dp_t hdot  = 0; /* HDOT, 2^7 m/cs  */
+    agc_dp_t alti  = 0; /* ALTI, 2^29 m    */
 
-    if (st == AGC_STATUS_OK)
+    agc_earth_orbit_insertion_monitor_readout(&vmagi, &hdot, &alti);
+    *value = vmagi;
+
+    if (id == AGC_DATA_HDOT)
     {
-        *value = vmagi;
-
-        if (id == AGC_DATA_HDOT)
-        {
-            *value = hdot;
-        }
-        else if (id == AGC_DATA_ALTI)
-        {
-            *value = alti;
-        }
-        else
-        {
-            /* VMAGI */
-        }
+        *value = hdot;
     }
-
-    return (st);
+    else if (id == AGC_DATA_ALTI)
+    {
+        *value = alti;
+    }
+    else
+    {
+        /* VMAGI */
+    }
 }
 
 /**********************************************************************
@@ -549,13 +542,14 @@ static agc_status_t noun_p11_readout(uint16_t id, agc_dp_t *value)
  *   write -- true: store *value
  *   value -- the value, at the noun's scale (read: receives it)
  *
- * RETURNS: agc_status_t -- the nav-aux store's status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t noun_latlong(uint16_t id, bool write, agc_dp_t *value)
+static void noun_latlong(uint16_t id, bool write, agc_dp_t *value)
 {
-    agc_latlong_t ll;                               /* LAT, LONG, ALT */
-    agc_status_t  st = agc_navaux_get_latlong(&ll); /* store outcome */
-    agc_dp_t     *f  = &ll.alt;                     /* the component named by id */
+    agc_latlong_t ll;          /* LAT, LONG, ALT */
+    agc_dp_t     *f = &ll.alt; /* the component named by id */
+
+    agc_navaux_get_latlong(&ll);
 
     if (id == AGC_DATA_LAT)
     {
@@ -570,21 +564,15 @@ static agc_status_t noun_latlong(uint16_t id, bool write, agc_dp_t *value)
         /* ALT */
     }
 
-    if (st == AGC_STATUS_OK && write)
+    if (write)
     {
         *f = *value;
-        st = agc_navaux_set_latlong(&ll);
-    }
-    else if (st == AGC_STATUS_OK)
-    {
-        *value = *f;
+        agc_navaux_set_latlong(&ll);
     }
     else
     {
-        /* the store's failure is returned */
+        *value = *f;
     }
-
-    return (st);
 }
 
 /**********************************************************************
@@ -608,11 +596,13 @@ static agc_status_t noun_by_function(uint16_t id, bool lm, bool write, agc_dp_t 
 
     if ((id == AGC_DATA_HDOT || id == AGC_DATA_ALTI || (id == AGC_DATA_VMAGI && p11)) && !write)
     {
-        st = noun_p11_readout(id, value);
+        noun_p11_readout(id, value);
+        st = AGC_STATUS_OK;
     }
     else if (id == AGC_DATA_LAT || id == AGC_DATA_LONG || id == AGC_DATA_ALT)
     {
-        st = noun_latlong(id, write, value);
+        noun_latlong(id, write, value);
+        st = AGC_STATUS_OK;
     }
     else
     {
@@ -643,7 +633,8 @@ static agc_status_t noun_by_function(uint16_t id, bool lm, bool write, agc_dp_t 
 
         if (st == AGC_STATUS_NOT_FOUND && write && (id == AGC_DATA_VHFCNT || id == AGC_DATA_FUNNYDSP))
         {
-            st = noun_two_int_write(id, *value);
+            noun_two_int_write(id, *value);
+            st = AGC_STATUS_OK;
         }
 
         if (st == AGC_STATUS_NOT_FOUND && !write)

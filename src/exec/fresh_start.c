@@ -220,27 +220,19 @@ static agc_status_t startsb2(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the first failing status of the routines
- *          it calls
+ * RETURNS: agc_status_t -- the STARTSB2 status
  **********************************************************************/
 static agc_status_t startsb1(void)
 {
-    agc_status_t st = AGC_STATUS_OK; /* LM DAP part outcome */
-
     waitlist_reset_time3();
     rupt_reset_timers();
 
     if (is_lm())
     {
-        st = agc_lm_dap_restart();
+        agc_lm_dap_restart();
     }
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = startsb2();
-    }
-
-    return (st);
+    return (startsb2());
 }
 
 /**********************************************************************
@@ -265,9 +257,9 @@ static agc_status_t startsub(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t dofstart_common(void)
+static void dofstart_common(void)
 {
     /* "The IMU was in coarse align in gimbal lock, so put it back"
      * (DOFSTART C p.184 / L p.212).                                       */
@@ -348,7 +340,6 @@ static agc_status_t dofstart_common(void)
     }
 
     /* ENDRSTRT: on to DUMMYJOB +2 (RELINT, NEWJOB untouched).          */
-    return (AGC_STATUS_OK);
 } /* dofstart_common */
 
 /**********************************************************************
@@ -357,9 +348,9 @@ static agc_status_t dofstart_common(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the DOFSTART tail status (AGC_STATUS_OK)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t dofstart_csm(void)
+static void dofstart_csm(void)
 {
     /* delegated (sys-misc self-check / uplink): ERESTORE, SMODE, UPSVFLAG */
     agc_chan_write(AGC_CHAN_PYJETS, 0); /* turn off RCS jets    */
@@ -371,7 +362,7 @@ static agc_status_t dofstart_csm(void)
 
     /* delegated: WTOPTION, DNLSTCOD, NVSAVE, EBANKTEM, RATEINDX, TRKMKCNT,
      * VHFCNT, EXTVBACT.                                                */
-    return (dofstart_common());
+    dofstart_common();
 }
 
 /**********************************************************************
@@ -380,9 +371,9 @@ static agc_status_t dofstart_csm(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the DOFSTART tail status (AGC_STATUS_OK)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t dofstrt1_lm(void)
+static void dofstrt1_lm(void)
 {
     /* delegated (dap-lm, sys-misc): RCSFLAGS = 4, ABDELV, NVSAVE,
      * EBANKTEM, CH5MASK, CH6MASK, PVALVEST, ERESTORE, SMODE, DNLSTCOD,
@@ -394,7 +385,7 @@ static agc_status_t dofstrt1_lm(void)
     agc_chan_write(AGC_CHAN_CHAN13, 0);
     agc_chan_write(AGC_CHAN_CHAN14, 0);
 
-    return (dofstart_common());
+    dofstart_common();
 }
 
 /**********************************************************************
@@ -406,13 +397,11 @@ static agc_status_t dofstrt1_lm(void)
  *   slap1 -- true for the V36 SLAP1 fresh start (also the SLAP1-only resets)
  *   engine_off -- true: DOFSTART turns the engine off; LM false = DOFSTRT1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the first failing status of the routines
- *          it calls
+ * RETURNS: agc_status_t -- the status of the other modules' resets
+ *          (exec_up_dofstart)
  **********************************************************************/
 static agc_status_t dofstart(bool slap1, bool engine_off)
 {
-    agc_status_t st; /* status of the vehicle's DOFSTART */
-
     if (is_lm())
     {
         if (engine_off)
@@ -421,16 +410,11 @@ static agc_status_t dofstart(bool slap1, bool engine_off)
             agc_erase_set_thrust(0);                     /* CS ZERO / TS THRUST (-0)      */
         }
 
-        st = dofstrt1_lm();
+        dofstrt1_lm();
     }
     else
     {
-        st = dofstart_csm();
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
+        dofstart_csm();
     }
 
     return (exec_up_dofstart(slap1)); /* other modules' erasables */

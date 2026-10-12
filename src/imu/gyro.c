@@ -238,8 +238,9 @@ void agc_imu_hw_set_gyrocmd(uint16_t pulses)
  *   wake_as  agc_job_id_t        I    job to sleep as when the gyros
  *                                     are busy
  *
- * RETURNS: agc_status_t -- OK, BUSY (asleep), ALARM when the IMU is
- *          being caged (IMUCADR -0), or the waitlist status
+ * RETURNS: agc_status_t -- OK, BUSY (asleep), ALARM when the IMU is being
+ *          caged (IMUCADR -0), or the waitlist status; AGC_STATUS_BAD_ARG
+ *          on a failed precondition
  **********************************************************************/
 agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
 {
@@ -301,7 +302,8 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as)
  * ARGUMENTS:
  *   gyro  const agc_dp_t [3]  I    OGC, IGC, MGC, rev 2^0
  *
- * RETURNS: agc_status_t -- status of IMUPULSE
+ * RETURNS: agc_status_t -- status of IMUPULSE; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t agc_imu_pulse(const agc_dp_t gyro[3])
 {
@@ -485,7 +487,8 @@ static agc_status_t gyro_next(void)
  * STRTGYRO (IMU_MODE_SWITCHING_ROUTINES.agc p.1432) -- task: de-select
  * the last gyro, CAGETEST, STRTGYR2
  *
- * RETURNS: agc_status_t -- status of STRTGYR2, or IMUBAD when caged
+ * RETURNS: agc_status_t -- status of STRTGYR2, or IMUBAD when caged;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_task_strtgyro(void)
 {
@@ -515,7 +518,8 @@ agc_status_t agc_task_strtgyro(void)
  *
  * Bad end if the IMU has been caged or put in coarse align meanwhile.
  *
- * RETURNS: agc_status_t -- status of AUG3 or LASTSEG, or IMUBAD
+ * RETURNS: agc_status_t -- status of AUG3 or LASTSEG, or IMUBAD;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_task_gyro_augment(void)
 {

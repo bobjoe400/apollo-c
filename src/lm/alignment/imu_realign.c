@@ -94,14 +94,11 @@ agc_status_t agc_lm_landing_site_latlong(agc_job_ctx_t *ctx, agc_dp_t t, agc_job
     agc_interp_t ip;              /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_navaux_padload_t pad;                               /* pad loads (ephemeris, RLS) */
-    agc_latlong_t        ll;                                /* latitude, longitude, altitude */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* status of the call */
+    agc_navaux_padload_t pad; /* pad loads (ephemeris, RLS) */
+    agc_latlong_t        ll;  /* latitude, longitude, altitude */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_from_r(&ip, &pad, latlong_options(), ram->alphav, t, &ll);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_latlong_from_r(&ip, &pad, latlong_options(), ram->alphav, t, &ll);
 
     if (st != AGC_STATUS_OK)
     {
@@ -160,17 +157,14 @@ agc_status_t agc_job_lm_landing_site_accepted(void)
     agc_interp_init(&ip);
     agc_latlong_t ll; /* latitude, longitude, altitude */
 
-    ll.lon                  = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
-    ll.alt                  = ram->landalt;
-    ll.lat                  = ram->landlat;
-    ll.eradm                = 0;
-    agc_navaux_padload_t pad;                                    /* pad loads (ephemeris, RLS) */
-    agc_status_t         st = agc_navaux_get_padload(&pad);      /* status of the call */
+    ll.lon   = agc_dp_shl(&ip, ram->landlong, 1); /* SL1      */
+    ll.alt   = ram->landalt;
+    ll.lat   = ram->landlat;
+    ll.eradm = 0;
+    agc_navaux_padload_t pad;                     /* pad loads (ephemeris, RLS) */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_to_r(&ip, &pad, latlong_options(), &ll, ram->landing_site_time, &ram->alphav, NULL);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_latlong_to_r(&ip, &pad, latlong_options(), &ll, ram->landing_site_time, &ram->alphav, NULL);
 
     if (st != AGC_STATUS_OK)
     {
@@ -207,14 +201,11 @@ agc_status_t agc_job_lm_imu_realign_landing_site(agc_job_ctx_t *ctx)
     agc_interp_t ip;                  /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_navaux_padload_t pad;                               /* pad loads (ephemeris, RLS) */
-    agc_vec_t            r  = agc_vec_zero();               /* RP-TO-R of RLS, m 2^27 */
-    agc_status_t         st = agc_navaux_get_padload(&pad); /* status of the call */
+    agc_navaux_padload_t pad;                /* pad loads (ephemeris, RLS) */
+    agc_vec_t            r = agc_vec_zero(); /* RP-TO-R of RLS, m 2^27 */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->talign, &r);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->talign, &r);
 
     if (st != AGC_STATUS_OK)
     {
@@ -250,13 +241,8 @@ agc_status_t agc_job_lm_realign_site_orientation(agc_job_ctx_t *ctx)
     agc_interp_t     ip;                    /* interpreter state */
 
     agc_interp_init(&ip);
-    const agc_vec_t    xsmd = agc_vec_unit(&ip, ram->alphav, NULL, NULL);                                            /* XSMD = UNIT(ALPHAV), half-unit (2^1) */
-    const agc_status_t st   = agc_align_lsorient(&ip, xsmd, agc_erase_rrectcsm(), agc_erase_vrectcsm(), &ram->xsmd); /* status of the call */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    const agc_vec_t xsmd = agc_vec_unit(&ip, ram->alphav, NULL, NULL); /* XSMD = UNIT(ALPHAV), half-unit (2^1) */
+    agc_align_lsorient(&ip, xsmd, agc_erase_rrectcsm(), agc_erase_vrectcsm(), &ram->xsmd);
 
     return (agc_job_realign_gimbal_display(ctx)); /* P52D     */
 }

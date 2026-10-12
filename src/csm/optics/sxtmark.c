@@ -142,9 +142,10 @@ static void mark_words(const agc_align_sxt_mark_t *m, uint16_t w[MARK_WORDS])
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_ALARM after an alarm
  **********************************************************************/
 static agc_status_t markok(void)
 {
@@ -181,9 +182,10 @@ static agc_status_t markok(void)
  *   want      bool      I    false for SXTMARK +2 (R56): only the VAC area
  *                            is wanted
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_ALARM after an alarm
  **********************************************************************/
 static agc_status_t sxtmark_common(agc_sp_t nmarks, bool want)
 {
@@ -523,9 +525,10 @@ agc_status_t agc_sxtmark_markcont(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_sxtmark_mark2(void)
 {
@@ -568,9 +571,10 @@ agc_status_t agc_sxtmark_mark2(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_sxtmark_mkreject(void)
 {
@@ -843,9 +847,10 @@ agc_sp_t agc_sxtmark_marks_made(void)
  *   mark      int                     I    mark slot, 0 = first
  *   out       agc_align_sxt_mark_t *  O    the mark
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out)
 {

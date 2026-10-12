@@ -1106,15 +1106,14 @@ agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r
  *   v         agc_vec_t              I    velocity, m/cs 2^7
  *   out       agc_rendz_periapo_t *  O    apsides and altitudes, body scale
  *
- * RETURNS: agc_status_t -- the status of agc_rendz_periapo() (always
- *          AGC_STATUS_OK)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out)
+void agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out)
 {
     agc_vec_t vvec = agc_rendz_vec_to_body(ip, rz, v); /* body scale */
     agc_vec_t rvec = agc_rendz_vec_to_body(ip, rz, r); /* body scale */
 
-    return (agc_rendz_periapo(ip, rz, rvec, vvec, out));
+    agc_rendz_periapo(ip, rz, rvec, vvec, out);
 }
 
 /**********************************************************************
@@ -1132,10 +1131,9 @@ agc_status_t agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *r
  *   vvec      agc_vec_t              I    velocity, body scale
  *   out       agc_rendz_periapo_t *  O    apsides and altitudes, body scale
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always: agc_conic_apsides() cannot
- *          fail)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t rvec, agc_vec_t vvec, agc_rendz_periapo_t *out)
+void agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t rvec, agc_vec_t vvec, agc_rendz_periapo_t *out)
 {
     agc_conic_body_t body = agc_conic_body_of_x1(rz->body.rtx1); /* X1 */
 
@@ -1148,14 +1146,8 @@ agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_
     }
 
     agc_apsides_out_t aps; /* APSIDES results */
-    agc_status_t      st;  /* APSIDES */
 
-    st = agc_conic_apsides(ip, rvec, vvec, body, &aps);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_apsides(ip, rvec, vvec, body, &aps);
 
     out->rapo  = aps.rapo;                                /* 2D */
     out->rperi = aps.rperi;                               /* 6D */
@@ -1164,8 +1156,6 @@ agc_status_t agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_
     out->p     = aps.p;
     out->hapo  = agc_dp_sub(ip, out->rapo, out->xxxalt);  /* 4D */
     out->hperi = agc_dp_sub(ip, out->rperi, out->xxxalt); /* 8D */
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -1215,15 +1205,13 @@ agc_status_t agc_rendz_los_and_normal(agc_interp_t *ip, agc_rendz_t *rz)
  *   rz        const agc_rendz_t *  I    rendezvous erasables
  *   m         agc_mat_t *          O    LV matrix rows, 2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m)
+void agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m)
 {
     m->row[1] = agc_vec_neg(rz->unrm);
     m->row[2] = agc_vec_neg(rz_unit(ip, rz->ract3));
     m->row[0] = agc_vec_shl(ip, agc_vec_cross(ip, m->row[2], rz->unrm), 1);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -1266,7 +1254,10 @@ agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit, agc_vec_t vini
 
 /**********************************************************************
  * GET+MGA (MIDGIM p.493): +MGA = ARCSIN(UNIT(dV) . Ysm) in 0..1 rev
- * AGC: GET+MGA (P34-35_P74-75.agc p.493)
+ * AGC: GET+MGA (P34-35_P74-75.agc C p.493, L line 1406)
+ * Luminary's GET+MGA has VLOAD UNIT / UNIT: the half-unit vector is
+ * unitized a second time (which can move its last bits); Comanche
+ * unitizes once. The C follows each rope.
  *
  * FUNCTION NAME: agc_rendz_get_mga
  *
@@ -1278,16 +1269,22 @@ agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit, agc_vec_t vini
  *   refsmmat  const agc_mat_t *  I    REFSMMAT, 2^1
  *   mga       agc_dp_t *         O    +MGA, revolutions 0 .. 1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always; MGLVFLAG cleared to mark a
- *          +MGA result)
+ * RETURNS: none (MGLVFLAG cleared to mark a +MGA result)
  **********************************************************************/
-agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, const agc_mat_t *refsmmat, agc_dp_t *mga)
+void agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, const agc_mat_t *refsmmat, agc_dp_t *mga)
 {
     /* HALFREV 2DEC 1 B-1 */
     static const agc_dp_t halfrev = AGC_DP_HALF; /* HALFREV, rev 2^0 */
     agc_dp_t              s;                     /* sin, 2^1 */
 
-    s          = agc_dp_shl(ip, agc_vec_dot(ip, rz_unit(ip, dv), refsmmat->row[1]), 1);
+    agc_vec_t u = rz_unit(ip, dv); /* VLOAD UNIT: UV, 2^1 */
+
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        u = rz_unit(ip, u); /* Luminary: second UNIT */
+    }
+
+    s          = agc_dp_shl(ip, agc_vec_dot(ip, u, refsmmat->row[1]), 1);
     agc_dp_t a = agc_dp_asin(ip, s); /* MGA, rev 2^0 */
 
     if (a < 0)
@@ -1297,8 +1294,6 @@ agc_status_t agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, const agc_mat_t *
 
     *mga = a;
     agc_flag_clear(AGC_FLAG_MGLVFLAG);
-
-    return (AGC_STATUS_OK);
 }
 
 /* ---- navigation pad loads and X789 (P20-P25 erasables, owned here) ---- */
@@ -1422,10 +1417,11 @@ agc_status_t rz_incorp2(agc_interp_t *ip, const agc_incorp_t *inc, bool moonthis
 
     if (st == AGC_STATUS_OK)
     {
-        st = agc_incorp_update_state(ip, inc, &sv);
+        agc_incorp_update_state(ip, inc, &sv);
     }
 
-    ctx->sv.rcv    = sv.rcv;
+    ctx->sv.rcv = sv.rcv;
+
     ctx->sv.vcv    = sv.vcv;
     ctx->sv.deltav = sv.tdeltav;
     ctx->sv.nuv    = sv.tnuv;

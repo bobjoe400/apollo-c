@@ -84,9 +84,9 @@ static void      test_cducmd_needle_range(void);
 int main(void)
 {
     agc_state_init(AGC_VEHICLE_CSM);
-    (void) agc_exec_init();
+    agc_exec_init();
     (void) agc_waitlist_init();
-    (void) agc_imu_mode_init();
+    agc_imu_mode_init();
     test_arctrig();
     test_calcgta_identity();
     test_calcga_gimbal_lock();
@@ -300,7 +300,7 @@ static void test_pipa_zero_comp(void)
     agc_imu_comp_params_t p = { {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0} };
 
     CHECK(agc_imu_comp_load(&p) == AGC_STATUS_OK);
-    CHECK(agc_imu_gcompzer() == AGC_STATUS_OK);
+    agc_imu_gcompzer();
     agc_imu_set_pipa_interval((agc_sp_t) (200 * 64));                                              /* 2 s, cs x 2^8        */
     agc_vec_t in   = agc_vec_make(agc_dp_pack(123, 0), agc_dp_pack(-45, 0), agc_dp_pack(7000, 0)); /* DELV, PIPA pulses x 2^14 */
     agc_vec_t delv = in;                                                                           /* DELV, PIPA pulses x 2^14 */
@@ -507,7 +507,7 @@ static void test_optical_verification(void)
     const agc_dp_t az     = agc_dp_from_double(0.1, 0); /* 36 deg, rev 2^0 */
 
     agc_interp_init(&ip);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_dsky_init();
     CHECK(agc_csm_prelaunch_set_pad(agc_dp_from_double(0.08, 0), az, az) == AGC_STATUS_OK);
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, erc);
     CHECK(agc_job_optical_verification(&ctx) == AGC_STATUS_OK);

@@ -184,9 +184,9 @@ agc_status_t agc_task_dotvcon(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_dostrull(void)
+void agc_task_dostrull(void)
 {
     if (agc_flag_test(AGC_FLAG_STRULLSW))
     {
@@ -196,8 +196,6 @@ agc_status_t agc_task_dostrull(void)
     agc_chan_write(05, 0U); /* ULAGEOFF: ZERO CHAN5   */
 
     agc_phase_kill(4);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -249,14 +247,7 @@ agc_status_t agc_task_dotvcrcs(void)
 {
     agc_inhint();
     agc_csm_dap_setmaxdb();
-    agc_status_t st = agc_csm_dap_rcsdapon(); /* status of agc_csm_dap_rcsdapon */
-
-    if (st != AGC_STATUS_OK)
-    {
-        agc_relint();
-
-        return (st);
-    }
+    agc_csm_dap_rcsdapon(); /* RCSDAPON */
 
     agc_relint();
     agc_csm_dap_massprop();

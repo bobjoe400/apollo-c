@@ -646,25 +646,19 @@ agc_status_t agc_job_rendezvous_sighting_mark_end(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the LAT-LONG access status
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_rendz_llasrd(void)
+void agc_rendz_llasrd(void)
 {
-    agc_latlong_t ll;                               /* LAT LONG ALT */
-    agc_status_t  st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
+    agc_latlong_t ll; /* LAT LONG ALT */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_navaux_get_latlong(&ll);
 
     agc_align_ram_t *a = agc_align_ram(); /* LANDLAT .. LANDALT */
 
     a->landlat  = ll.lat;
     a->landalt  = ll.alt;
     a->landlong = agc_dp_shr(ll.lon, 1);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -676,17 +670,13 @@ agc_status_t agc_rendz_llasrd(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the LAT-LONG access status
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_rendz_llasrda(void)
+void agc_rendz_llasrda(void)
 {
-    agc_latlong_t ll;                               /* LAT LONG ALT */
-    agc_status_t  st = agc_navaux_get_latlong(&ll); /* LAT LONG ALT */
+    agc_latlong_t ll; /* LAT LONG ALT */
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_navaux_get_latlong(&ll);
 
     agc_align_ram_t *a = agc_align_ram(); /* LANDLAT .. LANDALT */
     agc_interp_t     ip;                  /* interpreter state */
@@ -696,5 +686,5 @@ agc_status_t agc_rendz_llasrda(void)
     ll.alt = a->landalt;
     ll.lon = agc_dp_shl(&ip, a->landlong, 1);
 
-    return (agc_navaux_set_latlong(&ll));
+    agc_navaux_set_latlong(&ll);
 }

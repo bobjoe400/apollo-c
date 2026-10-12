@@ -267,18 +267,18 @@ agc_csm_tvc_t    *agc_csm_dap_tvc(void);
 agc_csm_dapcom_t *agc_csm_dap_com(void);
 
 /* ---- entry points used by other lanes -------------------------------- */
-agc_status_t agc_csm_dap_decode_dap_data(void); /* S41.2 decode DAPDATR1/2   */
-void         agc_csm_dap_rcs_gains(void);       /* S40.14 RCS gains          */
-agc_status_t agc_csm_dap_rcsdapon(void);        /* RCSDAPON (call under INHINT) */
-void         agc_csm_dap_massprop(void);        /* MASSPROP                  */
-void         agc_csm_dap_fixcw(void);           /* FIXCW (MASSPROP +)        */
-void         agc_csm_dap_zerojet(void);         /* ZEROJET                   */
-agc_status_t agc_csm_tvc_preswtch(void);        /* PRESWTCH (V46 CSM/LM switch-over) */
-void         agc_csm_dap_setmaxdb(void);        /* SETMAXDB (P40-P47 p.687)  */
-void         agc_csm_dap_setmindb(void);        /* SETMINDB (P40-P47 p.687)  */
+void agc_csm_dap_decode_dap_data(void); /* S41.2 decode DAPDATR1/2   */
+void agc_csm_dap_rcs_gains(void);       /* S40.14 RCS gains          */
+void agc_csm_dap_rcsdapon(void);        /* RCSDAPON (call under INHINT) */
+void agc_csm_dap_massprop(void);        /* MASSPROP                  */
+void agc_csm_dap_fixcw(void);           /* FIXCW (MASSPROP +)        */
+void agc_csm_dap_zerojet(void);         /* ZEROJET                   */
+void agc_csm_tvc_preswtch(void);        /* PRESWTCH (V46 CSM/LM switch-over) */
+void agc_csm_dap_setmaxdb(void);        /* SETMAXDB (P40-P47 p.687)  */
+void agc_csm_dap_setmindb(void);        /* SETMINDB (P40-P47 p.687)  */
 
 /* RCSDAPON +1 (R00TOP00 entry): TIME5 word supplied by the caller.       */
-agc_status_t agc_csm_dap_rcsdapon_t5(uint16_t time5_word);
+void agc_csm_dap_rcsdapon_t5(uint16_t time5_word);
 
 /* NEEDLER with the errors given (stored in AK..AK2 first); init sets
  * RCSFLAGS BIT3 first (the user's initialisation pass). For guid-entry.   */
@@ -293,7 +293,7 @@ agc_status_t agc_csm_dap_stickchk(uint16_t ch31_bits);
 agc_status_t agc_task_redorcs(void);
 agc_status_t agc_task_rcsatt(void);
 agc_status_t agc_task_jetslect(void);
-agc_status_t agc_task_t6start(void);
+void         agc_task_t6start(void);
 agc_status_t agc_task_tvcdapon(void);
 agc_status_t agc_task_tvc_initialize(void);
 agc_status_t agc_task_dapinit(void);
@@ -303,14 +303,14 @@ agc_status_t agc_task_redotvc(void);
 agc_status_t agc_task_optics_counter_enable(void);
 agc_status_t agc_task_cmdsout(void);
 agc_status_t agc_task_roll_jets_off(void);
-agc_status_t agc_task_rcsup(void); /* RCSUP (P40-P47 p.736)     */
+void         agc_task_rcsup(void); /* RCSUP (P40-P47 p.736)     */
 
 /* ---- waitlist tasks and jobs ------------------------------------------ */
 agc_status_t agc_task_tvcexec(void);
 agc_status_t agc_task_rolldap(void);
-agc_status_t agc_task_hackwlst(void);
+void         agc_task_hackwlst(void);
 agc_status_t agc_task_exrstrt(void);
-agc_status_t agc_job_ambgupdt(void);
+void         agc_job_ambgupdt(void);
 agc_status_t agc_job_strktsti(void);
 
 #endif /* AGC_CSM_DAP_H */

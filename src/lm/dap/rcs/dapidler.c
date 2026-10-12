@@ -94,18 +94,18 @@ static agc_status_t settime5(void)
  **********************************************************************/
 agc_status_t lm_dap_shutdown(void)
 {
-    lm_dap_t    *d  = lm_dap_state();                   /* DAP erasables */
-    agc_status_t st = lm_dap_set_t5adr(LM_T5_DAPIDLER); /* T5ADR = DAPIDLER */
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
+    lm_dap_set_t5adr(LM_T5_DAPIDLER); /* T5ADR = DAPIDLER */
     d->nextp        = 0;
     d->nextu        = 0;
     d->nextv        = 0;
-    agc_chan_write(005, 0);       /* command jets off        */
+    agc_chan_write(005, 0);           /* command jets off        */
     agc_chan_write(006, 0);
     agc_chan_and(012, (uint16_t) ~BGIM23 & 077777u);
-    agc_status_t t5 = settime5(); /* next T5RUPT in 100 ms */
+    agc_status_t t5 = settime5();     /* next T5RUPT in 100 ms */
 
-    if (!AGC_ASSERT(st != AGC_STATUS_OK || d->t5adr == LM_T5_DAPIDLER))
+    if (!AGC_ASSERT(d->t5adr == LM_T5_DAPIDLER))
     {
         return (AGC_STATUS_BAD_ARG); /* the next T5RUPT idles */
     }
@@ -115,7 +115,7 @@ agc_status_t lm_dap_shutdown(void)
         return (AGC_STATUS_BAD_ARG); /* trim gimbal drives off */
     }
 
-    return ((st != AGC_STATUS_OK) ? st : t5); /* first failure wins */
+    return (t5);
 }
 
 /**********************************************************************
@@ -132,13 +132,8 @@ agc_status_t lm_dap_shutdown(void)
  **********************************************************************/
 agc_status_t lm_dap_moreidle(void)
 {
-    agc_status_t sq = lm_dap_qerrcalc(); /* QERRCALC, RERRCALC */
+    lm_dap_qerrcalc();                   /* QERRCALC, RERRCALC */
     agc_status_t sp = lm_dap_calcperr(); /* CALCPERR */
-
-    if (sq != AGC_STATUS_OK)
-    {
-        return (sq);
-    }
 
     if (sp != AGC_STATUS_OK)
     {
@@ -262,32 +257,27 @@ agc_status_t lm_dap_startdap(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    d->rcsflags     = (uint16_t) (d->rcsflags & ~MANFLAG);
-    d->oldxforp     = agc_erase_cdux();
-    d->oldyforp     = agc_erase_cduy();
-    d->oldzforq     = agc_erase_cduz();
-    d->rcsflags     = (uint16_t) (d->rcsflags | LM_RCS_PSKIP);
-    d->skip[0]      = STARTDAP_SKIP;
-    d->skip[1]      = STARTDAP_SKIP;
+    d->rcsflags    = (uint16_t) (d->rcsflags & ~MANFLAG);
+    d->oldxforp    = agc_erase_cdux();
+    d->oldyforp    = agc_erase_cduy();
+    d->oldzforq    = agc_erase_cduz();
+    d->rcsflags    = (uint16_t) (d->rcsflags | LM_RCS_PSKIP);
+    d->skip[0]     = STARTDAP_SKIP;
+    d->skip[1]     = STARTDAP_SKIP;
     agc_rupt_set_time(6, LM_T6_POSMAX);
-    d->t6next[0]    = (agc_sp_t) LM_T6_POSMAX;
-    d->t6furtha[0]  = (agc_sp_t) LM_T6_POSMAX;
-    d->t6next[1]    = 0;
-    d->t6furtha[1]  = 0;
-    d->nxt6adr      = 0;
-    d->nextp        = 0;
-    d->nextu        = 0;
-    d->nextv        = 0;
-    d->dapzrupt     = LM_DAPZ_NEG;                   /* jask not in progress               */
-    d->nptraps      = STARTDAP_TRAPS;
-    d->nqtraps      = STARTDAP_TRAPS;
-    d->nrtraps      = STARTDAP_TRAPS;
-    agc_status_t s5 = lm_dap_set_t5adr(LM_T5_PAXIS); /* T5ADR = PAXIS */
-
-    if (s5 != AGC_STATUS_OK)
-    {
-        return (s5);
-    }
+    d->t6next[0]   = (agc_sp_t) LM_T6_POSMAX;
+    d->t6furtha[0] = (agc_sp_t) LM_T6_POSMAX;
+    d->t6next[1]   = 0;
+    d->t6furtha[1] = 0;
+    d->nxt6adr     = 0;
+    d->nextp       = 0;
+    d->nextu       = 0;
+    d->nextv       = 0;
+    d->dapzrupt    = LM_DAPZ_NEG; /* jask not in progress               */
+    d->nptraps     = STARTDAP_TRAPS;
+    d->nqtraps     = STARTDAP_TRAPS;
+    d->nrtraps     = STARTDAP_TRAPS;
+    lm_dap_set_t5adr(LM_T5_PAXIS);
 
     return (settime5());
 } /* lm_dap_startdap */

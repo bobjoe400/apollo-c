@@ -232,14 +232,11 @@ void exec_request_enema(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (the job or task returns it; the
- *          restart runs at the service point)
+ * RETURNS: none (the restart runs at the service point)
  **********************************************************************/
-agc_status_t agc_exec_enema(void)
+void agc_exec_enema(void)
 {
     exec_request_enema();
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

@@ -165,17 +165,13 @@ agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t
  **********************************************************************/
 agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job, agc_vec_t *los)
 {
-    agc_align_ram_t     *ram = agc_align_ram();              /* alignment erasables */
-    agc_navaux_padload_t pad;                                /* pad loads (ephemeris, RLS) */
-    agc_status_t         st  = agc_navaux_get_padload(&pad); /* status of the call */
+    agc_align_ram_t     *ram = agc_align_ram(); /* alignment erasables */
+    agc_navaux_padload_t pad;                   /* pad loads (ephemeris, RLS) */
 
+    agc_navaux_get_padload(&pad);
     ram->aoptime       = align_loadtime();
-    const agc_vec_t uz = agc_vec_make(0, 0, AGC_DP_HALF); /* UNITZ, half-unit (2^1) */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_rp_to_r(ip, &pad, agc_dp_high(ram->aoptime) != 0, uz, ram->aoptime, &ram->star); /* BHIZ on MPAC = the time: moon */
-    }
+    const agc_vec_t uz = agc_vec_make(0, 0, AGC_DP_HALF);                                                            /* UNITZ, half-unit (2^1) */
+    agc_status_t    st = agc_planet_rp_to_r(ip, &pad, agc_dp_high(ram->aoptime) != 0, uz, ram->aoptime, &ram->star); /* BHIZ on MPAC = the time: moon */
 
     agc_integ_out_t o; /* integration output (RATT, VATT) */
 
@@ -291,12 +287,8 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_jo
             ll.lon   = agc_dp_shl(ip, ram->landlong, 1);
             ll.alt   = ram->landalt;
             ll.eradm = 0;
-            st       = agc_navaux_get_padload(&pad);
-
-            if (st == AGC_STATUS_OK)
-            {
-                st = agc_latlong_to_r(ip, &pad, opt, &ll, ram->aoptime, &ram->star, NULL);
-            }
+            agc_navaux_get_padload(&pad);
+            st       = agc_latlong_to_r(ip, &pad, opt, &ll, ram->aoptime, &ram->star, NULL);
         }
 
         if (st == AGC_STATUS_OK)

@@ -270,11 +270,11 @@ agc_status_t agc_lm_start_approach_phase(void);               /* STARTP64     */
 agc_status_t agc_lm_start_velocity_nulling(void);             /* P65START     */
 agc_status_t agc_lm_ttfincr(agc_interp_t *ip);                /* TTFINCR      */
 agc_status_t agc_lm_calcrgvg(agc_interp_t *ip);               /* CALCRGVG     */
-agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip);               /* RGVGCALC     */
+void         agc_lm_rgvgcalc(agc_interp_t *ip);               /* RGVGCALC     */
 agc_status_t agc_lm_ttf8cl(agc_interp_t *ip);                 /* TTF/8CL      */
 agc_status_t agc_lm_quadguid(agc_interp_t *ip);               /* QUADGUID     */
 agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg); /* AFCCALC1 */
-agc_status_t agc_lm_cgcalc(agc_interp_t *ip);                 /* CGCALC       */
+void         agc_lm_cgcalc(agc_interp_t *ip);                 /* CGCALC       */
 agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3);
@@ -286,9 +286,9 @@ agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx);
 
 /* P64CEED */
-agc_status_t agc_lm_job_approach_phase_proceed(void);
-void         agc_lm_tdispset(void);  /* TDISPSET     */
-agc_sp_t     agc_lm_ttf8_high(void); /* CA TTF/8: the raw high word      */
+void     agc_lm_job_approach_phase_proceed(void);
+void     agc_lm_tdispset(void);  /* TDISPSET     */
+agc_sp_t agc_lm_ttf8_high(void); /* CA TTF/8: the raw high word      */
 
 /* ---- landing program flow (lunar_landing.c) ----------------------------- */
 agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx); /* P63LM        */

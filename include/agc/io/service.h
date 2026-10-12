@@ -413,11 +413,11 @@ agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx);         /* AURLOKON 
 agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx);          /* AURLOKON +5 */
 agc_status_t agc_job_rr_designate_schedule(void);                   /* RRDESNBK end */
 agc_status_t agc_job_rr_designate_drive(void);                      /* RRDESK2   */
-agc_status_t agc_job_rr_designate_result(void);                     /* RRDESK2 alarm 503 */
+void         agc_job_rr_designate_result(void);                     /* RRDESK2 alarm 503 */
 agc_status_t agc_job_rr_designate_end_monitor(void);                /* V44 NORRMON */
 agc_status_t agc_job_rr_los_display(void);                          /* V85 RRLOSDSP */
 agc_status_t agc_job_rr_los_display_next(void);                     /* RRLOSDSP loop */
-agc_status_t agc_job_rr_los_display_stop(void);                     /* V85 B5OFF */
+void         agc_job_rr_los_display_stop(void);                     /* V85 B5OFF */
 agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx); /* R04A V04N12 */
 agc_status_t agc_job_radar_test_select(agc_job_ctx_t *ctx);         /* R04 RTSTDEX */
 agc_status_t agc_job_radar_test_auto_check(agc_job_ctx_t *ctx);     /* R04B      */

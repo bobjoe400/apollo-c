@@ -322,7 +322,7 @@ static void test_rate_estimator(void)
     for (int pass = 1; pass <= 30; pass++)
     {
         d->dapcdu[0] = (uint16_t) ((d->dapcdu[0] + 10u) & 077777u);
-        CHECK(lm_dap_rateloop() == AGC_STATUS_OK);
+        lm_dap_rateloop();
         CHECK(lm_dap_backp() == AGC_STATUS_OK);
         int32_t err  = (int32_t) d->omegap - 400; /* OMEGAP error from the true rate, scaled pi/4 rad/s */
 
@@ -381,17 +381,17 @@ static void test_spsrcs(void)
     agc_flag_clear(AGC_FLAG_DRIFTDFL);
     d->jetctr[1] = 0;
     set_axis(d, 0, 0, 700);                       /* 1.92 deg/s               */
-    CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
+    lm_dap_spsrcs();
     CHECK(d->tj[1] == -8192);
     d->edot      = 0;                             /* target is -0.1 deg/s     */
-    CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
+    lm_dap_spsrcs();
     CHECK(d->tj[1] == -8192);                     /* keep firing              */
     d->edot      = -50;                           /* past target: stop        */
-    CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
+    lm_dap_spsrcs();
     CHECK(d->tj[1] == 0);
     CHECK(d->jetctr[1] == 10);
     d->e         = (agc_sp_t) (16384 * 10 / 180); /* outside deadband        */
-    CHECK(lm_dap_spsrcs() == AGC_STATUS_OK);
+    lm_dap_spsrcs();
     CHECK(d->tj[1] == 0);                         /* inhibited by counter     */
 }
 

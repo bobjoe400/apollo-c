@@ -524,7 +524,9 @@ agc_status_t pin_vbreldsp(void)
             return (AGC_STATUS_OK);
         }
 
-        return (pin_reldsp1());
+        pin_reldsp1();
+
+        return (AGC_STATUS_OK);
     }
 
     return (pin_tstlts4());

@@ -78,11 +78,9 @@ static agc_vec_t rone;     /* RONE: CSM position at TSTART82, m 2^29 */
  *   pointvsm  agc_vec_t *        O    POINTVSM: the CSM line of sight in SM
  *                                     axes, half-unit (2^1)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm, agc_vec_t rlem, const agc_mat_t *refsmmat, agc_vec_t *pointvsm)
+void agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm, agc_vec_t rlem, const agc_mat_t *refsmmat, agc_vec_t *pointvsm)
 {
     const agc_vec_t los   = agc_vec_sub(ip, rcsm, rlem); /* RONE - RATT, B27 m */
     int             shift = 0;                           /* NORMUNIT pre-shift: 13 or 0 */
@@ -91,8 +89,6 @@ agc_status_t agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm,
      * MXV halves it once more), so NORMUNIT shifts it left 13 before UNIT;
      * plain UNIT would lose ~15 mrad at 1 km. */
     *pointvsm = agc_rtb_normunit(ip, agc_mat_vec(ip, refsmmat, los), &shift, NULL, NULL);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -188,15 +184,12 @@ static agc_status_t final_attitude_lm(const agc_job_ctx_t *ctx)
     agc_vec_t       pointvsm = agc_vec_zero();       /* POINTVSM, half-unit (2^1) */
     const agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_rendezvous_final_attitude_los(&ip, rone, o.ratt, &refsmmat, &pointvsm);
-    }
-
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    agc_rendezvous_final_attitude_los(&ip, rone, o.ratt, &refsmmat, &pointvsm);
 
     /*
      * V89CALL1: SCAXIS = UNITZ (option 1) or UNITX (option 2); VECPOINT ->

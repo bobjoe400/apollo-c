@@ -41,7 +41,7 @@
 
 /* ---- fresh start / restart (FRESH_START_AND_RESTART.agc pp. 212-219) -- */
 agc_status_t agc_lm_dap_fresh_start(void); /* DAP erasables on fresh start   */
-agc_status_t agc_lm_dap_restart(void);     /* STARTSB1 DAP part (both)        */
+void         agc_lm_dap_restart(void);     /* STARTSB1 DAP part (both)        */
 
 /* ---- alarm codes (octal, as in the listing) ----------------------------- */
 #define AGC_ALARM_02000 \
@@ -80,7 +80,7 @@ agc_status_t agc_lm_dap_pflitedb(void);     /* DB = 1.0 deg, zero errors       *
 void         agc_lm_dap_zatteror(void);     /* CDUxD = CDUx, STOPRATE          */
 void         agc_lm_dap_stoprate(void);     /* zero commanded rates and lags   */
 agc_status_t agc_lm_dap_allcoast(void);     /* coasting-flight DAP init        */
-agc_status_t agc_lm_dap_timegmbl(void);     /* TIMEGMBL trim-gimbal null drive */
+void         agc_lm_dap_timegmbl(void);     /* TIMEGMBL trim-gimbal null drive */
 agc_status_t agc_lm_dap_needles_init(void); /* set RCSFLAGS bit 3 (FDAI init)  */
 
 /* ---- erasables owned by the LM DAP and shared with other modules ------- */

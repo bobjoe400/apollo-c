@@ -181,12 +181,10 @@ agc_status_t csm_tvc_hack(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (TASKOVER)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_hackwlst(void)
+void agc_task_hackwlst(void)
 {
     agc_csm_dap_tvc()->bunker_task = true; /* CAF TCTSKOVR; TS BUNKER    */
     stroke_burst();
-
-    return (AGC_STATUS_OK);
 }

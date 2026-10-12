@@ -76,19 +76,20 @@
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the T5 set-up (RESUME)
+ * RETURNS: agc_status_t -- the status of the T5 set-up (RESUME);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t tvcr_tvc_enable(void)
 {
     agc_chan_or(AGC_CHAN_CHAN12, CH12_ENABL1);
-    agc_status_t st = csm_dap_set_t5(AGC_TASK_OPTICS_COUNTER_ENABLE, T5_60MS); /* T5   */
+    csm_dap_set_t5(AGC_TASK_OPTICS_COUNTER_ENABLE, T5_60MS); /* T5   */
 
     if (!AGC_ASSERT((agc_chan_read(AGC_CHAN_CHAN12) & AGC_CH012_TVCENABLE) != 0u))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -154,17 +155,13 @@ agc_status_t agc_task_redotvc(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the T5 set-up (NOQRSM)
+ * RETURNS: agc_status_t -- the status of the T5 set-up (NOQRSM);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_task_optics_counter_enable(void)
 {
     agc_chan_or(AGC_CHAN_CHAN12, (uint16_t) AGC_CH012_ENBOCDUERR);
-    agc_status_t st = csm_dap_set_t5(AGC_TASK_CMDSOUT, T5_20MS); /* T5   */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    csm_dap_set_t5(AGC_TASK_CMDSOUT, T5_20MS);
 
     if (!AGC_ASSERT(agc_rupt_t5_task() == AGC_TASK_CMDSOUT))
     {
@@ -181,7 +178,8 @@ agc_status_t agc_task_optics_counter_enable(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of TVCINIT4
+ * RETURNS: agc_status_t -- the status of TVCINIT4; AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 static agc_status_t tvcr_chkstrk(void)
 {
@@ -216,13 +214,12 @@ static agc_status_t tvcr_chkstrk(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the first failure of
- *          MRCLEAN, SWICHOVR +5 or TVCINIT4
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the CHKSTRK status;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_task_cmdsout(void)
 {
-    agc_csm_tvc_t *t  = agc_csm_dap_tvc(); /* TVC DAP erasables         */
-    agc_status_t   st = AGC_STATUS_OK;     /* switch-over status        */
+    agc_csm_tvc_t *t = agc_csm_dap_tvc(); /* TVC DAP erasables         */
 
     agc_erase_set_tvcpitch(t->pcmd); /* CS ZERO; AD PCMD; TS TVCPITCH  */
     agc_erase_set_tvcyaw(t->ycmd);
@@ -230,12 +227,14 @@ agc_status_t agc_task_cmdsout(void)
 
     if (t->tvcphase == -1)
     {
-        return (csm_tvc_mrclean()); /* POSTJUMP MRCLEAN                */
+        csm_tvc_mrclean();
+
+        return (AGC_STATUS_OK); /* POSTJUMP MRCLEAN                */
     }
 
     if (t->tvcphase == -2)
     {
-        st = csm_tvc_swichovr_body(); /* IBNKCALL SWICHOVR +5          */
+        csm_tvc_swichovr_body(); /* IBNKCALL SWICHOVR +5          */
     }
 
     agc_status_t s2 = tvcr_chkstrk(); /* CHKSTRK                       */
@@ -245,7 +244,7 @@ agc_status_t agc_task_cmdsout(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st != AGC_STATUS_OK) ? st : s2); /* first failure          */
+    return (s2);
 }
 
 /**********************************************************************

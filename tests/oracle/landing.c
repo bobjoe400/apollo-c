@@ -167,8 +167,8 @@ static void common_in(const char *t)
     agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
 
     agc_state_init(AGC_VEHICLE_LM);
-    (void) agc_exec_init();
-    (void) agc_guid_init(AGC_VEHICLE_LM);
+    agc_exec_init();
+    agc_guid_init(AGC_VEHICLE_LM);
     agc_lm_landing_reset();
     target_in(t, "RBRFG", &p->target[0]);
     target_in(t, "RBRFG+28", &p->target[1]); /* RAPFG .. TCGIAPPR */
@@ -204,7 +204,7 @@ static void guid_pass(const char *t, long int tol)
     l->ttf_8_hi                 = (agc_sp_t) oracle_in(t, "TTF/8", 0);
     l->wchphase                 = (agc_sp_t) oracle_in(t, "WCHPHASE", 0);
     l->flpass0                  = (agc_sp_t) oracle_in(t, "FLPASS0", 0);
-    (void) agc_lm_rgvgcalc(&ip);
+    agc_lm_rgvgcalc(&ip);
     (void) agc_lm_ttf8cl(&ip);
     (void) agc_lm_quadguid(&ip);
     oracle_require_ok(t, "CGCALC");
@@ -251,7 +251,7 @@ static void cgcalc(const char *t, long int tol)
     l->ttf_8_hi            = (agc_sp_t) oracle_in(t, "TTF/8", 0);
     l->wchphase            = (agc_sp_t) oracle_in(t, "WCHPHASE", 0);
     l->cg                  = mat_in(t, "CG");
-    (void) agc_lm_cgcalc(&ip);
+    agc_lm_cgcalc(&ip);
     oracle_require_ok(t, "EXTLOGIC");
 
     for (int r = 0; r < 3; r++)
@@ -370,9 +370,9 @@ static void ascent(const char *t)
     agc_job_ctx_t ctx = {AGC_JOB_ATMAG, 020, false, -1, 0};
 
     agc_state_init(AGC_VEHICLE_LM);
-    (void) agc_exec_init();
-    (void) agc_dsky_init(); /* P12RET goes on into BURNBABY's display */
-    (void) agc_guid_init(AGC_VEHICLE_LM);
+    agc_exec_init();
+    agc_dsky_init(); /* P12RET goes on into BURNBABY's display */
+    agc_guid_init(AGC_VEHICLE_LM);
     agc_lm_landing_reset();
     g->lm.abdvconv = oracle_in_dp(t, "ABDVCONV", 0);
     g->lm.mass1    = oracle_in_dp(t, "MASS1", 0);
@@ -451,8 +451,8 @@ static void rodcomp(const char *t)
     agc_job_ctx_t ctx = {AGC_JOB_RODCOMP, 022, false, -1, 0};
 
     agc_state_init(AGC_VEHICLE_LM);
-    (void) agc_exec_init();
-    (void) agc_guid_init(AGC_VEHICLE_LM);
+    agc_exec_init();
+    agc_guid_init(AGC_VEHICLE_LM);
     agc_lm_landing_reset();
     l->rodcount = (agc_sp_t) oracle_in(t, "RODCOUNT", 0);
     l->rodscal1 = (agc_sp_t) oracle_in(t, "RODSCAL1", 0);

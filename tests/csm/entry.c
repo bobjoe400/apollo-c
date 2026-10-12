@@ -299,18 +299,18 @@ static void test_roll_phase_plane(void)
     agc_sp_t             err20; /* X/360 for 20 deg, B0 */
 
     err20 = agc_sp_from_double(20.0 / 360.0, 0);
-    CHECK(agc_entry_dap_roll_phase_plane(err20, 0, &o) == AGC_STATUS_OK);
+    agc_entry_dap_roll_phase_plane(err20, 0, &o);
     CHECK(!o.in_deadzone);
     CHECK(o.jndx == -1); /* positive roll jets     */
     CHECK(o.ton1 > 0);
-    CHECK(agc_entry_dap_roll_phase_plane((agc_sp_t) (-err20), 0, &o) == AGC_STATUS_OK);
+    agc_entry_dap_roll_phase_plane((agc_sp_t) (-err20), 0, &o);
     CHECK(!o.in_deadzone);
     CHECK(o.jndx == 1);  /* negative roll jets     */
     CHECK(o.ton1 > 0);
     CHECK(agc_entry_dap_roll_jet_bits(-1) != agc_entry_dap_roll_jet_bits(1));
 
     /* 1 deg error, no rate: inside the 4 deg dead zone (XMIN).           */
-    CHECK(agc_entry_dap_roll_phase_plane(agc_sp_from_double(1.0 / 360.0, 0), 0, &o) == AGC_STATUS_OK);
+    agc_entry_dap_roll_phase_plane(agc_sp_from_double(1.0 / 360.0, 0), 0, &o);
     CHECK(o.in_deadzone);
 }
 
@@ -386,7 +386,7 @@ static void test_sidetrak_restart_priority(void)
     es->diffold  = agc_dp_from_double(0.5, 0);
     CHECK(agc_entry_reestablish_sequencer(&display) == AGC_STATUS_OK);
     CHECK(es->gotoaddr == AGC_ENTRY_GOTO_HUNTEST);         /* sidetracked: the next pass resumes HUNTEST */
-    CHECK(agc_exec_init() == AGC_STATUS_OK);               /* STARTSB2: core sets free, NEWJOB -0 */
+    agc_exec_init();                                       /* STARTSB2: core sets free, NEWJOB -0 */
     CHECK(agc_restart_group(5) == AGC_STATUS_OK);
 
     for (int i = 0; i < agc_exec_core_sets(); i++)

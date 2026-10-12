@@ -169,10 +169,10 @@ static void fresh(void)
     agc_navaux_padload_t pad = {0};
 
     agc_state_init(AGC_VEHICLE_CSM);
-    (void) agc_exec_init();
+    agc_exec_init();
     (void) agc_waitlist_init();
     agc_erase_set_modreg(0);
-    (void) agc_navaux_set_padload(&pad);
+    agc_navaux_set_padload(&pad);
     agc_erase_set_tephem(0);
 }
 
@@ -380,7 +380,7 @@ static void run_third(const char *t, bool moon, long int tol_r, long int tol_v, 
     e.reso                = oracle_in_vec(t, "RESO");
     e.veso                = oracle_in_vec(t, "VESO");
     e.omegaes             = oracle_in_dp(t, "OMEGAES", 0);
-    (void) agc_ephem_set_csm_data(&e);
+    agc_ephem_set_csm_data(&e);
     agc_erase_set_tephem(oracle_in_tp(t, "TEPHEM", 0));
     agc_interp_init(&ip);
     (void) agc_integ_ctx_init(&ctx);

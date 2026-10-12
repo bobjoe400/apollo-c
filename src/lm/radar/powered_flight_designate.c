@@ -253,9 +253,10 @@ agc_status_t agc_job_powered_flight_remode(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_powered_flight_preposition(void)
 {
@@ -350,9 +351,9 @@ typedef struct pfd_trig
  *   trig      const agc_cdutrig_t *  I    CDUTRIG of the IMU CDUs
  *   u         agc_sp_t               O    ULOSNB high words, half unit 2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t pfd_ulosnb(agc_interp_t *ip, agc_vec_t los, const agc_cdutrig_t *trig, agc_sp_t u[3])
+static void pfd_ulosnb(agc_interp_t *ip, agc_vec_t los, const agc_cdutrig_t *trig, agc_sp_t u[3])
 {
     agc_vec_t v = agc_vec_unit(ip, los, NULL, NULL); /* UNIT LOS, 2^1 */
 
@@ -362,8 +363,6 @@ static agc_status_t pfd_ulosnb(agc_interp_t *ip, agc_vec_t los, const agc_cdutri
     {
         u[i] = agc_dp_high(v.c[i]);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -404,9 +403,9 @@ static agc_dp_t pfd_mp_chain(agc_sp_t a, agc_sp_t b, agc_sp_t c)
  *   trig      agc_cdutrig_t *  O    CDUTRIG of the IMU CDUs
  *   t         pfd_trig_t *     O    SP sines and cosines of the RR CDUs
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los, agc_cdutrig_t *trig, pfd_trig_t *t)
+static void pfd_first_pass(agc_interp_t *ip, agc_vec_t los, agc_cdutrig_t *trig, pfd_trig_t *t)
 {
     agc_inhint();
     uint16_t cdut   = agc_erase_cdut(); /* SAVECDUT */
@@ -415,15 +414,9 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los, agc_cdutrig_
 
     agc_relint();
     agc_guid_quictrig(trig, yzx);
-    agc_status_t st   = AGC_STATUS_OK; /* status of the last step */
-    agc_sp_t     u[3] = {0, 0, 0};
+    agc_sp_t u[3] = {0, 0, 0};
 
-    st = pfd_ulosnb(ip, los, trig, u);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    pfd_ulosnb(ip, los, trig, u);
 
     agc_sp_t tv = (agc_sp_t) rr_ones(cdut); /* trunnion, rev 2^0 */
     agc_sp_t sv = (agc_sp_t) rr_ones(cdus); /* shaft, rev 2^0 */
@@ -438,8 +431,6 @@ static agc_status_t pfd_first_pass(agc_interp_t *ip, agc_vec_t los, agc_cdutrig_
     { /* TESTCOS  */
         agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_TRACK);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -463,24 +454,13 @@ agc_status_t agc_job_powered_flight_designate(void)
     agc_interp_init(&ip);
     agc_cdutrig_t trig; /* CDUTRIG sines / cosines */
     pfd_trig_t    t;    /* RR CDU sines / cosines */
-    agc_status_t  st;   /* first pass */
 
-    st = pfd_first_pass(&ip, s->rrtarget, &trig, &t);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    pfd_first_pass(&ip, s->rrtarget, &trig, &t);
 
     s->rrtarget   = agc_vec_add(&ip, s->rrtarget, s->losvel); /* DAS LOSSM */
     agc_sp_t u[3] = {0, 0, 0};
 
-    st = pfd_ulosnb(&ip, agc_vec_add(&ip, s->rrtarget, s->losvel), &trig, u);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    pfd_ulosnb(&ip, agc_vec_add(&ip, s->rrtarget, s->losvel), &trig, u);
 
     /* R29DPAS2: commands to null half the error in .5 s:
      *   shaft    = ULOSNB' . (cos S, 0, -sin S)
@@ -658,12 +638,7 @@ agc_status_t agc_job_powered_flight_read(void)
         return (pfd_read_end());
     }
 
-    agc_status_t st = agc_radar_rrrdot(); /* RRRDOT */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_radar_rrrdot();
 
     return (pfd_stall(AGC_JOB_POWERED_FLIGHT_READ_RANGE));
 }
@@ -688,20 +663,15 @@ agc_status_t agc_job_powered_flight_read_range(void)
         return (pfd_read_end());
     }
 
-    pfd_mktime      = rr_timehold();
+    pfd_mktime = rr_timehold();
     agc_inhint();
-    pfd_cdu[0]      = agc_erase_cdut();
-    pfd_cdu[1]      = agc_erase_cdus();
-    pfd_cdu[2]      = agc_erase_cduy();
-    pfd_cdu[3]      = agc_erase_cduz();
-    pfd_cdu[4]      = agc_erase_cdux();
+    pfd_cdu[0] = agc_erase_cdut();
+    pfd_cdu[1] = agc_erase_cdus();
+    pfd_cdu[2] = agc_erase_cduy();
+    pfd_cdu[3] = agc_erase_cduz();
+    pfd_cdu[4] = agc_erase_cdux();
     agc_relint();
-    agc_status_t st = agc_radar_rrrange(); /* RRRANGE */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_radar_rrrange();
 
     return (pfd_stall(AGC_JOB_POWERED_FLIGHT_READ_DONE));
 }
@@ -730,12 +700,7 @@ agc_status_t agc_job_powered_flight_read_done(void)
         }
 
         rz_flag_put(AGC_FLAG_RNGSCFLG, false);
-        agc_status_t st = agc_radar_rrrange(); /* R29RANGE */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        agc_radar_rrrange();
 
         return (pfd_stall(AGC_JOB_POWERED_FLIGHT_READ_DONE));
     }

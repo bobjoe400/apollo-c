@@ -80,9 +80,9 @@ agc_guid_t *agc_guid_state(void)
  *   veh       agc_vehicle_t  I    vehicle: AGC_VEHICLE_CSM or
  *                                 AGC_VEHICLE_LM
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_guid_init(agc_vehicle_t veh)
+void agc_guid_init(agc_vehicle_t veh)
 {
     agc_guid_t zero = {0}; /* all cells +0 */
 
@@ -112,8 +112,6 @@ agc_status_t agc_guid_init(agc_vehicle_t veh)
         g_guid.lm.vselect  = 2;                /* VSELECT: X beam first          */
         g_guid.lm.which    = (agc_sp_t) AGC_LM_WHICH_DPS_BURN;
     }
-
-    return (AGC_STATUS_OK);
 } /* agc_guid_init */
 
 /* The job that resumes after an INTSTALL wait when a targeting subroutine

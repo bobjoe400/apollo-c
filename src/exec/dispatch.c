@@ -232,7 +232,9 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR_SETUP:
             return (agc_job_earth_orbit_insertion_monitor_setup(ctx));
         case AGC_JOB_ENDLAMB:
-            return (agc_job_endlamb());
+            agc_job_endlamb();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_ENGINE_ENABLE_BYPASS:
             return (agc_job_engine_enable_bypass());
         case AGC_JOB_ENGINE_ENABLE_PROCEED:
@@ -1718,7 +1720,9 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_RESTORE_BURN_DISPLAY:
             return (agc_job_restore_burn_display(ctx));
         case AGC_JOB_SERVIDLE:
-            return (agc_job_servidle());
+            agc_job_servidle();
+
+            return (AGC_STATUS_OK);
         case AGC_JOB_SERV_COPYCYC1:
             return (agc_job_serv_resume_lm(ctx));
         case AGC_JOB_SERV_DECCNTR:
@@ -2412,7 +2416,9 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
         case AGC_TASK_RCSATT:
             return (agc_task_rcsatt());
         case AGC_TASK_RCSUP:
-            return (agc_task_rcsup());
+            agc_task_rcsup();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_REDORCS:
             return (agc_task_redorcs());
         case AGC_TASK_REDOTVC:
@@ -2462,7 +2468,9 @@ static agc_status_t agc_dispatch_task_csm(agc_task_id_t task)
         case AGC_TASK_SVCT3:
             return (agc_task_svct3());
         case AGC_TASK_T5IDLOC:
-            return (agc_task_t5idloc());
+            agc_task_t5idloc();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_TASKOVER:
             return (agc_task_taskover());
 
@@ -2654,11 +2662,15 @@ static agc_status_t agc_dispatch_task_lm(agc_task_id_t task)
         case AGC_TASK_BIBIBIAS:
             return (agc_task_bibibias());
         case AGC_TASK_BRAKING_PHASE_ZOOM:
-            return (agc_task_braking_phase_zoom());
+            agc_task_braking_phase_zoom();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_COASTSET:
             return (agc_task_coastset());
         case AGC_TASK_DPS_BURN_ZOOM:
-            return (agc_task_dps_burn_zoom());
+            agc_task_dps_burn_zoom();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_ENGOFTSK:
             return (agc_task_engoftsk());
         case AGC_TASK_IGNITION_FINISH:

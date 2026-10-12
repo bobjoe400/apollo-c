@@ -183,16 +183,12 @@ static void cp_rendezvous_flags_off(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the ENGINOF1 or ALLCOAST status
+ * RETURNS: agc_status_t -- the ALLCOAST status
  **********************************************************************/
 static agc_status_t cp_seudop00(void)
 {
-    agc_status_t st = agc_lm_enginof1(); /* ENGINOF1 / ALLCOAST outcome */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_lm_dap_allcoast(); /* does a RESTORDB    */
-    }
+    agc_lm_enginof1();
+    agc_status_t st = agc_lm_dap_allcoast(); /* ALLCOAST outcome; does a RESTORDB    */
 
     agc_flag_clear(AGC_FLAG_TRACKFLG);
     agc_flag_clear(AGC_FLAG_UPDATFLG);

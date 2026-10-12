@@ -125,13 +125,8 @@ agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
         agc_interp_t ip; /* interpreter work area */
 
         agc_interp_init(&ip);
-        agc_mat_t    refsmmat = agc_erase_refsmmat();                                          /* half-unit rows */
-        agc_status_t st       = agc_rendz_get_mga(&ip, rz->delvsin, &refsmmat, &rz->plus_mga); /* status of GET+MGA */
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
+        agc_mat_t refsmmat = agc_erase_refsmmat(); /* half-unit rows */
+        agc_rendz_get_mga(&ip, rz->delvsin, &refsmmat, &rz->plus_mga);
     }
     else
     {
@@ -433,7 +428,8 @@ agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t t
     agc_dp_t             t  = rz->tstart_orbit;                                               /* TIME: TSTART82, cs 2^28 */
     agc_navaux_padload_t pad;                                                                 /* pad loads (LALOTORV) */
     agc_vec_t            r  = agc_vec_zero();                                                 /* target, m 2^29       */
-    agc_status_t         st = agc_navaux_set_latlong(&ll);                                    /* LAT LONG ALT */
+
+    agc_navaux_set_latlong(&ll); /* LAT LONG ALT */
 
     if (agc_flag_test(AGC_FLAG_SERVICER_RUNNING))
     {
@@ -444,15 +440,8 @@ agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t t
     agc_flag_clear(AGC_FLAG_ERADFLAG);
     agc_latlong_opt_t opt = {agc_flag_test(AGC_FLAG_LUNAFLAG), false};
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_navaux_get_padload(&pad);
-    }
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_latlong_to_r(ip, &pad, opt, &ll, t, &r, NULL); /* LALOTORV */
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_latlong_to_r(ip, &pad, opt, &ll, t, &r, NULL); /* LALOTORV */
 
     if (st != AGC_STATUS_OK)
     {

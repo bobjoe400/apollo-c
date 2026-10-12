@@ -297,9 +297,10 @@ agc_status_t align_nb_present(agc_interp_t *ip, agc_cdutrig_t *t, agc_mat_t *nb)
  *                                        wait (INTSTALL)
  *   out         agc_integ_out_t *   O    integration output (RATT, VATT, TAT, X2)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t align_integ(agc_interp_t *ip, align_integ_kind_t kind, agc_dp_t tdec1, agc_job_id_t resume_job, agc_integ_out_t *out)
 {
@@ -427,9 +428,10 @@ bool align_resp_recycle(void)
  *   --------  ------------  ---  ----------------------------------------
  *   next      agc_job_id_t  I    job to continue as
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t align_goto(agc_job_id_t next)
 {
@@ -458,9 +460,10 @@ agc_status_t align_goto(agc_job_id_t next)
  *   done      bool *            O    true when the device had already
  *                                    finished (no sleep)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_ALARM after an alarm
  **********************************************************************/
 agc_status_t align_stall(agc_imu_device_t dev, agc_job_id_t wake_as, bool *done)
 {
@@ -499,9 +502,11 @@ agc_status_t align_stall(agc_imu_device_t dev, agc_job_id_t wake_as, bool *done)
  *   --------  ----------------  ---  ------------------------------------
  *   dev       agc_imu_device_t  I    stalled device (IMU or optics)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_ALARM after an alarm; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t align_stall_outcome(agc_imu_device_t dev)
 {

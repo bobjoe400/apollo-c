@@ -278,7 +278,9 @@ agc_status_t agc_dispatch_task(agc_task_id_t task)
         case AGC_TASK_TASKOVER:
             return (agc_task_taskover());
         case AGC_TASK_T5IDLOC:
-            return (agc_task_t5idloc());
+            agc_task_t5idloc();
+
+            return (AGC_STATUS_OK);
         case AGC_TASK_NONE:
         case AGC_TASK_COUNT:
         default:
@@ -361,7 +363,7 @@ static void reset(agc_vehicle_t v)
 
     (void) agc_chan_set_signal(AGC_CHAN_CHAN33, 060000u, false);
     (void) agc_fresh_start_slap1();
-    (void) agc_exec_init();
+    agc_exec_init();
     wl_clean();
     job_n = 0;
 }
@@ -428,7 +430,7 @@ static bool task_entry(int i, agc_task_id_t task, int16_t lst1)
     int16_t       d = 0;             /* LST1 delta before entry i, cs */
     agc_task_id_t t = AGC_TASK_NONE; /* LST2 entry i */
 
-    (void) agc_waitlist_entry(i, &d, &t);
+    agc_waitlist_entry(i, &d, &t);
 
     return (t == task && d == lst1);
 }
@@ -448,7 +450,7 @@ static bool task_queued(agc_task_id_t task)
         int16_t       d = 0;             /* LST1 delta before entry i, cs */
         agc_task_id_t t = AGC_TASK_NONE; /* LST2 entry i */
 
-        (void) agc_waitlist_entry(i, &d, &t);
+        agc_waitlist_entry(i, &d, &t);
 
         if (t == task)
         {

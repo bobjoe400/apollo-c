@@ -263,7 +263,7 @@ agc_dp_words_t lm_dap_dpmake(int32_t v);                       /* sign-agreeing 
 
 /* ---- DAP interface (dapif.c) -------------------------------------------- */
 agc_status_t lm_dap_callaccs(void);              /* CALLACCS: NOVAC 1/ACCJOB  */
-agc_status_t lm_dap_set_t5adr(lm_dap_t5adr_t a); /* DXCH T5ADR             */
+void         lm_dap_set_t5adr(lm_dap_t5adr_t a); /* DXCH T5ADR             */
 
 /* ---- idler and display (dapidler.c, needles.c) ------------------------- */
 agc_status_t lm_dap_chekbits(bool *on); /* CHEKBITS: *on = DAP on    */
@@ -275,7 +275,7 @@ agc_status_t lm_dap_needler(void);      /* NEEDLER                   */
 
 /* ---- P axis (paxis.c, pmanual.c, rate.c) -------------------------------- */
 agc_status_t lm_dap_paxis(void);                /* PAXIS T5RUPT program      */
-agc_status_t lm_dap_rateloop(void);             /* RATELOOP + ROTORQUE       */
+void         lm_dap_rateloop(void);             /* RATELOOP + ROTORQUE       */
 agc_status_t lm_dap_backp(void);                /* BACKP rate derivation     */
 agc_status_t lm_dap_offset_est(void);           /* offset estimator          */
 agc_status_t lm_dap_pretimck(void);             /* PRETIMCK .. SKIPPAXS test */
@@ -292,13 +292,13 @@ agc_status_t lm_dap_zeroenbl(void);             /* ZEROENBL                  */
 
 /* ---- Q,R axes (qraxis.c, qrmanual.c, qrjets.c) -------------------------- */
 agc_status_t lm_dap_qraxis(void);   /* QRAXIS .. CLOSEOUT        */
-agc_status_t lm_dap_qerrcalc(void); /* QERRCALC + RERRCALC       */
+void         lm_dap_qerrcalc(void); /* QERRCALC + RERRCALC       */
 agc_status_t lm_dap_rcs(void);      /* RCS: Q,R RCS control      */
 agc_status_t lm_dap_qrminimp(void); /* Q,R minimum impulse       */
 agc_status_t lm_dap_chekstik(void); /* CHEKSTIK .. BACKHAND      */
 agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis);
 agc_status_t lm_dap_xtrans(void);   /* XTRANS                    */
-agc_status_t lm_dap_closeout(void); /* CLOSEOUT / ENDJASK        */
+void         lm_dap_closeout(void); /* CLOSEOUT / ENDJASK        */
 bool         lm_dap_selctsub(void); /* SELCTSUB: false = FAILOOP out */
 agc_status_t lm_dap_stillrcs(void); /* STILLRCS / ATTSTEER       */
 void         lm_dap_rot_touv(agc_sp_t q, agc_sp_t r, agc_sp_t *u, agc_sp_t *v);
@@ -311,9 +311,9 @@ agc_sp_t     lm_dap_time6_value(void);                    /* TIME6 as a 1's valu
 
 /* ---- control laws ------------------------------------------------------- */
 agc_status_t lm_dap_tjetlaw(void);                                                     /* TJETLAW (tjetlaw.c)       */
-agc_status_t lm_dap_spsrcs(void);                                                      /* SPSRCS (spsrcs.c)         */
-agc_status_t lm_dap_gts(void);                                                         /* GTS .. CLOSEOUT (gts.c)   */
-agc_status_t lm_dap_gimbal_drive_update(void);                                         /* ACDT+C12 (gts.c)          */
+void         lm_dap_spsrcs(void);                                                      /* SPSRCS (spsrcs.c)         */
+void         lm_dap_gts(void);                                                         /* GTS .. CLOSEOUT (gts.c)   */
+void         lm_dap_gimbal_drive_update(void);                                         /* ACDT+C12 (gts.c)          */
 agc_sp_t     lm_dap_gtsqrt(agc_dp_words_t *fn, agc_sp_t *shftflag, agc_sp_t *inindex); /* GTSQRT (gts.c)          */
 
 /* ---- 1/ACCS (accs.c, accont.c) ------------------------------------------ */

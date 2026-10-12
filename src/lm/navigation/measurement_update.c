@@ -709,7 +709,8 @@ static agc_status_t mu_range(agc_interp_t *ip)
  *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
  *   step      mu_step_t       I    the measurement
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status of the step
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status of the step;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
 {
@@ -830,8 +831,9 @@ static mu_step_t mu_next(mu_step_t step)
  *   --------  ---------------  ---  -------------------------------
  *   ip        agc_interp_t *   I/O  interpreter state (OVFIND)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status that stopped the
- *          sequence
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status that stopped
+ *          the sequence; AGC_STATUS_NO_CONVERGE when its step bound is
+ *          exhausted
  **********************************************************************/
 static agc_status_t mu_run(agc_interp_t *ip)
 {

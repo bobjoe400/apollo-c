@@ -809,13 +809,11 @@ agc_status_t agc_task_implburn_lm(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_implburn2(void)
+void agc_task_implburn2(void)
 {
-    agc_lm_noullage();
-
-    return (AGC_STATUS_OK); /* TURN OFF ULLAGE        */
+    agc_lm_noullage(); /* TURN OFF ULLAGE */
 }
 
 /**********************************************************************
@@ -875,16 +873,14 @@ void agc_lm_enginof4(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_enginof1(void)
+void agc_lm_enginof1(void)
 {
     agc_flag_set(AGC_FLAG_IDLEFLAG);
     agc_lm_noullage();
 
     agc_lm_enginof4();
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -901,7 +897,14 @@ agc_status_t agc_lm_enginof2(void)
 {
     agc_status_t st = agc_waitlist_call(1, AGC_TASK_COASTSET); /* status of agc_waitlist_call */
 
-    return ((st != AGC_STATUS_OK) ? st : agc_lm_enginof1()); /* ENGINOF1 if the call worked */
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    agc_lm_enginof1();
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

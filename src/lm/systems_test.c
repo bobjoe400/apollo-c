@@ -429,44 +429,36 @@ static void pipa_set(int axis, agc_sp_t v)
  **********************************************************************/
 static agc_status_t image_words(int ecadr, agc_dp_words_t *v)
 {
-    uint16_t     hi = 0;                  /* major word as read */
-    uint16_t     lo = 0;                  /* minor word as read */
-    agc_status_t st = AGC_STATUS_BAD_ARG; /* read status */
+    uint16_t hi = 0; /* major word as read */
+    uint16_t lo = 0; /* minor word as read */
 
-    if (AGC_ASSERT(ecadr >= 0 && ecadr < (int) EC_ERASABLE))
+    if (!AGC_ASSERT(ecadr >= 0 && ecadr < (int) EC_ERASABLE))
     {
-        st = agc_erase_read_ecadr((uint16_t) ecadr, &hi); /* an index from ground-loaded words */
+        return (AGC_STATUS_BAD_ARG); /* an index from ground-loaded words */
     }
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_erase_read_ecadr((uint16_t) (ecadr + 1), &lo);
-    }
-
+    agc_erase_read_ecadr((uint16_t) ecadr, &hi);
+    agc_erase_read_ecadr((uint16_t) (ecadr + 1), &lo);
     hi    = (uint16_t) (hi & WORD15);
     lo    = (uint16_t) (lo & WORD15);
     v->hi = (agc_sp_t) (((hi & 040000u) != 0u) ? -(int) (WORD15 - hi) : (int) hi); /* ones' complement */
     v->lo = (agc_sp_t) (((lo & 040000u) != 0u) ? -(int) (WORD15 - lo) : (int) lo); /* ones' complement */
 
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
  * AGC: none -- Fetch / write back the test erasables (see DEVIATION above).
  *
- * RETURNS: AGC_STATUS_OK or the image's read status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t st_fetch(void)
+static void st_fetch(void)
 {
-    agc_status_t st = AGC_STATUS_OK; /* read status */
-
-    for (int i = 0; i < W_WORDS && st == AGC_STATUS_OK; i++)
+    for (int i = 0; i < W_WORDS; i++)
     {
-        st   = agc_erase_read_ecadr((uint16_t) (EC_W + (unsigned int) i), &w[i]);
+        agc_erase_read_ecadr((uint16_t) (EC_W + (unsigned int) i), &w[i]);
         w[i] = (uint16_t) (w[i] & WORD15);
     }
-
-    return (st);
 }
 
 /**********************************************************************
@@ -586,14 +578,12 @@ static agc_status_t endtest1(void)
 /**********************************************************************
  * SOMERR2 (p.388): VARALARM 1601 (bad IMU moding), IMUSE down, ENDOFJOB.
  *
- * RETURNS: AGC_STATUS_OK (ENDOFJOB)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t somerr2(void)
+static void somerr2(void)
 {
     agc_exec_varalarm(ALARM_BAD_IMU);
     agc_flag_clear(AGC_FLAG_IMUSE);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -623,7 +613,9 @@ static agc_status_t imu_stall(agc_job_id_t wake_as, bool *good)
 
     if (res == AGC_IMU_STALL_BAD)
     {
-        return (somerr2());
+        somerr2();
+
+        return (AGC_STATUS_OK);
     }
 
     *good = true;
@@ -637,13 +629,16 @@ static agc_status_t imu_stall(agc_job_id_t wake_as, bool *good)
  * ARGUMENTS:
  *   good  bool *  O   true when the stalled mode switch ended good
  *
- * RETURNS: AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t imu_stall_outcome(bool *good)
+static void imu_stall_outcome(bool *good)
 {
     *good = (agc_imu_stall_outcome(AGC_IMU_DEV_IMU) == AGC_IMU_STALL_GOOD);
 
-    return (*good ? AGC_STATUS_OK : somerr2()); /* bad: SOMERR2 */
+    if (!*good)
+    {
+        somerr2(); /* bad: SOMERR2 */
+    }
 }
 
 /**********************************************************************
@@ -1844,21 +1839,21 @@ static agc_status_t pip_timer(void)
  *   e    st_entry_t       I   the job or task starting
  *   ctx  agc_job_ctx_t *  I   the running job (NULL for a task)
  *
- * RETURNS: the status of what runs
+ * RETURNS: the status of what runs; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 static agc_status_t st_body(st_entry_t e, agc_job_ctx_t *ctx)
 {
-    bool         good = false;         /* stall over and good */
-    agc_status_t st   = AGC_STATUS_OK; /* stall outcome status */
+    bool good = false; /* stall over and good */
 
     switch (e)
     {
         case ENTRY_REDO:
             return (redo(ctx));
         case ENTRY_IMU_ZEROED:
-            st = imu_stall_outcome(&good);
+            imu_stall_outcome(&good);
 
-            return (good ? imuback(ctx) : st); /* stall over and good; else SOMERR2 */
+            return (good ? imuback(ctx) : AGC_STATUS_OK); /* stall over and good; else SOMERR2 */
         case ENTRY_SITE_DISPLAY:
             return (site_display(ctx));
         case ENTRY_SITE_LOADED:
@@ -1866,13 +1861,13 @@ static agc_status_t st_body(st_entry_t e, agc_job_ctx_t *ctx)
         case ENTRY_END:
             return (endtest1());
         case ENTRY_COARSE_ALIGNED:
-            st = imu_stall_outcome(&good);
+            imu_stall_outcome(&good);
 
-            return (good ? coarse_aligned() : st); /* stall over and good; else SOMERR2 */
+            return (good ? coarse_aligned() : AGC_STATUS_OK); /* stall over and good; else SOMERR2 */
         case ENTRY_FINE_ALIGNED:
-            st = imu_stall_outcome(&good);
+            imu_stall_outcome(&good);
 
-            return (good ? fine_aligned() : st); /* stall over and good; else SOMERR2 */
+            return (good ? fine_aligned() : AGC_STATUS_OK); /* stall over and good; else SOMERR2 */
         case ENTRY_DRIFT_START:
             return (estims());
         case ENTRY_RESUME:
@@ -1880,9 +1875,9 @@ static agc_status_t st_body(st_entry_t e, agc_job_ctx_t *ctx)
         case ENTRY_EARTH_RATE_RETRY:
             return (earthr_stall(agc_imu_pulse_buf(AGC_IMU_GBUF_ERCOMP, AGC_JOB_SYSTEMS_TEST_EARTH_RATE_RETRY)));
         case ENTRY_EARTH_RATE_DONE:
-            st = imu_stall_outcome(&good);
+            imu_stall_outcome(&good);
 
-            return (good ? run_step((st_step_t) w_sp(W_QPLACES), ctx) : st);                  /* stall over and good; else SOMERR2 */
+            return (good ? run_step((st_step_t) w_sp(W_QPLACES), ctx) : AGC_STATUS_OK);       /* stall over and good; else SOMERR2 */
         case ENTRY_PIP_CATCH:
             return (pip_catch(ctx));
         case ENTRY_PIP_RESULT:
@@ -1892,13 +1887,13 @@ static agc_status_t st_body(st_entry_t e, agc_job_ctx_t *ctx)
         case ENTRY_TORQUE_RETRY:
             return (setuper1_stall(agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_SYSTEMS_TEST_TORQUE_RETRY), ctx));
         case ENTRY_TORQUED:
-            st = imu_stall_outcome(&good);
+            imu_stall_outcome(&good);
 
-            return (good ? geostrt4(ctx) : st); /* stall over and good; else SOMERR2 */
+            return (good ? geostrt4(ctx) : AGC_STATUS_OK); /* stall over and good; else SOMERR2 */
         case ENTRY_GIMBALS_ZEROED:
-            st = imu_stall_outcome(&good);
+            imu_stall_outcome(&good);
 
-            return (good ? show(STEP_VERTDRFT, ctx) : st);                /* stall over and good; else SOMERR2 */
+            return (good ? show(STEP_VERTDRFT, ctx) : AGC_STATUS_OK);     /* stall over and good; else SOMERR2 */
         case ENTRY_SHOW:
             return (show1(ctx));
         case ENTRY_DRIFT_WAKE:
@@ -1926,14 +1921,9 @@ static agc_status_t st_body(st_entry_t e, agc_job_ctx_t *ctx)
  **********************************************************************/
 static agc_status_t st_enter(st_entry_t e, agc_job_ctx_t *ctx)
 {
-    agc_status_t st = st_fetch(); /* fetch / body status */
+    st_fetch();
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    st              = st_body(e, ctx);
+    agc_status_t st = st_body(e, ctx);
     agc_status_t fl = st_flush(); /* write-back status */
 
     if (st != AGC_STATUS_OK)

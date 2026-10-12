@@ -123,11 +123,9 @@ agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd, con
  *   smd       agc_mat_t *     I    desired SM axes XSMD, YSMD, ZSMD wrt
  *                                  reference, half-unit rows
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v, agc_mat_t *smd)
+void agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, agc_vec_t v, agc_mat_t *smd)
 {
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
@@ -141,8 +139,6 @@ agc_status_t agc_align_nominal_orientation_axes(agc_interp_t *ip, agc_vec_t r, a
         smd->row[1] = agc_vec_unit(ip, agc_vec_cross(ip, v, r), NULL, NULL);
         smd->row[2] = agc_vec_unit(ip, agc_vec_cross(ip, smd->row[0], smd->row[1]), NULL, NULL);
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -178,7 +174,9 @@ agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign, ag
         return (st);
     }
 
-    return (agc_align_nominal_orientation_axes(ip, o.ratt, o.vatt, smd));
+    agc_align_nominal_orientation_axes(ip, o.ratt, o.vatt, smd);
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -202,19 +200,15 @@ agc_status_t agc_align_nominal_orientation(agc_interp_t *ip, agc_dp_t talign, ag
  *   smd       agc_mat_t *     I    desired SM axes XSMD, YSMD, ZSMD wrt
  *                                  reference, half-unit rows
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd, agc_vec_t rcsm, agc_vec_t vcsm, agc_mat_t *smd)
+void agc_align_lsorient(agc_interp_t *ip, agc_vec_t xsmd, agc_vec_t rcsm, agc_vec_t vcsm, agc_mat_t *smd)
 {
     const agc_vec_t h = agc_vec_cross(ip, rcsm, vcsm); /* RCSM x VCSM, orbital angular momentum direction, scale 2^36 (unnormalised) */
 
     smd->row[0] = xsmd;
     smd->row[2] = agc_vec_unit(ip, agc_vec_cross(ip, h, xsmd), NULL, NULL);
     smd->row[1] = agc_vec_unit(ip, agc_vec_cross(ip, smd->row[2], xsmd), NULL, NULL);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -305,16 +299,12 @@ bool agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cdu[3])
  *   xdc       agc_mat_t *        O    XDC, YDC, ZDC: desired SM wrt present
  *                                     SM, half-unit rows
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, agc_mat_t *xdc)
+void agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, agc_mat_t *xdc)
 {
     for (int i = 0; i < AGC_VEC_N; i++)
     {
         xdc->row[i] = agc_vec_unit(ip, agc_mat_vec(ip, refsmmat, smd->row[i]), NULL, NULL);
     }
-
-    return (AGC_STATUS_OK);
 }

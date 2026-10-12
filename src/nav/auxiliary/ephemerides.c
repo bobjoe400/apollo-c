@@ -93,13 +93,11 @@ static agc_ephem_csm_t csm_data; /* CM uplink, scales in the type */
  *   --------  -----------------------  ---  ---------------------------
  *   eph       const agc_ephem_csm_t *  I    uplink (scales in the type)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_ephem_set_csm_data(const agc_ephem_csm_t *eph)
+void agc_ephem_set_csm_data(const agc_ephem_csm_t *eph)
 {
     csm_data = *eph;
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -112,13 +110,11 @@ agc_status_t agc_ephem_set_csm_data(const agc_ephem_csm_t *eph)
  *   --------  -----------------  ---  ---------------------------------
  *   out       agc_ephem_csm_t *  O    uplink (scales in the type)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_ephem_get_csm_data(agc_ephem_csm_t *out)
+void agc_ephem_get_csm_data(agc_ephem_csm_t *out)
 {
     *out = csm_data;
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -315,7 +311,8 @@ agc_status_t agc_ephem_csm_lunvel(agc_interp_t *ip, const agc_ephem_csm_t *eph, 
  *   t_cs      agc_dp_t                 I    T, scale 2^28 cs
  *   sun       agc_vec_t *              O    SOLPOS, 2^38 m
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the LSTIME status
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the LSTIME status;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_ephem_csm_solpos(agc_interp_t *ip, const agc_ephem_csm_t *eph, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *sun)
 {
@@ -537,7 +534,7 @@ static agc_vec_t ephem_lm_konmat(agc_interp_t *ip, agc_dp_words_t l, agc_dp_word
  *   vmoon     agc_vec_t *     O    VMOON, unit vector scale 2^1
  *   vsun      agc_vec_t *     O    VSUN, unit vector scale 2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  *
  * TIMEP = (T + TEPHEM) / CSTODAY, days scale 2^9 (DDV takes only the DP
  * part of the TP dividend, so T + TEPHEM is truncated to 2^14 cs).  The
@@ -546,7 +543,7 @@ static agc_vec_t ephem_lm_konmat(agc_interp_t *ip, agc_dp_words_t l, agc_dp_word
  * are kept as the words the AGC stores (DAD / DSU leave them free to
  * disagree in sign), which SIN and COS then read.
  **********************************************************************/
-agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *vmoon, agc_vec_t *vsun)
+void agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem, agc_dp_t t_cs, agc_vec_t *vmoon, agc_vec_t *vsun)
 {
     const agc_dp_words_t zero = agc_dp_to_words(0);                                             /* KONMAT +2: ZEROS */
     agc_tp_words_t       t    = agc_mpac_shift(ip, agc_mpac_dload(agc_dp_to_words(t_cs)), -14); /* SR 14D, 2^42 cs */
@@ -571,8 +568,6 @@ agc_status_t agc_ephem_lm_lspos(agc_interp_t *ip, agc_tp_t tephem, agc_dp_t t_cs
 
     *vmoon = ephem_lm_konmat(ip, lom, sdl);
     *vsun  = ephem_lm_konmat(ip, los, zero);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -600,7 +595,9 @@ agc_status_t agc_lsposition(agc_interp_t *ip, agc_dp_t time_cs, agc_vec_t *moon_
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
     {
-        return (agc_ephem_lm_lspos(ip, tephem, time_cs, moon_pos, sun_pos));
+        agc_ephem_lm_lspos(ip, tephem, time_cs, moon_pos, sun_pos);
+
+        return (AGC_STATUS_OK);
     }
 
     return (agc_ephem_csm_lspos(ip, &csm_data, tephem, time_cs, moon_pos, sun_pos));

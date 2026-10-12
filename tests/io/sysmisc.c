@@ -382,9 +382,9 @@ static void test_showsum_display(void)
     uint16_t at[3] = {1, 1, 1}; /* the words at 1371..1373 */
 
     agc_state_init(AGC_VEHICLE_CSM);
-    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    agc_exec_init();
     CHECK(agc_waitlist_init() == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_dsky_init();
     CHECK(agc_selfcheck_set_rope(g_rope, 6) == AGC_STATUS_OK);
     agc_erase_set_extvbact(0);
     CHECK(agc_dsky_keys("V91E") == AGC_STATUS_OK);
@@ -398,7 +398,7 @@ static void test_showsum_display(void)
 
     for (int i = 0; i < 3; i++)
     {
-        CHECK(agc_erase_read_ecadr((uint16_t) (01371u + (uint16_t) i), &at[i]) == AGC_STATUS_OK);
+        agc_erase_read_ecadr((uint16_t) (01371u + (uint16_t) i), &at[i]);
     }
 
     CHECK(at[0] == w[0] && at[1] == w[1] && at[2] == w[2]);
@@ -649,9 +649,9 @@ static void test_uplink_clock_increment(void)
     agc_job_ctx_t ctx = {AGC_JOB_EXTENDED_VERB, 030, false, -1, 0};
 
     agc_state_init(AGC_VEHICLE_CSM);
-    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    agc_exec_init();
     CHECK(agc_waitlist_init() == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_dsky_init();
     agc_erase_set_extvbact(0);
     agc_time_set_cs(01000000u);
     CHECK(agc_uplink_update_start(&ctx, 73) == AGC_STATUS_OK);
@@ -677,9 +677,9 @@ static void test_dap_data_mass(void)
     agc_job_ctx_t ctx = {AGC_JOB_EXTENDED_VERB, 030, false, -1, 0};
 
     agc_state_init(AGC_VEHICLE_LM);
-    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    agc_exec_init();
     CHECK(agc_waitlist_init() == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_dsky_init();
     agc_erase_set_lemmass(1000);
     agc_guid_state()->lm.mass = 0;
     CHECK(agc_job_dap_data_load_mass(&ctx) == AGC_STATUS_OK);
@@ -786,9 +786,9 @@ static void oracle_set(char *line, uint16_t xsm[18], uint16_t delv[6])
 static void oracle_fresh(void)
 {
     agc_state_init(AGC_VEHICLE_LM);
-    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    agc_exec_init();
     CHECK(agc_waitlist_init() == AGC_STATUS_OK);
-    CHECK(agc_dsky_init() == AGC_STATUS_OK);
+    agc_dsky_init();
     agc_erase_reset_ecadr();
 }
 
@@ -872,7 +872,7 @@ static int oracle_compare(FILE *txt, const char *tag)
         }
         else
         {
-            CHECK(agc_erase_read_ecadr((uint16_t) oracle_ecadr(name, off), &got) == AGC_STATUS_OK);
+            agc_erase_read_ecadr((uint16_t) oracle_ecadr(name, off), &got);
         }
 
         want = (want == 077777u) ? 0u : want; /* -0 reads as +0 in C */

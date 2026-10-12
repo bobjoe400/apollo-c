@@ -105,13 +105,13 @@ typedef struct pp_point
     agc_sp_t       adbaf;   /* T5TEMP = ADB+AF, scale 180 deg          */
 } pp_point_t;
 
-static bool         words_nonneg(agc_dp_words_t w);
-static agc_status_t rcs_grabang(void);
-static agc_status_t rcs_atthold(void);
-static agc_status_t rcs_t6prog(void);
-static pp_region_t  rcs_region(const pp_point_t *p);
-static bool         rcs_delta_w(int i, const pp_point_t *p, agc_dp_words_t *kmpac);
-static agc_sp_t     rcs_jtime(int i, agc_dp_words_t kmpac);
+static bool        words_nonneg(agc_dp_words_t w);
+static void        rcs_grabang(void);
+static void        rcs_atthold(void);
+static void        rcs_t6prog(void);
+static pp_region_t rcs_region(const pp_point_t *p);
+static bool        rcs_delta_w(int i, const pp_point_t *p, agc_dp_words_t *kmpac);
+static agc_sp_t    rcs_jtime(int i, agc_dp_words_t kmpac);
 
 /**********************************************************************
  * CCS X; ...; CCS X +1 (SIGNCK1 .. SIGNCK5, AUTOMATIC_MANEUVERS.agc
@@ -141,7 +141,8 @@ static bool words_nonneg(agc_dp_words_t w)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the status of the branch taken
+ * RETURNS: agc_status_t -- the status of the branch taken;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t csm_rcs_ahfnorot(void)
 {
@@ -179,7 +180,9 @@ agc_status_t csm_rcs_ahfnorot(void)
             r_freecont->tau[i] = mintau[m]; /* CA MINTAU; TS TAU, TAU1, TAU2         */
         }
 
-        return (csm_rcs_t6prog_manual());
+        csm_rcs_t6prog_manual();
+
+        return (AGC_STATUS_OK);
     }
 
     if (csm_rcs_rate_init_pending())
@@ -196,18 +199,26 @@ agc_status_t csm_rcs_ahfnorot(void)
 
         if (r_holdfunc->holdflag == 0)
         {
-            return (rcs_atthold()); /* CCS HOLDFLAG: +0                      */
+            rcs_atthold();
+
+            return (AGC_STATUS_OK); /* CCS HOLDFLAG: +0                      */
         }
 
-        return (rcs_grabang());
+        rcs_grabang();
+
+        return (AGC_STATUS_OK);
     }
 
     if (r->holdflag <= 0)
     { /* AUTOCONT: HOLDFLAG +0, -0, - (BZMF) */
-        return (rcs_atthold());
+        rcs_atthold();
+
+        return (AGC_STATUS_OK);
     }
 
-    return (rcs_grabang());
+    rcs_grabang();
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -218,9 +229,9 @@ agc_status_t csm_rcs_ahfnorot(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the JETS or ATTHOLD status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t rcs_grabang(void)
+static void rcs_grabang(void)
 {
     agc_csm_rcs_t          *r = agc_csm_dap_rcs(); /* RCS DAP erasables  */
     const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* RCSFLAGS           */
@@ -238,17 +249,19 @@ static agc_status_t rcs_grabang(void)
             r->error[i] = 0;
         }
 
-        return (csm_rcs_jets());
+        csm_rcs_jets();
     }
-
-    r->holdflag = 0; /* ENDDAMP: TS HOLDFLAG (+0)                       */
-
-    for (int i = 0; i < AGC_CSM_AXES; i++)
+    else
     {
-        r->thetad[i] = csm_dap_cdu(i); /* DCA CDUX; DXCH THETADX; CDUZ  */
-    }
+        r->holdflag = 0; /* ENDDAMP: TS HOLDFLAG (+0)                       */
 
-    return (rcs_atthold());
+        for (int i = 0; i < AGC_CSM_AXES; i++)
+        {
+            r->thetad[i] = csm_dap_cdu(i); /* DCA CDUX; DXCH THETADX; CDUZ  */
+        }
+
+        rcs_atthold();
+    }
 }
 
 /**********************************************************************
@@ -258,9 +271,9 @@ static agc_status_t rcs_grabang(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the JETS status
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t rcs_atthold(void)
+static void rcs_atthold(void)
 {
     agc_csm_rcs_t *r  = agc_csm_dap_rcs();                           /* RCS DAP erasables       */
     agc_sp_t       ex = csm_dap_msu(agc_erase_cdux(), r->thetad[0]); /* CDUX - THETADX, scale 180 deg */
@@ -281,7 +294,7 @@ static agc_status_t rcs_atthold(void)
         }
     }
 
-    return (csm_rcs_jets());
+    csm_rcs_jets();
 }
 
 /**********************************************************************
@@ -292,9 +305,9 @@ static agc_status_t rcs_atthold(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the T6PROG status
+ * RETURNS: none
  **********************************************************************/
-agc_status_t csm_rcs_jets(void)
+void csm_rcs_jets(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
     pp_point_t     p;                     /* the axis' point            */
@@ -324,7 +337,7 @@ agc_status_t csm_rcs_jets(void)
         }
     }
 
-    return (rcs_t6prog());
+    rcs_t6prog();
 }
 
 /**********************************************************************
@@ -485,9 +498,9 @@ static agc_sp_t rcs_jtime(int i, agc_dp_words_t kmpac)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the T6PROG status
+ * RETURNS: none
  **********************************************************************/
-agc_status_t csm_rcs_t6prog_manual(void)
+void csm_rcs_t6prog_manual(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
 
@@ -496,7 +509,7 @@ agc_status_t csm_rcs_t6prog_manual(void)
         r->error[i] = 0; /* CAF ZERO; TS ERRORX, ERRORY, ERRORZ         */
     }
 
-    return (rcs_t6prog());
+    rcs_t6prog();
 }
 
 /**********************************************************************
@@ -506,11 +519,9 @@ agc_status_t csm_rcs_t6prog_manual(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t rcs_t6prog(void)
+static void rcs_t6prog(void)
 {
     agc_rupt_set_t5_task(AGC_TASK_JETSLECT);
-
-    return (AGC_STATUS_OK);
 }

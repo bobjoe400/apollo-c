@@ -681,12 +681,8 @@ agc_status_t rte_display_values(agc_interp_t *ip, rte_erasable_t *rs, agc_dp_t t
     agc_latlong_t           ll;  /* LAT LONG ALT of the site */
     const agc_latlong_opt_t opt = {false, false};
 
-    st_site = agc_navaux_get_padload(&pad);
-
-    if (st_site == AGC_STATUS_OK)
-    {
-        st_site = agc_latlong_from_r(ip, &pad, opt, alphav, tls, &ll); /* LAT-LONG      */
-    }
+    agc_navaux_get_padload(&pad);
+    st_site = agc_latlong_from_r(ip, &pad, opt, alphav, tls, &ll); /* LAT-LONG      */
 
     if (st_site == AGC_STATUS_OK)
     {

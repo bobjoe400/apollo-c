@@ -144,7 +144,8 @@ uint16_t agc_interp_take_alarm(void)
  *   out  agc_dp_t *      O  root at 2^n; 0 on the abort
  *
  * RETURNS: agc_status_t -- AGC_STATUS_POODOO for a < -2^-14 (caller
- *          raises POODOO 01302), else AGC_STATUS_OK
+ *          raises POODOO 01302), else AGC_STATUS_OK; AGC_STATUS_BAD_ARG
+ *          on a failed precondition
  **********************************************************************/
 agc_status_t agc_dp_sqrt_chk(agc_dp_t a, agc_dp_t *out)
 {
@@ -420,7 +421,8 @@ static agc_w3_t arc_words(agc_w3_t m, bool asin, bool *alarm)
  *   out  agc_dp_t *      O  the angle, revolutions in [0, .5]
  *
  * RETURNS: agc_status_t -- AGC_STATUS_ALARM when ACOSABRT was taken
- *          (caller raises ALARM 01301), else AGC_STATUS_OK
+ *          (caller raises ALARM 01301), else AGC_STATUS_OK;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 {
@@ -447,7 +449,8 @@ agc_status_t agc_dp_acos_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
  *   out  agc_dp_t *      O  the angle, revolutions in [-.25, .25]
  *
  * RETURNS: agc_status_t -- AGC_STATUS_ALARM when ACOSABRT was taken
- *          (caller raises ALARM 01301), else AGC_STATUS_OK
+ *          (caller raises ALARM 01301), else AGC_STATUS_OK;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_dp_asin_chk(agc_interp_t *ip, agc_dp_t a, agc_dp_t *out)
 {

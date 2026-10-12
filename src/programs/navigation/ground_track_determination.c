@@ -251,30 +251,22 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
      * AGC: P21DSP (GROUND_TRACKING_DETERMINATION_PROGRAM.agc p.458) */
     agc_latlong_opt_t opt; /* LUNAFLAG ERADFLAG */
 
-    opt.lunar                       = (o.x2 != 0);
-    opt.erad                        = false;
+    opt.lunar = (o.x2 != 0);
+    opt.erad  = false;
     rz_flag_put(AGC_FLAG_LUNAFLAG, opt.lunar);
     rz_flag_put(AGC_FLAG_ERADFLAG, false);
-    agc_navaux_padload_t pad;                                       /* pad loads */
-    agc_status_t         st_display = agc_navaux_get_padload(&pad); /* pad loads */
-    agc_latlong_t        ll;                                        /* LAT LONG ALT */
+    agc_navaux_padload_t pad; /* pad loads */
+    agc_latlong_t        ll;  /* LAT LONG ALT */
 
-    if (st_display == AGC_STATUS_OK)
-    {
-        st_display = agc_latlong_from_r(&ip, &pad, opt, o.ratt, o.tat, &ll);
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st_display = agc_latlong_from_r(&ip, &pad, opt, o.ratt, o.tat, &ll);
 
     if (st_display != AGC_STATUS_OK)
     {
         return (st_display);
     }
 
-    st_display = agc_navaux_set_latlong(&ll); /* LAT LONG ALT */
-
-    if (st_display != AGC_STATUS_OK)
-    {
-        return (st_display);
-    }
+    agc_navaux_set_latlong(&ll);
 
     rz->ground_track_alt = agc_dp_mul_trunc(ll.alt, GTD_K01); /* DMP K.01 */
 

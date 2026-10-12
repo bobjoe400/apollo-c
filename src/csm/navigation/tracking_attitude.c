@@ -264,8 +264,8 @@ static bool ta_gross(void)
  *   resume    agc_job_id_t    I    job that continues the caller
  *   res       ta_result_t *   O    TA_FED_DAP or TA_MANEUVER
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration or CRS61.2
- *          status
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, else the integration status
+
  **********************************************************************/
 static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta_result_t *res)
 {
@@ -327,17 +327,11 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta
     agc_cdutrig_t trig;                                                                                      /* CDUTRIG sines / cosines */
 
     agc_guid_cdutrig(&trig);
-    agc_vec_t    dcdu     = agc_vec_zero();              /* SMCDURES result, CDU scale */
-    agc_status_t st_rates = agc_guid_smcdures(ip, &trig, /* SMCDURES */
-                                              agc_vec_scale(ip, om, TA_TENTH),
-                                              &dcdu);
+    agc_vec_t dcdu = agc_vec_zero(); /* SMCDURES result, CDU scale */
 
-    delcdu = rz_vshift(ip, dcdu, -17 - x1); /* VSL* 0-17D,1 */
-
-    if (st_rates == AGC_STATUS_OK)
-    {
-        agc_guid_smnb(&trig, &om); /* *SMNB*   */
-    }
+    agc_guid_smcdures(ip, &trig, agc_vec_scale(ip, om, TA_TENTH), &dcdu); /* SMCDURES */
+    delcdu = rz_vshift(ip, dcdu, -17 - x1);                               /* VSL* 0-17D,1 */
+    agc_guid_smnb(&trig, &om);                                            /* *SMNB*   */
 
     agc_mat_t m; /* matrix rows, unit 2^1 */
 
@@ -349,29 +343,24 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta
     w = agc_vec_scale(ip, agc_mat_vec(ip, &m, om), TA_POINT8);
 
     wbody = rz_vshift(ip, w, -14 - x1); /* VSL* 0-14D,1 */
-    st    = st_rates;                   /* CRS61.2  */
 
-    if (st == AGC_STATUS_OK)
+    /* CRS61.2A: the DAP inputs under INHINT; HOLDFLAG = -1.
+     * AGC: CRS61.2A (P20-P25.agc p.596) */
+    agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* DAP erasables */
+
+    agc_inhint();
+
+    for (int i = 0; i < 3; i++)
     {
-        /* CRS61.2A */
-        /* CRS61.2A: the DAP inputs under INHINT; HOLDFLAG = -1.
-         * AGC: CRS61.2A (P20-P25.agc p.596) */
-        agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* DAP erasables */
-
-        agc_inhint();
-
-        for (int i = 0; i < 3; i++)
-        {
-            r->cdud[i]   = agc_dp_from_sp((agc_sp_t) rz_word_value(ta.savedcdu[i]));
-            r->wbody[i]  = wbody.c[i];
-            r->delcdu[i] = delcdu.c[i];
-        }
-
-        r->holdflag = -1;
-        agc_relint();
+        r->cdud[i]   = agc_dp_from_sp((agc_sp_t) rz_word_value(ta.savedcdu[i]));
+        r->wbody[i]  = wbody.c[i];
+        r->delcdu[i] = delcdu.c[i];
     }
 
-    return (st);
+    r->holdflag = -1;
+    agc_relint();
+
+    return (AGC_STATUS_OK);
 } /* ta_point_at_target */
 
 /**********************************************************************

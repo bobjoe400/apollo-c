@@ -681,9 +681,9 @@ static agc_status_t v2t_setup(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *p
  *   start_high  bool *            O    true: start the search at X(T1)MAX
  *                                      (V2T145), else at X(T1)MIN (V2T140)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl, bool *start_high)
+static void v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs, rte_v2t_t *pl, bool *start_high)
 {
     agc_dp_t a = agc_dp_sub(ip, agc_dp_shl(ip, TWO_B1, pl->x1), pl->lambda); /* SR* 0,1 DSU 00D: 2 - LAMBDA, B1 */
     agc_tp_t t = agc_dp_mul_tp(a, pl->beta5);                                /* DMP 28D: BETA6, TP B17 */
@@ -724,8 +724,6 @@ static agc_status_t v2t_precision_bounds(agc_interp_t *ip, rte_erasable_t *rs, r
             *start_high = false;
         }
     }
-
-    return (AGC_STATUS_OK);
 } /* v2t_precision_bounds */
 
 /**********************************************************************
@@ -806,18 +804,18 @@ agc_status_t rte_post_impulse_velocity(agc_interp_t *ip, rte_erasable_t *rs)
 
     agc_status_t st = v2t_setup(ip, rs, &pl); /* V2T100 status */
 
-    if ((st == AGC_STATUS_OK) && (rs->nn1a >= 0))
+    if (st != AGC_STATUS_OK)
     {
-        st = v2t_precision_bounds(ip, rs, &pl, &start_high); /* V2T110        */
+        return (st);
+    }
+
+    if (rs->nn1a >= 0)
+    {
+        v2t_precision_bounds(ip, rs, &pl, &start_high); /* V2T110        */
     }
     else
     {
         start_high = (rs->rtedvd == 0) && (rs->cfpa >= 0); /* V2T102/105    */
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
     }
 
     rs->x_t1 = start_high ? pl.x_t1max : pl.x_t1min;               /* V2T145/140    */

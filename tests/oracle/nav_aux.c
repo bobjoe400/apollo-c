@@ -198,7 +198,7 @@ static void latlong(const char *t, long int tol)
     const agc_navaux_padload_t pad = pad_of(t); /* case pad load     */
 
     agc_interp_init(&ip);
-    (void) agc_navaux_set_padload(&pad);
+    agc_navaux_set_padload(&pad);
     (void) agc_latlong_from_r(&ip, &pad, opt_of(t), oracle_in_vec(t, "ALPHAV"), oracle_in_dp(t, "MPAC", 0), &o);
     oracle_require_ok(t, "POODOO");
     (void) oracle_cmp(t, "LAT", o.lat, oracle_out_dp(t, "LAT"), tol);
@@ -229,7 +229,7 @@ static void lalotorv(const char *t, long int tol)
     const agc_navaux_padload_t pad   = pad_of(t); /* case pad load     */
 
     agc_interp_init(&ip);
-    (void) agc_navaux_set_padload(&pad);
+    agc_navaux_set_padload(&pad);
     in.lat   = oracle_in_dp(t, "LAT", 0);
     in.lon   = oracle_in_dp(t, "LONG", 0);
     in.alt   = oracle_in_dp(t, "ALT", 0);
@@ -269,7 +269,7 @@ static void rp_r(const char *t, bool to_r, long int tol)
     tt   = oracle_in_dp(t, "VAC1+6", 0);
 
     agc_interp_init(&ip);
-    (void) agc_navaux_set_padload(&pad);
+    agc_navaux_set_padload(&pad);
 
     if (to_r)
     {
@@ -304,7 +304,7 @@ static void tff_conic_of(const char *conic_tag, agc_interp_t *ip, agc_tff_t *tff
     tff->rone = oracle_in_vec(conic_tag, "RONE");
     tff->vone = oracle_in_vec(conic_tag, "VONE");
     tff->rtmu = oracle_in_dp(conic_tag, "MPAC", 0);
-    (void) agc_tff_conic(ip, tff);
+    agc_tff_conic(ip, tff);
 }
 
 /**********************************************************************
@@ -484,7 +484,7 @@ static void lspos_lm(const char *t, long int tol)
     agc_vec_t    vs; /* VSUN, scale 2^1    */
 
     agc_interp_init(&ip);
-    (void) agc_ephem_lm_lspos(&ip, oracle_in_tp(t, "TEPHEM", 0), oracle_in_dp(t, "MPAC", 0), &vm, &vs);
+    agc_ephem_lm_lspos(&ip, oracle_in_tp(t, "TEPHEM", 0), oracle_in_dp(t, "MPAC", 0), &vm, &vs);
     oracle_require_ok(t, "POODOO");
     oracle_cmp_vec(t, "VMOON", vm, oracle_out_vec(t, "VMOON"), tol);
     oracle_cmp_vec(t, "VSUN", vs, oracle_out_vec(t, "VSUN"), tol);
@@ -536,7 +536,7 @@ static void incorp2(const char *t, long int tol_w, long int tol_s)
     sv.tnuv     = oracle_in_vec(t, "NUVCSM");
     sv.x789     = oracle_in_vec(t, "X789");
     (void) agc_incorp_update_w(&ip, &inc, &w);
-    (void) agc_incorp_update_state(&ip, &inc, &sv);
+    agc_incorp_update_state(&ip, &inc, &sv);
     oracle_require_ok(t, "INTWAKE");
 
     for (int k = 0; k < 27; k++)

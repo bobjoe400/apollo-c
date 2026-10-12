@@ -193,13 +193,11 @@ static void rd_initread(uint16_t code, agc_sp_t n)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_radar_rrrange(void)
+void agc_radar_rrrange(void)
 {
     rd_initread(RD_RRRANGE, 1);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -210,13 +208,11 @@ agc_status_t agc_radar_rrrange(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_radar_rrrdot(void)
+void agc_radar_rrrdot(void)
 {
     rd_initread(RD_RRRDOT, 1);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -730,9 +726,10 @@ agc_status_t agc_radar_lrpos2(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_lr_position_scan(void)
 {
@@ -757,9 +754,10 @@ agc_status_t agc_task_lr_position_scan(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_lr_position_check(void)
 {
@@ -797,9 +795,10 @@ agc_status_t agc_task_lr_position_check(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or rescheduled
- *          itself, else the status of the waitlist or executive call that
- *          failed
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the task ended or
+ *          rescheduled itself, else the status of the waitlist or
+ *          executive call that failed; AGC_STATUS_BAD_ARG on a failed
+ *          precondition
  **********************************************************************/
 agc_status_t agc_task_lr_position_settled(void)
 {

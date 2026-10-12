@@ -71,10 +71,10 @@ static const agc_dp_words_t mutable_tab[8] = {
  *   ctx       agc_conic_ctx_t *  O    zeroed; 1/MU, ROOTMU, 1/ROOTMU
  *   body      agc_conic_body_t   I    AGC_CONIC_EARTH or AGC_CONIC_MOON
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always; any body other than
- *          AGC_CONIC_EARTH loads the moon's constants)
+ * RETURNS: none (any body other than AGC_CONIC_EARTH loads the moon's
+ *          constants)
  *********************************************************************/
-agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
+void agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
 {
     int             base = (body == AGC_CONIC_EARTH) ? 1 : 5; /* MUTABLE+2; or +10 words */
     agc_conic_ctx_t z    = {0};                               /* cleared context */
@@ -88,8 +88,6 @@ agc_status_t agc_conic_ctx_init_(agc_conic_ctx_t *ctx, agc_conic_body_t body)
     ctx->ur1         = agc_vec_zero();
     ctx->u2          = agc_vec_zero();
     ctx->un          = agc_vec_zero();
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************

@@ -70,7 +70,7 @@ typedef struct agc_job_ctx
 #define AGC_PRIO32 ((agc_prio_t) 032) /* PRIO32 */
 
 /* Executive (EXECUTIVE.agc pp. 1208-1220) */
-agc_status_t agc_exec_init(void);
+void         agc_exec_init(void);
 agc_status_t agc_exec_novac(agc_prio_t prio, agc_job_id_t job);   /* NOVAC   */
 agc_status_t agc_exec_findvac(agc_prio_t prio, agc_job_id_t job); /* FINDVAC */
 void         agc_exec_job_sleep(agc_job_id_t wake_as);            /* JOBSLEEP*/
@@ -195,7 +195,7 @@ agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value);
 /* Waitlist: T3RUPT entry for the interrupt lead-in (TIME3 just overflowed).*/
 agc_status_t agc_waitlist_t3rupt(void);
 uint16_t     agc_waitlist_time3(void);                                      /* C(TIME3)             */
-agc_status_t agc_waitlist_entry(int i, int16_t *lst1, agc_task_id_t *lst2); /* LST1+i-1 (i>=1) / LST2+2i */
+void         agc_waitlist_entry(int i, int16_t *lst1, agc_task_id_t *lst2); /* LST1+i-1 (i>=1) / LST2+2i */
 
 /* Phase tables. Codes are the AGC octal words that follow TC PHASCHNG:
  *   type A  TL0 00P PPP PPP GGG    type B  TL1 DAP PPP PPP GGG
@@ -284,7 +284,7 @@ agc_status_t  agc_dispatch_rupt(agc_rupt_id_t rupt);    /* interrupts.c: handler
  * or task that asked for it and the call graph stays acyclic.          */
 bool         agc_exec_restart_pending(void);
 agc_status_t agc_exec_service_restart(void);           /* runs ENEMA if requested */
-agc_status_t agc_exec_enema(void);                     /* request ENEMA (GOPROG2)  */
+void         agc_exec_enema(void);                     /* request ENEMA (GOPROG2)  */
 void         agc_exec_varalarm(agc_alarm_code_t code); /* VARALARM      */
 void         agc_phase_kill(int group);                /* DXCH -PHASEn with NEG0 */
 
@@ -302,7 +302,7 @@ agc_status_t agc_task_endtask(void);                          /* ENDTASK / SVCT3
 agc_status_t agc_task_svct3(void);                            /* SVCT3 (retry)     */
 agc_status_t agc_task_longcycl(void);                         /* LONGCYCL          */
 agc_status_t agc_task_getcadr(void);                          /* GETCADR           */
-agc_status_t agc_task_t5idloc(void);                          /* T5IDLOC (CSM)     */
+void         agc_task_t5idloc(void);                          /* T5IDLOC (CSM)     */
 agc_status_t agc_task_taskover(void);                         /* TASKOVER as a task*/
 
 /* MODECADR = IMUCADR, OPTCADR, RADCADR (MODE SWITCHING ERASABLE): the

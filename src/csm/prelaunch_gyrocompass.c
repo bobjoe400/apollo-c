@@ -113,7 +113,8 @@ static agc_sp_t time1(void)
  * GTSWTLT1 - TIME1 > 0 means TIME1 wrapped: AD NEGMAX (-16383, "10 MS
  * ERROR OK").
  *
- * RETURNS: agc_status_t of WAITLIST (TWIDDLE)
+ * RETURNS: agc_status_t of WAITLIST (TWIDDLE); AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 static agc_status_t setgwlst(void)
 {
@@ -161,7 +162,8 @@ static agc_status_t setgwlst(void)
  *   ctx      agc_job_ctx_t *  I  the calling job
  *   liftoff  bool *           O  true: P11 has taken over this job
  *
- * RETURNS: agc_status_t -- OK, or the status of P11
+ * RETURNS: agc_status_t -- OK, or the status of P11; AGC_STATUS_BAD_ARG
+ *          on a failed precondition
  **********************************************************************/
 static agc_status_t chkcomed(agc_job_ctx_t *ctx, bool *liftoff)
 {
@@ -504,7 +506,8 @@ static void compgs(agc_interp_t *ip, const agc_dp_t term[2])
  * ARGUMENTS:
  *   ctx  agc_job_ctx_t *  I  the filter job
  *
- * RETURNS: agc_status_t of the pass (see ALFLT)
+ * RETURNS: agc_status_t of the pass (see ALFLT); AGC_STATUS_UNIMPLEMENTED
+ *          (not translated; see the body)
  **********************************************************************/
 agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
 {
@@ -764,14 +767,14 @@ agc_status_t agc_job_gyrocompassing_azimuth_check(agc_job_ctx_t *ctx)
     r->newazmth     = r->launchaz;
     agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* status of the call */
 
-    buf[2] = d; /* ADERCOMP: STORE ERCOMP +4                         */
-    agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
-    st     = prelaunch_posn17c();
-
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
+
+    buf[2] = d; /* ADERCOMP: STORE ERCOMP +4                         */
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
+    prelaunch_posn17c();
 
     agc_phase_change(00335);
 

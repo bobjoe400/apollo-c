@@ -212,7 +212,7 @@ static void s40_1(const char *t, long int tol)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_interp_init(&ip);
-    (void) agc_guid_init(AGC_VEHICLE_CSM);
+    agc_guid_init(AGC_VEHICLE_CSM);
     agc_rendz_t *rz = agc_rendz_erasable();    /* targeting erasables */
     agc_burn_t  *b  = &agc_guid_state()->burn; /* burn erasables */
 
@@ -251,7 +251,7 @@ static void s40_2(const char *t, long int tol)
 
     agc_state_init(AGC_VEHICLE_CSM);
     agc_interp_init(&ip);
-    (void) agc_guid_init(AGC_VEHICLE_CSM);
+    agc_guid_init(AGC_VEHICLE_CSM);
     agc_rendz_t *rz = agc_rendz_erasable();    /* targeting erasables */
     agc_burn_t  *b  = &agc_guid_state()->burn; /* burn erasables */
 
@@ -288,7 +288,7 @@ static void deltime(const char *t, long int tol)
     agc_conic_ctx_t c;  /* DELTIME context */
 
     agc_interp_init(&ip);
-    (void) agc_conic_ctx_init_(&c, AGC_CONIC_EARTH);
+    agc_conic_ctx_init_(&c, AGC_CONIC_EARTH);
     c.xsq         = agc_dp_to_words(oracle_in_dp(t, "VAC1", 0));
     c.xsq_n1      = -oracle_in(t, "VAC1+38", 0);
     c.inv_root_mu = agc_dp_to_words(oracle_in_dp(t, "VAC1+18", 0));

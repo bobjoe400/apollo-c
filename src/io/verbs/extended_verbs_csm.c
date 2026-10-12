@@ -203,12 +203,7 @@ agc_status_t agc_job_dap_data_load_config_csm(agc_job_ctx_t *ctx)
     agc_flag_id_t f = (agc_flag_id_t) AGC_FLAG_MAXDBFLG; /* MAXDBFLG */
 
     agc_flag_put(f, (agc_erase_dapdatr1() & BIT4) != 0u);
-    agc_status_t st = agc_csm_dap_decode_dap_data(); /* S41.2 (MAXOUT)          */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_csm_dap_decode_dap_data();
 
     return (agc_job_dap_data_load_noun47_csm(ctx));
 }
@@ -353,7 +348,9 @@ agc_status_t agc_job_tracking_terminate_csm(void)
     agc_phase_change(01);
     agc_inhint();         /* CLEANOUT           */
 
-    return (agc_exec_enema());
+    agc_exec_enema();
+
+    return (AGC_STATUS_OK);
 }
 
 /* ---- small verbs --------------------------------------------------------- */
@@ -604,12 +601,7 @@ static agc_status_t fan_40s(agc_job_ctx_t *ctx, int verb)
                 return (agc_extverb_alm_end()); /* CSM alone               */
             }
 
-            agc_status_t st = agc_csm_tvc_preswtch(); /* TESTXACT / PRESWTCH status */
-
-            if (st != AGC_STATUS_OK)
-            {
-                return (st);
-            }
+            agc_csm_tvc_preswtch();
 
             return (agc_extverb_gopin()); /* PRESWTCH exits via PINBRNCH */
         }
@@ -649,7 +641,8 @@ static agc_status_t fan_40s(agc_job_ctx_t *ctx, int verb)
  * ARGUMENTS:
  *   verb  int  I   50..69
  *
- * RETURNS: the verb's status (ALM/END for spares)
+ * RETURNS: the verb's status (ALM/END for spares); AGC_STATUS_BAD_ARG on
+ *          a failed precondition
  **********************************************************************/
 static agc_status_t fan_50s_60s(int verb)
 {
@@ -801,7 +794,9 @@ static agc_status_t fan_70s_90s(int verb)
             agc_phase_change(PHASE_R64);
             agc_inhint(); /* CLEANOUT           */
 
-            return (agc_exec_enema());
+            agc_exec_enema();
+
+            return (AGC_STATUS_OK);
         }
         case 96:
             /* VERB96: QUITFLAG, V96ONFLG, then V37 to P00.                             */

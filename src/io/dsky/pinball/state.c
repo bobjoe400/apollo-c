@@ -985,9 +985,9 @@ void agc_dsky_response(uint8_t *verb, uint8_t *noun)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_dsky_init(void)
+void agc_dsky_init(void)
 {
     pin_state_t zero = {0};
 
@@ -1006,6 +1006,4 @@ agc_status_t agc_dsky_init(void)
     g_pin.loadstat = PIN_LS_WAITING;
     pin_block_dspcount(PIN_VD1);       /* CS VD1; TS DSPCOUNT    */
     agc_flagword_set(4, 0);            /* kill interface displays */
-
-    return (AGC_STATUS_OK);
 }

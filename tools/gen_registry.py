@@ -23,7 +23,9 @@ Outputs (both carry a GENERATED banner; edit the table, not the files):
   pick the vehicle, and four flat switches (agc_dispatch_job_csm,
   agc_dispatch_task_csm, agc_dispatch_job_lm, agc_dispatch_task_lm), one
   `case AGC_JOB_X: return (agc_job_x(ctx));` per registry row in table
-  order (rule 9: no function pointers; each rope has its own labels), each
+  order (rule 9: no function pointers; each rope has its own labels), or
+  `case AGC_JOB_X: agc_job_x(ctx); return (AGC_STATUS_OK);` for a handler
+  that cannot fail and is declared void (rule 7), each
   with a boxed prolog (docs/STYLE.md).  The file carries the rule 4
   exemption marker.  An id with no function on the vehicle being flown
   returns AGC_STATUS_NOT_FOUND.
@@ -153,7 +155,8 @@ def prolog(kind, title, returns):
     return out
 
 
-VOID_JOBS = set()
+VOID_JOBS = set()  # handlers declared with a (void) parameter list
+VOID_RET = set()   # handlers declared void: they cannot fail (rule 7)
 
 
 def call(handler, kind):
@@ -199,7 +202,11 @@ def emit_vehicle(rows, kind, veh, vlabel):
             group = r['group']
             out.append('        /* src/%s */' % group)
         out.append('        case %s:' % r['id'])
-        out.append('            return (%s);' % call(r[veh], kind))
+        if r[veh] in VOID_RET:
+            out.append('            %s;' % call(r[veh], kind))
+            out.append('            return (AGC_STATUS_OK);')
+        else:
+            out.append('            return (%s);' % call(r[veh], kind))
     out += ['        default:', '            break;', '    } /* switch (%s) */' % k['var'], '',
             '    return (AGC_STATUS_NOT_FOUND);', '} /* %s */' % name, '']
     return name, out
@@ -232,6 +239,8 @@ def headers_for(rows):
                     decl.setdefault(m.group(1), os.path.relpath(path, os.path.join(ROOT, 'include')))
                 for m in re.finditer(r'\b(agc_\w+)\s*\(\s*void\s*\)', text):
                     VOID_JOBS.add(m.group(1))
+                for m in re.finditer(r'^\s*void\s+(agc_\w+)\s*\(', text, re.M):
+                    VOID_RET.add(m.group(1))
     need = set()
     missing = []
     for r in rows:

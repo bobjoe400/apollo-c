@@ -77,7 +77,8 @@ void exec_up_stoprate(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the SERVIDLE status
+ * RETURNS: agc_status_t -- the SERVIDLE status; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  **********************************************************************/
 agc_status_t exec_up_servidle(void)
 {
@@ -91,7 +92,9 @@ agc_status_t exec_up_servidle(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_lm_servidle());
+    agc_lm_servidle();
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -253,13 +256,12 @@ void exec_up_startsub(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the DSKY reset status; BAD_ARG when called
- *          with interrupts enabled
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; BAD_ARG when called with
+ *          interrupts enabled
  **********************************************************************/
 agc_status_t exec_up_startsb2(void)
 {
-    agc_status_t st = agc_dsky_init(); /* DSKY reset outcome */
-
+    agc_dsky_init();           /* DSKY reset */
     agc_svc_startsub_reset();  /* DELAYLOC = 0      */
     agc_t4_startsub_reset();   /* DSRUPTSW = +0     */
     agc_selfcheck_restart();   /* SELFRET = SELFCHK */
@@ -270,7 +272,7 @@ agc_status_t exec_up_startsb2(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -377,12 +379,8 @@ agc_status_t agc_power_on(agc_vehicle_t v)
         agc_entry_lexicon_reset();
     }
 
-    agc_status_t st = agc_exec_init(); /* executive / waitlist start outcome */
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_waitlist_init();
-    }
+    agc_exec_init();
+    agc_status_t st = agc_waitlist_init(); /* waitlist start outcome */
 
     if (!AGC_ASSERT(agc_state_vehicle() == v))
     {

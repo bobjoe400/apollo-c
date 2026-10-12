@@ -362,12 +362,7 @@ static agc_status_t csi_post_csi_orbit(agc_interp_t *ip, agc_rendz_t *rz, agc_re
     }
 
     rz->hafpa1 = agc_dp_shr(t, 1); /* SR1        */
-    st         = agc_rendz_periapo_body_scale(ip, rz, rz->ract1, rz->vact4, pa);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_rendz_periapo_body_scale(ip, rz, rz->ract1, rz->vact4, pa);
 
     rz->postcsi = agc_rendz_scalar_from_body(rz, pa->hperi);
     *ellipse    = (rz->centang == 0) && (agc_dp_sub(ip, pa->ecc, CSI_ONETHTH) >= 0);
@@ -546,11 +541,7 @@ static agc_status_t csi_cdh_tpi(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t 
 
         if (st == AGC_STATUS_OK)
         {
-            st = agc_rendz_periapo_body_scale(ip, rz, rz->ract2, rz->vact3, &pa);
-        }
-
-        if (st == AGC_STATUS_OK)
-        {
+            agc_rendz_periapo_body_scale(ip, rz, rz->ract2, rz->vact3, &pa);
             rz->postcdh = agc_rendz_scalar_from_body(rz, pa.hperi);
             st          = rz_intint(ip, rz, rz->ract2, rz->vact3, rz->tcdh, agc_erase_ttpi(), true, resume, &r, &v);
 
@@ -1223,15 +1214,13 @@ agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz)
  *   m         agc_mat_t *          O    rows -URA1 x UP1, -UP1, -URA1, unit
  *                                       2^1
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m)
+void agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m)
 {
     m->row[1] = agc_vec_neg(rz->up1);                /* 6D         */
     m->row[2] = agc_vec_neg(rz_unit(ip, rz->ract1)); /* 12D        */
     m->row[0] = agc_vec_shl(ip, agc_vec_cross(ip, m->row[2], rz->up1), 1);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -1261,12 +1250,12 @@ agc_status_t agc_rendz_csi_cdh_dv_to_reference(agc_interp_t *ip,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_mat_t    m;                                            /* S32/33.X rows, 2^1 */
-    agc_status_t st = agc_rendz_csi_cdh_lv_matrix(ip, rz, &m); /* rows */
+    agc_mat_t m; /* S32/33.X rows, 2^1 */
 
+    agc_rendz_csi_cdh_lv_matrix(ip, rz, &m); /* rows */
     rz->delvsin = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
     rz->delvsab = rz_abval(ip, rz->delvsin);
     *delvsin    = rz->delvsin;
 
-    return (st);
+    return (AGC_STATUS_OK);
 }

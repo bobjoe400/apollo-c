@@ -569,7 +569,7 @@ static ref_model_t earth_model(bool j2)
 static void fresh(agc_vehicle_t veh)
 {
     agc_state_init(veh);
-    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    agc_exec_init();
     CHECK(agc_waitlist_init() == AGC_STATUS_OK);
     agc_erase_set_modreg(0);
 }
@@ -879,7 +879,7 @@ static void test_lunar_gravity(void)
     agc_interp_init(&ip);
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(20);
-    CHECK(agc_navaux_set_padload(&pad) == AGC_STATUS_OK);
+    agc_navaux_set_padload(&pad);
 
     /* E3J22R2M = 3J22R2MU (9.20479048E16 B-58), E32C31RM ~ 3/2 C31 R^3 mu
      * for C31 = 2.8E-5 at the scale B80 implied by QUALITY3.             */
@@ -949,13 +949,13 @@ static void test_third_body(void)
     fresh(AGC_VEHICLE_CSM);
     agc_erase_set_modreg(20);
     agc_erase_set_tephem(0);
-    CHECK(agc_navaux_set_padload(&pad) == AGC_STATUS_OK);
+    agc_navaux_set_padload(&pad);
     const dvec_t moon = dv(3.8e8, 1.0e7, -2.0e7); /* moon position, m */
     const dvec_t sun  = dv(1.5e11, 0.0, 0.0);     /* sun position, m */
 
     eph.vecoem[AGC_EPHEM_NCOEF - 1] = to_agc(moon, 31);  /* a0, fixed    */
     eph.reso                        = to_agc(sun, 38);
-    CHECK(agc_ephem_set_csm_data(&eph) == AGC_STATUS_OK);
+    agc_ephem_set_csm_data(&eph);
     ref_model_t m                   = earth_model(true); /* earth with J2..J4 and both bodies */
 
     m.nbody             = 2;
@@ -1159,7 +1159,7 @@ static void test_intwakeu(void)
     agc_phase_set_priority(6, 030);
     CHECK(agc_integ_install(0, AGC_JOB_NONE) == AGC_STATUS_OK);
     CHECK(agc_integ_intwakeu(&ip, ctx, &u, AGC_JOB_UPLINK_UPDATE_TERMINATE) == AGC_STATUS_OK);
-    CHECK(agc_exec_init() == AGC_STATUS_OK);
+    agc_exec_init();
     CHECK(agc_restart_group(6) == AGC_STATUS_OK);
 
     for (int i = 0; i < agc_exec_core_sets(); i++)

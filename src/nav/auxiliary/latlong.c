@@ -172,11 +172,10 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat)
  *   half_sin_lat  agc_dp_t                      I    1/2 sin L, 2^1
  *   eradm         agc_dp_t *                    O    ERADM, 2^29 m
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always). Earth: ERADFLAG = 0 ->
- *          ERAD, 1 -> GETERAD. Moon: ERADFLAG = 1 -> 504RM, 0 -> |RLS|
- *          (TSTRLSRM, SR2R).
+ * RETURNS: none. Earth: ERADFLAG = 0 -> ERAD, 1 -> GETERAD. Moon:
+ *          ERADFLAG = 1 -> 504RM, 0 -> |RLS| (TSTRLSRM, SR2R).
  **********************************************************************/
-agc_status_t agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_dp_t half_sin_lat, agc_dp_t *eradm)
+void agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_dp_t half_sin_lat, agc_dp_t *eradm)
 {
     if (opt.lunar && opt.erad)
     {
@@ -194,8 +193,6 @@ agc_status_t agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad
     {
         *eradm = ERAD;
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -291,12 +288,7 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip, const agc_navaux_padload_t *pa
     agc_vec_t alphav = agc_vec_unit(ip, rp, NULL, NULL); /* unit RP 2^1    */
     agc_dp_t  gamrp  = agc_latlong_setgamma(opt.lunar);  /* GAMRP, 2^1 */
 
-    st = agc_latlong_setre(ip, pad, opt, alphav.c[2], &out->eradm);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_latlong_setre(ip, pad, opt, alphav.c[2], &out->eradm);
 
     agc_dp_t costh = agc_tp_sqrt(sum_of_squares(ip, alphav.c[0], alphav.c[1])); /* cos Lc, scale 2^1 */
 
@@ -333,27 +325,22 @@ agc_status_t agc_latlong_from_r(agc_interp_t *ip, const agc_navaux_padload_t *pa
  **********************************************************************/
 agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, const agc_latlong_t *in, agc_dp_t t_cs, agc_vec_t *r, agc_dp_t *out_eradm)
 {
-    agc_dp_t     gamrp = agc_latlong_setgamma(opt.lunar); /* GAMRP 2^1 */
-    agc_dp_t     clat  = agc_dp_cos(in->lat);             /* scale 2^1 */
-    agc_dp_t     slat  = agc_dp_sin(in->lat);             /* scale 2^1 */
-    agc_dp_t     z     = agc_dp_mul(ip, slat, gamrp);     /* scale 2^2 */
-    agc_dp_t     y     = agc_dp_sin(in->lon);             /* RP y, 2^2 after DMP */
-    agc_dp_t     x     = agc_dp_cos(in->lon);             /* RP x, 2^2 after DMP */
-    agc_vec_t    urp   = agc_vec_zero();                  /* unit RP 2^1 */
-    agc_dp_t     eradm = 0;                               /* 2^29 m    */
-    agc_status_t st    = AGC_STATUS_OK;                   /* returned  */
-    agc_vec_t    ur    = agc_vec_zero();                  /* 2^1       */
+    agc_dp_t  gamrp = agc_latlong_setgamma(opt.lunar); /* GAMRP 2^1 */
+    agc_dp_t  clat  = agc_dp_cos(in->lat);             /* scale 2^1 */
+    agc_dp_t  slat  = agc_dp_sin(in->lat);             /* scale 2^1 */
+    agc_dp_t  z     = agc_dp_mul(ip, slat, gamrp);     /* scale 2^2 */
+    agc_dp_t  y     = agc_dp_sin(in->lon);             /* RP y, 2^2 after DMP */
+    agc_dp_t  x     = agc_dp_cos(in->lon);             /* RP x, 2^2 after DMP */
+    agc_vec_t urp   = agc_vec_zero();                  /* unit RP 2^1 */
+    agc_dp_t  eradm = 0;                               /* 2^29 m    */
+    agc_vec_t ur    = agc_vec_zero();                  /* 2^1       */
 
-    y   = agc_dp_mul(ip, y, clat);
-    x   = agc_dp_mul(ip, x, clat);
-    urp = agc_vec_make(x, y, z);
-    urp = agc_vec_unit(ip, urp, NULL, NULL); /* UNIT, scale 2^1 */
-    st  = agc_latlong_setre(ip, pad, opt, urp.c[2], &eradm);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_rp_to_r(ip, pad, opt.lunar, urp, t_cs, &ur);
-    }
+    y               = agc_dp_mul(ip, y, clat);
+    x               = agc_dp_mul(ip, x, clat);
+    urp             = agc_vec_make(x, y, z);
+    urp             = agc_vec_unit(ip, urp, NULL, NULL);                      /* UNIT, scale 2^1 */
+    agc_latlong_setre(ip, pad, opt, urp.c[2], &eradm);
+    agc_status_t st = agc_planet_rp_to_r(ip, pad, opt.lunar, urp, t_cs, &ur); /* returned */
 
     if (st != AGC_STATUS_OK)
     {
@@ -382,15 +369,13 @@ agc_status_t agc_latlong_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad,
  *   --------  ---------------------  ---  -------------------------------
  *   ll        const agc_latlong_t *  I    LAT, LONG 2^0 rev, ALT 2^29 m
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll)
+void agc_navaux_set_latlong(const agc_latlong_t *ll)
 {
     g_latlong.lat = ll->lat;
     g_latlong.lon = ll->lon;
     g_latlong.alt = ll->alt;
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -404,11 +389,9 @@ agc_status_t agc_navaux_set_latlong(const agc_latlong_t *ll)
  *   ll        agc_latlong_t *  O    LAT, LONG 2^0 rev, ALT 2^29 m
  *                                   (eradm copied as stored, 0)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_navaux_get_latlong(agc_latlong_t *ll)
+void agc_navaux_get_latlong(agc_latlong_t *ll)
 {
     *ll = g_latlong;
-
-    return (AGC_STATUS_OK);
 }

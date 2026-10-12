@@ -133,12 +133,7 @@ static bool td_good(void)
  **********************************************************************/
 static agc_status_t td_read_rdot(void)
 {
-    agc_status_t st = agc_radar_rrrdot(); /* RRRDOT */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_radar_rrrdot();
 
     return (td_stall(AGC_JOB_RENDEZVOUS_TRACKING_DATA_RANGE));
 }
@@ -231,21 +226,16 @@ agc_status_t agc_job_rendezvous_tracking_data_range(void)
     lmnav_state_t *n = lmnav_state(); /* LM navigation erasables */
 
     agc_inhint();
-    n->mktime       = rr_timehold();
-    n->rdotmsav     = agc_radar_samplsum();
-    n->aig          = agc_erase_cduy();
-    n->amg          = agc_erase_cduz();
-    n->aog          = agc_erase_cdux();
-    n->cdutime      = agc_rtb_loadtime();
-    n->tang[0]      = agc_erase_cdut();
-    n->tang[1]      = agc_erase_cdus();
+    n->mktime   = rr_timehold();
+    n->rdotmsav = agc_radar_samplsum();
+    n->aig      = agc_erase_cduy();
+    n->amg      = agc_erase_cduz();
+    n->aog      = agc_erase_cdux();
+    n->cdutime  = agc_rtb_loadtime();
+    n->tang[0]  = agc_erase_cdut();
+    n->tang[1]  = agc_erase_cdus();
     agc_relint();
-    agc_status_t st = agc_radar_rrrange(); /* RRRANGE */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_radar_rrrange();
 
     return (td_stall(AGC_JOB_RENDEZVOUS_TRACKING_DATA_MARK));
 }
@@ -584,13 +574,11 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(void)
+void agc_job_rendezvous_tracking_data_residuals_proceed(void)
 {
-    lmnav_state()->n49flag = -1;
-
-    return (AGC_STATUS_OK); /* ENDOFJOB */
+    lmnav_state()->n49flag = -1; /* ENDOFJOB */
 }
 
 /**********************************************************************
@@ -601,13 +589,11 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_proceed(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_rendezvous_tracking_data_residuals_recycle(void)
+void agc_job_rendezvous_tracking_data_residuals_recycle(void)
 {
-    lmnav_state()->n49flag = 1;
-
-    return (AGC_STATUS_OK); /* ENDOFJOB */
+    lmnav_state()->n49flag = 1; /* ENDOFJOB */
 }
 
 /**********************************************************************
@@ -669,12 +655,7 @@ agc_status_t agc_job_rendezvous_tracking_data_residuals_wait(agc_job_ctx_t *ctx)
 agc_status_t agc_job_rendezvous_tracking_data_restart(void)
 {
     agc_phase_change(00152);
-    agc_status_t st = agc_radar_rrrdot(); /* RRRDOT */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_radar_rrrdot();
 
     return (td_stall(AGC_JOB_RENDEZVOUS_TRACKING_DATA_RESTART_READ));
 }

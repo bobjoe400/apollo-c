@@ -350,7 +350,7 @@ static agc_status_t tps_trial(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t re
         rz->delvee  = agc_dp_add(ip, rz->magvtpi, rz->reldelv);
         agc_rendz_periapo_t pa; /* PERIAPO1 results */
 
-        st     = agc_rendz_periapo_body_scale(ip, rz, rz->ract3, rz->viprime, &pa);
+        agc_rendz_periapo_body_scale(ip, rz, rz->ract3, rz->viprime, &pa);
         rz->hp = agc_rendz_scalar_from_body(rz, pa.hperi); /* SL* 0,2 */
     }
 

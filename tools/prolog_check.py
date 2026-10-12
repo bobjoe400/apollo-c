@@ -15,7 +15,11 @@ bodies.  This tool reads each function's prolog and body and reports:
                    callees can return.  A function that takes an
                    agc_status_t (or passes one by address) can return
                    anything and is not checked.
-  returns-extra    body returns an AGC_STATUS_* the prolog does not name
+  returns-extra    body returns an AGC_STATUS_* literal (in a return, or
+                   assigned to the status it returns) that the prolog's
+                   RETURNS does not name, with or without the AGC_STATUS_
+                   prefix; statuses it only propagates from a callee are
+                   the callee's to name ("the status of X")
   flag-missing     prolog names an AGC flag (UPFLAG/DOWNFLAG text or an
                    AGC_FLAG_* name) the body never touches
   call-missing     prolog says the function calls/continues in/goes to
@@ -35,7 +39,7 @@ import clang.cindex as ci
 STATUS_RE = re.compile(r'AGC_STATUS_([A-Z_0-9]+)')
 FLAG_RE = re.compile(r'\bAGC_FLAG_([A-Z0-9_]+)\b')
 CALL_RE = re.compile(r'\b([a-z][a-z0-9_]+)\(\)')
-STATUS_WORDS = ('BAD_ARG', 'FULL', 'BUSY', 'NOT_FOUND', 'POODOO', 'BAILOUT', 'ALARM', 'NO_CONVERGE')
+STATUS_WORDS = ('BAD_ARG', 'FULL', 'BUSY', 'NOT_FOUND', 'POODOO', 'BAILOUT', 'ALARM', 'NO_CONVERGE', 'OVERFLOW', 'UNIMPLEMENTED')
 ARG_ROW_RE = re.compile(r'^\s*\*\s+([A-Za-z_][A-Za-z_0-9]*)\s+\S.*\b(I|O|I/O)\b')
 
 
@@ -112,6 +116,9 @@ def check_function(cursor, lines, src, out):
         if can is not None and 'ANY' not in can:
             for s in sorted(pro_st - can - {'OK'}):
                 out.append((name, line, 'returns-missing', f'RETURNS names {s}, which neither the body nor any status it propagates can return'))
+        if ret_line and not re.search(r'RETURNS:\s*none\b', ret_text, re.I):
+            for s in sorted(OWN.get(func_key(cursor), set()) - pro_st - {'OK', 'ANY'}):
+                out.append((name, line, 'returns-extra', f'body returns AGC_STATUS_{s}, which RETURNS does not name'))
     # flags
     for f in sorted(set(FLAG_RE.findall(ptext))):
         if 'AGC_FLAG_' + f not in body:
@@ -142,6 +149,7 @@ def check_function(cursor, lines, src, out):
 
 
 POSSIBLE = {}  # func_key -> set of status names the function can return
+OWN = {}       # func_key -> status literals the function itself returns
 
 
 def func_key(cursor):
@@ -153,13 +161,15 @@ def func_key(cursor):
 
 def status_facts(fn_cursor):
     """Literal statuses, whether a non-literal return propagates, callees."""
-    lits, callees, prop = set(), set(), False
+    lits, callees, prop, own = set(), set(), False, set()
     stack = list(fn_cursor.get_children())
     while stack:
         c = stack.pop()
         if c.kind == ci.CursorKind.RETURN_STMT:
-            toks = ' '.join(t.spelling for t in c.get_tokens())
+            tl = [t.spelling for t in c.get_tokens()]
+            toks = ' '.join(tl)
             lits.update(STATUS_RE.findall(toks))
+            own.update(m.group(1) for n, w in enumerate(tl) for m in [STATUS_RE.fullmatch(w)] if m and not (n > 0 and tl[n - 1] in ('==', '!=')))
             if re.search(r'[a-z_][a-z_0-9]*', re.sub(r'AGC_STATUS_[A-Z_0-9]+|\breturn\b', '', toks)):
                 prop = True
         elif c.kind == ci.CursorKind.UNARY_OPERATOR and c.type.spelling.startswith('agc_status_t *'):
@@ -173,9 +183,10 @@ def status_facts(fn_cursor):
             m = STATUS_RE.fullmatch(t)
             if m and not (n > 0 and toks[n - 1] in ('==', '!=')):
                 lits.add(m.group(1))
+                own.add(m.group(1))
     if any(a.type.spelling == 'agc_status_t' for a in fn_cursor.get_arguments()):
         lits.add('ANY')
-    return lits, prop, callees
+    return lits, prop, callees, own
 
 
 def parse(path):
@@ -195,9 +206,10 @@ def build_possible(tus):
             if c.result_type.spelling == 'agc_status_t':
                 facts[func_key(c)] = status_facts(c)
     POSSIBLE.update({k: set(v[0]) for k, v in facts.items()})
+    OWN.update({k: set(v[3]) for k, v in facts.items()})
     for _ in range(len(facts)):  # fixpoint; bounded by the function count
         changed = False
-        for k, (lits, prop, callees) in facts.items():
+        for k, (lits, prop, callees, _own) in facts.items():
             if not prop:
                 continue
             for cal in callees:

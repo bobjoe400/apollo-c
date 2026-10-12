@@ -333,7 +333,7 @@ agc_status_t pin_hmsin(void);         /* HMSIN            */
 
 /* ---- NVSUB family (nvsub.c) ------------------------------------ */
 agc_status_t pin_recaltst(void);                              /* RECALTST         */
-agc_status_t pin_reldsp1(void);                               /* RELDSP1          */
+void         pin_reldsp1(void);                               /* RELDSP1          */
 void         pin_kilmonon(void);                              /* KILMONON         */
 agc_status_t pin_nvmonopt(uint16_t nvtemp, uint16_t options); /* NVMONOPT   */
 bool         pin_dsp_blocked(void);                           /* MONSAVE1 EMB + DSPLOCK */

@@ -384,14 +384,7 @@ agc_status_t agc_task_engine_fail_shutdown_restart(void)
 agc_status_t agc_task_engine_fail_rcs_dap(void)
 {
     agc_inhint();
-    agc_status_t st = agc_csm_dap_rcsdapon(); /* status of agc_csm_dap_rcsdapon */
-
-    if (st != AGC_STATUS_OK)
-    {
-        agc_relint();
-
-        return (st);
-    }
+    agc_csm_dap_rcsdapon(); /* RCSDAPON */
 
     agc_relint();
 
@@ -444,15 +437,13 @@ agc_status_t agc_task_engine_fail_resume(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_task_engine_fail_reenable(void)
+void agc_task_engine_fail_reenable(void)
 {
     agc_flag_clear(AGC_FLAG_IDLEFAIL);
 
     agc_phase_kill(4);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -530,14 +521,7 @@ agc_status_t agc_task_engine_fail_reignite_trim(void)
     }
 
     agc_inhint();
-    agc_status_t sw = agc_csm_dap_rcsdapon(); /* status of agc_csm_dap_rcsdapon */
-
-    if (sw != AGC_STATUS_OK)
-    {
-        agc_relint();
-
-        return (sw);
-    }
+    agc_csm_dap_rcsdapon(); /* RCSDAPON */
 
     agc_relint();
     agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_QUICKIGN, 0, true, 0U };
@@ -785,14 +769,7 @@ agc_status_t agc_job_dapfig(void)
     }
     else
     {
-        agc_status_t st = agc_csm_dap_rcsdapon(); /* RCSDAPUP               */
-
-        if (st != AGC_STATUS_OK)
-        {
-            agc_relint();
-
-            return (st);
-        }
+        agc_csm_dap_rcsdapon(); /* RCSDAPON */
     }
 
     agc_relint();

@@ -663,13 +663,10 @@ static agc_status_t usepios(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     agc_vec_t            pole  = agc_vec_zero();                  /* lunar pole in reference axes, 2^1 */
     const agc_vec_t      zunit = agc_vec_make(0, 0, AGC_DP_HALF); /* ZUNIT, half unit 2^1 */
 
-    ctx->sv.tet     = ctx->tdec1;
-    agc_status_t st = agc_navaux_get_padload(&pad); /* status of the pad-load read, RP-TO-R */
+    ctx->sv.tet = ctx->tdec1;
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_planet_rp_to_r(ip, &pad, true, agc_erase_rls(), ctx->sv.tet, &ctx->sv.rcv); /* m 2^27     */
-    }
+    agc_navaux_get_padload(&pad);
+    agc_status_t st = agc_planet_rp_to_r(ip, &pad, true, agc_erase_rls(), ctx->sv.tet, &ctx->sv.rcv); /* m 2^27     */
 
     if (st == AGC_STATUS_OK)
     {
@@ -1290,8 +1287,9 @@ agc_status_t agc_integ_integrate_permanent(agc_interp_t *ip, agc_integ_ctx_t *ct
  *   csm         bool               I    VINTFLAG: the CSM state (else the LM)
  *   conic       bool               I    INTYPFLG: conic only (else precision)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, the INTSTALL status (BUSY: asleep),
- *                          or the integration status
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, the INTSTALL status (BUSY:
+ *          asleep), or the integration status; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
  *********************************************************************/
 static agc_status_t special_entry(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_dp_t tdec1, agc_job_id_t resume_job, bool csm, bool conic)
 {

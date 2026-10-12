@@ -329,7 +329,9 @@ agc_status_t agc_lm_calcrgvg(agc_interp_t *ip)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_lm_rgvgcalc(ip));
+    agc_lm_rgvgcalc(ip);
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -341,9 +343,9 @@ agc_status_t agc_lm_calcrgvg(agc_interp_t *ip)
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
+void agc_lm_rgvgcalc(agc_interp_t *ip)
 {
     agc_lm_ldg_t        *l = agc_lm_ldg();          /* landing erasables */
     const agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
@@ -364,8 +366,6 @@ agc_status_t agc_lm_rgvgcalc(agc_interp_t *ip)
     agc_sp_t  a  = agc_lm_sparcsin_doubled(s2);                 /* SPARCSIN -1: look angle, half-revolutions 2^0 */
 
     l->lookangl = agc_lm_mp_hi(agc_lm_ad(a, LDG_HALFDEG), LDG_180DEGS);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -449,7 +449,8 @@ agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, a
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ *          failed (AGC_STATUS_BAD_ARG on a failed precondition);
+ *          AGC_STATUS_NO_CONVERGE when ROOTPSRS fails (WHATALM)
  **********************************************************************/
 agc_status_t agc_lm_ttf8cl(agc_interp_t *ip)
 {
@@ -622,9 +623,9 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_cgcalc(agc_interp_t *ip)
+void agc_lm_cgcalc(agc_interp_t *ip)
 {
     agc_lm_ldg_t          *l  = agc_lm_ldg();                     /* landing erasables */
     const agc_lm_target_t *t  = &agc_lm_pad()->target[ldg_tgt()]; /* landing target set */
@@ -646,8 +647,6 @@ agc_status_t agc_lm_cgcalc(agc_interp_t *ip)
         l->cg.row[1] = w;
         l->cg.row[2] = agc_vec_shl(ip, agc_vec_cross(ip, l->cg.row[0], w), 1);
     }
-
-    return (AGC_STATUS_OK);
 } /* agc_lm_cgcalc */
 
 /**********************************************************************
@@ -794,17 +793,15 @@ agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_lm_job_approach_phase_proceed(void)
+void agc_lm_job_approach_phase_proceed(void)
 {
     agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
     l->elincr1 = 0;
     l->azincr1 = 0;
     agc_flag_set(AGC_FLAG_REDFLAG);
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -1007,7 +1004,9 @@ static agc_status_t ldg_front(agc_interp_t *ip)
         return (agc_lm_redesig(ip));
     }
 
-    return (agc_lm_rgvgcalc(ip));
+    agc_lm_rgvgcalc(ip);
+
+    return (AGC_STATUS_OK);
 } /* ldg_front */
 
 /**********************************************************************
@@ -1045,12 +1044,7 @@ static agc_status_t ldg_quadratic(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         return (st);
     }
 
-    st = agc_lm_cgcalc(ip); /* AFTRGUID         */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_lm_cgcalc(ip);
 
     agc_sp_t ex = ldg_extlogic(); /* phase of the WHATEXIT entry, unscaled */
 

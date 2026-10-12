@@ -138,9 +138,9 @@ static void postcheck(lm_dap_t *d, int i, agc_sp_t oldsense)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t lm_dap_spsrcs(void)
+void lm_dap_spsrcs(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
@@ -172,6 +172,4 @@ agc_status_t lm_dap_spsrcs(void)
     }
 
     postcheck(d, i, oldsense);
-
-    return (AGC_STATUS_OK);
 } /* lm_dap_spsrcs */

@@ -231,9 +231,10 @@ void agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t ro
  *   star_sm   agc_vec_t *                   O    star line of sight in SM
  *                                                axes, half-unit (2^1)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm)
 {
@@ -277,9 +278,10 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
  *                                                axes as TRG*NBSM leaves
  *                                                its words, half-unit (2^1)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_words_t *star_sm)
 {
@@ -336,9 +338,10 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, a
  *                                  (words), half-unit (2^1)
  *   ave       agc_vec_t *     IO   running average star vector, half-unit
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, agc_vec_t *ave)
 {
@@ -373,9 +376,11 @@ agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, a
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAILOUT after the BAILOUT; AGC_STATUS_POODOO after
+ *          the POODOO
  **********************************************************************/
 agc_status_t agc_aotmark(void)
 {
@@ -767,9 +772,10 @@ static agc_status_t average_marks(agc_interp_t *ip)
  *   ctx       agc_job_ctx_t *  I    the running job (display continuations,
  *                                   priority)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAILOUT after the BAILOUT
  **********************************************************************/
 agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx)
 {
@@ -897,9 +903,10 @@ agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx)
  *   ctx       agc_job_ctx_t *  I    the running job (display continuations,
  *                                   priority)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t surface_again(agc_job_ctx_t *ctx)
 {
@@ -997,9 +1004,10 @@ agc_status_t agc_job_aot_mark_surface_answer(agc_job_ctx_t *ctx)
  *   y_mark    bool                  I    true for a Y mark
  *   mark_bit  uint16_t              I    MARKSTAT bit of this mark (X or Y)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 static agc_status_t vacstor(const aot_sample_t *s, bool y_mark, uint16_t mark_bit)
 {
@@ -1059,9 +1067,10 @@ static agc_status_t vacstor(const aot_sample_t *s, bool y_mark, uint16_t mark_bi
  *   s         const aot_sample_t *  I    the button sample (time, IMU CDUs)
  *   y_mark    bool                  I    true for the Y mark button
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_ALARM after an alarm
  **********************************************************************/
 static agc_status_t mark_button(const aot_sample_t *s, bool y_mark)
 {
@@ -1110,9 +1119,10 @@ static agc_status_t mark_button(const aot_sample_t *s, bool y_mark)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_ALARM after an alarm
  **********************************************************************/
 agc_status_t agc_aotmark_markrupt(void)
 {

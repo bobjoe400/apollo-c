@@ -131,9 +131,9 @@ agc_dp_t agc_tff_poly(agc_dp_t x)
  *                                  tffalfa, tffrtalf, na, tff1_alf
  *                                  (scales in the type, auxiliary.h)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
+void agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
 {
     agc_dp_t  mag = 0;                                       /* |RN|, E 2^29 m */
     agc_vec_t ur  = agc_vec_unit(ip, tff->rone, &mag, NULL); /* UR, 2^1 */
@@ -170,8 +170,6 @@ agc_status_t agc_tff_conic(agc_interp_t *ip, agc_tff_t *tff)
     {
         tff->tff1_alf = agc_dp_from_words(agc_mpac_store(agc_mpac_bddv(ip, m, agc_dp_to_words(AGC_DP_QUARTER))));
     }
-
-    return (AGC_STATUS_OK);
 } /* agc_tff_conic */
 
 /**********************************************************************
@@ -249,9 +247,9 @@ agc_status_t agc_tff_rp_ra(agc_interp_t *ip, agc_tff_t *tff)
  *                                     E 2^45
  *   t_cs      agc_dp_t *         O    TFF, cs scale 2^28
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (NEARONE in t_cs on overflow)
+ * RETURNS: none (NEARONE in t_cs on overflow)
  **********************************************************************/
-static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_words_t tff_rtmu, agc_dp_t *t_cs)
+static void tff_end(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_words_t tff_rtmu, agc_dp_t *t_cs)
 {
     /* DMP TFF/RTMU: the caller takes the top two words (truncation).     */
     *t_cs = agc_dp_from_words(agc_mpac_store(agc_mpac_dmp(agc_mpac_dload(tff_rtmu), agc_dp_to_words(tff->rtmu)))); /* TFF, 2^28 cs */
@@ -260,8 +258,6 @@ static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_words
     {
         *t_cs = AGC_TFF_NEARONE; /* BOV MAXTFF  */
     }
-
-    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -282,10 +278,9 @@ static agc_status_t tff_end(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_words
  *   q2        agc_dp_t        I    Q2, E 2^16, M 2^15
  *   t_cs      agc_dp_t *      O    TFF, cs scale 2^28
  *
- * RETURNS: agc_status_t -- the status of ENDTFF, tff_end() (always
- *          AGC_STATUS_OK)
+ * RETURNS: none
  **********************************************************************/
-static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn, agc_dp_t q2, agc_dp_t *t_cs)
+static void tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn, agc_dp_t q2, agc_dp_t *t_cs)
 {
     int na = tff->na; /* NA, normalization count */
 
@@ -346,7 +341,7 @@ static agc_status_t tff_el1(agc_interp_t *ip, agc_tff_t *tff, agc_dp_t dn, agc_d
     st = agc_tp_shift(ip, st, na - 3);
     s  = agc_tp_to_dp(agc_tp_shift(ip, st, na - 4));
 
-    return (tff_end(ip, tff, agc_dp_to_words(s), t_cs));
+    tff_end(ip, tff, agc_dp_to_words(s), t_cs);
 } /* tff_el1 */
 
 /**********************************************************************
@@ -414,7 +409,9 @@ static agc_status_t tff_general(agc_interp_t *ip, agc_tff_t *tff, agc_dp_words_t
         } /* else NEGTFF  */
     }
 
-    return (tff_end(ip, tff, tsm, t_cs));
+    tff_end(ip, tff, tsm, t_cs);
+
+    return (AGC_STATUS_OK);
 } /* tff_general */
 
 /**********************************************************************
@@ -455,7 +452,9 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_words_t num, 
     { /* DEN = 0: Z indeterminate   */
         if (agc_dp_from_words(tff->tffalfa) > 0)
         {
-            return (tff_el1(ip, tff, 0, q2, t_cs)); /* assume 90 deg, D/N = 0 */
+            tff_el1(ip, tff, 0, q2, t_cs);
+
+            return (AGC_STATUS_OK); /* assume 90 deg, D/N = 0 */
         }
 
         *t_cs = 0; /* DUMPTFF1: perigee of parab/hyp   */
@@ -474,7 +473,9 @@ static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_words_t num, 
     { /* BOV TFFELL: SL2 BDDV DEN, D/N  */
         agc_dp_t dn = agc_dp_from_words(agc_mpac_store(agc_mpac_bddv(ip, agc_mpac_shift(ip, agc_mpac_dload(num), 2), den))); /* 2^-11 */
 
-        return (tff_el1(ip, tff, dn, q2, t_cs));
+        tff_el1(ip, tff, dn, q2, t_cs);
+
+        return (AGC_STATUS_OK);
     }
 
     return (tff_general(ip, tff, num, den, t_cs));

@@ -160,13 +160,8 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in, agc
     }
 
     agc_conic_time_out_clear_(out);
-    agc_conic_ctx_t ctx;                                      /* conic erasables */
-    agc_status_t    st = agc_conic_ctx_init_(&ctx, in->body); /* MUTABLE,1 */
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_conic_ctx_t ctx; /* conic erasables */
+    agc_conic_ctx_init_(&ctx, in->body);
 
     agc_interp_clear_ovf(ip); /* SETPD 0, BOV +1 */
     ctx.vvec = in->vvec;
@@ -221,8 +216,9 @@ agc_status_t agc_conic_timerad(agc_interp_t *ip, const agc_timerad_in_t *in, agc
     ctx.snth = agc_mpac_store(m_termnvec);            /* SNTH 2^1 */
     agc_conic_getx_(ip, &ctx, agc_mpac_dload(ctx.p)); /* DLOAD P, CALL GETX */
 
-    agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, false);       /* CLRGO SOLNSW */
-    st          = agc_conic_commnout_(ip, &ctx, in->rvsw, out); /* COMMNOUT */
+    agc_conic_mirror_flag_(AGC_CONIC_FLAG_SOLNSW, false);           /* CLRGO SOLNSW */
+    agc_status_t st = agc_conic_commnout_(ip, &ctx, in->rvsw, out); /* COMMNOUT */
+
     out->apsesw = apsesw;
     out->solnsw = false;
 

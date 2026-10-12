@@ -45,9 +45,9 @@
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK (ENDOFJOB, always)
+ * RETURNS: none
  **********************************************************************/
-agc_status_t agc_job_ambgupdt(void)
+void agc_job_ambgupdt(void)
 {
     agc_csm_rcs_t *r = agc_csm_dap_rcs(); /* RCS DAP erasables          */
 
@@ -68,5 +68,5 @@ agc_status_t agc_job_ambgupdt(void)
         r->amgb7 = (agc_sp_t) -csm_dap_mp_hi(r->amgb5, r->capsi); /* MP CAPSI; COM   */
     }
 
-    return (AGC_STATUS_OK); /* ENDOFJOB                                 */
+    /* ENDOFJOB */
 }

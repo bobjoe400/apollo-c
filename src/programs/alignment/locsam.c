@@ -619,9 +619,10 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls, c
  *                                    (INTSTALL)
  *   los         agc_vec_t *     O    line of sight, half-unit (2^1)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued
+ *          its successor; otherwise the status of the call that failed
+ *          (executive, display, IMU, integration or an input check);
+ *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_align_planet_vector(agc_interp_t *ip, agc_sp_t star6, agc_sp_t starind, agc_dp_t time_cs, agc_job_id_t resume_job, agc_vec_t *los)
 {
