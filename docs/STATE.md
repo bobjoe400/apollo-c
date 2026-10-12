@@ -3,8 +3,10 @@
 Updated: 2026-10-11
 
 ## Running agents (max 2)
-- review-exec-sched (Opus, resume): docs/agents/review_items.md exec-sched
-  line + EVA bug leads; note docs/modules/review-exec-sched.md.
+- review-exec-sched (Opus, resume): B4 WAIT2 fix, phase-code test by
+  status, R12 LM DAP restart, RDOT noun, EVA leads in executive.c/restarts.c,
+  renames, collapse-diff check, then style debt. Note:
+  docs/modules/review-exec-sched.md.
 - verify-collapse (Opus): independent check of the status-handling-2 diff
   in the eleven already-reviewed lanes only; the remaining reviews check
   it in their own files (review.md item). Note: docs/modules/verify-collapse.md.

@@ -557,3 +557,7 @@
             lanes (nobody reads them again); each remaining review checks
             the status-handling-2 diff in its own files (review.md item).
             exec-sched starts when the sim agent has stopped.
+2026-10-11  sim agent stopped at a clean checkpoint (7/7 scenarios on the
+            current tree; B2 and B3 closed by the guard pass, B4 WAIT2
+            still stands -> routed to exec-sched). Launched
+            review-exec-sched (resume, Opus) alongside verify-collapse.
