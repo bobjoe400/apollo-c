@@ -633,3 +633,8 @@
             page citations corrected, style 1,276 -> 0. Requests routed.
             Three stray grep-output files (hichp, p, qp) in the repo root
             deleted. review-nav-integ still running.
+2026-10-12  Launched follow-up-done-lanes (Opus) in guid-powered's slot,
+            alongside review-nav-integ: all routed items owned by closed
+            lanes (status propagation, EVA leads, API void conversions,
+            DMP/word-level adoption in the eight early-reviewed lanes,
+            test hygiene). Keeps out of src/nav/integration.
