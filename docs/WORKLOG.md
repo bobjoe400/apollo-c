@@ -776,3 +776,11 @@
             ProjectApollo, Scenarios/Project Apollo - NASSP, Doc). Missing:
             the D3D9 graphics client (forum download, manual). NASSP's
             default branch is Orbiter2016 (so 2016, not 2024).
+2026-10-12  NASSP beta 2651's Saturn5.dll imports __writeLogError from
+            Orbiter.exe: an open-source Orbiter export, absent from the
+            stock 2016 binary (user had asked "why 2016 instead of 2024":
+            2024 was right). Installed Orbiter 2024 x86 (orbitersim/orbiter
+            release "2024", 373 MB) as C:\Orbiter2024, NASSP unpacked over
+            it (3,912 files), Orbiter.exe exports the symbol, D3D9Client
+            bundled and activated in Orbiter_NG.cfg. C:\Orbiter2016 left
+            as is.
