@@ -76,6 +76,11 @@ quit it after each check, and when the host is busy with an Orbiter the user
 started, close it yourself (taskkill.exe /IM Orbiter.exe /F, /IM
 Orbiter_ng.exe /F; user approval 2026-10-12) rather than wait. Rules: no subagents; ONE waiter per background
 process (host processes included: poll with tasklist, not loops of
-launches); scratch under the session scratchpad's nassp-integration/.
+launches), and every wait on a host run is a sequence of short polls (at
+most 60 s per tool call) so lead messages are read between them; answer
+lead questions mid-run via SendMessage to "main"; uplinks need crew
+actions (UP TLM ACCEPT, MCC "Ready" on the PA MFD): script them through
+NASSP's checklist auto-execute / MCC mechanisms or document the manual
+steps per milestone; scratch under the session scratchpad's nassp-integration/.
 Final report <= 15 lines: phase reached, build results, milestones flown,
 risks.
