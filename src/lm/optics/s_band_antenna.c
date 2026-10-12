@@ -13,6 +13,7 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/interp_words.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
@@ -38,12 +39,16 @@ agc_dp_t agc_sband_yawang(void)
     return (yawang);
 }
 
-/* ABVAL SIGN ASIN: ASIN(SGN(s) |v|). */
+/*
+ * ABVAL SIGN ASIN: ASIN(SGN(s) |v|).  ABVAL is VSQSUB falling into SQRT,
+ * which leaves MPAC +2; SIGN complements all three words and ARCSIN's
+ * SQRTSUB reads them, so the chain runs on the MPAC words.
+ */
 static agc_dp_t signed_asin(agc_interp_t *ip, agc_vec_t v, agc_dp_t s)
 {
-    const agc_dp_t m = agc_vec_abval(ip, v);
+    const agc_tp_words_t m = agc_mpac_sign(agc_mpac_sqrt(agc_mpac_vsq(ip, v)), agc_dp_to_words(s));
 
-    return (agc_dp_asin(ip, agc_dp_sign(m, s)));
+    return (agc_dp_from_words(agc_mpac_store(agc_mpac_asin(ip, m))));
 }
 
 /*
@@ -169,9 +174,9 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
 
     st_sbandex = agc_dsky_blanket(BLANK_R3);
 
-    if (!AGC_ASSERT(st_sbandex == AGC_STATUS_OK))
+    if (st_sbandex != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st_sbandex);
     }
 
     agc_exec_prio_change(PRIO4); /* PRIOCHNG: on to SBANDANT +2 */
@@ -184,9 +189,14 @@ agc_status_t agc_job_sbandant_lm(agc_job_ctx_t *ctx)
 {
     const agc_status_t st = agc_imu_status_check();
 
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG) || (st != AGC_STATUS_OK))
+    if (st == AGC_STATUS_POODOO)
     {
-        return (AGC_STATUS_OK);
+        return (AGC_STATUS_OK); /* alarm 220/210, P00 started */
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
     }
 
     return (agc_job_sbandant_lm_recycle(ctx));

@@ -11,6 +11,7 @@
 #include <stddef.h>
 
 #include "agc/core/assert.h"
+#include "agc/core/interp_words.h"
 #include "agc/programs/alignment.h"
 
 #define LODPHALF AGC_DP_HALF /* LODPHALF .5 rev = 180 degrees            */
@@ -28,8 +29,13 @@
  */
 agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, uint16_t modea[2], uint16_t modeb[2], bool *along_y)
 {
-    const agc_dp_t t1 = agc_dp_asin(ip, agc_dp_neg(los_nb.c[1])); /* PD0 */
-    agc_vec_t      p  = los_nb;
+    /* The angles stay in the words ASIN, BDSU, ARCTRIG and DAD leave
+     * (signs may disagree), which 2V1STO2S converts: see word_forms.c. */
+    const agc_dp_words_t half = agc_dp_to_words(LODPHALF);
+    const agc_tp_words_t t1m  = agc_mpac_asin(ip, agc_mpac_dcomp(agc_mpac_dload(agc_dp_to_words(los_nb.c[1])))); /* DLOAD DCOMP 34D, ASIN */
+    const agc_dp_words_t t1w  = agc_mpac_store(t1m);                                                             /* PUSH: PD0 */
+    const agc_dp_words_t t2w  = agc_mpac_store(agc_mpac_bdsu(ip, t1m, half));                                    /* BDSU LODPHALF: PD4 */
+    agc_vec_t            p    = los_nb;
 
     p.c[1]   = 0;                       /* LO6ZEROS -> 34D */
     p        = agc_vec_unit(ip, p, NULL, NULL);
@@ -40,19 +46,12 @@ agc_status_t agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, 
         return (AGC_STATUS_OK);
     }
 
-    const agc_dp_t sinth = agc_dp_shr(p.c[0], 1);             /* SR1 -> SINTH    */
-    const agc_dp_t costh = agc_dp_shr(p.c[2], 1);             /* SR1 -> COSTH    */
-    const agc_dp_t s1    = agc_imu_arctrig(ip, sinth, costh); /* PD2 */
-
-    /* 2V1STO2S converts the words the angles were left in (ASIN's and
-     * ARCTRIG's disagree in sign), not their values: see word_forms.c. */
-    const align_words_t half = align_words_of(LODPHALF);
-    const align_words_t t1w  = align_asin_words(t1);
-    const align_words_t s1w  = align_arctrig_words(ip, sinth, costh, s1);
-    const align_words_t t2w  = align_words_add(half, align_words_neg(t1w)); /* PD4 BDSU */
-    const align_words_t s2w  = align_words_add(s1w, half);                  /* DAD     */
-    uint16_t            a[2] = {align_words_to_cdu(t1w), align_words_to_cdu(s1w)};
-    uint16_t            b[2] = {align_words_to_cdu(t2w), align_words_to_cdu(s2w)};
+    const agc_dp_t       sinth = agc_dp_shr(p.c[0], 1);                                       /* SR1 -> SINTH    */
+    const agc_dp_t       costh = agc_dp_shr(p.c[2], 1);                                       /* SR1 -> COSTH    */
+    const agc_dp_words_t s1w   = align_arctrig_words(ip, sinth, costh);                       /* PD2 */
+    const agc_dp_words_t s2w   = agc_mpac_store(agc_mpac_dad(ip, agc_mpac_dload(s1w), half)); /* DAD LODPHALF */
+    uint16_t             a[2]  = {align_words_to_cdu(t1w), align_words_to_cdu(s1w)};
+    uint16_t             b[2]  = {align_words_to_cdu(t2w), align_words_to_cdu(s2w)};
 
     for (int k = 0; k < 2; k++)
     {

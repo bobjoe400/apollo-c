@@ -111,7 +111,7 @@ agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job, agc_vec
     const agc_sp_t  n     = (agc_sp_t) (agc_erase_landmark() & LANDMARK_PERIODS);
     const agc_dp_t  n16   = (agc_dp_t) n * (1 << N_OVER_16_SHIFT); /* N/16      */
 
-    ram->aoptime = agc_dp_mul(ip, n16, MPERIOD);
+    ram->aoptime = agc_dp_mul_trunc(n16, MPERIOD); /* SLOAD DMP */
     v            = agc_csm_rota(ip, ram->star, v, ram->aoptime);
     ram->star    = axis2;
     ram->aoptime = agc_dp_sub(ip, DP_ONE_SIXTH, ram->aoptime);
@@ -217,8 +217,7 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_jo
         bool          cult = false;
 
         agc_guid_cdutrig(&t); /* CDUTRIG  */
-        st      = AGC_STATUS_OK;
-        st      = agc_csm_calcsxa(ip, ram->star, &t, &ram->sac, &ram->pac, &cult);
+        agc_csm_calcsxa(ip, ram->star, &t, &ram->sac, &ram->pac, &cult);
         *result = cult ? SR52_OVER_90 : trunnion_class(ram->pac);
     }
 
@@ -230,9 +229,9 @@ static agc_status_t auto_optics_wait(uint16_t dt)
 {
     const agc_status_t st = agc_svc_delayjob(dt, AGC_JOB_AUTO_OPTICS_POSITIONING_DELAYED);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -288,9 +287,9 @@ static agc_status_t auto_optics_target(const agc_job_ctx_t *ctx, bool resumed)
     {
         const agc_status_t st_drive = align_show(ctx, AGC_DSKY_GODSPR, VN_OPTICS_ANGLES);
 
-        if (!AGC_ASSERT(st_drive == AGC_STATUS_OK))
+        if (st_drive != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st_drive);
         }
     }
 
@@ -321,9 +320,9 @@ static agc_status_t auto_optics_cycle(const agc_job_ctx_t *ctx)
 
         agc_relint();
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st);
         }
     }
 
@@ -449,9 +448,9 @@ agc_status_t agc_job_auto_optics_positioning_terminate(agc_job_ctx_t *ctx)
     agc_dsky_clearmrk();
     agc_status_t st = agc_sxtmark_mkreleas();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     agc_erase_set_modecadr(AGC_IMU_DEV_OPTICS, 0); /* OPTCADR  */

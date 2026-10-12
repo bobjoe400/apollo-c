@@ -31,9 +31,9 @@ static agc_status_t fine_align_phase(void)
 {
     const agc_status_t st = align_phase4(PH_FINE_ALIGN);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -42,11 +42,6 @@ static agc_status_t fine_align_phase(void)
 /* R51 (STQ QMAJ: the caller has set agc_align_ram()->qmaj). */
 agc_status_t agc_job_lm_fine_align(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!AGC_ASSERT(agc_align_ram()->qmaj != AGC_JOB_NONE))
     {
         return (AGC_STATUS_BAD_ARG);

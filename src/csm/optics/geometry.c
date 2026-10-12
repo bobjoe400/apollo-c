@@ -15,6 +15,7 @@
 
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
+#include "agc/core/interp_words.h"
 #include "agc/programs/alignment.h"
 
 /* NB2NB1 / NB1NB2 elements, 2DEC ... B-1 (cos 32.523 deg, sin 32.523 deg). */
@@ -83,29 +84,24 @@ agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
  */
 agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb)
 {
-    const agc_dp_t ta     = agc_csm_sxtlogic(trunnion_cdu);    /* PD0 */
-    const agc_dp_t sin_ta = agc_dp_shl(ip, agc_dp_sin(ta), 1); /* PD2 */
-    const agc_dp_t sa     = agc_align_cdulogic(shaft_cdu);     /* PD4 */
-    agc_vec_t      starm;
+    const agc_dp_t ta = agc_csm_sxtlogic(trunnion_cdu); /* PD0 */
+    const agc_dp_t sa = agc_align_cdulogic(shaft_cdu);  /* PD4 */
 
-    starm.c[0] = agc_dp_mul_trunc(agc_dp_cos(sa), sin_ta); /* DMP */
-    starm.c[1] = agc_dp_mul_trunc(agc_dp_sin(sa), sin_ta);
+    /* SIN SL1, PUSH: the SL1 shifts SIN's MPAC +2 into the stored words,
+     * which the two DMPs then take as stored (word level).              */
+    const agc_tp_words_t sin_ta = agc_mpac_shift(ip, agc_mpac_sin(agc_mpac_dload(agc_dp_to_words(ta))), 1);
+    const agc_dp_words_t pd2    = agc_mpac_store(sin_ta); /* PD2 */
+    const agc_tp_words_t cos_sa = agc_mpac_cos(agc_mpac_dload(agc_dp_to_words(sa)));
+    const agc_tp_words_t sin_sa = agc_mpac_sin(agc_mpac_dload(agc_dp_to_words(sa)));
+    agc_vec_t            starm;
+
+    starm.c[0] = agc_dp_from_words(agc_mpac_store(agc_mpac_dmp(cos_sa, pd2))); /* COS DMP */
+    starm.c[1] = agc_dp_from_words(agc_mpac_store(agc_mpac_dmp(sin_sa, pd2))); /* SIN DMP */
     starm.c[2] = agc_dp_cos(ta);
 
     /* NB1NB2 (optics base NB1 -> NB), the transpose of NB2NB1. */
     const agc_mat_t m_nb1nb2 = nb2nb1();
-
-    if (!AGC_ASSERT(m_nb1nb2.row[0].c[2] == -NB_SIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(m_nb1nb2.row[2].c[0] == NB_SIN))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    const agc_mat_t m = agc_mat_transpose(&m_nb1nb2);
+    const agc_mat_t m        = agc_mat_transpose(&m_nb1nb2);
 
     *starm_nb = agc_vec_shl(ip, agc_mat_vec(ip, &m, starm), 1); /* MXV VSL1 */
 
@@ -121,7 +117,7 @@ agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t sha
  * A negative trunnion or one over 90 degrees sets CULTFLAG (SXTALARM; the
  * alarm itself was removed from the routine); otherwise CULTFLAG is clear.
  */
-static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb1, uint16_t *sac, uint16_t *pac, bool *cult)
+static void sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb1, uint16_t *sac, uint16_t *pac, bool *cult)
 {
     agc_vec_t pda = agc_vec_cross(ip, nb1->row[2], star);
 
@@ -134,60 +130,41 @@ static agc_status_t sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *n
         *sac  = SHAFT_270DEG;     /* DLOAD 270DEG STODL SAC */
         *pac  = PAC_20DEGS_MINUS; /* 20DEGS- STORE PAC      */
         *cult = false;            /* CLRGO CULTFLAG         */
+        agc_flag_put(AGC_FLAG_CULTFLAG, false);
 
-        return (AGC_STATUS_OK);
+        return;
     }
 
     const agc_dp_t sinth = agc_dp_neg(agc_vec_dot(ip, pda, nb1->row[0]));
     const agc_dp_t costh = agc_vec_dot(ip, pda, nb1->row[1]);
 
-    const agc_dp_t sa = agc_imu_arctrig(ip, sinth, costh); /* revs */
+    /* 1STO2S of ARCTRIG's words (word_forms.c), not of its value. */
+    *sac = align_words_to_cdu(align_arctrig_words(ip, sinth, costh));
+    align_clear_ovf(ip); /* BOV +1  */
 
-    /* 1STO2S of ARCTRIG's words (word_forms.c), not of the value. */
-    *sac                  = align_words_to_cdu(align_arctrig_words(ip, sinth, costh, sa));
-    align_clear_ovf(ip);                                             /* BOV +1  */
-    const agc_dp_t cos_ta = align_dot_shl(ip, star, nb1->row[2], 1); /* B0 */
-    const agc_dp_t ta     = agc_dp_acos(ip, cos_ta);                 /* revs */
+    /* DOT SL1 ACOS, BMN, SL2, BOV, DSU 20DEG-, 1STO2S on the MPAC words. */
+    agc_tp_words_t ta = agc_mpac_acos(ip, agc_mpac_shift(ip, agc_mpac_dot(ip, star, nb1->row[2]), 1));
 
-    if (ta < 0)
+    if (agc_tp_from_words(ta) < 0)
     {
         *cult = true; /* BMN SXTALARM: SETGO       */
     }
     else
     {
-        const agc_dp_t ta4 = agc_dp_shl(ip, ta, 2); /* SL2: negative only after an overflow */
+        ta = agc_mpac_shift(ip, ta, 2); /* SL2       */
 
-        if (ta4 < 0 || agc_interp_test_ovf(ip))
+        if (agc_interp_test_ovf(ip))
         {
             *cult = true; /* BOV SXTALARM (> 90 deg)   */
         }
         else
         {
-            /* SL2, DSU 20DEG-, 1STO2S on ACOS's words (word_forms.c); the SL2's
-             * bits from MPAC +2 are not modelled.                               */
-            const align_words_t taw  = align_acos_words(ta, cos_ta < 0);
-            const align_words_t ta2w = align_words_add(taw, taw);
-            const align_words_t ta4w = align_words_add(ta2w, ta2w);
-
-            *pac  = align_words_to_cdu(align_words_add(ta4w, align_words_neg(align_words_of(TWENTY_DEG_MINUS))));
+            *pac  = align_words_to_cdu(agc_mpac_store(agc_mpac_dsu(ip, ta, agc_dp_to_words(TWENTY_DEG_MINUS))));
             *cult = false; /* CLRGO CULTFLAG            */
         }
     }
 
-    return (AGC_STATUS_OK);
-}
-
-/* Record CULTFLAG as the AGC routine leaves it. */
-static agc_status_t store_cult(bool cult)
-{
-    agc_flag_put(AGC_FLAG_CULTFLAG, cult);
-
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_CULTFLAG) == cult))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
+    agc_flag_put(AGC_FLAG_CULTFLAG, *cult); /* SETGO / CLRGO CULTFLAG */
 }
 
 /*
@@ -196,7 +173,7 @@ static agc_status_t store_cult(bool cult)
  * t, then NB2NB1, VSL1 into optics-base axes; XNB1..ZNB1 = unit axes;
  * SXTANG1.  STAR is left in optics-base axes (ram->star), as the AGC does.
  */
-agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t, uint16_t *sac, uint16_t *pac, bool *cult)
+void agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t, uint16_t *sac, uint16_t *pac, bool *cult)
 {
     agc_vec_t s = star_sm;
 
@@ -206,14 +183,8 @@ agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdut
     s                     = agc_vec_shl(ip, agc_mat_vec(ip, &m, s), 1); /* MXV VSL1 */
     agc_align_ram()->star = s;                                          /* STOVL STAR */
     const agc_mat_t unit  = agc_mat_identity_half();                    /* HIUNITX.. */
-    agc_status_t    st    = sxtang1(ip, s, &unit, sac, pac, cult);
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = store_cult(*cult);
-    }
-
-    return (st);
+    sxtang1(ip, s, &unit, sac, pac, cult);
 }
 
 /*
@@ -222,7 +193,7 @@ agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdut
  * TRANSP1, XNB1.. = NB2NB1 (rows of the transpose), VSL1, TRANSP1/2, then
  * SXTANG1.
  */
-agc_status_t agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb, uint16_t *sac, uint16_t *pac, bool *cult)
+void agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb, uint16_t *sac, uint16_t *pac, bool *cult)
 {
     const agc_mat_t eref = agc_mat_transpose(nb); /* EREF WRT NB2     */
     const agc_mat_t m    = nb2nb1();
@@ -234,14 +205,8 @@ agc_status_t agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *n
     }
 
     const agc_mat_t nb1 = agc_mat_transpose(&t1); /* TRANSP2          */
-    agc_status_t    st  = sxtang1(ip, star, &nb1, sac, pac, cult);
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = store_cult(*cult);
-    }
-
-    return (st);
+    sxtang1(ip, star, &nb1, sac, pac, cult);
 }
 
 /*
@@ -259,11 +224,6 @@ agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log)
     int            n  = 0;
     const agc_dp_t xn = agc_dp_norm(x, &n); /* NORM     */
 
-    if (!AGC_ASSERT((n >= 0) && (n < AGC_DP_BITS)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_dp_t y       = agc_dp_sub(ip, NEARLY1, xn);            /* BDSU     */
     const agc_dp_t coef[4] = {0, LOG_A1, LOG_A2, LOG_A3};
     const agc_dp_t p       = agc_dp_poly(y, coef, 3);                /* POLY     */
@@ -271,11 +231,6 @@ agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log)
     agc_ovf_t      ovf     = 0;
 
     *neg_log = agc_dp_add_raw(p, k, &ovf); /* DAS MPAC */
-
-    if (!AGC_ASSERT(ovf == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (AGC_STATUS_OK);
 }

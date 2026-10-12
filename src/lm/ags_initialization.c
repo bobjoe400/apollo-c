@@ -129,11 +129,6 @@ static agc_status_t show_agsk(agc_job_ctx_t *ctx)
 /* AGSINIT: alarm 220 and ENDEXT without a REFSMMAT; else REDSPTEM. */
 agc_status_t agc_job_ags_initialization(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (!agc_flag_test(AGC_FLAG_REFSMFLG))
     {
         agc_alarm(ALM_NO_REFSMMAT);
@@ -311,10 +306,5 @@ agc_status_t agc_job_ags_initialization_imu_zeroed(agc_job_ctx_t *ctx)
  * before AGSVCALC sets it.                                               */
 agc_status_t agc_job_ags_initialization_end(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_endmark());
 }

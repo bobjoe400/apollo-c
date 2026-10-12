@@ -117,11 +117,6 @@ static agc_status_t target_vectors(agc_interp_t *ip, agc_vec_t tar[TARGETS])
                               s_az);
     }
 
-    if (!AGC_ASSERT(tar[0].c[0] >= -AGC_DP_HALF))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -167,7 +162,7 @@ agc_status_t agc_job_optical_verification(agc_job_ctx_t *ctx)
     agc_phase_change(PHASE_VERIFY);                           /* PHASCHNG OCT 00154          */
     agc_status_t st = agc_phase_newmode(PRELAUNCH_MM_VERIFY); /* MM 03 */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -196,7 +191,7 @@ agc_status_t prelaunch_verify_start(agc_job_ctx_t *ctx)
 {
     agc_status_t st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS     */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -312,12 +307,7 @@ static agc_status_t targdrve(agc_sp_t starcode, agc_sp_t targ)
     }
 
     ar->star = tar[(targ == 0) ? 0 : 1]; /* VLOAD* 6D,1; STCALL STAR    */
-    st       = agc_csm_sxtang(&ip, ar->star, &ar->xnb, &ar->sac, &ar->pac, &cult);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_csm_sxtang(&ip, ar->star, &ar->xnb, &ar->sac, &ar->pac, &cult);
 
     ar->desopts = ar->sac; /* CA SAC, TS DESOPTS                      */
     ar->desoptt = ar->pac; /* CA PAC, TS DESOPTT                      */
@@ -387,7 +377,7 @@ agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx)
     {
         agc_status_t st = agc_sxtmark_free_vac(); /* RETARG1          */
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
             return (st);
         }
@@ -427,7 +417,7 @@ agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx)
 
             st = agc_sxtmark_mark(0, &m); /* LITTLSUB: LXC,1 MARKSTAT        */
 
-            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            if (st != AGC_STATUS_OK)
             {
                 return (st);
             }
@@ -441,7 +431,7 @@ agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx)
 
             st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS                  */
 
-            if (!AGC_ASSERT(st == AGC_STATUS_OK))
+            if (st != AGC_STATUS_OK)
             {
                 return (st);
             }
@@ -471,7 +461,7 @@ agc_status_t agc_job_optical_verification_marked(agc_job_ctx_t *ctx)
         agc_interp_init(&ip);
         agc_status_t st = agc_sxtmark_mark(0, &m); /* CALL LITTLSUB        */
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
             return (st);
         }
@@ -534,7 +524,7 @@ agc_status_t agc_job_optical_verification_torque_accepted(void)
 
     agc_status_t st = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -564,7 +554,7 @@ agc_status_t agc_job_optical_verification_end(void)
 {
     agc_status_t st = agc_sxtmark_mkreleas(); /* BANKCALL MKRELEAS     */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -572,7 +562,7 @@ agc_status_t agc_job_optical_verification_end(void)
     agc_flag_clear(AGC_FLAG_TRM03FLG);            /* DOWNFLAG TRM03FLG            */
     st = agc_phase_newmode(PRELAUNCH_MM_COMPASS); /* NEWMODEX MM 02     */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }

@@ -69,12 +69,7 @@ static agc_status_t orient_to_star(const agc_job_ctx_t *ctx, uint16_t az, uint16
     agc_interp_t     ip;
 
     agc_interp_init(&ip);
-    const agc_status_t st = agc_aot_oanb(&ip, az, el, &ram->scaxis, &ram->uxp, &ram->uyp);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
+    agc_aot_oanb(&ip, az, el, &ram->scaxis, &ram->uxp, &ram->uyp);
 
     return (align_planet(ctx, align_loadtime(), AGC_JOB_LM_AUTO_OPTICS_STAR_LOCATED));
 }

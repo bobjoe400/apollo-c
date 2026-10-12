@@ -35,9 +35,9 @@ static agc_status_t surface_align_phase(void)
 {
     const agc_status_t st = align_phase4(PH_SURFACE_ALIGN);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -68,9 +68,9 @@ static agc_status_t read_pipas(void)
 {
     const agc_status_t st = agc_guid_pipasr(&agc_guid_state()->avg, false);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -208,26 +208,20 @@ agc_status_t agc_job_lunar_gravity_rotate(void)
 
     agc_interp_init(&ip);
     const agc_mat_t unit = agc_mat_identity_half();
-    agc_status_t    st   = AGC_STATUS_OK;
 
-    for (int i = 0; (i < 3) && (st == AGC_STATUS_OK); i++)
+    for (int i = 0; i < 3; i++)
     {
         agc_vec_t nb = unit.row[i];
 
         agc_guid_nbsm(&lung_trig, &nb); /* *NBSM*   */
-        st                 = AGC_STATUS_OK;
         ram->xnb.row[i]    = nb;
         const agc_vec_t uu = agc_vec_shl(&ip, agc_vec_scale(&ip, ram->star, ram->star.c[i]), 2);
 
         ram->xsm.row[i] = agc_vec_sub(&ip, uu, unit.row[i]); /* VSU*     */
     }
 
-    uint16_t thetad[3];
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_imu_calcga(&ip, &ram->xnb, &ram->xsm, thetad);
-    }
+    uint16_t           thetad[3];
+    const agc_status_t st = agc_imu_calcga(&ip, &ram->xnb, &ram->xsm, thetad);
 
     if (st != AGC_STATUS_OK)
     {
@@ -251,7 +245,7 @@ agc_status_t agc_job_lunar_gravity_measured(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     ram->starsav1    = agc_vec_unit(&ip, agc_vec_add(&ip, agc_vec_shr(ram->gout, 1), ram->starad[2]), NULL, NULL);
-    const agc_dp_t c = agc_dp_shl(&ip, agc_vec_dot(&ip, ram->starsav1, ram->gsav), 1);
+    const agc_dp_t c = align_dot_shl(&ip, ram->starsav1, ram->gsav, 1); /* DOT SL1 */
     align_set_dsptem1(agc_dp_acos(&ip, c));
     agc_flag_clear(AGC_FLAG_FREEFLAG);
 
@@ -261,11 +255,6 @@ agc_status_t agc_job_lunar_gravity_measured(agc_job_ctx_t *ctx)
 /* The V06N04 flash (gravity error angle). */
 agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_GRAVITY, AGC_JOB_GOTOPOOH, AGC_JOB_LUNAR_GRAVITY_ACCEPTED, AGC_JOB_LUNAR_GRAVITY_RECYCLE));
 }
 

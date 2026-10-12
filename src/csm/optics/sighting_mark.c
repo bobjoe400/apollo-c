@@ -104,9 +104,9 @@ agc_status_t agc_job_sighting_mark_marked(agc_job_ctx_t *ctx)
     {
         const agc_status_t st = agc_sxtmark_free_vac(); /* XCH MARKSTAT */
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st);
         }
 
         return (sighting_mark_request()); /* TCF R53A */

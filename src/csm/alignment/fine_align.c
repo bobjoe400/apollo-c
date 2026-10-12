@@ -36,11 +36,6 @@
  */
 agc_status_t agc_job_csm_fine_align(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->starind  = 1;
@@ -235,10 +230,5 @@ agc_status_t agc_job_csm_fine_align_torqued(agc_job_ctx_t *ctx)
  */
 agc_status_t agc_job_csm_fine_align_recheck(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_FINE_RECHECK, AGC_JOB_GOTOPOOH, AGC_JOB_CSM_REALIGN_STAR_SELECTION, AGC_JOB_GOTOPOOH));
 }

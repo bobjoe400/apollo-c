@@ -12,6 +12,7 @@
 #include "agc/core/assert.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
+#include "agc/core/interp_words.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
 
@@ -36,9 +37,9 @@ static agc_status_t surface_align_phase(void)
 {
     const agc_status_t st = align_phase4(PH_SURFACE_ALIGN);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -95,12 +96,12 @@ static bool star_in_position(agc_interp_t *ip, agc_vec_t star, uint16_t az)
 {
     agc_align_ram_t *ram = agc_align_ram();
 
-    if (agc_aot_oanb(ip, az, ELEVATION_45, &ram->scaxis, &ram->uxp, &ram->uyp) != AGC_STATUS_OK)
-    {
-        return (false);
-    }
+    agc_aot_oanb(ip, az, ELEVATION_45, &ram->scaxis, &ram->uxp, &ram->uyp);
 
-    const agc_dp_t sep = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, star, ram->scaxis), 1));
+    /* The angles stay in MPAC words: 1STO2S of YROT and of 12 SEP + YROT
+     * reads the words ARCCOS, DSU, SR1 and DAD leave (word_forms.c).   */
+    const agc_dp_words_t sepw = agc_mpac_store(agc_mpac_acos(ip, agc_mpac_shift(ip, agc_mpac_dot(ip, star, ram->scaxis), 1))); /* DOT SL1 ARCCOS: 24D */
+    const agc_dp_t       sep  = agc_dp_from_words(sepw);
 
     if ((sep - DEG30) >= 0)
     {
@@ -114,25 +115,49 @@ static bool star_in_position(agc_interp_t *ip, agc_vec_t star, uint16_t az)
     }
     else
     {
-        const agc_dp_t  spiral12 = agc_dp_shl(ip, agc_dp_mul(ip, sep, THREE_QUARTERS), 4);
-        const agc_vec_t ux       = agc_vec_make(AGC_DP_HALF, 0, 0);
-        const agc_vec_t oaux     = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, ux), NULL, NULL);
-        const agc_vec_t c2       = agc_vec_unit(ip, agc_vec_neg(agc_vec_cross(ip, oaux, ram->scaxis)), NULL, NULL);
-        const agc_vec_t oas      = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, star), NULL, NULL);
-        agc_dp_t        thet     = agc_dp_acos(ip, agc_dp_shl(ip, agc_vec_dot(ip, oas, oaux), 1));
+        const agc_dp_words_t spiral12 = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(sepw), agc_dp_to_words(THREE_QUARTERS)), 4)); /* DMP SL4: 24D */
+        const agc_vec_t      ux       = agc_vec_make(AGC_DP_HALF, 0, 0);
+        const agc_vec_t      oaux     = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, ux), NULL, NULL);
+        const agc_vec_t      c2       = agc_vec_unit(ip, agc_vec_neg(agc_vec_cross(ip, oaux, ram->scaxis)), NULL, NULL);
+        const agc_vec_t      oas      = agc_vec_unit(ip, agc_vec_cross(ip, ram->scaxis, star), NULL, NULL);
+        agc_dp_words_t       thet     = agc_mpac_store(agc_mpac_acos(ip, agc_mpac_shift(ip, agc_mpac_dot(ip, oas, oaux), 1)));                      /* 26D */
 
         if (agc_vec_dot(ip, oas, c2) < 0)
         {
-            thet = agc_dp_sub(ip, ABOUTONE, thet); /* 360-THET */
+            thet = agc_mpac_store(agc_mpac_dsu(ip, agc_mpac_dload(agc_dp_to_words(ABOUTONE)), thet)); /* 360-THET */
         }
 
-        const agc_dp_t yrot = agc_dp_add(ip, agc_dp_shr(agc_dp_pack(align_word_to_sp(az), 0), 1), thet);
+        /* R59D: SLOAD SR1 QMIN, DAD 26D, PUSH; DLOAD 24D, DAD.          */
+        const agc_dp_words_t az_words = {align_word_to_sp(az), 0};
+        const agc_dp_words_t yrot     = agc_mpac_store(agc_mpac_dad(ip, agc_mpac_shift(ip, agc_mpac_dload(az_words), -1), thet));
 
-        ram->cursor = agc_align_ones_to_twos(yrot); /* 1STO2S   */
-        ram->spiral = agc_align_ones_to_twos(agc_dp_add(ip, spiral12, yrot));
+        ram->cursor = align_words_to_cdu(yrot); /* 1STO2S   */
+        ram->spiral = align_words_to_cdu(agc_mpac_store(agc_mpac_dad(ip, agc_mpac_dload(spiral12), yrot)));
     }
 
     return (true);
+}
+
+/*
+ * INCAZ .. NXAX (pp. 957-959): POSCODE = 1..6 until the AOT detent at
+ * AOTAZ(POSCODE) and 45 degrees elevation sees star (NB, half-unit);
+ * CURSOR and SPIRAL are set for it.  false: no detent (R59ALM).
+ */
+bool agc_lm_aot_find_detent(agc_interp_t *ip, agc_vec_t star)
+{
+    agc_align_ram_t *ram = agc_align_ram();
+
+    for (int pos = 1; pos <= POSITIONS; pos++)
+    { /* INCAZ    */
+        ram->poscode = (agc_sp_t) pos;
+
+        if (star_in_position(ip, star, agc_erase_aotaz(pos)))
+        {
+            return (true);
+        }
+    }
+
+    return (false);
 }
 
 /*
@@ -180,14 +205,9 @@ agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
 
     ram->star = star;
 
-    for (int pos = 1; pos <= POSITIONS; pos++)
-    { /* INCAZ    */
-        ram->poscode = (agc_sp_t) pos;
-
-        if (star_in_position(&ip, star, agc_erase_aotaz(pos)))
-        {
-            return (agc_job_lunar_surface_star_position_display(ctx));
-        }
+    if (agc_lm_aot_find_detent(&ip, star))
+    {
+        return (agc_job_lunar_surface_star_position_display(ctx));
     }
 
     agc_alarm(ALM_NOT_IN_AOT); /* R59ALM   */

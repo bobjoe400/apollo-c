@@ -39,11 +39,6 @@ static void orientation_phase(agc_job_id_t restart_at)
  */
 agc_status_t agc_job_csm_imu_orientation_determination(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if ((agc_erase_imodes30() & IMODES30_IMU_OFF) != 0u)
     {
         agc_alarm(ALM_IMU_OFF);
@@ -53,9 +48,9 @@ agc_status_t agc_job_csm_imu_orientation_determination(agc_job_ctx_t *ctx)
 
     const agc_status_t st = agc_imu_set_in_use(); /* R02ZERO  */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (agc_job_csm_orientation_acquire_display(ctx));
@@ -64,11 +59,6 @@ agc_status_t agc_job_csm_imu_orientation_determination(agc_job_ctx_t *ctx)
 /* P51AA: V50N25 R1 00015; V34 P00, V33 P51B (mark), ENTER coarse align. */
 agc_status_t agc_job_csm_orientation_acquire_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH, AGC_JOB_CSM_ORIENTATION_MARK_SETUP, AGC_JOB_CSM_ORIENTATION_COARSE));
 }
 
@@ -108,9 +98,9 @@ agc_status_t agc_job_csm_orientation_coarse_start(void)
 
     agc_status_t st = agc_imu_coarse(thetad); /* IMUCOARS */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     bool done = false;
@@ -135,9 +125,9 @@ agc_status_t agc_job_csm_orientation_coarse_done(void)
 
     agc_status_t st = agc_imu_fine(); /* IMUFIN20 */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     bool done = false;
@@ -177,9 +167,9 @@ agc_status_t agc_job_csm_orientation_mark_setup(agc_job_ctx_t *ctx)
     ram->starind = 0;
     st           = align_set1_pdt();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     agc_flag_clear(AGC_FLAG_TARG2FLG);
@@ -212,9 +202,9 @@ static agc_status_t orientation_after_mark(const agc_job_ctx_t *ctx)
     orientation_phase(AGC_JOB_CSM_ORIENTATION_MARK_STAR);
     const agc_status_t st = agc_sxtmark_mkreleas();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if (ram->starind == 0)

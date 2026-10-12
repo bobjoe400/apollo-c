@@ -67,7 +67,7 @@ typedef struct agc_align_sxt_mark
 typedef struct agc_align_aot_pair
 {
     uint16_t xcdu[3]; /* X mark: CDUY, CDUZ, CDUX (cdu)             */
-    uint16_t ycdu[3]; /* Y mark (flight) or CURSOR, -, SPIRAL       */
+    uint16_t ycdu[3]; /* Y mark (flight) or CURSOR, SPIRAL, -       */
 } agc_align_aot_pair_t;
 
 /*
@@ -206,8 +206,8 @@ agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin
 /* ---- CSM geometry (src/csm/optics/geometry.c) ------------------------------- */
 agc_dp_t     agc_csm_sxtlogic(uint16_t trunnion_cdu);
 agc_status_t agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb);
-agc_status_t agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t, uint16_t *sac, uint16_t *pac, bool *cult);
-agc_status_t agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb, uint16_t *sac, uint16_t *pac, bool *cult);
+void         agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t, uint16_t *sac, uint16_t *pac, bool *cult);
+void         agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb, uint16_t *sac, uint16_t *pac, bool *cult);
 agc_status_t agc_csm_log(agc_interp_t *ip, agc_dp_t x, agc_dp_t *neg_log);
 
 typedef struct agc_csm_earrot
@@ -268,8 +268,8 @@ agc_status_t agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out);
 /* ---- AOTMARK (LM, src/lm/optics/aotmark.c) -------------------------------------- */
 agc_status_t agc_aotmark(void);          /* AOTMARK       */
 agc_status_t agc_aotmark_markrupt(void); /* MARKRUPT      */
-agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp);
-agc_status_t agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb);
+void         agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp);
+void         agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb);
 agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm);
 agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm);
 agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_t star, agc_vec_t *ave);
@@ -484,6 +484,7 @@ agc_status_t agc_job_lunar_surface_coarse_trim_go(void);
 agc_status_t agc_job_lunar_surface_coarse_trimmed(void);
 
 /* src/lm/alignment/lunar_surface_sighting.c */
+bool         agc_lm_aot_find_detent(agc_interp_t *ip, agc_vec_t star); /* INCAZ..R59D */
 agc_status_t agc_job_lunar_surface_star_acquisition(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx);
@@ -632,38 +633,15 @@ uint16_t align_sp_to_word(agc_sp_t v);
 
 /* ---- MPAC word forms (src/programs/alignment/word_forms.c) ----------- */
 
-/* An interpretive DP result as the AGC leaves it in MPAC, MPAC +1: the two
- * words may disagree in sign (AD/DAS results).  1STO2S reads the major word (after DDOUBL), so an angle with the
- * same value converts one count differently in these forms:
- * (+, -) rounds up, (-, +) rounds down, agreeing words truncate.       */
-typedef struct
-{
-    agc_sp_t hi; /* MPAC: major word, 2^-14 of the DP scale              */
-    agc_sp_t lo; /* MPAC +1: minor word, 2^-28 of the DP scale           */
-} align_words_t;
-
-/* The sign-agreeing words of a value (what DLOAD of a stored DP gives). */
-align_words_t align_words_of(agc_dp_t v);
-
-/* DAD (b) / DSU (-b): DAS of the minor words, carry into the major word,
- * overflow-corrected major word (OVFIND not touched).                    */
-align_words_t align_words_add(align_words_t a, align_words_t b);
-
-/* DCS / SIGN with a negative operand: both words complemented.          */
-align_words_t align_words_neg(align_words_t a);
-
-/* The words ASIN (ASINEX) and ACOS (DMPSUB, or SUBTR for a negative
- * argument) leave for a result of value v (revs).                        */
-align_words_t align_asin_words(agc_dp_t v);
-align_words_t align_acos_words(agc_dp_t v, bool arg_negative);
-
-/* ARCTRIG (INFLIGHT_ALIGNMENT_ROUTINES p. 1349) words for its inputs and
- * its value theta = agc_imu_arctrig(ip, sinth, costh).                   */
-align_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh, agc_dp_t theta);
+/* ARCTRIG (INFLIGHT_ALIGNMENT_ROUTINES p. 1349) run on the MPAC words:
+ * the angle (revs) in the words the AGC leaves (ASIN/ACOS/DSU results
+ * whose signs may disagree).                                             */
+agc_dp_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh);
 
 /* 1STO2S / 1TO2SUB on the actual words: DDOUBL, major word to a 2's
- * complement CDU pattern.                                                */
-uint16_t align_words_to_cdu(align_words_t w);
+ * complement CDU pattern.  (+, -) words round up, (-, +) round down,
+ * agreeing words truncate.                                               */
+uint16_t align_words_to_cdu(agc_dp_words_t w);
 
 /* DOT / DMP followed by SLn: the shift acts on the TP MPAC (MPAC +2's top
  * bits reach the stored DP); result truncated to DP.                    */

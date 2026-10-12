@@ -161,9 +161,9 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
 
     st_angles = agc_dsky_blanket(BLANK_R3); /* immediate ret*/
 
-    if (!AGC_ASSERT(st_angles == AGC_STATUS_OK))
+    if (st_angles != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st_angles);
     }
 
     return (agc_svc_delayjob(DELAY_1CS, AGC_JOB_SBANDANT_CM_RECYCLE));
@@ -174,9 +174,14 @@ agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
 {
     const agc_status_t st = agc_imu_status_check(); /* R02BOTH      */
 
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG) || (st != AGC_STATUS_OK))
+    if (st == AGC_STATUS_POODOO)
     {
-        return (AGC_STATUS_OK); /* alarm + P00  */
+        return (AGC_STATUS_OK); /* alarm 220/210, P00 started */
+    }
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
     }
 
     return (agc_job_sbandant_cm_recycle(ctx));
@@ -185,12 +190,5 @@ agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
 /* TC B5OFF (terminate / proceed of the N51 display), both vehicles. */
 agc_status_t agc_job_sband_b5off(void)
 {
-    const agc_status_t st = agc_svc_b5off();
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
+    return (agc_svc_b5off());
 }

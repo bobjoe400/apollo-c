@@ -51,9 +51,9 @@ static agc_status_t surface_align_phase(void)
 {
     const agc_status_t st = align_phase4(PH_SURFACE_ALIGN);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -129,11 +129,6 @@ agc_status_t agc_align_refmf(agc_interp_t *ip)
 /* P57: IMUCHK; OPTION2 = 3 (REFSMMAT) for the first display; P57OPT. */
 agc_status_t agc_job_lunar_surface_align(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = agc_lm_imu_check();
 
     if (st != AGC_STATUS_OK)

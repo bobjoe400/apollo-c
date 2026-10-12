@@ -29,9 +29,9 @@ static agc_status_t orientation_phase(void)
 {
     const agc_status_t st = align_phase4(PH_ORIENTATION);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -66,11 +66,6 @@ agc_status_t agc_lm_imu_check(void)
 /* P51: IMUCHK, then P51 +2. */
 agc_status_t agc_job_lm_imu_orientation_determination(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = agc_lm_imu_check();
 
     if (st != AGC_STATUS_OK)
@@ -84,11 +79,6 @@ agc_status_t agc_job_lm_imu_orientation_determination(agc_job_ctx_t *ctx)
 /* P51 +2: V50N25 R1 00015; V33 P51B, ENTER coarse align. */
 agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH, AGC_JOB_LM_ORIENTATION_MARK_SETUP, AGC_JOB_LM_ORIENTATION_COARSE));
 }
 

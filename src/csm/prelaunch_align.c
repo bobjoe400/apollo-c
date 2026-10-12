@@ -98,16 +98,6 @@ static prelaunch_ram_t pl;       /* AINLA overlay and pad words (see header) */
  **********************************************************************/
 prelaunch_ram_t *prelaunch_ram(void)
 {
-    if (!AGC_ASSERT(pl.lengthot >= 0 && pl.lengthot <= AGC_SP_MAX))
-    {
-        pl.lengthot = 0; /* recovery: no passes left                  */
-    }
-
-    if (!AGC_ASSERT(pl.premtrxc >= 0 && pl.premtrxc <= AGC_SP_MAX))
-    {
-        pl.premtrxc = 1; /* recovery: no azimuth slew pending         */
-    }
-
     return (&pl);
 }
 
@@ -224,7 +214,7 @@ agc_status_t prelaunch_posn17c(void)
 {
     agc_status_t st = agc_csm_prelaunch_posn17c(pl.newazmth, &agc_align_ram()->xsm); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -295,7 +285,7 @@ static agc_status_t earthr_at(agc_interp_t *ip, agc_dp_t temptime, agc_job_id_t 
     agc_dp_t     buf[3];                                                                /* ERCOMP1, rev 2^0              */
     agc_status_t st  = agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);                  /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -401,11 +391,6 @@ agc_status_t prelaunch_stall_outcome(bool *good)
         return (prelaunch_somerr2());
     }
 
-    if (!AGC_ASSERT(*good))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -432,7 +417,7 @@ agc_status_t prelaunch_earthr_star(agc_interp_t *ip, agc_job_id_t busy_wake, agc
         return (AGC_STATUS_OK); /* GYROBUSY: asleep as busy_wake      */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
+    if ((st != AGC_STATUS_OK) && (st != AGC_STATUS_ALARM))
     {
         return (st); /* ALARM: caged, IMUCADR -0, the stall sees it  */
     }
@@ -451,14 +436,14 @@ agc_status_t prelaunch_endtest1(void)
     agc_flag_clear(AGC_FLAG_IMUSE);                   /* DOWNFLAG IMUSE            */
     agc_status_t st = agc_phase_newmode(MODREG_NONE); /* NEWMODEX +3 */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
     st = agc_sxtmark_mkreleas(); /* MKRELEAS                          */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -475,11 +460,6 @@ agc_status_t prelaunch_endtest1(void)
 agc_status_t prelaunch_somerr2(void)
 {
     _Static_assert(PRELAUNCH_ALARM_TORQUE == 01601, "AGC constant");
-
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_alarm(PRELAUNCH_ALARM_TORQUE);
     agc_phase_change(00005); /* group 5 inactive                     */
@@ -508,11 +488,6 @@ agc_status_t prelaunch_nbpospl(void)
     xnb->row[1] = agc_vec_make(0, s, c);
     xnb->row[2] = agc_vec_make(0, agc_dp_neg(c), s);
 
-    if (!AGC_ASSERT(xnb->row[0].c[0] == AGC_DP_HALF))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -531,7 +506,7 @@ static agc_status_t geoimutt(agc_job_ctx_t *ctx)
 
     agc_status_t st = agc_imu_zero(); /* IMUZERO                       */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
+    if ((st != AGC_STATUS_OK) && (st != AGC_STATUS_BUSY))
     {
         return (st);
     }
@@ -560,11 +535,6 @@ agc_status_t agc_job_prelaunch_initialization(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip; /* interpreter state for POSN17C        */
 
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     if (agc_flag_test(AGC_FLAG_NO_PRELAUNCH_INITIALIZATION))
     {
         return (agc_poodoo(ALARM_NO_P01)); /* P11 already done      */
@@ -587,7 +557,7 @@ agc_status_t agc_job_prelaunch_initialization(agc_job_ctx_t *ctx)
     agc_interp_init(&ip);
     agc_status_t st = prelaunch_posn17c(); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -630,7 +600,7 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
 
     st = agc_imu_calcga(&ip, &agc_align_ram()->xnb, &agc_align_ram()->xsm, thetad);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -642,7 +612,7 @@ agc_status_t agc_job_prelaunch_imu_zeroed(agc_job_ctx_t *ctx)
 
     st = agc_imu_coarse(thetad); /* IMUCOARS                           */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
+    if ((st != AGC_STATUS_OK) && (st != AGC_STATUS_BUSY))
     {
         return (st);
     }
@@ -695,17 +665,13 @@ agc_status_t agc_job_prelaunch_imu_coarse_aligned(void)
          *
          * RETURNS: AGC_STATUS_UNIMPLEMENTED
          **********************************************************************/
-        if (!AGC_ASSERT(pl.ndxctr > 0))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
 
         return (AGC_STATUS_UNIMPLEMENTED);
     }
 
     st = agc_imu_fine(); /* IMUFINE                                    */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
+    if ((st != AGC_STATUS_OK) && (st != AGC_STATUS_BUSY))
     {
         return (st);
     }
@@ -763,14 +729,9 @@ agc_status_t agc_job_prelaunch_imu_fine_aligned(void)
  **********************************************************************/
 agc_status_t agc_task_gyrocompassing_wake(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_status_t st = agc_exec_job_wake(AGC_JOB_GYROCOMPASSING_START); /* status of the call */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_NOT_FOUND))
+    if ((st != AGC_STATUS_OK) && (st != AGC_STATUS_NOT_FOUND))
     {
         return (st);
     }
@@ -793,16 +754,11 @@ agc_status_t agc_csm_prelaunch_imutest(agc_job_ctx_t *ctx)
     const uint16_t zero[3] = {0, 0, 0}; /* THETAD = 0, CDU         */
     bool           done    = false;     /* IMUSTALL already over   */
 
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     pl.geocomp1     = 0;                    /* DRIFTT, GEOCOMP1 = 0                          */
     pl.lengthot     = TEST_PASSES;          /* CAF TESTTIME                       */
     agc_status_t st = agc_imu_coarse(zero); /* COAALIGN: IMUCOARS     */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_BUSY))
+    if ((st != AGC_STATUS_OK) && (st != AGC_STATUS_BUSY))
     {
         return (st);
     }
@@ -839,11 +795,6 @@ agc_status_t agc_job_imu_test_coarse_aligned(agc_job_ctx_t *ctx)
 
     pl.onesecxt1 = TEST_PERIOD;             /* CAF 1SECX, TS 1SECXT1              */
     agc_imu_set_pipa_interval(TEST_PIPADT); /* CA OC14400            */
-
-    if (!AGC_ASSERT(agc_imu_pipa_interval() == TEST_PIPADT))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_job_imu_test_site_display(ctx)); /* GUESS: LATAZCHK  */
 }
@@ -893,11 +844,6 @@ agc_status_t agc_job_imu_test_site_flash(agc_job_ctx_t *ctx)
     const agc_dsky_cont_t cont = {AGC_JOB_IMU_TEST_SITE_FLASH, /* TC +2 */
                                   AGC_JOB_IMU_TEST_SITE_LOADED,
                                   AGC_JOB_IMU_TEST_SITE_FLASH}; /* TC -5 */
-
-    if (!AGC_ASSERT(pl.geocomp1 == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, VN_SITE, &cont));
 }

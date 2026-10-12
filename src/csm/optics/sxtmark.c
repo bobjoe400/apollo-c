@@ -133,11 +133,6 @@ agc_status_t agc_sxtmark(agc_sp_t nmarks)
 /* SXTMARK +2 (R56): only reserve the mark VAC area. */
 agc_status_t agc_sxtmark_reserve(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = sxtmark_common(0, false);
 
     if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
@@ -164,9 +159,9 @@ agc_status_t agc_sxtmark_free_vac(void)
     {
         st = agc_exec_vac_release(ram->mkvac_index);
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
-            return (AGC_STATUS_BAD_ARG);
+            return (st);
         }
     }
 
@@ -189,9 +184,9 @@ agc_status_t agc_sxtmark_mkreleas(void)
 {
     agc_status_t st = agc_sxtmark_free_vac();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     agc_inhint(); /* MKRLEES  */
@@ -527,9 +522,9 @@ agc_status_t agc_job_entanswr(void)
 
     agc_relint();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     st = agc_dsky_endmark(); /* ENDMARK  */
@@ -547,9 +542,9 @@ agc_status_t agc_task_endmarks(void)
 
     const agc_status_t st = agc_imu_goodend(AGC_IMU_DEV_OPTICS);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);

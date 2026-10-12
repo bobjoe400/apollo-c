@@ -71,3 +71,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 ## From review-sys-misc checkpoint (2026-10-11; note docs/modules/review-sys-misc.md)
 - io-dsky: V91 SHOW-BANKSUM needs the display to carry the MPAC+2 address the AGC passes; the noun/display path cannot yet, so V91 cannot show bank sums.
 - sim: load the real rope image (Comanche055 / Luminary099 binary from tools/oracle) as fixed memory so the idle self-check (ROPECHK) and SHOW-BANKSUM run on real bank sums; data only, no model.
+
+## From review-prog-align checkpoint (2026-10-11; note docs/modules/review-prog-align.md)
+- follow-up-done-lanes (radar, navigation, displays, io): agc_csm_sxtnb, agc_lm_rrnb, agc_lm_rrangles cannot fail any more; make them void and drop the callers' status plumbing.
+- guid-powered: give TRG*NBSM / *NBSM* a word-level form (agc_dp_words_t out) so a component can stay as sign-disagreeing words; clears oracle KNOWN PA-W4 (AVEIT VSR3 rounding of an exact half).

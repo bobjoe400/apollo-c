@@ -21,11 +21,6 @@
 #define VN_ALARM        ALIGN_VN(5, 9)            /* V05N09                        */
 #define VN_LANDING_SITE ALIGN_VN(6, 89)           /* V06N89* VN 0689               */
 
-static bool is_csm(void)
-{
-    return (agc_state_vehicle() == AGC_VEHICLE_CSM);
-}
-
 /*
  * P52C: PHASCHNG 04024; V50N25 R1 00015 (perform star acquisition):
  * V34 terminates, V33 selects the stars (P52E), ENTER goes straight to
@@ -33,16 +28,11 @@ static bool is_csm(void)
  */
 agc_status_t agc_job_csm_realign_star_selection(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(is_csm()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const agc_status_t st = align_phase4(PH_STAR_SELECT);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH, AGC_JOB_CSM_REALIGN_PICK_STARS, AGC_JOB_CSM_FINE_ALIGN));
@@ -136,11 +126,6 @@ static void landmark_data_from_latlong(const agc_latlong_t *ll)
  */
 agc_status_t agc_job_csm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(is_csm()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     ram->qmaj   = AGC_JOB_REALIGN_GIMBAL_DISPLAY; /* QMAJ     */

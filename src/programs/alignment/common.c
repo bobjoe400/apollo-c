@@ -68,11 +68,6 @@ uint16_t agc_align_ones_to_twos(agc_dp_t revs)
 {
     int32_t hv = revs / CDU_TO_REVS_SHIFT;
 
-    if (!AGC_ASSERT((revs >= AGC_DP_MIN) && (revs <= AGC_DP_MAX)))
-    {
-        hv = 0;
-    }
-
     if (hv >= CDU_HALF_REV)
     {
         hv -= CDU_MODULUS;
@@ -214,9 +209,9 @@ agc_status_t align_goto(agc_job_id_t next)
 
     const agc_status_t st = agc_exec_job_yield(next);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -376,9 +371,9 @@ static agc_status_t coarse_fine(void)
 {
     agc_status_t st = agc_imu_fine(); /* IMUFINE   */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     bool done = false;
@@ -406,9 +401,9 @@ agc_status_t align_coarse(agc_job_id_t ret)
 
     agc_status_t st = agc_imu_coarse(thetad); /* IMUCOARS  */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     bool done = false;

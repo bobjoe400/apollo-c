@@ -108,11 +108,6 @@ agc_status_t agc_job_lm_landing_site_accepted(void)
  */
 agc_status_t agc_job_lm_imu_realign_landing_site(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram_t *ram = agc_align_ram();
 
     agc_flag_set(AGC_FLAG_LUNAFLAG);

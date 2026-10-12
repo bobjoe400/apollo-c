@@ -227,9 +227,9 @@ static agc_status_t realign_gimbal_angles(void)
     uint16_t           thetad[3];
     const agc_status_t st       = agc_align_gimbal_angles(&ip, &ram->xsmd, &refsmmat, cdu, &ram->xsm, &ram->xnb, thetad);
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (st);
@@ -299,9 +299,9 @@ agc_status_t agc_job_coarse_align_coarsed(agc_job_ctx_t *ctx)
 {
     const agc_status_t st = is_csm() ? align_set1_pdt() : align_ncoarse();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (agc_job_coarse_align_fineonly(ctx));
@@ -357,9 +357,9 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
     agc_flag_clear(AGC_FLAG_REFSMFLG);
     st = align_show(ctx, AGC_DSKY_GODSPR, VN_MONITOR_GIMBALS); /* GODSPR    */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     return (agc_job_gycrs_pulse(ctx));
@@ -418,9 +418,9 @@ agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx)
     agc_flag_set(AGC_FLAG_REFSMFLG);
     agc_status_t st = is_csm() ? align_set1_pdt() : align_ncoarse();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
-        return (AGC_STATUS_BAD_ARG);
+        return (st);
     }
 
     if (is_csm())

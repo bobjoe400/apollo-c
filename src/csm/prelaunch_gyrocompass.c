@@ -119,11 +119,6 @@ static agc_status_t setgwlst(void)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
-    if (!AGC_ASSERT(r->onesecxt1 > 0) || !AGC_ASSERT(r->gtswtlt1 >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_inhint();
     int32_t dt = (int32_t) r->gtswtlt1 - (int32_t) time1(); /* CS, AD  */
 
@@ -217,16 +212,6 @@ static agc_status_t sleepie_next(agc_job_ctx_t *ctx)
 {
     agc_phase_change(00135); /* restart at WTLISTNT              */
 
-    if (!AGC_ASSERT(prelaunch_ram()->onesecxt1 > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(prelaunch_ram()->lengthot >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_job_gyrocompassing_wait(ctx));
 }
 
@@ -251,7 +236,7 @@ agc_status_t agc_job_gyrocompassing_wait(agc_job_ctx_t *ctx)
 
     st = setgwlst();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -272,11 +257,6 @@ static agc_status_t torquing_cycle_start(agc_job_ctx_t *ctx)
 {
     prelaunch_ram()->lengthot = CYCLE_PASSES; /* CAF NINE           */
 
-    if (!AGC_ASSERT(prelaunch_ram()->lengthot == 9))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (sleepie_next(ctx));
 }
 
@@ -293,11 +273,6 @@ agc_status_t prelaunch_estims(agc_job_ctx_t *ctx)
 {
     agc_phase_change2(00075, 00004, NULL); /* 2PHSCHNG 5.7, 4 off      */
 
-    if (!AGC_ASSERT(prelaunch_ram()->geocomp1 >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_job_gyrocompassing_restart(ctx));
 }
 
@@ -312,11 +287,6 @@ agc_status_t prelaunch_estims(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_gyrocompassing_start(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (prelaunch_estims(ctx));
 }
 
@@ -381,7 +351,7 @@ agc_status_t agc_job_gyrocompassing_restart(agc_job_ctx_t *ctx)
         st = agc_imu_pipuse(); /* PIPA fail -> ISS alarm             */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -399,19 +369,9 @@ agc_status_t agc_task_gyrocompassing_sample(void)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     r->gtswtlt1 = time1();  /* CA TIME1, TS GTSWTLT1                  */
     r->geosave1 = r->altim; /* ALLOOP3                               */
     agc_phase_change(00115);
-
-    if (!AGC_ASSERT(r->gtswtlt1 >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_task_gyrocompassing_sample_restart());
 }
@@ -461,16 +421,6 @@ agc_status_t agc_task_gyrocompassing_sample_restart(void)
     agc_erase_set_delv(d);
     agc_phase_newphase(5, FILTER_PHASE, false); /* NEWPHASE 5.23      */
 
-    if (!AGC_ASSERT(agc_erase_pipax() == 0 && agc_erase_pipaz() == 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(r->altims >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_task_gyrocompassing_filter_start());
 } /* agc_task_gyrocompassing_sample_restart */
 
@@ -482,19 +432,7 @@ agc_status_t agc_task_gyrocompassing_sample_restart(void)
  **********************************************************************/
 agc_status_t agc_task_gyrocompassing_filter_start(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_status_t st = agc_exec_findvac(PRELAUNCH_PRIO_FILTER, AGC_JOB_GYROCOMPASSING_FILTER); /* status of the call */
-
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_FULL))
-    {
-        return (st);
-    }
-
-    return (st); /* TASKOVER                                         */
+    return (agc_exec_findvac(PRELAUNCH_PRIO_FILTER, AGC_JOB_GYROCOMPASSING_FILTER)); /* FINDVAC, TASKOVER */
 }
 
 /**********************************************************************
@@ -524,11 +462,6 @@ static void alwaysg(agc_interp_t *ip, agc_dp_t term[2])
         x              = agc_dp_mul(ip, f->intvec1[k], GEOCONS2);
         x              = agc_dp_add(ip, x, f->fildelv1[k]); /* DAD*     */
         term[k]        = agc_dp_mul(ip, x, GEOCONS5);       /* DMPR, PUSH     */
-    }
-
-    if (!AGC_ASSERT(prelaunch_ram()->erectim1 >= 0))
-    {
-        prelaunch_ram()->erectim1 = 0; /* recovery: erection over     */
     }
 }
 
@@ -561,11 +494,6 @@ static void compgs(agc_interp_t *ip, const agc_dp_t term[2])
         agc_dp_t t = agc_dp_sub(ip, th->c[1], agc_dp_mul(ip, f->fildelv1[1], GEOCONS3)); /* Y torque term, rev 2^0 */
 
         th->c[1] = agc_dp_sub(ip, t, agc_dp_mul(ip, f->intvec1[1], GEOCONS4));
-
-        if (!AGC_ASSERT(prelaunch_ram()->erectim1 == 0))
-        {
-            prelaunch_ram()->erectim1 = 0; /* recovery: erection over     */
-        }
     }
 }
 
@@ -601,7 +529,7 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
         st = agc_imu_one_over_pipa(&d); /* COMPENSATION IF IN COMPASS */
         agc_erase_set_delv(d);
 
-        if (!AGC_ASSERT(st == AGC_STATUS_OK))
+        if (st != AGC_STATUS_OK)
         {
             return (st);
         }
@@ -623,11 +551,6 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
     r_normlop->dpipa[0] = agc_dp_neg(v.c[1]); /* DLOAD DCOMP MPAC +3       */
     r_normlop->dpipa[1] = v.c[2];             /* MPAC +5                   */
 
-    if (!AGC_ASSERT(r_normlop->geocomp1 == 0 || r_normlop->geocomp1 == 1))
-    {
-        r_normlop->geocomp1 = 1; /* recovery: compass                          */
-    }
-
     if (r->geocomp1 <= 0)
     {
         /* BMN ALWAYSG not taken            */
@@ -640,11 +563,6 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
          *
          * RETURNS: AGC_STATUS_UNIMPLEMENTED
          **********************************************************************/
-        if (!AGC_ASSERT(prelaunch_ram()->geocomp1 == 0))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         return (AGC_STATUS_UNIMPLEMENTED);
     }
 
@@ -664,11 +582,6 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
     prelaunch_ram_t *r_endgtsal       = prelaunch_ram(); /* AINLA overlay */
     bool             liftoff_endgtsal = false;           /* CHKCOMED went to P11        */
     agc_dp_t         buf[3];                             /* ERCOMP1, rev 2^0            */
-
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(r_endgtsal->lengthot >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (r_endgtsal->lengthot > 0)
     {
@@ -693,7 +606,7 @@ agc_status_t agc_job_gyrocompassing_filter_restart(agc_job_ctx_t *ctx)
     r_endgtsal->filt.thetax1 = agc_vec_make(buf[0], buf[1], buf[2]);
     r_endgtsal->alk          = prelaunch_tmark();                              /* DLOAD TMARK, STORE ALK    */
 
-    if (!AGC_ASSERT(st_endgtsal == AGC_STATUS_OK))
+    if (st_endgtsal != AGC_STATUS_OK)
     {
         return (st_endgtsal);
     }
@@ -716,11 +629,6 @@ agc_status_t agc_job_gyrocompassing_filter(agc_job_ctx_t *ctx)
 
     r->restarpt = r->filt; /* STOREDTA                               */
     agc_phase_change(00215);
-
-    if (!AGC_ASSERT(r->restarpt.thetan1.c[0] == r->filt.thetan1.c[0]))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_job_gyrocompassing_filter_restart(ctx));
 }
@@ -753,7 +661,7 @@ agc_status_t agc_job_gyrocompassing_torque(agc_job_ctx_t *ctx)
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
     agc_status_t st = prelaunch_set_tmark(r->alk); /* STORE TMARK     */
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -791,11 +699,6 @@ agc_status_t agc_job_gyrocompassing_torqued(agc_job_ctx_t *ctx)
     prelaunch_ram()->geosave1 = prelaunch_ram()->erectim1; /* CAE, TS */
     agc_phase_change(00155);
 
-    if (!AGC_ASSERT(prelaunch_ram()->geosave1 >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_job_gyrocompassing_erection_check(ctx));
 }
 
@@ -811,11 +714,6 @@ agc_status_t agc_job_gyrocompassing_torqued(agc_job_ctx_t *ctx)
 static agc_status_t nochorld(agc_job_ctx_t *ctx)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
-
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(r->geosave1 >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     if (r->geosave1 > 0)
     {
@@ -837,11 +735,6 @@ static agc_status_t nochorld(agc_job_ctx_t *ctx)
 agc_status_t agc_job_gyrocompassing_erection_check(agc_job_ctx_t *ctx)
 {
     prelaunch_ram_t *r = prelaunch_ram(); /* AINLA overlay */
-
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(r->premtrxc >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     r->filt.thetan1 = agc_vec_zero(); /* VLOAD SCHZEROS, STORE      */
 
@@ -872,11 +765,6 @@ agc_status_t agc_job_gyrocompassing_azimuth_check(agc_job_ctx_t *ctx)
     agc_dp_t         buf[3];              /* ERCOMP, rev 2^0                      */
     agc_interp_t     ip;                  /* interpreter state                    */
 
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(r->premtrxc >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_interp_init(&ip);
     agc_dp_t d = agc_dp_sub(&ip, r->launchaz, r->oldazmth); /* rev 2^0 */
 
@@ -895,7 +783,7 @@ agc_status_t agc_job_gyrocompassing_azimuth_check(agc_job_ctx_t *ctx)
     agc_imu_gyro_buf_set(AGC_IMU_GBUF_ERCOMP, buf);
     st     = prelaunch_posn17c();
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK))
+    if (st != AGC_STATUS_OK)
     {
         return (st);
     }
@@ -930,7 +818,7 @@ agc_status_t agc_job_gyrocompassing_azimuth_slew(agc_job_ctx_t *ctx)
         return (AGC_STATUS_OK); /* GYROBUSY: RESCHNG runs again     */
     }
 
-    if (!AGC_ASSERT(st == AGC_STATUS_OK || st == AGC_STATUS_ALARM))
+    if ((st != AGC_STATUS_OK) && (st != AGC_STATUS_ALARM))
     {
         return (st);
     }
@@ -965,11 +853,6 @@ agc_status_t agc_job_gyrocompassing_azimuth_slewed(agc_job_ctx_t *ctx)
         return (st);
     }
 
-    if (!AGC_ASSERT(prelaunch_ram()->lengthot == SLEW_PASSES))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (prelaunch_estims(ctx));
 }
 
@@ -987,11 +870,6 @@ agc_status_t agc_job_gyrocompass_azimuth_change(agc_job_ctx_t *ctx)
     const agc_dsky_cont_t next = {AGC_JOB_GYROCOMPASS_AZIMUTH_FLASH,
                                   AGC_JOB_GYROCOMPASS_AZIMUTH_FLASH,
                                   AGC_JOB_GYROCOMPASS_AZIMUTH_FLASH};
-
-    if (!AGC_ASSERT(ctx != NULL) || !AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_dsky_set_dsptem(0, agc_rtb_1sto2s(prelaunch_ram()->newazmth)); /* RTB 1STO2S */
 
@@ -1012,11 +890,6 @@ agc_status_t agc_job_gyrocompass_azimuth_flash(agc_job_ctx_t *ctx)
     const agc_dsky_cont_t cont = {AGC_JOB_GYROCOMPASS_AZIMUTH_FLASH,
                                   AGC_JOB_GYROCOMPASS_AZIMUTH_LOADED,
                                   AGC_JOB_GYROCOMPASS_AZIMUTH_FLASH};
-
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_CSM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_dsky_display(ctx, AGC_DSKY_GOFLASH, VN_LAUNCH_AZ, &cont));
 }

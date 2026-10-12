@@ -7,12 +7,15 @@
  * Routines: SXTNB, SXTANG (incl. ZNB=S1 and the CULTFLAG trunnion alarm),
  * LOG (CSM_GEOMETRY); RRNB, RRANGLES (incl. mode 2 swap and the along-Y
  * exit) (LEM_GEOMETRY); SCALEVEC (R47, incl. the -0 rounding case);
- * the R05 S-band pitch/yaw computations of both vehicles.
+ * the R05 S-band pitch/yaw computations of both vehicles; OANB, OPTAXIS,
+ * SURFSTAR + AVEIT (AOTMARK); R59 detent, CURSOR and SPIRAL.
  *
  * Tolerances are in LSB of the AGC word (0 = bit exact).  RRANGLES and
  * SXTANG convert the words ASIN/ACOS/ARCTRIG leave (word_forms.c), which
- * 12 random cases each confirm; KNOWN PA-W2: SXTNB (SIN's MPAC +2),
- * PA-W3: LM S-band pitch (ABVAL's MPAC +2 reaches ASIN).
+ * 12 random cases each confirm.  SXTNB (SIN SL1) and the LM S-band
+ * pitch (ABVAL SIGN ASIN) run on the MPAC words (interp_words.h), the
+ * former KNOWN PA-W2 / PA-W3.  OANB, OPTAXIS, SURFSTAR (+ AVEIT) of
+ * AOTMARK are bit exact apart from KNOWN PA-W4 (TRG*NBSM words).
  */
 #include <stdio.h>
 
@@ -20,6 +23,7 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
+#include "agc/io/dsky.h"
 #include "agc/programs/alignment.h"
 #include "oracle_txt.h"
 
@@ -110,6 +114,124 @@ static void scalevec(const char *t)
     }
 }
 
+/* OANB: optic axis, UYP (18D) and UXP (24D) for AZ, EL in 8D, 9D.     */
+static void oanb(const char *t, long tol)
+{
+    agc_interp_t ip;
+    agc_vec_t    oa  = agc_vec_zero();
+    agc_vec_t    uxp = agc_vec_zero();
+    agc_vec_t    uyp = agc_vec_zero();
+
+    agc_interp_init(&ip);
+    oracle_require_ok(t, "POODOO");
+    agc_aot_oanb(&ip, oracle_in_raw(t, "VAC1+8", 0), oracle_in_raw(t, "VAC1+8", 1), &oa, &uxp, &uyp);
+    oracle_cmp_vec(t, "SCAXIS", oa, oracle_out_vec(t, "SCAXIS"), tol);
+    oracle_cmp_vec(t, "UYP", uyp, oracle_out_vec(t, "VAC1+18"), tol);
+    oracle_cmp_vec(t, "UXP", uxp, oracle_out_vec(t, "VAC1+24"), tol);
+}
+
+/* OPTAXIS: YPNB (12D), XPNB (18D) for AZ, EL, ROT in 8D..10D.          */
+static void optaxis(const char *t, long tol)
+{
+    agc_interp_t ip;
+    agc_vec_t    oa   = agc_vec_zero();
+    agc_vec_t    uxp  = agc_vec_zero();
+    agc_vec_t    uyp  = agc_vec_zero();
+    agc_vec_t    xpnb = agc_vec_zero();
+    agc_vec_t    ypnb = agc_vec_zero();
+
+    agc_interp_init(&ip);
+    oracle_require_ok(t, "GETMKS");
+    agc_aot_oanb(&ip, oracle_in_raw(t, "VAC1+8", 0), oracle_in_raw(t, "VAC1+8", 1), &oa, &uxp, &uyp);
+    agc_aot_optaxis(&ip, uxp, uyp, oracle_in_raw(t, "VAC1+8", 2), &xpnb, &ypnb);
+    oracle_cmp_vec(t, "YPNB", ypnb, oracle_out_vec(t, "VAC1+12"), tol);
+    oracle_cmp_vec(t, "XPNB", xpnb, oracle_out_vec(t, "VAC1+18"), tol);
+}
+
+/* SURFSTAR from the mark (VAC4: CDUY, CURSOR, CDUZ, SPIRAL, CDUX), then
+ * AVEIT for the first vector: 24D = VSR3 V/SC (1/8) of the star.      */
+static void surfstar(const char *t, long tol)
+{
+    agc_interp_t         ip;
+    agc_align_aot_pair_t m;
+    agc_vec_t            star = agc_vec_zero();
+    agc_vec_t            ave  = agc_vec_zero();
+
+    agc_interp_init(&ip);
+    oracle_require_ok(t, "ENDMARKS");
+
+    for (int k = 0; k < 3; k++)
+    {
+        m.xcdu[k] = oracle_in_raw(t, "VAC4", 2 * k);
+        m.ycdu[k] = oracle_in_raw(t, "VAC4", (2 * k) + 1);
+    }
+
+    (void) agc_aot_surfstar(&ip, &m, oracle_in_vec(t, "SCAXIS"), oracle_in_vec(t, "VAC1+18"), oracle_in_vec(t, "VAC1+12"), &star);
+    (void) agc_aot_aveit(&ip, 1, star, &ave);
+
+    /* TRG*NBSM can leave a component in sign-disagreeing words (VAD), and
+     * AVEIT's VSR3 then rounds an exact half the other way: one LSB of the
+     * VSR3 result, 8 after V/SC (1/8) (review-prog-align.md W4): KNOWN at
+     * 0, hard at 8.                                                    */
+    oracle_cmp_vec_known(t, "24D", ave, oracle_out_vec(t, "VAC1+24"), tol, "PA-W4");
+    oracle_cmp_vec(t, "24D", ave, oracle_out_vec(t, "VAC1+24"), tol + 8);
+}
+
+/* DODAT / CODE1TO6 for detent d: AZ, EL from the tables, the field
+ * rotation AOTAZ +1 MSU AZ (10D), then OPTAXIS: YPNB (12D), XPNB (18D).
+ * The job's V54N71 display is not part of the check.                 */
+static void code1to6(const char *t)
+{
+    agc_job_ctx_t    ctx = {AGC_JOB_AOT_MARK_DETENT, ALIGN_PRIO15, true, 0, 0};
+    agc_align_ram_t *ram = agc_align_ram();
+
+    oracle_require_ok(t, "GETMKS");
+
+    if (agc_dsky_init() != AGC_STATUS_OK)
+    {
+        (void) oracle_cmp(t, "agc_dsky_init", 1, 0, 0);
+    }
+
+    for (int k = 0; k < 6; k++)
+    {
+        agc_erase_set_aotaz(k + 1, oracle_in_raw(t, "AOTAZ", k));
+        agc_erase_set_aotel(k + 1, oracle_in_raw(t, "AOTEL", k));
+    }
+
+    ram->starcode = (agc_sp_t) (oracle_in(t, "XYMARK", 0) << 6); /* AOTCODE bits 7-9 */
+    (void) agc_job_aot_mark_detent(&ctx);
+    (void) oracle_cmp(t, "10D", (long) ram->rotang, (long) oracle_out_raw(t, "VAC1+10"), 0);
+    oracle_cmp_vec(t, "YPNB", ram->ypnb, oracle_out_vec(t, "VAC1+12"), 0);
+    oracle_cmp_vec(t, "XPNB", ram->xpnb, oracle_out_vec(t, "VAC1+18"), 0);
+}
+
+/* R59 INCAZ .. R59D: detent (POSCODE), CURSOR, SPIRAL for STAR (NB).  */
+static void r59(const char *t, bool found_expected)
+{
+    agc_interp_t ip;
+
+    agc_interp_init(&ip);
+    oracle_require_ok(t, found_expected ? "15,2437" : "R59ALM");
+
+    for (int k = 0; k < 6; k++)
+    {
+        agc_erase_set_aotaz(k + 1, oracle_in_raw(t, "AOTAZ", k));
+    }
+
+    const bool found = agc_lm_aot_find_detent(&ip, oracle_in_vec(t, "STAR"));
+
+    (void) oracle_cmp(t, "found", found ? 1 : 0, found_expected ? 1 : 0, 0);
+
+    if (found)
+    {
+        const agc_align_ram_t *ram = agc_align_ram();
+
+        (void) oracle_cmp(t, "POSCODE", ram->poscode, (long) oracle_out_raw(t, "POSCODE"), 0);
+        cmp_cdu(t, "CURSOR", ram->cursor, "CURSOR", 0);
+        cmp_cdu(t, "SPIRAL", ram->spiral, "SPIRAL", 0);
+    }
+}
+
 /* R05 (LM) angle part: UE = -UNIT(RATT), MXV identity VSL1, *SMNB* with
  * zero CDUs (exact), then the C angles routine.                        */
 static void sband_lm(const char *t, long tol)
@@ -126,10 +248,8 @@ static void sband_lm(const char *t, long tol)
     ue = agc_vec_shl(&ip, agc_mat_vec(&ip, &ref, ue), 1);
     (void) agc_sband_lm_angles(&ip, ue, &pitch, &yaw);
 
-    /* ABVAL leaves MPAC +2 (e.g. 20000) and ASIN's SQRTSUB sees it; the
-     * C ASIN takes a DP (review-prog-align.md W3): KNOWN at 0, hard at 1. */
-    oracle_cmp_known(t, "PITCHANG", (long) pitch, (long) oracle_out_dp(t, "PITCHANG"), tol, "PA-W3");
-    (void) oracle_cmp(t, "PITCHANG", (long) pitch, (long) oracle_out_dp(t, "PITCHANG"), tol + 1);
+    /* ABVAL SIGN ASIN on the MPAC words (MPAC +2 reaches ASIN): exact. */
+    (void) oracle_cmp(t, "PITCHANG", (long) pitch, (long) oracle_out_dp(t, "PITCHANG"), tol);
     (void) oracle_cmp(t, "YAWANG", (long) yaw, (long) oracle_out_dp(t, "YAWANG"), tol);
 }
 
@@ -156,11 +276,8 @@ static void sxtnb(const char *t, long tol)
     oracle_require_ok(t, "POODOO");
     (void) agc_csm_sxtnb(&ip, oracle_in_raw(t, "VAC4+5", 0), oracle_in_raw(t, "VAC4+3", 0), &los);
 
-    /* SXTNB's SIN SL1 shifts SIN's MPAC +2 into the result; agc_dp_sin
-     * returns two words, so sin TA can be 1 LSB low and 32D 2 LSB off
-     * (docs/modules/review-prog-align.md W2): KNOWN at 0, hard at 2.    */
-    oracle_cmp_vec_known(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol, "PA-W2");
-    oracle_cmp_vec(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol + 2);
+    /* SIN SL1 on the MPAC words (SIN's MPAC +2 shifted in): exact.  */
+    oracle_cmp_vec(t, "32D", los, oracle_out_vec(t, "VAC1+32"), tol);
 }
 
 static void sxtang(const char *t, long tol)
@@ -173,7 +290,7 @@ static void sxtang(const char *t, long tol)
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "POODOO");
-    (void) agc_csm_sxtang(&ip, oracle_in_vec(t, "STAR"), &nb, &sac, &pac, &cult);
+    agc_csm_sxtang(&ip, oracle_in_vec(t, "STAR"), &nb, &sac, &pac, &cult);
     cmp_cdu(t, "SAC", sac, "SAC", tol);
     const bool agc_cult = (oracle_out_raw(t, "FLAGWRD3") & CULTFLAG_BIT) != 0;
 
@@ -231,6 +348,51 @@ int main(void)
     sband_lm("sband_lm_b", 0);
     sband_lm("sband_lm_c", 0);
     sband_lm("sband_lm_d", 0);
+
+    static const char *const aot[7] = {"a", "b", "c", "d", "e", "f", "coas"};
+
+    for (int k = 0; k < 7; k++)
+    {
+        char tag[32];
+
+        (void) snprintf(tag, sizeof tag, "oanb_%s", aot[k]);
+        oanb(tag, 0);
+        (void) snprintf(tag, sizeof tag, "optaxis_%s", aot[k]);
+        optaxis(tag, 0);
+    }
+
+    surfstar("surfstar_zero", 0);
+    surfstar("surfstar_spiral", 0);
+
+    for (int k = 0; k < 8; k++)
+    {
+        char tag[32];
+
+        (void) snprintf(tag, sizeof tag, "surfstar_r%d", k);
+        surfstar(tag, 0);
+    }
+
+    for (int k = 0; k < 2; k++)
+    {
+        for (int d = 1; d <= 6; d++)
+        {
+            char tag[32];
+
+            (void) snprintf(tag, sizeof tag, "code1to6_%d%d", k, d);
+            code1to6(tag);
+        }
+    }
+
+    r59("r59_center", true);
+    r59("r59_behind", false);
+
+    for (int k = 0; k < 12; k++)
+    {
+        char tag[32];
+
+        (void) snprintf(tag, sizeof tag, "r59_r%d", k);
+        r59(tag, true);
+    }
 
     if (!oracle_load("align"))
     {

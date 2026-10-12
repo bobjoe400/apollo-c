@@ -109,6 +109,67 @@ def lm():
         s.run(tag, 'CONV4', 0o42, '42,3746',
               [('VAC1', vec(r, 29)), ('REFSMMAT', ident)],
               ['PITCHANG:dp', 'YAWANG:dp'], ebank=0o4)
+    # ---- AOTMARK: OANB, OPTAXIS (stop GETMKS), SURFSTAR + AVEIT ----
+    def sp_ones(deg):
+        """SP ones' complement word of an angle scaled by pi (half revs)."""
+        v = int(round(deg / 180.0 * 16384))
+        return '%05o' % (v if v >= 0 else (0o77777 + v))
+    aot = [('oanb_a', 60.0, 45.0, 10.0), ('oanb_b', 0.0, 45.0, 0.0),
+           ('oanb_c', -60.0, 45.0, -10.0), ('oanb_d', 120.0, 45.0, 35.0),
+           ('oanb_e', 180.0, 45.0, 0.0), ('oanb_f', -120.0, 45.0, -35.0),
+           ('oanb_coas', 17.3, -23.9, 0.0)]
+    for tag, az, el, rot in aot:
+        s.run(tag, 'OANB', 0o4, 'POODOO',
+              TRAP_LO + [('VAC1+8', cdu(az) + ',' + cdu(el))],
+              gets_dp('SCAXIS', 3) + gets_dp('VAC1+18', 3) + gets_dp('VAC1+24', 3),
+              ebank=0o7)
+        s.run(tag.replace('oanb', 'optaxis'), 'OPTAXIS', 0o7, 'GETMKS',
+              [('VAC1+8', cdu(az) + ',' + cdu(el) + ',' + sp_ones(rot))],
+              gets_dp('VAC1+12', 3) + gets_dp('VAC1+18', 3), ebank=0o7)
+    x1 = '%05o' % (0o77777 - VAC4)
+    rnd = random.Random(57)
+    surf = [('surfstar_zero', 0.0, 0.0), ('surfstar_spiral', 0.0, 200.0)]
+    for k in range(8):
+        surf.append(('surfstar_r%d' % k, rnd.uniform(-180, 180),
+                     rnd.uniform(-180, 180)))
+    for k, (tag, cur, spi) in enumerate(surf):
+        oa = half_unit([rnd.uniform(-1, 1) for _ in range(3)])
+        xp = [c / 2 for c in half_unit([rnd.uniform(-1, 1) for _ in range(3)])]
+        yp = [c / 2 for c in half_unit([rnd.uniform(-1, 1) for _ in range(3)])]
+        cd = [rnd.uniform(-180, 180) for _ in range(3)]
+        mark = ','.join([cdu(cd[0]), cdu(cur), cdu(cd[1]), cdu(spi), cdu(cd[2]),
+                         '00000'])
+        # AVEIT runs on (interpretive code: no stop there) with MKDEX = 1/8
+        # (one vector): 24D = VSR3 V/SC of the SURFSTAR vector; MARKCNTR 0
+        # ends at ENDMARKS.
+        s.run(tag, 'SURFSTAR', 0o15, 'ENDMARKS',
+              [('VAC1+38', x1), ('VAC4', mark), ('SCAXIS', vec(oa)),
+               ('VAC1+18', vec(xp)), ('VAC1+12', vec(yp)),
+               ('MARKCNTR', '00000,00000,04000')],
+              gets_dp('VAC1+24', 3), ebank=0o7)
+    # ---- CODE1TO6: detent AZ/EL, rotation AOTAZ +1 MSU AZ, OPTAXIS (stop GETMKS)
+    for k, az2 in enumerate((0.0, 0.7)):
+        tbl = ','.join(cdu(a) for a in (-60.0, az2, 60.0, 120.0, 180.0, -120.0))
+        els = ','.join(cdu(e) for e in (45.0, 44.5, 45.0, 45.2, 45.0, 44.8))
+        for d in range(1, 7):
+            s.run('code1to6_%d%d' % (k, d), None, 0o7, 'GETMKS',
+                  [('XYMARK', '%05o' % d), ('AOTAZ', tbl), ('AOTEL', els)],
+                  ['VAC1+10'] + gets_dp('VAC1+12', 3) + gets_dp('VAC1+18', 3),
+                  ebank=0o7, entry='CODE1TO6')
+    # ---- R59 INCAZ .. 79DISP (15,2437) / R59ALM (basic entry, six detents) ----
+    aotaz = ','.join(cdu(a) for a in (-60.0, 0.0, 60.0, 120.0, 180.0, -120.0))
+    stars = [('r59_center', [0.7071, 0.0012, 0.7071]),
+             ('r59_behind', [-0.3, 0.2, -0.9])]
+    for k in range(12):
+        az = math.radians(rnd.choice([-60.0, 0.0, 60.0, 120.0, 180.0, -120.0])
+                          + rnd.uniform(-25, 25))
+        el = math.radians(45.0 + rnd.uniform(-25, 25))
+        stars.append(('r59_r%d' % k, [math.sin(el), math.cos(el) * math.sin(az),
+                                      math.cos(el) * math.cos(az)]))
+    for tag, st in stars:
+        s.run(tag, None, 0o15, '15,2437 R59ALM',   # 79DISP
+              [('POSCODE', '00001'), ('AOTAZ', aotaz), ('STAR', vec(half_unit(st)))],
+              ['CURSOR', 'SPIRAL', 'POSCODE'], entry='INCAZ')
     s.write(os.path.join(OUT, 'align_lm.spec'))
 
 def cm():

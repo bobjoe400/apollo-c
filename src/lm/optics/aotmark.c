@@ -91,7 +91,7 @@ static bool surface_marks(void) /* MARKTYPE         */
  * words): OA = 1/2 (sin EL, cos EL sin AZ, cos EL cos AZ); the Y-plane
  * vector UYP = 1/2 (0, cos AZ, -sin AZ); UXP = UNIT(UYP x OA).  NB axes.
  */
-agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp)
+void agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp)
 {
     const agc_dp_t elr = agc_align_cdulogic(el);
     const agc_dp_t azr = agc_align_cdulogic(az);
@@ -99,13 +99,12 @@ agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t 
     const agc_dp_t ca  = agc_dp_cos(azr);
     const agc_dp_t sa  = agc_dp_sin(azr);
 
+    /* DMP SL1: the shift acts on the truncating DMP's TP product.          */
     *oa  = agc_vec_make(agc_dp_sin(elr),
-                        agc_dp_shl(ip, agc_dp_mul(ip, ce, sa), 1),
-                        agc_dp_shl(ip, agc_dp_mul(ip, ce, ca), 1));
+                        align_dmp_shl(ip, sa, ce, 1),
+                        align_dmp_shl(ip, ca, ce, 1));
     *uyp = agc_vec_make(0, ca, agc_dp_neg(sa));
     *uxp = agc_vec_unit(ip, agc_vec_cross(ip, *uyp, *oa), NULL, NULL);
-
-    return (AGC_STATUS_OK);
 }
 
 /*
@@ -114,7 +113,7 @@ agc_status_t agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t 
  *   YPNB = 1/4 (cos ROT UYP - sin ROT UXP), XPNB = 1/4 (cos ROT UXP +
  *   sin ROT UYP).
  */
-agc_status_t agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb)
+void agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb)
 {
     const agc_dp_t r = agc_dp_shr(agc_dp_pack(align_word_to_sp(rot), 0), 1); /* SR1 */
     const agc_dp_t s = agc_dp_sin(r);
@@ -122,8 +121,6 @@ agc_status_t agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uin
 
     *ypnb = agc_vec_sub(ip, agc_vec_scale(ip, uyp, c), agc_vec_scale(ip, uxp, s));
     *xpnb = agc_vec_add(ip, agc_vec_scale(ip, uxp, c), agc_vec_scale(ip, uyp, s));
-
-    return (AGC_STATUS_OK);
 }
 
 /*
@@ -180,7 +177,7 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, a
         const agc_vec_t c   = agc_vec_scale(ip, ypnb, agc_dp_cos(yrot));
         const agc_vec_t upp = agc_vec_unit(ip, agc_vec_sub(ip, c, s), NULL, NULL);
         const agc_vec_t px  = agc_vec_unit(ip, agc_vec_cross(ip, upp, oa), NULL, NULL);
-        const agc_dp_t  sep = agc_dp_mul(ip, agc_dp_add(ip, agc_dp_sub(ip, srot, yrot), ABOUTONE), DP_ONE_TWELFTH);
+        const agc_dp_t  sep = agc_dp_mul_trunc(agc_dp_add(ip, agc_dp_sub(ip, srot, yrot), ABOUTONE), DP_ONE_TWELFTH); /* DMP */
         const agc_vec_t a   = agc_vec_shl(ip, agc_vec_scale(ip, px, agc_dp_sin(sep)), 1);
         const agc_vec_t b   = agc_vec_shl(ip, agc_vec_scale(ip, oa, agc_dp_cos(sep)), 1);
 
@@ -257,11 +254,6 @@ agc_status_t agc_aotmark(void)
         return ((bo == AGC_STATUS_OK) ? AGC_STATUS_BAILOUT : bo);
     }
 
-    if (!AGC_ASSERT((vac >= 0) && (vac < AGC_EXEC_MAX_VACS)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_align_ram()->mkvac_index = vac;
     set_markstat((uint16_t) (vac + 1)); /* MKVACFND */
     const agc_status_t st        = agc_exec_findvac(ALIGN_PRIO15, AGC_JOB_AOT_MARK_STAR_DISPLAY);
@@ -299,11 +291,6 @@ agc_status_t agc_job_aot_mark_kill(void)
 {
     agc_erase_set_extvbact(0);
 
-    if (!AGC_ASSERT(agc_erase_extvbact() == 0u))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_exec_gotopooh());
 }
 
@@ -319,11 +306,6 @@ agc_status_t agc_job_aot_mark_star_display(agc_job_ctx_t *ctx)
 /* PASTIT: GOMARK4 with a mark verb; V33 MARKCHEX, ENTER GETDAT. */
 static agc_status_t request_marks(const agc_job_ctx_t *ctx, uint16_t vn)
 {
-    if (!AGC_ASSERT((vn == VN_MARK_XY) || (vn == VN_MARK_Y) || (vn == VN_MARK_X)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (align_flash(ctx, AGC_DSKY_GOMARK4, vn, AGC_JOB_AOT_MARK_KILL, AGC_JOB_AOT_MARK_CHECK, AGC_JOB_AOT_MARK_STAR_DISPLAY));
 }
 
@@ -346,18 +328,8 @@ static agc_status_t optic_axis(const agc_job_ctx_t *ctx, uint16_t az, uint16_t e
     agc_interp_t     ip;
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_aot_oanb(&ip, az, el, &ram->scaxis, &ram->uxp, &ram->uyp);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_aot_optaxis(&ip, ram->uxp, ram->uyp, rot, &ram->xpnb, &ram->ypnb);
-    }
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
+    agc_aot_oanb(&ip, az, el, &ram->scaxis, &ram->uxp, &ram->uyp);
+    agc_aot_optaxis(&ip, ram->uxp, ram->uyp, rot, &ram->xpnb, &ram->ypnb);
     ram->rotang    = rot;
     ram->starad[1] = agc_vec_zero(); /* LO6ZEROS */
     ram->xymark    = 0;              /* GETMKS   */
@@ -371,6 +343,9 @@ static agc_status_t optic_axis(const agc_job_ctx_t *ctx, uint16_t az, uint16_t e
  * valid here (GETDAT); 7 is the COAS (CODE7, AZ and EL keyed in, no
  * rotation); 1-6: AZ, EL of the detent and the apparent field rotation
  * AOTAZ +1 - AZ (CODE1TO6).
+ * DEVIATION: the AGC takes AOTCODE bits 7-15 (MASK HIGH9, MP BIT9), so a
+ * code keyed with a nonzero digit above the detent digit indexes past
+ * AOTAZ/AOTEL; the C keeps bits 7-9 (the N71 detent digit).
  */
 agc_status_t agc_job_aot_mark_detent(agc_job_ctx_t *ctx)
 {
@@ -392,10 +367,10 @@ agc_status_t agc_job_aot_mark_detent(agc_job_ctx_t *ctx)
     const uint16_t az = agc_erase_aotaz((int) d);
     const uint16_t el = agc_erase_aotel((int) d);
 
-    /* MSU: the 1's complement difference of two CDU words. */
-    uint16_t a = agc_erase_aotaz(2);
-
-    int32_t d_msu = (int32_t) (a & 077777u) - (int32_t) (az & 077777u);
+    /* MSU: the 2's complement difference of two CDU words, delivered as
+     * the 1's complement word of the same value (yaAGC MSU; oracle
+     * code1to6).                                                       */
+    int32_t d_msu = (int32_t) (agc_erase_aotaz(2) & 077777u) - (int32_t) (az & 077777u);
 
     if (d_msu >= CDU_HALF)
     {
@@ -410,22 +385,12 @@ agc_status_t agc_job_aot_mark_detent(agc_job_ctx_t *ctx)
         /* in range */
     }
 
-    if (!AGC_ASSERT((d_msu >= -CDU_HALF) && (d_msu < CDU_HALF)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (optic_axis(ctx, az, el, align_sp_to_word((agc_sp_t) ((d_msu < 0) ? (d_msu + 1) : d_msu))));
+    return (optic_axis(ctx, az, el, align_sp_to_word((agc_sp_t) d_msu)));
 }
 
 /* CODE7: GOMARKF V06N87 (AZ, EL of the COAS). */
 agc_status_t agc_job_aot_mark_coas_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(agc_align_ram()->xymark == DETENT_COAS))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_AZ_EL, AGC_JOB_AOT_MARK_KILL, AGC_JOB_AOT_MARK_COAS_LOADED, AGC_JOB_AOT_MARK_COAS_DISPLAY));
 }
 
@@ -531,11 +496,6 @@ agc_status_t agc_job_aot_mark_next_action(agc_job_ctx_t *ctx)
 
     const agc_sp_t k = agc_align_ram()->mkdex;
 
-    if (!AGC_ASSERT((k >= 0) && (k <= 3)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     const uint16_t vn = (k == 1) ? VN_MARK_Y : ((k == 2) ? VN_MARK_X : VN_MARK_XY);
 
     return (request_marks(ctx, vn));
@@ -544,11 +504,6 @@ agc_status_t agc_job_aot_mark_next_action(agc_job_ctx_t *ctx)
 /* DSPV6N79: GOMARKF V06N79 (CURSOR, SPIRAL, POSCODE). */
 agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(surface_marks()))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_CURSOR, AGC_JOB_AOT_MARK_KILL, AGC_JOB_AOT_MARK_SURFACE_END, AGC_JOB_AOT_MARK_SURFACE_ANSWER));
 }
 

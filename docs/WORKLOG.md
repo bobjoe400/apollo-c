@@ -592,3 +592,11 @@
 2026-10-11  User: pause the remaining review too (session limits).
             review-prog-align told to checkpoint and stop. Nothing
             running after its report; resume order in STATE.md.
+2026-10-11  review-prog-align checkpoint committed: six DMP/DOT-shift sites
+            fixed against the listing (OANB, SURFSTAR, R59 x3, SR52, P57
+            gravity error), MSU field-rotation bug in aotmark.c, SXTNB and
+            LM S-band pitch exact at 0 via agc_mpac_*, word_forms.c on the
+            word-level API, 50 oracle cases added (oracle_align 600
+            checks, 1 KNOWN PA-W4), 62 BAD_ARG filters now propagate.
+            Paused before sxtmark/sighting_mark guard review, SXTMARK
+            compare, P51-P53/P57 pass, style. Nothing running.

@@ -523,3 +523,897 @@ set REFSMMAT=20000,00000,00000,00000,00000,00000,00000,00000
 set REFSMMAT+8=20000,00000,00000,00000,00000,00000,00000,00000
 set REFSMMAT+16=20000,00000
 run sband_lm_d
+clearstops
+stop POODOO
+cleargets
+get SCAXIS:dp
+get SCAXIS+2:dp
+get SCAXIS+4:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q OANB
+fbank 4
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+42=25742
+set VAC1+8=12525,10000
+run oanb_a
+clearstops
+stop GETMKS
+cleargets
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry INTPRET
+q OPTAXIS
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+8=12525,10000,01616
+run optaxis_a
+clearstops
+stop POODOO
+cleargets
+get SCAXIS:dp
+get SCAXIS+2:dp
+get SCAXIS+4:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q OANB
+fbank 4
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+42=25742
+set VAC1+8=00000,10000
+run oanb_b
+clearstops
+stop GETMKS
+cleargets
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry INTPRET
+q OPTAXIS
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+8=00000,10000,00000
+run optaxis_b
+clearstops
+stop POODOO
+cleargets
+get SCAXIS:dp
+get SCAXIS+2:dp
+get SCAXIS+4:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q OANB
+fbank 4
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+42=25742
+set VAC1+8=65253,10000
+run oanb_c
+clearstops
+stop GETMKS
+cleargets
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry INTPRET
+q OPTAXIS
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+8=65253,10000,76161
+run optaxis_c
+clearstops
+stop POODOO
+cleargets
+get SCAXIS:dp
+get SCAXIS+2:dp
+get SCAXIS+4:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q OANB
+fbank 4
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+42=25742
+set VAC1+8=25253,10000
+run oanb_d
+clearstops
+stop GETMKS
+cleargets
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry INTPRET
+q OPTAXIS
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+8=25253,10000,06162
+run optaxis_d
+clearstops
+stop POODOO
+cleargets
+get SCAXIS:dp
+get SCAXIS+2:dp
+get SCAXIS+4:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q OANB
+fbank 4
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+42=25742
+set VAC1+8=40000,10000
+run oanb_e
+clearstops
+stop GETMKS
+cleargets
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry INTPRET
+q OPTAXIS
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+8=40000,10000,00000
+run optaxis_e
+clearstops
+stop POODOO
+cleargets
+get SCAXIS:dp
+get SCAXIS+2:dp
+get SCAXIS+4:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q OANB
+fbank 4
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+42=25742
+set VAC1+8=52525,10000
+run oanb_f
+clearstops
+stop GETMKS
+cleargets
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry INTPRET
+q OPTAXIS
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+8=52525,10000,71615
+run optaxis_f
+clearstops
+stop POODOO
+cleargets
+get SCAXIS:dp
+get SCAXIS+2:dp
+get SCAXIS+4:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q OANB
+fbank 4
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+42=25742
+set VAC1+8=03047,73601
+run oanb_coas
+clearstops
+stop GETMKS
+cleargets
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry INTPRET
+q OPTAXIS
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+8=03047,73601,00000
+run optaxis_coas
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=05413,00000,73227,00000,20630,00000
+set SCAXIS=14207,04613,11754,21615,02412,21126
+set VAC1+18=07271,02775,02566,07133,01420,35647
+set VAC1+12=72205,52611,00712,35746,72377,72261
+set MARKCNTR=00000,00000,04000
+run surfstar_zero
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=10664,00000,74415,43434,34172,00000
+set SCAXIS=10622,33544,62576,75042,01617,35435
+set VAC1+18=74467,43603,05650,34570,04232,16622
+set VAC1+12=75206,54651,70473,51136,76457,63675
+set MARKCNTR=00000,00000,04000
+run surfstar_spiral
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=67425,42563,06043,05573,60736,00000
+set SCAXIS=60730,40470,72532,54750,00436,05175
+set VAC1+18=70075,72057,77324,66677,01202,24633
+set VAC1+12=75121,67774,07116,13441,75642,46252
+set MARKCNTR=00000,00000,04000
+run surfstar_r0
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=14367,41171,16161,00717,36057,00000
+set SCAXIS=77133,72020,66161,73374,63271,47273
+set VAC1+18=03244,22247,74011,50415,71720,74427
+set VAC1+12=73437,57512,76356,56605,71414,40052
+set MARKCNTR=00000,00000,04000
+run surfstar_r1
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=52123,36403,15605,62447,74460,00000
+set SCAXIS=62000,50573,72257,77231,05226,10737
+set VAC1+18=04715,32152,74324,43556,05151,37776
+set VAC1+12=72357,41711,00445,05251,72200,47557
+set MARKCNTR=00000,00000,04000
+run surfstar_r2
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=23357,36263,50520,10551,46724,00000
+set SCAXIS=12707,07142,13505,36223,76450,76220
+set VAC1+18=00572,12454,75213,52230,70410,43435
+set VAC1+12=75755,74047,07325,10370,75630,45641
+set MARKCNTR=00000,00000,04000
+run surfstar_r3
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=11120,30446,60753,41205,06550,00000
+set SCAXIS=13563,14550,71365,72476,67220,51160
+set VAC1+18=05115,01021,03317,01637,05054,31711
+set VAC1+12=05374,01553,72225,71743,01076,31164
+set MARKCNTR=00000,00000,04000
+run surfstar_r4
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=04163,17052,35534,01043,30556,00000
+set SCAXIS=66643,57232,64525,62506,71327,64142
+set VAC1+18=01054,15626,71523,65533,04605,23555
+set VAC1+12=72275,53241,73462,42552,74317,60045
+set MARKCNTR=00000,00000,04000
+run surfstar_r5
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=30704,06533,12351,70142,14742,00000
+set SCAXIS=00416,02465,65303,60436,64025,73444
+set VAC1+18=04246,21460,71720,43472,75111,53630
+set VAC1+12=00107,15273,70232,50520,02127,10072
+set MARKCNTR=00000,00000,04000
+run surfstar_r6
+clearstops
+stop ENDMARKS
+cleargets
+get VAC1+24:dp
+get VAC1+26:dp
+get VAC1+28:dp
+entry INTPRET
+q SURFSTAR
+fbank 15
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set VAC1+38=77172
+set VAC4=41321,36415,03202,11740,42556,00000
+set SCAXIS=06453,22344,03640,06311,61731,67414
+set VAC1+18=71556,47344,03374,04704,03404,00601
+set VAC1+12=05352,15610,03675,23566,73472,64764
+set MARKCNTR=00000,00000,04000
+run surfstar_r7
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_01
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00002
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_02
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00003
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_03
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00004
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_04
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00005
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_05
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00006
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_06
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00001
+set AOTAZ=65253,00100,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_11
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00002
+set AOTAZ=65253,00100,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_12
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00003
+set AOTAZ=65253,00100,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_13
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00004
+set AOTAZ=65253,00100,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_14
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00005
+set AOTAZ=65253,00100,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_15
+clearstops
+stop GETMKS
+cleargets
+get VAC1+10
+get VAC1+12:dp
+get VAC1+14:dp
+get VAC1+16:dp
+get VAC1+18:dp
+get VAC1+20:dp
+get VAC1+22:dp
+entry CODE1TO6
+fbank 7
+ebank 7
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set XYMARK=00006
+set AOTAZ=65253,00100,12525,25253,40000,52525
+set AOTEL=10000,07722,10000,10022,10000,07756
+run code1to6_16
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=13240,23525,00011,32447,13240,23525
+run r59_center
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=73031,45566,03231,34133,61113,61144
+run r59_behind
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=11047,12222,66321,72315,66755,72435
+run r59_r0
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=16575,24206,76521,65442,71737,40663
+run r59_r1
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=16050,13005,75503,56612,70615,62154
+run r59_r2
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=13114,16550,13257,34422,01571,07543
+run r59_r3
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=15413,03211,75330,70151,10120,00426
+run r59_r4
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=14332,04714,66077,77737,02011,31150
+run r59_r5
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=07022,13451,74636,40065,61772,51573
+run r59_r6
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=13537,11440,11534,15304,05044,26637
+run r59_r7
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=16107,07474,07054,06277,75447,64635
+run r59_r8
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=07615,25113,15552,35776,02602,22646
+run r59_r9
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=16610,13146,72245,40350,02310,20045
+run r59_r10
+clearstops
+stop 15,2437
+stop R59ALM
+cleargets
+get CURSOR
+get SPIRAL
+get POSCODE
+entry INCAZ
+fbank 15
+set FIXLOC=@VAC1
+set PUSHLOC=@VAC1
+set POSCODE=00001
+set AOTAZ=65253,00000,12525,25253,40000,52525
+set STAR=14405,25771,75300,73141,11476,25107
+run r59_r11
