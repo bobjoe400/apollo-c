@@ -105,3 +105,10 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 ## After the EVA pass (2026-10-12)
 - ~~post-eva: 21 positive-assertion setter guards (`if (AGC_ASSERT(c)) { store; }`, 16 in src/lm/dap/state.c, imu/compensation.c x2, lm/dap/rcs/t6rupt.c, csm/navigation/tracking_data.c, csm/entry/dap.c) left for EVA by user decision (classifier blocked the lane's deletion; per-site reasoning in docs/modules/always-ok.md): delete those EVA proves VALID in the apply step, convert the rest to status returns.~~ DONE (finish, 2026-10-12): 1 deleted (EVA VALID: executive.c end_of_job; the list named lm/dap/rcs/t6rupt.c, the site was executive.c), 20 return BAD_ARG with every caller handling it; docs/modules/finish.md.
 - ~~post-eva: `make check` fails on exactly those 21 (check-rules "silent skip") until they are resolved; note `python3 tools/check_rules.py` run bare reports 0 and "density 0/1" (it does not scan the same set as the Makefile's check-rules target): make the bare invocation match the target.~~ DONE (finish, 2026-10-12): `make check` passes; a bare check_rules.py scans src include (DEFAULT_ROOTS), the Makefile target uses the bare form.
+
+## From the document wave (2026-10-12, docs/modules/document.md Findings; for a closed-loop-fixes lane with the LM Simulator bugs)
+- guid-powered: src/csm/burns/sps/burn.c: a failed assertion on P40TMP silently sets it to 1 (rule 7: delete if guaranteed, else return a status the caller handles).
+- core: src/core/erasable.c and include/agc/core/state.h comments describe assertion checks the accessors no longer contain: fix the comments.
+- all: about six assertions repeat the statement just above them and cannot fail: delete (list in document.md Findings).
+- prog-align: two P52 function prologs name the label "CALL" instead of S52.3 / S52.2.
+- exec: agc_exec_vac_claim's prolog describes an output pointer as an input index.

@@ -8,45 +8,52 @@ sim/ tools/prove/). Writes only docs/ and tools/{depgraph,xref}.py.
 
 ## Progress
 
-STOPPED 2026-10-12 by lead (code not final: loose ends + EVA pending).
-Resume here after the EVA pass; re-check everything below against the
-frozen tree.
+PAUSED 2026-10-12 by lead (NASSP lane needs the slot). Resume here.
+Tree: FINAL (HEAD d53337b). README.md (repo root) and docs/TIPS.md untouched.
 
-* a. PARTIAL. tools/depgraph.py WRITTEN and run (GCC -fcallgraph-info per
-  TU into --work, module = src folder two deep, three Mermaid views
-  CSM/LM/shared, hubs core,core/interp,exec,exec/interrupts collapsed,
-  edge/upward/header tables; writes between `<!-- depgraph:begin -->` /
-  `<!-- depgraph:end -->` in docs/overview/README.md, or --stdout).
-  Last run: 240 TUs, 3921 functions, 35 modules (output only in scratch).
-  NEXT: write docs/overview/README.md prose (two vehicles, exec/waitlist,
-  interrupts+clock, erasable/flags, DSKY loop, program lifecycle, restart
-  groups) with the markers, then run depgraph.py into it. Already read
-  for this: src/exec/{executive,waitlist,interrupts,fresh_start,alarm,
-  restarts,phase_table,restart_tables}.c, change_program/{sequence,csm,
-  lm,idle}.c, src/sim/{main,clock}.c, display_if.c prolog, keys.c KEYRUPT.
-* b. docs/overview/flowcharts/*.md -- TODO
-* c. "Program flow and decisions" in each lane note -- TODO
-* d. docs/overview/xref.md + tools/xref.py -- TODO. Design notes: prolog
-  heads come in several forms ("LABEL (FILE.agc pp.)", "A / B (C p.x /
-  L p.y):", "AGC: LABEL (...)", "AGC: none --", prose then labels);
-  take caps tokens before the first citation paren, keep only rope code
-  labels (column-0, non-data ops, as tools/callgraph.py agc_labels);
-  page of a label from the last "## Page N" line above it in the .agc;
-  also scan in-body block comments "/* LABEL (... p.N) */" -> enclosing
-  function.
-* e. docs/TIPS.md consolidation -- TODO
-* README.md "Documentation" section -- TODO
+* d. DONE tools/xref.py + docs/overview/xref.md (3067 labels -> 2976
+  functions, 4158 rows). Regenerate: `python3 -I tools/xref.py`.
+* a. DONE docs/overview/README.md (sections 1-7 prose; section 8 module
+  map written by `python3 -I tools/depgraph.py --work <scratch>/ci`).
+* b. DONE docs/overview/flowcharts/: README.md (index), fresh-start,
+  software-restart, job-preemption, waitlist-tick, program-change,
+  sps-burn, imu-realign, lunar-landing, earth-entry, powered-ascent.
+* c. PARTIAL, nothing written into docs/modules/ yet (all lane notes
+  unchanged). Scratch helpers in SCRATCH/document/: decisions.py (per-lane
+  generated tables: decision points by function + shared erasables with
+  scale; lane -> file globs in its LANES dict), assemble.py (appends or
+  replaces "## Program flow and decisions" = narr/<lane>.md + generated
+  tables), narr/exec-sched.md (the only narrative written). If scratch is
+  gone, rewrite both helpers from this description. NEXT: narratives for
+  core-numeric, state-flags, nav-conic, nav-integ, nav-aux, io-pinball,
+  io-nouns, imu, guid-powered, guid-landing, guid-entry, p37, dap-lm,
+  dap-csm, prog-rendz, prog-align, sys-misc, sim (flowcharts already
+  cover guid-*, prog-align, exec); then `python3 decisions.py <lane> >
+  lanes/<lane>.md` and `python3 assemble.py <lanes...>` from repo root.
+* e. docs/TIPS.md consolidation -- NOT STARTED (read every note's Lessons).
+* README.md "Documentation" section + Status line -- NOT STARTED.
 
 ## Findings (code undocumented or inconsistent; not fixed here)
 
-* src/exec/change_program/lm.c exec_cp_cleanup_lm: empty body, but its
-  prolog says "3AXISFLG down, FLGWRD11 = LRBYBIT (R12), R04FLAG, MUNFLAG
-  and XOVINFLG down" (R00 after INTSTALL, L p.229). Code or comment wrong.
-* src/exec/change_program/idle.c agc_power_on prolog: "The caller follows
-  with agc_fresh_dofstart()"; src/sim/main.c start() calls agc_rupt_go()
-  (GOJAM -> GOPROG) instead.
-* src/exec/waitlist.c: agc_waitlist_time3 prolog "0 on a failed
-  precondition" and agc_waitlist_entry "BAD_ARG on a bad index or NULL
-  pointer" -- neither function checks anything (stale after guard removal).
+Earlier three findings (exec_cp_cleanup_lm empty, agc_power_on caller,
+waitlist time3/entry prologs) are RESOLVED in the final tree. New:
+
+* src/core/erasable.c file prolog and 12 getter prologs (+3 in state.c,
+  include/agc/core/state.h:109) say a failed AGC_ASSERT makes a getter
+  return 0 / a setter ignore the value; the accessors contain no
+  assertion at all (stale after guard removal).
+* Assertions that restate the line above (cannot fail; CODING_STANDARD
+  rule 5 says such are not written): lm/ascent.c agc_lm_ascent (FLVR),
+  as_exitvr, agc_lm_job_cutoff (FLRCS); lm/landing/lunar_landing.c
+  agc_lm_job_astnret (QMAJ); lm/landing/guidance.c
+  agc_lm_start_velocity_nulling (WCHVERT); change_program/idle.c
+  agc_job_go_idle_fix (EXTVBACT).
+* programs/alignment/imu_realign.c agc_job_realign_nominal_orientation and
+  realign_gimbal_angles prologs name "AGC: CALL (INTERPRETER.agc)" instead
+  of S52.3 / S52.2 (so xref lists them under CALL).
+* csm/burns/sps/burn.c agc_job_preburn_state_vector: a failed
+  AGC_ASSERT(P40TMP >= 0) silently sets P40TMP = 1 (silent recovery).
+* exec/executive.c agc_exec_vac_claim prolog calls vac_index an input
+  "index, 0..4"; it is an output pointer (-1 when none).
 
 ## Lessons
