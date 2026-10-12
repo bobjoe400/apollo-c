@@ -589,3 +589,6 @@
             LM RADMODES, AGSWORD downlist, DUMPCNT on V36 only). Stopped
             in down_telemetry.c. Requests routed in review_items.md.
             prog-align's in-progress files left uncommitted.
+2026-10-11  User: pause the remaining review too (session limits).
+            review-prog-align told to checkpoint and stop. Nothing
+            running after its report; resume order in STATE.md.

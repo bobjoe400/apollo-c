@@ -6,9 +6,10 @@ Updated: 2026-10-11
 - review-sys-misc: PAUSED at a checkpoint (usage limit, user 2026-10-11);
   resume from the Progress section of docs/modules/review-sys-misc.md
   when a slot is free.
-- review-prog-align (Opus, resume): align_dot_shl sites, DMP/DMPR audit,
-  P51-P53/SXTMARK/AOTMARK/P57 fidelity with oracle cases, collapse-diff
-  check, style debt. Note: docs/modules/review-prog-align.md.
+- review-prog-align: PAUSED at a checkpoint (usage limit, user 2026-10-11);
+  resume from the Progress table of docs/modules/review-prog-align.md.
+- NOTHING RUNNING. On resume (two lanes): review-prog-align and
+  review-sys-misc first, both from their Progress sections.
 
 ## Queue after it (two at a time)
 1. review-guid-powered, review-nav-integ (resume) -- items in docs/agents/review_items.md
