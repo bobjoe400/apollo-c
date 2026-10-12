@@ -13,6 +13,10 @@ Updated: 2026-10-12
   (tools/prove/apply.py), triage alarms, commit. src/ is FROZEN until then.
 - document (Opus): docs/agents/document.md deliverables a-e; docs and
   tools/{depgraph,xref}.py only, no src/ edits.
+- loose-ends (Opus): the five open items in review_items.md (entry DOWNCNTL
+  words, waitlist delay bound, pad keyword for the impulsive burn, the
+  64-jobs limit rationale, prog-align note row); no guard add/delete while
+  EVA runs on its snapshot.
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md

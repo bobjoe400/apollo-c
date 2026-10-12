@@ -694,3 +694,7 @@
 2026-10-12  Started the single EVA run on the frozen tree (jobs 1, no
             effective timeout, sim entry unbounded as the real main).
             Launched the document wave (Opus) alongside: docs only.
+2026-10-12  User asked whether the loose ends were cleaned up: they were
+            only recorded. Launched loose-ends (Opus) for the five open
+            items alongside document; EVA runs on its snapshot so small
+            code edits are safe (apply matches guards by condition).
