@@ -649,3 +649,9 @@
             are now closed. Requests routed to follow-up-done-lanes.
 2026-10-12  Launched sim (acceptance pass, Opus) in nav-integ's slot,
             alongside follow-up-done-lanes. Sim records flight bugs only.
+2026-10-12  Usage limit cut off follow-up-done-lanes and sim. Checkpoint
+            494eb9a: tree builds, make test 34/34, 13 scenarios, check_rules
+            0 hard. follow-up had done 1.1-5.5 except 3.2 (entry HUNTEST1,
+            landing TBUP/TGO, nav-aux NODI/ASIN word-level); sim had done
+            steps 1-4 (rope image, scalers, scenario e, launcher
+            drop-in). Both relaunched from their Progress sections.
