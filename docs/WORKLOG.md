@@ -739,3 +739,9 @@
             apply step; the bare check_rules.py invocation scans a
             different set (recorded). Tree FROZEN; EVA started
             (jobs 1, no effective timeout, sim entry unbounded).
+2026-10-12  Lead note: `python3 tools/check_rules.py` with no paths scans
+            nothing (prints 0 hard, density 0/1); the real gate is `make
+            check-rules` (src include). The lead's bare invocations in
+            this session were vacuous; every lane ran `make check`, and
+            `make check-rules` now reports exactly the 21 silent-skip
+            sites left for EVA and nothing else.
