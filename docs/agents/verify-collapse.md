@@ -8,6 +8,11 @@ functions void, on its own judgment. Build, 34 test binaries (~9,600
 oracle checks against yaAGC) and 7 sim scenarios are green, so arithmetic
 on tested inputs is intact. Nobody else has read the decisions. You do.
 
+Scope (lead, 2026-10-11): the eleven lanes reviewed BEFORE that pass only.
+Keep out of exec, alignment (programs/csm/lm), sys-misc (io/service,
+io/verbs, io/telemetry), guid-powered (guidance, csm/burns/sps, lm/burns)
+and nav/integration: their reviews check the diff in their own files.
+
 You are a second pair of eyes, not a style pass. Do not reformat, rename
 or restructure. Edit src/ only to repair a change you have shown to be
 wrong (restore a guard as a fallible status check with a caller that

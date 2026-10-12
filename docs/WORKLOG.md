@@ -552,3 +552,8 @@
             while reviews change flight code means doing it twice). Sim
             agent stopped at a checkpoint; review-exec-sched takes its
             slot next to verify-collapse.
+2026-10-11  User: avoid two agents on the same code / verifying before it
+            settles. verify-collapse scoped to the eleven already-reviewed
+            lanes (nobody reads them again); each remaining review checks
+            the status-handling-2 diff in its own files (review.md item).
+            exec-sched starts when the sim agent has stopped.

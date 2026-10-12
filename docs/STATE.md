@@ -6,7 +6,8 @@ Updated: 2026-10-11
 - review-exec-sched (Opus, resume): docs/agents/review_items.md exec-sched
   line + EVA bug leads; note docs/modules/review-exec-sched.md.
 - verify-collapse (Opus): independent check of the status-handling-2 diff
-  (docs/agents/verify-collapse.md). Note: docs/modules/verify-collapse.md.
+  in the eleven already-reviewed lanes only; the remaining reviews check
+  it in their own files (review.md item). Note: docs/modules/verify-collapse.md.
 
 ## Queue after it (two at a time)
 1. review-prog-align, review-sys-misc, review-guid-powered,

@@ -40,6 +40,11 @@ its lane's AGC source files side by side with the C and checks:
   lane and adds nothing, remove it (update include/ and callers).
 * Keep `make`, `make test`, `make check` green; `make format` on edits.
 * Your note: docs/modules/review-<lane>.md; status row "review-<lane>".
+* Check the status-handling-2 diff in your lane (`git diff 1b72892
+  a02850c -- <your files>`): every deleted guard (reason in
+  tools/prove/manual.tsv), status conversion, inlined helper and
+  rewritten return there is yours to confirm or repair. The
+  verify-collapse lane covered only the lanes reviewed before that pass.
 * Do NOT run Frama-C EVA (`make prove`, `make prove-classify`). One EVA
   run happens at the end of the project on the frozen tree (docs/PLAN.md).
   Guards marked `eva-valid-deferred` stay until then.
