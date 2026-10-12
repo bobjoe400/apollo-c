@@ -45,3 +45,10 @@ agent's directory.
 Read docs/NAMING.md. Identifiers never contain P/R/V/N numbers or page
 numbers; those go in comments. Use the canonical stems in that table and
 add a row (do not invent a second name) if your program is missing.
+
+## Waiting on background work
+
+When you must wait for a process you started (an analysis, a long build),
+set up ONE waiter for it: one background Bash loop or one Monitor. Never
+add a second waiter on the same event when you are woken by an interim
+notification; check whether the first is still running instead.

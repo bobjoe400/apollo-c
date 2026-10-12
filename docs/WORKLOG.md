@@ -538,3 +538,12 @@
             review_items.md. Lead also stopped three duplicate waiters the
             agent had stacked on the one EVA process (rule for agents:
             one waiter per event).
+2026-10-11  status-handling-2 finished and committed (a02850c): rule 7 at 0
+            hard, 216 helpers inlined, 162 returns, tree green (34/34
+            tests, 7 scenarios). Launched sim (resume, Opus; may fix
+            scenario-blocking flight bugs B2/B4 with reference + test)
+            and verify-collapse (Opus; independent check of the
+            1b72892..a02850c diff: side-effect/mixed deletions, deletions
+            in code no test reaches, manual.tsv sample, status chains,
+            inlinings, returns, void conversions). Two-lane cap holds.
+            review-exec-sched follows whichever finishes first.

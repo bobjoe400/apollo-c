@@ -3,15 +3,15 @@
 Updated: 2026-10-11
 
 ## Running agents (max 2)
-- status-handling-2 (Opus, runs ALONE): finishing. Steps 1-8 done (guards,
-  status returns, one-liners, label-rule collapse, returns; tree green,
-  check_rules 0 hard). The EVA run it made (34 entries OK, sim TIMEOUT) is
-  kept on disk; its alarms go to docs/agents/review_items.md as bug leads.
-  Note: docs/modules/status-handling-2.md.
+- sim (Opus, resume): agc_sim as drop-in for yaAGC under the VirtualAGC GUI
+  (docs/agents/sim.md END GOAL); scenario e, GUI re-check; may fix flight
+  bugs that block a scenario (B2, B4 in its note) with AGC reference + test.
+  Note: docs/modules/sim.md.
+- verify-collapse (Opus): independent check of the status-handling-2 diff
+  (docs/agents/verify-collapse.md). Note: docs/modules/verify-collapse.md.
 
-## Queue after it (two at a time; sim first)
-1. sim (docs/agents/sim.md): agc_sim as drop-in for yaAGC under the
-   VirtualAGC GUI; no device models; headless scenarios via tools/sim_client.py.
+## Queue after it (two at a time)
+1. (sim running)
 2. review-exec-sched, review-prog-align, review-sys-misc,
    review-guid-powered, review-nav-integ (resume) -- items in
    docs/agents/review_items.md (now including the EVA bug leads).
