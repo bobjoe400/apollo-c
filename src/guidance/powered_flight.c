@@ -41,17 +41,19 @@
  *   2's-complement count (one count for negative angles), see cdu_as_sp.
  *
  * ALGORITHM:
- *   The basic-language routines (CD*TR*GS's loop, QUICTRIG, AX*SR*T,
- *   FLESHPOT) use the raw DP operations with the AGC's own truncation
- *   (DMPSUB keeps the high two words of the TP product) and DDOUBL
- *   rescaling; SMCDURES is interpretive (DMP truncates, SL1 and DAD act
- *   on the TP MPAC).
+ *   The basic-language routines AX*SR*T and FLESHPOT work on the stored
+ *   words (agc_dp_words_t): DMPSUB keeps the high two words of the TP
+ *   product, DAS and DDOUBL leave the words' signs as they fall, and the
+ *   next pass multiplies those words (*NBSM* word form for callers that
+ *   keep VBUF's words). SMCDURES is interpretive (DMP truncates, SL1 and
+ *   DAD act on the TP MPAC).
  **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
 #include "agc/core/channels.h"
 #include "agc/core/interp.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
@@ -94,70 +96,6 @@ static agc_sp_t cdu_as_sp(uint16_t cdu)
     }
 
     return ((agc_sp_t) w);
-}
-
-/**********************************************************************
- * DMP / DMPSUB in basic code: TP product, high two words kept.
- * AGC: none (helper for DMPSUB, INTERPRETER.agc p.1136, as AX*SR*T and
- * FLESHPOT call it)
- *
- * FUNCTION NAME: dmpsub
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  ---------------------------------------
- *   a         agc_dp_t    I    multiplicand, DP fraction
- *   b         agc_dp_t    I    multiplier, DP fraction
- *
- * RETURNS: agc_dp_t -- a b truncated to DP, scale of a times b
- **********************************************************************/
-static agc_dp_t dmpsub(agc_dp_t a, agc_dp_t b)
-{
-    return (agc_tp_to_dp(agc_dp_mul_tp(a, b)));
-}
-
-/**********************************************************************
- * DDOUBL: double a DP value (overflow saturates; the AGC's callers keep
- * operands below one half so that it never overflows).
- * AGC: none (helper for the DDOUBL instruction, p.1370)
- *
- * FUNCTION NAME: ddoubl
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  ---------------------------------------
- *   a         agc_dp_t    I    DP fraction to double
- *
- * RETURNS: agc_dp_t -- 2 a (0 on overflow)
- **********************************************************************/
-static agc_dp_t ddoubl(agc_dp_t a)
-{
-    agc_ovf_t ovf = 0;                          /* overflow of the shift */
-    agc_dp_t  r   = agc_dp_shl_raw(a, 1, &ovf); /* 2 a, scale of a / 2   */
-
-    return (r);
-}
-
-/**********************************************************************
- * DAS: DP add as the basic instruction does it (the callers keep the
- * sum below one). AGC: none (helper for DAS TERM1TMP, p.1370)
- *
- * FUNCTION NAME: das
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  ---------------------------------------
- *   a         agc_dp_t    I    addend, DP
- *   b         agc_dp_t    I    addend, DP
- *
- * RETURNS: agc_dp_t -- a + b (0 on overflow)
- **********************************************************************/
-static agc_dp_t das(agc_dp_t a, agc_dp_t b)
-{
-    agc_ovf_t ovf = 0;                          /* overflow of the sum */
-    agc_dp_t  r   = agc_dp_add_raw(a, b, &ovf); /* a + b, scale of a   */
-
-    return (r);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -278,10 +216,167 @@ void agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
 }
 
 /**********************************************************************
- * AX*SR*T (CM pp.1369-1371, LM pp.1262-1264): A = +3 transforms NB to SM,
- * A = -3 transforms SM to NB. The INDEXI table (4, 2, 0, 4) picks the
- * (DEX1, DEX2) pairs; DEXDEX counts 3, 2, 1 (or -3, -2, -1). Guaranteed
- * safe only for vectors of magnitude less than unity.
+ * DMPSUB as AX*SR*T calls it (INTERPRETER.agc p.1136): MPAC, MPAC+1
+ * times the DP at ADDRWD; the following DXCH MPAC keeps the high two
+ * words of the TP product, signs as the partial products leave them.
+ * AGC: none (helper for TC DMPSUB / DXCH MPAC, p.1370)
+ *
+ * FUNCTION NAME: words_dmpsub
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  -------------------------------------
+ *   a         agc_dp_words_t  I    multiplicand words (MPAC, MPAC+1)
+ *   b         agc_dp_words_t  I    multiplier words (at ADDRWD)
+ *
+ * RETURNS: agc_dp_words_t -- MPAC, MPAC+1 of a b, scale of a times b
+ **********************************************************************/
+static agc_dp_words_t words_dmpsub(agc_dp_words_t a, agc_dp_words_t b)
+{
+    return (agc_mpac_store(agc_mpac_dmp(agc_mpac_dload(a), b)));
+}
+
+/**********************************************************************
+ * DCS: both words complemented (the AGC's DCS VBUF / DCS MPAC).
+ * AGC: none (helper for EXTEND DCS, p.1370)
+ *
+ * FUNCTION NAME: words_dcs
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  -------------------------------------
+ *   a         agc_dp_words_t  I    DP words
+ *
+ * RETURNS: agc_dp_words_t -- -a word by word, same scale
+ **********************************************************************/
+static agc_dp_words_t words_dcs(agc_dp_words_t a)
+{
+    agc_dp_words_t r = {(agc_sp_t) -a.hi, (agc_sp_t) -a.lo}; /* DCS */
+
+    return (r);
+}
+
+/**********************************************************************
+ * DDOUBL (DAS A onto itself): both words doubled, the carry of the low
+ * word into the high word as DAS makes it; callers keep the value below
+ * one half, so the overflow left in A is never looked at.
+ * AGC: none (helper for EXTEND DDOUBL, p.1370, p.1265)
+ *
+ * FUNCTION NAME: words_ddoubl
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  -------------------------------------
+ *   a         agc_dp_words_t  I    DP words
+ *
+ * RETURNS: agc_dp_words_t -- 2 a, scale of a / 2
+ **********************************************************************/
+static agc_dp_words_t words_ddoubl(agc_dp_words_t a)
+{
+    int ovf = 0; /* overflow left in A (not looked at) */
+
+    return (agc_dp_words_das(a, a, &ovf));
+}
+
+/**********************************************************************
+ * One component of an elementary rotation: DAS TERM1TMP onto the
+ * component times the half cosine, then DDOUBL (DAS A onto itself),
+ * which restores the scale lost to the half sine and cosine. The words
+ * stay as DAS leaves them (signs may disagree). AX*SR*T's operands keep
+ * the sum below one half, so neither DAS overflows; the overflow left
+ * in A is not looked at by the AGC.
+ * AGC: none (DMPSUB / DAS TERM1TMP / DDOUBL sequence, p.1370)
+ *
+ * FUNCTION NAME: rotate_component
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  -------------------------------------
+ *   term      agc_dp_words_t  I    TERM1TMP: the sine term, 2^-1 of v's
+ *                                  scale
+ *   comp      agc_dp_words_t  I    the component, v's scale
+ *   c         agc_dp_words_t  I    half cosine, scale 2^1
+ *
+ * RETURNS: agc_dp_words_t -- 2 (term + comp c), v's scale
+ **********************************************************************/
+static agc_dp_words_t rotate_component(agc_dp_words_t term, agc_dp_words_t comp, agc_dp_words_t c)
+{
+    int            ovf = 0;                                                   /* overflow left in A (not looked at) */
+    agc_dp_words_t sum = agc_dp_words_das(term, words_dmpsub(comp, c), &ovf); /* DAS TERM1TMP, 2^-1 v */
+
+    return (words_ddoubl(sum)); /* DDOUBL */
+}
+
+/**********************************************************************
+ * AX*SR*T (CM pp.1369-1371, LM pp.1262-1264) on the words of VBUF: A = +3
+ * transforms NB to SM, A = -3 transforms SM to NB. The INDEXI table (4,
+ * 2, 0, 4) picks the (DEX1, DEX2) pairs; DEXDEX counts 3, 2, 1 (or -3,
+ * -2, -1). Each pass is basic code (DMPSUB, DAS, DDOUBL), so a component
+ * can leave in words of disagreeing sign, and the next pass multiplies
+ * those words as stored. Guaranteed safe only for vectors of magnitude
+ * less than unity.
+ *
+ * FUNCTION NAME: agc_guid_axisrot_words
+ *
+ * ARGUMENTS:
+ *   Argument  Type                   I/O  Description (scale)
+ *   --------  ---------------------  ---  ----------------------------
+ *   t         const agc_cdutrig_t *  I    CDU trig block (SINCDU, COSCDU
+ *                                         2^1)
+ *   dir       agc_axisrot_dir_t      I    rotation direction (SM to NB or
+ *                                         NB to SM)
+ *   v         agc_vec_words_t *      I/O  VBUF, rotated in place, any
+ *                                         scale |v| < 1
+ **********************************************************************/
+void agc_guid_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_words_t *v)
+{
+    /* INDEXI pairs in DP word offsets 4,2 / 2,0 / 0,4, halved to indices. */
+    static const int indexi[4] = {2, 1, 0, 2};
+    const bool       nbsm      = (dir == AGC_AXISROT_NBSM); /* A = +3 */
+
+    for (int dexdex = 3; dexdex >= 1; dexdex--)
+    { /* ROTLOOP, DIM DEXDEX */
+        int k = nbsm ? (3 - dexdex) : (dexdex - 1); /* +3->0 ... -3->2      */
+
+        /* One elementary rotation about the gimbal axis whose half-sine and
+         * half-cosine sit at index d1, mixing components d2 and d1:
+         *   NBSM: v[d2]' = 2(v[d2] c - v[d1] s),  v[d1]' = 2(v[d1] c + v[d2] s)
+         *   SMNB: v[d2]' = 2(v[d2] c + v[d1] s),  v[d1]' = 2(v[d1] c - v[d2] s)
+         * The AGC forms the sine term first (TERM1TMP), then DAS adds the
+         * cosine term and DDOUBL restores the scale.                          */
+        int d1 = indexi[k];     /* DEX1: gimbal axis, component */
+        int d2 = indexi[k + 1]; /* DEX2: second component      */
+
+        const agc_dp_words_t s    = agc_dp_to_words(t->sincdu[d1]); /* half sine, scale 2^1   */
+        const agc_dp_words_t c    = agc_dp_to_words(t->coscdu[d1]); /* half cosine, scale 2^1 */
+        const agc_dp_words_t old2 = v->c[d2];                       /* VBUF(D2) before, v's scale */
+
+        /* first pass, BUF = 1: DCS VBUF(D1) times sine                       */
+        agc_dp_words_t term = words_dmpsub(words_dcs(v->c[d1]), s); /* TERM1TMP, 2^-1 v */
+
+        if (!nbsm)
+        {
+            term = words_dcs(term); /* SMNB case: DCS MPAC          */
+        }
+
+        v->c[d2] = rotate_component(term, v->c[d2], c);
+
+        /* second pass, BUF = 0: old VBUF(D2) times sine                      */
+        term = words_dmpsub(old2, s);
+
+        if (!nbsm)
+        {
+            term = words_dcs(term);
+        }
+
+        v->c[d1] = rotate_component(term, v->c[d1], c);
+    }
+} /* agc_guid_axisrot_words */
+
+/**********************************************************************
+ * AX*SR*T (CM pp.1369-1371, LM pp.1262-1264) on a vector value: the
+ * value enters VBUF as sign-agreeing words (MPACVBUF of a stored vector)
+ * and leaves as the value of the words AX*SR*T leaves.
  *
  * FUNCTION NAME: agc_guid_axisrot
  *
@@ -297,47 +392,18 @@ void agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
  **********************************************************************/
 void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v)
 {
-    /* INDEXI pairs in DP word offsets 4,2 / 2,0 / 0,4, halved to indices. */
-    static const int indexi[4] = {2, 1, 0, 2};
-    const bool       nbsm      = (dir == AGC_AXISROT_NBSM); /* A = +3 */
+    agc_vec_words_t w; /* VBUF as words */
 
-    for (int dexdex = 3; dexdex >= 1; dexdex--)
-    { /* ROTLOOP, DIM DEXDEX */
-        int k = nbsm ? (3 - dexdex) : (dexdex - 1); /* +3->0 ... -3->2      */
+    for (int i = 0; i < 3; i++)
+    {
+        w.c[i] = agc_dp_to_words(v->c[i]);
+    }
 
-        /* One elementary rotation of AX*SR*T (CM pp.1370-1371, LM pp.1263-1264)
-         * about the gimbal axis whose half-sine/half-cosine sit at index d1,
-         * mixing vector components d2 and d1 (component index = word offset / 2):
-         *   NBSM: v[d2]' = 2(v[d2] c - v[d1] s),  v[d1]' = 2(v[d1] c + v[d2] s)
-         *   SMNB: v[d2]' = 2(v[d2] c + v[d1] s),  v[d1]' = 2(v[d1] c - v[d2] s)
-         * The AGC forms the sine term first (TERM1TMP), then DAS adds the cosine
-         * term and DDOUBL restores the scale lost by the half sine/cosine.        */
-        int d1 = indexi[k];     /* DEX1: gimbal axis, component */
-        int d2 = indexi[k + 1]; /* DEX2: second component      */
+    agc_guid_axisrot_words(t, dir, &w);
 
-        agc_dp_t s    = t->sincdu[d1]; /* half sine, scale 2^1      */
-        agc_dp_t c    = t->coscdu[d1]; /* half cosine, scale 2^1    */
-        agc_dp_t old2 = v->c[d2];      /* VBUF(D2) before, scale of v */
-
-        /* first pass, BUF = 1: DCS VBUF(D1) times sine                       */
-        agc_dp_t term = dmpsub(agc_dp_neg(v->c[d1]), s); /* TERM1TMP, 2^-1 v */
-
-        if (!nbsm)
-        {
-            term = agc_dp_neg(term); /* SMNB case: DCS MPAC          */
-        }
-
-        v->c[d2] = ddoubl(das(term, dmpsub(v->c[d2], c)));
-
-        /* second pass, BUF = 0: old VBUF(D2) times sine                      */
-        term = dmpsub(old2, s);
-
-        if (!nbsm)
-        {
-            term = agc_dp_neg(term);
-        }
-
-        v->c[d1] = ddoubl(das(term, dmpsub(v->c[d1], c)));
+    for (int i = 0; i < 3; i++)
+    {
+        v->c[i] = agc_dp_from_words(w.c[i]);
     }
 } /* agc_guid_axisrot */
 
@@ -450,16 +516,34 @@ void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v
  *   cdu_yzx   const uint16_t   I    CDU angles in Y Z X order, counts
  *   v         agc_vec_t *      I/O  vector rotated in place, any scale |v|
  *                                   < 1
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
- *          precondition failed)
  **********************************************************************/
-agc_status_t agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
+void agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
 {
     agc_guid_cdtrigs(t, cdu_yzx);
     agc_guid_nbsm(t, v);
+}
 
-    return (AGC_STATUS_OK);
+/**********************************************************************
+ * TRG*NBSM (CM p.1368, LM p.1262) with VBUF's words: CD*TR*GS then
+ * NB -> SM, the result as AX*SR*T leaves it in VBUF (a caller that
+ * stores it and later shifts or divides it sees the words, e.g. AVEIT's
+ * VSR3 after SURFSTAR).
+ *
+ * FUNCTION NAME: agc_guid_trg_nbsm_words
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  --------------------------------
+ *   t         agc_cdutrig_t *    I/O  CDU trig block (CDUSPOT, SINCDU,
+ *                                     COSCDU 2^1)
+ *   cdu_yzx   const uint16_t     I    CDU angles in Y Z X order, counts
+ *   v         agc_vec_words_t *  I/O  VBUF, rotated in place, any scale
+ *                                     |v| < 1
+ **********************************************************************/
+void agc_guid_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_words_t *v)
+{
+    agc_guid_cdtrigs(t, cdu_yzx);
+    agc_guid_axisrot_words(t, AGC_AXISROT_NBSM, v); /* C*MM*N3: CA THREE */
 }
 
 /**********************************************************************
@@ -528,28 +612,31 @@ agc_status_t agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec
  **********************************************************************/
 void agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
 {
-    /* Row 0 and row 2 elements of FLESHPOT (see agc_guid_fleshpot).          */
-    const agc_dp_t sx = t->sincdu[AGC_TRIG_X]; /* sin OGA / 2, scale 2^1 */
-    const agc_dp_t cx = t->coscdu[AGC_TRIG_X]; /* cos OGA / 2, scale 2^1 */
-    const agc_dp_t sy = t->sincdu[AGC_TRIG_Y]; /* sin IGA / 2, scale 2^1 */
-    const agc_dp_t cy = t->coscdu[AGC_TRIG_Y]; /* cos IGA / 2, scale 2^1 */
-    const agc_dp_t sz = t->sincdu[AGC_TRIG_Z]; /* sin MGA / 2, scale 2^1 */
-    const agc_dp_t cz = t->coscdu[AGC_TRIG_Z]; /* cos MGA / 2, scale 2^1 */
+    /* The half sines and cosines as stored (SINCDU, COSCDU), scale 2^1.    */
+    const agc_dp_words_t sx = agc_dp_to_words(t->sincdu[AGC_TRIG_X]); /* sin OGA / 2 */
+    const agc_dp_words_t cx = agc_dp_to_words(t->coscdu[AGC_TRIG_X]); /* cos OGA / 2 */
+    const agc_dp_words_t sy = agc_dp_to_words(t->sincdu[AGC_TRIG_Y]); /* sin IGA / 2 */
+    const agc_dp_words_t cy = agc_dp_to_words(t->coscdu[AGC_TRIG_Y]); /* cos IGA / 2 */
+    const agc_dp_words_t sz = agc_dp_to_words(t->sincdu[AGC_TRIG_Z]); /* sin MGA / 2 */
+    const agc_dp_words_t cz = agc_dp_to_words(t->coscdu[AGC_TRIG_Z]); /* cos MGA / 2 */
 
-    xnb->row[0].c[0] = ddoubl(dmpsub(cy, cz));                      /* COSY COSZ  */
-    xnb->row[0].c[1] = sz;                                          /* SINZ       */
-    xnb->row[0].c[2] = ddoubl(dmpsub(agc_dp_neg(sy), cz));          /* -SINY COSZ */
-    xnb->row[2].c[1] = ddoubl(dmpsub(agc_dp_neg(sx), cz));          /* -SINX COSZ */
-    agc_dp_t mxz     = dmpsub(agc_dp_neg(sx), sz);                  /* -SX SZ, 2^2  */
-    agc_dp_t t5      = ddoubl(ddoubl(dmpsub(mxz, sy)));             /* -SX SY SZ, 2^1 */
-    agc_dp_t buf     = ddoubl(ddoubl(dmpsub(agc_dp_neg(mxz), cy))); /* SX SZ CY, 2^1 */
+    /* Basic code: TC DMP / DMPSUB, DXCH MPAC, DDOUBL, DAS; each element is
+     * kept as the words those leave until it is stored.                    */
+    const agc_dp_words_t mxz = words_dmpsub(words_dcs(sx), sz);                              /* -SX SZ, 2^2       */
+    const agc_dp_words_t t5  = words_ddoubl(words_ddoubl(words_dmpsub(mxz, sy)));            /* -SX SY SZ, 2^1    */
+    const agc_dp_words_t buf = words_ddoubl(words_ddoubl(words_dmpsub(words_dcs(mxz), cy))); /* SX SZ CY, 2^1     */
+    int                  ovf = 0;                                                            /* DAS overflow (operands < 1/2: none) */
 
-    xnb->row[2].c[2] = das(t5, ddoubl(dmpsub(cy, cx))); /* CX CY - SX SY SZ */
+    xnb->row[0].c[0] = agc_dp_from_words(words_ddoubl(words_dmpsub(cy, cz)));                             /* COSY COSZ  */
+    xnb->row[0].c[1] = agc_dp_from_words(sz);                                                             /* SINZ       */
+    xnb->row[0].c[2] = agc_dp_from_words(words_ddoubl(words_dmpsub(words_dcs(sy), cz)));                  /* -SINY COSZ */
+    xnb->row[2].c[1] = agc_dp_from_words(words_ddoubl(words_dmpsub(words_dcs(sx), cz)));                  /* -SINX COSZ */
+    xnb->row[2].c[2] = agc_dp_from_words(agc_dp_words_das(t5, words_ddoubl(words_dmpsub(cy, cx)), &ovf)); /* CX CY - SX SY SZ */
 
     /* The listing's comment reads "- SINY COSX + SINX SINZ COSY" but the
      * code loads +SINCDUY (DCA, not DCS): the element is +SY CX + SX SZ CY,
      * the correct Z_NB component. The code is translated, not the comment. */
-    xnb->row[2].c[0] = das(buf, ddoubl(dmpsub(sy, cx)));
+    xnb->row[2].c[0] = agc_dp_from_words(agc_dp_words_das(buf, words_ddoubl(words_dmpsub(sy, cx)), &ovf));
     agc_interp_t ip; /* for VXV */
 
     agc_interp_init(&ip);
@@ -557,6 +644,6 @@ void agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
 
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        xnb->row[1].c[i] = ddoubl(y.c[i]); /* DDOUBL */
+        xnb->row[1].c[i] = agc_dp_from_words(words_ddoubl(agc_dp_to_words(y.c[i]))); /* DDOUBL */
     }
 } /* agc_guid_fleshpot */

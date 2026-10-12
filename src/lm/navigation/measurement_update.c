@@ -736,32 +736,24 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
              *   --------  --------------  ---  --------------------------------
              *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
              *
-             * RETURNS: agc_status_t -- the TRG*NBSM status
+             * RETURNS: none (TRG*NBSM cannot fail)
              **********************************************************************/
-            lmnav_state_t *n         = lmnav_state();                         /* LM navigation erasables */
-            agc_mat_t      refsmmat  = agc_erase_refsmmat();                  /* REFSMMAT, 2^1 */
-            agc_cdutrig_t  trig;                                              /* CDUTRIG sines / cosines */
-            uint16_t       yzx[3]    = {n->aig, n->amg, n->aog};
-            agc_vec_t      ax[3]     = {agc_vec_make(AGC_DP_HALF, 0, 0),
-                                        agc_vec_make(0, AGC_DP_HALF, 0),
-                                        agc_vec_make(0, 0, AGC_DP_HALF)};
-            agc_status_t   st_mxmymz = agc_guid_trg_nbsm(&trig, yzx, &ax[0]); /* UNITX */
+            lmnav_state_t *n        = lmnav_state();        /* LM navigation erasables */
+            agc_mat_t      refsmmat = agc_erase_refsmmat(); /* REFSMMAT, 2^1 */
+            agc_cdutrig_t  trig;                            /* CDUTRIG sines / cosines */
+            uint16_t       yzx[3]   = {n->aig, n->amg, n->aog};
+            agc_vec_t      ax[3]    = {agc_vec_make(AGC_DP_HALF, 0, 0),
+                                       agc_vec_make(0, AGC_DP_HALF, 0),
+                                       agc_vec_make(0, 0, AGC_DP_HALF)};
 
-            if (st_mxmymz == AGC_STATUS_OK)
-            {
-                agc_guid_nbsm(&trig, &ax[1]); /* UNITY *NBSM* */
-                agc_guid_nbsm(&trig, &ax[2]); /* UNITZ *NBSM* */
-            }
+            agc_guid_trg_nbsm(&trig, yzx, &ax[0]); /* UNITX */
+            agc_guid_nbsm(&trig, &ax[1]);          /* UNITY *NBSM* */
+            agc_guid_nbsm(&trig, &ax[2]);          /* UNITZ *NBSM* */
 
             mu.mx           = agc_vec_shl(ip, agc_vec_mat(ip, ax[0], &refsmmat), 1);
             mu.my           = agc_vec_shl(ip, agc_vec_mat(ip, ax[1], &refsmmat), 1);
             mu.mz           = agc_vec_shl(ip, agc_vec_mat(ip, ax[2], &refsmmat), 1);
-            agc_status_t st = st_mxmymz; /* MXMYMZ */
-
-            if (st == AGC_STATUS_OK)
-            {
-                st = mu_radarang(ip);
-            }
+            agc_status_t st = mu_radarang(ip); /* status of RADARANG */
 
             agc_dp_t sinth; /* 2^1 */
 

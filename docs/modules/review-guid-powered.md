@@ -1,7 +1,6 @@
 # review-guid-powered -- review of the powered-flight guidance lane
 
-NOTE: a duplicate second run was stopped by the lead at 21:35; run 1 owns
-the whole lane.
+STATUS: DONE (resume 2, 2026-10-12). Open: the requests below.
 
 ## Scope
 
@@ -25,11 +24,14 @@ include/agc/guidance/{guidance,pending}.h, tests/guidance/, tests/oracle/guidanc
 | fidelity: DMP vs DMPR | DONE: 25 agc_dp_mul (DMPR) sites checked; 22 were DMP -> agc_dp_mul_trunc / TP (R7); S40.1 oracle now bit-exact (tol 64 -> 0) |
 | fidelity: label coverage | DONE: every label of the 9 lane AGC files is named in the C or is data/internal (list in Findings R9) |
 | style: guid_state.c, servicer_common.c, burn_steering.c, powered_flight.c, guidance/external_delta_v.c, csm/burns/external_delta_v.c | DONE (0 check_style findings each) |
-| style: csm/burns/servicer.c | PARTIAL: prologs converted (tools: SCRATCH/review-guid-powered/prolog.py, blocks.py, annot.py); left: decl comments, GRP defines, file prolog, pipas_saturated RETURNS TODO, serv_phase "AGC: none (TODO)" line |
-| fidelity: CALCGRAV moon test | IN PROGRESS: CM servicer.c NORMLIZE/AVERAGEG and LM average_g.c CALCRVG/MUNRVG pass MOONFLAG; the AGC tests RTX2 (LXC,1 SLOAD RTX2) -> use agc_rendz_erasable()->body.rtx2 != 0 (R10, not yet edited) |
-| style: sps/{burn,clock,ignition,steer}.c, lm/burns/{dps_burn,dps_burn_rasteer}.c, lm/burns/servicer/*.c, lm/burns/ignition/*.c, tests/guidance/guidance.c, include/agc/guidance/guidance.h | TODO (run prolog.py -w, blocks.py, then hand-fix TODO lines + decl comments) |
-| rule-5 density warnings (sps/*, dps_burn*, servicer/*, ignition/*) | TODO |
-| make / make test / make check | PARTIAL: all touched files compile; the shared tree's lib currently fails on other lanes' WIP (pinball/internal.h "/*" in comment, dap-csm tvc); a private copy (HEAD header patched) passes oracle guidance 203/0, landing 172/0, imu 211/0, tests/guidance 29/0 |
+| fidelity: CALCGRAV moon test (R10) | DONE: CM NORMLIZE/AVERAGEG and LM CALCRVG/NORMLIZE pass RTX2 != 0 (CM LXC,1 SLOAD X1 BMN ITISMOON; LM SLOAD RTX2 DCOMP BMN CALCGRV1); MUNFLAG kept only where the AGC tests MUNFLAG (RVBOTH, MUNRVG choice) |
+| *NBSM* word-level form (prog-align request) | DONE (R11): AX*SR*T on VBUF words (agc_guid_axisrot_words, agc_vec_words_t in guidance.h); value form = the same code on sign-agreeing words; agc_guid_trg_nbsm_words; agc_guid_trg_nbsm made void (cannot fail; callers in aotmark.c, measurement_update.c, lunar_surface_gravity.c, sighting_mark.c updated); SURFSTAR/AVEIT carry the words (VSR3 = SRR3 on the stored words); oracle KNOWN PA-W4 flipped to hard at tol 0, oracle_align 570/0, all oracles unchanged |
+| dead guards (rule 5/7 spirit) | DONE: 70 by-construction guards deleted (ctx->id != NONE, vehicle checks in vehicle-only code, NULL locals) + ~100 tautological post-asserts (a flag/value/channel bit tested right after being set, table constants, switch-case values) and AGC-unchecked state asserts that returned BAD_ARG where the AGC goes on (DAS DVTOTAL overflow, NVWORD1, PIPCTR); kept: erasable/pad-load/sensor boundaries (ZOOMTIME, WEIGHT/G, EMDOT, PIPAGE, RTX2, AVGEXIT dispatch, HMEAS, SQRT/DDV operands). Lane density 302 -> 131 assertions / 423 functions (report only). 43 jobs/helpers lost an unused ctx (now (void)); dispatch regenerated (tools/gen_registry.py; jobs.h ids unchanged) -- callers outside the lane touched: csm/burns/earth_orbit_insertion.c (MATRXJOB, NORMLIZE call), csm/entry/cm_body_attitude.c (SERVNOUT, SERVEXIT call), include/agc/csm/entry.h (2 decls) |
+| style: sps/*, lm/burns/**, csm/burns/servicer.c, guidance/*, guidance.h, tests | DONE: 1276 -> 0 check_style findings in the 23 lane files: function prologs boxed (AGC citation, RETURNS, args), file prologs to the template (12 .c, 3 internal.h, guidance.h, 2 tests), declaration/scale/#define/ternary comments, long-block closers, qualifier and one-declaration fixes, tests main-first with prototypes; prolog page citations corrected to the listing page markers (R14); PRIO23_LR alias and two forwarding wrappers removed (agc_job_burnbaby, agc_lm_burnbaby_countdown; registry: AGC_JOB_BURNBABY -> agc_lm_burnbaby, AGC_JOB_BURNBABY_COUNTDOWN -> the routine itself; dispatch regenerated). Scripts: SCRATCH/review-guid-powered/{prolog,fill,fileprolog*,autodecl,applydecl,applyscale,fixpages}.py |
+| status-handling-2 diff check (git diff 1b72892 a02850c) | DONE (R12): 21 files, 1673 deletions read. Deleted guards (NULL ctx/ip/out pointers, enum ranges, post-hoc sentinels) all by construction: confirmed. Status conversions (agc_sv_get void, agc_dp_sin/cos/sqrt without ip, agc_phase_change(code), ctx-less jobs) confirmed. Repaired: helpers with their own AGC label that the collapse inlined (CALCTHET, PIPCHECK, P41/DSP, S40.81, LOTHRUST, SETUP.9, DVMON, HIGATASK, P63IGN, P40IGN) restored as static functions, pasted header boxes gone; NULLCLOK relinted only on a failed assertion (bug: removed the tautological guard); the two AGC_ASSERT(st == OK) sites now plain propagation; tautological post-asserts deleted in the restored code; single-return S40.1, UPDATEVG, COPYCYCL, COPYCYC1, P40SXTY |
+| word-level adoption in servicers / steering | DONE (R13): S40.2,3 bell axes on words (DMP SL1 / DCOMP / COS / SIN as agc_mpac_*; SCAXIS exact); oracle s40_2 tol 16 -> 2 (sps, sps_b; residual = VXM of the stored VDEF words, needs a DOT on stored words: core request) and 10 (radial: UNIT of a short UT x UNIT(R), core UNIT-at-B27 item); FLESHPOT on words (AX*SR*T helpers; value helpers dmpsub/das/ddoubl deleted). CALCRVG/CALCGRAV, S40.1, DELTIME already exact; LM servicer has no word-split residual on record |
+| fidelity: SR/SRR/VSR audit (ALL-lanes item) | DONE (R15): every rounding shift of the lane listings (CM SRR in CALCUT, VSR* in SETUP.9, VSR3 in BADVCTOR; LM VSR4 in COPYCYC2, SLR* in CALCGRV1, VSR1 in AVERAGEG and RASTEER1/GETVRVG2/NEGPROD) matches its C (shr_round, shl for the negative VSR* count, vec_shr, shl_round); SR after DMP in the S40.13 F/MASS terms truncates the DP, the same as the TP for sign-agreeing words |
+| make / make test / make scenarios / make check / check_rules | DONE: make OK, make test 0 failures (34 binaries), scenarios 8/8, check_rules src include 0 hard, format-check clean on the lane files (make check's format-check fails only on review-nav-integ's in-progress src/nav/integration/orbital_integration.c), gen_registry --check clean, one-liners PLAIN 0 |
 
 ## Findings
 
@@ -43,6 +45,12 @@ include/agc/guidance/{guidance,pending}.h, tests/guidance/, tests/oracle/guidanc
 | R6 | external_delta_v.c DELRSPL | pp.643-647 | stub | translated (CM file); VGAMCALC/TFF/TRIG made public in src/csm/entry/programs.c (agc_entry_vgamcalc, agc_entry_tff_trig); SR30.1 keeps its TFF debris for it (orbit_parameter_display.c) |
 | R7 | burn_steering.c (CALCTHET, TGOCALC, TGDCALC, S40.13), powered_flight.c SMCDURES, csm/burns/servicer.c DVTOTUP, sps/steer.c, lm/burns/servicer/*.c | interpretive DMP | agc_dp_mul is DMPR (rounded); DMP truncates, and NORM/SL/SR after a DMP act on the TP | agc_dp_mul_trunc, TP shifts; CALCTHET DMPR THETACON and LM DMPR ALTCONV/ARCONV1 kept rounded |
 | R8 | src/csm/burns/sps/ignition.c DOTVCON, MASSBACK | DCS ERRORY; CAE DELPBAR | build break after dap-csm made ERRBTMP/DELPBAR word pairs | each word complemented; high word read |
+| R10 | csm/burns/servicer.c NORMLIZE, AVERAGEG; lm/burns/servicer/average_g.c CALCRVG, NORMLIZE | CALCGRAV `LXC,1 SLOAD RTX2` / `SLOAD RTX2 DCOMP BMN` | moon test read MOONFLAG; the AGC tests the integrator's RTX2 | RTX2 != 0 |
+| R11 | powered_flight.c AX*SR*T; aotmark.c SURFSTAR/AVEIT (prog-align W4) | DMPSUB, DAS TERM1TMP, DDOUBL; STCALL 24D; VSR3 | components left in sign-disagreeing words were collapsed to values, so AVEIT's VSR3 rounded an exact half the other way | word-level AX*SR*T; SURFSTAR/AVEIT keep the words; PA-W4 hard |
+| R12 | status-handling-2 diff (lane files) | -- | inlined labelled helpers, NULLCLOK relint-on-failure, assert-on-status | see Progress row |
+| R13 | burn_steering.c S40.2,3 bell axes; powered_flight.c FLESHPOT | DMP SL1 on the TP, VDEF/PUSH keep MPAC, MPAC+1; basic DMP/DDOUBL/DAS | value collapse lost the split (SCAXIS 2 LSB) | word API; tolerances 16 -> 2 / 10 |
+| R14 | sps/*.c, lm/burns/dps_burn.c, ignition/burnbaby.c prologs | # Page markers | page citations 4-9 pages ahead (CM sps), +-1..3 (LM) | first-line citations corrected (78); a few body references keep the old numbering (noted in burn.c prolog) |
+| R15 | shift audit | SRR / VSR* / SLR* / VSRn | all rounding shifts match | none |
 | R9 | coverage | P30-P37 AVFLAGA/P, P20FLGON | implemented in prog-rendz (rz_avflag) / P30 flag set-up; S41.2/BDFAIL/TOGETHER are dap-csm's; MDOTFAIL is unreferenced in Comanche | none |
 
 ## Open questions (resolved)
@@ -60,6 +68,26 @@ include/agc/guidance/{guidance,pending}.h, tests/guidance/, tests/oracle/guidanc
 
 ## Requests to other lanes
 
+* core-numeric: (1) a DOT / VXM / MXV on stored words (agc_vec_words_t
+  inputs) -- the last 2 LSB of S40.2,3 XSCREF..ZSCREF come from the VXM of
+  the VDEF words; (2) move agc_vec_words_t (now in guidance.h, used by
+  AX*SR*T, SURFSTAR, AVEIT) to include/agc/core/word.h; (3) the s40_2_radial
+  10 LSB is the UNIT-at-B27 item for a short UT x UNIT(R).
+* prog-align (done lane, edited for the word form): aotmark.c SURFSTAR now
+  returns VBUF words, AVEIT takes the words (VSR3 = SRR3 per component),
+  FLIGHT LOS converts its value at STORE 24D; alignment.h decls updated;
+  KNOWN PA-W4 flipped to a hard check at tol 0 (oracle_align 570/0). Also
+  agc_aot_flight_los / agc_aot_surfstar can no longer fail after TRG*NBSM
+  became void (they still return AGC_STATUS_OK for their BAD_ARG guards).
+* guid-entry / nav lanes (call sites only): agc_guid_trg_nbsm is void
+  (lm/navigation/measurement_update.c, lm/alignment/lunar_surface_gravity.c,
+  csm/optics/sighting_mark.c); agc_job_normlize_csm, agc_job_servexit,
+  agc_job_matrxjob and entry_servnout take no ctx (earth_orbit_insertion.c,
+  cm_body_attitude.c, entry.h). measurement_update.c still carries a pasted
+  MXMYMZ header box inside a case body (document lane item).
+* oracle-cases: docs/modules/oracle-cases.md s40_2 rows: tolerances now 2
+  (sps, sps_b) and 10 (radial).
+
 * oracle-cases: docs/modules/oracle-cases.md rows s40_1 (tol now 0) and
   s40_2 (tol 16, residual <= 10 LSB) and the F7/F8/F9-TDISPSET findings are
   closed by this review.
@@ -70,6 +98,19 @@ include/agc/guidance/{guidance,pending}.h, tests/guidance/, tests/oracle/guidanc
   DELPBAR, DELYBAR (R8).
 
 ## Lessons
+
+* A basic-language routine that ends in DAS/DDOUBL (AX*SR*T, FLESHPOT)
+  leaves words whose signs disagree; the next pass multiplies those words
+  as stored. Run the whole routine on agc_dp_words_t and collapse to a
+  value only at the API boundary: the value form is then the same code.
+* VSR on a stored vector rounds per component on the words (MPACSRND with
+  MPAC+2 = 0): agc_mpac_shift_round(ip, agc_mpac_dload(w), -n).
+* The collapse pass inlined single-caller helpers even when their header
+  named their own AGC label; restore those (CALCTHET, DVMON, ...) rather
+  than keep a pasted header box inside the caller.
+* Prolog page numbers drift: check each first-line citation against the
+  listing's "# Page" marker of the label (fixpages.py); the CM P40-P47
+  file was 4-9 pages ahead.
 
 * "B1" in a 2DEC* means the stored value is TWICE the number (B-n halves).
   The F7 constants were read as B-1. Always read the word from the rope.

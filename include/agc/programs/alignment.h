@@ -302,9 +302,9 @@ agc_status_t agc_aotmark(void);          /* AOTMARK       */
 agc_status_t agc_aotmark_markrupt(void); /* MARKRUPT      */
 void         agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp);
 void         agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb);
-agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm);
+agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_words_t *star_sm);
 agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm);
-agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_t star, agc_vec_t *ave);
+agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, agc_vec_t *ave);
 
 /* ---- CSM sighting and optics routines (src/csm/optics/) ---------------- */
 /* SXTSM line of sight of one mark (half-unit, SM axes).                   */

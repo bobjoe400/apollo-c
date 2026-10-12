@@ -685,26 +685,18 @@ agc_status_t agc_job_lunar_surface_coarse_trimmed(void)
     agc_align_ram_t *ram = agc_align_ram(); /* alignment erasables */
 
     ram->lunar_gravity_return = AGC_JOB_LUNAR_SURFACE_ALIGNED;
-    const agc_mat_t unit      = agc_mat_identity_half();        /* XUNIT, YUNIT rows, half-unit (2^1) */
+    const agc_mat_t unit      = agc_mat_identity_half(); /* XUNIT, YUNIT rows, half-unit (2^1) */
     const uint16_t  yzx[3]    = {agc_erase_thetad(1), agc_erase_thetad(2), agc_erase_thetad(0)};
-    agc_cdutrig_t   t;                                          /* CDUTRIG sines and cosines */
-    agc_vec_t       x         = unit.row[0];                    /* XUNIT, then TRG*NBSM: nav-base X in SM (STARAD), half-unit (2^1) */
-    agc_vec_t       y         = unit.row[1];                    /* YUNIT, then *NBSM*: nav-base Y in SM (STARAD +6), half-unit (2^1) */
-    agc_status_t    st        = agc_guid_trg_nbsm(&t, yzx, &x); /* status of the call */
+    agc_cdutrig_t   t;                                   /* CDUTRIG sines and cosines */
+    agc_vec_t       x         = unit.row[0];             /* XUNIT, then TRG*NBSM: nav-base X in SM (STARAD), half-unit (2^1) */
+    agc_vec_t       y         = unit.row[1];             /* YUNIT, then *NBSM*: nav-base Y in SM (STARAD +6), half-unit (2^1) */
 
-    if (st == AGC_STATUS_OK)
-    {
-        agc_guid_nbsm(&t, &y);
-    }
-
+    agc_guid_trg_nbsm(&t, yzx, &x);
+    agc_guid_nbsm(&t, &y);
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-
-    if (st == AGC_STATUS_OK)
-    {
-        st = align_nb_present(&ip, &t, &ram->xnb);
-    }
+    agc_status_t st = align_nb_present(&ip, &t, &ram->xnb); /* status of the call */
 
     const agc_vec_t a[2] = {x, y};
     const agc_vec_t b[2] = {ram->xnb.row[0], ram->xnb.row[1]};

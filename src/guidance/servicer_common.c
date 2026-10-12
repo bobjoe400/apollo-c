@@ -129,11 +129,6 @@ agc_status_t agc_guid_pipasr(agc_avg_g_t *a, bool set_piptime1)
     agc_pipasr_noscale(); /* PIPASR +3 (core)        */
     agc_relint();
 
-    if (!AGC_ASSERT(a->piptime1 >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (AGC_STATUS_OK);
 }
 
@@ -194,7 +189,7 @@ static agc_status_t calcgrav_oblateness(agc_interp_t *ip, bool cm, agc_avg_g_t *
     agc_dp_t        s;                                       /* sin(latitude), scale 2^1                */
     agc_vec_t       t2;                                      /* polar term of GOBL, scale 2^1           */
 
-    if (!AGC_ASSERT(ip != NULL && a != NULL) || !AGC_ASSERT(a->rmagsq > 0))
+    if (!AGC_ASSERT(a->rmagsq > 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
@@ -258,11 +253,6 @@ static agc_status_t calcgrav_oblateness(agc_interp_t *ip, bool cm, agc_avg_g_t *
  **********************************************************************/
 agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon, agc_vec_t r, agc_avg_g_t *a)
 {
-    if (!AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     a->unitr      = agc_vec_unit(ip, r, &a->rmag, &a->rmagsq); /* UNIT PUSH */
     agc_vec_t dir = a->unitr;                                  /* gravity direction, scale 2^1; gravity direction, half unit */
 
@@ -280,11 +270,6 @@ agc_status_t agc_guid_calcgrav(agc_interp_t *ip, agc_vehicle_t veh, bool moon, a
 
     int      n = 0;                          /* NORM shift count (X2 = -n) */
     agc_dp_t x = agc_dp_norm(a->rmagsq, &n); /* NORM 34D X2, 2^(58-n) m^2 */
-
-    if (!AGC_ASSERT(x != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_dp_t k = agc_dp_div(ip, moon ? MUDT_M : MUDT_E, x); /* -mu dt / r^2, rescaled to 2^7 m/cs (half unit vector); BDDV* -MUDT,1 */
 

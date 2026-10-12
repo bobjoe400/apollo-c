@@ -677,7 +677,7 @@ typedef enum agc_job_id
     AGC_JOB_APS_BURN,                     /* LM: P42LM */
     AGC_JOB_APS_BURN_STAGE_CHECKED,       /* LM */
     AGC_JOB_AUTO_CONTROL_RECYCLE,         /* LM */
-    AGC_JOB_BURNBABY,                     /* LM: BURNBABY */
+    AGC_JOB_BURNBABY,                     /* LM: BURNBABY (also the group-4 restart job) */
     AGC_JOB_BURNBABY_COUNTDOWN,           /* LM */
     AGC_JOB_CLOKJOB_ENGINE_ENABLE,        /* LM */
     AGC_JOB_CLOKJOB_ENGINE_ENABLE_BYPASS, /* LM */

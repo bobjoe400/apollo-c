@@ -273,17 +273,7 @@ static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip, agc_rendz_t *r
  **********************************************************************/
 agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip, agc_vehicle_t veh)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(veh == AGC_VEHICLE_CSM || veh == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t *rz = agc_rendz_erasable(); /* targeting erasables */
-
-    if (!AGC_ASSERT(rz != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return ((veh == AGC_VEHICLE_CSM) ? external_delta_v_vectors_csm(ip, rz) : external_delta_v_vectors_lm(ip, rz)); /* Comanche S30.1; Luminary S30.1 */
 }
@@ -362,11 +352,6 @@ agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
     rz->vtig    = p->vatt;
     rz->vinit   = p->vatt;
     agc_dp_t e4 = agc_flag_test(AGC_FLAG_NORMSW) ? EP4_45 : EP4_10; /* EPSILON4, rev 2^0; NORMSW: 45 */
-
-    if (!AGC_ASSERT(e4 > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_rendz_initvel(ip, rz, 0, e4, agc_guid_nav_resume()));
 }
@@ -448,11 +433,6 @@ static agc_status_t flash(const agc_job_ctx_t *ctx, agc_dsky_disp_t kind, uint8_
 {
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, proceed, enter}; /* TERM PRO ENTER */
 
-    if (!AGC_ASSERT(proceed != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_dsky_display(ctx, kind, agc_dsky_vn(verb, noun), &cont));
 }
 
@@ -510,11 +490,6 @@ static agc_status_t ignition_time_entry(agc_job_ctx_t *ctx, agc_job_id_t self, a
  **********************************************************************/
 agc_status_t agc_job_external_delta_v(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (ignition_time_entry(ctx, AGC_JOB_EXTERNAL_DELTA_V, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV));
 }
 
@@ -533,11 +508,6 @@ agc_status_t agc_job_external_delta_v(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_display_dv(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (flash(ctx, AGC_DSKY_GOFLASH, 6, 81, AGC_JOB_EXTERNAL_DELTA_V_COMPUTE, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_DV));
 }
 
@@ -556,11 +526,6 @@ agc_status_t agc_job_external_delta_v_display_dv(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_UPDATFLG);
     agc_interp_t ip; /* interpreter work area of the job */
 
@@ -597,11 +562,6 @@ agc_status_t agc_job_external_delta_v_compute(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_display_parameters(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_job_id_t pro = AGC_JOB_EXTERNAL_DELTA_V_REFTEST; /* PROCEED (CM) */
 
     if (agc_state_vehicle() == AGC_VEHICLE_LM)
@@ -626,13 +586,8 @@ agc_status_t agc_job_external_delta_v_display_parameters(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
  *          otherwise the status of the routine it continues in
  **********************************************************************/
-agc_status_t agc_job_external_delta_v_accept(agc_job_ctx_t *ctx)
+agc_status_t agc_job_external_delta_v_accept(void)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_set(AGC_FLAG_XDELVFLG); /* EXTERNAL DELTA-V      */
 
     return (agc_exec_job_yield(AGC_JOB_MARKS_TFI_MGA_MONITOR));
@@ -653,11 +608,6 @@ agc_status_t agc_job_external_delta_v_accept(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_lambert_aimpoint_guidance_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (ignition_time_entry(ctx, AGC_JOB_LAMBERT_AIMPOINT_GUIDANCE, AGC_JOB_LAMBERT_AIMPOINT_COMPUTE));
 }
 
@@ -677,11 +627,6 @@ agc_status_t agc_job_lambert_aimpoint_guidance_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_lambert_aimpoint_compute_csm(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_UPDATFLG);
     agc_flag_clear(AGC_FLAG_NORMSW);
     agc_interp_t ip; /* interpreter work area of the job */
@@ -714,10 +659,5 @@ agc_status_t agc_job_lambert_aimpoint_compute_csm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_lambert_aimpoint_display_dv(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (flash(ctx, AGC_DSKY_GOFLASH, 6, 81, AGC_JOB_EXTERNAL_DELTA_V_DISPLAY_PARAMETERS, AGC_JOB_LAMBERT_AIMPOINT_DISPLAY_DV));
 }

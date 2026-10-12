@@ -1646,7 +1646,7 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
         case AGC_JOB_AUTO_CONTROL_RECYCLE:
             return (agc_job_auto_control_recycle(ctx));
         case AGC_JOB_BURNBABY:
-            return (agc_job_burnbaby(ctx));
+            return (agc_lm_burnbaby(ctx));
         case AGC_JOB_BURNBABY_COUNTDOWN:
             return (agc_job_burnbaby_countdown());
         case AGC_JOB_CLOKJOB_ENGINE_ENABLE:

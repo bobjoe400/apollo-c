@@ -97,11 +97,6 @@ agc_status_t agc_csm_comptgo(void)
 
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_MARKS_TFI_MGA_DISPLAY, AGC_TASK_NONE, (int16_t) AGC_PRIO13, false, 0U};
 
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_TIMRFLAG)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_phase_change2((uint16_t) 040036, (uint16_t) 005024, &v);
 
     return (AGC_STATUS_OK); /* 6.3, 4 C */
@@ -123,11 +118,6 @@ agc_status_t agc_csm_comptgo(void)
  **********************************************************************/
 agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_rendz_t *rz = agc_rendz_erasable(); /* DELVSIN, +MGA */
 
     if (agc_flag_test(AGC_FLAG_REFSMFLG))
@@ -175,11 +165,6 @@ agc_status_t agc_job_external_delta_v_reftest(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     /* A flashing display whose terminate goes to P00 (GOTOPOOH).             */
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_MARKS_TFI_MGA_DONE, AGC_JOB_MARKS_TFI_MGA_DISPLAY};
 
@@ -210,13 +195,8 @@ agc_status_t agc_job_marks_tfi_mga_display(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
  *          otherwise the status of the routine it continues in
  **********************************************************************/
-agc_status_t agc_job_marks_tfi_mga_done(agc_job_ctx_t *ctx)
+agc_status_t agc_job_marks_tfi_mga_done(void)
 {
-    if (!AGC_ASSERT(ctx->id != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_flag_clear(AGC_FLAG_TIMRFLAG);
 
     if (agc_erase_modreg() == 31)

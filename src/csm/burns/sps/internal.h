@@ -1,10 +1,21 @@
-/*
- * internal.h -- pieces of the Comanche P40-P47 programs shared by
- * src/csm/burns/sps/burn.c (program start and countdown), ignition.c
- * (ignition to post-burn), steer.c (UPDATEVG, S40.8, S40.9,
- * S40.13, STEERING, N85/N83) and clock.c (CLOKTASK, CLOCKJOB,
- * V97/V99, S40.6, DAPFIG).
- */
+/**********************************************************************
+ * FILE NAME: internal.h
+ *
+ * PURPOSE:
+ *   Pieces of the Comanche P40-P47 programs shared by burn.c (program
+ *   start and countdown), ignition.c (ignition to post-burn), steer.c
+ *   (UPDATEVG, S40.8, S40.9, S40.13, STEERING, N85/N83) and clock.c
+ *   (CLOKTASK, CLOCKJOB, V97/V99, S40.6, DAPFIG).
+ *
+ * AGC SOURCE:
+ *   Comanche055 P40-P47.agc pp. 684-734
+ *
+ * REQUIRES:
+ *   the project headers it includes (self-contained)
+ *
+ * GLOBAL VARIABLES:
+ *   none (state is reached through accessors)
+ **********************************************************************/
 #ifndef SPS_BURN_INTERNAL_H
 #define SPS_BURN_INTERNAL_H
 
@@ -23,22 +34,22 @@
 
 /* NVWORD1 of the CLOCKJOB: the V99 flash (-BIT9) and the V97 flash, which
  * the AGC marks with -0 (DEVIATION: -0 is not representable; -1 is used). */
-#define AGC_CSM_NV_ENGINE_ENABLE_REQUEST ((agc_sp_t) -0400)
-#define AGC_CSM_NV_ENGINE_FAIL_PROCEDURE ((agc_sp_t) -1)
+#define AGC_CSM_NV_ENGINE_ENABLE_REQUEST ((agc_sp_t) -0400) /* V99 flash (-BIT9) */
+#define AGC_CSM_NV_ENGINE_FAIL_PROCEDURE ((agc_sp_t) -1)    /* V97 flash (the AGC's -0) */
 
 /* FLAGWRD6 bits 15, 14 (DAPBIT1, DAPBIT2): T5 user, 10 = TVC, 01 = RCS.   */
-#define AGC_CSM_T5BITS ((uint16_t) 060000)
-#define AGC_CSM_T5_TVC ((uint16_t) 040000)
+#define AGC_CSM_T5BITS ((uint16_t) 060000) /* DAPBIT1, DAPBIT2 */
+#define AGC_CSM_T5_TVC ((uint16_t) 040000) /* 10: TVC DAP has T5 */
 
 /* DSALMOUT (channel 11) bit 13: SPS engine on; channel 12 bit 14: SIV
  * cutoff; channel 12 bits 2, 8, 11 (OCT 02202): TVC enable / optics.     */
-#define AGC_CSM_SPSON     ((uint16_t) 010000)
-#define AGC_CSM_SIVCUTOFF ((uint16_t) 020000)
-#define AGC_CSM_TVCOPT    ((uint16_t) 002202)
-#define AGC_CSM_TVCOPTEN  ((uint16_t) 002200)
+#define AGC_CSM_SPSON     ((uint16_t) 010000) /* channel 11 bit 13 */
+#define AGC_CSM_SIVCUTOFF ((uint16_t) 020000) /* channel 12 bit 14 */
+#define AGC_CSM_TVCOPT    ((uint16_t) 002202) /* channel 12 bits 2, 8, 11 */
+#define AGC_CSM_TVCOPTEN  ((uint16_t) 002200) /* channel 12 bits 8, 11 */
 
 /* 3MDOT DEC 86.6175796 B-16: 3 s of SPS mass loss, kg 2^16.               */
-#define AGC_CSM_3MDOT ((agc_sp_t) 22)
+#define AGC_CSM_3MDOT ((agc_sp_t) 22) /* kg 2^16 */
 
 agc_sp_t     agc_csm_vn(uint8_t verb, uint8_t noun);          /* VN as NVWORD1 */
 bool         agc_csm_is_rcs_burn(void);                       /* P41/P40       */

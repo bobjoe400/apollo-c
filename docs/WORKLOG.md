@@ -625,3 +625,11 @@
             change left uncommitted for that lane's commit.
 2026-10-12  Launched review-nav-integ (resume, Opus) in sys-misc's slot,
             alongside review-guid-powered. These are the last two reviews.
+2026-10-12  review-guid-powered DONE and committed: *NBSM*/AX*SR*T word
+            forms (align KNOWN PA-W4 closed, oracle_align 570/0 at 0),
+            S40.2,3 bell axes and FLESHPOT on words (s40_2 tol 16 -> 2),
+            10 AGC-labelled helpers restored from inlining, NULLCLOK
+            RELINT bug fixed, ~170 dead guards removed, 78 wrong prolog
+            page citations corrected, style 1,276 -> 0. Requests routed.
+            Three stray grep-output files (hichp, p, qp) in the repo root
+            deleted. review-nav-integ still running.

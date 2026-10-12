@@ -1,23 +1,52 @@
-/*
- * guidance.c -- guid-powered lane unit tests.
+/**********************************************************************
+ * FILE NAME: guidance.c
  *
- * 1. CALCRVG (SERVICER.agc p.880-881, the average-G state update): with
- *    no PIPA counts (zero delta-V) and no previous gravity term, one 2-s
- *    step (PGUIDE = 200 cs) moves RN1 by VN * 2 s within the 2 m LSB of
- *    the 2^29 m scale, and VN1 = VN + GDT1/2, the half-step lunar gravity
- *    (mu dt / 2 r^2) at RN1.
- * 2. S40.8 cross-product steering (P40-P47.agc p.719-722): with BDT = 0
- *    and the measured delta-V (DELVREF) along the velocity to be gained
- *    (thrust along VG), the commanded rate OMEGAC is zero; with VG at 90
- *    degrees to the thrust it is not.
- * 3. DELRSPL (P30-P37.agc pp.643-647, V82 splash error in P11): with the
- *    target under RONE, the CANTDO path (TFF >= 0) gives RSP-RREC = 0;
- *    on a descending 200-km trajectory (perigee below 300 kft) the error
- *    is the free-fall angle plus the AUGEKUGL entry range, a positive
- *    overshoot of a few degrees to a few tens of degrees.
+ * PURPOSE:
+ *   Unit tests of the guid-powered lane:
+ *   1. CALCRVG (the average-G state update): with no PIPA counts and no
+ *      previous gravity term, one 2-s step (PGUIDE = 200 cs) moves RN1 by
+ *      VN * 2 s within the 2 m LSB of the 2^29 m scale, and VN1 = VN +
+ *      GDT1/2, the half-step lunar gravity (mu dt / 2 r^2) at RN1.
+ *   2. S40.8 cross-product steering: with BDT = 0 and the measured delta-V
+ *      (DELVREF) along the velocity to be gained the commanded rate OMEGAC
+ *      is zero; with VG at 90 degrees to the thrust it is not.
+ *   3. DELRSPL (V82 splash error in P11): with the target under RONE the
+ *      CANTDO path (TFF >= 0) gives RSP-RREC = 0; on a descending 200-km
+ *      trajectory (perigee below 300 kft) the error is the free-fall angle
+ *      plus the AUGEKUGL entry range, a positive overshoot of a few degrees
+ *      to a few tens of degrees.
  *
- * AGC_ASSERT failures are counted by this file's agc_assert_report().
- */
+ * AGC SOURCE:
+ *   Luminary099 SERVICER.agc pp. 880-881 (CALCRVG); Comanche055
+ *   P40-P47.agc pp. 719-722 (S40.8), P30-P37.agc pp. 643-647 (DELRSPL)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
+ *   Name          Type       I/O  Scale        Description
+ *   ------------  ---------  ---  -----------  -----------------------
+ *   RONE          agc_vec_t  O    2^29 m       DELRSPL position input
+ *   LAT/LNG(SPL)  agc_dp_t   O    rev          splash target
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_guid_calcrvg      CALCRVG (servicer_common.c)
+ *   agc_guid_steering_cross_product  XPRODUCT (burn_steering.c)
+ *   agc_guid_delrspl      DELRSPL (csm/burns/external_delta_v.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   Exit status 1 when a check fails.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   Host test; double arithmetic only to build inputs and judge results.
+ *   Library assertion reports are printed and counted, not a pass
+ *   criterion.
+ *
+ * NOTES:
+ *   The bit-exact checks against the AGC are in tests/oracle/guidance.c.
+ *
+ * ALGORITHM:
+ *   As listed under PURPOSE.
+ **********************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -36,10 +65,54 @@
 
 #define MU_MOON 4.9027779e12 /* m^3/s^2 (MUM in the AGC)               */
 
-static int g_checks;
-static int g_failures;
-static int g_assert_reports;
+static int g_checks;         /* checks run                    */
+static int g_failures;       /* checks failed                 */
+static int g_assert_reports; /* library assertion reports seen */
 
+static void      check(bool ok, int line, const char *text);
+static agc_mat_t identity_half(void);
+static void      test_average_g_coast(void);
+static agc_vec_t steer(agc_vec_t vg, agc_vec_t delvref);
+static void      test_cross_product_steering(void);
+static void      delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo, double hi);
+static void      test_splash_error(void);
+
+/**********************************************************************
+ * Run the three tests.
+ * AGC: none (test driver).
+ *
+ * FUNCTION NAME: main
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: int -- 0 when every check passes, 1 otherwise
+ **********************************************************************/
+int main(void)
+{
+    test_average_g_coast();
+    test_cross_product_steering();
+    test_splash_error();
+    (void) printf("test_guidance: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
+
+    return ((g_failures == 0) ? 0 : 1); /* exit status */
+}
+
+/**********************************************************************
+ * The assertion hook of the library for this test: print and count the
+ * report (informational, not a pass criterion).
+ * AGC: none (test harness).
+ *
+ * FUNCTION NAME: agc_assert_report
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------------------------
+ *   file      const char *  I    source file of the failed assertion
+ *   line      int           I    line of the failed assertion
+ *   expr      const char *  I    text of the failed expression
+ *
+ * RETURNS: bool -- false (the assertion stays failed)
+ **********************************************************************/
 bool agc_assert_report(const char *file, int line, const char *expr)
 {
     (void) printf("assert %s:%d: %s\n", file, line, expr);
@@ -50,6 +123,19 @@ bool agc_assert_report(const char *file, int line, const char *expr)
 
 #define CHECK(c) check((c), __LINE__, #c)
 
+/**********************************************************************
+ * Count a check; print the failing ones.
+ * AGC: none (test harness).
+ *
+ * FUNCTION NAME: check
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------------------------
+ *   ok        bool          I    result of the check
+ *   line      int           I    test line
+ *   text      const char *  I    text of the check
+ **********************************************************************/
 static void check(bool ok, int line, const char *text)
 {
     g_checks++;
@@ -61,10 +147,19 @@ static void check(bool ok, int line, const char *text)
     }
 }
 
-/* REFSMMAT = identity, stored as a half-unit matrix (scale 2^1). */
+/**********************************************************************
+ * REFSMMAT = identity, stored as a half-unit matrix (scale 2^1).
+ * AGC: none (test fixture).
+ *
+ * FUNCTION NAME: identity_half
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_mat_t -- the identity, half-unit rows (2^1)
+ **********************************************************************/
 static agc_mat_t identity_half(void)
 {
-    agc_mat_t m;
+    agc_mat_t m; /* rotation matrix, half-unit rows (2^1) */
 
     m.row[0] = agc_vec_make(AGC_DP_HALF, 0, 0);
     m.row[1] = agc_vec_make(0, AGC_DP_HALF, 0);
@@ -75,9 +170,17 @@ static agc_mat_t identity_half(void)
 
 /* ---- 1. average-G with zero delta-V ----------------------------------- */
 
+/**********************************************************************
+ * Test 1: CALCRVG (SERVICER.agc p.880-881) with zero delta-V moves RN1
+ * by VN dt and VN1 by the half-step lunar gravity.
+ *
+ * FUNCTION NAME: test_average_g_coast
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_average_g_coast(void)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
     agc_avg_g_t a = {0};
@@ -90,9 +193,9 @@ static void test_average_g_coast(void)
 
     sv.r                     = agc_vec_make(0, agc_dp_from_double(r0, 29), 0);
     sv.v                     = agc_vec_make(agc_dp_from_double(vx, 7), 0, 0);
-    const agc_mat_t refsmmat = identity_half();
+    const agc_mat_t refsmmat = identity_half(); /* REFSMMAT = I, half-unit rows (2^1) */
 
-    agc_status_t st = agc_guid_calcrvg(&ip, AGC_VEHICLE_LM, true, &refsmmat, agc_vec_zero(), &sv, &a);
+    agc_status_t st = agc_guid_calcrvg(&ip, AGC_VEHICLE_LM, true, &refsmmat, agc_vec_zero(), &sv, &a); /* status of agc_guid_calcrvg */
 
     CHECK(st == AGC_STATUS_OK);
 
@@ -120,66 +223,104 @@ static void test_average_g_coast(void)
 
 /* ---- 2. cross-product steering ------------------------------------------ */
 
+/**********************************************************************
+ * Run S40.8 XPRODUCT (P40-P47.agc p.719-722) with all gimbals at 0,
+ * REFSMMAT = I, BDT = 0 and CSTEER = 1.
+ *
+ * FUNCTION NAME: steer
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ---------------------------------------
+ *   vg        agc_vec_t   I    velocity to be gained, m/cs 2^7
+ *   delvref   agc_vec_t   I    measured delta-V, m/cs 2^7
+ *
+ * RETURNS: agc_vec_t -- OMEGAC, the commanded rates
+ **********************************************************************/
 static agc_vec_t steer(agc_vec_t vg, agc_vec_t delvref)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
     agc_cdutrig_t  trig   = {{0}, {0}, {0}, {0}};
     const uint16_t cdu[3] = {0U, 0U, 0U};
 
-    agc_guid_cdtrigs(&trig, cdu); /* all gimbals at 0   */
-    const agc_mat_t refsmmat = identity_half();
-    agc_xprod_in_t  in;
+    agc_guid_cdtrigs(&trig, cdu);               /* all gimbals at 0   */
+    const agc_mat_t refsmmat = identity_half(); /* REFSMMAT = I, half-unit rows (2^1) */
+    agc_xprod_in_t  in;                         /* XPRODUCT inputs */
 
     in.vg               = vg;
     in.delvref          = delvref;
     in.bdt              = agc_vec_zero();
-    in.csteer           = AGC_DP_HALF;                /* CSTEER = 1, 2^1    */
-    in.kprimedt         = agc_dp_from_double(0.1, 0); /* arbitrary gain     */
-    agc_vec_t    omegac = agc_vec_zero();
-    agc_status_t st     = agc_guid_steering_cross_product(&ip, &in, &refsmmat, &trig, &omegac);
+    in.csteer           = AGC_DP_HALF;                                                          /* CSTEER = 1, 2^1    */
+    in.kprimedt         = agc_dp_from_double(0.1, 0);                                           /* arbitrary gain     */
+    agc_vec_t    omegac = agc_vec_zero();                                                       /* OMEGAC, commanded rates; scale of OMEGAC */
+    agc_status_t st     = agc_guid_steering_cross_product(&ip, &in, &refsmmat, &trig, &omegac); /* status of agc_guid_steering_cross_product */
 
     CHECK(st == AGC_STATUS_OK);
 
     return (omegac);
 }
 
+/**********************************************************************
+ * Test 2 (P40-P47.agc p.719-722): XPRODUCT gives no rate when the thrust is along VG and a rate
+ * about the third axis when VG is at 90 degrees.
+ *
+ * FUNCTION NAME: test_cross_product_steering
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_cross_product_steering(void)
 {
     /* VG 300 m/s and 2 s of thrust (6 m/s) both along SM (1, 2, 2)/3.     */
-    const double   ux  = 1.0 / 3.0, uy = 2.0 / 3.0, uz = 2.0 / 3.0;
-    agc_vec_t      vg  = agc_vec_make(agc_dp_from_double(3.0 * ux, 7),
+    const double   ux  = 1.0 / 3.0;                                     /* thrust direction, x */
+    const double   uy  = 2.0 / 3.0;                                     /* thrust direction, y */
+    const double   uz  = 2.0 / 3.0;                                     /* thrust direction, z */
+    agc_vec_t      vg  = agc_vec_make(agc_dp_from_double(3.0 * ux, 7),  /* VG 300 m/s along u, m/cs 2^7 */
                                       agc_dp_from_double(3.0 * uy, 7),
                                       agc_dp_from_double(3.0 * uz, 7));
-    agc_vec_t      dv  = agc_vec_make(agc_dp_from_double(0.06 * ux, 7),
+    agc_vec_t      dv  = agc_vec_make(agc_dp_from_double(0.06 * ux, 7), /* DELVREF 6 m/s along u, m/cs 2^7 */
                                       agc_dp_from_double(0.06 * uy, 7),
                                       agc_dp_from_double(0.06 * uz, 7));
-    agc_vec_t      om  = steer(vg, dv);
-    const agc_dp_t tol = 64; /* a few unit-vector LSBs */
+    agc_vec_t      om  = steer(vg, dv);                                 /* OMEGAC, thrust along VG; scale of OMEGAC */
+    const agc_dp_t tol = 64;                                            /* a few unit-vector LSBs; LSB of OMEGAC, unscaled */
 
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        CHECK(labs((long) om.c[i]) <= (long) tol);
+        CHECK(labs((long int) om.c[i]) <= (long int) tol);
     }
 
     /* Thrust along SM X, VG along SM Y: a rate about the third axis.       */
-    agc_vec_t vg2 = agc_vec_make(0, agc_dp_from_double(3.0, 7), 0);
-    agc_vec_t dv2 = agc_vec_make(agc_dp_from_double(0.06, 7), 0, 0);
-    agc_vec_t om2 = steer(vg2, dv2);
-    long      mag = labs((long) om2.c[0]) + labs((long) om2.c[1]) + labs((long) om2.c[2]);
+    agc_vec_t vg2 = agc_vec_make(0, agc_dp_from_double(3.0, 7), 0);                                    /* VG along SM Y, m/cs 2^7 */
+    agc_vec_t dv2 = agc_vec_make(agc_dp_from_double(0.06, 7), 0, 0);                                   /* thrust along SM X, m/cs 2^7 */
+    agc_vec_t om2 = steer(vg2, dv2);                                                                   /* OMEGAC, VG at 90 degrees; scale of OMEGAC */
+    long int  mag = labs((long int) om2.c[0]) + labs((long int) om2.c[1]) + labs((long int) om2.c[2]); /* sum of |OMEGAC| components */
 
-    CHECK(mag > 1000L * (long) tol);
+    CHECK(mag > 1000L * (long int) tol);
 }
 
-/* DELRSPL on an earth trajectory: RONE (m 2^29), VONE (m/cs 2^7).       */
+/**********************************************************************
+ * DELRSPL on an earth trajectory: RONE (m 2^29), VONE (m/cs 2^7).
+ * AGC: DELRSPL (P30-P37.agc pp.643-647).
+ *
+ * FUNCTION NAME: delrspl_case
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ---------------------------------------
+ *   r         agc_vec_t   I    RONE, m 2^29
+ *   v         agc_vec_t   I    VONE, m/cs 2^7
+ *   past      bool        I    call with TFF = 0 (CANTDO path)
+ *   lo        double      I    lowest acceptable RSP-RREC, rev
+ *   hi        double      I    highest acceptable RSP-RREC, rev
+ **********************************************************************/
 static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo, double hi)
 {
-    agc_interp_t         ip;
+    agc_interp_t         ip;      /* interpreter state */
     agc_tff_t            tff = {0};
-    agc_dp_t             t   = 0;
-    agc_latlong_t        ll;
-    agc_navaux_padload_t pad;
+    agc_dp_t             t   = 0; /* TFF to 300 kft, cs 2^28 */
+    agc_latlong_t        ll;      /* target latitude/longitude */
+    agc_navaux_padload_t pad;     /* pad loads (earth model) */
     agc_latlong_opt_t    opt = {false, false};
 
     agc_state_init(AGC_VEHICLE_CSM);
@@ -190,35 +331,33 @@ static void delrspl_case(agc_vec_t r, agc_vec_t v, bool past, double lo, double 
     agc_rendz_erasable()->tstart_orbit = 0;
     tff.rone                           = r;
     tff.vone                           = v;
-    tff.rtmu                           = (agc_dp_t) 176229826; /* 1/RTMUE, 2^17 (R30)             */
+    tff.rtmu                           = (agc_dp_t) 176229826;                     /* 1/RTMUE, 2^17 (R30)             */
     CHECK(agc_tff_conic(&ip, &tff) == AGC_STATUS_OK);
     CHECK(agc_tff_calctff(&ip, &tff, agc_dp_from_double(6373338.0 + 91440.0, 29), &t) == AGC_STATUS_OK);
     CHECK(agc_navaux_get_padload(&pad) == AGC_STATUS_OK);
     CHECK(agc_latlong_from_r(&ip, &pad, opt, r, 0, &ll) == AGC_STATUS_OK);
-    agc_entry_state()->lat_spl         = ll.lat;               /* target under RONE at TIME 0 */
+    agc_entry_state()->lat_spl         = ll.lat;                                   /* target under RONE at TIME 0 */
     agc_entry_state()->lng_spl         = ll.lon;
-    CHECK(agc_guid_delrspl(&ip, &tff, past ? 0 : agc_dp_neg(t)) == AGC_STATUS_OK);
+    CHECK(agc_guid_delrspl(&ip, &tff, past ? 0 : agc_dp_neg(t)) == AGC_STATUS_OK); /* CANTDO path at TFF 0, else the free-fall time */
     double e                           = agc_dp_to_double(agc_guid_state()->csm.rsp_rrec, 0);
 
     CHECK(e >= lo && e <= hi);
     CHECK(!agc_flag_test(AGC_FLAG_ERADFLAG));
 }
 
+/**********************************************************************
+ * Test 3: DELRSPL (P30-P37.agc pp.643-647): the CANTDO path and a
+ * descending 200-km trajectory.
+ *
+ * FUNCTION NAME: test_splash_error
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void test_splash_error(void)
 {
-    agc_vec_t r = agc_vec_make(agc_dp_from_double(6578000.0, 29), 0, 0);
-    agc_vec_t v = agc_vec_make(agc_dp_from_double(-1.0, 7), agc_dp_from_double(76.0, 7), 0);
+    agc_vec_t r = agc_vec_make(agc_dp_from_double(6578000.0, 29), 0, 0);                     /* RONE, m 2^29 */
+    agc_vec_t v = agc_vec_make(agc_dp_from_double(-1.0, 7), agc_dp_from_double(76.0, 7), 0); /* VONE, m/cs 2^7 */
 
     delrspl_case(r, v, true, -2e-4, 2e-4); /* CANTDO: -angle to target  */
     delrspl_case(r, v, false, 0.005, 0.3); /* free fall + entry range   */
-}
-
-int main(void)
-{
-    test_average_g_coast();
-    test_cross_product_steering();
-    test_splash_error();
-    (void) printf("test_guidance: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
-
-    return ((g_failures == 0) ? 0 : 1);
 }

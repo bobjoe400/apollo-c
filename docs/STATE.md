@@ -6,9 +6,9 @@ Updated: 2026-10-12
 - review-nav-integ (Opus, resume): DMP/DMPR and shift-rounding audits,
   collapse-diff and GRP2PC rerun checks, word-level adoption, style debt.
   Note: docs/modules/review-nav-integ.md.
-- review-guid-powered (Opus, resume): R10 CALCGRAV RTX2 test, *NBSM*
-  word-level form (clears align KNOWN PA-W4), collapse-diff check,
-  word-level adoption, style debt. Note: docs/modules/review-guid-powered.md.
+- follow-up-done-lanes (Opus): every routed item in review_items.md owned
+  by a closed lane (docs/agents/follow-up-done-lanes.md); keeps out of
+  src/nav/integration. Note: docs/modules/follow-up-done-lanes.md.
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md

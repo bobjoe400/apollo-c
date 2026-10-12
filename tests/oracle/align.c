@@ -16,8 +16,8 @@
  *
  *   Tolerances are in LSB of the AGC word (0 = bit exact).  RRANGLES and
  *   SXTANG convert the words ASIN / ACOS / ARCTRIG leave (word_forms.c),
- *   confirmed by 12 random cases each.  AOTMARK is bit exact apart from
- *   KNOWN PA-W4 (TRG*NBSM words).
+ *   confirmed by 12 random cases each.  AOTMARK is bit exact (PA-W4,
+ *   the TRG*NBSM words, closed by the word-level TRG*NBSM).
  *
  * AGC SOURCE:
  *   Comanche055 CSM_GEOMETRY.agc, S-BAND_ANTENNA_FOR_CM.agc
@@ -465,10 +465,10 @@ static void optaxis(const char *t, long int tol)
  **********************************************************************/
 static void surfstar(const char *t, long int tol)
 {
-    agc_interp_t         ip;                    /* interpreter state */
-    agc_align_aot_pair_t m;                     /* the mark */
-    agc_vec_t            star = agc_vec_zero(); /* SURFSTAR result (SM), half-unit (2^1) */
-    agc_vec_t            ave  = agc_vec_zero(); /* AVEIT running average, half-unit (2^1) */
+    agc_interp_t         ip;                   /* interpreter state */
+    agc_align_aot_pair_t m;                    /* the mark */
+    agc_vec_words_t      star;                 /* SURFSTAR result (SM) as stored at 24D, half-unit (2^1) */
+    agc_vec_t            ave = agc_vec_zero(); /* AVEIT running average, half-unit (2^1) */
 
     agc_interp_init(&ip);
     oracle_require_ok(t, "ENDMARKS");
@@ -482,12 +482,10 @@ static void surfstar(const char *t, long int tol)
     (void) agc_aot_surfstar(&ip, &m, oracle_in_vec(t, "SCAXIS"), oracle_in_vec(t, "VAC1+18"), oracle_in_vec(t, "VAC1+12"), &star);
     (void) agc_aot_aveit(&ip, 1, star, &ave);
 
-    /* TRG*NBSM can leave a component in sign-disagreeing words (VAD), and
-     * AVEIT's VSR3 then rounds an exact half the other way: one LSB of the
-     * VSR3 result, 8 after V/SC (1/8) (review-prog-align.md W4): KNOWN at
-     * 0, hard at 8.                                                    */
-    oracle_cmp_vec_known(t, "24D", ave, oracle_out_vec(t, "VAC1+24"), tol, "PA-W4");
-    oracle_cmp_vec(t, "24D", ave, oracle_out_vec(t, "VAC1+24"), tol + 8);
+    /* TRG*NBSM leaves its components in the words AX*SR*T's DAS/DDOUBL
+     * produce (signs may disagree); AVEIT's VSR3 rounds those words
+     * (review-prog-align.md W4, closed by the word-level TRG*NBSM).     */
+    oracle_cmp_vec(t, "24D", ave, oracle_out_vec(t, "VAC1+24"), tol);
 }
 
 /**********************************************************************

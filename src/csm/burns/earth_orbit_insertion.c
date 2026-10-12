@@ -284,7 +284,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_setup(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? agc_job_matrxjob(ctx) : st); /* go on if OK */
+    return ((st == AGC_STATUS_OK) ? agc_job_matrxjob() : st); /* go on if OK */
 } /* agc_job_earth_orbit_insertion_monitor_setup */
 
 /**********************************************************************
@@ -358,7 +358,7 @@ agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx)
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
+static agc_status_t matrx_tail(void)
 {
     agc_phase_var_t v = { AGC_RESTART_JOB, AGC_JOB_MATRXJOB, AGC_TASK_NONE, 0, false, 0U };
     int32_t         dt; /* READACCS delay, cs */
@@ -394,7 +394,7 @@ static agc_status_t matrx_tail(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_job_normlize_csm(ctx)); /* POSTJUMP      */
+    return (agc_job_normlize_csm()); /* POSTJUMP      */
 } /* matrx_tail */
 
 /**********************************************************************
@@ -451,7 +451,7 @@ static agc_status_t launch_refsmmat(agc_interp_t *ip, agc_vec_t down, agc_mat_t 
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
+agc_status_t agc_job_matrxjob(void)
 {
     const agc_latlong_opt_t opt = {false, false};
     agc_interp_t           *ip  = entry_ip();             /* entry job interpreter state */
@@ -526,7 +526,7 @@ agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx)
     insertion_pad.satrlrt = agc_dp_sign(insertion_pad.satrlrt, agc_dp_add(ip, agc_dp_sub(ip, INSERTION_HALFREV, insertion_pad.launchaz), insertion_pad.azimuth));
     agc_flag_set(AGC_FLAG_REFSMFLG);
 
-    return (matrx_tail(ctx));
+    return (matrx_tail());
 } /* agc_job_matrxjob */
 
 /* ======================================================================

@@ -476,7 +476,7 @@ job	AGC_JOB_LUNAR_SURFACE_TRIM_RETRY	-	agc_job_lunar_surface_trim_retry	lm/align
 job	AGC_JOB_APS_BURN	-	agc_job_aps_burn	lm/burns	P42LM
 job	AGC_JOB_APS_BURN_STAGE_CHECKED	-	agc_job_aps_burn	lm/burns	
 job	AGC_JOB_AUTO_CONTROL_RECYCLE	-	agc_job_auto_control_recycle	lm/burns	
-job	AGC_JOB_BURNBABY	-	agc_job_burnbaby	lm/burns	BURNBABY
+job	AGC_JOB_BURNBABY	-	agc_lm_burnbaby	lm/burns	BURNBABY (also the group-4 restart job)
 job	AGC_JOB_BURNBABY_COUNTDOWN	-	agc_job_burnbaby_countdown	lm/burns	
 job	AGC_JOB_CLOKJOB_ENGINE_ENABLE	-	agc_job_clokjob_engine_enable	lm/burns	
 job	AGC_JOB_CLOKJOB_ENGINE_ENABLE_BYPASS	-	agc_job_clokjob_engine_enable_bypass	lm/burns	

@@ -85,3 +85,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - follow-up-done-lanes: make agc_svc_b5off, trfailof, trfailon void (callers in other lanes); fold agc_svc_set_extvbact into agc_erase_set_extvbact.
 - io-dsky: P27 cannot receive data until something calls agc_uplink_update_write (wire the uplink path from the UPRUPT handler / V71-V73 flow).
 - sim: drive the scaler channels 3 and 4 (the AGC's SCALER1/SCALER2 read-back) as yaAGC does.
+
+## From review-guid-powered final (2026-10-12; note docs/modules/review-guid-powered.md, R10-R15)
+- core-numeric (follow-up-done-lanes): a DOT / VXM that takes stored words (last 2 LSB of oracle s40_2); move agc_vec_words_t into include/agc/core/word.h; UNIT-at-B27 behind the radial case's 10 LSB.
+- prog-align: KNOWN PA-W4 closed (oracle_align 570/0 hard at tolerance 0).

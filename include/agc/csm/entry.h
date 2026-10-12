@@ -376,7 +376,7 @@ agc_status_t agc_return_to_earth_xt1lim(agc_dp_t ma, agc_dp_t rcon, agc_dp_t r_t
 agc_status_t agc_job_earth_orbit_insertion_monitor(agc_job_ctx_t *ctx);           /* P11                 */
 agc_status_t agc_job_earth_orbit_insertion_monitor_restart(agc_job_ctx_t *ctx);   /* REP11  3.11         */
 agc_status_t agc_job_earth_orbit_insertion_monitor_ephemeris(agc_job_ctx_t *ctx); /* REP11A 3.13         */
-agc_status_t agc_job_matrxjob(agc_job_ctx_t *ctx);                                /* MATRXJOB 3.7        */
+agc_status_t agc_job_matrxjob(void);                                              /* MATRXJOB 3.7        */
 agc_status_t agc_job_vhhdot(agc_job_ctx_t *ctx);                                  /* VHHDOT (AVGEXIT)    */
 agc_status_t agc_job_aterjob(void);                                               /* ATERJOB             */
 agc_status_t agc_task_atertask(void);                                             /* ATERTASK 4.51       */
@@ -442,7 +442,7 @@ agc_status_t  entry_endexit(agc_job_ctx_t *ctx, agc_entry_state_t *es);         
 agc_status_t  entry_initial_target(agc_interp_t *ip, agc_entry_state_t *es);     /* STARTEN1 */
 
 /* cm_body_attitude.c: SERVNOUT (CHANG1 if a job waits, then SERVEXIT).  */
-agc_status_t entry_servnout(agc_job_ctx_t *ctx);
+agc_status_t entry_servnout(void);
 
 /* programs.c: mode/display changes called from the steering via RTB.        */
 agc_status_t entry_post_0_05g(agc_entry_state_t *es);

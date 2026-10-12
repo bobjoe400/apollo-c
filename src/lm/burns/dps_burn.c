@@ -1,12 +1,52 @@
-/*
- * dps_burn.c -- P40-P47.agc, Luminary099 pp. 752-784: the LM thrusting
- * programs P40 (DPS), P41 (RCS), P42 (APS) and P47 (thrust monitor):
- * P40LM, P41LM, P42LM, P40IN/P40SXT4/P41MANU (S40.1, S40.2,3, R60LEM),
- * POSTBURN, TIGNOW, TERM40, BLNKWAIT/REDO6.7/DYNMDISP, CALCN85, P47LM,
- * STARTP47, CALCN83, P47BOD, P47BODY, IMPLBURN, ENGOFTSK, ENGINOFF ..
- * ENGINOF4, COASTSET, UPDATEVG, STEERING, GETDT, the Luminary S40.8,
- * S40.9 and S40.13 and TRIMGIMB (RASTEER1 is in dps_burn_rasteer.c).
- */
+/**********************************************************************
+ * FILE NAME: dps_burn.c
+ *
+ * PURPOSE:
+ *   The LM thrusting programs P40 (DPS), P41 (RCS), P42 (APS) and P47
+ *   (thrust monitor): P40LM, P41LM, P42LM, P40IN/P40SXT4/P41MANU (S40.1,
+ *   S40.2,3, R60LEM), POSTBURN, TIGNOW, TERM40, BLNKWAIT/REDO6.7/DYNMDISP,
+ *   CALCN85, P47LM, STARTP47, CALCN83, P47BOD, P47BODY, IMPLBURN, ENGOFTSK,
+ *   ENGINOFF .. ENGINOF4, COASTSET, UPDATEVG, STEERING, GETDT, the Luminary
+ *   S40.8, S40.9 and S40.13, and TRIMGIMB.
+ *
+ * AGC SOURCE:
+ *   Luminary099 P40-P47.agc pp. 753-784 (RASTEER1: dps_burn_rasteer.c)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
+ *   Name          Type       I/O  Scale        Description
+ *   ------------  ---------  ---  -----------  -----------------------
+ *   TIG, TGO      agc_dp_t   I/O  cs 2^28      ignition time, time to go
+ *   VGTIG         agc_vec_t  I/O  m/cs 2^7     VGPREV (same erasable)
+ *   RN, VN        agc_vec_t  I    2^29, 2^7    state (S40.9)
+ *   PIPTIME       agc_dp_t   I    cs 2^28      time of RN, VN
+ *   REFSMMAT      agc_mat_t  I    2^1          SM to reference
+ *   TEVENT        agc_dp_t   O    cs 2^28      event time for the downlink
+ *   THRUST        agc_sp_t   O    -            DPS throttle command
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_guid_initial_velocity_to_gain        S40.1 (burn_steering.c)
+ *   agc_guid_preferred_thrust_attitude_lm    S40.2,3 (burn_steering.c)
+ *   agc_guid_steering_tgo_lm                 S40.8 TGO (burn_steering.c)
+ *   agc_lm_rasteer1       RASTEER1 (dps_burn_rasteer.c)
+ *   agc_job_burnbaby_countdown  B*RNB*B* (ignition/burnbaby.c)
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   ALARM 01407 (VG increasing) and ALARM 01706 (P40/P42 stage
+ *   check, REP40ALM). Display, integration, executive and waitlist
+ *   failures come back as their status.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   LM only. Jobs and waitlist tasks of the burn programs; the steering
+ *   runs in the SERVICER job (AVGEXIT). Restart groups 3, 4 and 6.
+ *
+ * NOTES:
+ *   See docs/modules/guid-powered.md and review-guid-powered.md.
+ *
+ * ALGORITHM:
+ *   As in the listing; scales: VG, DELVREF m/cs 2^7, TGO cs, mass kg 2^16.
+ **********************************************************************/
 #include <stddef.h>
 
 #include "agc/core/assert.h"
@@ -24,8 +64,8 @@
 #include "agc/nav/conic.h"
 #include "agc/programs/rendezvous.h"
 
-#define ONE_SEC   100
-#define HALF_SEC  50
+#define ONE_SEC   100  /* 1SEC, cs */
+#define HALF_SEC  50   /* 0.5 s, cs */
 #define TRIM_WAIT 6000 /* DEC 6000: one minute to full + trim       */
 
 /* TRIMGIMB channel 12 masks as the listing names them (p.781): EBANK5
@@ -33,78 +73,101 @@
  * "- PITCH, - ROLL"; BIT10 shuts off pitch, BIT12 roll. agc_channels.h
  * names these bits TRIMPITCHM/TRIMROLLM (9, 11) and TRIMPITCHP/TRIMROLLP
  * (10, 12) -- the opposite sense; see the module note, Open questions.   */
-#define TRIM_PLUS  ((uint16_t) (AGC_CH012_TRIMPITCHM | AGC_CH012_TRIMROLLM))
-#define TRIM_MINUS ((uint16_t) (AGC_CH012_TRIMPITCHP | AGC_CH012_TRIMROLLP))
-#define TRIM_PITCH ((uint16_t) AGC_CH012_TRIMPITCHP) /* BIT10            */
-#define TRIM_ROLL  ((uint16_t) AGC_CH012_TRIMROLLP)  /* BIT12            */
-#define PH_5_3_B   ((uint16_t) 010035)
+#define TRIM_PLUS  ((uint16_t) (AGC_CH012_TRIMPITCHM | AGC_CH012_TRIMROLLM)) /* channel 12 bits 9, 11 */
+#define TRIM_MINUS ((uint16_t) (AGC_CH012_TRIMPITCHP | AGC_CH012_TRIMROLLP)) /* channel 12 bits 10, 12 */
+#define TRIM_PITCH ((uint16_t) AGC_CH012_TRIMPITCHP)                         /* BIT10            */
+#define TRIM_ROLL  ((uint16_t) AGC_CH012_TRIMROLLP)                          /* BIT12            */
+#define PH_5_3_B   ((uint16_t) 010035)                                       /* B: 5.3 REREADAC + job */
 
 /* CONTROLLED_CONSTANTS (p.~): DPS and APS thrust, flow, tail-off; RCS.     */
 static const agc_dp_t FDPS    = 9158263; /* 4.3670 B-7: 9817.5 lb        */
 static const agc_dp_t MDOTDPS = 4966056; /* 0.1480 B-3: 32.62 lb/s       */
-static const agc_dp_t DTDECAY = -38;     /* 2DEC -38 cs                  */
+static const agc_dp_t DTDECAY = -38;     /* 2DEC -38 cs; DTDECAY, cs 2^28 */
 static const agc_dp_t FAPS    = 3265056; /* 1.5569 B-7: 3500 lb          */
 static const agc_dp_t MDOTAPS = 1723020; /* 0.05135 B-3: 11.32 lb/s      */
-static const agc_dp_t ATDECAY = -10;     /* 2DEC -10 cs                  */
+static const agc_dp_t ATDECAY = -10;     /* 2DEC -10 cs; ATDECAY, cs 2^28 */
 static const agc_dp_t FRCS4   = 373125;  /* 0.17792 B-7: 400 lb          */
 static const agc_dp_t FRCS2   = 186563;  /* 0.08896 B-7: 200 lb          */
 
 /* APSVEX DEC -3030 E-2 B-5, DPSVEX DEC* -2.95588868 E+1 B-05* (m/cs 2^5). */
-static const agc_sp_t APSVEX = -15514;
-static const agc_sp_t DPSVEX = -15134;
+static const agc_sp_t APSVEX = -15514; /* APSVEX, m/cs 2^5 */
+static const agc_sp_t DPSVEX = -15134; /* DPSVEX, m/cs 2^5 */
 
 /* DV monitor thresholds THRESH1 24, THRESH3 12 (DPS), THRESH2 308 (APS).  */
-#define THRESH1 24
-#define THRESH2 308
-#define THRESH3 12
+#define THRESH1 24  /* THRESH1, PIPA pulses (DPS, undocked) */
+#define THRESH2 308 /* THRESH2, PIPA pulses (APS) */
+#define THRESH3 12  /* THRESH3, PIPA pulses (DPS) */
 
 /* S40.13: K1VAL 124.55 B-23 (2800 lb-s), K2VAL 31.138 B-24 (700 lb-s),
  * K3VAL 1.5569 B-10 (FAPS), S40.136 .4671 B-9 (DPS M N), S40.136_ = B+1,
  * 4SEC(17) 400 B-17, 1SEC2D 100 B-14, 3.5SEC 350 B-13, 5SECS 500 B-14,
  * 6SEC 600 B-14, 89SECS 8900 B-14.                                         */
-static const agc_dp_t K1VAL                      = 3986;
-static const agc_dp_t K2VAL                      = 498;
-static const agc_dp_t K3VAL                      = 408132;
-static const agc_dp_t DPS_IMPULSE_THRUST         = 244895;
-static const agc_dp_t DPS_IMPULSE_THRUST_SHIFTED = 250772403;
-static const agc_dp_t SEC4_17                    = 819200;
-static const agc_dp_t SEC1_2D                    = 1638400;
-static const agc_dp_t SEC3_5                     = 11468800;
-static const agc_dp_t SEC5_14                    = 8192000;
-static const agc_dp_t SEC6_14                    = 9830400;
-static const agc_dp_t SEC89_14                   = 145817600;
+static const agc_dp_t K1VAL                      = 3986;      /* K1VAL 2800 lb-s, 2^23 */
+static const agc_dp_t K2VAL                      = 498;       /* K2VAL 700 lb-s, 2^24 */
+static const agc_dp_t K3VAL                      = 408132;    /* K3VAL FAPS, 2^10 */
+static const agc_dp_t DPS_IMPULSE_THRUST         = 244895;    /* S40.136 DPS M N, 2^9 */
+static const agc_dp_t DPS_IMPULSE_THRUST_SHIFTED = 250772403; /* S40.136_ DPS M N, 2^-1 */
+static const agc_dp_t SEC4_17                    = 819200;    /* 4 s, cs 2^17 */
+static const agc_dp_t SEC1_2D                    = 1638400;   /* 1 s, cs 2^14 (1SEC2D) */
+static const agc_dp_t SEC3_5                     = 11468800;  /* 3.5 s, cs 2^13 */
+static const agc_dp_t SEC5_14                    = 8192000;   /* 5 s, cs 2^14 */
+static const agc_dp_t SEC6_14                    = 9830400;   /* 6 s, cs 2^14 */
+static const agc_dp_t SEC89_14                   = 145817600; /* 89 s, cs 2^14 */
 
 /* FOURSECS 2DEC 400 (B-28); -FOURDT is in agc_guid_s40_8_tgo_lm.          */
-static const agc_dp_t FOURSECS = 400;
+static const agc_dp_t FOURSECS = 400; /* FOURSECS, cs 2^28 */
 
 /* EPS1 10 deg, EPS2 35 deg (rev).                                          */
-static const agc_dp_t EPS1 = 7456540;
-static const agc_dp_t EPS2 = 26097892;
+static const agc_dp_t EPS1 = 7456540;  /* EPS1 10 deg, rev 2^0 */
+static const agc_dp_t EPS2 = 26097892; /* EPS2 35 deg, rev 2^0 */
 
-/* The engine constants for P40 (DPS) and P42 (APS): F, MDOT, TDECAY by a
- * vector load, VEX = -VEX(SLOAD) SR1 (m/cs 2^6).                           */
+/**********************************************************************
+ * The engine constants for P40 (DPS) and P42 (APS): F, MDOT, TDECAY by a
+ * vector load, VEX = -VEX(SLOAD) SR1 (m/cs 2^6).
+ * AGC: P40LM / P42LM engine loads (P40-P47.agc pp.754, 758).
+ *
+ * FUNCTION NAME: load_engine
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ---------------------------------------
+ *   aps       bool        I    APS (true) or DPS (false) constants
+ **********************************************************************/
 static void load_engine(bool aps)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
-    g->burn.f    = aps ? FAPS : FDPS;
-    g->lm.mdot   = aps ? MDOTAPS : MDOTDPS;
-    g->lm.tdecay = aps ? ATDECAY : DTDECAY;
-    g->lm.vex    = agc_dp_shr(agc_dp_neg(agc_dp_from_sp(aps ? APSVEX : DPSVEX)), 1);
+    g->burn.f    = aps ? FAPS : FDPS;                                                /* F of APS or DPS */
+    g->lm.mdot   = aps ? MDOTAPS : MDOTDPS;                                          /* MDOT of APS or DPS */
+    g->lm.tdecay = aps ? ATDECAY : DTDECAY;                                          /* TDECAY of APS or DPS */
+    g->lm.vex    = agc_dp_shr(agc_dp_neg(agc_dp_from_sp(aps ? APSVEX : DPSVEX)), 1); /* -VEX SR1 of APS or DPS */
 }
 
-/* P40IN .. P40SXT4 (p.753-754): S40.1, S40.2,3; DB 1 deg (PFLITEDB); R60
- * with VECPOINT (3AXISFLG reset); then ret_job (BURNBABY / P41 rest).    */
+/**********************************************************************
+ * P40IN .. P40SXT4 (p.754-755): S40.1, S40.2,3; DB 1 deg (PFLITEDB); R60
+ * with VECPOINT (3AXISFLG reset); then ret_job (BURNBABY / P41 rest).
+ *
+ * FUNCTION NAME: burn_program_start
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *   ret_job   agc_job_id_t     I    job to continue at after the set-up
+ *   rcs_burn  bool             I    RCS burn (P41)
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 static agc_status_t burn_program_start(agc_job_ctx_t *ctx, agc_job_id_t ret_job, bool rcs_burn)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
     g->burn.weight_g = g->lm.mass; /* WEIGHT/G = MASS        */
-    agc_interp_t ip;
+    agc_interp_t ip;               /* interpreter state */
 
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);
-    agc_status_t st = agc_guid_initial_velocity_to_gain(&ip, AGC_VEHICLE_LM);
+    agc_status_t st = agc_guid_initial_velocity_to_gain(&ip, AGC_VEHICLE_LM); /* status of agc_guid_initial_velocity_to_gain */
 
     if (st == AGC_STATUS_OK)
     {
@@ -146,9 +209,20 @@ static agc_status_t burn_program_start(agc_job_ctx_t *ctx, agc_job_id_t ret_job,
     agc_flag_clear(AGC_FLAG_3AXISFLG); /* P41MANU: USE VECPOINT  */
 
     return (agc_imu_attitude_maneuver(ctx, ret_job)); /* R60LEM                 */
-}
+} /* burn_program_start */
 
-/* P40ALM (p.746): alarm 1706, then the V05N09 loop REP40ALM.              */
+/**********************************************************************
+ * P40ALM (p.748): alarm 1706, then the V05N09 loop REP40ALM.
+ *
+ * FUNCTION NAME: stage_alarm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 static agc_status_t stage_alarm(agc_job_ctx_t *ctx)
 {
     agc_alarm(AGC_ALARM_01706); /* PROGRAM vs. CONFIG.    */
@@ -156,12 +230,23 @@ static agc_status_t stage_alarm(agc_job_ctx_t *ctx)
     return (agc_job_stage_alarm_display(ctx));
 }
 
-/* P40LM (p.753): DPS burn. 4 type C here; WHICH = P40TABLE; APS staged ->
+/**********************************************************************
+ * P40LM (p.753): DPS burn. 4 type C here; WHICH = P40TABLE; APS staged ->
  * alarm 1706; IMU status; DV monitor 36 pulses (12 docked to the CSM),
- * 4 low passes; DPS constants, NOTHROTL reset; then P40IN and BURNBABY.  */
+ * 4 low passes; DPS constants, NOTHROTL reset; then P40IN and BURNBABY.
+ *
+ * FUNCTION NAME: agc_job_dps_burn
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx)
 {
-    agc_guid_t     *g = agc_guid_state();
+    agc_guid_t     *g = agc_guid_state(); /* guidance erasables */
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_DPS_BURN, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change_var((uint16_t) 004024, &v);
@@ -172,14 +257,14 @@ agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx)
         return (stage_alarm(ctx));
     }
 
-    agc_status_t st = agc_imu_status_check();
+    agc_status_t st = agc_imu_status_check(); /* status of agc_imu_status_check */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    g->lm.dvthrush = (agc_sp_t) ((agc_flag_test(AGC_FLAG_CSMDKFLG) ? 0 : THRESH1) + THRESH3);
+    g->lm.dvthrush = (agc_sp_t) ((agc_flag_test(AGC_FLAG_CSMDKFLG) ? 0 : THRESH1) + THRESH3); /* THRESH1 only undocked */
     g->lm.dvcntr   = 4;
     load_engine(false);
     agc_flag_clear(AGC_FLAG_NOTHROTL);
@@ -187,12 +272,23 @@ agc_status_t agc_job_dps_burn(agc_job_ctx_t *ctx)
     return (burn_program_start(ctx, AGC_JOB_BURNBABY, false));
 }
 
-/* P42LM / P42STAGE (p.756): APS burn; an unstaged LM gets alarm 1706 (the
+/**********************************************************************
+ * P42LM / P42STAGE (p.757): APS burn; an unstaged LM gets alarm 1706 (the
  * crew may proceed: REP40ALM (14) -> P42STAGE, entered as AGC_JOB_APS_BURN_STAGE).
- * DV monitor 308 pulses, AVFLAG set.                                      */
+ * DV monitor 308 pulses, AVFLAG set.
+ *
+ * FUNCTION NAME: agc_job_aps_burn
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_aps_burn(agc_job_ctx_t *ctx)
 {
-    agc_guid_t     *g = agc_guid_state();
+    agc_guid_t     *g = agc_guid_state(); /* guidance erasables */
     agc_phase_var_t v = {AGC_RESTART_JOB, AGC_JOB_APS_BURN, AGC_TASK_NONE, (int16_t) AGC_PRIO20, false, 0U};
 
     agc_phase_change_var((uint16_t) 004024, &v);
@@ -218,36 +314,53 @@ agc_status_t agc_job_aps_burn(agc_job_ctx_t *ctx)
     return (burn_program_start(ctx, AGC_JOB_BURNBABY, false));
 }
 
-/* P41LM (p.755): RCS burn: F = 2-jet (NJETSFLG) or 4-jet, S40.1, S40.2,3,
- * attitude errors zeroed, 0.3 deg deadband, R60.                          */
+/**********************************************************************
+ * P41LM (p.755): RCS burn: F = 2-jet (NJETSFLG) or 4-jet, S40.1, S40.2,3,
+ * attitude errors zeroed, 0.3 deg deadband, R60.
+ *
+ * FUNCTION NAME: agc_job_rcs_burn_lm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_rcs_burn_lm(agc_job_ctx_t *ctx)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
     g->lm.which     = (agc_sp_t) AGC_LM_WHICH_RCS_BURN;
-    agc_status_t st = agc_imu_status_check();
+    agc_status_t st = agc_imu_status_check(); /* status of agc_imu_status_check */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    g->burn.f = agc_flag_test(AGC_FLAG_NJETSFLG) ? FRCS2 : FRCS4;
-
-    if (!AGC_ASSERT(g->burn.f > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    g->burn.f = agc_flag_test(AGC_FLAG_NJETSFLG) ? FRCS2 : FRCS4; /* 2-jet or 4-jet ullage thrust */
 
     return (burn_program_start(ctx, AGC_JOB_RCS_BURN_AFTER_MANEUVER, true));
 }
 
-/* P41 after R60 (p.755-756): VGBODY = S41.1(VGTIG) for V16N85, then
- * GODSPRET; the job continues at agc_job_rcs_burn_vg_displayed.        */
+/**********************************************************************
+ * P41 after R60 (p.755-756): VGBODY = S41.1(VGTIG) for V16N85, then
+ * GODSPRET; the job continues at agc_job_rcs_burn_vg_displayed.
+ *
+ * FUNCTION NAME: agc_job_rcs_burn_after_maneuver
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
 {
-    agc_guid_t  *g = agc_guid_state();
-    agc_interp_t ip;
+    agc_guid_t  *g = agc_guid_state(); /* guidance erasables */
+    agc_interp_t ip;                   /* interpreter state */
 
     agc_interp_init(&ip);
     agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
@@ -256,14 +369,22 @@ agc_status_t agc_job_rcs_burn_after_maneuver(agc_job_ctx_t *ctx)
     return (agc_dsky_display(ctx, AGC_DSKY_GODSPRET, agc_dsky_vn(16, 85), &cont)); /* CADR GODSPRET */
 }
 
-/* P41 after GODSPRET (p.756): DISPDEX positive, DYNMDISP at PRIO5, 6.7
- * (REDO6.7) and 4 type C, B*RNB*B*.                                      */
+/**********************************************************************
+ * P41 after GODSPRET (p.756): DISPDEX positive, DYNMDISP at PRIO5, 6.7
+ * (REDO6.7) and 4 type C, B*RNB*B*.
+ *
+ * FUNCTION NAME: agc_job_rcs_burn_vg_displayed
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_rcs_burn_vg_displayed(void)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
-    g->lm.dispdex   = (agc_sp_t) AGC_PRIO5; /* FOR SAFETY ONLY        */
-    agc_status_t st = agc_exec_findvac(AGC_PRIO5, AGC_JOB_DYNDISP);
+    g->lm.dispdex   = (agc_sp_t) AGC_PRIO5;                         /* FOR SAFETY ONLY        */
+    agc_status_t st = agc_exec_findvac(AGC_PRIO5, AGC_JOB_DYNDISP); /* status of agc_exec_findvac */
 
     if (st != AGC_STATUS_OK)
     {
@@ -274,11 +395,22 @@ agc_status_t agc_job_rcs_burn_vg_displayed(void)
 
     agc_phase_change2((uint16_t) 000076, (uint16_t) 004024, &v);
 
-    return (agc_lm_burnbaby_countdown());
+    return (agc_job_burnbaby_countdown());
 }
 
-/* REDO6.7 / BLNKWAIT (p.756): on a restart do not put up N85 while the
- * DSKY is blanked (DISPDEX = -BLANKDEX = -2) -- wait a second.            */
+/**********************************************************************
+ * REDO6.7 / BLNKWAIT (p.756): on a restart do not put up N85 while the
+ * DSKY is blanked (DISPDEX = -BLANKDEX = -2) -- wait a second.
+ *
+ * FUNCTION NAME: agc_job_redo6_7
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx)
 {
     if (agc_guid_state()->lm.dispdex + 2 == 0)
@@ -291,8 +423,16 @@ agc_status_t agc_job_redo6_7(agc_job_ctx_t *ctx)
     return (agc_dsky_display(ctx, AGC_DSKY_GODSPRET, agc_dsky_vn(16, 85), &cont)); /* CADR GODSPRET */
 }
 
-/* REDO6.7 after GODSPRET (p.757): PRIOCHNG to PRIO5, then DYNMDISP. A
- * higher job waiting after the change runs first (CHANG1).               */
+/**********************************************************************
+ * REDO6.7 after GODSPRET (p.756): PRIOCHNG to PRIO5, then DYNMDISP. A
+ * higher job waiting after the change runs first (CHANG1).
+ *
+ * FUNCTION NAME: agc_job_redo6_7_vg_displayed
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_redo6_7_vg_displayed(void)
 {
     agc_exec_prio_change(AGC_PRIO5);
@@ -305,18 +445,27 @@ agc_status_t agc_job_redo6_7_vg_displayed(void)
     return (agc_job_dynmdisp());
 }
 
-/* DYNMDISP (p.756-757): every second VGBODY = S41.1(VGPREV) until TIG-35
- * (DISPDEX <= 0: SERVICER updates N85 from then on).                       */
+/**********************************************************************
+ * DYNMDISP (p.757-758): every second VGBODY = S41.1(VGPREV) until TIG-35
+ * (DISPDEX <= 0: SERVICER updates N85 from then on).
+ *
+ * FUNCTION NAME: agc_job_dynmdisp
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_dynmdisp(void)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
     if (g->lm.dispdex <= 0)
     {
         return (AGC_STATUS_OK); /* ENDOFJOB               */
     }
 
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
     agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
@@ -324,16 +473,28 @@ agc_status_t agc_job_dynmdisp(void)
     return (agc_svc_delayjob(ONE_SEC, AGC_JOB_DYNDISP));
 }
 
-/* POSTBURN (p.754): CLOKTASK off (DISPDEX positive), AVEGEXIT = CALCN85,
- * flash V16N40: PROCEED -> TIGNOW, V34 -> TERM40; 4.1.                    */
+/**********************************************************************
+ * POSTBURN (p.754): CLOKTASK off (DISPDEX positive), AVEGEXIT = CALCN85,
+ * flash V16N40: PROCEED -> TIGNOW, V34 -> TERM40; 4.1.
+ *
+ * FUNCTION NAME: agc_job_postburn_lm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_postburn_lm(agc_job_ctx_t *ctx)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
-    g->lm.dispdex        = 1;                    /* CA Z TS DISPDEX        */
-    g->avg.avgexit       = AGC_JOB_CALC_VG_BODY; /* ACADN85                */
+    g->lm.dispdex        = 1;                                                                    /* CA Z TS DISPDEX        */
+    g->avg.avgexit       = AGC_JOB_CALC_VG_BODY;                                                 /* ACADN85                */
     agc_dsky_cont_t cont = {AGC_JOB_TERM40, AGC_JOB_TIGNOW, AGC_JOB_POSTBURN};
-    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 40), &cont);
+    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 40), &cont); /* status of agc_dsky_display */
 
     if (st != AGC_STATUS_OK)
     {
@@ -345,13 +506,25 @@ agc_status_t agc_job_postburn_lm(agc_job_ctx_t *ctx)
     return (AGC_STATUS_OK); /* P40PHS1                */
 }
 
-/* TIGNOW (p.754): attitude errors zeroed, 0.3 deg deadband, flash V16N85
- * (RCS trim); terminate or proceed -> TERM40; 4.1.                        */
+/**********************************************************************
+ * TIGNOW (p.755): attitude errors zeroed, 0.3 deg deadband, flash V16N85
+ * (RCS trim); terminate or proceed -> TERM40; 4.1.
+ *
+ * FUNCTION NAME: agc_job_tignow_lm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx)
 {
     agc_inhint();
     agc_lm_dap_zatteror();
-    agc_status_t sw = agc_lm_dap_setmindb();
+    agc_status_t sw = agc_lm_dap_setmindb(); /* status of agc_lm_dap_setmindb */
 
     if (sw != AGC_STATUS_OK)
     {
@@ -362,7 +535,7 @@ agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx)
 
     agc_relint();
     agc_dsky_cont_t cont = {AGC_JOB_TERM40, AGC_JOB_TERM40, AGC_JOB_TIGNOW};
-    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_REFLASHR, agc_dsky_vn(16, 85), &cont);
+    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_REFLASHR, agc_dsky_vn(16, 85), &cont); /* status of agc_dsky_display */
 
     if (st != AGC_STATUS_OK)
     {
@@ -374,17 +547,25 @@ agc_status_t agc_job_tignow_lm(agc_job_ctx_t *ctx)
     return (AGC_STATUS_OK);
 }
 
-/* TERM40 (p.754-755): AVEGEXIT = SERVEXIT, rendezvous mark counter 0,
- * CLOKTASK off, deadband restored, P00.                                   */
+/**********************************************************************
+ * TERM40 (p.755-756): AVEGEXIT = SERVEXIT, rendezvous mark counter 0,
+ * CLOKTASK off, deadband restored, P00.
+ *
+ * FUNCTION NAME: agc_job_term40
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_term40(void)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
     g->avg.avgexit  = AGC_JOB_SERVEXIT;
-    agc_erase_set_trkmkcnt(0); /* ZERO RENDZVS CNTERS    */
+    agc_erase_set_trkmkcnt(0);               /* ZERO RENDZVS CNTERS    */
     g->lm.dispdex   = 1;
     agc_inhint();
-    agc_status_t st = agc_lm_dap_restordb();
+    agc_status_t st = agc_lm_dap_restordb(); /* status of agc_lm_dap_restordb */
 
     if (st != AGC_STATUS_OK)
     {
@@ -398,14 +579,22 @@ agc_status_t agc_job_term40(void)
     return (agc_exec_gotopooh());
 }
 
-/* CALCN85 (p.757): AVEGEXIT after the burn: UPDATEVG, N85, SERVEXIT.       */
-agc_status_t agc_job_calc_vg_body_lm(agc_job_ctx_t *ctx)
+/**********************************************************************
+ * CALCN85 (p.757): AVEGEXIT after the burn: UPDATEVG, N85, SERVEXIT.
+ *
+ * FUNCTION NAME: agc_job_calc_vg_body_lm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
+agc_status_t agc_job_calc_vg_body_lm(void)
 {
-    agc_guid_t  *g = agc_guid_state();
-    agc_interp_t ip;
+    agc_guid_t  *g = agc_guid_state(); /* guidance erasables */
+    agc_interp_t ip;                   /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_lm_updatevg(&ip);
+    agc_status_t st = agc_lm_updatevg(&ip); /* status of agc_lm_updatevg */
 
     if (st != AGC_STATUS_OK)
     {
@@ -414,24 +603,36 @@ agc_status_t agc_job_calc_vg_body_lm(agc_job_ctx_t *ctx)
 
     agc_guid_reference_to_body(&ip, AGC_VEHICLE_LM, agc_erase_vgtig(), &g->burn.vgbody);
 
-    return (agc_job_servexit(ctx));
+    return (agc_job_servexit());
 }
 
-/* P47LM (p.757-758): IMU status, MIDTOAV2, STARTP47 at the PREREAD time.  */
+/**********************************************************************
+ * P47LM (p.758-759): IMU status, MIDTOAV2, STARTP47 at the PREREAD time.
+ *
+ * FUNCTION NAME: agc_job_thrust_monitor_lm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_thrust_monitor_lm(agc_job_ctx_t *ctx)
 {
-    agc_status_t sw = agc_imu_status_check();
+    agc_status_t sw = agc_imu_status_check(); /* status of agc_imu_status_check */
 
     if (sw != AGC_STATUS_OK)
     {
         return (sw);
     }
 
-    agc_integ_midtoav_out_t mo;
-    agc_interp_t            ip;
+    agc_integ_midtoav_out_t mo; /* MIDTOAV results */
+    agc_interp_t            ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo);
+    agc_status_t st = agc_integ_midtoav2(&ip, agc_integ_shared_ctx(), ctx->id, &mo); /* status of agc_integ_midtoav2 */
 
     if (st != AGC_STATUS_OK)
     {
@@ -439,7 +640,7 @@ agc_status_t agc_job_thrust_monitor_lm(agc_job_ctx_t *ctx)
     }
 
     agc_guid_store_midtoav(&mo);
-    agc_dp_t dt = mo.dt;
+    agc_dp_t dt = mo.dt; /* MIDTOAV delay to PREREAD, cs 2^28 */
 
     if (!AGC_ASSERT(dt >= 0))
     {
@@ -449,36 +650,47 @@ agc_status_t agc_job_thrust_monitor_lm(agc_job_ctx_t *ctx)
     return (agc_waitlist_call((uint16_t) agc_dp_low(dt), AGC_TASK_TIGON)); /* TWIDDLE */
 }
 
-/* STARTP47 (p.758): type C immediate, AVEGEXIT = CALCN83, P47BODY job,
- * REDO4.2 (PREREAD unless SERVICER runs).                                 */
+/**********************************************************************
+ * STARTP47 (p.758): type C immediate, AVEGEXIT = CALCN83, P47BODY job,
+ * REDO4.2 (PREREAD unless SERVICER runs).
+ *
+ * FUNCTION NAME: agc_task_start_thrust_monitor
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_start_thrust_monitor(void)
 {
     agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_TIGON, 0, true, 0U };
 
     agc_phase_change_var((uint16_t) 005014, &v);
     agc_guid_state()->avg.avgexit = AGC_JOB_CALC_DELTA_V_BODY;
-    agc_status_t st               = agc_exec_findvac(AGC_PRIO20, AGC_JOB_THRUST_MONITOR_RESET);
+    agc_status_t st               = agc_exec_findvac(AGC_PRIO20, AGC_JOB_THRUST_MONITOR_RESET); /* status of agc_exec_findvac */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    if (!AGC_ASSERT(agc_guid_state()->avg.avgexit == AGC_JOB_CALC_DELTA_V_BODY))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_task_redo4_2());
 }
 
-/* CALCN83 (p.758): DELVSIN (temp) = DELVCTL + DELVREF, DELVIMU = S41.1 of
- * it (N83), 5.3 type B, DELVCTL = DELVSIN, SERVEXIT.                      */
-agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx)
+/**********************************************************************
+ * CALCN83 (p.758): DELVSIN (temp) = DELVCTL + DELVREF, DELVIMU = S41.1 of
+ * it (N83), 5.3 type B, DELVCTL = DELVSIN, SERVEXIT.
+ *
+ * FUNCTION NAME: agc_job_calc_delta_v_body_lm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
+agc_status_t agc_job_calc_delta_v_body_lm(void)
 {
-    agc_guid_t  *g  = agc_guid_state();
-    agc_rendz_t *rz = agc_rendz_erasable();
-    agc_interp_t ip;
+    agc_guid_t  *g  = agc_guid_state();     /* guidance erasables */
+    agc_rendz_t *rz = agc_rendz_erasable(); /* targeting erasables */
+    agc_interp_t ip;                        /* interpreter state */
 
     agc_interp_init(&ip);
     rz->delvsin       = agc_vec_add(&ip, g->burn.delvctl, g->avg.delvref);
@@ -488,13 +700,24 @@ agc_status_t agc_job_calc_delta_v_body_lm(agc_job_ctx_t *ctx)
     agc_phase_change_var(PH_5_3_B, &v);
     g->burn.delvctl = rz->delvsin;
 
-    return (agc_job_servexit(ctx));
+    return (agc_job_servexit());
 }
 
-/* P47BODY / P47BOD (p.758-759): clear N83, flash V16N83 (ENTER clears).   */
+/**********************************************************************
+ * P47BODY / P47BOD (p.759-760): clear N83, flash V16N83 (ENTER clears).
+ *
+ * FUNCTION NAME: agc_job_thrust_monitor_reset_lm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_thrust_monitor_reset_lm(agc_job_ctx_t *ctx)
 {
-    agc_burn_t *b = &agc_guid_state()->burn;
+    agc_burn_t *b = &agc_guid_state()->burn; /* burn erasables */
 
     b->delvimu = agc_vec_zero();
     b->delvctl = agc_vec_zero();
@@ -502,10 +725,24 @@ agc_status_t agc_job_thrust_monitor_reset_lm(agc_job_ctx_t *ctx)
     return (agc_job_thrust_monitor_display_lm(ctx));
 }
 
+/**********************************************************************
+ * P47BOD (p.759): V16N83 flash: PROCEED and TERMINATE go to P00, ENTER
+ * to P47BODY (reset); 4 off.
+ *
+ * FUNCTION NAME: agc_job_thrust_monitor_display_lm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_thrust_monitor_display_lm(agc_job_ctx_t *ctx)
 {
     agc_dsky_cont_t cont = {AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_THRUST_MONITOR_RESET};
-    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 83), &cont);
+    agc_status_t    st   = agc_dsky_display(ctx, AGC_DSKY_GOFLASHR, agc_dsky_vn(16, 83), &cont); /* status of agc_dsky_display */
 
     if (st != AGC_STATUS_OK)
     {
@@ -517,21 +754,40 @@ agc_status_t agc_job_thrust_monitor_display_lm(agc_job_ctx_t *ctx)
     return (AGC_STATUS_OK); /* P40PHS1                */
 }
 
-/* GETDT (p.762): the engine-off delay, at least 1 cs; TGO = (0, delay).   */
+/**********************************************************************
+ * GETDT (p.763): the engine-off delay, at least 1 cs; TGO = (0, delay).
+ *
+ * FUNCTION NAME: getdt
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ---------------------------------------
+ *   t         agc_sp_t    I    time in cs, SP
+ *
+ * RETURNS: uint16_t -- the delay, cs (at least 1)
+ **********************************************************************/
 static uint16_t getdt(agc_sp_t t)
 {
-    agc_sp_t dt = (t > 0) ? t : 1; /* CCS: AD ONE            */
+    agc_sp_t dt = (t > 0) ? t : 1; /* CCS: AD ONE; cs (unscaled), at least 1 */
 
     agc_erase_set_tgo((agc_dp_t) dt);
 
     return ((uint16_t) dt);
 }
 
-/* IMPLBURN (p.759): engine-off task at TGO, IGNFLAG, ASTNFLAG, IMPULSW
- * reset, 4.11 (ENGOFTSK), ullage off half a second later.                 */
+/**********************************************************************
+ * IMPLBURN (p.759): engine-off task at TGO, IGNFLAG, ASTNFLAG, IMPULSW
+ * reset, 4.11 (ENGOFTSK), ullage off half a second later.
+ *
+ * FUNCTION NAME: agc_task_implburn_lm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_implburn_lm(void)
 {
-    agc_status_t st = agc_waitlist_call(getdt(agc_dp_low(agc_erase_tgo())), AGC_TASK_ENGINOFF);
+    agc_status_t st = agc_waitlist_call(getdt(agc_dp_low(agc_erase_tgo())), AGC_TASK_ENGINOFF); /* status of agc_waitlist_call */
 
     if (st != AGC_STATUS_OK)
     {
@@ -543,44 +799,52 @@ agc_status_t agc_task_implburn_lm(void)
     agc_flag_clear(AGC_FLAG_IMPULSW);
     agc_phase_change((uint16_t) 040114); /* ENGOFTSK (ENGINOFF)    */
 
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_IMPULSW)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_waitlist_fixdelay(HALF_SEC, AGC_TASK_IMPLBURN2));
 }
 
+/**********************************************************************
+ * IMPLBURN +0.5 s (p.759): ullage off.
+ *
+ * FUNCTION NAME: agc_task_implburn2
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK
+ **********************************************************************/
 agc_status_t agc_task_implburn2(void)
 {
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_IGNFLAG)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     agc_lm_noullage();
 
     return (AGC_STATUS_OK); /* TURN OFF ULLAGE        */
 }
 
-/* ENGOFTSK (p.759): ENGINOFF as a waitlist task.                           */
+/**********************************************************************
+ * ENGOFTSK (p.760): ENGINOFF as a waitlist task.
+ *
+ * FUNCTION NAME: agc_task_engoftsk
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_engoftsk(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_lm_enginoff());
 }
 
-/* ENGINOF3 (p.760): ENGONFLG reset, engine off (DSALMOUT bits 13, 14 =
+/**********************************************************************
+ * ENGINOF3 (p.760): ENGONFLG reset, engine off (DSALMOUT bits 13, 14 =
  * 0, 1), trim gimbal off (USEQRJTS), auto-throttle zeroed (THRUST =
- * -HIRTHROT, channel 14 bit 4).                                           */
+ * -HIRTHROT, channel 14 bit 4).
+ *
+ * FUNCTION NAME: agc_lm_enginof3
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 void agc_lm_enginof3(void)
 {
     agc_flag_clear(AGC_FLAG_ENGONFLG);
-    uint16_t ch11 = agc_chan_read(011);
+    uint16_t ch11 = agc_chan_read(011); /* channel 11 */
 
     ch11 = (uint16_t) ((ch11 & ~(uint16_t) (AGC_CH011_ENGINEON | AGC_CH011_ENGINEOFF)) | (uint16_t) AGC_CH011_ENGINEOFF);
     agc_chan_write(011, ch11);                /* TURN OFF THE ENGINE    */
@@ -590,7 +854,13 @@ void agc_lm_enginof3(void)
     agc_chan_or(014, (uint16_t) AGC_CH014_THRUSTACT);
 }
 
-/* ENGINOF4 (p.760): TEVENT, then ENGINOF3.                                 */
+/**********************************************************************
+ * ENGINOF4 (p.760): TEVENT, then ENGINOF3.
+ *
+ * FUNCTION NAME: agc_lm_enginof4
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 void agc_lm_enginof4(void)
 {
     agc_erase_set_tevent((agc_dp_t) agc_time_now_cs());
@@ -598,62 +868,94 @@ void agc_lm_enginof4(void)
     agc_lm_enginof3();
 }
 
-/* ENGINOF1 (p.760): DV monitor off (IDLEFLAG), ullage off, ENGINOF4.       */
+/**********************************************************************
+ * ENGINOF1 (p.760): DV monitor off (IDLEFLAG), ullage off, ENGINOF4.
+ *
+ * FUNCTION NAME: agc_lm_enginof1
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK
+ **********************************************************************/
 agc_status_t agc_lm_enginof1(void)
 {
     agc_flag_set(AGC_FLAG_IDLEFLAG);
     agc_lm_noullage();
-
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_IDLEFLAG)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     agc_lm_enginof4();
 
     return (AGC_STATUS_OK);
 }
 
-/* ENGINOF2 (p.760): DAP coasting set-up (COASTSET) in 10 ms, ENGINOF1.    */
+/**********************************************************************
+ * ENGINOF2 (p.760): DAP coasting set-up (COASTSET) in 10 ms, ENGINOF1.
+ *
+ * FUNCTION NAME: agc_lm_enginof2
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_lm_enginof2(void)
 {
-    agc_status_t st = agc_waitlist_call(1, AGC_TASK_COASTSET);
+    agc_status_t st = agc_waitlist_call(1, AGC_TASK_COASTSET); /* status of agc_waitlist_call */
 
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return ((st != AGC_STATUS_OK) ? st : agc_lm_enginof1());
+    return ((st != AGC_STATUS_OK) ? st : agc_lm_enginof1()); /* ENGINOF1 if the call worked */
 }
 
-/* ENGINOFF (p.759): POSTBURN job (lower priority than CLOKJOB), ENGINOF2. */
+/**********************************************************************
+ * ENGINOFF (p.760): POSTBURN job (lower priority than CLOKJOB), ENGINOF2.
+ *
+ * FUNCTION NAME: agc_lm_enginoff
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_lm_enginoff(void)
 {
-    agc_status_t st = agc_exec_findvac(AGC_PRIO12, AGC_JOB_POSTBURN);
+    agc_status_t st = agc_exec_findvac(AGC_PRIO12, AGC_JOB_POSTBURN); /* status of agc_exec_findvac */
 
     _Static_assert(AGC_PRIO12 < AGC_PRIO27, "AGC constant");
 
-    return ((st != AGC_STATUS_OK) ? st : agc_lm_enginof2());
+    return ((st != AGC_STATUS_OK) ? st : agc_lm_enginof2()); /* ENGINOF2 if the call worked */
 }
 
-/* COASTSET (p.760): ALLCOAST.                                              */
+/**********************************************************************
+ * COASTSET (p.761): ALLCOAST.
+ *
+ * FUNCTION NAME: agc_task_coastset
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_coastset(void)
 {
-    if (!AGC_ASSERT(agc_state_vehicle() == AGC_VEHICLE_LM))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_lm_dap_allcoast());
 }
 
-/* S40.8 Luminary (p.770-771): VG = VGPREV - DELVREF (external delta-V) or
+/**********************************************************************
+ * S40.8 Luminary (p.771-772): VG = VGPREV - DELVREF (external delta-V) or
  * from RASTEER1 (aimpoint); UNFC/2 = REFSMMAT VG VSL1; VGDISP; VGPREV =
- * VG; with STEERSW, TGO and FINDCDUW.                                     */
+ * VG; with STEERSW, TGO and FINDCDUW.
+ *
+ * FUNCTION NAME: agc_lm_cross_product_steering
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  -----------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter state (OVFIND, index
+ *                                  registers)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
 {
-    agc_guid_t *g = agc_guid_state();
+    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
     if (!agc_flag_test(AGC_FLAG_XDELVFLG))
     {
@@ -671,7 +973,7 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
         g->burn.vg = agc_vec_sub(ip, agc_erase_vgtig(), g->avg.delvref);
     }
 
-    agc_mat_t refsmmat = agc_erase_refsmmat();
+    agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows (2^1) */
 
     agc_lm_ldg()->unfc_2 = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, g->burn.vg), 1);
     g->burn.vgdisp       = agc_vec_abval(ip, g->burn.vg); /* BDTOK                  */
@@ -686,10 +988,10 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
      * PIPTIME + TGO; FINDCDUW while TGO >= 4 s, else IMPULSW set, STEERSW
      * reset. A VG more than 90 degrees from the thrust gives alarm 1407 and
      * goes straight to FINDCDUW.                                               */
-    agc_guid_t  *g_commands  = agc_guid_state();
+    agc_guid_t  *g_commands  = agc_guid_state();                        /* guidance erasables */
     agc_tgo_in_t in          = {g_commands->burn.vg, agc_vec_neg(g_commands->avg.delvref), g_commands->lm.vex, g_commands->lm.tdecay};
-    agc_dp_t     tgo         = 0;
-    agc_status_t st_commands = agc_guid_steering_tgo_lm(ip, &in, &tgo);
+    agc_dp_t     tgo         = 0;                                       /* TGO, cs 2^28 */
+    agc_status_t st_commands = agc_guid_steering_tgo_lm(ip, &in, &tgo); /* status of agc_guid_steering_tgo_lm */
 
     if (st_commands == AGC_STATUS_ALARM)
     {
@@ -710,16 +1012,29 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
     agc_flag_clear(AGC_FLAG_STEERSW);
 
     return (AGC_STATUS_OK);
-}
+} /* agc_lm_cross_product_steering */
 
-/* UPDATEVG Luminary (p.761-762): S40.8; for aimpoint burns a new Lambert
+/**********************************************************************
+ * UPDATEVG Luminary (p.761-762): S40.8; for aimpoint burns a new Lambert
  * (S40.9, 2.17) every TNEWA after TIGSAVE (or every pass inside the
  * 165-195 degree cone, NORMSW) unless one is running (PHASE2), then
- * RINIT/VINIT/TIGSAVE for it and DELLT4 = TPASS4 - PIPTIME.               */
+ * RINIT/VINIT/TIGSAVE for it and DELLT4 = TPASS4 - PIPTIME.
+ *
+ * FUNCTION NAME: agc_lm_updatevg
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  -----------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter state (OVFIND, index
+ *                                  registers)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 agc_status_t agc_lm_updatevg(agc_interp_t *ip)
 {
-    agc_guid_t  *g  = agc_guid_state();
-    agc_rendz_t *rz = agc_rendz_erasable();
+    agc_guid_t  *g  = agc_guid_state();                  /* guidance erasables */
+    agc_rendz_t *rz = agc_rendz_erasable();              /* targeting erasables */
     agc_status_t sw = agc_lm_cross_product_steering(ip); /* X-PRODUCT STEERING     */
 
     if (sw != AGC_STATUS_OK)
@@ -732,11 +1047,11 @@ agc_status_t agc_lm_updatevg(agc_interp_t *ip)
         return (AGC_STATUS_OK);
     }
 
-    bool start = true;
+    bool start = true; /* first pass of the steering */
 
     if (!agc_flag_test(AGC_FLAG_NORMSW))
     {
-        agc_dp_t d = agc_dp_sub(ip, agc_dp_sub(ip, agc_erase_piptime(), g->lm.tigsave), g->lm.tnewa);
+        agc_dp_t d = agc_dp_sub(ip, agc_dp_sub(ip, agc_erase_piptime(), g->lm.tigsave), g->lm.tnewa); /* PIPTIME - TIGSAVE - TNEWA, cs 2^28 */
 
         start = (d >= 0);
 
@@ -748,7 +1063,7 @@ agc_status_t agc_lm_updatevg(agc_interp_t *ip)
 
     if (start && agc_phase_get(2) == 0U)
     { /* 180SETUP               */
-        agc_status_t st = agc_exec_findvac(AGC_PRIO10, AGC_JOB_VTOGAIN);
+        agc_status_t st = agc_exec_findvac(AGC_PRIO10, AGC_JOB_VTOGAIN); /* status of agc_exec_findvac */
 
         if (st != AGC_STATUS_OK)
         {
@@ -768,17 +1083,26 @@ agc_status_t agc_lm_updatevg(agc_interp_t *ip)
     rz->dellt4 = agc_dp_sub(ip, rz->tpass4, agc_erase_piptime()); /* GETRANS   */
 
     return (AGC_STATUS_OK);
-}
+} /* agc_lm_updatevg */
 
-/* STEERING / NSTEER (p.762): UPDATEVG; while thrusting (IMPULSW set by
+/**********************************************************************
+ * STEERING / NSTEER (p.762): UPDATEVG; while thrusting (IMPULSW set by
  * S40.8 and the DV monitor on) stop the rates, reset IMPULSW, DV monitor
- * off, ENGOFTSK at TIG (4.11 and 5.3); otherwise SERVEXIT.                 */
-agc_status_t agc_job_steering_lm(agc_job_ctx_t *ctx)
+ * off, ENGOFTSK at TIG (4.11 and 5.3); otherwise SERVEXIT.
+ *
+ * FUNCTION NAME: agc_job_steering_lm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
+agc_status_t agc_job_steering_lm(void)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t sw = agc_lm_updatevg(&ip);
+    agc_status_t sw = agc_lm_updatevg(&ip); /* status of agc_lm_updatevg */
 
     if (sw != AGC_STATUS_OK)
     {
@@ -787,16 +1111,16 @@ agc_status_t agc_job_steering_lm(agc_job_ctx_t *ctx)
 
     if (!agc_flag_test(AGC_FLAG_IMPULSW) || agc_flag_test(AGC_FLAG_IDLEFLAG))
     {
-        return (agc_job_servexit(ctx));
+        return (agc_job_servexit());
     }
 
     agc_inhint();
     agc_lm_dap_stoprate();
     agc_flag_clear(AGC_FLAG_IMPULSW);
-    agc_flag_set(AGC_FLAG_IDLEFLAG); /* TURN OFF DVMON         */
-    agc_dp_t     t  = agc_erase_tig() - (agc_dp_t) agc_time_now_cs();
-    agc_sp_t     lo = (agc_dp_high(t) == 0) ? agc_dp_low(t) : 0;
-    agc_status_t st = agc_waitlist_call(getdt(lo), AGC_TASK_ENGINOFF);
+    agc_flag_set(AGC_FLAG_IDLEFLAG);                                   /* TURN OFF DVMON         */
+    agc_dp_t     t  = agc_erase_tig() - (agc_dp_t) agc_time_now_cs();  /* TIG - TIME, cs 2^28 */
+    agc_sp_t     lo = (agc_dp_high(t) == 0) ? agc_dp_low(t) : 0;       /* TIG - TIME low word, cs; scale 2^14 */
+    agc_status_t st = agc_waitlist_call(getdt(lo), AGC_TASK_ENGINOFF); /* status of agc_waitlist_call */
 
     if (st != AGC_STATUS_OK)
     {
@@ -811,59 +1135,102 @@ agc_status_t agc_job_steering_lm(agc_job_ctx_t *ctx)
     return (AGC_STATUS_OK); /* ENDOFJOB               */
 }
 
-/* S40.9 Luminary (p.776): AVFLAG set (LM active), HAVEGUES with NUMIT 0
- * and EPSILON4 10 or 45 degrees (NORMSW), group 2 off.                    */
+/**********************************************************************
+ * S40.9 Luminary (p.776): AVFLAG set (LM active), HAVEGUES with NUMIT 0
+ * and EPSILON4 10 or 45 degrees (NORMSW), group 2 off.
+ *
+ * FUNCTION NAME: agc_job_vtogain_lm
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  ----------------------------------
+ *   ctx       agc_job_ctx_t *  I    executive context of the running job
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_job_vtogain_lm(agc_job_ctx_t *ctx)
 {
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
     agc_flag_set(AGC_FLAG_AVFLAG);
-    agc_dp_t     e4 = agc_flag_test(AGC_FLAG_NORMSW) ? agc_dp_add(&ip, EPS1, EPS2) : EPS1;
-    agc_status_t st = agc_rendz_havegues(&ip, agc_rendz_erasable(), 0, e4, ctx->id);
+    agc_dp_t     e4 = agc_flag_test(AGC_FLAG_NORMSW) ? agc_dp_add(&ip, EPS1, EPS2) : EPS1; /* EPSILON4, rev 2^0 */
+    agc_status_t st = agc_rendz_havegues(&ip, agc_rendz_erasable(), 0, e4, ctx->id);       /* status of agc_rendz_havegues */
 
     agc_phase_kill(2); /* ENDS40.9               */
 
     return (st);
 }
 
-/* S40.13 short-burn branch, APS (p.773-774): v = |VGTIG| less the 4 s of
+/**********************************************************************
+ * S40.13 short-burn branch, APS (p.773-774): v = |VGTIG| less the 4 s of
  * 2-jet ullage (2^7), m = WEIGHT/G (2^16). Below K1/m (one second of APS):
  * TGO = (m v SR1 + K2)/K3; otherwise with TEMP1 = v - K1/m and TEMP2 =
  * 5 s F SR2 / (m - 3.5 s MDOT): TGO = 1 s + 5 s TEMP1/TEMP2 if TEMP1 <
- * TEMP2. Result: TGO cs at 2^14 (IMPULSW to be set), or -1 to steer.     */
+ * TEMP2. Result: TGO cs at 2^14 (IMPULSW to be set), or -1 to steer.
+ *
+ * FUNCTION NAME: timeburn_aps
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  -----------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter state (OVFIND, index
+ *                                  registers)
+ *   v         agc_dp_t        I    |VGTIG| less the ullage, m/cs 2^7
+ *   m         agc_dp_t        I    WEIGHT/G, kg 2^16
+ *
+ * RETURNS: agc_dp_t -- TGO, cs at 2^14 (IMPULSW to be set), or -1 to
+ *          steer
+ **********************************************************************/
 static agc_dp_t timeburn_aps(agc_interp_t *ip, agc_dp_t v, agc_dp_t m)
 {
-    const agc_guid_t *g     = agc_guid_state();
-    agc_dp_t          temp1 = agc_dp_sub(ip, v, agc_dp_div(ip, K1VAL, m)); /* BDSU 00D */
+    const agc_guid_t *g     = agc_guid_state();                            /* guidance erasables */
+    agc_dp_t          temp1 = agc_dp_sub(ip, v, agc_dp_div(ip, K1VAL, m)); /* BDSU 00D; TEMP1 = v - K1/m, m/cs 2^7 */
 
     if (temp1 < 0)
     { /* S40.131  */
-        agc_dp_t mv = agc_dp_shr(agc_dp_mul_trunc(m, v), 1);
+        agc_dp_t mv = agc_dp_shr(agc_dp_mul_trunc(m, v), 1); /* m v SR1, scale per p.773 */
 
         return (agc_dp_div(ip, agc_dp_add(ip, mv, K2VAL), K3VAL));
     }
 
-    agc_dp_t mass  = agc_dp_sub(ip, m, agc_dp_mul_trunc(g->lm.mdot, SEC3_5));
-    agc_dp_t f5    = agc_dp_shr(agc_dp_mul_trunc(g->burn.f, SEC5_14), 2);
-    agc_dp_t temp2 = agc_dp_div(ip, f5, mass); /* 04D      */
+    agc_dp_t mass  = agc_dp_sub(ip, m, agc_dp_mul_trunc(g->lm.mdot, SEC3_5)); /* m - 3.5 s MDOT, kg 2^16 */
+    agc_dp_t f5    = agc_dp_shr(agc_dp_mul_trunc(g->burn.f, SEC5_14), 2);     /* 5 s F SR2, scale per p.773 */
+    agc_dp_t temp2 = agc_dp_div(ip, f5, mass);                                /* 04D; TEMP2, m/cs 2^7 */
 
     if (agc_dp_sub(ip, temp1, temp2) >= 0)
     {
         return (-1); /* S40.13D  */
     }
 
-    agc_dp_t r = agc_dp_div(ip, temp1, temp2); /* BDDV     */
+    agc_dp_t r = agc_dp_div(ip, temp1, temp2); /* BDDV; TEMP1/TEMP2, scale 2^0 */
 
     return (agc_dp_add(ip, agc_dp_mul_trunc(r, SEC5_14), SEC1_2D));
 }
 
-/* S40.13D (p.774-775), the burn is long enough to steer: APS TGO = m v /
+/**********************************************************************
+ * S40.13D (p.774-775), the burn is long enough to steer: APS TGO = m v /
  * FAPS SL2; DPS TGO = m v / (.4671 M N), NOTHROTL cleared, under 6 s an
  * impulsive burn (IMPULSW), under 95 s NOTHROTL set; a DPS quotient that
  * overflows 2^14 cs is recomputed at 2^28 (S40.130V) and stored as is.
  * Returns TGO at 2^14 (SP cs) or, for S40.130V, sets TGO itself and
- * returns -1.                                                             */
+ * returns -1.
+ *
+ * FUNCTION NAME: timeburn_long
+ *
+ * ARGUMENTS:
+ *   Argument   Type            I/O  Description (scale)
+ *   ---------  --------------  ---  ----------------------------------
+ *   ip         agc_interp_t *  I/O  interpreter state (OVFIND, index
+ *                                   registers)
+ *   v          agc_dp_t        I    |VGTIG| less the ullage, m/cs 2^7
+ *   m          agc_dp_t        I    WEIGHT/G, kg 2^16
+ *   impulsive  bool *          O    IMPULSW result: burn short enough for
+ *                                   attitude hold
+ *
+ * RETURNS: agc_dp_t -- TGO, cs at 2^14, or -1 when S40.130V stored TGO
+ *          itself
+ **********************************************************************/
 static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *impulsive)
 {
     agc_dp_t mv = agc_dp_mul_trunc(v, m); /* 2^23     */
@@ -873,7 +1240,7 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *im
         return (agc_dp_shl(ip, agc_dp_div(ip, mv, FAPS), 2));
     }
 
-    agc_dp_t t = agc_dp_div(ip, mv, DPS_IMPULSE_THRUST);
+    agc_dp_t t = agc_dp_div(ip, mv, DPS_IMPULSE_THRUST); /* m v / DPS M N, cs 2^14 */
 
     agc_flag_clear(AGC_FLAG_NOTHROTL);
 
@@ -884,7 +1251,7 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *im
         return (-1);
     }
 
-    agc_dp_t d = agc_dp_sub(ip, t, SEC6_14); /* S40.127  */
+    agc_dp_t d = agc_dp_sub(ip, t, SEC6_14); /* S40.127; TGO - 6 s, cs 2^14 */
 
     if (d < 0)
     {
@@ -901,31 +1268,40 @@ static agc_dp_t timeburn_long(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, bool *im
     return (t); /* STORETGO */
 }
 
-/* S40.13 TIMEBURN, Luminary (p.773-775), a job: decides whether the burn
+/**********************************************************************
+ * S40.13 TIMEBURN, Luminary (p.773-775), a job: decides whether the burn
  * (VGTIG, WEIGHT/G, F, MDOT, APSFLAG) is long enough to steer. Outputs
  * IMPULSW (set: attitude hold, engine off TGO after ignition), NOTHROTL
  * (set: no throttling) and TGO (cs, 2^28: the high word of the 2^14
- * result as the low word, TPAGREE / DXCH TGO). Group 3 off at the end.   */
+ * result as the low word, TPAGREE / DXCH TGO). Group 3 off at the end.
+ *
+ * FUNCTION NAME: agc_job_timeburn_lm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
+ *          precondition failed)
+ **********************************************************************/
 agc_status_t agc_job_timeburn_lm(void)
 {
-    const agc_guid_t *g = agc_guid_state();
-    agc_dp_t          m = g->burn.weight_g;
+    const agc_guid_t *g = agc_guid_state(); /* guidance erasables */
+    agc_dp_t          m = g->burn.weight_g; /* WEIGHT/G, kg 2^16 */
 
     if (!AGC_ASSERT(m > 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_interp_t ip;
+    agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_flag_clear(AGC_FLAG_IMPULSW); /* NO STEERING UNTIL FOUND  */
-    agc_dp_t v   = agc_vec_abval(&ip, agc_erase_vgtig());
-    agc_dp_t dvu = agc_dp_shl(&ip, agc_dp_div(&ip, agc_dp_mul_trunc(SEC4_17, FRCS2), m), 1);
+    agc_flag_clear(AGC_FLAG_IMPULSW);                                                        /* NO STEERING UNTIL FOUND  */
+    agc_dp_t v   = agc_vec_abval(&ip, agc_erase_vgtig());                                    /* |VGTIG|, m/cs 2^7 */
+    agc_dp_t dvu = agc_dp_shl(&ip, agc_dp_div(&ip, agc_dp_mul_trunc(SEC4_17, FRCS2), m), 1); /* 2-jet ullage delta-V, m/cs 2^7 */
 
     v                  = agc_dp_sub(&ip, v, dvu); /* 00D: VG LESS ULLAGE      */
-    bool     impulsive = false;
-    agc_dp_t t14       = -1;
+    bool     impulsive = false;                   /* impulsive burn (IMPULSW to be set) */
+    agc_dp_t t14       = -1;                      /* TGO, cs 2^14, -1 = steer */
 
     if (agc_flag_test(AGC_FLAG_APSFLAG))
     {
@@ -952,31 +1328,44 @@ agc_status_t agc_job_timeburn_lm(void)
     agc_phase_change((uint16_t) 000003);
 
     return (AGC_STATUS_OK); /* S40.134                  */
-}
+} /* agc_job_timeburn_lm */
 
-/* TRIMGIMB (formerly S40.6), p.781-782, a waitlist task from R03: trims
+/**********************************************************************
+ * TRIMGIMB (formerly S40.6), p.781-782, a waitlist task from R03: trims
  * the DPS engine: drive to full + pitch and + roll for one minute, then
  * run - pitch for PITTIME and - roll for ROLLTIME (cs); when both are
- * off, TRIMDONE (R03) as a PRIO10 job. GMBDRVSW records "one is done".  */
+ * off, TRIMDONE (R03) as a PRIO10 job. GMBDRVSW records "one is done".
+ *
+ * FUNCTION NAME: agc_task_trimgimb
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_trimgimb(void)
 {
     agc_flag_clear(AGC_FLAG_GMBDRVSW);
     agc_chan_and(012, (uint16_t) ~TRIM_MINUS); /* - PITCH, - ROLL OFF     */
     agc_chan_or(012, TRIM_PLUS);               /* + PITCH, + ROLL ON      */
 
-    if (!AGC_ASSERT((agc_chan_read(012) & TRIM_MINUS) == 0U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_waitlist_fixdelay(TRIM_WAIT, AGC_TASK_TRIMGIMB2));
 }
 
-/* TRIMGIMB after the minute: + off, - on, PITCHOFF at PITTIME, roll off
- * at ROLLTIME (VARDELAY).                                                 */
+/**********************************************************************
+ * TRIMGIMB after the minute: + off, - on, PITCHOFF at PITTIME, roll off
+ * at ROLLTIME (VARDELAY).
+ * AGC: TRIMGIMB (P40-P47.agc p.781-782).
+ *
+ * FUNCTION NAME: agc_task_trimgimb2
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
+ *          otherwise the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_trimgimb2(void)
 {
-    const agc_guid_lm_t *lm = &agc_guid_state()->lm;
+    const agc_guid_lm_t *lm = &agc_guid_state()->lm; /* LM guidance erasables */
 
     if (!AGC_ASSERT(lm->pittime >= 0 && lm->rolltime >= 0))
     {
@@ -995,17 +1384,21 @@ agc_status_t agc_task_trimgimb2(void)
     return (agc_waitlist_vardelay((uint16_t) lm->rolltime, AGC_TASK_ROLLOFF));
 }
 
-/* ROLLOVER (p.781-782): the second of roll/pitch to finish starts
- * TRIMDONE; the first sets GMBDRVSW. Then TASKOVER.                       */
+/**********************************************************************
+ * ROLLOVER (p.781-782): the second of roll/pitch to finish starts
+ * TRIMDONE; the first sets GMBDRVSW. Then TASKOVER.
+ *
+ * FUNCTION NAME: rollover
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in
+ **********************************************************************/
 static agc_status_t rollover(void)
 {
     if (agc_flag_test(AGC_FLAG_GMBDRVSW))
     {
-        if (!AGC_ASSERT((agc_chan_read(012) & TRIM_MINUS) == 0U))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         return (agc_exec_novac(AGC_PRIO10, AGC_JOB_TRIMDONE)); /* RETURN TO R03 */
     }
 
@@ -1014,28 +1407,36 @@ static agc_status_t rollover(void)
     return (AGC_STATUS_OK); /* PITCHOFF +4             */
 }
 
-/* TRIMGIMB after ROLLTIME: shut off - roll (BIT12), ROLLOVER.            */
+/**********************************************************************
+ * TRIMGIMB after ROLLTIME: shut off - roll (BIT12), ROLLOVER.
+ * AGC: TRIMGIMB roll-off task (P40-P47.agc p.782).
+ *
+ * FUNCTION NAME: agc_task_rolloff
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_rolloff(void)
 {
     agc_chan_and(012, (uint16_t) ~TRIM_ROLL);
 
-    if (!AGC_ASSERT((agc_chan_read(012) & TRIM_ROLL) == 0U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (rollover());
 }
 
-/* PITCHOFF: shut off - pitch (BIT10), ROLLOVER.                           */
+/**********************************************************************
+ * PITCHOFF: shut off - pitch (BIT10), ROLLOVER.
+ * AGC: PITCHOFF (P40-P47.agc p.782).
+ *
+ * FUNCTION NAME: agc_task_pitchoff
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the routine it continues in
+ **********************************************************************/
 agc_status_t agc_task_pitchoff(void)
 {
     agc_chan_and(012, (uint16_t) ~TRIM_PITCH);
-
-    if (!AGC_ASSERT((agc_chan_read(012) & TRIM_PITCH) == 0U))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (rollover());
 }

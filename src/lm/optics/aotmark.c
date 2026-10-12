@@ -77,6 +77,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
+#include "agc/core/interp_words.h"
 #include "agc/guidance/guidance.h"
 #include "agc/io/service.h"
 #include "agc/lm/landing.h"
@@ -241,22 +242,15 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_cdutrig_t t;                                        /* CDUTRIG sines and cosines */
-    agc_vec_t     yp = ypnb;                                /* Y reticle plane normal at the Y mark, then SM, half-unit (2^1) */
-    agc_vec_t     xp = xpnb;                                /* X reticle plane normal at the X mark, then SM, half-unit (2^1) */
-    agc_status_t  st = agc_guid_trg_nbsm(&t, m->ycdu, &yp); /* status of the call */
+    agc_cdutrig_t t;         /* CDUTRIG sines and cosines */
+    agc_vec_t     yp = ypnb; /* Y reticle plane normal at the Y mark, then SM, half-unit (2^1) */
+    agc_vec_t     xp = xpnb; /* X reticle plane normal at the X mark, then SM, half-unit (2^1) */
 
-    if (st == AGC_STATUS_OK)
-    {
-        st = agc_guid_trg_nbsm(&t, m->xcdu, &xp);
-    }
+    agc_guid_trg_nbsm(&t, m->ycdu, &yp);
+    agc_guid_trg_nbsm(&t, m->xcdu, &xp);
+    *star_sm = agc_vec_unit(ip, agc_vec_cross(ip, xp, yp), NULL, NULL);
 
-    if (st == AGC_STATUS_OK)
-    {
-        *star_sm = agc_vec_unit(ip, agc_vec_cross(ip, xp, yp), NULL, NULL);
-    }
-
-    return (st);
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -279,14 +273,15 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
  *                                                NB, half-unit
  *   ypnb      agc_vec_t                     I    Y reticle plane normal,
  *                                                NB, half-unit
- *   star_sm   agc_vec_t *                   O    star line of sight in SM
- *                                                axes, half-unit (2^1)
+ *   star_sm   agc_vec_words_t *             O    star line of sight in SM
+ *                                                axes as TRG*NBSM leaves
+ *                                                its words, half-unit (2^1)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm)
+agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_words_t *star_sm)
 {
     if (!AGC_ASSERT((ip != NULL) && (m != NULL)) || !AGC_ASSERT(star_sm != NULL))
     {
@@ -314,15 +309,16 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, a
 
     agc_cdutrig_t t; /* CDUTRIG sines and cosines */
 
-    v                     = agc_vec_unit(ip, v, NULL, NULL);    /* JUSTOA   */
-    const agc_status_t st = agc_guid_trg_nbsm(&t, m->xcdu, &v); /* status of the call */
+    v = agc_vec_unit(ip, v, NULL, NULL); /* JUSTOA   */
 
-    if (st == AGC_STATUS_OK)
+    for (int i = 0; i < 3; i++)
     {
-        *star_sm = v;
+        star_sm->c[i] = agc_dp_to_words(v.c[i]); /* MPACVBUF */
     }
 
-    return (st);
+    agc_guid_trg_nbsm_words(&t, m->xcdu, star_sm); /* STCALL 24D keeps VBUF's words */
+
+    return (AGC_STATUS_OK);
 }
 
 /**********************************************************************
@@ -336,22 +332,30 @@ agc_status_t agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, a
  *   --------  --------------  ---  --------------------------------------
  *   ip        agc_interp_t *  IO   interpreter state (OVFIND, MPAC words)
  *   n         agc_sp_t        I    shift count
- *   star      agc_vec_t       I    star line of sight, half-unit (2^1)
+ *   star      agc_vec_words_t I    star line of sight as stored at 24D
+ *                                  (words), half-unit (2^1)
  *   ave       agc_vec_t *     IO   running average star vector, half-unit
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_t star, agc_vec_t *ave)
+agc_status_t agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, agc_vec_t *ave)
 {
     if (!AGC_ASSERT((ip != NULL) && (ave != NULL)) || !AGC_ASSERT((n >= 1) && (n <= AGC_ALIGN_AOT_PAIRS)))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    const agc_dp_t  n8   = (agc_dp_t) n * DP_ONE_EIGHTH;                          /* MKDEX / 8, scale 2^0 */
-    const agc_vec_t part = agc_vec_div(ip, agc_vec_shr(star, 3), n8);             /* STAR VSR3 / (n/8): STAR/n, half-unit (2^1) */
+    const agc_dp_t n8 = (agc_dp_t) n * DP_ONE_EIGHTH; /* MKDEX / 8, scale 2^0 */
+    agc_vec_t      sr3;                               /* STAR VSR3 (rounds on the stored words), scale 2^4 */
+
+    for (int i = 0; i < 3; i++)
+    {
+        sr3.c[i] = agc_dp_from_words(agc_mpac_store(agc_mpac_shift_round(ip, agc_mpac_dload(star.c[i]), -3)));
+    }
+
+    const agc_vec_t part = agc_vec_div(ip, sr3, n8);                              /* STAR VSR3 / (n/8): STAR/n, half-unit (2^1) */
     const agc_dp_t  keep = agc_dp_div(ip, agc_dp_sub(ip, n8, DP_ONE_EIGHTH), n8); /* (n/8 - 1/8) / (n/8): (n-1)/n, scale 2^0 */
 
     *ave = agc_vec_add(ip, agc_vec_scale(ip, *ave, keep), part);
@@ -714,9 +718,23 @@ static agc_status_t average_marks(agc_interp_t *ip)
     {
         ram->mkdex                    = (agc_sp_t) (ram->mkdex + 1); /* ADS MKDEX */
         const agc_align_aot_pair_t *m = &ram->aot[ram->markcntr];    /* the mark */
-        agc_vec_t                   v;                               /* star line of sight of this pair (SM), half-unit (2^1) */
+        agc_vec_words_t             v;                               /* star line of sight of this pair (SM) at 24D, words, half-unit (2^1) */
 
-        st = surface_marks() ? agc_aot_surfstar(ip, m, ram->scaxis, ram->xpnb, ram->ypnb, &v) : agc_aot_flight_los(ip, m, ram->xpnb, ram->ypnb, &v); /* SURFSTAR or the flight LOS */
+        if (surface_marks())
+        {
+            st = agc_aot_surfstar(ip, m, ram->scaxis, ram->xpnb, ram->ypnb, &v);
+        }
+        else
+        {
+            agc_vec_t los; /* VXV UNIT: the flight LOS, half-unit (2^1) */
+
+            st = agc_aot_flight_los(ip, m, ram->xpnb, ram->ypnb, &los);
+
+            for (int i = 0; i < 3; i++)
+            {
+                v.c[i] = agc_dp_to_words(los.c[i]); /* STORE 24D */
+            }
+        }
 
         if (st == AGC_STATUS_OK)
         {

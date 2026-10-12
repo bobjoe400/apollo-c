@@ -497,12 +497,8 @@ agc_status_t agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_
         const uint16_t yzx[3] = {m->cduy, m->cduz, m->cdux};
         agc_cdutrig_t  t; /* CDUTRIG sines and cosines */
 
-        st = agc_guid_trg_nbsm(&t, yzx, &v); /* NBSM  */
-
-        if (st == AGC_STATUS_OK)
-        {
-            *los_sm = v;
-        }
+        agc_guid_trg_nbsm(&t, yzx, &v); /* NBSM  */
+        *los_sm = v;
     }
 
     return (st);

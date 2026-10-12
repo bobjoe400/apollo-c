@@ -1,12 +1,25 @@
-/*
- * internal.h -- the BURN, BABY, BURN ignition tables shared by
- * src/lm/burns/ignition/burnbaby.c and clock.c (Luminary099 pp. 731-751).
+/**********************************************************************
+ * FILE NAME: internal.h
  *
- * The AGC indexes a table of constants and TCF instructions by WHICH
- * (P12TABLE, P40TABLE, P41TABLE -5, P42TABLE, P63TABLE, ABRTABLE). Here each
- * table is a struct whose fields carry the AGC entry number (octal) and
- * whose TCF targets are enumerations (no function pointers).
- */
+ * PURPOSE:
+ *   The BURN, BABY, BURN ignition tables shared by burnbaby.c and
+ *   clock.c.
+ *
+ * AGC SOURCE:
+ *   Luminary099 BURN_BABY_BURN--MASTER_IGNITION_ROUTINE.agc pp. 731-751
+ *
+ * REQUIRES:
+ *   the project headers it includes (self-contained)
+ *
+ * GLOBAL VARIABLES:
+ *   none (state is reached through accessors)
+ *
+ * NOTES:
+ *   The AGC indexes a table of constants and TCF instructions by WHICH
+ *   (P12TABLE, P40TABLE, P41TABLE -5, P42TABLE, P63TABLE, ABRTABLE). Here
+ *   each table is a struct whose fields carry the AGC entry number (octal)
+ *   and whose TCF targets are enumerations (no function pointers).
+ **********************************************************************/
 #ifndef IGNITION_INTERNAL_H
 #define IGNITION_INTERNAL_H
 
@@ -58,7 +71,7 @@ typedef struct ign_table
     bool         comfail_kill;  /* (2)  COMFAIL3 (kill CLOKTASK) / COMFAIL4  */
     ign_enter_t  enter;         /* (3)                                       */
     bool         start_clock;   /* (5)  P40SPOT (STCLOK2) / P41SPOT          */
-    agc_sp_t     ullage_cs;     /* (6)  ullage before TIG-0, cs; < 0 P41     */
+    agc_sp_t     ullage_cs;     /* (6)  ullage before TIG-0, cs; < 0 P41; unscaled */
     agc_job_id_t avgexit;       /* (7)  AVEGEXIT from TIG-30                 */
     ign_tig5_t   tig5;          /* (11)                                      */
     bool         tigtask;       /* (12) TIGTASK (P41) / WAITABIT             */
@@ -79,7 +92,7 @@ const ign_table_t *ign_table(void);
 
 /* "CA Z / TS DISPDEX": any positive DISPDEX kills CLOKTASK. The AGC stores
  * the (positive) address in Z; 1 is used here, as POSTBURN does.         */
-#define IGN_DISPDEX_KILL 1
+#define IGN_DISPDEX_KILL 1 /* positive DISPDEX: kill CLOKTASK */
 
 /* STCLOK3 (p.743-744): start CLOKTASK at the next whole second before TIG
  * (6.3) and protect the caller with a 4.2 type C restart at restart_job.

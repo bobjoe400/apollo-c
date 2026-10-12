@@ -58,6 +58,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
+#include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
@@ -131,11 +132,6 @@ static agc_status_t vg_to_lvc(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg)
         agc_flag_set(AGC_FLAG_AVFLAG);
 
         return (agc_guid_midgim(ip, vg));
-    }
-
-    if (!AGC_ASSERT(rz != NULL))
-    {
-        return (AGC_STATUS_BAD_ARG);
     }
 
     return (agc_rendz_get_lvc(ip, rz->rinit, rz->vinit, vg, &rz->delvlvc));
@@ -293,6 +289,57 @@ static agc_status_t initial_vg_lambert_lm(agc_interp_t *ip)
 } /* initial_vg_lambert_lm */
 
 /**********************************************************************
+ * CALCTHET (CM p.709-710, LM p.765-766): the impulsive DELVSIN is spread
+ * over the burn arc. theta/2 = (|RxV| / R^2) (1/pi) |DV| m / F; the
+ * in-plane part DVP is rotated by theta/2 about UP:
+ *   VGTIG = |DVP| (cos(theta/2) UNIT(DVP) + sin(theta/2) UNIT(DVP x UP))
+ *           VSL2 + (DV . UP) UP;   UT = UNIT(VGTIG).
+ * F is the engine's fixed thrust constant (P40/P41/P42 set-up), never 0.
+ *
+ * FUNCTION NAME: calcthet
+ *
+ * ARGUMENTS:
+ *   Argument  Type            I/O  Description (scale)
+ *   --------  --------------  ---  -----------------------------------
+ *   ip        agc_interp_t *  I/O  interpreter state (OVFIND, index
+ *                                  registers)
+ *   veh       agc_vehicle_t   I    vehicle: AGC_VEHICLE_CSM or
+ *                                  AGC_VEHICLE_LM
+ *
+ * RETURNS: agc_status_t -- the status of the LVC conversion it ends in
+ **********************************************************************/
+static agc_status_t calcthet(agc_interp_t *ip, agc_vehicle_t veh)
+{
+    agc_rendz_t *rz = agc_rendz_erasable();    /* targeting */
+    agc_burn_t  *b  = &agc_guid_state()->burn; /* UT, F, WEIGHT/G */
+
+    rz->vinit  = rz->vtig;
+    agc_dp_t h = 0;                                                                 /* |V x R| (36D), m^2/cs 2^36 */
+    b->ut      = agc_vec_unit(ip, agc_vec_cross(ip, rz->vtig, rz->rtig), &h, NULL); /* UP */
+
+    rz->rinit    = rz->rtig;
+    agc_dp_t rsq = agc_vec_sq(ip, rz->rtig);                         /* VSQ PDDL 36D, m^2 2^58 */
+    agc_dp_t th  = agc_dp_div(ip, agc_dp_mul(ip, h, THETACON), rsq); /* theta/2, rev 2^0 */
+    th           = agc_dp_mul_trunc(agc_dp_mul_trunc(th, rz->delvsab), b->weight_g);
+    th           = agc_dp_div(ip, th, b->f);                         /* 14D         */
+
+    agc_vec_t dvup   = agc_vec_shl(ip, agc_vec_scale(ip, b->ut, agc_vec_dot(ip, rz->delvsin, b->ut)), 2);  /* PDL 0 (DV.UP) UP, m/cs 2^7 */
+    agc_vec_t dvp    = agc_vec_sub(ip, rz->delvsin, dvup);                                                 /* PDL 6, m/cs 2^7 */
+    agc_dp_t  sn     = agc_dp_sin(th);                                                                     /* PDL 12, scale 2^1 */
+    agc_vec_t vg     = agc_vec_scale(ip, agc_vec_unit(ip, agc_vec_cross(ip, dvp, b->ut), NULL, NULL), sn); /* VGTIG, m/cs 2^7 */
+    agc_dp_t  dvpmag = 0;                                                                                  /* |DVP|, m/cs 2^7 */
+    agc_vec_t udvp   = agc_vec_unit(ip, dvp, &dvpmag, NULL);                                               /* PDL 6, scale 2^1 */
+
+    vg = agc_vec_add(ip, agc_vec_scale(ip, udvp, agc_dp_cos(th)), vg);
+    vg = agc_vec_add(ip, agc_vec_shl(ip, agc_vec_scale(ip, vg, dvpmag), 2), dvup);
+
+    agc_erase_set_vgtig(vg);                  /* VG IGNITION */
+    b->ut = agc_vec_unit(ip, vg, NULL, NULL); /* THRUST DIR. */
+
+    return (vg_to_lvc(ip, veh, vg));
+}
+
+/**********************************************************************
  * S40.1 (CM p.709, LM p.764): initial thrust direction UT and VGTIG.
  * Comanche: BDT = 0 here; the caller sets FIRSTFLG (a Comanche-only flag).
  * Luminary: TIGSAVE = TIG.
@@ -324,92 +371,23 @@ agc_status_t agc_guid_initial_velocity_to_gain(agc_interp_t *ip, agc_vehicle_t v
         g->lm.tigsave = agc_erase_tig();
     }
 
+    agc_status_t st; /* status of the targeting branch */
+
     if (!agc_flag_test(AGC_FLAG_XDELVFLG))
     {
-        return ((veh == AGC_VEHICLE_CSM) ? initial_vg_lambert_csm(ip) : initial_vg_lambert_lm(ip)); /* CM; LM */
+        st = (veh == AGC_VEHICLE_CSM) ? initial_vg_lambert_csm(ip) : initial_vg_lambert_lm(ip); /* Lambert: CM; LM */
     }
-
-    if (veh == AGC_VEHICLE_CSM)
+    else
     {
-        rz->delvsab = agc_vec_abval(ip, rz->delvsin); /* P30/P40 I/F */
+        if (veh == AGC_VEHICLE_CSM)
+        {
+            rz->delvsab = agc_vec_abval(ip, rz->delvsin); /* P30/P40 I/F */
+        }
+
+        st = calcthet(ip, veh); /* external delta-V */
     }
 
-    /**********************************************************************
-     * CALCTHET (CM p.709-710, LM p.765-766): the impulsive DELVSIN is spread
-     * over the burn arc. theta/2 = (|RxV| / R^2) (1/pi) |DV| m / F; the
-     * in-plane part DVP is rotated by theta/2 about UP:
-     *   VGTIG = |DVP| (cos(theta/2) UNIT(DVP) + sin(theta/2) UNIT(DVP x UP))
-     *           VSL2 + (DV . UP) UP;   UT = UNIT(VGTIG).
-     *
-     * FUNCTION NAME: calcthet
-     *
-     * ARGUMENTS:
-     *   Argument  Type            I/O  Description (scale)
-     *   --------  --------------  ---  -----------------------------------
-     *   ip        agc_interp_t *  I/O  interpreter state (OVFIND, index
-     *                                  registers)
-     *   veh       agc_vehicle_t   I    vehicle: AGC_VEHICLE_CSM or
-     *                                  AGC_VEHICLE_LM
-     *
-     * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
-     *          otherwise the status of the routine it continues in
-     **********************************************************************/
-    agc_rendz_t *rz_calcthet = agc_rendz_erasable();    /* targeting */
-    agc_burn_t  *b           = &agc_guid_state()->burn; /* UT, F, WEIGHT/G */
-
-    rz_calcthet->vinit = rz_calcthet->vtig;
-    agc_dp_t h         = 0;                                                                                   /* |V x R| (36D), m^2/cs 2^36 */
-    b->ut              = agc_vec_unit(ip, agc_vec_cross(ip, rz_calcthet->vtig, rz_calcthet->rtig), &h, NULL); /* UP */
-
-    rz_calcthet->rinit = rz_calcthet->rtig;
-    agc_dp_t rsq       = agc_vec_sq(ip, rz_calcthet->rtig);                /* VSQ PDDL 36D, m^2 2^58 */
-    agc_dp_t th        = agc_dp_div(ip, agc_dp_mul(ip, h, THETACON), rsq); /* theta/2, rev 2^0 */
-    th                 = agc_dp_mul_trunc(agc_dp_mul_trunc(th, rz_calcthet->delvsab), b->weight_g);
-    th                 = agc_dp_div(ip, th, b->f);                         /* 14D         */
-
-    agc_vec_t dvup   = agc_vec_shl(ip, agc_vec_scale(ip, b->ut, agc_vec_dot(ip, rz_calcthet->delvsin, b->ut)), 2); /* PDL 0 (DV.UP) UP, m/cs 2^7 */
-    agc_vec_t dvp    = agc_vec_sub(ip, rz_calcthet->delvsin, dvup);                                                /* PDL 6, m/cs 2^7 */
-    agc_dp_t  sn     = agc_dp_sin(th);                                                                             /* PDL 12, scale 2^1 */
-    agc_vec_t vg     = agc_vec_scale(ip, agc_vec_unit(ip, agc_vec_cross(ip, dvp, b->ut), NULL, NULL), sn);         /* VGTIG, m/cs 2^7 */
-    agc_dp_t  dvpmag = 0;                                                                                          /* |DVP|, m/cs 2^7 */
-    agc_vec_t udvp   = agc_vec_unit(ip, dvp, &dvpmag, NULL);                                                       /* PDL 6, scale 2^1 */
-
-    vg = agc_vec_add(ip, agc_vec_scale(ip, udvp, agc_dp_cos(th)), vg);
-    vg = agc_vec_add(ip, agc_vec_shl(ip, agc_vec_scale(ip, vg, dvpmag), 2), dvup);
-
-    agc_erase_set_vgtig(vg);                  /* VG IGNITION */
-    b->ut = agc_vec_unit(ip, vg, NULL, NULL); /* THRUST DIR. */
-
-    if (!AGC_ASSERT(b->f > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (vg_to_lvc(ip, veh, vg));
-}
-
-/**********************************************************************
- * DMP then SL1 on the TP MPAC: the third word of the product shifts into
- * the DP result (AGC DMP leaves MPAC+2; SL shifts all three words).
- * AGC: none (helper for the DMP SL1 pairs of S40.2,3, p.715)
- *
- * FUNCTION NAME: dmp_sl1
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  -----------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND, index
- *                                  registers)
- *   a         agc_dp_t        I    multiplicand, DP fraction
- *   b         agc_dp_t        I    multiplier, DP fraction
- *
- * RETURNS: agc_dp_t -- the top two words of 2 a b (0 on overflow)
- **********************************************************************/
-static agc_dp_t dmp_sl1(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
-{
-    agc_dp_t r = agc_tp_to_dp(agc_tp_shift(ip, agc_dp_mul_tp(a, b), 1)); /* 2 a b, scale of a b */
-
-    return (r);
+    return (st);
 }
 
 /**********************************************************************
@@ -467,26 +445,35 @@ static agc_vec_t tstrxut(agc_interp_t *ip, agc_vec_t y, agc_dp_t mag)
  **********************************************************************/
 static agc_status_t sps_bell_axes(agc_interp_t *ip, agc_sp_t pactoff, agc_sp_t yactoff, agc_burn_t *b)
 {
-    if (!AGC_ASSERT(ip != NULL && b != NULL))
+    const agc_dp_words_t trimscal = agc_dp_to_words(TRIMSCAL); /* TRIMSCAL, scale 2^1 */
+
+    /* SLOAD YACTOFF DMP SL1 TRIMSCAL DAD YBIAS (PUSH 2); COS on that MPAC;
+     * PDDL pops the angle back (MPAC+2 = 0) for SIN.                      */
+    agc_tp_words_t       m  = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(agc_dp_from_sp(yactoff))), trimscal), 1); /* yaw trim, rev 2^0 */
+    agc_tp_words_t       y  = agc_mpac_dad(ip, m, agc_dp_to_words(YBIAS));                                                             /* yaw bell angle, rev 2^0 */
+    const agc_dp_words_t cy = agc_mpac_store(agc_mpac_cos(y));                                                                         /* COS(Y+Y0) PDL 2, scale 2^1 */
+    const agc_dp_words_t sy = agc_mpac_store(agc_mpac_sin(agc_mpac_dload(agc_mpac_store(y))));                                         /* SIN(Y+Y0) PDL 4, scale 2^1 */
+
+    m                       = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(agc_dp_to_words(agc_dp_from_sp(pactoff))), trimscal), 1); /* pitch trim, rev 2^0 */
+    agc_tp_words_t       p  = agc_mpac_dad(ip, m, agc_dp_to_words(PBIAS));                                                             /* pitch bell angle, rev 2^0 */
+    const agc_dp_words_t cp = agc_mpac_store(agc_mpac_cos(p));                                                                         /* COS(P+P0) PDL 6, scale 2^1 */
+    const agc_dp_words_t sp = agc_mpac_store(agc_mpac_sin(agc_mpac_dload(agc_mpac_store(p))));                                         /* SIN(P+P0) PDL 8D, scale 2^1 */
+
+    if (!AGC_ASSERT(agc_dp_from_words(cp) > 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_dp_t yaw   = agc_dp_add(ip, dmp_sl1(ip, agc_dp_from_sp(yactoff), TRIMSCAL), YBIAS); /* yaw bell angle, rev 2^0 */
-    agc_dp_t pitch = agc_dp_add(ip, dmp_sl1(ip, agc_dp_from_sp(pactoff), TRIMSCAL), PBIAS); /* pitch bell angle, rev 2^0 */
-    agc_dp_t cy    = agc_dp_cos(yaw);                                                       /* COS(Y+Y0) PDL 2, scale 2^1  */
-    agc_dp_t sy    = agc_dp_sin(yaw);                                                       /* SIN(Y+Y0) PDL 4, scale 2^1  */
-    agc_dp_t cp    = agc_dp_cos(pitch);                                                     /* COS(P+P0) PDL 6, scale 2^1  */
-    agc_dp_t sp    = agc_dp_sin(pitch);                                                     /* SIN(P+P0) PDL 8D, scale 2^1 */
+    /* The products are DMP SL1 on the TP MPAC; VDEF and the pushes keep
+     * MPAC, MPAC+1 as they are.                                           */
+    const agc_dp_t cpcy = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(cp), cy), 1)));                 /* COS P COS Y, 2^1 */
+    const agc_dp_t cpsy = agc_dp_from_words(agc_mpac_store(agc_mpac_dcomp(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(cp), sy), 1)))); /* -SIN Y COS P, 2^1 */
+    const agc_dp_t spsy = agc_dp_from_words(agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(sp), sy), 1)));                 /* SIN P SIN Y, 2^1 */
+    const agc_dp_t spcy = agc_dp_from_words(agc_mpac_store(agc_mpac_dcomp(agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(sp), cy), 1)))); /* -SIN P COS Y, 2^1 */
 
-    if (!AGC_ASSERT(cp > 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    b->xscref = agc_vec_make(dmp_sl1(ip, cp, cy), agc_dp_neg(dmp_sl1(ip, cp, sy)), sp);
-    b->zscref = agc_vec_make(agc_dp_neg(dmp_sl1(ip, sp, cy)), dmp_sl1(ip, sp, sy), cp);
-    b->yscref = agc_vec_make(sy, cy, 0);
+    b->xscref = agc_vec_make(cpcy, cpsy, agc_dp_from_words(sp));
+    b->zscref = agc_vec_make(spcy, spsy, agc_dp_from_words(cp));
+    b->yscref = agc_vec_make(agc_dp_from_words(sy), agc_dp_from_words(cy), 0);
     b->scaxis = agc_vec_make(b->xscref.c[0], b->yscref.c[0], b->zscref.c[0]);
 
     return (AGC_STATUS_OK);
@@ -801,7 +788,8 @@ agc_status_t agc_guid_steering_cross_product(agc_interp_t         *ip,
  *   emdot     agc_sp_t        I    EMDOT, SPS flow rate, kg/cs 2^3
  *   fang      agc_sp_t        I    FANG, SPS thrust, M.newton 2^-?
  *
- * RETURNS: agc_dp_t -- TODO
+ * RETURNS: agc_dp_t -- TGO, cs at 2^14 (IMPULSW to be set), or -1 to
+ *          steer
  **********************************************************************/
 static agc_dp_t timeburn_csm(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, agc_sp_t emdot, agc_sp_t fang)
 {
@@ -854,7 +842,7 @@ static agc_dp_t timeburn_csm(agc_interp_t *ip, agc_dp_t v, agc_dp_t m, agc_sp_t 
  **********************************************************************/
 agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage, bool four_jets, agc_sp_t emdot, agc_sp_t fang)
 {
-    if (!AGC_ASSERT(ip != NULL) || !AGC_ASSERT(emdot >= 0))
+    if (!AGC_ASSERT(emdot >= 0))
     {
         return (AGC_STATUS_BAD_ARG);
     }

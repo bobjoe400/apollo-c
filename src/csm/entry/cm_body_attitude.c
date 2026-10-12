@@ -260,7 +260,7 @@ static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t entry_servnout(agc_job_ctx_t *ctx)
+agc_status_t entry_servnout(void)
 {
     int nj; /* NEWJOB: priority waiting */
 
@@ -278,7 +278,7 @@ agc_status_t entry_servnout(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return (agc_job_servexit(ctx));
+    return (agc_job_servexit());
 }
 
 /**********************************************************************
@@ -334,12 +334,12 @@ static agc_status_t entry_posexit(agc_job_ctx_t *ctx)
     if (st != AGC_STATUS_OK)
     {
         /* end the SERVICER job anyway; a restart it asks for outranks st */
-        const agc_status_t sn = entry_servnout(ctx); /* SERVNOUT status */
+        const agc_status_t sn = entry_servnout(); /* SERVNOUT status */
 
         return ((sn == AGC_STATUS_BAILOUT) ? sn : st); /* restart wins */
     }
 
-    return (entry_servnout(ctx));
+    return (entry_servnout());
 } /* entry_posexit */
 
 /**********************************************************************
@@ -542,5 +542,5 @@ agc_status_t agc_job_reestablish_entry_sequencer(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    return ((st == AGC_STATUS_OK) ? entry_servnout(ctx) : st); /* SERVNOUT */
+    return ((st == AGC_STATUS_OK) ? entry_servnout() : st); /* SERVNOUT */
 }
