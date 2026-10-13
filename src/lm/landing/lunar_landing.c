@@ -136,7 +136,7 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install);
 static agc_status_t ll_ignalg_prec(agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     agc_lm_ldg_t *l     = agc_lm_ldg();                                                              /* landing erasables */
-    agc_dp_t      tdec1 = agc_dp_sub(ip, agc_lm_pad()->tland, LL_GUIDDURN);                          /* TLAND - GUIDDURN, cs 2^28 */
+    agc_dp_t      tdec1 = agc_dp_sub(ip, agc_erase_tland(), LL_GUIDDURN);                            /* TLAND - GUIDDURN, cs 2^28 */
     agc_status_t  st    = agc_integ_lemprec(ip, agc_integ_shared_ctx(), tdec1, AGC_JOB_IGNALG_PREC); /* step status */
 
     if (st == AGC_STATUS_BUSY)
@@ -355,19 +355,18 @@ agc_status_t agc_lm_job_braking_phase(agc_job_ctx_t *ctx)
 
     agc_interp_init(&ip);
     agc_lm_ldg_t        *l = agc_lm_ldg(); /* landing erasables */
-    const agc_lm_pad_t  *p = agc_lm_pad(); /* pad loads */
     agc_navaux_padload_t nav;              /* pad loads of the auxiliary nav lane */
     agc_navaux_get_padload(&nav);
 
-    agc_vec_t    r  = agc_vec_zero();                                                     /* landing site in SM, 2^24 m */
-    agc_status_t st = agc_planet_rp_to_r(&ip, &nav, true, agc_erase_rls(), p->tland, &r); /* step status */
+    agc_vec_t    r  = agc_vec_zero();                                                              /* landing site in SM, 2^24 m */
+    agc_status_t st = agc_planet_rp_to_r(&ip, &nav, true, agc_erase_rls(), agc_erase_tland(), &r); /* step status */
 
     if (st != AGC_STATUS_OK)
     {
         return (st);
     }
 
-    l->tpip     = p->tland;             /* TPIP for first guidance pass  */
+    l->tpip     = agc_erase_tland();    /* TPIP for first guidance pass (TLAND = W: one erasable, core pad_loads.c) */
     agc_mat_t m = agc_erase_refsmmat(); /* REFSMMAT, half unit */
 
     l->land = agc_vec_shl(&ip, agc_mat_vec(&ip, &m, r), 4); /* 2^24 m */

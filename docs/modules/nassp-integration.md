@@ -230,6 +230,27 @@ and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (st
   cutoff, N85 and V82; MISSION_TIME rows 20x until 30 s before; entry EI waits 20x until 60 s
   before; DSKY/switch/flash rows and uplinks at 1x. The dev DOI run the user re-warped by hand
   was killed and discarded; DOI was flown again on both builds with this schedule.
+- Milestone 8 (PDI, scenario 10) in progress. Script fixes on the way (stock runs that did not
+  ignite were discarded, runs/discarded/): the "(PDI -N)" rows of the PDI sheet are timeline marks
+  (now waits like T-N:00); an ENTER/PRO row that comes during a V06N18 attitude maneuver waits
+  for the flash (R60 shows F50N18 again when done); the TIG-5 wait accepts V99 with any noun
+  (P63 flashes V99N62, P40 V99N40; waiting for N40 delayed the PRO past TIG and stock P63 then
+  showed V97 thrust fail). V40N20 at PDI-6 (sheet) gives alarm 00206 on stock (zero encode not
+  allowed with coarse align + gimbal lock) - the same on both builds, harmless.
+- FLIGHT BUG 4 (PDI, ours only, fixed 2026-10-13): P63 on our build failed at once with alarm
+  01406 (IGNALG: no TTF/8 root) where stock showed V06N61. Luminary has one TLAND (= W,
+  ERASABLE_ASSIGNMENTS); the C kept two: core pad_loads.c g_tland (address map, nouns, P57) and
+  agc_lm_pad()->tland (read by P63 IGNALG). A TLAND loaded by address never reached P63, so the
+  landing site was rotated to time 0 (LAND 47 deg off) and ROOTPSRS diverged. Found with the
+  Linux replay of the PDI LGC image (debug library, gdb at the WHATALM branch: REFSMMAT equal
+  to the image, LAND not). Fix: the pad field is gone; src/lm/landing/lunar_landing.c reads
+  agc_erase_tland(). tests/lm/landing.c test 3 (fails before). Replay: N61 now TG -09 50,
+  TFI -14 33, CR +0003.6 (stock -09 50, -14 18 a little later, +0003.6).
+- PDI stock under the unattended checklist: P63 runs (N61, R60 maneuvers, final trim, V99N62 at
+  TIG-5, PRO, ignition at TIG) but shows V97 (thrust fail) about 25 s after ignition and the LM
+  does not brake (the crew's throttle/ullage items are manual rows); the landing itself is
+  not automatable from NASSP's checklists alone. The comparison is therefore P63 up to
+  ignition + the V97 behaviour.
 - LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
   get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only). Reference LEM.dll in
   C:\NASSP9-ref = stock 5470bf1 + 0002 (C:\Users\cnama\nassp-work\build-ref.bat, tree

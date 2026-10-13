@@ -36,9 +36,11 @@
 #include <stdint.h>
 
 #include "agc/core/assertion.h"
+#include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/word.h"
+#include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/lm/landing.h"
@@ -58,6 +60,7 @@ static agc_dp_t accel_dp(double a_ms2);
 static void     test_throttle_band(void);
 static void     setup_trajectory(double tgo_s, double dx_m, const double rd[3], const double vd[3], const double ad[3]);
 static void     test_quadguid_on_trajectory(void);
+static void     test_ignalg_uses_tland(void);
 
 /**********************************************************************
  * AGC: none -- run the tests; the exit status reports failures.
@@ -68,6 +71,7 @@ int main(void)
 {
     test_throttle_band();
     test_quadguid_on_trajectory();
+    test_ignalg_uses_tland();
     (void) printf("test_landing: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -304,3 +308,35 @@ static void test_quadguid_on_trajectory(void)
     (void) printf("quadguid 10 m off: dACG x = %+.6f m/s^2 (expect %+.6f)\n", acgx - acg0[0], corr);
     CHECK(fabs((acgx - acg0[0]) - corr) <= 0.05 * fabs(corr) + 2.0e-5);
 } /* test_quadguid_on_trajectory */
+
+/* ---- 3. P63 ignition algorithm start: TLAND ------------------------------ */
+
+/**********************************************************************
+ * IGNALG (THE_LUNAR_LANDING.agc p.786): the landing site is rotated to
+ * TLAND and TPIP starts at TLAND. Luminary has one TLAND (= W); the C
+ * kept a second copy in the landing pad struct, so a TLAND loaded by
+ * address (V25 / NASSP pad load / scenario restore) never reached P63 and
+ * IGNALG failed with 1406 (NASSP PDI finding). The first guidance pass
+ * must start from the TLAND in the erasable (TPIPOLD = TPIP = TLAND);
+ * without a state vector the pass then ends in 1406, as the AGC would.
+ * AGC: IGNALG (THE_LUNAR_LANDING.agc p.786)
+ *
+ * FUNCTION NAME: test_ignalg_uses_tland
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_ignalg_uses_tland(void)
+{
+    fresh_lm();
+    const agc_dp_t tland = 37032802; /* TLAND of the Apollo 11 PDI scenario, cs 2^28 */
+
+    agc_erase_set_tland(tland);
+    agc_flag_set(AGC_FLAG_REFSMFLG);                                /* REFSMMAT good: R02 passes */
+    CHECK(agc_erase_write_ecadr(01707u, 020017u) == AGC_STATUS_OK); /* TEPHEM of the scenario (middle word) */
+    CHECK(agc_erase_write_ecadr(01710u, 020545u) == AGC_STATUS_OK); /* TEPHEM low word */
+    agc_job_ctx_t ctx = {AGC_JOB_BRAKING_PHASE, 0, false, -1, 0};   /* the P63 job */
+    agc_status_t  st  = agc_lm_job_braking_phase(&ctx);             /* P63LM .. IGNALG start */
+
+    CHECK(st == AGC_STATUS_POODOO);        /* no state vector here: 1406 at the first TTF/8 */
+    CHECK(agc_lm_ldg()->tpipold == tland); /* the first pass starts at TLAND (TPIPOLD = TPIP = TLAND) */
+}

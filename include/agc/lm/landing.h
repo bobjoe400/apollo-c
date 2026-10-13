@@ -70,7 +70,6 @@ typedef struct agc_lm_target
 /* ---- pad loads used by this lane ---------------------------------------- */
 typedef struct agc_lm_pad
 {
-    agc_dp_t        tland;     /* TLAND nominal landing time, 2^28 cs      */
     agc_lm_target_t target[2]; /* braking, approach                        */
     agc_dp_t        vign;      /* VIGN desired ignition speed, 2^10 m/cs   */
     agc_dp_t        rignx;     /* RIGNX desired ignition "altitude", 2^24 m */
