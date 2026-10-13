@@ -1,17 +1,19 @@
 # STATE.md -- current state in one page (lead keeps this current)
 
-Updated: 2026-10-12
+Updated: 2026-10-13
 
 ## Running agents (max 2)
-- layering (Opus): imu->programs upward call from the L2 fix moved into
-  imu; other upward edges except core/ecadr.c (NASSP lane moves that map
-  out of core after milestone 3); comment leftovers. Gate: make lm-sim 34/34.
+- layering (Opus, resumed 2026-10-13, scope bounded): OGC words to imu,
+  smallest change per remaining upward edge (no folder reorganisation),
+  comment leftovers. Gate: make lm-sim 34/34, depgraph no upward edge.
+  (The address map is already out of core: src/erasable_map.)
 - document: DONE (47ae168): overview, flowcharts, xref, per-lane flow
   sections, TIPS by topic, README Status/Documentation. The
   nassp-integration.md section waits in the scratchpad until that lane ends.
-- nassp-integration (Opus): PLAN 10b+10c on NASSP 9 via WSL interop
-  (docs/agents/nassp-integration.md: study, stock build, shim, integrated
-  build, mission). Note: docs/modules/nassp-integration.md.
+- nassp-integration (Opus, resumed 2026-10-13): milestone 3 dev run
+  (MCC-2 SPS burn), then `make nassp-replay` (Linux offline replay of NASSP
+  scenario images through our shim vs NASSP's yaAGC: the lighter tier),
+  then milestones 4+. Note: docs/modules/nassp-integration.md.
 - DONE today: lm-simulator (10a; make lm-sim), closed-loop-fixes (L1-L3,
   S-L1/2, PROG after POODOO, doc findings; 34/34 checkpoints vs yaAGC).
 - NASSP milestones: 1 insertion+uplink PASS, 2 TLI PASS, 3 MCC-2 SPS

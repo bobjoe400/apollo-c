@@ -850,3 +850,12 @@
             nassp-integration moves the map out of core after milestone 3;
             launched layering (Opus) for the imu edge, other upward edges
             and the comment leftovers.
+2026-10-13  Weekly limit reset. User: is NASSP the right smoke test or
+            should something lighter be used? Lead: NASSP is the full-
+            mission demonstration, not the smoke test; the smoke tiers are
+            make test / make scenarios / make lm-sim (every NASSP finding
+            so far was in the scenario-restore layer, not flight code);
+            adding `make nassp-replay` (offline image replay vs NASSP's
+            yaAGC on Linux) as the light tier for the integration layer.
+            Checkpoint 7826e91; layering (bounded scope) and
+            nassp-integration relaunched from their notes.
