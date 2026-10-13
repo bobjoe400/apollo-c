@@ -901,3 +901,8 @@
             47d3ecd regressed check-rules (rule 4 sp_field 68 lines; rule
             7 (void) freopen) and prolog-report (write_ecadr RETURNS):
             sent back to the lane.
+2026-10-13  Flight bug 2 from NASSP (TEI): V82 after TEI blank DSKY: on a
+            departing hyperbola CALCTPER gives TPER < 0 and SKIPTPER stores
+            -TPER as is; our opd_orbit_params asserted it non-positive and
+            ended V82GON1 with BAD_ARG. Fixed with a failing-first test.
+            Gate regressions fixed. Next LM DOI.
