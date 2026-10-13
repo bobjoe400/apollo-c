@@ -913,3 +913,10 @@
             script now holds and logs the warp (20x waits, 1x windows).
             Deviation noted: LM V83 reruns continuously at C speed.
             Next PDI/landing, liftoff, entry.
+2026-10-13  Flight bug 4 (PDI): one TLAND in Luminary, two copies in C;
+            P63 read the stale one (alarm 1406): fixed with test (e201117).
+            Stock PDI from the checklists stops at V97 ~25 s after ignition
+            (throttle-up and ullage are hand-controller rows). Lead: the
+            landing is the milestone; lane extends its LEM test hook
+            (patch 0002) with the TTCA/ACA/ROD inputs and flies PDI to
+            touchdown on both builds.
