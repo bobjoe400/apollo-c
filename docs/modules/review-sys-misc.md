@@ -211,3 +211,7 @@ files excepted).
 * Two scaled constants in one listing can have different units: MINCSM
   was already a word (BIT11) while MINLMD/MINMINLM were copied as the
   source's decimal kg; read DEC x B-16 as x/4 words, or take the rope word.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [sys-misc](sys-misc.md#program-flow-and-decisions).

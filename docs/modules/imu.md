@@ -159,3 +159,173 @@ symbols stubbed in a scratch file, not committed).
   (agc_imu_hw_set_gyrocmd / agc_imu_hw_set_cducmd) or 8192AUG will see them grow.
 * The LM DAP header names the KALCMANU increments DELCDUX..Z (LM erasable DELDCDU = DELCDUX); written
   as the negative 0.1 s increment, as the comment there says.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/imu/*.c`, `src/csm/prelaunch_*.c`._
+
+IMU mode switching, gyro torquing, compensation, KALCMANU and the CSM
+prelaunch programs P01-P03. The realign that uses them is drawn in
+[flowcharts/imu-realign.md](../overview/flowcharts/imu-realign.md).
+
+* **Mode switches** (`src/imu/mode.c`): each switch sets the channel 12/14
+  discretes, schedules its tasks and returns; the last task ends the
+  operation with GOODEND or BADEND (`goodend_common`), which wakes the job
+  stalled on the device (`agc_imu_stall`, `agc_imu_stall_dev`: MODECADR
+  +0 = still running, the job sleeps; -1 good; -0 bad; a second user of
+  one device is MODABORT: POODOO 01210 CSM / BAILOUT 01210 LM, `modabort`).
+  - Zero (`agc_imu_zero`): refused with ALARM 00206 in coarse align with
+    gimbal lock, 00210 when the IMU is not operating; ZEROICDU on channel 12
+    then the release and done tasks (`agc_task_imu_zero_release`,
+    `agc_task_imu_zero_done`).
+  - Coarse align (`agc_imu_coarse` to THETAD): CDU drive pulses per task
+    (`agc_task_coarse_align_pulses`, channel 14 DRIVECDUX/Y/Z), then
+    `agc_task_coarse_align_check` (CHKCORS): a gimbal more than COARSTOL
+    from its target is ALARM 00211 and IMUBAD.
+  - Fine align (`agc_imu_fine`): zero and coarse off, NO ATT off; IFAILOK
+    5.12 s later (`agc_task_ifailok`).
+  - PIPAs: `agc_imu_pipuse` sets PIPAX..Z = -0; `agc_imu_pipfree` raises
+    ALARM 00212 if PIPA fail is on.
+  - R02 (`agc_imu_status_check`): REFSMFLG set -> fine; else ALARM 00220
+    (REFSMMAT unknown) or 00210 (IMU not operating).
+  - P06 (`agc_job_standby`, `agc_job_standby_request`,
+    `agc_job_standby_recovery`): NODOFLAG set (no V37) while the GNCS goes
+    to standby; channel 13 STANDBYENB; TIME2/TIME1 recovered afterwards.
+* **Gyro torquing** (`src/imu/gyro.c:agc_imu_pulse_buf`, `agc_imu_pulse`):
+  IMUPULSE reserves the gyros (GYROBUSY: a busy torquer makes the caller
+  sleep until GWAKE) and starts STRTGYRO 40 ms later; Y, Z, X in turn at
+  3200 pulses/s (channel 14 GYROACT / GYRONEG); commands of 8192 pulses or
+  more get 8192AUG augments (`augment_schedule`); less than one pulse is
+  kept as the residue. Caged or coarse align while torquing is IMUBAD
+  (BADEND) and IMUPULSE returns ALARM. OGC/IGC/MGC is the one alignment
+  erasable (`gyro_words`; closed-loop-fixes L2).
+* **Compensation** (`compensation.c`): 1/PIPA corrects PIPA scale factor
+  and bias; IRIGCOMP accumulates acceleration-sensitive drift into GCOMP;
+  NBDONLY (`agc_job_nbdonly`, started by the waitlist's ENDTASK when
+  DRIFTFLG is set and the IMU is free) adds bias drift; any gyro command
+  over two pulses is torqued (1/GYRO, `comp_irig_words` -> gyro command
+  job). SURFFLAG selects the lunar-surface form (`agc_job_lastbias`).
+* **Alignment maths** (`alignment.c`): CALCGTA, CALCGA (`agc_imu_calcga`:
+  middle gimbal beyond the lock limit sets GLOKFAIL and ALARM 00401 but
+  still completes), AXISGEN, CALCSMSC; half-unit vectors throughout.
+* **Maneuvers** (`maneuver.c`, `maneuver_calc.c`, `attitude_maneuver.c`):
+  GOMANUR (`agc_imu_gomanur`) requires KALCMANU free (else POODOO 01210);
+  KALCMAN3 (`kalcmanu_start`) finds axis and angle to CPHI/CTHETA/CPSI
+  (LM: |CPSI| >= 70 deg is TOOBADF, ALARM 00401), sets CALCMAN2;
+  UPDTCALL (`agc_task_updtcall`) each second FINDVACs NEWDELHI, which
+  advances MIS by DEL and hands the DAP new desired CDUs
+  (`steering_update`). R60 (`attitude_maneuver.c`) flashes V50N18 and
+  V06N18; 3AXISFLG chooses a three-axis maneuver or VECPOINT; V34 ends
+  in GOTOPOOH (or GOTOV56 in R61); RELINUS restarts a priority display
+  only with TRACKFLG / RNDVZFLG. The auto test reads channel 31 bits
+  13-15 (CM) or channel 30 bit 10 then channel 31 bit 14 (LM ISITAUTO).
+* **CSM prelaunch** (`src/csm/prelaunch_align.c`,
+  `prelaunch_gyrocompass.c`, `prelaunch_verify.c`): P01 after P11
+  (NOP01FLG) is POODOO 01521; a mode switch or torquing ending bad is
+  ALARM 01601 and ENDTEST1 (`prelaunch_somerr2`). P02 loops every 0.5 s
+  (`setgwlst`, ALLOOP/ALFLT: erection while ERECTIM1 > 0, then
+  gyrocompass), torques every 10 samples, slews on a V78 azimuth load, and
+  ends at liftoff (`chkcomed`: channel 30 LIFTOFF, GRRBKFLG). P03 compares
+  two sextant marks with the expected lines of sight (AXISGEN, CALCGTA);
+  an optics stall ending bad is ALARM 01602; V34 or TRM03FLG returns to
+  P02. The IMU performance test drift part (erasable-memory program, not
+  in the rope) is UNIMPLEMENTED.
+
+### Decision points by function
+
+49 of the lane's 259 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+
+| C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
+|---|---|---|---|---|---|---|
+| `prelaunch_endtest1` (prelaunch_align.c) | ENDTEST1 | - | -IMUSE | - | - | - |
+| `prelaunch_somerr2` (prelaunch_align.c) | SOMERR2 | - | - | ALARM 1601 | - | - |
+| `agc_job_prelaunch_initialization` (prelaunch_align.c) | GTSCPSS GTSCPSSA NXXTENN | NO_PRELAUNCH_INITIALIZATION | - | POODOO 1521 | - | - |
+| `agc_job_prelaunch_imu_zeroed` (prelaunch_align.c) | IMUBACK NBPOSPL | GLOKFAIL | -GLOKFAIL | - | - | - |
+| `agc_job_prelaunch_imu_fine_aligned` (prelaunch_align.c) | IMUBACK | - | - | - | - | task gyrocompassing_wake |
+| `setgwlst` (prelaunch_gyrocompass.c) | SETGWLST | - | - | - | - | task gyrocompassing_sample |
+| `chkcomed` (prelaunch_gyrocompass.c) | CHKCOMED PRELTERM | GRRBKFLG | - | - | ch30 LIFTOFF | - |
+| `agc_task_gyrocompassing_filter_start` (prelaunch_gyrocompass.c) | SPECSTS | - | - | - | - | job gyrocompassing_filter |
+| `agc_job_optical_verification_marked` (prelaunch_verify.c) | RETARG | TRM03FLG | - | ALARM 1602 | - | - |
+| `agc_job_optical_verification_end` (prelaunch_verify.c) | GCOMP5 | - | -TRM03FLG | - | - | - |
+| `agc_imu_calcga` (alignment.c) | CALCGA CALCGA1 | - | +GLOKFAIL | ALARM 0401 | - | - |
+| `final_angles` (attitude_maneuver.c) | REDOMANN REDOMANC | 3AXISFLG | - | - | - | - |
+| `chklinus` (attitude_maneuver.c) | CHKLINUS | PDSPFLAG | - | - | - | - |
+| `maneuver_return` (attitude_maneuver.c) | ENDMANU1 | 3AXISFLG | -3AXISFLG | - | - | - |
+| `agc_job_attitude_maneuver_terminate` (attitude_maneuver.c) | R61TEST | PDSPFLAG | - | - | - | - |
+| `agc_job_relinus` (attitude_maneuver.c) | RELINUS GOREDO20 | RNDVZFLG TRACKFLG | +PDSPFLAG | - | - | - |
+| `agc_job_crew_defined_maneuver_gomove` (attitude_maneuver.c) | GOMOVE | - | +3AXISFLG | - | - | - |
+| `comp_irig_words` (compensation.c) | IRIGCOMP | - | - | - | - | job gyro_command_pulse |
+| `agc_job_nbdonly` (compensation.c) | NBDONLY | DRIFTFLG SURFFLAG | - | - | - | - |
+| `agc_job_lastbias` (compensation.c) | LASTBIAS | SURFFLAG | - | - | - | - |
+| `agc_imu_pulse_buf` (gyro.c) | IMUPULSE GYROBUSY GWAKE | - | - | - | ch14 GYROPWR | - |
+| `lastseg` (gyro.c) | LASTSEG GYROEXIT | - | - | - | ch14 GYROACT | - |
+| `augment_schedule` (gyro.c) | AUG3 GYROEXIT | - | - | - | ch14 GYROACT | - |
+| `torque` (gyro.c) | MAJ+ MAJ- GMERGE | - | - | - | ch14 GYRONEG | - |
+| `agc_task_gyro_augment` (gyro.c) | 8192AUG AUG2 | - | - | - | ch12 COARSE | - |
+| `steering_update` (maneuver.c) | NEWANGL | CALCMAN2 | -CALCMAN2 | - | - | - |
+| `kalcmanu_start` (maneuver.c) | KALCMAN3 | - | +CALCMAN2 | ALARM 0401 | - | - |
+| `agc_imu_gomanur` (maneuver.c) | GOMANUR | - | - | POODOO 1210 | - | - |
+| `agc_task_updtcall` (maneuver.c) | UPDTCALL | - | - | - | - | job newdelhi |
+| `agc_imu_zero` (mode.c) | IMUZERO IMUZEROA | - | - | ALARM 0206, ALARM 0210 | ch12 COARSE, ch12 ENBIMUERR, ch12 ZEROICDU | - |
+| `agc_task_imu_zero_release` (mode.c) | IMUZERO2 | - | - | - | ch12 ZEROICDU | task imu_zero_done |
+| `agc_task_imu_zero_done` (mode.c) | IMUZERO3 | - | - | - | ch12 ZEROICDU | - |
+| `agc_task_coarse_align_commands` (mode.c) | COARS | - | - | - | ch12 ENBIMUERR | task coarse_align_pulses |
+| `agc_task_coarse_align_pulses` (mode.c) | COARS2 NEXTCDU SENDPULS | - | - | - | ch14 DRIVECDUX, ch14 DRIVECDUY, ch14 DRIVECDUZ | task coarse_align_pulses, task coarse_align_check |
+| `agc_task_coarse_align_check` (mode.c) | CHKCORS CORSCHK2 COARSERR | - | - | ALARM 0211 | - | - |
+| `agc_task_ca_ece` (mode.c) | CA+ECE | - | - | - | ch12 ENBIMUERR | - |
+| `agc_imu_setcoars` (mode.c) | SETCOARS | - | - | - | ch12 COARSE, ch12 ENBIMUERR, ch14 GYROACT | - |
+| `agc_imu_rndrefdr` (mode.c) | RNDREFDR | - | -TRACKFLG -DRIFTFLG -REFSMFLG | - | - | - |
+| `agc_imu_fine` (mode.c) | IMUFINE IMUFIN20 | - | - | - | ch12 COARSE, ch12 ZEROICDU | - |
+| `agc_task_imufined` (mode.c) | IMUFINED | - | - | - | ch12 ZEROICDU | - |
+| `agc_task_ifailok` (mode.c) | IFAILOK | - | - | - | ch12 COARSE | - |
+| `agc_imu_pipfree` (mode.c) | PIPFREE | - | - | ALARM 0212 | - | - |
+| `agc_imu_endimu` (mode.c) | ENDIMU IMUGOOD | - | - | - | ch11 ISSWARN | - |
+| `modabort` (mode.c) | MODABORT | - | - | BAILOUT 1210, POODOO 1210 | - | - |
+| `agc_imu_status_check` (mode.c) | R02BOTH | REFSMFLG | - | ALARM code) | - | - |
+| `agc_imu_set_in_use` (mode.c) | R02ZERO | IMUSE | +IMUSE | - | - | - |
+| `agc_job_standby` (mode.c) | P06 PRESTAND | - | +NODOFLAG -IMUSE -RNDVZFLG | - | ch13 STANDBYENB | - |
+| `agc_job_standby_request` (mode.c) | P06 | NODOFLAG | - | - | - | - |
+| `agc_job_standby_recovery` (mode.c) | POSTAND POSTCOM | - | -NODOFLAG | - | ch13 STANDBYENB | - |
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `1jacc` | none -- accessor of the DAP erasable 1JACC (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `1jaccq` | none -- accessor of the DAP erasable 1JACCQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `1jaccr` | none -- accessor of the DAP erasable 1JACCR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 5 | 1 |
+| `cduxd` | none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 4 | 1 |
+| `cduyd` | none -- accessor of the DAP erasable CDUYD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 4 | 1 |
+| `cduzd` | none -- accessor of the DAP erasable CDUZD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
+| `delcdux` | - | 0 | 1 |
+| `delcduy` | - | 0 | 1 |
+| `delcduz` | - | 0 | 1 |
+| `delperor` | - | 0 | 1 |
+| `delqeror` | - | 0 | 1 |
+| `delreror` | - | 0 | 1 |
+| `delv` | accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM. KPIP1  | 3 | 3 |
+| `dsptab` | display panel relay buffer DSPTAB +0..+10D, +11D is the C/S lights word (15-bit relay words) Index 0..11. | 4 | 1 |
+| `fdai` | none (accessor) -- FDAIX, FDAIY, FDAIZ (LM, noun 18); returns uint16_t -- FDAI angle, CDU pattern | 1 | 0 |
+| `imodes30` | last-sampled channel 30 bits, T4RUPT IMUMON (IMODES30, B(1)PRM) | 8 | 2 |
+| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 1 | 1 |
+| `modecadr` | C(MODECADR +dev) (ERASABLE_ASSIGNMENTS.agc "MODE SWITCHING ERASABLE").; returns agc_sp_t -- the word (+0 none, positive a waiting job) | 2 | 1 |
+| `modreg` | MODREG major mode (program) | 1 | 0 |
+| `omegapd` | none -- accessor of the DAP erasable OMEGAPD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
+| `omegaqd` | none -- accessor of the DAP erasable OMEGAQD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
+| `omegard` | none -- accessor of the DAP erasable OMEGARD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
+| `optind` | OPTIND (ERASABLE_ASSIGNMENTS.agc, CM) -- coarse optics state, read RETURNS: OPTIND: -1, 0, 1, or AGC_OPTIND_NEG0 for -0; returns OPTIND: -1, 0, 1, or  | 0 | 2 |
+| `pipax` | PIPA X pulse count since last read (register PIPAX, 037), unscaled pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) | 1 | 3 |
+| `pipay` | PIPA Y pulse count (register PIPAY) | 1 | 3 |
+| `pipaz` | PIPA Z pulse count (register PIPAZ) | 1 | 3 |
+| `piptime` | time of the PIPA reading / this vehicle's state vector, centiseconds, scale 2^28 (PIPTIME, B(2)PRM) | 1 | 0 |
+| `thetad` | desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style words, 2^15 = 1 revolution Index 0..2. | 5 | 3 |
+| `time1` | ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private | 2 | 0 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

@@ -212,3 +212,75 @@ X1 = work-area 38D: 77775 (-2, earth) or 77765 (-10D, moon).
   (rectified-state) versions for callers outside the integration package.
 * LM LAMBERT callers must supply in->iterctr (SETITCTR: 20, or 5 when
   AVEGFLAG); the CSM ignores it.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/nav/conic/*.c`._
+
+The conic subroutines run inside the caller's job on both vehicles and
+work on the conic context `agc_conic_ctx_t` (the AGC's conic erasables:
+R1, R1A, P, COGA, XI, T, ... scaled as in CONIC_SUBROUTINES.agc, positions
+2^29 m earth / 2^27 m moon, times 2^28 cs) on the word-level MPAC API, so
+each branch below is the interpretive BOV / BMN / BZE the AGC takes.
+
+* **KEPLER** (`src/nav/conic/kepler.c:agc_conic_kepler`): an elliptic TAU
+  beyond one period is reduced modulo the period (PERIODCH, bounded by
+  AGC_CONIC_PERIOD_MAX_PASSES, DEVIATION); the secant loop KEPLOOP steps x
+  inside XMIN/XMAX (a step crossing a bound is cut to 9/10 of the way)
+  until |TAU - T| <= |TAU| 2^-22 or ITERCTR = 20 passes run out
+  (NO_CONVERGE, state still computed); T overflowing until DELX halves to
+  zero gives OVERFLOW without a new state. `agc_conic_kepprep` is the
+  integration package's first guess of x.
+* **LAMBERT** (`lambert.c:agc_conic_lambert`, `lambert_pass`): per pass,
+  P <= 0 (NEGP) or an overflow forming P/R1A (HIENERGY) or GETX's
+  INFINFLG retreats COGA (`lambert_retreat`, LOENERGY moves COGAMAX);
+  DELTIME overflow (BIGTIME) restores TPREV and retreats;
+  |TDESIRED - T| <= EPSILONL goes to INITV; otherwise ITERCTR counts down
+  (CSM 20; LM 20, or 5 with AVEGFLAG, from the caller) and at zero
+  SUFFCHEK (`lambert_suffchek`) accepts the last COGA if |TERRLAMB| <=
+  TDESIRED/4 (CSM) or TDESIRED 2^-17 (LM). 1 - CSTH rounding to zero is
+  360LAMB. Failure sets SOLNSW (`lambert_solnsw`) and returns
+  NO_CONVERGE; GUESSW clear takes the caller's COGA guess, set takes
+  NOGUESS. `agc_conic_iterator` is the bounded secant step shared with
+  P37.
+* **TIME-THETA / TIME-RADIUS** (`timetheta.c:agc_conic_timethet`,
+  `timeradius.c:agc_conic_timerad`): PARAM -> GETX -> DELTIME -> NEWSTATE
+  (skipped when RVSW). COGA overflow (COGAFLAG, `agc_conic_cogaovfl_`),
+  INFINFLG from GETX, and for TIMERAD a circular orbit (UNIT of the
+  eccentricity vector overflows) go to ABTCONIC = POODOO 00607
+  (`common.c:agc_conic_abtconic_`). An RDESIRED beyond the apsides is not
+  an abort: APSESW is set and the apsis is used.
+* **GETX** (`geom.c:agc_conic_getx_`): three half-angle steps WLOOP, or
+  the inverse form near 360 degrees (INVRSEQN, 1/WLOOP), then POLYCOEF and
+  XCOMMON; a conic that would close through infinity sets INFINFLG.
+* **APSIDES** (`apsides.c:agc_conic_apsides`): RA is LDPOSMAX (INFINAPO)
+  when it overflows the position scale or the conic is not an ellipse.
+* The central body (earth / moon mu, `common.c:agc_conic_mu_`,
+  `agc_conic_body_of_x1`) comes from the caller's X1, i.e. the state
+  vector's moon flag.
+
+Outputs read by other lanes: VVEC, VTARGET, T, the end state (R2VEC,
+V2VEC), UN and GEOMSGN (`lambert.c:agc_erase_un`, `agc_erase_geomsgn`,
+read by the LM's RASTEER after INITVEL).
+
+### Decision points by function
+
+2 of the lane's 58 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+
+| C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
+|---|---|---|---|---|---|---|
+| `agc_conic_abtconic_` (common.c) | ABTCONIC | - | - | POODOO 0607 | - | - |
+| `lambert_step` (lambert.c) | - | ORDERSW | - | - | - | - |
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `geomsgn` | none (accessor of erasable GEOMSGN, CONIC_SUBROUTINES.agc p. 1306) -- GEOMSGN as LAMBERT left it; returns agc_sp_t -- GEOMSGN, +.5 short way / -.5 lon | 1 | 0 |
+| `un` | none (accessor of erasable UN, CONIC_SUBROUTINES.agc p. 1306) -- UN as LAMBERT left it (LM RASTEER reads it after INITVEL/LAMBERT); returns agc_vec_t  | 1 | 0 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

@@ -54,3 +54,66 @@ Without the launcher, from a Virtual AGC `Resources` directory:
 ../bin/yaDSKY2 --cfg=CM.ini --port=19697` (LM: Luminary099, 19797, LM.ini).
 Details, the pad files the launcher's "Custom" core-file option accepts,
 and screenshots: `docs/modules/sim.md`.
+
+## Status
+
+The definition of done (`docs/PLAN.md`, items 1-9) is met: every routine
+of both ropes is translated or a named, justified stub; `make`, `make test`
+(unit, oracle and 14 headless scenarios) and `make check` pass; the
+numeric modules match yaAGC within documented tolerances (bit-exact where
+the ones'-complement -0 allows); every lane was reviewed against its AGC
+source; and `build/agc_sim` runs under the stock VirtualAGC GUI. The
+gates were green at the code freeze (`docs/modules/finish.md`) and again
+after the closed-loop fixes.
+
+Closed loops (PLAN item 10, stretch), against the proven tools only:
+
+* **LM Simulator** (Virtual AGC `Contributed/LM_Simulator`, unmodified):
+  34 of 34 checkpoints match yaAGC flying the same crew sequence (IMU
+  zero, coarse and fine align, RCS DAP attitude hold, rate command,
+  minimum impulse, V49 manoeuvre, a POODOO restart):
+
+      make lm-sim LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator
+
+  (about 11 minutes real time; `LMSIM_ARGS="--gui --xshot DIR"` shows the
+  windows). Details: `docs/modules/lm-simulator.md`,
+  `docs/modules/closed-loop-fixes.md`.
+* **NASSP 9** (Orbiter 2024, Apollo 11, on the Windows host via WSL
+  interop): NASSP's Saturn5/LEM modules built against libagc through the
+  engine shim `src/nassp/` (CMake project plus a patch to NASSP's top
+  CMakeLists). Milestone 1 (earth orbit insertion and the first MCC
+  state-vector uplink) and milestone 2 (TLI) pass against the stock NASSP
+  run, unattended; milestone 3 (MCC-2 SPS burn) is in progress. The
+  integrated build lives in `C:\NASSP9-dev` (stock baseline `C:\NASSP9`);
+  runs are scripted scenarios driven by NASSP's own checklist workbook.
+  Details: `docs/modules/nassp-integration.md`,
+  `docs/overview/nassp_integration.md`.
+
+How to run each: `make scenarios` (headless, both vehicles);
+`make lm-sim` (above); the VirtualAGC launcher with `bin/yaAGC` linked to
+`build/agc_sim` (Run it, above); NASSP: start Orbiter from
+`C:\NASSP9-dev` with an `apollo-c` scenario (one Orbiter session at a
+time).
+
+## Documentation
+
+Generated from the final code (documentation wave, `docs/modules/document.md`):
+
+* `docs/overview/README.md` -- the system: the two vehicles, executive and
+  waitlist, interrupts and clock, erasable and flag layout, the DSKY loop,
+  how a program starts, runs, displays and ends, restart groups, and the
+  module map (`python3 -I tools/depgraph.py`).
+* `docs/overview/flowcharts/` -- Mermaid flowcharts from the C control
+  flow: fresh start, software restart, job pre-emption, waitlist tick, V37
+  program change, CSM P40 burn, P52 realign, LM P63-P66 landing, CSM
+  P61-P67 entry, LM P12 ascent.
+* `docs/overview/xref.md` -- AGC label -> C function -> file:line, for both
+  ropes (`python3 -I tools/xref.py`).
+* `docs/modules/<lane>.md` -- per lane: scope, decisions, findings, and
+  "Program flow and decisions" (decision points by function with flags,
+  alarms, channel bits and the jobs/tasks started; shared erasables with
+  scale; AGC labels -> C functions).
+* `docs/TIPS.md` -- tips for translating AGC assembly into C, by topic.
+* Reference: `docs/TRANSLATION_GUIDE.md`, `docs/CODING_STANDARD.md`,
+  `docs/STYLE.md`, `docs/NAMING.md`, `docs/ARCHITECTURE.md`,
+  `docs/MODULE_STATUS.md`; history in `docs/WORKLOG.md`.

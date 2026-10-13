@@ -180,3 +180,7 @@ iteration count, which the crew may load) -- see Requests.
   preconditions: a helper's name ("ones_neg of a magnitude") is not its
   contract; a P52 scenario was the only test reaching the caller that
   used it as a general CS.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [io-pinball](io-pinball.md#program-flow-and-decisions), [io-nouns](io-nouns.md#program-flow-and-decisions).

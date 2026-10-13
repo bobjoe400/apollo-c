@@ -79,3 +79,7 @@ the style pass.
   DDV and "high word alone" uses all read the words. When C and AGC differ
   by a few LSB with no logic difference, dump the MPAC trace (agc_probe
   "trace 1") and compare words, not values.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [prog-rendz](prog-rendz.md#program-flow-and-decisions).

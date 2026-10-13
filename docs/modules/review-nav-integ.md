@@ -133,3 +133,7 @@ patched probe and compared word for word).
   radius) is 11096 steps = 44384 passes.  Exceeding it releases INTSTALL
   and returns NO_CONVERGE (header comment corrected; it claimed
   "2^28 cs / 128 cs-steps x 3", which is 6.3 million).
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [nav-integ](nav-integ.md#program-flow-and-decisions).

@@ -150,3 +150,190 @@ jobs P63LM IGNALGRT ASTNRET P63SPOT3 P63SPOT4 P64CEED P64DISPS RODCOMP
 LANDJUNK LANDJUNK2 GOABORT P12LM P12LM2 NEWLOAD NEWLOAD2 CUTOFF CUTOFF1
 CUTOFF2 TERMASC LUNLAND ATMAG; tasks RODTASK REDESMON ENGOFF1 ABORT_MONITOR INTLZE
 SPEEDRUN2.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/lm/landing/*.c`, `src/lm/ascent.c`._
+
+The P63-P66 sequence is drawn in
+[flowcharts/lunar-landing.md](../overview/flowcharts/lunar-landing.md)
+and P12 in [flowcharts/powered-ascent.md](../overview/flowcharts/powered-ascent.md).
+The decision points:
+
+* **P63 ignition** (`src/lm/landing/lunar_landing.c`): IGNALG iterates
+  the ignition time (`ll_ign_guidance`: three passes of quadratic
+  guidance per iteration); 40 passes without convergence (NIGNLOOP) is
+  ALARM 01412 (IGNALOOP bounded at 64 passes, NO_CONVERGE, C only). R51
+  fine alignment and R60 follow; ASTNRET (`agc_lm_job_astnret`): PROCEED
+  aligns, ENTER returns to P63SPOT2. Ignition itself is BURN BABY BURN
+  (guid-powered).
+* **Guidance cycle** (`src/lm/landing/guidance.c`), every 2 s from
+  SERVICER, indexed by WCHPHASE (-1 IGNALG, 0 BRAKQUAD, 1 APPRQUAD, 2
+  VERTICAL): `ldg_quadratic` (WHATGUID) computes TTF/8 with ROOTPSRS
+  (`agc_lm_rootpsrs`: eight passes then NO_CONVERGE); no convergence is
+  POODOO 01406 in IGNALG and ALARM 01406 + RATESTOP in flight.
+  `ldg_extlogic` (EXTLOGIC) moves to the next phase when TTF/8 passes
+  TENDBRAK / TENDAPPR (FASTCHNG, WCHPHASE = WCHPHOLD + 1): BRAKQUAD ->
+  STARTP64 (P64, LPD redesignation enabled, RUPT10 on) -> P65 velocity
+  nulling (`agc_lm_start_velocity_nulling`, WCHVERT = -2). `agc_lm_steer_exit`
+  (STEER?): STEERSW down -> RATESTOP, no outputs; any overflow in
+  guidance -> ALARM 01410 (non-abortive) and RATESTOP; otherwise THROTTLE
+  and FINDCDUW, then the phase display (V06N63 / V06N64 unless FLUNDISP).
+* **Crew modes** (`lunar_landing.c:agc_lm_guildenstern`, R13 every 2 s):
+  each change of the manual throttle discrete selects P67 or P66; each
+  appearance of attitude hold selects P66 (rate-of-descent: P66VERTA,
+  RODTASK each second -> RODCOMP, `agc_lm_rate_of_descent_vertical`,
+  `agc_lm_job_rodcomp`). LPD: hand-controller RUPT10 in P64 only
+  (`agc_lm_pitfall`) starts REDESMON (`agc_lm_task_redesmon`, every 70
+  ms, counts clicks); REDESIG (`agc_lm_redesig`) moves the site with
+  REDFLAG set and TREDES not zero. P68 (`agc_lm_job_landing_confirmation*`):
+  V06N43 flash, PROCEED saves the attitude for P57.
+* **Throttle** (`throttle.c:agc_lm_throttle`, `agc_lm_throttle_measured`):
+  FC (desired) vs FP (present) force in throttle pulse units; the 10%..94%
+  region logic with a throttle-up to the fixed full-thrust region; PIF =
+  FC - FP + PIFPSET to the THRUST counter; FLATOUT (`agc_lm_throttle_flatout`)
+  goes to full.
+* **FINDCDUW** (`findcduw.c`): thrust and window command vectors to
+  gimbal increments and commanded rates for the DAP; NORMUNIT overflow is
+  ALARM 00402 (`fc_noattcnt`) then STOPRATE; CDUZ limited to 70 deg is
+  ALARM 00401 (`fc_gimbal_changes`).
+* **Displays** (`displays.c`): R10 four times a second drives ALTM
+  (alternating altitude and rate) and the cross-pointers (CDUSCMD /
+  CDUTCMD) when the mode switch is PGNCS (`ld_disindat`: first pass sets
+  DIDFLAG and initialises after 80 ms).
+* **Aborts** (`aborts.c`): R10,R11 (`agc_lm_task_abort_monitor`, every
+  0.25 s while AVEGFLAG) watches ABORT / ABORT STAGE and flashes the LR
+  lamps; GOABORT selects P70 (DPS) or P71 (APS); an illegal V37 P70/P71 is
+  OPR ERR (ABORTALM). Both hand over to ascent guidance.
+* **Ascent** (`src/lm/ascent.c`): ATMAG / ASCENT (`agc_lm_ascent`) per
+  cycle; ENGOFF (`as_engoff`) schedules the engine-off task at TGO
+  (group 4, variable delay ENGOFFDT) and sets IDLEFLAG; CUTOFF
+  (`agc_lm_job_cutoff`) shows V16N63 then V16N85 until PROCEED; P12 ends
+  through TERMASC in P00.
+
+### Decision points by function
+
+67 of the lane's 177 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+
+| C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
+|---|---|---|---|---|---|---|
+| `agc_lm_powered_ascent_init` (ascent.c) | P12INIT | FLAP | - | - | - | - |
+| `as_t2test` (ascent.c) | T2TEST CONST | FLPC | +FLPC | - | - | - |
+| `as_ascterm_display` (ascent.c) | ASCTERM1 | FLRCS FLUNDISP | - | - | - | - |
+| `as_ascterm` (ascent.c) | ASCTERM | FLRCS | - | - | - | - |
+| `as_mainline` (ascent.c) | MAINLINE ANG1CHEK CLRXFLAG | ROTFLAG | -ROTFLAG -NO_POWERED_DESIGNATE -XOVINFLG | - | - | - |
+| `as_exitvr` (ascent.c) | EXITVR | ROTFLAG | -FLVR | - | - | - |
+| `as_engoff` (ascent.c) | ENGOFF | - | +IDLEFLAG | - | - | task ascent_engine_off |
+| `agc_lm_ascent` (ascent.c) | ASCENT | FLPI FLRCS FLVR IDLEFLAG | +XOVINFLG -ROTFLAG | - | - | - |
+| `agc_lm_job_atmag` (ascent.c) | ATMAG | FLRCS | -SURFFLAG -RENDWFLG | - | - | - |
+| `agc_lm_task_ascent_engine_off` (ascent.c) | ENGOFF1 | - | - | - | - | job cutoff |
+| `agc_lm_job_cutoff` (ascent.c) | CUTOFF | - | +FLRCS | - | - | - |
+| `agc_lm_job_cutoff_display` (ascent.c) | CUTOFF | FLRCS | - | - | - | - |
+| `agc_lm_job_cutoff_proceed` (ascent.c) | CUTOFF1 | FLRCS | - | - | - | - |
+| `agc_lm_job_cutoff_trim_display` (ascent.c) | CUTOFF2 | FLRCS | - | - | - | - |
+| `agc_lm_job_termasc` (ascent.c) | TERMASC | - | -LETABORT | - | - | - |
+| `agc_lm_job_powered_ascent` (ascent.c) | P12LM | - | +MUNFLAG +ACC4_2FL +ALTITUDE_METERS_ONLY -RNDVZFLG | - | - | - |
+| `agc_lm_job_powered_ascent_flash` (ascent.c) | P12 | MUNFLAG | - | - | - | - |
+| `agc_lm_job_powered_ascent_proceed` (ascent.c) | PROCEED | - | +FLPI | - | - | - |
+| `agc_lm_job_newload` (ascent.c) | NEWLOAD | FLPI | - | - | - | - |
+| `agc_lm_job_newload_proceed` (ascent.c) | PROCEED | - | +FLVR | - | - | - |
+| `agc_lm_job_powered_ascent_burn` (ascent.c) | P12RET | - | -FLPI | - | - | - |
+| `agc_lm_task_abort_monitor` (aborts.c) | R10 R11 | AVEGFLAG | - | - | - | task abort_monitor |
+| `ab_abrtjask` (aborts.c) | ABRTJASK | ENGONFLG | +APSFLAG -ULLAGFLG -DRIFTDFL -XOVINFLG +ENGONFLG +ALTITUDE_METERS_ONLY | - | - | - |
+| `agc_lm_abort_monitor_resume` (aborts.c) | R10 | HFLSHFLG LETABORT VFLSHFLG | - | - | ch30 ABORTAPS, ch30 ABORTDPS | - |
+| `ab_legal` (aborts.c) | - | AVEGFLAG LETABORT | - | - | - | - |
+| `agc_lm_throtup` (aborts.c) | THROTUP | - | - | - | ch14 THRUSTACT | - |
+| `ab_upthrot` (aborts.c) | UPTHROT | FLVR ROTFLAG | +FLVR +ROTFLAG | - | - | - |
+| `agc_lm_job_abort_auto_control_check` (aborts.c) | UPTHROT1 | FLAP FLVR | - | - | - | - |
+| `agc_lm_job_aps_abort_oldtime` (aborts.c) | OLDTIME | FLAP | - | - | - | - |
+| `agc_lm_job_goabort` (aborts.c) | GOABORT | FLAP | -FLRCS -FLUNDISP -IDLEFLAG +ACC4_2FL -LETABORT +FLAP | - | - | - |
+| `ld_disprset` (displays.c) | DISPRSET ABORTON | ALTITUDE_METERS_ONLY DIDFLAG | -DIDFLAG | - | ch12 DISPINERT, ch12 ENBRRCDUERR | - |
+| `ld_dataout` (displays.c) | DATAOUT | - | - | - | ch14 ALTMETERACT | - |
+| `ld_continue` (displays.c) | LADQSAVE | - | - | - | ch14 ALTRATESEL | - |
+| `ld_disindat` (displays.c) | DISINDAT | ALTITUDE_METERS_ONLY DIDFLAG | +DIDFLAG | - | ch12 DISPINERT, ch30 DISPINERT | task speedrun_resume, task intlze |
+| `agc_lm_landisp` (displays.c) | LANDISP | DIDFLAG SWANDISP | - | - | - | - |
+| `agc_lm_task_intlze` (displays.c) | INTLZE | - | - | - | ch12 ENBRRCDUERR | - |
+| `agc_lm_vmonitor` (displays.c) | VMONITOR | - | - | - | ch14 DRIVECDUS, ch14 DRIVECDUT | - |
+| `agc_lm_task_speedrun_resume` (displays.c) | SPEEDRUN | ALTITUDE_METERS_ONLY | - | - | - | - |
+| `fc_fetch_basic` (findcduw.c) | - | CSMDKFLG XOVINFLG | - | - | ch30 LMCONTROL, ch31 AUTOSTAB | - |
+| `fc_noattcnt` (findcduw.c) | NOATTCNT | - | - | ALARM 0402 | - | - |
+| `fc_gimbal_changes` (findcduw.c) | - | - | - | ALARM 0401 | - | - |
+| `agc_lm_findcduw` (findcduw.c) | FINDCDUW | ENGONFLG | - | - | - | - |
+| `ldg_ratestop` (guidance.c) | RATESTOP | - | - | - | ch31 ATTHOLD | - |
+| `agc_lm_steer_exit` (guidance.c) | EXVERT EXOVFLOW RATESTOP | STEERSW | - | ALARM 1410 | - | - |
+| `agc_lm_job_approach_phase_display` (guidance.c) | P64DISPS REDES-OK | REDFLAG | -REDFLAG | - | - | - |
+| `agc_lm_job_approach_phase_proceed` (guidance.c) | P64CEED | - | +REDFLAG | - | - | - |
+| `agc_lm_dispexit` (guidance.c) | DISPEXIT | FLUNDISP | - | - | - | - |
+| `agc_lm_start_approach_phase` (guidance.c) | STARTP64 | - | -REDFLAG | - | ch13 RSTTRAP31A | - |
+| `agc_lm_start_velocity_nulling` (guidance.c) | P65START | - | -XOVINFLG | - | - | - |
+| `ldg_quadratic` (guidance.c) | WHATGUID WHATEXIT | - | - | POODOO 1406, ALARM 1406 | - | - |
+| `ll_ign_guidance` (lunar_landing.c) | IGNALOOP EXGSUB | - | - | ALARM 1412 | - | - |
+| `ll_ignaloop` (lunar_landing.c) | IGNALOOP | - | +INTYPFLG +MOONFLAG | - | - | - |
+| `agc_lm_job_braking_phase` (lunar_landing.c) | P63LM | - | -NOTHROTL -REDFLAG -LRBYPASS +MUNFLAG -PREFERRED_TRACKING_ATTITUDE_ACTIVE -RNDVZFLG | - | ch12 RRLOCKON | - |
+| `agc_lm_job_braking_phase_antenna_check` (lunar_landing.c) | P63SPOT3 | - | - | - | ch33 LRPOS1 | - |
+| `ll_rate_of_descent_setup` (lunar_landing.c) | STRTP66A | - | +RODFLAG | - | - | - |
+| `ll_vrtstart` (lunar_landing.c) | VRTSTART | - | -XOVINFLG -REDFLAG | - | - | - |
+| `agc_lm_guildenstern` (lunar_landing.c) | GUILDEN | RODFLAG | - | - | ch30 AUTOTHROT, ch31 ATTHOLD | - |
+| `agc_lm_redesig` (lunar_landing.c) | REDESIG | REDFLAG | - | - | - | - |
+| `agc_lm_rate_of_descent_vertical` (lunar_landing.c) | P66VERTA | - | - | - | - | task rodtask |
+| `agc_lm_task_rodtask` (lunar_landing.c) | RODTASK | - | - | - | - | job rodcomp |
+| `agc_lm_pitfall` (lunar_landing.c) | PITFALL | - | - | - | - | task redesmon |
+| `ll_resetrpt` (lunar_landing.c) | RESETRPT | - | - | - | ch13 RSTTRAP31A | - |
+| `agc_lm_task_redesmon` (lunar_landing.c) | REDESMON | - | - | - | ch31 ATTHOLD | task redesmon |
+| `agc_lm_descbits` (lunar_landing.c) | DESCBITS | - | - | - | ch16 DESCENTDN, ch16 DESCENTUP | - |
+| `ll_landjunk` (lunar_landing.c) | LANDJUNK | ERADFLAG | +SURFFLAG -LETABORT +APSFLAG +LUNAFLAG | - | - | - |
+| `agc_lm_job_landing_confirmation_flash` (lunar_landing.c) | LANDJUNK | SURFFLAG | - | - | - | - |
+| `thr_doit` (throttle.c) | DOIT | - | - | - | ch14 THRUSTACT | - |
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `1jacc` | none -- accessor of the DAP erasable 1JACC (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `1jaccq` | none -- accessor of the DAP erasable 1JACCQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `1jaccr` | none -- accessor of the DAP erasable 1JACCR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `altm` | ALTM (LM 060): altitude / altitude-rate meter drive, raw 15-bit word. | 1 | 1 |
+| `cdutcmd` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 0 | 1 |
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 1 | 0 |
+| `cduxd` | none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 2 | 0 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 1 | 0 |
+| `cduyd` | none -- accessor of the DAP erasable CDUYD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 2 | 0 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 1 | 0 |
+| `cduzd` | none -- accessor of the DAP erasable CDUZD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 2 | 0 |
+| `delcdux` | - | 0 | 1 |
+| `delcduy` | - | 0 | 1 |
+| `delcduz` | - | 0 | 1 |
+| `delperor` | - | 0 | 1 |
+| `delqeror` | - | 0 | 1 |
+| `delreror` | - | 0 | 1 |
+| `delv` | accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM. KPIP1  | 1 | 0 |
+| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 6 | 1 |
+| `m22` | M22 (GPMATRIX, T4RUPT_PROGRAM.agc p.188) -- SIN(OG), also MR22 RETURNS: M22, scaled at 1; returns M22, scaled at 1 | 1 | 0 |
+| `m32` | M32 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- COS(OG), also MR23 RETURNS: M32, scaled at 1; returns M32, scaled at 1 | 1 | 0 |
+| `modreg` | MODREG major mode (program) | 11 | 1 |
+| `omegapd` | none -- accessor of the DAP erasable OMEGAPD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `omegaqd` | none -- accessor of the DAP erasable OMEGAQD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `omegard` | none -- accessor of the DAP erasable OMEGARD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `pipax` | PIPA X pulse count since last read (register PIPAX, 037), unscaled pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) | 2 | 0 |
+| `pipay` | PIPA Y pulse count (register PIPAY) | 2 | 0 |
+| `pipaz` | PIPA Z pulse count (register PIPAZ) | 2 | 0 |
+| `piptime` | time of the PIPA reading / this vehicle's state vector, centiseconds, scale 2^28 (PIPTIME, B(2)PRM) | 8 | 0 |
+| `refsmmat` | reference-to-stable-member matrix, row-major, DP elements, scale 2^1 (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') | 6 | 0 |
+| `rls` | landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing | 2 | 1 |
+| `rn` | this vehicle's position, meters, scale 2^29 (earth) or 2^27 (moon) (RN, B(6)PRM) | 1 | 0 |
+| `rrectcsm` | permanent CSM position, meters, scale 2^29 earth / 2^27 moon (RRECTCSM) | 1 | 0 |
+| `tem` | PIPASR +3: read PIPAX..Z into TEMX..Z and the high words of DELV, zero the PIPAs (no PIPTIME1). TEMX..TEMZ (axis 0..2): those counts, SP. | 2 | 1 |
+| `tevent` | time of event for downlist, centiseconds, scale 2^28 (TEVENT; TLIFTOFF in P11) | 0 | 1 |
+| `thetad` | desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style words, 2^15 = 1 revolution Index 0..2. | 0 | 1 |
+| `thrust` | THRUST (LM 055): descent engine throttle command pulses, SP. | 1 | 2 |
+| `tig` | time of ignition, centiseconds, scale 2^28 (TIG; DSP noun 33) | 2 | 1 |
+| `trkmkcnt` | TRKMKCNT: rendezvous tracking mark count (noun 45 R1), whole number. | 0 | 1 |
+| `ttogo` | time to go, centiseconds, scale 2^28 (TTOGO; DSP nouns 35,40,45,59,99) | 1 | 1 |
+| `vrectcsm` | permanent CSM velocity, m/cs, scale 2^7 earth / 2^5 moon (VRECTCSM) | 1 | 0 |
+| `zoomtime` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 3 | 0 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

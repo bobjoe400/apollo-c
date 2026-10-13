@@ -69,3 +69,6 @@ Comanche CONIC_SUBROUTINES + KEPPREP: 12 DMPR sites (KEPLERN VSQ DMPR 1/MU p. 12
 * gcov over the oracle test shows which AGC paths no case reaches; here the near-360 GETX branch and every LAMBERT retreat were untested although RTE uses them. Generate cases for those paths before trusting a tolerance of 0.
 * Tests in other lanes that were tuned to the old C (a 50 m bound, a 128 LSB F14 chain) move when a dependency becomes exact; check them against the oracle before loosening (kep_leo_10min showed the AGC's own 53.4 m).
 
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [nav-conic](nav-conic.md#program-flow-and-decisions).

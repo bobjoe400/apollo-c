@@ -76,3 +76,7 @@ aliasing, no E-bank overlay layout (TIG EQUALS DELVSLV +6 etc.).
   assembled.
 * Style checkers with regex type parsing need word boundaries; `\w+_t`
   matched `g_t` of `g_tig` and produced dozens of false findings.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [state-flags](state-flags.md#program-flow-and-decisions).

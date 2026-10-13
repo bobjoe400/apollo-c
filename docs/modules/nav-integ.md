@@ -247,3 +247,148 @@ erasables, interpretive entry through INTPRET):
   "at the return address" which the C model cannot resume mid-integration.
 * VPROJ argument order assumed agc_vec_proj(ip, mpac, x) = (mpac.x) x
   (DOW..1 passes ALPHAV, unit R); the W test confirms the result.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/nav/integration/*.c`._
+
+Encke integration of a state vector's deviation from a conic, plus the
+jobs that keep the permanent state vectors current. Both vehicles; the
+flags are the AGC's integration flags in FLAGWRD3 etc. (STATEFLG,
+VINTFLAG, DIM0FLAG, D6OR9FLG, INTYPFLG, MIDFLAG, MOONFLAG, RPQFLAG,
+PRECIFLG, NEWIFLG, MIDAVFLG, AVEMIDSW, QUITFLAG, REINTFLG).
+
+* **Entrances** (`src/nav/integration/init.c`): CSMPREC / LEMPREC /
+  CSMCONIC / LEMCONIC (`agc_integ_csmprec`, `agc_integ_lemprec`,
+  `agc_integ_csmconic`, `agc_integ_lemconic` -> `special_entry`: precision
+  or conic, no W, to TDEC1), INTEGRVS (`agc_integ_integrvs`: the caller's
+  RCV/VCV/TET) and INTEGRV (`agc_integ_integrv`: the permanent state of
+  VINTFLAG). `agc_integ_setiflgs` sets the flag set the caller wants.
+* **INTSTALL lock** (`agc_integ_install`, `agc_integ_area_busy`): a busy
+  stall area (RASFLAG bits) puts the job to sleep until INTWAKE
+  (`agc_integ_intwake`: with REINTFLG set a phase change happened since
+  INTSTALL, so PHASCHNG 04022 keeps the caller's QPRET). DEVIATION: after
+  a restart the rerun job segment takes the area over instead of sleeping
+  on it.
+* **Driver** (`agc_integ_run`, TESTLOOP .. INTEXIT, one bounded loop over
+  the labels; AGC_INTEG_MAX_PASSES is NO_CONVERGE, C only): `testloop`
+  ends on QUITFLAG, sets MIDFLAG when |RCV| is beyond RME/RMM, chooses
+  the step (`norfinal`: DT = .3 sqrt(R^3/MU) truncated to a multiple of 128 cs, at most 4000 s);
+  `poohchk` ends when |DT/2| < 3 cs, and in P00 (MODREG = 0) stops before
+  the last partial step; `a_pchk` writes the permanent state back when
+  STATEFLG (ATOPCSM / ATOPLEM, GRP2PC phase change) and handles REINTFLG;
+  `rectout` rectifies and leaves the output in the push list; `intexit`
+  clears MIDAVFLG (CM) / STATEFLG (LM), AVEMIDSW, PRECIFLG and wakes the
+  stall area.
+* **One step** (`orbital_integration.c:agc_integ_timestep`): `rectest`
+  rectifies (`agc_integ_rectify`: a new conic through the actual state)
+  when |TDELTAV| or |TNUV| reaches 3/4 of scale or |TDELTAV| >= .01 |RCV|;
+  with MIDFLAG the sphere-of-influence test `agc_integ_chkswtch`
+  (CSM: moon primary RSPHERE - |R|, earth primary |R - RPQ| ...) may change
+  origin (`agc_integ_origchng`, MOONFLAG); `lm_sphere` is Luminary's form,
+  never reached because Luminary099 never sets MIDFLAG. `integrate_step`
+  runs three Nystrom stages (`nystrom_start`, `nystrom_stage`,
+  `nystrom_end`) with ACCOMP (`accomp`: third body by DIM0FLAG/MOONFLAG,
+  OBLATE earth J2-J4 or lunar QUALITY1-3). An overflow goes to GOBAQUE
+  (`gobaque`): back the conic up by H, rectify and retry; with no deviation
+  left it is POODOO 00430 (INT-ABRT). W columns (`agc_integ_wcolumns`):
+  6x6 (D6OR9FLG clear) or 9x9; W overflow is ALARM 00421 (WMATEND) and W is
+  marked invalid (ORBWFLAG / RENDWFLG cleared).
+* **Jobs** (`jobs.c`): `agc_task_stateint` (STATEINT, every 600 s through
+  `endint`'s LONGCALL) starts `agc_job_stateint_update` (STATINT1: QUITFLAG
+  set by V96 = NOINT; else TDEC1 = now, INTSTALL, `stateup` integrates the
+  CSM permanent state and its W when ORBWFLAG / RENDWFLG / SURFFLAG make it
+  valid, then the LM's (`stateup_lm_state`)). Going to thrusting:
+  `agc_integ_midtoav_at_time` (MIDTOAV1) integrates this vehicle to TIG-30
+  and `agc_integ_midtoav_check` (CKMID2) carries on while TDEC is at least
+  TIMEDELT (`timedelt`: 12.5 s CM / 20 s LM) in the future; too late is
+  NOTIME (`notime`: ALARM 01703, CALLOC +2 return). Coming back,
+  `agc_integ_avetomid` (AVETOMID) copies RN/VN/PIPTIME into the permanent
+  state (`setcoast` CM / `others` LM) after INT/W when W is valid.
+* **Others**: `agc_integ_perm_get` / `agc_integ_perm_set` (the 42-word
+  permanent blocks, also the ECADR map's path for NASSP scenario
+  restores), `setitctr_lm.c:agc_integ_setitctr` (LAMBERT ITERCTR 5 with
+  AVEGFLAG, else 20), `svdwn.c:agc_integ_svdwn` (downlink copy).
+
+### Decision points by function
+
+52 of the lane's 107 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+
+| C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
+|---|---|---|---|---|---|---|
+| `agc_integ_csm_resume_idle_integration` (flags_csm.c) | STATINT1 | - | =IDLE_INTEGRATION_INHIBITED | - | - | - |
+| `agc_integ_csm_amoonflg` (flags_csm.c) | SETCOAST | AMOONFLG | - | - | - | - |
+| `agc_integ_csm_set_amoonflg` (flags_csm.c) | MIDTOAV1 | - | =AMOONFLG | - | - | - |
+| `agc_integ_setiflgs` (init.c) | SETIFLGS | - | =STATEFLG =INTYPFLG =DIM0FLAG =D6OR9FLG | - | - | - |
+| `agc_integ_thisvint` (init.c) | THISVINT | - | =VINTFLAG | - | - | - |
+| `atop` (init.c) | ATOPCSM ATOPLEM | MOONFLAG | - | - | - | - |
+| `agc_integ_ptoacsm` (init.c) | PTOACSM | CMOONFLG | - | - | - | - |
+| `usepios` (init.c) | USEPIOS | - | =MOONFLAG | - | - | - |
+| `agc_integ_ptoalem` (init.c) | PTOALEM | LMOONFLG SURFFLAG | - | - | - | - |
+| `poohchk` (init.c) | POOHCHK | NEWIFLG PRECIFLG | =NEWIFLG | - | - | - |
+| `testloop` (init.c) | TESTLOOP | QUITFLAG | =STATEFLG =MIDFLAG | - | - | - |
+| `a_pchk` (init.c) | A-PCHK ANDOUT PHEXIT | MIDFLAG STATEFLG VINTFLAG | =STATEFLG =REINTFLG | - | - | - |
+| `rectout` (init.c) | RECTOUT | MOONFLAG | - | - | - | - |
+| `intexit` (init.c) | INTEXIT | - | =MIDAVFLG =STATEFLG =AVEMIDSW =PRECIFLG | - | - | - |
+| `aloaded` (init.c) | ALOADED | INTYPFLG | - | - | - | - |
+| `load_permanent_state` (init.c) | INTEGRV2 | VINTFLAG | - | - | - | - |
+| `wmatrix` (init.c) | ENDSTATE | VINTFLAG | =REINTFLG | - | - | - |
+| `agc_integ_run` (init.c) | TESTLOOP INTEXIT | - | - | POODOO 0430 | - | - |
+| `agc_integ_integrate_permanent` (init.c) | INTEGRV1 | - | =RPQFLAG =NEWIFLG | - | - | - |
+| `special_entry` (init.c) | CSMPREC LEMPREC IFLAGP | - | =VINTFLAG =PRECIFLG =DIM0FLAG =INTYPFLG | - | - | - |
+| `agc_integ_integrvs` (init.c) | INTEGRVS | MOONFLAG | =PRECIFLG =DIM0FLAG =NEWIFLG =RPQFLAG | - | - | - |
+| `agc_task_stateint` (jobs.c) | STATEINT | - | - | - | - | job stateint_update |
+| `endint` (jobs.c) | ENDINT | - | =STATEFLG | - | - | task stateint |
+| `stateup_lm_state` (jobs.c) | STATEUP | RENDWFLG | =VINTFLAG =DIM0FLAG =D6OR9FLG =PRECIFLG =NODOFLAG | - | - | - |
+| `stateup` (jobs.c) | STATEUP | ORBWFLAG RENDWFLG SURFFLAG | =VINTFLAG =DIM0FLAG =PRECIFLG =NODOFLAG | - | - | - |
+| `state_integration_grab` (jobs.c) | STATINT1 | - | =NODOFLAG | - | - | - |
+| `agc_job_stateint_update` (jobs.c) | STATINT1 | QUITFLAG | =QUITFLAG | - | - | - |
+| `int_w` (jobs.c) | INT/W | - | =DIM0FLAG =AVEMIDSW =D6OR9FLG =VINTFLAG | - | - | - |
+| `setcoast` (jobs.c) | SETCOAST | SURFFLAG | =CMOONFLG =VINTFLAG | - | - | - |
+| `others` (jobs.c) | OTHERS | LMOONFLG | =VINTFLAG | - | - | - |
+| `agc_integ_avetomid` (jobs.c) | AVETOMID | ORBWFLAG RENDWFLG | - | - | - | - |
+| `notime` (jobs.c) | NOTIME | - | =MID1FLAG | ALARM 1703 | - | - |
+| `midtoav_integrate` (jobs.c) | ENTMID1 | - | =DIM0FLAG =INTYPFLG =MIDAVFLG | - | - | - |
+| `agc_integ_midtoav_at_time` (jobs.c) | MIDTOAV1 | - | =MID1FLAG | - | - | - |
+| `agc_integ_midtoav_now` (jobs.c) | MIDTOAV2 | - | =MID1FLAG | - | - | - |
+| `agc_integ_midtoav_check` (jobs.c) | CKMID2 MID2 | MID1FLAG | - | - | - | - |
+| `agc_integ_intwakeu` (jobs.c) | INTWAKEU | - | =MOONFLAG =ORBWFLAG =RENDWFLG | - | - | - |
+| `agc_integ_setmoon` (orbital_integration.c) | SETMOON CLRMOON | - | =MOONFLAG | - | - | - |
+| `agc_integ_kepprep` (orbital_integration.c) | KEPPREP | MOONFLAG | - | - | - | - |
+| `gobaque` (orbital_integration.c) | GOBAQUE INT-ABRT | - | =RPQFLAG | - | - | - |
+| `third_body` (orbital_integration.c) | ACCOMP | DIM0FLAG MOONFLAG | =RPQFLAG | - | - | - |
+| `oblate` (orbital_integration.c) | OBLATE | MOONFLAG | - | - | - | - |
+| `accomp` (orbital_integration.c) | ACCOMP | DIM0FLAG MIDFLAG | - | - | - | - |
+| `dow` (orbital_integration.c) | - | MIDFLAG MOONFLAG | - | - | - | - |
+| `agc_integ_wcolumns` (orbital_integration.c) | AMOVED NEXTCOL DIFEQ+2 | D6OR9FLG | =JSWITCH =DIM0FLAG =ORBWFLAG =RENDWFLG =STATEFLG | ALARM 0421 | - | - |
+| `lm_sphere` (orbital_integration.c) | TIMESTEP | MOONFLAG RPQFLAG | - | - | - | - |
+| `integrate_step` (orbital_integration.c) | INTGRATE ENDSTATE | DIM0FLAG MIDAVFLG | =JSWITCH | - | - | - |
+| `agc_integ_timestep` (orbital_integration.c) | TIMESTEP RECTEST CALLRECT | MIDFLAG | - | - | - | - |
+| `agc_integ_chkswtch` (orbital_integration.c) | CHKSWTCH RPQOK EARSPH | MOONFLAG RPQFLAG | - | - | - | - |
+| `agc_integ_origchng` (orbital_integration.c) | ORIGCHNG | MOONFLAG | - | - | - | - |
+| `agc_integ_setitctr` (setitctr_lm.c) | SETITCTR | AVEGFLAG | - | - | - | - |
+| `agc_integ_svdwn` (svdwn.c) | SVDWN1 SVDWN2 | AVEMIDSW | - | - | - | - |
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `modreg` | MODREG major mode (program) | 2 | 0 |
+| `piptime` | time of the PIPA reading / this vehicle's state vector, centiseconds, scale 2^28 (PIPTIME, B(2)PRM) | 4 | 1 |
+| `rls` | landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing | 1 | 0 |
+| `rn` | this vehicle's position, meters, scale 2^29 (earth) or 2^27 (moon) (RN, B(6)PRM) | 1 | 1 |
+| `rrectcsm` | permanent CSM position, meters, scale 2^29 earth / 2^27 moon (RRECTCSM) | 1 | 1 |
+| `rrectlem` | permanent LM position, meters, scale 2^29 earth / 2^27 moon (RRECTLEM) | 1 | 1 |
+| `tephem` | time of the ephemeris epoch (TEPHEM = TIMSUBO, TP, centiseconds, scale 2^42: L "CSEC B-42 (TRIPLE PRECISION)"; P11 sets it at liftoff) | 2 | 0 |
+| `tetcsm` | time of the permanent CSM state vector, centiseconds, scale 2^28 (TETCSM) | 2 | 1 |
+| `tetlem` | time of the permanent LM state vector, centiseconds, scale 2^28 (TETLEM) | 1 | 1 |
+| `trkmkcnt` | TRKMKCNT: rendezvous tracking mark count (noun 45 R1), whole number. | 0 | 1 |
+| `vn` | this vehicle's velocity, m/cs, scale 2^7 (earth) or 2^5 (moon) (VN, B(6)PRM) | 1 | 1 |
+| `vrectcsm` | permanent CSM velocity, m/cs, scale 2^7 earth / 2^5 moon (VRECTCSM) | 1 | 1 |
+| `vrectlem` | permanent LM velocity, m/cs, scale 2^7 earth / 2^5 moon (VRECTLEM) | 1 | 1 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

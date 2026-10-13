@@ -128,3 +128,7 @@ resolved (one TEPHEM/RLS store).
 * Interpretive DMP never rounds and DAD/DSU touch only the top two
   words; most residues were DMPR/DP-shift substitutions for TP chains.
 * The remaining residues are ones'-complement word splits, not logic.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [nav-aux](nav-aux.md#program-flow-and-decisions).

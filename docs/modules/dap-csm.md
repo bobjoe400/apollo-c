@@ -128,3 +128,111 @@ tests/csm/dap.c (791 checks, 0 failures; linked with scratch stubs for the missi
 - INDEX I; 0 X with I = CA/CS instruction words is a runtime sign selector. An int +1/-1 (0 for a "same jets" switch) translates it cleanly.
 - TS L with overflow skips the next instruction. Look for the "TS x; TCF +3; INDEX A; CS LIMITS" overflow-protect idiom (ROLLSET) and the TS L skip in ACTLIM.
 - When the build is broken by other lanes, link the test against an archive of whatever compiles plus generated zero-return stubs (scratch only). This tells your own failures apart from link noise.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/csm/dap/*.c`, `src/csm/dap/*/*.c`._
+
+The CSM RCS and TVC autopilots, both T5 programs (only one owns T5 at a
+time; FLAGWRD6 bits 15-14 = DAPBIT1/DAPBIT2 say which: 01 RCS, 10 TVC,
+11 Saturn takeover, 00 none). Basic code on stored words
+(`src/csm/dap/mysubs.c`: AD/ADS/DAS with overflow correction, MSU on
+counter words, MP upper/lower words).
+
+* **RCS T5 cycle** (`src/csm/dap/rcs/t5rupt.c`): RCSATT
+  (`agc_task_rcsatt`) runs the DAP only when the G/C autopilot is fully
+  enabled (channel 31 bit 15 = 0: IMU powered and the S/C control switch
+  in CMC); otherwise the jets are zeroed (`agc_csm_dap_zerojet`) and T5
+  idles. Phase 1 every 100 ms (`csm_rcs_rate_filter_phase` ->
+  `filter.c`): rate filter RATEFILT, the 1-s AMGB request (`csm_rcs_kmatrix`
+  NOVACs AMBGUPDT, `exec.c:agc_job_ambgupdt`, PRIO34), automatic steering
+  increments, the FDAI needles (NEEDLFLG / ATTITUDE_ERROR_DESIRED_ANGLES
+  select which errors, `needles.c:csm_dap_needler`, EDRIVE limited to
+  +-384 counts). Phase 2 20 ms later: RHC out of detent (channel 31 bits
+  1-6) -> manual rate (`manual.c:csm_rcs_manual`: RATEINDX 0.05 / 0.2 /
+  0.5 / 2 deg/s, STIKFLAG); otherwise `attitude.c:csm_rcs_ahfnorot`:
+  channel 31 FREE -> free drift, ATTHOLD -> attitude hold, else automatic
+  steering (biases added only during KALCMANU maneuvers). `csm_rcs_jets`
+  locates (rate error, attitude error) per axis in the phase plane (dead
+  zone ADB, switch lines 0.3-0.5 deg/s, slopes 0.6 / 0.8) and computes the
+  one-jet on-time (1/1600 s bits). Phase 3 (`jet_select.c:agc_task_jetslect`):
+  translation and rotation jets per quad (pitch/yaw on channel 5, roll on
+  channel 6; failed quads from DAPDATR2), T6 started 14 ms later
+  (`agc_task_t6start`: channel 13 ENBT6RUPT, replace or stop jets as each
+  on-time ends).
+* **DAP data** (`dapdata.c`): S41.2 (`agc_csm_dap_decode_dap_data`)
+  decodes DAPDATR1/2 (configuration CSM / CSM-LM / ascent-only, quads,
+  deadband 0.5 or 5 deg, rate) into ATTCHFLG / NJETSFLG and the gains;
+  RCSDAPON (`agc_csm_dap_rcsdapon_t5`) sets DAPBIT1/2 = 01 and starts T5;
+  a negative inertia or a bad TIME5 word is BAD_ARG.
+* **TVC** (`src/csm/dap/tvc/`): TVCDAPON / MRCLEAN (`init.c`) zero the
+  filter state and run TVCINIT1-4 by T5 (gains, mass properties
+  `massprop.c`, trims to trackers, CSM-alone ATTINIT limits the RCS errors
+  to 1.5 deg), then TVCEXEC by waitlist. Pitch and yaw DAPs (`daps.c`)
+  alternate as self-perpetuating T5 tasks: body-axis rate from OMEGAYC/ZC
+  of S40.8 (or hold), error integrated and limited to 45 deg, sixth-order
+  filter (two cascades CSM, three CSM/LM; DAPDATR1 bit 14), trim offset,
+  command limited to 6 deg and sent to channel 14 DRIVECDUS/T. TVCEXEC
+  (`exec.c:agc_task_tvcexec`, every 0.5 s) ends unless DAPBIT1/2 read 10;
+  calls the roll DAP (`rolldap.c`: OGA within 5 deg of OGAD, phase-plane
+  regions 1-6, roll jets timed by T6) and NEEDLER; with the engine on
+  every 10 s updates mass and gains; CNTR = 0 makes the one-shot trim
+  correction, CNTR < 0 the repetitive one. V46 switch-over to CSM/LM gains
+  (`csm_tvc_swichovr_body`, SWTOVER). V68 stroke test (`stroke.c`, pitch,
+  CSM/LM only). Restarts (`restarts.c`) complete an interrupted copycycle,
+  re-enable TVC (channel 12 TVCENABLE) and optics error counters, and
+  restart through TVCINIT4 or MRCLEAN.
+
+### Decision points by function
+
+25 of the lane's 128 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+
+| C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
+|---|---|---|---|---|---|---|
+| `csm_dap_engine_on` (mysubs.c) | - | - | - | - | ch11 ENGINEON | - |
+| `csm_rcs_ahfnorot` (attitude.c) | AHFNOROT AUTOCONT | - | - | - | ch31 ATTHOLD, ch31 FREE | - |
+| `agc_csm_dap_decode_dap_data` (dapdata.c) | S41.2 | - | =ATTCHFLG =NJETSFLG | - | - | - |
+| `agc_csm_dap_rcsdapon_t5` (dapdata.c) | RCSDAPON | - | -DAPBIT1 +DAPBIT2 | - | - | - |
+| `agc_job_ambgupdt` (exec.c) | AMBGUPDT | DAPBIT1 DAPBIT2 | - | - | - | - |
+| `csm_rcs_kmatrix` (filter.c) | KMATRIX TENTHSEK | ATTITUDE_ERROR_DESIRED_ANGLES NEEDLFLG | - | - | - | job ambgupdt |
+| `agc_task_jetslect` (jet_select.c) | JETSLECT ENDJETS | - | - | - | ch13 ENBT6RUPT | - |
+| `agc_task_t6start` (jet_select.c) | T6START T6RUPTOR T6L1 | - | - | - | ch13 ENBT6RUPT | - |
+| `csm_rcs_manual` (manual.c) | NOCHANGE | - | +STIKFLAG | - | ch31 FREE | - |
+| `csm_dap_needler` (needles.c) | NEEDLER NEEDLER1 NEEDLER2 | - | - | - | ch12 COARSE, ch12 ENBIMUERR | - |
+| `agc_task_rcsatt` (t5rupt.c) | RCSATT | - | - | - | ch31 CMCCONTROL, ch31 FREE | - |
+| `csm_rcs_rate_filter_phase` (t5rupt.c) | SETT5 | - | - | - | ch31 FREE | - |
+| `rcs_zerot5` (t5rupt.c) | ZEROT5 IMUAOK RCSSWIT | - | - | - | - | job ambgupdt |
+| `agc_csm_dap_zerojet` (t5rupt.c) | ZEROJET | - | - | - | ch13 ENBT6RUPT | - |
+| `tvcd_entry` (daps.c) | PITCHDAP YAWDAP STROKER | - | - | - | ch14 DRIVECDUS, ch14 DRIVECDUT | - |
+| `agc_task_tvcexec` (exec.c) | TVCEXEC | DAPBIT1 DAPBIT2 | - | - | - | task tvcexec, task rolldap |
+| `tvc_init_filter_timing` (init.c) | TVCINIT2 | - | -SWTOVER | - | - | - |
+| `csm_tvc_init_complete` (init.c) | TVCINIT4 ENDTVCIN | - | - | - | - | task tvcexec |
+| `csm_tvc_swichovr_body` (init.c) | SWICHOVR RTRNLOC | - | +SWTOVER | - | - | - |
+| `tvcr_tvc_enable` (restarts.c) | ENABL1 | - | - | - | ch12 TVCENABLE | - |
+| `agc_task_redotvc` (restarts.c) | REDOTVC EXECPHS TVCDAPHS | - | - | - | - | task exrstrt |
+| `agc_task_optics_counter_enable` (restarts.c) | ENABL2 | - | - | - | ch12 ENBOCDUERR | - |
+| `roll_jetroll` (rolldap.c) | JETROLL SAMEJETS T6ENABL | - | - | - | ch13 ENBT6RUPT | - |
+| `stroke_burst` (stroke.c) | HACKWLST REVUP | - | - | - | ch14 DRIVECDUS | - |
+| `csm_tvc_hack` (stroke.c) | HACK | - | - | - | - | task hackwlst |
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 6 | 0 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 5 | 0 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 6 | 0 |
+| `csmmass` | CSM mass, kg, scale 2^16 (CSMMASS; TVCMASSPROP 'B+16 KILOGRAMS'; noun 47 R1) | 3 | 2 |
+| `dapdatr1` | DAP configuration word 1 (DAPDATR1, DSP noun 46 R1) | 12 | 2 |
+| `dapdatr2` | DAP configuration word 2 (DAPDATR2, DSP noun 46 R2; Comanche only, storage exists in both builds) | 1 | 0 |
+| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 2 | 0 |
+| `lemmass` | LM mass, kg, scale 2^16 (LEMMASS; DSP noun 47 R2) | 2 | 0 |
+| `thetad` | desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style words, 2^15 = 1 revolution Index 0..2. | 1 | 0 |
+| `tvcpitch` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 2 | 3 |
+| `tvcyaw` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 1 | 2 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

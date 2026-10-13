@@ -65,3 +65,16 @@ executive.c 17, cm_body_attitude.c 8, dap.c 20, navigation/common.c 5).
   found V1 in three runs.
 - A busy-bound counter in a harness is a CPU-saturation meter, not a
   sizing error, when the job that hits it is an AGC polling loop.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ Each item changed or documented one decision; the full flows are in the owning lanes:
+
+| item | decision as the code now takes it | lane section |
+|---|---|---|
+| 1 | `src/csm/entry/reentry.c:targ_geteta`, `step_downcntl`: GETETA and DOWNCNTL on the MPAC words (V1 as HUNTEST stored it) | [guid-entry](guid-entry.md#program-flow-and-decisions) |
+| 2 | `src/exec/waitlist.c:agc_waitlist_call`: a delay above 16250 cs is BAD_ARG (DEVIATION; the AGC would misplace it) | [exec-sched](exec-sched.md#program-flow-and-decisions) |
+| 3 | `src/sim/pad.c`: `sps_impulse` pad keyword, range-checked to each erasable's scale | [sim](sim.md#program-flow-and-decisions) |
+| 4 | `src/sim/clock.c`: at most SIM_JOBS_PER_CALL jobs per executive call | [sim](sim.md#program-flow-and-decisions) |
+| 6 | `src/exec/change_program/lm.c`: R00 after INTSTALL clears 3AXISFLG, R04FLAG, MUNFLAG, XOVINFLG and sets FLGWRD11 = LRBYBIT | [exec-sched](exec-sched.md#program-flow-and-decisions) |
+| 9 | `src/programs/navigation/common.c:agc_rendz_get_mga`: a second UNIT on the LM (Luminary GET+MGA) | [prog-rendz](prog-rendz.md#program-flow-and-decisions) |

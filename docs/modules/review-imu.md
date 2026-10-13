@@ -112,3 +112,7 @@ Lane open questions (docs/modules/imu.md): CALCSMSC has one implementation
   exact word split behind a few-LSB difference in minutes.
 * Comanche and Luminary differ in small places inside "identical" routines (LASTBIAS
   PIPUSE vs PIPUSE1, NBD2 -0 handling): diff the two ropes routine by routine.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [imu](imu.md#program-flow-and-decisions).

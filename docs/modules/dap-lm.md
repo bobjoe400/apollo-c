@@ -194,3 +194,150 @@ a scratch stub file (exec/alarm/inhint, M-matrix, RHC counters, IMU CDU commands
   continues while a genuine failure (bad code) is still propagated (rule 7).
 * SPSRCS keeps firing until the rate passes the 0.1 deg/s target on the far side (L = EDOT
   for negative firing), not until zero rate.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/lm/dap/*.c`, `src/lm/dap/rcs/*.c`._
+
+The LM RCS digital autopilot and trim gimbal, all at interrupt level
+(T5RUPT every 100 ms, T6RUPT for jet timing). Basic (machine) code on
+ones'-complement words (`src/lm/dap/arith.c`). The decision points:
+
+* **T5RUPT** (`src/lm/dap/rcs/dapidler.c:agc_lm_dap_t5rupt` dispatches on
+  T5ADR): DAPIDLER (`agc_task_dapidler`) idles at 10/s until the crew
+  wants the DAP and the IMU/CDUs are usable, then STARTDAP initialises
+  (ACCOKFLG clear -> 1/ACCS job first) and hands T5ADR to PAXIS.
+* **PAXIS** (`paxis.c:agc_task_paxis`, every 100 ms): a pass that finds
+  the previous one unfinished (DAPZRUPT > 0) is BAILOUT 02000. Rates from
+  CDU differences and the jet-torque Kalman feedback (`rate.c:lm_dap_backp`,
+  `lm_dap_offset_est` with DRIFTDFL), then the P-axis state logic
+  (`pmanual.c:lm_dap_pstate`): attitude hold uses minimum impulse
+  (PULSEFLG) or rate command; auto uses PURGENCY when X-axis override is
+  inhibited (XOVINFLG); docked (CSMDKFLG) uses SPSRCS instead of TJETLAW
+  (`spsrcs.c:lm_dap_spsrcs`). Rate command: direct rate while the stick
+  moves, pseudo-auto after the target deadband or 4 s (OURRCFLG,
+  `lm_dap_detentck`). Jet choice `lm_dap_pjetslec` (AORBSFLG system A/B);
+  no P/Y/Z policy is alarm 02001, no jets alarm 02003
+  (`lm_dap_chkvisfz`).
+* **Q,R axes** (`qraxis.c:lm_dap_qraxis`): COTROLER > 0 GTS, 0 try GTS
+  (`trygts`: not if USEQRFLG, 1/ACCS has not allowed it, or Q,R jets are
+  firing), < 0 RCS (`lm_dap_rcs`). RCS: SENSEGET picks the X-translation
+  policy from APSFLAG, DRIFTDFL, ULLAGFLG, ACC4_2FL, AORBTFLG (none usable:
+  alarm 02002); the U,V loop (`qrjets.c:lm_dap_uvloop`, V then U) runs
+  TJETLAW (`tjetlaw.c`: FINELAW zones 1-5 for small errors, RUFLAW1-3 for
+  errors beyond pi/16 or rates beyond pi/32 rad/s), BACKHAND direct rate
+  or MINRTN minimum impulse; no rotation jets is alarm 02004 (the pass
+  goes on). Manual Q,R: `qrmanual.c:lm_dap_chekstik` (WC = A (B + |D|) D).
+* **GTS** (`gts.c:lm_dap_gts`): drive the trim gimbals by the NEGUSUM
+  law (GTSQRT); the next pass is RCS (COTROLER = -1) and the drive timers
+  are set to 200 ms against runaway.
+* **Jet timing** (`t6rupt.c`): jets that must stop within the pass go
+  into the three-long list JTLST (`lm_dap_jtlst`: TIME6, T6NEXT,
+  T6FURTHA with axis indices 0 P / 4 U / 13 V); a zero delta is -0
+  (`set_time6`, closed-loop-fixes L3). T6RUPT (`agc_lm_dap_t6rupt` ->
+  `agc_lm_dap_t6jobchk`): TIME6 counting returns, -0 runs T6JOB (turn off
+  that axis's jets, load the next), +0 is the CCS hole (POODOO 01103).
+* **Jet acceleration and switch curves** (`accs.c`, `accont.c`): 1/ACCS
+  (`agc_lm_dap_jet_accel_update`) recomputes the one-jet accelerations
+  from mass (APSFLAG ascent / descent, CSMDKFLG docked) whenever mass,
+  deadband, configuration or jet masks change, then 1/ACCONT stores the
+  48-word BLOCKTOP switch curves (DRIFTDFL selects the coasting form);
+  ACCOKFLG is set when done. RCSMON (`rcsmon.c`, T4RUPT every 480 ms)
+  turns a changed isolation-valve switch (channel 32 bits 1-8) into jet
+  inhibit masks and a 1/ACCS run.
+* **Program interface** (`dapif.c`): deadband set/restore
+  (`agc_lm_dap_restordb`, DBSELFLG), ALLCOAST (`agc_lm_dap_allcoast`,
+  sets DRIFTDFL), STOPRATE / zeroing of commanded attitude and rates.
+  Needles (`needles.c:lm_dap_altdsply`): every 100 ms alternate error
+  computation (total errors with NEEDLFLG) and needle drive.
+
+### Decision points by function
+
+34 of the lane's 181 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+
+| C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
+|---|---|---|---|---|---|---|
+| `lm_dap_switch_curves` (accont.c) | 1/ACCONT | DRIFTDFL | - | - | - | - |
+| `lem_mass` (accs.c) | 1/ACCS | APSFLAG | - | - | - | - |
+| `spscont` (accs.c) | SPSCONT DOCKTEST | USEQRFLG | - | - | - | - |
+| `agc_lm_dap_jet_accel_update` (accs.c) | 1/ACCS | CSMDKFLG | +ACCOKFLG | - | - | - |
+| `lm_dap_accfix` (accs.c) | - | - | - | - | - | job jet_accel_update |
+| `lm_dap_callaccs` (dapif.c) | CALLACCS | - | - | - | - | job jet_accel_update |
+| `agc_lm_dap_restordb` (dapif.c) | RESTORDB | DBSELFLG | - | - | - | - |
+| `agc_lm_dap_allcoast` (dapif.c) | ALLCOAST | - | +DRIFTDFL | - | - | - |
+| `agc_task_dapidler` (dapidler.c) | DAPIDLER | ACCOKFLG | - | - | - | job jet_accel_reset |
+| `lm_dap_altdsply` (needles.c) | ALTDSPLY | NEEDLFLG | - | - | - | - |
+| `altsyst` (paxis.c) | ALTSYST | - | ~AORBSFLG | - | - | - |
+| `lm_dap_pjetslec` (paxis.c) | PJETSLEC | - | - | ALARM 2003 | - | - |
+| `lm_dap_pjetslec_pair` (paxis.c) | PJETSLEC | AORBSFLG | - | - | - | - |
+| `lm_dap_purgency_law` (paxis.c) | PURGENCY | CSMDKFLG | - | - | - | - |
+| `lm_dap_chkvisfz` (paxis.c) | CHKVISFZ TRYUORV ABORTYZ | - | - | ALARM 2003, ALARM 2001 | - | - |
+| `agc_task_paxis` (paxis.c) | PAXIS | - | - | BAILOUT 2000 | - | - |
+| `lm_dap_pstate` (pmanual.c) | STATE | PULSEFLG XOVINFLG | - | - | - | - |
+| `justout` (pmanual.c) | JUSTOUT | - | +OURRCFLG | - | - | - |
+| `lm_dap_detentck` (pmanual.c) | DETENTCK RUTH RATEDAMP | OURRCFLG | -OURRCFLG | - | - | - |
+| `senseget` (qraxis.c) | SENSEGET | ACC4_2FL AORBTFLG APSFLAG DRIFTDFL ULLAGFLG | - | ALARM 2002 | - | - |
+| `lm_dap_rcs` (qraxis.c) | SENSEGET QRCONTRL | PULSEFLG | - | - | - | - |
+| `trygts` (qraxis.c) | TRYGTS CHKINGTS | USEQRFLG | - | - | - | - |
+| `lm_dap_qraxis` (qraxis.c) | QRAXIS CALLQERR | OURRCFLG | - | - | - | - |
+| `rotation_failed` (qrjets.c) | SELCTSUB | - | - | ALARM 2004 | - | - |
+| `aftertj` (qrjets.c) | AFTERTJ DOROTAT | APSFLAG DRIFTDFL SNUFFER | - | - | - | - |
+| `body_tjlaw` (qrjets.c) | TJLAW | CSMDKFLG USEQRFLG | - | - | - | - |
+| `lm_dap_uvloop` (qrjets.c) | LOOPER | AORBTFLG CSMDKFLG | - | - | - | - |
+| `lm_dap_qrminimp` (qrmanual.c) | - | PULSEFLG | - | - | - | - |
+| `lm_dap_chekstik` (qrmanual.c) | CHEKSTIK DAMPING | OURRCFLG PULSEFLG | - | - | - | - |
+| `lm_dap_backp` (rate.c) | BACKP | CSMDKFLG | - | - | - | - |
+| `lm_dap_offset_est` (rate.c) | - | DRIFTDFL | - | - | - | - |
+| `lm_dap_spsrcs` (spsrcs.c) | SPSRCS | DRIFTDFL | - | - | - | - |
+| `agc_lm_dap_t6jobchk` (t6rupt.c) | T6JOBCHK | - | - | POODOO 1103 | - | - |
+| `agc_lm_dap_restart` (state.c) | STARTSB1 | - | -ACCOKFLG | - | - | - |
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `1jacc` | none -- accessor of the DAP erasable 1JACC (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `1jaccq` | none -- accessor of the DAP erasable 1JACCQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `1jaccr` | none -- accessor of the DAP erasable 1JACCR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `alphaq` | none -- accessor of the DAP erasable ALPHAQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `alphar` | none -- accessor of the DAP erasable ALPHAR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `aosq` | AOSQ/AOSR are DP word pairs at pi/2 (the minor word may disagree in sign after DAS, as in the AGC); the accessor returns their value. AGC: none (helpe | 1 | 1 |
+| `aosr` | none -- accessor of the DAP erasable AOSR (ERASABLE_ASSIGNMENTS.agc).; returns agc_dp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 9 | 0 |
+| `cduxd` | none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 6 | 0 |
+| `cduyd` | none -- accessor of the DAP erasable CDUYD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 5 | 0 |
+| `cduzd` | none -- accessor of the DAP erasable CDUZD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `csmmass` | CSM mass, kg, scale 2^16 (CSMMASS; TVCMASSPROP 'B+16 KILOGRAMS'; noun 47 R1) | 2 | 0 |
+| `delcdux` | - | 0 | 1 |
+| `delcduy` | - | 0 | 1 |
+| `delcduz` | - | 0 | 1 |
+| `delperor` | - | 0 | 1 |
+| `delqeror` | - | 0 | 1 |
+| `delreror` | - | 0 | 1 |
+| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 1 | 0 |
+| `lemmass` | LM mass, kg, scale 2^16 (LEMMASS; DSP noun 47 R2) | 3 | 1 |
+| `m11` | M11 (GPMATRIX, T4RUPT_PROGRAM.agc p.188) -- SIN(MG), read by the DAP RETURNS: M11, scaled at 1; returns M11, scaled at 1 | 3 | 0 |
+| `m21` | M21 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- COS(OG)COS(MG) RETURNS: M21, scaled at 1; returns M21, scaled at 1 | 3 | 0 |
+| `m22` | M22 (GPMATRIX, T4RUPT_PROGRAM.agc p.188) -- SIN(OG), also MR22 RETURNS: M22, scaled at 1; returns M22, scaled at 1 | 3 | 0 |
+| `m31` | M31 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- -SIN(OG)COS(MG) RETURNS: M31, scaled at 1; returns M31, scaled at 1 | 3 | 0 |
+| `m32` | M32 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- COS(OG), also MR23 RETURNS: M32, scaled at 1; returns M32, scaled at 1 | 3 | 0 |
+| `neg_ratedb` | - | 0 | 1 |
+| `omegap` | none -- accessor of the DAP erasable OMEGAP (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `omegapd` | none -- accessor of the DAP erasable OMEGAPD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `omegaq` | none -- accessor of the DAP erasable OMEGAQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `omegaqd` | none -- accessor of the DAP erasable OMEGAQD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `omegar` | none -- accessor of the DAP erasable OMEGAR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `omegard` | none -- accessor of the DAP erasable OMEGARD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `p_rhcctr` | P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP. | 3 | 2 |
+| `q_rhcctr` | P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP. | 1 | 2 |
+| `r_rhcctr` | P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP. | 1 | 2 |
+| `stiksens` | none -- accessor of the DAP erasable STIKSENS (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `thetad` | desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style words, 2^15 = 1 revolution Index 0..2. | 1 | 0 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

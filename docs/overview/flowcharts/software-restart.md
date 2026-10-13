@@ -77,7 +77,7 @@ flowchart TD
     N3 -- "yes" --> N1
     N3 -- "no" --> Z{"any group was active?"}
     Z -- "yes" --> Z1["ENDRSTRT: the restarted jobs and tasks run"]
-    Z -- "no, MODREG >= 0" --> Z2["GOTOPOOH -> P00 (V37 N99 flash)<br/>fresh_start.c:agc_exec_gotopooh"]
+    Z -- "no, MODREG >= 0" --> Z2["GOTOPOOH -> P00 (V37 flash): GOP00FIX takes over core set 0,<br/>where SPECTEST put MMDSPLAY's DSPMMJOB, so PROG stays blank<br/>fresh_start.c:agc_exec_gotopooh, executive.c:exec_core0_continue_as"]
     Z -- "no, MODREG = -0" --> Z3["idle"]
 ```
 

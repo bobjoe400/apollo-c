@@ -71,3 +71,7 @@ tests/oracle/landing.c. AGC: Luminary099 pp. 785-856, 898-925.
 - **To split a residual between translation error and word representation, rerun the rope from the middle with canonical words** (here T2TEST with TBUP/TGO/DRDOT canonicalised): if the rope then equals the C, the C is right and the gap is the F9 class. Snippets assembled with yaYUL and poked into VAC2USE isolate one op (DDV of a sign-disagreeing divisor differs by 1 LSB; SR of (4637, -3965) stores (2, 4327) = 37095, not 37094).
 - **Erasable names that start with a digit (1/DV1) are parsed as numbers by agc_probe**: give the E-bank address.
 - **TS/XCH of an overflowed A stores the overflow-corrected word** (16383 + 1 -> +0); a saturating C helper hides the AGC behaviour even when it is asserted unreachable.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [guid-landing](guid-landing.md#program-flow-and-decisions).

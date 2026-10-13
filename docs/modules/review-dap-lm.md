@@ -112,3 +112,7 @@ t.sh runs one test against it.
   assertions; grep src, tests and sim first.
 
 Oracle cases added by this review: accs_aos_* (13, earlier run), accs_docked_thrust/_aps/_fix, gts_a..f, tg_a..d, tjs_* (20), kal_docked, kal_docked_pw.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [dap-lm](dap-lm.md#program-flow-and-decisions).

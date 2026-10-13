@@ -69,3 +69,7 @@ New oracle cases (tools/oracle/cases/gen/gen_dap_csm.py): rate_* (5), needles_* 
 * Word-level erasables need oracle cases with sign-disagreeing input words; value-based code passes every sign-agreeing case.
 * yaAGC drains CDUXCMD through its coarse-align burst model once channel 14 is set, so counter outputs cannot be compared at a fixed stop label.
 * Deleting guaranteed guards drops rule-5 density far below 2.0 in arithmetic-heavy files; the density target and the no-silent-failure rule pull in opposite directions, and the latter wins.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [dap-csm](dap-csm.md#program-flow-and-decisions).

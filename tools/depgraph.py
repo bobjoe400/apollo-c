@@ -5,7 +5,7 @@ Usage (from the repo root):
     python3 -I tools/depgraph.py [--work DIR] [--readme FILE] [--stdout]
 
 Method (no reading or grepping of calls; CODING_STANDARD.md "Tooling"):
-  * every src/**/*.c is compiled with GCC -O0 -fno-inline
+  * every src/**/*.c except the host-only src/nassp/ is compiled with GCC -O0 -fno-inline
     -fcallgraph-info=su,da into --work (default build/depgraph); each TU's
     VCG file gives the defined functions (a node with a stack-usage line)
     and one edge per call site;
@@ -45,6 +45,9 @@ EDGE_RE = re.compile(r'^edge: \{ sourcename: "([^"]+)" targetname: "([^"]+)" lab
 INCLUDE_RE = re.compile(r'^\s*#\s*include\s+"agc/([a-z_]+)/[^"]+"')
 BEGIN = '<!-- depgraph:begin -->'
 END = '<!-- depgraph:end -->'
+# Host-only shims built outside this tree's Makefile (src/nassp needs
+# NASSP's own headers; the Makefile's LIB_SRCS excludes it too).
+HOST_ONLY = ('src/nassp/',)
 SPECIAL = {'src/exec/dispatch.c': 'exec/dispatch', 'src/exec/interrupts.c': 'exec/interrupts'}
 # ARCHITECTURE.md: core < exec < io/imu/nav < guidance < programs < csm|lm < sim
 LAYER = {'core': 0, 'exec': 1, 'io': 2, 'imu': 2, 'nav': 2, 'guidance': 3, 'programs': 4,
@@ -274,6 +277,7 @@ def main(argv):
     ap.add_argument('--stdout', action='store_true')
     args = ap.parse_args(argv[1:])
     srcs = sorted(os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, 'src', '**', '*.c'), recursive=True))
+    srcs = [p for p in srcs if not p.startswith(HOST_ONLY)]
     defined, edges = parse_ci(compile_all(srcs, os.path.abspath(args.work)))
     text = '\n'.join(render(srcs, defined, edges, includes(srcs))) + '\n'
     if args.stdout:

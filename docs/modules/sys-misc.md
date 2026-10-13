@@ -149,3 +149,217 @@ designate.  271 checks pass (linked against a scratch build plus link stubs).
 - In a unit test, the first LM T4RUPT passes see the ISS turn on and zero the ICDUs;
   settle T4RUPT before setting CDUs you want GPMATRIX to see.
 
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/io/service/*.c`, `src/io/telemetry/*.c`, `src/io/verbs/*.c`, `src/lm/systems_test.c`._
+
+T4RUPT, DOWNRUPT, the extended verbs, P27 uplink, the service routines,
+self-check and the LM systems test. The decision points:
+
+* **T4RUPT** (`src/io/service/t4rupt.c:agc_t4rupt_rupt` -> `agc_t4rupt`,
+  every 120 ms): CDRVE sends the lamp word or one DSKY relay word (after
+  a relay word the next five T4RUPTs come 20 ms apart, QUIKDSP);
+  PROCEEDE edge-detects channel 32 bit 14 (PRO); T4JUMP (`t4_jump`) runs
+  one activity per phase, each once per 0.96 s: IMUMON (turn-on request
+  dropped 00207, turn-on without operate 00213, ISS off while in use
+  00214, PIPA fail 00212; ISS warning by VARALARM), C33TEST (down/uplink
+  too fast 01105/01106), GLOCKMON (gimbal lock lamp and coarse align
+  stop), the CSM optics (`t4rupt_csm.c`: OPTMON zeroing sequence, switch
+  moved while zeroing 00116, not zeroed since fresh start 00120; OPTDRIVE)
+  and the LM radar monitors (`t4rupt_lm.c`: RR CDU fail with RNDVZFLG in
+  P20/P22 is 00515; GPMATRIX for the DAP). RCSMON (dap-lm) also runs here.
+* **DOWNRUPT** (`src/io/telemetry/down_telemetry.c:agc_telem_downrupt`,
+  every 20 ms): word order bit to 1 in channel 13 (LM WOTEST: only when it
+  is 0, Comanche every time; closed-loop-fixes), then one DP word of the
+  current downlist (control list and sublists of
+  `downlink_lists_csm.c` / `downlink_lists_lm.c`) to channels 34/35, 100
+  words a list; a new DNLSTCOD outside DNTABLE is BAD_ARG at NEWLIST; V74
+  replaces the list by the erasable dump.
+* **Extended verbs** (`src/io/verbs/extended_verbs.c`,
+  `extended_verbs_csm.c`, `extended_verbs_lm.c`,
+  `extended_verbs_lm_radar.c`): GOEXTVB fans verbs 40-99 (LST2FAN);
+  TESTXACT refuses with OPR ERR (ALM/END) when the extended-verb display
+  is busy, a priority display holds the DSKY, MODECADR is in use, or the
+  verb needs P00 (CHKPOOH). Per-verb refusals: CSM V54/V57 without
+  rendezvous tracking 00406, V41N91 00115/00117, V92 after P11 POODOO
+  01521; LM radar verbs refused while a radar is in use (RDRUSECK) or P20
+  runs, designate fail 00503, LR not in position 2 00523; LM R03 asks
+  again for masses below an empty vehicle. V40-V42 (IMU zero, coarse and
+  fine align from the keyboard; V42 torques by OGC/IGC/MGC).
+* **P27 uplink** (`src/io/verbs/uplink_update.c`): V70 liftoff time, V71
+  block (3..20 components, OPR ERR if it crosses an EBANK), V72 scattered
+  pairs (even count OPR ERR), V73 clock; refused in a mode that may not
+  be interrupted. Words arrive by V21N01; V21N02 / V33 verify
+  (`agc_job_uplink_update_proceed`); execute (`agc_job_uplink_update_execute`)
+  holds INTSTALL, restart-protects, sets REINTFLG and stores through
+  `agc_erase_write_ecadr` (state-flags); V34 or an error restores the old
+  mode and kills group 6 (`agc_job_uplink_update_terminate`).
+* **Service** (`src/io/service/service.c`): DELAYJOB
+  (`agc_svc_delayjob`) sleeps the job and wakes it as the given
+  continuation; all four DELAYLOCs in use is BAILOUT 01104. UPFLAG /
+  DOWNFLAG / UPENT2 / DOWNENT2 (CSM: flagword in bits 1-3; LM: FLAGWRD4
+  always), GENTRAN, B5OFF, CSM tracker lamps. `rtb_ops.c`: the RTB op
+  codes as plain functions on MPAC values. `interbank.c`: no code (bank
+  switching does not exist in C).
+* **Self-check** (`self_check.c`): a bank whose sum is not +-bank number
+  is alarm 01102 (ERCOUNT); SMODE + drops to idle, - restarts SELFCHK, -0
+  goes on; memory tests pass by construction (DEVIATION).
+* **LM P07 systems test** (`src/lm/systems_test.c`): IMU performance
+  tests (latitude/azimuth V06N41, coarse and fine align, gyro drift, PIPA
+  scale, vertical drift); bad IMU moding is VARALARM 01601 (SOMERR2); a
+  first PIPA count of +0 is the CCS hole; the erasable program (ATIGINC)
+  is not run (DEVIATION).
+
+### Decision points by function
+
+59 of the lane's 410 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+
+| C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
+|---|---|---|---|---|---|---|
+| `ropechk_bank` (self_check.c) | ROPECHK | - | - | ALARM 1102 | - | - |
+| `agc_svc_delayjob` (service.c) | DELAYJOB | - | - | BAILOUT 1104 | - | task waker |
+| `agc_t4_setissw` (t4rupt.c) | SETISSW | - | - | ALARM (agc_alarm_code_t) ( | - | - |
+| `t4_imucage` (t4rupt.c) | IMUCAGE | - | -ENGONFLG | - | - | - |
+| `t4_iturnon` (t4rupt.c) | ITURNON | - | - | ALARM 0207 | - | - |
+| `t4_imuop` (t4rupt.c) | IMUOP | IMUSE | -RNDVZFLG -IMUSE | ALARM 0214 | - | - |
+| `t4_proctnon` (t4rupt.c) | PROCTNON | IMUSE | - | ALARM 0213 | - | - |
+| `agc_t4_c33test` (t4rupt.c) | C33TEST | - | - | ALARM 1105, ALARM 0212 | - | - |
+| `t4_unz2` (t4rupt.c) | UNZ2 | - | - | - | - | task issup |
+| `agc_t4_task` (t4rupt.c) | - | DRIFTFLG IMUSE | +DRIFTFLG | - | - | task endtnon |
+| `t4_zoptdes` (t4rupt_csm.c) | ZOPTDES ZTOMAN ZOPALARM | - | - | ALARM 0116 | - | task endzopt |
+| `agc_t4_optics_task` (t4rupt_csm.c) | ENDZOPT ZEROPCDU | - | - | - | - | task endzopt2 |
+| `agc_t4_optics_drive` (t4rupt_csm.c) | OPTDRIVE OZONE CONTDRVE | - | - | ALARM 0120 | - | - |
+| `t4_rrgimon` (t4rupt_lm.c) | RRGIMON MONREPOS | AVEGFLAG MUNFLAG NORRMON | - | - | - | task dorrepos |
+| `t4_rrcduchk` (t4rupt_lm.c) | RRCDUCHK | RNDVZFLG | - | ALARM 0515 | - | - |
+| `agc_t4_rr_monitor` (t4rupt_lm.c) | RRAUTCHK | - | - | - | - | task rrturnon |
+| `after_liftoff` (extended_verbs_csm.c) | - | GRRBKFLG | - | - | - | - |
+| `agc_job_attitude_error_load_csm` (extended_verbs_csm.c) | - | - | - | - | - | task attitude_error_output |
+| `verb_marking` (extended_verbs_csm.c) | GOTOR21 GOTOR23 | RNDVZFLG TRACKFLG | - | ALARM 0406 | - | - |
+| `verb_terminate_tracking` (extended_verbs_csm.c) | TRACKTRM | RNDVZFLG TRACKFLG | -RNDVZFLG -TRACKFLG -UPDATFLG -IMUSE | - | - | - |
+| `verb_total_error` (extended_verbs_csm.c) | - | - | +NEEDLFLG | - | - | - |
+| `verb_systems_test` (extended_verbs_csm.c) | SYSTEST | NO_PRELAUNCH_INITIALIZATION | - | POODOO 1521 | - | - |
+| `verb_optics_coarse` (extended_verbs_csm.c) | OPTCOARK | - | - | ALARM 0115, ALARM 0117 | - | - |
+| `fan_70s_90s` (extended_verbs_csm.c) | - | - | -VHFRFLAG -RENDWFLG +QUITFLAG +IDLE_INTEGRATION_INHIBITED | - | - | - |
+| `agc_job_attitude_error_enable` (extended_verbs_lm.c) | - | - | - | - | - | task attitude_error_output |
+| `agc_job_dap_data_load_mass_lm` (extended_verbs_lm.c) | - | APSFLAG | - | - | - | - |
+| `agc_job_dap_data_load_trim` (extended_verbs_lm.c) | - | - | - | - | - | task trimgimb |
+| `verb_terminate_tracking` (extended_verbs_lm.c) | TRMTRACK | PREFERRED_TRACKING_ATTITUDE_ACTIVE RNDVZFLG TRACKFLG | -RNDVZFLG -PREFERRED_TRACKING_ATTITUDE_ACTIVE -SRCHOPTN -UPDATFLG -TRACKFLG -IMUSE | - | - | - |
+| `verb_rendezvous_display` (extended_verbs_lm.c) | - | - | - | - | - | task rendezvous_parameter_display |
+| `fan_40s_60s` (extended_verbs_lm.c) | - | APSFLAG | - | - | - | - |
+| `fan_70s_90s` (extended_verbs_lm.c) | - | - | -RENDWFLG +QUITFLAG | - | - | - |
+| `radar_in_use_check` (extended_verbs_lm_radar.c) | RDRUSECK | LRBYPASS NO_POWERED_DESIGNATE RADAR_ALARMS_SUPPRESSED RNDVZFLG SERVICER_RUNNING TRACKFLG | - | - | - | - |
+| `agc_job_lr_position_two_check` (extended_verbs_lm_radar.c) | - | - | - | ALARM 0523 | - | - |
+| `agc_extverb_rr_designate` (extended_verbs_lm_radar.c) | RRDESNBK | RNDVZFLG | - | - | - | - |
+| `agc_job_rr_lockon_answer` (extended_verbs_lm_radar.c) | - | - | =LOKONSW +CDESFLAG +NORRMON | - | - | - |
+| `agc_job_rr_designate_result` (extended_verbs_lm_radar.c) | - | - | - | ALARM 0503 | - | - |
+| `agc_extverb_rr_designate_end` (extended_verbs_lm_radar.c) | RRDESEND | - | - | - | - | job rr_designate_end_monitor |
+| `agc_job_rr_designate_end_monitor` (extended_verbs_lm_radar.c) | - | - | -NORRMON | - | - | - |
+| `agc_job_rr_los_display` (extended_verbs_lm_radar.c) | RRLOSDSP | - | - | - | - | job rr_los_display_next |
+| `radar_test_is_self_test` (extended_verbs_lm_radar.c) | FLAGWRD3 R04FLBIT | ALARM_521_SUPPRESSED | - | - | - | - |
+| `radar_test_start` (extended_verbs_lm_radar.c) | - | - | - | - | - | task radsamp |
+| `agc_extverb_radar_test` (extended_verbs_lm_radar.c) | R04 | - | =ALARM_521_SUPPRESSED | - | - | - |
+| `agc_extverb_lr_spurious_test` (extended_verbs_lm_radar.c) | R77 | - | =RADAR_ALARMS_SUPPRESSED | - | - | - |
+| `agc_job_radar_test_switch` (extended_verbs_lm_radar.c) | R04Y | - | - | - | - | job radar_test_switch_resume |
+| `agc_job_radar_test_end` (extended_verbs_lm_radar.c) | R04END | - | - | - | - | job radar_test_end_resume |
+| `agc_job_radar_test_end_resume` (extended_verbs_lm_radar.c) | - | - | -ALARM_521_SUPPRESSED | - | - | - |
+| `agc_extverb_lr_spurious_test_end` (extended_verbs_lm_radar.c) | R77END | - | - | - | - | job lr_spurious_test_end_resume |
+| `agc_job_lr_spurious_test_end_resume` (extended_verbs_lm_radar.c) | - | - | -RADAR_ALARMS_SUPPRESSED | - | - | - |
+| `agc_job_uplink_update_proceed` (uplink_update.c) | - | - | ~VERIFLAG | - | - | - |
+| `agc_job_uplink_update_execute` (uplink_update.c) | - | - | +REINTFLG | - | - | - |
+| `endtest1` (systems_test.c) | ENDTEST1 | - | -IMUSE | - | - | - |
+| `somerr2` (systems_test.c) | SOMERR2 | - | -IMUSE | ALARM 1601 | - | - |
+| `fine_aligned` (systems_test.c) | FINIMUDD | - | - | - | - | task systems_test_drift_wake |
+| `posgmbl` (systems_test.c) | LATAZCHK POSGMBL | GLOKFAIL | -GLOKFAIL | - | - | - |
+| `estims` (systems_test.c) | ESTIMS | - | - | - | - | task systems_test_sample |
+| `pipjobb_result` (systems_test.c) | AINGOTN | - | - | POODOO 1103 | - | - |
+| `alloop` (systems_test.c) | ALLOOP | - | - | - | - | task systems_test_sample, job systems_test_filter |
+| `run_step` (systems_test.c) | - | - | - | - | - | task systems_test_pip_timer |
+| `pip_timer` (systems_test.c) | PIPATASK | - | - | - | - | task systems_test_pip_timer, job systems_test_pip_result |
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `agsword` | none -- AGSWORD (LM): the downlist to return to after AGS initialization. RETURNS: AGSWORD; returns AGSWORD | 1 | 2 |
+| `alphaq` | none -- accessor of the DAP erasable ALPHAQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `alphar` | none -- accessor of the DAP erasable ALPHAR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `cdus` | CSM optics shaft CDU raw word (CDUS / OPTX); LM: rendezvous radar shaft | 4 | 1 |
+| `cdut` | CSM optics trunnion CDU raw word (CDUT / OPTY); LM: rendezvous radar trunnion | 4 | 1 |
+| `cdutcmd` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 0 | 1 |
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 5 | 0 |
+| `cduxd` | none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 2 | 0 |
+| `cduyd` | none -- accessor of the DAP erasable CDUYD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 4 | 0 |
+| `cduzd` | none -- accessor of the DAP erasable CDUZD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `cosmg` | COSMG (GPMATRIX, T4RUPT_PROGRAM.agc p.188) -- COS(MG), a factor only RETURNS: COSMG, scaled at 1; returns COSMG, scaled at 1 | 1 | 0 |
+| `csmmass` | CSM mass, kg, scale 2^16 (CSMMASS; TVCMASSPROP 'B+16 KILOGRAMS'; noun 47 R1) | 3 | 0 |
+| `dapdatr1` | DAP configuration word 1 (DAPDATR1, DSP noun 46 R1) | 6 | 2 |
+| `dapdatr2` | DAP configuration word 2 (DAPDATR2, DSP noun 46 R2; Comanche only, storage exists in both builds) | 1 | 0 |
+| `delv` | accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM. KPIP1  | 3 | 3 |
+| `dsptab` | display panel relay buffer DSPTAB +0..+10D, +11D is the C/S lights word (15-bit relay words) Index 0..11. | 7 | 4 |
+| `dsptem1` | - | 0 | 3 |
+| `extvbact` | EXTVBACT (ERASABLE_ASSIGNMENTS; TESTXACT p.237 C / p.264 L) -- the extended verb activity bits, read RETURNS: EXTVBACT, 15 bits; returns EXTVBACT, 15  | 3 | 2 |
+| `failreg` | three alarm code registers FAILREG +0..+2 (octal alarm codes) Index 0..2. | 1 | 0 |
+| `imodes30` | last-sampled channel 30 bits, T4RUPT IMUMON (IMODES30, B(1)PRM) | 13 | 8 |
+| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 8 | 5 |
+| `landmark` | LANDMARK (CM P22 code ABCDE, V52) as a signed SP number. AGC: LANDMARK (ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- the code (0 when the word is ou | 1 | 1 |
+| `lemmass` | LM mass, kg, scale 2^16 (LEMMASS; DSP noun 47 R2) | 3 | 0 |
+| `m11` | M11 (GPMATRIX, T4RUPT_PROGRAM.agc p.188) -- SIN(MG), read by the DAP RETURNS: M11, scaled at 1; returns M11, scaled at 1 | 1 | 0 |
+| `m21` | M21 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- COS(OG)COS(MG) RETURNS: M21, scaled at 1; returns M21, scaled at 1 | 1 | 0 |
+| `m22` | M22 (GPMATRIX, T4RUPT_PROGRAM.agc p.188) -- SIN(OG), also MR22 RETURNS: M22, scaled at 1; returns M22, scaled at 1 | 1 | 0 |
+| `m31` | M31 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- -SIN(OG)COS(MG) RETURNS: M31, scaled at 1; returns M31, scaled at 1 | 1 | 0 |
+| `m32` | M32 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- COS(OG), also MR23 RETURNS: M32, scaled at 1; returns M32, scaled at 1 | 1 | 0 |
+| `markstat` | mark status bit word (MARKSTAT, B(1)PRM; SXTMARK/R21/R22/P20/P23) | 1 | 0 |
+| `modecadr` | C(MODECADR +dev) (ERASABLE_ASSIGNMENTS.agc "MODE SWITCHING ERASABLE").; returns agc_sp_t -- the word (+0 none, positive a waiting job) | 2 | 0 |
+| `modreg` | MODREG major mode (program) | 4 | 0 |
+| `mrkbuf` | One raw word of MRKBUF1 / MRKBUF2 (layout above). AGC: MRKBUF1, MRKBUF2 (ERASABLE_ASSIGNMENTS.agc); returns uint16_t -- the raw 15-bit word (0 for a b | 0 | 1 |
+| `neg_ratedb` | - | 0 | 1 |
+| `omegap` | none -- accessor of the DAP erasable OMEGAP (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `omegapd` | none -- accessor of the DAP erasable OMEGAPD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `omegaq` | none -- accessor of the DAP erasable OMEGAQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `omegaqd` | none -- accessor of the DAP erasable OMEGAQD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `omegar` | none -- accessor of the DAP erasable OMEGAR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `omegard` | none -- accessor of the DAP erasable OMEGARD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `optind` | OPTIND (ERASABLE_ASSIGNMENTS.agc, CM) -- coarse optics state, read RETURNS: OPTIND: -1, 0, 1, or AGC_OPTIND_NEG0 for -0; returns OPTIND: -1, 0, 1, or  | 2 | 3 |
+| `optionx` | none (erasable read) OPTIONX +index (= DSPTEM2 +1 +index).; returns agc_sp_t -- OPTIONX +index as SP | 2 | 2 |
+| `optmodes` | OPTMODES (ERASABLE_ASSIGNMENTS.agc, CM) -- the optics mode bit word, read RETURNS: OPTMODES, 15 bits (0 in an LM build); returns OPTMODES, 15 bits (0  | 3 | 2 |
+| `pipax` | PIPA X pulse count since last read (register PIPAX, 037), unscaled pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) | 4 | 2 |
+| `pipay` | PIPA Y pulse count (register PIPAY) | 4 | 2 |
+| `pipaz` | PIPA Z pulse count (register PIPAZ) | 4 | 2 |
+| `piptime` | time of the PIPA reading / this vehicle's state vector, centiseconds, scale 2^28 (PIPTIME, B(2)PRM) | 1 | 0 |
+| `radmodes` | RADMODES (ERASABLE_ASSIGNMENTS; EQUALS FLGWRD12, FLAGWORD_ASSIGNMENTS p.85) -- the radar mode bit word, read RETURNS: uint16_t -- RADMODES (15 bits);  | 7 | 8 |
+| `read_ecadr` | Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074) map onto agc_flagword_*; other addresses use a raw image (no map to the typed er | 4 | 0 |
+| `refsmmat` | reference-to-stable-member matrix, row-major, DP elements, scale 2^1 (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') | 1 | 0 |
+| `rfailcnt` | none -- RFAILCNT (R04Z, RADSAMP) -- bad samples counted RETURNS: RFAILCNT; returns RFAILCNT | 1 | 1 |
+| `rls` | landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing | 1 | 0 |
+| `rn` | this vehicle's position, meters, scale 2^29 (earth) or 2^27 (moon) (RN, B(6)PRM) | 1 | 0 |
+| `rr_az` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 0 | 1 |
+| `rr_elev` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 0 | 1 |
+| `rsampdt` | none -- RSAMPDT (R04 / R77, read by RADSAMP) -- the sampling interval RETURNS: RSAMPDT: interval + 1, cs (0 stops the sampling); returns RSAMPDT: inte | 1 | 1 |
+| `rtstbase` | none -- RTSTBASE (R04X / R04L) -- base of the sample storage RETURNS: 0 for the RR, 2 for the LR; returns 0 for the RR, 2 for the LR | 1 | 0 |
+| `rtstdex` | none -- RTSTDEX (R04X) -- which radar is sampled RETURNS: RTSTDEX: 1 RR, 2 LR (test index); returns RTSTDEX: 1 RR, 2 LR (test index) | 1 | 1 |
+| `rtstloc` | none -- RTSTLOC (R04Z, RADSAMP) -- the next sample slot RETURNS: RTSTLOC; returns RTSTLOC | 1 | 1 |
+| `rtstmax` | none -- RTSTMAX (R04C) -- the last sample slot RETURNS: 2 for the RR, 6 for the LR; returns 2 for the RR, 6 for the LR | 1 | 0 |
+| `stiksens` | none -- accessor of the DAP erasable STIKSENS (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
+| `swsample` | SWSAMPLE (ERASABLE_ASSIGNMENTS, CM; set in OPTMON p.160) -- the optics mode switch as last sampled (read by V41 N91 and R52) RETURNS: +1 computer (CSC | 2 | 0 |
+| `tephem` | time of the ephemeris epoch (TEPHEM = TIMSUBO, TP, centiseconds, scale 2^42: L "CSEC B-42 (TRIPLE PRECISION)"; P11 sets it at liftoff) | 1 | 1 |
+| `tetcsm` | time of the permanent CSM state vector, centiseconds, scale 2^28 (TETCSM) | 1 | 1 |
+| `tetlem` | time of the permanent LM state vector, centiseconds, scale 2^28 (TETLEM) | 1 | 1 |
+| `tevent` | time of event for downlist, centiseconds, scale 2^28 (TEVENT; TLIFTOFF in P11) | 1 | 0 |
+| `tgo` | time to go in the burn / guidance, centiseconds, scale 2^28 (TGO) | 1 | 0 |
+| `thetad` | desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style words, 2^15 = 1 revolution Index 0..2. | 4 | 1 |
+| `tig` | time of ignition, centiseconds, scale 2^28 (TIG; DSP noun 33) | 1 | 0 |
+| `time1` | ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private | 3 | 0 |
+| `time2` | ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private | 1 | 0 |
+| `ttpi` | TPI time, centiseconds, scale 2^28 (TTPI; DSP noun 37) | 1 | 0 |
+| `upsvflag` | UPSVFLAG (UPDATE_PROGRAM.agc, INTWAKEU) -- the state vector a P27 update replaced RETURNS: UPSVFLAG: 0, +-1 earth, +-2 moon (+ CSM, - LM); returns UPS | 1 | 1 |
+| `vgtig` | velocity to be gained at TIG, m/cs, scale 2^7 (VGTIG, P40-P47: 'VG IGNITION SCALED AT 2(+7) M/CS') | 1 | 0 |
+| `vn` | this vehicle's velocity, m/cs, scale 2^7 (earth) or 2^5 (moon) (VN, B(6)PRM) | 1 | 0 |
+| `write_ecadr` | Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074) map onto agc_flagword_*; other addresses use a raw image (no map to the typed er | 4 | 0 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

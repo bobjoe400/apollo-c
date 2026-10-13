@@ -38,7 +38,7 @@ flowchart TD
     D1 --> D2{"integration finished late?<br/>(MIDTOAV slipped)"}
     D2 -- "yes" --> D3["TIG = integrated time + 29.96 s"]
     D2 -- "no" --> D4
-    D3 --> D4["LONGCALL TIGBLNK at TIG - 35 s; 4.21"]
+    D3 --> D4["P40SET: P40TMP = time to TIG - 35 s; LONGCALL TIGBLNK; 4.21<br/>(P40TMP <= 0: LONGCALL of 0 = POODOO 1204, as the AGC)<br/>burn.c:agc_csm_preburn_call_tigblnk"]
 ```
 
 ## TIG - 35 s to ignition

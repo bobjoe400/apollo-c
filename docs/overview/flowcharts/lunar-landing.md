@@ -37,7 +37,7 @@ flowchart TD
     C4 --> C3
     C3 -- "yes" --> C5["P63SPOT4: SETPOS1 (LR beam vectors)<br/>agc_lm_job_braking_phase_radar_init"]
     C5 --> D0["BURNBABY: group 4; DVTOTAL = 0; P40AUTO<br/>burnbaby.c:agc_lm_burnbaby, agc_job_burnbaby_countdown"]
-    D0 --> D1["P41SPOT/P63SPOT: TDEC1 = TIG - 29.9 s; INITCDUW;<br/>CSM state for MUNRVG; MIDTOAV1 (slip TIG if late);<br/>LONGCALL TIG-35<br/>burnbaby.c:agc_job_preburn_state_vector_lm"]
+    D0 --> D1["P41SPOT/P63SPOT: TDEC1 = TIG - 29.9 s; INITCDUW;<br/>CSM state for MUNRVG; MIDTOAV1 (slip TIG if late);<br/>CALLT-35: SAVET-30 = time to TIG - 35 s, LONGCALL TIG-35<br/>(<= 0: LONGCALL of 0 = POODOO 1204, as the AGC)<br/>burnbaby.c:agc_job_preburn_state_vector_lm, ign_call_tig_35"]
     D1 --> D2["TIG-35: blank DSKY 5 s; TIG-30 in 5 s<br/>burnbaby.c:agc_task_tig_35"]
     D2 --> D3["TIG-30: TIG-5 in 24.9 s; display on; ullage task;<br/>ULLGNOT: AVGEXIT from the table; PREREAD (SERVICER)<br/>burnbaby.c:agc_task_tig_30, ullgnot"]
     D3 --> D4["TIG-5: TIG-0 in 5 s; IGNFLAG, ASTNFLAG down;<br/>S40.13; V99 request<br/>burnbaby.c:agc_task_tig_5_lm"]

@@ -84,3 +84,7 @@ during P07's job-heavy loops; harmless (jobs continue next call).
 - A sampled channel image cannot see write events (yaAGC's RHC latch on
   each write of ch13); per-cs sampling while the bits are set is the
   closest equivalent and is documented.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [sim](sim.md#program-flow-and-decisions).

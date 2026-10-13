@@ -216,3 +216,116 @@ over a normal display and ENDMARK, LOADITIS (V21 of another noun -> redisplay).
 - V37 (agc_change_program) currently returns UNIMPLEMENTED in the exec lane.
 - Nouns whose data ids io-nouns has not wired (UNIMPLEMENTED) make V06/V0x/loads
   stop with that status; the display interface then drops the display.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/io/dsky/pinball/*.c`, `src/io/dsky/display_if.c`._
+
+The DSKY loop is drawn in [docs/overview/README.md](../overview/README.md)
+(section "The DSKY loop") and V37 in
+[flowcharts/program-change.md](../overview/flowcharts/program-change.md).
+The decision points:
+
+* **Key in** (`src/io/dsky/pinball/keys.c`): KEYRUPT1/2 or the host
+  (`agc_dsky_key`, `agc_dsky_keys`: each key as KEYRUPT1 + CHARIN, PRO as
+  PROCKEY) sets DSKYFLAG and NOVACs CHARIN (`pin_keycom` ->
+  `agc_job_charin`); `pin_charin` blocks the display system and fans the
+  key out (NUM, VERB, NOUN, +/-, CLEAR, ENTER, KEY REL, ERROR RESET). An
+  illegal key in the sequence is CHARALRM (`verbs.c:pin_charalrm`: OPR
+  ERR, ENDOFJOB). UPRUPT (`agc_dsky_uprupt`) checks the uplink triple
+  (key, complement, key); a bad one sets UPLOCKFL and locks the uplink
+  out until ERROR RESET clears it.
+* **ENTER** (`keys.c:pin_enter` -> `pin_enter_once`): REQRET + is pass 0,
+  a new verb/noun (`verbs.c:pin_entpas0`: TESTNN, REQADD/USEADD for
+  machine-address nouns, then VERBFAN); REQRET - is a data word for a
+  waiting load (`pin_load_resume`), refused by DSPALARM when a decimal
+  word has fewer than 5 digits. ALMCYCLE (`verbs.c:pin_almcycle`: CHECK
+  FAIL lamp, restore the verb and noun) re-enters ENTER: `pin_enter` loops
+  only while `pin_recycle` sees that ALMCYCLE itself ran (the `almcycle`
+  mark), so an ALARM status from a called routine (V37BAD, CANTR00) ends
+  the job instead (closed-loop-fixes L1). The loop is bounded by
+  PIN_RECYCLE_MAX.
+* **Verb fan** (`verbs.c:pin_verbfan`): verbs 40 and up release the
+  display system and go to the extended-verb fan (sys-misc); below that,
+  VERBTAB (`pin_vbfandir`): display V01-V07 (octal `pin_dsp_octal`,
+  decimal through `scale.c`, PREDSPAL alarms a decimal display of an
+  octal-only noun), monitor V11-V17 (`monitor.c:pin_monitor` -> MONREQ
+  task each second), load V21-V25 (`load.c`: mixed octal/decimal or a
+  scale overflow alarms and recycles via `sfin.c`, HMSIN with fewer than
+  three words forces V25), V30/V31 request executive/waitlist, V32-V34
+  resequence/proceed/terminate, V35 lamp test (TSTLTS2/3 tasks), V37
+  change program. Illegal verb/noun: DSPALARM (`pin_dspalarm`) = OPR ERR
+  when keyed, POODOO 01501 when an internal NVSUB asked for it.
+* **Program displays** (`nvsub.c`, `src/io/dsky/display_if.c`): NVSUB
+  (`pin_nvsub1`: noun +0 pastes the verb, verb +0 shows only the noun)
+  returns BUSY while the display system is held; a second job waiting in
+  CADRSTOR or DSPLIST is POODOO 01206 (`pin_check_lists`). The GO entries
+  (`agc_dsky_display`, `agc_dsky_display_ecadr`) build a request and start
+  MAKEPLAY (`dif_makeplay`), which classes it: priority (`dif_makeprio`:
+  a priority display over another priority display is POODOO 01502
+  PRIOBORT unless bit 14), mark (`dif_makemark`), or normal
+  (`dif_makenorm`). A displaced display sleeps (`dif_gosleeps`,
+  `dif_xchsleep`); a flashing one waits in ENDIDLE (`dif_flashsub`) for
+  the crew. ENDIDLE returns by RECALTST (`nvsub.c:pin_recaltst`): V34
+  terminate -> call CADR +1 (`agc_job_termate`), V33 proceed -> +2
+  (`agc_job_proceed`), data entered -> +3 (`agc_job_idleret3`). After the
+  crew used the DSKY, PINBRNCH (`pin_pinbrnch`) re-establishes the display
+  in ENDIDLE; NORMRET / ENDOUT (`dif_normret`, `dif_endout`) wake the
+  next waiting display.
+* **Out** (`state.c:pin_dspoutsb`, called from T4RUPT): scan DSPTAB for a
+  negative (pending) word, at most twice round, and write it to channel
+  10; DSPTAB +0 met by DSPIN is the AGC's CCS hole (refused by assertion).
+  Lamps: KEY REL (channel 11 bit 5, `pin_reldspon`), OPR ERR, VERB/NOUN
+  flash (`display.c`). DSPMMJB (`nvsub.c:agc_dsky_dspmm` job) shows MODREG
+  in the PROG digits (negative = blank, DEVIATION for -0).
+
+### Decision points by function
+
+16 of the lane's 242 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+
+| C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
+|---|---|---|---|---|---|---|
+| `dif_priobort` (display_if.c) | PRIOBORT | - | - | POODOO 1502 | - | - |
+| `dif_cleanend` (display_if.c) | CLEANEND | - | - | - | - | job jamterm |
+| `dif_normret` (display_if.c) | NORMRET | - | - | - | - | job playjum1 |
+| `dif_start_makeplay` (display_if.c) | GODSPRS1 BOTHJOBS | - | - | - | - | job makeplay |
+| `agc_dsky_prockey_request` (keys.c) | PROCKEY | - | - | - | - | job prockey |
+| `pin_keycom` (keys.c) | KEYCOM ACCEPTUP | - | +DSKYFLAG | - | - | job charin |
+| `agc_dsky_uprupt` (keys.c) | UPRUPT | UPLOCKFL | +UPLOCKFL -UPLOCKFL | - | - | - |
+| `agc_dsky_key` (keys.c) | KEYRUPT1 CHARIN | - | +DSKYFLAG | - | - | - |
+| `pin_monitor` (monitor.c) | MONITOR | - | - | - | - | task monreq |
+| `agc_task_monreq` (monitor.c) | MONREQ | - | - | - | - | task monreq, job mondo |
+| `pin_vbtstlts` (monitor.c) | VBTSTLTS | - | - | - | - | task tstlts2 |
+| `agc_task_tstlts2` (monitor.c) | TSTLTS2 | - | - | - | - | job tstlts3 |
+| `pin_check_lists` (nvsub.c) | ISCADR+0 ISLIST+0 | - | - | POODOO 1206 | - | - |
+| `agc_dsky_dspmm` (nvsub.c) | DSPMM | - | - | - | - | job dspmmjb |
+| `agc_dsky_dspout` (state.c) | DSPOUT | DSKYFLAG | - | - | - | - |
+| `pin_dspalarm` (verbs.c) | DSPALARM | - | - | POODOO 1501 | - | - |
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `dsptab` | display panel relay buffer DSPTAB +0..+10D, +11D is the C/S lights word (15-bit relay words) Index 0..11. | 8 | 7 |
+| `dsptem1` | - | 0 | 1 |
+| `dsptemx` | none (erasable read) DSPTEMX,+1 (= DSPTEM2 +1, +2) as a DP.; returns agc_dp_t -- DSPTEMX,+1 as a DP | 1 | 1 |
+| `extvbact` | EXTVBACT (ERASABLE_ASSIGNMENTS; TESTXACT p.237 C / p.264 L) -- the extended verb activity bits, read RETURNS: EXTVBACT, 15 bits; returns EXTVBACT, 15  | 0 | 1 |
+| `failreg` | three alarm code registers FAILREG +0..+2 (octal alarm codes) Index 0..2. | 0 | 1 |
+| `imodes30` | last-sampled channel 30 bits, T4RUPT IMUMON (IMODES30, B(1)PRM) | 2 | 2 |
+| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 3 | 3 |
+| `modreg` | MODREG major mode (program) | 2 | 0 |
+| `option1` | OPTION1 +index (index 0..2 = OPTION1, OPTION2, OPTION3; noun 06), octal. | 0 | 1 |
+| `optionx` | none (erasable read) OPTIONX +index (= DSPTEM2 +1 +index).; returns agc_sp_t -- OPTIONX +index as SP | 1 | 1 |
+| `optmodes` | OPTMODES (ERASABLE_ASSIGNMENTS.agc, CM) -- the optics mode bit word, read RETURNS: OPTMODES, 15 bits (0 in an LM build); returns OPTMODES, 15 bits (0  | 2 | 2 |
+| `radmodes` | RADMODES (ERASABLE_ASSIGNMENTS; EQUALS FLGWRD12, FLAGWORD_ASSIGNMENTS p.85) -- the radar mode bit word, read RETURNS: uint16_t -- RADMODES (15 bits);  | 2 | 2 |
+| `read_ecadr` | Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074) map onto agc_flagword_*; other addresses use a raw image (no map to the typed er | 2 | 0 |
+| `samptime` | SAMPTIME: sampled TIME2,TIME1 (noun 65), cs 2^28. | 0 | 1 |
+| `sfail` | SFAIL (= SELFERAS): self-check failure address, raw word. | 0 | 1 |
+| `time1` | ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private | 2 | 0 |
+| `write_ecadr` | Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074) map onto agc_flagword_*; other addresses use a raw image (no map to the typed er | 2 | 0 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

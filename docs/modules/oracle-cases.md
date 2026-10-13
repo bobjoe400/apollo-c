@@ -388,3 +388,7 @@ tests (the test rule has no header dependency).
   block): tests zero it to match the AGC's zeroed erasable.
 * oracle_in() folds 77777 to 0; raw inputs go through oracle_in_raw(),
   which keeps -0.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ The cases (tests/oracle/*.c) exercise the numeric modules against yaAGC; the flows they cover are in [core-numeric](core-numeric.md#program-flow-and-decisions), [nav-conic](nav-conic.md#program-flow-and-decisions), [nav-integ](nav-integ.md#program-flow-and-decisions), [nav-aux](nav-aux.md#program-flow-and-decisions), [guid-powered](guid-powered.md#program-flow-and-decisions), [guid-landing](guid-landing.md#program-flow-and-decisions), [guid-entry](guid-entry.md#program-flow-and-decisions), [p37](p37.md#program-flow-and-decisions), [dap-lm](dap-lm.md#program-flow-and-decisions), [dap-csm](dap-csm.md#program-flow-and-decisions), [prog-rendz](prog-rendz.md#program-flow-and-decisions), [prog-align](prog-align.md#program-flow-and-decisions).

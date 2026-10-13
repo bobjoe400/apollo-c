@@ -110,3 +110,7 @@ Files mid-edit: none. Every touched file compiles; make and make test green.
 * MPAC+2 is live state: DLOAD zeroes it, DAD/DSU/BDSU/DCS of two words and the ARCSIN/ARCCOS epilogues leave it, SQRT/SR/DMP/DOT write it, and ROUND, SR, NORM, SQRTSUB and TAD read it. "X then ROUND" or "X then SQRT" needs the TP words.
 * An interpretive op with its address on the push-down list must be followed by an op line in YUL source; "DAD EXIT" at the end of a snippet assembles DAD with an address word (it then takes the TC ENDOFJOB word as its operand and the run hangs).
 * Mutation check of the oracle test: forcing DDV agreement fails 36 checks (DDV, BDDV, ATMAG, ASCENT, HUNTEST); zeroing ACOS's stale MPAC+2 fails 13 (ASIN, ACOS). The random word cases are sensitive to exactly the effects the lanes reported.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [core-numeric](core-numeric.md#program-flow-and-decisions).

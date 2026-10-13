@@ -163,3 +163,20 @@ old code, or for P40TMP/CALLT-35 by the old inline logic: 1 cs / BAD_ARG).
 - A peripheral's behaviour can depend on how many packets arrive, not just
   their content; count packets per second against the reference before
   comparing physics.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the code at HEAD 99b2c6e. Each fix
+changed a decision point; the full flow of each is in the owning lane's
+section (linked)._
+
+| fix | decision as the code now takes it | lane section |
+|---|---|---|
+| L1 | `src/io/dsky/pinball/keys.c:pin_enter` re-enters ENTER only while `verbs.c:pin_recycle` sees the `almcycle` mark that `pin_almcycle` sets; an ALARM status from a called routine (V37BAD) ends the job | [io-pinball](io-pinball.md#program-flow-and-decisions) |
+| L2 | `src/imu/gyro.c:gyro_words`: the OGC buffer is `agc_align_ram()->ogc`, the one erasable V25N93 loads and IMUPULSE reads | [imu](imu.md#program-flow-and-decisions) |
+| L3 | `src/lm/dap/rcs/t6rupt.c:set_time6`: a zero T6 delta loads TIME6 = -0; `agc_lm_dap_t6jobchk`: -0 runs T6JOB, +0 is the CCS hole | [dap-lm](dap-lm.md#program-flow-and-decisions) |
+| S-L1 | `src/core/channels.c:wlog_add` logs every WRITE/WOR/WAND; `src/sim/channels.c:send_writes` sends one packet per entry | [state-flags](state-flags.md#program-flow-and-decisions), [sim](sim.md#program-flow-and-decisions) |
+| S-L2/3 | `src/sim/counters.c:sim_counters_tick`: CDUX-Z counts queued per CDU, 400 / 6400 counts a second | [sim](sim.md#program-flow-and-decisions) |
+| P40TMP | `src/csm/burns/sps/burn.c:agc_csm_preburn_call_tigblnk` (P40SET) and `src/lm/burns/ignition/burnbaby.c:ign_call_tig_35` (CALLT-35): a delay <= 0 goes to LONGCALL as 0 = POODOO 1204 | [guid-powered](guid-powered.md#program-flow-and-decisions) |
+| D1 | `src/exec/fresh_start.c:agc_exec_gotopooh`: from restart code, `src/exec/executive.c:exec_core0_continue_as` makes GOP00FIX replace the DSPMMJOB SPECTEST put in core set 0 (PROG stays blank) | [exec-sched](exec-sched.md#program-flow-and-decisions) |
+| WOTEST | `src/io/telemetry/down_telemetry.c:agc_telem_downrupt`: LM writes the channel 13 word-order bit only when it is 0 | [sys-misc](sys-misc.md#program-flow-and-decisions) |

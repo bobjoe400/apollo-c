@@ -277,3 +277,81 @@ those two until core-numeric lands.
 * HMS rule (only data_id[0] set): noun 65 in the AGC lists SAMPTIME three times.
 * SF constants: the 2DEC* entries (LM landing radar) are rope values; their physical
   scale (E5 B-28) is quoted in the comment.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/io/dsky/nouns/*.c`, `src/exec/nouns.c`._
+
+The noun tables are data; the decisions are how a noun component is
+found, scaled and stored.
+
+* **Lookup** (`src/io/dsky/nouns/data.c:agc_noun_lookup`,
+  `agc_noun_lookup_vehicle` = LODNNTAB): the flat `agc_noun_t` row for
+  the flown rope (`tables_csm.c`, `tables_lm.c`: NNADTAB / NNTYPTAB for
+  normal nouns 00-39 with one SF pair for all components, IDADDTAB /
+  RUTMXTAB for mixed nouns 40-99 with a pair per component, plus the
+  NO-LOAD and decimal-only bits pinball tests in NOUNTEST / PREDSPAL).
+* **Data access** (`data.c:noun_data_access`, through `agc_noun_read` /
+  `agc_noun_write`): one switch on the data id. Core erasables are served
+  here (times `noun_access_time`, SP masses and PIPAs `noun_access_sp`,
+  raw CDU / DAPDATR / FAILREG / THETAD words `noun_raw_read` /
+  `noun_raw_write`, OPTION1-3, SAMPTIME, T3TOT4, RR-AZ/ELEV); the
+  machine-address nouns 01-03, 10, 15 are NOT_FOUND here because pinball
+  resolves them by ECADR (`src/core/ecadr.c`); every other id goes to
+  `src/exec/nouns.c:agc_dispatch_noun`.
+* **Owner dispatch** (`src/exec/nouns.c:agc_dispatch_noun`): a DP field of
+  a guidance / entry / landing / alignment state block (`noun_dp`,
+  per vehicle), else an SP field (`noun_sp`, stored in the high word),
+  else a raw 15-bit word (`noun_word`), else a computed component
+  (`noun_by_function`: derived values, star codes `noun_star_code`,
+  lat/long `noun_latlong`, the P11 readout `noun_p11_readout`). One
+  vehicle- and mode-dependent case: VMAGI in CSM P11 (MODREG 11) is the
+  P11 readout's, not the guidance erasable. An id no owner holds is
+  NOT_FOUND. Value convention (include/agc/io/nouns.h): SP in the high
+  word of the `agc_dp_t`, DP as the value, raw words unscaled.
+* **Scales** (`scales.c:agc_scale_info`, `agc_scale_sfconst` = GTSFIN /
+  GTSFOUT): the SF routine and SF constant words of SFINTAB / SFOUTAB per
+  scale type, as the assembled rope words; an unknown scale or SF code is
+  BAD_ARG. Pinball's `scale.c` and `sfin.c` (io-pinball) do the display
+  and load conversions with them.
+
+### Decision points by function
+
+None of the lane's 31 functions tests a flag, raises an alarm or starts a job or task; its decisions are the numeric branches described above.
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `cdus` | CSM optics shaft CDU raw word (CDUS / OPTX); LM: rendezvous radar shaft | 1 | 1 |
+| `cdut` | CSM optics trunnion CDU raw word (CDUT / OPTY); LM: rendezvous radar trunnion | 1 | 1 |
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 1 | 1 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 1 | 1 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 1 | 1 |
+| `csmmass` | CSM mass, kg, scale 2^16 (CSMMASS; TVCMASSPROP 'B+16 KILOGRAMS'; noun 47 R1) | 1 | 1 |
+| `dapdatr1` | DAP configuration word 1 (DAPDATR1, DSP noun 46 R1) | 1 | 1 |
+| `dapdatr2` | DAP configuration word 2 (DAPDATR2, DSP noun 46 R2; Comanche only, storage exists in both builds) | 1 | 1 |
+| `failreg` | three alarm code registers FAILREG +0..+2 (octal alarm codes) Index 0..2. | 1 | 1 |
+| `fdai` | none (accessor) -- FDAIX, FDAIY, FDAIZ (LM, noun 18); returns uint16_t -- FDAI angle, CDU pattern | 1 | 0 |
+| `lemmass` | LM mass, kg, scale 2^16 (LEMMASS; DSP noun 47 R2) | 1 | 1 |
+| `modreg` | MODREG major mode (program) | 2 | 0 |
+| `option1` | OPTION1 +index (index 0..2 = OPTION1, OPTION2, OPTION3; noun 06), octal. | 1 | 1 |
+| `pipax` | PIPA X pulse count since last read (register PIPAX, 037), unscaled pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) | 1 | 1 |
+| `pipay` | PIPA Y pulse count (register PIPAY) | 1 | 1 |
+| `pipaz` | PIPA Z pulse count (register PIPAZ) | 1 | 1 |
+| `rr_az` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 1 | 1 |
+| `rr_elev` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 1 | 1 |
+| `samptime` | SAMPTIME: sampled TIME2,TIME1 (noun 65), cs 2^28. | 1 | 1 |
+| `t3tot4` | T3TOT4 (= RELDELV +2): transfer time for noun 39, cs 2^28. | 1 | 1 |
+| `thetad` | desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style words, 2^15 = 1 revolution Index 0..2. | 1 | 1 |
+| `tig` | time of ignition, centiseconds, scale 2^28 (TIG; DSP noun 33) | 1 | 1 |
+| `trkmkcnt` | TRKMKCNT: rendezvous tracking mark count (noun 45 R1), whole number. | 0 | 1 |
+| `ttogo` | time to go, centiseconds, scale 2^28 (TTOGO; DSP nouns 35,40,45,59,99) | 1 | 1 |
+| `ttpi` | TPI time, centiseconds, scale 2^28 (TTPI; DSP noun 37) | 1 | 1 |
+| `vhfcnt` | VHFCNT (CM): VHF range mark count. AGC: VHFCNT (ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- VHFCNT, a count | 0 | 1 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

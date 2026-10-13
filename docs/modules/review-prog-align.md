@@ -101,3 +101,6 @@ Files touched this session (all compile): src/lm/ags_initialization.c, src/lm/op
 * A status return that only ever says OK spreads: every caller grows an `if (st != OK)` that hides real failures next to it (align_stall_outcome's callers swallowed BAD_ARG this way).  Make never-fail routines void or value-returning first, then the real failure paths stand out.
 * For prolog work: an AGC label index (label -> rope, file, page) built from the listings' "# Page" markers gives exact cites automatically; several hand-written page numbers in this lane were off by up to five pages (e.g. MKVB51 is p. 232, not 227).
 
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [prog-align](prog-align.md#program-flow-and-decisions).

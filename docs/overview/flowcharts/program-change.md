@@ -19,7 +19,7 @@ flowchart TD
     K2 -- "no" --> K3["ALMCYCLE: OPR ERR, re-request<br/>pinball/verbs.c:pin_almcycle"]
     K2 -- "yes" --> V0["V37: MMNUMBER = Nxx<br/>change_program/sequence.c:agc_change_program"]
     V0 --> V1{"IMODES30 bit 6:<br/>IMU being initialised?"}
-    V1 -- "yes" --> X1["CANTR00: ALARM 1520, RELDSP<br/>sequence.c:cp_refuse(true)"]
+    V1 -- "yes" --> X1["CANTR00: ALARM 1520, RELDSP; V37BAD ends the job<br/>(pinball does not recycle: keys.c:pin_enter, verbs.c:pin_recycle)<br/>sequence.c:cp_refuse(true)"]
     V1 -- "no" --> V2{"LM and Nxx = 70 / 71?"}
     V2 -- "yes" --> V3["SETUP70 / SETUP71: start the abort program now<br/>lm.c:exec_cp_setup_abort -> agc_lm_job_dps_abort / agc_lm_job_aps_abort"]
     V2 -- "no" --> V4{"CSM: SPS engine on (ch 11 bit 13)<br/>or TVC DAP running (FLAGWRD6)?"}

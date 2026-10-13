@@ -145,3 +145,154 @@ missing symbols: 23 checks, 0 failures, 0 assert reports):
 - RESOLVED (review-guid-entry): GETLEWD is a typo of the transcription
   only; the assembled rope defines GETLEWD at 25,2677 (the code jumps
   there). CH1 = .64 confirmed against the rope words (24365 30244).
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/csm/entry/*.c`, `src/csm/burns/earth_orbit_insertion.c`._
+
+The P61-P67 sequence is drawn in
+[flowcharts/earth-entry.md](../overview/flowcharts/earth-entry.md).
+CSM only. The decision points:
+
+* **P61** (`src/csm/entry/programs.c:agc_job_entry_preparation*`):
+  extended verbs locked out; S61.1 (`agc_job_entry_imu_check`): R02BOTH;
+  with AVERAGEG on the IMU axis test runs at once, otherwise the state is
+  brought forward (MIDTOAV2) and AVERAGEG started
+  (`agc_job_entry_imu_check_extrapolated`, `agc_task_entry_start_average_g`).
+  `agc_job_entry_imu_axis_test`: the IMU Y axis must be within 30 deg of
+  UNIT(VN x RN); -Y within 30 deg is ALARM 01427 (IMU reversed), neither
+  is 01426 (unsatisfactory), then V05N09 and a 10 s DELAYJOB. Displays
+  V06N61, V06N60 (S61.2 `agc_entry_ems_data`: GMAX, VPRED, GAMMAEI) and
+  V06N63 (RTGO, VIO, TTE corrected for time spent at the display).
+* **P62/P63** (`programs.c`, `dap.c:agc_entry_dap_ic`): CM/SM separation
+  and the entry DAP on (CM/DAPIC: READGYMB in phase with PIPTIME,
+  CM/DSTBY, LATSW, restart groups 6 and 4); P63
+  (`agc_job_entry_initialization`) sets POSEXIT = STARTENT and waits for
+  .05 g in CM/POSE.
+* **Every 2 s** (`cm_body_attitude.c`): CM/POSE after SERVICER builds the
+  trajectory and body triads (`agc_entry_cm_pose_triad`,
+  `agc_entry_cm_trio`: UYA held at OLDUYA once |VREL| <= VQUIT) and goes
+  to POSEXIT; SERVNOUT's BAILOUT outranks the guidance status.
+* **Guidance** (`reentry.c`, one call per pass through `entry_sequencer`,
+  each AGC section a step function): TARGETNG (`agc_entry_targeting`:
+  D, RT, THETAH, GONEBY, .05GSW, L/D from `targ_ldcalc` skipped on
+  overflow) then the phase in GOTOADDR: INITIAL ROLL (INRLSW, `step_inrolout`)
+  -> HUNTEST (`step_huntest`: RANGER, PREFINAL or constant drag) ->
+  UPCONTROL (`step_upcontrl`, `step_upcontrol_reference`,
+  `step_upcontrol_ld`, `step_downcntl` on the stored words) -> KEP2
+  (`step_kepler_test`: final phase once D > Q7F + KDMIN, otherwise hold
+  ROLLC; below .05 g zero it) -> PREDICT3 (`step_prefinal` sets P67 and
+  EGSW; `step_final_predict`: stop steering below VQUIT, else the range
+  error DNRNGERR, or GONEGLAD past the target). L/D is limited by
+  NEGTESTS (above 175 fpss LATSW cleared, negative L/D -> 0), GLIMITER
+  (`step_glimiter`: limit downlift above GMAX/2) and the lateral corridor
+  (`step_limitld`, switching when NOSWITCH is clear); ROLLC = SIGN(K2ROLL)
+  ACOS(L/D1 / LAD) (`step_roll_command`). The P64-P67 mode changes and
+  displays (V16N69 P65, V16N67 P67) are made from these steps;
+  `agc_job_entry_final_phase_end` turns the DAP off and ends in GOTOPOOH.
+* **Entry DAP** (`dap.c`): READGYMB every 0.1 s (`agc_task_readgymb`:
+  first pass only sets GYMDIFSW, `dap_gymic`), body rates, then
+  extra-atmospheric (`dap_exdap`: rate and attitude dead zones, 3.6 deg
+  YAWLIM, 2 deg/s rate dead zone; P63FLAG +0 with |cos alfa| > .707 wakes
+  P62 later) or atmospheric roll (`dap_cm_rcs` -> `dap_phase_plane` ->
+  `dap_timetst` keeps jet intervals > 2 cs that fit the 2 s period ->
+  `dap_jetlist` WAITLISTs JETCALL); a WAITLIST overflow (BAILOUT 1203)
+  leaves the pass without jets. `dap_fdai` integrates the roll error for
+  the needles on alternate passes.
+* **P11** (`src/csm/burns/earth_orbit_insertion.c`): at liftoff (or V75)
+  zero the clock, TEPHEM to liftoff, PREREAD1, launch REFSMMAT and RN/VN
+  (MATRXJOB, NO_PRELAUNCH_INITIALIZATION set so P01 is refused later),
+  V06N62 every 2 s; ATERJOB drives the FDAI needles and the Saturn
+  takeover while DAPBIT1/2 select it.
+
+### Decision points by function
+
+52 of the lane's 160 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+
+| C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
+|---|---|---|---|---|---|---|
+| `agc_job_earth_orbit_insertion_monitor_setup` (earth_orbit_insertion.c) | - | NO_PRELAUNCH_INITIALIZATION | +NO_PRELAUNCH_INITIALIZATION | - | - | task atertask |
+| `matrx_tail` (earth_orbit_insertion.c) | MATRXJOB | - | - | - | - | task readaccs |
+| `agc_job_matrxjob` (earth_orbit_insertion.c) | MATRXJOB | - | -ERADFLAG +REFSMFLG | - | - | - |
+| `agc_csm_velocity_altitude_rate` (earth_orbit_insertion.c) | S11.1 | AMOONFLG | - | - | - | - |
+| `agc_task_atertask` (earth_orbit_insertion.c) | ATERTASK | - | - | - | - | job aterjob |
+| `agc_job_aterjob` (earth_orbit_insertion.c) | ATERJOB | DAPBIT1 DAPBIT2 | - | - | ch30 SCCTLSATURN | job atreset_after_delay, job aterjob |
+| `agc_job_atreset_after_delay` (earth_orbit_insertion.c) | ATRESET | - | - | - | ch12 SIVBTAKEOVER | job aterjob |
+| `agc_csm_satstkon` (earth_orbit_insertion.c) | SATSTKON | DAPBIT1 | +DAPBIT1 +DAPBIT2 | - | - | - |
+| `agc_task_redosat` (earth_orbit_insertion.c) | REDOSAT | - | - | - | ch12 SIVBTAKEOVER | - |
+| `agc_job_cm_pose` (cm_body_attitude.c) | CM/POSE | GAMDIFSW | +GAMDIFSW | - | - | - |
+| `dap_gymic` (dap.c) | CM/GYMIC | - | +GYMDIFSW | - | - | - |
+| `agc_task_readgymb` (dap.c) | READGYMB READGYM1 DOBRATE | CMDAPARM CM_DSTBY GYMDIFSW | -GYMDIFSW | - | - | task readgymb |
+| `dap_exdap` (dap.c) | EXDAP EXDAP4 EXDAP3 | - | - | - | - | task wake_cm_sm_separation |
+| `dap_jetlist` (dap.c) | JETCALL1 JETACTN | - | - | - | - | task jetcall |
+| `agc_task_jetcall` (dap.c) | JETCALL | CM_DSTBY | - | - | - | - |
+| `dap_cm_rcs` (dap.c) | CM/RCS COMPAT | LATSW | +LATSW | - | - | - |
+| `agc_task_attrates` (dap.c) | ATTRATES | _05GSW | - | - | - | - |
+| `agc_job_cm_dapon_wait` (dap.c) | CM/DAPON | GAMDIFSW | +CMDAPARM +NODOFLAG | - | - | job cm_dapon_wait |
+| `agc_job_cm_dapon` (dap.c) | CM/DAPON | - | -DAPBIT1 -DAPBIT2 | - | - | - |
+| `agc_entry_dap_ic` (dap.c) | CM/DAPIC | CM_DSTBY | +CM_DSTBY +LATSW | - | - | task readgymb |
+| `agc_job_cm_sm_separation_end_hold` (programs.c) | P62.1 PROCEED | - | +ENTRYDSP | - | - | - |
+| `agc_task_wake_cm_sm_separation` (programs.c) | WAKEP62 | - | - | - | - | job entry_initialization |
+| `entry_post_0_05g` (programs.c) | P64 | _05GSW | - | - | - | - |
+| `entry_upcontrol` (programs.c) | P65 | - | - | - | - | job entry_upcontrol_display |
+| `agc_job_entry_upcontrol_display` (programs.c) | P65.1 | ENTRYDSP | -ENTRYDSP | - | - | - |
+| `agc_job_entry_upcontrol_proceed` (programs.c) | P65.1 PROCEED | ENTRYDSP | +ENTRYDSP | - | - | - |
+| `entry_ballistic` (programs.c) | P66 | - | +ENTRYDSP | - | - | - |
+| `entry_final_phase` (programs.c) | P67 | - | +ENTRYDSP | - | - | - |
+| `agc_job_entry_final_phase_end` (programs.c) | P67.1 | CM_DSTBY | -CM_DSTBY -GYMDIFSW | - | - | - |
+| `agc_entry_final_phase_latlong` (programs.c) | P67.2 | - | -ERADFLAG -LUNAFLAG | - | - | - |
+| `agc_job_entry_imu_check_extrapolated` (programs.c) | S61.1 | - | - | - | - | task entry_start_average_g |
+| `agc_job_entry_imu_check` (programs.c) | S61.1 | AVEGFLAG | - | - | - | - |
+| `agc_task_entry_start_average_g` (programs.c) | S61.1C | - | - | - | - | job entry_imu_axis_test |
+| `agc_job_entry_imu_axis_test` (programs.c) | S61.1A S61.1B | - | - | ALARM code) | - | job entry_imu_check_return |
+| `agc_entry_desired_gimbal_angles` (programs.c) | S62.3 | - | -CPHIFLAG | - | - | - |
+| `targ_geteta` (reentry.c) | GETETA SUBETA SUBETA2 | EGSW | +RELVELSW | - | - | - |
+| `agc_entry_targeting` (reentry.c) | TARGETNG | GONEBY RELVELSW | -GONEBY +GONEBY -_05GSW +_05GSW | - | - | - |
+| `entry_initial_target` (reentry.c) | STARTEN1 | - | -ERADFLAG -LUNAFLAG | - | - | - |
+| `agc_entry_startent` (reentry.c) | STARTENT | - | +ENTRYDSP +GONEPAST +LATSW | - | - | - |
+| `step_inrolout` (reentry.c) | INROLOUT | INRLSW | +INRLSW | - | - | - |
+| `agc_job_pre_hunt` (reentry.c) | PRE-HUNT | - | -HIND | - | - | - |
+| `step_upcontrl` (reentry.c) | UPCONTRL VLTEST | - | +NOSWITCH | - | - | - |
+| `step_negtests` (reentry.c) | NEGTESTS | - | -LATSW | - | - | - |
+| `step_kepler_test` (reentry.c) | KEP2 | _05GSW | - | - | - | - |
+| `step_prefinal` (reentry.c) | PREFINAL | - | +EGSW | - | - | - |
+| `step_final_predict` (reentry.c) | PREDICT3 | GONEBY GONEPAST | +GONEPAST | - | - | - |
+| `step_limitld` (reentry.c) | LIMITL/D L350 | GONEPAST | - | - | - | - |
+| `step_roll_command` (reentry.c) | L355 | - | -NOSWITCH | - | - | - |
+| `entry_initial_roll_step` (reentry.c) | - | INRLSW _05GSW | -GONEPAST | - | - | - |
+| `entry_huntest_step` (reentry.c) | - | HIND | +HIND | - | - | - |
+| `entry_final_phase_step` (reentry.c) | - | NOSWITCH | -NOSWITCH | - | - | job entry_final_phase_display |
+| `entry_endexit` (reentry.c) | ENDEXIT OVERNOUT NODISKY | ENTRYDSP | - | - | - | - |
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `aig` | none (AIG erasable, CM_ENTRY_DIGITAL_AUTOPILOT.agc p. 1063) -- accessor for other lanes.; returns agc_sp_t -- agc_sp_t -- AIG inner gimbal angle /180, | 1 | 0 |
+| `amg` | none (AMG erasable, CM_ENTRY_DIGITAL_AUTOPILOT.agc p. 1063) -- accessor for other lanes.; returns agc_sp_t -- agc_sp_t -- AMG middle gimbal angle /180 | 1 | 0 |
+| `aog` | none (AOG erasable, CM_ENTRY_DIGITAL_AUTOPILOT.agc p. 1063) -- accessor for other lanes.; returns agc_sp_t -- agc_sp_t -- AOG outer gimbal angle /180, | 1 | 0 |
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 3 | 0 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 3 | 0 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 3 | 0 |
+| `cm_gymdt` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 2 | 2 |
+| `dapdatr1` | DAP configuration word 1 (DAPDATR1, DSP noun 46 R1) | 1 | 1 |
+| `delv` | accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM. KPIP1  | 1 | 0 |
+| `extvbact` | EXTVBACT (ERASABLE_ASSIGNMENTS; TESTXACT p.237 C / p.264 L) -- the extended verb activity bits, read RETURNS: EXTVBACT, 15 bits; returns EXTVBACT, 15  | 0 | 1 |
+| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 1 | 0 |
+| `modreg` | MODREG major mode (program) | 1 | 0 |
+| `piptime` | time of the PIPA reading / this vehicle's state vector, centiseconds, scale 2^28 (PIPTIME, B(2)PRM) | 4 | 0 |
+| `refsmmat` | reference-to-stable-member matrix, row-major, DP elements, scale 2^1 (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') | 3 | 1 |
+| `rls` | landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing | 1 | 0 |
+| `rn` | this vehicle's position, meters, scale 2^29 (earth) or 2^27 (moon) (RN, B(6)PRM) | 4 | 0 |
+| `s61dt` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 0 | 1 |
+| `tephem` | time of the ephemeris epoch (TEPHEM = TIMSUBO, TP, centiseconds, scale 2^42: L "CSEC B-42 (TRIPLE PRECISION)"; P11 sets it at liftoff) | 2 | 1 |
+| `tevent` | time of event for downlist, centiseconds, scale 2^28 (TEVENT; TLIFTOFF in P11) | 2 | 2 |
+| `time1` | ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private | 6 | 0 |
+| `time2` | ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private | 1 | 0 |
+| `vn` | this vehicle's velocity, m/cs, scale 2^7 (earth) or 2^5 (moon) (VN, B(6)PRM) | 5 | 0 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.

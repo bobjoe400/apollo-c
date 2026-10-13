@@ -181,3 +181,7 @@ restart priority; ZOOM/P40ZOOMA group-3 question.
 * tools/check_style.py's declaration regex reads `long...`/`int...`
   identifiers (`longtime`, `interp_result`) as types; rename the variable
   rather than fight the tool.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [exec-sched](exec-sched.md#program-flow-and-decisions).

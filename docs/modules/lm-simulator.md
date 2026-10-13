@@ -189,3 +189,41 @@ headless and --gui (2026-10-12; agc_sim built from c77e3e5 + working tree).
 - gdb on build/agc_sim (-O2 -g) through a wrapper passed as --sim (or as
   sim_client --sim) catches flight-code alarms in live real-time runs:
   `break agc_ccshole` gave bug L3's call chain at once.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from tools/lm_sim.py,
+tools/lm_sim_harness.tcl and sim/lm_simulator/tutorial.txt at HEAD
+99b2c6e. This lane owns no flight code; the AGC paths the simulator
+exercises are in the lane notes named below._
+
+* **Harness** (`tools/lm_sim.py:main`): for `--agc both` it flies the
+  same sequence twice, ours then yaAGC, and compares (`compare`); exit 1
+  on any mismatch. Per AGC (`Flight`): a free LM port range
+  (`free_base`), the AGC process (build/agc_sim `--core` or
+  tools/oracle/bin/yaAGC `--no-resume`), a monitor peripheral on base+1
+  (`Monitor`: decodes channel 010/011 like yaDSKY2, logs channel 5/6 jet
+  words), the simulator on base+4 (`Harness`: `tclsh` headless or `wish`
+  with `--gui`, through `tools/lm_sim_harness.tcl`, which sources the
+  unmodified simulator and opens a control socket; `tcl` refuses any
+  reply that is not `OK`). `--repeat-jets` puts a relay (`Relay`) between
+  ours and the simulator that re-sends the last ch5/6 words every 50 ms
+  (diagnostic for S-L1).
+* **Sequence** (`Flight` playing sim/lm_simulator/tutorial.txt): `keys`,
+  `pro`, `crew`, `rhc`, `wait`; `until` waits for a DSKY field (default
+  30 s); `expect` checks it now; `snap` records a checkpoint with
+  tolerances (deg, rate, needle, jets, reg; `=skip` per field;
+  `hold=R` checks each AGC alone: every body rate within R deg/s).
+* **Comparison** (`compare`): checkpoint by checkpoint, DSKY text,
+  gimbal angles, body rates, needles and jets used, within the snap's
+  tolerances. After the first RHC detent the tutorial compares displays,
+  alarms, jets used and rate during a deflection, and `hold=1.5` instead
+  of attitude, because yaAGC against itself is not repeatable there
+  (closed-loop-fixes Findings).
+* **What it exercises**: IMU zero / coarse / fine align and gyro torquing
+  ([imu.md](imu.md#program-flow-and-decisions)), the RCS DAP and T6 jet
+  timing ([dap-lm.md](dap-lm.md#program-flow-and-decisions)), pinball and
+  V37 ([io-pinball.md](io-pinball.md#program-flow-and-decisions)), the
+  restart path after a POODOO
+  ([exec-sched.md](exec-sched.md#program-flow-and-decisions)) and the
+  sim's packet and CDU pacing ([sim.md](sim.md#program-flow-and-decisions)).

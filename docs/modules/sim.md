@@ -158,3 +158,81 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
   TIME3 >= 134. Test in tests/exec/exec.c: two tasks due in the same cs, the
   first queues a 1 cs task from inside the chain; the queued task must run
   1 cs later and the second chained task must not be pushed back 163.84 s.
+
+## Program flow and decisions
+
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/sim/*.c`._
+
+The harness that makes build/agc_sim a drop-in for yaAGC: the clock and
+interrupt driver and the peripheral protocol, nothing else (no device
+models). It raises no AGC alarms; its decisions are timing and protocol.
+
+* **Start** (`src/sim/main.c`): yaAGC's command line (`--core` rope picks
+  the vehicle via `rope.c:sim_rope_vehicle`, `--port`, `--cfg`, `--resume`
+  as a pad file) plus `--headless` (no sockets, `--max-cs`), `--lockstep`
+  (the clock advances only when the client asks) and `--fast` (no
+  real-time pacing). Bad arguments, an unknown rope or no port to listen
+  on exit 2; power on = rope, pad (`pad.c:sim_pad_load`: keywords in
+  engineering units through the public setters, BAD_ARG with the line
+  number refuses to start), channels, then GOJAM (`agc_rupt_go`). A run
+  that counted handler errors exits 1.
+* **Clock** (`clock.c:sim_clock_tick`, one centisecond = 32 scaler counts
+  at 3200 Hz, `sim_clock_count`): at scaler phase 020 TIME1/TIME2 and
+  TIME3 (overflow -> T3RUPT); at 000 TIME5 (-> T5RUPT) and the radar gate;
+  TIME4 -> T4RUPT, TIME6 at 1600/s while enabled (-> T6RUPT); DOWNRUPT
+  every 20 ms (DEVIATION: yaAGC times it from the program's 034/035
+  writes); the SBY/PRO standby circuit. Taken interrupts run their
+  handler, then the executive runs jobs (bounded per call,
+  SIM_JOBS_PER_CALL). A handler or job returning BAD_ARG is counted and
+  reported, the run goes on.
+* **Outputs** (`channels.c`): one packet per program WRITE / WOR / WAND,
+  in order, from core's write log (`send_writes` over
+  `agc_chan_next_write`; closed-loop-fixes S-L1), as yaAGC's
+  ChannelOutput; the fictitious channels yaAGC computes (DSKY lamps 0163,
+  CDU drive 0174-0176, gyro 0177, optics/TVC 0171-0172); a new client
+  gets every non-zero output first. LM RHC counters are loaded once per
+  centisecond while channel 13 bits 8 and 9 are set (DEVIATION).
+* **Inputs** (`socket.c`, `counters.c`): ports base..base+9, one client
+  each (CSM 19697, LM 19797 by default); input packets update input
+  channels with masks; channel 0200 | addr is an unprogrammed counter
+  increment (`sim_counter_increment`: PINC, MINC, PCDU, MCDU, DINC; an
+  unknown type is BAD_ARG, an unmapped counter NOT_FOUND). CDUX-CDUZ
+  counts go through a per-CDU FIFO served at 400 counts/s (slow) or 6400
+  (fast) (`sim_counters_tick`; closed-loop-fixes S-L2), so CDUs lag a
+  coarse-align drive as under yaAGC. A broken client is dropped.
+* **Scripts** (`script.c`): `--script` events `<cs> <channel> <value>
+  [<repeat>]` applied as packets when due; a malformed line ends the
+  script.
+
+### Decision points by function
+
+None of the lane's 103 functions tests a flag, raises an alarm or starts a job or task; its decisions are the numeric branches described above.
+
+### Shared erasables read and written
+
+Accessors of `include/agc/core/state.h` and the lanes' public headers called by this lane, with the number of its functions that read / write each. Lane-private erasables are `static` in the lane's files or in its state struct; their scales are on the declarations.
+
+| erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
+|---|---|---|---|
+| `cdus` | CSM optics shaft CDU raw word (CDUS / OPTX); LM: rendezvous radar shaft | 1 | 1 |
+| `cdut` | CSM optics trunnion CDU raw word (CDUT / OPTY); LM: rendezvous radar trunnion | 1 | 1 |
+| `cdutcmd` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 2 | 2 |
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 1 | 1 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 1 | 1 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 1 | 1 |
+| `failreg` | three alarm code registers FAILREG +0..+2 (octal alarm codes) Index 0..2. | 1 | 0 |
+| `inlink` | INLINK (045): uplink word for UPRUPT, raw 15-bit word. | 1 | 2 |
+| `modreg` | MODREG major mode (program) | 1 | 0 |
+| `p_rhcctr` | P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP. | 1 | 2 |
+| `pipax` | PIPA X pulse count since last read (register PIPAX, 037), unscaled pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) | 1 | 1 |
+| `pipay` | PIPA Y pulse count (register PIPAY) | 1 | 1 |
+| `pipaz` | PIPA Z pulse count (register PIPAZ) | 1 | 1 |
+| `q_rhcctr` | P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP. | 1 | 2 |
+| `r_rhcctr` | P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP. | 1 | 2 |
+| `refsmmat` | reference-to-stable-member matrix, row-major, DP elements, scale 2^1 (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') | 0 | 1 |
+| `rnrad` | RNRAD (046): the radar reading (RR, LR or VHF range), raw 15-bit word. | 1 | 1 |
+| `thrust` | THRUST (LM 055): descent engine throttle command pulses, SP. | 1 | 1 |
+
+### AGC labels -> C functions
+
+The "AGC" column above names the label each listed function translates; the complete label -> function -> file:line index for the lane (and the tree) is [docs/overview/xref.md](../overview/xref.md), generated by `tools/xref.py`.
