@@ -3,15 +3,15 @@
 Updated: 2026-10-12
 
 ## Running agents (max 2)
-- lm-simulator (Opus): PLAN 10a, Virtual AGC LM Simulator closed loop vs
-  yaAGC. Note: docs/modules/lm-simulator.md.
+- document (Opus, resumed): c per-lane flow sections, e TIPS, README
+  Documentation/Status; overview + xref regenerated at HEAD.
 - nassp-integration (Opus): PLAN 10b+10c on NASSP 9 via WSL interop
   (docs/agents/nassp-integration.md: study, stock build, shim, integrated
   build, mission). Note: docs/modules/nassp-integration.md.
-- document: PAUSED (a, b, d done; c partial; e + README todo); resumes
-  from docs/modules/document.md Progress when a slot frees.
-- Queued after lm-simulator: closed-loop-fixes (LM Simulator bugs L1-L3 +
-  the document wave's code findings in review_items.md). Host: C:\NASSP9 (Orbiter 2024 x64 +
+- DONE today: lm-simulator (10a; make lm-sim), closed-loop-fixes (L1-L3,
+  S-L1/2, PROG after POODOO, doc findings; 34/34 checkpoints vs yaAGC).
+- NASSP milestones: 1 insertion+uplink PASS, 2 TLI PASS, 3 MCC-2 SPS
+  burn in progress (checklist workbook executor). Host: C:\NASSP9 (Orbiter 2024 x64 +
   NASSP-V9.0-Orbiter2024-437) loads Apollo 11 at the pad = the stock
   baseline for 10c. C:\Orbiter2016, C:\Orbiter2024, C:\Orbiter-nightly
   are dead ends (NASSP 8 needs Orbiter Beta R90) and can be deleted.

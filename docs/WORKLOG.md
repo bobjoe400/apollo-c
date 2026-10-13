@@ -839,3 +839,8 @@
             lunar potential), tests/core/ecadr.c 125 checks. Milestone 3
             (MCC-2 P30/P40 SPS) via NASSP's own Apollo 11 checklist
             workbook compiled to Lua tables, executed identically on both.
+2026-10-12  closed-loop-fixes DONE (99b2c6e, combined with the NASSP
+            checkpoint): make lm-sim 34/34 vs yaAGC twice; L1-L3, P40TMP
+            POODOO 1204, PROG-after-POODOO root-caused, packet-per-write,
+            CDU pacing (00211 on both), LM DOWNRUPT channel-13 WOTEST
+            fix. Document wave resumed in the freed slot.
