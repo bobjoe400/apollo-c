@@ -61,12 +61,22 @@ scenarios: $(BUILD)/agc_sim
 # sequence; the checkpoints are compared (docs/modules/lm-simulator.md).
 # Real time, about 11 minutes; runs under tclsh (no windows).  LMSIM_ARGS:
 # --gui (wish, screenshots with --xshot DIR), --repeat-jets (diagnostic
-# relay), --agc ours|yaagc.  Not part of `make test`.
-LMSIM_DIR  ?=
+# relay), --agc ours|yaagc.  Not part of `make test`.  LMSIM_DIR defaults to
+# a sparse checkout of virtualagc (only Contributed/LM_Simulator) at the
+# commit the comparison was verified with, fetched into build/virtualagc on
+# first use; LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator uses your own.
+LMSIM_REV  := c239e9c96ebd52b81c1834cd91d12827bec7f620
+LMSIM_REPO := $(BUILD)/virtualagc
+LMSIM_DIR  ?= $(LMSIM_REPO)/Contributed/LM_Simulator
 LMSIM_ARGS ?=
-lm-sim: $(BUILD)/agc_sim
-	@test -n "$(LMSIM_DIR)" || { echo "lm-sim: set LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator"; exit 2; }
+lm-sim: $(BUILD)/agc_sim $(if $(filter $(LMSIM_REPO)/%,$(LMSIM_DIR)),$(LMSIM_REPO)/Contributed/LM_Simulator/lm_simulator.tcl)
 	python3 -I tools/lm_sim.py --lmsim $(LMSIM_DIR) --sim $(BUILD)/agc_sim --sequence sim/lm_simulator/tutorial.txt --out $(BUILD)/lm_sim $(LMSIM_ARGS)
+
+$(LMSIM_REPO)/Contributed/LM_Simulator/lm_simulator.tcl:
+	@rm -rf $(LMSIM_REPO)
+	git clone --quiet --filter=blob:none --no-checkout https://github.com/virtualagc/virtualagc $(LMSIM_REPO)
+	git -C $(LMSIM_REPO) sparse-checkout set Contributed/LM_Simulator
+	git -C $(LMSIM_REPO) checkout --quiet $(LMSIM_REV)
 
 # NASSP 9 scenario images (sim/nassp/images) replayed on our AGC through the NASSP
 # shim (src/nassp/nassp_engine.c) and on NASSP's own yaAGC engine, compared word for

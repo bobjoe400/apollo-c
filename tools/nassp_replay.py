@@ -108,9 +108,10 @@ def build(args, ya):
 
 def run(exe, case):
     name, rope, secs, _, up = case
-    img = os.path.join('sim', 'nassp', 'images', name + '.agc')
-    r = subprocess.run([exe, img, os.path.join('tools', 'oracle', 'ropes', rope), str(secs), up],
-                       capture_output=True, text=True, timeout=600)
+    img = os.path.abspath(os.path.join('sim', 'nassp', 'images', name + '.agc'))
+    # cwd: the shim writes its apollo-c-agc-*.log sidecars into the working directory
+    r = subprocess.run([os.path.abspath(exe), img, os.path.abspath(os.path.join('tools', 'oracle', 'ropes', rope)),
+                        str(secs), up], capture_output=True, text=True, timeout=600, cwd=os.path.dirname(os.path.abspath(exe)))
     if r.returncode != 0:
         return None, r.stderr
     return r.stdout.splitlines(), ''

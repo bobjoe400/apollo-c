@@ -209,8 +209,16 @@ serviced only for the duration of a scaler count.
   On exit Orbiter writes `Scenarios\(Current state).scn` with the AGC
   section and the DSKY state: the comparison artefact against the stock
   run of the same scenario and duration.
-- Scripting: the Saturn and LEM vessels expose Lua (`get_agcerasable`,
-  `set_agcerasable`, `get_agcchannel`, panel switch get/set), and the
+- Scripting: the Saturn vessel exposes Lua (`get_agcerasable`,
+  `set_agcerasable`, `get_agcchannel`, panel switch get/set); the LEM in
+  NASSP 9 exposes none (correction, 2026-10-13: LEM has no clbkGeneric /
+  Lua_InitInstance). Test hook src/nassp/patches/0002-lem-lua-test-interface.patch
+  gives the LEM the same four read/press methods (get/set_panelswitch,
+  get_agcerasable, get_agcchannel; no set_agcerasable, no behaviour change:
+  only a Lua binding and the Lua link library). It is applied to BOTH
+  sides of every LM comparison: the reference LEM.dll in C:\NASSP9-ref is
+  built from stock source 5470bf1 + 0002 (yaAGC engine); ours is built
+  from 0001 + 0002. C:\NASSP9 (the release install) is never modified. The
   Checklist MFD can auto-execute checklist items; MCC (the "MCC" vessel)
   runs ground tasks and uplinks by itself in its mission state machine.
   What a person must do: Orbiter has no key-injection API for the DSKY,

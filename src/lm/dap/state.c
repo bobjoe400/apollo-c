@@ -132,6 +132,29 @@ void agc_lm_dap_fresh_start(void)
 
 /* ---- accessors of DAP erasables shared with other modules -------------- */
 /**********************************************************************
+ * AGC: none -- the DAP pad loads by element for the address map (Luminary099
+ * ERASABLE_ASSIGNMENTS.agc 3000 HIASCENT, 3003-3011 DKTRAP .. DKDB).
+ *
+ * FUNCTION NAME: agc_lm_dap_padload
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   k         int   I    0 HIASCENT, 1 DKTRAP, 2 DKOMEGAN, 3 DKKAOSN,
+ *                        4 LMTRAP, 5 LMOMEGAN, 6 LMKAOSN, 7 DKDB
+ *
+ * RETURNS: agc_sp_t * -- the erasable (scales in internal.h); DKDB for
+ *          an element out of range
+ **********************************************************************/
+agc_sp_t *agc_lm_dap_padload(int k)
+{
+    lm_dap_t *d    = lm_dap_state();                                                                                         /* DAP erasables */
+    agc_sp_t *f[8] = {&d->hiascent, &d->dktrap, &d->dkomegan, &d->dkkaosn, &d->lmtrap, &d->lmomegan, &d->lmkaosn, &d->dkdb}; /* erasable order */
+
+    return (f[(k >= 0 && k < AGC_LM_DAP_PADLOADS) ? k : AGC_LM_DAP_PADLOADS - 1]); /* out of range: DKDB */
+}
+
+/**********************************************************************
  * AGC: none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).
  *
  * FUNCTION NAME: agc_erase_cduxd

@@ -1,0 +1,149 @@
+diff --git a/Orbitersdk/samples/ProjectApollo/Project/LEM/CMakeLists.txt b/Orbitersdk/samples/ProjectApollo/Project/LEM/CMakeLists.txt
+index 90edc3c..4a82b71 100644
+--- a/Orbitersdk/samples/ProjectApollo/Project/LEM/CMakeLists.txt
++++ b/Orbitersdk/samples/ProjectApollo/Project/LEM/CMakeLists.txt
+@@ -93,6 +93,8 @@ set(SOURCES
+ )
+ 
+ link_directories(${ORBITERSDK_DIR}/lib)
++link_directories(${ORBITERSDK_DIR}/lib/Lua)
++link_directories(${ORBITERSDK_DIR}/..)
+ link_directories(${ORBITERSDK_DIR}/XRSound)
+ link_directories(${CMAKE_BINARY_DIR}/Projects/PanelSDK)
+ 
+@@ -111,4 +113,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
+     Orbitersdk
+     PanelSDK
+     XRSound
+-)
+\ No newline at end of file
++)
++# apollo-c test hook (0002): the LEM Lua methods need the Lua library, as Saturn5.
++if(OPENORBITER)
++    target_link_libraries(${PROJECT_NAME} PRIVATE lua)
++else()
++    target_link_libraries(${PROJECT_NAME} PRIVATE lua5.1)
++endif()
+\ No newline at end of file
+diff --git a/Orbitersdk/samples/ProjectApollo/src_lm/LEM.cpp b/Orbitersdk/samples/ProjectApollo/src_lm/LEM.cpp
+index 04c2244..7adb77f 100644
+--- a/Orbitersdk/samples/ProjectApollo/src_lm/LEM.cpp
++++ b/Orbitersdk/samples/ProjectApollo/src_lm/LEM.cpp
+@@ -2855,4 +2855,95 @@ void LEM::CalculatePMIandCOG(VECTOR3 &PMI, VECTOR3 &COG)
+ 		//PMI = _V(2.8, 2.29, 2.37);
+ 		//COG = _V(0, 0, 0);
+ 	}
+-}
+\ No newline at end of file
++}
++extern "C" {
++#include <lua\lua.h>
++#include <lua\lualib.h>
++#include <lua\lauxlib.h>
++}
++
++//
++// apollo-c test hook (0002-lem-lua-test-interface): Lua methods as Saturn's
++// (saturn.cpp Lua_InitInstance): get/set_panelswitch, get_agcerasable,
++// get_agcchannel on the LEM's vessel interface. Test instrumentation only.
++//
++
++int LEM::clbkGeneric(int msgid, int prm, void *context)
++{
++	if (msgid == VMSG_LUAINSTANCE)
++		return Lua_InitInstance(context);
++	return 0;
++}
++
++int LEM::Lua_GetPanelSwitch(const char *name) {
++	return MainPanel.GetState(name);
++}
++
++void LEM::Lua_SetPanelSwitch(const char *name, int state) {
++	MainPanel.SetState(name, state);
++}
++
++int LEM::Lua_GetAGCErasable(int page, int addr) {
++	return agc.GetErasable(page, addr);
++}
++
++int LEM::Lua_GetAGCChannel(int ch) {
++	return agc.GetOutputChannel(ch);
++}
++
++static int LemLuaCall_GetPanelSwitch(lua_State *L) {
++	VESSEL **pv = (VESSEL**)lua_touserdata(L, 1);
++	LEM *v = (LEM*)*pv;
++	lua_pushnumber(L, v->Lua_GetPanelSwitch(lua_tostring(L, 2)));
++	return 1;
++}
++
++static int LemLuaCall_SetPanelSwitch(lua_State *L) {
++	VESSEL **pv = (VESSEL**)lua_touserdata(L, 1);
++	LEM *v = (LEM*)*pv;
++	v->Lua_SetPanelSwitch(lua_tostring(L, 2), lua_tointeger(L, 3));
++	return 0;
++}
++
++static int LemLuaCall_GetAGCErasable(lua_State *L) {
++	VESSEL **pv = (VESSEL**)lua_touserdata(L, 1);
++	LEM *v = (LEM*)*pv;
++	lua_pushnumber(L, v->Lua_GetAGCErasable(lua_tointeger(L, 2), lua_tointeger(L, 3)));
++	return 1;
++}
++
++static int LemLuaCall_GetAGCChannel(lua_State *L) {
++	VESSEL **pv = (VESSEL**)lua_touserdata(L, 1);
++	LEM *v = (LEM*)*pv;
++	lua_pushnumber(L, v->Lua_GetAGCChannel(lua_tointeger(L, 2)));
++	return 1;
++}
++
++int LEM::Lua_InitInstance(void *context)
++{
++	lua_State *L = (lua_State*)context;
++	luaL_getmetatable(L, "VESSEL.LEM");
++	if (lua_isnil(L, -1)) { // class not yet registered
++		lua_pop(L, 1);
++		static const struct luaL_reg LEMLib[] = {
++			{"get_panelswitch", LemLuaCall_GetPanelSwitch},
++			{"set_panelswitch", LemLuaCall_SetPanelSwitch},
++			{"get_agcerasable", LemLuaCall_GetAGCErasable},
++			{"get_agcchannel", LemLuaCall_GetAGCChannel},
++			{NULL, NULL}
++		};
++		luaL_newmetatable(L, "LEM.vtable");
++		luaL_openlib(L, "LEM.method", LEMLib, 0);
++		luaL_newmetatable(L, "LEM.base");
++		lua_pushstring(L, "__index");
++		luaL_getmetatable(L, "VESSEL.vtable");
++		lua_settable(L, -3);
++		lua_setmetatable(L, -2);
++		lua_pushstring(L, "__index");
++		lua_pushvalue(L, -2);
++		lua_settable(L, -4);
++		lua_pop(L, 1);
++	}
++	lua_setmetatable(L, -2);
++	return 0;
++}
+diff --git a/Orbitersdk/samples/ProjectApollo/src_lm/LEM.h b/Orbitersdk/samples/ProjectApollo/src_lm/LEM.h
+index 0605338..4aa2779 100644
+--- a/Orbitersdk/samples/ProjectApollo/src_lm/LEM.h
++++ b/Orbitersdk/samples/ProjectApollo/src_lm/LEM.h
+@@ -616,6 +616,15 @@ public:
+ 	void clbkFocusChanged(bool getfocus, OBJHANDLE hNewVessel, OBJHANDLE hOldVessel);
+ 	void clbkGetRadiationForce(const VECTOR3& mflux, VECTOR3& F, VECTOR3& pos);
+ 
++	// apollo-c test hook (0002-lem-lua-test-interface): the Lua methods Saturn has,
++	// so an unattended script can press LM DSKY keys and switches and read the LGC.
++	int clbkGeneric(int msgid, int prm, void *context);
++	int Lua_InitInstance(void *context);
++	int Lua_GetPanelSwitch(const char *name);
++	void Lua_SetPanelSwitch(const char *name, int state);
++	int Lua_GetAGCErasable(int page, int addr);
++	int Lua_GetAGCChannel(int ch);
++
+ 	void GetScenarioState(FILEHANDLE scn, void *vs);
+ 	void SetGenericStageState(int stat);
+ 	void PostLoadSetup(bool define_anims = true);

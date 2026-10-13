@@ -35,9 +35,11 @@
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"
+#include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
+#include "agc/programs/rendezvous.h"
 
 static int g_checks;   /* checks run    */
 static int g_failures; /* checks failed */
@@ -51,6 +53,7 @@ static void test_tephem_and_follow(agc_vehicle_t v);
 static void test_unmapped_and_flags(agc_vehicle_t v);
 static void test_pad_loads(void);
 static void test_lm_landing_pad(void);
+static void test_lm_pad_more(void);
 
 #define CHECK(c) check((c), __LINE__, #c)
 
@@ -73,6 +76,7 @@ int main(void)
     test_unmapped_and_flags(AGC_VEHICLE_LM);
     test_pad_loads();
     test_lm_landing_pad();
+    test_lm_pad_more();
     (void) printf("test_ecadr: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -305,4 +309,38 @@ static void test_lm_landing_pad(void)
     CHECK(pad->target[1].rfg.c[0] == 011);
     CHECK(pad->costhet2 == 2 * 040000);
     CHECK(pad->tendappr == 013);
+}
+
+/**********************************************************************
+ * AGC: none (test) -- the LM pad loads a scenario restore needs beyond the
+ * landing pad (Luminary099 ERASABLE_ASSIGNMENTS): HIASCENT 3000, DKTRAP
+ * 3003, IGNAOSR 3013, LRVF 2527, MASS 1244, X789 1700, WRENDVEL 2001,
+ * ATIGINC 3400 reach their typed homes.
+ *
+ * FUNCTION NAME: test_lm_pad_more
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_lm_pad_more(void)
+{
+    agc_state_init(AGC_VEHICLE_LM);
+    CHECK(agc_erase_write_ecadr(03000u, 02343u) == AGC_STATUS_OK);  /* HIASCENT */
+    CHECK(agc_erase_write_ecadr(03003u, 077001u) == AGC_STATUS_OK); /* DKTRAP = -0776 */
+    CHECK(agc_erase_write_ecadr(03013u, 00005u) == AGC_STATUS_OK);  /* IGNAOSR */
+    CHECK(agc_erase_write_ecadr(02527u, 00012u) == AGC_STATUS_OK);  /* LRVF */
+    CHECK(agc_erase_write_ecadr(01244u, 00003u) == AGC_STATUS_OK);  /* MASS high */
+    CHECK(agc_erase_write_ecadr(01245u, 00004u) == AGC_STATUS_OK);  /* MASS low */
+    CHECK(agc_erase_write_ecadr(01702u, 00006u) == AGC_STATUS_OK);  /* X789 y high */
+    CHECK(agc_erase_write_ecadr(02001u, 00017u) == AGC_STATUS_OK);  /* WRENDVEL */
+    CHECK(agc_erase_write_ecadr(03401u, 00021u) == AGC_STATUS_OK);  /* ATIGINC low */
+    CHECK(*agc_lm_dap_padload(0) == 02343);
+    CHECK(*agc_lm_dap_padload(1) == -0776);
+    CHECK(agc_guid_state()->lm.ignaosr == 5);
+    CHECK(agc_guid_state()->lm.lrvf == 012);
+    CHECK(agc_erase_mass() == 3 * 040000 + 4);
+    CHECK(agc_erase_x789().c[1] == 6 * 040000);
+    CHECK(agc_rendz_nav_pad()->wrendvel == 017);
+    CHECK(agc_rendz_erasable()->atiginc == 021);
 }

@@ -85,9 +85,17 @@ agc_status_t agc_lm_dap_needles_init(void); /* set RCSFLAGS bit 3 (FDAI init)  *
 
 /* ---- erasables owned by the LM DAP and shared with other modules ------- */
 /* KALCMANU / FINDCDUW interface (ERASABLE_ASSIGNMENTS p. 134)              */
-uint16_t     agc_erase_cduxd(void);              /* desired CDU X, 2's comp at pi */
-uint16_t     agc_erase_cduyd(void);
-uint16_t     agc_erase_cduzd(void);
+uint16_t agc_erase_cduxd(void); /* desired CDU X, 2's comp at pi */
+uint16_t agc_erase_cduyd(void);
+uint16_t agc_erase_cduzd(void);
+
+/* DAP pad loads by element, in erasable order (address map, scenario
+ * restore): 0 HIASCENT (B16 kg), 1 DKTRAP, 2 DKOMEGAN, 3 DKKAOSN, 4 LMTRAP,
+ * 5 LMOMEGAN, 6 LMKAOSN, 7 DKDB (Luminary099 ERASABLE_ASSIGNMENTS 3000,
+ * 3003-3011; scales as in src/lm/dap/internal.h).                         */
+#define AGC_LM_DAP_PADLOADS 8 /* HIASCENT, DKTRAP .. DKDB */
+agc_sp_t *agc_lm_dap_padload(int k);
+
 agc_status_t agc_erase_set_cduxd(uint16_t v);
 agc_status_t agc_erase_set_cduyd(uint16_t v);
 agc_status_t agc_erase_set_cduzd(uint16_t v);

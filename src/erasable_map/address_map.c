@@ -1,38 +1,72 @@
-/*
- * address_map.c -- erasable access by AGC address (ECADR), for the machine-address
- * nouns of pinball (nouns 01-03, 07, 15: V01/V21/V25 of any erasable), the
- * uplink update program (V71/V72), the downlink erasable dump, and hosts
- * that see the AGC as an addressable memory (src/nassp: NASSP reads and
- * pad-loads erasable by address).
+/**********************************************************************
+ * FILE NAME: address_map.c
  *
- * The C translation keeps each erasable in its owner's typed storage, not
- * in an addressable array. Three kinds of address:
+ * PURPOSE:
+ *   Erasable access by AGC address (ECADR), for the machine-address
+ *   nouns of pinball (nouns 01-03, 07, 15: V01/V21/V25 of any
+ *   erasable), the uplink update program (V71/V72), the downlink
+ *   erasable dump, and hosts that see the AGC as an addressable memory
+ *   (src/nassp: NASSP reads and pad-loads erasable by address). The C
+ *   translation keeps each erasable in its owner's typed storage, not in
+ *   an addressable array; this file maps addresses onto that storage.
+ *
+ * AGC SOURCE:
+ *   none (the addresses are Comanche055 / Luminary099
+ *   ERASABLE_ASSIGNMENTS.agc, from the assembly listings)
+ *
+ * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
+ *   Name          Type        I/O  Scale          Description
+ *   ------------  ----------  ---  -------------  ----------------------
+ *   FLAGWRD0-13   uint16_t    I/O  bits           agc_flagword_get/set
+ *   (k_map_csm,   per item    I/O  each item's    REFSMMAT, TEPHEM, state
+ *    k_map_lm)                     own scale      vectors, pad loads, ...
+ *                                                 through their owners'
+ *                                                 accessors
+ *
+ * EXTERNAL REFERENCES:
+ *   Name                  Description
+ *   --------------------  ------------------------------------------
+ *   agc_erase_raw_read    the raw word image (src/core/ecadr.c)
+ *   agc_erase_raw_write   store into the raw word image
+ *   agc_integ_perm_get    the permanent state vector sets (nav)
+ *   agc_lm_pad            the LM landing / abort pad loads
+ *
+ * ABNORMAL TERMINATION CONDITIONS, ALARMS:
+ *   agc_erase_write_ecadr returns a setter's status when the typed
+ *   owner refuses the value (e.g. UPSVFLAG out of range); the old value
+ *   stays.
+ *
+ * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
+ *   The vehicle (agc_state_vehicle) selects the CSM or the LM map.
+ *
+ * NOTES:
+ *   Three kinds of address:
  *   - the flagwords (STATE +0.., ECADR 074 in both ropes, so FLAGWRD0..
  *     FLGWRD13 = 074..0111) map onto agc_flagword_get/set;
- *   - the named erasables in the address map below (k_map_csm / k_map_lm,
- *     addresses from the Comanche055 / Luminary099 assembly listings)
+ *   - the named erasables in the address map below (k_map_csm / k_map_lm)
  *     map onto their typed accessors: REFSMMAT, TEPHEM, the state vectors,
  *     the uplink buffer (UPSVFLAG and the RRECT..XKEP block) and the two
- *     permanent state vector blocks (RRECTCSM.., RRECTLEM..), the external dV
- *     (DELVSLV) and desired REFSMMAT (XSMD), LAT/LONG/ALT, LAT(SPL)/LNG(SPL), the LM landing and abort pad loads, times, masses, DAP
+ *     permanent state vector blocks (RRECTCSM.., RRECTLEM..), the external
+ *     dV (DELVSLV) and desired REFSMMAT (XSMD), LAT/LONG/ALT, LAT(SPL)/
+ *     LNG(SPL), the LM landing and abort pad loads, times, masses, DAP
  *     words, display registers;
  *   - every other address reads and writes a raw image of the 15-bit
  *     address space (0000-77777: erasable E0..E7 at 0000-3777, then the
  *     fixed-memory pseudo addresses, which hold no rope here and simply
  *     keep what was stored).
- * For a mapped erasable the raw image keeps the words last stored, so a
- * DP or TP quantity loaded one word at a time (V71 stores from the last
- * word to the first) keeps the words exactly as given, signs free to
- * disagree, and the typed value is rebuilt from all its words after each
- * store. When the program has changed the typed value since, the words
- * are refreshed from it (sign-agreeing) before a read or a store.
- * DEVIATION: an address that is neither a flagword nor in the map does not
- * reach any typed erasable of the same name; the raw image keeps the value
- * so a later V01/V05 of the same address reads it.
- * Layering: the map reaches typed storage in every subsystem (core to
- * csm/lm), so it sits above them all; the raw image itself is core's
- * (src/core/ecadr.c, agc_erase_raw_read / agc_erase_raw_write).
- */
+ *   For a mapped erasable the raw image keeps the words last stored, so a
+ *   DP or TP quantity loaded one word at a time (V71 stores from the last
+ *   word to the first) keeps the words exactly as given, signs free to
+ *   disagree, and the typed value is rebuilt from all its words after each
+ *   store. When the program has changed the typed value since, the words
+ *   are refreshed from it (sign-agreeing) before a read or a store.
+ *   DEVIATION: an address that is neither a flagword nor in the map does
+ *   not reach any typed erasable of the same name; the raw image keeps the
+ *   value so a later V01/V05 of the same address reads it.
+ *   Layering: the map reaches typed storage in every subsystem (core to
+ *   csm/lm), so it sits above them all; the raw image itself is core's
+ *   (src/core/ecadr.c, agc_erase_raw_read / agc_erase_raw_write).
+ **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -45,6 +79,7 @@
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"
+#include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
@@ -52,7 +87,7 @@
 #include "agc/programs/rendezvous.h"
 
 #define EC_STATE     0074u   /* STATE = FLAGWRD0 (both ropes, unswitched)   */
-#define EC_WORD_MAX  077777u
+#define EC_WORD_MAX  077777u /* one AGC word (15 bits)                  */
 #define EC_SIGN      040000u /* ones'-complement sign bit                */
 #define EC_MAG       037777u /* ones'-complement magnitude               */
 #define EC_MAX_WORDS 60      /* longest mapped erasable: VECOEM          */
@@ -90,6 +125,16 @@ typedef enum ec_item
     EC_PACTOFF,     /* SP   PACTOFF (CSM)                     */
     EC_YACTOFF,     /* SP   YACTOFF (CSM)                     */
     EC_HBN10,       /* SP x15 HBN10 .. HBD32 (CSM TVC filter) */
+    EC_LM_HIASCENT, /* SP   HIASCENT (LM DAP pad load)        */
+    EC_LM_ROLLPIT,  /* SP x2 ROLLTIME, PITTIME (LM)           */
+    EC_LM_DAPGAINS, /* SP x7 DKTRAP DKOMEGAN DKKAOSN LMTRAP LMOMEGAN LMKAOSN DKDB (LM) */
+    EC_LM_IGNAOS,   /* SP x2 IGNAOSQ, IGNAOSR (LM)            */
+    EC_LM_SKALSKAL, /* SP   SKALSKAL (LM landing radar)       */
+    EC_LM_LRPAD,    /* SP x13 LRALPHA LRBETA1 LRALPHA2 LRBETA2 LRVMAX LRVF LRWVZ/Y/X LRWVFZ/Y/X LRWVFF (LM) */
+    EC_LM_LRHMAX,   /* SP x2 LRHMAX, LRWH (LM)                */
+    EC_LM_RPCRT,    /* SP x2 RPCRTIME, RPCRTQSW (LM)          */
+    EC_LM_NAVPAD,   /* SP x10 WRENDPOS WRENDVEL WSHAFT WTRUN RMAX VMAX WSURFPOS WSURFVEL SHAFTVAR TRUNVAR (LM) */
+    EC_LM_VARMIN,   /* SP x2 RVARMIN, VVARMIN (LM)            */
     EC_LM_BRK_SP,   /* SP x2 TCGFBRAK, TCGIBRAK (LM)           */
     EC_LM_APP_SP,   /* SP x2 TCGFAPPR, TCGIAPPR (LM)           */
     EC_LM_CRIT,     /* SP x2 LOWCRIT, HIGHCRIT (LM)            */
@@ -121,6 +166,7 @@ typedef enum ec_item
     EC_TLAND,       /* DP   TLAND (LM)                        */
     EC_P40TMP,      /* DP   P40TMP (CSM)                      */
     EC_SAVET_30,    /* DP   SAVET-30 (LM)                     */
+    EC_LM_MASS,     /* DP   MASS, kg 2^16 (LM)                */
     EC_LAT,         /* DP   LAT, revs 2^0 (noun 43)           */
     EC_LONG,        /* DP   LONG, revs 2^0                    */
     EC_ALT,         /* DP   ALT, m 2^29                       */
@@ -140,6 +186,13 @@ typedef enum ec_item
     EC_EK1VAL,      /* DP   EK1VAL (CSM)                      */
     EC_EK2VAL,      /* DP   EK2VAL (CSM)                      */
     EC_EK3VAL,      /* DP   EK3VAL (CSM)                      */
+    EC_LM_RADSKAL,  /* DP   RADSKAL (LM landing radar)        */
+    EC_LM_DELQFIX,  /* DP   DELQFIX (LM landing radar)        */
+    EC_LM_TNEWA,    /* DP   TNEWA (LM)                        */
+    EC_LM_RANGEVAR, /* DP   RANGEVAR (LM RR variance)         */
+    EC_LM_RATEVAR,  /* DP   RATEVAR (LM RR variance)          */
+    EC_LM_ATIGINC,  /* DP   ATIGINC (LM)                      */
+    EC_LM_PTIGINC,  /* DP   PTIGINC (LM)                      */
     EC_EMSALT,      /* DP   EMSALT (CSM entry)                */
     EC_LAT_SPL,     /* DP   LAT(SPL) entry target, revs (CSM) */
     EC_LNG_SPL,     /* DP   LNG(SPL) entry target, revs (CSM) */
@@ -149,6 +202,7 @@ typedef enum ec_item
     EC_VGTIG,       /* VEC  VGTIG                             */
     EC_RLS,         /* VEC  RLS                               */
     EC_DELVSLV,     /* VEC  DELVSLV = DELVLVC (external dV)   */
+    EC_X789,        /* VEC  X789 (W-matrix states 7-9)         */
     EC_SV_TEMP,     /* SV   RRECT..XKEP (uplink / integration buffer, 42 words) */
     EC_SV_CSM,      /* SV   RRECTCSM..XKEPCSM (42 words)       */
     EC_SV_LEM,      /* SV   RRECTLEM..XKEPLEM (42 words)       */
@@ -181,27 +235,78 @@ typedef struct ec_entry
 static const ec_entry_t k_map_csm[] = { {00306u, 18, EC_XSMD}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01103u, 2, EC_LAT}, {01105u, 2, EC_LONG}, {01107u, 2, EC_ALT}, {01126u, 1, EC_TRKMKCNT}, {01131u, 2, EC_OPTION1}, {01155u, 3, EC_THETAD}, {01162u, 6, EC_DELV}, {01170u, 6, EC_RN}, {01176u, 6, EC_VN}, {01204u, 2, EC_PIPTIME}, {01320u, 1, EC_IMODES30}, {01321u, 1, EC_IMODES33}, {01330u, 1, EC_MARKSTAT}, {01336u, 2, EC_TEVENT}, {01341u, 1, EC_CDUCHKWD}, {01351u, 2, EC_RTED1}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01735u, 18, EC_REFSMMAT}, {02025u, 6, EC_RLS}, {02640u, 2, EC_T3TOT4}, {03066u, 1, EC_DAPDATR1}, {03067u, 1, EC_DAPDATR2}, {03073u, 1, EC_LEMMASS}, {03074u, 1, EC_CSMMASS}, {03325u, 1, EC_CM_GYMDT}, {03374u, 1, EC_S61DT}, {03376u, 1, EC_P37RANGE}, {03400u, 2, EC_LAT_SPL}, {03402u, 2, EC_LNG_SPL}, {03404u, 6, EC_DELVSLV}, {03412u, 2, EC_TIG}, {03427u, 2, EC_TGO}, {03502u, 7, EC_MARK2DWN}, {03660u, 2, EC_TTOGO}, {03662u, 2, EC_TTPI}, {03672u, 2, EC_P40TMP}, {03674u, 7, EC_MARKDOWN}, {03720u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02011u, 6, EC_504LM}, {02033u, 3, EC_TIMEMO}, {02036u, 60, EC_VECOEM}, {02132u, 6, EC_RESO}, {02140u, 6, EC_VESO}, {02146u, 2, EC_OMEGAES}, {00110u, 1, EC_EMDOT}, {01353u, 1, EC_DVTHRESH}, {01767u, 2, EC_EK1VAL}, {01771u, 2, EC_EK2VAL}, {01774u, 1, EC_FANG}, {01773u, 2, EC_EK3VAL}, {02017u, 2, EC_EMSALT}, {03007u, 1, EC_LADPAD}, {03010u, 1, EC_LODPAD}, {03011u, 1, EC_ALFAPAD}, {03012u, 1, EC_ETDECAY}, {03013u, 1, EC_ESTROKER}, {03014u, 2, EC_EKPRIME}, {03016u, 3, EC_EKTLX_I}, {03021u, 2, EC_EREPFRAC}, {03023u, 1, EC_PACTOFF}, {03024u, 1, EC_YACTOFF}, {03025u, 15, EC_HBN10}, {01776u, 2, EC_LUNARCOEF}};
 
 /* Luminary099 addresses (ERASABLE_ASSIGNMENTS, from the listing).        */
-static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}};
+static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}, {03000u, 1, EC_LM_HIASCENT}, {03001u, 2, EC_LM_ROLLPIT}, {03003u, 7, EC_LM_DAPGAINS}, {03012u, 2, EC_LM_IGNAOS}, {01354u, 2, EC_LM_RADSKAL}, {01356u, 1, EC_LM_SKALSKAL}, {02520u, 2, EC_LM_DELQFIX}, {02522u, 13, EC_LM_LRPAD}, {03420u, 2, EC_LM_LRHMAX}, {03427u, 2, EC_LM_RPCRT}, {03431u, 2, EC_LM_TNEWA}, {01244u, 2, EC_LM_MASS}, {01700u, 6, EC_X789}, {01770u, 2, EC_LM_RANGEVAR}, {01772u, 2, EC_LM_RATEVAR}, {01774u, 2, EC_LM_VARMIN}, {02000u, 10, EC_LM_NAVPAD}, {03400u, 2, EC_LM_ATIGINC}, {03402u, 2, EC_LM_PTIGINC}};
 
+/**********************************************************************
+ * Whether an ECADR is one of the flagwords (STATE + 0..13).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: is_flagword
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   ecadr     uint16_t  I    erasable address
+ *
+ * RETURNS: bool -- true for FLAGWRD0-13
+ **********************************************************************/
 static bool is_flagword(uint16_t ecadr)
 {
-    uint16_t n = (agc_state_vehicle() == AGC_VEHICLE_LM) ? (uint16_t) AGC_FLAGWORDS_LM : (uint16_t) AGC_FLAGWORDS_CSM;
+    uint16_t n = (agc_state_vehicle() == AGC_VEHICLE_LM) ? (uint16_t) AGC_FLAGWORDS_LM : (uint16_t) AGC_FLAGWORDS_CSM; /* flagwords of this rope (LM or CSM) */
 
     return ((ecadr >= EC_STATE) && (ecadr < EC_STATE + n));
 }
 
 /* ---- word <-> value ------------------------------------------------------ */
 
+/**********************************************************************
+ * A signed value as its 15-bit ones'-complement word.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: word_of_sp
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   v         agc_sp_t  I    the value (the erasable's own scale)
+ *
+ * RETURNS: uint16_t -- the word
+ **********************************************************************/
 static uint16_t word_of_sp(agc_sp_t v)
 {
-    return ((v < 0) ? (uint16_t) (~(uint16_t) (-(int32_t) v) & EC_WORD_MAX) : (uint16_t) v);
+    return ((v < 0) ? (uint16_t) (~(uint16_t) (-(int32_t) v) & EC_WORD_MAX) : (uint16_t) v); /* negative: complement of the magnitude */
 }
 
+/**********************************************************************
+ * A 15-bit ones'-complement word as a signed value (-0 reads 0).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: sp_of_word
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   w         uint16_t  I    the word
+ *
+ * RETURNS: agc_sp_t -- the value (the erasable's scale)
+ **********************************************************************/
 static agc_sp_t sp_of_word(uint16_t w)
 {
-    return (((w & EC_SIGN) != 0u) ? (agc_sp_t) -(int32_t) ((uint16_t) ~w & EC_MAG) : (agc_sp_t) w);
+    return (((w & EC_SIGN) != 0u) ? (agc_sp_t) -(int32_t) ((uint16_t) ~w & EC_MAG) : (agc_sp_t) w); /* sign bit: minus the complement */
 }
 
+/**********************************************************************
+ * A DP value as its two sign-agreeing words.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: dp_to
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------------------------
+ *   v         agc_dp_t    I    the value (the erasable's scale)
+ *   w         uint16_t *  O    the high and low words
+ **********************************************************************/
 static void dp_to(agc_dp_t v, uint16_t *w)
 {
     agc_dp_words_t d = agc_dp_to_words(v); /* sign-agreeing pair */
@@ -210,6 +315,19 @@ static void dp_to(agc_dp_t v, uint16_t *w)
     w[1] = word_of_sp(d.lo);
 }
 
+/**********************************************************************
+ * Two words (signs free to disagree) as a DP value.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: dp_of
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  -------------------------------------
+ *   w         const uint16_t *  I    the high and low words
+ *
+ * RETURNS: agc_dp_t -- the value (the erasable's scale)
+ **********************************************************************/
 static agc_dp_t dp_of(const uint16_t *w)
 {
     agc_dp_words_t d = {sp_of_word(w[0]), sp_of_word(w[1])}; /* signs free */
@@ -217,6 +335,18 @@ static agc_dp_t dp_of(const uint16_t *w)
     return (agc_dp_from_words(d));
 }
 
+/**********************************************************************
+ * A vector as its six words (three DP, x y z).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: vec_to
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------------------------
+ *   v         agc_vec_t   I    the vector (the erasable's scale)
+ *   w         uint16_t *  O    six words
+ **********************************************************************/
 static void vec_to(agc_vec_t v, uint16_t *w)
 {
     for (int i = 0; i < AGC_VEC_N; i++)
@@ -225,9 +355,22 @@ static void vec_to(agc_vec_t v, uint16_t *w)
     }
 }
 
+/**********************************************************************
+ * Six words as a vector (three DP, x y z).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: vec_of
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  -------------------------------------
+ *   w         const uint16_t *  I    six words
+ *
+ * RETURNS: agc_vec_t -- the vector (the erasable's scale)
+ **********************************************************************/
 static agc_vec_t vec_of(const uint16_t *w)
 {
-    agc_vec_t v; /* the vector */
+    agc_vec_t v; /* the vector, the erasable's scale */
 
     for (int i = 0; i < AGC_VEC_N; i++)
     {
@@ -239,6 +382,19 @@ static agc_vec_t vec_of(const uint16_t *w)
 
 /* ---- the items ----------------------------------------------------------- */
 
+/**********************************************************************
+ * The element layout of an item: SP, RAW, TP or DP (DP, VEC, MAT, groups).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: item_layout
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: ec_layout_t -- the layout
+ **********************************************************************/
 static ec_layout_t item_layout(ec_item_t item)
 {
     ec_layout_t l = EC_DP; /* DP, VEC, MAT */
@@ -263,16 +419,29 @@ static ec_layout_t item_layout(ec_item_t item)
     return (l);
 }
 
-/* IMU compensation pad load, element k in erasable order: PBIASX
- * PIPASCFX PBIASY PIPASCFY PBIASZ PIPASCFZ NBDX NBDY NBDZ ADIAX ADIAY
- * ADIAZ ADSRAX ADSRAY ADSRAZ.                                             */
+/**********************************************************************
+ * IMU compensation pad load, element k in erasable order: PBIASX PIPASCFX
+ * PBIASY PIPASCFY PBIASZ PIPASCFZ NBDX NBDY NBDZ ADIAX ADIAY ADIAZ ADSRAX
+ * ADSRAY ADSRAZ.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: comp_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type                     I/O  Description (scale)
+ *   --------  -----------------------  ---  -------------------------------------
+ *   p         agc_imu_comp_params_t *  I    the compensation parameters
+ *   k         int                      I    element of the item, from 0
+ *
+ * RETURNS: agc_sp_t * -- the field of element k
+ **********************************************************************/
 static agc_sp_t *comp_field(agc_imu_comp_params_t *p, int k)
 {
     agc_sp_t *f = &p->adsra[k - 12]; /* ADSRAX..Z */
 
     if (k < 6)
     {
-        f = ((k % 2) == 0) ? &p->pipabias[k / 2] : &p->pipascf[k / 2];
+        f = ((k % 2) == 0) ? &p->pipabias[k / 2] : &p->pipascf[k / 2]; /* PBIAS, PIPASCF alternate */
     }
     else if (k < 9)
     {
@@ -290,6 +459,19 @@ static agc_sp_t *comp_field(agc_imu_comp_params_t *p, int k)
     return (f);
 }
 
+/**********************************************************************
+ * IMU compensation element k (comp_field order).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: comp_get
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   k         int   I    element of the item, from 0
+ *
+ * RETURNS: agc_sp_t -- the value (the pad load's scale)
+ **********************************************************************/
 static agc_sp_t comp_get(int k)
 {
     agc_imu_comp_params_t p; /* the pad load */
@@ -299,6 +481,20 @@ static agc_sp_t comp_get(int k)
     return (*comp_field(&p, k));
 }
 
+/**********************************************************************
+ * Store IMU compensation element k (comp_field order).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: comp_set
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   k         int       I    element of the item, from 0
+ *   v         agc_sp_t  I    the value (the pad load's scale)
+ *
+ * RETURNS: agc_status_t -- the status of agc_imu_comp_set
+ **********************************************************************/
 static agc_status_t comp_set(int k, agc_sp_t v)
 {
     agc_imu_comp_params_t p; /* the pad load */
@@ -309,27 +505,74 @@ static agc_status_t comp_set(int k, agc_sp_t v)
     return (agc_imu_comp_load(&p));
 }
 
-/* E3J22R2M (k = 0), E32C31RM (k = 1).                                    */
+/**********************************************************************
+ * E3J22R2M (k = 0), E32C31RM (k = 1): the lunar potential pad loads.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: lunar_coef
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   k         int   I    element of the item, from 0
+ *
+ * RETURNS: agc_sp_t -- the coefficient (scale per ERASABLE_ASSIGNMENTS)
+ **********************************************************************/
 static agc_sp_t lunar_coef(int k)
 {
-    agc_sp_t j22 = 0; /* E3J22R2M */
-    agc_sp_t c31 = 0; /* E32C31RM */
+    agc_sp_t j22 = 0; /* E3J22R2M, pad-load scale (ERASABLE_ASSIGNMENTS) */
+    agc_sp_t c31 = 0; /* E32C31RM, pad-load scale (ERASABLE_ASSIGNMENTS) */
 
     agc_integ_get_lunar_coeffs(&j22, &c31);
 
-    return ((k == 0) ? j22 : c31);
+    return ((k == 0) ? j22 : c31); /* E3J22R2M or E32C31RM */
 }
 
+/**********************************************************************
+ * Store E3J22R2M (k = 0) or E32C31RM (k = 1).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: set_lunar_coef
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   k         int       I    element of the item, from 0
+ *   v         agc_sp_t  I    the coefficient (scale per ERASABLE_ASSIGNMENTS)
+ **********************************************************************/
 static void set_lunar_coef(int k, agc_sp_t v)
 {
-    agc_sp_t j22 = 0; /* E3J22R2M */
-    agc_sp_t c31 = 0; /* E32C31RM */
+    agc_sp_t j22 = 0; /* E3J22R2M, pad-load scale (ERASABLE_ASSIGNMENTS) */
+    agc_sp_t c31 = 0; /* E32C31RM, pad-load scale (ERASABLE_ASSIGNMENTS) */
 
     agc_integ_get_lunar_coeffs(&j22, &c31);
-    agc_integ_set_lunar_coeffs((k == 0) ? v : j22, (k == 1) ? v : c31);
+
+    if (k == 0)
+    {
+        j22 = v;
+    }
+    else
+    {
+        c31 = v;
+    }
+
+    agc_integ_set_lunar_coeffs(j22, c31);
 }
 
-/* LM landing pad loads (agc_lm_pad): SP element k.                       */
+/**********************************************************************
+ * LM landing pad loads (agc_lm_pad): SP element k.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: lm_sp_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    element of the item, from 0
+ *
+ * RETURNS: agc_sp_t * -- the field
+ **********************************************************************/
 static agc_sp_t *lm_sp_field(ec_item_t item, int k)
 {
     agc_lm_pad_t *pad  = agc_lm_pad();                                                     /* the landing pad loads */
@@ -340,11 +583,11 @@ static agc_sp_t *lm_sp_field(ec_item_t item, int k)
     {
         int i = (item == EC_LM_BRK_SP) ? 0 : 1; /* braking, approach */
 
-        f = (k == 0) ? &pad->target[i].tcgf : &pad->target[i].tcgi;
+        f = (k == 0) ? &pad->target[i].tcgf : &pad->target[i].tcgi; /* TCGF then TCGI */
     }
     else if (item == EC_LM_CRIT)
     {
-        f = (k == 0) ? &pad->lowcrit : &pad->highcrit;
+        f = (k == 0) ? &pad->lowcrit : &pad->highcrit; /* LOWCRIT then HIGHCRIT */
     }
     else if (item == EC_LM_TEND)
     {
@@ -358,8 +601,21 @@ static agc_sp_t *lm_sp_field(ec_item_t item, int k)
     return (f);
 }
 
-/* LM landing target DP element k: RFG (0-2), VFG (3-5), AFG (6-8), VFG*,
- * AFG*, JFG*, GAIN (9-12).                                                */
+/**********************************************************************
+ * LM landing target DP element k: RFG (0-2), VFG (3-5), AFG (6-8), VFG*,
+ * AFG*, JFG*, GAIN (9-12).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: lm_target_dp
+ *
+ * ARGUMENTS:
+ *   Argument  Type               I/O  Description (scale)
+ *   --------  -----------------  ---  -------------------------------------
+ *   t         agc_lm_target_t *  I    braking or approach target
+ *   k         int                I    element of the item, from 0
+ *
+ * RETURNS: agc_dp_t * -- the field
+ **********************************************************************/
 static agc_dp_t *lm_target_dp(agc_lm_target_t *t, int k)
 {
     agc_dp_t *f = &t->gain; /* 12 */
@@ -376,9 +632,17 @@ static agc_dp_t *lm_target_dp(agc_lm_target_t *t, int k)
     {
         f = &t->afg.c[k - 6];
     }
-    else if (k < 12)
+    else if (k == 9)
     {
-        f = (k == 9) ? &t->vfg_star : (k == 10) ? &t->afg_star : &t->jfg_star;
+        f = &t->vfg_star;
+    }
+    else if (k == 10)
+    {
+        f = &t->afg_star;
+    }
+    else if (k == 11)
+    {
+        f = &t->jfg_star;
     }
     else
     {
@@ -388,7 +652,20 @@ static agc_dp_t *lm_target_dp(agc_lm_target_t *t, int k)
     return (f);
 }
 
-/* LM landing / abort pad DP element k of the DP-list items.               */
+/**********************************************************************
+ * LM landing / abort pad DP element k of the DP-list items.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: lm_dp_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    element of the item, from 0
+ *
+ * RETURNS: agc_dp_t * -- the field
+ **********************************************************************/
 static agc_dp_t *lm_dp_field(ec_item_t item, int k)
 {
     agc_lm_pad_t *pad    = agc_lm_pad();                                                                                                                         /* the landing pad loads */
@@ -398,7 +675,7 @@ static agc_dp_t *lm_dp_field(ec_item_t item, int k)
 
     if (item == EC_LM_BRK_DP || item == EC_LM_APP_DP)
     {
-        f = lm_target_dp(&pad->target[(item == EC_LM_BRK_DP) ? 0 : 1], k);
+        f = lm_target_dp(&pad->target[(item == EC_LM_BRK_DP) ? 0 : 1], k); /* braking 0, approach 1 */
     }
     else if (item == EC_LM_IGN)
     {
@@ -406,27 +683,136 @@ static agc_dp_t *lm_dp_field(ec_item_t item, int k)
     }
     else if (item == EC_LM_V2FG)
     {
-        f = (k < 3) ? &pad->v2fg.c[k] : &pad->tauvert;
+        f = (k < 3) ? &pad->v2fg.c[k] : &pad->tauvert; /* V2FG x y z, then TAUVERT */
+    }
+    else if (k < 4)
+    {
+        f = abt[k]; /* EC_LM_ABORT: TAUROD .. MAXFORCE */
+    }
+    else if (k < 12)
+    {
+        f = &pad->abtcof[k - 4]; /* ABTCOF */
     }
     else
     {
-        f = (k < 4) ? abt[k] : (k < 12) ? &pad->abtcof[k - 4] : abt[k - 8]; /* EC_LM_ABORT */
+        f = abt[k - 8]; /* VMIN .. COSTHET2 */
     }
 
     return (f);
 }
 
+/**********************************************************************
+ * Whether an item is an LM landing / abort DP list.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: is_lm_dp
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: bool -- true for those items
+ **********************************************************************/
 static bool is_lm_dp(ec_item_t item)
 {
     return (item >= EC_LM_BRK_DP && item <= EC_LM_ABORT);
 }
 
-/* SP pad loads held in module structs: element k of the item.            */
+/**********************************************************************
+ * The LM pad loads restored by address beyond the landing pad: the DAP
+ * (HIASCENT, DKTRAP .. DKDB), ROLLTIME/PITTIME, IGNAOSQ/R, the landing
+ * radar (SKALSKAL, LRALPHA .. LRWVFF, LRHMAX/LRWH, RPCRTIME/RPCRTQSW) and
+ * the rendezvous navigation pad (WRENDPOS .. TRUNVAR, RVARMIN, VVARMIN):
+ * SP element k of the item, in erasable order.
+ * AGC: none (address map; addresses from Luminary099 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: lm_pad_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    element of the item, from 0
+ *
+ * RETURNS: agc_sp_t * -- the field
+ **********************************************************************/
+static agc_sp_t *lm_pad_field(ec_item_t item, int k)
+{
+    agc_guid_lm_t       *g      = &agc_guid_state()->lm;                                                                                                                                                             /* Luminary guidance */
+    agc_rendz_nav_pad_t *nav    = agc_rendz_nav_pad();                                                                                                                                                               /* rendezvous navigation pad */
+    agc_sp_t            *lr[13] = {&g->lralpha[0], &g->lrbeta[0], &g->lralpha[1], &g->lrbeta[1], &g->lrvmax, &g->lrvf, &g->lrwv[0], &g->lrwv[1], &g->lrwv[2], &g->lrwvf[0], &g->lrwvf[1], &g->lrwvf[2], &g->lrwvff}; /* LRALPHA .. LRWVFF */
+    agc_sp_t            *np[10] = {&nav->wrendpos, &nav->wrendvel, &nav->wshaft, &nav->wtrun, &nav->rmax, &nav->vmax, &nav->wsurfpos, &nav->wsurfvel, &nav->shaftvar, &nav->trunvar};                                /* WRENDPOS .. TRUNVAR */
+    agc_sp_t            *f      = &g->skalskal;                                                                                                                                                                      /* EC_LM_SKALSKAL */
+
+    switch ((int) item)
+    {
+        case EC_LM_HIASCENT:
+            f = agc_lm_dap_padload(0);
+            break;
+        case EC_LM_ROLLPIT:
+            f = (k == 0) ? &g->rolltime : &g->pittime;    /* ROLLTIME then PITTIME */
+            break;
+        case EC_LM_DAPGAINS:
+            f = agc_lm_dap_padload(k + 1);
+            break;
+        case EC_LM_IGNAOS:
+            f = (k == 0) ? &g->ignaosq : &g->ignaosr;     /* IGNAOSQ then IGNAOSR */
+            break;
+        case EC_LM_LRPAD:
+            f = lr[k];
+            break;
+        case EC_LM_LRHMAX:
+            f = (k == 0) ? &g->lrhmax : &g->lrwh;         /* LRHMAX then LRWH */
+            break;
+        case EC_LM_RPCRT:
+            f = (k == 0) ? &g->rpcrtime : &g->rpcrtqsw;   /* RPCRTIME then RPCRTQSW */
+            break;
+        case EC_LM_NAVPAD:
+            f = np[k];
+            break;
+        case EC_LM_VARMIN:
+            f = (k == 0) ? &nav->rvarmin : &nav->vvarmin; /* RVARMIN then VVARMIN */
+            break;
+        default:
+            break;                                        /* EC_LM_SKALSKAL */
+    }
+
+    return (f);
+} /* lm_pad_field */
+
+/**********************************************************************
+ * SP pad loads held in module structs (sp_field).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: is_sp_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: bool -- true for those items
+ **********************************************************************/
 static bool is_sp_field(ec_item_t item)
 {
     return (item >= EC_EMDOT && item <= EC_LM_TEND);
 }
 
+/**********************************************************************
+ * The struct field of SP pad-load element k.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: sp_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    element of the item, from 0
+ *
+ * RETURNS: agc_sp_t * -- the field
+ **********************************************************************/
 static agc_sp_t *sp_field(ec_item_t item, int k)
 {
     agc_csm_dapcom_t  *dc = agc_csm_dap_com();      /* TVC / RCS common */
@@ -482,19 +868,56 @@ static agc_sp_t *sp_field(ec_item_t item, int k)
         case EC_LM_TEND:
             f = lm_sp_field(item, k);
             break;
+        case EC_LM_HIASCENT:
+        case EC_LM_ROLLPIT:
+        case EC_LM_DAPGAINS:
+        case EC_LM_IGNAOS:
+        case EC_LM_SKALSKAL:
+        case EC_LM_LRPAD:
+        case EC_LM_LRHMAX:
+        case EC_LM_RPCRT:
+        case EC_LM_NAVPAD:
+        case EC_LM_VARMIN:
+            f = lm_pad_field(item, k);
+            break;
         default:
             break; /* EC_HBN10 */
-    }
+    } /* switch */
 
     return (f);
-}
+} /* sp_field */
 
-/* DP pad loads held in module structs.                                    */
+/**********************************************************************
+ * DP pad loads held in module structs (dp_field).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: is_dp_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: bool -- true for those items
+ **********************************************************************/
 static bool is_dp_field(ec_item_t item)
 {
     return (item >= EC_EK1VAL && item <= EC_EMSALT);
 }
 
+/**********************************************************************
+ * The struct field of a DP pad load (EK1VAL, EK2VAL, EK3VAL, EMSALT).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: dp_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: agc_dp_t * -- the field
+ **********************************************************************/
 static agc_dp_t *dp_field(ec_item_t item)
 {
     agc_guid_csm_t *gc = &agc_guid_state()->csm;     /* Comanche guidance */
@@ -512,18 +935,59 @@ static agc_dp_t *dp_field(ec_item_t item)
     {
         f = &gc->ek3val;
     }
+    else if (item == EC_LM_RADSKAL)
+    {
+        f = &agc_guid_state()->lm.radskal;
+    }
+    else if (item == EC_LM_DELQFIX)
+    {
+        f = &agc_guid_state()->lm.delqfix;
+    }
+    else if (item == EC_LM_TNEWA)
+    {
+        f = &agc_guid_state()->lm.tnewa;
+    }
+    else if (item == EC_LM_RANGEVAR)
+    {
+        f = &agc_rendz_nav_pad()->rangevar;
+    }
+    else if (item == EC_LM_RATEVAR)
+    {
+        f = &agc_rendz_nav_pad()->ratevar;
+    }
+    else if (item == EC_LM_ATIGINC)
+    {
+        f = &agc_rendz_erasable()->atiginc;
+    }
+    else if (item == EC_LM_PTIGINC)
+    {
+        f = &agc_rendz_erasable()->ptiginc;
+    }
     else
     {
         /* EMSALT */
     }
 
     return (f);
-}
+} /* dp_field */
 
-/* SP items: the value of element k.                                       */
+/**********************************************************************
+ * SP items: the value of element k.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: sp_get
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    element of the item, from 0
+ *
+ * RETURNS: agc_sp_t -- the value (the erasable's scale)
+ **********************************************************************/
 static agc_sp_t sp_get(ec_item_t item, int k)
 {
-    agc_sp_t v = is_sp_field(item) ? *sp_field(item, k) : 0; /* the value */
+    agc_sp_t v = is_sp_field(item) ? *sp_field(item, k) : 0; /* the value, the erasable's scale */
 
     switch ((int) item)
     {
@@ -571,11 +1035,26 @@ static agc_sp_t sp_get(ec_item_t item, int k)
             break;
         default:
             break; /* the struct fields: read above */
-    }
+    } /* switch */
 
     return (v);
-}
+} /* sp_get */
 
+/**********************************************************************
+ * SP items: store element k (FANG also sets K3VAL's low word).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: sp_set
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    element of the item, from 0
+ *   v         agc_sp_t   I    the value (the erasable's scale)
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the setter's status (refused value)
+ **********************************************************************/
 static agc_status_t sp_set(ec_item_t item, int k, agc_sp_t v)
 {
     agc_status_t st = AGC_STATUS_OK; /* outcome */
@@ -631,12 +1110,25 @@ static agc_status_t sp_set(ec_item_t item, int k, agc_sp_t v)
         default:
             *sp_field(item, k)           = v;                                                         /* the struct fields */
             break;
-    }
+    } /* switch */
 
     return (st);
-}
+} /* sp_set */
 
-/* RAW items: the word of element k.                                       */
+/**********************************************************************
+ * RAW items: the word of element k.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: raw_get
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    element of the item, from 0
+ *
+ * RETURNS: uint16_t -- the word
+ **********************************************************************/
 static uint16_t raw_get(ec_item_t item, int k)
 {
     uint16_t w = 0; /* the word */
@@ -682,8 +1174,21 @@ static uint16_t raw_get(ec_item_t item, int k)
     }
 
     return ((uint16_t) (w & EC_WORD_MAX));
-}
+} /* raw_get */
 
+/**********************************************************************
+ * RAW items: store the word of element k.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: raw_set
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    element of the item, from 0
+ *   w         uint16_t   I    the word
+ **********************************************************************/
 static void raw_set(ec_item_t item, int k, uint16_t w)
 {
     switch ((int) item)
@@ -727,10 +1232,22 @@ static void raw_set(ec_item_t item, int k, uint16_t w)
     }
 }
 
-/* DP items (one element).                                                 */
+/**********************************************************************
+ * DP items (one element): the value.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: dp_get
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: agc_dp_t -- the value (the erasable's scale)
+ **********************************************************************/
 static agc_dp_t dp_get(ec_item_t item)
 {
-    agc_dp_t v = 0; /* the value */
+    agc_dp_t v = 0; /* the value, the erasable's scale */
 
     switch ((int) item)
     {
@@ -770,14 +1287,29 @@ static agc_dp_t dp_get(ec_item_t item)
         case EC_P40TMP:
             v = agc_erase_p40tmp();
             break;
+        case EC_LM_MASS:
+            v = agc_erase_mass();
+            break;
         default:
             v = agc_erase_savet_30(); /* EC_SAVET_30 */
             break;
-    }
+    } /* switch */
 
     return (v);
-}
+} /* dp_get */
 
+/**********************************************************************
+ * DP items (one element): store the value.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: dp_set
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   v         agc_dp_t   I    the value (the erasable's scale)
+ **********************************************************************/
 static void dp_set(ec_item_t item, agc_dp_t v)
 {
     switch ((int) item)
@@ -818,13 +1350,29 @@ static void dp_set(ec_item_t item, agc_dp_t v)
         case EC_P40TMP:
             agc_erase_set_p40tmp(v);
             break;
+        case EC_LM_MASS:
+            agc_erase_set_mass(v);
+            break;
         default:
             agc_erase_set_savet_30(v); /* EC_SAVET_30 */
             break;
-    }
-}
+    } /* switch */
+} /* dp_set */
 
-/* LAT, LONG, ALT (one store, agc_navaux_*_latlong).                      */
+/**********************************************************************
+ * LAT, LONG, ALT (one store, agc_navaux_*_latlong): the field.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: latlong_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------------
+ *   ll        agc_latlong_t *  I    the latitude / longitude / altitude set
+ *   item      ec_item_t        I    the mapped erasable
+ *
+ * RETURNS: agc_dp_t * -- the field
+ **********************************************************************/
 static agc_dp_t *latlong_field(agc_latlong_t *ll, ec_item_t item)
 {
     agc_dp_t *f = &ll->alt; /* EC_ALT */
@@ -845,12 +1393,34 @@ static agc_dp_t *latlong_field(agc_latlong_t *ll, ec_item_t item)
     return (f);
 }
 
+/**********************************************************************
+ * Whether an item is LAT, LONG or ALT.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: is_latlong
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: bool -- true for those items
+ **********************************************************************/
 static bool is_latlong(ec_item_t item)
 {
     return (item == EC_LAT || item == EC_LONG || item == EC_ALT);
 }
 
-/* TIMEMO (the ephemeris' centre time).                                    */
+/**********************************************************************
+ * TIMEMO, the ephemeris' centre time.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: tp_timemo
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_tp_t -- cs, scale 2^42
+ **********************************************************************/
 static agc_tp_t tp_timemo(void)
 {
     agc_ephem_csm_t eph; /* the ephemeris */
@@ -860,6 +1430,17 @@ static agc_tp_t tp_timemo(void)
     return (eph.timemo);
 }
 
+/**********************************************************************
+ * Store TIMEMO.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: tp_set_timemo
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   t         agc_tp_t  I    cs, scale 2^42
+ **********************************************************************/
 static void tp_set_timemo(agc_tp_t t)
 {
     agc_ephem_csm_t eph; /* the ephemeris */
@@ -869,13 +1450,37 @@ static void tp_set_timemo(agc_tp_t t)
     agc_ephem_set_csm_data(&eph);
 }
 
-/* Launch pad load (AZO, -AYO, AXO, 504LM) and the CSM ephemeris
- * (VECOEM, RESO, VESO, OMEGAES): DP values of the item, in erasable order. */
+/**********************************************************************
+ * Launch pad load (AZO, -AYO, AXO, 504LM) and the CSM ephemeris (VECOEM,
+ * RESO, VESO, OMEGAES): DP values of the item, in erasable order.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: is_group
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: bool -- true for those items
+ **********************************************************************/
 static bool is_group(ec_item_t item)
 {
     return (item >= EC_AZO && item <= EC_OMEGAES);
 }
 
+/**********************************************************************
+ * A vector into three DP elements.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: group_vec
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------------------------
+ *   v         agc_vec_t   I    the vector (the item's scale)
+ *   d         agc_dp_t *  O    x, y, z
+ **********************************************************************/
 static void group_vec(agc_vec_t v, agc_dp_t *d)
 {
     for (int k = 0; k < AGC_VEC_N; k++)
@@ -884,6 +1489,18 @@ static void group_vec(agc_vec_t v, agc_dp_t *d)
     }
 }
 
+/**********************************************************************
+ * A group item as DP values in erasable order.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: group_get
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------------------------
+ *   item      ec_item_t   I    the mapped erasable
+ *   d         agc_dp_t *  O    the values (the item's scale)
+ **********************************************************************/
 static void group_get(ec_item_t item, agc_dp_t *d)
 {
     agc_navaux_padload_t pad; /* AZO .. 504LM */
@@ -891,7 +1508,24 @@ static void group_get(ec_item_t item, agc_dp_t *d)
 
     agc_navaux_get_padload(&pad);
     agc_ephem_get_csm_data(&eph);
-    d[0] = (item == EC_AZO) ? pad.azo : (item == EC_NEG_AYO) ? pad.neg_ayo : (item == EC_AXO) ? pad.axo : eph.omegaes; /* the DP items */
+    d[0] = eph.omegaes; /* the DP items: OMEGAES unless one below */
+
+    if (item == EC_AZO)
+    {
+        d[0] = pad.azo;
+    }
+    else if (item == EC_NEG_AYO)
+    {
+        d[0] = pad.neg_ayo;
+    }
+    else if (item == EC_AXO)
+    {
+        d[0] = pad.axo;
+    }
+    else
+    {
+        /* OMEGAES, or a vector item filled below */
+    }
 
     if (item == EC_504LM)
     {
@@ -912,11 +1546,24 @@ static void group_get(ec_item_t item, agc_dp_t *d)
     {
         /* one DP, set above */
     }
-}
+} /* group_get */
 
+/**********************************************************************
+ * Three DP elements as a vector.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: group_of
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  -------------------------------------
+ *   d         const agc_dp_t *  I    x, y, z (the item's scale)
+ *
+ * RETURNS: agc_vec_t -- the vector
+ **********************************************************************/
 static agc_vec_t group_of(const agc_dp_t *d)
 {
-    agc_vec_t v; /* the vector */
+    agc_vec_t v; /* the vector, the erasable's scale */
 
     for (int k = 0; k < AGC_VEC_N; k++)
     {
@@ -926,6 +1573,18 @@ static agc_vec_t group_of(const agc_dp_t *d)
     return (v);
 }
 
+/**********************************************************************
+ * Store a group item from DP values in erasable order.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: group_put
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  -------------------------------------
+ *   item      ec_item_t         I    the mapped erasable
+ *   d         const agc_dp_t *  I    the values (the item's scale)
+ **********************************************************************/
 static void group_put(ec_item_t item, const agc_dp_t *d)
 {
     agc_navaux_padload_t pad; /* AZO .. 504LM */
@@ -933,13 +1592,13 @@ static void group_put(ec_item_t item, const agc_dp_t *d)
 
     agc_navaux_get_padload(&pad);
     agc_ephem_get_csm_data(&eph);
-    pad.azo     = (item == EC_AZO) ? d[0] : pad.azo;
-    pad.neg_ayo = (item == EC_NEG_AYO) ? d[0] : pad.neg_ayo;
-    pad.axo     = (item == EC_AXO) ? d[0] : pad.axo;
-    pad.lm504   = (item == EC_504LM) ? group_of(d) : pad.lm504;
-    eph.reso    = (item == EC_RESO) ? group_of(d) : eph.reso;
-    eph.veso    = (item == EC_VESO) ? group_of(d) : eph.veso;
-    eph.omegaes = (item == EC_OMEGAES) ? d[0] : eph.omegaes;
+    pad.azo     = (item == EC_AZO) ? d[0] : pad.azo;            /* AZO when it is the item */
+    pad.neg_ayo = (item == EC_NEG_AYO) ? d[0] : pad.neg_ayo;    /* -AYO when it is the item */
+    pad.axo     = (item == EC_AXO) ? d[0] : pad.axo;            /* AXO when it is the item */
+    pad.lm504   = (item == EC_504LM) ? group_of(d) : pad.lm504; /* 504LM when it is the item */
+    eph.reso    = (item == EC_RESO) ? group_of(d) : eph.reso;   /* RESO when it is the item */
+    eph.veso    = (item == EC_VESO) ? group_of(d) : eph.veso;   /* VESO when it is the item */
+    eph.omegaes = (item == EC_OMEGAES) ? d[0] : eph.omegaes;    /* OMEGAES when it is the item */
 
     for (int i = 0; i < AGC_EPHEM_NCOEF && item == EC_VECOEM; i++)
     {
@@ -956,23 +1615,60 @@ static void group_put(ec_item_t item, const agc_dp_t *d)
     }
 }
 
-/* LAT(SPL), LNG(SPL): the CSM entry target (agc_entry_state).            */
+/**********************************************************************
+ * LAT(SPL), LNG(SPL): the CSM entry target (agc_entry_state).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: is_splash
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: bool -- true for those items
+ **********************************************************************/
 static bool is_splash(ec_item_t item)
 {
     return (item == EC_LAT_SPL || item == EC_LNG_SPL);
 }
 
+/**********************************************************************
+ * The field of LAT(SPL) or LNG(SPL).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: splash_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: agc_dp_t * -- the field
+ **********************************************************************/
 static agc_dp_t *splash_field(ec_item_t item)
 {
     agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
 
-    return ((item == EC_LAT_SPL) ? &es->lat_spl : &es->lng_spl);
+    return ((item == EC_LAT_SPL) ? &es->lat_spl : &es->lng_spl); /* LAT(SPL) or LNG(SPL) */
 }
 
-/* VEC items.                                                              */
+/**********************************************************************
+ * VEC items: the vector.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: vec_get
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: agc_vec_t -- the vector (the erasable's scale)
+ **********************************************************************/
 static agc_vec_t vec_get(ec_item_t item)
 {
-    agc_vec_t v; /* the vector */
+    agc_vec_t v; /* the vector, the erasable's scale */
 
     switch ((int) item)
     {
@@ -991,6 +1687,9 @@ static agc_vec_t vec_get(ec_item_t item)
         case EC_RLS:
             v = agc_erase_rls();
             break;
+        case EC_X789:
+            v = agc_erase_x789();
+            break;
         default:
             v = agc_rendz_erasable()->delvlvc; /* EC_DELVSLV */
             break;
@@ -999,6 +1698,18 @@ static agc_vec_t vec_get(ec_item_t item)
     return (v);
 }
 
+/**********************************************************************
+ * VEC items: store the vector.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: vec_set
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   v         agc_vec_t  I    the vector (the erasable's scale)
+ **********************************************************************/
 static void vec_set(ec_item_t item, agc_vec_t v)
 {
     switch ((int) item)
@@ -1018,14 +1729,28 @@ static void vec_set(ec_item_t item, agc_vec_t v)
         case EC_RLS:
             agc_erase_set_rls(v);
             break;
+        case EC_X789:
+            agc_erase_set_x789(v);
+            break;
         default:
             agc_rendz_erasable()->delvlvc = v; /* EC_DELVSLV */
             break;
     }
 }
 
-/* State vector blocks (RRECT, VRECT, TET, DELTAV, NUV, RCV, VCV, TC, XKEP:
- * the 42-word layout of the temporary and the two permanent sets).       */
+/**********************************************************************
+ * State vector blocks (RRECT, VRECT, TET, DELTAV, NUV, RCV, VCV, TC, XKEP:
+ * the 42-word layout of the temporary and the two permanent sets) as 21 DP.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: sv_dps
+ *
+ * ARGUMENTS:
+ *   Argument  Type                    I/O  Description (scale)
+ *   --------  ----------------------  ---  -------------------------------------
+ *   sv        const agc_integ_sv_t *  I    the state vector set
+ *   d         agc_dp_t *              O    21 DP values in erasable order (each its scale)
+ **********************************************************************/
 static void sv_dps(const agc_integ_sv_t *sv, agc_dp_t *d)
 {
     const agc_vec_t *v[6]  = {&sv->rrect, &sv->vrect, &sv->deltav, &sv->nuv, &sv->rcv, &sv->vcv}; /* the vectors */
@@ -1044,6 +1769,18 @@ static void sv_dps(const agc_integ_sv_t *sv, agc_dp_t *d)
     d[20] = sv->xkep;
 }
 
+/**********************************************************************
+ * 21 DP values in erasable order as a state vector set.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: sv_of_dps
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  -------------------------------------
+ *   d         const agc_dp_t *  I    21 DP values (each its scale)
+ *   sv        agc_integ_sv_t *  O    the state vector set
+ **********************************************************************/
 static void sv_of_dps(const agc_dp_t *d, agc_integ_sv_t *sv)
 {
     agc_vec_t *v[6]  = {&sv->rrect, &sv->vrect, &sv->deltav, &sv->nuv, &sv->rcv, &sv->vcv}; /* the vectors */
@@ -1062,11 +1799,36 @@ static void sv_of_dps(const agc_dp_t *d, agc_integ_sv_t *sv)
     sv->xkep = d[20];
 }
 
+/**********************************************************************
+ * Whether an item is a 42-word state vector block.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: is_sv
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *
+ * RETURNS: bool -- true for those items
+ **********************************************************************/
 static bool is_sv(ec_item_t item)
 {
     return (item == EC_SV_TEMP || item == EC_SV_CSM || item == EC_SV_LEM);
 }
 
+/**********************************************************************
+ * The state vector set of a block item (temporary, CSM, LM).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: sv_get
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  -------------------------------------
+ *   item      ec_item_t         I    the mapped erasable
+ *   sv        agc_integ_sv_t *  O    the set
+ **********************************************************************/
 static void sv_get(ec_item_t item, agc_integ_sv_t *sv)
 {
     if (item == EC_SV_TEMP)
@@ -1075,10 +1837,22 @@ static void sv_get(ec_item_t item, agc_integ_sv_t *sv)
     }
     else
     {
-        agc_integ_perm_get((item == EC_SV_CSM) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM, sv);
+        agc_integ_perm_get((item == EC_SV_CSM) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM, sv); /* CSM or LM permanent set */
     }
 }
 
+/**********************************************************************
+ * Store the state vector set of a block item.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: sv_put
+ *
+ * ARGUMENTS:
+ *   Argument  Type                    I/O  Description (scale)
+ *   --------  ----------------------  ---  -------------------------------------
+ *   item      ec_item_t               I    the mapped erasable
+ *   sv        const agc_integ_sv_t *  I    the set
+ **********************************************************************/
 static void sv_put(ec_item_t item, const agc_integ_sv_t *sv)
 {
     if (item == EC_SV_TEMP)
@@ -1087,11 +1861,22 @@ static void sv_put(ec_item_t item, const agc_integ_sv_t *sv)
     }
     else
     {
-        agc_integ_perm_set((item == EC_SV_CSM) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM, sv);
+        agc_integ_perm_set((item == EC_SV_CSM) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM, sv); /* CSM or LM permanent set */
     }
 }
 
-/* The typed value of an item as sign-agreeing words.                      */
+/**********************************************************************
+ * The typed value of an item as sign-agreeing words.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: item_words
+ *
+ * ARGUMENTS:
+ *   Argument  Type                I/O  Description (scale)
+ *   --------  ------------------  ---  -------------------------------------
+ *   e         const ec_entry_t *  I    the map entry
+ *   w         uint16_t *          O    its words (e->words of them)
+ **********************************************************************/
 static void item_words(const ec_entry_t *e, uint16_t *w)
 {
     ec_layout_t l = item_layout(e->item); /* element layout */
@@ -1151,7 +1936,7 @@ static void item_words(const ec_entry_t *e, uint16_t *w)
     }
     else if (is_group(e->item))
     {
-        agc_dp_t d[EC_MAX_WORDS / EC_DP_WORDS]; /* the DP values */
+        agc_dp_t d[EC_MAX_WORDS / EC_DP_WORDS]; /* the DP values, each its erasable's scale */
 
         group_get(e->item, d);
 
@@ -1163,7 +1948,7 @@ static void item_words(const ec_entry_t *e, uint16_t *w)
     else if (is_sv(e->item))
     {
         agc_integ_sv_t sv;           /* the block */
-        agc_dp_t       d[EC_SV_DPS]; /* its DP values */
+        agc_dp_t       d[EC_SV_DPS]; /* its DP values, each its erasable's scale */
 
         sv_get(e->item, &sv);
         sv_dps(&sv, d);
@@ -1181,9 +1966,22 @@ static void item_words(const ec_entry_t *e, uint16_t *w)
     {
         vec_to(vec_get(e->item), w);
     }
-}
+} /* item_words */
 
-/* Store an item from its words (signs free to disagree).                  */
+/**********************************************************************
+ * Store an item from its words (signs free to disagree).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: item_store
+ *
+ * ARGUMENTS:
+ *   Argument  Type                I/O  Description (scale)
+ *   --------  ------------------  ---  -------------------------------------
+ *   e         const ec_entry_t *  I    the map entry
+ *   w         const uint16_t *    I    its words
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or a setter's status (refused value)
+ **********************************************************************/
 static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
 {
     ec_layout_t  l  = item_layout(e->item); /* element layout */
@@ -1259,7 +2057,7 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
     }
     else if (is_group(e->item))
     {
-        agc_dp_t d[EC_MAX_WORDS / EC_DP_WORDS]; /* the DP values */
+        agc_dp_t d[EC_MAX_WORDS / EC_DP_WORDS]; /* the DP values, each its erasable's scale */
 
         for (int k = 0; k < e->words / EC_DP_WORDS; k++)
         {
@@ -1285,7 +2083,7 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
     }
     else if (is_group(e->item))
     {
-        agc_dp_t d[EC_MAX_WORDS / EC_DP_WORDS]; /* the DP values */
+        agc_dp_t d[EC_MAX_WORDS / EC_DP_WORDS]; /* the DP values, each its erasable's scale */
 
         for (int k = 0; k < e->words / EC_DP_WORDS; k++)
         {
@@ -1297,7 +2095,7 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
     else if (is_sv(e->item))
     {
         agc_integ_sv_t sv;           /* the block */
-        agc_dp_t       d[EC_SV_DPS]; /* its DP values */
+        agc_dp_t       d[EC_SV_DPS]; /* its DP values, each its erasable's scale */
 
         for (int k = 0; k < EC_SV_DPS; k++)
         {
@@ -1317,9 +2115,21 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
     }
 
     return (st);
-}
+} /* item_store */
 
-/* Words per element of a layout.                                         */
+/**********************************************************************
+ * Words per element of a layout.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: element_words
+ *
+ * ARGUMENTS:
+ *   Argument  Type         I/O  Description (scale)
+ *   --------  -----------  ---  -------------------------------------
+ *   l         ec_layout_t  I    the layout
+ *
+ * RETURNS: int -- 1, 2 or 3
+ **********************************************************************/
 static int element_words(ec_layout_t l)
 {
     int n = EC_DP_WORDS; /* DP */
@@ -1340,7 +2150,21 @@ static int element_words(ec_layout_t l)
     return (n);
 }
 
-/* Whether two word images of one element hold the same value.            */
+/**********************************************************************
+ * Whether two word images of one element hold the same value.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: same_element
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  -------------------------------------
+ *   l         ec_layout_t       I    the layout
+ *   a         const uint16_t *  I    first image
+ *   b         const uint16_t *  I    second image
+ *
+ * RETURNS: bool -- true for the same value
+ **********************************************************************/
 static bool same_element(ec_layout_t l, const uint16_t *a, const uint16_t *b)
 {
     bool same = a[0] == b[0]; /* RAW: the bits */
@@ -1368,7 +2192,19 @@ static bool same_element(ec_layout_t l, const uint16_t *a, const uint16_t *b)
     return (same);
 }
 
-/* The map entry holding ecadr, or NULL.                                   */
+/**********************************************************************
+ * The map entry holding ecadr (the first that does), or NULL.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: map_find
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   ecadr     uint16_t  I    erasable address
+ *
+ * RETURNS: const ec_entry_t * -- the entry, or NULL
+ **********************************************************************/
 static const ec_entry_t *map_find(uint16_t ecadr)
 {
     bool              lm  = agc_state_vehicle() == AGC_VEHICLE_LM;                                                      /* which map */
@@ -1387,8 +2223,18 @@ static const ec_entry_t *map_find(uint16_t ecadr)
     return (hit);
 }
 
-/* Bring the raw words of a mapped item up to date with its typed value,
- * element by element (an unchanged element keeps its words as stored).   */
+/**********************************************************************
+ * Bring the raw words of a mapped item up to date with its typed value,
+ * element by element (an unchanged element keeps its words as stored).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: refresh
+ *
+ * ARGUMENTS:
+ *   Argument  Type                I/O  Description (scale)
+ *   --------  ------------------  ---  -------------------------------------
+ *   e         const ec_entry_t *  I    the map entry
+ **********************************************************************/
 static void refresh(const ec_entry_t *e)
 {
     uint16_t w[EC_MAX_WORDS]; /* typed value as words */
@@ -1417,7 +2263,19 @@ static void refresh(const ec_entry_t *e)
     }
 }
 
-/* Read the erasable word at ECADR (raw 15-bit word).                     */
+/**********************************************************************
+ * Read the erasable word at ECADR (raw 15-bit word): a flagword, a
+ * mapped erasable (refreshed from its typed value), or the raw image.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: agc_erase_read_ecadr
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  -------------------------------------
+ *   ecadr     uint16_t    I    address, 15 bits
+ *   word      uint16_t *  O    the word
+ **********************************************************************/
 void agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
 {
     const ec_entry_t *e = map_find(ecadr); /* named erasable */
@@ -1437,7 +2295,22 @@ void agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
     }
 }
 
-/* Store a raw 15-bit word at ECADR.                                      */
+/**********************************************************************
+ * Store a raw 15-bit word at ECADR: a flagword, a mapped erasable
+ * (typed value rebuilt from all its words), or the raw image.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: agc_erase_write_ecadr
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   ecadr     uint16_t  I    address, 15 bits
+ *   word      uint16_t  I    the word
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or the setter's status (refused value;
+ *          the old value stays)
+ **********************************************************************/
 agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word)
 {
     const ec_entry_t *e  = map_find(ecadr); /* named erasable */

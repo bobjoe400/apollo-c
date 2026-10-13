@@ -36,6 +36,11 @@ the pinned commit into build/nassp/yaagc, or uses NASSP_YAAGC_DIR=<NASSP>/Orbite
 samples/ProjectApollo/src_sys/yaAGC; with neither it prints SKIP and exits 0.
 `python3 -I tools/nassp_replay.py --keep` leaves both transcripts in build/nassp.
 
+(The other closed loop, `make lm-sim`, needs no setup either: it fetches Virtual AGC's
+Contributed/LM_Simulator, a sparse checkout of virtualagc at c239e9c, into
+build/virtualagc on first use; LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator uses
+another checkout. Tcl/Tk (tclsh) must be installed.)
+
 Full tier, Windows host (C:\NASSP9-dev, one Orbiter session at a time): build the
 DLLs with C:\Users\cnama\nassp-work\build-agc.bat after syncing the sources
 (SCRATCH sync.sh), then run an `apollo-c\<scenario>` with `Orbiter_ng.exe -s ... -T N`;
@@ -158,6 +163,45 @@ and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (st
   TLI 2 steps + P30 target uplink identical except DELTAV.y -1, NUV.x +2, NUV.y -2 LSB (the
   documented integrator residuals, review-nav-integ N4/N9/N10); MCC-2 P30 target uplink
   identical. ~25-50 s.
+- DONE milestone 3 (MCC-2, 2026-10-13, after the FANG fix): stock vs ours VG/dVM 0.3/15.9 vs
+  0.3/15.9 ft/s, N85 -0.3/-0.1/0.0 vs -0.3/-0.1/-0.1, V82 HP 49.7 vs 49.8 nmi, V99 at TIG-5 and
+  SPS on time on both. Logs runs/{ref_mcc2,agc_mcc2}.
+- Script finding (2026-10-13, user screenshot): NASSP's PRO key is "DskySwitchProg" on CSM and
+  LEM; the helper pressed "DskySwitchProceed" (unknown: NASSP only prints "Switch not found")
+  so every PRO of milestones 1-3 fell back to V33E on both builds (equivalent for P30/P40).
+  common.lua now presses DskySwitchProg, checks every switch name (get_panelswitch = -1) and
+  preflights the sheets: an unknown name aborts the run loudly (FATAL ..., end).
+- DONE milestone 4 (LOI-1, scenario 06, real PRO presses, 2026-10-13): stock vs ours burn
+  373.90 vs 373.97 s, VG/dVM 0.4/2924.9 vs 0.4/2925.0 ft/s, N85 -0.4/+0.1/+0.1 vs -0.5/-0.1/-0.1,
+  V82 HA/HP 169.9/59.5 vs 169.7/59.5 nmi, P30 N81/N42 identical, V99 at TIG-5 on both; 0 shim
+  errors. runs/{ref,agc}_loi1 (stock with V33E PROs: runs/ref_loi1_v33, same result).
+  Display: V06N40 R1 counts down identically before ignition; during the burn it is time to
+  cutoff, re-estimated every 2 s (jumps early in the burn on both). A 1 s Lua read of DSPTAB on
+  ours aliases against the shim's once-per-second erasable export (repeats/skips a second);
+  the on-screen DSKY follows the channel 010 relay words (every count), unaffected.
+- MAP FINDING (2026-10-13, TEI dev run, LGC sidecar "errors 1"): restored LM images left the
+  LM DAP pad loads at 0 (no address): 1/ACCSET then clamped LEMMASS to HIASCENT = 0 and
+  lm_alone's AGC_ASSERT(LEMMASS > 0) returned BAD_ARG (job 652 = 1/ACCSET, accs.c:364; found by
+  the Linux replay of the TEI scenario's Eagle image on the debug library). Comparing the map
+  with NASSP's LM pad-load list (lmpad.txt, 269 words) found 73 unmapped words. Mapped now (LM):
+  HIASCENT, ROLLTIME/PITTIME, DKTRAP..DKDB, IGNAOSQ/R, MASS, RADSKAL/SKALSKAL, DELQFIX,
+  LRALPHA..LRWVFF, LRHMAX/LRWH, RPCRTIME/RPCRTQSW, TNEWA, X789, RANGEVAR/RATEVAR, RVARMIN/
+  VVARMIN, WRENDPOS..TRUNVAR, ATIGINC/PTIGINC (new accessor agc_lm_dap_padload in
+  include/agc/lm/dap.h); tests/erasable_map/address_map.c 157 checks. The DOI, PDI, liftoff
+  and LM-powerup Eagle images now replay without a BAD_ARG. Still unmapped (no typed home or
+  not flight-relevant): DUMPCNT, AGSK (AGS clock, getter only), DOWNTORK..NEGTORKV (jet torque
+  telemetry sums); CSM: ENTRYVN, PGNCSALT, HORIZALT, TRANSM1, the CSM W/variance pad,
+  AZIMUTH/LATITUDE/LAUNCHAZ, TAZEL1, DELVTPI, the Saturn takeover block (AOG .. POSEXIT,
+  SATRATE ..), ECSTEER (milestones 1-5 matched without them; mapped next if a milestone needs it).
+- src/nassp/nassp_engine.c now reopens stderr into apollo-c-agc-stderr.log, so src/sim's
+  BAD_ARG diagnostics from inside NASSP land on disk.
+- LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
+  get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only). Reference LEM.dll in
+  C:\NASSP9-ref = stock 5470bf1 + 0002 (C:\Users\cnama\nassp-work\build-ref.bat, tree
+  nassp-ref; release DLL kept as LEM.dll.release-437); ours = 0001 + 0002 (nassp-agc).
+- Closing list from the lead done early: `make style` clean on address_map.c, nassp_engine.c,
+  ecadr.c (boxed prologs, no behaviour change; 140 map checks pass); `make lm-sim` fetches the
+  LM Simulator itself (sparse virtualagc c239e9c into build/virtualagc).
 - Do not run Linux test loads during a host run: the stock AGC at 50x went to garbage (MODREG 227,
   FAILREG 207) when frames stretched under CPU load; that run was discarded.
 

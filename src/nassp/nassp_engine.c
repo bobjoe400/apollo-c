@@ -125,17 +125,42 @@ static uint32_t g_errors;                 /* refused stores / inputs, GOPROG BAD
 
 /* ---- words ---------------------------------------------------------------- */
 
+/**********************************************************************
+ * A signed value as the 15-bit ones'-complement word NASSP reads.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: word_of_sp
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   v         agc_sp_t  I    the value (scale of the register it goes to)
+ *
+ * RETURNS: int16_t -- the AGC word (bit 15 the sign)
+ **********************************************************************/
 static int16_t word_of_sp(agc_sp_t v)
 {
-    return ((int16_t) ((v < 0) ? (~(uint16_t) (-(int32_t) v) & NS_WORD) : (uint16_t) v));
+    return ((int16_t) ((v < 0) ? (~(uint16_t) (-(int32_t) v) & NS_WORD) : (uint16_t) v)); /* negative: ones'-complement of the magnitude */
 }
 
-/* A mirror cell as NASSP wrote it: a 15-bit ones'-complement word, or a
- * plain negative int16 (LEMcomputer stores the RHC counts as int).        */
+/**********************************************************************
+ * A mirror cell as NASSP wrote it: a 15-bit ones'-complement word, or a
+ * plain negative int16 (LEMcomputer stores the RHC counts as int).
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: sp_of_cell
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------------------------
+ *   c         int16_t  I    the cell
+ *
+ * RETURNS: agc_sp_t -- the signed value (scale of the register)
+ **********************************************************************/
 static agc_sp_t sp_of_cell(int16_t c)
 {
     uint16_t w = (uint16_t) c; /* the bits */
-    agc_sp_t v = 0;            /* the value */
+    agc_sp_t v = 0;            /* the value, the register's scale (unscaled count) */
 
     if ((w & NS_TWOS_NEG) != 0u)
     {
@@ -153,6 +178,19 @@ static agc_sp_t sp_of_cell(int16_t c)
     return (v);
 }
 
+/**********************************************************************
+ * The mirror cell of a flat erasable address (bank = addr / 0400).
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: cell
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   addr      int   I    flat erasable address, 0-03777
+ *
+ * RETURNS: int16_t * -- the cell in NASSP's agc_t
+ **********************************************************************/
 static int16_t *cell(int addr)
 {
     return (&g_agc->Erasable[addr / NS_BANK][addr % NS_BANK]);
@@ -160,6 +198,19 @@ static int16_t *cell(int addr)
 
 /* ---- counters and registers (024-060) ------------------------------------- */
 
+/**********************************************************************
+ * Counter and timer registers 024-040 as words: TIME1-6, CDUs, optics, PIPAs.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: reg_get
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   addr      int   I    register address
+ *
+ * RETURNS: int16_t -- the register word (0 for an address reg_get2 handles)
+ **********************************************************************/
 static int16_t reg_get(int addr)
 {
     int16_t w = 0; /* the register word */
@@ -207,11 +258,25 @@ static int16_t reg_get(int addr)
         default:
             w = 0; /* the rest: reg_get2 */
             break;
-    }
+    } /* switch */
 
     return (w);
-}
+} /* reg_get */
 
+/**********************************************************************
+ * Registers 041-060 as words (RHC, INLINK, RNRAD, GYROCTR, CDU and optics
+ * drives, THRUST, ALTM); the others through reg_get.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: reg_get2
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   addr      int   I    register address, 024-060
+ *
+ * RETURNS: int16_t -- the register word
+ **********************************************************************/
 static int16_t reg_get2(int addr)
 {
     int16_t w = 0; /* the register word */
@@ -257,9 +322,22 @@ static int16_t reg_get2(int addr)
     }
 
     return (w);
-}
+} /* reg_get2 */
 
-/* NASSP wrote register addr: store it in the typed counter.              */
+/**********************************************************************
+ * NASSP wrote register addr: store it in the typed counter (TIME1/2 as one
+ * clock, CDUs, optics, RHC, INLINK, RNRAD; timers 3-6, PIPAs and drives
+ * are the AGC's own).
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: reg_set
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------------------------
+ *   addr      int      I    register address, 024-060
+ *   c         int16_t  I    the cell NASSP wrote
+ **********************************************************************/
 static void reg_set(int addr, int16_t c)
 {
     uint16_t w = (uint16_t) ((uint16_t) c & NS_WORD); /* 15-bit word */
@@ -307,11 +385,19 @@ static void reg_set(int addr, int16_t c)
             break;
         default:
             break; /* timers 3-6, PIPAs (counter pulses), drives: the AGC's own */
-    }
-}
+    } /* switch */
+} /* reg_set */
 
 /* ---- the mirror ------------------------------------------------------------ */
 
+/**********************************************************************
+ * Registers 024-060 into the mirror and its shadow; Z reads 0.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: export_registers
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void export_registers(void)
 {
     for (int a = NS_REG_FIRST; a <= NS_REG_LAST; a++)
@@ -324,6 +410,15 @@ static void export_registers(void)
     g_shadow[NS_REG_Z] = 0;
 }
 
+/**********************************************************************
+ * The whole erasable (flagwords up) into the mirror through the address
+ * map, then the registers.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: export_erasable
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void export_erasable(void)
 {
     for (int a = NS_FLAG_FIRST; a < NS_ERASABLE; a++)
@@ -338,8 +433,20 @@ static void export_erasable(void)
     export_registers();
 }
 
-/* What NASSP wrote into the mirror since the last export: the registers
- * and counters (024-060) at every count, the rest when `all`.            */
+/**********************************************************************
+ * What NASSP wrote into the mirror since the last export: the registers
+ * and counters (024-060) at every count, the rest when all.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: import_erasable
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   all       bool  I    scan the whole erasable, not only the registers
+ *
+ * RETURNS: bool -- true when NASSP wrote Z = 04000 (power came back)
+ **********************************************************************/
 static bool import_erasable(bool all)
 {
     bool power_cycle = false;                               /* Z = 04000 written: power came back */
@@ -381,6 +488,14 @@ static bool import_erasable(bool all)
 
 /* ---- channels and interrupts ----------------------------------------------- */
 
+/**********************************************************************
+ * Input channels NASSP changed (keys, discretes) into src/sim.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: import_channels
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void import_channels(void)
 {
     int n = (int) (sizeof (k_inputs) / sizeof (k_inputs[0])); /* input channels */
@@ -399,6 +514,15 @@ static void import_channels(void)
     }
 }
 
+/**********************************************************************
+ * All channels 0-037 into InputChannel[] (NASSP reads outputs there too)
+ * and the superbank into OutputChannel7.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: export_channels
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void export_channels(void)
 {
     for (int c = 0; c < NS_CHANNELS; c++)
@@ -410,6 +534,14 @@ static void export_channels(void)
     g_agc->OutputChannel7 = g_agc->InputChannel[AGC_CHAN_SUPERBNK];
 }
 
+/**********************************************************************
+ * Interrupts NASSP requested (KEYRUPT, UPRUPT, DOWNRUPT, ...) into src/sim.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: import_rupts
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void import_rupts(void)
 {
     for (int i = 1; i <= NS_RUPTS; i++)
@@ -421,18 +553,34 @@ static void import_rupts(void)
     }
 }
 
+/**********************************************************************
+ * The pending interrupts back into InterruptRequests[]; no ISR in progress.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: export_rupts
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void export_rupts(void)
 {
     for (int i = 1; i <= NS_RUPTS; i++)
     {
-        g_agc->InterruptRequests[i] = sim_irq_pending((sim_irq_t) (i - 1)) ? 1 : 0;
+        g_agc->InterruptRequests[i] = sim_irq_pending((sim_irq_t) (i - 1)) ? 1 : 0; /* pending in src/sim: requested */
     }
 
     g_agc->InterruptRequests[0] = 0;
     g_agc->InIsr                = 0;
 }
 
-/* LM drives NASSP adds to yaAGC: THRUST (055) on 0142, ALTM (060) on 0143. */
+/**********************************************************************
+ * LM drives NASSP adds to yaAGC: THRUST (055) on 0142, ALTM (060) on 0143,
+ * sent when channel 14 enables them, then cleared.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: lm_drives
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void lm_drives(void)
 {
     uint16_t c14 = agc_chan_read((int) AGC_CHAN_CHAN14); /* channel 14 */
@@ -452,6 +600,18 @@ static void lm_drives(void)
 
 /* ---- trace (watchdog) --------------------------------------------------------- */
 
+/**********************************************************************
+ * One line in the apollo-c-agc-<vehicle>.log watchdog sidecar.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: trace
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------------------------
+ *   what      const char *  I    the event
+ *   cpu_s     double        I    host CPU seconds, s
+ **********************************************************************/
 static void trace(const char *what, double cpu_s)
 {
     sim_stats_t st; /* clock statistics */
@@ -467,15 +627,32 @@ static void trace(const char *what, double cpu_s)
 
 /* ---- one scaler count ------------------------------------------------------ */
 
+/**********************************************************************
+ * GOJAM -> GOPROG: power on, or power back after NASSP's power-off.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: power_up
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void power_up(void)
 {
     agc_status_t st = agc_rupt_go(); /* GOJAM -> GOPROG */
 
-    g_errors  += (st == AGC_STATUS_OK) ? 0u : 1u;
+    g_errors  += (st == AGC_STATUS_OK) ? 0u : 1u; /* a refused GOJAM counts as a shim error */
     g_started = true;
     trace("GOJAM (power on / power cycle)", 0.0);
 }
 
+/**********************************************************************
+ * One 1/3200 s scaler count: import, GOJAM when due, the clock count, LM
+ * drives, export.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: one_count
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 static void one_count(void)
 {
     bool cycle = import_erasable(g_count == 0); /* NASSP's stores; power cycle */
@@ -522,12 +699,28 @@ static void one_count(void)
 
     export_channels();
     export_rupts();
-    g_agc->Standby = sim_clock_standby() ? 1u : 0u;
-}
+    g_agc->Standby = sim_clock_standby() ? 1u : 0u; /* STBY lamp / standby state for NASSP */
+} /* one_count */
 
 /* ---- the yaAGC API ----------------------------------------------------------- */
 
-/* agc_engine_init: NASSP passes no rope here (agc_load_binfile follows).  */
+/**********************************************************************
+ * yaAGC agc_engine_init: power-on input channels, Z = 04000, RESTART lamp;
+ * NASSP passes no rope here (agc_load_binfile follows).
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: agc_engine_init
+ *
+ * ARGUMENTS:
+ *   Argument       Type          I/O  Description (scale)
+ *   -------------  ------------  ---  -------------------------------------
+ *   State          agc_t *       I/O  NASSP's struct for this vessel
+ *   RomImage       const char *  I    unused (NULL from NASSP)
+ *   CoreDump       const char *  I    unused
+ *   AllOrErasable  int           I    unused
+ *
+ * RETURNS: int -- 0
+ **********************************************************************/
 int agc_engine_init(agc_t *State, const char *RomImage, const char *CoreDump, int AllOrErasable)
 {
     (void) RomImage;
@@ -551,7 +744,21 @@ int agc_engine_init(agc_t *State, const char *RomImage, const char *CoreDump, in
     return (0);
 }
 
-/* agc_load_binfile: the rope names the vehicle; power on libagc.          */
+/**********************************************************************
+ * yaAGC agc_load_binfile: the rope names the vehicle; libagc, the clock
+ * and the channels are powered on.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: agc_load_binfile
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------------------------
+ *   State     agc_t *       I/O  NASSP's struct for this vessel
+ *   RomImage  const char *  I    rope file (Comanche055 / Luminary099)
+ *
+ * RETURNS: int -- 0 when loaded, 1 for another rope or an unreadable file
+ **********************************************************************/
 int agc_load_binfile(agc_t *State, const char *RomImage)
 {
     agc_vehicle_t v  = AGC_VEHICLE_CSM; /* from the rope's name */
@@ -566,24 +773,38 @@ int agc_load_binfile(agc_t *State, const char *RomImage)
         if (g_trace == NULL)
         {
             g_trace = fopen((v == AGC_VEHICLE_LM) ? "apollo-c-agc-lm.log" : "apollo-c-agc-csm.log", "w"); /* NULL: no trace */
+            (void) freopen("apollo-c-agc-stderr.log", "a", stderr);                                       /* stdlib: src/sim's diagnostics (BAD_ARG job / interrupt) land on disk, not in NASSP's lost console */
         }
 
-        rc        = (sim_rope_load(RomImage) == AGC_STATUS_OK) ? 0 : 1;
+        rc        = (sim_rope_load(RomImage) == AGC_STATUS_OK) ? 0 : 1; /* rope read: 0 */
         sim_clock_init();
-        rc        = (sim_channels_init() == AGC_STATUS_OK) ? rc : 1;
-        (void) memset(g_shadow, 0, sizeof (g_shadow));       /* stdlib: every non-zero mirror word is a store */
-        (void) memset(g_chan_seen, 0, sizeof (g_chan_seen)); /* stdlib */
+        rc        = (sim_channels_init() == AGC_STATUS_OK) ? rc : 1;    /* channels ready: keep rc */
+        (void) memset(g_shadow, 0, sizeof (g_shadow));                  /* stdlib: every non-zero mirror word is a store */
+        (void) memset(g_chan_seen, 0, sizeof (g_chan_seen));            /* stdlib */
         g_loaded  = (rc == 0);
         g_started = false;
         g_scaler  = 0;
         g_count   = 0;
-        g_export  = NS_EXPORT_COUNTS;                        /* export at the first count */
+        g_export  = NS_EXPORT_COUNTS;                                   /* export at the first count */
     }
 
     return (rc);
 }
 
-/* agc_engine: one memory cycle.                                          */
+/**********************************************************************
+ * yaAGC agc_engine: one memory cycle (11.71875 us); every 80/3 calls one
+ * scaler count (one_count).
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: agc_engine
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------------------------
+ *   State     agc_t *  I/O  NASSP's struct for this vessel
+ *
+ * RETURNS: int -- 0
+ **********************************************************************/
 int agc_engine(agc_t *State)
 {
     g_agc = State;
@@ -603,7 +824,19 @@ int agc_engine(agc_t *State)
     return (0);
 }
 
-/* WriteIO: NASSP stores an input channel; taken at the next count.        */
+/**********************************************************************
+ * yaAGC WriteIO: NASSP stores an input channel; taken at the next count.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: WriteIO
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------------------------
+ *   State     agc_t *  I/O  NASSP's struct
+ *   Address   int      I    channel, 0-0777
+ *   Value     int      I    the channel word
+ **********************************************************************/
 void WriteIO(agc_t *State, int Address, int Value)
 {
     if (Address >= 0 && Address < NUM_CHANNELS)
@@ -612,17 +845,56 @@ void WriteIO(agc_t *State, int Address, int Value)
     }
 }
 
+/**********************************************************************
+ * yaAGC CpuWriteIO: as WriteIO.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: CpuWriteIO
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------------------------
+ *   State     agc_t *  I/O  NASSP's struct
+ *   Address   int      I    channel
+ *   Value     int      I    the channel word
+ **********************************************************************/
 void CpuWriteIO(agc_t *State, int Address, int Value)
 {
     WriteIO(State, Address, Value);
 }
 
+/**********************************************************************
+ * yaAGC ReadIO: a channel as last exported.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: ReadIO
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------------------------
+ *   State     agc_t *  I    NASSP's struct
+ *   Address   int      I    channel
+ *
+ * RETURNS: int -- the channel word (0 outside 0-0777)
+ **********************************************************************/
 int ReadIO(agc_t *State, int Address)
 {
-    return ((Address >= 0 && Address < NUM_CHANNELS) ? (int) State->InputChannel[Address] : 0);
+    return ((Address >= 0 && Address < NUM_CHANNELS) ? (int) State->InputChannel[Address] : 0); /* outside 0-0777: 0 */
 }
 
-/* UnprogrammedIncrement: a counter pulse (PIPA PINC/MINC, CDU ...).       */
+/**********************************************************************
+ * yaAGC UnprogrammedIncrement: a counter pulse (PIPA PINC/MINC, CDU, ...).
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: UnprogrammedIncrement
+ *
+ * ARGUMENTS:
+ *   Argument  Type     I/O  Description (scale)
+ *   --------  -------  ---  -------------------------------------
+ *   State     agc_t *  I/O  NASSP's struct
+ *   Counter   int      I    counter address (NASSP may add 0200)
+ *   IncType   int      I    yaAGC increment type (PINC, MINC, PCDU, ...)
+ **********************************************************************/
 void UnprogrammedIncrement(agc_t *State, int Counter, int IncType)
 {
     int addr = Counter & 0177; /* SetInputChannel passes 0200 | address */
@@ -636,7 +908,18 @@ void UnprogrammedIncrement(agc_t *State, int Counter, int IncType)
     }
 }
 
-/* MakeCoreDump: there is no yaAGC core image of the typed erasable.        */
+/**********************************************************************
+ * yaAGC MakeCoreDump: there is no yaAGC core image of the typed erasable.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: MakeCoreDump
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------------------------
+ *   State     agc_t *       I    unused
+ *   CoreDump  const char *  I    unused
+ **********************************************************************/
 void MakeCoreDump(agc_t *State, const char *CoreDump)
 {
     (void) State;
@@ -645,7 +928,20 @@ void MakeCoreDump(agc_t *State, const char *CoreDump)
 
 /* ---- host hooks of src/sim (internal.h), as socket.c provides for agc_sim -- */
 
-void sim_socket_send(uint16_t chan, uint16_t value)
+/**********************************************************************
+ * src/sim host hook: an output channel to NASSP (ChannelOutput), optics
+ * drives renumbered to NASSP's 0140/0141, the DSKY lamps into DskyChannel163.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: sim_socket_send
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   chan      uint16_t  I    channel as src/sim numbers it
+ *   word      uint16_t  I    the channel word
+ **********************************************************************/
+void sim_socket_send(uint16_t chan, uint16_t word)
 {
     int c = (int) chan; /* NASSP's channel number */
 
@@ -664,18 +960,36 @@ void sim_socket_send(uint16_t chan, uint16_t value)
 
     if (chan == SIM_CH_DSKY_LAMPS)
     {
-        g_agc->DskyChannel163 = value;
-        g_agc->RestartLight   = ((value & NS_CH163_RESTART) != 0u) ? 1u : 0u;
+        g_agc->DskyChannel163 = word;
+        g_agc->RestartLight   = ((word & NS_CH163_RESTART) != 0u) ? 1u : 0u; /* RESTART lamp bit */
     }
 
-    ChannelOutput(g_agc, c, (int) value);
+    ChannelOutput(g_agc, c, (int) word);
 }
 
+/**********************************************************************
+ * src/sim host hook: NASSP's PCM telemetry raises DOWNRUPT.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: sim_host_downrupt_external
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: bool -- true
+ **********************************************************************/
 bool sim_host_downrupt_external(void)
 {
     return (true);
 }
 
+/**********************************************************************
+ * src/sim host hook: NASSP stores RNRAD at the end of a radar cycle.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: sim_host_radar_read
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
 void sim_host_radar_read(void)
 {
     RequestRadarData(g_agc);

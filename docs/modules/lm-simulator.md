@@ -82,7 +82,10 @@ join on any other port of the ten (yaDSKY2 --port=19797 --cfg=LM.ini).
 
 Scripted comparison (both AGCs, same crew sequence, real time ~11 min):
 
-    make lm-sim LMSIM_DIR=$LMSIM                     # headless (tclsh)
+    make lm-sim                                      # headless (tclsh); fetches LMSIM
+                                                     # (virtualagc c239e9c, sparse) into
+                                                     # build/virtualagc on first use
+    make lm-sim LMSIM_DIR=$LMSIM                     # the same on your own checkout
     make lm-sim LMSIM_DIR=$LMSIM LMSIM_ARGS="--gui --xshot DIR"   # windows + screenshots
     make lm-sim LMSIM_DIR=$LMSIM LMSIM_ARGS=--repeat-jets         # diagnostic relay
 

@@ -73,10 +73,12 @@ Closed loops (PLAN item 10, stretch), against the proven tools only:
   zero, coarse and fine align, RCS DAP attitude hold, rate command,
   minimum impulse, V49 manoeuvre, a POODOO restart):
 
-      make lm-sim LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator
+      make lm-sim
 
-  (about 11 minutes real time; `LMSIM_ARGS="--gui --xshot DIR"` shows the
-  windows). Details: `docs/modules/lm-simulator.md`,
+  (about 11 minutes real time; the first run fetches the LM Simulator, a
+  sparse checkout of virtualagc at the verified commit, into
+  `build/virtualagc`; `LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator`
+  uses your own; `LMSIM_ARGS="--gui --xshot DIR"` shows the windows). Details: `docs/modules/lm-simulator.md`,
   `docs/modules/closed-loop-fixes.md`.
 * **NASSP 9** (Orbiter 2024, Apollo 11, on the Windows host via WSL
   interop): NASSP's Saturn5/LEM modules built against libagc through the
