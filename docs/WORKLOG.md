@@ -906,3 +906,10 @@
             -TPER as is; our opd_orbit_params asserted it non-positive and
             ended V82GON1 with BAD_ARG. Fixed with a failing-first test.
             Gate regressions fixed. Next LM DOI.
+2026-10-13  NASSP LM DOI PASS (DPS): ignition 0.2 s apart, VG/dVM 0.2/71.9 vs
+            0.8/71.4, N85 within 0.5 ft/s. Flight bug 3: VGDISP = DELVSAB
+            in Luminary, two variables in C (LM P30 N42 R3 = 0): fixed with
+            test. User's warp change killed one dev run (discarded); the
+            script now holds and logs the warp (20x waits, 1x windows).
+            Deviation noted: LM V83 reruns continuously at C speed.
+            Next PDI/landing, liftoff, entry.
