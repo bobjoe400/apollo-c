@@ -831,3 +831,11 @@
             per second (6 ms CPU per sim second, like yaAGC); watchdog
             sidecar logs. NASSP's yaAGC now also builds on Linux for
             offline image replays. Next: TLI (scenario 03) + pad-load map.
+2026-10-12  NASSP milestone 2 PASS (TLI, scenario 03, unattended): V82 at
+            load 111.1/104.0 vs stock 111.2/104.0 (replay exact), P47
+            through the S-IVB burn on both, post-TLI vector consistent to
+            the 0.11 s sampling offset. Pad-load map extended (IMU comp,
+            pad orientation, CSM ephemeris, SPS/TVC pads, entry pads,
+            lunar potential), tests/core/ecadr.c 125 checks. Milestone 3
+            (MCC-2 P30/P40 SPS) via NASSP's own Apollo 11 checklist
+            workbook compiled to Lua tables, executed identically on both.
