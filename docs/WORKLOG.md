@@ -892,3 +892,12 @@
             in-burn jumps are Comanche's CLOKTASK/S40.8 on both. PRO had
             been V33E on milestones 1-3 (NASSP switch name DskySwitchProg;
             script now aborts on unknown switches). Next TEI, entry, LM.
+2026-10-13  NASSP TEI PASS (160 s SPS: VG/dVM 0.9/3306.7 vs 1.1/3306.8, N85
+            within 0.2 ft/s, HP/TFF identical). OPEN flight bug (ours):
+            after TEI, V82 then PRO leaves the DSKY blank with one
+            BAD_ARG job (stock restores F37); under root cause. LM
+            pad-load map gap closed (73/269 words; 157 checks); make
+            style 0 tree-wide; lm-sim fetches the simulator. Commit
+            47d3ecd regressed check-rules (rule 4 sp_field 68 lines; rule
+            7 (void) freopen) and prolog-report (write_ecadr RETURNS):
+            sent back to the lane.
