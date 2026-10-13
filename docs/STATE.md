@@ -3,8 +3,12 @@
 Updated: 2026-10-12
 
 ## Running agents (max 2)
-- document (Opus, resumed): c per-lane flow sections, e TIPS, README
-  Documentation/Status; overview + xref regenerated at HEAD.
+- layering (Opus): imu->programs upward call from the L2 fix moved into
+  imu; other upward edges except core/ecadr.c (NASSP lane moves that map
+  out of core after milestone 3); comment leftovers. Gate: make lm-sim 34/34.
+- document: DONE (47ae168): overview, flowcharts, xref, per-lane flow
+  sections, TIPS by topic, README Status/Documentation. The
+  nassp-integration.md section waits in the scratchpad until that lane ends.
 - nassp-integration (Opus): PLAN 10b+10c on NASSP 9 via WSL interop
   (docs/agents/nassp-integration.md: study, stock build, shim, integrated
   build, mission). Note: docs/modules/nassp-integration.md.

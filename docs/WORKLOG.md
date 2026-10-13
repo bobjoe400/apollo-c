@@ -844,3 +844,9 @@
             POODOO 1204, PROG-after-POODOO root-caused, packet-per-write,
             CDU pacing (00211 on both), LM DOWNRUPT channel-13 WOTEST
             fix. Document wave resumed in the freed slot.
+2026-10-12  document DONE (47ae168): definition-of-done item 9 complete.
+            Its module map exposed upward calls from core (ecadr.c map)
+            and imu (gyro.c -> align_ram, the L2 fix): item 2 regression.
+            nassp-integration moves the map out of core after milestone 3;
+            launched layering (Opus) for the imu edge, other upward edges
+            and the comment leftovers.
