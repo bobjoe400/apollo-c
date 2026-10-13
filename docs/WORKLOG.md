@@ -867,3 +867,11 @@
             (646 mechanical findings): style-final (Sonnet) launched.
             Item 7 caveat recorded (LM P63 not under the GUI; LM Simulator
             + NASSP PDI cover it).
+2026-10-13  NASSP milestone 3 PASS (MCC-2 P30/P40 SPS burn, NASSP's own
+            checklists, unattended): V99 at TIG-5, SPS 2.1-2.2 s on time,
+            VG/dVM 0.3/15.9 on both, N85 -0.3/-0.1/0.0 vs -0.3/-0.1/-0.1,
+            HP 49.7 vs 49.8 nmi, P30 displays identical. Map bug fixed
+            (EK3VAL two words overlapping FANG -> steered burn path).
+            make nassp-replay added (eebc6e1; the address-map change and
+            Makefile target had gone in with 0d697f8). Next LOI; LEM Lua
+            test-hook patch 0002 for both builds approved.
