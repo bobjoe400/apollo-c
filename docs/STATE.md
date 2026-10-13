@@ -3,10 +3,10 @@
 Updated: 2026-10-13
 
 ## Running agents (max 2)
-- layering (Opus, resumed 2026-10-13, scope bounded): OGC words to imu,
-  smallest change per remaining upward edge (no folder reorganisation),
-  comment leftovers. Gate: make lm-sim 34/34, depgraph no upward edge.
-  (The address map is already out of core: src/erasable_map.)
+- style-final (Sonnet): the 646 remaining `make style` findings
+  (definition-of-done item 3), no behaviour change; excludes the NASSP
+  lane's files. Note: docs/modules/style-final.md.
+- layering: DONE (0d697f8): depgraph upward table empty.
 - document: DONE (47ae168): overview, flowcharts, xref, per-lane flow
   sections, TIPS by topic, README Status/Documentation. The
   nassp-integration.md section waits in the scratchpad until that lane ends.

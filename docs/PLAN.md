@@ -196,6 +196,41 @@ Then: lead assert.h rename; ONE Frama-C EVA run (`make prove`, `make
     is the only limit: ~7 GB at 60 min on a 15 GB host). Apply proven guard
     deletions everywhere, triage any alarms; then the document wave.
 
+## Status against the definition of done (lead, 2026-10-13)
+
+1. Coverage: DONE. 19 lanes, every AGC file of both ropes in MODULE_STATUS;
+   the remaining stubs are named and justified there (LM P07 fixed-memory
+   part translated; the erasable program at ATIGINC absent from the rope).
+2. Builds clean: DONE. -Werror set, one flat registry (4 generated
+   switches), no pending/glue/shim files; layering restored 2026-10-13
+   (depgraph upward-call table empty; address map in src/erasable_map).
+3. Rules pass: check-rules 0 hard, format-check clean, rule 5 by its
+   spirit (no density quota; checkers reject the dodges). `make style`:
+   646 mechanical findings left (from 22,489) -- style-final lane running
+   2026-10-13; DONE when it reports.
+4. Naming: DONE (NAMING.md applied, RENAMES.md ledger complete, no
+   program/verb/noun numbers in identifiers or file names).
+5. Tests: DONE. make test = 35 binaries + 14 scenarios through the real
+   library, no stand-ins.
+6. Oracle: DONE. ~10k checks vs yaAGC; conic, DAP CSM/LM, DSKY, alignment,
+   nav-aux, landing ascent, entry, targeting exact at tolerance 0 where -0
+   allows; remaining tolerances documented in docs/oracle-cases.md.
+7. Runs under the Virtual AGC GUI: DONE for the CSM and the LM DSKY
+   sequences (fresh start, V35, V16N36, CSM P52, CSM P30/P40 burn) with
+   the stock launcher, yaDSKY2 and yaTelemetry; headless twins in make
+   scenarios. LM P63 braking was NOT run there: it is a closed loop that
+   needs a vehicle (no device models by principle); it is covered instead
+   by the LM Simulator loop (make lm-sim, 34/34 vs yaAGC: ISS, align, DAP)
+   and will be flown in NASSP's PDI milestone (item 10).
+8. Reviewed: DONE. 16 lane reviews + verify-collapse, follow-up,
+   loose-ends, prolog-consistency, always-ok, closed-loop-fixes; every
+   routed finding closed (docs/agents/review_items.md).
+9. Documented: DONE (47ae168): overview + generated module map, 10
+   flowcharts, per-lane program-flow sections, xref (3,071 labels), TIPS.
+10. Stretch, in progress: LM Simulator closed loop DONE; NASSP 9 on our
+    AGC: milestones 1 (insertion + uplink) and 2 (TLI) PASS, 3 (SPS burn)
+    running; `make nassp-replay` light tier being added.
+
 ## Stretch (not yet in the definition of done; user to decide)
 
 10. Full-mission closed loop (user, 2026-10-12: "a good final test would

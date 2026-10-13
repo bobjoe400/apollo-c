@@ -859,3 +859,11 @@
             yaAGC on Linux) as the light tier for the integration layer.
             Checkpoint 7826e91; layering (bounded scope) and
             nassp-integration relaunched from their notes.
+2026-10-13  layering DONE (0d697f8): no module calls upward (gyro words
+            owned by imu, agc_exec_jump for POSTJUMP seams, owners moved,
+            address-based access via erasable_map classed as the AGC's
+            address column). Definition-of-done status written into
+            PLAN.md: all nine items met except item 3's `make style`
+            (646 mechanical findings): style-final (Sonnet) launched.
+            Item 7 caveat recorded (LM P63 not under the GUI; LM Simulator
+            + NASSP PDI cover it).
