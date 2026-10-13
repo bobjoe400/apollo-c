@@ -217,6 +217,19 @@ void     agc_erase_set_mass(agc_dp_t v);
 agc_sp_t agc_erase_abdelv(void);
 void     agc_erase_set_abdelv(agc_sp_t v);
 
+/* MRKBUF1 / MRKBUF2 (CM): two seven-word mark buffers (time DP, CDUY,
+ * CDUS, CDUZ, CDUT, CDUX), raw 15-bit words, buf 1 or 2, index 0..6;
+ * word 0 = -1 (77776) marks a buffer empty. mrkbuf2 / set_mrkbuf2 read
+ * and store MRKBUF2 +index as a signed SP number (ones' complement).     */
+uint16_t agc_erase_mrkbuf(int buf, int index);
+void     agc_erase_set_mrkbuf(int buf, int index, uint16_t v);
+agc_sp_t agc_erase_mrkbuf2(int index);
+void     agc_erase_set_mrkbuf2(int index, agc_sp_t v);
+
+/* LANDMARK (CM P22 code ABCDE, V52), a signed SP number                  */
+agc_sp_t agc_erase_landmark(void);
+void     agc_erase_set_landmark(agc_sp_t v);
+
 /* PIPA X pulse count since last read (register PIPAX, 037), unscaled
  * pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) */
 agc_sp_t agc_erase_pipax(void);

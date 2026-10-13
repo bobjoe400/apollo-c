@@ -57,7 +57,6 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 
-
 /* ======================================================================
  * Average-G (SERVICER207 / SERVICER)
  * ====================================================================== */
@@ -279,6 +278,7 @@ agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip);               
 /* DELRSPL (CM): tff = the TFF debris of the last SR30.1, tff_cs = TFF
  * (cs 2^28, negative); sets RSP-RREC and does INTWAKE0.                  */
 agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t tff_cs);
+agc_status_t agc_job_orbit_display_splash(void); /* CANDEL / SPLRET (CM R30) */
 
 agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv); /* MIDGIM (CM) */
 

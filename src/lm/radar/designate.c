@@ -604,11 +604,11 @@ static agc_status_t rr_dorrout(agc_interp_t *ip, rr_state_t *s)
  **********************************************************************/
 static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s, const agc_cdutrig_t *trig, agc_vec_t los)
 {
-    agc_dp_t sa    = agc_imu_cdulogic(agc_erase_cdus());                                                /* rev 2^0 */
+    agc_dp_t sa    = agc_imu_cdulogic(agc_erase_cdus());                                                 /* rev 2^0 */
     agc_dp_t sn_s  = agc_dp_sin(sa);                                                                     /* 0D, 2^1 */
     agc_dp_t cs_s  = agc_dp_cos(sa);                                                                     /* 2D, 2^1 */
     agc_dp_t shaft = agc_dp_sub(ip, agc_dp_mul_trunc(cs_s, los.c[0]), agc_dp_mul_trunc(los.c[2], sn_s)); /* 2^2 */
-    agc_dp_t ta    = agc_imu_cdulogic(agc_erase_cdut());                                                /* rev 2^0 */
+    agc_dp_t ta    = agc_imu_cdulogic(agc_erase_cdut());                                                 /* rev 2^0 */
     agc_dp_t cs_t  = agc_dp_cos(ta);                                                                     /* 4D, 2^1 */
     agc_dp_t sn_t  = agc_dp_sin(ta);                                                                     /* 6D, 2^1 */
     agc_dp_t ux    = agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, sn_s), 1);                                    /* 2^1 */
@@ -713,4 +713,39 @@ agc_status_t agc_rr_designate_gimbal(bool *started)
     *started = (res == AGC_RR_DESIGNATE_STARTED);
 
     return (st);
+}
+
+/**********************************************************************
+ * RRDESK2 (EXTENDED_VERBS.agc L p.269): the V41 N72 designate job,
+ * FINDVAC'd by the verb (src/io/verbs/extended_verbs_lm_radar.c):
+ * RRDESNB, then RADSTALL for the designate to finish.
+ *
+ * FUNCTION NAME: agc_job_rr_designate_drive
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the RRDESNB or RADSTALL status
+ **********************************************************************/
+agc_status_t agc_job_rr_designate_drive(void)
+{
+    bool         started = false;                             /* RRDESNB started a designate */
+    agc_status_t st      = agc_rr_designate_gimbal(&started); /* RRDESNB / stall status */
+
+    if (st != AGC_STATUS_OK || !started)
+    {
+        return (st); /* RRDESNB did ENDOFJOB   */
+    }
+
+    agc_imu_stall_result_t res = AGC_IMU_STALL_SLEEPING; /* RADSTALL return */
+
+    st = agc_imu_stall_dev(AGC_IMU_DEV_RADAR, AGC_JOB_RR_DESIGNATE_RESULT, &res);
+
+    if (st != AGC_STATUS_OK || res == AGC_IMU_STALL_SLEEPING)
+    {
+        return (st); /* asleep until RRDESK2's RADSTALL return */
+    }
+
+    agc_job_rr_designate_result();
+
+    return (AGC_STATUS_OK);
 }

@@ -34,7 +34,8 @@
  *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *   No alarms; nothing here can fail (the functions are void or return
+ *   a value).
  *
  * NOTES:
  *   Drive-setting algorithm, per axis (Q, R), from the AGC comments:

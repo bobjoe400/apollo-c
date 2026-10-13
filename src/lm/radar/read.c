@@ -4,8 +4,10 @@
  * PURPOSE:
  *   LM radar reading: the read lead-ins RRRANGE, RRRDOT, LRVELX/Y/Z,
  *   LRALT, LRVEL and INITREAD; the RADAR RUPT reader RADAREAD with its
- *   scale, data-good and bias handling; LRPOS2 (landing radar to
- *   position 2); the landing radar lamps R12LITES / RADLITES. A program
+ *   scale, data-good and bias handling; the LRPOS2 scan (landing radar
+ *   to position 2; LRPOS2 itself, with RADMODES, is in
+ *   src/io/service/t4rupt_lm.c); the landing radar lamps R12LITES /
+ *   RADLITES. A program
  *   starts a reading with a lead-in and waits in RADSTALL; each
  *   RADARUPT brings one sample (RNRAD) which RADAREAD checks and adds
  *   to SAMPLSUM until N good samples are in (GOODEND) or the tries run
@@ -16,7 +18,7 @@
  *   LRALT, LRVEL, INITREAD, RADAREAD, TRYCOUNT, PLENTY, RENDRAD,
  *   LRPOSCHK, VELCHK, LRHEIGHT, SCALECHK, SCALCHNG, RADIN, SCALADJ,
  *   LRSCK, DGCHECK, DGCHECK2, NOEND, GOODRAD, RESAMPLE, DATAFAIL,
- *   NOMORE, BADRAD, LRPOS2, LRPOSCAN, LRPOSNXT, LASTLRDT) and
+ *   NOMORE, BADRAD, LRPOSCAN, LRPOSNXT, LASTLRDT) and
  *   pp. 612-613 (R12LITES, RADLITES, HLIGHT, VLIGHT); LM only
  *
  * EXTERNAL VARIABLES:
@@ -81,7 +83,6 @@
 #define RD_LVELBIAS         (-12288)                   /* LVELBIAS DEC -12288 (153.6 kc)      */
 #define RD_RDOTBIAS         ((agc_dp_t) 17000)         /* RDOTBIAS, counts       */
 #define RD_HISCALIM         460                        /* HISCALIM DEC 460: 2481.7 ft         */
-#define RD_LR_POS2_WAIT     600U                       /* 6SECS DEC 600                       */
 #define RD_2SECS            200U                       /* 2 s, cs */
 #define RD_1SEC             100U                       /* 1 s, cs */
 #define RD_POS_TRIES        14                         /* FOURTEEN: 15 samples                */
@@ -683,40 +684,6 @@ agc_status_t agc_rendz_radar_read(void)
 
     return (rd_goodrad());
 } /* agc_rendz_radar_read */
-
-/**********************************************************************
- * LRPOS2 (pp.561-562): command the landing radar to position 2 and
- * check that it gets there: scanning for the inbit starts after 6 s,
- * once a second for 15 s; then 2 s for the antenna bounce to die out.
- * AGC: LRPOS2 (P20-P25.agc p.561)
- *
- * FUNCTION NAME: agc_radar_lrpos2
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
- **********************************************************************/
-agc_status_t agc_radar_lrpos2(void)
-{
-    agc_inhint();
-    rr_radmodes_set(RR_LRPOSBIT);
-    agc_status_t st; /* waitlist status */
-
-    if ((agc_chan_read(AGC_CHAN_CHAN33) & RR_CH33_LR_POS2) == 0U)
-    {
-        st = rr_radnoop(); /* already  */
-    }
-    else
-    {
-        agc_chan_or(AGC_CHAN_CHAN12, RR_CH12_LRPOS2);
-        st = agc_waitlist_call(RD_LR_POS2_WAIT, AGC_TASK_LR_POSITION_SCAN);
-    }
-
-    agc_relint();
-
-    return (st);
-}
 
 /**********************************************************************
  * LRPOSCAN: set up for 15 samples.

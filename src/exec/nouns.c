@@ -475,7 +475,7 @@ static agc_sp_t noun_signed_word(agc_dp_t raw)
  **********************************************************************/
 static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
 {
-    agc_sp_t *code  = &agc_align_ram()->starcode;                 /* STARCODE/AOTCODE */
+    agc_sp_t *code  = &agc_align_ram()->starcode;          /* STARCODE/AOTCODE */
     agc_dp_t *sin_y = &agc_imu_trig()->sincdu[AGC_TRIG_Y]; /* SINCDUY, 2^1 */
 
     switch (id)

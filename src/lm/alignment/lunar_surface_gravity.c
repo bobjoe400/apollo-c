@@ -288,7 +288,7 @@ agc_status_t agc_job_lunar_gravity_rotate(void)
     {
         agc_vec_t nb = unit.row[i]; /* unit vector i in SM (*NBSM*), half-unit (2^1) */
 
-        agc_imu_nbsm(&lung_trig, &nb);                                                          /* *NBSM*   */
+        agc_imu_nbsm(&lung_trig, &nb);                                                           /* *NBSM*   */
         ram->xnb.row[i]    = nb;
         const agc_vec_t uu = agc_vec_shl(&ip, agc_vec_scale(&ip, ram->star, ram->star.c[i]), 2); /* STAR STAR(i) VSL2, scale 2^0 */
 

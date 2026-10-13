@@ -26,11 +26,9 @@
  * EXTERNAL REFERENCES:
  *   Name                    Description
  *   ----------------------  ------------------------------------------
- *   agc_rr_zero, agc_radar  RRZERO, LRPOS2, RRDESNB (radar lane)
- *    _lrpos2, agc_rr_
- *    designate_gimbal
+ *   agc_rr_zero, agc_radar  RRZERO, LRPOS2 (with RADMODES, service.h)
+ *    _lrpos2
  *   agc_imu_stall_dev       RADSTALL
- *   agc_lm_rrnb             RRNBMPAC (V85)
  *   agc_svc_delayjob        DELAYJOB
  *   agc_dsky_*              GOXDSPF, GOMARKF(R), GOMARK4, BLANKET, ENDEXT
  *
@@ -51,11 +49,13 @@
  *   and RDRUSECK, the "is either radar in use" check they share.
  *
  *   The radar mode-switching routines called here are in P20-P25.agc and
- *   RADAR_LEADIN_ROUTINES.agc (prog-rendz): RRZERO, RRDESNB, LRPOS2,
- *   CLRADMOD and the RADSAMP sampling task
- *   (include/agc/programs/rendezvous.h,
- *   include/agc/programs/alignment.h).  RADSTALL is the imu lane's
- *   agc_imu_stall_dev(AGC_IMU_DEV_RADAR, ...).
+ *   RADAR_LEADIN_ROUTINES.agc: RRZERO, LRPOS2 and CLRADMOD are with
+ *   RADMODES in src/io/service/t4rupt_lm.c; RRDESNB and the RADSAMP
+ *   sampling task are in src/lm/radar, reached by job / task id. The two
+ *   jobs these verbs FINDVAC that call radar routines are filed with
+ *   those routines: RRDESK2 (V41) in src/lm/radar/designate.c, RRLOSDSP
+ *   (V85, RRNBMPAC) in src/lm/optics/lem_geometry.c.  RADSTALL is the
+ *   imu lane's agc_imu_stall_dev(AGC_IMU_DEV_RADAR, ...).
  *
  *   DEVIATION (MAKECADR / DESRET): AURLOKON keeps its caller's return
  *   CADR in DESRET and jumps back to it after the V04N12 answer, and
@@ -78,13 +78,10 @@
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
-#include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
 
 #define WORD15        077777u                           /* one AGC word */
 #define BIT2          000002u                           /* CHAN33: RR auto-mode discrete (inverted)   */
 #define BIT3          000004u                           /* BLANKET R3                                 */
-#define BIT5          000020u                           /* EXTVBACT: extended verb active             */
 #define BIT14         020000u                           /* CHAN12: enable RR auto tracker             */
 #define RADMODES_CDES 040000u                           /* RADMODES bit 15: continuous designate      */
 #define OCT41000      041000u                           /* RADMODES bits 15, 10: designate bits       */
@@ -489,31 +486,6 @@ agc_status_t agc_job_rr_designate_schedule(void)
 }
 
 /**********************************************************************
- * RRDESK2 (p.269): RRDESNB, then RADSTALL for the designate to finish.
- *
- * RETURNS: the RRDESNB or RADSTALL status
- **********************************************************************/
-agc_status_t agc_job_rr_designate_drive(void)
-{
-    bool         started = false;                             /* RRDESNB started a designate */
-    agc_status_t st      = agc_rr_designate_gimbal(&started); /* RRDESNB / stall status */
-
-    if (st != AGC_STATUS_OK || !started)
-    {
-        return (st); /* RRDESNB did ENDOFJOB   */
-    }
-
-    if (radar_stall(AGC_JOB_RR_DESIGNATE_RESULT, &st))
-    {
-        return (st);
-    }
-
-    agc_job_rr_designate_result();
-
-    return (AGC_STATUS_OK);
-}
-
-/**********************************************************************
  * AGC: none -- RRDESK2 after RADSTALL: bad end (no lock-on or out of limits) -> alarm
  * 503 DESIGNATE FAIL; ENDOFJOB either way.
  *
@@ -601,74 +573,6 @@ agc_status_t agc_extverb_rr_los_display(agc_job_ctx_t *ctx)
     }
 
     return (agc_dsky_blanket(BIT3));
-}
-
-/**********************************************************************
- * AGC: none -- ARCTRIG, then BPL / DAD DPPOSMAX: an angle 0..1 rev (error 2^-28 rev).
- *
- * ARGUMENTS:
- *   ip    agc_interp_t *  I   interpreter state (OVFIND)
- *   sin4  agc_dp_t        I   sin / 4 of the angle
- *   cos4  agc_dp_t        I   cos / 4 of the angle
- *
- * RETURNS: the angle, 0..1 revolution
- **********************************************************************/
-static agc_dp_t angle_0_360(agc_interp_t *ip, agc_dp_t sin4, agc_dp_t cos4)
-{
-    agc_dp_t a = agc_imu_arctrig(ip, sin4, cos4); /* ARCTRIG, rev 2^0 */
-
-    if (a < 0)
-    {
-        a = agc_dp_add(ip, a, AGC_DP_MAX);
-    }
-
-    return (a);
-}
-
-/**********************************************************************
- * RRLOSDSP (p.299-300): LOS in NB axes from CDUT, CDUS (RRNBMPAC); its X-Z
- * projection P.  RR-ELEV = angle (P.X, P.Z) about +Y; RR-AZ = angle of the
- * LOS out of the X-Z plane (LOS.Y, LOS.P).  Revolutions.  Again in 1 s.
- *
- * RETURNS: the RRNBMPAC or DELAYJOB status
- **********************************************************************/
-agc_status_t agc_job_rr_los_display(void)
-{
-    agc_interp_t ip; /* interpreter state */
-
-    agc_interp_init(&ip);
-    agc_vec_t los = agc_vec_zero(); /* RR LOS in NB axes, half-unit, 2^1 */
-    agc_lm_rrnb(&ip, agc_erase_cdut(), agc_erase_cdus(), &los);
-
-    agc_vec_t xz = los; /* LOS projected on the X-Z plane, half-unit, 2^1 */
-
-    xz.c[1]               = 0;                                                                          /* HI6ZEROS into 8D       */
-    xz                    = agc_vec_unit(&ip, xz, NULL, NULL);
-    const agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0);                                            /* UNITX, half-unit, 2^1 */
-    const agc_vec_t unity = agc_vec_make(0, AGC_DP_HALF, 0);                                            /* UNITY, half-unit, 2^1 */
-    const agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF);                                            /* UNITZ, half-unit, 2^1 */
-    agc_dp_t        elev  = angle_0_360(&ip, agc_vec_dot(&ip, unitx, xz), agc_vec_dot(&ip, xz, unitz)); /* RR-ELEV, rev 2^0 */
-    agc_dp_t        az    = angle_0_360(&ip, agc_vec_dot(&ip, los, unity), agc_vec_dot(&ip, los, xz));  /* RR-AZ, rev 2^0 */
-
-    agc_erase_set_rr_elev(elev);
-    agc_erase_set_rr_az(az);
-
-    return (agc_svc_delayjob(DELAY_1SEC, AGC_JOB_RR_LOS_DISPLAY_NEXT));
-}
-
-/**********************************************************************
- * AGC: none -- RRLOSDSP after DELAYJOB: again while EXTVBACT bit 5 is set, else ENDEXT.
- *
- * RETURNS: the RRLOSDSP or ENDEXT status
- **********************************************************************/
-agc_status_t agc_job_rr_los_display_next(void)
-{
-    if ((agc_erase_extvbact() & BIT5) != 0u)
-    {
-        return (agc_job_rr_los_display());
-    }
-
-    return (agc_dsky_endmark());
 }
 
 /**********************************************************************

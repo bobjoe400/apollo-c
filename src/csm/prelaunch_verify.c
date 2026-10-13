@@ -20,7 +20,7 @@
  *   XNB..ZNB      agc_mat_t  I/O  half-unit      agc_align_ram()->xnb
  *   STARAD        agc_vec_t  O    half-unit      agc_align_ram()->starad
  *   STAR          agc_vec_t  O    half-unit      agc_align_ram()->star
- *   OGC,IGC,MGC   agc_dp_t   O    rev 2^0        agc_align_ram()->ogc
+ *   OGC,IGC,MGC   agc_dp_t   O    rev 2^0        agc_imu_ogc()
  *   DESOPTS/T     uint16_t   O    CDU            agc_erase_set_desopt*()
  *   ERCOMP1       agc_dp_t   I/O  rev 2^0        gyro buffer ERCOMP
  *   TAZEL1, RUN,  struct     I/O  see header     prelaunch_ram()

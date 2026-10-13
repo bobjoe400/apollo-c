@@ -26,8 +26,9 @@
  *   agc_imu_pulse  IMUPULSE (PULSEIMU)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   None in the AGC.  Out-of-range arguments fail an assertion and give
- *   0 / BAD_ARG.
+ *   None in the AGC.  agc_rtb_pulseimu passes IMUPULSE's status (BUSY
+ *   when the gyros are in use); agc_rtb_quality1 gives NOT_FOUND when
+ *   MOONFLAG is clear (NBRANCH).
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   Both vehicles; called from interpretive code (job context).

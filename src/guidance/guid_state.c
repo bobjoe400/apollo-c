@@ -87,9 +87,9 @@ void agc_guid_init(agc_vehicle_t veh)
     const agc_guid_t    zero      = {0}; /* all cells +0 */
     const agc_cdutrig_t zero_trig = {0}; /* CDUSPOT, SINCDU, COSCDU +0 */
 
-    g_guid           = zero;
-    *agc_imu_trig()  = zero_trig; /* imu's since the layering lane; cleared with the block as before */
-    agc_erase_set_mass(0);        /* MASS, ABDELV: core's, likewise  */
+    g_guid          = zero;
+    *agc_imu_trig() = zero_trig; /* imu's since the layering lane; cleared with the block as before */
+    agc_erase_set_mass(0);       /* MASS, ABDELV: core's, likewise  */
     agc_erase_set_abdelv(0);
 
     /* Average-G defaults: AVGEXIT = SERVEXIT (normal exit), UNITW = earth's

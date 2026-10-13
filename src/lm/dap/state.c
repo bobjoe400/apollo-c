@@ -107,25 +107,25 @@ void agc_lm_dap_fresh_start(void)
 {
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
-    d->rcsflags                 = FS_RCSFLAGS;
+    d->rcsflags   = FS_RCSFLAGS;
     agc_erase_set_abdelv(0); /* ABDELV: DAP initialisation     */
-    d->ch5mask                  = 0;
-    d->ch6mask                  = 0;
-    d->pvalvest                 = 0; /* RCS failure monitor           */
-    agc_chan_write(005, 0);          /* turn off RCS jets       */
+    d->ch5mask    = 0;
+    d->ch6mask    = 0;
+    d->pvalvest   = 0;       /* RCS failure monitor           */
+    agc_chan_write(005, 0);  /* turn off RCS jets       */
     agc_chan_write(006, 0);
-    d->db                       = FS_MAXDB;
+    d->db         = FS_MAXDB;
     agc_flagword_set(DAPBOOLS_WORD, FS_BOOLSTRT);
-    d->stiksens                 = FS_STIKSTRT;
-    d->neg_ratedb               = FS_RATESTRT;
-    d->hiascent                 = FS_FULLAPS;
-    d->dktrap                   = FS_TRAP;
-    d->lmtrap                   = FS_TRAP;
-    d->dkkaosn                  = FS_KAOS;
-    d->lmkaosn                  = FS_KAOS;
-    d->lmomegan                 = 0; /* unity gain                     */
-    d->dkomegan                 = FS_DKOMEGAN;
-    d->dkdb                     = FS_DKDB;
+    d->stiksens   = FS_STIKSTRT;
+    d->neg_ratedb = FS_RATESTRT;
+    d->hiascent   = FS_FULLAPS;
+    d->dktrap     = FS_TRAP;
+    d->lmtrap     = FS_TRAP;
+    d->dkkaosn    = FS_KAOS;
+    d->lmkaosn    = FS_KAOS;
+    d->lmomegan   = 0;       /* unity gain                     */
+    d->dkomegan   = FS_DKOMEGAN;
+    d->dkdb       = FS_DKDB;
 
     agc_lm_dap_restart(); /* STARTSB1 */
 } /* agc_lm_dap_fresh_start */

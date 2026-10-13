@@ -330,7 +330,7 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta
     agc_vec_t dcdu = agc_vec_zero(); /* SMCDURES result, CDU scale */
 
     agc_imu_smcdures(ip, &trig, agc_vec_scale(ip, om, TA_TENTH), &dcdu); /* SMCDURES */
-    delcdu = rz_vshift(ip, dcdu, -17 - x1);                               /* VSL* 0-17D,1 */
+    delcdu = rz_vshift(ip, dcdu, -17 - x1);                              /* VSL* 0-17D,1 */
     agc_imu_smnb(&trig, &om);                                            /* *SMNB*   */
 
     agc_mat_t m; /* matrix rows, unit 2^1 */

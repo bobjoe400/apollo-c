@@ -150,15 +150,15 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
 
     /* CM/TRIO part 2 (pp. 884-885): UBX, UBY, UBZ in reference coordinates
      * from the PIP-time gimbal angles and REFSMMAT. */
-    agc_mat_t refsmmat = agc_erase_refsmmat();                        /* REFSMMAT, half-unit rows */
+    agc_mat_t refsmmat = agc_erase_refsmmat();                       /* REFSMMAT, half-unit rows */
     agc_dp_t  aig      = agc_imu_cdulogic(cdu_pattern(es->aig_pip)); /* AIG/PIP, revs B0 */
     agc_dp_t  amg      = agc_imu_cdulogic(cdu_pattern(es->amg_pip)); /* AMG/PIP, revs B0 */
     agc_dp_t  aog      = agc_imu_cdulogic(cdu_pattern(es->aog_pip)); /* AOG/PIP, revs B0 */
-    agc_dp_t  ci       = agc_dp_cos(aig);                             /* COS AIG /2, B1 */
-    agc_dp_t  si       = agc_dp_sin(aig);                             /* SIN AIG /2, B1 */
-    agc_dp_t  sm       = agc_dp_sin(amg);                             /* SIN AMG /2, B1 */
-    agc_dp_t  cm       = agc_dp_cos(amg);                             /* COS AMG /2, B1 */
-    agc_vec_t ubx;                                                    /* XB/2 platform, B1 */
+    agc_dp_t  ci       = agc_dp_cos(aig);                            /* COS AIG /2, B1 */
+    agc_dp_t  si       = agc_dp_sin(aig);                            /* SIN AIG /2, B1 */
+    agc_dp_t  sm       = agc_dp_sin(amg);                            /* SIN AMG /2, B1 */
+    agc_dp_t  cm       = agc_dp_cos(amg);                            /* COS AMG /2, B1 */
+    agc_vec_t ubx;                                                   /* XB/2 platform, B1 */
 
     /* CM/TRIO part 1 (p. 884): UBY in platform coordinates /4,
      * YB = (-CO SM CI + SO SI, CO CM, CO SM SI + SO CI). */

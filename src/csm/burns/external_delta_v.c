@@ -454,3 +454,54 @@ agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t t
 
     return (agc_integ_intwake_release()); /* DELRDONE: STCALL RSP-RREC INTWAKE0 */
 } /* agc_guid_delrspl */
+
+/**********************************************************************
+ * CANDEL / SPLRET (Comanche055 R30.agc p.520): INTSTALL, DELRSPL with TFF
+ * (it does the INTWAKE0); in P00 -> SPLRET1 (tick set-up), otherwise
+ * V82GON3. Should DELRSPL fail before its INTWAKE0, this job releases
+ * the area. The CM-only part of V82 (R30, src/programs/displays), which
+ * continues here by job id in P00 and P11; filed with DELRSPL, whose
+ * entry routines are the CM's (Luminary's DELRSPL EQUALS SPLRET).
+ *
+ * FUNCTION NAME: agc_job_orbit_display_splash
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
+ *          successor, else the status of the executive, display or
+ *          navigation call that failed
+ **********************************************************************/
+agc_status_t agc_job_orbit_display_splash(void)
+{
+    agc_interp_t ip;                        /* interpreter state */
+    agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables: TFF */
+    agc_status_t st;                        /* INTSTALL */
+
+    agc_interp_init(&ip);
+
+    st = agc_integ_install(0, AGC_JOB_ORBIT_DISPLAY_SPLASH);
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st); /* asleep        */
+    }
+
+    st = agc_guid_delrspl(&ip, agc_orbit_display_tff_debris(), rz->tff);
+
+    if (st != AGC_STATUS_OK)
+    {
+        st = agc_integ_intwake();
+
+        if (st != AGC_STATUS_OK)
+        {
+            return (st);
+        }
+    }
+
+    if (agc_erase_modreg() == 0)
+    {
+        return (agc_orbit_display_start_ticking(&ip, rz)); /* SPLRET1       */
+    }
+
+    return (agc_job_orbit_display_repeat());
+}

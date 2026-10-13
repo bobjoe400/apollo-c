@@ -192,7 +192,7 @@ static agc_status_t setup_descent(int32_t kg)
     agc_flag_clear(AGC_FLAG_APSFLAG);
     agc_flag_set(AGC_FLAG_DRIFTDFL);
     agc_erase_set_csmmass(0);
-    agc_erase_set_mass((agc_dp_t)(KG(kg) * 16384));
+    agc_erase_set_mass((agc_dp_t) (KG(kg) * 16384));
     agc_erase_set_abdelv(0);
 
     return (agc_lm_dap_jet_accel_update());
@@ -440,8 +440,8 @@ static void test_zero_erasable(void)
     agc_erase_set_abdelv(0);
     CHECK(agc_lm_dap_jet_accel_update() == AGC_STATUS_OK);
     CHECK(agc_flag_test(AGC_FLAG_ACCOKFLG));
-    CHECK(agc_erase_lemmass() == 438);                                         /* DEC 1750 B-16    */
-    agc_dp_words_t q            = lm_dap_dvqr((agc_dp_words_t){-199, 0}, -85); /* the rope's BIGIQ improper divide */
+    CHECK(agc_erase_lemmass() == 438);                              /* DEC 1750 B-16    */
+    agc_dp_words_t q = lm_dap_dvqr((agc_dp_words_t){-199, 0}, -85); /* the rope's BIGIQ improper divide */
 
     CHECK(q.hi == 16383 && q.lo == -85);
 }

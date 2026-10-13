@@ -6,7 +6,7 @@
  *   (times of state and burns, state vectors, REFSMMAT, masses, CDU and
  *   PIPA registers, mode words, DSPTAB, FAILREG, THETAD). One static
  *   object per AGC erasable (rule 6: no extern globals); each accessor
- *   is a plain get/set with a range check.
+ *   is a plain get/set (no checks: see below).
  *
  * AGC SOURCE:
  *   Comanche055 ERASABLE_ASSIGNMENTS.agc pp. 39-124
@@ -796,6 +796,141 @@ agc_sp_t agc_erase_abdelv(void)
 void agc_erase_set_abdelv(agc_sp_t v)
 {
     g_abdelv = v;
+}
+
+/**********************************************************************
+ * AGC: none -- the signed value of a raw ones' complement word
+ *
+ * FUNCTION NAME: word_value
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------
+ *   w         uint16_t  I    raw word (15 bits used)
+ *
+ * RETURNS: int -- the signed value (-0 gives 0)
+ **********************************************************************/
+static int word_value(uint16_t w)
+{
+    uint16_t v = (uint16_t) (w & AGC_WORD15_MAX);                               /* 15 bits */
+    int      r = ((v & 040000u) != 0u) ? -(int) (AGC_WORD15_MAX - v) : (int) v; /* signed */
+
+    return (r);
+}
+
+/* MRKBUF1, MRKBUF2 (CM, EBANK= MRKBUF1): the two seven-word mark buffers
+ * (time DP, CDUY, CDUS, CDUZ, CDUT, CDUX), raw words; word 0 = -1 (77776)
+ * marks a buffer empty. SXTMARK fills MRKBUF1 (and moves it to MRKBUF2
+ * for R21); R22, P76 and the verbs read and clear them.                */
+#define MRKBUF_WORDS 7                     /* words per buffer */
+static uint16_t g_mrkbuf[2][MRKBUF_WORDS]; /* MRKBUF1, MRKBUF2 */
+
+/**********************************************************************
+ * One raw word of MRKBUF1 / MRKBUF2 (layout above).
+ * AGC: MRKBUF1, MRKBUF2 (ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_mrkbuf
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  ------------------------------------------
+ *   buf       int   I    buffer, 1 or 2
+ *   index     int   I    word, 0 .. 6
+ *
+ * RETURNS: uint16_t -- the raw 15-bit word (0 for a bad index)
+ **********************************************************************/
+uint16_t agc_erase_mrkbuf(int buf, int index)
+{
+    return (g_mrkbuf[buf - 1][index]);
+}
+
+/**********************************************************************
+ * Store one word of MRKBUF1 / MRKBUF2 (raw, 15 bits kept).
+ * AGC: MRKBUF1, MRKBUF2 (ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_set_mrkbuf
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------
+ *   buf       int       I    buffer, 1 or 2
+ *   index     int       I    word, 0 .. 6
+ *   v         uint16_t  I    the raw word
+ **********************************************************************/
+void agc_erase_set_mrkbuf(int buf, int index, uint16_t v)
+{
+    g_mrkbuf[buf - 1][index] = (uint16_t) (v & AGC_WORD15_MAX);
+}
+
+/**********************************************************************
+ * MRKBUF2 +index as an SP number (P76 ENDP76, R22: -1 = invalid).
+ * AGC: MRKBUF2 (ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_mrkbuf2
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  ------------------------------------------
+ *   index     int   I    word index
+ *
+ * RETURNS: agc_sp_t -- MRKBUF2 +index as a signed SP number
+ **********************************************************************/
+agc_sp_t agc_erase_mrkbuf2(int index)
+{
+    return ((agc_sp_t) word_value(agc_erase_mrkbuf(2, index)));
+}
+
+/**********************************************************************
+ * Store MRKBUF2 +index from a signed SP number (ones' complement word).
+ * AGC: MRKBUF2 (ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_set_mrkbuf2
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------
+ *   index     int       I    word index
+ *   v         agc_sp_t  I    the SP number
+ **********************************************************************/
+void agc_erase_set_mrkbuf2(int index, agc_sp_t v)
+{
+    uint16_t w = (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v); /* 1s compl. */
+
+    agc_erase_set_mrkbuf(2, index, w);
+}
+
+/* LANDMARK (CM P22 code ABCDE, V52), a ones' complement SP word.      */
+static uint16_t g_landmark; /* LANDMARK code */
+
+/**********************************************************************
+ * LANDMARK (CM P22 code ABCDE, V52) as a signed SP number.
+ * AGC: LANDMARK (ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_landmark
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_sp_t -- the code (0 when the word is out of range)
+ **********************************************************************/
+agc_sp_t agc_erase_landmark(void)
+{
+    return ((agc_sp_t) word_value(g_landmark));
+}
+
+/**********************************************************************
+ * Store LANDMARK (CM) from a signed SP number.
+ * AGC: LANDMARK (ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_set_landmark
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  --------------------------------------
+ *   v         agc_sp_t  I    the code
+ **********************************************************************/
+void agc_erase_set_landmark(agc_sp_t v)
+{
+    g_landmark = (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v); /* 1s compl. */
 }
 
 /**********************************************************************

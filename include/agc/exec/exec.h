@@ -90,9 +90,10 @@ agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc);
  * caller BAILOUTs 1207). Release stores the VAC address back (TS VACnUSE). */
 agc_status_t agc_exec_vac_claim(int *vac_index);
 agc_status_t agc_exec_vac_release(int vac_index);
-void         agc_exec_prio_change(agc_prio_t new_prio); /* PRIOCHNG*/
-agc_status_t agc_exec_run_one(void);                    /* run highest-priority ready job  */
-bool         agc_exec_idle(void);                       /* DUMMYJOB would run              */
+void         agc_exec_prio_change(agc_prio_t new_prio);                /* PRIOCHNG*/
+agc_status_t agc_exec_jump(const agc_job_ctx_t *ctx, agc_job_id_t id); /* TC/POSTJUMP to a job body */
+agc_status_t agc_exec_run_one(void);                                   /* run highest-priority ready job  */
+bool         agc_exec_idle(void);                                      /* DUMMYJOB would run              */
 
 /* Waitlist (WAITLIST.agc pp. 1221-1235). Delay in centiseconds.           */
 void         agc_waitlist_init(void);

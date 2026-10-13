@@ -25,6 +25,7 @@
  *   ---------------------  ------------------------------------------
  *   agc_dnlist_*           the list tables (downlink_lists_{csm,lm}.c)
  *   agc_erase_read_ecadr   DNDUMP2's register pair
+ *   agc_dispatch_noun      DELVSLV (= DELVLVC), noun data above io
  *   agc_chan_*             channels 13, 34, 35
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -57,9 +58,9 @@
  *   is read through the owner's accessor where one exists (see item_word
  *   below); items whose owner exports no accessor yet are sent as zero
  *   (ERASZERO), which the AGC itself sends for SPARE entries.  The
- *   erasable dump reads its words by address (agc_erase_read_ecadr), so
- *   it sends the flagwords and whatever the address image holds; typed
- *   erasables are not mapped there yet (src/core/ecadr.c DEVIATION).
+ *   erasable dump reads its words by address (agc_erase_read_ecadr,
+ *   src/erasable_map/address_map.c), so it sends the flagwords, the
+ *   named erasables the address map holds and the raw image elsewhere.
  *
  *   DUMPCNT is set by SLAP1 (LM fresh start, one dump).  The V21N01 load
  *   of DUMPCNT the AGC allows goes to the address image and does not
@@ -73,9 +74,9 @@
 #include "agc/core/state.h"
 #include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
+#include "agc/io/nouns.h"
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
-#include "agc/programs/rendezvous.h"
 
 #define WORD15         077777u /* one AGC word */
 #define BIT7           000100u /* CHAN13 bit 7: downlink word order code   */
@@ -224,6 +225,35 @@ static uint16_t pick(int k, int n, const uint16_t *list)
 }
 
 /**********************************************************************
+ * AGC: none -- word k of DELVSLV (= DELVLVC, X high first). The vector
+ * is rendezvous noun data (nouns 81, 82, 86) held by programs/navigation
+ * above this layer, so it is read by noun data id through
+ * agc_dispatch_noun (exec/nouns), as pinball reads it.
+ *
+ * ARGUMENTS:
+ *   k  int         I   SP-word offset in the item
+ *   w  uint16_t *  O   the word (0 past the vector)
+ *
+ * RETURNS: true when the owner gave the component (always, for these
+ *          ids); false sends the word as ERASZERO (item_word)
+ **********************************************************************/
+static bool delvslv_word(int k, uint16_t *w)
+{
+    static const uint16_t ids[AGC_VEC_N] = {AGC_DATA_DELVLVC, AGC_DATA_DELVLVC_P2, AGC_DATA_DELVLVC_P4}; /* X, Y, Z */
+    agc_dp_t              c              = 0;                                                            /* the component, m/cs 2^7 */
+    agc_status_t          st             = AGC_STATUS_OK;                                                /* noun data read */
+
+    if (k < 2 * AGC_VEC_N)
+    {
+        st = agc_dispatch_noun(ids[k / 2], false, &c);
+    }
+
+    *w = dp_word(c, k % 2);
+
+    return (st == AGC_STATUS_OK);
+}
+
+/**********************************************************************
  * AGC: none -- Items that are plain DP times or vectors from agc_state.h.
  *
  * ARGUMENTS:
@@ -254,8 +284,7 @@ static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
             v   = agc_erase_vgtig();
             break;
         case AGC_DN_DELVSLV:
-            v   = agc_rendz_erasable()->delvlvc; /* DELVSLV = DELVLVC */
-            break;
+            return (delvslv_word(k, w)); /* DELVSLV = DELVLVC */
         case AGC_DN_RLS:
             v   = agc_erase_rls();
             break;

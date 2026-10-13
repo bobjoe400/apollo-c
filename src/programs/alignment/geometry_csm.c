@@ -281,7 +281,7 @@ void agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t
 {
     agc_vec_t s = star_sm; /* STAR in NB, then NB1, half-unit (2^1) */
 
-    agc_imu_smnb(t, &s);         /* *SMNB*  */
+    agc_imu_smnb(t, &s);          /* *SMNB*  */
     const agc_mat_t m = nb2nb1(); /* the mark */
 
     s                     = agc_vec_shl(ip, agc_mat_vec(ip, &m, s), 1); /* MXV VSL1 */

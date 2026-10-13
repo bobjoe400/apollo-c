@@ -50,6 +50,7 @@
 
 #include "agc/core/assertion.h"
 #include "agc/guidance/guidance.h"
+#include "agc/io/service.h"
 #include "internal.h"
 
 #define RDGIMS_DELAY 17 /* 170MS EQUALS ND1 (OCT 21 = 17 cs)          */
@@ -533,9 +534,9 @@ static agc_dp_t lr_deltav(agc_interp_t *ip, agc_guid_t *g, agc_vec_t *vbsm, agc_
     int            s        = g->lm.vselect; /* VSELECT, beam index */
     const uint16_t lrcdu[3] = {g->lm.lrcdu[1], g->lm.lrcdu[2], g->lm.lrcdu[0]};
 
-    agc_imu_quictrig(agc_imu_trig(), lrcdu);                                                                                                                             /* CDUSPOT = LRY LRZ LRX  */
+    agc_imu_quictrig(agc_imu_trig(), lrcdu);                                                                                                                        /* CDUSPOT = LRY LRZ LRX  */
     *vbsm           = g->lm.vbeamnb[s];
-    agc_imu_nbsm(agc_imu_trig(), vbsm);                                                                                                                                  /* *NBSM*                 */
+    agc_imu_nbsm(agc_imu_trig(), vbsm);                                                                                                                             /* *NBSM*                 */
     agc_dp_t  vm    = agc_dp_mul_trunc(agc_dp_shl(ip, g->lm.vmeas, 12), VSCAL[s]);                                                                                  /* VM measured beam velocity, m/cs 2^6 */
     agc_vec_t delvu = agc_vec_scale(ip, agc_vec_make(agc_dp_pack(g->lm.piptem[0], 0), agc_dp_pack(g->lm.piptem[1], 0), agc_dp_pack(g->lm.piptem[2], 0)), KPIP1_LM); /* DELVU since the PIPA reading, m/cs 2^7 */
     agc_dp_t  frac  = agc_dp_div(ip, agc_dp_sub(ip, g->lm.lrvtime, agc_erase_piptime()), TWOSEC_28);                                                                /* (LRVTIME - PIPTIME) / 2 s, 2^0 */

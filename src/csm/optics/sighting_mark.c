@@ -490,7 +490,7 @@ void agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *l
     agc_cdutrig_t  t;                                    /* CDUTRIG sines and cosines */
 
     agc_csm_sxtnb(ip, m->cdut, m->cdus, &v); /* SXTNB */
-    agc_imu_trg_nbsm(&t, yzx, &v);          /* NBSM  */
+    agc_imu_trg_nbsm(&t, yzx, &v);           /* NBSM  */
     *los_sm = v;
 }
 

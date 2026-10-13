@@ -739,6 +739,34 @@ void agc_exec_prio_change(agc_prio_t new_prio)
 }
 
 /**********************************************************************
+ * AGC: none (TC / TCF / POSTJUMP, INTERBANK_COMMUNICATION.agc) -- a
+ * jump to a label of the rope being flown: the running job goes on at the job body named id, in the same core set (priority,
+ * VAC area and A word unchanged). The body is reached through the
+ * registry (agc_dispatch_job), so shared code can continue in a body a
+ * vehicle folder owns (one registry row names the CSM and the LM label)
+ * without calling up the layering.
+ *
+ * FUNCTION NAME: agc_exec_jump
+ *
+ * ARGUMENTS:
+ *   Argument  Type                   I/O  Description (scale)
+ *   --------  ---------------------  ---  ---------------------------
+ *   ctx       const agc_job_ctx_t *  I    the running job
+ *   id        agc_job_id_t           I    the job body it continues in
+ *
+ * RETURNS: agc_status_t -- the status of that body; NOT_FOUND when the
+ *          rope being flown has no body for id
+ **********************************************************************/
+agc_status_t agc_exec_jump(const agc_job_ctx_t *ctx, agc_job_id_t id)
+{
+    agc_job_ctx_t next = *ctx; /* the same job, at its new LOC */
+
+    next.id = id;
+
+    return (agc_dispatch_job(&next));
+}
+
+/**********************************************************************
  * CHANG1 / CHANG2 (C p.1208 / L p.1103): the running job offers the
  * processor; it continues as `resume_as` the next time it runs.
  *

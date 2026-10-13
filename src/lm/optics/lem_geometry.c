@@ -39,9 +39,16 @@
 #include <stddef.h>
 
 #include "agc/core/interp_words.h"
+#include "agc/core/state.h"
+#include "agc/exec/exec.h"
+#include "agc/imu/imu.h"
+#include "agc/io/dsky.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 
-#define LODPHALF AGC_DP_HALF /* LODPHALF .5 rev = 180 degrees            */
+#define LODPHALF       AGC_DP_HALF /* LODPHALF .5 rev = 180 degrees            */
+#define EXTVBACT_BIT5  000020u     /* EXTVBACT bit 5: extended verb active (V85 shown) */
+#define RRLOSDSP_DELAY 100u        /* 1SEC: RRLOSDSP repeats once a second, cs */
 
 /**********************************************************************
  * RRANGLES (LEM_GEOMETRY.agc pp. 322-323) -- RR trunnion and shaft for the
@@ -132,4 +139,84 @@ void agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, ag
     const agc_dp_t x = align_dmp_shl(ip, agc_dp_sin(s), cos_t, 1); /* SIN S COS T SL1, scale 2^1 */
 
     *los_nb = agc_vec_make(x, y, z);
+}
+
+/**********************************************************************
+ * AGC: none -- ARCTRIG, then BPL / DAD DPPOSMAX: an angle 0..1 rev (error 2^-28 rev).
+ *
+ * FUNCTION NAME: angle_0_360
+ *
+ * ARGUMENTS:
+ *   ip    agc_interp_t *  I   interpreter state (OVFIND)
+ *   sin4  agc_dp_t        I   sin / 4 of the angle
+ *   cos4  agc_dp_t        I   cos / 4 of the angle
+ *
+ * RETURNS: the angle, 0..1 revolution
+ **********************************************************************/
+static agc_dp_t angle_0_360(agc_interp_t *ip, agc_dp_t sin4, agc_dp_t cos4)
+{
+    agc_dp_t a = agc_imu_arctrig(ip, sin4, cos4); /* ARCTRIG, rev 2^0 */
+
+    if (a < 0)
+    {
+        a = agc_dp_add(ip, a, AGC_DP_MAX);
+    }
+
+    return (a);
+}
+
+/**********************************************************************
+ * RRLOSDSP (EXTENDED_VERBS.agc L pp.299-300): the V85 job, FINDVAC'd by
+ * the verb (src/io/verbs/extended_verbs_lm_radar.c). LOS in NB axes from
+ * CDUT, CDUS (RRNBMPAC); its X-Z projection P.  RR-ELEV = angle (P.X,
+ * P.Z) about +Y; RR-AZ = angle of the LOS out of the X-Z plane (LOS.Y,
+ * LOS.P).  Revolutions.  Again in 1 s.
+ *
+ * FUNCTION NAME: agc_job_rr_los_display
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the RRNBMPAC or DELAYJOB status
+ **********************************************************************/
+agc_status_t agc_job_rr_los_display(void)
+{
+    agc_interp_t ip; /* interpreter state */
+
+    agc_interp_init(&ip);
+    agc_vec_t los = agc_vec_zero(); /* RR LOS in NB axes, half-unit, 2^1 */
+    agc_lm_rrnb(&ip, agc_erase_cdut(), agc_erase_cdus(), &los);
+
+    agc_vec_t xz = los; /* LOS projected on the X-Z plane, half-unit, 2^1 */
+
+    xz.c[1]               = 0;                                                                          /* HI6ZEROS into 8D       */
+    xz                    = agc_vec_unit(&ip, xz, NULL, NULL);
+    const agc_vec_t unitx = agc_vec_make(AGC_DP_HALF, 0, 0);                                            /* UNITX, half-unit, 2^1 */
+    const agc_vec_t unity = agc_vec_make(0, AGC_DP_HALF, 0);                                            /* UNITY, half-unit, 2^1 */
+    const agc_vec_t unitz = agc_vec_make(0, 0, AGC_DP_HALF);                                            /* UNITZ, half-unit, 2^1 */
+    agc_dp_t        elev  = angle_0_360(&ip, agc_vec_dot(&ip, unitx, xz), agc_vec_dot(&ip, xz, unitz)); /* RR-ELEV, rev 2^0 */
+    agc_dp_t        az    = angle_0_360(&ip, agc_vec_dot(&ip, los, unity), agc_vec_dot(&ip, los, xz));  /* RR-AZ, rev 2^0 */
+
+    agc_erase_set_rr_elev(elev);
+    agc_erase_set_rr_az(az);
+
+    return (agc_svc_delayjob(RRLOSDSP_DELAY, AGC_JOB_RR_LOS_DISPLAY_NEXT));
+}
+
+/**********************************************************************
+ * AGC: none -- RRLOSDSP after DELAYJOB: again while EXTVBACT bit 5 is set, else ENDEXT.
+ *
+ * FUNCTION NAME: agc_job_rr_los_display_next
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the RRLOSDSP or ENDEXT status
+ **********************************************************************/
+agc_status_t agc_job_rr_los_display_next(void)
+{
+    if ((agc_erase_extvbact() & EXTVBACT_BIT5) != 0u)
+    {
+        return (agc_job_rr_los_display());
+    }
+
+    return (agc_dsky_endmark());
 }

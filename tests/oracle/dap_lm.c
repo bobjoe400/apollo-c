@@ -268,15 +268,15 @@ static void accs(const char *t, long int tol)
 
     fresh();
     agc_erase_set_mass(oracle_in_dp(t, "MASS", 0));
-    agc_erase_set_abdelv((agc_sp_t)oracle_in(t, "ABDELV", 0));
+    agc_erase_set_abdelv((agc_sp_t) oracle_in(t, "ABDELV", 0));
     agc_erase_set_csmmass((agc_sp_t) oracle_in(t, "CSMMASS", 0));
-    d->hiascent                 = (agc_sp_t) oracle_in(t, "HIASCENT", 0);
-    d->db                       = (agc_sp_t) oracle_in(t, "DB", 0);
-    d->aosq                     = (agc_sp_t) oracle_in(t, "AOSQ", 0);
-    d->aosq_lo                  = (agc_sp_t) oracle_in(t, "AOSQ", 1);
-    d->aosr                     = (agc_sp_t) oracle_in(t, "AOSQ", 2);
-    d->aosr_lo                  = (agc_sp_t) oracle_in(t, "AOSQ", 3);
-    d->ch5mask                  = oracle_in_raw(t, "CH5MASK", 0);
+    d->hiascent = (agc_sp_t) oracle_in(t, "HIASCENT", 0);
+    d->db       = (agc_sp_t) oracle_in(t, "DB", 0);
+    d->aosq     = (agc_sp_t) oracle_in(t, "AOSQ", 0);
+    d->aosq_lo  = (agc_sp_t) oracle_in(t, "AOSQ", 1);
+    d->aosr     = (agc_sp_t) oracle_in(t, "AOSQ", 2);
+    d->aosr_lo  = (agc_sp_t) oracle_in(t, "AOSQ", 3);
+    d->ch5mask  = oracle_in_raw(t, "CH5MASK", 0);
     agc_flagword_set(DAPBOOLS_WORD, oracle_in_raw(t, "DAPBOOLS", 0));
     agc_flagword_set(FLGWRD10, oracle_in_raw(t, "FLGWRD10", 0));
     (void) agc_lm_dap_jet_accel_update();
@@ -302,8 +302,7 @@ static void accs(const char *t, long int tol)
     cmp_sp(t, "RACCDOT", d->raccdot, "RACCDOT", tol);
     cmp_sp(t, "-2JETLIM", d->neg_2jetlim, "-2JETLIM", 0);
     cmp_sp(t, "ALLOWGTS", d->allowgts, "ALLOWGTS", 0);
-    (void) oracle_cmp(t, "MASS", agc_erase_mass(), oracle_out_dp(t, "MASS"),
-                      0);
+    (void) oracle_cmp(t, "MASS", agc_erase_mass(), oracle_out_dp(t, "MASS"), 0);
 
     /* AOSQ = AOSR = 0 leaves AOSV = -0 in the AGC; 1/ACCONT models that
      * sign (SIGNAOS = 1), so the V-axis pairs are compared as stored.    */

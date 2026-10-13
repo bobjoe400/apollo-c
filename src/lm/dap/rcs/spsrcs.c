@@ -23,7 +23,8 @@
  *   lm_dap_wrap                 overflow-corrected store, TS/ADS/XCH (arith.c)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails.
+ *   No alarms; nothing here can fail (the functions are void or return
+ *   a value).
  *
  * NOTES:
  *   Per axis (AXISCTR -1 = P, 0 = U, 1 = V), from E (at pi) and EDOT (at

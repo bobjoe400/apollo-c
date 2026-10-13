@@ -371,11 +371,10 @@ static void massmon(agc_guid_lm_t *lm)
 {
     if (!agc_flag_test(AGC_FLAG_SURFFLAG)) /* YES: BYPASS MASS MESS  */
     {
-        agc_sp_t  vex = agc_flag_test(AGC_FLAG_APSFLAG) ? APSVEX : DPSVEX;       /* VEX of the engine, m/cs 2^5 */
-        agc_ovf_t ovf = 0;                                                       /* overflow of the DAS (not tested, as in the AGC) */
-        agc_dp_t  q   = agc_dp_div_raw(lm->abdvconv, agc_dp_from_sp(vex), &ovf); /* DV Q; ABDVCONV/VEX, scale 2^0 */
-        agc_dp_t  dm  = agc_sp_mul(agc_dp_high(q),
-                                   agc_dp_high(agc_erase_mass()));       /* MP MASS; mass decrement, kg 2^16 */
+        agc_sp_t  vex = agc_flag_test(AGC_FLAG_APSFLAG) ? APSVEX : DPSVEX;         /* VEX of the engine, m/cs 2^5 */
+        agc_ovf_t ovf = 0;                                                         /* overflow of the DAS (not tested, as in the AGC) */
+        agc_dp_t  q   = agc_dp_div_raw(lm->abdvconv, agc_dp_from_sp(vex), &ovf);   /* DV Q; ABDVCONV/VEX, scale 2^0 */
+        agc_dp_t  dm  = agc_sp_mul(agc_dp_high(q), agc_dp_high(agc_erase_mass())); /* MP MASS; mass decrement, kg 2^16 */
 
         lm->mass1 = agc_dp_add_raw(lm->mass1, dm, &ovf); /* DAS MASS1 */
     }
@@ -581,9 +580,9 @@ static agc_status_t getabval(void)
         agc_interp_init(&ip);
         agc_dp_t abv = agc_vec_abval(&ip, agc_erase_delv()); /* VLOAD ABVAL DELV; |DELV|, scale 2^14 pulses */
 
-        agc_erase_set_abdelv(agc_dp_high(abv));                                           /* ABDELV cm/s 2^14 */
-        g->lm.abdvconv = agc_sp_mul(agc_erase_abdelv(), KPIP_LM);                          /* MP KPIP: 2^5     */
-        g->lm.mass1    = agc_erase_mass();                                                 /* INITIALIZE MASS1 */
+        agc_erase_set_abdelv(agc_dp_high(abv));                                      /* ABDELV cm/s 2^14 */
+        g->lm.abdvconv = agc_sp_mul(agc_erase_abdelv(), KPIP_LM);                    /* MP KPIP: 2^5     */
+        g->lm.mass1    = agc_erase_mass();                                           /* INITIALIZE MASS1 */
         massmon(&g->lm);
         agc_dp_t  dv   = agc_tp_to_dp(agc_dp_mul_tp(abv, agc_dp_from_sp(KPIP1_HI))); /* SHORTMP; DVTOTAL increment, m/cs 2^7 */
         agc_ovf_t ovf  = 0;                                                          /* overflow of the DAS (not tested, as in the AGC) */

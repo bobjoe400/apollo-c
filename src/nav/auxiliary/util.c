@@ -19,7 +19,7 @@
  *   agc_vec_shl/shr       VSL / VSR (interp.h)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   none (a failed assertion returns 0 / the zero vector)
+ *   none; the helpers take any value and cannot fail
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   Shift counts within +-NAVAUX_MAX_SHIFT.

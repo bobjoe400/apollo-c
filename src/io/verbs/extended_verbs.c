@@ -701,7 +701,7 @@ static agc_status_t fan_shared(agc_job_ctx_t *ctx, int verb)
 
             agc_exec_prio_change(PRIO7);
 
-            return (agc_job_orbit_parameter_display(ctx)); /* POSTJUMP V82CALL */
+            return (agc_exec_jump(ctx, AGC_JOB_ORBIT_PARAMETER_DISPLAY)); /* POSTJUMP V82CALL */
         }
         case 89:
             return (xact_and_schedule(true, PRIO10, AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE));

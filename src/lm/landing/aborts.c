@@ -601,7 +601,7 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
 
     /* P70INIT (p. 833): DPS engine data and targets for P70. */
     {
-        agc_lm_asc_t *a    = agc_lm_asc();              /* ascent erasables */
+        agc_lm_asc_t *a    = agc_lm_asc();     /* ascent erasables */
         agc_dp_t      mass = agc_erase_mass(); /* MASS, 2^16 kg */
 
         if (!AGC_ASSERT(mass > 0))

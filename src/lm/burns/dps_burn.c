@@ -163,7 +163,7 @@ static agc_status_t burn_program_start(agc_job_ctx_t *ctx, agc_job_id_t ret_job,
     agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
     g->burn.weight_g = agc_erase_mass(); /* WEIGHT/G = MASS        */
-    agc_interp_t ip;               /* interpreter state */
+    agc_interp_t ip;                     /* interpreter state */
 
     agc_interp_init(&ip);
     agc_guid_nav_set_resume(ctx->id);

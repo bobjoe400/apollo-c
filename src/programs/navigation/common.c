@@ -148,87 +148,6 @@ void agc_erase_set_vhfcnt(agc_sp_t v)
     rendz_erasable.vhfcnt = v;
 }
 
-/* MRKBUF1, MRKBUF2 (CM, EBANK= MRKBUF1): the two seven-word mark buffers
- * (time DP, CDUY, CDUS, CDUZ, CDUT, CDUX), raw words; word 0 = -1 (77776)
- * marks a buffer empty. SXTMARK fills MRKBUF1 (and moves it to MRKBUF2
- * for R21); R22, P76 and the verbs read and clear them.                */
-#define RZ_MRKBUF_WORDS 7                   /* words per buffer */
-static uint16_t mrkbuf[2][RZ_MRKBUF_WORDS]; /* MRKBUF1, MRKBUF2 */
-
-/**********************************************************************
- * One raw word of MRKBUF1 / MRKBUF2 (layout above).
- * AGC: MRKBUF1, MRKBUF2 (ERASABLE_ASSIGNMENTS.agc)
- *
- * FUNCTION NAME: agc_erase_mrkbuf
- *
- * ARGUMENTS:
- *   Argument  Type  I/O  Description (scale)
- *   --------  ----  ---  ------------------------------------------
- *   buf       int   I    buffer, 1 or 2
- *   index     int   I    word, 0 .. 6
- *
- * RETURNS: uint16_t -- the raw 15-bit word (0 for a bad index)
- **********************************************************************/
-uint16_t agc_erase_mrkbuf(int buf, int index)
-{
-    return (mrkbuf[buf - 1][index]);
-}
-
-/**********************************************************************
- * Store one word of MRKBUF1 / MRKBUF2 (raw, 15 bits kept).
- * AGC: MRKBUF1, MRKBUF2 (ERASABLE_ASSIGNMENTS.agc)
- *
- * FUNCTION NAME: agc_erase_set_mrkbuf
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------------------------
- *   buf       int       I    buffer, 1 or 2
- *   index     int       I    word, 0 .. 6
- *   v         uint16_t  I    the raw word
- **********************************************************************/
-void agc_erase_set_mrkbuf(int buf, int index, uint16_t v)
-{
-    mrkbuf[buf - 1][index] = (uint16_t) (v & 077777u);
-}
-
-/**********************************************************************
- * MRKBUF2 +index as an SP number (P76 ENDP76, R22: -1 = invalid).
- * AGC: MRKBUF2 (ERASABLE_ASSIGNMENTS.agc)
- *
- * FUNCTION NAME: agc_erase_mrkbuf2
- *
- * ARGUMENTS:
- *   Argument  Type  I/O  Description (scale)
- *   --------  ----  ---  ------------------------------------------
- *   index     int   I    word index
- *
- * RETURNS: agc_sp_t -- MRKBUF2 +index as a signed SP number
- **********************************************************************/
-agc_sp_t agc_erase_mrkbuf2(int index)
-{
-    return ((agc_sp_t) rz_word_value(agc_erase_mrkbuf(2, index)));
-}
-
-/**********************************************************************
- * Store MRKBUF2 +index from a signed SP number (ones' complement word).
- * AGC: MRKBUF2 (ERASABLE_ASSIGNMENTS.agc)
- *
- * FUNCTION NAME: agc_erase_set_mrkbuf2
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------------------------
- *   index     int       I    word index
- *   v         agc_sp_t  I    the SP number
- **********************************************************************/
-void agc_erase_set_mrkbuf2(int index, agc_sp_t v)
-{
-    uint16_t w = (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v); /* 1s compl. */
-
-    agc_erase_set_mrkbuf(2, index, w);
-}
-
 /* TANG, TANG +1 (LM, noun 72): RR gimbal command or, for RRDESNB, the
  * desired trunnion and shaft CDU words, as ones' complement SP numbers.
  * RSTACK (LM, R04/R77 nouns 66, 67, 78): four DP radar samples, m or
@@ -311,44 +230,12 @@ void agc_erase_set_rstack(int index, agc_dp_t v)
     rstack[index] = v;
 }
 
-/* LANDMARK (CM P22 code ABCDE, V52), HORIZON (CM noun 70/71 R3) and
- * the CM R63 results CPHIX (noun 96, X axis) and PRAXIS (noun 95,
- * preferred axis), CDU words. Owned here, with the noun tables, so this
- * layer does not reach up into src/csm/navigation.                     */
-static uint16_t landmark;         /* LANDMARK code */
+/* HORIZON (CM noun 70/71 R3) and the CM R63 results CPHIX (noun 96, X
+ * axis) and PRAXIS (noun 95, preferred axis), CDU words. Owned here, with
+ * the noun tables, so this layer does not reach up into
+ * src/csm/navigation. (LANDMARK is a core erasable: agc/core/state.h.)  */
 static uint16_t horizon;          /* HORIZON word */
 static uint16_t trk_angles[2][3]; /* [0] CPHIX, [1] PRAXIS               */
-
-/**********************************************************************
- * LANDMARK (CM P22 code ABCDE, V52) as a signed SP number.
- * AGC: LANDMARK (ERASABLE_ASSIGNMENTS.agc)
- *
- * FUNCTION NAME: agc_erase_landmark
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_sp_t -- the code (0 when the word is out of range)
- **********************************************************************/
-agc_sp_t agc_erase_landmark(void)
-{
-    return ((agc_sp_t) rz_word_value(landmark));
-}
-
-/**********************************************************************
- * Store LANDMARK (CM) from a signed SP number.
- * AGC: LANDMARK (ERASABLE_ASSIGNMENTS.agc)
- *
- * FUNCTION NAME: agc_erase_set_landmark
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------------------------
- *   v         agc_sp_t  I    the code
- **********************************************************************/
-void agc_erase_set_landmark(agc_sp_t v)
-{
-    landmark = (v >= 0) ? (uint16_t) v : (uint16_t) (077777 + v); /* 1s compl. */
-}
 
 /**********************************************************************
  * HORIZON (CM noun 70/71 R3), raw word.

@@ -300,28 +300,31 @@ uint16_t     agc_erase_desopts(void);                /* DESOPTS (CM): OPTDRIVE s
 void         agc_erase_set_desopts(uint16_t v);
 
 /* LM radar monitor and DAP matrix (src/io/service/t4rupt_lm.c).                 */
-agc_status_t agc_t4_rr_monitor(void);    /* RRAUTCHK..RRGIMON+GPMATRIX */
-void         agc_t4_gimbal_matrix(void); /* GPMATRIX / DAPT4S        */
-uint16_t     agc_erase_radmodes(void);   /* RADMODES (LM)            */
+agc_status_t agc_t4_rr_monitor(void);                 /* RRAUTCHK..RRGIMON+GPMATRIX */
+void         agc_t4_gimbal_matrix(void);              /* GPMATRIX / DAPT4S        */
+uint16_t     agc_erase_radmodes(void);                /* RADMODES (LM)            */
 void         agc_erase_set_radmodes(uint16_t v);
-void         agc_t4_radmodes_init(void); /* STARTSUB: RADMODES = RMODINIT */
-bool         agc_rr_magsub(int a, int k);            /* MAGSUB: |a| + k <= 0 (L+3)     */
-bool         agc_rr_limchk(uint16_t t, uint16_t s);  /* RRLIMCHK: in the mode's limits */
-void         agc_rr_settrkf(void);                   /* SETTRKF: tracker fail lamp     */
+void         agc_t4_radmodes_init(void);              /* STARTSUB: RADMODES = RMODINIT */
+bool         agc_rr_magsub(int a, int k);             /* MAGSUB: |a| + k <= 0 (L+3)     */
+bool         agc_rr_limchk(uint16_t t, uint16_t s);   /* RRLIMCHK: in the mode's limits */
+void         agc_rr_settrkf(void);                    /* SETTRKF: tracker fail lamp     */
 void         agc_rr_lamp_put(uint16_t lamp, bool on); /* TRKFLON +1: DSPTAB +11D lamp  */
-void         agc_rendz_flip(uint16_t lamp_bit);      /* FLIP: invert a DSPTAB +11D lamp */
-agc_sp_t     agc_erase_m11(void);        /* SIN(MG), scaled at 1     */
-agc_sp_t     agc_erase_m21(void);        /* COS(OG)COS(MG)           */
-agc_sp_t     agc_erase_m22(void);        /* SIN(OG)                  */
-agc_sp_t     agc_erase_m31(void);        /* -SIN(OG)COS(MG)          */
-agc_sp_t     agc_erase_m32(void);        /* COS(OG)                  */
-agc_sp_t     agc_erase_cosmg(void);      /* COS(MG)                  */
+void         agc_rendz_flip(uint16_t lamp_bit);       /* FLIP: invert a DSPTAB +11D lamp */
+void         agc_rendz_clradmod(void);                /* CLRADMOD: designate bits, RR error counters off */
+agc_status_t agc_rr_zero(void);                       /* RRZERO: zero the RR CDUs (RADSTALL next) */
+agc_status_t agc_radar_lrpos2(void);                  /* LRPOS2: landing radar to position 2      */
+agc_sp_t     agc_erase_m11(void);                     /* SIN(MG), scaled at 1     */
+agc_sp_t     agc_erase_m21(void);                     /* COS(OG)COS(MG)           */
+agc_sp_t     agc_erase_m22(void);                     /* SIN(OG)                  */
+agc_sp_t     agc_erase_m31(void);                     /* -SIN(OG)COS(MG)          */
+agc_sp_t     agc_erase_m32(void);                     /* COS(OG)                  */
+agc_sp_t     agc_erase_cosmg(void);                   /* COS(MG)                  */
 
 /* ======================================================================
  * Extended verbs (src/io/verbs/extended_verbs{,_csm,_lm}.c) and the update
  * program P27 (src/io/verbs/uplink_update.c)
  * ==================================================================== */
-agc_status_t agc_extverb(int verb, int noun); /* GOEXTVB (pinball) */
+agc_status_t agc_extverb(int verb, int noun);           /* GOEXTVB (pinball) */
 agc_status_t agc_extverb_goto_tracking_terminate(void); /* GOTOV56: V56 TRACKTRM */
 
 /* ---- shared parts of the extended verbs (extended_verbs.c) -------------- */
@@ -412,21 +415,19 @@ agc_status_t agc_job_trimdone(agc_job_ctx_t *ctx);              /* LM TRIMDONE *
 agc_status_t agc_job_state_vector_copy(void);                   /* V66 / CSM V47 */
 agc_status_t agc_job_tracking_terminate(void);                  /* CSM V56 */
 agc_status_t agc_job_attitude_error_enable(void);               /* LM V43 */
-agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx);   /* CSM V41 N91 OPTC1 */
 agc_status_t agc_job_optics_coarse_start(void);                 /* CSM V41 N91 OPTIND */
 
-/* LM radar verbs (src/io/verbs/extended_verbs_lm_radar.c)                */
+/* LM radar verbs (src/io/verbs/extended_verbs_lm_radar.c; their RRDESK2 and
+ * RRLOSDSP jobs are in src/lm/radar and src/lm/optics, rendezvous.h and
+ * alignment.h).                                                          */
 agc_status_t agc_job_lr_position_two_check(void);                   /* V60 LRP2ALM */
 agc_status_t agc_job_rr_designate_load(agc_job_ctx_t *ctx);         /* V41N72 V24N73 */
 agc_status_t agc_job_rr_lockon_query(agc_job_ctx_t *ctx);           /* AURLOKON  */
 agc_status_t agc_job_rr_lockon_display(agc_job_ctx_t *ctx);         /* AURLOKON V04N12 */
 agc_status_t agc_job_rr_lockon_answer(agc_job_ctx_t *ctx);          /* AURLOKON +5 */
 agc_status_t agc_job_rr_designate_schedule(void);                   /* RRDESNBK end */
-agc_status_t agc_job_rr_designate_drive(void);                      /* RRDESK2   */
 void         agc_job_rr_designate_result(void);                     /* RRDESK2 alarm 503 */
 agc_status_t agc_job_rr_designate_end_monitor(void);                /* V44 NORRMON */
-agc_status_t agc_job_rr_los_display(void);                          /* V85 RRLOSDSP */
-agc_status_t agc_job_rr_los_display_next(void);                     /* RRLOSDSP loop */
 void         agc_job_rr_los_display_stop(void);                     /* V85 B5OFF */
 agc_status_t agc_job_radar_test_option_display(agc_job_ctx_t *ctx); /* R04A V04N12 */
 agc_status_t agc_job_radar_test_select(agc_job_ctx_t *ctx);         /* R04 RTSTDEX */

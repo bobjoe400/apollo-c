@@ -276,7 +276,7 @@ static agc_vec_t steer(agc_vec_t vg, agc_vec_t delvref)
     agc_cdutrig_t  trig   = {{0}, {0}, {0}, {0}};
     const uint16_t cdu[3] = {0U, 0U, 0U};
 
-    agc_imu_cdtrigs(&trig, cdu);               /* all gimbals at 0   */
+    agc_imu_cdtrigs(&trig, cdu);                /* all gimbals at 0   */
     const agc_mat_t refsmmat = identity_half(); /* REFSMMAT = I, half-unit rows (2^1) */
     agc_xprod_in_t  in;                         /* XPRODUCT inputs */
 

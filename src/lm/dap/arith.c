@@ -20,7 +20,8 @@
  *   none
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   None. Out-of-range arguments fail an assertion and return 0.
+ *   None. Every operation takes any operand (an improper or zero divide
+ *   gives the hardware's result) and none can fail.
  *
  * NOTES:
  *   The DAP is basic (machine) code, not interpretive: its results depend on

@@ -248,16 +248,10 @@ typedef struct agc_rendz
 
 /* TRKMKCNT (B(1)PRM, rendezvous tracking marks): owned here, zeroed by
  * AVETOMID (nav-integ) and counted by P20.                               */
-/* VHFCNT, MRKBUF2 (CM, owned here; the guidance lane clears them).        */
+/* VHFCNT (CM, owned here; the guidance lane clears it). MRKBUF1/2 and
+ * LANDMARK are core erasables (agc/core/state.h).                         */
 agc_sp_t agc_erase_vhfcnt(void);
 void     agc_erase_set_vhfcnt(agc_sp_t v);
-agc_sp_t agc_erase_mrkbuf2(int index); /* index 0..6        */
-
-/* MRKBUF1 / MRKBUF2 raw words (buf 1 or 2, index 0..6); same declarations
- * as include/agc/programs/alignment_pending.h.                           */
-uint16_t agc_erase_mrkbuf(int buf, int index);
-void     agc_erase_set_mrkbuf(int buf, int index, uint16_t v);
-void     agc_erase_set_mrkbuf2(int index, agc_sp_t v);
 
 /* The rendezvous erasables used by the programs (module storage).          */
 agc_rendz_t *agc_rendz_erasable(void);
@@ -482,8 +476,6 @@ typedef enum agc_rr_designate_result
 } agc_rr_designate_result_t;
 
 /* RRLIMCHK: in limits */
-void         agc_rendz_clradmod(void);          /* CLRADMOD      */
-agc_status_t agc_rr_zero(void);                 /* RRZERO        */
 
 /* RRDESSM: designate to RRTARGET (half unit, SM; set by LPS20.1).       */
 agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *res);
@@ -500,7 +492,6 @@ void         agc_radar_lr_velocity_beam(int beam, agc_sp_t nsamples); /* LRVELZ/
 agc_status_t agc_rendz_radar_read(void);                              /* RADAREAD (rupt) */
 agc_dp_t     agc_radar_samplsum(void);                                /* SAMPLSUM counts */
 uint16_t     agc_erase_dnrrange(int index);                           /* DNRRANGE +index */
-agc_status_t agc_radar_lrpos2(void);                                  /* LRPOS2        */
 void         agc_radar_landing_radar_lights(void);                    /* R12LITES      */
 agc_status_t agc_radar_powered_flight_designate(void);                /* R29 (SERVICER) */
 
@@ -531,7 +522,8 @@ void         agc_erase_set_rstack(int index, agc_dp_t v);
 /* RRDESNB to TANG, TANG +1 (verb 41 noun 72); *started false when the
  * job ended instead (angles rejected, or a job already in RADSTALL).    */
 agc_status_t agc_rr_designate_gimbal(bool *started);
-agc_sp_t     agc_erase_tang(int index); /* TANG +index   */
+agc_status_t agc_job_rr_designate_drive(void); /* RRDESK2 (V41 N72): RRDESNB, RADSTALL */
+agc_sp_t     agc_erase_tang(int index);        /* TANG +index   */
 void         agc_erase_set_tang(int index, agc_sp_t v);
 
 /* R29 downlink set (RM RDOTM MKTIME TANGNB AIG AMG AOG, P20-P25 p.606);
@@ -656,19 +648,20 @@ agc_status_t agc_job_tpm_advance(agc_job_ctx_t *ctx);
 agc_status_t agc_job_tpm_after_final(agc_job_ctx_t *ctx);
 
 /* orbit_parameter_display.c (R30, verb 82) */
-agc_status_t agc_job_orbit_parameter_display(agc_job_ctx_t *ctx);
-agc_status_t agc_job_orbit_display_vehicle_select(agc_job_ctx_t *ctx);
-agc_status_t agc_job_orbit_display_vehicle_selected(agc_job_ctx_t *ctx);
-agc_status_t agc_job_orbit_display_recycle(agc_job_ctx_t *ctx);
-agc_status_t agc_job_orbit_display_stall(agc_job_ctx_t *ctx);
-agc_status_t agc_job_orbit_display_update(void);
-agc_status_t agc_job_orbit_display_average_g(void);
-agc_status_t agc_job_orbit_display_repeat(void);
-agc_status_t agc_job_orbit_display_splash(void);
-agc_status_t agc_job_orbit_display_monitor(agc_job_ctx_t *ctx);
-void         agc_job_rendz_display_terminate(void);
-agc_status_t agc_job_rendz_endext(void);
-agc_status_t agc_task_ticktest(void);
+agc_status_t     agc_job_orbit_parameter_display(agc_job_ctx_t *ctx);
+agc_status_t     agc_job_orbit_display_vehicle_select(agc_job_ctx_t *ctx);
+agc_status_t     agc_job_orbit_display_vehicle_selected(agc_job_ctx_t *ctx);
+agc_status_t     agc_job_orbit_display_recycle(agc_job_ctx_t *ctx);
+agc_status_t     agc_job_orbit_display_stall(agc_job_ctx_t *ctx);
+agc_status_t     agc_job_orbit_display_update(agc_job_ctx_t *ctx);
+agc_status_t     agc_job_orbit_display_average_g(agc_job_ctx_t *ctx);
+agc_status_t     agc_job_orbit_display_repeat(void);
+agc_status_t     agc_orbit_display_start_ticking(agc_interp_t *ip, agc_rendz_t *rz); /* SPLRET1 .. TICKTFF */
+const agc_tff_t *agc_orbit_display_tff_debris(void);                                 /* SR30.1's TFF erasables */
+agc_status_t     agc_job_orbit_display_monitor(agc_job_ctx_t *ctx);
+void             agc_job_rendz_display_terminate(void);
+agc_status_t     agc_job_rendz_endext(void);
+agc_status_t     agc_task_ticktest(void);
 
 /* target_delta_v.c (P76) */
 agc_status_t agc_job_target_delta_v(agc_job_ctx_t *ctx);
@@ -952,8 +945,6 @@ agc_status_t agc_job_rendezvous_sighting_mark_done(agc_job_ctx_t *ctx);
 
 /* R21END */
 agc_status_t agc_job_rendezvous_sighting_mark_end(agc_job_ctx_t *ctx);
-agc_sp_t     agc_erase_landmark(void); /* LANDMARK */
-void         agc_erase_set_landmark(agc_sp_t v);
 agc_sp_t     agc_erase_trunbias(void); /* TRUNBIAS (R57), CDU units  */
 uint16_t     agc_erase_horizon(void);  /* HORIZON (noun 70 R3)       */
 void         agc_erase_set_horizon(uint16_t v);

@@ -240,6 +240,7 @@ job	AGC_JOB_TPI_SEARCH_RESULTS	agc_job_tpi_search_results	-	csm/navigation	V06N5
 job	AGC_JOB_TPI_SEARCH_START	agc_job_tpi_search_start	-	csm/navigation	S17.1, V06N72
 job	AGC_JOB_TRACKING_ATTITUDE_CSM	agc_job_tracking_attitude_csm	-	csm/navigation	R61CSM CRS61.1
 job	AGC_JOB_TRACKING_ATTITUDE_CSM_MANEUVERED	agc_job_tracking_attitude_csm_maneuvered	-	csm/navigation	after R60CSM
+job	AGC_JOB_OPTICS_COARSE_DRIVE	agc_job_optics_coarse_drive	-	csm/optics	V41N91 OPTC1 +4 (CM only)
 job	AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY	agc_job_alternate_los_angles_display	-	csm/optics	
 job	AGC_JOB_ALTERNATE_LOS_MARKED	agc_job_alternate_los_marked	-	csm/optics	
 job	AGC_JOB_ALTERNATE_LOS_MARK_REQUEST	agc_job_alternate_los_mark_request	-	csm/optics	
@@ -330,7 +331,6 @@ job	AGC_JOB_KEYBOARD_FINE_MODE	agc_job_keyboard_fine_mode	agc_job_keyboard_fine_
 job	AGC_JOB_KEYBOARD_GYRO_TORQUE	agc_job_keyboard_gyro_torque	agc_job_keyboard_gyro_torque	io/verbs	V42 FINEK2 (IMUPULSE)
 job	AGC_JOB_LR_POSITION_TWO_CHECK	agc_job_lr_position_two_check	agc_job_lr_position_two_check	io/verbs	V60 after RADSTALL
 job	AGC_JOB_LR_SPURIOUS_TEST_END_RESUME	agc_job_lr_spurious_test_end_resume	agc_job_lr_spurious_test_end_resume	io/verbs	R77END after 320 ms
-job	AGC_JOB_OPTICS_COARSE_DRIVE	agc_job_optics_coarse_drive	agc_job_optics_coarse_drive	io/verbs	CSM V41N91 OPTC1
 job	AGC_JOB_OPTICS_COARSE_START	agc_job_optics_coarse_start	agc_job_optics_coarse_start	io/verbs	CSM V41N91 after EXDSPRET
 job	AGC_JOB_RADAR_TEST_AUTO_CHECK	agc_job_radar_test_auto_check	agc_job_radar_test_auto_check	io/verbs	R04B
 job	AGC_JOB_RADAR_TEST_AUTO_REQUEST	agc_job_radar_test_auto_request	agc_job_radar_test_auto_request	io/verbs	R04B +5 V50N25
@@ -342,7 +342,6 @@ job	AGC_JOB_RADAR_TEST_SECOND_DISPLAY	agc_job_radar_test_second_display	agc_job_
 job	AGC_JOB_RADAR_TEST_SELECT	agc_job_radar_test_select	agc_job_radar_test_select	io/verbs	R04 V33 on V04N12
 job	AGC_JOB_RADAR_TEST_SWITCH	agc_job_radar_test_switch	agc_job_radar_test_switch	io/verbs	R04Y
 job	AGC_JOB_RADAR_TEST_SWITCH_RESUME	agc_job_radar_test_switch_resume	agc_job_radar_test_switch_resume	io/verbs	R04Y after 2 s
-job	AGC_JOB_RR_DESIGNATE_DRIVE	agc_job_rr_designate_drive	agc_job_rr_designate_drive	io/verbs	RRDESK2
 job	AGC_JOB_RR_DESIGNATE_END_MONITOR	agc_job_rr_designate_end_monitor	agc_job_rr_designate_end_monitor	io/verbs	V44 after DELAYJOB
 job	AGC_JOB_RR_DESIGNATE_LOAD	agc_job_rr_designate_load	agc_job_rr_designate_load	io/verbs	V41N72 V24N73 (V33 again)
 job	AGC_JOB_RR_DESIGNATE_RESULT	agc_job_rr_designate_result	agc_job_rr_designate_result	io/verbs	RRDESK2 after RADSTALL
@@ -350,8 +349,6 @@ job	AGC_JOB_RR_DESIGNATE_SCHEDULE	agc_job_rr_designate_schedule	agc_job_rr_desig
 job	AGC_JOB_RR_LOCKON_ANSWER	agc_job_rr_lockon_answer	agc_job_rr_lockon_answer	io/verbs	AURLOKON +5 (V33)
 job	AGC_JOB_RR_LOCKON_DISPLAY	agc_job_rr_lockon_display	agc_job_rr_lockon_display	io/verbs	AURLOKON -5 V04N12
 job	AGC_JOB_RR_LOCKON_QUERY	agc_job_rr_lockon_query	agc_job_rr_lockon_query	io/verbs	AURLOKON (ENTER on N73)
-job	AGC_JOB_RR_LOS_DISPLAY	agc_job_rr_los_display	agc_job_rr_los_display	io/verbs	RRLOSDSP (LM V85)
-job	AGC_JOB_RR_LOS_DISPLAY_NEXT	agc_job_rr_los_display_next	agc_job_rr_los_display_next	io/verbs	V85 RRLOSDSP after 1 s
 job	AGC_JOB_RR_LOS_DISPLAY_STOP	agc_job_rr_los_display_stop	agc_job_rr_los_display_stop	io/verbs	V85 responses: B5OFF
 job	AGC_JOB_SHOW_BANKSUM_DISPLAY	agc_job_show_banksum_display	agc_job_show_banksum_display	io/verbs	V91 NOKILL
 job	AGC_JOB_SHOW_BANKSUM_END	agc_job_show_banksum_end	agc_job_show_banksum_end	io/verbs	V91 terminate
@@ -647,11 +644,13 @@ job	AGC_JOB_REALIGN_GIMBAL_DISPLAY	agc_job_realign_gimbal_display	agc_job_realig
 job	AGC_JOB_REALIGN_NOMINAL_ORIENTATION	agc_job_realign_nominal_orientation	agc_job_realign_nominal_orientation	programs/alignment	
 job	AGC_JOB_REALIGN_TIME_FLASH	agc_job_realign_time_flash	agc_job_realign_time_flash	programs/alignment	
 job	AGC_JOB_REALIGN_TIME_PROCEED	agc_job_realign_time_proceed	agc_job_realign_time_proceed	programs/alignment	
+job	AGC_JOB_IMU_REALIGN_STARS	agc_job_csm_realign_star_selection	agc_job_lm_fine_align	programs/alignment	P52C (CM) / R51 (LM): the stars after the new orientation
+job	AGC_JOB_IMU_REALIGN_RECHECK	agc_job_csm_fine_align_recheck	agc_job_lm_fine_align_recheck	programs/alignment	R51K after GYCRS (CM, LM)
+job	AGC_JOB_IMU_REALIGN_LANDING_SITE	agc_job_csm_imu_realign_landing_site	agc_job_lm_imu_realign_landing_site	programs/alignment	P52LS (CM, LM)
 job	AGC_JOB_ORBIT_DISPLAY_AVERAGE_G	agc_job_orbit_display_average_g	agc_job_orbit_display_average_g	programs/displays	V82GON1
 job	AGC_JOB_ORBIT_DISPLAY_MONITOR	agc_job_orbit_display_monitor	agc_job_orbit_display_monitor	programs/displays	V82REDSP
 job	AGC_JOB_ORBIT_DISPLAY_RECYCLE	agc_job_orbit_display_recycle	agc_job_orbit_display_recycle	programs/displays	V82GOFLP
 job	AGC_JOB_ORBIT_DISPLAY_REPEAT	agc_job_orbit_display_repeat	agc_job_orbit_display_repeat	programs/displays	V82GON3
-job	AGC_JOB_ORBIT_DISPLAY_SPLASH	agc_job_orbit_display_splash	agc_job_orbit_display_splash	programs/displays	CANDEL (CM)
 job	AGC_JOB_ORBIT_DISPLAY_STALL	agc_job_orbit_display_stall	agc_job_orbit_display_stall	programs/displays	V82STALL
 job	AGC_JOB_ORBIT_DISPLAY_UPDATE	agc_job_orbit_display_update	agc_job_orbit_display_update	programs/displays	V82GOFF1
 job	AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT	agc_job_orbit_display_vehicle_select	agc_job_orbit_display_vehicle_select	programs/displays	V82GOFF V04N12
@@ -885,6 +884,8 @@ task	AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_CHECK	-	agc_task_rendezvous_navigation
 task	AGC_TASK_RENDEZVOUS_NAVIGATION_TRACK_WAIT	-	agc_task_rendezvous_navigation_track_wait	lm/navigation	P20LEMD1
 task	AGC_TASK_TRACKING_ATTITUDE_WAIT	-	agc_task_tracking_attitude_wait	lm/navigation	R61C+L2
 task	AGC_TASK_AOT_MARK_RELEASE	-	agc_task_aot_mark_release	lm/optics	
+job	AGC_JOB_RR_LOS_DISPLAY	-	agc_job_rr_los_display	lm/optics	RRLOSDSP (LM V85)
+job	AGC_JOB_RR_LOS_DISPLAY_NEXT	-	agc_job_rr_los_display_next	lm/optics	V85 RRLOSDSP after 1 s
 task	AGC_TASK_DORREPOS	-	agc_task_dorrepos	lm/radar	prog-rendz: DORREPOS
 task	AGC_TASK_LR_POSITION_CHECK	-	agc_task_lr_position_check	lm/radar	LRPOSNXT
 task	AGC_TASK_LR_POSITION_SCAN	-	agc_task_lr_position_scan	lm/radar	LRPOSCAN
@@ -908,6 +909,7 @@ task	AGC_TASK_RR_TURNON_DONE	-	agc_task_rr_turnon_done	lm/radar	RRTURNON +1 s
 task	AGC_TASK_RR_ZERO	-	agc_task_rr_zero	lm/radar	RRZ2
 task	AGC_TASK_RR_ZERO_COUNTERS	-	agc_task_rr_zero_counters	lm/radar	RRZEROSB +20 ms
 task	AGC_TASK_RR_ZERO_SETTLED	-	agc_task_rr_zero_settled	lm/radar	RRZEROSB +10 s
+job	AGC_JOB_RR_DESIGNATE_DRIVE	-	agc_job_rr_designate_drive	lm/radar	RRDESK2 (V41 N72)
 task	AGC_TASK_STATEINT	agc_task_stateint	agc_task_stateint	nav/integration	2.3 LONGCALL (nav-integ)
 task	AGC_TASK_RENDEZVOUS_PARAMETER_DISPLAY	-	agc_task_rendezvous_parameter_display	programs/displays	R31CALL (LM V83)
 task	AGC_TASK_RENDEZVOUS_PARAMS_WAIT	agc_task_rendezvous_params_wait	agc_task_rendezvous_params_wait	programs/displays	
@@ -915,6 +917,7 @@ task	AGC_TASK_TICKTEST	agc_task_ticktest	agc_task_ticktest	programs/displays	R30
 job	AGC_JOB_CHANGE_PROGRAM_CONTINUE	agc_job_change_program_continue	agc_job_change_program_continue	exec	CANV37 (V37 after SERVICER stops / INTSTALL)
 job	AGC_JOB_CHANGE_PROGRAM_START	agc_job_change_program_start	agc_job_change_program_start	exec	V37XEQ (restart point of the V37 software restart)
 job	AGC_JOB_SPS_BURN	agc_job_sps_burn	-	csm/burns	P40CSM (V37)
+job	AGC_JOB_ORBIT_DISPLAY_SPLASH	agc_job_orbit_display_splash	-	csm/burns	CANDEL (CM)
 job	AGC_JOB_IMU_ORIENTATION_DETERMINATION	agc_job_csm_imu_orientation_determination	agc_job_lm_imu_orientation_determination	csm/alignment	P51 / P53 (V37)
 job	AGC_JOB_LUNAR_SURFACE_ALIGN	-	agc_job_lunar_surface_align	lm/alignment	P57 (V37)
 job	AGC_JOB_STANDBY	agc_job_standby	agc_job_standby	imu	P06 (V37)

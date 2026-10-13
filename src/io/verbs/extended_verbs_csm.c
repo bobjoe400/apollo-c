@@ -61,7 +61,6 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/integration.h"
-#include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
 
 #define WORD15                077777u                    /* one AGC word */
@@ -500,25 +499,6 @@ static agc_status_t verb_optics_coarse(agc_job_ctx_t *ctx)
 }
 
 /**********************************************************************
- * AGC: none -- OPTC1 after the load (V33 or ENTER): DESOPTS = SAC, DESOPTT = PAC; show
- * V41 again.
- *
- * ARGUMENTS:
- *   ctx  agc_job_ctx_t *  I   the job
- *
- * RETURNS: the display request status
- **********************************************************************/
-agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx)
-{
-    agc_align_ram_t *ar = agc_align_ram(); /* DESOPTS, DESOPTT, SAC, PAC */
-
-    agc_erase_set_desopts(ar->sac);
-    agc_erase_set_desoptt(ar->pac);
-
-    return (agc_extverb_redisplay(ctx, 41, AGC_JOB_OPTICS_COARSE_START));
-}
-
-/**********************************************************************
  * AGC: none -- OPTC1 after EXDSPRET: OPTIND = 1 (coarse optics working; T4RUPT's
  * OPTDRIVE takes it from here), ENDEXT.
  *
@@ -593,7 +573,7 @@ static agc_status_t fan_40s(agc_job_ctx_t *ctx, int verb)
         {
             if (!tvc_on())
             {
-                return (agc_job_dapfig()); /* POSTJUMP DAPFIG         */
+                return (agc_exec_jump(ctx, AGC_JOB_DAPFIG)); /* POSTJUMP DAPFIG */
             }
 
             if ((agc_erase_dapdatr1() & BIT14) == 0u)

@@ -425,7 +425,7 @@ void agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3], uint16_t out[3
     const uint16_t yzx[3] = {gimbal[1], gimbal[2], gimbal[0]}; /* CDUSPOT */
     agc_cdutrig_t  t;                                          /* sin/cos of the CDUs */
 
-    agc_imu_cdtrigs(&t, yzx);                /* CD*TR*G */
+    agc_imu_cdtrigs(&t, yzx);                 /* CD*TR*G */
     const agc_dp_t sx = t.sincdu[AGC_TRIG_X]; /* SINCDUX / 2, 2^0   */
     const agc_dp_t cx = t.coscdu[AGC_TRIG_X]; /* COSCDUX / 2, 2^0   */
     const agc_dp_t sy = t.sincdu[AGC_TRIG_Y]; /* SINCDUY / 2, 2^0   */

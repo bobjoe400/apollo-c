@@ -4,10 +4,10 @@
  * PURPOSE:
  *   Rendezvous radar (RR) moding, LM only: RRTURNON / RRZEROSB, DORREPOS
  *   / REPOSRPT / SETRRECR, REMODE / RMODINV, RRTONLY / RRSONLY / RR1AXIS,
- *   RROUT, RRZERO, ENDRADAR / RGOODEND / RDBADEND, CLRADMOD. (MAGSUB,
- *   RRLIMCHK and SETTRKF / TRKFLON / FLIP live with RADMODES in
- *   src/io/service/t4rupt_lm.c, their lowest caller being T4RUPT's RR
- *   monitor.) The AGC runs these as waitlist tasks
+ *   RROUT, RRZ2, ENDRADAR / RGOODEND / RDBADEND. (MAGSUB, RRLIMCHK,
+ *   SETTRKF / TRKFLON / FLIP, CLRADMOD and the starters RRZERO, LRPOS2,
+ *   RADNOOP live with RADMODES in src/io/service/t4rupt_lm.c, their
+ *   lowest callers being T4RUPT's RR monitor and the radar verbs.) The AGC runs these as waitlist tasks
  *   chained by FIXDELAY, with RRRET holding the return address of the
  *   subroutines that wait (RRZEROSB, RR1AXIS). Here each FIXDELAY
  *   continuation is its own task and RRRET is an enum naming the
@@ -17,8 +17,7 @@
  *   Luminary099 P20-P25.agc pp. 525-537 (RRTURNON, RRZEROSB, DORREPOS,
  *   REPOSRPT, SETRRECR,
  *   REMODE, RMODINV, RRTONLY, RRSONLY, RR1AXIS, RR1AX2, NXTRR1AX, RROUT,
- *   RRZERO, RRZ2), p. 563 (ENDRADAR, RGOODEND, RDBADEND), p. 516
- *   (CLRADMOD); LM only
+ *   RRZ2), p. 563 (ENDRADAR, RGOODEND, RDBADEND); LM only
  *
  * EXTERNAL VARIABLES:
  *   Name       Type       I/O  Scale      Description
@@ -38,7 +37,7 @@
  *   rr_stdesig            STDESIG: designate after a remode
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   00510 (RRZERO with the RR out of auto mode). A failed RR CDU ends a
+ *   None raised here (RRZERO's 00510 is in t4rupt_lm.c). A failed RR CDU ends a
  *   radar operation with BADEND. AGC_STATUS_NO_CONVERGE when more than
  *   RR_AXIS_MAX_STEPS single-axis drives finish in one task (cannot
  *   happen: REMODE has five).
@@ -67,15 +66,13 @@
 
 /* ---- constants (pp.523, 528, 532, 534, 536) ----------------------------
  * DEC values are SP fractions of 180 degrees (x 16384).                  */
-#define RR_20_5DEGS 1866     /* 20.5DEGS DEC .11389                   */
-#define RR_LIM_90   (-8192)  /* DEC -.5: 90 degrees (mode test)       */
-#define RR_1DEG     (-91)    /* DEC -.00555: 1 degree                 */
+#define RR_20_5DEGS 1866    /* 20.5DEGS DEC .11389                   */
+#define RR_LIM_90   (-8192) /* DEC -.5: 90 degrees (mode test)       */
+#define RR_1DEG     (-91)   /* DEC -.00555: 1 degree                 */
 
 /* RRSPGAIN DEC .59062: null .7 of the error in .5 s                   */
-#define RR_SPGAIN    9677    /* RRSPGAIN, 2^0                          */
-#define RR_LIMIT     (-384)  /* -RRLIMIT DEC -384 pulses               */
-#define RR_BIT11_1   002001u /* BIT11+1: reposition, turn-on          */
-#define RR_BIT10_15  041000u /* BIT10+15: designate, continuous des.  */
+#define RR_SPGAIN 9677   /* RRSPGAIN, 2^0                          */
+#define RR_LIMIT  (-384) /* -RRLIMIT DEC -384 pulses               */
 
 /* Single-axis targets, CDU words: BIT15 / NEGMAX = 180 degrees, CS HALF
  * = -90, -45DEGSR = 13,14,15 (octal 70000), -50DEGSR DEC -.27778,
@@ -93,8 +90,7 @@
 #define RR_DT_10SEC   1000U /* 10 s, cs */
 
 /* Bound on the RR1AXIS steps run in one task (REMODE has five).         */
-#define RR_AXIS_MAX_STEPS 12                         /* drives per task */
-#define RR_ALARM_NOT_AUTO ((agc_alarm_code_t) 00510) /* RR not in auto */
+#define RR_AXIS_MAX_STEPS 12 /* drives per task */
 
 /* Where RRZEROSB returns (RRRET): RRTURNON or RRZ2 (RRZERO).            */
 typedef enum rr_zero_return
@@ -397,47 +393,6 @@ agc_status_t rr_endradar(void)
 }
 
 /**********************************************************************
- * RADNOOP (p.561): no further action requested; good end in 10 ms.
- * AGC: RADNOOP (P20-P25.agc p.561)
- *
- * FUNCTION NAME: rr_radnoop
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- the waitlist status; AGC_STATUS_BAD_ARG on a
- *          failed precondition
- **********************************************************************/
-agc_status_t rr_radnoop(void)
-{
-    agc_status_t st = agc_waitlist_call(1U, AGC_TASK_RR_GOODEND); /* WAITLIST */
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
-}
-
-/**********************************************************************
- * CLRADMOD (p.516): clear designate and continuous designate, disable
- * the RR error counters. The AGC's caller is inhibited (the user will
- * RELINT); here the routine inhibits around its own update.
- * AGC: CLRADMOD (P20-P25.agc p.516)
- *
- * FUNCTION NAME: agc_rendz_clradmod
- *
- * ARGUMENTS: none
- **********************************************************************/
-void agc_rendz_clradmod(void)
-{
-    agc_inhint();
-    rr_radmodes_clear(RR_BIT10_15);
-    rr_chan_clear(AGC_CHAN_CHAN12, RR_CH12_ENB_ECTR);
-    agc_relint();
-}
-
-/**********************************************************************
  * SETRRECR (p.530): enable the RR error counters and clear the last
  * commands, unless the counters are already enabled.
  * AGC: SETRRECR (P20-P25.agc p.530)
@@ -658,39 +613,6 @@ agc_status_t agc_task_rr_zero(void)
     }
 
     return (rr_zero_begin(RR_ZERO_FOR_RRZERO));
-}
-
-/**********************************************************************
- * RRZERO (p.537): zero the RR CDUs and find the antenna mode; the caller
- * then waits in RADSTALL. Nothing to do during a monitor reposition or
- * turn-on (RADNOOP); alarm 510 when the auto discrete is absent.
- * AGC: RRZERO (P20-P25.agc p.537)
- *
- * FUNCTION NAME: agc_rr_zero
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, else the waitlist status
- **********************************************************************/
-agc_status_t agc_rr_zero(void)
-{
-    if (rr_radmodes_test(RR_BIT11_1))
-    {
-        return (rr_radnoop());
-    }
-
-    agc_inhint();
-    rr_radmodes_set(RR_RCDU0BIT);
-    agc_status_t st = agc_waitlist_call(1U, AGC_TASK_RR_ZERO); /* RRZ2 */
-
-    if (st == AGC_STATUS_OK && rr_radmodes_test(RR_AUTOMBIT))
-    {
-        agc_alarm(RR_ALARM_NOT_AUTO);
-    }
-
-    agc_relint(); /* ROADBACK */
-
-    return (st);
 }
 
 /* ---- single-axis drives (RRTONLY, RRSONLY, RR1AXIS pp.533-534) -------- */

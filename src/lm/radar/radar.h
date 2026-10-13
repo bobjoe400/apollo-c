@@ -122,8 +122,6 @@ agc_status_t rr_axis_start(rr_axis_client_t client, int step, int rrindex, uint1
 agc_status_t rr_remode_start(void); /* REMODE        */
 agc_status_t rr_endradar(void);     /* ENDRADAR      */
 agc_status_t rr_badend(void);       /* RDBADEND      */
-agc_status_t rr_radnoop(void);      /* RADNOOP       */
-
 
 /* ---- designate (lm/radar/designate.c) ----------------------------------- */
 agc_status_t rr_stdesig(void); /* STDESIG (task body)           */

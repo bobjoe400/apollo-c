@@ -276,15 +276,15 @@ static void throttle(const char *t)
     agc_lm_thr_t *h = agc_lm_thr(); /* throttle erasables */
 
     common_in(t);
-    agc_lm_pad()->lowcrit       = (agc_sp_t) oracle_in(t, "LOWCRIT", 0);
-    agc_lm_pad()->highcrit      = (agc_sp_t) oracle_in(t, "LOWCRIT", 1);
-    agc_erase_set_abdelv((agc_sp_t)oracle_in(t, "ABDELV", 0));
-    l->afc                      = oracle_in_dp(t, "/AFC/", 0);
-    l->thistpip                 = oracle_in_dp(t, "THISTPIP", 0);
-    h->tthrot                   = (agc_sp_t) oracle_in(t, "TTHROT", 0);
-    h->fweight.hi               = (agc_sp_t) oracle_in(t, "FWEIGHT", 0);
-    h->fweight.lo               = (agc_sp_t) oracle_in(t, "FWEIGHT", 1);
-    h->fcold                    = (agc_sp_t) oracle_in(t, "FCOLD", 0);
+    agc_lm_pad()->lowcrit  = (agc_sp_t) oracle_in(t, "LOWCRIT", 0);
+    agc_lm_pad()->highcrit = (agc_sp_t) oracle_in(t, "LOWCRIT", 1);
+    agc_erase_set_abdelv((agc_sp_t) oracle_in(t, "ABDELV", 0));
+    l->afc                 = oracle_in_dp(t, "/AFC/", 0);
+    l->thistpip            = oracle_in_dp(t, "THISTPIP", 0);
+    h->tthrot              = (agc_sp_t) oracle_in(t, "TTHROT", 0);
+    h->fweight.hi          = (agc_sp_t) oracle_in(t, "FWEIGHT", 0);
+    h->fweight.lo          = (agc_sp_t) oracle_in(t, "FWEIGHT", 1);
+    h->fcold               = (agc_sp_t) oracle_in(t, "FCOLD", 0);
     agc_erase_set_modreg((agc_sp_t) oracle_in(t, "MODREG", 0));
     agc_erase_set_piptime(oracle_in_dp(t, "PIPTIME", 0));
 

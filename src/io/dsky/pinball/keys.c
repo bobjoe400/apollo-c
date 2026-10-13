@@ -1035,9 +1035,8 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
     if (low == PIN_ELRCODE)
     {
         agc_flag_clear((agc_flag_id_t) AGC_FLAG_UPLOCKFL); /* CLUPLOCK */
-        agc_status_t st = AGC_STATUS_OK;                   /* status so far */
 
-        return ((st == AGC_STATUS_OK) ? pin_keycom(low) : st); /* if OK */
+        return (pin_keycom(low)); /* ACCEPTUP */
     }
 
     if (agc_flag_test((agc_flag_id_t) AGC_FLAG_UPLOCKFL))

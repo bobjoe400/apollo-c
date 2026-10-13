@@ -151,8 +151,8 @@ typedef struct agc_align_ram
     agc_dp_t           landalt;   /* LANDALT (N89): altitude, m 2^29 */
 
     /* optics (CM) */
-    uint16_t sac;     /* SAC: desired shaft, CDU word */
-    uint16_t pac;     /* PAC: desired trunnion, CDU word */
+    uint16_t sac; /* SAC: desired shaft, CDU word */
+    uint16_t pac; /* PAC: desired trunnion, CDU word */
 
     /* AOT (LM) */
     uint16_t az;       /* AZ: keyed-in optic axis azimuth (N87), CDU word */
@@ -257,8 +257,10 @@ void agc_csm_earrot2(agc_interp_t *ip, agc_csm_earrot_t *e);
 /* RRANGLES: los_nb half-unit; modea/modeb = (trunnion, shaft) cdu for RR
  * mode 1 and mode 2 (swapped when RADMODES antenna bit says mode 2);
  * *along_y when the LOS is along Y (the AGC's BOVB LUNDESCH).             */
-void agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, uint16_t modea[2], uint16_t modeb[2], bool *along_y);
-void agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *los_nb);
+void         agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, uint16_t modea[2], uint16_t modeb[2], bool *along_y);
+void         agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *los_nb);
+agc_status_t agc_job_rr_los_display(void);      /* RRLOSDSP (V85): RR-AZ, RR-ELEV once a second */
+agc_status_t agc_job_rr_los_display_next(void); /* RRLOSDSP after DELAYJOB                 */
 
 /* ---- S-band antenna R05 --------------------------------------------------- */
 /* CM: r_nb = vehicle-to-earth vector in NB axes (any scale) -> RHOSB pitch,
@@ -320,6 +322,7 @@ agc_vec_t    agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_d
 /* Interpretive subroutines entered from a job: ret is the job continued
  * as on return (SAVQR52 / R53EXIT).                                       */
 agc_status_t agc_csm_auto_optics_positioning(const agc_job_ctx_t *ctx, agc_job_id_t ret);     /* R52    */
+agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx);                                 /* V41 N91 OPTC1 +4 */
 agc_status_t agc_csm_auto_optics_advanced_orbit(const agc_job_ctx_t *ctx, agc_job_id_t ret);  /* ADVORB */
 agc_status_t agc_csm_sighting_mark(agc_job_id_t ret);                                         /* R53    */
 agc_status_t agc_csm_alternate_los_sighting_mark(const agc_job_ctx_t *ctx, agc_job_id_t ret); /* R56    */

@@ -72,26 +72,20 @@ typedef enum agc_axisrot_dir
 } agc_axisrot_dir_t;
 
 agc_dp_t agc_imu_cdulogic(uint16_t cdu);                                                                  /* CDULOGIC */
-void agc_imu_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                    /* CD*TR*GS */
-void agc_imu_cdutrig(agc_cdutrig_t *t);                                                               /* CDUTRIG(S) */
-void agc_imu_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                   /* QUICTRIG */
-void agc_imu_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
-		     agc_vec_t *v);                    /* AX*SR*T  */
-void agc_imu_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
-			   agc_vec_words_t *v);        /* AX*SR*T on VBUF words */
-void agc_imu_smnb(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *SMNB*   */
-void agc_imu_nbsm(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *NBSM*   */
-void agc_imu_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*SMNB */
-void agc_imu_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*NBSM */
-void agc_imu_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
-		      agc_vec_t *v);                     /* TRG*SMNB */
-void agc_imu_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
-		      agc_vec_t *v);                     /* TRG*NBSM */
-void agc_imu_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
-			    agc_vec_words_t *v);         /* TRG*NBSM, VBUF words */
-void agc_imu_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
-		      agc_vec_t dthetasm, agc_vec_t *dcdu); /* SMCDURES (CM) */
-void agc_imu_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb);                                        /* FLESHPOT (LM) */
+void     agc_imu_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                    /* CD*TR*GS */
+void     agc_imu_cdutrig(agc_cdutrig_t *t);                                                               /* CDUTRIG(S) */
+void     agc_imu_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                   /* QUICTRIG */
+void     agc_imu_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v);                    /* AX*SR*T  */
+void     agc_imu_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_words_t *v);        /* AX*SR*T on VBUF words */
+void     agc_imu_smnb(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *SMNB*   */
+void     agc_imu_nbsm(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *NBSM*   */
+void     agc_imu_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*SMNB */
+void     agc_imu_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*NBSM */
+void     agc_imu_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v);                     /* TRG*SMNB */
+void     agc_imu_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v);                     /* TRG*NBSM */
+void     agc_imu_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_words_t *v);         /* TRG*NBSM, VBUF words */
+void     agc_imu_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu); /* SMCDURES (CM) */
+void     agc_imu_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb);                                        /* FLESHPOT (LM) */
 
 /* The erasables CDUSPOT, SINCDU, COSCDU (QUICTRIG / CDUTRIG results the
  * SERVICER, the landing and the TVC DAP share), owned here.               */
@@ -149,13 +143,13 @@ agc_status_t agc_imu_pulse_buf(agc_imu_gyro_buf_t buf, agc_job_id_t wake_as);
 
 /* IMUPULSE on the OGC buffer after loading it with gyro[0..2] (X,Y,Z).    */
 agc_status_t agc_imu_pulse(const agc_dp_t gyro[3]);
-agc_dp_t    *agc_imu_ogc(void); /* OGC, IGC, MGC (the OGC buffer), rev 2^0 */
+agc_dp_t    *agc_imu_ogc(void);             /* OGC, IGC, MGC (the OGC buffer), rev 2^0 */
 agc_status_t agc_imu_finetime(agc_dp_t *t); /* FINETIME: HISCALAR, LOSCALAR; returns with INHINT */
 void         agc_imu_gyro_buf_get(agc_imu_gyro_buf_t buf, agc_dp_t out[3]);
 void         agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3]);
-bool         agc_imu_gyros_busy(void); /* LGYRO != 0     */
-uint16_t     agc_imu_gyrocmd(void);    /* GYROCMD counter (pulses)      */
-agc_sp_t     agc_imu_cducmd(int axis); /* CDUXCMD..CDUZCMD (pulses)     */
+bool         agc_imu_gyros_busy(void);      /* LGYRO != 0     */
+uint16_t     agc_imu_gyrocmd(void);         /* GYROCMD counter (pulses)      */
+agc_sp_t     agc_imu_cducmd(int axis);      /* CDUXCMD..CDUZCMD (pulses)     */
 
 /* STALL: IMUSTALL / OPTSTALL / RADSTALL.  On SLEEPING the caller must
  * return; job wake_as is woken by GOODEND/BADEND and then reads the outcome

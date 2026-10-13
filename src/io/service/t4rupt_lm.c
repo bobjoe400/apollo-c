@@ -6,13 +6,17 @@
  *   limit monitors (RRAUTCHK, RRCDUCHK, RRGIMON / MONREPOS) and the
  *   gimbal-to-pilot axis matrix for the LM DAP (GPMATRIX = DAPT4S); and
  *   the RR moding primitives the monitor shares with the radar programs
- *   (MAGSUB, RRLIMCHK, SETTRKF / RRTRKF, TRKFLON +1, FLIP).
+ *   (MAGSUB, RRLIMCHK, SETTRKF / RRTRKF, TRKFLON +1, FLIP, CLRADMOD) and
+ *   the mode-switch starters the radar verbs share with them (RRZERO,
+ *   LRPOS2, RADNOOP: RADMODES, a channel bit and a waitlist task of
+ *   src/lm/radar).
  *
  * AGC SOURCE:
  *   Luminary099 T4RUPT_PROGRAM.agc pp.182-189  (RRAUTCHK, RRCDUCHK,
  *   RRGIMON, MONREPOS, GPMATRIX); P20-P25.agc pp.521-525 (MAGSUB,
- *   RRLIMCHK, SETTRKF, RRTRKF, TRKFLON, FLIP); Comanche055 has no
- *   counterpart.
+ *   RRLIMCHK, SETTRKF, RRTRKF, TRKFLON, FLIP), p.516 (CLRADMOD), p.537
+ *   (RRZERO), p.561 (RADNOOP, LRPOS2);
+ *   Comanche055 has no counterpart.
  *
  * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
  *   Name      Type      I/O  Scale        Description
@@ -27,11 +31,13 @@
  * EXTERNAL REFERENCES:
  *   Name               Description
  *   -----------------  ----------------------------------------------
- *   agc_waitlist_call  WAITLIST: RRTURNON (10 ms), DORREPOS (20 ms)
+ *   agc_waitlist_call  WAITLIST: RRTURNON (10 ms), DORREPOS (20 ms),
+ *                      RRZ2, RGOODEND (10 ms), LRPOSCAN (6 s)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   Alarm 00515 (RR CDU fail while RNDVZFLG, P20/P22).  BAD_ARG when the
- *   waitlist rejects a call.
+ *   Alarm 00515 (RR CDU fail while RNDVZFLG, P20/P22); 00510 (RRZERO
+ *   with the RR out of auto mode).  BAD_ARG when the waitlist rejects a
+ *   call.
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   LM only; runs inside T4RUPT (agc_t4rupt, t4rupt.c).  T4JUMP runs
@@ -54,6 +60,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
@@ -61,26 +68,35 @@
 #include "agc/exec/exec.h"
 #include "agc/io/service.h"
 
-#define RADMODES_WORD     12                         /* RADMODES EQUALS FLGWRD12          */
-#define AUTOMBIT          000002u                    /* BIT2: RR not in auto (inverted)   */
-#define RCDUFBIT          000100u                    /* BIT7: RR CDU OK                   */
-#define REPOSBIT          002000u                    /* BIT11: reposition in progress     */
-#define WORD15            077777u                    /* one AGC word, 15 bits             */
-#define BIT6              000040u                    /* channel 33 bit 6: LR position 2   */
-#define RMODINIT          000102u                    /* RMODINIT: bits 7 and 2            */
-#define OCT05776          005776u                    /* keeps all but CDES/REMODE/REPOS.. */
-#define OCT10001          010001u                    /* RRCDUZRO and TURNON bits          */
-#define OCT32002          032002u                    /* remode, zeroing, monitor, no auto */
-#define OCT20002          020002u                    /* tracker and error counter enable  */
-#define CDU_SIGN          040000u                    /* sign bit of a CDU counter         */
-#define RRTURNON_DELAY_CS 1u                         /* CAF ONE: RRTURNON in 10 ms        */
-#define DORREPOS_DELAY_CS 2u                         /* CAF TWO: DORREPOS in 20 ms        */
-#define ALARM_RR_CDU_FAIL ((agc_alarm_code_t) 00515) /* in P20/P22     */
-#define ANTENBIT          004000u                    /* BIT12 ANTENFLG: RR antenna in mode 2 */
-#define RR_RRDATABT       000010u                    /* BIT4 RRDATAFL: RR data fail       */
-#define RR_13_7_2         010102u                    /* 13,7,2: zeroing, CDU OK, not in auto */
-#define RR_TRKF_LAMP      000200u                    /* DSPTAB +11D BIT8: tracker fail lamp */
-#define RR_DSPTAB_11      11                         /* DSPTAB +11D                       */
+#define RADMODES_WORD         12                         /* RADMODES EQUALS FLGWRD12          */
+#define AUTOMBIT              000002u                    /* BIT2: RR not in auto (inverted)   */
+#define RCDUFBIT              000100u                    /* BIT7: RR CDU OK                   */
+#define REPOSBIT              002000u                    /* BIT11: reposition in progress     */
+#define WORD15                077777u                    /* one AGC word, 15 bits             */
+#define BIT6                  000040u                    /* channel 33 bit 6: LR position 2   */
+#define RMODINIT              000102u                    /* RMODINIT: bits 7 and 2            */
+#define OCT05776              005776u                    /* keeps all but CDES/REMODE/REPOS.. */
+#define OCT10001              010001u                    /* RRCDUZRO and TURNON bits          */
+#define OCT32002              032002u                    /* remode, zeroing, monitor, no auto */
+#define OCT20002              020002u                    /* tracker and error counter enable  */
+#define CDU_SIGN              040000u                    /* sign bit of a CDU counter         */
+#define RRTURNON_DELAY_CS     1u                         /* CAF ONE: RRTURNON in 10 ms        */
+#define DORREPOS_DELAY_CS     2u                         /* CAF TWO: DORREPOS in 20 ms        */
+#define ALARM_RR_CDU_FAIL     ((agc_alarm_code_t) 00515) /* in P20/P22     */
+#define ANTENBIT              004000u                    /* BIT12 ANTENFLG: RR antenna in mode 2 */
+#define RR_RRDATABT           000010u                    /* BIT4 RRDATAFL: RR data fail       */
+#define RR_13_7_2             010102u                    /* 13,7,2: zeroing, CDU OK, not in auto */
+#define RR_TRKF_LAMP          000200u                    /* DSPTAB +11D BIT8: tracker fail lamp */
+#define RR_DSPTAB_11          11                         /* DSPTAB +11D                       */
+#define RADMODES_DESIGNATE    041000u                    /* BIT10+15: designate, continuous des. */
+#define CH12_ENB_ECTR         000002u                    /* chan 12 bit 2: enable RR error ctrs */
+#define RADMODES_RCDU0        010000u                    /* BIT13 RCDU0FLG: RR CDUs being zeroed */
+#define RADMODES_LRPOS        000040u                    /* BIT6 LRPOSFLG: LR position 2 desired */
+#define RADMODES_REPOS_TURNON 002001u                    /* BIT11+1: reposition, turn-on      */
+#define CH12_LRPOS2           010000u                    /* chan 12 bit 13: LR to position 2  */
+#define CH33_LR_POS2          000100u                    /* chan 33 bit 7: LR in position 2   */
+#define LR_POS2_WAIT          600U                       /* 6SECS DEC 600: LRPOSCAN delay, cs */
+#define ALARM_RR_NOT_AUTO     ((agc_alarm_code_t) 00510) /* RR not in auto  */
 
 /* RRLIMCHK limits (p.523): DEC fractions of 180 degrees (x 16384).      */
 #define RR_LIM_T1  (-5006)  /* DEC -.30555: 55 degrees               */
@@ -310,6 +326,117 @@ bool agc_rr_limchk(uint16_t t, uint16_t s)
     }
 
     return (!agc_rr_magsub(tv, RR_LIM_T2));
+}
+
+/* ---- CLRADMOD (p.516) ------------------------------------------------ */
+/**********************************************************************
+ * CLRADMOD (p.516): clear designate and continuous designate, disable
+ * the RR error counters. The AGC's caller is inhibited (the user will
+ * RELINT); here the routine inhibits around its own update. Its callers
+ * are the radar programs, the radar verbs and the V37 / abort clean-ups.
+ * AGC: CLRADMOD (P20-P25.agc p.516)
+ *
+ * FUNCTION NAME: agc_rendz_clradmod
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+void agc_rendz_clradmod(void)
+{
+    agc_inhint();
+    agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() & ~RADMODES_DESIGNATE & WORD15));
+    agc_chan_and((int) AGC_CHAN_CHAN12, (uint16_t) (~(uint32_t) CH12_ENB_ECTR & WORD15));
+    agc_relint();
+}
+
+/* ---- mode-switch starters (RADNOOP, RRZERO p.537, LRPOS2 p.561) ------ */
+/**********************************************************************
+ * RADNOOP (p.561): no further action requested; good end in 10 ms.
+ * AGC: RADNOOP (P20-P25.agc p.561)
+ *
+ * FUNCTION NAME: radnoop
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the waitlist status; AGC_STATUS_BAD_ARG on a
+ *          failed precondition
+ **********************************************************************/
+static agc_status_t radnoop(void)
+{
+    agc_status_t st = agc_waitlist_call(1U, AGC_TASK_RR_GOODEND); /* WAITLIST */
+
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (st);
+}
+
+/**********************************************************************
+ * RRZERO (p.537): zero the RR CDUs and find the antenna mode; the caller
+ * then waits in RADSTALL. Nothing to do during a monitor reposition or
+ * turn-on (RADNOOP); alarm 510 when the auto discrete is absent.
+ * AGC: RRZERO (P20-P25.agc p.537)
+ *
+ * FUNCTION NAME: agc_rr_zero
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, else the waitlist status
+ **********************************************************************/
+agc_status_t agc_rr_zero(void)
+{
+    if ((agc_erase_radmodes() & RADMODES_REPOS_TURNON) != 0U)
+    {
+        return (radnoop());
+    }
+
+    agc_inhint();
+    agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() | RADMODES_RCDU0));
+    agc_status_t st = agc_waitlist_call(1U, AGC_TASK_RR_ZERO); /* RRZ2 */
+
+    if (st == AGC_STATUS_OK && (agc_erase_radmodes() & AUTOMBIT) != 0U)
+    {
+        agc_alarm(ALARM_RR_NOT_AUTO);
+    }
+
+    agc_relint(); /* ROADBACK */
+
+    return (st);
+}
+
+/**********************************************************************
+ * LRPOS2 (pp.561-562): command the landing radar to position 2 and
+ * check that it gets there: scanning for the inbit starts after 6 s,
+ * once a second for 15 s; then 2 s for the antenna bounce to die out.
+ * AGC: LRPOS2 (P20-P25.agc p.561)
+ *
+ * FUNCTION NAME: agc_radar_lrpos2
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
+ *          argument, else the status of the call that failed
+ **********************************************************************/
+agc_status_t agc_radar_lrpos2(void)
+{
+    agc_inhint();
+    agc_erase_set_radmodes((uint16_t) (agc_erase_radmodes() | RADMODES_LRPOS));
+    agc_status_t st; /* waitlist status */
+
+    if ((agc_chan_read(AGC_CHAN_CHAN33) & CH33_LR_POS2) == 0U)
+    {
+        st = radnoop(); /* already  */
+    }
+    else
+    {
+        agc_chan_or(AGC_CHAN_CHAN12, CH12_LRPOS2);
+        st = agc_waitlist_call(LR_POS2_WAIT, AGC_TASK_LR_POSITION_SCAN);
+    }
+
+    agc_relint();
+
+    return (st);
 }
 
 /* ---- lamps (SETTRKF, TRKFLON, FLIP pp.524-525) ------------------------ */

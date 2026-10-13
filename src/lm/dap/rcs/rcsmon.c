@@ -21,8 +21,7 @@
  *   lm_dap_state                DAP erasables (state.c)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   No alarms. AGC_STATUS_BAD_ARG when an internal assertion fails;
- *   1/ACCFIX status passed through.
+ *   No alarms. The 1/ACCFIX status is passed through.
  *
  * NOTES:
  *   Channel 32 bits 1-8 (inverted) report the crew's jet-pair isolation
@@ -54,9 +53,8 @@ static const uint16_t fail6[RM_NBITS] = {000010u, 000020u, 000004u, 000200u, 000
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, else the status of the
+ *          routine it ends in (1/ACCFIX)
  **********************************************************************/
 agc_status_t agc_lm_dap_rcsmon(void)
 {

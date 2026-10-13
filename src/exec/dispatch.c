@@ -583,6 +583,8 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_tracking_attitude_csm_maneuvered());
 
         /* src/csm/optics */
+        case AGC_JOB_OPTICS_COARSE_DRIVE:
+            return (agc_job_optics_coarse_drive(ctx));
         case AGC_JOB_ALTERNATE_LOS_ANGLES_DISPLAY:
             return (agc_job_alternate_los_angles_display(ctx));
         case AGC_JOB_ALTERNATE_LOS_MARKED:
@@ -779,8 +781,6 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_lr_position_two_check());
         case AGC_JOB_LR_SPURIOUS_TEST_END_RESUME:
             return (agc_job_lr_spurious_test_end_resume());
-        case AGC_JOB_OPTICS_COARSE_DRIVE:
-            return (agc_job_optics_coarse_drive(ctx));
         case AGC_JOB_OPTICS_COARSE_START:
             return (agc_job_optics_coarse_start());
         case AGC_JOB_RADAR_TEST_AUTO_CHECK:
@@ -803,8 +803,6 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_radar_test_switch());
         case AGC_JOB_RADAR_TEST_SWITCH_RESUME:
             return (agc_job_radar_test_switch_resume(ctx));
-        case AGC_JOB_RR_DESIGNATE_DRIVE:
-            return (agc_job_rr_designate_drive());
         case AGC_JOB_RR_DESIGNATE_END_MONITOR:
             return (agc_job_rr_designate_end_monitor());
         case AGC_JOB_RR_DESIGNATE_LOAD:
@@ -821,10 +819,6 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_rr_lockon_display(ctx));
         case AGC_JOB_RR_LOCKON_QUERY:
             return (agc_job_rr_lockon_query(ctx));
-        case AGC_JOB_RR_LOS_DISPLAY:
-            return (agc_job_rr_los_display());
-        case AGC_JOB_RR_LOS_DISPLAY_NEXT:
-            return (agc_job_rr_los_display_next());
         case AGC_JOB_RR_LOS_DISPLAY_STOP:
             agc_job_rr_los_display_stop();
 
@@ -915,22 +909,26 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
             return (agc_job_realign_time_flash(ctx));
         case AGC_JOB_REALIGN_TIME_PROCEED:
             return (agc_job_realign_time_proceed(ctx));
+        case AGC_JOB_IMU_REALIGN_STARS:
+            return (agc_job_csm_realign_star_selection(ctx));
+        case AGC_JOB_IMU_REALIGN_RECHECK:
+            return (agc_job_csm_fine_align_recheck(ctx));
+        case AGC_JOB_IMU_REALIGN_LANDING_SITE:
+            return (agc_job_csm_imu_realign_landing_site(ctx));
 
         /* src/programs/displays */
         case AGC_JOB_ORBIT_DISPLAY_AVERAGE_G:
-            return (agc_job_orbit_display_average_g());
+            return (agc_job_orbit_display_average_g(ctx));
         case AGC_JOB_ORBIT_DISPLAY_MONITOR:
             return (agc_job_orbit_display_monitor(ctx));
         case AGC_JOB_ORBIT_DISPLAY_RECYCLE:
             return (agc_job_orbit_display_recycle(ctx));
         case AGC_JOB_ORBIT_DISPLAY_REPEAT:
             return (agc_job_orbit_display_repeat());
-        case AGC_JOB_ORBIT_DISPLAY_SPLASH:
-            return (agc_job_orbit_display_splash());
         case AGC_JOB_ORBIT_DISPLAY_STALL:
             return (agc_job_orbit_display_stall(ctx));
         case AGC_JOB_ORBIT_DISPLAY_UPDATE:
-            return (agc_job_orbit_display_update());
+            return (agc_job_orbit_display_update(ctx));
         case AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT:
             return (agc_job_orbit_display_vehicle_select(ctx));
         case AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECTED:
@@ -1133,6 +1131,8 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         /* src/csm/burns */
         case AGC_JOB_SPS_BURN:
             return (agc_job_sps_burn(ctx));
+        case AGC_JOB_ORBIT_DISPLAY_SPLASH:
+            return (agc_job_orbit_display_splash());
 
         /* src/csm/alignment */
         case AGC_JOB_IMU_ORIENTATION_DETERMINATION:
@@ -1377,8 +1377,6 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_lr_position_two_check());
         case AGC_JOB_LR_SPURIOUS_TEST_END_RESUME:
             return (agc_job_lr_spurious_test_end_resume());
-        case AGC_JOB_OPTICS_COARSE_DRIVE:
-            return (agc_job_optics_coarse_drive(ctx));
         case AGC_JOB_OPTICS_COARSE_START:
             return (agc_job_optics_coarse_start());
         case AGC_JOB_RADAR_TEST_AUTO_CHECK:
@@ -1401,8 +1399,6 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_radar_test_switch());
         case AGC_JOB_RADAR_TEST_SWITCH_RESUME:
             return (agc_job_radar_test_switch_resume(ctx));
-        case AGC_JOB_RR_DESIGNATE_DRIVE:
-            return (agc_job_rr_designate_drive());
         case AGC_JOB_RR_DESIGNATE_END_MONITOR:
             return (agc_job_rr_designate_end_monitor());
         case AGC_JOB_RR_DESIGNATE_LOAD:
@@ -1419,10 +1415,6 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_rr_lockon_display(ctx));
         case AGC_JOB_RR_LOCKON_QUERY:
             return (agc_job_rr_lockon_query(ctx));
-        case AGC_JOB_RR_LOS_DISPLAY:
-            return (agc_job_rr_los_display());
-        case AGC_JOB_RR_LOS_DISPLAY_NEXT:
-            return (agc_job_rr_los_display_next());
         case AGC_JOB_RR_LOS_DISPLAY_STOP:
             agc_job_rr_los_display_stop();
 
@@ -2049,22 +2041,26 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_realign_time_flash(ctx));
         case AGC_JOB_REALIGN_TIME_PROCEED:
             return (agc_job_realign_time_proceed(ctx));
+        case AGC_JOB_IMU_REALIGN_STARS:
+            return (agc_job_lm_fine_align(ctx));
+        case AGC_JOB_IMU_REALIGN_RECHECK:
+            return (agc_job_lm_fine_align_recheck(ctx));
+        case AGC_JOB_IMU_REALIGN_LANDING_SITE:
+            return (agc_job_lm_imu_realign_landing_site(ctx));
 
         /* src/programs/displays */
         case AGC_JOB_ORBIT_DISPLAY_AVERAGE_G:
-            return (agc_job_orbit_display_average_g());
+            return (agc_job_orbit_display_average_g(ctx));
         case AGC_JOB_ORBIT_DISPLAY_MONITOR:
             return (agc_job_orbit_display_monitor(ctx));
         case AGC_JOB_ORBIT_DISPLAY_RECYCLE:
             return (agc_job_orbit_display_recycle(ctx));
         case AGC_JOB_ORBIT_DISPLAY_REPEAT:
             return (agc_job_orbit_display_repeat());
-        case AGC_JOB_ORBIT_DISPLAY_SPLASH:
-            return (agc_job_orbit_display_splash());
         case AGC_JOB_ORBIT_DISPLAY_STALL:
             return (agc_job_orbit_display_stall(ctx));
         case AGC_JOB_ORBIT_DISPLAY_UPDATE:
-            return (agc_job_orbit_display_update());
+            return (agc_job_orbit_display_update(ctx));
         case AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT:
             return (agc_job_orbit_display_vehicle_select(ctx));
         case AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECTED:
@@ -2257,6 +2253,16 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_tpm_targeting(ctx));
         case AGC_JOB_TPM_TARGETING_OTHER_VEHICLE:
             return (agc_job_tpm_targeting_other_vehicle(ctx));
+
+        /* src/lm/optics */
+        case AGC_JOB_RR_LOS_DISPLAY:
+            return (agc_job_rr_los_display());
+        case AGC_JOB_RR_LOS_DISPLAY_NEXT:
+            return (agc_job_rr_los_display_next());
+
+        /* src/lm/radar */
+        case AGC_JOB_RR_DESIGNATE_DRIVE:
+            return (agc_job_rr_designate_drive());
 
         /* src/exec */
         case AGC_JOB_CHANGE_PROGRAM_CONTINUE:

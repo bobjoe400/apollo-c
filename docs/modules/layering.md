@@ -26,25 +26,65 @@ function pairs; 9 of them from core/ecadr.c.
 | D: shared code continuing in a vehicle's job | TC/TCF to a label of the rope being flown | agc_dispatch_job_as(id, ctx) (generated): the registry row names the CSM and LM label; the shared code depends on the id, not on the vehicle module |
 
 ## Progress
-- TODO depgraph exceptions/layers, ARCHITECTURE.md
-- TODO M OGC -> imu (task 1)
-- TODO M FINETIME, CDU trig, GOTOV56, DESOPTT/S, RRLIMCHK/SETTRKF, SXTNB, MASS/ABDELV, rendezvous block
-- TODO V extended verbs to vehicle folders
-- TODO D P52 seams, R30 CANDEL
-- TODO comments (six prologs, erasable.c line 9, keys.c ERROR RESET)
-- TODO gates, review_items, MODULE_STATUS
+(resumed 2026-10-13 after the weekly cutoff; the first run's moves are in
+checkpoint 7826e91. Bounded scope from the lead: smallest change per edge,
+no extended-verb folder moves or P52/R30 restructuring unless unavoidable.)
+- DONE depgraph: exec/nouns and exec/change_program as exceptions, guidance =
+  programs layer, csm/dap and lm/dap on the io/imu layer (tools/depgraph.py)
+- DONE M OGC/IGC/MGC -> imu (agc_imu_ogc, src/imu/gyro.c; task 1); lm-sim 34/34
+- DONE M FINETIME -> imu/mode.c; CDU trig + AX*SR*T -> imu/cdu_trig.c; GOTOV56 ->
+  io/verbs/extended_verbs.c; DESOPTT/S -> io/service/t4rupt_csm.c; RRLIMCHK,
+  SETTRKF/FLIP/TRKFLON -> io/service/t4rupt_lm.c; SXTNB ->
+  programs/alignment/geometry_csm.c; MASS, ABDELV -> core/erasable.c
+- DONE erasable_map callers: the address column (tools/depgraph.py ADDRESS_COLUMN); ARCHITECTURE.md layering + tree
+- DONE io/verbs: DAPFIG, V82CALL (agc_exec_jump); LANDMARK/MRKBUF -> core; OPTC1 job ->
+  csm/optics; CLRADMOD, RRZERO, LRPOS2, RADNOOP -> io/service/t4rupt_lm.c; RRDESK2 job ->
+  lm/radar/designate.c; RRLOSDSP jobs -> lm/optics/lem_geometry.c
+- DONE programs/alignment P52 seams: three registry rows + agc_exec_jump
+- DONE io/telemetry DELVSLV (noun data dispatch); programs/displays CANDEL -> csm/burns
+- DONE depgraph: no upward edge (2026-10-13); lm-sim baseline at HEAD 34/34 (task 1)
+- DONE comments: six file prologs, erasable.c line 9, keys.c CLUPLOCK -> ACCEPTUP
+- DONE gates (2026-10-13, private BUILD): make, make test (unit + 14 scenarios), make
+  lm-sim 34/34 matched, make check (0 hard; format clean; style 646 = HEAD),
+  prolog-report 0, always-ok-report 0, depgraph upward table "(none)";
+  docs/overview/README.md regenerated; review_items struck; MODULE_STATUS row
 
 ## Decisions per edge
-(filled in as each edge is removed)
+Smallest change per edge (lead, 2026-10-13); behaviour identical (gates
+below). First run (7826e91): the M rows of the design table.
+
+| Edge (caller -> callee) | AGC structure | Change |
+|---|---|---|
+| imu -> programs/alignment (gyro_words -> agc_align_ram, L2) | OGC/IGC/MGC: one erasable, ECADR OGC at IMUPULSE | OGC buffer owned by imu: agc_imu_ogc() (src/imu/gyro.c); CALCGTA callers, P57, P07, V25N93 noun write through it |
+| core -> csm/guidance/programs (ecadr.c) | ERASABLE_ASSIGNMENTS address column | nassp-integration moved the map to src/erasable_map; calls INTO it (pinball machine-address nouns, V71/V72, DNDUMP, LM P07) are the address column: tools/depgraph.py ADDRESS_COLUMN, ARCHITECTURE.md |
+| io/verbs -> csm/burns (V46 -> agc_job_dapfig) | POSTJUMP DAPFIG | agc_exec_jump(ctx, AGC_JOB_DAPFIG) (new exec primitive: the job goes on at a body by id) |
+| io/verbs -> programs/displays (V82 -> R30) | POSTJUMP V82CALL | agc_exec_jump(ctx, AGC_JOB_ORBIT_PARAMETER_DISPLAY) |
+| io/verbs -> programs/navigation (LANDMARK, MRKBUF1/2) | shared erasables | storage and the agc_erase_* accessors moved to src/core/erasable.c (not reset at power-on, as before) |
+| io/verbs -> programs/alignment (OPTC1: SAC/PAC -> DESOPTS/T) | V41 N91 continuation | the OPTC1 job body moved to src/csm/optics/auto_optics_positioning.c (R52 makes the same hand-over); registry CSM only |
+| io/verbs -> lm/radar (RRZEROK, LRPOS2K, RRDESEND, V56) | RRZERO, LRPOS2, RADNOOP, CLRADMOD: RADMODES + channel bit + waitlist task | moved to src/io/service/t4rupt_lm.c with RADMODES (as RRLIMCHK/SETTRKF in 7826e91); tasks stay in lm/radar, by id |
+| io/verbs -> lm/radar (RRDESK2 -> RRDESNB) | FINDVAC'd job | job body moved to src/lm/radar/designate.c; registry LM only |
+| io/verbs -> lm/optics (RRLOSDSP -> RRNBMPAC) | FINDVAC'd job | RRLOSDSP and its DELAYJOB continuation moved to src/lm/optics/lem_geometry.c; registry LM only |
+| io/telemetry -> programs/navigation (DELVSLV) | DNADR DELVSLV (= DELVLVC) | read by noun data id through agc_dispatch_noun (exec/nouns, the documented noun-data exception); same dp value, same words |
+| programs/alignment -> csm/alignment, lm/alignment (P52 seams, 8 pairs) | TC/TCF to the rope's own label | three registry rows with a CSM and an LM body (AGC_JOB_IMU_REALIGN_STARS, _RECHECK, _LANDING_SITE) + agc_exec_jump |
+| programs/displays -> csm/burns (CANDEL -> DELRSPL) | CANDEL is CM-only (LM DELRSPL EQUALS SPLRET) | CANDEL/SPLRET job moved next to DELRSPL (src/csm/burns/external_delta_v.c); V82GOFF1 / V82GON1 jump to it by id (they now take ctx); R30 exports SPLRET1 and the TFF erasables |
+
+Not done (out of the bounded scope): the extended-verb files stay in
+io/verbs (design row V); no new upward edge needed it.
 
 ## Deviations
-none (no behaviour change is intended anywhere)
+none (no behaviour change). Registry rows of moved vehicle-only bodies
+(OPTC1, RRDESK2, RRLOSDSP, CANDEL) lost the other vehicle's handler, which
+no path reached; job enum values shifted (ids are symbolic everywhere).
 
 ## Stubs
 none
 
 ## Requested core additions
-none (this lane was told to edit include/agc for the moves)
+none requested; made directly (the lane edits include/agc for the moves):
+agc_exec_jump (exec.h); agc_erase_mrkbuf/_set_mrkbuf/_mrkbuf2/_set_mrkbuf2,
+agc_erase_landmark/_set_landmark (core/state.h); agc_rendz_clradmod,
+agc_rr_zero, agc_radar_lrpos2 (io/service.h); agc_orbit_display_start_ticking,
+agc_orbit_display_tff_debris (programs/rendezvous.h)
 
 ## Tests written
 none new: the moves change no behaviour; tests/imu, tests/programs/align,
@@ -53,3 +93,12 @@ oracle_imu, oracle_align and `make lm-sim` are the acceptance.
 ## Open questions
 
 ## Lessons
+- "Continue in a vehicle's job body" is TC/TCF/POSTJUMP in the AGC; in C
+  it is agc_exec_jump(ctx, id) with a two-handler registry row, not a
+  direct call into src/csm or src/lm. Use it only for jumps, never to
+  launder a subroutine CALL (DELRSPL is a CALL: its caller CANDEL moved).
+- Small mode-switch starters (RRZERO, LRPOS2, CLRADMOD) belong with the
+  word they set (RADMODES, io/service), not with the program that also
+  uses them; their waitlist tasks stay put and are reached by id.
+- A downlist item whose owner sits above io is noun data: read it by id
+  (agc_dispatch_noun) rather than moving the owner's storage.

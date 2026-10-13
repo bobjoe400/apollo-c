@@ -739,7 +739,7 @@ static agc_vec_t fc_window(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
 {
     agc_interp_clear_ovf(ip);                                      /* BOV: clear       */
-    agc_cdutrig_t *trig = agc_imu_trig();                 /* debris: SIN/COSCDU */
+    agc_cdutrig_t *trig = agc_imu_trig();                          /* debris: SIN/COSCDU */
     agc_vec_t      unx;                                            /* unit thrust command, half unit 2^1 */
     agc_vec_t      unz;                                            /* unit window command, half unit 2^1 */
     agc_status_t   st   = fc_inputs(ip, unfc_2, &unx, &unz, trig); /* step status */

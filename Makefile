@@ -23,7 +23,7 @@ UNCRUSTIFY     ?= uncrustify
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim sim-debug scenarios lm-sim test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report always-ok-report clean
+.PHONY: all lib lib-debug sim sim-debug scenarios lm-sim nassp-replay test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report always-ok-report clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -67,6 +67,15 @@ LMSIM_ARGS ?=
 lm-sim: $(BUILD)/agc_sim
 	@test -n "$(LMSIM_DIR)" || { echo "lm-sim: set LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator"; exit 2; }
 	python3 -I tools/lm_sim.py --lmsim $(LMSIM_DIR) --sim $(BUILD)/agc_sim --sequence sim/lm_simulator/tutorial.txt --out $(BUILD)/lm_sim $(LMSIM_ARGS)
+
+# NASSP 9 scenario images (sim/nassp/images) replayed on our AGC through the NASSP
+# shim (src/nassp/nassp_engine.c) and on NASSP's own yaAGC engine, compared word for
+# word: state-vector blocks after the P00 integration steps and an MCC state-vector
+# uplink (docs/modules/nassp-integration.md).  Seconds, no Orbiter.  NASSP's yaAGC
+# (GPL) is downloaded into build/nassp at the pinned commit, or taken from
+# NASSP_YAAGC_DIR; without either the target skips.  Not part of `make test`.
+nassp-replay: $(BUILD)/libagc.a $(SIM_OBJS)
+	python3 -I tools/nassp_replay.py --build $(BUILD)
 
 $(BUILD)/debug/%.o: %.c
 	@mkdir -p $(dir $@)

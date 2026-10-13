@@ -37,12 +37,9 @@
  *   agc_flag_*            flag words (flags_common.h)
  *   agc_erase_*           erasable accessors (state.h)
  *   agc_state_vehicle     vehicle state (state.h)
- *   agc_job_csm_fine_align_recheck  see its header
- *   agc_job_csm_imu_realign_landing_site  see its header
- *   agc_job_csm_realign_star_selection  see its header
- *   agc_job_lm_fine_align  see its header
- *   agc_job_lm_fine_align_recheck  see its header
- *   agc_job_lm_imu_realign_landing_site  see its header
+ *   agc_exec_jump         the vehicle's own P52 steps, by registry id:
+ *                         AGC_JOB_IMU_REALIGN_STARS (CM P52C, LM R51),
+ *                         _RECHECK (R51K), _LANDING_SITE (P52LS)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   A failing service call (executive, waitlist, display, IMU,
@@ -241,7 +238,7 @@ agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
 
     if (is_csm())
     {
-        return ((opt == 0) ? agc_job_realign_time(ctx) : agc_job_csm_realign_star_selection(ctx)); /* landing site (P52T) or REFSMMAT (P52C) */
+        return ((opt == 0) ? agc_job_realign_time(ctx) : agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_STARS)); /* landing site (P52T) or REFSMMAT (P52C) */
     }
 
     if (opt == 0)
@@ -253,7 +250,7 @@ agc_status_t agc_job_imu_realign_option(agc_job_ctx_t *ctx)
 
     agc_align_ram()->qmaj = AGC_JOB_GOTOPOOH; /* P52OUT         */
 
-    return (agc_job_lm_fine_align(ctx)); /* P52E, P52F     */
+    return (agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_STARS)); /* P52E, P52F: R51 */
 }
 
 /**********************************************************************
@@ -340,12 +337,12 @@ agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
             align_set_dsptem1(align_loadtime());
         }
 
-        return (nominal ? agc_job_realign_nominal_orientation(ctx) : agc_job_csm_imu_realign_landing_site(ctx)); /* S52.3 or P52LS */
+        return (nominal ? agc_job_realign_nominal_orientation(ctx) : agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_LANDING_SITE)); /* S52.3 or P52LS */
     }
 
     agc_align_ram()->talign = (major <= 0) ? align_loadtime() : t; /* BZMF   */
 
-    return (nominal ? agc_job_realign_nominal_orientation(ctx) : agc_job_lm_imu_realign_landing_site(ctx)); /* S52.3 or P52LS */
+    return (nominal ? agc_job_realign_nominal_orientation(ctx) : agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_LANDING_SITE)); /* S52.3 or P52LS */
 }
 
 /**********************************************************************
@@ -577,13 +574,13 @@ agc_status_t agc_job_coarse_align_fineonly(agc_job_ctx_t *ctx)
 
     if (is_csm())
     {
-        return (agc_job_csm_realign_star_selection(ctx));
+        return (agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_STARS)); /* P52C */
     }
 
     agc_flag_clear(AGC_FLAG_PFRATFLG);
     ram->qmaj = AGC_JOB_GOTOPOOH; /* P52OUT    */
 
-    return (agc_job_lm_fine_align(ctx));
+    return (agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_STARS)); /* R51 */
 }
 
 /**********************************************************************
@@ -613,7 +610,7 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
     const agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows */
 
     agc_align_gyro_coarse_dc(&ip, &ram->xsmd, &refsmmat, &ram->xdc);
-    agc_imu_calcgta(&ip, &ram->xdc, agc_imu_ogc());                              /* CALCGTA   */
+    agc_imu_calcgta(&ip, &ram->xdc, agc_imu_ogc());                         /* CALCGTA   */
     agc_flag_clear(AGC_FLAG_DRIFTFLG);                                      /* flag ids are valid  */
     agc_flag_clear(AGC_FLAG_REFSMFLG);
     agc_status_t st = align_show(ctx, AGC_DSKY_GODSPR, VN_MONITOR_GIMBALS); /* GODSPR    */
@@ -735,10 +732,10 @@ agc_status_t agc_job_gycrs_torqued(agc_job_ctx_t *ctx)
 
     if (is_csm())
     {
-        return (agc_job_csm_fine_align_recheck(ctx));
+        return (agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_RECHECK)); /* R51K */
     }
 
     ram->qmaj = AGC_JOB_GOTOPOOH; /* P52OUT    */
 
-    return (agc_job_lm_fine_align_recheck(ctx));
+    return (agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_RECHECK)); /* R51K */
 }

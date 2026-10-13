@@ -50,6 +50,7 @@
  *   agc_csm_*             CSM optics and sighting routines (alignment.h)
  *   agc_sxtmark_mkreleas  SXTMARK routines (alignment.h)
  *   agc_rendz_tracking_attitude_csm  see its header
+ *   agc_extverb_redisplay  EXDSPRET of V41 N91 (service.h)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   A failing service call (executive, waitlist, display, IMU,
@@ -318,7 +319,7 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_jo
         agc_cdutrig_t t;                                                                    /* CDUTRIG sines and cosines */
         bool          cult = false;                                                         /* CULTFLAG from CALCSXA */
 
-        agc_imu_cdutrig(&t);                                     /* CDUTRIG  */
+        agc_imu_cdutrig(&t);                                      /* CDUTRIG  */
         agc_csm_calcsxa(ip, ram->star, &t, &ram->sac, &ram->pac, &cult);
         *result = cult ? SR52_OVER_90 : trunnion_class(ram->pac); /* CULTFLAG: trunnion over 90 deg */
     }
@@ -714,4 +715,29 @@ agc_status_t agc_job_auto_optics_positioning_terminate(agc_job_ctx_t *ctx)
     agc_erase_set_modecadr(AGC_IMU_DEV_OPTICS, 0); /* OPTCADR  */
 
     return (align_flash(ctx, AGC_DSKY_KLEENEX, 0, AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH, AGC_JOB_GOTOPOOH));
+}
+
+/**********************************************************************
+ * AGC: OPTC1 +4 (Comanche055 EXTENDED_VERBS.agc p.242) -- V41 N91
+ * after the V24N92 load (V33 or ENTER): DESOPTS = SAC, DESOPTT = PAC,
+ * the hand-over to the T4RUPT optics drive that R52 also makes; then V41
+ * is shown again (EXDSPRET). The verb itself is OPTCOARK in
+ * src/io/verbs/extended_verbs_csm.c; this continuation is filed with
+ * the optics because SAC and PAC are the alignment erasables.
+ *
+ * FUNCTION NAME: agc_job_optics_coarse_drive
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I   the job
+ *
+ * RETURNS: agc_status_t -- the display request status
+ **********************************************************************/
+agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx)
+{
+    agc_align_ram_t *ar = agc_align_ram(); /* SAC, PAC */
+
+    agc_erase_set_desopts(ar->sac);
+    agc_erase_set_desoptt(ar->pac);
+
+    return (agc_extverb_redisplay(ctx, 41, AGC_JOB_OPTICS_COARSE_START));
 }

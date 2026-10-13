@@ -32,6 +32,7 @@
 #include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "agc/erasable_map/address_map.h"
+#include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"
 #include "agc/lm/landing.h"
@@ -248,13 +249,15 @@ static void test_unmapped_and_flags(agc_vehicle_t v)
 /**********************************************************************
  * AGC: none (test) -- launch pad loads by address (Comanche055 CMPAD):
  * IMU compensation at 1452 (PBIASX PIPASCFX PBIASY ..), AZO at 1711 and
- * the lunar ephemeris (VECOEM 2036, OMEGAES 2146) reach their typed homes.
+ * the lunar ephemeris (VECOEM 2036, OMEGAES 2146) reach their typed homes;
+ * FANG (1774) reaches both FANG and the low word of K3VAL (EK3VAL 1773).
  **********************************************************************/
 static void test_pad_loads(void)
 {
     agc_imu_comp_params_t c;   /* compensation read back */
     agc_navaux_padload_t  pad; /* AZO .. */
     agc_ephem_csm_t       eph; /* VECOEM .. */
+    uint16_t              w;   /* FANG read back */
 
     agc_state_init(AGC_VEHICLE_CSM);
     CHECK(agc_erase_write_ecadr(01452u, 077745u) == AGC_STATUS_OK); /* PBIASX = -26 */
@@ -273,6 +276,12 @@ static void test_pad_loads(void)
     agc_ephem_get_csm_data(&eph);
     CHECK(eph.vecoem[0].c[0] == 040000);
     CHECK(eph.omegaes == 011);
+    CHECK(agc_erase_write_ecadr(01773u, 00552u) == AGC_STATUS_OK);  /* EK3VAL */
+    CHECK(agc_erase_write_ecadr(01774u, 02200u) == AGC_STATUS_OK);  /* FANG   */
+    CHECK(agc_guid_state()->csm.fang == 02200);
+    CHECK(agc_guid_state()->csm.ek3val == agc_dp_pack(0552, 02200));
+    agc_erase_read_ecadr(01774u, &w);
+    CHECK(w == 02200u);
 }
 
 /**********************************************************************

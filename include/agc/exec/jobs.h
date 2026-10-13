@@ -79,7 +79,6 @@ typedef enum agc_job_id
     AGC_JOB_KEYBOARD_GYRO_TORQUE,        /* V42 FINEK2 (IMUPULSE) */
     AGC_JOB_LR_POSITION_TWO_CHECK,       /* V60 after RADSTALL */
     AGC_JOB_LR_SPURIOUS_TEST_END_RESUME, /* R77END after 320 ms */
-    AGC_JOB_OPTICS_COARSE_DRIVE,         /* CSM V41N91 OPTC1 */
     AGC_JOB_OPTICS_COARSE_START,         /* CSM V41N91 after EXDSPRET */
     AGC_JOB_RADAR_TEST_AUTO_CHECK,       /* R04B */
     AGC_JOB_RADAR_TEST_AUTO_REQUEST,     /* R04B +5 V50N25 */
@@ -91,7 +90,6 @@ typedef enum agc_job_id
     AGC_JOB_RADAR_TEST_SELECT,           /* R04 V33 on V04N12 */
     AGC_JOB_RADAR_TEST_SWITCH,           /* R04Y */
     AGC_JOB_RADAR_TEST_SWITCH_RESUME,    /* R04Y after 2 s */
-    AGC_JOB_RR_DESIGNATE_DRIVE,          /* RRDESK2 */
     AGC_JOB_RR_DESIGNATE_END_MONITOR,    /* V44 after DELAYJOB */
     AGC_JOB_RR_DESIGNATE_LOAD,           /* V41N72 V24N73 (V33 again) */
     AGC_JOB_RR_DESIGNATE_RESULT,         /* RRDESK2 after RADSTALL */
@@ -99,8 +97,6 @@ typedef enum agc_job_id
     AGC_JOB_RR_LOCKON_ANSWER,            /* AURLOKON +5 (V33) */
     AGC_JOB_RR_LOCKON_DISPLAY,           /* AURLOKON -5 V04N12 */
     AGC_JOB_RR_LOCKON_QUERY,             /* AURLOKON (ENTER on N73) */
-    AGC_JOB_RR_LOS_DISPLAY,              /* RRLOSDSP (LM V85) */
-    AGC_JOB_RR_LOS_DISPLAY_NEXT,         /* V85 RRLOSDSP after 1 s */
     AGC_JOB_RR_LOS_DISPLAY_STOP,         /* V85 responses: B5OFF */
     AGC_JOB_SHOW_BANKSUM_DISPLAY,        /* V91 NOKILL */
     AGC_JOB_SHOW_BANKSUM_END,            /* V91 terminate */
@@ -165,8 +161,11 @@ typedef enum agc_job_id
     AGC_JOB_GYRO_TORQUING_PULSED,
     AGC_JOB_GYRO_TORQUING_RETURN,
     AGC_JOB_IMU_REALIGN,
+    AGC_JOB_IMU_REALIGN_LANDING_SITE,       /* P52LS (CM, LM) */
     AGC_JOB_IMU_REALIGN_OPTION,
     AGC_JOB_IMU_REALIGN_OPTION_DISPLAY,
+    AGC_JOB_IMU_REALIGN_RECHECK,            /* R51K after GYCRS (CM, LM) */
+    AGC_JOB_IMU_REALIGN_STARS,              /* P52C (CM) / R51 (LM): the stars after the new orientation */
     AGC_JOB_PLANET_FLASH,
     AGC_JOB_PLANET_LOADED,
     AGC_JOB_PLANET_RESUME,
@@ -179,7 +178,6 @@ typedef enum agc_job_id
     AGC_JOB_ORBIT_DISPLAY_MONITOR,          /* V82REDSP */
     AGC_JOB_ORBIT_DISPLAY_RECYCLE,          /* V82GOFLP */
     AGC_JOB_ORBIT_DISPLAY_REPEAT,           /* V82GON3 */
-    AGC_JOB_ORBIT_DISPLAY_SPLASH,           /* CANDEL (CM) */
     AGC_JOB_ORBIT_DISPLAY_STALL,            /* V82STALL */
     AGC_JOB_ORBIT_DISPLAY_UPDATE,           /* V82GOFF1 */
     AGC_JOB_ORBIT_DISPLAY_VEHICLE_SELECT,   /* V82GOFF V04N12 */
@@ -372,6 +370,7 @@ typedef enum agc_job_id
     AGC_JOB_MARKS_TFI_MGA_DONE,                       /* CSM: END45 */
     AGC_JOB_MATRXJOB,                                 /* CSM: 3.7 */
     AGC_JOB_NORMLIZE,                                 /* 5.2  guid-powered */
+    AGC_JOB_ORBIT_DISPLAY_SPLASH,                     /* CSM: CANDEL (CM) */
     AGC_JOB_POST41,                                   /* CSM */
     AGC_JOB_POSTBURN,                                 /* CSM 4.35, LM 4.13 */
     AGC_JOB_PREBURN_BLANK_DSKY,                       /* CSM: P40BLNKR */
@@ -550,6 +549,7 @@ typedef enum agc_job_id
     AGC_JOB_MARK_REDISPLAY,                    /* CSM */
     AGC_JOB_MARK_REQUEST_DISPLAY,              /* CSM */
     AGC_JOB_MARK_REQUEST_FLASH,                /* CSM */
+    AGC_JOB_OPTICS_COARSE_DRIVE,               /* CSM: V41N91 OPTC1 +4 (CM only) */
     AGC_JOB_SBANDANT_CM,                       /* CSM */
     AGC_JOB_SBANDANT_CM_RECYCLE,               /* CSM */
     AGC_JOB_SBAND_B5OFF,
@@ -792,6 +792,8 @@ typedef enum agc_job_id
     AGC_JOB_AOT_MARK_STAR_DISPLAY,   /* LM */
     AGC_JOB_AOT_MARK_SURFACE_ANSWER, /* LM */
     AGC_JOB_AOT_MARK_SURFACE_END,    /* LM */
+    AGC_JOB_RR_LOS_DISPLAY,          /* LM: RRLOSDSP (LM V85) */
+    AGC_JOB_RR_LOS_DISPLAY_NEXT,     /* LM: V85 RRLOSDSP after 1 s */
     AGC_JOB_SBANDANT_LM,             /* LM */
     AGC_JOB_SBANDANT_LM_RECYCLE,     /* LM */
 
@@ -830,6 +832,7 @@ typedef enum agc_job_id
     AGC_JOB_RENDEZVOUS_SIGHTING_MARK_VERIFY,         /* LM: R21DISP */
     AGC_JOB_RENDEZVOUS_SIGHTING_MARK_WAIT,           /* LM: R21DISP PROCEED */
     AGC_JOB_RR_DESIGNATE_COMMAND,                    /* LM: DODES */
+    AGC_JOB_RR_DESIGNATE_DRIVE,                      /* LM: RRDESK2 (V41 N72) */
 
     AGC_JOB_COUNT /* number of ids; not a job */
 } agc_job_id_t;

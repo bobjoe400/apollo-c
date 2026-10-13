@@ -20,6 +20,8 @@ fan-out does not hide the rest: src/exec/dispatch.c (the generated
 job/task switch), src/exec/interrupts.c (the interrupt lead-ins),
 src/exec/nouns.c (agc_dispatch_noun: the noun data held above io) and
 src/exec/change_program/ (V37 and the fresh-start / restart resets).
+Calls into src/erasable_map (erasable access by AGC address, the address
+column) are not upward either: it sits above every owner it maps.
 
 Output: the Markdown between the markers
     <!-- depgraph:begin -->  ...  <!-- depgraph:end -->
@@ -58,6 +60,12 @@ EXCEPTIONS = set(SPECIAL.values()) | {'exec/change_program'}
 # The NASSP address map (nassp-integration) sits above everything it maps.
 LAYER = {'core': 0, 'exec': 1, 'io': 2, 'imu': 2, 'nav': 2, 'guidance': 3, 'programs': 3,
          'csm': 5, 'lm': 5, 'sim': 6, 'erasable_map': 6}
+# The address column: erasable access by AGC address (ECADR), the C form
+# of the AGC's one address space.  Pinball's machine-address nouns, the
+# V71/V72 uplink, the downlink erasable dump and the LM systems test reach
+# it from below by design (as io reaches exec/nouns); it sits on top
+# because it maps every owner's storage.  Calls INTO it are not upward.
+ADDRESS_COLUMN = {'erasable_map'}
 # Modules filed under a vehicle folder whose layer is lower than the
 # folder's: the T5RUPT/T6RUPT digital autopilots, commanded by KALCMANU
 # (imu), monitored by T4RUPT (io/service) and downlinked (io/telemetry).
@@ -89,7 +97,7 @@ def layer_of(module):
 
 def upward(a, b):
     """A call from module a into module b goes up the layering."""
-    return a not in EXCEPTIONS and layer_of(a) < layer_of(b)
+    return a not in EXCEPTIONS and b not in ADDRESS_COLUMN and layer_of(a) < layer_of(b)
 
 
 def compile_all(srcs, work):
@@ -243,7 +251,8 @@ def render(srcs, defined, edges, inc):
            'the reasons are in the "Upward calls" table below. The fan-out of',
            'the documented exceptions (job/task switch, interrupt lead-ins,',
            'noun data, V37 and resets) is left out here (see "Exception',
-           'fan-out").', '']
+           'fan-out"); calls into erasable_map (erasable access by address,',
+           'the address column) are drawn solid.', '']
     layer_lines, _agg = mermaid_layers(medges, modules)
     out += layer_lines
     out += ['', '### Modules', '',
@@ -279,13 +288,18 @@ def render(srcs, defined, edges, inc):
         out.append(f'| {a} | {b} | {len(pairs)} | {sites} |')
     out += ['', '#### Upward calls (against the layering)', '',
             'Calls from a lower layer into a higher one, outside the documented',
-            'exceptions. Example pairs are the first three in name order.', '',
+            'exceptions (calls into erasable_map, the address column, are not',
+            'upward). Example pairs are the first three in name order.', '',
             '| Caller module | Callee module | Pairs | Examples |', '|---|---|---|---|']
+    nup = 0
     for (a, b), (pairs, _sites) in sorted(medges.items()):
         if not upward(a, b):
             continue
         ex = ', '.join(f'`{short(s)}` -> `{short(d)}`' for s, d in sorted(pairs)[:3])
         out.append(f'| {a} | {b} | {len(pairs)} | {ex} |')
+        nup += 1
+    if nup == 0:
+        out.append('| (none) | | 0 | |')
     out += ['', '#### Header dependencies', '',
             'Files of each module that include a public header of another',
             'subsystem (include/agc/<subsystem>/), where the module makes no call',

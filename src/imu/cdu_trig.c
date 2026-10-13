@@ -173,8 +173,8 @@ void agc_imu_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
     { /* TRIGLOOP (TR*GL*P): index 4, 2, 0 */
         t->cduraw[k]  = cdu_as_sp(cdu_yzx[k]);
         t->cduspot[k] = agc_imu_cdulogic(cdu_yzx[k]); /* USPRCADR CDULOGIC */
-        t->coscdu[k]  = agc_dp_cos(t->cduspot[k]);     /* COSINE, 2^1     */
-        t->sincdu[k]  = agc_dp_sin(t->cduspot[k]);     /* SINE +1, 2^1    */
+        t->coscdu[k]  = agc_dp_cos(t->cduspot[k]);    /* COSINE, 2^1     */
+        t->sincdu[k]  = agc_dp_sin(t->cduspot[k]);    /* SINE +1, 2^1    */
     }
 }
 
@@ -348,8 +348,7 @@ static agc_dp_words_t rotate_component(agc_dp_words_t term, agc_dp_words_t comp,
  *   v         agc_vec_words_t *      I/O  VBUF, rotated in place, any
  *                                         scale |v| < 1
  **********************************************************************/
-void agc_imu_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
-                           agc_vec_words_t *v)
+void agc_imu_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_words_t *v)
 {
     /* INDEXI pairs in DP word offsets 4,2 / 2,0 / 0,4, halved to indices. */
     static const int indexi[4] = {2, 1, 0, 2};
@@ -411,8 +410,7 @@ void agc_imu_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
  *   v         agc_vec_t *            I/O  vector rotated in place, any
  *                                         scale |v| < 1
  **********************************************************************/
-void agc_imu_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
-                     agc_vec_t *v)
+void agc_imu_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v)
 {
     agc_vec_words_t w; /* VBUF as words */
 
@@ -518,8 +516,7 @@ void agc_imu_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
  *   v         agc_vec_t *      I/O  vector rotated in place, any scale |v|
  *                                   < 1
  **********************************************************************/
-void agc_imu_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
-                      agc_vec_t *v)
+void agc_imu_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
 {
     agc_imu_cdtrigs(t, cdu_yzx);
     agc_imu_smnb(t, v);
@@ -540,8 +537,7 @@ void agc_imu_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
  *   v         agc_vec_t *      I/O  vector rotated in place, any scale |v|
  *                                   < 1
  **********************************************************************/
-void agc_imu_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
-                      agc_vec_t *v)
+void agc_imu_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
 {
     agc_imu_cdtrigs(t, cdu_yzx);
     agc_imu_nbsm(t, v);
@@ -564,8 +560,7 @@ void agc_imu_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
  *   v         agc_vec_words_t *  I/O  VBUF, rotated in place, any scale
  *                                     |v| < 1
  **********************************************************************/
-void agc_imu_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
-                            agc_vec_words_t *v)
+void agc_imu_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_words_t *v)
 {
     agc_imu_cdtrigs(t, cdu_yzx);
     agc_imu_axisrot_words(t, AGC_AXISROT_NBSM, v); /* C*MM*N3: CA THREE */
@@ -593,8 +588,7 @@ void agc_imu_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
  *
  * RETURNS: none
  **********************************************************************/
-void agc_imu_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
-                      agc_vec_t dthetasm, agc_vec_t *dcdu)
+void agc_imu_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu)
 {
     const agc_dp_t sy = t->sincdu[AGC_TRIG_Y]; /* sin IGA / 2, scale 2^1 */
     const agc_dp_t cy = t->coscdu[AGC_TRIG_Y]; /* cos IGA / 2, scale 2^1 */

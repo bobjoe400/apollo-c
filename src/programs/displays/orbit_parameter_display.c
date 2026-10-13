@@ -36,7 +36,8 @@
  *   agc_tff_rp_ra         TFFRP/RA: apsides
  *   agc_tff_calctper      CALCTPER: time to perigee
  *   agc_tff_calctff       CALCTFF: time to the entry altitude
- *   agc_guid_delrspl      DELRSPL: CM splash error (noun 50)
+ *   agc_exec_jump         CANDEL (CM: DELRSPL, splash error, noun 50) in
+ *                         src/csm/burns/external_delta_v.c, by job id
  *   rz_integ              THISPREC / OTHPREC
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -173,6 +174,22 @@ static agc_dp_t opd_display_height(agc_interp_t *ip, agc_dp_t h, bool moon)
 /* The TFF erasables (NRMAG, NRTERM, TFFNP, TFFVSQ, TFFX, TFFTEM...) the
  * last SR30.1 left; CM DELRSPL (CANDEL) works on them.                  */
 static agc_tff_t opd_tff_debris; /* TFF erasables */
+
+/**********************************************************************
+ * AGC: none (accessor; NRMAG, NRTERM, TFFNP, TFFVSQ, TFFX, TFFTEM of
+ * ERASABLE_ASSIGNMENTS.agc) -- the TFF erasables the last SR30.1 left,
+ * for the CM's CANDEL (DELRSPL).
+ *
+ * FUNCTION NAME: agc_orbit_display_tff_debris
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: const agc_tff_t * -- the TFF erasables
+ **********************************************************************/
+const agc_tff_t *agc_orbit_display_tff_debris(void)
+{
+    return (&opd_tff_debris);
+}
 
 /**********************************************************************
  * SR30.1 (pp.522-523)
@@ -557,7 +574,9 @@ agc_status_t agc_job_orbit_display_stall(agc_job_ctx_t *ctx)
  * otherwise TFF). ENDOFJOB.
  * AGC: SPLRET1 .. TICKTFF (R30.agc pp.517-518)
  *
- * FUNCTION NAME: opd_start_ticking
+ * The CM's CANDEL (src/csm/burns/external_delta_v.c) ends here too.
+ *
+ * FUNCTION NAME: agc_orbit_display_start_ticking
  *
  * ARGUMENTS:
  *   Argument  Type            I/O  Description (scale)
@@ -568,7 +587,7 @@ agc_status_t agc_job_orbit_display_stall(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a
  *          negative elapsed time
  **********************************************************************/
-static agc_status_t opd_start_ticking(agc_interp_t *ip, agc_rendz_t *rz)
+agc_status_t agc_orbit_display_start_ticking(agc_interp_t *ip, agc_rendz_t *rz)
 {
     rz->tstart_orbit = agc_dp_sub(ip, agc_rtb_loadtime(), rz->tstart_orbit);
 
@@ -600,13 +619,16 @@ static agc_status_t opd_start_ticking(agc_interp_t *ip, agc_rendz_t *rz)
  *
  * FUNCTION NAME: agc_job_orbit_display_update
  *
- * ARGUMENTS: none
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    the job (CANDEL continues in it)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
+ *          successor, else the status of the executive, display,
+ *          navigation or CANDEL call that failed
  **********************************************************************/
-agc_status_t agc_job_orbit_display_update(void)
+agc_status_t agc_job_orbit_display_update(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;                       /* interpreter state */
     agc_rendz_t *rz  = opd_begin(&ip);     /* rendezvous erasables */
@@ -642,10 +664,10 @@ agc_status_t agc_job_orbit_display_update(void)
 
     if (rz_is_csm() && agc_erase_modreg() == 0)
     { /* CANDEL        */
-        return (agc_job_orbit_display_splash());
+        return (agc_exec_jump(ctx, AGC_JOB_ORBIT_DISPLAY_SPLASH)); /* CANDEL (CM) */
     }
 
-    return (opd_start_ticking(&ip, rz));
+    return (agc_orbit_display_start_ticking(&ip, rz));
 } /* agc_job_orbit_display_update */
 
 /**********************************************************************
@@ -655,13 +677,16 @@ agc_status_t agc_job_orbit_display_update(void)
  *
  * FUNCTION NAME: agc_job_orbit_display_average_g
  *
- * ARGUMENTS: none
+ * ARGUMENTS:
+ *   Argument  Type             I/O  Description (scale)
+ *   --------  ---------------  ---  -------------------------------
+ *   ctx       agc_job_ctx_t *  I    the job (CANDEL continues in it)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
+ *          successor, else the status of the executive, display,
+ *          navigation or CANDEL call that failed
  **********************************************************************/
-agc_status_t agc_job_orbit_display_average_g(void)
+agc_status_t agc_job_orbit_display_average_g(agc_job_ctx_t *ctx)
 {
     agc_interp_t ip;                  /* interpreter state */
     agc_rendz_t *rz = opd_begin(&ip); /* rendezvous erasables */
@@ -692,7 +717,7 @@ agc_status_t agc_job_orbit_display_average_g(void)
 
     if (rz_is_csm() && agc_phase_checkmm(OPD_MODE_EARTH_ORBIT_INSERTION_MONITOR))
     {
-        return (agc_job_orbit_display_splash());
+        return (agc_exec_jump(ctx, AGC_JOB_ORBIT_DISPLAY_SPLASH)); /* CANDEL (CM) */
     }
 
     return (agc_job_orbit_display_repeat());
@@ -718,52 +743,6 @@ agc_status_t agc_job_orbit_display_repeat(void)
     }
 
     return (agc_svc_delayjob(RZ_1SEC_CS, AGC_JOB_ORBIT_DISPLAY_AVERAGE_G));
-}
-
-/**********************************************************************
- * CANDEL / SPLRET (CM p.520): INTSTALL, DELRSPL with TFF (it does the
- * INTWAKE0); in P00 -> SPLRET1 (tick set-up), otherwise V82GON3.
- * Should DELRSPL fail before its INTWAKE0, this job releases the area.
- *
- * FUNCTION NAME: agc_job_orbit_display_splash
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
- **********************************************************************/
-agc_status_t agc_job_orbit_display_splash(void)
-{
-    agc_interp_t ip;                  /* interpreter state */
-    agc_rendz_t *rz = opd_begin(&ip); /* rendezvous erasables */
-    agc_status_t st;                  /* INTSTALL */
-
-    st = agc_integ_install(0, AGC_JOB_ORBIT_DISPLAY_SPLASH);
-
-    if (st != AGC_STATUS_OK)
-    {
-        return (st); /* asleep        */
-    }
-
-    st = agc_guid_delrspl(&ip, &opd_tff_debris, rz->tff);
-
-    if (st != AGC_STATUS_OK)
-    {
-        st = agc_integ_intwake();
-
-        if (st != AGC_STATUS_OK)
-        {
-            return (st);
-        }
-    }
-
-    if (agc_erase_modreg() == 0)
-    {
-        return (opd_start_ticking(&ip, rz)); /* SPLRET1       */
-    }
-
-    return (agc_job_orbit_display_repeat());
 }
 
 /**********************************************************************
