@@ -817,3 +817,17 @@
             112 checks) and src/sim changes (lead's mistake; harmless).
             src/nassp (host-only shim) excluded from the Linux build.
             Launched closed-loop-fixes (Opus) alongside nassp-integration.
+2026-10-12  NASSP milestone 1 PASS (Insertion + first MCC CSM state-vector
+            uplink, our AGC in NASSP 9 vs stock, identical unattended Lua
+            script, 20x warp cap): V82 after load 104.1/102.0 vs
+            104.3/101.9 (Linux replay exact), after uplink 109.7/107.3
+            vs 110.2/107.0 (MCC per-session vectors), N43 identical, P27
+            sequence identical. Findings on the way, all in the scenario-
+            restore address map (src/core/ecadr.c), none in flight code:
+            full 42-word state-vector blocks (integration exited from
+            RCV=0), LAT/LONG/ALT, LAT(SPL)/LNG(SPL) (R30 DELRSPL; HA/HP
+            5 nmi high), mixed-sign words kept for unchanged elements.
+            Integration bug #1 was cost: full mirror export per cs ->
+            per second (6 ms CPU per sim second, like yaAGC); watchdog
+            sidecar logs. NASSP's yaAGC now also builds on Linux for
+            offline image replays. Next: TLI (scenario 03) + pad-load map.
