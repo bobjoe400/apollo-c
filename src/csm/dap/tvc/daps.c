@@ -488,11 +488,10 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
 
     tvcd_precomp();
 
-    /* DELBARx: ?: axis      */
     /* DELBARP / DELBARY (TVCDAPS.agc pp. 966, 969) -- the offset-tracker
      * filter DELBRTMP = E(-AT) DELBAR + (1 - E(-AT)) CMDTMP, the lower word
      * of DELBAR and the upper word of CMDTMP each multiplied alone. */
-    agc_dp_words_t delbar = p ? t_dap->delpbar : t_dap->delybar;
+    agc_dp_words_t delbar = p ? t_dap->delpbar : t_dap->delybar; /* DELBARP for pitch, DELBARY for yaw; word pair */
 
     agc_csm_tvc_t *t_delbar = agc_csm_dap_tvc(); /* TVC DAP erasables          */
 
@@ -508,7 +507,7 @@ static agc_status_t tvcd_entry(tvcd_axis_t ax)
     agc_status_t s2 = p ? csm_tvc_pcopy(false) : csm_tvc_ycopy(false); /* status of the DAP body          */
 
     return ((st != AGC_STATUS_OK) ? st : s2); /* first failure          */
-}
+} /* tvcd_entry */
 
 /**********************************************************************
  * PITCHDAP (TVCDAPS.agc p. 963) -- T5 entry, normal or via DAPINIT.

@@ -285,7 +285,7 @@ static uint16_t up_ecadr(int idx)
 
     if (idx == UP_UPTEMP)
     {
-        word = lm ? UP_EC_TEMP_LM : UP_EC_TEMP_CSM;
+        word = lm ? UP_EC_TEMP_LM : UP_EC_TEMP_CSM; /* the LM or CSM UPTEMP cell */
     }
 
     return (word);
@@ -514,8 +514,8 @@ agc_status_t agc_job_uplink_update_load(agc_job_ctx_t *ctx)
 
     uint16_t word = 0; /* the ground's word as pinball stored it */
 
-    agc_erase_read_ecadr(up_ecadr(load_target), &word); /* the word at MPAC+2 */
-    agc_status_t st = agc_uplink_update_write(load_target, word);
+    agc_erase_read_ecadr(up_ecadr(load_target), &word);           /* the word at MPAC+2 */
+    agc_status_t st = agc_uplink_update_write(load_target, word); /* status of the erasable write */
 
     if (st != AGC_STATUS_OK)
     {

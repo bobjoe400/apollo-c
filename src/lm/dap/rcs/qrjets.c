@@ -394,7 +394,7 @@ static agc_status_t aftertj(lm_dap_t *d, int axis, bool *end)
         }
 
         return (sj);
-    }
+    } /* end if (d->abstj - QJ_150MS <= 0) */
 
     if (!lm_dap_selctsub())
     {
@@ -620,9 +620,9 @@ agc_status_t lm_dap_uvloop(lm_dap_uvbody_t body, agc_sp_t first_axis)
         {
             return (st);
         }
-    }
+    } /* end for (int axis = first_axis; axis >= 0; axis--) */
 
     lm_dap_closeout();
 
     return (AGC_STATUS_OK);
-}
+} /* lm_dap_uvloop */

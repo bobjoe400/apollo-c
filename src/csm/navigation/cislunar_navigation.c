@@ -1257,10 +1257,10 @@ agc_status_t agc_job_cislunar_midcourse_navigation_incorporate(agc_job_ctx_t *ct
                 agc_phase_change(00012);
             }
         }
-    }
+    } /* end if (st == AGC_STATUS_OK) */
 
     return (st);
-}
+} /* agc_job_cislunar_midcourse_navigation_incorporate */
 
 /**********************************************************************
  * R23.7: VEHUPFLG (the CSM); INCORP2; P00.

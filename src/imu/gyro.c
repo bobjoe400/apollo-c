@@ -459,7 +459,7 @@ static agc_status_t gyro_next(void)
             if (gyro_waiter != AGC_JOB_NONE)
             { /* JOBWAKE LGWAKE   */
                 gwake_pending   = true;
-                agc_status_t st = agc_exec_job_wake_if_asleep(gyro_waiter);
+                agc_status_t st = agc_exec_job_wake_if_asleep(gyro_waiter); /* status of the JOBWAKE */
 
                 gyro_waiter = AGC_JOB_NONE;
 

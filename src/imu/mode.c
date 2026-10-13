@@ -447,7 +447,7 @@ static agc_status_t cagetest(bool *caged)
 {
     *caged = imu_caged();
 
-    return (*caged ? agc_imu_imubad() : AGC_STATUS_OK);
+    return (*caged ? agc_imu_imubad() : AGC_STATUS_OK); /* IMUBAD when caged, else OK */
 }
 
 /**********************************************************************

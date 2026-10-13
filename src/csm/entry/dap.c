@@ -1598,7 +1598,7 @@ agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx)
         x -= 10;
     }
 
-    agc_erase_set_cm_gymdt((agc_sp_t) ((x == 0) ? 1 : -x));
+    agc_erase_set_cm_gymdt((agc_sp_t) ((x == 0) ? 1 : -x));       /* GYMDT is 1 when x is 0, else -x */
     const uint16_t dt = (uint16_t) agc_erase_cm_gymdt();          /* CM/GYMDT, cs */
     agc_status_t   st = agc_waitlist_call(dt, AGC_TASK_READGYMB); /* WAITLIST */
 

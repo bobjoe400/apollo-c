@@ -299,7 +299,7 @@ static void unit_core(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *
     int       shift = 0;         /* MPTEMP: SQRTSUB right-shift count */
     int       kdiv;              /* pre-divide shift, -1..13 */
     bool      abort = false;     /* SQRTABRT: cannot happen, |v|^2 >= 0 */
-    agc_vec_t r;                 /* MPAC after UNIT */
+    agc_vec_t r;                 /* MPAC after UNIT, half-unit vector 2^1 */
 
     sq = agc_w_vsqsub(v, &o); /* OVFIND saved     */
 
@@ -366,17 +366,23 @@ static void unit_core(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t *
                 r.c[k] = unit_dv(v.c[k], kdiv, agc_w_join(root), &ip->dvsign_neg);
             }
         }
-    }
+    } /* end else */
 
     if (u != 0)
     {
         *u = r;
     }
-}
+} /* unit_core */
 
 /**********************************************************************
  * UNIT (INTERPRETER.agc pp.1175-1179) -- half-unit vector v / (2|v|);
  * see unit_core for LV and LVSQUARE.
+ *
+ * ARGUMENTS:
+ *   ip     agc_interp_t *  IO OVFIND (1 on overflow), DVSIGN
+ *   v      agc_vec_t       I  argument, any scale 2^n
+ *   abval  agc_dp_t *      O  LV: |v| scaled as v; may be NULL
+ *   vsq    agc_dp_t *      O  LVSQUARE: |v|^2 at 2^2n; may be NULL
  *
  * RETURNS: agc_vec_t -- the half-unit vector, scaled 2^1; the DVOVF
  *          arrangement for |v|^2 >= 1 or v = 0
@@ -393,6 +399,10 @@ agc_vec_t agc_vec_unit(agc_interp_t *ip, agc_vec_t v, agc_dp_t *abval, agc_dp_t 
 /**********************************************************************
  * UNIT (INTERPRETER.agc pp.1175-1179) whose vector is never read: only
  * LV (36D), OVFIND and DVSIGN matter (FIGTIME's UNIT RP / UNIT RA).
+ *
+ * ARGUMENTS:
+ *   ip  agc_interp_t *  IO OVFIND (1 on overflow), DVSIGN
+ *   v   agc_vec_t       I  argument, any scale 2^n
  *
  * RETURNS: agc_dp_t -- LV, |v| scaled as v (0 for a zero vector or on
  *          |v|^2 overflow)

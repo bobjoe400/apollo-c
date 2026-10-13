@@ -754,7 +754,7 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
             mu_angle(ip, 0, agc_rendz_nav_pad()->shaftvar, d);
 
             return (AGC_STATUS_OK);
-        }
+        } /* end MU_SHAFT case */
         case MU_TRUNNION:
         { /* Trunnion (TRUNBQ p.581): angle = ASIN(SINTHETA); B0 = (ULC x MY) x ULC, complemented if the CSM is corrected. */
             agc_vec_t b0; /* 2^1 */

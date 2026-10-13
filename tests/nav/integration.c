@@ -1171,4 +1171,4 @@ static void test_intwakeu(void)
     }
 
     CHECK(resumed);
-}
+} /* test_intwakeu */

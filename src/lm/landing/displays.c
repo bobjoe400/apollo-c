@@ -343,7 +343,7 @@ static agc_status_t ld_continue(void)
     }
 
     return (AGC_STATUS_OK);
-}
+} /* ld_continue */
 
 /**********************************************************************
  * DISINDAT (p. 900): does the astronaut wish the analog displays (mode
@@ -415,7 +415,7 @@ static agc_status_t ld_disindat(void)
     }
 
     return (agc_waitlist_call(8, AGC_TASK_INTLZE));
-}
+} /* ld_disindat */
 
 /**********************************************************************
  * LANDISP (p. 898): R10 proper.

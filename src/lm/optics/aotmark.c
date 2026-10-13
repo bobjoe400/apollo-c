@@ -737,7 +737,7 @@ static agc_status_t average_marks(agc_interp_t *ip)
     }
 
     return (st);
-}
+} /* average_marks */
 
 /**********************************************************************
  * MARKCHEX (p. 256): bit 12 (no more marks); MKDEX = 0.  With the last pair

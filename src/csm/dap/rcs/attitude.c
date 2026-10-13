@@ -219,7 +219,7 @@ agc_status_t csm_rcs_ahfnorot(void)
     rcs_grabang();
 
     return (AGC_STATUS_OK);
-}
+} /* csm_rcs_ahfnorot */
 
 /**********************************************************************
  * GRABANG, ENDDAMP (AUTOMATIC_MANEUVERS.agc p. 1028) -- zero the WBODYs

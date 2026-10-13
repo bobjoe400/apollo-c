@@ -66,7 +66,7 @@ agc_vec_words_t agc_vec_to_words(agc_vec_t v)
  **********************************************************************/
 agc_vec_t agc_vec_from_words(agc_vec_words_t v)
 {
-    agc_vec_t r; /* values of v */
+    agc_vec_t r; /* values of v, same scale as v */
 
     for (int i = 0; i < AGC_VEC_N; i++)
     {

@@ -400,7 +400,7 @@ static agc_status_t iv_run(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, ag
         }
 
         w.r2vec = agc_vec_add(ip, agc_vec_sub(ip, w.rtarg1, rend), w.r2vec);
-    }
+    } /* end for (int pass = 0; pass <= (int) numit; pass++) */
 
     if (st == AGC_STATUS_OK)
     {

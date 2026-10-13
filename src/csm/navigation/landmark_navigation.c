@@ -1000,7 +1000,7 @@ static agc_status_t ln_dmpinteg(agc_job_ctx_t *ctx, agc_interp_t *ip)
         }
 
         st = st_landmark;
-    }
+    } /* end else */
 
     if (st != AGC_STATUS_OK)
     {

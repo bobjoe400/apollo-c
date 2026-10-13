@@ -207,4 +207,4 @@ agc_status_t lm_dap_needler(void)
 
         return (st);
     }
-}
+} /* lm_dap_needler */

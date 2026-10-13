@@ -673,7 +673,7 @@ static void dp_norm_core(agc_dp_t a, int *shift, agc_dp_t *out)
  **********************************************************************/
 agc_dp_t agc_dp_norm(agc_dp_t a, int *shift)
 {
-    agc_dp_t n = 0; /* a left-justified */
+    agc_dp_t n = 0; /* a left-justified, scale of a */
 
     dp_norm_core(a, shift, &n);
 

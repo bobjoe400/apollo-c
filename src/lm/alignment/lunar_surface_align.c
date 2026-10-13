@@ -125,7 +125,7 @@ agc_status_t agc_align_mfref(agc_interp_t *ip)
     const bool           moon = (agc_dp_high(ram->tsight) != 0); /* BHIZ on MPAC = TSIGHT */
 
     agc_navaux_get_padload(&pad);
-    agc_status_t st = agc_planet_rp_to_r(ip, &pad, moon, ram->vec1, ram->tsight, &ram->vec1);
+    agc_status_t st = agc_planet_rp_to_r(ip, &pad, moon, ram->vec1, ram->tsight, &ram->vec1); /* status of RP-TO-R for the first vector */
 
     if (st == AGC_STATUS_OK)
     {
@@ -1033,7 +1033,7 @@ agc_status_t agc_job_lunar_surface_site_updated(void)
     agc_vec_t            rls = agc_vec_zero();     /* RLS, moon fixed, m 2^27 */
 
     agc_navaux_get_padload(&pad);
-    agc_status_t st = agc_planet_r_to_rp(&ip, &pad, true, agc_vec_shl(&ip, ram->alphav, 2), ram->landing_site_time, &rls);
+    agc_status_t st = agc_planet_r_to_rp(&ip, &pad, true, agc_vec_shl(&ip, ram->alphav, 2), ram->landing_site_time, &rls); /* status of R-TO-RP */
 
     if (st != AGC_STATUS_OK)
     {

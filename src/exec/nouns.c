@@ -427,7 +427,7 @@ static agc_status_t noun_derived(uint16_t id, bool lm, agc_dp_t *v)
         default:
             return (AGC_STATUS_NOT_FOUND);
     }
-}
+} /* noun_derived */
 
 /**********************************************************************
  * AGC: none -- a signed SP word as the raw 15-bit ones'-complement

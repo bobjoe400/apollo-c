@@ -315,7 +315,7 @@ static void js_roll(const agc_csm_jet_in_t *in, js_work_t *w, agc_csm_jet_out_t 
             w->nrjets = (int) (out->rword1 >> 11) - 2; /* NOACY */
         }
     }
-}
+} /* js_roll */
 
 /**********************************************************************
  * RBLAST, PTAUPOS, YTAUPOS and the .1 s and 14 ms limits
@@ -516,7 +516,7 @@ agc_status_t agc_csm_jet_select(const agc_csm_jet_in_t *in, agc_csm_jet_out_t *o
     /* T6SETUP, DXCHT12, CHECKT23, DXCHT23, CALCDT6 (JET_SELECTION_LOGIC.agc
      * pp. 1059-1060) -- sort the on-times with their branch indices and turn
      * them into successive T6 intervals. */
-    agc_csm_blast_t *b = out->blast;
+    agc_csm_blast_t *b = out->blast; /* BLAST table of the T6 sort */
 
     b[0].axis = AGC_CSM_JET_ROLL; /* branch indices                    */
     b[1].axis = AGC_CSM_JET_PITCH;
@@ -541,7 +541,7 @@ agc_status_t agc_csm_jet_select(const agc_csm_jet_in_t *in, agc_csm_jet_out_t *o
     b[1].time = (agc_sp_t) (b[1].time - b[0].time); /* CS BLAST; ADS BLAST1  */
 
     return (AGC_STATUS_OK);
-}
+} /* agc_csm_jet_select */
 
 /**********************************************************************
  * JETSLECT, ENDJETS (JET_SELECTION_LOGIC.agc pp. 1039, 1059) -- T5

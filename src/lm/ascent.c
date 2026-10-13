@@ -655,7 +655,7 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (!agc_flag_test(AGC_FLAG_IDLEFLAG) && (agc_tp_from_words(agc_mpac_dsu(ip, agc_mpac_dload(a->tgo), agc_dp_to_words(AS_4SEC17))) < 0))
     {
-        agc_status_t st_engoff = as_engoff(ip);
+        agc_status_t st_engoff = as_engoff(ip); /* status of the engine-off sequence */
 
         if (st_engoff != AGC_STATUS_OK)
         {

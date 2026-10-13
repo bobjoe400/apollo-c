@@ -306,7 +306,7 @@ static agc_sp_t finelaw(lm_dap_t *d, tjl_t *w)
      * unreachable (rough law takes large E, EDOT), so sat = wrap here.     */
     /* ZONE5 (pp.1463-1465): between the coast and fire curves; TJET from
      * H = 4 f ACCFCTZ5 and TTOAXIS = 1/ANET2 EDOT by FORMULA1/2 or FULLTIME. */
-    agc_sp_t f_curves = lm_dap_sat(g);
+    agc_sp_t f_curves = lm_dap_sat(g); /* FIREFCT saturated, scaled pi/4 rad */
 
     if (w->rotsense < 0)
     {
@@ -528,7 +528,7 @@ agc_status_t lm_dap_tjetlaw(void)
 
             d->edot   = t;                                                               /* XCH EDOT       */
             int32_t s = (int32_t) lm_dap_mphi(sq, blk(d, LM_BK_1ANET1 + 2, w.adr1)) + t; /* 1/ANET1 EDOT^2 + E - FIREDB: above the curve, scaled 4 pi rad */
-            a         = (s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME;
+            a         = (s <= 0) ? 0 : (agc_sp_t) TJ_FULLTIME;                           /* above the switch curve (s > 0): FULLTIME, else coast */
         }
         else
         {

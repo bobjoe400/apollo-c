@@ -409,7 +409,7 @@ agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
     /* CMTR1 GAMDOT part (p. 887): GAMA = new flight path angle; GAMDOT = (GAMA
      * - old GAMA) TCDU, set to +0 on the first pass (GAMDIFSW clear, then set)
      * or when below 5 bits (about .5 deg/s). */
-    agc_sp_t gama_new = (agc_sp_t) (-agc_dp_high(angles[3]));
+    agc_sp_t gama_new = (agc_sp_t) (-agc_dp_high(angles[3])); /* new GAMA, B0 (flight path angle /360) */
 
     agc_sp_t old = es->gama; /* old GAMA, B0 */
     int32_t  g;              /* -|GAMDOT|, SP units */
@@ -446,7 +446,7 @@ agc_status_t agc_job_cm_pose(agc_job_ctx_t *ctx)
     }
 
     return (entry_redopose_tail(ctx));
-}
+} /* agc_job_cm_pose */
 
 /**********************************************************************
  * REDOPOSE as the group 5 restart job (p. 888).

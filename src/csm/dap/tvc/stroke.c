@@ -146,7 +146,7 @@ static void stroke_burst(void)
 
         t->stroker = (agc_sp_t) -t->stroker; /* CS STROKER; TS STROKER: change sign of slope */
     }
-}
+} /* stroke_burst */
 
 /**********************************************************************
  * HACK (TVCSTROKETEST.agc p. 982) -- entry in the T5 interrupt from the

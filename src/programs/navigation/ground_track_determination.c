@@ -259,7 +259,7 @@ agc_status_t agc_job_ground_track_compute(agc_job_ctx_t *ctx)
     agc_latlong_t        ll;  /* LAT LONG ALT */
 
     agc_navaux_get_padload(&pad);
-    agc_status_t st_display = agc_latlong_from_r(&ip, &pad, opt, o.ratt, o.tat, &ll);
+    agc_status_t st_display = agc_latlong_from_r(&ip, &pad, opt, o.ratt, o.tat, &ll); /* status of LAT-LONG from R */
 
     if (st_display != AGC_STATUS_OK)
     {

@@ -545,7 +545,7 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls, c
     /* Field assignments, not an initializer: Frama-C 25 (the proof tool)
      * fails internally on an initializer of this struct; cat is filled by
      * catlog_load and sax computed below before either is read.         */
-    picapar_search_t s;
+    picapar_search_t s; /* PICAPAR search state */
 
     s.ip    = ip;
     s.ls    = ls;

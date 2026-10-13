@@ -317,4 +317,4 @@ agc_status_t csm_rcs_kmatrix(void)
     }
 
     return (AGC_STATUS_OK); /* RESUME: end phase 1                     */
-}
+} /* csm_rcs_kmatrix */

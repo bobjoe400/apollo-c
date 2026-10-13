@@ -308,7 +308,7 @@ void agc_lm_throttle_flatout(void)
     /* WHATOUT (THROTTLE_CONTROL_ROUTINES.agc p. 796) -- command a fixed
      * pulse count through PIFPSET so that FWEIGHT comes out zero; FCOLD and
      * the PIF high word become -0 (DEVIATION: +0, same pulses and FWEIGHT) */
-    agc_sp_t pulses = (agc_sp_t) AGC_LM_FEXTRA;
+    agc_sp_t pulses = (agc_sp_t) AGC_LM_FEXTRA; /* FEXTRA pulse count, 2^14 */
 
     agc_lm_thr_t *t = agc_lm_thr(); /* throttle erasables             */
 

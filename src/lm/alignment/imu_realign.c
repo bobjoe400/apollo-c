@@ -98,7 +98,7 @@ agc_status_t agc_lm_landing_site_latlong(agc_job_ctx_t *ctx, agc_dp_t t, agc_job
     agc_latlong_t        ll;  /* latitude, longitude, altitude */
 
     agc_navaux_get_padload(&pad);
-    agc_status_t st = agc_latlong_from_r(&ip, &pad, latlong_options(), ram->alphav, t, &ll);
+    agc_status_t st = agc_latlong_from_r(&ip, &pad, latlong_options(), ram->alphav, t, &ll); /* status of LAT-LONG from R */
 
     if (st != AGC_STATUS_OK)
     {
@@ -164,7 +164,7 @@ agc_status_t agc_job_lm_landing_site_accepted(void)
     agc_navaux_padload_t pad;                     /* pad loads (ephemeris, RLS) */
 
     agc_navaux_get_padload(&pad);
-    agc_status_t st = agc_latlong_to_r(&ip, &pad, latlong_options(), &ll, ram->landing_site_time, &ram->alphav, NULL);
+    agc_status_t st = agc_latlong_to_r(&ip, &pad, latlong_options(), &ll, ram->landing_site_time, &ram->alphav, NULL); /* status of R from LAT-LONG */
 
     if (st != AGC_STATUS_OK)
     {
@@ -205,7 +205,7 @@ agc_status_t agc_job_lm_imu_realign_landing_site(agc_job_ctx_t *ctx)
     agc_vec_t            r = agc_vec_zero(); /* RP-TO-R of RLS, m 2^27 */
 
     agc_navaux_get_padload(&pad);
-    agc_status_t st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->talign, &r);
+    agc_status_t st = agc_planet_rp_to_r(&ip, &pad, true, agc_erase_rls(), ram->talign, &r); /* status of RP-TO-R */
 
     if (st != AGC_STATUS_OK)
     {

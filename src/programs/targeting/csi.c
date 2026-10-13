@@ -1071,7 +1071,7 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
                 }
 
                 return (w.st);
-        }
+        } /* end switch (l) */
     } /* for (int pass = 0; pass < CSI_MAX_PASSES; pass++) */
 
     return (AGC_STATUS_NO_CONVERGE); /* DEVIATION: the AGC has no pass bound */

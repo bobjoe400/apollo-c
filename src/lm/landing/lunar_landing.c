@@ -272,7 +272,7 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
                 /* DDUMGOOD and R60INIT (p. 788): TIG = TDEC1 - ZOOMTIME; the landing
                  * site's distance out of the orbital plane (+ right/north); UNFC/2 kept
                  * in R60VSAVE for the attitude maneuver. */
-                agc_dp_t tdec1 = ic->tdec1;
+                agc_dp_t tdec1 = ic->tdec1; /* TDEC1, cs 2^28 */
 
                 agc_lm_ldg_t        *l  = agc_lm_ldg();                    /* landing erasables */
                 const agc_guid_lm_t *g  = &agc_guid_state()->lm;           /* LM guidance state */
@@ -287,7 +287,7 @@ static agc_status_t ll_ignaloop(agc_job_ctx_t *ctx, bool from_install)
 
                 return (agc_lm_job_ignalgrt());
             }
-        }
+        } /* end if (!resume) */
 
         resume          = false;
         agc_status_t st = agc_integ_install(0, AGC_JOB_IGNALOOP); /* step status */

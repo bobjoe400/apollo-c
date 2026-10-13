@@ -1,13 +1,26 @@
-/*
- * agc_assert.h -- side-effect-free assertion (Power of Ten rule 5).
+/**********************************************************************
+ * FILE NAME: assertion.h
  *
- * Usage:
- *     if (!AGC_ASSERT(x >= 0)) { return AGC_STATUS_BAD_ARG; }
+ * PURPOSE:
+ *   Side-effect-free assertion (Power of Ten rule 5).
  *
- * AGC_ASSERT evaluates to a bool and never aborts the program. When
- * AGC_HOST_DEBUG is defined (test builds) a failed assertion is also
- * reported through agc_assert_report() so unit tests can see it.
- */
+ * AGC SOURCE:
+ *   none (host-side infrastructure; the AGC has no assertions)
+ *
+ * REQUIRES:
+ *   <stdbool.h>
+ *
+ * GLOBAL VARIABLES:
+ *   none
+ *
+ * NOTES:
+ *   Usage:
+ *       if (!AGC_ASSERT(x >= 0)) { return AGC_STATUS_BAD_ARG; }
+ *
+ *   AGC_ASSERT evaluates to a bool and never aborts the program. When
+ *   AGC_HOST_DEBUG is defined (test builds) a failed assertion is also
+ *   reported through agc_assert_report() so unit tests can see it.
+ **********************************************************************/
 #ifndef AGC_ASSERT_H
 #define AGC_ASSERT_H
 

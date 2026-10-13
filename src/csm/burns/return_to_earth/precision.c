@@ -311,7 +311,7 @@ static agc_status_t prec_angle_not_met(agc_interp_t *ip, rte_erasable_t *rs)
     /* PREC170 .. PREC174 (pp. 910-911): time DT21 from R(T2)/ to the new radius
      * RF on the osculating conic (TIMERAD, time only, backwards when BETA12 <
      * 0), limited to DT21PR (forward) or -.6 DT21PR (reversal). */
-    agc_dp_t rf_step = agc_tp_to_dp(rf);
+    agc_dp_t rf_step = agc_tp_to_dp(rf); /* RF truncated to DP, B29 */
 
     agc_timerad_in_t     in;     /* TIMERAD inputs (R, V, RF, SGNRDOT) */
     agc_conic_time_out_t out;    /* TIMERAD outputs (T, cs B28) */
@@ -359,7 +359,7 @@ static agc_status_t prec_angle_not_met(agc_interp_t *ip, rte_erasable_t *rs)
     rs->prec_step = RTE_PREC_TIME_STEP; /* RTENCK2       */
 
     return (AGC_STATUS_OK);
-}
+} /* prec_angle_not_met */
 
 /**********************************************************************
  * PREC205 .. PREC207 (pp. 911-912): new RCON. First pass RD^2/RPRE; then

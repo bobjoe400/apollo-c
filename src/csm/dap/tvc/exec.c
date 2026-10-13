@@ -437,4 +437,4 @@ agc_status_t agc_task_tvcexec(void)
     }
 
     return (r);
-}
+} /* agc_task_tvcexec */

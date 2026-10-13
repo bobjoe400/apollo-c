@@ -291,7 +291,7 @@ agc_status_t agc_job_csi_after_tcsi(agc_job_ctx_t *ctx)
     }
 
     return (rz_vnpooh(ctx, 6U, 55U, AGC_JOB_CSI_AFTER_NN_ELEV));
-}
+} /* agc_job_csi_after_tcsi */
 
 /**********************************************************************
  * After V06N55: V06N37 TTPI.
@@ -454,7 +454,7 @@ agc_status_t agc_job_csi_compute(agc_job_ctx_t *ctx)
     rz->t2tot3 = csi_mod_hour(&ip, rz->t2tot3); /* P32/P72F  */
 
     return (rz_vnpooh(ctx, 6U, 75U, AGC_JOB_CSI_AFTER_RESULTS));
-}
+} /* agc_job_csi_compute */
 
 /**********************************************************************
  * After V06N75: S32/33.1 with DELVEET1 -> DISDVLVC V06N81.

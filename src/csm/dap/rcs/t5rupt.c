@@ -228,7 +228,7 @@ agc_status_t csm_rcs_rate_filter_phase(void)
     }
 
     return (csm_rcs_kmatrix());
-}
+} /* csm_rcs_rate_filter_phase */
 
 /**********************************************************************
  * RCSFLAGS BIT14 (RCS-CSM_DIGITAL_AUTOPILOT.agc pp. 1004, 1025) -- the

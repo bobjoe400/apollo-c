@@ -312,4 +312,4 @@ agc_status_t agc_job_w_matrix_monitor_proceed(void)
     rz_flag_put(AGC_FLAG_RENDWFLG, false);
 
     return (agc_dsky_endmark());
-}
+} /* agc_job_w_matrix_monitor_proceed */

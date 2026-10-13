@@ -491,7 +491,7 @@ static agc_status_t sps_bell_axes(agc_interp_t *ip, agc_sp_t pactoff, agc_sp_t y
     b->scaxis    = agc_vec_make(b->xscref.c[0], b->yscref.c[0], b->zscref.c[0]);
 
     return (AGC_STATUS_OK);
-}
+} /* sps_bell_axes */
 
 /**********************************************************************
  * S40.2,3 Comanche (p.714-716): POINTVSM = REFSMMAT UT VSL1; for the SPS

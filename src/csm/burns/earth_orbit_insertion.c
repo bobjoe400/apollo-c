@@ -852,7 +852,7 @@ agc_status_t agc_job_aterjob(void)
 
     /* STRSAT: SATSW <= 0 -> ATTDISP, else ATRESET. Switch off: CCS
      * SATSW: > 0 -> ATTDISP, +0 or < 0 -> ATRESET.                       */
-    if ((switch_on ? (satsw > 0) : (satsw <= 0)))
+    if ((switch_on ? (satsw > 0) : (satsw <= 0))) /* ATRESET: switch on and SATSW > 0, or switch off and SATSW <= 0 */
     { /* ATRESET: NEEDLER init, 60 ms        */
         agc_status_t sw = agc_dap_needler(insertion_ak[0], insertion_ak[1], /* NEEDLER status */
                                           insertion_ak[2],

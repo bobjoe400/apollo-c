@@ -314,7 +314,7 @@ agc_status_t agc_incorp_state_deviation(agc_interp_t         *ip,
     inc->deltax[1] = agc_vec_shl(ip, inc->deltax[1], 3); /* VSL3   */
 
     return (AGC_STATUS_OK);
-}
+} /* agc_incorp_state_deviation */
 
 /**********************************************************************
  * INCORP2 phases 1-2, FAZA..FAZB5 (MEASUREMENT_INCORPORATION.agc

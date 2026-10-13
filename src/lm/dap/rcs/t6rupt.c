@@ -303,7 +303,7 @@ agc_status_t agc_lm_dap_t6jobchk(void)
     /* T6JOB (p.1404): a T6RUPT is due. Shift the list up one, restart TIME6
      * if the next entry is a real time (<= 511 counts), then write the queued
      * jets of the axis whose firing just ended. */
-    lm_dap_t *d = lm_dap_state();
+    lm_dap_t *d = lm_dap_state(); /* LM DAP erasables */
 
     agc_chan_and(013, LM_T6_POSMAX); /* disable clock  */
     agc_sp_t head = d->t6next[0];    /* DXCH T6NEXT: delta to the next entry, scaled 0.625 ms per count */
@@ -342,7 +342,7 @@ agc_status_t agc_lm_dap_t6jobchk(void)
     }
 
     return (lm_dap_write_next(done)); /* GOCH56         */
-}
+} /* agc_lm_dap_t6jobchk */
 
 /**********************************************************************
  * DOT6RUPT (p.1405): the T6RUPT handler is T6JOBCHK, then RESUME.

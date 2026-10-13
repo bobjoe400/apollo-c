@@ -470,7 +470,7 @@ static agc_dp_t mga_expected(agc_vec_t dv, agc_vec_t ysm, bool twice)
         u = agc_vec_unit(&ip, u, NULL, NULL);
     }
 
-    agc_dp_t a = agc_dp_asin(&ip, agc_dp_shl(&ip, agc_vec_dot(&ip, u, ysm), 1)); /* MGA, rev */
+    agc_dp_t a = agc_dp_asin(&ip, agc_dp_shl(&ip, agc_vec_dot(&ip, u, ysm), 1)); /* MGA, revolutions 2^0 */
 
     if (a < 0)
     {
@@ -502,14 +502,14 @@ static void test_get_mga_per_rope(void)
     for (int i = 0; i < 64; i++)
     {
         double    t  = 0.1 * (double) i;                                          /* direction parameter */
-        agc_vec_t dv = vel(3.0 * cos(t), 2.0 * sin(1.7 * t) + 0.3, 1.1 * sin(t)); /* m/s */
-        agc_dp_t  m[2];                                                           /* +MGA CSM, LM */
+        agc_vec_t dv = vel(3.0 * cos(t), 2.0 * sin(1.7 * t) + 0.3, 1.1 * sin(t)); /* delta V, m/cs 2^7 (vel() scales it) */
+        agc_dp_t  m[2];                                                           /* +MGA CSM, LM, revolutions 2^0 */
 
         for (int k = 0; k < 2; k++)
         {
             agc_interp_t ip; /* interpreter state */
 
-            agc_state_init((k == 0) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM);
+            agc_state_init((k == 0) ? AGC_VEHICLE_CSM : AGC_VEHICLE_LM); /* CSM first, then LM */
             agc_interp_init(&ip);
             agc_rendz_get_mga(&ip, dv, &refsmmat, &m[k]);
             CHECK(m[k] == mga_expected(dv, refsmmat.row[1], k == 1));

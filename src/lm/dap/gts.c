@@ -485,10 +485,10 @@ void lm_dap_gts(void)
             }
 
             newneg = dp_sign(w.k2theta);
-        }
+        } /* end if (w.k != 0) */
 
         gts_drive(d, i, newneg);
-    }
+    } /* end for (int i = 1; i >= 0; i--) */
 
     lm_dap_closeout();
 } /* lm_dap_gts */

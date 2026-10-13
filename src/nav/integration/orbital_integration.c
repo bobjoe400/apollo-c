@@ -801,7 +801,7 @@ static agc_status_t moon_axes(agc_interp_t *ip, const agc_integ_ctx_t *ctx, obl_
     const agc_vec_t      zunit = agc_vec_make(0, 0, AGC_DP_HALF); /* ZUNIT, half unit 2^1 */
 
     agc_navaux_get_padload(&pad);
-    agc_status_t st = agc_planet_r_to_rp(ip, &pad, true, ctx->alphav, ctx->sv.tet, &w->urpv);
+    agc_status_t st = agc_planet_r_to_rp(ip, &pad, true, ctx->alphav, ctx->sv.tet, &w->urpv); /* status of R-TO-RP */
 
     if (st == AGC_STATUS_OK)
     {

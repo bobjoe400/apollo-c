@@ -782,7 +782,7 @@ static agc_status_t td_passes(agc_interp_t *ip, bool at_incorp2)
             {
                 return (agc_job_rendezvous_tracking_data_csm_display());
             }
-        }
+        } /* end if (!at_incorp2) */
 
         at_incorp2 = false;
         st         = rz_incorp2(ip, &td.inc, agc_flag_test(AGC_FLAG_CMOONFLG)); /* REND12 */

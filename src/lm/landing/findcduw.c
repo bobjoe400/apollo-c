@@ -759,7 +759,7 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
     /* DCMCL (p. 913): the required direction cosine matrix. The filtered
      * thrust offsets (UNFVY/2, UNFVZ/2) tilt X so that the estimated thrust,
      * not the X axis, lies along the command. */
-    agc_vec_t unz_dcmcl = fc_window(ip, unx, unz);
+    agc_vec_t unz_dcmcl = fc_window(ip, unx, unz); /* UNZ for DCMCL, half unit 2^1 */
 
     agc_vec_t uny1    = agc_vec_unit(ip, agc_vec_cross(ip, unz_dcmcl, unx), NULL, NULL); /* UNIT(UNZ x UNX), half unit 2^1 */
     agc_vec_t munz    = agc_vec_shl(ip, agc_vec_cross(ip, uny1, unx), 1);                /* -UNZ, half unit 2^1 */

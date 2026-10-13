@@ -621,7 +621,7 @@ agc_status_t agc_task_manustop(void)
     }
 
     return (agc_task_endmanu()); /* GOODMANU        */
-}
+} /* agc_task_manustop */
 
 /**********************************************************************
  * ENDMANU (KALCMANU_STEERING.agc p.418 CM) / GOODMANU (LM) -- task:
@@ -896,7 +896,7 @@ static agc_status_t steering_update(agc_interp_t *ip)
                     }
                 } /* end for */
             }
-        }
+        } /* end if (is_lm()) */
         else
         {
             /* MANUSTAT (CM p.416): completion time, enable auto maneuvers in the DAP
@@ -919,10 +919,10 @@ static agc_status_t steering_update(agc_interp_t *ip)
         }
 
         nextime = ((int) agc_erase_time1() + ONESEC_CS) & (TIME1_MOD - 1); /* XCH NEXTIME; INHINT held into INCRDCDU */
-    }
+    } /* end if (agc_flag_test(AGC_FLAG_CALCMAN2)) */
 
     return (incrdcdu_tmanuchk());
-}
+} /* steering_update */
 
 /* ======================================================================= */
 /* Entry points                                                            */

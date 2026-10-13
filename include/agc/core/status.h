@@ -1,7 +1,20 @@
-/*
- * agc_status.h -- status codes returned by every non-void apollo-c function
- * that can fail (Power of Ten rule 7).
- */
+/**********************************************************************
+ * FILE NAME: status.h
+ *
+ * PURPOSE:
+ *   Status codes returned by every non-void apollo-c function that can
+ *   fail (Power of Ten rule 7).
+ *
+ * AGC SOURCE:
+ *   none (the AGC reports failure through ALARM, BAILOUT and POODOO;
+ *   these codes carry the same outcomes to the C caller)
+ *
+ * REQUIRES:
+ *   none (self-contained)
+ *
+ * GLOBAL VARIABLES:
+ *   none
+ **********************************************************************/
 #ifndef AGC_STATUS_H
 #define AGC_STATUS_H
 

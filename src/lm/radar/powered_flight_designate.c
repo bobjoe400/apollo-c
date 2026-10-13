@@ -216,8 +216,8 @@ agc_status_t agc_radar_powered_flight_designate(void)
         agc_relint();
 
         return (st);
-    }
-}
+    } /* end block */
+} /* agc_radar_powered_flight_designate */
 
 /**********************************************************************
  * R29REM0J: REMODE as a task, wait for its end in RADSTALL.
@@ -498,7 +498,7 @@ agc_status_t agc_job_powered_flight_designate(void)
     agc_relint();
 
     return (st_check);
-}
+} /* agc_job_powered_flight_designate */
 
 /* ---- R29READ / R29RDJOB (pp.605-607) ---------------------------------- */
 /**********************************************************************

@@ -490,7 +490,7 @@ static void test_vector_words(void)
     const agc_mat_t m = {{u, v, w}};                        /* rows u, v, w */
     agc_vec_words_t mw[3];                                  /* the rows as words */
     agc_vec_words_t r;                                      /* word results */
-    agc_vec_t       e;                                      /* value results */
+    agc_vec_t       e;                                      /* value results, scaled as the operands */
 
     agc_interp_init(&ip);
     mw[0] = agc_vec_to_words(u);
@@ -524,7 +524,7 @@ static void test_vector_words(void)
     agc_vec_words_t b = {{mw[1].c[0], {0, 0}, {0, 0}}}; /* operand */
 
     eq("VDOT words", agc_tp_from_words(agc_mpac_vdot(&ip, a, b)), agc_tp_from_words(agc_mpac_dmp(agc_mpac_dload(a.c[0]), b.c[0])));
-}
+} /* test_vector_words */
 
 /**********************************************************************
  * FIXED_FIXED_CONSTANT_POOL.agc / INTERPRETIVE_CONSTANTS.agc

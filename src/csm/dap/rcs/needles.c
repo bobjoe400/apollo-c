@@ -131,7 +131,7 @@ agc_status_t csm_dap_needler(void)
         agc_chan_or(AGC_CHAN_CHAN14, DAC_BITS); /* CAF 13,14,15; WOR CHAN14   */
 
         return (st_needles);
-    }
+    } /* end if (f == 0u) */
 
     if ((f & AGC_CSM_RCSF_NEEDLE1) != 0u)
     {
@@ -166,7 +166,7 @@ agc_status_t csm_dap_needler(void)
     c->rcsflags = (uint16_t) (c->rcsflags & ~(unsigned int) FLAGS_23);
 
     return (AGC_STATUS_OK);
-}
+} /* csm_dap_needler */
 
 /**********************************************************************
  * NEEDLER for other lanes (entry DAP, R60) (RCS-CSM_DIGITAL_AUTOPILOT.agc

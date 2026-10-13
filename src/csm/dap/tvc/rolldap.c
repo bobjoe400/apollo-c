@@ -505,7 +505,7 @@ agc_status_t agc_task_rolldap(void)
     }
 
     return (roll_jetroll((uint16_t) t_fire->temreg));
-}
+} /* agc_task_rolldap */
 
 /**********************************************************************
  * NOROLL1, KILLJETS (TVCROLLDAP.agc p. 997) -- T6 task called by

@@ -1,4 +1,5 @@
 {
     "files.exclude": { "build/**": true },
-    "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json"
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
+    "cmake.sourceDirectory": "/home/cooperdesktop/git/apollo-c/src/nassp"
 }

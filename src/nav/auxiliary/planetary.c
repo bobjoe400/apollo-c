@@ -180,7 +180,7 @@ static agc_status_t newangle_words(agc_interp_t *ip, agc_tp_t timsubo, agc_dp_t 
 
     const agc_dp_words_t tlow  = {tsum.mid, tsum.lo};                                                         /* DLOAD TIMSUBM +1, 2^28 cs */
     const agc_dp_words_t thigh = {tsum.hi, 0};                                                                /* SLOAD TIMSUBM, 2^14 */
-    const agc_dp_words_t xdw   = agc_dp_to_words(xdot);
+    const agc_dp_words_t xdw   = agc_dp_to_words(xdot);                                                       /* XDOT as word pair, rev/cs at 2^-(23+xdot_shift) */
     agc_tp_words_t       p     = agc_mpac_shift(ip, agc_mpac_dmp(agc_mpac_dload(tlow), xdw), 5 - xdot_shift); /* DMP, SL* 5,1 */
     const agc_dp_words_t part  = agc_mpac_store(agc_mpac_dad(ip, p, agc_dp_to_words(x0)));                    /* DAD X0, PUSH */
 

@@ -811,7 +811,7 @@ static agc_entry_hunt_result_t entry_huntest_core(agc_interp_t      *ip,
     *gammal     = g;
 
     return (AGC_ENTRY_HUNT_RANGER);
-}
+} /* entry_huntest_core */
 
 /**********************************************************************
  * RANGER (pp. 859-860): range components (revs) for GAMMAL; returns DIFF =
@@ -1229,7 +1229,7 @@ static entry_step_t step_kepler_test(entry_pass_t *p)
         es->rollhold = 0;
     }
 
-    const agc_status_t st = agc_entry_desired_gimbal_angles();
+    const agc_status_t st = agc_entry_desired_gimbal_angles(); /* status of the desired-gimbal-angle computation */
 
     if (st != AGC_STATUS_OK)
     {
@@ -1264,7 +1264,7 @@ static entry_step_t step_prefinal(entry_pass_t *p)
 {
     p->es->gotoaddr = AGC_ENTRY_GOTO_PREFINAL; /* restart protection */
 
-    const agc_status_t st = entry_final_phase(p->es);
+    const agc_status_t st = entry_final_phase(p->es); /* status of the final phase */
 
     if (st != AGC_STATUS_OK)
     {
@@ -1361,7 +1361,7 @@ static entry_step_t step_final_predict(entry_pass_t *p)
 
     /* BACK2 (pp. 870-871): GRAD and the six interpolated functions FX+5..FX+0 =
      * F1, F2, RDOTREF, RTOGO, -AREF, F3 (SP). */
-    agc_sp_t tem1b = predict_find_jj(es, agc_dp_high(es->v));
+    agc_sp_t tem1b = predict_find_jj(es, agc_dp_high(es->v)); /* TEM1B: V - VREF(JJ), positive, B0 */
 
     int      mm;                                                                      /* table column */
     int      jj = es->jj;                                                             /* table index */
@@ -1681,7 +1681,7 @@ static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
             kat = agc_dp_div(ip, kat, AGC_ENTRY_ONE_OVER_KA1);
             kat = agc_dp_add(ip, kat, AGC_ENTRY_KA2);
 
-            const agc_status_t st = entry_post_0_05g(es);
+            const agc_status_t st = entry_post_0_05g(es); /* status of the post-0.05g computation */
 
             if (st != AGC_STATUS_OK)
             { /* RTB P64: MM 64, N74   */
@@ -1703,7 +1703,7 @@ static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
             es->gotoaddr = AGC_ENTRY_GOTO_KEPLER; /* idle until D > .2 g   */
 
             return (ST_INROLOUT);
-        }
+        } /* end ST_INITROLL case */
         case ST_D0EQ:
             /* D0EQ (pp. 853-854): constant drag level D0 = KA3 LEQ + KA4, C/D0 = (-4/25
              * g)/D0 B-8; L/D = LAD, or -LAD when V - VFINAL + (RDOT/V)^3 / K44 is
@@ -1758,10 +1758,10 @@ static entry_step_t entry_initial_roll_step(entry_pass_t *p, entry_step_t s)
         }
         default:
             break;
-    }
+    } /* end switch ((int) s) */
 
     return (ST_ERROR); /* unreachable: the range was asserted */
-}
+} /* entry_initial_roll_step */
 
 /**********************************************************************
  * Dispatch within the HUNT TEST and RANGE PREDICTION sections
@@ -1866,10 +1866,10 @@ static entry_step_t entry_huntest_step(entry_pass_t *p, entry_step_t s)
         }
         default:
             break;
-    }
+    } /* end switch ((int) s) */
 
     return (ST_ERROR); /* unreachable: the range was asserted */
-}
+} /* entry_huntest_step */
 
 /**********************************************************************
  * Dispatch within the UP CONTROL section (pp. 864-868), roll during the
@@ -1898,7 +1898,7 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
         {
             p->status = entry_upcontrol(p->es); /* still OK on entry to a step */
 
-            return ((p->status == AGC_STATUS_OK) ? ST_UPCONTRL : ST_ERROR);
+            return ((p->status == AGC_STATUS_OK) ? ST_UPCONTRL : ST_ERROR); /* UPCONTRL while the step is OK, else error */
         }
         case ST_UPCONTRL:
             return (step_upcontrl(p));
@@ -1986,7 +1986,7 @@ static entry_step_t entry_upcontrol_step(entry_pass_t *p, entry_step_t s)
             return (step_downcntl(p));
         default:
             break;
-    }
+    } /* end switch ((int) s) */
 
     return (ST_ERROR); /* unreachable: the range was asserted */
 } /* entry_upcontrol_step */
@@ -2015,7 +2015,7 @@ static entry_step_t entry_ballistic_step(entry_pass_t *p, entry_step_t s)
         case ST_KEP:
             /* KEP (p. 869): RTB P66, GOTOADDR = KEP2. */
         {
-            const agc_status_t st = entry_ballistic(p->es);
+            const agc_status_t st = entry_ballistic(p->es); /* status of the ballistic entry */
 
             if (st != AGC_STATUS_OK)
             {
@@ -2142,7 +2142,7 @@ static entry_step_t entry_final_phase_step(entry_pass_t *p, entry_step_t s)
         }
         default:
             break;
-    }
+    } /* end switch ((int) s) */
 
     return (ST_ERROR); /* unreachable: the range was asserted */
 } /* entry_final_phase_step */

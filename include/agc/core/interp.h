@@ -95,7 +95,7 @@ typedef struct agc_interp
     agc_sp_t  s2;                      /* S2 step register, unscaled                  */
     bool      sw[AGC_INTERP_SWITCHES]; /* interpretive switch bits    */
     bool      dvsign_neg;              /* DVSIGN (= DOTINC) holds -0: last divide gave a negative quotient (see DVOVF) */
-    agc_dp_t  mpac;                    /* MPAC as left by a DAD/DDV whose result only sets OVFIND (BOV next) */
+    agc_dp_t  mpac;                    /* MPAC as left by a DAD/DDV whose result only sets OVFIND (BOV next), scale of its operands */
 } agc_interp_t;
 
 void agc_interp_init(agc_interp_t *ip);

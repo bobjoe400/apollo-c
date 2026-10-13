@@ -112,7 +112,7 @@ void exec_vac5stor(void)
 }
 
 /**********************************************************************
- * ALMCADR (ERASABLE_ASSIGNMENTS, noun 08 R1): where the last alarm came
+ * ALMCADR (ERASABLE_ASSIGNMENTS.agc C p. 82, L p. 108; noun 08 R1): where the last alarm came
  * from. DEVIATION: the AGC keeps the caller's return address (and its
  * bank in ALMCADR +1); C keeps the job running at the alarm.
  *

@@ -631,4 +631,4 @@ agc_status_t agc_lm_job_goabort(agc_job_ctx_t *ctx)
 
         return (ab_upthrot(ctx));
     }
-}
+} /* agc_lm_job_goabort */

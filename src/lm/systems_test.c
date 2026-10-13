@@ -1883,8 +1883,8 @@ static agc_status_t st_enter(st_entry_t e, agc_job_ctx_t *ctx)
 {
     st_fetch();
 
-    agc_status_t st = st_body(e, ctx);
-    agc_status_t fl = st_flush(); /* write-back status */
+    agc_status_t st = st_body(e, ctx); /* status of the test body */
+    agc_status_t fl = st_flush();      /* write-back status */
 
     if (st != AGC_STATUS_OK)
     {
