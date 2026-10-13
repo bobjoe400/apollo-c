@@ -14,6 +14,34 @@ Host layout (Windows, reached through WSL interop):
 - Scratch: SCRATCH/nassp-integration/ (logs, symbol tables sym_csm.txt / sym_lm.txt
   from the yaYUL listings, tools/symtab.py, runs/*.scn saved states).
 
+## How to run it
+
+Light tier, Linux only, about a minute, no Orbiter:
+
+    make nassp-replay
+
+replays the CMC images of three NASSP 9 Apollo 11 scenarios (sim/nassp/images:
+02 Insertion, 03 TLI T-15m, 05 MCC-2 T-15m; the scenario's AGC_BEGIN..AGC_END block,
+GPL data from NASSP) on two engines built from sim/nassp/replay.c: ours (src/nassp/
+nassp_engine.c, the shim NASSP's vessels link, over build/libagc.a) and stock (NASSP's own
+yaAGC, src_sys/yaAGC at 5470bf1). Each image: RSET, V37E00E, P00 for 20 minutes of AGC
+time (one integration step of each state vector), then an uplink sent as NASSP's PCM sends
+MCC uplinks (INLINK + UPRUPT, 0.1 s apart): the CSM state vector (V71 21 words at 1501) or
+a P30 target (V71 12 words at 3404), V33. The CSM/LM state-vector blocks after each step,
+UPBUFF, UPSVFLAG, DELVSLV/TIG, MODREG and DSPTAB are compared word for word; DP pairs by
+value (a -0/+0 high word is representation) and within TOL_LSB = 2 for the integrator
+residuals documented in review-nav-integ.md (every pair off is listed). NASSP's yaAGC is
+not in this repository: the target downloads the eight src_sys/yaAGC files from GitHub at
+the pinned commit into build/nassp/yaagc, or uses NASSP_YAAGC_DIR=<NASSP>/Orbitersdk/
+samples/ProjectApollo/src_sys/yaAGC; with neither it prints SKIP and exits 0.
+`python3 -I tools/nassp_replay.py --keep` leaves both transcripts in build/nassp.
+
+Full tier, Windows host (C:\NASSP9-dev, one Orbiter session at a time): build the
+DLLs with C:\Users\cnama\nassp-work\build-agc.bat after syncing the sources
+(SCRATCH sync.sh), then run an `apollo-c\<scenario>` with `Orbiter_ng.exe -s ... -T N`;
+each scenario's Lua script (Script\apollo-c) drives the checklist workbook unattended
+and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (stock).
+
 ## Progress
 - DONE phase 1 STUDY: docs/overview/nassp_integration.md (embedding, engine API,
   callbacks, every direct agc_t / Erasable access with file:line, uplink paths,
@@ -111,6 +139,25 @@ Host layout (Windows, reached through WSL interop):
   the repo) + harness/ref.c replays a scenario's AGC image beside harness/scn.c (our shim): the P00
   integration step of the Insertion image gives the CSM state vector block identical to stock.
   (Keys into ref.c do not yet reach pinball; integration-only checks work.)
+- 2026-10-13 resume: tree green at HEAD with the map move (callers include
+  agc/erasable_map/address_map.h; pinball load.c / scale.c include order fixed by
+  tools/format.sh). Host DLLs are now built from `git archive HEAD` plus this lane's
+  working-tree files (SCRATCH sync.sh), never from another lane's uncommitted edits.
+- FLIGHT BUG (milestone 3, found 2026-10-13): MCC-2 on our build burned 2.53 s where stock
+  burned 2.21 s (N85 -2.4/-0.2/-0.2 vs -0.3/-0.1/0.0 ft/s). Cause: the CSM address map had
+  EK3VAL as 2 words (1773-1774) ahead of FANG (1774), so the FANG pad load landed in
+  K3VAL's low word and FANG stayed 0: S40.13 TIMEBURN (P40-P47 p.727) then found TEMP2 = 0,
+  took S40.133 (steer, IMPULSW clear, TGO unchanged) and the cutoff came from STEERING
+  instead of the impulsive TGO waitlist. Fix: src/erasable_map/address_map.c FANG entry
+  first, a FANG store also sets K3VAL's low word (K3VAL = EK3VAL,FANG as DDV reads it);
+  tests/erasable_map/address_map.c +5 checks. Offline (Linux replay of the MCC-2 image,
+  V37E40E .. V99 PRO): TGO 0,341 (225 cs) and engine off at the new TIG, as stock.
+- `make nassp-replay` (light tier, 2026-10-13): sim/nassp/replay.c + tools/nassp_replay.py,
+  images sim/nassp/images/{insertion,tli,mcc2}.agc. Results: insertion 2 integration steps +
+  CSM SV uplink identical (23 words differ only as -0/+0 high words of mixed-sign pairs);
+  TLI 2 steps + P30 target uplink identical except DELTAV.y -1, NUV.x +2, NUV.y -2 LSB (the
+  documented integrator residuals, review-nav-integ N4/N9/N10); MCC-2 P30 target uplink
+  identical. ~25-50 s.
 - Do not run Linux test loads during a host run: the stock AGC at 50x went to garbage (MODREG 227,
   FAILREG 207) when frames stretched under CPU load; that run was discarded.
 
