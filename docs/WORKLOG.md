@@ -878,3 +878,10 @@
 2026-10-13  style-final DONE (1b03034): 646 -> 236 findings, all 236 in the
             NASSP lane's address_map.c / nassp_engine.c (its closing list,
             with the lm-sim LMSIM_DIR fetch). Only nassp-integration runs.
+2026-10-13  Host: the GitHub release zips of Orbiter 2024 carry no planetary
+            textures (grey/blue spheres); the full package is
+            cdn.openorbiter.space/orbiter-releases/Orbiter-2024.zip
+            (2.9 GB). Its Textures/ and Textures2/ (88 files, 2.5 GB:
+            Earth/Moon/... Archive tile trees) extracted into C:\NASSP9
+            without overwriting NASSP's files; junctions into NASSP9-dev
+            and NASSP9-ref. Hi-res packs (orbiter-mods.com) optional.
