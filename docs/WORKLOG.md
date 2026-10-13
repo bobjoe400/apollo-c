@@ -875,3 +875,6 @@
             make nassp-replay added (eebc6e1; the address-map change and
             Makefile target had gone in with 0d697f8). Next LOI; LEM Lua
             test-hook patch 0002 for both builds approved.
+2026-10-13  style-final DONE (1b03034): 646 -> 236 findings, all 236 in the
+            NASSP lane's address_map.c / nassp_engine.c (its closing list,
+            with the lm-sim LMSIM_DIR fetch). Only nassp-integration runs.

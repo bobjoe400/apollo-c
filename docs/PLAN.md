@@ -204,10 +204,11 @@ Then: lead assert.h rename; ONE Frama-C EVA run (`make prove`, `make
 2. Builds clean: DONE. -Werror set, one flat registry (4 generated
    switches), no pending/glue/shim files; layering restored 2026-10-13
    (depgraph upward-call table empty; address map in src/erasable_map).
-3. Rules pass: check-rules 0 hard, format-check clean, rule 5 by its
-   spirit (no density quota; checkers reject the dodges). `make style`:
-   646 mechanical findings left (from 22,489) -- style-final lane running
-   2026-10-13; DONE when it reports.
+3. Rules pass: DONE except two files. check-rules 0 hard, format-check
+   clean, rule 5 by its spirit (no density quota; checkers reject the
+   dodges). `make style`: 0 findings outside src/erasable_map/
+   address_map.c and src/nassp/nassp_engine.c (236 there, the NASSP
+   lane's in-progress files; on its closing list).
 4. Naming: DONE (NAMING.md applied, RENAMES.md ledger complete, no
    program/verb/noun numbers in identifiers or file names).
 5. Tests: DONE. make test = 35 binaries + 14 scenarios through the real

@@ -3,9 +3,8 @@
 Updated: 2026-10-13
 
 ## Running agents (max 2)
-- style-final (Sonnet): the 646 remaining `make style` findings
-  (definition-of-done item 3), no behaviour change; excludes the NASSP
-  lane's files. Note: docs/modules/style-final.md.
+- style-final: DONE (1b03034); `make style` clean except the NASSP lane's
+  two files (on its closing list).
 - layering: DONE (0d697f8): depgraph upward table empty.
 - document: DONE (47ae168): overview, flowcharts, xref, per-lane flow
   sections, TIPS by topic, README Status/Documentation. The
