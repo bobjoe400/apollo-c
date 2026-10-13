@@ -2,18 +2,20 @@
  * FILE NAME: moding.c
  *
  * PURPOSE:
- *   Rendezvous radar (RR) moding, LM only: MAGSUB, RRLIMCHK, SETTRKF /
- *   FLIP, RRTURNON / RRZEROSB, DORREPOS / REPOSRPT / SETRRECR, REMODE /
- *   RMODINV, RRTONLY / RRSONLY / RR1AXIS, RROUT, RRZERO, ENDRADAR /
- *   RGOODEND / RDBADEND, CLRADMOD. The AGC runs these as waitlist tasks
+ *   Rendezvous radar (RR) moding, LM only: RRTURNON / RRZEROSB, DORREPOS
+ *   / REPOSRPT / SETRRECR, REMODE / RMODINV, RRTONLY / RRSONLY / RR1AXIS,
+ *   RROUT, RRZERO, ENDRADAR / RGOODEND / RDBADEND, CLRADMOD. (MAGSUB,
+ *   RRLIMCHK and SETTRKF / TRKFLON / FLIP live with RADMODES in
+ *   src/io/service/t4rupt_lm.c, their lowest caller being T4RUPT's RR
+ *   monitor.) The AGC runs these as waitlist tasks
  *   chained by FIXDELAY, with RRRET holding the return address of the
  *   subroutines that wait (RRZEROSB, RR1AXIS). Here each FIXDELAY
  *   continuation is its own task and RRRET is an enum naming the
  *   caller's next step.
  *
  * AGC SOURCE:
- *   Luminary099 P20-P25.agc pp. 521-537 (MAGSUB, RRLIMCHK, SETTRKF,
- *   TRKFLON, FLIP, RRTURNON, RRZEROSB, DORREPOS, REPOSRPT, SETRRECR,
+ *   Luminary099 P20-P25.agc pp. 525-537 (RRTURNON, RRZEROSB, DORREPOS,
+ *   REPOSRPT, SETRRECR,
  *   REMODE, RMODINV, RRTONLY, RRSONLY, RR1AXIS, RR1AX2, NXTRR1AX, RROUT,
  *   RRZERO, RRZ2), p. 563 (ENDRADAR, RGOODEND, RDBADEND), p. 516
  *   (CLRADMOD); LM only
@@ -26,8 +28,6 @@
  *   CDUTCMD CDUSCMD agc_sp_t O pulses     gyro command counters
  *   TANG       agc_sp_t   I/O  pulses     commanded gyro pulses
  *   LASTYCMD LASTXCMD (rr_state_t) I/O pulses  last commands sent
- *   DSPTAB +11D word      I/O  -          tracker fail lamp
- *   IMODES33   word       I    -          lamp test
  *   CHAN12 CHAN14  channels O  -          zero, error counters, drive
  *
  * EXTERNAL REFERENCES:
@@ -67,12 +67,6 @@
 
 /* ---- constants (pp.523, 528, 532, 534, 536) ----------------------------
  * DEC values are SP fractions of 180 degrees (x 16384).                  */
-#define RR_LIM_T1   (-5006)  /* DEC -.30555: 55 degrees               */
-#define RR_LIM_S1   (-5871)  /* DEC -.35833: 64.5 degrees             */
-#define RR_5_5DEGS  501      /* 5.5DEGS DEC .03056                    */
-#define RR_82DEGS   7464     /* 82DEGS DEC .45556                     */
-#define RR_LIM_S2   (-5188)  /* DEC -.31667: 57 degrees               */
-#define RR_LIM_T2   (-11378) /* DEC -.69444: 125 degrees              */
 #define RR_20_5DEGS 1866     /* 20.5DEGS DEC .11389                   */
 #define RR_LIM_90   (-8192)  /* DEC -.5: 90 degrees (mode test)       */
 #define RR_1DEG     (-91)    /* DEC -.00555: 1 degree                 */
@@ -80,11 +74,8 @@
 /* RRSPGAIN DEC .59062: null .7 of the error in .5 s                   */
 #define RR_SPGAIN    9677    /* RRSPGAIN, 2^0                          */
 #define RR_LIMIT     (-384)  /* -RRLIMIT DEC -384 pulses               */
-#define RR_13_7_2    010102u /* 13,7,2: zeroing, CDU OK, not in auto  */
 #define RR_BIT11_1   002001u /* BIT11+1: reposition, turn-on          */
 #define RR_BIT10_15  041000u /* BIT10+15: designate, continuous des.  */
-#define RR_TRKF_LAMP 000200u /* DSPTAB +11D BIT8: tracker fail lamp   */
-#define RR_DSPTAB_11 11      /* DSPTAB +11D */
 
 /* Single-axis targets, CDU words: BIT15 / NEGMAX = 180 degrees, CS HALF
  * = -90, -45DEGSR = 13,14,15 (octal 70000), -50DEGSR DEC -.27778,
@@ -189,27 +180,6 @@ uint16_t rr_word(int v)
     }
 
     return ((uint16_t) v);
-}
-
-/**********************************************************************
- * MAGSUB (p.521): |a| + k <= 0 returns to L+3 (within), else L+2.
- * AGC: MAGSUB (P20-P25.agc p.521)
- *
- * FUNCTION NAME: rr_magsub
- *
- * ARGUMENTS:
- *   Argument  Type  I/O  Description (scale)
- *   --------  ----  ---  ------------------------------------------
- *   a         int   I    the value, CDU units
- *   k         int   I    minus the limit (negative), CDU units
- *
- * RETURNS: bool -- true when |a| + k <= 0 (within the limit, L+3)
- **********************************************************************/
-bool rr_magsub(int a, int k)
-{
-    int m = (a < 0) ? -a : a; /* |a| */
-
-    return ((m + k) <= 0);
 }
 
 /**********************************************************************
@@ -355,122 +325,6 @@ void rr_mode_invert(void)
     uint16_t m = agc_erase_radmodes(); /* RADMODES */
 
     agc_erase_set_radmodes((uint16_t) (m ^ RR_ANTENBIT));
-}
-
-/**********************************************************************
- * RRLIMCHK (pp.522-523)
- * Mode 1: |T| <= 55 and |S + 5.5| <= 64.5 degrees (S from -70 to +59).
- * Mode 2: |S + 82| <= 57 (S from -139 to -25) and |T| > 125 degrees.
- * True = within the limits of the present mode (L+3). Also called by
- * the T4RUPT gimbal monitor (sys-misc) on CDUT, CDUS.
- * AGC: RRLIMCHK (P20-P25.agc pp.522-523)
- *
- * FUNCTION NAME: agc_rr_limchk
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------------------------
- *   t         uint16_t  I    trunnion CDU word
- *   s         uint16_t  I    shaft CDU word
- *
- * RETURNS: bool -- true when within the limits of the present mode (L+3)
- **********************************************************************/
-bool agc_rr_limchk(uint16_t t, uint16_t s)
-{
-    int tv = rr_ones(t); /* trunnion, CDU units */
-    int sv = rr_ones(s); /* shaft, CDU units */
-
-    if (!rr_mode2())
-    {
-        return (rr_magsub(tv, RR_LIM_T1) && rr_magsub(sv + RR_5_5DEGS, RR_LIM_S1));
-    }
-
-    if (!rr_magsub(sv + RR_82DEGS, RR_LIM_S2))
-    {
-        return (false);
-    }
-
-    return (!rr_magsub(tv, RR_LIM_T2));
-}
-
-/* ---- lamps (SETTRKF, TRKFLON, FLIP pp.524-525) ------------------------ */
-/**********************************************************************
- * FLIP: invert the lamp bit in DSPTAB +11D and mark the word for output
- * (bit 15).
- * AGC: FLIP (P20-P25.agc p.525)
- *
- * FUNCTION NAME: agc_rendz_flip
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------------------------
- *   lamp_bit  uint16_t  I    lamp bit in DSPTAB +11D
- **********************************************************************/
-void agc_rendz_flip(uint16_t lamp_bit)
-{
-    uint16_t w = agc_erase_dsptab(RR_DSPTAB_11); /* DSPTAB +11D */
-
-    w = (uint16_t) (((w ^ lamp_bit) & 037777u) | 040000u); /* POSMAX, BIT15 */
-    agc_erase_set_dsptab(RR_DSPTAB_11, w);
-}
-
-/**********************************************************************
- * TRKFLON +1: the "half add" of the desired and present lamp states;
- * FLIP only when they differ.
- * AGC: TRKFLON +1 (P20-P25.agc p.525)
- *
- * FUNCTION NAME: rr_lamp_put
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------------------------
- *   lamp      uint16_t  I    lamp bit in DSPTAB +11D
- *   on        bool      I    the desired lamp state
- **********************************************************************/
-void rr_lamp_put(uint16_t lamp, bool on)
-{
-    bool now = (agc_erase_dsptab(RR_DSPTAB_11) & lamp) != 0U; /* lamp on now */
-
-    if (now != on) /* NO CHANGE      */
-    {
-        agc_rendz_flip(lamp);
-    }
-}
-
-/**********************************************************************
- * RRTRKF: the tracker fail lamp is on when the RR CDU failed in auto mode
- * while not being zeroed (RADMODES 13, 7, 2 all zero), or RR data failed
- * (RADMODES bit 4).
- * AGC: RRTRKF (P20-P25.agc p.524)
- *
- * FUNCTION NAME: rr_trkf
- *
- * ARGUMENTS: none
- **********************************************************************/
-static void rr_trkf(void)
-{
-    uint16_t m = agc_erase_radmodes(); /* RADMODES */
-    bool     on;                       /* lamp wanted */
-
-    on = ((m & RR_13_7_2) == 0U) || ((m & RR_RRDATABT) != 0U);
-
-    rr_lamp_put(RR_TRKF_LAMP, on);
-}
-
-/**********************************************************************
- * SETTRKF (p.524): no action during a lamp test (IMODES33 bit 1).
- * AGC: SETTRKF (P20-P25.agc p.524)
- *
- * FUNCTION NAME: agc_rr_settrkf
- *
- * ARGUMENTS: none
- **********************************************************************/
-void agc_rr_settrkf(void)
-{
-    if ((agc_erase_imodes33() & 1U) == 0U)
-    {
-        rr_trkf(); /* no lamp test (IMODES33 bit 1) */
-    }
 }
 
 /**********************************************************************
@@ -621,7 +475,7 @@ void rr_rrout(void)
     { /* shaft, then trunnion   */
         int cmd = agc_erase_tang(i); /* TANG, pulses */
 
-        if (!rr_magsub(cmd, RR_LIMIT))
+        if (!agc_rr_magsub(cmd, RR_LIMIT))
         {
             cmd = (cmd > 0) ? -RR_LIMIT : RR_LIMIT; /* RROUTLIM   */
         }
@@ -713,7 +567,7 @@ agc_status_t agc_task_rr_zero_settled(void)
 {
     rr_radmodes_clear(RR_RCDU0BIT);
 
-    if (rr_magsub(rr_ones(agc_erase_cdut()), RR_LIM_90))
+    if (agc_rr_magsub(rr_ones(agc_erase_cdut()), RR_LIM_90))
     {
         rr_radmodes_clear(RR_ANTENBIT); /* mode 1  */
     }
@@ -949,7 +803,7 @@ static rr_axis_outcome_t rr_axis_pass(agc_status_t *st)
     int err = rr_msu(rr_axis.rdes, cdu); /* ITEMP1  */
     int cmd = rr_mp(err, RR_SPGAIN);     /* L       */
 
-    if (rr_magsub(err, RR_1DEG) || (m & RR_AUTOMBIT) != 0U)
+    if (agc_rr_magsub(err, RR_1DEG) || (m & RR_AUTOMBIT) != 0U)
     {
         return (RR_AXIS_DONE);
     }

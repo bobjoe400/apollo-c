@@ -108,7 +108,7 @@ void agc_lm_dap_fresh_start(void)
     lm_dap_t *d = lm_dap_state(); /* DAP erasables */
 
     d->rcsflags                 = FS_RCSFLAGS;
-    agc_guid_state()->lm.abdelv = 0; /* ABDELV: DAP initialisation     */
+    agc_erase_set_abdelv(0); /* ABDELV: DAP initialisation     */
     d->ch5mask                  = 0;
     d->ch6mask                  = 0;
     d->pvalvest                 = 0; /* RCS failure monitor           */

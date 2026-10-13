@@ -294,6 +294,10 @@ void         agc_erase_set_optmodes(uint16_t v);
 agc_sp_t     agc_erase_optind(void);                 /* OPTIND (CM)              */
 void         agc_erase_set_optind(agc_sp_t v);
 agc_sp_t     agc_erase_swsample(void);               /* SWSAMPLE (CM) +1 CSC, 0 manual, -1 zero optics */
+uint16_t     agc_erase_desoptt(void);                /* DESOPTT (CM): OPTDRIVE trunnion, CDU word */
+void         agc_erase_set_desoptt(uint16_t v);
+uint16_t     agc_erase_desopts(void);                /* DESOPTS (CM): OPTDRIVE shaft, CDU word */
+void         agc_erase_set_desopts(uint16_t v);
 
 /* LM radar monitor and DAP matrix (src/io/service/t4rupt_lm.c).                 */
 agc_status_t agc_t4_rr_monitor(void);    /* RRAUTCHK..RRGIMON+GPMATRIX */
@@ -301,6 +305,11 @@ void         agc_t4_gimbal_matrix(void); /* GPMATRIX / DAPT4S        */
 uint16_t     agc_erase_radmodes(void);   /* RADMODES (LM)            */
 void         agc_erase_set_radmodes(uint16_t v);
 void         agc_t4_radmodes_init(void); /* STARTSUB: RADMODES = RMODINIT */
+bool         agc_rr_magsub(int a, int k);            /* MAGSUB: |a| + k <= 0 (L+3)     */
+bool         agc_rr_limchk(uint16_t t, uint16_t s);  /* RRLIMCHK: in the mode's limits */
+void         agc_rr_settrkf(void);                   /* SETTRKF: tracker fail lamp     */
+void         agc_rr_lamp_put(uint16_t lamp, bool on); /* TRKFLON +1: DSPTAB +11D lamp  */
+void         agc_rendz_flip(uint16_t lamp_bit);      /* FLIP: invert a DSPTAB +11D lamp */
 agc_sp_t     agc_erase_m11(void);        /* SIN(MG), scaled at 1     */
 agc_sp_t     agc_erase_m21(void);        /* COS(OG)COS(MG)           */
 agc_sp_t     agc_erase_m22(void);        /* SIN(OG)                  */
@@ -313,6 +322,7 @@ agc_sp_t     agc_erase_cosmg(void);      /* COS(MG)                  */
  * program P27 (src/io/verbs/uplink_update.c)
  * ==================================================================== */
 agc_status_t agc_extverb(int verb, int noun); /* GOEXTVB (pinball) */
+agc_status_t agc_extverb_goto_tracking_terminate(void); /* GOTOV56: V56 TRACKTRM */
 
 /* ---- shared parts of the extended verbs (extended_verbs.c) -------------- */
 /* The verb and noun GOEXTVB was entered with (VERBREG, NOUNREG).          */
@@ -492,7 +502,6 @@ uint16_t     agc_selfcheck_error_count(void);            /* ERCOUNT (ALMCADR +2)
  * SYSTEM_TEST_STANDARD_LEAD_INS, IMU_PERFORMANCE_TEST_2, _TESTS_4)
  * ==================================================================== */
 agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);          /* ZEROING  */
-agc_status_t agc_systems_test_finetime(agc_dp_t *t);                    /* FINETIME */
 agc_dp_t     agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a);   /* OVERFFIX */
 agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx);                  /* REDO (V92) */
 agc_status_t agc_job_systems_test_imu_zeroed(agc_job_ctx_t *ctx);       /* IMUBACK          */

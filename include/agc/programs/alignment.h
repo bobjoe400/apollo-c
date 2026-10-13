@@ -109,7 +109,6 @@ typedef struct agc_align_ram
     agc_mat_t xsm;     /* XSM,YSM,ZSM   desired SM (S52.2 output)    */
     agc_mat_t xnb;     /* XNB,YNB,ZNB   nav base wrt SM or ref       */
     agc_mat_t xdc;     /* XDC,YDC,ZDC   desired SM wrt present SM    */
-    agc_dp_t  ogc[3];  /* OGC, IGC, MGC: gyro torque angles, revs 2^0 */
     agc_dp_t  ogct[3]; /* OGCT: saved torque angles (P57), revs 2^0 */
 
     /* star data */
@@ -154,8 +153,6 @@ typedef struct agc_align_ram
     /* optics (CM) */
     uint16_t sac;     /* SAC: desired shaft, CDU word */
     uint16_t pac;     /* PAC: desired trunnion, CDU word */
-    uint16_t desoptt; /* DESOPTT: desired trunnion for the T4 drive, CDU word */
-    uint16_t desopts; /* DESOPTS: desired shaft for the T4 drive, CDU word */
 
     /* AOT (LM) */
     uint16_t az;       /* AZ: keyed-in optic axis azimuth (N87), CDU word */
@@ -236,7 +233,7 @@ bool agc_align_chkscode(agc_sp_t starcode);
 agc_status_t agc_align_sighting_data_display(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
 agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin_return);
 
-/* ---- CSM geometry (src/csm/optics/geometry.c) ------------------------------- */
+/* ---- CSM geometry (src/programs/alignment/geometry_csm.c) ------------------- */
 agc_dp_t     agc_csm_sxtlogic(uint16_t trunnion_cdu);
 void         agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb);
 void         agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t, uint16_t *sac, uint16_t *pac, bool *cult);

@@ -232,8 +232,8 @@ agc_status_t agc_job_lunar_gravity_accumulate(void)
     ram->star   = agc_vec_unit(&ip, ram->gacc, NULL, NULL);
     agc_vec_t g = ram->star; /* STAR in nav-base axes (*SMNB*), half-unit (2^1) */
 
-    agc_guid_cdutrig(&lung_trig);
-    agc_guid_smnb(&lung_trig, &g); /* *SMNB*   */
+    agc_imu_cdutrig(&lung_trig);
+    agc_imu_smnb(&lung_trig, &g); /* *SMNB*   */
     ram->gout = g;
     align_phase4(PH_SURFACE_ALIGN);
 
@@ -288,7 +288,7 @@ agc_status_t agc_job_lunar_gravity_rotate(void)
     {
         agc_vec_t nb = unit.row[i]; /* unit vector i in SM (*NBSM*), half-unit (2^1) */
 
-        agc_guid_nbsm(&lung_trig, &nb);                                                          /* *NBSM*   */
+        agc_imu_nbsm(&lung_trig, &nb);                                                          /* *NBSM*   */
         ram->xnb.row[i]    = nb;
         const agc_vec_t uu = agc_vec_shl(&ip, agc_vec_scale(&ip, ram->star, ram->star.c[i]), 2); /* STAR STAR(i) VSL2, scale 2^0 */
 
@@ -688,8 +688,8 @@ agc_status_t agc_job_lunar_surface_coarse_trimmed(void)
     agc_vec_t       x         = unit.row[0];             /* XUNIT, then TRG*NBSM: nav-base X in SM (STARAD), half-unit (2^1) */
     agc_vec_t       y         = unit.row[1];             /* YUNIT, then *NBSM*: nav-base Y in SM (STARAD +6), half-unit (2^1) */
 
-    agc_guid_trg_nbsm(&t, yzx, &x);
-    agc_guid_nbsm(&t, &y);
+    agc_imu_trg_nbsm(&t, yzx, &x);
+    agc_imu_nbsm(&t, &y);
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -705,7 +705,7 @@ agc_status_t agc_job_lunar_surface_coarse_trimmed(void)
 
     if (st == AGC_STATUS_OK)
     {
-        agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
+        agc_imu_calcgta(&ip, &ram->xdc, agc_imu_ogc());
     }
 
     if (st != AGC_STATUS_OK)

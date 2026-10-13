@@ -689,7 +689,7 @@ agc_status_t agc_job_rendezvous_navigation_range_alarm(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_rendezvous_navigation_terminate(void)
 {
-    return (agc_rendz_goto_terminate_tracking());
+    return (agc_extverb_goto_tracking_terminate());
 }
 
 /**********************************************************************

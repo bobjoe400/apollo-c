@@ -230,10 +230,9 @@ agc_status_t agc_job_dap_data_load_config_lm(agc_job_ctx_t *ctx)
     uint16_t b    = (uint16_t) ((agc_flagword_get(DAPBOOLS_WORD) & ~(uint32_t) BOOLSMSK) | (d & mask)); /* new DAPBOOLS */
 
     agc_flagword_set(DAPBOOLS_WORD, b);
-    agc_guid_lm_t *g  = &agc_guid_state()->lm;                                                                        /* MASS */
-    int32_t        hi = (int32_t) agc_erase_lemmass() + (((b & CSMDOCKD) != 0u) ? (int32_t) agc_erase_csmmass() : 0); /* MASS high word, kg 2^16 */
+    int32_t hi = (int32_t) agc_erase_lemmass() + (((b & CSMDOCKD) != 0u) ? (int32_t) agc_erase_csmmass() : 0); /* MASS high word, kg 2^16 */
 
-    g->mass          = agc_dp_pack((agc_sp_t) hi, agc_dp_low(g->mass)); /* TS MASS */
+    agc_erase_set_mass(agc_dp_pack((agc_sp_t)hi, agc_dp_low(agc_erase_mass()))); /* TS MASS */
     agc_flag_id_t nj = (agc_flag_id_t) AGC_FLAG_NJETSFLG;               /* NJETSFLG */
 
     agc_flag_put(nj, (b & ACC4OR2X) == 0u);
@@ -331,7 +330,7 @@ agc_status_t agc_job_dap_data_load_mass_lm(agc_job_ctx_t *ctx)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_guid_state()->lm.mass = agc_dp_from_sp((agc_sp_t) m); /* ZL, DXCH */
+    agc_erase_set_mass(agc_dp_from_sp((agc_sp_t)m)); /* ZL, DXCH */
     agc_inhint();
     agc_status_t st           = agc_lm_dap_restordb();        /* deadband, inertias      */
 

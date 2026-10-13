@@ -39,6 +39,7 @@
 #include "../../src/io/dsky/pinball/internal.h"
 #include "agc/core/assertion.h"
 #include "agc/core/state.h"
+#include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"
 #include "agc/io/nouns.h"

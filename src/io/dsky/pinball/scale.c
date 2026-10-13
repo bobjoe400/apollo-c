@@ -50,6 +50,7 @@
  *   is display conversion, not flight arithmetic. HMSOUT and M/SOUT derive
  *   the same digits by integer division of the centisecond count.
  **********************************************************************/
+#include "agc/erasable_map/address_map.h"
 #include <stddef.h>
 #include <stdlib.h>
 

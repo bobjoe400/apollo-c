@@ -209,7 +209,7 @@ static agc_status_t steering_after_vg_update(agc_interp_t *ip)
     agc_mat_t      refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows (2^1) */
     agc_vec_t      om;                              /* OMEGAC commanded rates (XPRODUCT); scale of OMEGAC (csm/dap.h) */
 
-    agc_guid_steering_cross_product(ip, &xin, &refsmmat, &g->trig, &om);
+    agc_guid_steering_cross_product(ip, &xin, &refsmmat, agc_imu_trig(), &om);
 
     for (int i = 0; i < 3; i++)
     {

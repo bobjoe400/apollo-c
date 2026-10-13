@@ -425,7 +425,7 @@ void agc_imu_ballangs(agc_interp_t *ip, const uint16_t gimbal[3], uint16_t out[3
     const uint16_t yzx[3] = {gimbal[1], gimbal[2], gimbal[0]}; /* CDUSPOT */
     agc_cdutrig_t  t;                                          /* sin/cos of the CDUs */
 
-    agc_guid_cdtrigs(&t, yzx);                /* CD*TR*G */
+    agc_imu_cdtrigs(&t, yzx);                /* CD*TR*G */
     const agc_dp_t sx = t.sincdu[AGC_TRIG_X]; /* SINCDUX / 2, 2^0   */
     const agc_dp_t cx = t.coscdu[AGC_TRIG_X]; /* COSCDUX / 2, 2^0   */
     const agc_dp_t sy = t.sincdu[AGC_TRIG_Y]; /* SINCDUY / 2, 2^0   */
@@ -796,7 +796,7 @@ agc_status_t agc_job_attitude_maneuver_terminate(agc_job_ctx_t *ctx)
         return (agc_exec_gotopooh());
     }
 
-    return (agc_rendz_goto_terminate_tracking());
+    return (agc_extverb_goto_tracking_terminate());
 }
 
 /**********************************************************************

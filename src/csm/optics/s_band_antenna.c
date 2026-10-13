@@ -211,7 +211,7 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     agc_integ_out_t o;                      /* integration output (RATT, VATT) */
     const agc_dp_t  now = align_loadtime(); /* TIME2/1, cs 2^28 */
 
-    agc_guid_cdutrig(&trig);                                                                  /* CDUTRIG      */
+    agc_imu_cdutrig(&trig);                                                                  /* CDUTRIG      */
     agc_status_t st = align_integ(&ip, ALIGN_CSMCONIC, now, AGC_JOB_SBANDANT_CM_RECYCLE, &o); /* status of the call */
     agc_vec_t    r;                                                                           /* the earth vector in SM, then NB, scale 2^28 m */
 
@@ -225,7 +225,7 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
         return ((st == AGC_STATUS_BUSY) ? AGC_STATUS_OK : st); /* INTSTALL: the job sleeps */
     }
 
-    agc_guid_smnb(&trig, &r); /* *SMNB*       */
+    agc_imu_smnb(&trig, &r); /* *SMNB*       */
     agc_sband_cm_angles(&ip, r, &rhosb, &gammasb);
 
     /* Display VN_ANTENNA_ANGLES while EXTVBACT bit 5 is on (p. 935). */

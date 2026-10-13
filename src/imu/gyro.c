@@ -16,8 +16,8 @@
  *   channel 14    uint16_t   I/O  bits           gyro select, sign,
  *                                                activity, power
  *   IMODES30      uint16_t   I    bits           cage test
- *   OGC,IGC,MGC   agc_dp_t   I/O  rev 2^0        the OGC buffer
- *                                                (agc_align_ram()->ogc)
+ *   OGC,IGC,MGC   agc_dp_t   I/O  rev 2^0        the OGC buffer (owned
+ *                                                here: agc_imu_ogc)
  *
  * EXTERNAL REFERENCES:
  *   Name                  Description
@@ -43,10 +43,10 @@
  *   at 3200 pulses/s (32 pulses per centisecond).  Commands of less than
  *   one pulse are not sent; the unsent fraction of every command stays
  *   in the buffer.
- *   The OGC buffer is the alignment erasables OGC, IGC, MGC
- *   (agc_align_ram()->ogc), the words CALCGTA and the noun 93 load
- *   write: one erasable, as in the AGC (ECADR OGC in A at IMUPULSE).
- *   GCOMP and ERCOMP are this module's own.
+ *   The OGC buffer is the erasables OGC, IGC, MGC that CALCGTA, the
+ *   alignment programs and the noun 93 load write (agc_imu_ogc): one
+ *   erasable, as in the AGC (ECADR OGC in A at IMUPULSE), owned here
+ *   with GCOMP and ERCOMP.
  *   DEVIATION: the AGC keeps the augment count in the major word of the
  *   command buffer while torquing; here it is a module variable and the
  *   buffer holds only the final fraction throughout.
@@ -67,7 +67,6 @@
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"
-#include "agc/programs/alignment.h"
 #include "internal.h"
 
 #define GYROFRAC    ((agc_dp_t) 28) /* 2DEC .215 B-21: .215 pulse, LSBs  */
@@ -92,7 +91,7 @@ typedef struct lgyro_word
     int                phase; /* bits 13-14: 0 Y, 1 Z, 2 X, 3 done */
 } lgyro_word_t;
 
-static agc_dp_t     gbuf[AGC_IMU_GBUF_COUNT][3]; /* GCOMP, ERCOMP (OGC row unused): rev 2^0 */
+static agc_dp_t     gbuf[AGC_IMU_GBUF_COUNT][3]; /* OGC, GCOMP, ERCOMP: rev 2^0 */
 static lgyro_word_t lgyro;                       /* LGYRO                                  */
 static uint16_t     gyrocmd;                     /* GYROCMD hardware counter, pulses    */
 static int          aug_left;                    /* 8192 augments still to come         */
@@ -141,9 +140,6 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
  * AGC: none (ECADR in A at IMUPULSE) -- the three words of a gyro
  *      command buffer
  *
- * OGC is the alignment erasable OGC, IGC, MGC (noun 93, CALCGTA);
- * GCOMP and ERCOMP are this module's.
- *
  * ARGUMENTS:
  *   buf  agc_imu_gyro_buf_t  I    buffer id
  *
@@ -151,7 +147,22 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
  **********************************************************************/
 static agc_dp_t *gyro_words(agc_imu_gyro_buf_t buf)
 {
-    return ((buf == AGC_IMU_GBUF_OGC) ? agc_align_ram()->ogc : gbuf[buf]); /* ECADR OGC / GCOMP / ERCOMP */
+    return (gbuf[buf]); /* ECADR OGC / GCOMP / ERCOMP */
+}
+
+/**********************************************************************
+ * AGC: none (accessor) -- the erasables OGC, IGC, MGC
+ *
+ * The OGC gyro buffer: CALCGTA, the alignment programs (P52, P54, P57),
+ * the systems test and the noun 93 load (V25N93, FINEK2) write it;
+ * IMUPULSE on the OGC buffer torques by it and leaves the unsent
+ * fractions in it.
+ *
+ * RETURNS: agc_dp_t * -- OGC, IGC, MGC (X, Y, Z), rev 2^0
+ **********************************************************************/
+agc_dp_t *agc_imu_ogc(void)
+{
+    return (gbuf[AGC_IMU_GBUF_OGC]);
 }
 
 /**********************************************************************

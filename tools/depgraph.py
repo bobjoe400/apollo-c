@@ -14,10 +14,12 @@ Method (no reading or grepping of calls; CODING_STANDARD.md "Tooling"):
   * #include "agc/<subsystem>/<h>.h" lines give the header dependencies.
 
 A module is a src/ folder two levels deep (src/nav/conic, src/csm/dap; a
-file directly under src/<x>/ belongs to module <x>).  src/exec/dispatch.c
-(the generated job/task switch) and src/exec/interrupts.c (the interrupt
-lead-ins) are the documented layering exceptions and are kept as their own
-nodes so their fan-out does not hide the rest.
+file directly under src/<x>/ belongs to module <x>).  The documented
+layering exceptions (ARCHITECTURE.md) are kept as their own nodes so their
+fan-out does not hide the rest: src/exec/dispatch.c (the generated
+job/task switch), src/exec/interrupts.c (the interrupt lead-ins),
+src/exec/nouns.c (agc_dispatch_noun: the noun data held above io) and
+src/exec/change_program/ (V37 and the fresh-start / restart resets).
 
 Output: the Markdown between the markers
     <!-- depgraph:begin -->  ...  <!-- depgraph:end -->
@@ -48,18 +50,26 @@ END = '<!-- depgraph:end -->'
 # Host-only shims built outside this tree's Makefile (src/nassp needs
 # NASSP's own headers; the Makefile's LIB_SRCS excludes it too).
 HOST_ONLY = ('src/nassp/',)
-SPECIAL = {'src/exec/dispatch.c': 'exec/dispatch', 'src/exec/interrupts.c': 'exec/interrupts'}
-# ARCHITECTURE.md: core < exec < io/imu/nav < guidance < programs < csm|lm < sim
-LAYER = {'core': 0, 'exec': 1, 'io': 2, 'imu': 2, 'nav': 2, 'guidance': 3, 'programs': 4,
-         'csm': 5, 'lm': 5, 'sim': 6}
-TOP_ORDER = ['sim', 'csm', 'lm', 'programs', 'guidance', 'io', 'imu', 'nav', 'exec', 'core']
+SPECIAL = {'src/exec/dispatch.c': 'exec/dispatch', 'src/exec/interrupts.c': 'exec/interrupts',
+           'src/exec/nouns.c': 'exec/nouns'}
+# The documented exceptions: the three files above and the V37 / reset folder.
+EXCEPTIONS = set(SPECIAL.values()) | {'exec/change_program'}
+# ARCHITECTURE.md: core < exec < io/imu/nav < guidance|programs < csm|lm < sim.
+# The NASSP address map (nassp-integration) sits above everything it maps.
+LAYER = {'core': 0, 'exec': 1, 'io': 2, 'imu': 2, 'nav': 2, 'guidance': 3, 'programs': 3,
+         'csm': 5, 'lm': 5, 'sim': 6, 'erasable_map': 6}
+# Modules filed under a vehicle folder whose layer is lower than the
+# folder's: the T5RUPT/T6RUPT digital autopilots, commanded by KALCMANU
+# (imu), monitored by T4RUPT (io/service) and downlinked (io/telemetry).
+MODULE_LAYER = {'csm/dap': 2, 'lm/dap': 2}
+TOP_ORDER = ['sim', 'erasable_map', 'csm', 'lm', 'programs', 'guidance', 'io', 'imu', 'nav', 'exec', 'core']
 HUB_SHARE = 0.7   # a callee module called by >= 70 % of the modules is a hub
 MIN_DRAWN = 5     # module edges with fewer distinct function pairs are table-only
 GCC_FLAGS = ['-std=c11', '-O0', '-fno-inline', '-Iinclude', '-fcallgraph-info=su,da', '-c']
 
 
 def module_of(path):
-    """src/a/b/c.c -> 'a/b'; src/a/c.c -> 'a'; the two exec exceptions apart."""
+    """src/a/b/c.c -> 'a/b'; src/a/c.c -> 'a'; the single-file exceptions apart."""
     if path in SPECIAL:
         return SPECIAL[path]
     parts = path.split('/')
@@ -70,6 +80,16 @@ def module_of(path):
 
 def top_of(module):
     return module.split('/')[0]
+
+
+def layer_of(module):
+    """ARCHITECTURE.md layer of a module (MODULE_LAYER, else its top folder's)."""
+    return MODULE_LAYER.get(module, LAYER[top_of(module)])
+
+
+def upward(a, b):
+    """A call from module a into module b goes up the layering."""
+    return a not in EXCEPTIONS and layer_of(a) < layer_of(b)
 
 
 def compile_all(srcs, work):
@@ -148,15 +168,18 @@ def short(title):
 def mermaid_layers(medges, modules):
     tops = [t for t in TOP_ORDER if any(top_of(m) == t for m in modules)]
     agg = collections.Counter()
+    up = set()
     for (a, b), (pairs, _sites) in medges.items():
         ta, tb = top_of(a), top_of(b)
-        if ta != tb and a not in SPECIAL.values():
+        if ta != tb and a not in EXCEPTIONS:
             agg[(ta, tb)] += len(pairs)
+            if upward(a, b):
+                up.add((ta, tb))
     lines = ['```mermaid', 'flowchart TB']
     for t in tops:
         lines.append(f'    {t}["{t}/ (layer {LAYER[t]})"]')
     for (a, b), n in sorted(agg.items(), key=lambda kv: (TOP_ORDER.index(kv[0][0]), TOP_ORDER.index(kv[0][1]))):
-        arrow = '-.->' if LAYER[a] < LAYER[b] else '-->'
+        arrow = '-.->' if (a, b) in up else '-->'
         lines.append(f'    {a} {arrow}|{n}| {b}')
     lines.append('```')
     return lines, agg
@@ -175,7 +198,7 @@ def mermaid_modules(medges, callers, hubs, nfiles, nfuncs):
     only the modules on those edges appear, grouped by top folder."""
     drawn = []
     for (a, b), (pairs, _sites) in sorted(medges.items()):
-        if top_of(a) not in callers or b in hubs or a in SPECIAL.values() or len(pairs) < MIN_DRAWN:
+        if top_of(a) not in callers or b in hubs or a in EXCEPTIONS or len(pairs) < MIN_DRAWN:
             continue
         drawn.append((a, b, len(pairs)))
     used = {a for a, _b, _n in drawn} | {b for _a, b, _n in drawn}
@@ -189,7 +212,7 @@ def mermaid_modules(medges, callers, hubs, nfiles, nfuncs):
             lines.append(f'        {node_id(m)}["{m}<br/>{nfiles[m]} files, {nfuncs[m]} fns"]')
         lines.append('    end')
     for a, b, n in drawn:
-        arrow = '-.->' if LAYER[top_of(a)] < LAYER[top_of(b)] else '-->'
+        arrow = '-.->' if upward(a, b) else '-->'
         lines.append(f'    {node_id(a)} {arrow}|{n}| {node_id(b)}')
     lines.append('```')
     return lines
@@ -215,10 +238,12 @@ def render(srcs, defined, edges, inc):
            '### Layers', '',
            'One node per top-level folder; edge label = distinct caller->callee',
            'function pairs. Dotted arrows call UP the ARCHITECTURE.md layering',
-           '(core < exec < io/imu/nav < guidance < programs < csm|lm < sim);',
+           '(core < exec < io/imu/nav < guidance|programs < csm|lm < sim; the',
+           'digital autopilots csm/dap and lm/dap are on the io/imu layer);',
            'the reasons are in the "Upward calls" table below. The fan-out of',
-           'the job/task switch and the interrupt lead-ins is left out here',
-           '(see "Dispatch fan-out").', '']
+           'the documented exceptions (job/task switch, interrupt lead-ins,',
+           'noun data, V37 and resets) is left out here (see "Exception',
+           'fan-out").', '']
     layer_lines, _agg = mermaid_layers(medges, modules)
     out += layer_lines
     out += ['', '### Modules', '',
@@ -228,9 +253,10 @@ def render(srcs, defined, edges, inc):
             'keep the maps',
             'readable (all are in the edge table): edges into the hub modules',
             f'{", ".join("`src/" + h + "`" for h in hubs)} (called by at least',
-            f'{int(HUB_SHARE * 100)} % of the modules), the fan-out of `exec/dispatch`',
-            '(the generated job/task switch) and `exec/interrupts` (interrupt',
-            f'lead-ins), and edges with fewer than {MIN_DRAWN} function pairs.', '']
+            f'{int(HUB_SHARE * 100)} % of the modules), the fan-out of the',
+            'documented exceptions (`exec/dispatch`, `exec/interrupts`,',
+            '`exec/nouns`, `exec/change_program`), and edges with fewer than',
+            f'{MIN_DRAWN} function pairs.', '']
     for title, tops in MODULE_VIEWS:
         out += ['', f'#### {title}', '']
         out += mermaid_modules(medges, tops, hubs, nfiles, nfuncs)
@@ -239,21 +265,24 @@ def render(srcs, defined, edges, inc):
     for h in hubs:
         n = sum(len(medges[(a, h)][0]) for a in callers[h])
         out.append(f'| src/{h} | {len(callers[h])} | {n} |')
-    out += ['', '#### Dispatch fan-out (edges not drawn)', '',
-            '| From | Into module | Job/task/rupt handlers |', '|---|---|---|']
+    out += ['', '#### Exception fan-out (edges not drawn)', '',
+            'The documented layering exceptions (ARCHITECTURE.md): the job/task',
+            'switch, the interrupt lead-ins, the noun data held above io and the',
+            'V37 / fresh-start resets.', '',
+            '| From | Into module | Functions called |', '|---|---|---|']
     for (a, b), (pairs, _sites) in sorted(medges.items()):
-        if a in SPECIAL.values():
+        if a in EXCEPTIONS:
             out.append(f'| {a} | src/{b} | {len(pairs)} |')
     out += ['', '#### All module edges', '',
             '| Caller module | Callee module | Function pairs | Call sites |', '|---|---|---|---|']
     for (a, b), (pairs, sites) in sorted(medges.items()):
         out.append(f'| {a} | {b} | {len(pairs)} | {sites} |')
     out += ['', '#### Upward calls (against the layering)', '',
-            'Calls from a lower layer into a higher one, outside the two exec',
+            'Calls from a lower layer into a higher one, outside the documented',
             'exceptions. Example pairs are the first three in name order.', '',
             '| Caller module | Callee module | Pairs | Examples |', '|---|---|---|---|']
     for (a, b), (pairs, _sites) in sorted(medges.items()):
-        if a in SPECIAL.values() or LAYER[top_of(a)] >= LAYER[top_of(b)]:
+        if not upward(a, b):
             continue
         ex = ', '.join(f'`{short(s)}` -> `{short(d)}`' for s, d in sorted(pairs)[:3])
         out.append(f'| {a} | {b} | {len(pairs)} | {ex} |')

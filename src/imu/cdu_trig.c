@@ -1,12 +1,14 @@
 /**********************************************************************
- * FILE NAME: powered_flight.c
+ * FILE NAME: cdu_trig.c
  *
  * PURPOSE:
  *   POWERED_FLIGHT_SUBROUTINES: CDUTRIG / CD*TR*GS / QUICTRIG compute the
  *   sines and cosines of three CDU angles; AX*SR*T rotates a vector
  *   between stable-member (SM) and navigation-base (NB) axes using them;
  *   SMCDURES (Comanche) converts SM increments to CDU increments;
- *   FLESHPOT (Luminary) builds the NB->SM matrix XNB.
+ *   FLESHPOT (Luminary) builds the NB->SM matrix XNB. The erasables
+ *   CDUSPOT, SINCDU, COSCDU they fill for the SERVICER, the landing and
+ *   the TVC DAP are owned here (agc_imu_trig).
  *
  * AGC SOURCE:
  *   Comanche055 POWERED_FLIGHT_SUBROUTINES.agc pp. 1365-1372 (CDUTRIG,
@@ -19,6 +21,7 @@
  *   Name          Type      I/O  Scale        Description
  *   ------------  --------  ---  -----------  ------------------------
  *   CDUX/Y/Z      uint16_t  I    2^15/rev     CDU counters (CDUTRIG)
+ *   CDUSPOT, SINCDU, COSCDU  agc_cdutrig_t  I/O  see imu.h  owned here
  *
  * EXTERNAL REFERENCES:
  *   Name                  Description
@@ -39,6 +42,10 @@
  *   gimbal axes in that order; the C arrays keep that order
  *   (AGC_TRIG_Y/Z/X). DEVIATION: CDULOGIC's 1's-complement logic on a
  *   2's-complement count (one count for negative angles), see cdu_as_sp.
+ *   Filed with the IMU (it was src/guidance/powered_flight.c): the
+ *   gimbal-angle transforms serve KALCMANU (BALLANGS), the alignment and
+ *   radar routines, the SERVICER and the TVC DAP; imu is their lowest
+ *   caller (layering lane).
  *
  * ALGORITHM:
  *   The basic-language routines AX*SR*T and FLESHPOT work on the stored
@@ -56,14 +63,27 @@
 #include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
-#include "agc/io/service.h"
 
 #define CDU_SIGN_BIT   ((uint16_t) 040000) /* bit 15 of the 15-bit CDU word  */
 #define CDU_MASK       ((uint16_t) 077777) /* the 15 bits of a CDU word */
 #define CDU_FULL_SCALE 0100000L            /* 2^15 counts = one revolution    */
+
+static agc_cdutrig_t g_trig; /* CDUSPOT, SINCDU, COSCDU (Y Z X) */
+
+/**********************************************************************
+ * AGC: none (accessor) -- the erasables CDUSPOT, SINCDU, COSCDU
+ *
+ * QUICTRIG / CDUTRIG results kept between routines: the SERVICER (READACCS
+ * and the LM landing radar), P40 steering, the landing guidance and the
+ * TVC DAP read them.
+ *
+ * RETURNS: agc_cdutrig_t * -- CDUSPOT, SINCDU, COSCDU (scales in imu.h)
+ **********************************************************************/
+agc_cdutrig_t *agc_imu_trig(void)
+{
+    return (&g_trig);
+}
 
 /* ---------------------------------------------------------------------- */
 /* Helpers                                                                 */
@@ -106,7 +126,7 @@ static agc_sp_t cdu_as_sp(uint16_t cdu)
  * revolutions, range [-1/2, +1/2). 2^15 counts are one revolution, so the
  * DP value is the signed count times 2^13.
  *
- * FUNCTION NAME: agc_guid_cdulogic
+ * FUNCTION NAME: agc_imu_cdulogic
  *
  * ARGUMENTS:
  *   Argument  Type        I/O  Description (scale)
@@ -115,7 +135,7 @@ static agc_sp_t cdu_as_sp(uint16_t cdu)
  *
  * RETURNS: agc_dp_t -- the angle, rev 2^0, in [-1/2, +1/2)
  **********************************************************************/
-agc_dp_t agc_guid_cdulogic(uint16_t cdu)
+agc_dp_t agc_imu_cdulogic(uint16_t cdu)
 {
     long int w = (long int) (cdu & CDU_MASK); /* signed counts, 2^15/rev */
 
@@ -134,7 +154,7 @@ agc_dp_t agc_guid_cdulogic(uint16_t cdu)
  * half-cosines in SINCDU and COSCDU. The AGC loops X, Z, Y (index 4, 2, 0)
  * and leaves MPAC untouched; C locals make the latter automatic.
  *
- * FUNCTION NAME: agc_guid_cdtrigs
+ * FUNCTION NAME: agc_imu_cdtrigs
  *
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
@@ -143,7 +163,7 @@ agc_dp_t agc_guid_cdulogic(uint16_t cdu)
  *                                   2^1)
  *   cdu_yzx   const uint16_t   I    CDU angles in Y Z X order, counts
  **********************************************************************/
-void agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
+void agc_imu_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
 {
     agc_interp_t ip; /* for SINE and COSINE */
 
@@ -152,7 +172,7 @@ void agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
     for (int k = 2; k >= 0; k--)
     { /* TRIGLOOP (TR*GL*P): index 4, 2, 0 */
         t->cduraw[k]  = cdu_as_sp(cdu_yzx[k]);
-        t->cduspot[k] = agc_guid_cdulogic(cdu_yzx[k]); /* USPRCADR CDULOGIC */
+        t->cduspot[k] = agc_imu_cdulogic(cdu_yzx[k]); /* USPRCADR CDULOGIC */
         t->coscdu[k]  = agc_dp_cos(t->cduspot[k]);     /* COSINE, 2^1     */
         t->sincdu[k]  = agc_dp_sin(t->cduspot[k]);     /* SINE +1, 2^1    */
     }
@@ -163,7 +183,7 @@ void agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
  * present CDU counters, loaded CDUY, CDUZ, CDUX into CDUSPOT. CDUTEMP is
  * not touched so it stays consistent with the last PIPA reading.
  *
- * FUNCTION NAME: agc_guid_cdutrig
+ * FUNCTION NAME: agc_imu_cdutrig
  *
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
@@ -171,14 +191,14 @@ void agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
  *   t         agc_cdutrig_t *  I/O  CDU trig block (CDUSPOT, SINCDU, COSCDU
  *                                   2^1)
  **********************************************************************/
-void agc_guid_cdutrig(agc_cdutrig_t *t)
+void agc_imu_cdutrig(agc_cdutrig_t *t)
 {
     uint16_t cdu[3]; /* CDUY, CDUZ, CDUX counts */
 
     cdu[AGC_TRIG_X] = agc_erase_cdux(); /* CA CDUX  TS CDUSPOT +4       */
     cdu[AGC_TRIG_Y] = agc_erase_cduy(); /* CA CDUY  TS CDUSPOT          */
     cdu[AGC_TRIG_Z] = agc_erase_cduz(); /* CA CDUZ  TS CDUSPOT +2       */
-    agc_guid_cdtrigs(t, cdu);
+    agc_imu_cdtrigs(t, cdu);
 }
 
 /**********************************************************************
@@ -190,7 +210,7 @@ void agc_guid_cdutrig(agc_cdutrig_t *t)
  * AGC because the DAP shares the temporaries; C locals need no inhibit,
  * but the INHINT/RELINT pair is kept for the shared SINCDU/COSCDU.
  *
- * FUNCTION NAME: agc_guid_quictrig
+ * FUNCTION NAME: agc_imu_quictrig
  *
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
@@ -199,7 +219,7 @@ void agc_guid_cdutrig(agc_cdutrig_t *t)
  *                                   2^1)
  *   cdu_yzx   const uint16_t   I    CDU angles in Y Z X order, counts
  **********************************************************************/
-void agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
+void agc_imu_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
 {
     agc_inhint();
 
@@ -316,7 +336,7 @@ static agc_dp_words_t rotate_component(agc_dp_words_t term, agc_dp_words_t comp,
  * those words as stored. Guaranteed safe only for vectors of magnitude
  * less than unity.
  *
- * FUNCTION NAME: agc_guid_axisrot_words
+ * FUNCTION NAME: agc_imu_axisrot_words
  *
  * ARGUMENTS:
  *   Argument  Type                   I/O  Description (scale)
@@ -328,7 +348,8 @@ static agc_dp_words_t rotate_component(agc_dp_words_t term, agc_dp_words_t comp,
  *   v         agc_vec_words_t *      I/O  VBUF, rotated in place, any
  *                                         scale |v| < 1
  **********************************************************************/
-void agc_guid_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_words_t *v)
+void agc_imu_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
+                           agc_vec_words_t *v)
 {
     /* INDEXI pairs in DP word offsets 4,2 / 2,0 / 0,4, halved to indices. */
     static const int indexi[4] = {2, 1, 0, 2};
@@ -371,14 +392,14 @@ void agc_guid_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_v
 
         v->c[d1] = rotate_component(term, v->c[d1], c);
     }
-} /* agc_guid_axisrot_words */
+} /* agc_imu_axisrot_words */
 
 /**********************************************************************
  * AX*SR*T (CM pp.1369-1371, LM pp.1262-1264) on a vector value: the
  * value enters VBUF as sign-agreeing words (MPACVBUF of a stored vector)
  * and leaves as the value of the words AX*SR*T leaves.
  *
- * FUNCTION NAME: agc_guid_axisrot
+ * FUNCTION NAME: agc_imu_axisrot
  *
  * ARGUMENTS:
  *   Argument  Type                   I/O  Description (scale)
@@ -390,7 +411,8 @@ void agc_guid_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_v
  *   v         agc_vec_t *            I/O  vector rotated in place, any
  *                                         scale |v| < 1
  **********************************************************************/
-void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v)
+void agc_imu_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir,
+                     agc_vec_t *v)
 {
     agc_vec_words_t w; /* VBUF as words */
 
@@ -399,18 +421,18 @@ void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *
         w.c[i] = agc_dp_to_words(v->c[i]);
     }
 
-    agc_guid_axisrot_words(t, dir, &w);
+    agc_imu_axisrot_words(t, dir, &w);
 
     for (int i = 0; i < 3; i++)
     {
         v->c[i] = agc_dp_from_words(w.c[i]);
     }
-} /* agc_guid_axisrot */
+} /* agc_imu_axisrot */
 
 /**********************************************************************
  * *SMNB* (CM p.1369, LM p.1263): SM -> NB with the present SINCDU/COSCDU.
  *
- * FUNCTION NAME: agc_guid_smnb
+ * FUNCTION NAME: agc_imu_smnb
  *
  * ARGUMENTS:
  *   Argument  Type                   I/O  Description (scale)
@@ -420,15 +442,15 @@ void agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *
  *   v         agc_vec_t *            I/O  vector rotated in place, any
  *                                         scale |v| < 1
  **********************************************************************/
-void agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v)
+void agc_imu_smnb(const agc_cdutrig_t *t, agc_vec_t *v)
 {
-    agc_guid_axisrot(t, AGC_AXISROT_SMNB, v); /* C*MM*N1: CS THREE */
+    agc_imu_axisrot(t, AGC_AXISROT_SMNB, v); /* C*MM*N1: CS THREE */
 }
 
 /**********************************************************************
  * *NBSM* (CM p.1369, LM p.1263): NB -> SM with the present SINCDU/COSCDU.
  *
- * FUNCTION NAME: agc_guid_nbsm
+ * FUNCTION NAME: agc_imu_nbsm
  *
  * ARGUMENTS:
  *   Argument  Type                   I/O  Description (scale)
@@ -438,15 +460,15 @@ void agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v)
  *   v         agc_vec_t *            I/O  vector rotated in place, any
  *                                         scale |v| < 1
  **********************************************************************/
-void agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v)
+void agc_imu_nbsm(const agc_cdutrig_t *t, agc_vec_t *v)
 {
-    agc_guid_axisrot(t, AGC_AXISROT_NBSM, v); /* C*MM*N3: CA THREE */
+    agc_imu_axisrot(t, AGC_AXISROT_NBSM, v); /* C*MM*N3: CA THREE */
 }
 
 /**********************************************************************
  * CDU*SMNB (CM p.1368, LM p.1262): CDUTRIGS then SM -> NB.
  *
- * FUNCTION NAME: agc_guid_cdu_smnb
+ * FUNCTION NAME: agc_imu_cdu_smnb
  *
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
@@ -456,16 +478,16 @@ void agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v)
  *   v         agc_vec_t *      I/O  vector rotated in place, any scale |v|
  *                                   < 1
  **********************************************************************/
-void agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v)
+void agc_imu_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v)
 {
-    agc_guid_cdutrig(t);
-    agc_guid_smnb(t, v);
+    agc_imu_cdutrig(t);
+    agc_imu_smnb(t, v);
 }
 
 /**********************************************************************
  * CDU*NBSM (CM p.1368, LM p.1262): CDUTRIGS then NB -> SM.
  *
- * FUNCTION NAME: agc_guid_cdu_nbsm
+ * FUNCTION NAME: agc_imu_cdu_nbsm
  *
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
@@ -475,17 +497,17 @@ void agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v)
  *   v         agc_vec_t *      I/O  vector rotated in place, any scale |v|
  *                                   < 1
  **********************************************************************/
-void agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
+void agc_imu_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
 {
-    agc_guid_cdutrig(t);
-    agc_guid_nbsm(t, v);
+    agc_imu_cdutrig(t);
+    agc_imu_nbsm(t, v);
 }
 
 /**********************************************************************
  * TRG*SMNB (CM p.1368, LM p.1262): CD*TR*GS on caller's angles (Y Z X),
  * then SM -> NB.
  *
- * FUNCTION NAME: agc_guid_trg_smnb
+ * FUNCTION NAME: agc_imu_trg_smnb
  *
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
@@ -496,17 +518,18 @@ void agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v)
  *   v         agc_vec_t *      I/O  vector rotated in place, any scale |v|
  *                                   < 1
  **********************************************************************/
-void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
+void agc_imu_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
+                      agc_vec_t *v)
 {
-    agc_guid_cdtrigs(t, cdu_yzx);
-    agc_guid_smnb(t, v);
+    agc_imu_cdtrigs(t, cdu_yzx);
+    agc_imu_smnb(t, v);
 }
 
 /**********************************************************************
  * TRG*NBSM (CM p.1368, LM p.1262): CD*TR*GS then NB -> SM. (Comanche's
  * NBSM interface, "the first to go", is not translated: no callers.)
  *
- * FUNCTION NAME: agc_guid_trg_nbsm
+ * FUNCTION NAME: agc_imu_trg_nbsm
  *
  * ARGUMENTS:
  *   Argument  Type             I/O  Description (scale)
@@ -517,10 +540,11 @@ void agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v
  *   v         agc_vec_t *      I/O  vector rotated in place, any scale |v|
  *                                   < 1
  **********************************************************************/
-void agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v)
+void agc_imu_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
+                      agc_vec_t *v)
 {
-    agc_guid_cdtrigs(t, cdu_yzx);
-    agc_guid_nbsm(t, v);
+    agc_imu_cdtrigs(t, cdu_yzx);
+    agc_imu_nbsm(t, v);
 }
 
 /**********************************************************************
@@ -529,7 +553,7 @@ void agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v
  * stores it and later shifts or divides it sees the words, e.g. AVEIT's
  * VSR3 after SURFSTAR).
  *
- * FUNCTION NAME: agc_guid_trg_nbsm_words
+ * FUNCTION NAME: agc_imu_trg_nbsm_words
  *
  * ARGUMENTS:
  *   Argument  Type               I/O  Description (scale)
@@ -540,10 +564,11 @@ void agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v
  *   v         agc_vec_words_t *  I/O  VBUF, rotated in place, any scale
  *                                     |v| < 1
  **********************************************************************/
-void agc_guid_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_words_t *v)
+void agc_imu_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3],
+                            agc_vec_words_t *v)
 {
-    agc_guid_cdtrigs(t, cdu_yzx);
-    agc_guid_axisrot_words(t, AGC_AXISROT_NBSM, v); /* C*MM*N3: CA THREE */
+    agc_imu_cdtrigs(t, cdu_yzx);
+    agc_imu_axisrot_words(t, AGC_AXISROT_NBSM, v); /* C*MM*N3: CA THREE */
 }
 
 /**********************************************************************
@@ -554,7 +579,7 @@ void agc_guid_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_ve
  * IGA = CDUY, MGA = CDUZ. DTHETASM and DCDU are in revolutions (2^0);
  * the sines and cosines are halves (2^1), hence the SL1s.
  *
- * FUNCTION NAME: agc_guid_smcdures
+ * FUNCTION NAME: agc_imu_smcdures
  *
  * ARGUMENTS:
  *   Argument  Type                   I/O  Description (scale)
@@ -568,7 +593,8 @@ void agc_guid_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_ve
  *
  * RETURNS: none
  **********************************************************************/
-void agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu)
+void agc_imu_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t,
+                      agc_vec_t dthetasm, agc_vec_t *dcdu)
 {
     const agc_dp_t sy = t->sincdu[AGC_TRIG_Y]; /* sin IGA / 2, scale 2^1 */
     const agc_dp_t cy = t->coscdu[AGC_TRIG_Y]; /* cos IGA / 2, scale 2^1 */
@@ -598,7 +624,7 @@ void agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthet
  * XNBPIP, half-unit rows scaled 2^1) from SINCDU/COSCDU. Rows are the NB
  * axes in SM coordinates; row 1 = row 2 x row 0 (TCF VXV), doubled.
  *
- * FUNCTION NAME: agc_guid_fleshpot
+ * FUNCTION NAME: agc_imu_fleshpot
  *
  * ARGUMENTS:
  *   Argument  Type                   I/O  Description (scale)
@@ -607,7 +633,7 @@ void agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthet
  *                                         2^1)
  *   xnb       agc_mat_t *            O    NB-to-SM matrix, half-unit rows
  **********************************************************************/
-void agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
+void agc_imu_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
 {
     /* The half sines and cosines as stored (SINCDU, COSCDU), scale 2^1.    */
     const agc_dp_words_t sx = agc_dp_to_words(t->sincdu[AGC_TRIG_X]); /* sin OGA / 2 */
@@ -643,4 +669,4 @@ void agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb)
     {
         xnb->row[1].c[i] = agc_dp_from_words(words_ddoubl(agc_dp_to_words(y.c[i]))); /* DDOUBL */
     }
-} /* agc_guid_fleshpot */
+} /* agc_imu_fleshpot */

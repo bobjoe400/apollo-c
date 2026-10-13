@@ -396,15 +396,15 @@ static void test_gyro_pulse(void)
  **********************************************************************/
 static void test_gyro_pulse_loaded_angles(void)
 {
-    agc_align_ram_t *r = agc_align_ram(); /* alignment erasables (N93 target) */
+    agc_dp_t *ogc = agc_imu_ogc(); /* OGC, IGC, MGC: the N93 target */
 
-    r->ogc[0] = 0;
-    r->ogc[1] = 2000 * 128;                      /* IGC: 2000 pulses, rev 2^0 */
-    r->ogc[2] = 0;
+    ogc[0] = 0;
+    ogc[1] = 2000 * 128;                         /* IGC: 2000 pulses, rev 2^0 */
+    ogc[2] = 0;
     CHECK(agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_NONE) == AGC_STATUS_OK);
     CHECK(agc_task_strtgyro() == AGC_STATUS_OK); /* phase Y          */
     CHECK(agc_imu_gyrocmd() == 2000u);
-    CHECK(r->ogc[1] == 28);                      /* +.215 pulse left */
+    CHECK(ogc[1] == 28);                         /* +.215 pulse left */
     CHECK(agc_task_strtgyro() == AGC_STATUS_OK); /* Z, X: nothing    */
     CHECK(!agc_imu_gyros_busy());
 }
@@ -498,13 +498,11 @@ static void test_pipfree_alarm(void)
  **********************************************************************/
 static void p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx)
 {
-    const agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
-
     agc_erase_set_cduy(imu[1]);
     agc_erase_set_cduz(imu[2]);
     agc_erase_set_cdux(imu[0]);
-    agc_erase_set_cdus(ar->desopts);
-    agc_erase_set_cdut(ar->desoptt);
+    agc_erase_set_cdus(agc_erase_desopts());
+    agc_erase_set_cdut(agc_erase_desoptt());
     CHECK(agc_chan_set_signal(016, AGC_CH016_MARK, true) == AGC_STATUS_OK);
     CHECK(agc_sxtmark_markrupt() == AGC_STATUS_OK);
     CHECK(agc_chan_set_signal(016, AGC_CH016_MARK, false) == AGC_STATUS_OK);
@@ -556,12 +554,12 @@ static void test_optical_verification(void)
     for (int k = 0; k < 3; k++)
     {
         /* the marks carry the CDU quantisation: 2^-15 rev = 40 arcsec */
-        CHECK(near(rev(ar->ogc[k]), 0.0, 5e-5));
+        CHECK(near(rev(agc_imu_ogc()[k]), 0.0, 5e-5));
     }
 
     CHECK(agc_job_optical_verification_torque_accepted() == AGC_STATUS_OK);
     agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, erc);
-    CHECK(erc[0] == ar->ogc[0] && erc[2] == ar->ogc[2]);
+    CHECK(erc[0] == agc_imu_ogc()[0] && erc[2] == agc_imu_ogc()[2]);
     CHECK(agc_phase_checkmm(2)); /* GCOMP5: back to P02 */
 } /* test_optical_verification */
 

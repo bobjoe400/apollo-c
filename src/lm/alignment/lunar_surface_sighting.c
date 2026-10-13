@@ -24,7 +24,7 @@
  *   --------------------  ------------------------------------------
  *   align_*               alignment helpers: displays, stalls, phases, word forms (alignment.h)
  *   agc_align_ram         alignment routines of this lane (alignment.h)
- *   agc_guid_cdu_smnb     CDUTRIG, *NBSM* / *SMNB*, PIPASR (guidance.h)
+ *   agc_imu_cdu_smnb     CDUTRIG, *NBSM* / *SMNB*, PIPASR (imu.h)
  *   agc_star_vector       star catalogue (auxiliary.h)
  *   agc_mpac_*            interpretive instructions on MPAC words (interp_words.h)
  *   agc_vec_*             vector arithmetic of the interpreter (interp.h)
@@ -315,7 +315,7 @@ agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
     if (st == AGC_STATUS_OK)
     {
         star = agc_vec_unit(&ip, agc_mat_vec(&ip, &refsmmat, star), NULL, NULL);
-        agc_guid_cdu_smnb(&t, &star);
+        agc_imu_cdu_smnb(&t, &star);
     }
 
     if (st != AGC_STATUS_OK)

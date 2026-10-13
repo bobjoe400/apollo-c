@@ -27,7 +27,7 @@
  *   waitlist_clear_lists  STARTSB2: LST1, LST2 (waitlist.c)
  *   exec_clear_tables     STARTSB2: core sets, VAC areas (executive.c)
  *   agc_phase_restart_all GOPROG3 NXTRST loop (restarts.c)
- *   agc_lm_dap_restart    LM STARTSB1 DAP part (lm/dap)
+ *   exec_up_startsb1      LM STARTSB1 DAP part (change_program/idle.c)
  *   exec_up_startsb2/dofstart  other modules' resets (change_program/idle.c)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -64,7 +64,6 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
-#include "agc/lm/dap.h"
 #include "internal.h"
 
 #define FS_BIT15            040000u            /* bit 15: lamp word "send me" / OSC FAIL */
@@ -221,7 +220,7 @@ static void startsb1(void)
 
     if (is_lm())
     {
-        agc_lm_dap_restart();
+        exec_up_startsb1(); /* the DAP part (lm/dap) */
     }
 
     startsb2();

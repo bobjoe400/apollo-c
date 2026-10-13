@@ -39,7 +39,7 @@
  *   agc_lm_rrangles     RRANGLES: RR angles for both modes
  *   agc_lm_rrnb         RRNB: gimbal angles to an NB LOS
  *   agc_rr_limchk       RRLIMCHK
- *   agc_guid_smnb       *SMNB* / *NBSM* with CDUTRIG
+ *   agc_imu_smnb       *SMNB* / *NBSM* with CDUTRIG
  *   rr_rrout            RROUT: send the gyro commands
  *   rr_remode_start     REMODE
  *
@@ -173,8 +173,8 @@ agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *re
     agc_cdutrig_t trig;              /* CDUTRIG sines / cosines */
     agc_vec_t     los = s->rrtarget; /* LOS, 2^1 */
 
-    agc_guid_cdutrig(&trig);
-    agc_guid_smnb(&trig, &los);
+    agc_imu_cdutrig(&trig);
+    agc_imu_smnb(&trig, &los);
     bool along_y = false; /* LOS along NB Y */
 
     agc_lm_rrangles(ip, los, rr_mode2(), s->modea, s->modeb, &along_y);
@@ -268,14 +268,14 @@ static bool rr_limnb(uint16_t t, uint16_t s)
 
     int sv = rr_ones(s); /* shaft, CDU units */
 
-    if (!rr_magsub(rr_ones(t), RR_LIM_T1))
+    if (!agc_rr_magsub(rr_ones(t), RR_LIM_T1))
     {
         return (false);
     }
 
     sv += (sv <= 0) ? RR_20_5DEGS : RR_5_5DEGS; /* NEGSHAFT      */
 
-    return (rr_magsub(sv, RR_LIM_S1));
+    return (agc_rr_magsub(sv, RR_LIM_S1));
 }
 
 /**********************************************************************
@@ -488,8 +488,8 @@ static void rr_dodes_los(agc_interp_t *ip, const rr_state_t *s, agc_cdutrig_t *t
         dv = agc_vec_scale(ip, s->losvel, RR_MCTOMS);
 
         *los = agc_vec_unit(ip, agc_vec_add(ip, r, dv), NULL, NULL);
-        agc_guid_cdutrig(trig);
-        agc_guid_smnb(trig, los);
+        agc_imu_cdutrig(trig);
+        agc_imu_smnb(trig, los);
     }
 }
 
@@ -604,11 +604,11 @@ static agc_status_t rr_dorrout(agc_interp_t *ip, rr_state_t *s)
  **********************************************************************/
 static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s, const agc_cdutrig_t *trig, agc_vec_t los)
 {
-    agc_dp_t sa    = agc_guid_cdulogic(agc_erase_cdus());                                                /* rev 2^0 */
+    agc_dp_t sa    = agc_imu_cdulogic(agc_erase_cdus());                                                /* rev 2^0 */
     agc_dp_t sn_s  = agc_dp_sin(sa);                                                                     /* 0D, 2^1 */
     agc_dp_t cs_s  = agc_dp_cos(sa);                                                                     /* 2D, 2^1 */
     agc_dp_t shaft = agc_dp_sub(ip, agc_dp_mul_trunc(cs_s, los.c[0]), agc_dp_mul_trunc(los.c[2], sn_s)); /* 2^2 */
-    agc_dp_t ta    = agc_guid_cdulogic(agc_erase_cdut());                                                /* rev 2^0 */
+    agc_dp_t ta    = agc_imu_cdulogic(agc_erase_cdut());                                                /* rev 2^0 */
     agc_dp_t cs_t  = agc_dp_cos(ta);                                                                     /* 4D, 2^1 */
     agc_dp_t sn_t  = agc_dp_sin(ta);                                                                     /* 6D, 2^1 */
     agc_dp_t ux    = agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, sn_s), 1);                                    /* 2^1 */
@@ -631,7 +631,7 @@ static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s, const a
 
     if (!agc_flag_test(AGC_FLAG_RRNBSW))
     {
-        agc_guid_nbsm(trig, &urr);
+        agc_imu_nbsm(trig, &urr);
     }
 
     return (agc_dp_sub(ip, agc_vec_dot(ip, urr, s->rrtarget), RR_COS_HALFDEG));
@@ -684,32 +684,6 @@ agc_status_t agc_job_rr_designate_command(void)
 
     return (rr_dorrout(&ip, s));
 } /* agc_job_rr_designate_command */
-
-/**********************************************************************
- * GOTOV56 (p.593): P20 terminates through verb 56 (TRMTRACK)
- * instead of GOTOPOOH. DEVIATION: the AGC continues the calling job at
- * TRMTRACK; here the extended verb is started as its own job and the
- * calling job ends.
- * AGC: GOTOV56 (P20-P25.agc p.593)
- *
- * FUNCTION NAME: agc_rendz_goto_terminate_tracking
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- the status of the extended verb request;
- *          AGC_STATUS_BAD_ARG on a failed precondition
- **********************************************************************/
-agc_status_t agc_rendz_goto_terminate_tracking(void)
-{
-    agc_status_t st = agc_extverb(56, 0); /* V56 request */
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
-}
 
 /**********************************************************************
  * RRDESNB for verb 41 (TANG, noun 72)

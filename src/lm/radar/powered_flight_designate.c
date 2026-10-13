@@ -38,8 +38,8 @@
  * EXTERNAL REFERENCES:
  *   Name                  Description
  *   --------------------  ----------------------------------------------
- *   agc_guid_axisrot      AX*SR*T: SM to NB
- *   agc_guid_quictrig     QUICTRIG of the IMU CDUs
+ *   agc_imu_axisrot      AX*SR*T: SM to NB
+ *   agc_imu_quictrig     QUICTRIG of the IMU CDUs
  *   agc_radar_rrrdot      RRRDOT / RRRANGE readings
  *   agc_imu_stall_dev     RADSTALL
  *   rr_axis_start         the trunnion preposition
@@ -357,7 +357,7 @@ static void pfd_ulosnb(agc_interp_t *ip, agc_vec_t los, const agc_cdutrig_t *tri
 {
     agc_vec_t v = agc_vec_unit(ip, los, NULL, NULL); /* UNIT LOS, 2^1 */
 
-    agc_guid_axisrot(trig, AGC_AXISROT_SMNB, &v);
+    agc_imu_axisrot(trig, AGC_AXISROT_SMNB, &v);
 
     for (int i = 0; i < 3; i++)
     {
@@ -413,7 +413,7 @@ static void pfd_first_pass(agc_interp_t *ip, agc_vec_t los, agc_cdutrig_t *trig,
     uint16_t yzx[3] = {agc_erase_cduy(), agc_erase_cduz(), agc_erase_cdux()};
 
     agc_relint();
-    agc_guid_quictrig(trig, yzx);
+    agc_imu_quictrig(trig, yzx);
     agc_sp_t u[3] = {0, 0, 0};
 
     pfd_ulosnb(ip, los, trig, u);

@@ -21,7 +21,7 @@
  *   STARAD        agc_vec_t  O    half-unit      agc_align_ram()->starad
  *   STAR          agc_vec_t  O    half-unit      agc_align_ram()->star
  *   OGC,IGC,MGC   agc_dp_t   O    rev 2^0        agc_align_ram()->ogc
- *   DESOPTS/T     uint16_t   O    CDU            agc_align_ram()->desopt*
+ *   DESOPTS/T     uint16_t   O    CDU            agc_erase_set_desopt*()
  *   ERCOMP1       agc_dp_t   I/O  rev 2^0        gyro buffer ERCOMP
  *   TAZEL1, RUN,  struct     I/O  see header     prelaunch_ram()
  *   TARG1/2, LOSVEC
@@ -291,8 +291,8 @@ static agc_status_t targdrve(agc_sp_t starcode, agc_sp_t targ)
     ar->star = tar[(targ == 0) ? 0 : 1]; /* VLOAD* 6D,1; STCALL STAR    */
     agc_csm_sxtang(&ip, ar->star, &ar->xnb, &ar->sac, &ar->pac, &cult);
 
-    ar->desopts = ar->sac; /* CA SAC, TS DESOPTS                      */
-    ar->desoptt = ar->pac; /* CA PAC, TS DESOPTT                      */
+    agc_erase_set_desopts(ar->sac); /* CA SAC, TS DESOPTS                      */
+    agc_erase_set_desoptt(ar->pac); /* CA PAC, TS DESOPTT                      */
 
     return (retarg());
 }
@@ -400,7 +400,7 @@ static agc_status_t target2_marked(agc_job_ctx_t *ctx)
     }
 
     ar->xdc = xdc;
-    agc_imu_calcgta(&ip, &xdc, ar->ogc); /* CALL CALCGTA               */
+    agc_imu_calcgta(&ip, &xdc, agc_imu_ogc()); /* CALL CALCGTA               */
 
     return (agc_job_optical_verification_torque_display(ctx)); /* GCOMP4 */
 }
@@ -481,14 +481,14 @@ agc_status_t agc_job_optical_verification_torque_display(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_optical_verification_torque_accepted(void)
 {
-    const agc_align_ram_t *ar = agc_align_ram(); /* alignment erasables */
-    agc_interp_t           ip;                   /* interpreter state (VAD)         */
-    agc_dp_t               buf[3];               /* ERCOMP1, rev 2^0                */
+    const agc_dp_t *ogc = agc_imu_ogc(); /* OGC, IGC, MGC, rev 2^0 */
+    agc_interp_t    ip;                  /* interpreter state (VAD)         */
+    agc_dp_t        buf[3];              /* ERCOMP1, rev 2^0                */
 
     agc_imu_gyro_buf_get(AGC_IMU_GBUF_ERCOMP, buf);
 
     agc_interp_init(&ip);
-    const agc_vec_t sum = agc_vec_add(&ip, agc_vec_make(ar->ogc[0], ar->ogc[1], ar->ogc[2]), agc_vec_make(buf[0], buf[1], buf[2])); /* OGC + ERCOMP1, rev 2^0; VLOAD VAD */
+    const agc_vec_t sum = agc_vec_add(&ip, agc_vec_make(ogc[0], ogc[1], ogc[2]), agc_vec_make(buf[0], buf[1], buf[2])); /* OGC + ERCOMP1, rev 2^0; VLOAD VAD */
 
     for (int i = 0; i < 3; i++)
     {

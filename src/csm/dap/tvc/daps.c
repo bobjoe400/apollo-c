@@ -371,7 +371,7 @@ agc_status_t csm_tvc_ycopy(bool restart)
 static void tvcd_integrate(tvcd_axis_t ax)
 {
     agc_csm_tvc_t       *t    = agc_csm_dap_tvc();                  /* TVC DAP erasables */
-    const agc_cdutrig_t *g    = &agc_guid_state()->trig;            /* QUICTRIG     */
+    const agc_cdutrig_t *g    = agc_imu_trig();            /* QUICTRIG     */
     bool                 p    = (ax == TVCD_PITCH);                 /* pitch pass        */
     int                  a    = p ? 1 : 2;                          /* OMEGAYx / OMEGAZx */
     agc_sp_t             cosz = agc_dp_high(g->coscdu[AGC_TRIG_Z]); /* 2^1 */

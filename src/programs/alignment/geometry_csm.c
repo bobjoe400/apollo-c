@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: geometry.c
+ * FILE NAME: geometry_csm.c
  *
  * PURPOSE:
  *   CSM_GEOMETRY: the sextant line of sight in navigation-base axes
@@ -27,7 +27,7 @@
  *   --------------------  ------------------------------------------
  *   align_*               alignment helpers: displays, stalls, phases, word forms (alignment.h)
  *   agc_align_*           alignment routines of this lane (alignment.h)
- *   agc_guid_smnb         CDUTRIG, *NBSM* / *SMNB*, PIPASR (guidance.h)
+ *   agc_imu_smnb         CDUTRIG, *NBSM* / *SMNB*, PIPASR (imu.h)
  *   agc_mpac_*            interpretive instructions on MPAC words (interp_words.h)
  *   agc_vec_*             vector arithmetic of the interpreter (interp.h)
  *   agc_mat_*             matrix arithmetic of the interpreter (interp.h)
@@ -42,6 +42,10 @@
  *   (CURTAINS, BAILOUT done) end the job with AGC_STATUS_OK.
  *
  * NOTES:
+ *   Filed with the alignment routines (it was src/csm/optics/geometry.c)
+ *   because the shared rendezvous parameter display (R31/R34 R34LOS)
+ *   calls SXTNB: the routines are the CSM's, the module is the lowest
+ *   caller's (layering lane).
  *   SXTNB and SXTANG run on the MPAC words (word_forms.c,
  *   interp_words.h): bit exact on the oracle.  EARROT1/2 have no caller
  *   in the tree (entry has its own copy, entry_earrot).
@@ -277,7 +281,7 @@ void agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t
 {
     agc_vec_t s = star_sm; /* STAR in NB, then NB1, half-unit (2^1) */
 
-    agc_guid_smnb(t, &s);         /* *SMNB*  */
+    agc_imu_smnb(t, &s);         /* *SMNB*  */
     const agc_mat_t m = nb2nb1(); /* the mark */
 
     s                     = agc_vec_shl(ip, agc_mat_vec(ip, &m, s), 1); /* MXV VSL1 */

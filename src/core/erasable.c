@@ -80,6 +80,8 @@ static agc_mat_t g_refsmmat;               /* REFSMMAT, scale 2^1 */
 static agc_tp_t  g_tephem;                 /* TEPHEM, cs, TP scale 2^42 */
 static agc_sp_t  g_csmmass;                /* CSMMASS, kg, scale 2^16 */
 static agc_sp_t  g_lemmass;                /* LEMMASS, kg, scale 2^16 */
+static agc_dp_t  g_mass;                   /* MASS (LM), kg, scale 2^16 (DP) */
+static agc_sp_t  g_abdelv;                 /* ABDELV (LM), |DELV| cm/s, scale 2^14 */
 static agc_sp_t  g_pipax;                  /* PIPAX, unscaled pulses */
 static agc_sp_t  g_pipay;                  /* PIPAY, unscaled pulses */
 static agc_sp_t  g_pipaz;                  /* PIPAZ, unscaled pulses */
@@ -739,6 +741,64 @@ void agc_erase_set_lemmass(agc_sp_t v)
 }
 
 /**********************************************************************
+ * AGC: MASS (ERASABLE_ASSIGNMENTS.agc L p. 105) -- read MASS: the LM
+ *   vehicle mass, kept by the SERVICER (MASSMON) and 1/ACCS, read by the
+ *   DAP, the landing guidance and the throttle
+ *
+ * FUNCTION NAME: agc_erase_mass
+ *
+ * RETURNS: agc_dp_t -- MASS, kg, scale 2^16 (DP)
+ **********************************************************************/
+agc_dp_t agc_erase_mass(void)
+{
+    return (g_mass);
+}
+
+/**********************************************************************
+ * AGC: MASS (ERASABLE_ASSIGNMENTS.agc L p. 105) -- store MASS
+ *
+ * FUNCTION NAME: agc_erase_set_mass
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------
+ *   v         agc_dp_t    I    new value, kg, scale 2^16 (DP)
+ **********************************************************************/
+void agc_erase_set_mass(agc_dp_t v)
+{
+    g_mass = v;
+}
+
+/**********************************************************************
+ * AGC: ABDELV (ERASABLE_ASSIGNMENTS.agc L p. 105) -- read ABDELV: the
+ *   magnitude of the last PIPA increment (SERVICER), read by the DAP
+ *   (1/ACCS) and the throttle
+ *
+ * FUNCTION NAME: agc_erase_abdelv
+ *
+ * RETURNS: agc_sp_t -- ABDELV, cm/s, scale 2^14
+ **********************************************************************/
+agc_sp_t agc_erase_abdelv(void)
+{
+    return (g_abdelv);
+}
+
+/**********************************************************************
+ * AGC: ABDELV (ERASABLE_ASSIGNMENTS.agc L p. 105) -- store ABDELV
+ *
+ * FUNCTION NAME: agc_erase_set_abdelv
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------
+ *   v         agc_sp_t    I    new value, cm/s, scale 2^14
+ **********************************************************************/
+void agc_erase_set_abdelv(agc_sp_t v)
+{
+    g_abdelv = v;
+}
+
+/**********************************************************************
  * AGC: PIPAX (ERASABLE_ASSIGNMENTS.agc C p. 39, L p. 92) -- read PIPAX:
  *   PIPA X counter
  *
@@ -1261,6 +1321,8 @@ void agc_erase_reset(void)
     g_tephem   = 0;
     g_csmmass  = 0;
     g_lemmass  = 0;
+    g_mass     = 0;
+    g_abdelv   = 0;
     g_pipax    = 0;
     g_pipay    = 0;
     g_pipaz    = 0;

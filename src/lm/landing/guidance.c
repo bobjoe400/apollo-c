@@ -573,7 +573,7 @@ agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
      * horizontal demand fits within the maximum thrust:
      *   AMAXHORIZ = SQRT((HIGHESTF/MASS)^2 - A1^2 - A0^2),
      *   UNFC z >= -AMAXHORIZ.                                              */
-    agc_dp_t mass = agc_guid_state()->lm.mass; /* 2^16 kg      */
+    agc_dp_t mass = agc_erase_mass(); /* 2^16 kg      */
 
     if (!AGC_ASSERT(mass > 0))
     {

@@ -37,8 +37,8 @@
  *   -------------------------  -----------------------------------------
  *   rz_integ                   CSMCONIC / LEMCONIC to the time
  *   agc_imu_vecpoint           VECPOINT
- *   agc_guid_smcdures          SMCDURES
- *   agc_guid_smnb              *SMNB*
+ *   agc_imu_smcdures          SMCDURES
+ *   agc_imu_smnb              *SMNB*
  *   agc_imu_attitude_maneuver  R60CSM
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -326,12 +326,12 @@ static agc_status_t ta_point_at_target(agc_interp_t *ip, agc_job_id_t resume, ta
     agc_vec_t     om       = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, agc_vec_scale(ip, cross, quot)), 1); /* OMEGA, SM, scale by X1 */
     agc_cdutrig_t trig;                                                                                      /* CDUTRIG sines / cosines */
 
-    agc_guid_cdutrig(&trig);
+    agc_imu_cdutrig(&trig);
     agc_vec_t dcdu = agc_vec_zero(); /* SMCDURES result, CDU scale */
 
-    agc_guid_smcdures(ip, &trig, agc_vec_scale(ip, om, TA_TENTH), &dcdu); /* SMCDURES */
+    agc_imu_smcdures(ip, &trig, agc_vec_scale(ip, om, TA_TENTH), &dcdu); /* SMCDURES */
     delcdu = rz_vshift(ip, dcdu, -17 - x1);                               /* VSL* 0-17D,1 */
-    agc_guid_smnb(&trig, &om);                                            /* *SMNB*   */
+    agc_imu_smnb(&trig, &om);                                            /* *SMNB*   */
 
     agc_mat_t m; /* matrix rows, unit 2^1 */
 

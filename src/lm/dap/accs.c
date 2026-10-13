@@ -117,7 +117,7 @@ static const uint16_t gimblbts[4] = {001400u, 001000u, 006000u, 004000u};
  **********************************************************************/
 static agc_sp_t mass_hi(void)
 {
-    agc_dp_t m = agc_guid_state()->lm.mass; /* MASS (DP), scaled 2^16 kg */
+    agc_dp_t m = agc_erase_mass(); /* MASS (DP), scaled 2^16 kg */
 
     return ((agc_sp_t) (m / 16384)); /* major word of MASS          */
 }
@@ -163,7 +163,7 @@ static bool lem_mass(lm_dap_t *d, bool docked)
     }
 
     agc_erase_set_lemmass(lem);
-    agc_guid_state()->lm.mass = (agc_dp_t) ((int32_t) (csm + lem) * 16384);
+    agc_erase_set_mass((agc_dp_t)((int32_t)(csm + lem) * 16384));
 
     return (!ascent);
 }
@@ -335,7 +335,7 @@ static agc_status_t docked(lm_dap_t *d)
 
     agc_sp_t mc = lm_dap_mphi(mass_hi(), cg); /* MASS x CG DELDOT, scale per the DOCKED fit (MPAC) */
 
-    d->accdotr = lm_dap_dvovsub(lm_dap_mp(mc, agc_guid_state()->lm.abdelv), inertia);
+    d->accdotr = lm_dap_dvovsub(lm_dap_mp(mc, agc_erase_abdelv()), inertia);
 
     return (spscont(d, d->accdotr)); /* TCF SPSCONT    */
 }
@@ -423,7 +423,7 @@ static agc_status_t lm_alone(lm_dap_t *d, bool descent)
     /* LRESC (pp.1489-1490): descent jerk ACCDOTx = (ABDELV MASS / GFACTM)
      * L,PVT-CG 1JACCx / TORKJET1, i.e. engine thrust x moment arm divided by
      * the jet torque, times the jet acceleration. */
-    agc_sp_t abdelv = agc_guid_state()->lm.abdelv;                             /* ABDELV, scaled 2^13 cm/s^2 */
+    agc_sp_t abdelv = agc_erase_abdelv();                             /* ABDELV, scaled 2^13 cm/s^2 */
     agc_sp_t f      = lm_dap_dvovsub(lm_dap_mp(abdelv, mass_hi()), AC_GFACTM); /* thrust T = ABDELV MASS / GFACTM, scaled 2^14 lb */
     agc_sp_t t      = lm_dap_mphi(f, d->l_pvt_cg);                             /* torque T x L,PVT-CG, scaled 2^17 lb-ft */
 

@@ -209,6 +209,14 @@ void     agc_erase_set_csmmass(agc_sp_t v);
 agc_sp_t agc_erase_lemmass(void);
 void     agc_erase_set_lemmass(agc_sp_t v);
 
+/* LM vehicle mass, kg, scale 2^16, DP (MASS: SERVICER MASSMON, 1/ACCS) */
+agc_dp_t agc_erase_mass(void);
+void     agc_erase_set_mass(agc_dp_t v);
+
+/* |DELV| of the last PIPA reading, cm/s, scale 2^14 (ABDELV, LM) */
+agc_sp_t agc_erase_abdelv(void);
+void     agc_erase_set_abdelv(agc_sp_t v);
+
 /* PIPA X pulse count since last read (register PIPAX, 037), unscaled
  * pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) */
 agc_sp_t agc_erase_pipax(void);
@@ -382,12 +390,12 @@ void     agc_erase_set_return_to_earth_range(agc_sp_t v);
 agc_dp_t agc_erase_tland(void);
 void     agc_erase_set_tland(agc_dp_t v);
 
-/* ---- erasable by address (src/core/ecadr.c) ------------------------------
- * Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074)
- * map onto agc_flagword_*; other addresses use a raw image (no map to the
- * typed erasables yet; fixed memory holds no rope).                        */
-void         agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word);
-agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word);
+/* ---- raw image of the address space (src/core/ecadr.c) ------------------
+ * Address 00000-77777 (bit 16 ignored). Erasable access by address, with
+ * the flagwords and named erasables mapped onto typed storage, is
+ * agc/erasable_map/address_map.h; this is only the word image it keeps. */
+void agc_erase_raw_read(uint16_t ecadr, uint16_t *word);
+void agc_erase_raw_write(uint16_t ecadr, uint16_t word);
 
 /* ---- restart-table delay times (src/core/restart_delays.c) ---------------
  * P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs),

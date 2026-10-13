@@ -162,9 +162,8 @@ static void target_in(const char *t, const char *name, agc_lm_target_t *g)
  **********************************************************************/
 static void common_in(const char *t)
 {
-    agc_lm_pad_t  *p = agc_lm_pad();          /* pad loads */
-    agc_lm_ldg_t  *l = agc_lm_ldg();          /* landing erasables */
-    agc_guid_lm_t *g = &agc_guid_state()->lm; /* LM guidance state */
+    agc_lm_pad_t *p = agc_lm_pad(); /* pad loads */
+    agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
     agc_state_init(AGC_VEHICLE_LM);
     agc_exec_init();
@@ -173,7 +172,7 @@ static void common_in(const char *t)
     target_in(t, "RBRFG", &p->target[0]);
     target_in(t, "RBRFG+28", &p->target[1]); /* RAPFG .. TCGIAPPR */
     p->leadtime = (agc_sp_t) oracle_in(t, "LEADTIME", 0);
-    g->mass     = oracle_in_dp(t, "MASS", 0);
+    agc_erase_set_mass(oracle_in_dp(t, "MASS", 0));
     l->wm       = oracle_in_vec(t, "WM");
 }
 
@@ -279,7 +278,7 @@ static void throttle(const char *t)
     common_in(t);
     agc_lm_pad()->lowcrit       = (agc_sp_t) oracle_in(t, "LOWCRIT", 0);
     agc_lm_pad()->highcrit      = (agc_sp_t) oracle_in(t, "LOWCRIT", 1);
-    agc_guid_state()->lm.abdelv = (agc_sp_t) oracle_in(t, "ABDELV", 0);
+    agc_erase_set_abdelv((agc_sp_t)oracle_in(t, "ABDELV", 0));
     l->afc                      = oracle_in_dp(t, "/AFC/", 0);
     l->thistpip                 = oracle_in_dp(t, "THISTPIP", 0);
     h->tthrot                   = (agc_sp_t) oracle_in(t, "TTHROT", 0);
@@ -481,7 +480,7 @@ static void rodcomp(const char *t)
     p->lag_tau               = oracle_in_dp(t, "LAG/TAU", 0);
     p->maxforce              = oracle_in_dp(t, "MAXFORCE", 0);
     p->minforce              = oracle_in_dp(t, "MINFORCE", 0);
-    g->lm.mass               = oracle_in_dp(t, "MASS", 0);
+    agc_erase_set_mass(oracle_in_dp(t, "MASS", 0));
     agc_lm_thr()->fweight.hi = (agc_sp_t) oracle_in(t, "FWEIGHT", 0);
     agc_lm_thr()->fweight.lo = (agc_sp_t) oracle_in(t, "FWEIGHT", 1);
     l->afc                   = oracle_in_dp(t, "/AFC/", 0);

@@ -96,7 +96,7 @@ static int32_t thr_csad(agc_sp_t a, agc_sp_t b, agc_sp_t c)
 static agc_dp_words_t thr_massmult(agc_dp_t accel)
 {
     agc_dp_words_t force = {AGC_SP_MAX, THR_MASSMULT_L}; /* overflow */
-    agc_dp_t       mass  = agc_guid_state()->lm.mass;    /* MASS, 2^16 kg */
+    agc_dp_t       mass  = agc_erase_mass();    /* MASS, 2^16 kg */
 
     /* First DMP leaves a TP in MPAC; the second DMP uses only MPAC,+1. */
     agc_dp_t ma  = agc_tp_to_dp(agc_dp_mul_tp(accel, mass)); /* 2^12 */
@@ -287,7 +287,7 @@ agc_status_t agc_lm_throttle_measured(agc_dp_t accel)
  **********************************************************************/
 agc_status_t agc_lm_throttle(void)
 {
-    agc_sp_t abdelv = agc_guid_state()->lm.abdelv; /* 2^14 cm/s / 2 s */
+    agc_sp_t abdelv = agc_erase_abdelv(); /* 2^14 cm/s / 2 s */
 
     if (!AGC_ASSERT(abdelv >= 0))
     {

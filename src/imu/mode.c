@@ -1497,9 +1497,47 @@ agc_status_t agc_imu_set_in_use(void)
 #define SCALER_MOD         0x10000000u /* 2^28: HISCALAR,LOSCALAR wrap      */
 #define SCALER_TO_CS_SHIFT 5           /* SHORTMP by BIT10 = 2^-5: scaler to cs  */
 #define SCALER_TRIES       4           /* bound on the SCALPREP re-reads         */
+#define SCALER_POSMAX      037777u     /* POSMAX: LOSCALAR about to carry        */
+#define FINETIME_TRIES     3           /* READ, re-READ, and the POSMAX retry   */
 
 static uint32_t time2sav; /* TIME2SAV: TIME2,TIME1 at PRESTAND, cs B28     */
 static uint32_t scalsave; /* SCALSAVE: scaler at PRESTAND, 1/3200 s B28    */
+
+/**********************************************************************
+ * FINETIME (IMU_CALIBRATION_AND_ALIGNMENT.agc C p.431 / IMU_PERFORMANCE_
+ * TEST_2.agc L p.381): LOSCALAR read twice so a carry between the reads is
+ * seen; if it is POSMAX (about to carry into HISCALAR) read again.  Returns
+ * with interrupts inhibited, like the AGC.  *t = HISCALAR, LOSCALAR as a DP
+ * count of the scalar (1/1600 s per LOSCALAR count, scale as channel 3/4).
+ * BUSY when LOSCALAR still reads POSMAX: the caller tries again later.
+ *
+ * ARGUMENTS:
+ *   t  agc_dp_t *  O   HISCALAR, LOSCALAR as one DP count
+ *
+ * RETURNS: AGC_STATUS_OK, BUSY while LOSCALAR reads POSMAX
+ **********************************************************************/
+agc_status_t agc_imu_finetime(agc_dp_t *t)
+{
+    agc_inhint();
+    uint16_t lo = SCALER_POSMAX; /* LOSCALAR, scaler counts */
+
+    for (int k = 0; k < FINETIME_TRIES && lo == SCALER_POSMAX; k++)
+    {
+        lo             = (uint16_t) (agc_chan_read((int) AGC_CHAN_LOSCALAR) & SCALER_POSMAX);
+        uint16_t again = (uint16_t) (agc_chan_read((int) AGC_CHAN_LOSCALAR) & SCALER_POSMAX); /* second read: carry seen? */
+
+        if (again != lo)
+        { /* RXOR, BZF               */
+            lo = again;
+        }
+    }
+
+    uint16_t hi = (uint16_t) (agc_chan_read((int) AGC_CHAN_HISCALAR) & SCALER_POSMAX); /* HISCALAR, scaler counts x 2^14 */
+
+    *t = agc_dp_pack((agc_sp_t) hi, (agc_sp_t) lo);
+
+    return ((lo == SCALER_POSMAX) ? AGC_STATUS_BUSY : AGC_STATUS_OK); /* POSMAX: about to carry */
+}
 
 /**********************************************************************
  * SCALPREP (IMU_MODE_SWITCHING_ROUTINES.agc p.1447 CM / p.1336 LM) --
@@ -1530,7 +1568,7 @@ static agc_status_t scalprep(uint32_t *scaler)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = agc_systems_test_finetime(&raw); /* FINETIME +1 */
+    agc_status_t st = agc_imu_finetime(&raw); /* FINETIME +1 */
 
     agc_relint(); /* RELINT (FINETIME's INHINT)                   */
     agc_relint(); /* RELINT (the caller's INHINT)                 */

@@ -68,6 +68,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
+#include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
@@ -389,6 +390,33 @@ agc_status_t agc_extverb(int verb, int noun)
     xv_noun = noun;
 
     return (agc_extverb_schedule(PRIO30, AGC_JOB_EXTENDED_VERB, false));
+}
+
+/**********************************************************************
+ * GOTOV56 (P20-P25.agc C p.631 / L p.593): P20 terminates through verb
+ * 56 (TRACKTRM) instead of GOTOPOOH (DCA VB56CADR, TCF SUPDXCHZ: a jump
+ * into the extended verb). DEVIATION: the AGC continues the calling job
+ * at TRACKTRM; here the extended verb is started as its own job and the
+ * calling job ends.
+ * AGC: GOTOV56 (P20-P25.agc C p.631 / L p.593)
+ *
+ * FUNCTION NAME: agc_extverb_goto_tracking_terminate
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- the status of the extended verb request;
+ *          AGC_STATUS_BAD_ARG on a failed precondition
+ **********************************************************************/
+agc_status_t agc_extverb_goto_tracking_terminate(void)
+{
+    agc_status_t st = agc_extverb(56, 0); /* V56 request */
+
+    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    return (st);
 }
 
 /**********************************************************************

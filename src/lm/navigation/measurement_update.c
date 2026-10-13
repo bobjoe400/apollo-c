@@ -724,9 +724,9 @@ static agc_status_t mu_compute(agc_interp_t *ip, mu_step_t step)
                                        agc_vec_make(0, AGC_DP_HALF, 0),
                                        agc_vec_make(0, 0, AGC_DP_HALF)};
 
-            agc_guid_trg_nbsm(&trig, yzx, &ax[0]); /* UNITX */
-            agc_guid_nbsm(&trig, &ax[1]);          /* UNITY *NBSM* */
-            agc_guid_nbsm(&trig, &ax[2]);          /* UNITZ *NBSM* */
+            agc_imu_trg_nbsm(&trig, yzx, &ax[0]); /* UNITX */
+            agc_imu_nbsm(&trig, &ax[1]);          /* UNITY *NBSM* */
+            agc_imu_nbsm(&trig, &ax[2]);          /* UNITZ *NBSM* */
 
             mu.mx = agc_vec_shl(ip, agc_vec_mat(ip, ax[0], &refsmmat), 1);
             mu.my = agc_vec_shl(ip, agc_vec_mat(ip, ax[1], &refsmmat), 1);

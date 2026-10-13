@@ -233,11 +233,11 @@ static agc_dp_t *noun_dp_alignment(uint16_t id)
     switch (id)
     {
         case AGC_DATA_OGC:
-            return (&r->ogc[0]);
+            return (&agc_imu_ogc()[0]);
         case AGC_DATA_OGC_P2:
-            return (&r->ogc[1]);
+            return (&agc_imu_ogc()[1]);
         case AGC_DATA_OGC_P4:
-            return (&r->ogc[2]);
+            return (&agc_imu_ogc()[2]);
         case AGC_DATA_LANDLAT:
             return (&r->landlat);
         case AGC_DATA_LANDLONG:
@@ -476,7 +476,7 @@ static agc_sp_t noun_signed_word(agc_dp_t raw)
 static agc_status_t noun_star_code(uint16_t id, bool write, agc_dp_t *value)
 {
     agc_sp_t *code  = &agc_align_ram()->starcode;                 /* STARCODE/AOTCODE */
-    agc_dp_t *sin_y = &agc_guid_state()->trig.sincdu[AGC_TRIG_Y]; /* SINCDUY, 2^1 */
+    agc_dp_t *sin_y = &agc_imu_trig()->sincdu[AGC_TRIG_Y]; /* SINCDUY, 2^1 */
 
     switch (id)
     {

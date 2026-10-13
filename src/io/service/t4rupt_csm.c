@@ -21,14 +21,14 @@
  *   ZOPTCNT       int       I/O  480 ms       32-sample wait
  *   ZONE          int       I/O  2^14 = pi    shaft stop monitor
  *   COMMANDO      int [2]   I/O  pulses       drive commands T, S
- *   DESOPTT/S     uint16_t  I    2's comp pi  desired optics (align)
+ *   DESOPTT/S     uint16_t  I/O  2's comp pi  desired optics (written by
+ *                                             R52, V41 N91, P03)
  *   CDUT/S        uint16_t  I/O  2's comp pi  optics CDUs
  *   CDUTCMD/SCMD  agc_sp_t  O    pulses       drive out-counters
  *
  * EXTERNAL REFERENCES:
  *   Name                   Description
  *   ---------------------  ------------------------------------------
- *   agc_align_ram          DESOPTT / DESOPTS (prog-align)
  *   agc_erase_set_cdutcmd  CDUTCMD / CDUSCMD out-counters (core)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -68,7 +68,6 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/io/service.h"
-#include "agc/programs/alignment.h"
 
 #define BIT1         000001u /* BIT1: ZERO OCDU / ZOPT task working     */
 #define BIT2         000002u /* BIT2: OCDU error counters / fail inhib  */
@@ -102,6 +101,8 @@
 static uint16_t optmodes = OPTINITF; /* OPTMODES bits                     */
 static agc_sp_t optind   = -1;       /* OPTIND, unscaled (NEG0 = -0)      */
 static int      swsample;            /* SWSAMPLE: +1 CMC, 0 man, -1 zero  */
+static uint16_t desoptt;             /* DESOPTT: desired trunnion, CDU word */
+static uint16_t desopts;             /* DESOPTS: desired shaft, CDU word  */
 static int      desopmod;            /* DESOPMOD: previous SWSAMPLE       */
 static int      wtoption;            /* WTOPTION countdown, 480 ms passes */
 static int      zoptcnt;             /* ZOPTCNT, 480 ms samples           */
@@ -150,6 +151,52 @@ agc_sp_t agc_erase_optind(void)
 void agc_erase_set_optind(agc_sp_t v)
 {
     optind = v; /* every caller stores a constant state */
+}
+
+/**********************************************************************
+ * DESOPTT (ERASABLE_ASSIGNMENTS.agc, CM) -- the trunnion angle OPTDRIVE
+ * drives to, read
+ *
+ * RETURNS: DESOPTT, CDU word (2^15 = 1 rev)
+ **********************************************************************/
+uint16_t agc_erase_desoptt(void)
+{
+    return (desoptt);
+}
+
+/**********************************************************************
+ * DESOPTT (ERASABLE_ASSIGNMENTS.agc, CM) -- the trunnion angle OPTDRIVE
+ * drives to, written (R52, V41 N91, P03 RETARG)
+ *
+ * ARGUMENTS:
+ *   v  uint16_t  I   desired trunnion, CDU word
+ **********************************************************************/
+void agc_erase_set_desoptt(uint16_t v)
+{
+    desoptt = v; /* a CDU word (PAC, CDUT) */
+}
+
+/**********************************************************************
+ * DESOPTS (ERASABLE_ASSIGNMENTS.agc, CM) -- the shaft angle OPTDRIVE
+ * drives to, read
+ *
+ * RETURNS: DESOPTS, CDU word (2^15 = 1 rev)
+ **********************************************************************/
+uint16_t agc_erase_desopts(void)
+{
+    return (desopts);
+}
+
+/**********************************************************************
+ * DESOPTS (ERASABLE_ASSIGNMENTS.agc, CM) -- the shaft angle OPTDRIVE
+ * drives to, written (R52, V41 N91, P03 RETARG)
+ *
+ * ARGUMENTS:
+ *   v  uint16_t  I   desired shaft, CDU word
+ **********************************************************************/
+void agc_erase_set_desopts(uint16_t v)
+{
+    desopts = v; /* a CDU word (SAC, CDUS) */
 }
 
 /**********************************************************************
@@ -656,12 +703,11 @@ void agc_t4_optics_drive(void)
              * shaft beyond 90 deg in a ZONE whose sign agrees with the command
              * and DESOPTS within 90 deg, the shaft command is reversed to keep
              * off the stops.                                                     */
-            const agc_align_ram_t *ar            = agc_align_ram(); /* DESOPTT, DESOPTS */
-            int                    tdiff         = 0;               /* DESOPTT - CDUT, ones', 2^14 = pi */
-            int                    cdus_commands = 0;               /* CDUS, ones', 2^14 = pi           */
+            int tdiff         = 0; /* DESOPTT - CDUT, ones', 2^14 = pi */
+            int cdus_commands = 0; /* CDUS, ones', 2^14 = pi           */
 
-            commando[1] = t4_getopcmd(ar->desopts, agc_erase_cdus()); /* shaft */
-            tdiff       = cdu_ones(ar->desoptt) - cdu_ones(agc_erase_cdut());
+            commando[1] = t4_getopcmd(agc_erase_desopts(), agc_erase_cdus()); /* shaft */
+            tdiff       = cdu_ones(agc_erase_desoptt()) - cdu_ones(agc_erase_cdut());
 
             if ((tdiff > (int) POSMAX) || (tdiff < -(int) POSMAX))
             {
@@ -670,7 +716,7 @@ void agc_t4_optics_drive(void)
             }
             else
             {
-                commando[0] = t4_getopcmd(ar->desoptt, agc_erase_cdut());
+                commando[0] = t4_getopcmd(agc_erase_desoptt(), agc_erase_cdut());
             }
 
             cdus_commands = cdu_ones(agc_erase_cdus());
@@ -679,7 +725,7 @@ void agc_t4_optics_drive(void)
             {
                 if ((zone < 0) == (commando[1] < 0)) /* ZONE sign agrees with the command */
                 {
-                    if (iabs(cdu_ones(ar->desopts)) - 1 - DEG90_CDU <= 0)
+                    if (iabs(cdu_ones(agc_erase_desopts())) - 1 - DEG90_CDU <= 0)
                     {
                         commando[1] = -commando[1]; /* reverse the regular command */
                     }

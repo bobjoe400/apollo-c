@@ -382,7 +382,7 @@ void agc_guid_copycycle(agc_vehicle_t veh, agc_copy_kind_t kind)
 
     if (kind == AGC_COPY_ALL && veh == AGC_VEHICLE_LM)
     {
-        g->lm.mass = g->lm.mass1;
+        agc_erase_set_mass(g->lm.mass1);
     }
 
     agc_relint();

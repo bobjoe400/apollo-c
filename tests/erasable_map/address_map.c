@@ -1,8 +1,8 @@
 /**********************************************************************
- * FILE NAME: ecadr.c
+ * FILE NAME: address_map.c
  *
  * PURPOSE:
- *   Erasable access by address (src/core/ecadr.c): the address map onto
+ *   Erasable access by address (src/erasable_map/address_map.c): the address map onto
  *   the typed erasables, both ropes. A V71 state-vector / REFSMMAT /
  *   TEPHEM load (words stored from the last to the first, as STORLP71
  *   does, signs free to disagree) reaches the typed erasable; a read of a
@@ -31,8 +31,10 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/state.h"
+#include "agc/erasable_map/address_map.h"
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"
+#include "agc/lm/landing.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 
@@ -47,6 +49,7 @@ static void test_state_vector_uplink(agc_vehicle_t v);
 static void test_tephem_and_follow(agc_vehicle_t v);
 static void test_unmapped_and_flags(agc_vehicle_t v);
 static void test_pad_loads(void);
+static void test_lm_landing_pad(void);
 
 #define CHECK(c) check((c), __LINE__, #c)
 
@@ -68,6 +71,7 @@ int main(void)
     test_unmapped_and_flags(AGC_VEHICLE_CSM);
     test_unmapped_and_flags(AGC_VEHICLE_LM);
     test_pad_loads();
+    test_lm_landing_pad();
     (void) printf("test_ecadr: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -269,4 +273,27 @@ static void test_pad_loads(void)
     agc_ephem_get_csm_data(&eph);
     CHECK(eph.vecoem[0].c[0] == 040000);
     CHECK(eph.omegaes == 011);
+}
+
+/**********************************************************************
+ * AGC: none (test) -- the Luminary099 landing pad loads by address
+ * (LMPAD): RBRFG at 2402, TCGIBRAK at 2435, RAPFG at 2436, COSTHET2 at
+ * 2600 and TENDAPPR at 3424 reach agc_lm_pad().
+ **********************************************************************/
+static void test_lm_landing_pad(void)
+{
+    agc_state_init(AGC_VEHICLE_LM);
+    CHECK(agc_erase_write_ecadr(02402u, 00005u) == AGC_STATUS_OK); /* RBRFG x high */
+    CHECK(agc_erase_write_ecadr(02435u, 00007u) == AGC_STATUS_OK); /* TCGIBRAK */
+    CHECK(agc_erase_write_ecadr(02437u, 00011u) == AGC_STATUS_OK); /* RAPFG x low */
+    CHECK(agc_erase_write_ecadr(02600u, 00002u) == AGC_STATUS_OK); /* COSTHET2 high */
+    CHECK(agc_erase_write_ecadr(03424u, 00013u) == AGC_STATUS_OK); /* TENDAPPR */
+
+    agc_lm_pad_t *pad = agc_lm_pad(); /* the landing pad loads */
+
+    CHECK(pad->target[0].rfg.c[0] == 5 * 040000);
+    CHECK(pad->target[0].tcgi == 7);
+    CHECK(pad->target[1].rfg.c[0] == 011);
+    CHECK(pad->costhet2 == 2 * 040000);
+    CHECK(pad->tendappr == 013);
 }

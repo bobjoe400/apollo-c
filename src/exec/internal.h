@@ -134,6 +134,7 @@ void         exec_up_stoprate(void);        /* CSM GOPROG3 / INITSUB: STOPRATE *
 agc_status_t exec_up_servidle(void);        /* LM STRTIDLE: SERVIDLE          */
 void         exec_up_setcoars(void);        /* CSM GOPROG: SETCOARS (NO ATT)  */
 void         exec_up_startsub(void);        /* STARTSUB: DNTMGOTO, LM RADMODES */
+void         exec_up_startsb1(void);        /* LM STARTSB1: the DAP part       */
 void         exec_up_startsb2(void);        /* STARTSB2: other modules' resets */
 void         exec_up_dofstart(bool slap1);  /* DOFSTART: other modules' resets */
 void         exec_up_goprog_optics(void);   /* CSM GOPROG: OPTMODES           */

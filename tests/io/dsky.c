@@ -36,6 +36,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
+#include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"
 

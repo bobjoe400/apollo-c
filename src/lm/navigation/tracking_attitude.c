@@ -231,7 +231,7 @@ agc_status_t agc_job_tracking_attitude_compute(agc_job_ctx_t *ctx)
     agc_cdutrig_t trig;                     /* CDU sines and cosines */
     agc_vec_t     v = rr_state()->rrtarget; /* LOS, then in NB axes, 2^1 */
 
-    agc_guid_cdu_smnb(&trig, &v);
+    agc_imu_cdu_smnb(&trig, &v);
 
     if (agc_dp_sub(&ip, v.c[2], TA_COS15DEG) >= 0)
     { /* R61LEM2  */

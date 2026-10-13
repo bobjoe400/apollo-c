@@ -21,7 +21,8 @@
  *   --------------------  ------------------------------------------
  *   agc_dsky_*            GOP00FIX display, STARTSB2 resets (io-dsky)
  *   agc_kalc_stoprate, agc_imu_setcoars    CSM restart up-calls
- *   agc_lm_dap_fresh_start, agc_lm_servidle   LM up-calls
+ *   agc_lm_dap_fresh_start, agc_lm_dap_restart, agc_lm_servidle
+ *                         LM up-calls
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   The statuses of the up-calls; BAD_ARG for a bad vehicle or
@@ -241,6 +242,19 @@ void exec_up_startsub(void)
     {
         agc_t4_radmodes_init();
     }
+}
+
+/**********************************************************************
+ * STARTSB1's DAP part (L pp.220-221): RCSFLAGS bit 13 off, T6NEXT,
+ * NXT6ADR, NEXTP, ACCSOKAY, T5ADR = DAPIDLER (lm/dap STARTSB1 part).
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+void exec_up_startsb1(void)
+{
+    agc_lm_dap_restart();
 }
 
 /**********************************************************************

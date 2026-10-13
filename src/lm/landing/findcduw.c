@@ -38,7 +38,7 @@
  *   agc_guid_state()->trig, lm.xnbpip
  *
  * EXTERNAL REFERENCES:
- *   agc_rtb_normunit, agc_guid_quictrig, agc_guid_smnb,
+ *   agc_rtb_normunit, agc_imu_quictrig, agc_imu_smnb,
  *   agc_lm_dap_stoprate, agc_erase_set_thetad,
  *   agc_erase_set_delcdux/y/z, agc_erase_set_omegapd/qd/rd,
  *   agc_erase_set_delperor/qeror/reror, agc_alarm
@@ -674,7 +674,7 @@ static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx, 
 
     *unx = agc_rtb_normunit(ip, unfc, &shift, NULL, NULL);
     *unz = agc_rtb_normunit(ip, agc_lm_ldg()->unwc_2, &shift, NULL, NULL);
-    agc_guid_quictrig(trig, yzx);
+    agc_imu_quictrig(trig, yzx);
 
     if (agc_interp_test_ovf(ip))
     {
@@ -685,7 +685,7 @@ static agc_status_t fc_inputs(agc_interp_t *ip, agc_vec_t unfc, agc_vec_t *unx, 
 
     if (!agc_interp_test_ovf(ip)) /* skip the filter  */
     {
-        agc_guid_smnb(trig, &u); /* unit DELV, NB    */
+        agc_imu_smnb(trig, &u); /* unit DELV, NB    */
         fc_unfv_2.c[1] = agc_dp_from_sp(fc_fltrsub(agc_dp_high(fc_unfv_2.c[1]), agc_dp_high(u.c[1])));
         fc_unfv_2.c[2] = agc_dp_from_sp(fc_fltrsub(agc_dp_high(fc_unfv_2.c[2]), agc_dp_high(u.c[2])));
     }
@@ -739,7 +739,7 @@ static agc_vec_t fc_window(agc_interp_t *ip, agc_vec_t unx, agc_vec_t unz)
 agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2)
 {
     agc_interp_clear_ovf(ip);                                      /* BOV: clear       */
-    agc_cdutrig_t *trig = &agc_guid_state()->trig;                 /* debris: SIN/COSCDU */
+    agc_cdutrig_t *trig = agc_imu_trig();                 /* debris: SIN/COSCDU */
     agc_vec_t      unx;                                            /* unit thrust command, half unit 2^1 */
     agc_vec_t      unz;                                            /* unit window command, half unit 2^1 */
     agc_status_t   st   = fc_inputs(ip, unfc_2, &unx, &unz, trig); /* step status */

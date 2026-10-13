@@ -512,8 +512,8 @@ agc_status_t agc_job_optics_coarse_drive(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ar = agc_align_ram(); /* DESOPTS, DESOPTT, SAC, PAC */
 
-    ar->desopts = ar->sac;
-    ar->desoptt = ar->pac;
+    agc_erase_set_desopts(ar->sac);
+    agc_erase_set_desoptt(ar->pac);
 
     return (agc_extverb_redisplay(ctx, 41, AGC_JOB_OPTICS_COARSE_START));
 }

@@ -254,7 +254,7 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        agc_guid_cdutrig(&trig); /* CDUTRIG      */
+        agc_imu_cdutrig(&trig); /* CDUTRIG      */
     }
 
     if (st == AGC_STATUS_OK)
@@ -262,7 +262,7 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
         const agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows */
 
         ue = agc_vec_shl(&ip, agc_mat_vec(&ip, &refsmmat, ue), 1);
-        agc_guid_smnb(&trig, &ue); /* *SMNB*       */
+        agc_imu_smnb(&trig, &ue); /* *SMNB*       */
     }
 
     if (st != AGC_STATUS_OK)

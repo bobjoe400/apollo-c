@@ -33,7 +33,7 @@
  *   agc_align_*           alignment routines of this lane (alignment.h)
  *   agc_exec_gotopooh     executive: jobs, VAC areas, sleep / wake (exec.h)
  *   agc_imu_calcgta       IMU mode switching, CALCGA / CALCGTA / AXISGEN, gyro torquing (imu.h)
- *   agc_guid_cdu_nbsm     CDUTRIG, *NBSM* / *SMNB*, PIPASR (guidance.h)
+ *   agc_imu_cdu_nbsm     CDUTRIG, *NBSM* / *SMNB*, PIPASR (imu.h)
  *   agc_planet_*          RP-TO-R / R-TO-RP (auxiliary.h)
  *   agc_navaux_get_padload  pad loads (auxiliary.h)
  *   agc_vec_*             vector arithmetic of the interpreter (interp.h)
@@ -666,7 +666,7 @@ static agc_vec_t gravity_sm(void)
     agc_cdutrig_t t;                         /* CDUTRIG sines and cosines */
     agc_vec_t     g = agc_align_ram()->gsav; /* GSAV (NB), then in SM, half-unit (2^1) */
 
-    agc_guid_cdu_nbsm(&t, &g);
+    agc_imu_cdu_nbsm(&t, &g);
 
     return (g);
 }
@@ -841,7 +841,7 @@ agc_status_t agc_job_lunar_surface_solve(agc_job_ctx_t *ctx)
 
     if (st == AGC_STATUS_OK)
     {
-        agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);
+        agc_imu_calcgta(&ip, &ram->xdc, agc_imu_ogc());
     }
 
     if (st != AGC_STATUS_OK)
@@ -882,8 +882,8 @@ agc_status_t agc_job_lunar_surface_torque_test(agc_job_ctx_t *ctx)
 
     for (int i = 0; i < 3; i++)
     {
-        ram->ogct[i] = ram->ogc[i]; /* SURFSUP  */
-        large        = large || (agc_dp_abs(ram->ogc[i]) >= FIVE_DEGREES);
+        ram->ogct[i] = agc_imu_ogc()[i]; /* SURFSUP  */
+        large        = large || (agc_dp_abs(agc_imu_ogc()[i]) >= FIVE_DEGREES);
     }
 
     if (large)

@@ -29,7 +29,7 @@ Host layout (Windows, reached through WSL interop):
   Saved state kept as runs/stockdev_launch_120s.scn (CMC unpowered at T-4h: CYCLECOUNTER 0,
   DSKY blank -- the launch scenario starts with the CMC off).
 - DONE phase 3 SHIM (first cut, 2026-10-12):
-  - src/core/ecadr.c: address map onto typed erasables (both ropes, 45/44 entries: REFSMMAT,
+  - src/core/ecadr.c (now src/erasable_map/address_map.c): address map onto typed erasables (both ropes, 45/44 entries: REFSMMAT,
     TEPHEM, state vectors, UPSVFLAG+RRECT/VRECT/TET uplink buffer, times, masses, DAP words,
     display registers); raw words kept for mixed-sign V71 loads; tests/core/ecadr.c (112 checks).
   - src/sim: clock.c sim_clock_count (one scaler count; tick = 32 of them), sim_irq_pending,
@@ -97,6 +97,16 @@ Host layout (Windows, reached through WSL interop):
   rows wait for that display, "T-m:ss" rows wait on TIG - TIME read from the CMC, "Engine Cutoff"
   waits on channel 11 bit 13, manual rows collected for the report; ac.subst fills the digits the
   crew types by hand (V48 DAP data).
+- DONE src/sim/socket.c send_to (closed-loop-fixes finding): a partial or EAGAIN send is retried
+  (rest of the packet after up to 10 ms for buffer space, 20 tries); a client still not draining
+  loses the packet (none sent) or is dropped (part sent), both reported; tests/sim/harness 59/59.
+- DONE layering (lead, 2026-10-12): the address map left core. src/erasable_map/address_map.c +
+  include/agc/erasable_map/address_map.h (agc_erase_read_ecadr / agc_erase_write_ecadr, the
+  flagwords and every named erasable; top of the graph, reaches csm/lm/guidance/programs/nav/
+  imu/io storage); src/core/ecadr.c keeps only the raw image (agc_erase_raw_read/_write, reset),
+  no include above core. Test moved to tests/erasable_map/address_map.c (125 checks). Callers
+  (pinball load/scale, telemetry, extended verbs, uplink update, LM systems test, NASSP shim, 3 tests)
+  include the new header.
 - Offline stock reference: NASSP's yaAGC engine compiled on Linux (SCRATCH yaagc_nassp/, GPL, not in
   the repo) + harness/ref.c replays a scenario's AGC image beside harness/scn.c (our shim): the P00
   integration step of the Insertion image gives the CSM state vector block identical to stock.

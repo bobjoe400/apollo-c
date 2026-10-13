@@ -38,6 +38,7 @@
  *   holds a pin_reqret_t naming the point after the REQDAT call and
  *   pin_load_resume() continues from it.
  **********************************************************************/
+#include "agc/erasable_map/address_map.h"
 #include <stddef.h>
 
 #include "internal.h"

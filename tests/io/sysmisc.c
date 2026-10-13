@@ -46,6 +46,7 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
+#include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/io/dsky.h"
@@ -724,12 +725,12 @@ static void test_dap_data_mass(void)
     agc_waitlist_init();
     agc_dsky_init();
     agc_erase_set_lemmass(1000);
-    agc_guid_state()->lm.mass = 0;
+    agc_erase_set_mass(0);
     CHECK(agc_job_dap_data_load_mass(&ctx) == AGC_STATUS_OK);
-    CHECK(agc_guid_state()->lm.mass == 0); /* asks for N47 again */
+    CHECK(agc_erase_mass() == 0); /* asks for N47 again */
     agc_erase_set_lemmass(2000);
     CHECK(agc_job_dap_data_load_mass(&ctx) == AGC_STATUS_OK);
-    CHECK(agc_guid_state()->lm.mass == agc_dp_from_sp(2000));
+    CHECK(agc_erase_mass() == agc_dp_from_sp(2000));
 }
 
 /* ---- P07 against yaAGC (tools/oracle/cases/systems_test_lm.*) -------- */

@@ -909,7 +909,7 @@ static void test_star_code_nouns(bool lm)
 
     if (lm)
     {
-        agc_guid_state()->trig.sincdu[AGC_TRIG_Y] = agc_dp_pack(-3, -5);
+        agc_imu_trig()->sincdu[AGC_TRIG_Y] = agc_dp_pack(-3, -5);
         CHECK(agc_noun_read(AGC_DATA_AOTCODE_P1, &v) == AGC_STATUS_OK);
         CHECK(v == 077774); /* -3 in ones' complement */
         CHECK(agc_noun_read(AGC_DATA_AOTCODE_P2, &v) == AGC_STATUS_OK);

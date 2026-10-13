@@ -53,51 +53,10 @@
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/exec/jobs.h"
+#include "agc/imu/imu.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 
-/* ======================================================================
- * POWERED_FLIGHT_SUBROUTINES
- * ====================================================================== */
-
-/* Order of the CDUSPOT / SINCDU / COSCDU triples in the AGC: Y, Z, X.  */
-#define AGC_TRIG_Y 0 /* inner gimbal (IGA) */
-#define AGC_TRIG_Z 1 /* middle gimbal (MGA) */
-#define AGC_TRIG_X 2 /* outer gimbal (OGA) */
-
-typedef struct agc_cdutrig
-{
-    agc_dp_t cduspot[3]; /* CDUSPOT  Y Z X, 1's comp angle, rev, scale 2^0   */
-    agc_sp_t cduraw[3];  /* CDUSPOT  Y Z X, 2's comp CDU counts as loaded; unscaled */
-    agc_dp_t sincdu[3];  /* SINCDU   Y Z X, sin(angle)/2, scale 2^1          */
-    agc_dp_t coscdu[3];  /* COSCDU   Y Z X, cos(angle)/2, scale 2^1          */
-} agc_cdutrig_t;
-
-/* AX*SR*T leaves VBUF as agc_vec_words_t (include/agc/core/word.h): the
- * DAS/DDOUBL passes leave words whose signs may disagree.                  */
-
-/* AX*SR*T direction: A = +3 for NB->SM, -3 for SM->NB.                     */
-typedef enum agc_axisrot_dir
-{
-    AGC_AXISROT_SMNB = -3,
-    AGC_AXISROT_NBSM = 3
-} agc_axisrot_dir_t;
-
-agc_dp_t agc_guid_cdulogic(uint16_t cdu);                                                                  /* CDULOGIC */
-void     agc_guid_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                    /* CD*TR*GS */
-void     agc_guid_cdutrig(agc_cdutrig_t *t);                                                               /* CDUTRIG(S) */
-void     agc_guid_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                   /* QUICTRIG */
-void     agc_guid_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v);                    /* AX*SR*T  */
-void     agc_guid_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_words_t *v);        /* AX*SR*T on VBUF words */
-void     agc_guid_smnb(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *SMNB*   */
-void     agc_guid_nbsm(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *NBSM*   */
-void     agc_guid_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*SMNB */
-void     agc_guid_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*NBSM */
-void     agc_guid_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v);                     /* TRG*SMNB */
-void     agc_guid_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v);                     /* TRG*NBSM */
-void     agc_guid_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_words_t *v);         /* TRG*NBSM, VBUF words */
-void     agc_guid_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu); /* SMCDURES (CM) */
-void     agc_guid_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb);                                        /* FLESHPOT (LM) */
 
 /* ======================================================================
  * Average-G (SERVICER207 / SERVICER)
@@ -212,9 +171,7 @@ typedef struct agc_guid_csm
  * DELTAH, HCALC1, WCHPHASE, FLPASS0 are guid-landing's (agc_lm_ldg()).      */
 typedef struct agc_guid_lm
 {
-    agc_dp_t     mass;     /* MASS = WEIGHT/G, kg, scale 2^16                 */
     agc_dp_t     mass1;    /* MASS1 kg 2^16 (also DVCNTR1 temporary)          */
-    agc_sp_t     abdelv;   /* ABDELV   |DELV| cm/s, scale 2^14                */
     agc_dp_t     abdvconv; /* ABDVCONV |DELV| m/cs, scale 2^5                 */
     agc_sp_t     dvthrush; /* DVTHRUSH DV monitor threshold, PIPA pulses; unscaled */
     agc_sp_t     dvcntr;   /* DVCNTR   low-thrust passes left; unscaled */
@@ -296,7 +253,6 @@ typedef struct agc_guid_lm
 
 typedef struct agc_guid
 {
-    agc_cdutrig_t  trig; /* CDUSPOT / SINCDU / COSCDU                       */
     agc_avg_g_t    avg;  /* average-G package                               */
     agc_burn_t     burn; /* P30-P47 targeting and steering                  */
     agc_guid_csm_t csm;  /* Comanche-only erasables */

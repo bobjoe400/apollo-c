@@ -35,7 +35,7 @@
  *   agc_radar_rrrdot         RRRDOT / RRRANGE readings and RADSTALL
  *   agc_lm_rrnb              RRNB: radar LOS in NB axes
  *   lmnav_los                LPS20.1: LOS from the state vectors
- *   agc_guid_trg_smnb        TRG*SMNB with the mark CDUs
+ *   agc_imu_trg_smnb        TRG*SMNB with the mark CDUs
  *   lmnav_tracking_attitude  R61LEM / R65LEM
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -289,8 +289,8 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
     s->tangnb[1]   = n->tang[1];
     agc_relint();
     n->rdotm       = agc_dp_mul(&ip, agc_dp_shl(&ip, n->rdotmsav, 14), TD_RDOTCONV);
-    n->rrtrun      = agc_guid_cdulogic(n->tang[0]);
-    n->rrshaft     = agc_guid_cdulogic(n->tang[1]);
+    n->rrtrun      = agc_imu_cdulogic(n->tang[0]);
+    n->rrshaft     = agc_imu_cdulogic(n->tang[1]);
     n->rm          = agc_dp_shl_round(&ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
     bool too_far   = false; /* range > 400 NM */
 
@@ -311,7 +311,7 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
     uint16_t      yzx[3] = {n->aig, n->amg, n->aog};
     agc_vec_t     los    = rr_state()->rrtarget; /* SV LOS, 2^1 */
 
-    agc_guid_trg_smnb(&trig, yzx, &los);
+    agc_imu_trg_smnb(&trig, yzx, &los);
     agc_dp_t c; /* cos, 2^1 */
 
     c = agc_dp_shl(&ip, agc_vec_dot(&ip, los, n->rrborsit), 1);

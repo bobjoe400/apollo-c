@@ -5,7 +5,8 @@
  *   P07 SYSTEMS TEST in the LM (V92): the IMU performance tests -- site
  *   latitude / azimuth, coarse and fine align, the gyro drift filter, the
  *   PIPA scale test, the vertical drift test -- and the subroutines other
- *   code may use (ZEROING, FINETIME, OVERFFIX).
+ *   code may use (ZEROING, OVERFFIX). FINETIME is imu's (agc_imu_finetime,
+ *   src/imu/mode.c: P06's SCALPREP uses it too).
  *
  * AGC SOURCE:
  *   Luminary099 SYSTEM_TEST_STANDARD_LEAD_INS.agc pp.370-372,
@@ -78,7 +79,7 @@
  *   C the PIPA can only change between two runs of the job, so the job
  *   yields (CHANG1) between the reads.
  *
- *   Also translated: ZEROING, FINETIME, OVERFFIX, ERTHRVSE / EARTHR (the
+ *   Also translated: ZEROING, OVERFFIX, ERTHRVSE / EARTHR (the
  *   same text as the CM prelaunch ones, src/csm/prelaunch_align.c).  The
  *   erasable-memory program helpers in SYSTEM_TEST_STANDARD_LEAD_INS
  *   (E/BKCALL, E/CALL, E/SWITCH, E/JOBWAK) exist only so that programs
@@ -94,6 +95,7 @@
 #include "agc/core/interp.h"
 #include "agc/core/interp_words.h"
 #include "agc/core/state.h"
+#include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
@@ -103,7 +105,6 @@
 #define POSMAX            037777u                    /* POSMAX */
 #define WORD15            077777u                    /* one AGC word, 15 bits */
 #define ZEROING_MAX       0400                       /* longest block cleared (one EBANK)     */
-#define FINETIME_TRIES    3                          /* READ, re-READ, and the POSMAX retry   */
 #define SYSTEMS_TEST_MODE 07                         /* NEWMODEX, MM 07                        */
 #define MODREG_NONE       ((agc_sp_t) -1)            /* CS ZERO, NEWMODEA: -0 (exec's code)   */
 #define ONEDPP            ((agc_dp_t) 1)             /* ONEDPP: 2^-28 */
@@ -501,41 +502,6 @@ agc_status_t agc_systems_test_zeroing(uint16_t *block, int n)
     }
 
     return (AGC_STATUS_OK);
-}
-
-/**********************************************************************
- * FINETIME (p.380): LOSCALAR read twice so a carry between the reads is
- * seen; if it is POSMAX (about to carry into HISCALAR) read again.  Returns
- * with interrupts inhibited, like the AGC.  *t = HISCALAR, LOSCALAR as a DP
- * count of the scalar (1/1600 s per LOSCALAR count, scale as channel 3/4).
- * BUSY when LOSCALAR still reads POSMAX: the caller tries again later.
- *
- * ARGUMENTS:
- *   t  agc_dp_t *  O   HISCALAR, LOSCALAR as one DP count
- *
- * RETURNS: AGC_STATUS_OK, BUSY while LOSCALAR reads POSMAX
- **********************************************************************/
-agc_status_t agc_systems_test_finetime(agc_dp_t *t)
-{
-    agc_inhint();
-    uint16_t lo = POSMAX; /* LOSCALAR, scaler counts */
-
-    for (int k = 0; k < FINETIME_TRIES && lo == POSMAX; k++)
-    {
-        lo             = (uint16_t) (agc_chan_read((int) AGC_CHAN_LOSCALAR) & POSMAX);
-        uint16_t again = (uint16_t) (agc_chan_read((int) AGC_CHAN_LOSCALAR) & POSMAX); /* second read: carry seen? */
-
-        if (again != lo)
-        { /* RXOR, BZF               */
-            lo = again;
-        }
-    }
-
-    uint16_t hi = (uint16_t) (agc_chan_read((int) AGC_CHAN_HISCALAR) & POSMAX); /* HISCALAR, scaler counts x 2^14 */
-
-    *t = agc_dp_pack((agc_sp_t) hi, (agc_sp_t) lo);
-
-    return ((lo == POSMAX) ? AGC_STATUS_BUSY : AGC_STATUS_OK); /* POSMAX: about to carry */
 }
 
 /**********************************************************************
@@ -1388,7 +1354,7 @@ static agc_status_t setuper1(agc_job_ctx_t *ctx)
 
     for (int i = 0; i < 3; i++)
     {
-        agc_align_ram()->ogc[i] = ang.c[i]; /* STORE OGC */
+        agc_imu_ogc()[i] = ang.c[i]; /* STORE OGC */
     }
 
     return (setuper1_stall(agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_SYSTEMS_TEST_TORQUE_RETRY), ctx));
@@ -1782,7 +1748,7 @@ static agc_status_t pip_catch(agc_job_ctx_t *ctx)
         return (agc_exec_job_yield(AGC_JOB_SYSTEMS_TEST_PIP_CATCH));
     }
 
-    st = agc_systems_test_finetime(&t); /* returns with INHINT */
+    st = agc_imu_finetime(&t); /* returns with INHINT */
 
     if (st == AGC_STATUS_BUSY || !AGC_ASSERT(r >= W_DATAPL && r + 2 < W_WORDS))
     {

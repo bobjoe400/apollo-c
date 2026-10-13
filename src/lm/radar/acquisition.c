@@ -738,7 +738,7 @@ agc_status_t agc_job_manual_acquisition_terminate(void)
 {
     rz_flag_put(AGC_FLAG_NORRMON, false);
 
-    return (agc_rendz_goto_terminate_tracking());
+    return (agc_extverb_goto_tracking_terminate());
 }
 
 /**********************************************************************

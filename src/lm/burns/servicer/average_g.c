@@ -23,7 +23,7 @@
  *   --------------------  ------------------------------------------
  *   agc_guid_pipasr       PIPASR (servicer_common.c)
  *   agc_guid_calcrvg      CALCRVG / CALCGRAV (servicer_common.c)
- *   agc_guid_fleshpot     FLESHPOT into XNBPIP (powered_flight.c)
+ *   agc_imu_fleshpot     FLESHPOT into XNBPIP (powered_flight.c)
  *   agc_lm_dap_jet_accel_update  1/ACCS (lm/dap.h)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -374,7 +374,8 @@ static void massmon(agc_guid_lm_t *lm)
         agc_sp_t  vex = agc_flag_test(AGC_FLAG_APSFLAG) ? APSVEX : DPSVEX;       /* VEX of the engine, m/cs 2^5 */
         agc_ovf_t ovf = 0;                                                       /* overflow of the DAS (not tested, as in the AGC) */
         agc_dp_t  q   = agc_dp_div_raw(lm->abdvconv, agc_dp_from_sp(vex), &ovf); /* DV Q; ABDVCONV/VEX, scale 2^0 */
-        agc_dp_t  dm  = agc_sp_mul(agc_dp_high(q), agc_dp_high(lm->mass));       /* MP MASS; mass decrement, kg 2^16 */
+        agc_dp_t  dm  = agc_sp_mul(agc_dp_high(q),
+                                   agc_dp_high(agc_erase_mass()));       /* MP MASS; mass decrement, kg 2^16 */
 
         lm->mass1 = agc_dp_add_raw(lm->mass1, dm, &ovf); /* DAS MASS1 */
     }
@@ -389,11 +390,12 @@ static void massmon(agc_guid_lm_t *lm)
  **********************************************************************/
 void agc_lm_tmptospt(void)
 {
-    agc_guid_t *g = agc_guid_state(); /* guidance erasables */
+    const agc_guid_t *g    = agc_guid_state(); /* guidance erasables */
+    agc_cdutrig_t    *trig = agc_imu_trig();   /* CDUSPOT */
 
-    g->trig.cduraw[AGC_TRIG_Y] = (agc_sp_t) (g->avg.cdutemp[1] & 077777U);
-    g->trig.cduraw[AGC_TRIG_Z] = (agc_sp_t) (g->avg.cdutemp[2] & 077777U);
-    g->trig.cduraw[AGC_TRIG_X] = (agc_sp_t) (g->avg.cdutemp[0] & 077777U);
+    trig->cduraw[AGC_TRIG_Y] = (agc_sp_t) (g->avg.cdutemp[1] & 077777U);
+    trig->cduraw[AGC_TRIG_Z] = (agc_sp_t) (g->avg.cdutemp[2] & 077777U);
+    trig->cduraw[AGC_TRIG_X] = (agc_sp_t) (g->avg.cdutemp[0] & 077777U);
 }
 
 /**********************************************************************
@@ -579,9 +581,9 @@ static agc_status_t getabval(void)
         agc_interp_init(&ip);
         agc_dp_t abv = agc_vec_abval(&ip, agc_erase_delv()); /* VLOAD ABVAL DELV; |DELV|, scale 2^14 pulses */
 
-        g->lm.abdelv   = agc_dp_high(abv);                                           /* ABDELV cm/s 2^14 */
-        g->lm.abdvconv = agc_sp_mul(g->lm.abdelv, KPIP_LM);                          /* MP KPIP: 2^5     */
-        g->lm.mass1    = g->lm.mass;                                                 /* INITIALIZE MASS1 */
+        agc_erase_set_abdelv(agc_dp_high(abv));                                           /* ABDELV cm/s 2^14 */
+        g->lm.abdvconv = agc_sp_mul(agc_erase_abdelv(), KPIP_LM);                          /* MP KPIP: 2^5     */
+        g->lm.mass1    = agc_erase_mass();                                                 /* INITIALIZE MASS1 */
         massmon(&g->lm);
         agc_dp_t  dv   = agc_tp_to_dp(agc_dp_mul_tp(abv, agc_dp_from_sp(KPIP1_HI))); /* SHORTMP; DVTOTAL increment, m/cs 2^7 */
         agc_ovf_t ovf  = 0;                                                          /* overflow of the DAS (not tested, as in the AGC) */
@@ -589,12 +591,11 @@ static agc_status_t getabval(void)
         g->avg.dvtotal = agc_dp_add_raw(g->avg.dvtotal, dv, &ovf); /* DAS DVTOTAL */
     }
     agc_lm_tmptospt();
-    const uint16_t cdu[3] = {(uint16_t) g->trig.cduraw[0],
-                             (uint16_t) g->trig.cduraw[1],
-                             (uint16_t) g->trig.cduraw[2]};
+    agc_cdutrig_t *trig   = agc_imu_trig(); /* CDUSPOT, SINCDU, COSCDU */
+    const uint16_t cdu[3] = {(uint16_t) trig->cduraw[0], (uint16_t) trig->cduraw[1], (uint16_t) trig->cduraw[2]};
 
-    agc_guid_quictrig(&g->trig, cdu);
-    agc_guid_fleshpot(&g->trig, &g->lm.xnbpip);
+    agc_imu_quictrig(trig, cdu);
+    agc_imu_fleshpot(trig, &g->lm.xnbpip);
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
@@ -719,7 +720,7 @@ static agc_status_t dvmon(void)
     agc_guid_lm_t *lm = &agc_guid_state()->lm; /* LM guidance erasables */
     agc_status_t   st;                         /* status of SERVOUT or LOTHRUST */
 
-    if (lm->abdelv - lm->dvthrush <= 0)
+    if (agc_erase_abdelv() - lm->dvthrush <= 0)
     {
         st = lothrust();
     }

@@ -463,9 +463,9 @@ agc_status_t agc_job_matrxjob(void)
     agc_mat_t               m;                            /* REFSMMAT to store, half-unit */
     agc_status_t            st;                           /* status */
 
-    ogc_lo[0] = agc_guid_cdulogic(agc_erase_cdux()); /* OGC B-1: revs */
-    ogc_lo[1] = agc_guid_cdulogic(agc_erase_cduy());
-    ogc_lo[2] = agc_guid_cdulogic(agc_erase_cduz());
+    ogc_lo[0] = agc_imu_cdulogic(agc_erase_cdux()); /* OGC B-1: revs */
+    ogc_lo[1] = agc_imu_cdulogic(agc_erase_cduy());
+    ogc_lo[2] = agc_imu_cdulogic(agc_erase_cduz());
     agc_flag_clear(AGC_FLAG_ERADFLAG);
     agc_navaux_get_padload(&pad);
     st        = agc_latlong_to_r(ip, &pad, opt, &ll, 0, &avg->rn1, NULL);
@@ -663,10 +663,10 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(const agc_dp_t desired[3]
         d[i] = agc_dp_from_sp(entry_angle_wrap(w)); /* DELSTOR (MSU)  */
     }
 
-    sx = agc_dp_sin(agc_guid_cdulogic(cdu[0]));
-    cx = agc_dp_cos(agc_guid_cdulogic(cdu[0]));
-    sz = agc_dp_sin(agc_guid_cdulogic(cdu[2]));
-    cz = agc_dp_cos(agc_guid_cdulogic(cdu[2]));
+    sx = agc_dp_sin(agc_imu_cdulogic(cdu[0]));
+    cx = agc_dp_cos(agc_imu_cdulogic(cdu[0]));
+    sz = agc_dp_sin(agc_imu_cdulogic(cdu[2]));
+    cz = agc_dp_cos(agc_imu_cdulogic(cdu[2]));
 
     /* NOPOLYM: .5(DPHI + DTHETA SIN(CDUZ)): DMP SL1, DAD, SR2 (truncating)
      * on the TP MPAC.                                                    */

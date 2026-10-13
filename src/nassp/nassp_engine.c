@@ -76,6 +76,7 @@
 #include "../sim/internal.h"
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
+#include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 

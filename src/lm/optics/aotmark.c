@@ -41,7 +41,7 @@
  *   agc_exec_*            executive: jobs, VAC areas, sleep / wake (exec.h)
  *   agc_waitlist_call     WAITLIST (exec.h)
  *   agc_imu_goodend       IMU mode switching, CALCGA / CALCGTA / AXISGEN, gyro torquing (imu.h)
- *   agc_guid_trg_nbsm     CDUTRIG, *NBSM* / *SMNB*, PIPASR (guidance.h)
+ *   agc_imu_trg_nbsm     CDUTRIG, *NBSM* / *SMNB*, PIPASR (imu.h)
  *   agc_vec_*             vector arithmetic of the interpreter (interp.h)
  *   agc_dp_*              DP arithmetic of the interpreter (interp.h, word.h)
  *   agc_interp_init       interpreter state: OVFIND (interp.h)
@@ -247,8 +247,8 @@ agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m,
     agc_vec_t     yp = ypnb; /* Y reticle plane normal at the Y mark, then SM, half-unit (2^1) */
     agc_vec_t     xp = xpnb; /* X reticle plane normal at the X mark, then SM, half-unit (2^1) */
 
-    agc_guid_trg_nbsm(&t, m->ycdu, &yp);
-    agc_guid_trg_nbsm(&t, m->xcdu, &xp);
+    agc_imu_trg_nbsm(&t, m->ycdu, &yp);
+    agc_imu_trg_nbsm(&t, m->xcdu, &xp);
     *star_sm = agc_vec_unit(ip, agc_vec_cross(ip, xp, yp), NULL, NULL);
 
     return (AGC_STATUS_OK);
@@ -310,7 +310,7 @@ void agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t
         star_sm->c[i] = agc_dp_to_words(v.c[i]); /* MPACVBUF */
     }
 
-    agc_guid_trg_nbsm_words(&t, m->xcdu, star_sm); /* STCALL 24D keeps VBUF's words */
+    agc_imu_trg_nbsm_words(&t, m->xcdu, star_sm); /* STCALL 24D keeps VBUF's words */
 }
 
 /**********************************************************************

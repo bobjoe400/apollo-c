@@ -294,11 +294,11 @@ static void rd_lr_lamp(bool velocity)
     if (fail)
     { /* ONLITES  */
         rz_flag_put(flash, false);
-        rr_lamp_put(lamp, true);
+        agc_rr_lamp_put(lamp, true);
     }
     else if (!agc_flag_test(flash))
     {
-        rr_lamp_put(lamp, false); /* LITIT    */
+        agc_rr_lamp_put(lamp, false); /* LITIT    */
     }
 
     agc_rr_settrkf(); /* RRTRKF   */

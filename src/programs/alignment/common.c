@@ -90,7 +90,8 @@ agc_align_ram_t *agc_align_ram(void)
 /**********************************************************************
  * AGC: none (fresh start: clear the alignment erasables)
  *
- * Fresh start: clear the alignment erasables.
+ * Fresh start: clear the alignment erasables and the OGC gyro buffer
+ * (owned by imu since the layering lane).
  *
  * FUNCTION NAME: agc_align_ram_reset
  *
@@ -100,7 +101,10 @@ agc_align_ram_t *agc_align_ram(void)
  **********************************************************************/
 void agc_align_ram_reset(void)
 {
-    const agc_align_ram_t zero = {.mkvac_index = -1};
+    const agc_align_ram_t zero    = {.mkvac_index = -1};
+    const agc_dp_t        none[3] = {0, 0, 0}; /* OGC, IGC, MGC, rev 2^0 */
+
+    agc_imu_gyro_buf_set(AGC_IMU_GBUF_OGC, none); /* OGC (imu's) cleared with the alignment erasables */
 
     align_ram                      = zero;
     align_ram.qmin                 = AGC_JOB_NONE;
@@ -114,7 +118,7 @@ void agc_align_ram_reset(void)
 /**********************************************************************
  * CDULOGIC (RTB_OP_CODES.agc, Luminary p. 1397) -- the SP 2's complement
  * CDU angle (half-revolutions) as a DP angle in revolutions.  The routine
- * itself is guid-powered's agc_guid_cdulogic(); this keeps the alignment
+ * itself is guid-powered's agc_imu_cdulogic(); this keeps the alignment
  * name used throughout the lane.
  *
  * FUNCTION NAME: agc_align_cdulogic
@@ -128,7 +132,7 @@ void agc_align_ram_reset(void)
  **********************************************************************/
 agc_dp_t agc_align_cdulogic(uint16_t cdu)
 {
-    const agc_dp_t r = agc_guid_cdulogic((uint16_t) (cdu & CDU_WORD_MASK)); /* CDULOGIC result, revs 2^0 */
+    const agc_dp_t r = agc_imu_cdulogic((uint16_t) (cdu & CDU_WORD_MASK)); /* CDULOGIC result, revs 2^0 */
 
     return (r);
 }
@@ -198,7 +202,7 @@ void agc_align_cdutrig(const uint16_t cdu_xyz[3], agc_cdutrig_t *t)
     yzx[AGC_TRIG_X] = cdu_xyz[0];
     yzx[AGC_TRIG_Y] = cdu_xyz[1];
     yzx[AGC_TRIG_Z] = cdu_xyz[2];
-    agc_guid_cdtrigs(t, yzx);
+    agc_imu_cdtrigs(t, yzx);
 }
 
 /**********************************************************************
@@ -272,7 +276,7 @@ void align_read_cdus(uint16_t cdu[3])
  **********************************************************************/
 agc_status_t align_nb_present(agc_interp_t *ip, agc_cdutrig_t *t, agc_mat_t *nb)
 {
-    agc_guid_cdutrig(t);
+    agc_imu_cdutrig(t);
 
     return (agc_align_calcsmsc(ip, t, nb));
 }

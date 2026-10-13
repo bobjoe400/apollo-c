@@ -27,7 +27,7 @@
  *   --------------------  ------------------------------------------
  *   agc_radar_*           LR reading (RADSTALL, SAMPLSUM; lm/radar.h)
  *   agc_radar_powered_flight_designate   R29 (lm/radar.h)
- *   agc_guid_nbsm         *NBSM* (powered_flight.c)
+ *   agc_imu_nbsm         *NBSM* (powered_flight.c)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   ALARM 00511 (LR antenna not in position, LRPOSALM) and ALARM 00523
@@ -533,9 +533,9 @@ static agc_dp_t lr_deltav(agc_interp_t *ip, agc_guid_t *g, agc_vec_t *vbsm, agc_
     int            s        = g->lm.vselect; /* VSELECT, beam index */
     const uint16_t lrcdu[3] = {g->lm.lrcdu[1], g->lm.lrcdu[2], g->lm.lrcdu[0]};
 
-    agc_guid_quictrig(&g->trig, lrcdu);                                                                                                                             /* CDUSPOT = LRY LRZ LRX  */
+    agc_imu_quictrig(agc_imu_trig(), lrcdu);                                                                                                                             /* CDUSPOT = LRY LRZ LRX  */
     *vbsm           = g->lm.vbeamnb[s];
-    agc_guid_nbsm(&g->trig, vbsm);                                                                                                                                  /* *NBSM*                 */
+    agc_imu_nbsm(agc_imu_trig(), vbsm);                                                                                                                                  /* *NBSM*                 */
     agc_dp_t  vm    = agc_dp_mul_trunc(agc_dp_shl(ip, g->lm.vmeas, 12), VSCAL[s]);                                                                                  /* VM measured beam velocity, m/cs 2^6 */
     agc_vec_t delvu = agc_vec_scale(ip, agc_vec_make(agc_dp_pack(g->lm.piptem[0], 0), agc_dp_pack(g->lm.piptem[1], 0), agc_dp_pack(g->lm.piptem[2], 0)), KPIP1_LM); /* DELVU since the PIPA reading, m/cs 2^7 */
     agc_dp_t  frac  = agc_dp_div(ip, agc_dp_sub(ip, g->lm.lrvtime, agc_erase_piptime()), TWOSEC_28);                                                                /* (LRVTIME - PIPTIME) / 2 s, 2^0 */
@@ -910,11 +910,11 @@ static void setpos(int pos)
     const uint16_t cdu[3] = { (uint16_t) ((uint16_t) g->lm.lrbeta[pos] & 077777U), 0U, (uint16_t) ((uint16_t) g->lm.lralpha[pos] & 077777U) };
     agc_vec_t      y      = agc_vec_make(0, AGC_DP_HALF, 0); /* UNITY, half unit; (2^1) */
 
-    agc_guid_trg_smnb(&g->trig, cdu, &y);
+    agc_imu_trg_smnb(agc_imu_trig(), cdu, &y);
     g->lm.vbeamnb[1] = y;                               /* VYBEAMNB               */
     agc_vec_t x      = agc_vec_make(AGC_DP_HALF, 0, 0); /* UNITX, half unit; (2^1) */
 
-    agc_guid_smnb(&g->trig, &x);
+    agc_imu_smnb(agc_imu_trig(), &x);
     g->lm.vbeamnb[2] = x; /* VXBEAMNB               */
     agc_interp_t ip;      /* interpreter state */
 
@@ -922,7 +922,7 @@ static void setpos(int pos)
     g->lm.vbeamnb[0] = agc_vec_shl(&ip, agc_vec_cross(&ip, x, y), 1);       /* Z = X * Y */
     agc_vec_t h      = agc_vec_make(HBEAMANT[0], HBEAMANT[1], HBEAMANT[2]); /* HBEAMANT, half unit (antenna axes); (2^1) */
 
-    agc_guid_smnb(&g->trig, &h);
+    agc_imu_smnb(agc_imu_trig(), &h);
     g->lm.hbeamnb = h;
 }
 

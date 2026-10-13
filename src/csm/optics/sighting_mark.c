@@ -32,7 +32,7 @@
  *   agc_dsky_*            DSKY displays, astronaut returns (dsky.h)
  *   align_*               alignment helpers: displays, stalls, phases, word forms (alignment.h)
  *   agc_align_*           alignment routines of this lane (alignment.h)
- *   agc_guid_trg_nbsm     CDUTRIG, *NBSM* / *SMNB*, PIPASR (guidance.h)
+ *   agc_imu_trg_nbsm     CDUTRIG, *NBSM* / *SMNB*, PIPASR (imu.h)
  *   agc_dp_*              DP arithmetic of the interpreter (interp.h, word.h)
  *   agc_flag_set          flag words (flags_common.h)
  *   agc_phase_checkmm     restart phase tables, CHECKMM (exec.h)
@@ -490,7 +490,7 @@ void agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *l
     agc_cdutrig_t  t;                                    /* CDUTRIG sines and cosines */
 
     agc_csm_sxtnb(ip, m->cdut, m->cdus, &v); /* SXTNB */
-    agc_guid_trg_nbsm(&t, yzx, &v);          /* NBSM  */
+    agc_imu_trg_nbsm(&t, yzx, &v);          /* NBSM  */
     *los_sm = v;
 }
 

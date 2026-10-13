@@ -38,7 +38,7 @@
  *   --------------------  ----------------------------------------------
  *   rz_integ rz_integrvs  CSMPREC / LEMPREC, INTEGRVS from a base vector
  *   agc_csm_sxtnb         SXTNB: sextant LOS in navigation base axes
- *   agc_guid_cdu_nbsm     CDUTRIG, *NBSM*: navigation base to SM
+ *   agc_imu_cdu_nbsm     CDUTRIG, *NBSM*: navigation base to SM
  *   rz_flash              GOMARKF display request
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -166,7 +166,7 @@ static void rpd_axis(agc_interp_t *ip, agc_vec_t *axis_sm)
 
     agc_cdutrig_t t; /* CDUTRIG sines/cosines */
 
-    agc_guid_cdu_nbsm(&t, &a); /* CDU*NBSM  */
+    agc_imu_cdu_nbsm(&t, &a); /* CDU*NBSM  */
     *axis_sm = a;
 }
 

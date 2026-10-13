@@ -801,7 +801,7 @@ static agc_dp_t ll_rod_afc(agc_interp_t *ip, agc_vec_t ur)
     agc_dp_t            gm   = agc_dp_shr(agc_dp_div(ip, agc_vec_abval(ip, g->avg.gdt_2), LL_GSCALE), 2); /* |G| (20D), 2^-4 m/cs^2 */
     agc_vec_t           x    = agc_vec_make(AGC_DP_HALF, 0, 0);                                           /* UNITX, transformed to SM by CDU*NBSM, 2^1 */
 
-    agc_guid_cdu_nbsm(&g->trig, &x);
+    agc_imu_cdu_nbsm(agc_imu_trig(), &x);
 
     agc_dp_t xur = agc_vec_dot(ip, x, ur); /* X.UR (22D), scale 2^2 */
 
@@ -817,11 +817,12 @@ static agc_dp_t ll_rod_afc(agc_interp_t *ip, agc_vec_t ur)
      * pair sign-disagreeing (lo never borrows from hi).                */
     agc_dp_t fw = agc_dp_pack(0, agc_lm_thr()->fweight.hi); /* FWEIGHT DMP BIT1H = (0, FWEIGHT hi), 2^28 */
 
-    fw            = agc_dp_div(ip, agc_dp_div(ip, fw, g->lm.mass), LL_SCALEFAC);
+    fw            = agc_dp_div(ip, agc_dp_div(ip, fw, agc_erase_mass()),
+                               LL_SCALEFAC);
     agc_dp_t e    = agc_dp_sub(ip, agc_dp_div(ip, gm, xur), agc_dp_add(ip, fw, meas)); /* G/(X.UR) - (FWEIGHT + measured), 2^-4 */
     agc_dp_t afc  = agc_dp_add(ip, agc_dp_mul_trunc(e, p->lag_tau), l->afc);           /* corrected /AFC/, 2^-4 m/cs^2 */
-    agc_dp_t amax = agc_dp_div(ip, p->maxforce, g->lm.mass);                           /* MAXFORCE/MASS, 2^-4 m/cs^2 */
-    agc_dp_t amin = agc_dp_div(ip, p->minforce, g->lm.mass);                           /* MINFORCE/MASS, 2^-4 m/cs^2 */
+    agc_dp_t amax = agc_dp_div(ip, p->maxforce, agc_erase_mass());                           /* MAXFORCE/MASS, 2^-4 m/cs^2 */
+    agc_dp_t amin = agc_dp_div(ip, p->minforce, agc_erase_mass());                           /* MINFORCE/MASS, 2^-4 m/cs^2 */
 
     l->afc = afc; /* AFCSPOT: limited to MINFORCE/MASS .. MAXFORCE/MASS */
 

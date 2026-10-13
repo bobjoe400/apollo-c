@@ -613,7 +613,7 @@ agc_status_t agc_job_gycrs(agc_job_ctx_t *ctx)
     const agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows */
 
     agc_align_gyro_coarse_dc(&ip, &ram->xsmd, &refsmmat, &ram->xdc);
-    agc_imu_calcgta(&ip, &ram->xdc, ram->ogc);                              /* CALCGTA   */
+    agc_imu_calcgta(&ip, &ram->xdc, agc_imu_ogc());                              /* CALCGTA   */
     agc_flag_clear(AGC_FLAG_DRIFTFLG);                                      /* flag ids are valid  */
     agc_flag_clear(AGC_FLAG_REFSMFLG);
     agc_status_t st = align_show(ctx, AGC_DSKY_GODSPR, VN_MONITOR_GIMBALS); /* GODSPR    */

@@ -292,7 +292,7 @@ static void pitch(const char *t)
     agc_cdutrig_t *g;                     /* QUICTRIG trig, scale 2^1   */
 
     fresh();
-    g                     = &agc_guid_state()->trig;
+    g                     = agc_imu_trig();
     agc_erase_set_cduy(oracle_in_raw(t, "CDUY", 0));
     agc_erase_set_cduz(oracle_in_raw(t, "CDUY", 1));
     v->pcduypst           = oracle_in_raw(t, "PCDUYPST", 0);

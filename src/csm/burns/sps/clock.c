@@ -186,10 +186,9 @@ static agc_status_t cknvwrd1(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_clockjob(agc_job_ctx_t *ctx)
 {
-    agc_guid_t    *g      = agc_guid_state(); /* guidance erasables */
     const uint16_t cdu[3] = {agc_erase_cduy(), agc_erase_cduz(), agc_erase_cdux()};
 
-    agc_guid_quictrig(&g->trig, cdu);
+    agc_imu_quictrig(agc_imu_trig(), cdu);
     agc_inhint();
 
     return (cknvwrd1(ctx));

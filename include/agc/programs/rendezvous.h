@@ -482,9 +482,6 @@ typedef enum agc_rr_designate_result
 } agc_rr_designate_result_t;
 
 /* RRLIMCHK: in limits */
-bool         agc_rr_limchk(uint16_t cdut, uint16_t cdus);
-void         agc_rr_settrkf(void);              /* SETTRKF       */
-void         agc_rendz_flip(uint16_t lamp_bit); /* FLIP          */
 void         agc_rendz_clradmod(void);          /* CLRADMOD      */
 agc_status_t agc_rr_zero(void);                 /* RRZERO        */
 
@@ -493,7 +490,6 @@ agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *re
 
 /* RRDESNB: designate to RR gimbal angles (trunnion, shaft CDU words).   */
 agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion, uint16_t shaft, agc_rr_designate_result_t *res);
-agc_status_t agc_rendz_goto_terminate_tracking(void); /* GOTOV56       */
 
 /* read lead-ins (one sample; LRVEL five), RADAREAD, SAMPLSUM            */
 void         agc_radar_rrrange(void);                                 /* RRRANGE       */

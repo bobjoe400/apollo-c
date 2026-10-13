@@ -269,7 +269,7 @@ agc_status_t agc_align_gyro_torquing(const agc_job_ctx_t *ctx, agc_job_id_t qmin
     agc_interp_t ip;         /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_imu_calcgta(&ip, &ram->xdc, ram->ogc); /* CALCGTA */
+    agc_imu_calcgta(&ip, &ram->xdc, agc_imu_ogc()); /* CALCGTA */
 
     return (gyro_angles_flash(ctx));
 }

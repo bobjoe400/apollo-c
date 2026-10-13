@@ -147,7 +147,7 @@ static void test_throttle_band(void)
     pad->highcrit     = 3070;
     const double mass = 8000.0; /* kg                                   */
 
-    agc_guid_state()->lm.mass = agc_dp_from_double(mass, 16);
+    agc_erase_set_mass(agc_dp_from_double(mass, 16));
     agc_time_set_cs(50000u);
 
     /* TTHROT more than 3 s ago */
@@ -253,7 +253,7 @@ static void setup_trajectory(double tgo_s, double dx_m, const double rd[3], cons
     }
 
     agc_guid_state()->avg.gdt_2 = agc_vec_zero();
-    agc_guid_state()->lm.mass   = agc_dp_from_double(8000.0, 16);
+    agc_erase_set_mass(agc_dp_from_double(8000.0, 16));
 }
 
 /**********************************************************************

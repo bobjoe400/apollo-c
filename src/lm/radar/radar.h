@@ -105,8 +105,6 @@ rr_state_t *rr_state(void);
 int      rr_ones(uint16_t w); /* 15-bit word as ones' complement  */
 uint16_t rr_word(int v);      /* ones' complement word of v       */
 
-/* MAGSUB: true ("L+3") when |a| <= -k, k a negative constant.           */
-bool rr_magsub(int a, int k);
 void rr_chan_clear(int chan, uint16_t bits);
 void rr_radmodes_set(uint16_t bits);
 void rr_radmodes_clear(uint16_t bits);
@@ -126,8 +124,6 @@ agc_status_t rr_endradar(void);     /* ENDRADAR      */
 agc_status_t rr_badend(void);       /* RDBADEND      */
 agc_status_t rr_radnoop(void);      /* RADNOOP       */
 
-/* Turn the lamp `lamp` (DSPTAB +11D bit) on or off (TRKFLON +1).       */
-void rr_lamp_put(uint16_t lamp, bool on);
 
 /* ---- designate (lm/radar/designate.c) ----------------------------------- */
 agc_status_t rr_stdesig(void); /* STDESIG (task body)           */

@@ -33,7 +33,7 @@
  *   agc_align_ram         alignment routines of this lane (alignment.h)
  *   agc_exec_findvac      executive: jobs, VAC areas, sleep / wake (exec.h)
  *   agc_svc_*             service routines: DELAYJOB, flags, B5OFF (service.h)
- *   agc_guid_cdutrig      CDUTRIG, *NBSM* / *SMNB*, PIPASR (guidance.h)
+ *   agc_imu_cdutrig      CDUTRIG, *NBSM* / *SMNB*, PIPASR (imu.h)
  *   agc_planet_rp_to_r    RP-TO-R / R-TO-RP (auxiliary.h)
  *   agc_latlong_to_r      LAT-LONG / LALOTORV (auxiliary.h)
  *   agc_navaux_get_padload  pad loads (auxiliary.h)
@@ -318,7 +318,7 @@ agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_jo
         agc_cdutrig_t t;                                                                    /* CDUTRIG sines and cosines */
         bool          cult = false;                                                         /* CULTFLAG from CALCSXA */
 
-        agc_guid_cdutrig(&t);                                     /* CDUTRIG  */
+        agc_imu_cdutrig(&t);                                     /* CDUTRIG  */
         agc_csm_calcsxa(ip, ram->star, &t, &ram->sac, &ram->pac, &cult);
         *result = cult ? SR52_OVER_90 : trunnion_class(ram->pac); /* CULTFLAG: trunnion over 90 deg */
     }
@@ -421,8 +421,8 @@ static agc_status_t auto_optics_target(const agc_job_ctx_t *ctx, bool resumed)
 
     if (cmc_mode() && agc_flag_test(AGC_FLAG_TRUNFLAG))
     { /* R52E     */
-        ram->desoptt = ram->pac;
-        ram->desopts = ram->sac;
+        agc_erase_set_desoptt(ram->pac);
+        agc_erase_set_desopts(ram->sac);
     }
 
     return (auto_optics_wait(DT_HALF_SEC));
@@ -495,8 +495,8 @@ static agc_status_t auto_optics_start(const agc_job_ctx_t *ctx, agc_job_id_t ret
     agc_align_ram_t *ram = agc_align_ram(); /* alignment erasables */
 
     ram->auto_optics_return = ret; /* SAVQR52  */
-    ram->desoptt            = agc_erase_cdut();
-    ram->desopts            = agc_erase_cdus();
+    agc_erase_set_desoptt(agc_erase_cdut());
+    agc_erase_set_desopts(agc_erase_cdus());
     agc_erase_set_optind(0);
     agc_flag_clear(AGC_FLAG_SIGHTING_MARK_REQUESTED);
     agc_flag_set(AGC_FLAG_TRUNFLAG);

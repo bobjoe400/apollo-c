@@ -77,6 +77,8 @@
 #define SOCK_READ_MAX 4096  /* bytes read from one client per poll    */
 #define SOCK_PORT_MAX 65535 /* highest TCP port                      */
 #define SOCK_COUNTER  0177u /* counter address bits of 0200 | addr    */
+#define SOCK_SEND_TRY 20    /* send attempts for one packet           */
+#define SOCK_SEND_MS  10    /* wait for buffer space between attempts, ms */
 
 typedef struct sock_client
 {
@@ -274,9 +276,12 @@ void sim_socket_close(void)
 }
 
 /**********************************************************************
- * AGC: none -- send one packet to one client; a broken pipe or short
- * write drops the client (yaAGC SOCKET_BROKEN); a full buffer (EAGAIN)
- * drops the packet, as yaAGC's non-blocking send does.
+ * AGC: none -- send one packet to one client. A partial send or a full
+ * buffer (EAGAIN) is retried: the rest of the packet is sent after up to
+ * SOCK_SEND_MS for buffer space, at most SOCK_SEND_TRY times. A broken
+ * pipe drops the client (yaAGC SOCKET_BROKEN); a client that still has
+ * not drained loses the packet (none of it sent) or is dropped (part of
+ * it sent, since half a packet would shift the stream); both reported.
  *
  * ARGUMENTS:
  *   i    int              I  slot
@@ -284,14 +289,43 @@ void sim_socket_close(void)
  **********************************************************************/
 static void send_to(int i, const uint8_t pkt[SIM_PACKET_BYTES])
 {
-    if (g_client[i].fd >= 0)
-    {
-        ssize_t n = send(g_client[i].fd, pkt, SIM_PACKET_BYTES, MSG_NOSIGNAL); /* bytes sent, -1 error */
+    size_t done = 0; /* bytes of the packet sent */
 
-        if (n != (ssize_t) SIM_PACKET_BYTES && !(n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)))
+    for (int t = 0; t < SOCK_SEND_TRY && g_client[i].fd >= 0 && done < SIM_PACKET_BYTES; t++)
+    {
+        ssize_t n = send(g_client[i].fd, &pkt[done], SIM_PACKET_BYTES - done, MSG_NOSIGNAL); /* bytes sent, -1 error */
+
+        if (n > 0)
         {
-            client_close(i);
+            done += (size_t) n; /* a partial send: the rest follows */
         }
+        else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+        {
+            struct pollfd w = {g_client[i].fd, POLLOUT, 0}; /* wait for buffer space */
+
+            if (poll(&w, 1, SOCK_SEND_MS) < 0 && errno != EINTR)
+            {
+                client_close(i);
+            }
+        }
+        else
+        {
+            client_close(i); /* the peer has gone */
+        }
+    }
+
+    if (g_client[i].fd >= 0 && done != 0u && done < SIM_PACKET_BYTES)
+    {
+        (void) fprintf(stderr, "agc_sim: client %d not draining: closed after a torn packet\n", i); /* stdlib diagnostic */
+        client_close(i);                                                                            /* half a packet would shift every later one */
+    }
+    else if (g_client[i].fd >= 0 && done == 0u)
+    {
+        (void) fprintf(stderr, "agc_sim: client %d not draining: packet dropped\n", i); /* stdlib diagnostic */
+    }
+    else
+    {
+        /* sent, or no client */
     }
 }
 

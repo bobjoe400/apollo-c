@@ -624,20 +624,20 @@ agc_status_t agc_guid_preferred_thrust_attitude_lm(agc_interp_t *ip)
  **********************************************************************/
 void agc_guid_reference_to_body(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg_ref, agc_vec_t *vg_ctl)
 {
-    agc_guid_t *g        = agc_guid_state();                   /* trig */
-    agc_mat_t   refsmmat = agc_erase_refsmmat();               /* 2^1 */
-    agc_vec_t   v        = agc_mat_vec(ip, &refsmmat, vg_ref); /* VG SM, m/cs 2^7 */
+    agc_cdutrig_t *trig     = agc_imu_trig();                     /* CDUSPOT, SINCDU, COSCDU */
+    agc_mat_t      refsmmat = agc_erase_refsmmat();               /* 2^1 */
+    agc_vec_t      v        = agc_mat_vec(ip, &refsmmat, vg_ref); /* VG SM, m/cs 2^7 */
 
     if (veh == AGC_VEHICLE_LM)
     {
         v       = agc_vec_shl(ip, v, 1);
-        agc_guid_cdu_smnb(&g->trig, &v); /* CDU*SMNB    */
+        agc_imu_cdu_smnb(trig, &v); /* CDU*SMNB    */
         *vg_ctl = v;
     }
     else
     {
-        agc_guid_cdutrig(&g->trig);
-        agc_guid_smnb(&g->trig, &v);
+        agc_imu_cdutrig(trig);
+        agc_imu_smnb(trig, &v);
         agc_mat_t quadrot = {
             {{{Q_P1, 0, 0}}, {{0, Q_COS, -Q_SIN}}, {{0, Q_SIN, Q_COS}}}
         };
@@ -781,7 +781,7 @@ void agc_guid_steering_cross_product(agc_interp_t         *ip,
     agc_vec_t x = agc_vec_cross(ip, agc_vec_unit(ip, in->vg, NULL, NULL), w);    /* UNIT(VG) x W, 2^2 */
 
     x       = agc_mat_vec(ip, refsmmat, x);       /* REFSMMAT/2  */
-    agc_guid_smnb(trig, &x);
+    agc_imu_smnb(trig, &x);
     *omegac = agc_vec_scale(ip, x, in->kprimedt); /* OMEGACLC    */
 }
 
