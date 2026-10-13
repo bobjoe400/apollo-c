@@ -885,3 +885,10 @@
             Earth/Moon/... Archive tile trees) extracted into C:\NASSP9
             without overwriting NASSP's files; junctions into NASSP9-dev
             and NASSP9-ref. Hi-res packs (orbiter-mods.com) optional.
+2026-10-13  NASSP milestone 4 PASS (LOI-1, 374 s SPS burn, real PRO presses):
+            ignition 0.03 s apart, burn 373.90 vs 373.97 s, VG/dVM 0.4/
+            2924.9 vs 0.4/2925.0, N85 within 0.2 ft/s, HA/HP 169.9/59.5 vs
+            169.7/59.5. Countdown cadence identical before ignition;
+            in-burn jumps are Comanche's CLOKTASK/S40.8 on both. PRO had
+            been V33E on milestones 1-3 (NASSP switch name DskySwitchProg;
+            script now aborts on unknown switches). Next TEI, entry, LM.
