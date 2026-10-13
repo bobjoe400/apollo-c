@@ -73,6 +73,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
+#include "agc/nav/integration.h"
 #include "agc/programs/rendezvous.h"
 
 /* Library-internal entry points (src/csm/burns/sps/internal.h and
@@ -102,6 +103,7 @@ static void      test_engine_enable_request_csm(void);
 static void      test_engine_fail_csm(void);
 static void      test_engine_enable_request_lm(void);
 static void      test_preburn_late(void);
+static void      test_external_dv_vgdisp_lm(void);
 
 /**********************************************************************
  * Run the tests.
@@ -123,6 +125,7 @@ int main(void)
     test_engine_fail_csm();
     test_engine_enable_request_lm();
     test_preburn_late();
+    test_external_dv_vgdisp_lm();
     (void) printf("test_guidance: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -595,4 +598,42 @@ static void test_preburn_late(void)
     agc_power_on(AGC_VEHICLE_LM);
     run_jobs();
     CHECK(ign_call_tig_35(-100) == AGC_STATUS_POODOO);             /* passed */
+}
+
+/**********************************************************************
+ * Luminary S30.1 (P30_P37.agc pp.616-617): DELTA V MAG. goes to DELVSAB,
+ * which Luminary's ERASABLE_ASSIGNMENTS makes the same erasable as VGDISP
+ * (VGDISP = DELVSAB), so P30's N42 R3 shows it. NASSP DOI finding: the C
+ * kept two variables and showed R3 = 0. LM state on an earth orbit at
+ * TET = TIG (LEMPREC makes no step), DELVSLV = (+22, 0, -5.4) m/s LV.
+ * AGC: S30.1, VGDISP = DELVSAB (Luminary099)
+ *
+ * FUNCTION NAME: test_external_dv_vgdisp_lm
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_external_dv_vgdisp_lm(void)
+{
+    agc_state_init(AGC_VEHICLE_LM);
+    agc_integ_sv_t sv = {0}; /* LM permanent state, earth */
+
+    sv.rrect.c[0]   = agc_dp_from_double(6678137.0, 29);
+    sv.vrect.c[1]   = agc_dp_from_double(77.26, 7); /* m/cs */
+    sv.rcv          = sv.rrect;
+    sv.vcv          = sv.vrect;
+    sv.tet          = agc_dp_from_double(100000.0, 28);
+    agc_integ_perm_set(AGC_VEHICLE_LM, &sv);
+    agc_erase_set_tig(sv.tet);
+    agc_rendz_t *rz = agc_rendz_erasable();         /* DELVLVC, DELVSAB */
+
+    rz->delvlvc.c[0] = agc_dp_from_double(0.22, 7);
+    rz->delvlvc.c[2] = agc_dp_from_double(-0.054, 7);
+    agc_interp_t ip; /* interpreter state */
+
+    agc_interp_init(&ip);
+    agc_status_t st = agc_guid_external_delta_v_vectors(&ip, AGC_VEHICLE_LM); /* S30.1 */
+
+    CHECK(st == AGC_STATUS_OK);
+    CHECK(rz->delvsab > 0);
+    CHECK(agc_guid_state()->burn.vgdisp == rz->delvsab);
 }

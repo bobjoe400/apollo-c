@@ -61,6 +61,7 @@
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
+#include "agc/guidance/guidance.h"
 
 /* ---- constants (P32-P33 p.663, values as 2^28 fractions) --------------- */
 #define CSI_INITST     ((agc_dp_t) 63921)    /* .03048 B-7: 10 fps            */
@@ -1256,6 +1257,11 @@ agc_status_t agc_rendz_csi_cdh_dv_to_reference(agc_interp_t *ip,
     rz->delvsin = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1);
     rz->delvsab = rz_abval(ip, rz->delvsin);
     *delvsin    = rz->delvsin;
+
+    if (agc_state_vehicle() == AGC_VEHICLE_LM)
+    {
+        agc_guid_state()->burn.vgdisp = rz->delvsab; /* Luminary VGDISP = DELVSAB */
+    }
 
     return (AGC_STATUS_OK);
 }

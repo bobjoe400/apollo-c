@@ -243,6 +243,8 @@ static agc_status_t external_delta_v_vectors_lm(agc_interp_t *ip, agc_rendz_t *r
     rz->delvsin = agc_vec_shl(ip, agc_vec_mat(ip, rz->delvlvc, &m), 1); /* DELVSLV = DELVLVC: one vector, rz->delvlvc */
     rz->delvsab = agc_vec_abval(ip, rz->delvsin);                       /* DELTA V MAG. */
 
+    agc_guid_state()->burn.vgdisp = rz->delvsab; /* Luminary VGDISP = DELVSAB (one erasable): the N42 R3 of P30 */
+
     return (apo_peri(ip, rz, rz->rtig, agc_vec_add(ip, rz->vtig, rz->delvsin)));
 }
 

@@ -83,16 +83,26 @@ Closed loops (PLAN item 10, stretch), against the proven tools only:
 * **NASSP 9** (Orbiter 2024, Apollo 11, on the Windows host via WSL
   interop): NASSP's Saturn5/LEM modules built against libagc through the
   engine shim `src/nassp/` (CMake project plus a patch to NASSP's top
-  CMakeLists). Milestone 1 (earth orbit insertion and the first MCC
-  state-vector uplink) and milestone 2 (TLI) pass against the stock NASSP
-  run, unattended; milestone 3 (MCC-2 SPS burn) is in progress. The
-  integrated build lives in `C:\NASSP9-dev` (stock baseline `C:\NASSP9`);
-  runs are scripted scenarios driven by NASSP's own checklist workbook.
+  CMakeLists; `patches/0002` gives the LEM the Saturn's Lua test hooks, on
+  both the stock reference and ours). Flown unattended against the stock
+  NASSP run with NASSP's own checklist workbook: insertion and the first
+  MCC state-vector uplink, TLI, MCC-2, LOI-1 and TEI (SPS burns within
+  0.1 s and a few tenths of a ft/s of stock); LM milestones in progress.
+  Two flight bugs found on the way (FANG/K3VAL address map, V82 after an
+  escape burn), both fixed with tests. The integrated build lives in
+  `C:\NASSP9-dev` (stock baseline `C:\NASSP9`). A light tier runs on
+  Linux in about a minute, no Orbiter:
+
+      make nassp-replay
+
+  (NASSP scenario images on our AGC through the shim and on NASSP's own
+  yaAGC, downloaded at the pinned commit: state-vector blocks after the
+  P00 integration steps and MCC uplinks compared word for word).
   Details: `docs/modules/nassp-integration.md`,
   `docs/overview/nassp_integration.md`.
 
 How to run each: `make scenarios` (headless, both vehicles);
-`make lm-sim` (above); the VirtualAGC launcher with `bin/yaAGC` linked to
+`make lm-sim` and `make nassp-replay` (above); the VirtualAGC launcher with `bin/yaAGC` linked to
 `build/agc_sim` (Run it, above); NASSP: start Orbiter from
 `C:\NASSP9-dev` with an `apollo-c` scenario (one Orbiter session at a
 time).

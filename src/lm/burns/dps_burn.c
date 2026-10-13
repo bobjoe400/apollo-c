@@ -978,9 +978,10 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
 
     agc_mat_t refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows (2^1) */
 
-    agc_lm_ldg()->unfc_2 = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, g->burn.vg), 1);
-    g->burn.vgdisp       = agc_vec_abval(ip, g->burn.vg); /* BDTOK                  */
-    agc_erase_set_vgtig(g->burn.vg);                      /* STOVL VGPREV           */
+    agc_lm_ldg()->unfc_2          = agc_vec_shl(ip, agc_mat_vec(ip, &refsmmat, g->burn.vg), 1);
+    g->burn.vgdisp                = agc_vec_abval(ip, g->burn.vg); /* BDTOK                  */
+    agc_rendz_erasable()->delvsab = g->burn.vgdisp;                /* VGDISP = DELVSAB (Luminary) */
+    agc_erase_set_vgtig(g->burn.vg);                               /* STOVL VGPREV           */
 
     if (!agc_flag_test(AGC_FLAG_STEERSW))
     {

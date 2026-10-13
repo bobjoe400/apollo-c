@@ -149,6 +149,7 @@ agc_status_t agc_job_lambert_aimpoint_compute_lm(agc_job_ctx_t *ctx)
 
     rz->delvsin                   = rz->delveet3;
     agc_guid_state()->burn.vgdisp = rz_abval(&ip, rz->delveet3);
+    rz->delvsab                   = agc_guid_state()->burn.vgdisp; /* VGDISP = DELVSAB (Luminary) */
     agc_flag_clear(AGC_FLAG_XDELVFLG);
     st                            = agc_rendz_get_lvc(&ip, rz->rinit, rz->vinit, rz->delveet3, &rz->delvlvc);
 

@@ -209,6 +209,27 @@ and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (st
   sign (no assertion); tests/programs/rendezvous.c test 6 (V82GON1 on a departing earth
   hyperbola; fails before the fix). Reproduced offline from the run's saved state
   (SCRATCH harness/v82g.c on runs/agc_tei/state.scn, debug library).
+- DONE milestone 7 (LM DOI, scenario 09, LEM Lua hook 0002 on both, 2026-10-13; warp schedule
+  below): DPS ignition at TIG on both (AGC 366224.1 vs 366224.3, 1 s log sampling), cutoff
+  366299.3 vs 366299.9; F16N40 VG/dVM 0.8/71.4 vs 0.2/71.9 ft/s; N85 +0.8/+0.1/0.0 vs
+  +0.3/+0.1/-0.1; resulting orbit (Orbiter elements) peri/apo radius 1753.1/1851.4 km vs
+  1752.5/1851.4 km. P30 N81 identical. Not automatable: manual throttle to 40% at TIG+15 s
+  (DPS stays at the 10% start throttle on both), ullage, DEDA (AGS) entries, attitude checks.
+- FLIGHT BUG 3 (DOI, ours only, fixed): P30 N42 R3 (DV REQ) showed 0 (stock +0072.1). Luminary
+  ERASABLE_ASSIGNMENTS makes VGDISP = DELVSAB one erasable; the C kept burn.vgdisp and
+  rz->delvsab apart and the LM S30.1 set only delvsab. Fix: the LM writers keep them equal
+  (external_delta_v.c LM S30.1, dps_burn.c BDTOK, lambert_aimpoint_guidance_lm.c, csi.c on the
+  LM); tests/guidance/guidance.c test_external_dv_vgdisp_lm (fails before). Offline replay of the
+  DOI LGC image now shows N42 R3 +00721 as stock.
+- Observation (not a bug): LM V83 (R31) recomputes continuously; the C pass takes no AGC time,
+  so the job runs thousands of times a second (sidecar "busy" up to 76%) where the AGC runs a
+  few; displays and results are the same; R31 ends at the next PRO/ENTER as in the AGC.
+- Warp schedule (user, 2026-10-13), in common.lua for every milestone: script sets and holds the
+  warp (a hand change is logged "WARP CHANGED" and re-asserted, every change logged); waits for
+  T-m:ss rows more than 60 s out at 20x until 15 s before the row; 1x from TIG-75 s through
+  cutoff, N85 and V82; MISSION_TIME rows 20x until 30 s before; entry EI waits 20x until 60 s
+  before; DSKY/switch/flash rows and uplinks at 1x. The dev DOI run the user re-warped by hand
+  was killed and discarded; DOI was flown again on both builds with this schedule.
 - LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
   get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only). Reference LEM.dll in
   C:\NASSP9-ref = stock 5470bf1 + 0002 (C:\Users\cnama\nassp-work\build-ref.bat, tree
