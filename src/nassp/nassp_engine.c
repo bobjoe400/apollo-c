@@ -772,8 +772,13 @@ int agc_load_binfile(agc_t *State, const char *RomImage)
 
         if (g_trace == NULL)
         {
-            g_trace = fopen((v == AGC_VEHICLE_LM) ? "apollo-c-agc-lm.log" : "apollo-c-agc-csm.log", "w"); /* NULL: no trace */
-            (void) freopen("apollo-c-agc-stderr.log", "a", stderr);                                       /* stdlib: src/sim's diagnostics (BAD_ARG job / interrupt) land on disk, not in NASSP's lost console */
+            g_trace   = fopen((v == AGC_VEHICLE_LM) ? "apollo-c-agc-lm.log" : "apollo-c-agc-csm.log", "w"); /* NULL: no trace */
+            FILE *err = freopen("apollo-c-agc-stderr.log", "a", stderr);                                    /* src/sim's diagnostics (BAD_ARG job / interrupt) on disk, not in NASSP's lost console */
+
+            if (err == NULL)
+            {
+                trace("stderr not redirected: src/sim diagnostics go to the console", 0.0);
+            }
         }
 
         rc        = (sim_rope_load(RomImage) == AGC_STATUS_OK) ? 0 : 1; /* rope read: 0 */

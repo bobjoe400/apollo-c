@@ -19,6 +19,10 @@
  *        restart of a type C phase with D clear runs at that priority.
  *     5. GET+MGA: Comanche unitizes delta V once, Luminary twice
  *        (VLOAD UNIT / UNIT); each vehicle follows its rope.
+ *     6. V82 with average G on (V82GON1) on an escape hyperbola past its
+ *        pericenter: CALCTPER gives TPER < 0, SR30.1 stores -TPER > 0
+ *        as is and the job goes on (NASSP TEI finding: the C refused a
+ *        positive -TPER, ended the V82 job and left the DSKY blank).
  *
  * AGC SOURCE:
  *   Comanche055 R30.agc (SR30.1, MAXCHK), P32-P33_P72-P73.agc (CSI/A),
@@ -43,6 +47,7 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
+#include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
@@ -73,6 +78,7 @@ static bool         group2_restarts_at(agc_job_id_t job, agc_prio_t prio);
 static void         test_group2_restart_priority(void);
 static agc_dp_t     mga_expected(agc_vec_t dv, agc_vec_t ysm, bool twice);
 static void         test_get_mga_per_rope(void);
+static void         test_v82_average_g_departing(void);
 
 /**********************************************************************
  * AGC: none (test driver) -- the three tests, CSM build
@@ -91,6 +97,7 @@ int main(void)
     test_csi_coplanar_circular();
     test_group2_restart_priority();
     test_get_mga_per_rope();
+    test_v82_average_g_departing();
     (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks, g_failures);
 
     if (g_failures != 0)
@@ -520,4 +527,37 @@ static void test_get_mga_per_rope(void)
 
     CHECK(moved);
     agc_state_init(AGC_VEHICLE_CSM);
+}
+
+/**********************************************************************
+ * 6. V82GON1 (R30.agc p.519) after an escape burn: RN, VN on an earth
+ * hyperbola (v = 1.1 escape speed) 40 degrees past its pericenter, the
+ * pericenter above HPERMIN. SKIPTPER stores -TPER > 0 as is; the job
+ * must not fail (it did: the display was left blank, NASSP TEI).
+ * AGC: V82GON1, SR30.1, DOTPER, SKIPTPER (R30.agc pp.519-523)
+ *
+ * FUNCTION NAME: test_v82_average_g_departing
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_v82_average_g_departing(void)
+{
+    agc_state_init(AGC_VEHICLE_CSM);
+    const double rp = R0;                                    /* pericenter radius, m        */
+    const double vp = 1.1 * sqrt(2.0 * MU / rp);             /* pericenter speed, m/cs  */
+    const double h  = rp * vp;                               /* angular momentum, m^2/cs    */
+    const double e  = h * h / (MU * rp) - 1.0;               /* eccentricity (> 1)          */
+    const double nu = 40.0 * 3.14159265358979323846 / 180.0; /* true anomaly, rad */
+    const double r  = h * h / MU / (1.0 + e * cos(nu));      /* radius, m      */
+    const double vr = MU / h * e * sin(nu);                  /* radial speed > 0, m/cs     */
+    const double vt = h / r;                                 /* transverse speed, m/cs      */
+
+    agc_flag_clear(AGC_FLAG_AMOONFLG);
+    agc_erase_set_rn(pos(r, 0.0, 0.0));
+    agc_erase_set_vn(vel(vr, vt, 0.0));
+    agc_job_ctx_t ctx = {AGC_JOB_ORBIT_DISPLAY_AVERAGE_G, 0, false, -1, 0}; /* the V82GON1 job */
+    agc_status_t  st  = agc_job_orbit_display_average_g(&ctx);              /* SR30.1 then V82GON3 */
+
+    CHECK(st != AGC_STATUS_BAD_ARG);
+    CHECK(agc_rendz_erasable()->neg_tper > 0);
 }

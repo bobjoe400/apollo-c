@@ -861,27 +861,11 @@ static agc_sp_t *sp_field(ec_item_t item, int k)
         case EC_YACTOFF:
             f = &dc->yactoff;
             break;
-        case EC_LM_BRK_SP:
-        case EC_LM_APP_SP:
-        case EC_LM_CRIT:
-        case EC_LM_RODSCALE:
-        case EC_LM_TEND:
-            f = lm_sp_field(item, k);
-            break;
-        case EC_LM_HIASCENT:
-        case EC_LM_ROLLPIT:
-        case EC_LM_DAPGAINS:
-        case EC_LM_IGNAOS:
-        case EC_LM_SKALSKAL:
-        case EC_LM_LRPAD:
-        case EC_LM_LRHMAX:
-        case EC_LM_RPCRT:
-        case EC_LM_NAVPAD:
-        case EC_LM_VARMIN:
-            f = lm_pad_field(item, k);
+        case EC_HBN10:
             break;
         default:
-            break; /* EC_HBN10 */
+            f = (item >= EC_LM_BRK_SP) ? lm_sp_field(item, k) : lm_pad_field(item, k); /* LM landing pad (EC_LM_BRK_SP ..) or LM DAP / LR / nav pad */
+            break;
     } /* switch */
 
     return (f);
@@ -2308,8 +2292,9 @@ void agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
  *   ecadr     uint16_t  I    address, 15 bits
  *   word      uint16_t  I    the word
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the setter's status (refused value;
- *          the old value stays)
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG for a word
+ *          above 15 bits; or the setter's status (refused value; the old
+ *          value stays)
  **********************************************************************/
 agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word)
 {

@@ -299,8 +299,7 @@ agc_status_t agc_orbit_params_compute(agc_interp_t                *ip,
  *   in        const agc_orbit_params_in_t *  I    SR30.1 inputs (copied to
  *                                                 the erasables)
  *
- * RETURNS: agc_status_t -- the SR30.1 status, AGC_STATUS_BAD_ARG for a
- *          positive -TPER
+ * RETURNS: agc_status_t -- the SR30.1 status
  **********************************************************************/
 static agc_status_t opd_orbit_params(agc_interp_t *ip, agc_rendz_t *rz, const agc_orbit_params_in_t *in)
 {
@@ -315,12 +314,7 @@ static agc_status_t opd_orbit_params(agc_interp_t *ip, agc_rendz_t *rz, const ag
     rz->hapox                           = o.hapox;
     rz->hperx                           = o.hperx;
     rz->tff                             = o.tff;
-    rz->neg_tper                        = o.neg_tper;
-
-    if (!AGC_ASSERT(o.neg_tper <= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
+    rz->neg_tper                        = o.neg_tper; /* any sign: past pericenter CALCTPER gives TPER < 0 (SKIPTPER stores DCOMP as is) */
 
     return (st);
 }

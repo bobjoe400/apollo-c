@@ -192,9 +192,23 @@ and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (st
   not flight-relevant): DUMPCNT, AGSK (AGS clock, getter only), DOWNTORK..NEGTORKV (jet torque
   telemetry sums); CSM: ENTRYVN, PGNCSALT, HORIZALT, TRANSM1, the CSM W/variance pad,
   AZIMUTH/LATITUDE/LAUNCHAZ, TAZEL1, DELVTPI, the Saturn takeover block (AOG .. POSEXIT,
-  SATRATE ..), ECSTEER (milestones 1-5 matched without them; mapped next if a milestone needs it).
+  SATRATE ..), ECSTEER (milestones 1-4 and TEI matched without them; mapped next if a milestone needs it).
 - src/nassp/nassp_engine.c now reopens stderr into apollo-c-agc-stderr.log, so src/sim's
   BAD_ARG diagnostics from inside NASSP land on disk.
+- DONE milestone 6 (TEI, scenario 13, 2026-10-13): stock vs ours burn 160.26 vs 160.28 s, VG/dVM
+  1.1/3306.8 vs 0.9/3306.7 ft/s, N85 -0.8/+0.8/0.0 vs -0.6/+0.7/-0.1, F16N44 HP 57.8 and TFF
+  -59 59 on both; V99/ignition/cutoff within 0.04 s (AGC clock). Stock refused the first two
+  V37E30E after RSET/V37E00E (1520, its P40 still ending); ours took the first (restore restarts).
+  Scripts retry V37 (ac.select) on both.
+- FLIGHT BUG 2 (TEI, ours only, fixed 2026-10-13): after the burn, P40 at F37, V82 then PRO on
+  F16N44 left the DSKY blank (stock: F37 again); apollo-c-agc-stderr.log: job 135 =
+  ORBIT_DISPLAY_AVERAGE_G returned BAD_ARG. V82GON1 runs SR30.1 on RN/VN; past pericenter on
+  the escape hyperbola CALCTPER gives TPER < 0 and SKIPTPER stores -TPER > 0 as is (R30.agc
+  p.523), but opd_orbit_params asserted -TPER <= 0 and ended the V82 job, so ENDEXT never
+  restored the display. Fix: src/programs/displays/orbit_parameter_display.c stores -TPER of any
+  sign (no assertion); tests/programs/rendezvous.c test 6 (V82GON1 on a departing earth
+  hyperbola; fails before the fix). Reproduced offline from the run's saved state
+  (SCRATCH harness/v82g.c on runs/agc_tei/state.scn, debug library).
 - LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
   get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only). Reference LEM.dll in
   C:\NASSP9-ref = stock 5470bf1 + 0002 (C:\Users\cnama\nassp-work\build-ref.bat, tree
