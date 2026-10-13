@@ -31,7 +31,9 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/state.h"
+#include "agc/imu/imu.h"
 #include "agc/io/service.h"
+#include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 
 static int g_checks;   /* checks run    */
@@ -44,6 +46,7 @@ static void test_refsmmat(agc_vehicle_t v, uint16_t ecadr);
 static void test_state_vector_uplink(agc_vehicle_t v);
 static void test_tephem_and_follow(agc_vehicle_t v);
 static void test_unmapped_and_flags(agc_vehicle_t v);
+static void test_pad_loads(void);
 
 #define CHECK(c) check((c), __LINE__, #c)
 
@@ -64,6 +67,7 @@ int main(void)
     test_tephem_and_follow(AGC_VEHICLE_LM);
     test_unmapped_and_flags(AGC_VEHICLE_CSM);
     test_unmapped_and_flags(AGC_VEHICLE_LM);
+    test_pad_loads();
     (void) printf("test_ecadr: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -137,11 +141,11 @@ static void test_refsmmat(agc_vehicle_t v, uint16_t ecadr)
     uint16_t r     = 0;   /* a word read back */
 
     agc_state_init(v);
-    w[0]  = 010000u;      /* m11 = +1                                     */
-    w[8]  = 010000u;      /* m22 = +1                                     */
-    w[16] = 010000u;      /* m33 = +1                                     */
-    w[2]  = 000001u;      /* m12 = +1 x 2^14 - 3 (mixed signs, kept)       */
-    w[3]  = 077774u;      /* -3                                           */
+    w[0]  = 010000u; /* m11 = +1                                     */
+    w[8]  = 010000u; /* m22 = +1                                     */
+    w[16] = 010000u; /* m33 = +1                                     */
+    w[2]  = 000001u; /* m12 = +1 x 2^14 - 3 (mixed signs, kept)       */
+    w[3]  = 077774u; /* -3                                           */
     store_block(ecadr, w, 18);
 
     agc_mat_t m = agc_erase_refsmmat(); /* typed */
@@ -230,9 +234,39 @@ static void test_unmapped_and_flags(agc_vehicle_t v)
     uint16_t r = 0; /* a word read back */
 
     agc_state_init(v);
-    CHECK(agc_erase_write_ecadr(0104u, 012345u) == AGC_STATUS_OK); /* FLAGWRD8 */
+    CHECK(agc_erase_write_ecadr(0104u, 012345u) == AGC_STATUS_OK);  /* FLAGWRD8 */
     CHECK(agc_flagword_get(8) == 012345u);
     CHECK(agc_erase_write_ecadr(02777u, 054321u) == AGC_STATUS_OK); /* not mapped */
     agc_erase_read_ecadr(02777u, &r);
     CHECK(r == 054321u);
+}
+
+/**********************************************************************
+ * AGC: none (test) -- launch pad loads by address (Comanche055 CMPAD):
+ * IMU compensation at 1452 (PBIASX PIPASCFX PBIASY ..), AZO at 1711 and
+ * the lunar ephemeris (VECOEM 2036, OMEGAES 2146) reach their typed homes.
+ **********************************************************************/
+static void test_pad_loads(void)
+{
+    agc_imu_comp_params_t c;   /* compensation read back */
+    agc_navaux_padload_t  pad; /* AZO .. */
+    agc_ephem_csm_t       eph; /* VECOEM .. */
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    CHECK(agc_erase_write_ecadr(01452u, 077745u) == AGC_STATUS_OK); /* PBIASX = -26 */
+    CHECK(agc_erase_write_ecadr(01453u, 000050u) == AGC_STATUS_OK); /* PIPASCFX = 40 */
+    CHECK(agc_erase_write_ecadr(01470u, 000005u) == AGC_STATUS_OK); /* ADSRAZ = 5 */
+    agc_imu_comp_get(&c);
+    CHECK(c.pipabias[0] == -26);
+    CHECK(c.pipascf[0] == 40);
+    CHECK(c.adsra[2] == 5);
+    CHECK(agc_erase_write_ecadr(01711u, 00003u) == AGC_STATUS_OK);  /* AZO high */
+    CHECK(agc_erase_write_ecadr(01712u, 00007u) == AGC_STATUS_OK);  /* AZO low  */
+    agc_navaux_get_padload(&pad);
+    CHECK(pad.azo == 3 * 040000 + 7);
+    CHECK(agc_erase_write_ecadr(02036u, 00001u) == AGC_STATUS_OK);  /* VECOEM [0].x high */
+    CHECK(agc_erase_write_ecadr(02147u, 00011u) == AGC_STATUS_OK);  /* OMEGAES low */
+    agc_ephem_get_csm_data(&eph);
+    CHECK(eph.vecoem[0].c[0] == 040000);
+    CHECK(eph.omegaes == 011);
 }

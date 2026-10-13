@@ -41,15 +41,22 @@
  *
  * NOTES:
  *   Outputs (yaAGC ChannelOutput): yaAGC broadcasts every program WRITE,
- *   WOR or WAND of a channel. The translated program writes the channel
- *   image in src/core/channels.c directly, so the harness samples the
- *   output channels after every interrupt and job and broadcasts what
- *   changed; 010 (DSKY relays) is sent after every T4RUPT, which writes
- *   it on every pass, and 034/035 (downlink) after every DOWNRUPT.
- *   DEVIATION (sampling): an output written twice with the same value
- *   between two samples, or changed and changed back inside one job, is
- *   sent once or not at all; only the relays and the downlink rely on
- *   repeats, and they are forced as above.
+ *   WOR or WAND of a channel, changed or not. The translated program
+ *   writes the channel image in src/core/channels.c directly, which
+ *   logs each write with the word after it (agc_chan_next_write); after
+ *   every interrupt and job the harness sends one packet per logged
+ *   write of an output channel, in order, then any output whose word
+ *   changed without a write (power-on reset, a lost log entry); 010 (DSKY relays) is
+ *   sent after every T4RUPT, which writes it on every pass, and 034/035
+ *   (downlink) after every DOWNRUPT. A peripheral can depend on the
+ *   repeats: the LM Simulator sets its jets from the packet before the
+ *   one it has just received, so the DAP's rewrite of channels 5/6 on
+ *   every pass is what lets it fire the jets in time
+ *   (docs/modules/closed-loop-fixes.md S-L1): WRITEU and WRITEV each
+ *   write channel 5 in one DAP pass, and the simulator acts on the U
+ *   jets at the second packet.
+ *   DEVIATION (timing): the packets of one interrupt or job leave
+ *   together after it, where yaAGC sends each at its instruction.
  *   Fictitious outputs (yaAGC agc_engine.c):
  *     0163       DSKY lamps not wired to a channel bit (UpdateDSKY): KEY
  *                REL, OPR ERR and V/N flash (1.28 s period, the first
@@ -148,7 +155,7 @@ static uint16_t g_gyro_count;           /* GyroCount: pulses still to send   */
 static uint16_t g_gyro_sel;             /* OldChannel14: gyro bits << 6      */
 static uint32_t g_gyro_timer;           /* 1/3200 s toward the next burst    */
 
-/* Output channels sampled for changes (010, 034, 035 are forced).        */
+/* Output channels sent per write (010, 034, 035 are forced).             */
 static const uint16_t k_outputs[] = {005, 006, 011, 012, 013, 014};
 
 /**********************************************************************
@@ -205,8 +212,38 @@ static void send_if_changed(uint16_t chan, uint16_t value)
 }
 
 /**********************************************************************
- * AGC: none -- sample the output channels and broadcast the changes
- * (yaAGC ChannelOutput on CpuWriteIO); channel 11 bit 10 resets the
+ * AGC: none -- yaAGC ChannelOutput on CpuWriteIO: one packet per program
+ * write of an output channel since the last call, in order, with the
+ * word after that write.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void send_writes(void)
+{
+    int      n     = (int) (sizeof (k_outputs) / sizeof (k_outputs[0])); /* output channels */
+    uint16_t chan  = 0;                                                  /* channel written */
+    uint16_t value = 0;                                                  /* its word after the write */
+
+    for (int k = 0; k < AGC_CHAN_WLOG_MAX && agc_chan_next_write(&chan, &value); k++)
+    {
+        bool out = false; /* an output peripherals see */
+
+        for (int i = 0; i < n; i++)
+        {
+            out = out || (k_outputs[i] == chan);
+        }
+
+        if (out)
+        {
+            g_sent[chan] = value;
+            sim_socket_send(chan, value);
+        }
+    }
+}
+
+/**********************************************************************
+ * AGC: none -- broadcast the output-channel writes, then any output
+ * that changed without one (yaAGC ChannelOutput on CpuWriteIO); channel 11 bit 10 resets the
  * RESTART lamp (CpuWriteIO).
  *
  * ARGUMENTS: none
@@ -216,6 +253,7 @@ void sim_channels_sync(void)
     int n = (int) (sizeof (k_outputs) / sizeof (k_outputs[0])); /* channels sampled */
 
     sim_clock_arm_traps(); /* channel 13 bits 12-14 never read back */
+    send_writes();
 
     for (int i = 0; i < n; i++)
     {
@@ -537,6 +575,7 @@ agc_status_t sim_channels_tick(uint32_t cs)
 
     if (!sim_clock_standby())
     {
+        sim_counters_tick(); /* CDU counts paced at 400 / 6400 a second */
         st = cdu_drive(c14);
         gyro_drive(c14);
         optics_drive(c14);

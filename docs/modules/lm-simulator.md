@@ -60,6 +60,11 @@ of the simulator is modified; no device model on our side.
   tutorial now runs V35 before V36 so V37E00E is accepted (L1 is reproduced
   by the lockstep recipe in Bugs found). No process or window left behind.
 
+- 2026-10-12 closed-loop-fixes: L1-L3, S-L1, S-L2/S-L3 and D1 fixed;
+  `make lm-sim` exits 0 (34 checkpoints). Tolerances after the first
+  detent now come from yaAGC's own run-to-run spread
+  (docs/modules/closed-loop-fixes.md Findings).
+
 ## How to run it
 LMSIM = virtualagc/Contributed/LM_Simulator (here SRC/virtualagc/...,
 virtualagc commit c239e9c, tools/oracle/BUILD.md). Tcl/Tk 8.6 (`wish`).

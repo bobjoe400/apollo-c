@@ -242,6 +242,40 @@ static agc_status_t csm_state_for_munrvg(agc_interp_t *ip, agc_job_id_t self, ag
 }
 
 /**********************************************************************
+ * CALLT-35 (BURN_BABY_BURN--MASTER_IGNITION_ROUTINE.agc L p.734):
+ * SAVET-30 = DELTA-T UNTIL TIG-30 - 5 s, LONGCALL TIG-35, phase 4.25.
+ * MIDTOAV1 leaves at least TIMEDELT (20 s) before TIG - 30 when it
+ * starts, but the integration runs after that check; a slow one leaves
+ * 5 s or less, and LONGCALL refuses a zero or negative delay with
+ * LONGPOOH: POODOO 1204 (WAITLIST.agc L p.1131). The C passes 0 for any
+ * such delay, which LONGCALL turns into the same POODOO.
+ *
+ * FUNCTION NAME: ign_call_tig_35
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  ----------------------------------
+ *   dt35      agc_dp_t  I    DELTA-T UNTIL TIG-35, cs 2^28
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; the LONGCALL status (POODOO
+ *          1204 for a delay <= 0, BAILOUT 1203 when the list is full)
+ **********************************************************************/
+agc_status_t ign_call_tig_35(agc_dp_t dt35)
+{
+    agc_erase_set_savet_30(dt35);
+    agc_status_t st = agc_waitlist_longcall((dt35 > 0) ? (uint32_t) dt35 : 0u, AGC_TASK_TIG_35); /* <= 0: LONGPOOH, POODOO 1204 */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    agc_phase_change((uint16_t) 020254); /* 4.25SPOT               */
+
+    return (AGC_STATUS_OK);
+}
+
+/**********************************************************************
  * P41SPOT .. CALLT-35 (p.734-735), a job: TDEC1 = TIG - 29.9 s, INITCDUW,
  * the CSM state (MUNFLAG), MIDTOAV1; a slipped TIG becomes PIPTIME1 +
  * 29.9 s. TIG-35 by LONGCALL (4.25); in P63 the countdown display starts
@@ -254,9 +288,9 @@ static agc_status_t csm_state_for_munrvg(agc_interp_t *ip, agc_job_id_t self, ag
  *   --------  ---------------  ---  ----------------------------------
  *   ctx       agc_job_ctx_t *  I    executive context of the running job
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
- *          precondition failed); otherwise the status of the routine it
- *          continues in
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
+ *          routine it continues in (CALLT-35: POODOO 1204 when TIG-35
+ *          has passed)
  **********************************************************************/
 agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
 {
@@ -293,21 +327,12 @@ agc_status_t agc_job_preburn_state_vector_lm(agc_job_ctx_t *ctx)
         agc_erase_set_tig(agc_dp_add(&ip, g->avg.piptime1, D29_9SEC));
     }
 
-    agc_erase_set_savet_30(agc_dp_sub(&ip, mo.dt, SEC5)); /* DELTA-T TO TIG-35 */
-
-    if (!AGC_ASSERT(agc_erase_savet_30() >= 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_status_t sw = agc_waitlist_longcall((uint32_t) ((agc_erase_savet_30() > 0) ? agc_erase_savet_30() : 1), AGC_TASK_TIG_35); /* status of agc_waitlist_longcall */
+    agc_status_t sw = ign_call_tig_35(agc_dp_sub(&ip, mo.dt, SEC5)); /* CALLT-35 */
 
     if (sw != AGC_STATUS_OK)
     {
         return (sw);
     }
-
-    agc_phase_change((uint16_t) 020254); /* 4.25SPOT               */
 
     if (agc_phase_checkmm(63))
     { /* P63 DISPLAYS NOW       */

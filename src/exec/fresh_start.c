@@ -783,12 +783,17 @@ uint16_t agc_restart_redoctr(void)
  * GOTOPOOH (C p.194 / L p.223): protect the P00 request by restart
  * group 4 (CSM 4.1 = redisplay, LM 4.33 = GOP00FIX) and go to GOP00FIX.
  * Called from a job, the job continues as GOP00FIX (the caller returns
- * at once). Called from restart code (no job running), GOP00FIX is
- * started as a NOVAC job at the display restart priority (RESTREG).
+ * at once). Called from restart code (GOPROG3 with no group active), the
+ * restart runs on as the job MMDSPLAY's NOVAC put in core set 0, and
+ * GOP00FIX replaces DSPMMJOB there (exec_core0_continue_as): the PROG
+ * digits stay as STARTSB2's DSPOFF left them (blank), as in the AGC.
+ * When core set 0 is not the current job, GOP00FIX is started as a
+ * NOVAC job at the display restart priority (RESTREG).
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- the CHANG1 (yield) or NOVAC status
+ * RETURNS: agc_status_t -- the CHANG1 (yield) or NOVAC status; OK when
+ *          GOP00FIX took core set 0
  **********************************************************************/
 agc_status_t agc_exec_gotopooh(void)
 {
@@ -814,6 +819,10 @@ agc_status_t agc_exec_gotopooh(void)
     if (exec_in_job())
     {
         st = agc_exec_job_yield(AGC_JOB_GO_IDLE_FIX);
+    }
+    else if (exec_core0_continue_as(AGC_JOB_GO_IDLE_FIX))
+    {
+        st = AGC_STATUS_OK; /* POSTJUMP GOP00FIX in core set 0 */
     }
     else
     {

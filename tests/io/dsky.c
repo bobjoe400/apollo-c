@@ -65,6 +65,7 @@ static void             test_lights(void);
 static void             test_cleandsp_no_continuation(void);
 static void             test_request_waitlist_zero_delay(void);
 static void             test_display_machine_address(void);
+static void             test_change_program_refused(void);
 
 /**********************************************************************
  * AGC: none (test driver) -- run every test of this file
@@ -92,6 +93,7 @@ int main(void)
     test_cleandsp_no_continuation();
     test_display_machine_address();
     test_request_waitlist_zero_delay();
+    test_change_program_refused();
     (void) printf("test_dsky: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_asserts);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -627,4 +629,26 @@ static void test_display_machine_address(void)
 
     CHECK(s.verb[0] == 0 && s.verb[1] == 5 && s.noun[0] == 0 && s.noun[1] == 1);
     CHECK(reg_is(&s, 0, 12345, 0));
+}
+
+/**********************************************************************
+ * AGC: none (test) -- V37E00E while the IMU is being initialised
+ *      (IMODES30 bit 6): CANTR00 / V37BAD (FRESH_START_AND_RESTART.agc
+ *      L pp. 227-228) raise alarm 1520, release the display and end the
+ *      job. The program alarm is not an operator error: ENTER does not
+ *      run again (ALMCYCLE is reached only through pinball's own TCs),
+ *      so OPR ERR stays off (closed-loop-fixes L1).
+ *
+ * FUNCTION NAME: test_change_program_refused
+ **********************************************************************/
+static void test_change_program_refused(void)
+{
+    fresh(AGC_VEHICLE_LM);
+    agc_erase_set_imodes30(000040u);                     /* bit 6: IMU being initialised */
+    CHECK(agc_dsky_keys("V37E00E") == AGC_STATUS_ALARM); /* V37BAD */
+    agc_dsky_state_t s = state();                        /* DSKY readout */
+
+    CHECK(agc_erase_failreg(0) == 01520u);
+    CHECK(!s.opr_err);
+    CHECK(!s.flash);
 }

@@ -27,7 +27,12 @@
  *                         end (job end, NVSUBEND, PASTEVB);
  *     PIN_STATUS_RECYCLE  ALMCYCLE ran: the AGC re-enters ENTER with the
  *                         original verb; pin_enter() loops on it (no
- *                         recursion, rule 1);
+ *                         recursion, rule 1). The value is ALARM, so a
+ *                         caller that does not know pinball stops as on
+ *                         any alarm; inside pinball only pin_recycle()
+ *                         tells the two apart (the almcycle mark), so an
+ *                         ALARM a called routine returns (V37's CANTR00,
+ *                         alarm 1520) ends the job and is not recycled;
  *     AGC_STATUS_POODOO   DSPALARM from an internal NVSUB (abort 01501) or
  *                         DSPABORT (01206);
  *     other               a parameter/assertion failure.
@@ -221,6 +226,7 @@ typedef struct pin_state
     uint8_t        resp_verb;      /* MPAC at ENDIDLE wake (verb)          */
     uint8_t        resp_noun;      /* MPAC +1 at ENDIDLE wake (noun)       */
     uint16_t       mpac2;          /* MPAC +2: ECADR for internal MCTBS    */
+    bool           almcycle;       /* ALMCYCLE ran, POSTJUMP ENTER pending */
 } pin_state_t;
 
 #define PIN_NNTYPE_NORMAL  0 /* NNADTEM +: normal noun */
@@ -278,17 +284,18 @@ agc_status_t pin_tstlts4(void);        /* TSTLTS4          */
 agc_status_t pin_error_key(void);      /* ERROR            */
 
 /* ---- verb execution (verbs.c) ---------------------------------- */
-agc_status_t pin_entpas0(void);         /* ENTPAS0          */
-agc_status_t pin_testnn(void);          /* TESTNN           */
-agc_status_t pin_verbfan(void);         /* VERBFAN          */
-agc_status_t pin_usead(uint16_t ecadr); /* USEADD           */
-agc_status_t pin_entexit(void);         /* TC ENTEXIT       */
-agc_status_t pin_dspalarm(void);        /* DSPALARM         */
-agc_status_t pin_predspal(void);        /* PREDSPAL         */
-agc_status_t pin_charalrm(void);        /* CHARALRM         */
-agc_status_t pin_reqadd_resume(void);   /* REQADD after Z   */
-agc_status_t pin_almcycle(void);        /* ALMCYCLE         */
-agc_status_t pin_noun_load(void);       /* LODNNTAB         */
+agc_status_t pin_entpas0(void);            /* ENTPAS0          */
+agc_status_t pin_testnn(void);             /* TESTNN           */
+agc_status_t pin_verbfan(void);            /* VERBFAN          */
+agc_status_t pin_usead(uint16_t ecadr);    /* USEADD           */
+agc_status_t pin_entexit(void);            /* TC ENTEXIT       */
+agc_status_t pin_dspalarm(void);           /* DSPALARM         */
+agc_status_t pin_predspal(void);           /* PREDSPAL         */
+agc_status_t pin_charalrm(void);           /* CHARALRM         */
+agc_status_t pin_reqadd_resume(void);      /* REQADD after Z   */
+agc_status_t pin_almcycle(void);           /* ALMCYCLE         */
+bool         pin_recycle(agc_status_t st); /* ALMCYCLE return? */
+agc_status_t pin_noun_load(void);          /* LODNNTAB         */
 
 /* The component tests return true when the AGC routine would return to
  * its caller; on false the caller takes the alarm exit itself

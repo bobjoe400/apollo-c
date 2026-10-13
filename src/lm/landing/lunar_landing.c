@@ -454,11 +454,6 @@ agc_status_t agc_lm_job_astnret(agc_job_ctx_t *ctx)
 {
     agc_align_ram()->qmaj = AGC_JOB_BRAKING_PHASE_BURN_ATTITUDE; /* SSP QMAJ    */
 
-    if (!AGC_ASSERT(agc_align_ram()->qmaj == AGC_JOB_BRAKING_PHASE_BURN_ATTITUDE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (agc_job_lm_fine_align_recheck(ctx)); /* RTB R51P63  */
 }
 

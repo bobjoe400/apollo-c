@@ -27,9 +27,10 @@
  *                         restart delays)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   No AGC alarms. A failed AGC_ASSERT (value out of range, vehicle not
- *   selected) makes a getter return 0 and a setter leave the erasable
- *   unchanged.
+ *   No AGC alarms. The accessors hold no checks: an erasable holds
+ *   whatever word the AGC stores in it, and the indexed ones (DSPTAB,
+ *   FAILREG, THETAD) are called with the AGC's own indices (constants
+ *   or bounded loop counters).
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   Values are held exactly as the AGC holds them. DP/TP values are the
@@ -49,7 +50,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 
 #define AGC_WORD15_MAX 077777u /* largest raw 15-bit AGC word */
@@ -103,8 +103,7 @@ static uint16_t  g_thetad[THETAD_WORDS];   /* THETAD, raw words, 2^15 = 1 rev */
  *
  * FUNCTION NAME: agc_erase_modreg
  *
- * RETURNS: agc_sp_t -- MODREG, unscaled integer (0 after an assertion
- *          report)
+ * RETURNS: agc_sp_t -- MODREG, unscaled integer
  **********************************************************************/
 agc_sp_t agc_erase_modreg(void)
 {
@@ -133,8 +132,7 @@ void agc_erase_set_modreg(agc_sp_t v)
  *
  * FUNCTION NAME: agc_erase_piptime
  *
- * RETURNS: agc_dp_t -- PIPTIME, cs, scale 2^28 (0 after an assertion
- *          report)
+ * RETURNS: agc_dp_t -- PIPTIME, cs, scale 2^28
  **********************************************************************/
 agc_dp_t agc_erase_piptime(void)
 {
@@ -163,7 +161,7 @@ void agc_erase_set_piptime(agc_dp_t v)
  *
  * FUNCTION NAME: agc_erase_tig
  *
- * RETURNS: agc_dp_t -- TIG, cs, scale 2^28 (0 after an assertion report)
+ * RETURNS: agc_dp_t -- TIG, cs, scale 2^28
  **********************************************************************/
 agc_dp_t agc_erase_tig(void)
 {
@@ -192,8 +190,7 @@ void agc_erase_set_tig(agc_dp_t v)
  *
  * FUNCTION NAME: agc_erase_ttogo
  *
- * RETURNS: agc_dp_t -- TTOGO, cs, scale 2^28 (0 after an assertion
- *          report)
+ * RETURNS: agc_dp_t -- TTOGO, cs, scale 2^28
  **********************************************************************/
 agc_dp_t agc_erase_ttogo(void)
 {
@@ -222,7 +219,7 @@ void agc_erase_set_ttogo(agc_dp_t v)
  *
  * FUNCTION NAME: agc_erase_tgo
  *
- * RETURNS: agc_dp_t -- TGO, cs, scale 2^28 (0 after an assertion report)
+ * RETURNS: agc_dp_t -- TGO, cs, scale 2^28
  **********************************************************************/
 agc_dp_t agc_erase_tgo(void)
 {
@@ -251,7 +248,7 @@ void agc_erase_set_tgo(agc_dp_t v)
  *
  * FUNCTION NAME: agc_erase_ttpi
  *
- * RETURNS: agc_dp_t -- TTPI, cs, scale 2^28 (0 after an assertion report)
+ * RETURNS: agc_dp_t -- TTPI, cs, scale 2^28
  **********************************************************************/
 agc_dp_t agc_erase_ttpi(void)
 {
@@ -280,8 +277,7 @@ void agc_erase_set_ttpi(agc_dp_t v)
  *
  * FUNCTION NAME: agc_erase_tevent
  *
- * RETURNS: agc_dp_t -- TEVENT, cs, scale 2^28 (0 after an assertion
- *          report)
+ * RETURNS: agc_dp_t -- TEVENT, cs, scale 2^28
  **********************************************************************/
 agc_dp_t agc_erase_tevent(void)
 {
@@ -310,8 +306,7 @@ void agc_erase_set_tevent(agc_dp_t v)
  *
  * FUNCTION NAME: agc_erase_tetcsm
  *
- * RETURNS: agc_dp_t -- TETCSM, cs, scale 2^28 (0 after an assertion
- *          report)
+ * RETURNS: agc_dp_t -- TETCSM, cs, scale 2^28
  **********************************************************************/
 agc_dp_t agc_erase_tetcsm(void)
 {
@@ -340,8 +335,7 @@ void agc_erase_set_tetcsm(agc_dp_t v)
  *
  * FUNCTION NAME: agc_erase_tetlem
  *
- * RETURNS: agc_dp_t -- TETLEM, cs, scale 2^28 (0 after an assertion
- *          report)
+ * RETURNS: agc_dp_t -- TETLEM, cs, scale 2^28
  **********************************************************************/
 agc_dp_t agc_erase_tetlem(void)
 {
@@ -370,8 +364,7 @@ void agc_erase_set_tetlem(agc_dp_t v)
  *
  * FUNCTION NAME: agc_erase_rn
  *
- * RETURNS: agc_vec_t -- RN, m, scale 2^29 earth / 2^27 moon (zero after
- *          an assertion report)
+ * RETURNS: agc_vec_t -- RN, m, scale 2^29 earth / 2^27 moon
  **********************************************************************/
 agc_vec_t agc_erase_rn(void)
 {
@@ -400,8 +393,7 @@ void agc_erase_set_rn(agc_vec_t v)
  *
  * FUNCTION NAME: agc_erase_vn
  *
- * RETURNS: agc_vec_t -- VN, m/cs, scale 2^7 earth / 2^5 moon (zero after
- *          an assertion report)
+ * RETURNS: agc_vec_t -- VN, m/cs, scale 2^7 earth / 2^5 moon
  **********************************************************************/
 agc_vec_t agc_erase_vn(void)
 {
@@ -431,8 +423,7 @@ void agc_erase_set_vn(agc_vec_t v)
  *
  * FUNCTION NAME: agc_erase_rrectcsm
  *
- * RETURNS: agc_vec_t -- RRECTCSM, m, scale 2^29 earth / 2^27 moon (zero
- *          after an assertion report)
+ * RETURNS: agc_vec_t -- RRECTCSM, m, scale 2^29 earth / 2^27 moon
  **********************************************************************/
 agc_vec_t agc_erase_rrectcsm(void)
 {
@@ -461,8 +452,7 @@ void agc_erase_set_rrectcsm(agc_vec_t v)
  *
  * FUNCTION NAME: agc_erase_vrectcsm
  *
- * RETURNS: agc_vec_t -- VRECTCSM, m/cs, scale 2^7 earth / 2^5 moon (zero
- *          after an assertion report)
+ * RETURNS: agc_vec_t -- VRECTCSM, m/cs, scale 2^7 earth / 2^5 moon
  **********************************************************************/
 agc_vec_t agc_erase_vrectcsm(void)
 {
@@ -492,8 +482,7 @@ void agc_erase_set_vrectcsm(agc_vec_t v)
  *
  * FUNCTION NAME: agc_erase_rrectlem
  *
- * RETURNS: agc_vec_t -- RRECTLEM, m, scale 2^29 earth / 2^27 moon (zero
- *          after an assertion report)
+ * RETURNS: agc_vec_t -- RRECTLEM, m, scale 2^29 earth / 2^27 moon
  **********************************************************************/
 agc_vec_t agc_erase_rrectlem(void)
 {
@@ -522,8 +511,7 @@ void agc_erase_set_rrectlem(agc_vec_t v)
  *
  * FUNCTION NAME: agc_erase_vrectlem
  *
- * RETURNS: agc_vec_t -- VRECTLEM, m/cs, scale 2^7 earth / 2^5 moon (zero
- *          after an assertion report)
+ * RETURNS: agc_vec_t -- VRECTLEM, m/cs, scale 2^7 earth / 2^5 moon
  **********************************************************************/
 agc_vec_t agc_erase_vrectlem(void)
 {
@@ -553,8 +541,7 @@ void agc_erase_set_vrectlem(agc_vec_t v)
  *
  * FUNCTION NAME: agc_erase_delv
  *
- * RETURNS: agc_vec_t -- DELV, PIPA pulses, scale 2^14 (zero after an
- *          assertion report)
+ * RETURNS: agc_vec_t -- DELV, PIPA pulses, scale 2^14
  **********************************************************************/
 agc_vec_t agc_erase_delv(void)
 {
@@ -583,8 +570,7 @@ void agc_erase_set_delv(agc_vec_t v)
  *
  * FUNCTION NAME: agc_erase_vgtig
  *
- * RETURNS: agc_vec_t -- VGTIG, m/cs, scale 2^7 (zero after an assertion
- *          report)
+ * RETURNS: agc_vec_t -- VGTIG, m/cs, scale 2^7
  **********************************************************************/
 agc_vec_t agc_erase_vgtig(void)
 {
@@ -613,8 +599,7 @@ void agc_erase_set_vgtig(agc_vec_t v)
  *
  * FUNCTION NAME: agc_erase_rls
  *
- * RETURNS: agc_vec_t -- RLS, m, scale 2^27 (zero after an assertion
- *          report)
+ * RETURNS: agc_vec_t -- RLS, m, scale 2^27
  **********************************************************************/
 agc_vec_t agc_erase_rls(void)
 {
@@ -643,8 +628,7 @@ void agc_erase_set_rls(agc_vec_t v)
  *
  * FUNCTION NAME: agc_erase_refsmmat
  *
- * RETURNS: agc_mat_t -- REFSMMAT, scale 2^1 (zero after an assertion
- *          report)
+ * RETURNS: agc_mat_t -- REFSMMAT, scale 2^1
  **********************************************************************/
 agc_mat_t agc_erase_refsmmat(void)
 {
@@ -673,8 +657,7 @@ void agc_erase_set_refsmmat(agc_mat_t v)
  *
  * FUNCTION NAME: agc_erase_tephem
  *
- * RETURNS: agc_tp_t -- TEPHEM, cs, TP scale 2^42 (0 after an assertion
- *          report)
+ * RETURNS: agc_tp_t -- TEPHEM, cs, TP scale 2^42
  **********************************************************************/
 agc_tp_t agc_erase_tephem(void)
 {
@@ -703,8 +686,7 @@ void agc_erase_set_tephem(agc_tp_t v)
  *
  * FUNCTION NAME: agc_erase_csmmass
  *
- * RETURNS: agc_sp_t -- CSMMASS, kg, scale 2^16 (0 after an assertion
- *          report)
+ * RETURNS: agc_sp_t -- CSMMASS, kg, scale 2^16
  **********************************************************************/
 agc_sp_t agc_erase_csmmass(void)
 {
@@ -733,8 +715,7 @@ void agc_erase_set_csmmass(agc_sp_t v)
  *
  * FUNCTION NAME: agc_erase_lemmass
  *
- * RETURNS: agc_sp_t -- LEMMASS, kg, scale 2^16 (0 after an assertion
- *          report)
+ * RETURNS: agc_sp_t -- LEMMASS, kg, scale 2^16
  **********************************************************************/
 agc_sp_t agc_erase_lemmass(void)
 {
@@ -763,8 +744,7 @@ void agc_erase_set_lemmass(agc_sp_t v)
  *
  * FUNCTION NAME: agc_erase_pipax
  *
- * RETURNS: agc_sp_t -- PIPAX, unscaled pulses (0 after an assertion
- *          report)
+ * RETURNS: agc_sp_t -- PIPAX, unscaled pulses
  **********************************************************************/
 agc_sp_t agc_erase_pipax(void)
 {
@@ -793,8 +773,7 @@ void agc_erase_set_pipax(agc_sp_t v)
  *
  * FUNCTION NAME: agc_erase_pipay
  *
- * RETURNS: agc_sp_t -- PIPAY, unscaled pulses (0 after an assertion
- *          report)
+ * RETURNS: agc_sp_t -- PIPAY, unscaled pulses
  **********************************************************************/
 agc_sp_t agc_erase_pipay(void)
 {
@@ -823,8 +802,7 @@ void agc_erase_set_pipay(agc_sp_t v)
  *
  * FUNCTION NAME: agc_erase_pipaz
  *
- * RETURNS: agc_sp_t -- PIPAZ, unscaled pulses (0 after an assertion
- *          report)
+ * RETURNS: agc_sp_t -- PIPAZ, unscaled pulses
  **********************************************************************/
 agc_sp_t agc_erase_pipaz(void)
 {
@@ -853,8 +831,7 @@ void agc_erase_set_pipaz(agc_sp_t v)
  *
  * FUNCTION NAME: agc_erase_cdux
  *
- * RETURNS: uint16_t -- CDUX, raw word, 2^15 = 1 rev (0 after an assertion
- *          report)
+ * RETURNS: uint16_t -- CDUX, raw word, 2^15 = 1 rev
  **********************************************************************/
 uint16_t agc_erase_cdux(void)
 {
@@ -883,8 +860,7 @@ void agc_erase_set_cdux(uint16_t v)
  *
  * FUNCTION NAME: agc_erase_cduy
  *
- * RETURNS: uint16_t -- CDUY, raw word, 2^15 = 1 rev (0 after an assertion
- *          report)
+ * RETURNS: uint16_t -- CDUY, raw word, 2^15 = 1 rev
  **********************************************************************/
 uint16_t agc_erase_cduy(void)
 {
@@ -913,8 +889,7 @@ void agc_erase_set_cduy(uint16_t v)
  *
  * FUNCTION NAME: agc_erase_cduz
  *
- * RETURNS: uint16_t -- CDUZ, raw word, 2^15 = 1 rev (0 after an assertion
- *          report)
+ * RETURNS: uint16_t -- CDUZ, raw word, 2^15 = 1 rev
  **********************************************************************/
 uint16_t agc_erase_cduz(void)
 {
@@ -943,8 +918,7 @@ void agc_erase_set_cduz(uint16_t v)
  *
  * FUNCTION NAME: agc_erase_cdut
  *
- * RETURNS: uint16_t -- CDUT, raw word, 2^15 = 1 rev (0 after an assertion
- *          report)
+ * RETURNS: uint16_t -- CDUT, raw word, 2^15 = 1 rev
  **********************************************************************/
 uint16_t agc_erase_cdut(void)
 {
@@ -973,8 +947,7 @@ void agc_erase_set_cdut(uint16_t v)
  *
  * FUNCTION NAME: agc_erase_cdus
  *
- * RETURNS: uint16_t -- CDUS, raw word, 2^15 = 1 rev (0 after an assertion
- *          report)
+ * RETURNS: uint16_t -- CDUS, raw word, 2^15 = 1 rev
  **********************************************************************/
 uint16_t agc_erase_cdus(void)
 {
@@ -1003,7 +976,7 @@ void agc_erase_set_cdus(uint16_t v)
  *
  * FUNCTION NAME: agc_erase_markstat
  *
- * RETURNS: uint16_t -- MARKSTAT, bit word (0 after an assertion report)
+ * RETURNS: uint16_t -- MARKSTAT, bit word
  **********************************************************************/
 uint16_t agc_erase_markstat(void)
 {
@@ -1032,7 +1005,7 @@ void agc_erase_set_markstat(uint16_t v)
  *
  * FUNCTION NAME: agc_erase_imodes30
  *
- * RETURNS: uint16_t -- IMODES30, bit word (0 after an assertion report)
+ * RETURNS: uint16_t -- IMODES30, bit word
  **********************************************************************/
 uint16_t agc_erase_imodes30(void)
 {
@@ -1061,7 +1034,7 @@ void agc_erase_set_imodes30(uint16_t v)
  *
  * FUNCTION NAME: agc_erase_imodes33
  *
- * RETURNS: uint16_t -- IMODES33, bit word (0 after an assertion report)
+ * RETURNS: uint16_t -- IMODES33, bit word
  **********************************************************************/
 uint16_t agc_erase_imodes33(void)
 {
@@ -1090,7 +1063,7 @@ void agc_erase_set_imodes33(uint16_t v)
  *
  * FUNCTION NAME: agc_erase_dapdatr1
  *
- * RETURNS: uint16_t -- DAPDATR1, bit word (0 after an assertion report)
+ * RETURNS: uint16_t -- DAPDATR1, bit word
  **********************************************************************/
 uint16_t agc_erase_dapdatr1(void)
 {
@@ -1119,7 +1092,7 @@ void agc_erase_set_dapdatr1(uint16_t v)
  *
  * FUNCTION NAME: agc_erase_dapdatr2
  *
- * RETURNS: uint16_t -- DAPDATR2, bit word (0 after an assertion report)
+ * RETURNS: uint16_t -- DAPDATR2, bit word
  **********************************************************************/
 uint16_t agc_erase_dapdatr2(void)
 {
@@ -1153,8 +1126,7 @@ void agc_erase_set_dapdatr2(uint16_t v)
  *   --------  ----------  ---  ------------------------------------
  *   index     int         I    word offset 0..11
  *
- * RETURNS: uint16_t -- DSPTAB +index, relay bit words (0 after an
- *          assertion report)
+ * RETURNS: uint16_t -- DSPTAB +index, relay bit words
  **********************************************************************/
 uint16_t agc_erase_dsptab(int index)
 {
@@ -1189,8 +1161,7 @@ void agc_erase_set_dsptab(int index, uint16_t v)
  *   --------  ----------  ---  ------------------------------------
  *   index     int         I    word offset 0..2
  *
- * RETURNS: uint16_t -- FAILREG +index, octal alarm codes (0 after an
- *          assertion report)
+ * RETURNS: uint16_t -- FAILREG +index, octal alarm codes
  **********************************************************************/
 uint16_t agc_erase_failreg(int index)
 {
@@ -1227,8 +1198,7 @@ void agc_erase_set_failreg(int index, uint16_t v)
  *   --------  ----------  ---  ------------------------------------
  *   index     int         I    word offset 0..2
  *
- * RETURNS: uint16_t -- THETAD +index, raw words, 2^15 = 1 rev (0 after an
- *          assertion report)
+ * RETURNS: uint16_t -- THETAD +index, raw words, 2^15 = 1 rev
  **********************************************************************/
 uint16_t agc_erase_thetad(int index)
 {

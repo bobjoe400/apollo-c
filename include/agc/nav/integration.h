@@ -159,6 +159,7 @@ void agc_integ_perm_set(agc_vehicle_t veh, const agc_integ_sv_t *in);
 /* Lunar potential pad loads used by QUALITY2/3 (SP):
  * E3J22R2M (J22 term, B61 x R^4 product) and E32C31RM (C31 term).       */
 void agc_integ_set_lunar_coeffs(agc_sp_t e3j22r2m, agc_sp_t e32c31rm);
+void agc_integ_get_lunar_coeffs(agc_sp_t *e3j22r2m, agc_sp_t *e32c31rm);
 
 /* ---- INTSTALL lock (p. 1324-1326) ----------------------------------- */
 /* INTSTALL (area 0), ERASTAL1 (1), ERASTAL2 (2; CM only). OK: the area is

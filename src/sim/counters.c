@@ -44,11 +44,20 @@
  *   zero; at +-0 nothing changes and ZOUT is sent, else POUT / MOUT, as
  *   packets 0200 | addr = 017 / 015 / 016); 5 SHINC, 6 SHANC (shift left
  *   in 14 bits, bring in 0 / 1).
- *   DEVIATION: yaAGC paces CDUX-CDUZ PCDU/MCDU through a FIFO (400 or
- *   6400 counts a second); here each increment is applied when its
- *   packet arrives. Counters owned by the harness (TIME1-TIME6) and the
- *   drives it empties itself (GYROCMD, CDUxCMD, channels.c) take no
- *   increments.
+ *   CDUX-CDUZ PCDU/MCDU go through a FIFO per CDU, as in yaAGC
+ *   (PushCduFifo / ServiceCduFifo): runs of one type (slow or fast, up
+ *   or down) in arrival order, at most 128 runs (a count that would need
+ *   a 129th is dropped), applied at the CDU's own rate, 400 counts a
+ *   second slow (types 1, 3) and 6400 fast (021, 023). A peripheral may
+ *   send counts faster than that (the LM Simulator sends a coarse-align
+ *   gimbal step at once); the AGC then sees its CDUs lag the gimbals, as
+ *   COARS's CHKCORS does under yaAGC (closed-loop-fixes S-L2).
+ *   DEVIATION (pacing grain): the FIFO is served once per centisecond
+ *   (sim_counters_tick) with a budget of 64 fast counts (or 4 slow, a
+ *   slow count costing 16), where yaAGC serves it every 213 (13) machine
+ *   cycles; the rate is the same, a count lands up to 10 ms later.
+ *   Counters owned by the harness (TIME1-TIME6) and the drives it
+ *   empties itself (GYROCMD, CDUxCMD, channels.c) take no increments.
  *
  * ALGORITHM:
  *   word = the counter as a 15-bit word; step it as yaAGC does; store.
@@ -90,6 +99,27 @@
 #define W_NEG0       077777u /* -0                                     */
 #define W_SIGN       040000u /* sign bit                               */
 #define W_SHIFT_MASK 037777u /* SHINC / SHANC keep 14 bits             */
+#define CDU_FIFOS    3       /* CDUX-CDUZ (yaAGC NUM_CDU_FIFOS)        */
+#define CDU_RUNS     128     /* yaAGC MAX_CDU_FIFO_ENTRIES             */
+#define CDU_BUDGET   64u     /* fast counts per cs: 6400 a second      */
+#define CDU_COST_SLW 16u     /* a slow count: 400 a second = 64 / 16   */
+
+/* One FIFO entry: a run of counts of one type (yaAGC Counts[i]).          */
+typedef struct cdu_run
+{
+    uint16_t type;  /* INC_PCDU / INC_MCDU, | INC_FAST for the fast rate */
+    uint32_t count; /* counts still to apply                           */
+} cdu_run_t;
+
+/* A CDU's FIFO (yaAGC CduFifo_t): a ring of runs.                         */
+typedef struct cdu_fifo
+{
+    int       head;          /* index of the run being applied */
+    int       size;          /* runs queued                    */
+    cdu_run_t run[CDU_RUNS]; /* the runs, oldest at head       */
+} cdu_fifo_t;
+
+static cdu_fifo_t g_cdu_fifo[CDU_FIFOS]; /* CDUX, CDUY, CDUZ */
 
 /**********************************************************************
  * AGC: none -- yaAGC CounterDINC: the step and the output it emits.
@@ -330,6 +360,74 @@ static void counter_write(uint16_t addr, uint16_t w)
 } /* counter_write */
 
 /**********************************************************************
+ * AGC: none -- yaAGC PushCduFifo: queue one PCDU / MCDU of a CDU; a
+ * count of the type of the last run extends it, another type opens a
+ * run, and with all CDU_RUNS runs in use the count is dropped.
+ *
+ * ARGUMENTS:
+ *   cdu   int       I  0 CDUX, 1 CDUY, 2 CDUZ
+ *   type  uint16_t  I  1, 3, 021 or 023
+ **********************************************************************/
+static void cdu_push(int cdu, uint16_t type)
+{
+    cdu_fifo_t *f    = &g_cdu_fifo[cdu];                              /* this CDU's FIFO */
+    int         last = (f->head + f->size - 1 + CDU_RUNS) % CDU_RUNS; /* newest run */
+
+    if (f->size > 0 && f->run[last].type == type)
+    {
+        f->run[last].count++;
+    }
+    else if (f->size < CDU_RUNS)
+    {
+        last         = (f->head + f->size) % CDU_RUNS;
+        f->run[last] = (cdu_run_t) {type, 1u};
+        f->size++;
+    }
+    else
+    {
+        /* FIFO full: yaAGC drops the count */
+    }
+}
+
+/**********************************************************************
+ * AGC: none -- yaAGC ServiceCduFifo for one centisecond: apply the
+ * queued counts of each CDU at 6400 a second (fast) or 400 (slow).
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+void sim_counters_tick(void)
+{
+    for (int cdu = 0; cdu < CDU_FIFOS; cdu++)
+    {
+        cdu_fifo_t *f      = &g_cdu_fifo[cdu];                       /* this CDU's FIFO */
+        uint32_t    budget = CDU_BUDGET;                             /* fast counts left in this cs */
+        uint16_t    addr   = (uint16_t) (CTR_CDUX + (uint16_t) cdu); /* CDUX + cdu */
+
+        for (uint32_t i = 0; i < CDU_BUDGET && f->size > 0; i++)
+        {
+            cdu_run_t *r    = &f->run[f->head];                                 /* oldest run */
+            uint32_t   cost = ((r->type & INC_FAST) != 0u) ? 1u : CDU_COST_SLW; /* fast or slow count */
+            uint16_t   w    = 0;                                                /* the CDU word */
+
+            if (budget < cost || !counter_read(addr, &w))
+            {
+                break;
+            }
+
+            budget -= cost;
+            counter_write(addr, word_step(w, (uint16_t) (r->type & ~INC_FAST)));
+            r->count--;
+
+            if (r->count == 0u)
+            {
+                f->head = (f->head + 1) % CDU_RUNS;
+                f->size--;
+            }
+        }
+    }
+}
+
+/**********************************************************************
  * AGC: none -- yaAGC UnprogrammedIncrement: one increment of type
  * `type` of the counter at `addr`. The output counters 053-055 take
  * DINC only (the drive pulses a peripheral counts out of them).
@@ -355,6 +453,10 @@ agc_status_t sim_counter_increment(uint16_t addr, uint16_t type)
     else if (!counter_read(addr, &w) || (output && t != INC_DINC))
     {
         st = AGC_STATUS_NOT_FOUND; /* timers, drives the harness empties, unmapped */
+    }
+    else if (addr >= CTR_CDUX && addr < CTR_CDUX + CDU_FIFOS && (t == INC_PCDU || t == INC_MCDU))
+    {
+        cdu_push((int) (addr - CTR_CDUX), type);
     }
     else if (t == INC_DINC)
     {

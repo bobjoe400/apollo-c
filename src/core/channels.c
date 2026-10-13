@@ -16,6 +16,8 @@
  *   Name          Type      I/O  Scale          Description
  *   ------------  --------  ---  -------------  ----------------------
  *   g_chan        uint16_t  I/O  bit words      channel 0..037 image
+ *   g_wlog        struct    I/O  words          the last WRITE/WOR/WAND
+ *                                                (channel, word after it)
  *
  * EXTERNAL REFERENCES:
  *   none
@@ -51,7 +53,18 @@
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 
-static uint16_t g_chan[AGC_CHAN_COUNT]; /* channel image, 15-bit words */
+/* The program's channel writes in order, for the simulator's peripheral
+ * packets (yaAGC sends one per WRITE, WOR, WAND: ChannelOutput).        */
+typedef struct chan_wlog
+{
+    uint16_t chan[AGC_CHAN_WLOG_MAX];  /* channel written            */
+    uint16_t value[AGC_CHAN_WLOG_MAX]; /* its word after the write    */
+    int      head;                     /* oldest unread entry         */
+    int      size;                     /* unread entries              */
+} chan_wlog_t;
+
+static uint16_t    g_chan[AGC_CHAN_COUNT]; /* channel image, 15-bit words */
+static chan_wlog_t g_wlog;                 /* writes not yet read          */
 
 /**********************************************************************
  * AGC: none (helper; INPUT_OUTPUT_CHANNEL_BIT_DESCRIPTIONS L p. 54:
@@ -144,6 +157,9 @@ static bool chan_input(int chan)
  **********************************************************************/
 void agc_chan_reset(void)
 {
+    g_wlog.head = 0;
+    g_wlog.size = 0;
+
     for (int i = 0; i < AGC_CHAN_COUNT; i++)
     {
         g_chan[i] = 0u;
@@ -171,6 +187,65 @@ void agc_chan_reset(void)
 uint16_t agc_chan_read(int chan)
 {
     return (g_chan[chan]);
+}
+
+/**********************************************************************
+ * AGC: none (simulator: a write pulse on the channel) -- record a
+ *      WRITE, WOR or WAND with the channel's word after it; when the
+ *      ring is full the oldest entry is dropped (a host that does not
+ *      read the log loses nothing it uses).
+ *
+ * FUNCTION NAME: wlog_add
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  ------------------------------------------
+ *   chan      int   I    channel written
+ **********************************************************************/
+static void wlog_add(int chan)
+{
+    if (g_wlog.size == AGC_CHAN_WLOG_MAX)
+    {
+        g_wlog.head = (g_wlog.head + 1) % AGC_CHAN_WLOG_MAX; /* drop the oldest */
+        g_wlog.size--;
+    }
+
+    int i = (g_wlog.head + g_wlog.size) % AGC_CHAN_WLOG_MAX; /* the new entry */
+
+    g_wlog.chan[i]  = (uint16_t) chan;
+    g_wlog.value[i] = g_chan[chan];
+    g_wlog.size++;
+}
+
+/**********************************************************************
+ * AGC: none (simulator: yaAGC ChannelOutput) -- the oldest program
+ *      write not yet read: a peripheral sees every WRITE, WOR and WAND
+ *      as a packet, in order, even one that leaves the word unchanged
+ *      (the LM Simulator fires its jets from those repeats).
+ *
+ * FUNCTION NAME: agc_chan_next_write
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  --------------------------------------
+ *   chan      uint16_t *  O    channel written
+ *   value     uint16_t *  O    its 15-bit word after the write
+ *
+ * RETURNS: bool -- false when every write has been read
+ **********************************************************************/
+bool agc_chan_next_write(uint16_t *chan, uint16_t *value)
+{
+    bool any = g_wlog.size > 0; /* a write is waiting */
+
+    if (any)
+    {
+        *chan       = g_wlog.chan[g_wlog.head];
+        *value      = g_wlog.value[g_wlog.head];
+        g_wlog.head = (g_wlog.head + 1) % AGC_CHAN_WLOG_MAX;
+        g_wlog.size--;
+    }
+
+    return (any);
 }
 
 /**********************************************************************
@@ -205,6 +280,8 @@ void agc_chan_write(int chan, uint16_t value)
     {
         g_chan[chan] = value;
     }
+
+    wlog_add(chan);
 }
 
 /**********************************************************************
@@ -228,6 +305,8 @@ void agc_chan_or(int chan, uint16_t mask)
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] | mask);
     }
+
+    wlog_add(chan);
 }
 
 /**********************************************************************
@@ -256,6 +335,8 @@ void agc_chan_and(int chan, uint16_t mask)
     {
         g_chan[chan] = (uint16_t) (g_chan[chan] & mask);
     }
+
+    wlog_add(chan);
 }
 
 /**********************************************************************

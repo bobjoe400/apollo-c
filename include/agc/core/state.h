@@ -106,7 +106,7 @@ void agc_sv_set(agc_vehicle_sv_t which, const agc_state_vector_t *in);
 /* ---- shared erasables: agc_erase_<agcname>() / agc_erase_set_<agcname>() --
  * Names follow the AGC erasable name, lower case. Values are held exactly as
  * the AGC holds them (scale factors in the comments, from the AGC text).
- * Setters ignore (and AGC_ASSERT-report) out-of-range values. Everything not
+ * The accessors hold no checks (callers pass the AGC's values). Everything not
  * listed here is module-private to the module that owns it; see
  * docs/modules/state-flags.md for the full name -> accessor/owner table. */
 

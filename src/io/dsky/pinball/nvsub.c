@@ -489,7 +489,7 @@ static agc_status_t pin_nvsub1(uint16_t nvtemp)
 
     st = pin_entpas0();
 
-    return ((st == PIN_STATUS_RECYCLE) ? pin_enter() : st); /* ALMCYCLE  */
+    return (pin_recycle(st) ? pin_enter() : st); /* ALMCYCLE  */
 } /* pin_nvsub1 */
 
 /**********************************************************************

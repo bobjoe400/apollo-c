@@ -754,15 +754,23 @@ static void dndump2(void)
 /* ---- public ------------------------------------------------------------ */
 
 /**********************************************************************
- * AGC: none -- DODOWNTM (DOWNRUPT, every 20 ms): word order code to 1, then the phase
- * in DNTMGOTO.
+ * AGC: none -- DODOWNTM (DOWNRUPT, every 20 ms): word order code to 1 (LM
+ * WOTEST: only when it is 0), then the phase in DNTMGOTO.
  *
  * RETURNS: AGC_STATUS_OK, or the list lookup / image status; BAD_ARG for
  *          a bad DNTMGOTO
  **********************************************************************/
 agc_status_t agc_telem_downrupt(void)
 {
-    agc_chan_or((int) AGC_CHAN_CHAN13, (uint16_t) BIT7); /* WOTEST/WO1 */
+    /* Comanche (C p.1096): CA BIT7, EXTEND, WOR CHAN13 on every DOWNRUPT.
+     * Luminary WOTEST / WO1 (L p.997): only when the bit is 0. A channel
+     * write is a packet to every peripheral, so the difference shows.  */
+    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM; /* Luminary WOTEST */
+
+    if (!lm || (agc_chan_read((int) AGC_CHAN_CHAN13) & BIT7) == 0u)
+    {
+        agc_chan_or((int) AGC_CHAN_CHAN13, (uint16_t) BIT7); /* WO1: EXTEND, WOR CHAN13 */
+    }
 
     switch (dntmgoto)
     {

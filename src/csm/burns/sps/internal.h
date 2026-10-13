@@ -58,5 +58,6 @@ agc_status_t agc_csm_preburn_start_clock(agc_job_ctx_t *ctx); /* P40S/RS       *
 void         agc_csm_convert_vg_body(agc_interp_t *ip);       /* P40CNV85      */
 agc_status_t agc_csm_preptvc(void);                           /* PREPTVC       */
 agc_status_t agc_csm_vtogain_body(agc_interp_t *ip);          /* S40.9 to COPY40.9 */
+agc_status_t agc_csm_preburn_call_tigblnk(agc_dp_t dt);       /* P40SET        */
 
 #endif /* SPS_BURN_INTERNAL_H */

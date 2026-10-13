@@ -509,11 +509,6 @@ static agc_status_t as_exitvr(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         agc_lm_asc()->txo = agc_dp_add(ip, agc_erase_piptime(), AS_10SECS);
     }
 
-    if (!AGC_ASSERT(!agc_flag_test(AGC_FLAG_FLVR)))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (as_mainline(ctx, ip));
 }
 
@@ -681,11 +676,6 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
         /* CHECKALT / CHECKYAW / KEEPVR (pp. 850-852): below 25,000 ft keep the
          * vertical rise until the line of sight is within 5 degrees of the
          * YZ plane or RDOT exceeds 40 ft/s. */
-        if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLVR))) /* in the vertical rise */
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
-
         agc_lm_asc_t *a_checkalt = agc_lm_asc();                                                                        /* ascent erasables */
         agc_guid_t   *g_checkalt = agc_guid_state();                                                                    /* guidance state */
         agc_dp_t      h          = agc_dp_sub(ip, agc_dp_sub(ip, a_checkalt->r_mag, agc_lm_ldg()->land_mag), AS_25KFT); /* /R/MAG - /LAND/ - 25KFT, 2^24 m */
@@ -837,11 +827,6 @@ static agc_status_t as_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t nou
 agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx)
 {
     agc_flag_set(AGC_FLAG_FLRCS);
-
-    if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLRCS))) /* RCS trim mode */
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
 
     return (agc_lm_job_cutoff_display(ctx));
 }

@@ -68,6 +68,7 @@ static void      test_pipa_zero_comp(void);
 static void      test_dcm_round_trip(void);
 static void      test_delcomp_zero(void);
 static void      test_gyro_pulse(void);
+static void      test_gyro_pulse_loaded_angles(void);
 static void      test_kalc_compute(void);
 static void      test_vecpoint(void);
 static void      test_lastbias_pipuse(void);
@@ -94,6 +95,7 @@ int main(void)
     test_dcm_round_trip();
     test_delcomp_zero();
     test_gyro_pulse();
+    test_gyro_pulse_loaded_angles();
     test_kalc_compute();
     test_vecpoint();
     test_pipfree_alarm();
@@ -382,6 +384,27 @@ static void test_gyro_pulse(void)
     agc_imu_gyro_buf_get(AGC_IMU_GBUF_OGC, buf);
     CHECK(buf[1] == 78);                         /* unsent fraction  */
     CHECK(agc_imu_gyros_busy());
+    CHECK(agc_task_strtgyro() == AGC_STATUS_OK); /* Z, X: nothing    */
+    CHECK(!agc_imu_gyros_busy());
+}
+
+/**********************************************************************
+ * AGC: none (test) -- FINEK2 (EXTENDED_VERBS.agc L p.273): the V25N93
+ *      load writes OGC, IGC, MGC and `CAF LGYROBIN / TC IMUPULSE`
+ *      torques by that erasable. One store: the gyro buffer IMUPULSE
+ *      reads is the noun's OGC (closed-loop-fixes L2).
+ **********************************************************************/
+static void test_gyro_pulse_loaded_angles(void)
+{
+    agc_align_ram_t *r = agc_align_ram(); /* alignment erasables (N93 target) */
+
+    r->ogc[0] = 0;
+    r->ogc[1] = 2000 * 128;                      /* IGC: 2000 pulses, rev 2^0 */
+    r->ogc[2] = 0;
+    CHECK(agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_NONE) == AGC_STATUS_OK);
+    CHECK(agc_task_strtgyro() == AGC_STATUS_OK); /* phase Y          */
+    CHECK(agc_imu_gyrocmd() == 2000u);
+    CHECK(r->ogc[1] == 28);                      /* +.215 pulse left */
     CHECK(agc_task_strtgyro() == AGC_STATUS_OK); /* Z, X: nothing    */
     CHECK(!agc_imu_gyros_busy());
 }

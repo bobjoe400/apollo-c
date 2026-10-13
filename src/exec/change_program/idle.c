@@ -204,11 +204,6 @@ agc_status_t agc_job_go_idle_fix(agc_job_ctx_t *ctx)
     agc_dsky_clearmrk();
     agc_erase_set_extvbact(extvbact);
 
-    if (!AGC_ASSERT(agc_erase_extvbact() == extvbact))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
     return (flash_program_request(ctx));
 }
 

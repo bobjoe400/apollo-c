@@ -16,6 +16,8 @@
  *   channel 14    uint16_t   I/O  bits           gyro select, sign,
  *                                                activity, power
  *   IMODES30      uint16_t   I    bits           cage test
+ *   OGC,IGC,MGC   agc_dp_t   I/O  rev 2^0        the OGC buffer
+ *                                                (agc_align_ram()->ogc)
  *
  * EXTERNAL REFERENCES:
  *   Name                  Description
@@ -41,6 +43,10 @@
  *   at 3200 pulses/s (32 pulses per centisecond).  Commands of less than
  *   one pulse are not sent; the unsent fraction of every command stays
  *   in the buffer.
+ *   The OGC buffer is the alignment erasables OGC, IGC, MGC
+ *   (agc_align_ram()->ogc), the words CALCGTA and the noun 93 load
+ *   write: one erasable, as in the AGC (ECADR OGC in A at IMUPULSE).
+ *   GCOMP and ERCOMP are this module's own.
  *   DEVIATION: the AGC keeps the augment count in the major word of the
  *   command buffer while torquing; here it is a module variable and the
  *   buffer holds only the final fraction throughout.
@@ -61,6 +67,7 @@
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"
+#include "agc/programs/alignment.h"
 #include "internal.h"
 
 #define GYROFRAC    ((agc_dp_t) 28) /* 2DEC .215 B-21: .215 pulse, LSBs  */
@@ -85,7 +92,7 @@ typedef struct lgyro_word
     int                phase; /* bits 13-14: 0 Y, 1 Z, 2 X, 3 done */
 } lgyro_word_t;
 
-static agc_dp_t     gbuf[AGC_IMU_GBUF_COUNT][3]; /* OGC, GCOMP, ERCOMP: rev 2^0 */
+static agc_dp_t     gbuf[AGC_IMU_GBUF_COUNT][3]; /* GCOMP, ERCOMP (OGC row unused): rev 2^0 */
 static lgyro_word_t lgyro;                       /* LGYRO                                  */
 static uint16_t     gyrocmd;                     /* GYROCMD hardware counter, pulses    */
 static int          aug_left;                    /* 8192 augments still to come         */
@@ -131,6 +138,23 @@ static agc_status_t waitlist(uint16_t dt, agc_task_id_t task)
 /* ---- buffers and counters ---------------------------------------------- */
 
 /**********************************************************************
+ * AGC: none (ECADR in A at IMUPULSE) -- the three words of a gyro
+ *      command buffer
+ *
+ * OGC is the alignment erasable OGC, IGC, MGC (noun 93, CALCGTA);
+ * GCOMP and ERCOMP are this module's.
+ *
+ * ARGUMENTS:
+ *   buf  agc_imu_gyro_buf_t  I    buffer id
+ *
+ * RETURNS: agc_dp_t * -- X, Y, Z commands, rev 2^0
+ **********************************************************************/
+static agc_dp_t *gyro_words(agc_imu_gyro_buf_t buf)
+{
+    return ((buf == AGC_IMU_GBUF_OGC) ? agc_align_ram()->ogc : gbuf[buf]); /* ECADR OGC / GCOMP / ERCOMP */
+}
+
+/**********************************************************************
  * AGC: none (accessor) -- a six-word gyro command buffer
  *
  * OGC/IGC/MGC (CALCGTA, P52, P53), GCOMP (compensation) or ERCOMP (CM
@@ -146,7 +170,7 @@ void agc_imu_gyro_buf_get(agc_imu_gyro_buf_t buf, agc_dp_t out[3])
 {
     for (int i = 0; i < 3; i++)
     {
-        out[i] = gbuf[buf][i];
+        out[i] = gyro_words(buf)[i];
     }
 }
 
@@ -161,7 +185,7 @@ void agc_imu_gyro_buf_set(agc_imu_gyro_buf_t buf, const agc_dp_t in[3])
 {
     for (int i = 0; i < 3; i++)
     {
-        gbuf[buf][i] = in[i];
+        gyro_words(buf)[i] = in[i];
     }
 }
 
@@ -352,7 +376,7 @@ static agc_status_t torque(int axis, uint16_t select, agc_dp_t cmd)
     uint32_t naug   = pulses >> 13;                                         /* major / 64       */
     uint16_t itemp2 = (uint16_t) (pulses & 017777u);                        /* pulses mod 8192  */
 
-    gbuf[lgyro.buf][axis] = neg ? -frac : frac; /* COM for MAJ- */
+    gyro_words(lgyro.buf)[axis] = neg ? -frac : frac; /* COM for MAJ- */
 
     if (naug >= 2u)
     { /* LONGGYRO         */
@@ -383,7 +407,7 @@ static agc_status_t torque(int axis, uint16_t select, agc_dp_t cmd)
  **********************************************************************/
 static bool gselect(int axis, uint16_t select, agc_status_t *st)
 {
-    agc_dp_t cmd   = gbuf[lgyro.buf][axis];                                           /* DCA 1400, rev 2^0 */
+    agc_dp_t cmd   = gyro_words(lgyro.buf)[axis];                                     /* DCA 1400, rev 2^0 */
     agc_sp_t major = agc_dp_high(cmd);                                                /* RUPTREG1, 128 pulses B0 */
     agc_sp_t minor = agc_dp_low(cmd);                                                 /* RUPTREG2, pulse/128 B0  */
     bool     send  = (major != 0) || (minor > GYROMIN_LSB) || (minor < -GYROMIN_LSB); /* MAJ+ / MAJ-; MIN+/- */

@@ -29,9 +29,9 @@
  *   agc_erase_rn ...      state-vector erasables (erasable.c)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
- *   No AGC alarms. A failed AGC_ASSERT (bad vehicle, flag id not valid
- *   for the vehicle, time >= 2^28) leaves the state unchanged; getters
- *   return 0/false, agc_sv_get/agc_sv_set return AGC_STATUS_BAD_ARG.
+ *   No AGC alarms. The accessors hold no checks: their callers pass the
+ *   AGC's own values (a vehicle from agc_state_init, a flag id of the
+ *   vehicle's enum, a time below 2^28).
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   The flagwords are an array indexed by n, not consecutive erasable
@@ -52,7 +52,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
@@ -99,8 +98,7 @@ void agc_state_init(agc_vehicle_t v)
  *
  * FUNCTION NAME: agc_state_vehicle
  *
- * RETURNS: agc_vehicle_t -- the vehicle given to agc_state_init (CSM
- *          after an assertion report)
+ * RETURNS: agc_vehicle_t -- the vehicle given to agc_state_init
  **********************************************************************/
 agc_vehicle_t agc_state_vehicle(void)
 {
@@ -113,8 +111,7 @@ agc_vehicle_t agc_state_vehicle(void)
  *
  * FUNCTION NAME: agc_time_now_cs
  *
- * RETURNS: uint32_t -- C(TIME2,TIME1), cs, 0..2^28-1 (0 after an
- *          assertion report)
+ * RETURNS: uint32_t -- C(TIME2,TIME1), cs, 0..2^28-1
  **********************************************************************/
 uint32_t agc_time_now_cs(void)
 {
@@ -130,8 +127,7 @@ uint32_t agc_time_now_cs(void)
  * ARGUMENTS:
  *   Argument  Type      I/O  Description (scale)
  *   --------  --------  ---  ---------------------------------------
- *   t_cs      uint32_t  I    new C(TIME2,TIME1), cs, < 2^28 (else
- *                            ignored after an assertion report)
+ *   t_cs      uint32_t  I    new C(TIME2,TIME1), cs, < 2^28
  **********************************************************************/
 void agc_time_set_cs(uint32_t t_cs)
 {
@@ -160,8 +156,7 @@ void agc_time_advance_cs(uint16_t dt_cs)
  *
  * FUNCTION NAME: agc_erase_time1
  *
- * RETURNS: agc_sp_t -- low 14 bits of the count, cs (0 after an
- *          assertion report)
+ * RETURNS: agc_sp_t -- low 14 bits of the count, cs
  **********************************************************************/
 agc_sp_t agc_erase_time1(void)
 {
@@ -173,8 +168,7 @@ agc_sp_t agc_erase_time1(void)
  *
  * FUNCTION NAME: agc_erase_time2
  *
- * RETURNS: agc_sp_t -- high 14 bits of the count, units of 2^14 cs (0
- *          after an assertion report)
+ * RETURNS: agc_sp_t -- high 14 bits of the count, units of 2^14 cs
  **********************************************************************/
 agc_sp_t agc_erase_time2(void)
 {

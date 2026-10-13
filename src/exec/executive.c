@@ -675,7 +675,7 @@ agc_status_t agc_exec_job_wake_as(agc_job_id_t loc, agc_job_id_t new_loc)
  * without starting a job.
  *
  * ARGUMENTS:
- *   vac_index -- VAC area index, 0..4
+ *   vac_index -- (output) the claimed VAC area index, 0..4; -1 when none
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_FULL when every VAC area is in use
  *          (*vac_index = -1)
@@ -893,6 +893,36 @@ agc_status_t agc_job_endofjob(agc_job_ctx_t *ctx)
     }
 
     return (AGC_STATUS_OK);
+}
+
+/**********************************************************************
+ * Restart code continuing as the job in core set 0 (FRESH_START_AND_
+ * RESTART C p.194 / L p.223, GOTOPOOH -> POSTJUMP GOP00FIX). STARTSB2
+ * frees every core set and sets NEWJOB = -0, so the first NOVAC of the
+ * restart (MMDSPLAY's DSPMMJOB) lands in core set 0 and SPECTEST makes
+ * it the current job (NEWJOB = +0, LOC = its start). The restart code
+ * then runs on in that core set: GOP00FIX's ENDIDLE -> JOBSLEEP stores
+ * its own LOC there, so the job NOVAC'd into core set 0 never starts and
+ * the sleeper keeps its priority. Here the C restart code is not a job:
+ * core set 0, when SPECTEST loaded it, takes `job` as its LOC.
+ *
+ * ARGUMENTS:
+ *   job -- the restart code's continuation (AGC_JOB_*)
+ *
+ * RETURNS: bool -- true when core set 0 was the current job and now runs
+ *          `job`; false when core set 0 is free or not current
+ **********************************************************************/
+bool exec_core0_continue_as(agc_job_id_t job)
+{
+    bool current = (newjob == 0) && (core[0].state == AGC_CORE_ACTIVE) && !in_job; /* SPECTEST set core set 0 */
+
+    if (current)
+    {
+        core[0].loc = job; /* JOBSLEEP: TS LOC */
+        core[0].arg = 0;
+    }
+
+    return (current);
 }
 
 /**********************************************************************

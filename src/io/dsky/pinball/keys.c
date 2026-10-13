@@ -441,14 +441,16 @@ agc_status_t pin_enter(void)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_status_t st = PIN_STATUS_RECYCLE; /* status so far */
+    agc_status_t st    = AGC_STATUS_OK; /* status so far */
+    bool         again = true;          /* ALMCYCLE: ENTER again */
 
-    for (int pass = 0; pass < PIN_RECYCLE_MAX && st == PIN_STATUS_RECYCLE; pass++)
+    for (int pass = 0; pass < PIN_RECYCLE_MAX && again; pass++)
     {
-        st = pin_enter_once();
+        st    = pin_enter_once();
+        again = pin_recycle(st);
     }
 
-    if (!AGC_ASSERT(st != PIN_STATUS_RECYCLE))
+    if (!AGC_ASSERT(!again))
     {
         return (AGC_STATUS_OK); /* bound hit: ENDOFJOB    */
     }
@@ -813,7 +815,7 @@ agc_status_t pin_charin(uint8_t code)
 
     agc_status_t st = pin_charin2(code); /* status so far */
 
-    if (!AGC_ASSERT(st != PIN_STATUS_RECYCLE))
+    if (!AGC_ASSERT(!pin_recycle(st)))
     {
         return (AGC_STATUS_BAD_ARG);
     }

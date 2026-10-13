@@ -99,4 +99,8 @@ const ign_table_t *ign_table(void);
  * DISPDEX must already be set (STCLOK1/STCLOK2).                          */
 agc_status_t ign_start_clock(agc_job_id_t restart_job);
 
+/* CALLT-35 (p.734): SAVET-30 = dt35, LONGCALL TIG-35 (POODOO 1204 when
+ * dt35 <= 0), phase 4.25.                                                 */
+agc_status_t ign_call_tig_35(agc_dp_t dt35);
+
 #endif /* IGNITION_INTERNAL_H */

@@ -75,6 +75,12 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/rendezvous.h"
 
+/* Library-internal entry points (src/csm/burns/sps/internal.h and
+ * src/lm/burns/ignition/internal.h; the two cannot share a translation
+ * unit: they include the CSM and the LM flag enums).                      */
+agc_status_t agc_csm_preburn_call_tigblnk(agc_dp_t dt); /* P40SET    */
+agc_status_t ign_call_tig_35(agc_dp_t dt35);            /* CALLT-35  */
+
 #define MU_MOON 4.9027779e12 /* m^3/s^2 (MUM in the AGC)               */
 
 static int g_checks;         /* checks run                    */
@@ -95,6 +101,7 @@ static bool      dsky_shows(int verb, int noun, bool flash);
 static void      test_engine_enable_request_csm(void);
 static void      test_engine_fail_csm(void);
 static void      test_engine_enable_request_lm(void);
+static void      test_preburn_late(void);
 
 /**********************************************************************
  * Run the tests.
@@ -115,6 +122,7 @@ int main(void)
     test_engine_enable_request_csm();
     test_engine_fail_csm();
     test_engine_enable_request_lm();
+    test_preburn_late();
     (void) printf("test_guidance: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -555,4 +563,36 @@ static void test_engine_enable_request_lm(void)
     run_jobs();
     CHECK(dsky_shows(99, 40, true));
     CHECK(sleeping_jobs() == 1);
+}
+
+/**********************************************************************
+ * Test 6: P40SET (P40-P47.agc C p.686) and CALLT-35 (BURN_BABY_BURN
+ * L p.734) when MIDTOAV1 finished less than 5 s before TIG - 30: the
+ * LONGCALL delay is zero or negative and the AGC ends in POODOO 1204
+ * (WATLST0- / LONGPOOH), not in a task 1 cs later (closed-loop-fixes,
+ * document wave: burn.c's P40TMP fallback).
+ * AGC: P40SET, CALLT-35
+ *
+ * FUNCTION NAME: test_preburn_late
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_preburn_late(void)
+{
+    agc_power_on(AGC_VEHICLE_CSM);
+    run_jobs();
+    CHECK(agc_csm_preburn_call_tigblnk(400) == AGC_STATUS_POODOO); /* P40TMP = -1 s */
+    CHECK(agc_erase_failreg(0) == 01204u);
+    agc_power_on(AGC_VEHICLE_CSM);
+    run_jobs();
+    CHECK(agc_csm_preburn_call_tigblnk(1500) == AGC_STATUS_OK);    /* P40TMP = 10 s */
+    agc_power_on(AGC_VEHICLE_LM);
+    run_jobs();
+    CHECK(ign_call_tig_35(0) == AGC_STATUS_POODOO);                /* TIG-35 now */
+    CHECK(agc_erase_failreg(0) == 01204u);
+    agc_power_on(AGC_VEHICLE_LM);
+    run_jobs();
+    CHECK(ign_call_tig_35(-100) == AGC_STATUS_POODOO);             /* passed */
 }

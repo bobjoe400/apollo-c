@@ -920,8 +920,7 @@ agc_status_t agc_lm_start_approach_phase(void)
 /**********************************************************************
  * P65START (p. 802): P65, WCHVERT = -2, X-axis override permitted.
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ * RETURNS: agc_status_t -- the status of NEWMODE
  **********************************************************************/
 agc_status_t agc_lm_start_velocity_nulling(void)
 {
@@ -930,17 +929,7 @@ agc_status_t agc_lm_start_velocity_nulling(void)
     agc_lm_ldg()->wchvert = -2;
     agc_flag_clear(AGC_FLAG_XOVINFLG);
 
-    if (st != AGC_STATUS_OK)
-    {
-        return (st);
-    }
-
-    if (!AGC_ASSERT(agc_lm_ldg()->wchvert < 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (AGC_STATUS_OK);
+    return (st);
 }
 
 /**********************************************************************

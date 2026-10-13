@@ -61,6 +61,7 @@ static void     test_downlist_word_counts(void);
 static bool     sublist_ok(agc_vehicle_t v, int ref);
 static void     test_downlist_tables(void);
 static void     test_downrupt_sequence(void);
+static void     test_downrupt_word_order_writes(void);
 static void     test_erasable_dump(void);
 static void     test_loadtime(void);
 static void     test_sgnagree(void);
@@ -92,6 +93,7 @@ int main(void)
     test_downlist_word_counts();
     test_downlist_tables();
     test_downrupt_sequence();
+    test_downrupt_word_order_writes();
     test_erasable_dump();
     test_loadtime();
     test_sgnagree();
@@ -287,6 +289,40 @@ static void test_downrupt_sequence(void)
     agc_telem_restart();
     CHECK(agc_telem_downrupt() == AGC_STATUS_OK);
     CHECK(agc_chan_read(AGC_CHAN_DNTM1) == 077776u);
+}
+
+/**********************************************************************
+ * AGC: none -- WOTEST (DOWN_TELEMETRY_PROGRAM.agc L p.997): DODOWNTM
+ * writes channel 13 (WO1) only when the word order bit is 0, so a
+ * DOWNRUPT in the middle of a list writes no channel 13 at all (each
+ * write is a packet to the peripherals; closed-loop-fixes, ch13 at 50
+ * packets a second against yaAGC's 2.5).
+ **********************************************************************/
+static void test_downrupt_word_order_writes(void)
+{
+    agc_state_init(AGC_VEHICLE_LM);
+    agc_chan_reset();
+    agc_telem_fresh_start();
+    agc_telem_restart();
+    CHECK(agc_telem_downrupt() == AGC_STATUS_OK); /* ID word: WOZERO      */
+    CHECK(agc_telem_downrupt() == AGC_STATUS_OK); /* WO1 sets bit 7       */
+    uint16_t chan   = 0;                          /* channel written */
+    uint16_t value  = 0;                          /* its word */
+    int      writes = 0;                          /* channel 13 writes seen */
+
+    for (int i = 0; i < AGC_CHAN_WLOG_MAX && agc_chan_next_write(&chan, &value); i++)
+    {
+        /* drain the log */
+    }
+
+    CHECK(agc_telem_downrupt() == AGC_STATUS_OK); /* bit 7 already 1      */
+
+    for (int i = 0; i < AGC_CHAN_WLOG_MAX && agc_chan_next_write(&chan, &value); i++)
+    {
+        writes += (chan == AGC_CHAN_CHAN13) ? 1 : 0; /* a channel 13 write */
+    }
+
+    CHECK(writes == 0);
 }
 
 /**********************************************************************

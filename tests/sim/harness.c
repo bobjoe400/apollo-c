@@ -5,8 +5,9 @@
  *   Unit tests of the sim harness (src/sim/ without main.c) against
  *   yaAGC's behaviour: packet format, unprogrammed counter increments,
  *   the scaler-phase timing of TIME6 / T6RUPT, the radar cycle and
- *   RADARUPT, the HANDRUPT traps, the channel 33 latches, and the CDU
- *   drive pacing.
+ *   RADARUPT, the HANDRUPT traps, the channel 33 latches, the CDU
+ *   drive pacing, one packet per output-channel write, and the CDU
+ *   count FIFO.
  *
  * AGC SOURCE:
  *   No AGC routine: virtualagc yaAGC/agc_utilities.c (FormIoPacket,
@@ -26,10 +27,16 @@
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   Exit status 1 when any check fails.
  **********************************************************************/
+#define _POSIX_C_SOURCE 200809L /* POSIX.1-2008: sockets, poll */
+
 #include <stdio.h>
 
+#include <netinet/in.h>
+#include <poll.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #include "../../src/sim/internal.h"
 #include "agc/core/channels.h"
@@ -55,6 +62,10 @@ static void test_radar(void);
 static void test_handrupt(void);
 static void test_channel33(void);
 static void test_cdu_drive(void);
+static void test_output_writes(void);
+static void test_cdu_fifo(void);
+static int  client_connect(int port);
+static int  client_count(int fd, uint16_t chan);
 
 /**********************************************************************
  * AGC: none -- run every test; print the totals.
@@ -71,6 +82,8 @@ int main(void)
     test_time6();
     test_channel33();
     test_cdu_drive();
+    test_output_writes();
+    test_cdu_fifo();
     power_on(AGC_VEHICLE_LM);
     test_radar();
     test_handrupt();
@@ -150,7 +163,7 @@ static void test_packets(void)
 
 /**********************************************************************
  * AGC: none -- UnprogrammedIncrement: PINC/MINC overflow to +-0, the
- * -0 -> +1 step, PCDU/MCDU wrap, SHINC/SHANC in 14 bits, DINC toward
+ * -0 -> +1 step, PCDU/MCDU wrap (CDUT: not paced), SHINC/SHANC in 14 bits, DINC toward
  * zero and holding at zero, refused counters and types.
  *
  * ARGUMENTS: none
@@ -164,9 +177,9 @@ static void test_counters(void)
     CHECK(sim_counter_increment(037, 2) == AGC_STATUS_OK && agc_erase_pipax() == 0);
     agc_erase_set_cdux(NEG0);
     CHECK(sim_counter_increment(032, 0) == AGC_STATUS_OK && agc_erase_cdux() == 1u);
-    agc_erase_set_cdux(077777u);
-    CHECK(sim_counter_increment(032, 1) == AGC_STATUS_OK && agc_erase_cdux() == 0u);
-    CHECK(sim_counter_increment(032, 023) == AGC_STATUS_OK && agc_erase_cdux() == 077777u);
+    agc_erase_set_cdut(077777u);
+    CHECK(sim_counter_increment(035, 1) == AGC_STATUS_OK && agc_erase_cdut() == 0u);
+    CHECK(sim_counter_increment(035, 023) == AGC_STATUS_OK && agc_erase_cdut() == 077777u);
     agc_erase_set_rnrad(020001u);
     CHECK(sim_counter_increment(046, 5) == AGC_STATUS_OK && agc_erase_rnrad() == 2u);
     CHECK(sim_counter_increment(046, 6) == AGC_STATUS_OK && agc_erase_rnrad() == 5u);
@@ -295,4 +308,135 @@ static void test_cdu_drive(void)
     }
 
     CHECK(sim_channels_tick(15) == AGC_STATUS_OK && agc_imu_cducmd(0) == 28);
+}
+
+/**********************************************************************
+ * AGC: none -- a TCP client on 127.0.0.1:port (the peripheral side).
+ *
+ * ARGUMENTS:
+ *   port  int  I  port to connect to
+ *
+ * RETURNS: int -- the socket, -1 when the connection failed
+ **********************************************************************/
+static int client_connect(int port)
+{
+    struct sockaddr_in a  = {0};                             /* server address */
+    int                fd = socket(AF_INET, SOCK_STREAM, 0); /* client socket */
+
+    a.sin_family      = AF_INET;
+    a.sin_port        = htons((uint16_t) port);
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    if (fd >= 0 && connect(fd, (const struct sockaddr *) &a, sizeof (a)) != 0)
+    {
+        (void) close(fd); /* stdlib: connection refused */
+        fd = -1;
+    }
+
+    return (fd);
+}
+
+/**********************************************************************
+ * AGC: none -- read every packet that arrives within 200 ms of the last
+ * one; count those for one channel.
+ *
+ * ARGUMENTS:
+ *   fd    int       I  client socket
+ *   chan  uint16_t  I  channel to count
+ *
+ * RETURNS: int -- packets for chan
+ **********************************************************************/
+static int client_count(int fd, uint16_t chan)
+{
+    int           n   = 0;               /* packets for chan */
+    struct pollfd pfd = {fd, POLLIN, 0}; /* wait for input */
+
+    for (int i = 0; i < 4096 && poll(&pfd, 1, 200) > 0; i++)
+    {
+        uint8_t  p[SIM_PACKET_BYTES]; /* one packet */
+        uint16_t c = 0;               /* its channel */
+        uint16_t v = 0;               /* its value */
+        bool     u = false;           /* its u-bit */
+
+        if (recv(fd, p, SIM_PACKET_BYTES, MSG_WAITALL) != (ssize_t) SIM_PACKET_BYTES)
+        {
+            break;
+        }
+
+        n += (sim_packet_parse(p, &c, &v, &u) && c == chan) ? 1 : 0; /* a packet for chan */
+    }
+
+    return (n);
+}
+
+/**********************************************************************
+ * AGC: none -- yaAGC ChannelOutput on every CpuWriteIO: each write of
+ * channel 5 sends a packet, also one that leaves the value unchanged and
+ * two inside one job (the LM Simulator applies the jets of the packet
+ * before the last one, so it needs every write the DAP makes;
+ * closed-loop-fixes S-L1); a sample with no write sends nothing.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_output_writes(void)
+{
+    int port = 0; /* base port opened */
+
+    for (int base = 27990; base < 28390 && port == 0; base += 100)
+    {
+        port = (sim_socket_open(base) == AGC_STATUS_OK) ? base : 0; /* opened: this base */
+    }
+
+    CHECK(port != 0);
+    int fd = (port != 0) ? client_connect(port) : -1; /* the peripheral */
+
+    CHECK(fd >= 0);
+    sim_socket_poll();                              /* accept: connect update */
+    sim_channels_sync();
+    (void) client_count(fd, 0u);                    /* drain what is there */
+    agc_chan_write((int) AGC_CHAN_PYJETS, 000041u);
+    sim_channels_sync();
+    agc_chan_write((int) AGC_CHAN_PYJETS, 000041u); /* same value again */
+    agc_chan_or((int) AGC_CHAN_PYJETS, 000002u);    /* a second write in the same job */
+    sim_channels_sync();
+    sim_channels_sync();                            /* no write: nothing */
+    CHECK(client_count(fd, (uint16_t) AGC_CHAN_PYJETS) == 3);
+
+    if (fd >= 0)
+    {
+        (void) close(fd); /* stdlib */
+    }
+
+    sim_socket_close();
+}
+
+/**********************************************************************
+ * AGC: none -- yaAGC PushCduFifo / ServiceCduFifo: PCDU / MCDU on
+ * CDUX-CDUZ are applied at 400 counts a second (slow, 4 per cs) or 6400
+ * (fast, 64 per cs), in arrival order (closed-loop-fixes S-L2).
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_cdu_fifo(void)
+{
+    bool ok = true; /* every increment accepted */
+
+    agc_erase_set_cduy(0u);
+
+    for (int i = 0; i < 10; i++)
+    {
+        ok = ok && sim_counter_increment(033, 1) == AGC_STATUS_OK; /* slow PCDU */
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        ok = ok && sim_counter_increment(033, 023) == AGC_STATUS_OK; /* fast MCDU */
+    }
+
+    CHECK(ok && agc_erase_cduy() == 0u);
+    CHECK(sim_channels_tick(100) == AGC_STATUS_OK && agc_erase_cduy() == 4u);
+    CHECK(sim_channels_tick(101) == AGC_STATUS_OK && agc_erase_cduy() == 8u);
+    CHECK(sim_channels_tick(102) == AGC_STATUS_OK && agc_erase_cduy() == (uint16_t) (0100000u - 22u)); /* 2 slow, 32 fast: 10 - 32 */
+    CHECK(sim_channels_tick(103) == AGC_STATUS_OK && agc_erase_cduy() == (uint16_t) (0100000u - 86u)); /* 64 fast more  */
+    CHECK(sim_channels_tick(104) == AGC_STATUS_OK && agc_erase_cduy() == (uint16_t) (0100000u - 90u)); /* the last 4    */
 }

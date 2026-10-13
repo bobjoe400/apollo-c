@@ -563,8 +563,8 @@ static bool parse_args(int argc, char *argv[], sim_opts_t *o)
 static agc_status_t rope_load_default(agc_vehicle_t vehicle, const char *argv0)
 {
     const char *name = (vehicle == AGC_VEHICLE_LM) ? "Luminary099" : "Comanche055"; /* rope of the vehicle */
-    char        path[SIM_PATH_MAX + SIM_ROPE_NAME];                                        /* candidate path */
-    char        exe[SIM_PATH_MAX];                                                     /* executable path */
+    char        path[SIM_PATH_MAX + SIM_ROPE_NAME];                                 /* candidate path */
+    char        exe[SIM_PATH_MAX];                                                  /* executable path */
     ssize_t     n    = readlink("/proc/self/exe", exe, sizeof (exe) - 1u);          /* its length, -1 without /proc */
 
     (void) snprintf(path, sizeof (path), "tools/oracle/ropes/%s.bin", name); /* stdlib: fits */
@@ -608,7 +608,7 @@ static agc_status_t rope_load_default(agc_vehicle_t vehicle, const char *argv0)
  **********************************************************************/
 static agc_status_t load_rope(const sim_opts_t *o, const char *argv0)
 {
-    const char  *name = (o->vehicle == AGC_VEHICLE_LM) ? "LM, Luminary099" : "CSM, Comanche055";               /* banner */
+    const char  *name = (o->vehicle == AGC_VEHICLE_LM) ? "LM, Luminary099" : "CSM, Comanche055";           /* banner */
     agc_status_t st   = (o->core != NULL) ? sim_rope_load(o->core) : rope_load_default(o->vehicle, argv0); /* given or default */
 
     if (st == AGC_STATUS_NOT_FOUND && o->core == NULL)

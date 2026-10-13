@@ -1,0 +1,95 @@
+diff --git a/Orbitersdk/samples/ProjectApollo/CMakeLists.txt b/Orbitersdk/samples/ProjectApollo/CMakeLists.txt
+index 2a55827..3099029 100644
+--- a/Orbitersdk/samples/ProjectApollo/CMakeLists.txt
++++ b/Orbitersdk/samples/ProjectApollo/CMakeLists.txt
+@@ -75,6 +75,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${FINAL_INSTALL_DIR}/Modules/ProjectApollo)
+ # such as MFDs or ProjectApolloConfigurator.
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${FINAL_INSTALL_DIR}/Modules/ProjectApollo)
+ 
++# apollo-c: build the CMC / LGC on the apollo-c C translation instead of yaAGC.
++# Configure with -DAPOLLO_C_DIR=<apollo-c checkout> (empty: stock yaAGC).
++set(APOLLO_C_DIR "" CACHE PATH "apollo-c checkout whose AGC replaces yaAGC (empty: yaAGC)")
++if(APOLLO_C_DIR)
++    set(NASSP_YAAGC_DIR ${NASSP_SOURCE_ROOT}/src_sys/yaAGC)
++    add_subdirectory(${APOLLO_C_DIR}/src/nassp ${CMAKE_BINARY_DIR}/apollo_c_agc)
++    message("[NASSP] AGC: apollo-c at ${APOLLO_C_DIR}")
++endif()
++
+ # Sub-projects are what actually build all our vessels, MFDs, etc.
+ add_subdirectory(Project/PanelSDK)
+ add_subdirectory(Project/ApolloRTCCMFD)
+diff --git a/Orbitersdk/samples/ProjectApollo/Project/LEM/CMakeLists.txt b/Orbitersdk/samples/ProjectApollo/Project/LEM/CMakeLists.txt
+index 90edc3c..4a1ff68 100644
+--- a/Orbitersdk/samples/ProjectApollo/Project/LEM/CMakeLists.txt
++++ b/Orbitersdk/samples/ProjectApollo/Project/LEM/CMakeLists.txt
+@@ -92,6 +92,10 @@ set(SOURCES
+     ${NASSP_SOURCE_ROOT}/src_sys/yaAGC/rfopen.c
+ )
+ 
++if(APOLLO_C_DIR)
++    list(FILTER SOURCES EXCLUDE REGEX "src_sys/yaAGC/(agc_engine|agc_engine_init|agc_utilities|Backtrace)[.]c$")
++endif()
++
+ link_directories(${ORBITERSDK_DIR}/lib)
+ link_directories(${ORBITERSDK_DIR}/XRSound)
+ link_directories(${CMAKE_BINARY_DIR}/Projects/PanelSDK)
+@@ -99,6 +103,9 @@ link_directories(${CMAKE_BINARY_DIR}/Projects/PanelSDK)
+ add_library(${PROJECT_NAME} SHARED ${SOURCES})
+ target_sources(LEM PRIVATE ${NASSP_SOURCE_ROOT}/src_lm/LEMResources.rc)
+ target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
++if(APOLLO_C_DIR)
++    target_link_libraries(${PROJECT_NAME} PRIVATE apollo_c_agc)
++endif()
+ target_link_libraries(${PROJECT_NAME} PRIVATE 
+     GLU32
+     dxguid
+diff --git a/Orbitersdk/samples/ProjectApollo/Project/Saturn1B/CMakeLists.txt b/Orbitersdk/samples/ProjectApollo/Project/Saturn1B/CMakeLists.txt
+index fcc4b03..e274661 100644
+--- a/Orbitersdk/samples/ProjectApollo/Project/Saturn1B/CMakeLists.txt
++++ b/Orbitersdk/samples/ProjectApollo/Project/Saturn1B/CMakeLists.txt
+@@ -103,6 +103,10 @@ set(SOURCES
+     ${NASSP_SOURCE_ROOT}/src_sys/yaAGC/rfopen.c
+ )
+ 
++if(APOLLO_C_DIR)
++    list(FILTER SOURCES EXCLUDE REGEX "src_sys/yaAGC/(agc_engine|agc_engine_init|agc_utilities|Backtrace)[.]c$")
++endif()
++
+ link_directories(${ORBITERSDK_DIR}/lib)
+ link_directories(${ORBITERSDK_DIR}/lib/Lua)
+ link_directories(${ORBITERSDK_DIR}/..)
+@@ -112,6 +116,9 @@ link_directories(${CMAKE_BINARY_DIR}/Projects/PanelSDK)
+ add_library(${PROJECT_NAME} SHARED ${SOURCES})
+ target_sources(Saturn1B PRIVATE ${NASSP_SOURCE_ROOT}/src_csm/Resources.rc)
+ target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
++if(APOLLO_C_DIR)
++    target_link_libraries(${PROJECT_NAME} PRIVATE apollo_c_agc)
++endif()
+ target_link_libraries(${PROJECT_NAME} PRIVATE 
+     GLU32
+     dxguid
+diff --git a/Orbitersdk/samples/ProjectApollo/Project/Saturn5/CMakeLists.txt b/Orbitersdk/samples/ProjectApollo/Project/Saturn5/CMakeLists.txt
+index 8eeacd2..37e42f7 100644
+--- a/Orbitersdk/samples/ProjectApollo/Project/Saturn5/CMakeLists.txt
++++ b/Orbitersdk/samples/ProjectApollo/Project/Saturn5/CMakeLists.txt
+@@ -102,6 +102,10 @@ set(SOURCES
+     ${NASSP_SOURCE_ROOT}/src_sys/yaAGC/rfopen.c
+ )
+ 
++if(APOLLO_C_DIR)
++    list(FILTER SOURCES EXCLUDE REGEX "src_sys/yaAGC/(agc_engine|agc_engine_init|agc_utilities|Backtrace)[.]c$")
++endif()
++
+ link_directories(${ORBITERSDK_DIR}/lib)
+ link_directories(${ORBITERSDK_DIR}/lib/Lua)
+ link_directories(${ORBITERSDK_DIR}/..)
+@@ -111,6 +115,9 @@ link_directories(${CMAKE_BINARY_DIR}/Projects/PanelSDK)
+ add_library(${PROJECT_NAME} SHARED ${SOURCES})
+ target_sources(Saturn5 PRIVATE ${NASSP_SOURCE_ROOT}/src_csm/Resources.rc)
+ target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
++if(APOLLO_C_DIR)
++    target_link_libraries(${PROJECT_NAME} PRIVATE apollo_c_agc)
++endif()
+ target_link_libraries(${PROJECT_NAME} PRIVATE 
+     GLU32
+     dxguid

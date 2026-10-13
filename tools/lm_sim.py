@@ -37,8 +37,12 @@ Sequence language (one command per line, `#` comments, times in s):
   snap NAME [TOL...]  checkpoint; compared across AGCs with tolerances
                       deg=D (gimbal, default 0.5) rate=R (deg/s, default
                       0.2) needle=N (default 30 counts) jets=F (relative,
-                      default 0.5) reg=N (R1-R3 numeric, default 0) or
-                      reg=skip, display=skip
+                      default 0.5) reg=N (R1-R3 numeric, default 0); each
+                      of them =skip, and display=skip.  hold=R checks
+                      each AGC on its own: every body rate within R deg/s
+                      (the DAP holds the attitude); used where the
+                      closed loop is not repeatable run to run, even
+                      yaAGC against itself (docs/modules/closed-loop-fixes.md)
   jets reset          zero the jet statistics
   shot NAME           (--gui) save the simulator windows as NAME_*.png
   tcl SCRIPT          evaluate SCRIPT in the simulator
@@ -373,6 +377,13 @@ class Flight:
              'jets': self.mon.jets()}
         self.snaps.append(s)
         st = s['sim']
+        if 'hold' in tol:
+            for v in ('Omega_Roll', 'Omega_Pitch', 'Omega_Yaw'):
+                if abs(st[v]) > float(tol['hold']):
+                    msg = 'snap %s: %s %.3f deg/s, not held within %s' % (
+                        name, v, st[v], tol['hold'])
+                    self.failures.append(msg)
+                    self.say('FAIL ' + msg)
         fired = {k: v for k, v in s['jets'].items() if v[0] and k != 'packets'}
         fired['ch5/6 packets'] = s['jets']['packets']
         self.say(
@@ -535,22 +546,25 @@ def compare(a, b):
                     bad.append(
                         '%s: %s %s vs %s' %
                         (sa['name'], f, da[f], db[f]))
-        deg = float(tol.get('deg', 0.5))
-        for v in ('IMUX_ANGLE', 'IMUY_ANGLE', 'IMUZ_ANGLE'):
-            d = abs(sa['sim'][v] - sb['sim'][v]) % 360.0
-            if min(d, 360.0 - d) > deg:
-                bad.append('%s: %s %.3f vs %.3f' %
-                           (sa['name'], v, sa['sim'][v], sb['sim'][v]))
-        rate = float(tol.get('rate', 0.2))
-        for v in ('Omega_Roll', 'Omega_Pitch', 'Omega_Yaw'):
-            if abs(sa['sim'][v] - sb['sim'][v]) > rate:
-                bad.append('%s: %s %.3f vs %.3f' %
-                           (sa['name'], v, sa['sim'][v], sb['sim'][v]))
-        needle = float(tol.get('needle', 30))
-        for v in ('error_x', 'error_y', 'error_z'):
-            if abs(sa['sim'][v] - sb['sim'][v]) > needle:
-                bad.append('%s: %s %d vs %d' %
-                           (sa['name'], v, sa['sim'][v], sb['sim'][v]))
+        if tol.get('deg') != 'skip':
+            deg = float(tol.get('deg', 0.5))
+            for v in ('IMUX_ANGLE', 'IMUY_ANGLE', 'IMUZ_ANGLE'):
+                d = abs(sa['sim'][v] - sb['sim'][v]) % 360.0
+                if min(d, 360.0 - d) > deg:
+                    bad.append('%s: %s %.3f vs %.3f' %
+                               (sa['name'], v, sa['sim'][v], sb['sim'][v]))
+        if tol.get('rate') != 'skip':
+            rate = float(tol.get('rate', 0.2))
+            for v in ('Omega_Roll', 'Omega_Pitch', 'Omega_Yaw'):
+                if abs(sa['sim'][v] - sb['sim'][v]) > rate:
+                    bad.append('%s: %s %.3f vs %.3f' %
+                               (sa['name'], v, sa['sim'][v], sb['sim'][v]))
+        if tol.get('needle') != 'skip':
+            needle = float(tol.get('needle', 30))
+            for v in ('error_x', 'error_y', 'error_z'):
+                if abs(sa['sim'][v] - sb['sim'][v]) > needle:
+                    bad.append('%s: %s %d vs %d' %
+                               (sa['name'], v, sa['sim'][v], sb['sim'][v]))
         if tol.get('jets') != 'skip':
             jf = float(tol.get('jets', 0.5))
             ta = sum(v[1] for k, v in sa['jets'].items() if k != 'packets')

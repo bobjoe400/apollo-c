@@ -195,8 +195,33 @@ agc_status_t pin_almcycle(void)
     s->reqret     = PIN_REQ_PASS0; /* set for ENTPAS0        */
     s->reqret_neg = false;
     pin_updatvb(s->verbsave);
+    s->almcycle   = true;          /* POSTJUMP ENTER pending */
 
     return (PIN_STATUS_RECYCLE);
+}
+
+/**********************************************************************
+ * AGC: ALMCYCLE (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 364)
+ *
+ * Whether status st is ALMCYCLE's return (re-enter ENTER) and not an
+ * ALARM a called routine reported (V37BAD, alarm 1520, ends the job:
+ * FRESH_START_AND_RESTART.agc L p. 227). Clears the mark.
+ *
+ * ARGUMENTS:
+ *   Argument  Type          I/O  Description (scale)
+ *   --------  ------------  ---  -------------------
+ *   st        agc_status_t  I    status of the routine just run
+ *
+ * RETURNS: bool -- true when ENTER must run again
+ **********************************************************************/
+bool pin_recycle(agc_status_t st)
+{
+    pin_state_t *s     = pin_st();                                  /* pinball erasables */
+    bool         again = (st == PIN_STATUS_RECYCLE) && s->almcycle; /* ALMCYCLE ran      */
+
+    s->almcycle = false;
+
+    return (again);
 }
 
 /**********************************************************************

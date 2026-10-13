@@ -94,6 +94,7 @@ void         sim_channels_send_all(void);       /* connect update        */
 agc_status_t sim_channels_tick(uint32_t cs);    /* 0163, drives, RHC     */
 bool         sim_input(uint16_t chan, uint16_t value, uint16_t mask);
 agc_status_t sim_counter_increment(uint16_t addr, uint16_t type);
+void         sim_counters_tick(void);           /* CDU FIFOs: one cs of PCDU/MCDU */
 
 /* ---- clock and interrupts (clock.c) ----------------------------------- */
 typedef struct sim_stats
@@ -107,8 +108,8 @@ typedef struct sim_stats
 } sim_stats_t;
 
 void     sim_clock_init(void);
-void     sim_clock_tick(void);  /* one centisecond = 32 counts */
-void     sim_clock_count(void); /* one scaler count, 1/3200 s  */
+void     sim_clock_tick(void);      /* one centisecond = 32 counts */
+void     sim_clock_count(void);     /* one scaler count, 1/3200 s  */
 bool     sim_irq_pending(sim_irq_t irq);
 void     sim_irq_request(sim_irq_t irq);
 uint32_t sim_clock_cs(void);

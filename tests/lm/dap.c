@@ -94,6 +94,7 @@ static void         test_rcsmon(void);
 static void         test_spsrcs(void);
 static void         test_rot_touv(void);
 static void         test_zero_erasable(void);
+static void         test_t6_list_zero_delta(void);
 
 /**********************************************************************
  * AGC: none -- run the tests.
@@ -114,6 +115,7 @@ int main(void)
     test_spsrcs();
     test_rot_touv();
     test_zero_erasable();
+    test_t6_list_zero_delta();
     (void) printf("test_lm_dap: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -442,4 +444,57 @@ static void test_zero_erasable(void)
     agc_dp_words_t q            = lm_dap_dvqr((agc_dp_words_t){-199, 0}, -85); /* the rope's BIGIQ improper divide */
 
     CHECK(q.hi == 16383 && q.lo == -85);
+}
+
+/**********************************************************************
+ * AGC: none -- test 9 (JTLST / MIDORLST / LASTCHG, Q_R-AXIS_RCS_AUTOPILOT
+ *      L p.1457; T6JOB, T6-RUPT_PROGRAMS L p.1404). A firing that ends
+ *      in the same T6 count as the one TIME6 holds gives T6NEXT = T -
+ *      TIME6 = -0 (EXTEND / SU TIME6); one that ends with the second
+ *      gives T6FURTHA = -0 (CS A / AD NEG0). T6JOB loads that -0 into
+ *      TIME6 with the clock enabled: the next DINC requests T6RUPT at
+ *      once and T6JOBCHK finds -0 (T6JOB), never +0 (CCSHOLE, POODOO
+ *      01103) (closed-loop-fixes L3).
+ *
+ * FUNCTION NAME: test_t6_list_zero_delta
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_t6_list_zero_delta(void)
+{
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    /* MIDORLST: TIME6 = 50, new firing at 50 counts on V.               */
+    agc_lm_dap_fresh_start();
+    agc_chan_or(013, 040000u);
+    agc_rupt_set_time(6, 50u);
+    d->nxt6adr     = 4;
+    d->t6next[0]   = LM_POSMAX;
+    d->t6next[1]   = 0;
+    d->t6furtha[0] = 50;
+    d->t6furtha[1] = 13;
+    CHECK(lm_dap_jtlst() == AGC_STATUS_OK);
+    agc_rupt_set_time(6, LM_T6_NEGZERO);         /* U firing ends    */
+    CHECK(agc_lm_dap_t6rupt() == AGC_STATUS_OK); /* T6JOB: V next    */
+    CHECK(agc_rupt_time(6) == LM_T6_NEGZERO);    /* -0, not +0       */
+    CHECK(agc_lm_dap_t6rupt() == AGC_STATUS_OK); /* T6JOB, no 01103  */
+
+    /* LASTCHG: TIME6 = 50, T6NEXT = 20, new firing at 70 counts.         */
+    agc_lm_dap_fresh_start();
+    agc_chan_or(013, 040000u);
+    agc_rupt_set_time(6, 50u);
+    d->nxt6adr     = 4;
+    d->t6next[0]   = 20;
+    d->t6next[1]   = 0;
+    d->t6furtha[0] = 70;
+    d->t6furtha[1] = 13;
+    CHECK(lm_dap_jtlst() == AGC_STATUS_OK);
+    agc_rupt_set_time(6, LM_T6_NEGZERO);         /* U firing ends    */
+    CHECK(agc_lm_dap_t6rupt() == AGC_STATUS_OK); /* TIME6 = 20 (P)   */
+    agc_rupt_set_time(6, LM_T6_NEGZERO);         /* P firing ends    */
+    CHECK(agc_lm_dap_t6rupt() == AGC_STATUS_OK); /* T6JOB: V next    */
+    CHECK(agc_rupt_time(6) == LM_T6_NEGZERO);
+    CHECK(agc_lm_dap_t6rupt() == AGC_STATUS_OK); /* T6JOB, no 01103  */
 }

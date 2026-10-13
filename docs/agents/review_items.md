@@ -107,17 +107,17 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - ~~post-eva: `make check` fails on exactly those 21 (check-rules "silent skip") until they are resolved; note `python3 tools/check_rules.py` run bare reports 0 and "density 0/1" (it does not scan the same set as the Makefile's check-rules target): make the bare invocation match the target.~~ DONE (finish, 2026-10-12): `make check` passes; a bare check_rules.py scans src include (DEFAULT_ROOTS), the Makefile target uses the bare form.
 
 ## From the document wave (2026-10-12, docs/modules/document.md Findings; for a closed-loop-fixes lane with the LM Simulator bugs)
-- guid-powered: src/csm/burns/sps/burn.c: a failed assertion on P40TMP silently sets it to 1 (rule 7: delete if guaranteed, else return a status the caller handles).
-- core: src/core/erasable.c and include/agc/core/state.h comments describe assertion checks the accessors no longer contain: fix the comments.
-- all: about six assertions repeat the statement just above them and cannot fail: delete (list in document.md Findings).
-- prog-align: two P52 function prologs name the label "CALL" instead of S52.3 / S52.2.
-- exec: agc_exec_vac_claim's prolog describes an output pointer as an input index.
+- ~~guid-powered: src/csm/burns/sps/burn.c: a failed assertion on P40TMP silently sets it to 1 (rule 7: delete if guaranteed, else return a status the caller handles).~~ DONE (closed-loop-fixes, P40TMP; docs/modules/closed-loop-fixes.md)
+- ~~core: src/core/erasable.c and include/agc/core/state.h comments describe assertion checks the accessors no longer contain: fix the comments.~~ DONE (closed-loop-fixes, stale comments; docs/modules/closed-loop-fixes.md)
+- ~~all: about six assertions repeat the statement just above them and cannot fail: delete (list in document.md Findings).~~ DONE (closed-loop-fixes, repeated assertions; docs/modules/closed-loop-fixes.md)
+- ~~prog-align: two P52 function prologs name the label "CALL" instead of S52.3 / S52.2.~~ DONE (closed-loop-fixes, stale comments; docs/modules/closed-loop-fixes.md)
+- ~~exec: agc_exec_vac_claim's prolog describes an output pointer as an input index.~~ DONE (closed-loop-fixes, stale comments; docs/modules/closed-loop-fixes.md)
 
 ## From lm-simulator (2026-10-12; closed loop vs yaAGC; docs/modules/lm-simulator.md "Bugs found" and Findings) -- closed-loop-fixes lane
-- L1 (io-dsky/exec): a V37 refused with alarm 1520 also lights OPR ERR: cp_refuse returns AGC_STATUS_ALARM, which PIN_STATUS_RECYCLE aliases (src/io/dsky/pinball/internal.h:52), so ENTER runs again (change_program/sequence.c:117, pinball/keys.c:448). AGC CANTROD/V37BAD, Luminary p.227.
-- L2 (imu/verbs): extended_verbs.c:828 FINEK2 pulses gyro.c's private OGC buffer but the V25N93 load writes agc_align_ram()->ogc (nouns.c:235): V42 fine align never torques. EXTENDED_VERBS Luminary p.273.
-- L3 (dap-lm): t6rupt.c:252 MIDORLST computes +0 where the AGC's SU TIME6 gives -0; T6JOBCHK then hits CCSHOLE and POODOO 01103 during jet firings. Q_R-AXIS Luminary p.1457.
-- PROG display after a POODOO restart: yaAGC blank, ours 00 (not root-caused).
-- S-L1 (sim): channels.c:200 broadcasts ch5/6 only on change; yaAGC sends a packet on every write and the LM Simulator applies jets one packet late: match yaAGC.
-- S-L2 (sim): CDU counts applied at once where yaAGC paces them at 400/6400 per second (review-sim paced the drive; check the LM Simulator path).
-- S-L3 (alignment): coarse-align alarm 00211 raised by yaAGC, not by ours (finding in the note).
+- ~~L1 (io-dsky/exec): a V37 refused with alarm 1520 also lights OPR ERR: cp_refuse returns AGC_STATUS_ALARM, which PIN_STATUS_RECYCLE aliases (src/io/dsky/pinball/internal.h:52), so ENTER runs again (change_program/sequence.c:117, pinball/keys.c:448). AGC CANTROD/V37BAD, Luminary p.227.~~ DONE (closed-loop-fixes, L1; docs/modules/closed-loop-fixes.md)
+- ~~L2 (imu/verbs): extended_verbs.c:828 FINEK2 pulses gyro.c's private OGC buffer but the V25N93 load writes agc_align_ram()->ogc (nouns.c:235): V42 fine align never torques. EXTENDED_VERBS Luminary p.273.~~ DONE (closed-loop-fixes, L2; docs/modules/closed-loop-fixes.md)
+- ~~L3 (dap-lm): t6rupt.c:252 MIDORLST computes +0 where the AGC's SU TIME6 gives -0; T6JOBCHK then hits CCSHOLE and POODOO 01103 during jet firings. Q_R-AXIS Luminary p.1457.~~ DONE (closed-loop-fixes, L3; docs/modules/closed-loop-fixes.md)
+- ~~PROG display after a POODOO restart: yaAGC blank, ours 00 (not root-caused).~~ DONE (closed-loop-fixes, D1: GOP00FIX runs on in core set 0 over DSPMMJOB; docs/modules/closed-loop-fixes.md)
+- ~~S-L1 (sim): channels.c:200 broadcasts ch5/6 only on change; yaAGC sends a packet on every write and the LM Simulator applies jets one packet late: match yaAGC.~~ DONE (closed-loop-fixes, S-L1; docs/modules/closed-loop-fixes.md)
+- ~~S-L2 (sim): CDU counts applied at once where yaAGC paces them at 400/6400 per second (review-sim paced the drive; check the LM Simulator path).~~ DONE (closed-loop-fixes, S-L2; docs/modules/closed-loop-fixes.md)
+- ~~S-L3 (alignment): coarse-align alarm 00211 raised by yaAGC, not by ours (finding in the note).~~ DONE (closed-loop-fixes, S-L2 / S-L3; docs/modules/closed-loop-fixes.md)

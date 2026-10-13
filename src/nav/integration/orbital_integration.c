@@ -171,6 +171,24 @@ void agc_integ_set_lunar_coeffs(agc_sp_t j22, agc_sp_t c31)
 }
 
 /**********************************************************************
+ * E3J22R2M / E32C31RM (ERASABLE_ASSIGNMENTS.agc, pad loads) -- read the lunar
+ * potential coefficients back (erasable access by address, src/core/ecadr.c)
+ *
+ * FUNCTION NAME: agc_integ_get_lunar_coeffs
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------------
+ *   j22       agc_sp_t *  O    E3J22R2M (SP)
+ *   c31       agc_sp_t *  O    E32C31RM (SP)
+ *********************************************************************/
+void agc_integ_get_lunar_coeffs(agc_sp_t *j22, agc_sp_t *c31)
+{
+    *j22 = e3j22r2m;
+    *c31 = e32c31rm;
+}
+
+/**********************************************************************
  * MUEARTH,2 (ORBITAL_INTEGRATION.agc p. 1353) -- the gravitational constant
  * indexed by X2
  *

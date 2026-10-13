@@ -84,16 +84,24 @@ agc_sp_t lm_dap_time6_value(void)
 /**********************************************************************
  * TIME6 = v (DXCH / TS TIME6, pp.1404, 1456).  AGC: none (helper)
  *
+ * A zero T6 time is -0. The list words reach zero only as -0: MIDORLST's
+ * `EXTEND / SU TIME6` of equal counts gives -0 in T6NEXT, LASTCHG's
+ * `AD NEG0` gives -0 in T6FURTHA (Q_R-AXIS_RCS_AUTOPILOT L p.1457), and
+ * T6JOB moves them into TIME6 unchanged. TIME6 = -0 with the clock
+ * enabled requests T6RUPT at the next DINC, which T6JOBCHK serves as
+ * T6JOB; TIME6 = +0 there is its CCSHOLE (POODOO 01103), which T6JOB's
+ * comment rules out ("must not have T6 = +0 with enable set", p.1404).
+ * The C list holds counts as values (no -0), so 0 stands for that -0.
+ *
  * FUNCTION NAME: set_time6
  *
  * ARGUMENTS:
  *   Argument  Type      I/O  Description (scale)
  *   --------  --------  ---  --------------------
- *   v         agc_sp_t  I    TIME6 value, scaled 0.625 ms
+ *   v         agc_sp_t  I    TIME6 value, scaled 0.625 ms (0: -0)
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG when v is
+ *          not a T6 time (0..POSMAX)
  **********************************************************************/
 static agc_status_t set_time6(agc_sp_t v)
 {
@@ -102,12 +110,7 @@ static agc_status_t set_time6(agc_sp_t v)
         return (AGC_STATUS_BAD_ARG);
     }
 
-    agc_rupt_set_time(6, (uint16_t) v);
-
-    if (!AGC_ASSERT(agc_rupt_time(6) == (uint16_t) v))
-    {
-        return (AGC_STATUS_BAD_ARG); /* TIME6 holds the new count */
-    }
+    agc_rupt_set_time(6, (v == 0) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) v); /* TS TIME6; zero is -0 */
 
     return (AGC_STATUS_OK);
 }
@@ -348,30 +351,17 @@ agc_status_t agc_lm_dap_t6jobchk(void)
  *
  * ARGUMENTS: none
  *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a
- *          failed assertion, else the status of the routine it
- *          ends in
+ * RETURNS: agc_status_t -- the status of T6JOBCHK
  **********************************************************************/
 agc_status_t agc_lm_dap_t6rupt(void)
 {
-    agc_status_t st = agc_lm_dap_t6jobchk(); /* T6JOBCHK status */
-
-    if (!AGC_ASSERT(st != AGC_STATUS_BAD_ARG))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    if (!AGC_ASSERT(agc_rupt_time(6) != LM_T6_NEGZERO || st != AGC_STATUS_OK))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    return (st);
+    return (agc_lm_dap_t6jobchk()); /* T6JOBCHK; TIME6 may be -0 again (a zero list delta) */
 }
 
 /**********************************************************************
  * Sim harness: apply `counts` DINC pulses to TIME6 while channel 13 bit
- * 15 enables it. The pulse after +0 makes -0 and requests the T6RUPT.
+ * 15 enables it. The DINC of +1 makes -0 (ones' complement adder),
+ * which requests the T6RUPT.
  * AGC: none (helper)
  *
  * FUNCTION NAME: agc_lm_dap_time6_count
@@ -389,7 +379,7 @@ void agc_lm_dap_time6_count(uint16_t counts)
 
     if (!((agc_chan_read(013) & T6_ENABLE) == 0u || raw > LM_T6_POSMAX || counts == 0u)) /* idle, or rupt already due */
     {
-        uint16_t next = (counts > raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts); /* counted past +0: -0, a T6RUPT is due */
+        uint16_t next = (counts >= raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts); /* +1 - 1 = -0 in the adder: a T6RUPT is due */
 
         agc_rupt_set_time(6, next);
     }

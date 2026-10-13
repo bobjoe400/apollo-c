@@ -408,14 +408,35 @@ agc_status_t agc_job_preburn_state_vector(agc_job_ctx_t *ctx)
         agc_erase_set_tig(g->avg.piptime1 + SEC29_96);
     }
 
-    agc_erase_set_p40tmp(dt - SEC5); /* DELTA T TO PREREAD - 5 S */
+    return (agc_csm_preburn_call_tigblnk(dt)); /* P40SET */
+}
 
-    if (!AGC_ASSERT(agc_erase_p40tmp() >= 0))
-    {
-        agc_erase_set_p40tmp(1);
-    }
+/**********************************************************************
+ * P40SET (P40-P47.agc C p.686): P40TMP = DELTA T TO PREREAD - 5 S,
+ * LONGCALL TIGBLNK, phase 4.21. MIDTOAV1 leaves at least TIMEDELT
+ * (12.5 s) before TIG - 30 when it starts, but the integration runs
+ * after that check, so a slow one leaves less than 5 s: the AGC then
+ * calls LONGCALL with a zero or negative delay, LONGCYCL falls through
+ * to LASTTIME and WAITLIST ends in WATLST0-: POODOO 1204 (WAITLIST.agc
+ * C p.1221). The C passes 0 for any such delay, which LONGCALL turns
+ * into the same POODOO.
+ *
+ * FUNCTION NAME: agc_csm_preburn_call_tigblnk
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  ----------------------------------
+ *   dt        agc_dp_t  I    MIDTOAV delay to PREREAD, cs 2^28
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; the LONGCALL status (POODOO
+ *          1204 for a delay <= 0, BAILOUT 1203 when the list is full)
+ **********************************************************************/
+agc_status_t agc_csm_preburn_call_tigblnk(agc_dp_t dt)
+{
+    agc_dp_t p40tmp = dt - SEC5; /* DELTA T TO PREREAD - 5 S, cs 2^28 */
 
-    st = agc_waitlist_longcall((uint32_t) agc_erase_p40tmp(), AGC_TASK_TIGBLNK);
+    agc_erase_set_p40tmp(p40tmp);
+    agc_status_t st = agc_waitlist_longcall((p40tmp > 0) ? (uint32_t) p40tmp : 0u, AGC_TASK_TIGBLNK); /* <= 0: POODOO 1204 */
 
     if (st != AGC_STATUS_OK)
     {

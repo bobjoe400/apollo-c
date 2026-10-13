@@ -41,6 +41,7 @@
 #include "agc/core/status.h"
 
 #define AGC_CHAN_COUNT          040     /* channels 0..037                     */
+#define AGC_CHAN_WLOG_MAX       64      /* program writes kept for the sim     */
 #define AGC_CHAN_MASK           077777u /* channels are 15 bits wide           */
 #define AGC_CHAN_FIRST_INVERTED 030     /* channels 030..033 read inverted     */
 #define AGC_CHAN_LAST_INVERTED  033     /* last inverted-logic input channel  */
@@ -442,6 +443,7 @@ enum agc_channel_bits
 };
 
 uint16_t     agc_chan_read(int chan);                                    /* READ          */
+bool         agc_chan_next_write(uint16_t *chan, uint16_t *value);       /* sim: oldest unread WRITE/WOR/WAND */
 void         agc_chan_write(int chan, uint16_t value);                   /* WRITE         */
 bool         agc_chan_writable(int chan);                                /* L, Q, outputs, 033 */
 void         agc_chan_or(int chan, uint16_t mask);                       /* WOR           */

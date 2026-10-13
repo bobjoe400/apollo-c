@@ -349,8 +349,8 @@ agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
 }
 
 /**********************************************************************
- * AGC: CALL (Comanche055 INTERPRETER.agc p. 1128; Luminary099
- *      INTERPRETER.agc p. 1023)
+ * AGC: S52.3 (Comanche055 P51-P53.agc p. 780; Luminary099 P51-P53.agc
+ *      p. 954)
  *
  * CALL S52.3 (nominal orientation at DSPTEM1 (CM) / TALIGN (LM)), then
  * P52D.  The integration may put the job to sleep in INTSTALL; it then
@@ -391,8 +391,8 @@ agc_status_t agc_job_realign_nominal_orientation(agc_job_ctx_t *ctx)
 }
 
 /**********************************************************************
- * AGC: CALL (Comanche055 INTERPRETER.agc p. 1128; Luminary099
- *      INTERPRETER.agc p. 1023)
+ * AGC: S52.2 (Comanche055 P51-P53.agc p. 774; Luminary099 P51-P53.agc
+ *      p. 953)
  *
  * CALL S52.2 on the present CDUs: XSM = XSMD, THETAD, XNB (reference).
  *

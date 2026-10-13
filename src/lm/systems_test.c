@@ -1391,8 +1391,6 @@ static agc_status_t setuper1(agc_job_ctx_t *ctx)
         agc_align_ram()->ogc[i] = ang.c[i]; /* STORE OGC */
     }
 
-    agc_imu_gyro_buf_set(AGC_IMU_GBUF_OGC, agc_align_ram()->ogc);
-
     return (setuper1_stall(agc_imu_pulse_buf(AGC_IMU_GBUF_OGC, AGC_JOB_SYSTEMS_TEST_TORQUE_RETRY), ctx));
 }
 

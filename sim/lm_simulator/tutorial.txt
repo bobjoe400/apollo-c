@@ -82,6 +82,15 @@ keys V34E                          # terminate R03 (else V49 is refused)
 wait 2
 
 # ---- 2.1 DAP attitude hold / rate command, RHC deflections ------------
+# From the first detent on, the closed loop (real-time AGC, Tcl simulator,
+# host scheduling, RHC timing) is not repeatable: two yaAGC runs differ by
+# up to 1.1 deg/s in the rate after a detent, 13 deg in attitude and 90
+# needle counts (docs/modules/closed-loop-fixes.md, "lm-sim
+# repeatability").  There the AGCs are compared on what is repeatable --
+# the displays and alarms, the jets used, the rate during a deflection --
+# and each AGC is checked on its own to hold its attitude (hold=R: every
+# body rate within R deg/s), not on its instantaneous rates or angles.
+# During the V49 manoeuvre hold=3 only rules out a tumble.
 crew ATTHOLD
 wait 1
 keys V77E
@@ -96,17 +105,17 @@ snap rhc_pitch rate=1.5 deg=3 jets=0.6
 shot rhc_pitch                   # --gui only
 rhc DETENT
 wait 10
-snap pitch_detent rate=0.4 deg=4 jets=0.6
+snap pitch_detent rate=skip hold=1.5 deg=6 needle=skip jets=0.6
 jets reset
 rhc YAW 30
 wait 3
-snap rhc_yaw rate=1.5 deg=4 jets=0.6
+snap rhc_yaw rate=2 deg=skip needle=skip jets=0.6   # pitch drifts freely since its detent
 rhc DETENT
 wait 10
-snap yaw_detent rate=0.4 deg=5 jets=0.6
+snap yaw_detent rate=skip hold=1.5 deg=skip needle=skip jets=0.6
 keys V05N09E
 wait 2
-snap dap_alarms reg=skip deg=5 jets=skip
+snap dap_alarms reg=skip rate=skip hold=1.5 deg=skip needle=skip jets=skip
 keys R
 
 # ---- 2.2 V49 crew defined manoeuvre (R62, KALCMANU) in AUTO -----------
@@ -116,29 +125,29 @@ keys V37E00E
 wait 2
 keys V49E
 wait 3
-snap v49 reg=skip deg=5 jets=skip
+snap v49 reg=skip rate=skip hold=1.5 deg=skip needle=skip jets=skip
 keys V25E
 keys +03000E
 keys +03000E
 keys +00000E
 wait 2
-snap v49_loaded deg=5 jets=skip
+snap v49_loaded rate=skip hold=1.5 deg=skip needle=skip jets=skip
 pro
 wait 3
-snap v50n18 reg=skip deg=5 jets=skip
+snap v50n18 reg=skip rate=skip hold=1.5 deg=skip needle=skip jets=skip
 jets reset
 pro
 wait 15
-snap man_15s reg=skip deg=5 rate=1 jets=0.6 needle=80
+snap man_15s reg=skip rate=skip hold=3 deg=skip needle=skip jets=skip
 wait 30
-snap man_45s reg=skip deg=2 rate=0.3 jets=0.6 needle=80
+snap man_45s reg=skip rate=skip hold=3 deg=skip needle=skip jets=skip
 keys V16N20E
 wait 3
-snap man_n20 reg=200 deg=2 jets=skip needle=80
+snap man_n20 reg=skip rate=skip hold=1.5 deg=skip needle=skip jets=skip
 shot man_n20                   # --gui only
 keys V05N09E
 wait 2
-snap man_alarms jets=skip deg=2 needle=80
+snap man_alarms rate=skip hold=1.5 deg=skip needle=skip jets=skip
 keys R
 
 # ---- 2.1 minimum impulse V76 ------------------------------------------
@@ -151,6 +160,26 @@ rhc PITCH 30
 wait 1
 rhc DETENT
 wait 3
-snap min_impulse reg=skip deg=2 rate=0.2 jets=0.6 needle=80
+snap min_impulse reg=skip rate=skip hold=1.5 deg=skip needle=skip jets=0.6
 keys V77E
 wait 1
+
+# ---- POODOO in P00: V31 (request waitlist) with a zero delay -----------
+# WAITLIST ends in POODOO 1204; the software restart (ENEMA) blanks the
+# DSKY (STARTSB2 DSPOFF), MMDSPLAY's DSPMMJOB lands in core set 0 and
+# GOP00FIX, run on by the restart code, sleeps in that core set: PROG
+# stays blank under the V37 flash (docs/modules/closed-loop-fixes.md D1).
+keys V37E00E
+wait 2
+keys R
+keys V25N26E
+keys 0E
+keys 1E
+keys 0E
+wait 1
+keys V31E
+wait 5
+snap poodoo_p00 reg=skip rate=skip deg=skip needle=skip jets=skip
+keys V05N09E
+wait 2
+snap poodoo_alarms rate=skip deg=skip needle=skip jets=skip

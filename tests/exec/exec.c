@@ -682,9 +682,10 @@ static void test_waitlist_zero_delay(void)
     CHECK(agc_waitlist_call(0, TT_A) == AGC_STATUS_POODOO);
     CHECK(agc_erase_failreg(0) == 01204);
     CHECK(agc_exec_restart_pending());
-    (void) agc_exec_service_restart(); /* -> GOTOPOOH     */
-    CHECK(agc_phase_get(4) == 1U);     /* CSM 4.1         */
+    (void) agc_exec_service_restart();             /* -> GOTOPOOH     */
+    CHECK(agc_phase_get(4) == 1U);                 /* CSM 4.1         */
     CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
+    CHECK(!job_present(AGC_JOB_DSPMMJB, 030, -1)); /* GOP00FIX took core set 0 */
 }
 
 /**********************************************************************
@@ -935,8 +936,8 @@ static void test_goprog(void)
     /* no active group, MODREG = 0: P00 via GOTOPOOH                   */
     agc_erase_set_modreg(0);
     CHECK(agc_restart_goprog() == AGC_STATUS_OK);
-    CHECK(job_present(AGC_JOB_DSPMMJB, 030, -1)); /* MMDSPLAY        */
-    CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
+    CHECK(!job_present(AGC_JOB_DSPMMJB, 030, -1));    /* MMDSPLAY's job in core set 0 ... */
+    CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1)); /* ... runs on as GOP00FIX         */
     CHECK(agc_phase_get(4) == 1U);
 
     /* an active group is restarted                                    */
@@ -964,6 +965,7 @@ static void test_poodoo_lm(void)
     (void) agc_exec_service_restart();              /* WHIMPER -> ENEMA */
     CHECK(agc_phase_get(4) == 033U);                /* GOTOPOOH 4.33   */
     CHECK(job_present(AGC_JOB_GO_IDLE_FIX, 030, -1));
+    CHECK(!job_present(AGC_JOB_DSPMMJB, 030, -1));  /* GOP00FIX took core set 0: PROG stays blank */
     CHECK(agc_rupt_t5_task() == AGC_TASK_DAPIDLER); /* STARTSB1      */
     CHECK(!agc_flag_test(AGC_FLAG_ACCOKFLG));       /* STARTSB1 DAP part: 1/ACCS reruns */
 }
