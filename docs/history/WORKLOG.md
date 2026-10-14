@@ -1038,3 +1038,8 @@
             apply_layout.sh prepared and verified. Post-move make test
             green. Plan: apply the layout at the NASSP lane's next
             checkpoint, then a structure lane for proposals 2-5.
+2026-10-14  Bug 14 committed (f7abdcf). Layout applied at the NASSP lane's
+            checkpoint (755db91): NASSP split into src/nassp (compiled by
+            NASSP) and sim/nassp (harness), 25 moves, dead code, 102
+            static, 213 includes; all gates green. NASSP lane resumed with
+            the new paths; structure lane launched for proposals 2-5.

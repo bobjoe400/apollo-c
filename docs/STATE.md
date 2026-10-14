@@ -16,15 +16,13 @@ Updated: 2026-10-13
   P64 at TIG+496.7 s, auto P65 at +660.8 s, touchdown +706.9 s at
   -0.85 m/s, lng 23.7265 lat 0.6695), compare, then liftoff, rendezvous,
   entry.
-- organize: DONE (1a1d77e). docs/overview/INDEX.md (tools/repo_index.py),
-  ORGANIZATION.md. NEXT, lead, at the NASSP lane's next checkpoint: run
-  tools/apply_layout.sh (verified; 22 moves, dead code, 102 static, 213
-  includes), hand the lane its new paths. THEN launch `structure` (Opus):
-  ORGANIZATION.md proposals 2-5 (16 duplicate-translation groups ->
-  owner's copy after output comparison; 5 cross-vehicle routines to
-  shared; the 39 uncalled labelled routines checked for missing wiring,
-  interrupt/table-dispatched ones excluded; split programs/navigation/
-  common.c, csm/entry/reentry.c, lm/systems_test.c at section bounds).
+- Layout APPLIED (755db91): src/nassp (engine.c, CMake) vs sim/nassp
+  (harness: images, lua, host, patches, replay.py, mission_tables.py,
+  mission_tolerances.tsv, checklist_to_lua.py); docs/history, tools/archive.
+- structure (Opus): ORGANIZATION.md proposals 2-5 (duplicate translations
+  to the owner's copy, cross-vehicle routines, uncalled labelled routines
+  classified, three file splits, internal.h prototypes). Note:
+  docs/modules/structure.md. Keeps out of the NASSP areas.
 - Mission status on our AGC in NASSP 9: insertion+uplink, TLI, MCC-2, LOI,
   TEI, LM DOI PASS; PDI pending. Flight bugs found by the mission: 4, all
   fixed with tests (FANG/EK3VAL map, V82 on a hyperbola, VGDISP = DELVSAB,
