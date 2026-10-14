@@ -1043,3 +1043,8 @@
             NASSP) and sim/nassp (harness), 25 moves, dead code, 102
             static, 213 includes; all gates green. NASSP lane resumed with
             the new paths; structure lane launched for proposals 2-5.
+2026-10-14  NASSP lane final (d7b272f): PDI, liftoff, entry rerun from the
+            new layout, matching stock on decisions and end state (timing
+            deviations listed). Rendezvous not yet working on stock
+            (00503, display waits): lane relaunched for that leg + the
+            final mission report. Full make test after the layout: green.

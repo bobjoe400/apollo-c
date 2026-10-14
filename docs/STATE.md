@@ -3,9 +3,10 @@
 Updated: 2026-10-13
 
 ## Running agents (max 2)
-- nassp-integration (Opus, resumed after the restart): our PDI to
-  touchdown vs the stock record, then liftoff, rendezvous, entry. Runs
-  from docs/modules/nassp-integration.md Progress (CHECKPOINT bullet) with docs/agents/nassp-integration.md
+- nassp-integration (Opus, rendezvous leg): make the P20/CSI/CDH/TPI
+  script work on STOCK first (alarm 00503, display waits), derive
+  tolerances, fly ours, then the final mission report. Runs from
+  docs/modules/nassp-integration.md Progress with docs/agents/nassp-integration.md
   (hard rules: unattended runs, held warp, one Orbiter at a time, short
   polls, answer via SendMessage to main; LM runs at 1x: warp tumbled the
   stock LM). Host: C:\NASSP9 stock baseline (untouched), C:\NASSP9-ref
@@ -23,8 +24,11 @@ Updated: 2026-10-13
   to the owner's copy, cross-vehicle routines, uncalled labelled routines
   classified, three file splits, internal.h prototypes). Note:
   docs/modules/structure.md. Keeps out of the NASSP areas.
-- Mission status on our AGC in NASSP 9: insertion+uplink, TLI, MCC-2, LOI,
-  TEI, LM DOI PASS; PDI pending. Flight bugs found by the mission: 4, all
+- Mission status on our AGC in NASSP 9 (decisions and end state, timing
+  differences listed as expected deviations): insertion+uplink, TLI,
+  MCC-2, LOI, DOI, PDI/landing, liftoff, TEI, entry/splashdown all match
+  stock; rendezvous in progress. 14 flight bugs found by the mission,
+  all fixed with failing-first tests. Flight bugs found by the mission: 4, all
   fixed with tests (FANG/EK3VAL map, V82 on a hyperbola, VGDISP = DELVSAB,
   one TLAND).
 - Definition of done: all nine items met (PLAN.md status block); `make
