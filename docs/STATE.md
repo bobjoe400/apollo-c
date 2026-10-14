@@ -3,8 +3,12 @@
 Updated: 2026-10-13
 
 ## Running agents (max 2)
-- NONE. PROJECT CLOSED 2026-10-14: documentation at the final code
-  (8ab9a3d), close-out fixes (0b4217a). Code complete as of a5bcdb1: definition of done
+- guide (Opus): docs/guide/, a reader's guide to the AGC through the C
+  (12 chapters + glossary) -- the document the project was for.
+- docs-split (Sonnet): docs/modules/*.md keep only explanation; lane
+  diaries move verbatim to docs/history/lanes/.
+- Code CLOSED 2026-10-14: documentation at the final code (8ab9a3d),
+  close-out fixes (0b4217a). Code complete as of a5bcdb1: definition of done
   items 1-9 met; stretch item 10 done (LM Simulator loop; the full Apollo
   11 mission in NASSP 9 on our AGC, all ten milestones matching stock on
   decisions and end state). 17 flight bugs from the mission fixed with

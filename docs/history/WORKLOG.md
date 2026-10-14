@@ -1080,3 +1080,10 @@
             citations fixed by script, flow sections for every note,
             ARCHITECTURE final, mission rules in the guides, TIPS, README,
             MODULE_STATUS. Close-out (0b4217a). PROJECT CLOSED.
+2026-10-14  User: does the documentation serve the original goal (understand
+            the AGC through C), and how much is process vs codebase? Lead
+            measured: ~7.5k lines reader-facing prose/charts, ~5k generated
+            reference, ~12k process record mixed into the module notes;
+            no guided reader's path exists. Launched guide (12-chapter
+            reader's guide from the code) and docs-split (module notes
+            keep explanation; diaries to docs/history/lanes/).
