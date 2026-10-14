@@ -1034,3 +1034,7 @@
             behaviours (1202 etc.) need not be reproduced. Decision
             recorded in PLAN.md; NASSP lane told: judge decisions and end
             state, list timing-born differences as expected deviations.
+2026-10-14  organize DONE (1a1d77e): 679-file index, ORGANIZATION.md,
+            apply_layout.sh prepared and verified. Post-move make test
+            green. Plan: apply the layout at the NASSP lane's next
+            checkpoint, then a structure lane for proposals 2-5.
