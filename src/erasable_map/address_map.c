@@ -152,6 +152,9 @@ typedef enum ec_item
     EC_AOTAZ,       /* RAW x6 AOTAZ (LM)                      */
     EC_AOTEL,       /* RAW x6 AOTEL (LM)                      */
     EC_MARKDOWN,    /* RAW x7 MARKDOWN (CSM)                  */
+    EC_PHASES,      /* RAW x12 -PHASE1 PHASE1 .. -PHASE6 PHASE6 */
+    EC_TBASES,      /* RAW x12 TBASE1 PHSPRDT1 .. (PHSPRDTn not kept) */
+    EC_LONGBASE,    /* RAW x2 LONGBASE (TIME2, TIME1)         */
     EC_MARK2DWN,    /* RAW x7 MARK2DWN (CSM)                  */
     EC_PIPTIME,     /* DP   PIPTIME, cs 2^28                  */
     EC_TIG,         /* DP   TIG                               */
@@ -234,10 +237,10 @@ typedef struct ec_entry
  * first entry holding an address wins: FANG (1774) precedes EK3VAL, whose
  * DP K3VAL (S40.13 DDV) is EK3VAL with FANG as its low word, so a FANG
  * pad load reaches both (sp_set).                                         */
-static const ec_entry_t k_map_csm[] = { {00306u, 18, EC_XSMD}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01103u, 2, EC_LAT}, {01105u, 2, EC_LONG}, {01107u, 2, EC_ALT}, {01126u, 1, EC_TRKMKCNT}, {01131u, 2, EC_OPTION1}, {01155u, 3, EC_THETAD}, {01162u, 6, EC_DELV}, {01170u, 6, EC_RN}, {01176u, 6, EC_VN}, {01204u, 2, EC_PIPTIME}, {01320u, 1, EC_IMODES30}, {01321u, 1, EC_IMODES33}, {01330u, 1, EC_MARKSTAT}, {01336u, 2, EC_TEVENT}, {01341u, 1, EC_CDUCHKWD}, {01351u, 2, EC_RTED1}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01735u, 18, EC_REFSMMAT}, {02025u, 6, EC_RLS}, {02640u, 2, EC_T3TOT4}, {03066u, 1, EC_DAPDATR1}, {03067u, 1, EC_DAPDATR2}, {03073u, 1, EC_LEMMASS}, {03074u, 1, EC_CSMMASS}, {03325u, 1, EC_CM_GYMDT}, {03374u, 1, EC_S61DT}, {03376u, 1, EC_P37RANGE}, {03400u, 2, EC_LAT_SPL}, {03402u, 2, EC_LNG_SPL}, {03404u, 6, EC_DELVSLV}, {03412u, 2, EC_TIG}, {03427u, 2, EC_TGO}, {03502u, 7, EC_MARK2DWN}, {03660u, 2, EC_TTOGO}, {03662u, 2, EC_TTPI}, {03672u, 2, EC_P40TMP}, {03674u, 7, EC_MARKDOWN}, {03720u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02011u, 6, EC_504LM}, {02033u, 3, EC_TIMEMO}, {02036u, 60, EC_VECOEM}, {02132u, 6, EC_RESO}, {02140u, 6, EC_VESO}, {02146u, 2, EC_OMEGAES}, {00110u, 1, EC_EMDOT}, {01353u, 1, EC_DVTHRESH}, {01767u, 2, EC_EK1VAL}, {01771u, 2, EC_EK2VAL}, {01774u, 1, EC_FANG}, {01773u, 2, EC_EK3VAL}, {02017u, 2, EC_EMSALT}, {03007u, 1, EC_LADPAD}, {03010u, 1, EC_LODPAD}, {03011u, 1, EC_ALFAPAD}, {03012u, 1, EC_ETDECAY}, {03013u, 1, EC_ESTROKER}, {03014u, 2, EC_EKPRIME}, {03016u, 3, EC_EKTLX_I}, {03021u, 2, EC_EREPFRAC}, {03023u, 1, EC_PACTOFF}, {03024u, 1, EC_YACTOFF}, {03025u, 15, EC_HBN10}, {01776u, 2, EC_LUNARCOEF}};
+static const ec_entry_t k_map_csm[] = { {00306u, 18, EC_XSMD}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01103u, 2, EC_LAT}, {01105u, 2, EC_LONG}, {01107u, 2, EC_ALT}, {01126u, 1, EC_TRKMKCNT}, {01131u, 2, EC_OPTION1}, {01155u, 3, EC_THETAD}, {01162u, 6, EC_DELV}, {01170u, 6, EC_RN}, {01176u, 6, EC_VN}, {01204u, 2, EC_PIPTIME}, {01320u, 1, EC_IMODES30}, {01321u, 1, EC_IMODES33}, {01330u, 1, EC_MARKSTAT}, {01336u, 2, EC_TEVENT}, {01341u, 1, EC_CDUCHKWD}, {01351u, 2, EC_RTED1}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01735u, 18, EC_REFSMMAT}, {02025u, 6, EC_RLS}, {02640u, 2, EC_T3TOT4}, {03066u, 1, EC_DAPDATR1}, {03067u, 1, EC_DAPDATR2}, {03073u, 1, EC_LEMMASS}, {03074u, 1, EC_CSMMASS}, {03325u, 1, EC_CM_GYMDT}, {03374u, 1, EC_S61DT}, {03376u, 1, EC_P37RANGE}, {03400u, 2, EC_LAT_SPL}, {03402u, 2, EC_LNG_SPL}, {03404u, 6, EC_DELVSLV}, {03412u, 2, EC_TIG}, {03427u, 2, EC_TGO}, {03502u, 7, EC_MARK2DWN}, {03660u, 2, EC_TTOGO}, {03662u, 2, EC_TTPI}, {03672u, 2, EC_P40TMP}, {03674u, 7, EC_MARKDOWN}, {03720u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02011u, 6, EC_504LM}, {02033u, 3, EC_TIMEMO}, {02036u, 60, EC_VECOEM}, {02132u, 6, EC_RESO}, {02140u, 6, EC_VESO}, {02146u, 2, EC_OMEGAES}, {00110u, 1, EC_EMDOT}, {01353u, 1, EC_DVTHRESH}, {01767u, 2, EC_EK1VAL}, {01771u, 2, EC_EK2VAL}, {01774u, 1, EC_FANG}, {01773u, 2, EC_EK3VAL}, {02017u, 2, EC_EMSALT}, {03007u, 1, EC_LADPAD}, {03010u, 1, EC_LODPAD}, {03011u, 1, EC_ALFAPAD}, {03012u, 1, EC_ETDECAY}, {03013u, 1, EC_ESTROKER}, {03014u, 2, EC_EKPRIME}, {03016u, 3, EC_EKTLX_I}, {03021u, 2, EC_EREPFRAC}, {03023u, 1, EC_PACTOFF}, {03024u, 1, EC_YACTOFF}, {03025u, 15, EC_HBN10}, {01776u, 2, EC_LUNARCOEF}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01135u, 2, EC_LONGBASE}};
 
 /* Luminary099 addresses (ERASABLE_ASSIGNMENTS, from the listing).        */
-static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}, {03000u, 1, EC_LM_HIASCENT}, {03001u, 2, EC_LM_ROLLPIT}, {03003u, 7, EC_LM_DAPGAINS}, {03012u, 2, EC_LM_IGNAOS}, {01354u, 2, EC_LM_RADSKAL}, {01356u, 1, EC_LM_SKALSKAL}, {02520u, 2, EC_LM_DELQFIX}, {02522u, 13, EC_LM_LRPAD}, {03420u, 2, EC_LM_LRHMAX}, {03427u, 2, EC_LM_RPCRT}, {03431u, 2, EC_LM_TNEWA}, {01244u, 2, EC_LM_MASS}, {01700u, 6, EC_X789}, {01770u, 2, EC_LM_RANGEVAR}, {01772u, 2, EC_LM_RATEVAR}, {01774u, 2, EC_LM_VARMIN}, {02000u, 10, EC_LM_NAVPAD}, {03400u, 2, EC_LM_ATIGINC}, {03402u, 2, EC_LM_PTIGINC}, {03253u, 6, EC_LM_UNFC}, {03261u, 6, EC_LM_UNWC}};
+static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}, {03000u, 1, EC_LM_HIASCENT}, {03001u, 2, EC_LM_ROLLPIT}, {03003u, 7, EC_LM_DAPGAINS}, {03012u, 2, EC_LM_IGNAOS}, {01354u, 2, EC_LM_RADSKAL}, {01356u, 1, EC_LM_SKALSKAL}, {02520u, 2, EC_LM_DELQFIX}, {02522u, 13, EC_LM_LRPAD}, {03420u, 2, EC_LM_LRHMAX}, {03427u, 2, EC_LM_RPCRT}, {03431u, 2, EC_LM_TNEWA}, {01244u, 2, EC_LM_MASS}, {01700u, 6, EC_X789}, {01770u, 2, EC_LM_RANGEVAR}, {01772u, 2, EC_LM_RATEVAR}, {01774u, 2, EC_LM_VARMIN}, {02000u, 10, EC_LM_NAVPAD}, {03400u, 2, EC_LM_ATIGINC}, {03402u, 2, EC_LM_PTIGINC}, {03253u, 6, EC_LM_UNFC}, {03261u, 6, EC_LM_UNWC}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01151u, 2, EC_LONGBASE}};
 
 /**********************************************************************
  * Whether an ECADR is one of the flagwords (STATE + 0..13).
@@ -1154,8 +1157,17 @@ static uint16_t raw_get(ec_item_t item, int k)
         case EC_MARKDOWN:
             w = agc_erase_markdown(k);
             break;
+        case EC_PHASES:
+            w = agc_phase_table_word(k / 2 + 1, (k % 2) == 0);                                           /* -PHASEn at even k */
+            break;
+        case EC_TBASES:
+            w = ((k % 2) == 0) ? agc_phase_tbase_word(k / 2 + 1) : 0u;                                   /* PHSPRDTn: not kept, 0 */
+            break;
+        case EC_LONGBASE:
+            w = (uint16_t) ((k == 0) ? (agc_phase_longbase() >> 14) : (agc_phase_longbase() & 037777u)); /* TIME2, TIME1 */
+            break;
         default:
-            w = agc_erase_mark2dwn(k); /* EC_MARK2DWN */
+            w = agc_erase_mark2dwn(k);                                                                   /* EC_MARK2DWN */
             break;
     }
 
@@ -1211,6 +1223,24 @@ static void raw_set(ec_item_t item, int k, uint16_t w)
             break;
         case EC_MARKDOWN:
             agc_erase_set_markdown(k, w);
+            break;
+        case EC_PHASES:
+            agc_phase_table_set_word(k / 2 + 1, (k % 2) == 0, w); /* -PHASEn at even k */
+            break;
+        case EC_TBASES:
+
+            if ((k % 2) == 0)
+            {
+                agc_phase_set_tbase_word(k / 2 + 1, w);
+            }
+            else
+            {
+                /* PHSPRDTn belongs to PHSNAMEn, a rope address with no C job id: not kept */
+            }
+
+            break;
+        case EC_LONGBASE:
+            agc_phase_set_longbase((k == 0) ? (((uint32_t) w << 14) | (agc_phase_longbase() & 037777u)) : ((agc_phase_longbase() & ~(uint32_t) 037777u) | w));
             break;
         default:
             agc_erase_set_mark2dwn(k, w); /* EC_MARK2DWN */

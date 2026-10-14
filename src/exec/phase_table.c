@@ -560,6 +560,116 @@ uint32_t phase_longbase(void)
 }
 
 /**********************************************************************
+ * -PHASEn / PHASEn as the erasable holds them (ERASABLE_ASSIGNMENTS: the
+ * pairs at -PHASE1 .. PHASE6), read for the address map.
+ *
+ * FUNCTION NAME: agc_phase_table_word
+ *
+ * ARGUMENTS:
+ *   group     int   I    restart group, 1..6
+ *   negative  bool  I    true: -PHASEn, false: PHASEn
+ *
+ * RETURNS: uint16_t -- the 15-bit word; 0 on a bad group
+ **********************************************************************/
+uint16_t agc_phase_table_word(int group, bool negative)
+{
+    uint16_t w = 0; /* the word; 0 for a bad group */
+
+    if (group_ok(group))
+    {
+        w = negative ? nphase_w[group] : phase_w[group];
+    }
+
+    return (w);
+}
+
+/**********************************************************************
+ * Store -PHASEn or PHASEn as a saved erasable image holds it (a host
+ * restoring a scenario before its restart: GOPROG3 then checks the pair
+ * and restarts the group as the AGC would). The variable restart point
+ * PHSNAMEn / PHSPRDTn is not part of it (a rope address has no C job id).
+ *
+ * FUNCTION NAME: agc_phase_table_set_word
+ *
+ * ARGUMENTS:
+ *   group     int       I    restart group, 1..6 (others ignored)
+ *   negative  bool      I    true: -PHASEn, false: PHASEn
+ *   w         uint16_t  I    the 15-bit word
+ **********************************************************************/
+void agc_phase_table_set_word(int group, bool negative, uint16_t w)
+{
+    if (group_ok(group))
+    {
+        if (negative)
+        {
+            nphase_w[group] = (uint16_t) (w & PH_WORD15);
+        }
+        else
+        {
+            phase_w[group] = (uint16_t) (w & PH_WORD15);
+        }
+    }
+}
+
+/**********************************************************************
+ * TBASEn word (TIME1 when the phase was set, 14 bits), read for the
+ * address map.
+ *
+ * FUNCTION NAME: agc_phase_tbase_word
+ *
+ * ARGUMENTS:
+ *   group  int  I    restart group, 1..6
+ *
+ * RETURNS: uint16_t -- TBASEn, cs (TIME1 bits); 0 on a bad group
+ **********************************************************************/
+uint16_t agc_phase_tbase_word(int group)
+{
+    return (group_ok(group) ? tbase[group] : 0u); /* 0: no such group */
+}
+
+/**********************************************************************
+ * TBASEn word (TIME1 when the phase was set, 14 bits), as above.
+ *
+ * FUNCTION NAME: agc_phase_set_tbase_word
+ *
+ * ARGUMENTS:
+ *   group  int       I    restart group, 1..6 (others ignored)
+ *   w      uint16_t  I    TBASEn, cs (TIME1 bits)
+ **********************************************************************/
+void agc_phase_set_tbase_word(int group, uint16_t w)
+{
+    if (group_ok(group))
+    {
+        tbase[group] = (uint16_t) (w & PH_TIME1);
+    }
+}
+
+/**********************************************************************
+ * LONGBASE (TIME2,TIME1 when the last LONGCALL phase was set), as above.
+ *
+ * FUNCTION NAME: agc_phase_longbase
+ *
+ * RETURNS: uint32_t -- LONGBASE, cs (28 bits)
+ **********************************************************************/
+uint32_t agc_phase_longbase(void)
+{
+    return (longbase);
+}
+
+/**********************************************************************
+ * Store LONGBASE as a saved image holds it, as above.
+ *
+ * FUNCTION NAME: agc_phase_set_longbase
+ *
+ * ARGUMENTS:
+ *   t_cs  uint32_t  I    TIME2,TIME1, cs (28 bits)
+ **********************************************************************/
+void agc_phase_set_longbase(uint32_t t_cs)
+{
+    longbase = t_cs & (AGC_TIME_MODULUS_CS - 1u);
+}
+
+/**********************************************************************
  * AGC: none (test hook) -- Test hook: corrupt -PHASEn (as a restart between the two stores of a
  * PHASCHNG would leave it) so the GOPROG3 table check can be exercised.
  *

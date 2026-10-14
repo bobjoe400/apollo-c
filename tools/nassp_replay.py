@@ -59,7 +59,21 @@ CASES = [
     # LGC before PDI, landing radar breaker open: the LR position the AGC wants (RADMODES
     # bit 6) must survive the shim's load restart (flight bug 5, alarm 00522 in P63).
     ('pdi_lm', 'Luminary099.bin', 2, 0, '-'),
+    # LGC at T-1m of lunar liftoff, P12 waiting for TIG-35 (restart group 4 phase 25): the load
+    # restart must resume it from the saved phase table (PHASEn, TBASEn, LONGBASE mapped).
+    ('liftoff_lm', 'Luminary099.bin', 2, 0, '-'),
 ]
+
+
+# The display a resumed program shows 40 s after the load (Luminary images): liftoff's P12
+# at TIG-35 s (25 s after the load) shows V06N74.
+NOUN40 = {'liftoff_lm': '74'}
+RELAY_DIGIT = {0: ' ', 21: '0', 3: '1', 25: '2', 27: '3', 15: '4', 30: '5', 28: '6', 19: '7', 29: '8', 31: '9'}
+
+
+def relay_digits(w):
+    """The two digits of a DSKY relay word (bits 10-6 and 5-1)."""
+    return RELAY_DIGIT.get((w >> 5) & 31, '?') + RELAY_DIGIT.get(w & 31, '?')
 
 
 def skip(msg):
@@ -199,6 +213,18 @@ def main():
             print('FAIL %-10s RADMODES bit 6 (LR position wanted) %s after the load, %s in the image' %
                   (name, lr[0][5], lr[0][3]))
             fails += 1
+            continue
+        nn = [x.split() for x in a if x.startswith('# noun40')]
+        if name in NOUN40 and (not nn or relay_digits(int(nn[0][2], 8)) != NOUN40[name]):
+            print('FAIL %-10s noun %s 40 s after the load, %s expected: the program was not resumed' %
+                  (name, relay_digits(int(nn[0][2], 8)) if nn else '?', NOUN40[name]))
+            fails += 1
+            continue
+        if case[1].startswith('Luminary'):
+            # This harness's yaAGC restarts the LGC images by a TC trap (NASSP's does not), so
+            # stock is no reference here: the LM cases are checked against the image only.
+            print('PASS %-10s load restart: LR position kept%s (own checks; %.1f s)' %
+                  (name, ', program resumed' if name in NOUN40 else '', dt))
             continue
         what = '%d integration steps' % steps + (' + uplink' if up != '-' else '')
         if same and steps == want:

@@ -54,6 +54,7 @@ static void test_unmapped_and_flags(agc_vehicle_t v);
 static void test_pad_loads(void);
 static void test_lm_landing_pad(void);
 static void test_lm_pad_more(void);
+static void test_phase_tables(agc_vehicle_t v, uint16_t longbase);
 
 #define CHECK(c) check((c), __LINE__, #c)
 
@@ -77,6 +78,8 @@ int main(void)
     test_pad_loads();
     test_lm_landing_pad();
     test_lm_pad_more();
+    test_phase_tables(AGC_VEHICLE_CSM, 01135u);
+    test_phase_tables(AGC_VEHICLE_LM, 01151u);
     (void) printf("test_ecadr: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -343,4 +346,33 @@ static void test_lm_pad_more(void)
     CHECK(agc_erase_x789().c[1] == 6 * 040000);
     CHECK(agc_rendz_nav_pad()->wrendvel == 017);
     CHECK(agc_rendz_erasable()->atiginc == 021);
+}
+
+/**********************************************************************
+ * AGC: none (test) -- the restart phase table by address (a saved image's
+ * -PHASEn PHASEn pairs at 0752, TBASEn at 01053 + 2(n-1), LONGBASE):
+ * stored where GOPROG reads them, read back as stored.
+ *
+ * ARGUMENTS:
+ *   v         agc_vehicle_t  I    vehicle
+ *   longbase  uint16_t       I    LONGBASE ECADR (CSM 01135, LM 01151)
+ **********************************************************************/
+static void test_phase_tables(agc_vehicle_t v, uint16_t longbase)
+{
+    uint16_t w = 0; /* a word read back */
+
+    agc_state_init(v);
+    CHECK(agc_erase_write_ecadr(00760u, 077752u) == AGC_STATUS_OK); /* -PHASE4 */
+    CHECK(agc_erase_write_ecadr(00761u, 00025u) == AGC_STATUS_OK);  /* PHASE4 = 25 */
+    CHECK(agc_erase_write_ecadr(01061u, 01234u) == AGC_STATUS_OK);  /* TBASE4 */
+    CHECK(agc_erase_write_ecadr(longbase, 05245u) == AGC_STATUS_OK);
+    CHECK(agc_erase_write_ecadr((uint16_t) (longbase + 1u), 032373u) == AGC_STATUS_OK);
+    CHECK(agc_phase_get(4) == 025u);
+    CHECK(agc_phase_table_word(4, true) == 077752u);
+    CHECK(agc_phase_tbase_word(4) == 01234u);
+    CHECK(agc_phase_longbase() == ((uint32_t) 05245u << 14 | 032373u));
+    agc_erase_read_ecadr(00761u, &w);
+    CHECK(w == 025u);
+    agc_erase_read_ecadr(01062u, &w);
+    CHECK(w == 0u);                                                 /* PHSPRDT4: not kept */
 }

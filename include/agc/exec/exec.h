@@ -226,6 +226,12 @@ void         agc_phase_change_var(uint16_t code, const agc_phase_var_t *v);     
 void         agc_phase_change2(uint16_t code_a, uint16_t code_b, const agc_phase_var_t *v); /* 2PHSCHNG */
 void         agc_phase_newphase(int group, uint16_t phase, bool set_tbase);                 /* NEWPHASE */
 uint16_t     agc_phase_get(int group);                                                      /* C(PHASEn)            */
+uint16_t     agc_phase_table_word(int group, bool negative);                                /* -PHASEn / PHASEn word (address map) */
+void         agc_phase_table_set_word(int group, bool negative, uint16_t w);
+uint16_t     agc_phase_tbase_word(int group);                                               /* TBASEn, TIME1 bits */
+void         agc_phase_set_tbase_word(int group, uint16_t w);
+uint32_t     agc_phase_longbase(void);                                                      /* LONGBASE, cs     */
+void         agc_phase_set_longbase(uint32_t t_cs);
 void         agc_phase_mr_klean(void);                                                      /* MR.KLEAN             */
 void         agc_phase_idle_klean(void);                                                    /* P00KLEAN             */
 void         agc_phase_change_program_klean(void);                                          /* V37KLEAN             */

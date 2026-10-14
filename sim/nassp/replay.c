@@ -17,7 +17,9 @@
  *           telemetry sends MCC uplinks (csm_telecom.cpp), or "-" for none
  *
  * Transcript ('#' lines are timing notes the driver does not compare):
- * for a Luminary image first "# radmodes-lrpos" (RADMODES bit 6 saved, and 5 s after the load);
+ * for a Luminary image first "# radmodes-lrpos" (RADMODES bit 6 saved, and 5 s after the load),
+ * then "# noun40" (the noun relay word 40 s after the load: the shim's load restart must resume
+ * the running program from the saved phase table, PHASEn / TBASEn / LONGBASE);
  * "step csm TETCSM=hi,lo" / "step lem TETLEM=hi,lo" with that state-vector block (42
  * words, RRECT .. XKEP) whenever P00 integration moves TETCSM or TETLEM; then the
  * uplink's result (UPBUFF, UPSVFLAG, the blocks, DELVSLV and TIG, MODREG, DSPTAB).
@@ -48,27 +50,57 @@
 #define ADDR_DSPTAB  01023
 #define ADDR_RADMODE 0110          /* RADMODES = FLGWRD12 (Luminary)          */
 #define RADM_LRPOS   040           /* RADMODES bit 6: LR position 2 desired   */
+#define DSPTAB_NOUN  8             /* DSPTAB +8: the noun digits' relay word   */
 #ifdef REPLAY_YAAGC
-#define ROPE_OK      5             /* NASSP's yaAGC agc_load_binfile: 5 when loaded */
+#define ROPE_OK 5                  /* NASSP's yaAGC agc_load_binfile: 5 when loaded */
 #else
-#define ROPE_OK      0
+#define ROPE_OK 0
 #endif
 
 static agc_t vagc;
 
 /* NASSP callbacks the engines call; nothing is attached here. */
-void ChannelOutput(agc_t *s, int ch, int v) { (void) s; (void) ch; (void) v; }
-void RequestRadarData(agc_t *s) { (void) s; }
+void ChannelOutput(agc_t *s, int ch, int v)
+{
+    (void) s;
+    (void) ch;
+    (void) v;
+}
+
+void RequestRadarData(agc_t *s)
+{
+    (void) s;
+}
+
 #ifdef REPLAY_YAAGC
-int ChannelInput(agc_t *s) { (void) s; return 0; }
-void ChannelRoutine(agc_t *s) { (void) s; }
-void ShiftToDeda(agc_t *s, int d) { (void) s; (void) d; }
-void UnblockSocket(int n) { (void) n; }
+int ChannelInput(agc_t *s)
+{
+    (void) s;
+
+    return (0);
+}
+
+void ChannelRoutine(agc_t *s)
+{
+    (void) s;
+}
+
+void ShiftToDeda(agc_t *s, int d)
+{
+    (void) s;
+    (void) d;
+}
+
+void UnblockSocket(int n)
+{
+    (void) n;
+}
+
 #endif
 
 static unsigned word(int flat)
 {
-    return (unsigned) (unsigned short) vagc.Erasable[flat / 0400][flat % 0400] & 077777u;
+    return ((unsigned) (unsigned short) vagc.Erasable[flat / 0400][flat % 0400] & 077777u);
 }
 
 static void run(double s)
@@ -85,17 +117,28 @@ static int key_code(char c)
 {
     switch (c)
     {
-    case 'V': return 021;
-    case 'N': return 037;
-    case 'E': return 034;
-    case 'R': return 022;
-    case 'C': return 036;
-    case 'K': return 031;
-    case 'P': return 032; /* not a DSKY key code: PRO is V33E below      */
-    case '+': return 032;
-    case '-': return 033;
-    case '0': return 020;
-    default:  return (c >= '1' && c <= '9') ? c - '0' : -1;
+        case 'V':
+            return (021);
+        case 'N':
+            return (037);
+        case 'E':
+            return (034);
+        case 'R':
+            return (022);
+        case 'C':
+            return (036);
+        case 'K':
+            return (031);
+        case 'P':
+            return (032); /* not a DSKY key code: PRO is V33E below      */
+        case '+':
+            return (032);
+        case '-':
+            return (033);
+        case '0':
+            return (020);
+        default:
+            return ((c >= '1' && c <= '9') ? c - '0' : -1);
     }
 }
 
@@ -119,7 +162,7 @@ static int uplink_word(char c)
 {
     int k = key_code(c);
 
-    return (k < 0) ? -1 : (int) (0100000u | ((unsigned) k << 10) | ((~(unsigned) k & 037u) << 5) | (unsigned) k);
+    return ((k < 0) ? -1 : (int) (0100000u | ((unsigned) k << 10) | ((~(unsigned) k & 037u) << 5) | (unsigned) k));
 }
 
 static void uplink(const char *s)
@@ -138,7 +181,7 @@ static void uplink(const char *s)
             run(0.1);
         }
 
-        vagc.Erasable[0][REG_INLINK]   = (int16_t) w;
+        vagc.Erasable[0][REG_INLINK]    = (int16_t) w;
         vagc.InterruptRequests[RUPT_UP] = 1;
         run(0.1);
     }
@@ -169,6 +212,7 @@ static void words(const char *tag, int base, int n)
 }
 
 #ifdef REPLAY_YAAGC
+
 /* The engine state NASSP's ApolloGuidance::LoadState restores (apolloguidance.cpp,
  * AGCState bit order), so stock yaAGC continues the saved image as it does in NASSP. */
 static int yaagc_state(const char *p)
@@ -217,9 +261,9 @@ static int yaagc_state(const char *p)
         vagc.SubstituteInstruction = (u >> b++) & 1u;
         vagc.PendFlag              = (u >> b++) & 1u;
         vagc.PendDelay             = (u >> b) & 7u;
-        b += 3;
+        b                          += 3;
         vagc.ExtraDelay            = (u >> b) & 7u;
-        b += 3;
+        b                          += 3;
         vagc.DownruptTimeValid     = (u >> b++) & 1u;
         b++; /* PadLoaded */
         vagc.NightWatchman         = (u >> b++) & 1u;
@@ -242,16 +286,17 @@ static int yaagc_state(const char *p)
     }
     else
     {
-        return 0;
+        return (0);
     }
 
-    return 1;
+    return (1);
 }
+
 #endif
 
 static void load(const char *path)
 {
-    FILE *f = fopen(path, "r");
+    FILE *f  = fopen(path, "r");
     char  line[512];
     int   in = 0;
 
@@ -293,6 +338,7 @@ static void load(const char *path)
         {
             vagc.InputChannel[c] = (int16_t) u;
         }
+
 #ifdef REPLAY_YAAGC
         else if (yaagc_state(p))
         {
@@ -312,7 +358,8 @@ int main(int argc, char **argv)
     if (argc != 5)
     {
         fprintf(stderr, "usage: replay IMAGE ROPE SECONDS UPLINK\n");
-        return 2;
+
+        return (2);
     }
 
     memset(&vagc, 0, sizeof vagc);
@@ -321,7 +368,8 @@ int main(int argc, char **argv)
     if (agc_load_binfile(&vagc, argv[2]) != ROPE_OK)
     {
         fprintf(stderr, "replay: cannot load rope %s\n", argv[2]);
-        return 2;
+
+        return (2);
     }
 
     load(argv[1]);
@@ -338,14 +386,16 @@ int main(int argc, char **argv)
     if (strstr(argv[2], "Luminary") != NULL)
     {
         printf("# radmodes-lrpos image %o after-load %o\n", lrpos, word(ADDR_RADMODE) & RADM_LRPOS);
+        run(35.0);
+        printf("# noun40 %o\n", word(ADDR_DSPTAB + DSPTAB_NOUN)); /* the noun relay word 40 s after the load */
     }
 
     keys("R");
     keys("V37E00E");
 
-    unsigned tc = word(ADDR_SV_CSM + SV_TET) << 14 | word(ADDR_SV_CSM + SV_TET + 1);
-    unsigned tl = word(ADDR_SV_LEM + SV_TET) << 14 | word(ADDR_SV_LEM + SV_TET + 1);
-    int      n  = 0;
+    unsigned tc    = word(ADDR_SV_CSM + SV_TET) << 14 | word(ADDR_SV_CSM + SV_TET + 1);
+    unsigned tl    = word(ADDR_SV_LEM + SV_TET) << 14 | word(ADDR_SV_LEM + SV_TET + 1);
+    int      n     = 0;
     double   total = atof(argv[3]);
 
     printf("start TETCSM=%o,%o TETLEM=%o,%o\n", word(ADDR_SV_CSM + SV_TET), word(ADDR_SV_CSM + SV_TET + 1), word(ADDR_SV_LEM + SV_TET), word(ADDR_SV_LEM + SV_TET + 1));
@@ -392,5 +442,5 @@ int main(int argc, char **argv)
         words("  dsptab", ADDR_DSPTAB, 11);
     }
 
-    return 0;
+    return (0);
 }
