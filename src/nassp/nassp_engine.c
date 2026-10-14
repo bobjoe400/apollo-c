@@ -79,6 +79,7 @@
 #include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
 
 #define NS_SCALER_STEP   3                    /* yaAGC SCALER_DIVIDER, per MCT          */
 #define NS_SCALER_COUNT  80                   /* yaAGC SCALER_OVERFLOW: one 1/3200 s    */
@@ -107,6 +108,7 @@
 #define NS_CH14_ALTM     000004u              /* channel 14 bit 3: altitude meter drive */
 #define NS_CH163_RESTART 000200u              /* 0163 bit 8: RESTART lamp               */
 #define NS_CH163_STBY    000400u              /* 0163 bit 9: STBY lamp                  */
+#define NS_RADM_LRPOS    000040u              /* RADMODES bit 6: LR position 2 wanted   */
 
 /* Input channels NASSP writes (keys, discretes, inverted 030-033).       */
 static const int k_inputs[] = {015, 016, 030, 031, 032, 033};
@@ -486,6 +488,8 @@ static bool import_erasable(bool all)
     return (power_cycle);
 }
 
+static void trace(const char *what, double cpu_s); /* the sidecar line (below) */
+
 /* ---- channels and interrupts ----------------------------------------------- */
 
 /**********************************************************************
@@ -506,9 +510,19 @@ static void import_channels(void)
 
         if (g_agc->InputChannel[c] != g_chan_seen[c])
         {
+            int16_t was = g_chan_seen[c]; /* the value last exported */
+
             if (sim_input((uint16_t) c, (uint16_t) ((uint16_t) g_agc->InputChannel[c] & NS_WORD), NS_WORD))
             {
                 g_keys++; /* 015 / 016: KEYRUPT1 / 2 requested */
+            }
+
+            if (c == 033)
+            {
+                char what[96]; /* the trace line */
+
+                (void) snprintf(what, sizeof (what), "chan 33 input %05o -> %05o, stored %05o", (unsigned int) (uint16_t) was & NS_WORD, (unsigned int) (uint16_t) g_agc->InputChannel[c] & NS_WORD, (unsigned int) agc_chan_read(033)); /* stdlib: host trace */
+                trace(what, 0.0);
             }
         }
     }
@@ -661,7 +675,21 @@ static void one_count(void)
 
     if (!g_started || cycle)
     {
+        /* A scenario load (not a power-on: NASSP's power-off leaves Z = 04000) resumes a
+         * running LGC through a restart, where NASSP's yaAGC simply continues. STARTSUB
+         * then re-reads RADMODES bit 6, the LR position the AGC wants, from channel 33,
+         * and an LR whose breaker is still open reports no position: the AGC would want
+         * position 2 and alarm 00522 on every LR read of P63 once the LR comes on in
+         * position 1 (flight bug 5). The saved bit is kept, as yaAGC keeps it. */
+        bool     resume = !g_started && !cycle && agc_state_vehicle() == AGC_VEHICLE_LM; /* LGC scenario load */
+        uint16_t lrpos  = (uint16_t) (agc_erase_radmodes() & NS_RADM_LRPOS);             /* as the image has it */
+
         power_up();
+
+        if (resume)
+        {
+            agc_erase_set_radmodes((uint16_t) ((agc_erase_radmodes() & ~NS_RADM_LRPOS) | lrpos));
+        }
     }
 
     import_rupts();

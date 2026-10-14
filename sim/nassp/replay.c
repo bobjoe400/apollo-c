@@ -17,6 +17,7 @@
  *           telemetry sends MCC uplinks (csm_telecom.cpp), or "-" for none
  *
  * Transcript ('#' lines are timing notes the driver does not compare):
+ * for a Luminary image first "# radmodes-lrpos" (RADMODES bit 6 saved, and 5 s after the load);
  * "step csm TETCSM=hi,lo" / "step lem TETLEM=hi,lo" with that state-vector block (42
  * words, RRECT .. XKEP) whenever P00 integration moves TETCSM or TETLEM; then the
  * uplink's result (UPBUFF, UPSVFLAG, the blocks, DELVSLV and TIG, MODREG, DSPTAB).
@@ -45,6 +46,8 @@
 #define ADDR_DELVSLV 03404         /* DELVSLV (6) and TIG (2) at 03412, CSM  */
 #define ADDR_MODREG  01011
 #define ADDR_DSPTAB  01023
+#define ADDR_RADMODE 0110          /* RADMODES = FLGWRD12 (Luminary)          */
+#define RADM_LRPOS   040           /* RADMODES bit 6: LR position 2 desired   */
 #ifdef REPLAY_YAAGC
 #define ROPE_OK      5             /* NASSP's yaAGC agc_load_binfile: 5 when loaded */
 #else
@@ -323,7 +326,20 @@ int main(int argc, char **argv)
 
     load(argv[1]);
 
+    unsigned lrpos = word(ADDR_RADMODE) & RADM_LRPOS; /* as the scenario saved it */
+
     run(5.0);
+
+    /* LGC: the LR position the AGC wants (RADMODES bit 6). NASSP resumes the saved
+     * image; our shim restarts it, and STARTSUB re-reads the bit from channel 33, where
+     * an LR that is off reports no position: the shim must keep the saved bit. A '#'
+     * line: the driver checks it in our transcript (this harness's yaAGC restarts this
+     * image by a TC trap, unlike NASSP, so stock is no reference here). */
+    if (strstr(argv[2], "Luminary") != NULL)
+    {
+        printf("# radmodes-lrpos image %o after-load %o\n", lrpos, word(ADDR_RADMODE) & RADM_LRPOS);
+    }
+
     keys("R");
     keys("V37E00E");
 

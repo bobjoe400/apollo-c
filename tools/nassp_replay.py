@@ -56,6 +56,9 @@ CASES = [
     ('insertion', 'Comanche055.bin', 1220, 2, SV_UPLINK),
     ('tli', 'Comanche055.bin', 1220, 2, DV_UPLINK),
     ('mcc2', 'Comanche055.bin', 30, 0, DV_UPLINK),
+    # LGC before PDI, landing radar breaker open: the LR position the AGC wants (RADMODES
+    # bit 6) must survive the shim's load restart (flight bug 5, alarm 00522 in P63).
+    ('pdi_lm', 'Luminary099.bin', 2, 0, '-'),
 ]
 
 
@@ -191,6 +194,12 @@ def main():
                     f.write('\n'.join(lines) + '\n')
         steps = sum(1 for x in b if x.startswith('step '))
         same, rep, off = compare(b, a)
+        lr = [x.split() for x in a if x.startswith('# radmodes-lrpos')]
+        if lr and lr[0][3] != lr[0][5]:
+            print('FAIL %-10s RADMODES bit 6 (LR position wanted) %s after the load, %s in the image' %
+                  (name, lr[0][5], lr[0][3]))
+            fails += 1
+            continue
         what = '%d integration steps' % steps + (' + uplink' if up != '-' else '')
         if same and steps == want:
             print('PASS %-10s %s %s (%.1f s)' % (name, what, 'identical' if not off else
