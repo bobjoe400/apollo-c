@@ -10,6 +10,9 @@ function's prolog.
 
 Companion documents:
 
+* [Reader's guide](../guide/README.md) -- the AGC explained through this
+  C, chapter by chapter, for a reader new to the AGC; start there if this
+  page assumes too much.
 * [flowcharts/](flowcharts) -- Mermaid flowcharts of the scheduler
   paths and the major program sequences, drawn from the C control flow.
 * [xref.md](xref.md) -- generated index AGC label -> C function ->

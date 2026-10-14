@@ -99,8 +99,9 @@ scenario restore, and the downlist words the C cannot hold
 Start at `docs/README.md`. Generated from the final code (documentation wave
 and final pass, `history/waves/document.md`):
 
-* `docs/guide/` -- the reader's guide: the AGC and this translation of it,
-  for a reader who knows C and nothing about the AGC.
+* [Reader's guide](docs/guide/README.md) (`docs/guide/`) -- the AGC and
+  this translation of it, in twelve chapters and a glossary, for a reader
+  who knows C and nothing about the AGC.
 * `docs/overview/README.md` -- the system: the two vehicles, executive and
   waitlist, interrupts and clock, erasable and flag layout (and erasable
   by address), the DSKY loop, how a program starts, runs, displays and
