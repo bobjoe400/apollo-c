@@ -920,3 +920,9 @@
             landing is the milestone; lane extends its LEM test hook
             (patch 0002) with the TTCA/ACA/ROD inputs and flies PDI to
             touchdown on both builds.
+2026-10-13  User restarting the computer (D3D error closed our PDI run at
+            sim 247 s). Lane checkpointed and stopped. Stock PDI LANDED
+            unattended at 1x (the earlier V97 was the LM tumbling under
+            warp: LM runs at 1x). Patch 0002 adds set_ttca_throttle and
+            the ROD input bits. Tree committed; STATE.md has the resume
+            plan and host map.

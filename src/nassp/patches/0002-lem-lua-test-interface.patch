@@ -26,10 +26,10 @@ index 90edc3c..4a82b71 100644
 +endif()
 \ No newline at end of file
 diff --git a/Orbitersdk/samples/ProjectApollo/src_lm/LEM.cpp b/Orbitersdk/samples/ProjectApollo/src_lm/LEM.cpp
-index 04c2244..7adb77f 100644
+index 04c2244..0697d5e 100644
 --- a/Orbitersdk/samples/ProjectApollo/src_lm/LEM.cpp
 +++ b/Orbitersdk/samples/ProjectApollo/src_lm/LEM.cpp
-@@ -2855,4 +2855,95 @@ void LEM::CalculatePMIandCOG(VECTOR3 &PMI, VECTOR3 &COG)
+@@ -2855,4 +2855,123 @@ void LEM::CalculatePMIandCOG(VECTOR3 &PMI, VECTOR3 &COG)
  		//PMI = _V(2.8, 2.29, 2.37);
  		//COG = _V(0, 0, 0);
  	}
@@ -45,7 +45,9 @@ index 04c2244..7adb77f 100644
 +//
 +// apollo-c test hook (0002-lem-lua-test-interface): Lua methods as Saturn's
 +// (saturn.cpp Lua_InitInstance): get/set_panelswitch, get_agcerasable,
-+// get_agcchannel on the LEM's vessel interface. Test instrumentation only.
++// get_agcchannel on the LEM's vessel interface; set_ttca_throttle and set_agcinputbit
++// drive the hand-controller inputs as LEM.cpp's keyboard/VESIM handlers do. Test
++// instrumentation only.
 +//
 +
 +int LEM::clbkGeneric(int msgid, int prm, void *context)
@@ -69,6 +71,30 @@ index 04c2244..7adb77f 100644
 +
 +int LEM::Lua_GetAGCChannel(int ch) {
 +	return agc.GetOutputChannel(ch);
++}
++
++// TTCA throttle position 0 (min) .. 1 (max), as the keyboard throttle keys move it
++void LEM::Lua_SetTTCAThrottle(double pos) {
++	ttca_throttle_pos_dig = (pos < 0.0) ? 0.0 : ((pos > 1.0) ? 1.0 : pos);
++}
++
++// an AGC input channel bit, as the keyboard handler sets them (e.g. 016 DescendPlus/Minus: ROD)
++void LEM::Lua_SetAGCInputBit(int channel, int bit, int value) {
++	agc.SetInputChannelBit(channel, bit, value != 0);
++}
++
++static int LemLuaCall_SetTTCAThrottle(lua_State *L) {
++	VESSEL **pv = (VESSEL**)lua_touserdata(L, 1);
++	LEM *v = (LEM*)*pv;
++	v->Lua_SetTTCAThrottle(lua_tonumber(L, 2));
++	return 0;
++}
++
++static int LemLuaCall_SetAGCInputBit(lua_State *L) {
++	VESSEL **pv = (VESSEL**)lua_touserdata(L, 1);
++	LEM *v = (LEM*)*pv;
++	v->Lua_SetAGCInputBit(lua_tointeger(L, 2), lua_tointeger(L, 3), lua_tointeger(L, 4));
++	return 0;
 +}
 +
 +static int LemLuaCall_GetPanelSwitch(lua_State *L) {
@@ -110,6 +136,8 @@ index 04c2244..7adb77f 100644
 +			{"set_panelswitch", LemLuaCall_SetPanelSwitch},
 +			{"get_agcerasable", LemLuaCall_GetAGCErasable},
 +			{"get_agcchannel", LemLuaCall_GetAGCChannel},
++			{"set_ttca_throttle", LemLuaCall_SetTTCAThrottle},
++			{"set_agcinputbit", LemLuaCall_SetAGCInputBit},
 +			{NULL, NULL}
 +		};
 +		luaL_newmetatable(L, "LEM.vtable");
@@ -128,21 +156,24 @@ index 04c2244..7adb77f 100644
 +	return 0;
 +}
 diff --git a/Orbitersdk/samples/ProjectApollo/src_lm/LEM.h b/Orbitersdk/samples/ProjectApollo/src_lm/LEM.h
-index 0605338..4aa2779 100644
+index 0605338..3435ccc 100644
 --- a/Orbitersdk/samples/ProjectApollo/src_lm/LEM.h
 +++ b/Orbitersdk/samples/ProjectApollo/src_lm/LEM.h
-@@ -616,6 +616,15 @@ public:
+@@ -616,6 +616,18 @@ public:
  	void clbkFocusChanged(bool getfocus, OBJHANDLE hNewVessel, OBJHANDLE hOldVessel);
  	void clbkGetRadiationForce(const VECTOR3& mflux, VECTOR3& F, VECTOR3& pos);
  
 +	// apollo-c test hook (0002-lem-lua-test-interface): the Lua methods Saturn has,
-+	// so an unattended script can press LM DSKY keys and switches and read the LGC.
++	// so an unattended script can press LM DSKY keys and switches and read the LGC;
++	// plus the TTCA throttle and the AGC input bits (ROD) as the keyboard/VESIM handlers set them.
 +	int clbkGeneric(int msgid, int prm, void *context);
 +	int Lua_InitInstance(void *context);
 +	int Lua_GetPanelSwitch(const char *name);
 +	void Lua_SetPanelSwitch(const char *name, int state);
 +	int Lua_GetAGCErasable(int page, int addr);
 +	int Lua_GetAGCChannel(int ch);
++	void Lua_SetTTCAThrottle(double pos);
++	void Lua_SetAGCInputBit(int channel, int bit, int value);
 +
  	void GetScenarioState(FILEHANDLE scn, void *vs);
  	void SetGenericStageState(int stat);

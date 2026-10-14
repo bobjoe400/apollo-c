@@ -3,25 +3,25 @@
 Updated: 2026-10-13
 
 ## Running agents (max 2)
-- style-final: DONE (1b03034); `make style` clean except the NASSP lane's
-  two files (on its closing list).
-- layering: DONE (0d697f8): depgraph upward table empty.
-- document: DONE (47ae168): overview, flowcharts, xref, per-lane flow
-  sections, TIPS by topic, README Status/Documentation. The
-  nassp-integration.md section waits in the scratchpad until that lane ends.
-- nassp-integration (Opus, resumed 2026-10-13): milestone 3 dev run
-  (MCC-2 SPS burn), then `make nassp-replay` (Linux offline replay of NASSP
-  scenario images through our shim vs NASSP's yaAGC: the lighter tier),
-  then milestones 4+. Note: docs/modules/nassp-integration.md.
-- DONE today: lm-simulator (10a; make lm-sim), closed-loop-fixes (L1-L3,
-  S-L1/2, PROG after POODOO, doc findings; 34/34 checkpoints vs yaAGC).
-- NASSP milestones: 1 insertion+uplink PASS, 2 TLI PASS, 3 MCC-2 SPS
-  burn in progress (checklist workbook executor). Host: C:\NASSP9 (Orbiter 2024 x64 +
-  NASSP-V9.0-Orbiter2024-437) loads Apollo 11 at the pad = the stock
-  baseline for 10c. C:\Orbiter2016, C:\Orbiter2024, C:\Orbiter-nightly
-  are dead ends (NASSP 8 needs Orbiter Beta R90) and can be deleted.
-- CODE IS FINAL: finish lane applied the EVA pass (d53337b); all gates
-  green; nothing under src/ include/ tests/ tools/prove changes any more.
+- NONE (computer restart 2026-10-13). RESUME: launch `nassp-integration`
+  (Opus) from docs/modules/nassp-integration.md Progress (CHECKPOINT
+  bullet has the exact commands) with docs/agents/nassp-integration.md
+  (hard rules: unattended runs, held warp, one Orbiter at a time, short
+  polls, answer via SendMessage to main; LM runs at 1x: warp tumbled the
+  stock LM). Host: C:\NASSP9 stock baseline (untouched), C:\NASSP9-ref
+  (stock + LEM test hook 0002), C:\NASSP9-dev (ours); sources under
+  C:\Users\cnama\Downloads\nassp-src and nassp-work; the lane's scratch
+  is backed up at C:\Users\cnama\nassp-work\scratch-backup.
+  Next: rerun OUR PDI from the scenario (stock LANDED unattended:
+  P64 at TIG+496.7 s, auto P65 at +660.8 s, touchdown +706.9 s at
+  -0.85 m/s, lng 23.7265 lat 0.6695), compare, then liftoff, rendezvous,
+  entry.
+- Mission status on our AGC in NASSP 9: insertion+uplink, TLI, MCC-2, LOI,
+  TEI, LM DOI PASS; PDI pending. Flight bugs found by the mission: 4, all
+  fixed with tests (FANG/EK3VAL map, V82 on a hyperbola, VGDISP = DELVSAB,
+  one TLAND).
+- Definition of done: all nine items met (PLAN.md status block); `make
+  style` 0 tree-wide; layering restored; docs generated at HEAD.
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md

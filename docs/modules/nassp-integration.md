@@ -235,8 +235,8 @@ and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (st
   (now waits like T-N:00); an ENTER/PRO row that comes during a V06N18 attitude maneuver waits
   for the flash (R60 shows F50N18 again when done); the TIG-5 wait accepts V99 with any noun
   (P63 flashes V99N62, P40 V99N40; waiting for N40 delayed the PRO past TIG and stock P63 then
-  showed V97 thrust fail). V40N20 at PDI-6 (sheet) gives alarm 00206 on stock (zero encode not
-  allowed with coarse align + gimbal lock) - the same on both builds, harmless.
+  showed V97 thrust fail). Alarm 00206 seen at PDI-5 on those runs came from the warp tumble
+  (gimbal lock), see below; at 1x there is none.
 - FLIGHT BUG 4 (PDI, ours only, fixed 2026-10-13): P63 on our build failed at once with alarm
   01406 (IGNALG: no TTF/8 root) where stock showed V06N61. Luminary has one TLAND (= W,
   ERASABLE_ASSIGNMENTS); the C kept two: core pad_loads.c g_tland (address map, nouns, P57) and
@@ -246,13 +246,38 @@ and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (st
   to the image, LAND not). Fix: the pad field is gone; src/lm/landing/lunar_landing.c reads
   agc_erase_tland(). tests/lm/landing.c test 3 (fails before). Replay: N61 now TG -09 50,
   TFI -14 33, CR +0003.6 (stock -09 50, -14 18 a little later, +0003.6).
-- PDI stock under the unattended checklist: P63 runs (N61, R60 maneuvers, final trim, V99N62 at
-  TIG-5, PRO, ignition at TIG) but shows V97 (thrust fail) about 25 s after ignition and the LM
-  does not brake (the crew's throttle/ullage items are manual rows); the landing itself is
-  not automatable from NASSP's checklists alone. The comparison is therefore P63 up to
-  ignition + the V97 behaviour.
+- PDI: the earlier stock "V97, no braking" result was a warp artefact, not the checklist. With
+  attitude logging (Orbiter pitch/bank/yaw, thrust in the horizon frame, RCS jets, LGC CDUs) the
+  stock LM tumbled under 20x (16 jets, CDUs frozen at gimbal lock, alarm 00206 at PDI-5) and at
+  10x a DAP pulse grew into a continuous 4-jet rotation (PDI-9); the DPS then fired upward (LM
+  climbing at 60 m/s at full throttle). At 1x the LM holds attitude (jets 0). The LM's
+  PDI runs at 1x throughout (pdi.lua ac.WAIT_WARP = 1); the 10x/20x runs are in runs/discarded/.
+- CHECKPOINT 2026-10-13 17:22 (host restart; resume from here). Bug 4 committed (HEAD c97631d).
+  Uncommitted, complete (no half edits): src/nassp/patches/0002 regenerated (git diff of tree
+  nassp-ref) with set_ttca_throttle + set_agcinputbit (LEM.cpp/LEM.h, identical in the
+  nassp-ref and nassp-agc trees; reverse-applies cleanly on nassp-ref); docs/overview note;
+  this file. No ACA setter (not needed: the landing ran P65 auto). Installed builds:
+  C:\NASSP9-ref LEM.dll 16:19 = stock 5470bf1 + new 0002; C:\NASSP9-dev Saturn5+LEM 16:20 =
+  HEAD c97631d (sync.sh, no overlays) + 0001 + new 0002 (later hook edits were comments only).
+  STOCK PDI LANDED, unattended, 1x (runs/ref_pdi): ignition sim 903.0 (AGC 369646.9), throttle-up
+  TIG+26.6 s, P64 at TIG+496.7 s (galt 2205 m, hdot -41.3, vh 152.8), V16N68 at TIG+5m
+  R1 +00477 R2 -04 04 R3 +99999 and at TIG+8m +00052 / -01 07 / -00048, script handover at
+  TIG+9m02 in P64, P65 (auto, MODREG 65) at TIG+660.8 s (galt 46 m), ground contact TIG+706.9 s
+  at -0.85 m/s, touchdown lng 23.7265 lat 0.6695 (Orbiter equ pos), mass 7512 kg, ENG STOP.
+  The checklist flies P63/P64 up to "At TIG +10m"; the LGC goes to P65 by itself; the P66/ROD
+  fallback (ATT HOLD + set_agcinputbit ROD clicks below 30 m if no P65) was not needed.
+  DEV PDI run: killed by the host D3D error at sim 247 (invalid; rerun from scenario load).
+  NEXT: bash start.sh 'C:\NASSP9-dev' 'apollo-c\A11 PDI' 4000 (pp.sh polls; poll.sh ... agc_pdi
+  collects), then tools/pdisum.py on both logs, compare, report to main, commit 0002 + docs.
+  Scratch lives in /tmp (lost on restart): copies of lua/ (pdi.lua 1x + hooks, common.lua with
+  ac.run 'to' row and ac.hook), tools/ (pdisum.py, dsky.py, cl2lua.py), start/poll/pp/sync/
+  mkscn.sh and runs/ref_pdi* are in C:\Users\cnama\nassp-work\scratch-backup; the deployed
+  pdi.lua/common.lua/cl_lm.lua are in C:\NASSP9-{ref,dev}\Script\apollo-c. Linux gates not
+  rerun since the last commit (only docs and the patch file changed).
 - LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
-  get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only). Reference LEM.dll in
+  get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only; 2026-10-13 also
+  set_ttca_throttle and set_agcinputbit, the TTCA throttle and the ROD bits of channel 016 as
+  LEM.cpp's keyboard/VESIM handlers set them, for the landing). Reference LEM.dll in
   C:\NASSP9-ref = stock 5470bf1 + 0002 (C:\Users\cnama\nassp-work\build-ref.bat, tree
   nassp-ref; release DLL kept as LEM.dll.release-437); ours = 0001 + 0002 (nassp-agc).
 - Closing list from the lead done early: `make style` clean on address_map.c, nassp_engine.c,

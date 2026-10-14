@@ -215,7 +215,11 @@ serviced only for the duration of a scaler count.
   Lua_InitInstance). Test hook src/nassp/patches/0002-lem-lua-test-interface.patch
   gives the LEM the same four read/press methods (get/set_panelswitch,
   get_agcerasable, get_agcchannel; no set_agcerasable, no behaviour change:
-  only a Lua binding and the Lua link library). It is applied to BOTH
+  only a Lua binding and the Lua link library), plus two hand-controller
+  inputs for the landing (2026-10-13): set_ttca_throttle (the TTCA throttle
+  position, as the throttle keys move it) and set_agcinputbit (an LGC input
+  bit, as LEM.cpp's ROD keys and VESIM buttons set channel 016 bits 6/7,
+  KEYRUPT2 on a set bit). It is applied to BOTH
   sides of every LM comparison: the reference LEM.dll in C:\NASSP9-ref is
   built from stock source 5470bf1 + 0002 (yaAGC engine); ours is built
   from 0001 + 0002. C:\NASSP9 (the release install) is never modified. The
