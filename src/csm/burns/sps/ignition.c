@@ -117,6 +117,10 @@ agc_status_t agc_task_ignition_csm(void)
         agc_phase_var_t v = { AGC_RESTART_TASK, AGC_JOB_NONE, AGC_TASK_IMPLCONT, 0, true, 0U };
 
         agc_phase_change2((uint16_t) 040153, (uint16_t) 007014, &v);
+
+        /* CAE TGO +1, TC WAITLIST (p.696): the AGC takes the LOW word of TGO as
+         * the delay. It fits: S40.13 limits TGO of an impulsive burn
+         * (TPAGREE) to under 600 cs, so the high word is zero.        */
         agc_status_t st = agc_waitlist_call((uint16_t) agc_dp_low(agc_erase_tgo()), AGC_TASK_ENGINOFF); /* status of agc_waitlist_call */
 
         return ((st != AGC_STATUS_OK) ? st : agc_task_implcont()); /* IMPLCONT if the WAITLIST call worked */

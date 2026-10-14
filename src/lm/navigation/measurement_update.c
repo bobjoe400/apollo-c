@@ -46,8 +46,8 @@
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   No alarms. Too large a state change stops for the noun 49 display.
- *   AGC_STATUS_NO_CONVERGE after MU_STEPS measurements (cannot happen:
- *   there are four). Integration statuses (INTSTALL sleep) are passed
+ *   AGC_STATUS_NO_CONVERGE when the loop bound MU_STEPS is exhausted (cannot
+ *   happen: range, range rate, shaft, trunnion, then the RENDEND pass). Integration statuses (INTSTALL sleep) are passed
  *   back.
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
@@ -71,7 +71,7 @@
 
 #define MU_IMUVAR ((agc_dp_t) 1099512)   /* IMUVAR 2DEC E-6 B12: rad^2  */
 #define MU_2PI_8  ((agc_dp_t) 210828714) /* 2PI/8 2DEC 3.141592653 B-2  */
-#define MU_STEPS  6                      /* bound on the measurement loop */
+#define MU_STEPS  5                      /* 4 measurements + the RENDEND pass */
 
 typedef enum mu_step
 {

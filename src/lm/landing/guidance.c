@@ -521,7 +521,7 @@ static void ldg_quadcoef(agc_sp_t c[4])
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
  *
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
- *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
+ *          failed
  **********************************************************************/
 agc_status_t agc_lm_quadguid(agc_interp_t *ip)
 {
@@ -539,11 +539,10 @@ agc_status_t agc_lm_quadguid(agc_interp_t *ip)
     a = agc_vec_scale(ip, agc_vec_div(ip, a, l->ttf_8), LDG_3_4DP);
     a = agc_vec_add(ip, agc_vec_scale(ip, t->afg, agc_dp_from_sp(c[3])), a);
 
-    if (!AGC_ASSERT(l->ttf_8 != 0))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
+    /* No TTF/8 != 0 test here: QUADGUID has none (p.808). TTF/8 comes from
+     * ROOTPSRS and is not guaranteed nonzero; a zero divisor is handled as
+     * the AGC handles it, by the saturating divides above (DV / V/SC DVOVF,
+     * OVFIND set), and the guidance pass continues with the saturated ACG. */
     return (agc_lm_afccalc(ip, a));
 }
 
