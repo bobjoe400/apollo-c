@@ -79,7 +79,12 @@ Your session can be stopped at any time. Keep `docs/modules/<agent-id>.md`
 current so a fresh agent can resume without re-reading everything:
 
 * Create the note with the design table BEFORE writing code.
-* Keep a `## Progress` section: one line per AGC routine or table,
+* (Layout since 2026-10-14: a lane note docs/modules/<lane>.md holds the
+  explanation of the module -- Scope, Design, Deviations, Program flow and
+  decisions, How to run it; the lane's diary -- Progress, Findings, Bugs
+  found, Lessons, Requests, Open questions, Test changes -- goes in
+  docs/history/lanes/<lane>.md. Write the diary there.)
+* Keep a `## Progress` section (in the history file): one line per AGC routine or table,
   `DONE <C function> <file>` / `PARTIAL <what is left>` / `TODO`. Update it
   every time you finish a routine or a file, not at the end.
 * Keep "Requested core additions" and "Requested jobs-tasks" current as you

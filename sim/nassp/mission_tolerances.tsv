@@ -5,7 +5,7 @@
 # headless -f 0.02 against stock headless -f 0.01, same scenario and script), no rounding, no hand
 # choice. Rows are the output of `sim/nassp/mission_tables.py --derive <runs> <milestone>` and are
 # frozen before the dev run of that milestone is compared; a change repeats the stock runs and is
-# logged in docs/modules/nassp-integration.md "Test changes". A column with stock spread 0 (e.g.
+# logged in docs/history/lanes/nassp-integration.md "Test changes". A column with stock spread 0 (e.g.
 # liftoff eng) has tolerance 0. Euler angles near pitch 90 (liftoff bank / yaw) spread ~180 deg in
 # stock alone: their rows judge little; the CDU columns carry the attitude.
 # Derived 2026-10-13 from runs ref_pdi_H / ref_pdi_H01 (repeated 2026-10-14 under the current
