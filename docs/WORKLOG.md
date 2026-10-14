@@ -1003,3 +1003,9 @@
             are model-level accommodations for zero-time jobs, stated as
             such. OPEN: our CMC does not hold attitude in NASSP (entry,
             earlier MCC-2 symptom); DAP words to be diffed.
+2026-10-14  CSM attitude hold in NASSP fixed: RCS DAP state unmapped after a
+            load (J/M, HOLDFLAG, THETAD, CDUxD): 13 words mapped, test
+            200/200; jets now match stock (first firing 10.89 vs 10.92 s,
+            111 vs 111 commands). Tables regenerated under the mechanical
+            rule; PDI/liftoff restated honestly. Entry tolerances being
+            frozen from two stock runs before our run.
