@@ -70,6 +70,7 @@
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 #include "radar.h"
 
 #define RR_MAXTRYS 60 /* MAXTRYS DEC 60             */
@@ -603,11 +604,11 @@ static agc_status_t rr_dorrout(agc_interp_t *ip, rr_state_t *s)
  **********************************************************************/
 static agc_dp_t rr_dodes_commands(agc_interp_t *ip, const rr_state_t *s, const agc_cdutrig_t *trig, agc_vec_t los)
 {
-    agc_dp_t sa    = agc_imu_cdulogic(agc_erase_cdus());                                                 /* rev 2^0 */
+    agc_dp_t sa    = agc_rtb_cdulogic(agc_erase_cdus());                                                 /* rev 2^0 */
     agc_dp_t sn_s  = agc_dp_sin(sa);                                                                     /* 0D, 2^1 */
     agc_dp_t cs_s  = agc_dp_cos(sa);                                                                     /* 2D, 2^1 */
     agc_dp_t shaft = agc_dp_sub(ip, agc_dp_mul_trunc(cs_s, los.c[0]), agc_dp_mul_trunc(los.c[2], sn_s)); /* 2^2 */
-    agc_dp_t ta    = agc_imu_cdulogic(agc_erase_cdut());                                                 /* rev 2^0 */
+    agc_dp_t ta    = agc_rtb_cdulogic(agc_erase_cdut());                                                 /* rev 2^0 */
     agc_dp_t cs_t  = agc_dp_cos(ta);                                                                     /* 4D, 2^1 */
     agc_dp_t sn_t  = agc_dp_sin(ta);                                                                     /* 6D, 2^1 */
     agc_dp_t ux    = agc_dp_shl(ip, agc_dp_mul_trunc(sn_t, sn_s), 1);                                    /* 2^1 */

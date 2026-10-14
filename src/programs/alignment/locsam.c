@@ -54,6 +54,7 @@
 #include "agc/core/flags_common.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 /* ---- constants (2DEC value -> DP integer = value * 2^28 / 2^B) --------- */
 #define RSUBM              ((agc_dp_t) 869045)    /* 1738090 B-29   moon radius m     */
@@ -553,8 +554,10 @@ agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls, c
     s.besti = 0;
     s.bestj = 0;
 
-    agc_align_cdutrig(cdu, &trig);                        /* CDUTRIG  */
-    agc_status_t st = agc_align_calcsmsc(ip, &trig, &nb); /* CALCSMSC */
+    const uint16_t yzx[3] = {cdu[1], cdu[2], cdu[0]}; /* CDUSPOT: CDUY, CDUZ, CDUX (AGC_TRIG_Y, _Z, _X) */
+
+    agc_imu_cdtrigs(&trig, yzx);                        /* CDUTRIG (CD*TR*GS) */
+    agc_status_t st = agc_imu_calcsmsc(ip, &trig, &nb); /* CALCSMSC */
 
     if (st == AGC_STATUS_OK)
     {

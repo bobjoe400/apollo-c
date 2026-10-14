@@ -74,6 +74,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/integration.h"
+#include "internal.h"
 
 #define WORD15                    077777u            /* one AGC word */
 #define BIT6                      000040u            /* DSALMOUT bit 6: flash */

@@ -48,8 +48,10 @@
 
 #include "agc/core/flags_common.h"
 #include "agc/core/interp_words.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 static agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx);
 
@@ -195,7 +197,7 @@ static bool star_in_position(agc_interp_t *ip, agc_vec_t star, uint16_t az)
     agc_aot_oanb(ip, az, ELEVATION_45, &ram->scaxis, &ram->uxp, &ram->uyp);
 
     /* The angles stay in MPAC words: 1STO2S of YROT and of 12 SEP + YROT
-     * reads the words ARCCOS, DSU, SR1 and DAD leave (word_forms.c).   */
+     * reads the words ARCCOS, DSU, SR1 and DAD leave (rtb_ops.c).      */
     const agc_dp_words_t sepw = agc_mpac_store(agc_mpac_acos(ip, agc_mpac_shift(ip, agc_mpac_dot(ip, star, ram->scaxis), 1))); /* DOT SL1 ARCCOS: 24D */
     const agc_dp_t       sep  = agc_dp_from_words(sepw);                                                                       /* separation from the optic axis, revs 2^0 */
 
@@ -227,8 +229,8 @@ static bool star_in_position(agc_interp_t *ip, agc_vec_t star, uint16_t az)
         const agc_dp_words_t az_words = {align_word_to_sp(az), 0};
         const agc_dp_words_t yrot     = agc_mpac_store(agc_mpac_dad(ip, agc_mpac_shift(ip, agc_mpac_dload(az_words), -1), thet)); /* YROT = AZ/2 + THET, MPAC words, revs 2^0 */
 
-        ram->cursor = align_words_to_cdu(yrot); /* 1STO2S   */
-        ram->spiral = align_words_to_cdu(agc_mpac_store(agc_mpac_dad(ip, agc_mpac_dload(spiral12), yrot)));
+        ram->cursor = agc_rtb_1sto2s_words(yrot); /* 1STO2S   */
+        ram->spiral = agc_rtb_1sto2s_words(agc_mpac_store(agc_mpac_dad(ip, agc_mpac_dload(spiral12), yrot)));
     }
 
     return (true);

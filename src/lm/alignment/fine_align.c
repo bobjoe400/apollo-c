@@ -49,7 +49,9 @@
 #include <stdint.h>
 
 #include "agc/core/flags_common.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 static agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx);
 
@@ -207,7 +209,7 @@ agc_status_t agc_job_lm_fine_align_pick_stars(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_align_ram()->tsight = agc_dp_add(&ip, align_loadtime(), TSIGHT1_CS);
+    agc_align_ram()->tsight = agc_dp_add(&ip, agc_rtb_loadtime(), TSIGHT1_CS);
 
     return (fine_align_pick(ctx));
 }

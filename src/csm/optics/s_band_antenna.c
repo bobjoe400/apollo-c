@@ -206,9 +206,9 @@ agc_status_t agc_job_sbandant_cm_recycle(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_cdutrig_t   trig;                   /* CDUTRIG sines and cosines */
-    agc_integ_out_t o;                      /* integration output (RATT, VATT) */
-    const agc_dp_t  now = align_loadtime(); /* TIME2/1, cs 2^28 */
+    agc_cdutrig_t   trig;                     /* CDUTRIG sines and cosines */
+    agc_integ_out_t o;                        /* integration output (RATT, VATT) */
+    const agc_dp_t  now = agc_rtb_loadtime(); /* TIME2/1, cs 2^28 */
 
     agc_imu_cdutrig(&trig);                                                                   /* CDUTRIG      */
     agc_status_t st = align_integ(&ip, ALIGN_CSMCONIC, now, AGC_JOB_SBANDANT_CM_RECYCLE, &o); /* status of the call */
@@ -282,20 +282,4 @@ agc_status_t agc_job_sbandant_cm(agc_job_ctx_t *ctx)
     }
 
     return (agc_job_sbandant_cm_recycle(ctx));
-}
-
-/**********************************************************************
- * AGC: TC (Comanche055 ERASABLE_ASSIGNMENTS.agc p. 85)
- *
- * TC B5OFF (terminate / proceed of the N51 display), both vehicles.
- *
- * FUNCTION NAME: agc_job_sband_b5off
- *
- * ARGUMENTS: none
- *
- * RETURNS: none
- **********************************************************************/
-void agc_job_sband_b5off(void)
-{
-    agc_svc_b5off(); /* B5OFF */
 }

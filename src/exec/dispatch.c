@@ -466,7 +466,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY:
             return (agc_job_optics_calibration_mark_display(ctx));
         case AGC_JOB_ORBITAL_NAVIGATION:
-            return (agc_job_orbital_navigation(ctx));
+            return (agc_job_orbital_navigation_csm(ctx));
         case AGC_JOB_ORBITAL_NAVIGATION_ADVANCED_OPTICS:
             return (agc_job_orbital_navigation_advanced_optics(ctx));
         case AGC_JOB_ORBITAL_NAVIGATION_CODE:
@@ -516,7 +516,7 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         case AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION:
             return (agc_job_rendezvous_final_attitude_csm_option(ctx));
         case AGC_JOB_RENDEZVOUS_NAVIGATION:
-            return (agc_job_rendezvous_navigation(ctx));
+            return (agc_job_rendezvous_navigation_csm());
         case AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK:
             return (agc_job_rendezvous_navigation_csm_check());
         case AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_INTEGRATE:
@@ -849,6 +849,8 @@ static agc_status_t agc_dispatch_job_csm(agc_job_ctx_t *ctx)
         /* src/lm */
         case AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE:
             return (agc_job_rendezvous_final_attitude_csm(ctx));
+        case AGC_JOB_SYSTEMS_TEST:
+            return (agc_job_systems_test_csm(ctx));
 
         /* src/nav/integration */
         case AGC_JOB_STATEUP_STALL:
@@ -1223,6 +1225,10 @@ static agc_status_t agc_dispatch_job_lm(agc_job_ctx_t *ctx)
             return (agc_job_vtogain_lm(ctx));
 
         /* src/csm/navigation */
+        case AGC_JOB_ORBITAL_NAVIGATION:
+            return (agc_job_rendezvous_navigation_lm(ctx));
+        case AGC_JOB_RENDEZVOUS_NAVIGATION:
+            return (agc_job_rendezvous_navigation_lm(ctx));
         case AGC_JOB_RENDEZVOUS_TRACKING_DATA:
             return (agc_job_rendezvous_tracking_data(ctx));
 

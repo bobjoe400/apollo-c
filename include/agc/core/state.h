@@ -425,10 +425,6 @@ agc_sp_t agc_erase_cm_gymdt(void);
 void     agc_erase_set_cm_gymdt(agc_sp_t v);
 
 /* Fresh-start zeroing of the files above (called by agc_erase_reset).     */
-void agc_erase_reset_counters(void);
-void agc_erase_reset_display(void);
-void agc_erase_reset_pad_loads(void);
 void agc_erase_reset_ecadr(void);
-void agc_erase_reset_restart_delays(void);
 
 #endif /* AGC_STATE_H */

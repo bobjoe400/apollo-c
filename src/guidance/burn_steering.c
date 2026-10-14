@@ -62,6 +62,7 @@
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/programs/rendezvous.h"
+#include "internal.h"
 
 /* THETACON 2DEC .31830989 B-8 (1/pi).                                     */
 static const agc_dp_t THETACON = 333772; /* 1/pi, scale 2^-8 */

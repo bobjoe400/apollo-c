@@ -271,7 +271,6 @@ void agc_csm_dap_decode_dap_data(void); /* S41.2 decode DAPDATR1/2   */
 void agc_csm_dap_rcs_gains(void);       /* S40.14 RCS gains          */
 void agc_csm_dap_rcsdapon(void);        /* RCSDAPON (call under INHINT) */
 void agc_csm_dap_massprop(void);        /* MASSPROP                  */
-void agc_csm_dap_fixcw(void);           /* FIXCW (MASSPROP +)        */
 void agc_csm_dap_zerojet(void);         /* ZEROJET                   */
 void agc_csm_tvc_preswtch(void);        /* PRESWTCH (V46 CSM/LM switch-over) */
 void agc_csm_dap_setmaxdb(void);        /* SETMAXDB (P40-P47 p.687)  */

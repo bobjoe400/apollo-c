@@ -58,6 +58,8 @@
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
+#include "agc/io/service.h"
+#include "internal.h"
 
 /* NN = 2 offsets (SSP NN 2 / DECTWO). */
 #define SO_NN_OFFSETS ((agc_sp_t) 2) /* SSP NN 2 */
@@ -505,10 +507,8 @@ agc_status_t agc_job_stable_orbit_start(agc_job_ctx_t *ctx)
     agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
 
     rz_flag_put(AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE, false);
-    agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-    rz_flag_put(AGC_FLAG_FINALFLG, false);
 
-    return (rz_ttogo_display(ctx, &ip, rz, AGC_JOB_STABLE_ORBIT_RECYCLE));
+    return (rz_selectmu_display(ctx, &ip, rz, AGC_JOB_STABLE_ORBIT_RECYCLE)); /* SELECTMU */
 }
 
 /**********************************************************************
@@ -718,10 +718,8 @@ static agc_status_t som_start(agc_job_ctx_t *ctx, bool this_active)
     rz->kt = this_active ? rz->atiginc : rz->ptiginc; /* ATIGINC / PTIGINC */
     rz_tracking_flags_on();
     rz_flag_put(AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE, true);
-    agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-    rz_flag_put(AGC_FLAG_FINALFLG, false);
 
-    return (rz_ttogo_display(ctx, &ip, rz, AGC_JOB_STABLE_ORBIT_MIDCOURSE_COMPUTE));
+    return (rz_selectmu_display(ctx, &ip, rz, AGC_JOB_STABLE_ORBIT_MIDCOURSE_COMPUTE)); /* SELECTMU */
 }
 
 /**********************************************************************

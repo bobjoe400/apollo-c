@@ -4,18 +4,18 @@
  * PURPOSE:
  *   The alignment results whose low bits depend on the words the AGC
  *   leaves in MPAC, not only on their value: ARCTRIG's angle (ASIN or
- *   ACOS with SIGN, or HIDPHALF - ASIN) as words, 1STO2S on such words,
- *   and DOT / DMP followed by SLn on the TP MPAC.  The instructions run
- *   on include/agc/core/interp_words.h; 1TO2SUB reads the major word
- *   after DDOUBL, so the same value converts to counts differing by one
- *   when the words disagree in sign.  The yaAGC oracle
+ *   ACOS with SIGN, or HIDPHALF - ASIN) as words, and DOT / DMP followed
+ *   by SLn on the TP MPAC.  The instructions run on
+ *   include/agc/core/interp_words.h.  1STO2S on such words is the RTB op
+ *   agc_rtb_1sto2s_words (io/service/rtb_ops.c): 1TO2SUB reads the major
+ *   word after DDOUBL, so the same value converts to counts differing by
+ *   one when the words disagree in sign.  The yaAGC oracle
  *   (tests/oracle/alignment.c: RRANGLES, SXTANG, RRNB, OANB) shows the
  *   AGC result.
  *
  * AGC SOURCE:
  *   INFLIGHT_ALIGNMENT_ROUTINES.agc (Comanche055 p. 1349 / Luminary099
- *   p. 1349, ARCTRIG), RTB_OP_CODES.agc pp. 1397-1398 (1STO2S, 1TO2SUB),
- *   INTERPRETER.agc TSSL (SL on the TP MPAC).
+ *   p. 1349, ARCTRIG), INTERPRETER.agc TSSL (SL on the TP MPAC).
  *
  * EXTERNAL VARIABLES:
  *   none
@@ -38,9 +38,6 @@
 
 #include "agc/core/interp_words.h"
 #include "agc/programs/alignment.h"
-
-#define WORD_MAX 16383 /* largest 14-bit magnitude                    */
-#define CDU_MOD  32768 /* one revolution in CDU counts                 */
 
 #define QTSN45 ((agc_dp_t) 47459389) /* QTSN45 2DEC .1768 (sin 45 deg / 4), rope 05520 26075 */
 
@@ -89,57 +86,6 @@ agc_dp_words_t align_arctrig_words(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t co
     }
 
     return (agc_mpac_store(m));
-}
-
-/**********************************************************************
- * 1STO2S / 1TO2SUB (RTB_OP_CODES.agc pp. 1397-1398) on the words
- *
- * FUNCTION NAME: align_words_to_cdu
- *
- * ARGUMENTS:
- *   Argument  Type           I/O  Description (scale)
- *   --------  -------------  ---  ------------------------------------
- *   w         agc_dp_words_t I    angle in revs (B0) as MPAC words
- *
- * RETURNS: uint16_t -- 2's complement CDU pattern (2^-15 rev): DDOUBL,
- *          the major word (with the minor word's carry); a negative
- *          major word converted by CCS/COM (same value; -0 gives +0);
- *          a doubling overflow wraps by one revolution (LIMITS)
- **********************************************************************/
-uint16_t align_words_to_cdu(agc_dp_words_t w)
-{
-    int32_t a     = 2 * (int32_t) w.hi; /* DDOUBL major word, counts */
-    int32_t carry = 0;                  /* from 2 x minor word       */
-
-    if (2 * (int32_t) w.lo > WORD_MAX)
-    {
-        carry = 1;
-    }
-    else if (2 * (int32_t) w.lo < -WORD_MAX)
-    {
-        carry = -1;
-    }
-    else
-    {
-        /* no carry */
-    }
-
-    a += carry;
-
-    if (a > WORD_MAX)
-    {
-        a -= CDU_MOD; /* LIMITS: one revolution */
-    }
-    else if (a < -WORD_MAX - 1)
-    {
-        a += CDU_MOD;
-    }
-    else
-    {
-        /* in range */
-    }
-
-    return ((uint16_t) ((a < 0) ? (a + CDU_MOD) : a)); /* negative counts as the 2s complement pattern */
 }
 
 /**********************************************************************

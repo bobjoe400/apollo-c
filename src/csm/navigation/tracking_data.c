@@ -234,22 +234,6 @@ static void td_getum(agc_interp_t *ip, agc_vec_t *um)
     *um = agc_vec_shl(ip, agc_vec_mat(ip, los, &refsmmat), 1);
 }
 
-/**********************************************************************
- * BVECTORS (p.576): rz_bvectors on the R22 state.
- * AGC: BVECTORS (P20-P25.agc p.576)
- *
- * FUNCTION NAME: td_bvectors
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- **********************************************************************/
-static void td_bvectors(agc_interp_t *ip)
-{
-    rz_bvectors(ip, td.rclp, td.um, &td.ustar, &td.inc);
-}
-
 /* ---- variances (REND9A .. REND10 pp.581-582) --------------------------- */
 /**********************************************************************
  * VARIANCE = base |RCLP|^2 (normalized, X1 doubled, plus 2 X2), SR*
@@ -329,7 +313,7 @@ static bool td_optics_mark(agc_interp_t *ip)
         }
     }
 
-    td_bvectors(ip); /* REND9    */
+    rz_bvectors(ip, td.rclp, td.um, &td.ustar, &td.inc); /* REND9: BVECTORS on the R22 state */
 
     if (!agc_flag_test(AGC_FLAG_VEHUPFLG))
     {

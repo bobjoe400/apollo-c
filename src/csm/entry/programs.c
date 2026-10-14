@@ -6,7 +6,7 @@
  *   GMAX/VPRED/GAMMAEI, N63 RTGO/VIO/TTE), P62 (CM/SM separation, N41
  *   checklist, entry DAP on, entry attitude), P63 (entry initialisation,
  *   waits for .05 g: STARTENT via CM/POSE), the P64-P67 mode and display
- *   changes called from the steering (reentry.c), S61.1 (state vector and
+ *   changes called from the steering (entry_*.c), S61.1 (state vector and
  *   IMU orientation check), S61.2 (the N60/N63 predictions) and S62.3
  *   (the desired gimbal angles for N22).
  *
@@ -70,6 +70,7 @@
 #include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
+#include "internal.h"
 
 static agc_status_t agc_entry_ems_data(void);
 static agc_status_t agc_job_entry_imu_check(agc_job_ctx_t *ctx);

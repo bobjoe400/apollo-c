@@ -60,6 +60,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/integration.h"
+#include "internal.h"
 
 #define WORD15                077777u                    /* one AGC word */
 #define BIT4                  000010u                    /* DAPDATR1 bit 4: max deadband */

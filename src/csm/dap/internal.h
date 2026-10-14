@@ -106,4 +106,10 @@ agc_status_t csm_tvc_pcopy(bool restart);             /* PCOPY (restart: PCOPY +
 agc_status_t csm_tvc_ycopy(bool restart);             /* YCOPY (restart: YCOPY +1)   */
 agc_status_t csm_tvc_exec_restart(agc_sp_t tvcexphs); /* EXRSTRT targets    */
 agc_status_t csm_tvc_hack(void);                      /* HACK (entry from the DAPs)  */
-#endif                                                /* CSM_DAP_INTERNAL_H */
+
+/* ---- moved from the public headers (used only in csm/dap/) ---- */
+
+/* agc/csm/dap.h */
+void agc_csm_dap_fixcw(void); /* FIXCW (MASSPROP +)        */
+
+#endif /* CSM_DAP_INTERNAL_H */

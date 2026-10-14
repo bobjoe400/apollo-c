@@ -60,8 +60,10 @@
 
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 static agc_status_t agc_job_lunar_surface_solve(agc_job_ctx_t *ctx);
 static agc_status_t agc_job_lunar_surface_stored_attitude(agc_job_ctx_t *ctx);
@@ -123,7 +125,7 @@ agc_status_t agc_align_mfref(agc_interp_t *ip)
 {
     agc_align_ram_t *ram = agc_align_ram(); /* alignment erasables */
 
-    ram->tsight               = align_loadtime();
+    ram->tsight               = agc_rtb_loadtime();
     agc_navaux_padload_t pad;                                    /* pad loads (ephemeris, RLS) */
     const bool           moon = (agc_dp_high(ram->tsight) != 0); /* BHIZ on MPAC = TSIGHT */
 
@@ -159,7 +161,7 @@ agc_status_t agc_align_refmf(agc_interp_t *ip)
     agc_cdutrig_t    t;                                         /* CDUTRIG sines and cosines */
     agc_status_t     st  = align_nb_present(ip, &t, &ram->xnb); /* status of the call */
 
-    ram->tsight                   = align_loadtime();
+    ram->tsight                   = agc_rtb_loadtime();
     const agc_mat_t      refsmmat = agc_erase_refsmmat(); /* REFSMMAT, half-unit rows */
     agc_navaux_padload_t pad;                             /* pad loads (ephemeris, RLS) */
 
@@ -411,9 +413,9 @@ static agc_status_t site_orientation(agc_job_ctx_t *ctx)
  **********************************************************************/
 agc_status_t agc_job_lunar_surface_time_entered(agc_job_ctx_t *ctx)
 {
-    agc_align_ram_t *ram = agc_align_ram();  /* alignment erasables */
-    const agc_dp_t   now = align_loadtime(); /* TIME2/1, cs 2^28 */
-    const agc_dp_t   t   = align_dsptem1();  /* keyed TALIGN (DSPTEM1), cs 2^28 */
+    agc_align_ram_t *ram = agc_align_ram();    /* alignment erasables */
+    const agc_dp_t   now = agc_rtb_loadtime(); /* TIME2/1, cs 2^28 */
+    const agc_dp_t   t   = align_dsptem1();    /* keyed TALIGN (DSPTEM1), cs 2^28 */
 
     if (t == 0)
     {
@@ -1007,7 +1009,7 @@ agc_status_t agc_job_lunar_surface_post_enter(agc_job_ctx_t *ctx)
     agc_align_ram()->alphav = agc_vec_scale(&ip, g, agc_vec_abval(&ip, agc_erase_rls()));
     agc_flag_clear(AGC_FLAG_ERADFLAG);
 
-    return (agc_lm_landing_site_latlong(ctx, align_loadtime(), AGC_JOB_LUNAR_SURFACE_SITE_UPDATED));
+    return (agc_lm_landing_site_latlong(ctx, agc_rtb_loadtime(), AGC_JOB_LUNAR_SURFACE_SITE_UPDATED));
 }
 
 /**********************************************************************

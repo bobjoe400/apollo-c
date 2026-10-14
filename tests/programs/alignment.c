@@ -65,6 +65,7 @@
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/nouns.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
 
@@ -707,9 +708,20 @@ static void test_misc(void)
     CHECK(agc_align_chkscode(050));
     CHECK(!agc_align_chkscode(051));
     CHECK(!agc_align_chkscode(-1));
-    CHECK(agc_align_ones_to_twos(agc_dp_from_double(0.25, 0)) == 020000u);
-    CHECK(agc_align_ones_to_twos(agc_dp_from_double(-0.25, 0)) == 060000u);
-    CHECK(near(rev(agc_align_cdulogic(060000u)), -0.25, 1e-9));
+    CHECK(agc_rtb_1sto2s(agc_dp_from_double(0.25, 0)) == 020000u);
+    CHECK(agc_rtb_1sto2s(agc_dp_from_double(-0.25, 0)) == 060000u);
+    CHECK(near(rev(agc_rtb_cdulogic(060000u)), -0.25, 1e-9));
+
+    /* 1TO2SUB on the words: DDOUBL carries the minor word into the major
+     * word, so (+1, -1) (value 16383 x 2^-28) gives 2 counts on the words
+     * and 1 on the value (structure lane: one 1TO2SUB, rtb_ops.c).        */
+    const agc_dp_words_t mixed = {1, -1};
+    uint16_t             rr[2] = {0, 0};
+
+    CHECK(agc_rtb_1sto2s_words(mixed) == 2u);
+    CHECK(agc_rtb_1sto2s(agc_dp_from_words(mixed)) == 1u);
+    agc_rtb_2v1sto2s(mixed, agc_dp_to_words(agc_dp_from_double(-0.25, 0)), rr);
+    CHECK(rr[0] == 2u && rr[1] == 060000u);
 
     /* SVDWN, other vehicle, moon (x2 = 2): R = (dR SR9 + RCV) SR2. */
     const agc_vec_t rcv = agc_vec_make(agc_dp_from_double(2.0e6, 27), 0, 0);  /* other-vehicle position, m 2^27 */
@@ -720,7 +732,7 @@ static void test_misc(void)
     agc_integ_svdwn(&ip, false, 2, rcv, vcv, dr, dv, 0);
     CHECK(near(agc_dp_to_double(agc_integ_r_other().c[0], 29), 2.001e6, 2.0));
     CHECK(near(agc_dp_to_double(agc_integ_v_other().c[1], 7), 16.01, 1e-3));
-}
+} /* test_misc */
 
 /**********************************************************************
  * AGC: S52.3 (Comanche055 P51-P53.agc p. 780; Luminary099 P51-P53.agc p.

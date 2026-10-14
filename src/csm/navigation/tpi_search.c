@@ -101,34 +101,6 @@ static tps_work_t tps_work; /* S17.2 work cells */
  * positive), on = passive lower.                                       */
 
 /**********************************************************************
- * LEMSTORE / CSMSTORE: an integration result as active (AVFLAG matches
- * the vehicle) or passive state.
- * AGC: LEMSTORE, CSMSTORE (P34-35_P74-75.agc p.498)
- *
- * FUNCTION NAME: tps_store
- *
- * ARGUMENTS:
- *   Argument  Type                     I/O  Description (scale)
- *   --------  -----------------------  ---  -----------------------
- *   rz        agc_rendz_t *            I/O  rendezvous erasables
- *   lm        bool                     I    true: the LM state
- *   o         const agc_integ_out_t *  I    the integration result
- **********************************************************************/
-static void tps_store(agc_rendz_t *rz, bool lm, const agc_integ_out_t *o)
-{
-    bool lm_active = agc_flag_test(AGC_FLAG_AVFLAG); /* AVFLAG */
-
-    if (lm == lm_active)
-    {
-        rz_store_active(rz, o->ratt, o->vatt);
-    }
-    else
-    {
-        rz_store_passive(rz, o->ratt, o->vatt);
-    }
-}
-
-/**********************************************************************
  * S17.1 (pp.552-553)
  * AGC: S17.1 (TPI_SEARCH.agc pp.552-553)
  *
@@ -159,7 +131,7 @@ static agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz
         return (st);
     }
 
-    tps_store(rz, true, &o);
+    rz_vehicle_store(rz, true, &o);
     st = rz_integ(ip, RZ_CSMCONIC, agc_erase_ttpi(), resume, &o);
 
     if (st != AGC_STATUS_OK)
@@ -167,7 +139,7 @@ static agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz
         return (st);
     }
 
-    tps_store(rz, false, &o);
+    rz_vehicle_store(rz, false, &o);
     agc_dp_t  rp  = 0;                                       /* |RP|, m 2^29 */
     agc_vec_t urp = agc_vec_unit(ip, rz->rpass3, &rp, NULL); /* 0D, 2^1 */
 

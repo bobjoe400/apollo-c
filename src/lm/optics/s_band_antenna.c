@@ -241,10 +241,10 @@ agc_status_t agc_job_sbandant_lm_recycle(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_integ_out_t o;                                                                                        /* integration output (RATT, VATT) */
-    agc_vec_t       ue = agc_vec_zero();                                                                      /* UE in SM, then NB, half-unit (2^1) */
-    agc_cdutrig_t   trig;                                                                                     /* CDUTRIG sines and cosines */
-    agc_status_t    st = align_integ(&ip, ALIGN_LEMCONIC, align_loadtime(), AGC_JOB_SBANDANT_LM_RECYCLE, &o); /* status of the call */
+    agc_integ_out_t o;                                                                                          /* integration output (RATT, VATT) */
+    agc_vec_t       ue = agc_vec_zero();                                                                        /* UE in SM, then NB, half-unit (2^1) */
+    agc_cdutrig_t   trig;                                                                                       /* CDUTRIG sines and cosines */
+    agc_status_t    st = align_integ(&ip, ALIGN_LEMCONIC, agc_rtb_loadtime(), AGC_JOB_SBANDANT_LM_RECYCLE, &o); /* status of the call */
 
     if (st == AGC_STATUS_OK)
     {

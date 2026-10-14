@@ -52,6 +52,8 @@
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
+#include "agc/io/service.h"
+#include "internal.h"
 
 /* 130DEG 2DEC .3611111111 (LM P34-35 p.684): 130 degrees in revolutions */
 #define TPI_130DEG ((agc_dp_t) 96935026) /* 130 deg, revolutions 2^0 */
@@ -74,32 +76,6 @@ static agc_rendz_t *tpi_begin(agc_interp_t *ip)
     agc_interp_init(ip);
 
     return (agc_rendz_erasable());
-}
-
-/**********************************************************************
- * SELECTMU (p.494): primary body, CLEAR FINALFLG, GOTO VN1645, which
- * returns into the program at next.
- * AGC: SELECTMU (P34-35_P74-75.agc p.494), VN1645
- *
- * FUNCTION NAME: tpi_selectmu
- *
- * ARGUMENTS:
- *   Argument  Type                   I/O  Description (scale)
- *   --------  ---------------------  ---  -------------------------
- *   ctx       const agc_job_ctx_t *  I    job context of the calling job
- *   ip        agc_interp_t *         I/O  interpreter state (OVFIND)
- *   rz        agc_rendz_t *          I/O  rendezvous erasables
- *   next      agc_job_id_t           I    job started next
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
- **********************************************************************/
-static agc_status_t tpi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t next)
-{
-    agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-    agc_flag_clear(AGC_FLAG_FINALFLG);
-
-    return (rz_ttogo_display(ctx, ip, rz, next));
 }
 
 /* ======================= P34 / P74 (pp.462-465) ========================== */
@@ -230,7 +206,7 @@ agc_status_t agc_job_tpi_after_elev(agc_job_ctx_t *ctx)
         agc_flag_set(AGC_FLAG_ETPIFLAG);
     }
 
-    return (tpi_selectmu(ctx, &ip, rz, AGC_JOB_TPI_CYCLE));
+    return (rz_selectmu_display(ctx, &ip, rz, AGC_JOB_TPI_CYCLE));
 }
 
 /**********************************************************************
@@ -499,7 +475,7 @@ static agc_status_t tpm_start(agc_job_ctx_t *ctx, bool this_active)
     rz->kt = this_active ? rz->atiginc : rz->ptiginc; /* DCA xTIGINC */
     rz_tracking_flags_on();
 
-    return (tpi_selectmu(ctx, &ip, rz, AGC_JOB_TPM_COMPUTE));
+    return (rz_selectmu_display(ctx, &ip, rz, AGC_JOB_TPM_COMPUTE));
 }
 
 /**********************************************************************

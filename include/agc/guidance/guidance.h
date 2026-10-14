@@ -263,8 +263,7 @@ agc_guid_t *agc_guid_state(void); /* the one guidance block    */
 /* The job that resumes after an INTSTALL wait inside a targeting
  * subroutine that has no job context (S30.1, S31.1, AGAIN, S40.1): set by
  * the job that calls it (guid_state.c).                                   */
-void         agc_guid_nav_set_resume(agc_job_id_t job);
-agc_job_id_t agc_guid_nav_resume(void);
+void agc_guid_nav_set_resume(agc_job_id_t job);
 
 /* Store the MIDTOAV1/2 output where the AGC leaves it: RN1 VN1 PIPTIME1
  * in the average-G block, RTX1 RTX2 in the rendezvous body block.          */
@@ -279,11 +278,8 @@ agc_status_t agc_guid_external_delta_v_vectors(agc_interp_t *ip, agc_vehicle_t v
 agc_status_t agc_guid_delrspl(agc_interp_t *ip, const agc_tff_t *tff, agc_dp_t tff_cs);
 agc_status_t agc_job_orbit_display_splash(void); /* CANDEL / SPLRET (CM R30) */
 
-agc_status_t agc_guid_midgim(agc_interp_t *ip, agc_vec_t dv); /* MIDGIM (CM) */
-
 /* ---- shared steering math (burn_steering.c) ------------------------------------- */
 agc_status_t agc_guid_initial_velocity_to_gain(agc_interp_t *ip, agc_vehicle_t veh); /* S40.1 */
-agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1);                       /* AGAIN (CM) */
 
 /* S40.2,3 (CM): rcs = ENG2FLAG; pactoff/yactoff: trims, 85.41"/bit.      */
 agc_status_t agc_guid_preferred_thrust_attitude_csm(agc_interp_t *ip, bool rcs, agc_sp_t pactoff, agc_sp_t yactoff);
@@ -325,7 +321,6 @@ void agc_guid_steering_cross_product(agc_interp_t         *ip,
 agc_status_t agc_guid_timeburn_csm(agc_interp_t *ip, bool ullage, bool four_jets, agc_sp_t emdot, agc_sp_t fang);
 
 /* ---- average-G jobs and tasks: Comanche (src/csm/burns/servicer.c) ------ */
-void         agc_guid_preread1_csm(void);              /* PREREAD1 (P11 liftoff)  */
 agc_status_t agc_task_preread_csm(void);               /* PREREAD     */
 agc_status_t agc_task_readaccs_csm(void);              /* READACCS    */
 agc_status_t agc_task_rereadac_csm(void);              /* REREADAC    */
@@ -482,7 +477,6 @@ agc_status_t agc_task_trimgimb(void);                               /* TRIMGIMB 
 agc_status_t agc_task_trimgimb2(void);                              /* TRIMGIMB after 60 s */
 agc_status_t agc_task_rolloff(void);                                /* roll done (VARDELAY) */
 agc_status_t agc_task_pitchoff(void);                               /* PITCHOFF    */
-agc_status_t agc_lm_rasteer1(agc_interp_t *ip);                     /* RASTEER1    */
 agc_status_t agc_lm_enginoff(void);                                 /* ENGINOFF    */
 void         agc_lm_enginof1(void);                                 /* ENGINOF1    */
 agc_status_t agc_lm_enginof2(void);                                 /* ENGINOF2    */

@@ -60,6 +60,7 @@
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
+#include "internal.h"
 
 /* ---- constants (p. 925) ------------------------------------------------ */
 static const agc_sp_t fc_gainfltr[2] = {

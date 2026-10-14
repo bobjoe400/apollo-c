@@ -214,7 +214,7 @@ typedef struct agc_entry_state
 agc_entry_state_t *agc_entry_state(void); /* the one entry erasable set */
 void               agc_entry_lexicon_reset(void);
 
-/* ---- entry guidance (reentry.c) -----------------------------------------
+/* ---- entry guidance (src/csm/entry/entry_*.c) ---------------------------
  * The steering runs inside the CM/POSE job (AVGEXIT during entry). The
  * pass functions return *display = true when the AGC ends at ENDEXIT
  * (entry display ENTRYVN, then SERVNOUT) and false for SERVNOUT alone.    */
@@ -294,10 +294,8 @@ agc_status_t agc_job_entry_imu_check_extrapolated(void);      /* S61.1 MIDTOAV2 
 
 /* RETRN1 after delay */
 agc_status_t agc_job_entry_imu_check_return(agc_job_ctx_t *ctx);
-agc_status_t agc_task_entry_start_average_g(void);  /* S61.1C  4.43        */
-agc_status_t agc_task_wake_cm_sm_separation(void);  /* WAKEP62 4.33        */
-agc_status_t agc_entry_desired_gimbal_angles(void); /* S62.3 CPHI for N22  */
-agc_status_t agc_entry_final_phase_latlong(void);   /* P67.2 LAT LONG ALT  */
+agc_status_t agc_task_entry_start_average_g(void); /* S61.1C  4.43        */
+agc_status_t agc_task_wake_cm_sm_separation(void); /* WAKEP62 4.33        */
 
 /* TFF subroutines on the debris CALCTFF leaves in *t (also DELRSPL's).  */
 agc_dp_t agc_entry_tff_trig(agc_interp_t *ip, const agc_tff_t *t, agc_dp_t *cdelf2);         /* TFF/TRIG: .5 sin   */
@@ -310,9 +308,7 @@ agc_status_t agc_task_attrates(void); /* ATTRATES  T5RUPT after BODYRATE */
 /* SETJTAG   2 s task (READACCS) */
 agc_status_t agc_task_setjtag(void);
 agc_status_t agc_task_jetcall(void);                    /* JETCALL   roll jet task */
-agc_status_t agc_job_cm_dapon(agc_job_ctx_t *ctx);      /* CM/DAPON        */
 agc_status_t agc_job_cm_dapon_wait(agc_job_ctx_t *ctx); /* NOTYET +4       */
-agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx);      /* CM/DAPIC        */
 
 /* Roll phase-plane solution of CM/RCS (pp. 1081-1086) for a roll error and
  * roll rate, as a pure function (used by CM/RCS and by unit tests).       */
@@ -420,20 +416,12 @@ agc_status_t agc_earth_orbit_insertion_monitor_set_padload(const agc_earth_orbit
 /* ======================================================================
  * Helpers shared by the entry files (src/csm/entry); formerly entry_internal.h
  * ==================================================================== */
-/* reentry.c */
-agc_interp_t *entry_ip(void);                                                    /* shared interpreter state (OVFIND) */
-void          entry_earrot(agc_interp_t *ip, agc_entry_state_t *es, bool first); /* EARROT1/2 */
-agc_status_t  entry_endexit(agc_job_ctx_t *ctx, agc_entry_state_t *es);          /* OVERNOUT */
-agc_status_t  entry_initial_target(agc_interp_t *ip, agc_entry_state_t *es);     /* STARTEN1 */
+/* entry_guidance.c, entry_targeting.c */
+agc_interp_t *entry_ip(void); /* shared interpreter state (OVFIND) */
 
 /* programs.c: mode/display changes called from the steering via RTB.        */
-agc_status_t entry_post_0_05g(agc_entry_state_t *es);
-agc_status_t entry_upcontrol(agc_entry_state_t *es);
-agc_status_t entry_ballistic(agc_entry_state_t *es);
-agc_status_t entry_final_phase(agc_entry_state_t *es);
-void         entry_disable_restart_group(void);
 
-/* reentry.c: SL n on the TP MPAC a DMP or DOT leaves (MPAC+2 bits move
+/* entry_guidance.c: SL n on the TP MPAC a DMP or DOT leaves (MPAC+2 bits move
  * up into MPAC+1), stored as DP: the AGC "DMP ... SL1" / "DOT SL1".     */
 agc_dp_t entry_tp_shl(agc_interp_t *ip, agc_tp_t m, int n);
 
@@ -442,7 +430,6 @@ agc_dp_t entry_tp_shl(agc_interp_t *ip, agc_tp_t m, int n);
  * back into [-1, 1) (i.e. modulo 360 deg).                               */
 agc_sp_t entry_angle_wrap(int32_t sum);
 agc_sp_t entry_sp_mp(agc_sp_t a, agc_sp_t b); /* MP: high word of a b      */
-agc_sp_t entry_sp_sat(int32_t sum);           /* AD whose result is kept (overflow not expected) */
 
 /* TS/ADS of an overflowed sum into erasable: the word keeps SG and bits
  * 1-14, i.e. the sum modulo 1.0 (an angle/360 wraps by 360 deg).        */

@@ -16,15 +16,15 @@
  *   ---------  ---------  ---  ---------  ------------------------------
  *   agc_rendz_t fields    I/O  per field  DP and vector erasables
  *   RSTACK     agc_dp_t   I    radar      LM radar test samples
- *   LANDMARK HORIZON TANG word I/O -       raw words (common.c)
- *   PRAXIS CPHIX     word I    CDU        CM R63 attitudes (common.c)
+ *   LANDMARK HORIZON TANG word I/O -       raw words (rendezvous_erasables.c)
+ *   PRAXIS CPHIX     word I    CDU        CM R63 attitudes (rendezvous_erasables.c)
  *   MRKBUF1 +3/+5    word I    CDU        mark buffer words
  *
  * EXTERNAL REFERENCES:
  *   Name                       Description
  *   -------------------------  -----------------------------------------
- *   agc_rendz_erasable         the rendezvous erasables (common.c)
- *   agc_erase_rstack/tang/...  storage accessors (common.c)
+ *   agc_rendz_erasable         the rendezvous erasables (rendezvous_erasables.c)
+ *   agc_erase_rstack/tang/...  storage accessors (rendezvous_erasables.c)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   none; ids not owned here return AGC_STATUS_NOT_FOUND.

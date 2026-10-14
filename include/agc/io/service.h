@@ -51,8 +51,9 @@ agc_dp_t     agc_rtb_cdulogic(uint16_t cdu_pattern);                            
 int          agc_rtb_sgnagree(agc_mpac_tp_t *mpac);                                                       /* SGNAGREE/TPAGREE  */
 agc_dp_t     agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo);
 uint16_t     agc_rtb_1sto2s(agc_dp_t angle_rev);                                                          /* 1STO2S            */
+uint16_t     agc_rtb_1sto2s_words(agc_dp_words_t w);                                                      /* 1STO2S on words   */
 void         agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3]);                                      /* V1STO2S  */
-void         agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2]);
+void         agc_rtb_2v1sto2s(agc_dp_words_t a, agc_dp_words_t b, uint16_t out[2]);                       /* 2V1STO2S */
 void         agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr);                                        /* INCRCDUS */
 agc_vec_t    agc_rtb_readpips(void);                                                                      /* READPIPS */
 agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds);                                                       /* PULSEIMU */
@@ -60,7 +61,6 @@ void         agc_rtb_transp(agc_mat_t *m);                                      
 agc_dp_t     agc_rtb_signmpac(agc_dp_t mpac);                                                             /* SIGNMPAC         */
 agc_vec_t    agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift, agc_dp_t *abval, agc_dp_t *vsq); /* NORMUNIT/NORMUNX1 */
 agc_vec_t    agc_rtb_vecsgnag(agc_vec_t v);                                                               /* VECSGNAG         */
-agc_status_t agc_rtb_quality1(agc_interp_t *ip, agc_vec_t urpv, bool moonflag, agc_sp_t e3j22r2m, agc_vec_t *out);
 
 /* ======================================================================
  * Downlink lists (src/io/downlink_lists_csm.c, src/io/downlink_lists_lm.c)
@@ -259,6 +259,7 @@ agc_status_t agc_svc_delay_wake(int slot);                               /* WAKE
 void         agc_svc_startsub_reset(void);                               /* DELAYLOC = 0             */
 void         agc_svc_gentran(const uint16_t *from, uint16_t *to, int n); /* GENTRAN */
 void         agc_svc_b5off(void);                                        /* B5OFF                    */
+void         agc_job_sband_b5off(void);                                  /* B5OFF: N51 responses     */
 void         agc_svc_trfailof(void);                                     /* TRFAILOF (CM)            */
 void         agc_svc_trfailon(void);                                     /* TRFAILON (CM)            */
 
@@ -275,23 +276,19 @@ agc_status_t agc_t4_task(agc_task_id_t task); /* ENDTNON UNZ2 ISSUP ENDZOPT */
 void         agc_t4_setissw(void);            /* SETISSW (called by imu)  */
 
 /* CSM optics (src/io/service/t4rupt_csm.c). OPTIND -0 is AGC_OPTIND_NEG0.      */
-#define AGC_OPTIND_NEG0 ((agc_sp_t) -2)              /* OPTIND -0: optics reserved (TVC) */
-agc_status_t agc_t4_optics_monitor(void);            /* OPTMON                   */
-void         agc_t4_optics_drive(void);              /* OPTDRIVE                 */
-agc_status_t agc_t4_optics_task(agc_task_id_t task); /* ENDZOPT              */
-void         agc_t4_optics_reset(bool fresh);        /* OPTIND/OPTMODES init     */
-uint16_t     agc_erase_optmodes(void);               /* OPTMODES (CM)            */
-void         agc_erase_set_optmodes(uint16_t v);
-agc_sp_t     agc_erase_optind(void);                 /* OPTIND (CM)              */
-void         agc_erase_set_optind(agc_sp_t v);
-agc_sp_t     agc_erase_swsample(void);               /* SWSAMPLE (CM) +1 CSC, 0 manual, -1 zero optics */
-uint16_t     agc_erase_desoptt(void);                /* DESOPTT (CM): OPTDRIVE trunnion, CDU word */
-void         agc_erase_set_desoptt(uint16_t v);
-uint16_t     agc_erase_desopts(void);                /* DESOPTS (CM): OPTDRIVE shaft, CDU word */
-void         agc_erase_set_desopts(uint16_t v);
+#define AGC_OPTIND_NEG0 ((agc_sp_t) -2)   /* OPTIND -0: optics reserved (TVC) */
+void     agc_t4_optics_reset(bool fresh); /* OPTIND/OPTMODES init     */
+uint16_t agc_erase_optmodes(void);        /* OPTMODES (CM)            */
+void     agc_erase_set_optmodes(uint16_t v);
+agc_sp_t agc_erase_optind(void);          /* OPTIND (CM)              */
+void     agc_erase_set_optind(agc_sp_t v);
+agc_sp_t agc_erase_swsample(void);        /* SWSAMPLE (CM) +1 CSC, 0 manual, -1 zero optics */
+uint16_t agc_erase_desoptt(void);         /* DESOPTT (CM): OPTDRIVE trunnion, CDU word */
+void     agc_erase_set_desoptt(uint16_t v);
+uint16_t agc_erase_desopts(void);         /* DESOPTS (CM): OPTDRIVE shaft, CDU word */
+void     agc_erase_set_desopts(uint16_t v);
 
 /* LM radar monitor and DAP matrix (src/io/service/t4rupt_lm.c).                 */
-agc_status_t agc_t4_rr_monitor(void);                 /* RRAUTCHK..RRGIMON+GPMATRIX */
 void         agc_t4_gimbal_matrix(void);              /* GPMATRIX / DAPT4S        */
 uint16_t     agc_erase_radmodes(void);                /* RADMODES (LM)            */
 void         agc_erase_set_radmodes(uint16_t v);
@@ -320,55 +317,18 @@ agc_status_t agc_extverb_goto_tracking_terminate(void); /* GOTOV56: V56 TRACKTRM
 
 /* ---- shared parts of the extended verbs (extended_verbs.c) -------------- */
 /* The verb and noun GOEXTVB was entered with (VERBREG, NOUNREG).          */
-int          agc_extverb_noun(void);
-agc_status_t agc_extverb_testxact(bool *ok);        /* TESTXACT: false = ALM/END done */
-agc_status_t agc_extverb_alm_end(void);             /* ALM/END: FALTON, PINBRNCH     */
-agc_status_t agc_extverb_gopin(void);               /* GOPIN: PINBRNCH               */
-agc_status_t agc_extverb_chkpooh(bool *p00);        /* CHKPOOH: P00 (ALM/END if not) */
-agc_status_t agc_extverb_goloadlv(void);            /* GOLOADLV: please-perform done */
-agc_status_t agc_extverb_upflag(agc_flag_id_t f);   /* TC UPFLAG, TC GOPIN       */
-agc_status_t agc_extverb_downflag(agc_flag_id_t f); /* TC DOWNFLAG, TC GOPIN     */
-agc_status_t agc_extverb_schedule(agc_prio_t prio, agc_job_id_t job, bool vac);
-
-/* Request a flashing display for the running verb (GOXDSPF = GOMARKF).    */
-agc_status_t agc_extverb_flash(const agc_job_ctx_t *ctx, uint8_t verb, uint8_t noun, agc_job_id_t on_proceed, agc_job_id_t on_enter);
+agc_status_t agc_extverb_gopin(void); /* GOPIN: PINBRNCH               */
 
 /* EXDSPRET: show our verb again and continue at next.                     */
 agc_status_t agc_extverb_redisplay(const agc_job_ctx_t *ctx, uint8_t verb, agc_job_id_t next);
 
 /* LM radar verb entries (extended_verbs_lm_radar.c)                       */
-agc_status_t agc_extverb_rr_zero(void);                        /* V40 N72 */
-agc_status_t agc_extverb_rr_designate(agc_job_ctx_t *ctx);     /* V41 N72 */
-agc_status_t agc_extverb_rr_designate_end(void);               /* V44     */
-agc_status_t agc_extverb_lr_position_two(void);                /* V60     */
-agc_status_t agc_extverb_radar_test(agc_job_ctx_t *ctx);       /* V63 R04 */
-agc_status_t agc_extverb_lr_spurious_test(agc_job_ctx_t *ctx); /* V78 R77 */
-agc_status_t agc_extverb_lr_spurious_test_end(void);           /* V79    */
-agc_status_t agc_extverb_rr_los_display(agc_job_ctx_t *ctx);   /* V85     */
-
-agc_status_t agc_extverb_state_vector_copy(bool from_other); /* V66 / CSM V47 */
-agc_status_t agc_extverb_lm_attck2(void);                    /* LM V43 ATTCK2 (task body)  */
+agc_status_t agc_extverb_rr_designate_end(void); /* V44     */
 
 /* vehicle halves of the jobs whose AGC code differs (wrappers in
  * extended_verbs.c pick one by vehicle)                                   */
-agc_status_t agc_job_attitude_error_load_csm(void);
-agc_status_t agc_job_attitude_error_load_lm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_tracking_terminate_csm(void);
-agc_status_t agc_job_tracking_terminate_lm(void);
-agc_status_t agc_job_dap_data_load_noun46_csm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_dap_data_load_noun46_lm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_dap_data_load_config_csm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_dap_data_load_config_lm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_dap_data_load_noun47_csm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_dap_data_load_noun47_lm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_dap_data_load_mass_csm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_dap_data_load_mass_lm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_dap_data_load_noun48_csm(agc_job_ctx_t *ctx);
-agc_status_t agc_job_dap_data_load_noun48_lm(agc_job_ctx_t *ctx);
 
 /* vehicle verb fans (extended_verbs_csm.c / extended_verbs_lm.c)          */
-agc_status_t agc_extverb_csm(agc_job_ctx_t *ctx, int verb);
-agc_status_t agc_extverb_lm(agc_job_ctx_t *ctx, int verb);
 
 bool agc_extverb_busy(void); /* EXTVBACT != 0   */
 
@@ -487,7 +447,7 @@ void         agc_selfcheck_showsum_words(uint16_t w[3]); /* SKEEP1..3 (V05 N01) 
 uint16_t     agc_selfcheck_error_count(void);            /* ERCOUNT (ALMCADR +2)               */
 
 /* ======================================================================
- * P07 IMU performance tests (src/lm/systems_test.c; Luminary099
+ * P07 IMU performance tests (src/lm/systems_test/; Luminary099
  * SYSTEM_TEST_STANDARD_LEAD_INS, IMU_PERFORMANCE_TEST_2, _TESTS_4)
  * ==================================================================== */
 agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx);                  /* REDO (V92) */

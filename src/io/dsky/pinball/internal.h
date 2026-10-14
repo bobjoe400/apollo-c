@@ -353,4 +353,9 @@ pin_sleeper_t pin_take_sleeper(bool dsplist);
 /* ---- display interface (display_if.c) ---------------------------------- */
 agc_status_t pin_pinbrnch(void); /* PINBRNCH         */
 
+/* ---- moved from the public headers (used only in io/dsky/pinball/) ---- */
+
+/* agc/io/dsky.h */
+agc_status_t agc_dsky_dspmm(void); /* DSPMM: show MODREG         */
+
 #endif /* PINBALL_INTERNAL_H */

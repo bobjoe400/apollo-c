@@ -57,6 +57,7 @@
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
+#include "internal.h"
 
 /* ---- constants (P34-35 p.485) ------------------------------------------- */
 #define TPI_MAX250  ((agc_dp_t) 25000)    /* MAX250 2DEC 25 E3 B-28: 250 s */

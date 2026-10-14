@@ -66,6 +66,7 @@
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
 #include "agc/io/service.h"
+#include "internal.h"
 #include "radar.h"
 
 #define RD_RRRANGE          011u                       /* RR range */

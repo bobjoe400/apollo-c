@@ -321,7 +321,6 @@ void         agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, const agc_mat_t *
  * the job to sleep and it will be resumed as that job (which redoes the
  * step from its start).                                                   */
 /* ADVANCE: PRECSET to TIG, passive plane UP1, active rotated into it.     */
-agc_status_t agc_rendz_advance(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
 
 /* CSI/A: on success returns OK with DELVEET1/TCDH/... set; on failure
  * returns AGC_STATUS_ALARM with *alarm = 00600..00606.                    */
@@ -329,28 +328,15 @@ agc_status_t agc_rendz_csi_a(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t *alarm,
 agc_status_t agc_rendz_cdhmvr(agc_interp_t *ip, agc_rendz_t *rz);
 void         agc_rendz_csi_cdh_lv_matrix(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m);
 
-/* S32/33.1 after the V06N81 display: DELVSIN = M^T DELVLVC, DELVSAB.      */
-agc_status_t agc_rendz_csi_cdh_dv_to_reference(agc_interp_t *ip,
-                                               agc_rendz_t  *rz,
-                                               agc_vec_t    *delvsin);
-
 /* ---- TPI / TPM (P34-35_P74-75.agc) ------------------------------------- */
 /* Every routine that integrates takes `resume`: AGC_STATUS_BUSY means
  * INTSTALL put the job to sleep; it is resumed as that job.               */
 /* S33/34.1 (pp.469-473): iterate the TPI time for the elevation ELEV
  * (ITSWICH set) or compute ELEV for TTPI (ITSWICH clear). OK = the AGC's
  * zero MPAC exit, ALARM = non-zero MPAC (caller raises 00611).           */
-agc_status_t agc_rendz_tpi_time_search(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
-
-/* The same, continued at the ADTIME/GOINT step after an INTSTALL sleep. */
-agc_status_t agc_rendz_tpi_time_search_cont(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
 
 /* S34/35.2 (p.475-476): passive to TPASS4, ACTCENT, INITVEL, DELVLVC.   */
 agc_status_t agc_rendz_tpi_required_velocity(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
-
-/* S3435.25 (p.475-476): RTARG VPASS4 given -> ACTCENT, DELLT4, INITVEL,
- * DELVLVC (also P38/P39 MAINRTNE).                                     */
-agc_status_t agc_rendz_intercept_velocity(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rtarg, agc_vec_t vpass4, agc_job_id_t resume);
 
 /* S34/35.3 (p.477): crew-loaded DELVLVC -> DELVEET3, RTARG, DVLOS.      */
 agc_status_t agc_rendz_tpi_crew_overwrite(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
@@ -363,10 +349,6 @@ agc_status_t agc_rendz_initvel(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit
 
 /* HAVEGUES (p.487): INITVEL with the previous COGA as Lambert's guess.  */
 agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numit, agc_dp_t e4, agc_job_id_t resume);
-
-/* P34/P74E (pp.464-465): TPASS4 from CENTANG, S34/35.2, DELVTPI,
- * DELVTPF, POSTTPI, TIG.                                                 */
-agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
 
 /* ---- R31 rendezvous parameters (COMPDISP) ------------------------------- */
 /* COMPDISP (R31.agc): RANGE, RRATE of the other vehicle (RATT VATT) seen
@@ -456,23 +438,16 @@ typedef enum agc_rr_designate_result
 
 /* RRLIMCHK: in limits */
 
-/* RRDESSM: designate to RRTARGET (half unit, SM; set by LPS20.1).       */
-agc_status_t agc_rr_designate_sm(agc_interp_t *ip, agc_rr_designate_result_t *res);
-
-/* RRDESNB: designate to RR gimbal angles (trunnion, shaft CDU words).   */
-agc_status_t agc_rr_designate_nb(agc_interp_t *ip, uint16_t trunnion, uint16_t shaft, agc_rr_designate_result_t *res);
-
 /* read lead-ins (one sample; LRVEL five), RADAREAD, SAMPLSUM            */
-void         agc_radar_rrrange(void);                                 /* RRRANGE       */
-void         agc_radar_rrrdot(void);                                  /* RRRDOT        */
-void         agc_radar_lralt(void);                                   /* LRALT         */
-void         agc_radar_lrvel(agc_sp_t beam2);                         /* LRVEL 0,2,4 = Z,Y,X */
-void         agc_radar_lr_velocity_beam(int beam, agc_sp_t nsamples); /* LRVELZ/Y/X */
-agc_status_t agc_rendz_radar_read(void);                              /* RADAREAD (rupt) */
-agc_dp_t     agc_radar_samplsum(void);                                /* SAMPLSUM counts */
-uint16_t     agc_erase_dnrrange(int index);                           /* DNRRANGE +index */
-void         agc_radar_landing_radar_lights(void);                    /* R12LITES      */
-agc_status_t agc_radar_powered_flight_designate(void);                /* R29 (SERVICER) */
+void         agc_radar_rrrange(void);                  /* RRRANGE       */
+void         agc_radar_rrrdot(void);                   /* RRRDOT        */
+void         agc_radar_lralt(void);                    /* LRALT         */
+void         agc_radar_lrvel(agc_sp_t beam2);          /* LRVEL 0,2,4 = Z,Y,X */
+agc_status_t agc_rendz_radar_read(void);               /* RADAREAD (rupt) */
+agc_dp_t     agc_radar_samplsum(void);                 /* SAMPLSUM counts */
+uint16_t     agc_erase_dnrrange(int index);            /* DNRRANGE +index */
+void         agc_radar_landing_radar_lights(void);     /* R12LITES      */
+agc_status_t agc_radar_powered_flight_designate(void); /* R29 (SERVICER) */
 
 /* waitlist tasks and jobs of the radar routines                         */
 agc_status_t agc_task_rrturnon(void);            /* RRTURNON      */
@@ -492,10 +467,9 @@ agc_status_t agc_task_lr_position_scan(void);    /* LRPOSCAN      */
 agc_status_t agc_task_lr_position_check(void);   /* LRPOSNXT      */
 agc_status_t agc_task_lr_position_settled(void); /* LASTLRDT      */
 
-agc_status_t agc_task_radsamp(void);      /* RADSAMP       */
-agc_status_t agc_job_radar_sample(void);  /* DORSAMP       */
+agc_status_t agc_task_radsamp(void);     /* RADSAMP       */
+agc_status_t agc_job_radar_sample(void); /* DORSAMP       */
 void         agc_job_radar_sample_done(void);
-agc_dp_t     agc_erase_rstack(int index); /* RSTACK, 0..3  */
 void         agc_erase_set_rstack(int index, agc_dp_t v);
 
 /* RRDESNB to TANG, TANG +1 (verb 41 noun 72); *started false when the
@@ -562,8 +536,6 @@ agc_status_t agc_rendz_ttogo_display_start(const agc_job_ctx_t *ctx,
                                            agc_job_id_t         resume_as);
 
 /* LLASRD / LLASRDA (P22): LAT, LONG, ALT <-> the noun 89 registers.    */
-void agc_rendz_llasrd(void);
-void agc_rendz_llasrda(void);
 
 /* ---- job entry points (generated list follows) ---- */
 /* imu_realign.c */
@@ -720,9 +692,6 @@ agc_status_t agc_job_gyro_torquing_pulsed(void);
 agc_status_t agc_job_gyro_torquing_return(void);
 
 /* lm/navigation/navigation.c (P20 = P22 LM, P25 LM) */
-/* P20: by vehicle */
-agc_status_t agc_job_rendezvous_navigation(agc_job_ctx_t *ctx);
-
 /* PROG20 (LM) */
 agc_status_t agc_job_rendezvous_navigation_lm(agc_job_ctx_t *ctx);
 
@@ -882,18 +851,14 @@ agc_status_t agc_job_w_matrix_monitor_proceed(void);
 agc_status_t agc_rendz_tracking_attitude_csm(agc_job_id_t ret_job);
 agc_status_t agc_job_tracking_attitude_csm(agc_job_ctx_t *ctx);
 agc_status_t agc_job_tracking_attitude_csm_maneuvered(void);
-agc_sp_t     agc_erase_r61cntr(void);                             /* R61CNTR (CM)       */
-void         agc_erase_set_r61cntr(agc_sp_t v);
-uint16_t     agc_rendz_tracking_angles(bool preferred, int axis); /* PRAXIS / CPHIX */
 
-/* csm/navigation/navigation.c (P20 CSM, R21CSM V57, R23CSM V54, dispatch) */
-/* P22: by vehicle */
-agc_status_t agc_job_orbital_navigation(agc_job_ctx_t *ctx);
-
+/* csm/navigation/navigation.c (P20 CSM, R21CSM V57, R23CSM V54); the
+ * registry dispatches P20 / P22 by vehicle (LM: PROG22 = PROG20).        */
 /* PROG22 (CM) */
 agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx);
 
 /* PROG20 (CM) */
+agc_status_t agc_job_rendezvous_navigation_csm(void);
 agc_status_t agc_job_rendezvous_navigation_csm_integrate(void);
 
 /* PIKUP20 */
@@ -924,7 +889,6 @@ agc_status_t agc_job_rendezvous_sighting_mark_done(agc_job_ctx_t *ctx);
 agc_status_t agc_job_rendezvous_sighting_mark_end(agc_job_ctx_t *ctx);
 agc_sp_t     agc_erase_trunbias(void); /* TRUNBIAS (R57), CDU units  */
 uint16_t     agc_erase_horizon(void);  /* HORIZON (noun 70 R3)       */
-void         agc_erase_set_horizon(uint16_t v);
 
 /* csm/navigation/tracking_data.c (R22 CSM, VHFREAD) */
 agc_status_t agc_job_rendezvous_tracking_data_csm(void); /* R22 */

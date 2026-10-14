@@ -475,7 +475,7 @@ typedef enum agc_job_id
     AGC_JOB_OPTICS_CALIBRATION_END,                         /* CSM: ENDR57 */
     AGC_JOB_OPTICS_CALIBRATION_END_MARK,                    /* CSM: ENDMARK PRIO14 */
     AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY,                /* CSM */
-    AGC_JOB_ORBITAL_NAVIGATION,                             /* CSM: P22 (by vehicle) */
+    AGC_JOB_ORBITAL_NAVIGATION,                             /* P22 (by vehicle; LM PROG22 = PROG20) */
     AGC_JOB_ORBITAL_NAVIGATION_ADVANCED_OPTICS,             /* CSM: DE-GR-50 */
     AGC_JOB_ORBITAL_NAVIGATION_CODE,                        /* CSM: S22DSPPA */
     AGC_JOB_ORBITAL_NAVIGATION_CODE_CHECK,                  /* CSM: S22DSPPA PROCEED */
@@ -500,7 +500,7 @@ typedef enum agc_job_id
     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE,          /* CSM: V89RECL */
     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_MANEUVER,         /* CSM: R60CSM */
     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION,           /* CSM: V04N06 */
-    AGC_JOB_RENDEZVOUS_NAVIGATION,                          /* CSM: PROG20 = PROG22 (LM) */
+    AGC_JOB_RENDEZVOUS_NAVIGATION,                          /* PROG20 (by vehicle) */
     AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK,                /* CSM: CONTCHK after 4 s */
     AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_INTEGRATE,            /* CSM: PROG20 integration */
     AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS,               /* CSM: P20R52JB */
@@ -588,7 +588,7 @@ typedef enum agc_job_id
     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_LM_STATE,  /* LM */
     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER,  /* LM */
     AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_OPTION,    /* LM */
-    AGC_JOB_SYSTEMS_TEST,                        /* LM: REDO (V92, P07) */
+    AGC_JOB_SYSTEMS_TEST,                        /* REDO (V92, P07) */
     AGC_JOB_SYSTEMS_TEST_COARSE_ALIGNED,         /* LM: POSGMBL IMUSLLLG (P07) */
     AGC_JOB_SYSTEMS_TEST_DRIFT_START,            /* LM: ESTICADR: GOESTIMS JOBWAKE (P07) */
     AGC_JOB_SYSTEMS_TEST_EARTH_RATE_DONE,        /* LM: EARTHR* IMUSLLLG -> TC QPLACES (P07) */

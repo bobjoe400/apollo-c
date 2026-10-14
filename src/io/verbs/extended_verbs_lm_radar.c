@@ -76,6 +76,7 @@
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
+#include "internal.h"
 
 #define WORD15        077777u                           /* one AGC word */
 #define BIT2          000002u                           /* CHAN33: RR auto-mode discrete (inverted)   */

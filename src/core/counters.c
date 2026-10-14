@@ -62,6 +62,7 @@
 
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
+#include "internal.h"
 
 #define CTR_RHC_N    3 /* P, Q, R                                 */
 #define CTR_CDUCMD_N 2 /* 0 CDUTCMD (TVCYAW), 1 CDUSCMD (TVCPITCH) */

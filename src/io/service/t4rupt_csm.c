@@ -67,6 +67,7 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/io/service.h"
+#include "internal.h"
 
 #define BIT1         000001u /* BIT1: ZERO OCDU / ZOPT task working     */
 #define BIT2         000002u /* BIT2: OCDU error counters / fail inhib  */

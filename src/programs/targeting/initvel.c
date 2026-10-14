@@ -58,6 +58,7 @@
  **********************************************************************/
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
+#include "agc/nav/conic.h"
 
 /* Work cells of one INITVEL call (AGC erasables RTARG1 R1VEC R2VEC UN
  * COZY4 ITCTR VTARGTAG VTARGET and the Lambert inputs).                */
@@ -272,8 +273,8 @@ static void iv_finish(agc_interp_t *ip, agc_rendz_t *rz, iv_work_t *w)
 
     if (!rz_is_csm())
     { /* LM INITVELX */
-        agc_dp_t mu = rz_mutable_mu(rz->body.rtx2 != 0); /* MU, body scale */
-        agc_dp_t a;                                      /* MU R1A / 2 (scale MU's x R1A's) */
+        agc_dp_t mu = agc_dp_from_words(agc_conic_mu_((rz->body.rtx2 != 0) ? AGC_CONIC_MOON : AGC_CONIC_EARTH)); /* MUTABLE: MU, body scale */
+        agc_dp_t a;                                                                                              /* MU R1A / 2 (scale MU's x R1A's) */
 
         a = agc_dp_shr(agc_dp_mul_trunc(mu, w->lout.r1a), 1);
 

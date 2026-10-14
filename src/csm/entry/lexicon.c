@@ -35,6 +35,7 @@
 #include "agc/core/assertion.h"
 #include "agc/csm/entry.h"
 #include "agc/csm/entry_lexicon.h"
+#include "internal.h"
 
 /* The entry erasables. EBANK7 (RTINIT..) and EBANK6 (AOG..) in the AGC.    */
 static agc_entry_state_t entry_state; /* scales per member */

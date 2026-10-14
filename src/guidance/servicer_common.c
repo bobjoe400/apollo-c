@@ -4,12 +4,12 @@
  * PURPOSE:
  *   The average-G package shared by SERVICER207.agc and SERVICER.agc:
  *   the PIPA reader PIPASR, the REREADAC restart decision, the gravity
- *   routine CALCGRAV and the state-vector integrator CALCRVG, and the
- *   copy cycle (GENTRAN / COPYCYC).
+ *   routine CALCGRAV and the state-vector integrator CALCRVG, the copy
+ *   cycle (GENTRAN / COPYCYC) and SERVEXIT.
  *
  * AGC SOURCE:
  *   Comanche055 SERVICER207.agc pp. 819-836 (PIPASR, REREADAC, CALCGRAV,
- *     CALCRVG, GENTRAN)
+ *     CALCRVG, GENTRAN, SERVEXIT)
  *   Luminary099 SERVICER.agc pp. 857-897 (same routines; differs: UNITZ
  *     for UNITW, KPIP1 after the VXM, PGUIDE for the 2-s period)
  *
@@ -54,6 +54,8 @@
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/programs/rendezvous.h"
+
+#define PH_5_3_A ((uint16_t) 000035) /* SERVEXIT: OCT 00035, A, 5.3 = REREADAC only */
 
 /* ---- constants (SERVICER207 p.836 / SERVICER p.881, CONTROLLED_CONSTANTS) */
 /* -MUDT(E) 2DEC* -7.9720645 E+12 B-44*: -mu(earth) * 200 cs, m^3/cs.      */
@@ -408,4 +410,27 @@ void agc_guid_store_midtoav(const agc_integ_midtoav_out_t *o)
     rz->body.rtx1 = (agc_sp_t) o->rtx1;
     rz->body.rtx2 = (agc_sp_t) o->rtx2;
     rz->body.moon = (o->rtx2 != 0);
+}
+
+/**********************************************************************
+ * SERVEXIT (SERVICER207.agc p.830, SERVICER.agc p.866; both vehicles):
+ * leave only 5.3 (REREADAC) protection and end the job.
+ *
+ * FUNCTION NAME: agc_job_servexit
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when AVGEXIT
+ *          holds no job
+ **********************************************************************/
+agc_status_t agc_job_servexit(void)
+{
+    if (!AGC_ASSERT(agc_guid_state()->avg.avgexit != AGC_JOB_NONE))
+    {
+        return (AGC_STATUS_BAD_ARG);
+    }
+
+    agc_phase_change(PH_5_3_A);
+
+    return (AGC_STATUS_OK);
 }

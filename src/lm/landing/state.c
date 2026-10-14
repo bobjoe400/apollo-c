@@ -31,6 +31,7 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/lm/landing.h"
+#include "internal.h"
 
 static agc_lm_pad_t lm_pad; /* W-matrix overlay pad loads, EBANK 5     */
 static agc_lm_ldg_t lm_ldg; /* landing guidance erasables, EBANK 7     */

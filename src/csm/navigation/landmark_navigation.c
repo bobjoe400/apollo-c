@@ -72,6 +72,7 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
+#include "internal.h"
 
 #define LN_SCTVAR     ((agc_dp_t) 70368744) /* SCTVAR 2DEC 1.0 E-6 B+18   */
 #define LN_IMUVARR    ((agc_dp_t) 2814750)  /* IMUVARR 2DEC 0.04 E-6 B+18 */

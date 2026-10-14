@@ -41,7 +41,9 @@
 #include <stdint.h>
 
 #include "agc/core/flags_common.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 #define VN_STAR_CODE ALIGN_VN(1, 70)     /* V01N70 VN 0170                 */
 #define VN_AZ_EL     ALIGN_VN(6, 87)     /* V06N87 VN 687                  */
@@ -135,7 +137,7 @@ static agc_status_t orient_to_star(const agc_job_ctx_t *ctx, uint16_t az, uint16
     agc_interp_init(&ip);
     agc_aot_oanb(&ip, az, el, &ram->scaxis, &ram->uxp, &ram->uyp);
 
-    return (align_planet(ctx, align_loadtime(), AGC_JOB_LM_AUTO_OPTICS_STAR_LOCATED));
+    return (align_planet(ctx, agc_rtb_loadtime(), AGC_JOB_LM_AUTO_OPTICS_STAR_LOCATED));
 }
 
 /**********************************************************************

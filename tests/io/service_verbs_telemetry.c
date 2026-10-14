@@ -737,7 +737,7 @@ static void test_dap_data_mass(void)
 
 /**********************************************************************
  * AGC: none -- ECADR of a spec name: AINLA+k, W+k, E4,ooo (the test erasables are kept
- * at their AGC addresses, src/lm/systems_test.c).
+ * at their AGC addresses, src/lm/systems_test/test_erasables.c).
  *
  * ARGUMENTS:
  *   name  const char *  I   AINLA, W or E4,ooo

@@ -64,6 +64,7 @@
 #include "agc/nav/integration.h"
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
+#include "internal.h"
 
 /**********************************************************************
  * AGC: none -- guidance (SERVICER, P30-P47) DP erasables named by the

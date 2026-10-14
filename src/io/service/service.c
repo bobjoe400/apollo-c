@@ -312,6 +312,22 @@ void agc_svc_b5off(void)
 }
 
 /**********************************************************************
+ * B5OFF (p.1491) as the job a display response starts: the TERMINATE and
+ * PROCEED of the S-band antenna angles display (V06 N51, R05 of both
+ * vehicles) go to B5OFF, which ends the job.
+ *
+ * FUNCTION NAME: agc_job_sband_b5off
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+void agc_job_sband_b5off(void)
+{
+    agc_svc_b5off(); /* B5OFF */
+}
+
+/**********************************************************************
  * TRFAILOF (C p.1492): TRACKER lamp off (DSPTAB +11D bit 8) and re-arm
  * the OCDU fail lamp (OPTMODES bit 7).
  **********************************************************************/

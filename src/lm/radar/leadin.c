@@ -42,7 +42,7 @@
  *   the extended verbs (sys-misc, src/io/verbs/extended_verbs_lm_radar.c).
  *   DEVIATION: RSTACK EQUALS RANGE in the AGC (eight words over RANGE,
  *   RRATE, RTHETA); here it has its own storage (agc_erase_rstack,
- *   src/programs/navigation/common.c).
+ *   src/programs/navigation/rendezvous_erasables.c).
  **********************************************************************/
 #include <stddef.h>
 
@@ -51,6 +51,7 @@
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
 #include "agc/imu/imu.h"
+#include "internal.h"
 
 #define LEADIN_PRIO25 ((agc_prio_t) 025) /* DORSAMP job priority */
 

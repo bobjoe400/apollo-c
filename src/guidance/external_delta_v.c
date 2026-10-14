@@ -58,6 +58,7 @@
 #include "agc/guidance/guidance.h"
 #include "agc/io/dsky.h"
 #include "agc/programs/rendezvous.h"
+#include "internal.h"
 
 #define GRP4 4 /* restart group 4 (P30/P31 display) */
 

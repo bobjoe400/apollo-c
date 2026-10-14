@@ -4,8 +4,7 @@
  * PURPOSE:
  *   P20 RENDEZVOUS NAVIGATION, CSM, with the R21CSM / R23CSM marking
  *   verbs (V57 / V54), SETINTG, the CNTCHK / WAITONE / REDOR22 wait of
- *   R22, LLASRD / LLASRDA, and the vehicle dispatch of the P20 / P22
- *   entries shared with the LM (PROG22 = PROG20 in the LM). "To control
+ *   R22, LLASRD / LLASRDA. "To control
  *   the CSM attitude and optics to acquire the LEM in the S+T field and
  *   to point the CSM transponder at the LEM. To update either the LEM or
  *   CSM state vector (as specified by the astronaut by the DSKY entry) on
@@ -15,7 +14,9 @@
  *   Comanche055 P20-P25.agc pp. 562-564 (PROG20, P20.1, P20.3, PIKUP20,
  *   P20R52JB), pp. 572-573 (R21CSM, R21C1, R21CSMA, R21END, R23CSM,
  *   R23CSM1), p. 586 (SETINTG, WAITONE, CONTCHK, REDOR22), p. 610
- *   (LLASRD, LLASRDA); CSM only
+ *   (LLASRD, LLASRDA); CSM only. The registry dispatches the P20 / P22
+ *   jobs by vehicle (tools/registry.tsv: PROG20, PROG22 CSM here and in
+ *   orbital_navigation.c, LM PROG20 = PROG22 in src/lm/navigation).
  *
  * EXTERNAL VARIABLES:
  *   Name       Type       I/O  Scale      Description
@@ -57,9 +58,9 @@
 #include "agc/core/state.h"
 #include "agc/csm/dap.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-
-static agc_status_t agc_job_rendezvous_navigation_csm(void);
+#include "internal.h"
 
 #define NC_PRIO26       ((agc_prio_t) 026) /* PRIO26 */
 #define NC_PRIO14       ((agc_prio_t) 014) /* PRIO14 */
@@ -69,58 +70,6 @@ static agc_status_t agc_job_rendezvous_navigation_csm(void);
 
 static agc_dp_t     nc_marktime; /* MARKTIME: cs 2^28          */
 static agc_job_id_t nc_pointex;  /* POINTEX: WAITONE return    */
-
-/* ---- vehicle dispatch --------------------------------------------------- */
-/**********************************************************************
- * P20 (V37E20E): the CSM or the LM program.
- * AGC: PROG20 (Comanche055 P20-P25.agc p.562, Luminary099 p.492)
- *
- * FUNCTION NAME: agc_job_rendezvous_navigation
- *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
- **********************************************************************/
-agc_status_t agc_job_rendezvous_navigation(agc_job_ctx_t *ctx)
-{
-    if (rz_is_csm())
-    {
-        return (agc_job_rendezvous_navigation_csm()); /* CM PROG20 */
-    }
-
-    return (agc_job_rendezvous_navigation_lm(ctx)); /* LM PROG20 */
-}
-
-/**********************************************************************
- * P22 (V37E22E): CSM orbital navigation; LM lunar surface navigation is
- * the P20 code (PROG22 = PROG20).
- * AGC: PROG22 (Comanche055 P20-P25.agc, Luminary099 p.492)
- *
- * FUNCTION NAME: agc_job_orbital_navigation
- *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------
- *   ctx       agc_job_ctx_t *  I    job context (checked, not used)
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor, AGC_STATUS_BAD_ARG for a NULL ctx, else the status of
- *          the executive, display or navigation call that failed
- **********************************************************************/
-agc_status_t agc_job_orbital_navigation(agc_job_ctx_t *ctx)
-{
-    if (rz_is_csm())
-    {
-        return (agc_job_orbital_navigation_csm(ctx)); /* CM PROG22 */
-    }
-
-    return (agc_job_rendezvous_navigation_lm(ctx)); /* LM PROG22 = PROG20 */
-}
 
 /**********************************************************************
  * MARKTIME: the time of the last state update (CSM P20 / P23).
@@ -269,7 +218,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(void)
  *          ended or queued its successor, else the status of the executive,
  *          display or navigation call that failed
  **********************************************************************/
-static agc_status_t agc_job_rendezvous_navigation_csm(void)
+agc_status_t agc_job_rendezvous_navigation_csm(void)
 {
     agc_status_t st = agc_imu_status_check(); /* R02BOTH  */
 

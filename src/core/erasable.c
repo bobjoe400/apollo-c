@@ -51,6 +51,7 @@
 #include <stdint.h>
 
 #include "agc/core/state.h"
+#include "internal.h"
 
 #define AGC_WORD15_MAX 077777u /* largest raw 15-bit AGC word */
 #define DSPTAB_WORDS   12      /* DSPTAB +0..+11D             */

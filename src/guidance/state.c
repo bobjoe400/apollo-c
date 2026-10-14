@@ -42,6 +42,7 @@
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
+#include "internal.h"
 
 static agc_guid_t g_guid; /* the guidance erasables (see guidance.h) */
 

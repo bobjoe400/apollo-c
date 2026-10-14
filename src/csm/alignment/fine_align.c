@@ -48,6 +48,7 @@
 
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 
 static agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx);
@@ -199,7 +200,7 @@ agc_status_t agc_job_csm_fine_align_star_accepted(agc_job_ctx_t *ctx)
         return (agc_job_csm_fine_align_star_display(ctx));
     }
 
-    return (align_planet(ctx, align_loadtime(), AGC_JOB_CSM_FINE_ALIGN_STAR_LOCATED));
+    return (align_planet(ctx, agc_rtb_loadtime(), AGC_JOB_CSM_FINE_ALIGN_STAR_LOCATED));
 }
 
 /**********************************************************************

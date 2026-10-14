@@ -73,6 +73,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
+#include "internal.h"
 
 static agc_status_t agc_t4_c33test(void);
 static agc_status_t agc_t4_glockmon(void);

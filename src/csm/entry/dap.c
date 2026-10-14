@@ -67,6 +67,7 @@
 #include "agc/csm/entry_lexicon.h"
 #include "agc/exec/exec.h"
 #include "agc/io/service.h"
+#include "internal.h"
 
 /* ---- module erasables (EBANK6, "ANGLE REGISTERS FOR ENTRY DAPS") ------ */
 static agc_sp_t aog;           /* AOG outer gimbal /180, B0       */

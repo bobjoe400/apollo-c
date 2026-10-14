@@ -10,7 +10,9 @@
  *   SGNAGREE, 1STO2S, V1STO2S, 2V1STO2S, 1TO2SUB, CDUINC, PULSEIMU,
  *   SIGNMPAC, NORMUNIT, NORMUNX1, VECSGNAG)
  *   Comanche055 RT8_OP_CODES.agc  (the same plus READPIPS, INCRCDUS,
- *   TRANSP1/TRANSP2, QUALITY1/QUALITY2)
+ *   TRANSP1/TRANSP2). QUALITY1/QUALITY2 (Comanche RT8_OP_CODES, Luminary
+ *   ORBITAL_INTEGRATION) are translated on the MPAC words in
+ *   src/nav/integration/orbital_integration.c (lunar_j22_term).
  *
  * EXTERNAL VARIABLES:
  *   (AGC erasables reached through accessors)
@@ -27,8 +29,7 @@
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   None in the AGC.  agc_rtb_pulseimu passes IMUPULSE's status (BUSY
- *   when the gyros are in use); agc_rtb_quality1 gives NOT_FOUND when
- *   MOONFLAG is clear (NBRANCH).
+ *   when the gyros are in use).
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   Both vehicles; called from interpretive code (job context).
@@ -225,23 +226,41 @@ agc_dp_t agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo)
 }
 
 /**********************************************************************
- * 1TO2SUB (RTB_OP_CODES.agc p.1398): double the DP angle (revolutions ->
- * half-revolutions), keep the high word (truncation toward zero, as the
- * ones'-complement DDOUBL/TS sequence does) and express it as a two's-
- * complement pattern; the LIMITS correction on overflow makes the result
- * the angle modulo one revolution.
+ * 1TO2SUB (RTB_OP_CODES.agc p.1398) on the MPAC words: DDOUBL (the minor
+ * word's doubling carries into the major word), keep the major word,
+ * express it as a two's-complement pattern (CCS/AD ONE, COM: -0 gives
+ * +0); the LIMITS correction on overflow makes the result the angle
+ * modulo one revolution. The major word after DDOUBL depends on the
+ * words, not only on their value: words whose signs disagree (as ASIN,
+ * BDSU, ARCTRIG and DAD leave them) convert to counts differing by one
+ * from the value's (yaAGC oracle, tests/oracle/alignment.c RRANGLES).
  *
  * ARGUMENTS:
- *   angle_rev  agc_dp_t  I   DP angle, revolutions (2^0)
+ *   w  agc_dp_words_t  I   angle in revolutions (2^0) as MPAC, MPAC+1
  *
  * RETURNS: the 15-bit 2's complement pattern, half-revolutions
  **********************************************************************/
-static uint16_t one_to_two(agc_dp_t angle_rev)
+static uint16_t one_to_two(agc_dp_words_t w)
 {
-    int64_t doubled = 2 * (int64_t) angle_rev;      /* DDOUBL            */
-    int64_t hi      = doubled / (int64_t) SP_RANGE; /* truncates to 0    */
+    int32_t a     = 2 * (int32_t) w.hi; /* DDOUBL major word, counts */
+    int32_t carry = 0;                  /* from 2 x minor word       */
 
-    return (cdu_value_pattern((int32_t) hi));
+    if (2 * (int32_t) w.lo > AGC_SP_MAX)
+    {
+        carry = 1;
+    }
+    else if (2 * (int32_t) w.lo < -AGC_SP_MAX)
+    {
+        carry = -1;
+    }
+    else
+    {
+        /* no carry */
+    }
+
+    a += carry;
+
+    return (cdu_value_pattern(a)); /* LIMITS: modulo one revolution */
 }
 
 /**********************************************************************
@@ -255,7 +274,23 @@ static uint16_t one_to_two(agc_dp_t angle_rev)
  **********************************************************************/
 uint16_t agc_rtb_1sto2s(agc_dp_t angle_rev)
 {
-    uint16_t p = one_to_two(angle_rev); /* 2's comp half-revs */
+    uint16_t p = one_to_two(agc_dp_to_words(angle_rev)); /* 2's comp half-revs */
+
+    return (p);
+}
+
+/**********************************************************************
+ * 1STO2S (RTB_OP_CODES.agc p.1397) on the MPAC words as an interpretive
+ * sequence leaves them (signs may disagree): see one_to_two.
+ *
+ * ARGUMENTS:
+ *   w  agc_dp_words_t  I   angle in revolutions (2^0) as MPAC, MPAC+1
+ *
+ * RETURNS: the SP 2's complement angle, half-revolutions (MPAC)
+ **********************************************************************/
+uint16_t agc_rtb_1sto2s_words(agc_dp_words_t w)
+{
+    uint16_t p = one_to_two(w); /* 2's comp half-revs */
 
     return (p);
 }
@@ -274,25 +309,26 @@ void agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3])
 {
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        out[i] = one_to_two(angles_rev.c[i]);
+        out[i] = one_to_two(agc_dp_to_words(angles_rev.c[i]));
     }
 }
 
 /**********************************************************************
  * 2V1STO2S (RTB_OP_CODES.agc p.1398): two-component version used by the RR;
- * results arrive in A (first component) and L (second).
+ * results arrive in A (first component) and L (second). The components
+ * are the MPAC words RRANGLES leaves (signs may disagree).
  *
  * ARGUMENTS:
- *   a_rev  agc_dp_t     I   first DP angle, revolutions (to A)
- *   b_rev  agc_dp_t     I   second DP angle, revolutions (to L)
- *   out    uint16_t []  O   the two 2's complement patterns,
- *                           half-revolutions
+ *   a    agc_dp_words_t  I   first angle, revolutions (to A)
+ *   b    agc_dp_words_t  I   second angle, revolutions (to L)
+ *   out  uint16_t []     O   the two 2's complement patterns,
+ *                            half-revolutions
  *
  **********************************************************************/
-void agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2])
+void agc_rtb_2v1sto2s(agc_dp_words_t a, agc_dp_words_t b, uint16_t out[2])
 {
-    out[0] = one_to_two(a_rev);
-    out[1] = one_to_two(b_rev);
+    out[0] = one_to_two(a);
+    out[1] = one_to_two(b);
 }
 
 /**********************************************************************
@@ -497,65 +533,4 @@ agc_vec_t agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift, agc_dp_t *
 agc_vec_t agc_rtb_vecsgnag(agc_vec_t v)
 {
     return (v);
-}
-
-/**********************************************************************
- * QUALITY2 (RT8_OP_CODES.agc, Comanche only, SETLOC MODCHG2; entered from
- * QUALITY1 with MPAC = URPV_x^2 scaled B2): the lunar J22 term of the
- * orbital-integration disturbing acceleration.
- *   v = 5 (y^2 - x^2) UR  (B6), VSL3 -> B3
- *   v.x += 2x, v.y -= 2y  (B3)    i.e. v += 2 (x UNITX - y UNITY)
- *   result = E3J22R2M * v         "J22 TERM X R**4", scaled B61
- * urpv: unit position vector, scaled B1.  e3j22r2m: SP coefficient
- * (padload erasable E3J22R2M), scaled B58.  On return the AGC loads
- * COSPHI/2 (= URPV z) into MPAC for QUALITY3; the caller does that.
- *
- * ARGUMENTS:
- *   ip        agc_interp_t *  I   interpreter context
- *   urpv      agc_vec_t       I   unit position vector, B1
- *   e3j22r2m  agc_sp_t        I   SP coefficient E3J22R2M, B58
- *
- * RETURNS: the J22 term x R^4, B61
- **********************************************************************/
-static agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
-{
-    static const agc_dp_t five_eighths = 0x0A000000;             /* 5/8: 2DEC 5 B-3 */
-    agc_dp_t              x2           = agc_dp_sq(urpv.c[0]);   /* B2              */
-    agc_dp_t              y2           = agc_dp_sq(urpv.c[1]);   /* B2              */
-    agc_dp_t              d            = agc_dp_sub(ip, y2, x2); /* DSU, B2         */
-
-    d           = agc_dp_mul_trunc(d, five_eighths); /* DMP 5/8 (truncating), B5 */
-    agc_vec_t v = agc_vec_scale(ip, urpv, d);        /* VXSC, B6        */
-
-    v      = agc_vec_shl(ip, v, 3);                            /* VSL3, B3        */
-    v.c[0] = agc_dp_add(ip, agc_dp_shr(urpv.c[0], 1), v.c[0]); /* SR1 DAD  */
-    v.c[1] = agc_dp_sub(ip, v.c[1], agc_dp_shr(urpv.c[1], 1)); /* SR1 BDSU */
-
-    return (agc_vec_scale(ip, v, agc_dp_from_sp(e3j22r2m))); /* VXSC B61 */
-}
-
-/**********************************************************************
- * QUALITY1 (RT8_OP_CODES.agc, SETLOC MODCHG3): only when MOONFLAG is set is
- * the J22 term computed; otherwise control goes to NBRANCH in ORBITAL_
- * INTEGRATION (returned here as AGC_STATUS_NOT_FOUND, *out untouched).
- *
- * ARGUMENTS:
- *   ip        agc_interp_t *  I   interpreter context
- *   urpv      agc_vec_t       I   unit position vector, B1
- *   moonflag  bool            I   MOONFLAG (lunar primary body)
- *   e3j22r2m  agc_sp_t        I   SP coefficient E3J22R2M, B58
- *   out       agc_vec_t *     O   the J22 term, B61, when moonflag is set
- *
- * RETURNS: AGC_STATUS_OK, NOT_FOUND when MOONFLAG is clear (NBRANCH)
- **********************************************************************/
-agc_status_t agc_rtb_quality1(agc_interp_t *ip, agc_vec_t urpv, bool moonflag, agc_sp_t e3j22r2m, agc_vec_t *out)
-{
-    if (!moonflag)
-    {
-        return (AGC_STATUS_NOT_FOUND); /* BOF -> NBRANCH  */
-    }
-
-    *out = agc_rtb_quality2(ip, urpv, e3j22r2m);
-
-    return (AGC_STATUS_OK);
 }

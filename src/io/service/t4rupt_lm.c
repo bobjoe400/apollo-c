@@ -66,6 +66,7 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/io/service.h"
+#include "internal.h"
 
 #define RADMODES_WORD         12                         /* RADMODES EQUALS FLGWRD12          */
 #define AUTOMBIT              000002u                    /* BIT2: RR not in auto (inverted)   */

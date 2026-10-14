@@ -49,6 +49,7 @@
  **********************************************************************/
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
+#include "agc/io/service.h"
 
 /* State between the jobs of R36 (the AGC's RPASS36, UNP36, OPTIONY). */
 typedef struct oop_work

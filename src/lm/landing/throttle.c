@@ -39,6 +39,7 @@
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
 #include "agc/lm/landing.h"
+#include "internal.h"
 
 /* SCALEFAC 2DEC* +7.97959872E+2 B-16* (CONTROLLED_CONSTANTS): pulses per
  * (kg m/cs^2) = 1E4 * BITPERF. /AF/CNST DEC .13107 (p. 797): ABDELV

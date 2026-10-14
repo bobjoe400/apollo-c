@@ -20,7 +20,8 @@
  *   Name                  Description
  *   --------------------  ------------------------------------------
  *   align_*               alignment helpers: displays, stalls, phases, word forms (alignment.h)
- *   agc_align_cdulogic    alignment routines of this lane (alignment.h)
+ *   agc_rtb_cdulogic      CDULOGIC (RTB op, service.h)
+ *   agc_rtb_2v1sto2s      2V1STO2S on the MPAC words (RTB op, service.h)
  *   agc_mpac_*            interpretive instructions on MPAC words (interp_words.h)
  *   agc_vec_*             vector arithmetic of the interpreter (interp.h)
  *   agc_dp_*              DP arithmetic of the interpreter (interp.h, word.h)
@@ -32,8 +33,8 @@
  *   (CURTAINS, BAILOUT done) end the job with AGC_STATUS_OK.
  *
  * NOTES:
- *   RRANGLES and RRNB run on the MPAC words (word_forms.c): bit exact on
- *   the oracle (findings A4, A5).
+ *   RRANGLES and RRNB run on the MPAC words (ARCTRIG in word_forms.c,
+ *   2V1STO2S in rtb_ops.c): bit exact on the oracle (findings A4, A5).
  **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>
@@ -78,7 +79,7 @@
 void agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, uint16_t modea[2], uint16_t modeb[2], bool *along_y)
 {
     /* The angles stay in the words ASIN, BDSU, ARCTRIG and DAD leave
-     * (signs may disagree), which 2V1STO2S converts: see word_forms.c. */
+     * (signs may disagree), which 2V1STO2S converts (rtb_ops.c).        */
     const agc_dp_words_t half = agc_dp_to_words(LODPHALF);                                                       /* LODPHALF as words, revs 2^0 */
     const agc_tp_words_t t1m  = agc_mpac_asin(ip, agc_mpac_dcomp(agc_mpac_dload(agc_dp_to_words(los_nb.c[1])))); /* DLOAD DCOMP 34D, ASIN */
     const agc_dp_words_t t1w  = agc_mpac_store(t1m);                                                             /* PUSH: PD0 */
@@ -95,8 +96,11 @@ void agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, uint16_t
         const agc_dp_t       costh = agc_dp_shr(p.c[2], 1);                                       /* P.Z SR1 -> COSTH, scale 2^2 */
         const agc_dp_words_t s1w   = align_arctrig_words(ip, sinth, costh);                       /* PD2 */
         const agc_dp_words_t s2w   = agc_mpac_store(agc_mpac_dad(ip, agc_mpac_dload(s1w), half)); /* DAD LODPHALF */
-        uint16_t             a[2]  = {align_words_to_cdu(t1w), align_words_to_cdu(s1w)};
-        uint16_t             b[2]  = {align_words_to_cdu(t2w), align_words_to_cdu(s2w)};
+        uint16_t             a[2];                                                                /* MODE 1 trunnion, shaft */
+        uint16_t             b[2];                                                                /* MODE 2 trunnion, shaft */
+
+        agc_rtb_2v1sto2s(t2w, s2w, b); /* VLOAD 4, RTB 2V1STO2S: MODEB */
+        agc_rtb_2v1sto2s(t1w, s1w, a); /* VLOAD 0, RTB 2V1STO2S: MODEA */
 
         for (int k = 0; k < 2; k++)
         {
@@ -127,10 +131,10 @@ void agc_lm_rrangles(agc_interp_t *ip, agc_vec_t los_nb, bool rr_mode2, uint16_t
  **********************************************************************/
 void agc_lm_rrnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *los_nb)
 {
-    const agc_dp_t t     = agc_align_cdulogic(trunnion_cdu); /* trunnion T, revs 2^0 */
-    const agc_dp_t y     = agc_dp_neg(agc_dp_sin(t));        /* -SIN T (34D), scale 2^1 */
-    const agc_dp_t cos_t = agc_dp_cos(t);                    /* COS T (PD0), scale 2^1 */
-    const agc_dp_t s     = agc_align_cdulogic(shaft_cdu);    /* shaft S (RRNB1), revs 2^0 */
+    const agc_dp_t t     = agc_rtb_cdulogic(trunnion_cdu); /* trunnion T, revs 2^0 */
+    const agc_dp_t y     = agc_dp_neg(agc_dp_sin(t));      /* -SIN T (34D), scale 2^1 */
+    const agc_dp_t cos_t = agc_dp_cos(t);                  /* COS T (PD0), scale 2^1 */
+    const agc_dp_t s     = agc_rtb_cdulogic(shaft_cdu);    /* shaft S (RRNB1), revs 2^0 */
 
     /* DMP SL1 then STORE: the SL1 acts on the TP product, so MPAC+2's top
      * bit becomes the stored low word's LSB (no rounding).              */

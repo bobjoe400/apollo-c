@@ -117,7 +117,6 @@ void         agc_alarm(agc_alarm_code_t code);     /* ALARM: light, store   */
 void         agc_prioalarm(agc_alarm_code_t code); /* PRIOLARM              */
 agc_status_t agc_bailout(agc_alarm_code_t code);   /* BAILOUT -> restart    */
 agc_status_t agc_poodoo(agc_alarm_code_t code);    /* POODOO  -> P00        */
-agc_job_id_t agc_alarm_almcadr(void);              /* ALMCADR: alarming job */
 agc_status_t agc_abort_restart(void);              /* ABORT                 */
 
 /* Phase table maintenance (PHASE_TABLE_MAINTENANCE.agc pp. 1404-1413).    */
@@ -130,8 +129,7 @@ void agc_phase_set_tbase(int group);
 
 /* CAF PRIOnn / TS PHSPRDTn without a phase change: the priority a later
  * type B/C PHASCHNG of `group` with D clear keeps (FINDVAC restart).     */
-void         agc_phase_set_priority(int group, agc_prio_t prio);
-agc_status_t agc_phase_restart_all(void); /* RESTART  */
+void agc_phase_set_priority(int group, agc_prio_t prio);
 
 /* ======================================================================
  * Additions by exec-sched (see docs/modules/exec-sched.md).
@@ -194,9 +192,8 @@ agc_status_t agc_dispatch_task(agc_task_id_t task);
 agc_status_t agc_dispatch_noun(uint16_t data_id, bool write, agc_dp_t *value);
 
 /* Waitlist: T3RUPT entry for the interrupt lead-in (TIME3 just overflowed).*/
-agc_status_t agc_waitlist_t3rupt(void);
-uint16_t     agc_waitlist_time3(void);                                      /* C(TIME3)             */
-void         agc_waitlist_entry(int i, int16_t *lst1, agc_task_id_t *lst2); /* LST1+i-1 (i>=1) / LST2+2i */
+uint16_t agc_waitlist_time3(void);                                      /* C(TIME3)             */
+void     agc_waitlist_entry(int i, int16_t *lst1, agc_task_id_t *lst2); /* LST1+i-1 (i>=1) / LST2+2i */
 
 /* Phase tables. Codes are the AGC octal words that follow TC PHASCHNG:
  *   type A  TL0 00P PPP PPP GGG    type B  TL1 DAP PPP PPP GGG

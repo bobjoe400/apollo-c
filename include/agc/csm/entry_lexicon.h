@@ -127,14 +127,6 @@
     ((agc_dp_t) -218753271)                        /* 2DEC -.81491944: -KVSCALE (CM_BODY_ATTITUDE) */
 #define AGC_ENTRY_ONE_OVER_WIE \
     ((agc_dp_t) 8616410)                           /* 2DEC 8616410: 1/WIE, cs per radian (CSM_GEOMETRY) */
-#define AGC_ENTRY_CLOG2_32 \
-    ((agc_dp_t) 5814540)                           /* 2DEC .0216608494: ln(2)/32 (CSM_GEOMETRY LOG) */
-#define AGC_ENTRY_LOG_C1 \
-    ((agc_dp_t) 8411550)                           /* 2DEC .031335467: LOG series coefficient a1 */
-#define AGC_ENTRY_LOG_C2 \
-    ((agc_dp_t) 3493576)                           /* 2DEC .0130145859: LOG series coefficient a2 */
-#define AGC_ENTRY_LOG_C3 \
-    ((agc_dp_t) 5791197)                           /* 2DEC .0215738898: LOG series coefficient a3 */
 #define AGC_ENTRY_C30LIM \
     ((agc_dp_t) 152198877)                         /* 2DEC .566985: C(30)LIM = 1.0 - .5 cos(30) */
 #define AGC_ENTRY_SEC60_DP ((agc_dp_t) 6000)       /* 2DEC 6000 B-28: 60SECDP, cs */
@@ -184,8 +176,6 @@
     ((agc_dp_t) 1)                                 /* 1BITDP  2^-28                          */
 #define AGC_ENTRY_ONEBIT_DP_P1 \
     ((agc_dp_t) 16384)                             /* 1BITDP +1 as DP = (1, 0) = 2^-14        */
-#define AGC_ENTRY_DPOSMAX \
-    ((agc_dp_t) AGC_DP_MAX)                        /* DPOSMAX (SIGNMPAC result)              */
 
 /* ---- loop bounds (Power of Ten rule 2) --------------------------------- */
 #define AGC_ENTRY_HUNTEST_MAX_ITER \
@@ -238,8 +228,5 @@
     ((agc_sp_t) 91)          /* DEC 91 = 2/360 B14 (also BUFLIM)      */
 #define AGC_ENTRY_KTRCS \
     ((agc_sp_t) AGC_SP_HALF) /* KTRCS = HALF: KT = (.25) 2       */
-
-/* VREFER (REENTRY_CONTROL pp. 876-878): table t, point k -> SP value.     */
-agc_sp_t agc_entry_vrefer(int table, int k);
 
 #endif /* AGC_ENTRY_LEXICON_H */

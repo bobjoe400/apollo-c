@@ -71,20 +71,19 @@ typedef enum agc_axisrot_dir
     AGC_AXISROT_NBSM = 3
 } agc_axisrot_dir_t;
 
-agc_dp_t agc_imu_cdulogic(uint16_t cdu);                                                                  /* CDULOGIC */
-void     agc_imu_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                    /* CD*TR*GS */
-void     agc_imu_cdutrig(agc_cdutrig_t *t);                                                               /* CDUTRIG(S) */
-void     agc_imu_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                   /* QUICTRIG */
-void     agc_imu_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v);                    /* AX*SR*T  */
-void     agc_imu_smnb(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *SMNB*   */
-void     agc_imu_nbsm(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *NBSM*   */
-void     agc_imu_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*SMNB */
-void     agc_imu_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*NBSM */
-void     agc_imu_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v);                     /* TRG*SMNB */
-void     agc_imu_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v);                     /* TRG*NBSM */
-void     agc_imu_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_words_t *v);         /* TRG*NBSM, VBUF words */
-void     agc_imu_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu); /* SMCDURES (CM) */
-void     agc_imu_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb);                                        /* FLESHPOT (LM) */
+void agc_imu_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                    /* CD*TR*GS */
+void agc_imu_cdutrig(agc_cdutrig_t *t);                                                               /* CDUTRIG(S) */
+void agc_imu_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                   /* QUICTRIG */
+void agc_imu_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v);                    /* AX*SR*T  */
+void agc_imu_smnb(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *SMNB*   */
+void agc_imu_nbsm(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *NBSM*   */
+void agc_imu_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*SMNB */
+void agc_imu_cdu_nbsm(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*NBSM */
+void agc_imu_trg_smnb(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v);                     /* TRG*SMNB */
+void agc_imu_trg_nbsm(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_t *v);                     /* TRG*NBSM */
+void agc_imu_trg_nbsm_words(agc_cdutrig_t *t, const uint16_t cdu_yzx[3], agc_vec_words_t *v);         /* TRG*NBSM, VBUF words */
+void agc_imu_smcdures(agc_interp_t *ip, const agc_cdutrig_t *t, agc_vec_t dthetasm, agc_vec_t *dcdu); /* SMCDURES (CM) */
+void agc_imu_fleshpot(const agc_cdutrig_t *t, agc_mat_t *xnb);                                        /* FLESHPOT (LM) */
 
 /* The erasables CDUSPOT, SINCDU, COSCDU (QUICTRIG / CDUTRIG results the
  * SERVICER, the landing and the TVC DAP share), owned here.               */
@@ -129,7 +128,6 @@ agc_status_t agc_imu_zero(void);                       /* IMUZERO        */
 agc_status_t agc_imu_coarse(const uint16_t thetad[3]); /* IMUCOARS       */
 agc_status_t agc_imu_fine(void);                       /* IMUFINE/IMUFIN20 */
 void         agc_imu_pipuse(void);                     /* PIPUSE         */
-void         agc_imu_pipa_fail_enable(void);           /* PIPUSE1        */
 void         agc_imu_pipfree(void);                    /* PIPFREE        */
 void         agc_imu_rndrefdr(void);                   /* RNDREFDR       */
 
@@ -259,9 +257,9 @@ agc_status_t agc_imu_calcga(agc_interp_t *ip, const agc_mat_t *nb, const agc_mat
  * unit) -> rows XDC, YDC, ZDC = axes of A referred to B (half-unit).      */
 agc_status_t agc_imu_axisgen(agc_interp_t *ip, const agc_vec_t a[2], const agc_vec_t b[2], agc_mat_t *a_wrt_b);
 
-/* CALCSMSC: sin/cos of CDU angles (X Y Z order, each scaled 2, i.e. sin/2)
- * -> rows XNB, YNB, ZNB in stable-member axes (half-unit).                 */
-agc_status_t agc_imu_calcsmsc(agc_interp_t *ip, agc_vec_t sincdu, agc_vec_t coscdu, agc_mat_t *nb);
+/* CALCSMSC: SINCDU / COSCDU of the trig block (sin/2, cos/2 as CDUTRIG
+ * left them) -> rows XNB, YNB, ZNB in stable-member axes (half-unit).     */
+agc_status_t agc_imu_calcsmsc(agc_interp_t *ip, const agc_cdutrig_t *t, agc_mat_t *nb);
 
 /* ======================================================================= */
 /* Attitude maneuvers: KALCMANU (ANGLFIND / ATTITUDE_MANEUVER_ROUTINE,      */
@@ -305,9 +303,7 @@ typedef struct agc_kalc_setup
 agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const uint16_t cphi[3], agc_kalc_setup_t *out);
 
 agc_status_t agc_kalc_set_rateindx(agc_sp_t idx); /* RATEINDX 0,2,4,6   */
-bool         agc_kalc_active(void);               /* ATTCADR != 0        */
 
-agc_status_t           agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as);
 agc_imu_stall_result_t agc_kalc_outcome(void);
 
 agc_status_t agc_job_kalcmanu_start(agc_job_ctx_t *ctx); /* KALCMAN3            */
@@ -337,7 +333,6 @@ void         agc_imu_set_pointvsm(agc_vec_t v); /* POINTVSM, half-unit */
 
 /* G+N,AUTO / ISITAUTO (LM R60_62.agc): +0 when the LM is in G&N and auto
  * stabilization, positive otherwise.                                     */
-agc_sp_t agc_imu_isitauto(void);
 agc_sp_t agc_imu_gn_auto(void);
 
 /* R60CSM / R60LEM: called by a program job; on exit (ENDMANU1) job
@@ -360,10 +355,6 @@ agc_status_t agc_job_crew_defined_maneuver_terminate(agc_job_ctx_t *ctx); /* V34
 /* Pad erasable load: LATITUDE, AZIMUTH (of ZNB), LAUNCHAZ, rev 2^0.     */
 agc_status_t agc_csm_prelaunch_set_pad(agc_dp_t latitude, agc_dp_t azimuth, agc_dp_t launchaz);
 
-/* ERTHRVSE: ERVECTOR = (sin LAT, -cos LAT, 0) OMEG/MS; TMARK = now;
- * ERCOMP1 = 0.  latitude in revolutions.                                 */
-agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude);
-
 /* P11 at liftoff: ERCOMP += (XSM THETAN) VSL1, then EARTHR +3 at
  * TEMPTIME = TLIFTOFF (cs 2^28).                                          */
 agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip, agc_dp_t tliftoff);
@@ -375,8 +366,9 @@ agc_status_t agc_job_prelaunch_imu_coarse_aligned(void);
 agc_status_t agc_job_prelaunch_imu_fine_aligned(void);
 agc_status_t agc_task_gyrocompassing_wake(void);                   /* GOESTIMS            */
 
-/* P07 IMU performance test entry (IMUTEST, GUESS, LATAZCHK).          */
-agc_status_t agc_csm_prelaunch_imutest(agc_job_ctx_t *ctx);     /* IMUTEST  */
+/* P07 IMU performance test (CSM): REDO (V92) falls into IMUTEST; GUESS,
+ * LATAZCHK.                                                            */
+agc_status_t agc_job_systems_test_csm(agc_job_ctx_t *ctx);      /* REDO (V92) */
 agc_status_t agc_job_imu_test_coarse_aligned(agc_job_ctx_t *ctx);
 agc_status_t agc_job_imu_test_site_display(agc_job_ctx_t *ctx); /* LATAZCHK */
 agc_status_t agc_job_imu_test_site_flash(agc_job_ctx_t *ctx);

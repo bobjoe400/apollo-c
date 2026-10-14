@@ -78,6 +78,7 @@ static void         test_group2_restart_priority(void);
 static agc_dp_t     mga_expected(agc_vec_t dv, agc_vec_t ysm, bool twice);
 static void         test_get_mga_per_rope(void);
 static void         test_v82_average_g_departing(void);
+static void         test_vehicle_dispatch(void);
 
 /**********************************************************************
  * AGC: none (test driver) -- the three tests, CSM build
@@ -97,6 +98,7 @@ int main(void)
     test_group2_restart_priority();
     test_get_mga_per_rope();
     test_v82_average_g_departing();
+    test_vehicle_dispatch();
     (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks, g_failures);
 
     if (g_failures != 0)
@@ -559,4 +561,36 @@ static void test_v82_average_g_departing(void)
 
     CHECK(st != AGC_STATUS_BAD_ARG);
     CHECK(agc_rendz_erasable()->neg_tper > 0);
+}
+
+/**********************************************************************
+ * The registry dispatches P20 / P22 (V37E20E, V37E22E) and V92 to each
+ * rope's own program: the LM's PROG20 (PROG22 = PROG20) and the CSM's
+ * REDO (NEWMODEX 07, IMUTEST). Before the structure lane the vehicle
+ * switch for P20 / P22 sat in csm/navigation and the LM column was empty,
+ * and the CSM column of V92 was empty: those jobs ended NOT_FOUND.
+ * AGC: PROG20, PROG22 (Luminary099 P20-P25.agc p.492); REDO (Comanche055
+ * SYSTEM_TEST_STANDARD_LEAD_INS.agc p.422)
+ *
+ * FUNCTION NAME: test_vehicle_dispatch
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_vehicle_dispatch(void)
+{
+    agc_job_ctx_t ctx = {AGC_JOB_RENDEZVOUS_NAVIGATION, 013, false, -1, 0}; /* the V37 job */
+
+    agc_state_init(AGC_VEHICLE_LM);
+    CHECK(agc_dispatch_job(&ctx) != AGC_STATUS_NOT_FOUND); /* LM PROG20 */
+    ctx.id = AGC_JOB_ORBITAL_NAVIGATION;
+    CHECK(agc_dispatch_job(&ctx) != AGC_STATUS_NOT_FOUND); /* LM PROG22 = PROG20 */
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    ctx.id   = AGC_JOB_SYSTEMS_TEST;
+    ctx.prio = 020;
+    CHECK(agc_dispatch_job(&ctx) != AGC_STATUS_NOT_FOUND); /* CSM REDO */
+    CHECK(agc_erase_modreg() == 07);                       /* NEWMODEX 07 */
+    agc_state_init(AGC_VEHICLE_CSM);
 }

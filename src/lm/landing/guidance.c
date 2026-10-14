@@ -54,6 +54,7 @@
 #include "agc/lm/landing.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 static agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg);
 

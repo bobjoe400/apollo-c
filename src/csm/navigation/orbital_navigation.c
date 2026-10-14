@@ -53,8 +53,10 @@
 #include "agc/core/flags_csm.h"
 #include "agc/core/state.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 #define ON_PRIO7       07000u  /* B of ABCDE (offset)        */
 #define ON_PRIO5       05000u  /* offset 5                   */

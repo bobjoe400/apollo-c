@@ -41,6 +41,7 @@
 #include <stdint.h>
 
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 #define CDU_WORD_MASK 077777u /* 15-bit CDU word */
 #define CDU_SIGN_BIT  040000u /* sign bit of a 15-bit word */
@@ -85,8 +86,10 @@ agc_status_t agc_align_gimbal_angles(agc_interp_t *ip, const agc_mat_t *smd, con
 {
     agc_cdutrig_t trig; /* CDUTRIG sines and cosines */
 
-    agc_align_cdutrig(cdu, &trig);                              /* CDUTRIG        */
-    const agc_status_t st = agc_align_calcsmsc(ip, &trig, xnb); /* CALCSMSC       */
+    const uint16_t yzx[3] = {cdu[1], cdu[2], cdu[0]}; /* CDUSPOT: CDUY, CDUZ, CDUX (AGC_TRIG_Y, _Z, _X) */
+
+    agc_imu_cdtrigs(&trig, yzx);                              /* CDUTRIG (CD*TR*GS) */
+    const agc_status_t st = agc_imu_calcsmsc(ip, &trig, xnb); /* CALCSMSC       */
 
     if (st != AGC_STATUS_OK)
     {

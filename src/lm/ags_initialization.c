@@ -319,8 +319,8 @@ agc_status_t agc_job_ags_initialization_lm_state(void)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_integ_out_t o;                                                                                               /* integration output (RATT, VATT) */
-    agc_status_t    st = align_integ(&ip, ALIGN_LEMPREC, align_loadtime(), AGC_JOB_AGS_INITIALIZATION_LM_STATE, &o); /* status of the call */
+    agc_integ_out_t o;                                                                                                 /* integration output (RATT, VATT) */
+    agc_status_t    st = align_integ(&ip, ALIGN_LEMPREC, agc_rtb_loadtime(), AGC_JOB_AGS_INITIALIZATION_LM_STATE, &o); /* status of the call */
 
     if (st == AGC_STATUS_BUSY)
     {

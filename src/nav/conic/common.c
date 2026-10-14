@@ -107,6 +107,24 @@ agc_dp_words_t agc_conic_mu_(agc_conic_body_t body)
     return ((body == AGC_CONIC_EARTH) ? mutable_tab[0] : mutable_tab[4]); /* MUEARTH, else MUM */
 }
 
+/**********************************************************************
+ * MUTABLE +6 / +14 (CONIC_SUBROUTINES.agc p. 1305) -- 1/SQRT(MU) of the
+ * body, the word SELECTMU loads into RTSR1/MU
+ *
+ * FUNCTION NAME: agc_conic_inv_root_mu_
+ *
+ * ARGUMENTS:
+ *   Argument  Type              I/O  Description (scale)
+ *   --------  ----------------  ---  ----------------------------------
+ *   body      agc_conic_body_t  I    central body
+ *
+ * RETURNS: agc_dp_words_t -- 1/SQRT(MU), 2^17 (earth) / 2^14 (moon)
+ *********************************************************************/
+agc_dp_words_t agc_conic_inv_root_mu_(agc_conic_body_t body)
+{
+    return ((body == AGC_CONIC_EARTH) ? mutable_tab[3] : mutable_tab[7]); /* 1/SQRT(MUE), else 1/SQRT(MUM) */
+}
+
 /* ---- MPAC helpers beyond interp_words.h ---------------------------- */
 
 /**********************************************************************

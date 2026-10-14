@@ -42,6 +42,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/lm/landing.h"
+#include "internal.h"
 
 #define AB_OCT31   25                     /* OCT31: R10,R11 period, cs                */
 #define AB_OCTAL27 027                    /* 4.27 (P70A) / 4.31 (P71A) restart phase  */

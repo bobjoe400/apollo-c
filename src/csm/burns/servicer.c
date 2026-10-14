@@ -4,9 +4,9 @@
  * PURPOSE:
  *   The Comanche average-G cycle of SERVICER207.agc: PREREAD, READACCS
  *   (with the entry-DAP part of REDO5.5), ONMNITOR/QUIKREAD, SERVICER and
- *   PIPCHECK, DVTOTUP, AVERAGEG, AVGEND, SERVEXIT, NORMLIZE, the REREADAC
- *   and CHEKAVEG restart tasks. The arithmetic shared with Luminary
- *   (PIPASR, CALCGRAV, CALCRVG, the copy cycle) is in
+ *   PIPCHECK, DVTOTUP, AVERAGEG, AVGEND, NORMLIZE, the REREADAC and
+ *   CHEKAVEG restart tasks. What Luminary shares (PIPASR, CALCGRAV,
+ *   CALCRVG, the copy cycle, SERVEXIT) is in
  *   src/guidance/servicer_common.c.
  *
  * AGC SOURCE:
@@ -65,6 +65,7 @@
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/programs/rendezvous.h"
+#include "internal.h"
 
 #define MAXDELV  6398  /* -MAXDELV DEC -6398: 3200 pps for 2 s, less 1 (CCS) */
 #define JTAGTIME 120   /* JTAGTIME DEC 120 cs = 1 s + T CDU (0.1 s)  */
@@ -79,7 +80,6 @@
 #define GRP5        5                   /* restart group 5 (average-G) */
 #define PH_5_3_B    ((uint16_t) 010035) /* B: 5.3 REREADAC + job below   */
 #define PH_5_3_BJOB ((uint16_t) 016035) /* B: 5.3 + 2CADR job, PRIO20    */
-#define PH_5_3_A    ((uint16_t) 000035) /* A: 5.3 REREADAC only          */
 
 /* KPIP1 2DEC 0.074880 (1 PIPA pulse = 5.85 cm/s), scale to m/cs 2^7.      */
 static const agc_dp_t KPIP1_CM = (agc_dp_t) 20100447; /* KPIP1 0.074880: pulses to m/cs 2^7 */
@@ -766,27 +766,4 @@ agc_status_t agc_job_avetomid_csm(agc_job_ctx_t *ctx)
     }
 
     return (agc_job_change_program_continue()); /* POSTJUMP CANV37        */
-}
-
-/**********************************************************************
- * SERVEXIT (p.830, both vehicles): leave only 5.3 (REREADAC) protection
- * and end the job.
- *
- * FUNCTION NAME: agc_job_servexit
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK; AGC_STATUS_BAD_ARG when AVGEXIT
- *          holds no job
- **********************************************************************/
-agc_status_t agc_job_servexit(void)
-{
-    if (!AGC_ASSERT(agc_guid_state()->avg.avgexit != AGC_JOB_NONE))
-    {
-        return (AGC_STATUS_BAD_ARG);
-    }
-
-    agc_phase_change(PH_5_3_A);
-
-    return (AGC_STATUS_OK);
 }

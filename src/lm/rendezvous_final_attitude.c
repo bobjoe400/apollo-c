@@ -284,7 +284,7 @@ agc_status_t agc_job_rendezvous_final_attitude_compute(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    tstart82 = agc_dp_add(&ip, align_loadtime(), DP1MIN);
+    tstart82 = agc_dp_add(&ip, agc_rtb_loadtime(), DP1MIN);
 
     return (final_attitude_csm(ctx));
 }

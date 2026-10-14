@@ -66,6 +66,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/programs/rendezvous.h"
+#include "internal.h"
 
 #define TA_DEGREE10  910                    /* DEGREE10 DEC .05556       */
 #define TA_RVCS_RDS  ((agc_dp_t) 267017681) /* RVCS/RDS 2DEC 15.915494 B-4 */

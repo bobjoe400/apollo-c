@@ -184,7 +184,7 @@ job	AGC_JOB_OPTICS_CALIBRATION_BIAS	agc_job_optics_calibration_bias	-	csm/naviga
 job	AGC_JOB_OPTICS_CALIBRATION_END	agc_job_optics_calibration_end	-	csm/navigation	ENDR57
 job	AGC_JOB_OPTICS_CALIBRATION_END_MARK	agc_job_optics_calibration_end_mark	-	csm/navigation	ENDMARK PRIO14
 job	AGC_JOB_OPTICS_CALIBRATION_MARK_DISPLAY	agc_job_optics_calibration_mark_display	-	csm/navigation	
-job	AGC_JOB_ORBITAL_NAVIGATION	agc_job_orbital_navigation	-	csm/navigation	P22 (by vehicle)
+job	AGC_JOB_ORBITAL_NAVIGATION	agc_job_orbital_navigation_csm	agc_job_rendezvous_navigation_lm	csm/navigation	P22 (by vehicle; LM PROG22 = PROG20)
 job	AGC_JOB_ORBITAL_NAVIGATION_ADVANCED_OPTICS	agc_job_orbital_navigation_advanced_optics	-	csm/navigation	DE-GR-50
 job	AGC_JOB_ORBITAL_NAVIGATION_CODE	agc_job_orbital_navigation_code	-	csm/navigation	S22DSPPA
 job	AGC_JOB_ORBITAL_NAVIGATION_CODE_CHECK	agc_job_orbital_navigation_code_check	-	csm/navigation	S22DSPPA PROCEED
@@ -209,7 +209,7 @@ job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_CHOSEN	agc_job_rendezvous_final_attitu
 job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_COMPUTE	agc_job_rendezvous_final_attitude_csm_compute	-	csm/navigation	V89RECL
 job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_MANEUVER	agc_job_rendezvous_final_attitude_csm_maneuver	-	csm/navigation	R60CSM
 job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM_OPTION	agc_job_rendezvous_final_attitude_csm_option	-	csm/navigation	V04N06
-job	AGC_JOB_RENDEZVOUS_NAVIGATION	agc_job_rendezvous_navigation	-	csm/navigation	PROG20 = PROG22 (LM)
+job	AGC_JOB_RENDEZVOUS_NAVIGATION	expr:agc_job_rendezvous_navigation_csm()	agc_job_rendezvous_navigation_lm	csm/navigation	PROG20 (by vehicle)
 job	AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_CHECK	agc_job_rendezvous_navigation_csm_check	-	csm/navigation	CONTCHK after 4 s
 job	AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_INTEGRATE	agc_job_rendezvous_navigation_csm_integrate	-	csm/navigation	PROG20 integration
 job	AGC_JOB_RENDEZVOUS_NAVIGATION_CSM_OPTICS	agc_job_rendezvous_navigation_csm_optics	-	csm/navigation	P20R52JB
@@ -389,7 +389,7 @@ job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_END	-	agc_job_rendezvous_final_attitude_en
 job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_LM_STATE	-	agc_job_rendezvous_final_attitude_lm_state	lm	
 job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_MANEUVER	-	agc_job_rendezvous_final_attitude_maneuver	lm	
 job	AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_OPTION	-	agc_job_rendezvous_final_attitude_option	lm	
-job	AGC_JOB_SYSTEMS_TEST	-	agc_job_systems_test	lm	REDO (V92, P07)
+job	AGC_JOB_SYSTEMS_TEST	agc_job_systems_test_csm	agc_job_systems_test	lm	REDO (V92, P07)
 job	AGC_JOB_SYSTEMS_TEST_IMU_ZEROED	-	agc_job_systems_test_imu_zeroed	lm	IMUBACK after IMUZERR (P07)
 job	AGC_JOB_SYSTEMS_TEST_SITE_DISPLAY	-	agc_job_systems_test_site_display	lm	LATAZCHK V06N41 (P07)
 job	AGC_JOB_SYSTEMS_TEST_SITE_LOADED	-	agc_job_systems_test_site_loaded	lm	LATAZCHK V33 -> POSGMBL (P07)

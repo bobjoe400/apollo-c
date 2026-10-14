@@ -74,6 +74,7 @@
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
+#include "internal.h"
 
 /* Powers of two used as MP multipliers (BITn = 2^(n-1)).                 */
 #define BIT4  ((agc_sp_t) 00010) /* 2^3: MP shifts right 11 */

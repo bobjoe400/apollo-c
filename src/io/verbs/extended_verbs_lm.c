@@ -59,6 +59,7 @@
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
 #include "agc/nav/integration.h"
+#include "internal.h"
 
 #define WORD15                      077777u            /* one AGC word */
 #define BIT3                        000004u            /* BIT3 */

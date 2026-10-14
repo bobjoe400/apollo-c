@@ -105,21 +105,6 @@ static perm_ext_t perm_ext[2]; /* [0] CSM, [1] LM */
 /* ---- small services --------------------------------------------------- */
 
 /**********************************************************************
- * LOADTIME (RT8_OP_CODES.agc C p. 1508, RTB_OP_CODES.agc L) -- TIME2, TIME1 as
- * a DP
- *
- * FUNCTION NAME: agc_integ_loadtime
- *
- * RETURNS: agc_dp_t -- agc_dp_t the time now, cs 2^28
- *********************************************************************/
-agc_dp_t agc_integ_loadtime(void)
-{
-    const uint32_t t = agc_time_now_cs(); /* TIME2, TIME1, cs */
-
-    return ((agc_dp_t) (t & 0x0FFFFFFFu));
-}
-
-/**********************************************************************
  * AGC: none (the integration erasables) -- the one set of integration
  * erasables, which INTSTALL guards
  *

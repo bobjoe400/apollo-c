@@ -15,7 +15,6 @@
  *     CD*TR*GS, QUICTRIG, AX*SR*T, *SMNB*, *NBSM*, SMCDURES)
  *   Luminary099 POWERED_FLIGHT_SUBROUTINES.agc pp. 1259-1267 (differs:
  *     FLESHPOT / CALCSMSC instead of SMCDURES)
- *   CDULOGIC: RTB_OP_CODES.agc, Comanche p.1488
  *
  * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
  *   Name          Type      I/O  Scale        Description
@@ -28,6 +27,7 @@
  *   --------------------  ------------------------------------------
  *   agc_dp_sin, _cos      SINE / COSINE (interp.h)
  *   agc_sp_sin, _cos      SPSIN / SPCOS (QUICTRIG)
+ *   agc_rtb_cdulogic      CDULOGIC (RTB op, CD*TR*GS)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   None; AGC_STATUS_BAD_ARG on a failed precondition.
@@ -62,10 +62,10 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
 
-#define CDU_SIGN_BIT   ((uint16_t) 040000) /* bit 15 of the 15-bit CDU word  */
-#define CDU_MASK       ((uint16_t) 077777) /* the 15 bits of a CDU word */
-#define CDU_FULL_SCALE 0100000L            /* 2^15 counts = one revolution    */
+#define CDU_SIGN_BIT ((uint16_t) 040000) /* bit 15 of the 15-bit CDU word  */
+#define CDU_MASK     ((uint16_t) 077777) /* the 15 bits of a CDU word */
 
 static agc_cdutrig_t g_trig; /* CDUSPOT, SINCDU, COSCDU (Y Z X) */
 
@@ -119,33 +119,6 @@ static agc_sp_t cdu_as_sp(uint16_t cdu)
 /* ---------------------------------------------------------------------- */
 
 /**********************************************************************
- * CDULOGIC (RTB_OP_CODES.agc, Comanche p.1488): convert the 15-bit
- * 2's-complement CDU angle (scaled in half revolutions) to a DP angle in
- * revolutions, range [-1/2, +1/2). 2^15 counts are one revolution, so the
- * DP value is the signed count times 2^13.
- *
- * FUNCTION NAME: agc_imu_cdulogic
- *
- * ARGUMENTS:
- *   Argument  Type        I/O  Description (scale)
- *   --------  ----------  ---  ---------------------------------------
- *   cdu       uint16_t    I    CDU angle, 15-bit 2s-complement counts
- *
- * RETURNS: agc_dp_t -- the angle, rev 2^0, in [-1/2, +1/2)
- **********************************************************************/
-agc_dp_t agc_imu_cdulogic(uint16_t cdu)
-{
-    long int w = (long int) (cdu & CDU_MASK); /* signed counts, 2^15/rev */
-
-    if (w >= (long int) CDU_SIGN_BIT)
-    {
-        w -= CDU_FULL_SCALE; /* 2's complement negative angle */
-    }
-
-    return ((agc_dp_t) (w * 8192L)); /* w / 2^15 rev at scale 2^0    */
-}
-
-/**********************************************************************
  * CD*TR*GS (POWERED_FLIGHT_SUBROUTINES, CM p.1366, LM p.1260): for the
  * three 2's-complement angles at CDUSPOT (order Y Z X) store the 1's
  * complement DP angles back in CDUSPOT and their half-sines and
@@ -170,7 +143,7 @@ void agc_imu_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3])
     for (int k = 2; k >= 0; k--)
     { /* TRIGLOOP (TR*GL*P): index 4, 2, 0 */
         t->cduraw[k]  = cdu_as_sp(cdu_yzx[k]);
-        t->cduspot[k] = agc_imu_cdulogic(cdu_yzx[k]); /* USPRCADR CDULOGIC */
+        t->cduspot[k] = agc_rtb_cdulogic(cdu_yzx[k]); /* USPRCADR CDULOGIC */
         t->coscdu[k]  = agc_dp_cos(t->cduspot[k]);    /* COSINE, 2^1     */
         t->sincdu[k]  = agc_dp_sin(t->cduspot[k]);    /* SINE +1, 2^1    */
     }

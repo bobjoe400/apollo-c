@@ -73,19 +73,20 @@
 #include "agc/programs/alignment.h"
 #include "internal.h"
 
-#define OMEG_MS        ((agc_dp_t) 65334634)        /* OMEG/MS 2DEC .24339048 (07623 26552) */
-#define TIME_WRAP      ((agc_dp_t) 0x10000000L)     /* DPPOSMAX + ONEDPP: 2^28 cs */
-#define ALARM_NO_P01   ((agc_alarm_code_t) 01521)   /* P01 after P11       */
-#define COMPASS_PIPADT ((agc_sp_t) 06200)           /* 1/PIPAGT: 50 cs, cs B8     */
-#define TEST_PIPADT    ((agc_sp_t) 014400)          /* OC14400: 100 cs, cs B8    */
-#define COMPASS_PASSES ((agc_sp_t) 0200)            /* BIT8: 128 erection cycles  */
-#define TEST_PASSES    ((agc_sp_t) 01602)           /* TESTTIME: 898 passes       */
-#define COMPASS_PERIOD ((agc_sp_t) 062)             /* 1/2SECX = .5SEC: 50 cs     */
-#define TEST_PERIOD    ((agc_sp_t) 0144)            /* 1SECX = 1SEC: 100 cs       */
-#define COMPASS_DELAY  ((agc_dp_t) 1)               /* PERFDLAY = 0,1: 1 cs B28   */
-#define MODREG_NONE    ((agc_sp_t) -1)              /* -0 in MODREG (exec's code) */
-#define VN_SITE        ((uint16_t) ((6 << 7) | 41)) /* VNG0641: V06N41 */
-#define TEMPTIME_SHIFT 9                            /* ERTHR: SL 9D               */
+#define OMEG_MS           ((agc_dp_t) 65334634)        /* OMEG/MS 2DEC .24339048 (07623 26552) */
+#define TIME_WRAP         ((agc_dp_t) 0x10000000L)     /* DPPOSMAX + ONEDPP: 2^28 cs */
+#define ALARM_NO_P01      ((agc_alarm_code_t) 01521)   /* P01 after P11       */
+#define COMPASS_PIPADT    ((agc_sp_t) 06200)           /* 1/PIPAGT: 50 cs, cs B8     */
+#define TEST_PIPADT       ((agc_sp_t) 014400)          /* OC14400: 100 cs, cs B8    */
+#define COMPASS_PASSES    ((agc_sp_t) 0200)            /* BIT8: 128 erection cycles  */
+#define TEST_PASSES       ((agc_sp_t) 01602)           /* TESTTIME: 898 passes       */
+#define COMPASS_PERIOD    ((agc_sp_t) 062)             /* 1/2SECX = .5SEC: 50 cs     */
+#define TEST_PERIOD       ((agc_sp_t) 0144)            /* 1SECX = 1SEC: 100 cs       */
+#define COMPASS_DELAY     ((agc_dp_t) 1)               /* PERFDLAY = 0,1: 1 cs B28   */
+#define MODREG_NONE       ((agc_sp_t) -1)              /* -0 in MODREG (exec's code) */
+#define VN_SITE           ((uint16_t) ((6 << 7) | 41)) /* VNG0641: V06N41 */
+#define TEMPTIME_SHIFT    9                            /* ERTHR: SL 9D               */
+#define SYSTEMS_TEST_MODE ((agc_sp_t) 07)              /* REDO: NEWMODEX, MM 07      */
 
 static agc_vec_t       ervector; /* ERVECTOR: earth rate, rev/cs x 2^-19 B0  */
 static agc_dp_t        tmark;    /* TMARK: time of the last EARTHR, cs 2^28  */
@@ -707,7 +708,7 @@ agc_status_t agc_task_gyrocompassing_wake(void)
  *
  * RETURNS: agc_status_t of the stall or of the next step
  **********************************************************************/
-agc_status_t agc_csm_prelaunch_imutest(agc_job_ctx_t *ctx)
+static agc_status_t prelaunch_imutest(agc_job_ctx_t *ctx)
 {
     const uint16_t zero[3] = {0, 0, 0}; /* THETAD = 0, CDU         */
     bool           done    = false;     /* IMUSTALL already over   */
@@ -840,4 +841,27 @@ agc_status_t agc_job_imu_test_site_loaded(agc_job_ctx_t *ctx)
     }
 
     return (geoimutt(ctx)); /* GEOIMUTT                              */
+}
+
+/**********************************************************************
+ * REDO (SYSTEM_TEST_STANDARD_LEAD_INS.agc p.422, Comanche): the V92 job
+ * (SYSTEST FINDVAC REDO): NEWMODEX 07, then "FALL INTO IMUTEST"
+ * (IMU_CALIBRATION_AND_ALIGNMENT.agc p.423).  The LM's REDO
+ * (IMU_PERFORMANCE_TEST_2) is agc_job_systems_test (src/lm/).
+ *
+ * ARGUMENTS:
+ *   ctx  agc_job_ctx_t *  I  the V92 job
+ *
+ * RETURNS: agc_status_t -- the NEWMODEX status, else IMUTEST's
+ **********************************************************************/
+agc_status_t agc_job_systems_test_csm(agc_job_ctx_t *ctx)
+{
+    agc_status_t st = agc_phase_newmode(SYSTEMS_TEST_MODE); /* NEWMODEX, MM 07 */
+
+    if (st != AGC_STATUS_OK)
+    {
+        return (st);
+    }
+
+    return (prelaunch_imutest(ctx)); /* FALL INTO IMUTEST */
 }

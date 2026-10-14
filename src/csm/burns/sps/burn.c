@@ -515,7 +515,7 @@ agc_status_t agc_task_precheck(void)
         return (AGC_STATUS_OK); /* DON'T START ANOTHER    */
     }
 
-    return ((agc_state_vehicle() == AGC_VEHICLE_CSM) ? agc_task_preread_csm() : agc_task_preread_lm()); /* PREREAD of the vehicle */
+    return (agc_task_preread_csm()); /* PREREAD (CSM only: the registry has no LM PRECHECK) */
 }
 
 /**********************************************************************

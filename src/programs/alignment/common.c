@@ -3,16 +3,16 @@
  *
  * PURPOSE:
  *   The alignment erasables and the small helpers shared by every
- *   alignment and marking routine of both vehicles: the CDULOGIC / 1STO2S
- *   word formats, CDUTRIG / CALCSMSC glue, the integration call, the DSKY
- *   display calls with their astronaut returns, the IMUSTALL / OPTSTALL
- *   outcome, restart phase changes, SET1/PDT and NCOARSE, COARSE,
- *   LOADTIME and the DSPTEM1 words.
+ *   alignment and marking routine of both vehicles: CDUTRIG + CALCSMSC of
+ *   the present CDUs, the integration call, the DSKY display calls with
+ *   their astronaut returns, the IMUSTALL / OPTSTALL outcome, restart
+ *   phase changes, SET1/PDT and NCOARSE, COARSE and the DSPTEM1 words.
+ *   The RTB ops (CDULOGIC, 1STO2S, LOADTIME) are io/service's
+ *   (agc_rtb_*).
  *
  * AGC SOURCE:
  *   Comanche055 P51-P53.agc pp. 737-784 (SET1/PDT p. 769)
  *   Luminary099 P51-P53.agc pp. 926-983 (COARSE, NCOARSE p. 951)
- *   RTB_OP_CODES.agc pp. 1397-1398 (CDULOGIC, 1STO2S, LOADTIME)
  *   POWERED_FLIGHT_SUBROUTINES.agc (CDUTRIG)
  *
  * EXTERNAL VARIABLES:  (AGC erasables reached through accessors)
@@ -49,9 +49,7 @@
  *   (CURTAINS, BAILOUT done) end the job with AGC_STATUS_OK.
  *
  * NOTES:
- *   agc_align_ones_to_twos is a local 1STO2S (DEVIATION: the RTB op is
- *   not public); align_stall_outcome checks that the woken job sees a
- *   finished stall.
+ *   align_stall_outcome checks that the woken job sees a finished stall.
  **********************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
@@ -60,12 +58,9 @@
 #include "agc/core/flags_common.h"
 #include "agc/programs/alignment.h"
 
-#define CDU_WORD_MASK     077777u /* 15-bit CDU register                  */
-#define CDU_MODULUS       0100000 /* one revolution in CDU counts         */
-#define CDU_HALF_REV      16384   /* counts in half a revolution          */
-#define CDU_TO_REVS_SHIFT 8192    /* 2^13: cdu count -> DP revs           */
-#define WORD_SIGN         040000u /* sign bit of a 15-bit word            */
-#define WORD_ONES_NEG     077777  /* 1's complement bias                  */
+#define CDU_WORD_MASK 077777u /* 15-bit CDU register                  */
+#define WORD_SIGN     040000u /* sign bit of a 15-bit word            */
+#define WORD_ONES_NEG 077777  /* 1's complement bias                  */
 
 static agc_align_ram_t align_ram; /* the alignment erasables (one block, cleared at fresh start) */
 
@@ -115,122 +110,6 @@ void agc_align_ram_reset(void)
 }
 
 /**********************************************************************
- * CDULOGIC (RTB_OP_CODES.agc, Luminary p. 1397) -- the SP 2's complement
- * CDU angle (half-revolutions) as a DP angle in revolutions.  The routine
- * itself is guid-powered's agc_imu_cdulogic(); this keeps the alignment
- * name used throughout the lane.
- *
- * FUNCTION NAME: agc_align_cdulogic
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------------------------------
- *   cdu       uint16_t  I    CDU words X, Y, Z (2^15 = 1 rev)
- *
- * RETURNS: agc_dp_t -- the angle, revs 2^0 (DP)
- **********************************************************************/
-agc_dp_t agc_align_cdulogic(uint16_t cdu)
-{
-    const agc_dp_t r = agc_imu_cdulogic((uint16_t) (cdu & CDU_WORD_MASK)); /* CDULOGIC result, revs 2^0 */
-
-    return (r);
-}
-
-/**********************************************************************
- * 1STO2S / 1TO2SUB (RTB_OP_CODES.agc, Luminary p. 1397-1398) -- convert a
- * DP angle in revolutions to a SP 2's complement angle in half revolutions.
- * The low word is dropped (truncation toward zero, as the 1's complement
- * high word is), and a doubling overflow wraps by one revolution.
- * DEVIATION: local copy of the RTB op (owner sys-misc, not public yet).
- *
- * FUNCTION NAME: agc_align_ones_to_twos
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------------------------------
- *   revs      agc_dp_t  I    angle, revs 2^0 (DP)
- *
- * RETURNS: uint16_t -- 2s complement CDU pattern, 2^15 = 1 rev
- **********************************************************************/
-uint16_t agc_align_ones_to_twos(agc_dp_t revs)
-{
-    int32_t hv = revs / CDU_TO_REVS_SHIFT; /* major word doubled, CDU counts */
-
-    if (hv >= CDU_HALF_REV)
-    {
-        hv -= CDU_MODULUS;
-    }
-    else if (hv < -CDU_HALF_REV)
-    {
-        hv += CDU_MODULUS;
-    }
-    else
-    {
-        /* no doubling overflow */
-    }
-
-    if (hv < 0)
-    {
-        hv += CDU_MODULUS;
-    }
-
-    return ((uint16_t) hv);
-}
-
-/**********************************************************************
- * AGC: CDUTRIG (Comanche055 POWERED_FLIGHT_SUBROUTINES.agc p. 1365;
- *      Luminary099 POWERED_FLIGHT_SUBROUTINES.agc p. 1259)
- *
- * CDUTRIG with explicit angles (POWERED_FLIGHT_SUBROUTINES CD*TR*GS): the
- * CDUSPOT order is Y, Z, X.
- *
- * FUNCTION NAME: agc_align_cdutrig
- *
- * ARGUMENTS:
- *   Argument  Type             I/O  Description (scale)
- *   --------  ---------------  ---  -------------------------------------
- *   cdu_xyz   const uint16_t   I    CDU words X, Y, Z (2^15 = 1 rev)
- *   t         agc_cdutrig_t *  O    CDUTRIG sines and cosines (scale 2^1)
- *
- * RETURNS: none
- **********************************************************************/
-void agc_align_cdutrig(const uint16_t cdu_xyz[3], agc_cdutrig_t *t)
-{
-    uint16_t yzx[3]; /* CDUY, CDUZ, CDUX words */
-
-    yzx[AGC_TRIG_X] = cdu_xyz[0];
-    yzx[AGC_TRIG_Y] = cdu_xyz[1];
-    yzx[AGC_TRIG_Z] = cdu_xyz[2];
-    agc_imu_cdtrigs(t, yzx);
-}
-
-/**********************************************************************
- * CALCSMSC (P51-P53.agc, Comanche p. 763) on the SINCDU/COSCDU left by
- * CDUTRIG: the routine is the imu lane's agc_imu_calcsmsc (X, Y, Z order).
- *
- * FUNCTION NAME: agc_align_calcsmsc
- *
- * ARGUMENTS:
- *   Argument  Type                   I/O  Description (scale)
- *   --------  ---------------------  ---  -------------------------------
- *   ip        agc_interp_t *         IO   interpreter state (OVFIND, MPAC
- *                                         words)
- *   t         const agc_cdutrig_t *  I    CDUTRIG sines and cosines (scale 2^1)
- *   nb        agc_mat_t *            O    XNB, YNB, ZNB rows, half-unit
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK when the step ended or queued its
- *          successor; otherwise the status of the call that failed
- *          (executive, display, IMU, integration or an input check)
- **********************************************************************/
-agc_status_t agc_align_calcsmsc(agc_interp_t *ip, const agc_cdutrig_t *t, agc_mat_t *nb)
-{
-    const agc_vec_t s = agc_vec_make(t->sincdu[AGC_TRIG_X], t->sincdu[AGC_TRIG_Y], t->sincdu[AGC_TRIG_Z]); /* SINCDU X, Y, Z, scale 2^1 */
-    const agc_vec_t c = agc_vec_make(t->coscdu[AGC_TRIG_X], t->coscdu[AGC_TRIG_Y], t->coscdu[AGC_TRIG_Z]); /* COSCDU X, Y, Z, scale 2^1 */
-
-    return (agc_imu_calcsmsc(ip, s, c, nb));
-}
-
-/**********************************************************************
  * AGC: CDUX (Comanche055 ERASABLE_ASSIGNMENTS.agc p. 39; Luminary099
  *      ERASABLE_ASSIGNMENTS.agc p. 92)
  *
@@ -277,7 +156,7 @@ agc_status_t align_nb_present(agc_interp_t *ip, agc_cdutrig_t *t, agc_mat_t *nb)
 {
     agc_imu_cdutrig(t);
 
-    return (agc_align_calcsmsc(ip, t, nb));
+    return (agc_imu_calcsmsc(ip, t, nb));
 }
 
 /**********************************************************************
@@ -556,27 +435,6 @@ void align_phase_job(uint16_t code, agc_job_id_t job, agc_prio_t prio)
     v.job        = job;
     v.prio_or_dt = (int16_t) prio;
     agc_phase_change_var(code, &v);
-}
-
-/**********************************************************************
- * AGC: LOADTIME (Comanche055 RT8_OP_CODES.agc p. 1508; Luminary099
- *      RTB_OP_CODES.agc p. 1397)
- *
- * LOADTIME (RTB): TIME2, TIME1, cs B28.
- *
- * FUNCTION NAME: align_loadtime
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_dp_t -- TIME2, TIME1, cs 2^28
- **********************************************************************/
-agc_dp_t align_loadtime(void)
-{
-    const uint32_t t = agc_time_now_cs(); /* CDUTRIG sines and cosines */
-
-    const agc_dp_t d = (agc_dp_t) (t & (AGC_TIME_MODULUS_CS - 1u)); /* TIME2/TIME1, cs 2^28 */
-
-    return (d);
 }
 
 /**********************************************************************

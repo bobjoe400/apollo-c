@@ -69,6 +69,7 @@
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 #include "radar.h"
 
 #define ACQ_MAXTRIES   60                     /* MAXTRIES DEC 60            */

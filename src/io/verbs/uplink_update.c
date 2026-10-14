@@ -73,6 +73,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/integration.h"
+#include "internal.h"
 
 #define WORD15         077777u            /* one AGC word */
 #define LOW8           000377u            /* relative address in an EBANK */

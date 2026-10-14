@@ -170,7 +170,7 @@ static agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job, 
     agc_navaux_padload_t pad;                   /* pad loads (ephemeris, RLS) */
 
     agc_navaux_get_padload(&pad);
-    ram->aoptime       = align_loadtime();
+    ram->aoptime       = agc_rtb_loadtime();
     const agc_vec_t uz = agc_vec_make(0, 0, AGC_DP_HALF);                                                            /* UNITZ, half-unit (2^1) */
     agc_status_t    st = agc_planet_rp_to_r(ip, &pad, agc_dp_high(ram->aoptime) != 0, uz, ram->aoptime, &ram->star); /* BHIZ on MPAC = the time: moon */
 
@@ -257,7 +257,7 @@ static agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed,
 
     if (!resumed)
     {
-        ram->aoptime = agc_dp_add(ip, align_loadtime(), AOP_LEAD_CS);
+        ram->aoptime = agc_dp_add(ip, agc_rtb_loadtime(), AOP_LEAD_CS);
     }
 
     agc_vec_t    los;                /* target line of sight (reference), half-unit (2^1) */

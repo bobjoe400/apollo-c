@@ -221,14 +221,8 @@ void          agc_lm_asc_set_tgo(agc_dp_words_t w); /* TGO, ascent words = the T
 void          agc_lm_landing_reset(void);
 
 /* basic-language helpers shared by the lane (state.c) */
-void           agc_lm_phaschng(uint16_t octal_code);            /* PHASCHNG  */
-void           agc_lm_fastchng(void);                           /* FASTCHNG  */
-agc_sp_t       agc_lm_time1(void);                              /* TIME1     */
-agc_sp_t       agc_lm_dv(agc_dp_t dividend, agc_sp_t divisor);  /* DV        */
-agc_sp_t       agc_lm_mp_hi(agc_sp_t a, agc_sp_t b);            /* MP, high  */
-agc_sp_t       agc_lm_ad(agc_sp_t a, agc_sp_t b);               /* AD, wraps */
-agc_dp_words_t agc_lm_das(agc_dp_words_t x, agc_dp_words_t y);  /* DAS     */
-bool           agc_lm_chan_bit_present(int chan, uint16_t bit); /* inverted ch30-33 */
+void     agc_lm_phaschng(uint16_t octal_code); /* PHASCHNG  */
+agc_sp_t agc_lm_time1(void);                   /* TIME1     */
 
 /* ---- THROTTLE_CONTROL_ROUTINES (throttle.c) ----------------------------- */
 agc_status_t agc_lm_throttle(void);
@@ -245,7 +239,6 @@ agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2);
 agc_status_t agc_lm_findcduw_from_unfc(agc_interp_t *ip);
 
 /* SPARCSIN -1: arg scale 2 */
-agc_sp_t agc_lm_sparcsin_doubled(agc_sp_t x);
 agc_sp_t agc_lm_findcduw_limit_mga(agc_sp_t mga); /* FINDCDUW MGA limit, alarm 00401 (p. 914) */
 
 /* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (guidance.c) --------------
@@ -258,12 +251,10 @@ agc_sp_t agc_lm_findcduw_limit_mga(agc_sp_t mga); /* FINDCDUW MGA limit, alarm 0
 #define AGC_LM_ENTRY_QGUIDSUB  2                     /* ?GUIDSUB first IGNALG pass          */
 #define AGC_LM_ENTRY_VERTGUID  3                     /* straight to VERTGUID                */
 agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx); /* LUNLAND      */
-agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry);
 void         agc_lm_rgvgcalc(agc_interp_t *ip);      /* RGVGCALC     */
 agc_status_t agc_lm_ttf8cl(agc_interp_t *ip);        /* TTF/8CL      */
 agc_status_t agc_lm_quadguid(agc_interp_t *ip);      /* QUADGUID     */
 void         agc_lm_cgcalc(agc_interp_t *ip);        /* CGCALC       */
-agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3);
 
 /* P63DISPS -2 */
 agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx);
@@ -294,12 +285,8 @@ agc_status_t agc_lm_job_braking_phase_antenna_check(agc_job_ctx_t *ctx);
 
 /* P63SPOT4 */
 agc_status_t agc_lm_job_braking_phase_radar_init(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_guildenstern(int *entry);  /* R13 */
-agc_status_t agc_lm_redesig(agc_interp_t *ip); /* REDESIG      */
 
 /* P66VERTA */
-agc_status_t agc_lm_rate_of_descent_vertical(const agc_job_ctx_t *ctx);
-agc_status_t agc_lm_manual_landing_vertical(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_status_t agc_lm_task_rodtask(void);              /* RODTASK      */
 agc_status_t agc_lm_job_rodcomp(agc_job_ctx_t *ctx); /* RODCOMP      */
 agc_status_t agc_lm_pitfall(void);                   /* PITFALL (RUPT10) */
@@ -334,7 +321,6 @@ agc_status_t agc_lm_job_abort_to_ascent_guidance(void);
 
 /* OLDTIME restart */
 agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx);
-agc_sp_t     agc_lm_pipctr1(void); /* PIPCTR1 for LANDISP */
 
 /* ---- P12 and ASCENT_GUIDANCE (ascent.c) --------------------------------- */
 agc_status_t agc_lm_guidinit(agc_interp_t *ip);

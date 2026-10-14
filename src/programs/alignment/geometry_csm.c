@@ -47,8 +47,8 @@
  *   calls SXTNB: the routines are the CSM's, the module is the lowest
  *   caller's (layering lane).
  *   SXTNB and SXTANG run on the MPAC words (word_forms.c,
- *   interp_words.h): bit exact on the oracle.  EARROT1/2 have no caller
- *   in the tree (entry has its own copy, entry_earrot).
+ *   interp_words.h): bit exact on the oracle.  Entry calls LOG and
+ *   EARROT1/2 here (csm/entry/entry_targeting.c, entry_huntest.c).
  **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>
@@ -56,6 +56,7 @@
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp_words.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 
 /* NB2NB1 / NB1NB2 elements, 2DEC ... B-1 (cos 32.523 deg, sin 32.523 deg). */
@@ -130,8 +131,8 @@ static agc_mat_t nb2nb1(void)
  **********************************************************************/
 agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
 {
-    agc_ovf_t      ovf = 0;                                                                      /* overflow of the ADS (dropped as the AGC does) */
-    const agc_dp_t a   = agc_dp_add_raw(agc_align_cdulogic(trunnion_cdu), TEN_DEGS_MINUS, &ovf); /* CDULOGIC(TA) + 10DEGS-, revs 2^0 */
+    agc_ovf_t      ovf = 0;                                                                    /* overflow of the ADS (dropped as the AGC does) */
+    const agc_dp_t a   = agc_dp_add_raw(agc_rtb_cdulogic(trunnion_cdu), TEN_DEGS_MINUS, &ovf); /* CDULOGIC(TA) + 10DEGS-, revs 2^0 */
 
     return (agc_dp_shr(a, 2)); /* x QUARTER */
 }
@@ -158,7 +159,7 @@ agc_dp_t agc_csm_sxtlogic(uint16_t trunnion_cdu)
 void agc_csm_sxtnb(agc_interp_t *ip, uint16_t trunnion_cdu, uint16_t shaft_cdu, agc_vec_t *starm_nb)
 {
     const agc_dp_t ta = agc_csm_sxtlogic(trunnion_cdu); /* TA, revs 2^0 (PD0) */
-    const agc_dp_t sa = agc_align_cdulogic(shaft_cdu);  /* SA, revs 2^0 (PD4) */
+    const agc_dp_t sa = agc_rtb_cdulogic(shaft_cdu);    /* SA, revs 2^0 (PD4) */
 
     /* SIN SL1, PUSH: the SL1 shifts SIN's MPAC +2 into the stored words,
      * which the two DMPs then take as stored (word level).              */
@@ -225,8 +226,8 @@ static void sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb1, uint
     const agc_dp_t sinth = agc_dp_neg(agc_vec_dot(ip, pda, nb1->row[0])); /* -PDA . XNB1, scale 2^2 */
     const agc_dp_t costh = agc_vec_dot(ip, pda, nb1->row[1]);             /* PDA . YNB1, scale 2^2 */
 
-    /* 1STO2S of ARCTRIG's words (word_forms.c), not of its value. */
-    *sac = align_words_to_cdu(align_arctrig_words(ip, sinth, costh));
+    /* 1STO2S of ARCTRIG's words (rtb_ops.c), not of its value. */
+    *sac = agc_rtb_1sto2s_words(align_arctrig_words(ip, sinth, costh));
     align_clear_ovf(ip); /* BOV +1  */
 
     /* DOT SL1 ACOS, BMN, SL2, BOV, DSU 20DEG-, 1STO2S on the MPAC words. */
@@ -246,7 +247,7 @@ static void sxtang1(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb1, uint
         }
         else
         {
-            *pac  = align_words_to_cdu(agc_mpac_store(agc_mpac_dsu(ip, ta, agc_dp_to_words(TWENTY_DEG_MINUS))));
+            *pac  = agc_rtb_1sto2s_words(agc_mpac_store(agc_mpac_dsu(ip, ta, agc_dp_to_words(TWENTY_DEG_MINUS))));
             *cult = false; /* CLRGO CULTFLAG            */
         }
     }
@@ -294,8 +295,8 @@ void agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t
 /**********************************************************************
  * SXTANG (CSM_GEOMETRY.agc pp. 286-287) -- optics angles for STAR given in
  * any frame in which nb holds the NB axes (XNB, YNB, ZNB rows, half-unit):
- * TRANSP1, XNB1.. = NB2NB1 (rows of the transpose), VSL1, TRANSP1/2, then
- * SXTANG1.
+ * TRANSP1, XNB1.. = NB2NB1 (rows of the transpose), VSL1, TRANSP1/2 (the
+ * RTB ops, rtb_ops.c), then SXTANG1.
  *
  * FUNCTION NAME: agc_csm_sxtang
  *
@@ -315,17 +316,19 @@ void agc_csm_calcsxa(agc_interp_t *ip, agc_vec_t star_sm, const agc_cdutrig_t *t
  **********************************************************************/
 void agc_csm_sxtang(agc_interp_t *ip, agc_vec_t star, const agc_mat_t *nb, uint16_t *sac, uint16_t *pac, bool *cult)
 {
-    const agc_mat_t eref = agc_mat_transpose(nb); /* EREF WRT NB2     */
-    const agc_mat_t m    = nb2nb1();              /* the mark */
-    agc_mat_t       t1;                           /* NB2NB1 times the reference axes, half-unit rows */
+    agc_mat_t       eref = *nb;      /* XNB, YNB, ZNB, half-unit rows */
+    const agc_mat_t m    = nb2nb1(); /* the mark */
+    agc_mat_t       nb1;             /* XNB1, YNB1, ZNB1: NB2NB1 times the reference axes, half-unit rows */
+
+    agc_rtb_transp(&eref); /* RTB TRANSP1: EREF WRT NB2 */
 
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        t1.row[i] = agc_vec_shl(ip, agc_mat_vec(ip, &m, eref.row[i]), 1);
+        nb1.row[i] = agc_vec_shl(ip, agc_mat_vec(ip, &m, eref.row[i]), 1); /* MXV NB2NB1, VSL1 */
     }
 
-    const agc_mat_t nb1 = agc_mat_transpose(&t1); /* TRANSP2          */
-
+    /* RTB TRANSP1 puts XNB back (here eref is a copy); RTB TRANSP2:      */
+    agc_rtb_transp(&nb1);
     sxtang1(ip, star, &nb1, sac, pac, cult);
 }
 

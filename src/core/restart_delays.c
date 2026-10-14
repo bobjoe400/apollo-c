@@ -37,6 +37,7 @@
 #include <stdint.h>
 
 #include "agc/core/state.h"
+#include "internal.h"
 
 static agc_dp_t g_p40tmp;   /* P40TMP: LONGCALL / TIGON delay, cs 2^28 */
 static agc_dp_t g_savet_30; /* SAVET-30: delay to TIG-35, cs 2^28     */

@@ -52,6 +52,7 @@
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
+#include "internal.h"
 
 /* Bound of the modulo-one-hour loops P32/P72E, P33/P73E, P33/P73F:
  * more than 2^28 cs / 60 min passes.                                    */
@@ -110,31 +111,6 @@ static agc_dp_t csi_mod_hour(agc_interp_t *ip, agc_dp_t x)
     }
 
     return (v);
-}
-
-/**********************************************************************
- * SELECTMU (p.494) then its GOTO VN1645, which returns to the caller.
- * AGC: SELECTMU (P34-35_P74-75.agc p.494), VN1645
- *
- * FUNCTION NAME: csi_selectmu
- *
- * ARGUMENTS:
- *   Argument  Type                   I/O  Description (scale)
- *   --------  ---------------------  ---  -------------------------
- *   ctx       const agc_job_ctx_t *  I    job context of the calling job
- *   ip        agc_interp_t *         I/O  interpreter state (OVFIND)
- *   rz        agc_rendz_t *          I/O  rendezvous erasables
- *   next      agc_job_id_t           I    job started next
- *
- * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
- *          argument, else the status of the call that failed
- **********************************************************************/
-static agc_status_t csi_selectmu(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t next)
-{
-    agc_rendz_selectmu(rz, agc_flag_test(AGC_FLAG_CMOONFLG));
-    agc_flag_clear(AGC_FLAG_FINALFLG);
-
-    return (rz_ttogo_display(ctx, ip, rz, next));
 }
 
 /* ======================= P32 / P72 (pp.652-654) ========================== */
@@ -340,7 +316,7 @@ agc_status_t agc_job_csi_after_ttpi(agc_job_ctx_t *ctx)
 
     agc_erase_set_tig(rz->tcsi);
 
-    return (csi_selectmu(ctx, &ip, rz, AGC_JOB_CSI_COMPUTE));
+    return (rz_selectmu_display(ctx, &ip, rz, AGC_JOB_CSI_COMPUTE));
 }
 
 /**********************************************************************
@@ -645,7 +621,7 @@ agc_status_t agc_job_cdh_after_tcdh(agc_job_ctx_t *ctx)
     agc_erase_set_ttpi(rz->ttpio);
     agc_erase_set_tig(rz->tcdh);
 
-    return (csi_selectmu(ctx, &ip, rz, AGC_JOB_CDH_COMPUTE));
+    return (rz_selectmu_display(ctx, &ip, rz, AGC_JOB_CDH_COMPUTE));
 }
 
 /**********************************************************************

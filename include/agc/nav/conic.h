@@ -245,6 +245,11 @@ void agc_conic_param(agc_interp_t *ip, agc_vec_t rvec, agc_vec_t vvec, agc_conic
 /* Body from RTX1 (the integrator's X1): -2 earth, -10 moon.             */
 agc_conic_body_t agc_conic_body_of_x1(int x1);
 
+/* MUTABLE words of the body (CONIC_SUBROUTINES p. 1305): MU (MUEARTH,2
+ * 2^36 / MUM 2^30 m^3/cs^2) and 1/SQRT(MU) (2^17 / 2^14).               */
+agc_dp_words_t agc_conic_mu_(agc_conic_body_t body);
+agc_dp_words_t agc_conic_inv_root_mu_(agc_conic_body_t body);
+
 /* UN and GEOMSGN of the last LAMBERT (erasables read by LM RASTEER).    */
 agc_vec_t agc_erase_un(void);      /* UN, unit normal, 2^1              */
 agc_sp_t  agc_erase_geomsgn(void); /* GEOMSGN, SP +.5 short / -.5 long  */

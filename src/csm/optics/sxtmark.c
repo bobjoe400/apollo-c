@@ -74,6 +74,7 @@
 #include "agc/core/flags_csm.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 static agc_status_t agc_sxtmark_markcont(void);
 static agc_status_t agc_sxtmark_mkreject(void);
@@ -339,7 +340,7 @@ agc_status_t agc_sxtmark_markrupt(void)
     mk.cduy           = agc_erase_cduy();
     mk.cduz           = agc_erase_cduz();
     mk.cdux           = agc_erase_cdux();
-    mk.t              = align_loadtime();
+    mk.t              = agc_rtb_loadtime();
     agc_erase_set_samptime(mk.t);
     const uint16_t in = agc_chan_read(016); /* channel 16 (NAVKEYIN) */
 

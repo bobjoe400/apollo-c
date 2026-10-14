@@ -62,6 +62,7 @@
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/guidance/guidance.h"
+#include "internal.h"
 
 /* ---- constants (P32-P33 p.663, values as 2^28 fractions) --------------- */
 #define CSI_INITST     ((agc_dp_t) 63921)    /* .03048 B-7: 10 fps            */

@@ -30,6 +30,7 @@
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
+#include "agc/imu/imu.h"
 
 /* THETAX1 .. INTVEC1 +5: the words STOREDTA copies to RESTARPT.          */
 typedef struct prelaunch_filter
@@ -113,5 +114,12 @@ agc_status_t prelaunch_estims(agc_job_ctx_t *ctx);
 
 /* SETNBPOS +1 (p.449): MKRELEAS, then OPTDATA in the calling job.      */
 agc_status_t prelaunch_verify_start(agc_job_ctx_t *ctx);
+
+/* ---- moved from the public headers (used only in csm/prelaunch/) ---- */
+
+/* agc/imu/imu.h */
+/* ERTHRVSE: ERVECTOR = (sin LAT, -cos LAT, 0) OMEG/MS; TMARK = now;
+ * ERCOMP1 = 0.  latitude in revolutions.                                 */
+agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude);
 
 #endif /* CSM_PRELAUNCH_INTERNAL_H */

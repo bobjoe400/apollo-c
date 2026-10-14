@@ -25,9 +25,9 @@
  * EXTERNAL REFERENCES:
  *   Name                  Description
  *   --------------------  ------------------------------------------
- *   agc_imu_cdulogic     CDULOGIC: CDU pattern to revs
+ *   agc_rtb_cdulogic     CDULOGIC: CDU pattern to revs
  *   agc_imu_arctrig       ARCTRIG (ROLL, ALFA)
- *   agc_entry_scalepop    entry guidance pass (reentry.c)
+ *   agc_entry_scalepop    entry guidance pass (entry_guidance.c)
  *   agc_job_servexit      SERVEXIT (SERVICER)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -57,6 +57,8 @@
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
+#include "agc/io/service.h"
+#include "internal.h"
 
 /* Restart storage TEMPROLL, TEMPALFA, TEMPBETA (ENTRY RESTART PROTECTION
  * STORAGE): the updated angles /180, SP 2s complement.                    */
@@ -149,9 +151,9 @@ agc_status_t agc_entry_cm_trio(agc_dp_t angles[4])
     /* CM/TRIO part 2 (pp. 884-885): UBX, UBY, UBZ in reference coordinates
      * from the PIP-time gimbal angles and REFSMMAT. */
     agc_mat_t refsmmat = agc_erase_refsmmat();                       /* REFSMMAT, half-unit rows */
-    agc_dp_t  aig      = agc_imu_cdulogic(cdu_pattern(es->aig_pip)); /* AIG/PIP, revs B0 */
-    agc_dp_t  amg      = agc_imu_cdulogic(cdu_pattern(es->amg_pip)); /* AMG/PIP, revs B0 */
-    agc_dp_t  aog      = agc_imu_cdulogic(cdu_pattern(es->aog_pip)); /* AOG/PIP, revs B0 */
+    agc_dp_t  aig      = agc_rtb_cdulogic(cdu_pattern(es->aig_pip)); /* AIG/PIP, revs B0 */
+    agc_dp_t  amg      = agc_rtb_cdulogic(cdu_pattern(es->amg_pip)); /* AMG/PIP, revs B0 */
+    agc_dp_t  aog      = agc_rtb_cdulogic(cdu_pattern(es->aog_pip)); /* AOG/PIP, revs B0 */
     agc_dp_t  ci       = agc_dp_cos(aig);                            /* COS AIG /2, B1 */
     agc_dp_t  si       = agc_dp_sin(aig);                            /* SIN AIG /2, B1 */
     agc_dp_t  sm       = agc_dp_sin(amg);                            /* SIN AMG /2, B1 */

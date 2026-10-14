@@ -42,6 +42,7 @@
 #include "agc/guidance/guidance.h"
 #include "agc/io/service.h"
 #include "agc/lm/landing.h"
+#include "internal.h"
 
 #define LD_ARCONV   10498   /* OCT 24402: 656.1679798 B-10, rate to bits */
 #define LD_ARTOA    873     /* DEC .1066098 B-1: .25/2.345, 4x/s cycle   */

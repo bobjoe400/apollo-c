@@ -59,6 +59,7 @@
 #include "agc/io/service.h"
 #include "agc/nav/conic.h"
 #include "agc/programs/rendezvous.h"
+#include "internal.h"
 
 /* 2PI+3: 2DEC 3.141592653 B-2 (pi at 2^2).                                 */
 static const agc_dp_t PI_B2 = 210828714; /* pi, 2^2 */

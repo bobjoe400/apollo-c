@@ -192,7 +192,6 @@ agc_status_t agc_dsky_blanksub(uint16_t code); /* bit1 R1 bit2 R2 bit3 R3 */
 agc_status_t agc_dsky_endidle(agc_job_id_t on_terminate, agc_job_id_t on_proceed, agc_job_id_t on_enter);
 agc_status_t agc_dsky_jamterm(void);    /* JAMTERM (V34 by program)   */
 agc_status_t agc_dsky_jamproc(void);    /* JAMPROC (V33 by program)   */
-agc_status_t agc_dsky_dspmm(void);      /* DSPMM: show MODREG         */
 agc_status_t agc_dsky_releasedsp(void); /* RELDSP                     */
 
 /* LOADLV (via LOADLV1 / GOLOADLV of extended verbs 50, 51): end of a

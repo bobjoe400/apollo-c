@@ -233,14 +233,8 @@ agc_status_t agc_integ_midtoav_now(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_j
  * group 6 restart point (the caller's continuation, PHASCHNG 04026).    */
 agc_status_t agc_integ_intwakeu(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_sp_t *upsvflag, agc_job_id_t resume);
 
-/* GRP2PC: PHASCHNG OCT 04022 (group 2).                                  */
-void agc_integ_grp2pc(void);
-
 /* SETIFLGS: SET STATEFLG, CLEAR INTYPFLG DIM0FLAG D6OR9FLG.              */
 void agc_integ_setiflgs(void);
-
-/* THISVINT: VINTFLAG for this vehicle (CM: set, LM: clear).             */
-void agc_integ_thisvint(void);
 
 /* ---- STATEINT (periodic P00 integration), jobs and tasks ------------- */
 agc_status_t agc_task_stateint(void);             /* STATEINT task */

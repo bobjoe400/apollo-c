@@ -111,7 +111,10 @@ bool          rz_is_csm(void);
 bool rz_moonthis(void);
 void rz_flag_put(agc_flag_id_t f, bool on);
 
-/* ---- glue to other lanes (glue.c) --------------------------------- */
+/* ---- integration, INCORP2, restart phases (state_vector_update.c),
+ * display calls (programs/displays/display.c), words
+ * (rendezvous_erasables.c), numeric helpers and P34-35 subroutines
+ * (rendezvous_subroutines.c) ------------------------------------------ */
 /* Conic body from RTX1 (-2 earth, -10 moon).                              */
 /* LAMBERT (CM) / SETITCTR + LAMBERT (LM).                                 */
 
@@ -186,8 +189,7 @@ int rz_word_value(uint16_t w);
 
 /* CPHIX (preferred false) or PRAXIS (true): three CDU words, R63 CSM.   */
 uint16_t *rz_tracking_angles(bool preferred);
-uint16_t  rz_word_of(int v);        /* the word of v     */
-agc_dp_t  rz_mutable_mu(bool moon); /* MUE 2^36 / MUM 2^30            */
+uint16_t  rz_word_of(int v); /* the word of v     */
 agc_vec_t rz_unit(agc_interp_t *ip, agc_vec_t v);
 agc_dp_t  rz_abval(agc_interp_t *ip, agc_vec_t v);
 
@@ -224,6 +226,14 @@ agc_status_t rz_timethet_rv(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r
  * RPASS3/VPASS3.                                                         */
 void rz_store_active(agc_rendz_t *rz, agc_vec_t r, agc_vec_t v);
 void rz_store_passive(agc_rendz_t *rz, agc_vec_t r, agc_vec_t v);
+
+/* LEMSTORE / CSMSTORE (P34-35 p.498): an integration result as the active
+ * (the vehicle AVFLAG names) or the passive state.                      */
+void rz_vehicle_store(agc_rendz_t *rz, bool lm, const agc_integ_out_t *o);
+
+/* SELECTMU, CLEAR FINALFLG, GOTO VN1645 (P34-35 p.494): the primary body,
+ * then the TTOGO display that returns into the program at next.         */
+agc_status_t rz_selectmu_display(const agc_job_ctx_t *ctx, agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t next);
 
 /* ---- displays (display.c) ----------------------------------------- */
 /* VNPOOH: flash verb/noun; TERM -> P00, PROCEED -> next, ENTER -> again. */
@@ -283,5 +293,12 @@ agc_status_t rz_landing_site_display(agc_job_ctx_t *ctx, agc_job_id_t ret);
 
 /* R57 optics calibration; continue as ret.                               */
 agc_status_t rz_optics_calibration(const agc_job_ctx_t *ctx, agc_job_id_t ret);
+
+/* ---- moved from the public headers (used only in programs/navigation/) ---- */
+
+/* agc/programs/rendezvous.h */
+agc_dp_t agc_erase_rstack(int index);                         /* RSTACK, 0..3  */
+uint16_t agc_rendz_tracking_angles(bool preferred, int axis); /* PRAXIS / CPHIX */
+void     agc_erase_set_horizon(uint16_t v);
 
 #endif /* RENDZ_INTERNAL_H */

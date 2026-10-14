@@ -49,6 +49,7 @@
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/exec/exec.h"
+#include "agc/io/service.h"
 #include "agc/nav/integration.h"
 #include "internal.h"
 
@@ -271,7 +272,7 @@ agc_status_t agc_job_stateint_update(void)
         return (AGC_STATUS_OK); /* ENDOFJOB  */
     }
 
-    state_integration_tdec1 = agc_integ_loadtime();
+    state_integration_tdec1 = agc_rtb_loadtime();
 
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
@@ -572,7 +573,7 @@ static agc_status_t midtoav_integrate(agc_interp_t *ip, agc_integ_ctx_t *ctx, ag
     out->vn1      = ctx->out.vatt;
     out->piptime1 = ctx->out.tat;
     agc_inhint();
-    out->dt       = agc_dp_sub(ip, ctx->out.tat, agc_integ_loadtime());
+    out->dt       = agc_dp_sub(ip, ctx->out.tat, agc_rtb_loadtime());
     agc_relint();
     out->slipped  = ctx->notime;
 
@@ -620,16 +621,16 @@ agc_status_t agc_integ_midtoav_at_time(agc_interp_t *ip, agc_integ_ctx_t *ctx, a
     }
 
     agc_flag_put(AGC_FLAG_MID1FLAG, true);
-    agc_dp_t       t1      = tdec1;                /* TDEC1, cs 2^28 */
-    bool           slipped = false;                /* NOTIME taken */
-    const agc_dp_t now     = agc_integ_loadtime(); /* time now, cs 2^28 */
+    agc_dp_t       t1      = tdec1;              /* TDEC1, cs 2^28 */
+    bool           slipped = false;              /* NOTIME taken */
+    const agc_dp_t now     = agc_rtb_loadtime(); /* time now, cs 2^28 */
 
     if (agc_dp_sub(ip, t1, agc_dp_add(ip, now, timedelt())) < 0)
     {
         notime(csm ? ctx : NULL, &slipped);                    /* ALARM 1703    */
         const agc_dp_t add = csm ? ctx->t_to_add : timedelt(); /* T-TO-ADD (CM) or TIMEDELT (LM), cs 2^28 */
 
-        t1 = agc_dp_add(ip, agc_integ_loadtime(), add); /* ENTMID2       */
+        t1 = agc_dp_add(ip, agc_rtb_loadtime(), add); /* ENTMID2       */
     }
 
     st = csm ? AGC_STATUS_OK : agc_integ_install(0, resume_job); /* LM: INTSTALL after the time check */
@@ -688,8 +689,8 @@ agc_status_t agc_integ_midtoav_now(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_j
     }
 
     agc_flag_put(AGC_FLAG_MID1FLAG, false);
-    const agc_dp_t add = csm ? ctx->t_to_add : timedelt();          /* T-TO-ADD (CM) or TIMEDELT (LM), cs 2^28 */
-    const agc_dp_t t1  = agc_dp_add(ip, agc_integ_loadtime(), add); /* ENTMID2; TDEC1 = now + step, cs 2^28 */
+    const agc_dp_t add = csm ? ctx->t_to_add : timedelt();        /* T-TO-ADD (CM) or TIMEDELT (LM), cs 2^28 */
+    const agc_dp_t t1  = agc_dp_add(ip, agc_rtb_loadtime(), add); /* ENTMID2; TDEC1 = now + step, cs 2^28 */
 
     st = csm ? AGC_STATUS_OK : agc_integ_install(0, resume_job); /* LM: INTSTALL now */
 
@@ -724,7 +725,7 @@ static agc_integ_next_t timeinc(agc_interp_t *ip, agc_integ_ctx_t *ctx)
     const bool     csm = (agc_state_vehicle() == AGC_VEHICLE_CSM); /* CM: T-TO-ADD, LM: TIMEDELT */
     const agc_dp_t add = csm ? ctx->t_to_add : timedelt();         /* step, cs 2^28 */
 
-    ctx->tdec = agc_dp_add(ip, agc_integ_loadtime(), add);
+    ctx->tdec = agc_dp_add(ip, agc_rtb_loadtime(), add);
 
     return (INTEG_NEXT_TESTLOOP);
 }
@@ -753,7 +754,7 @@ agc_integ_next_t agc_integ_midtoav_check(agc_interp_t *ip, agc_integ_ctx_t *ctx)
 {
     if (agc_flag_test(AGC_FLAG_MID1FLAG))
     {
-        const agc_dp_t lim = agc_dp_add(ip, agc_integ_loadtime(), timedelt()); /* now + TIMEDELT, cs 2^28 */
+        const agc_dp_t lim = agc_dp_add(ip, agc_rtb_loadtime(), timedelt()); /* now + TIMEDELT, cs 2^28 */
 
         if (agc_dp_sub(ip, ctx->tdec, lim) >= 0)
         {
@@ -777,7 +778,7 @@ agc_integ_next_t agc_integ_midtoav_check(agc_interp_t *ip, agc_integ_ctx_t *ctx)
         return (timeinc(ip, ctx));
     }
 
-    const agc_dp_t ahead = agc_dp_sub(ip, ctx->sv.tet, agc_integ_loadtime()); /* TET - now, cs 2^28 */
+    const agc_dp_t ahead = agc_dp_sub(ip, ctx->sv.tet, agc_rtb_loadtime()); /* TET - now, cs 2^28 */
 
     if (agc_dp_sub(ip, ahead, K_5_6SECS) >= 0)
     {

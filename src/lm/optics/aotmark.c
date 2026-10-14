@@ -167,11 +167,11 @@ static bool surface_marks(void) /* MARKTYPE         */
  **********************************************************************/
 void agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp)
 {
-    const agc_dp_t elr = agc_align_cdulogic(el); /* EL, revs 2^0 */
-    const agc_dp_t azr = agc_align_cdulogic(az); /* AZ, revs 2^0 */
-    const agc_dp_t ce  = agc_dp_cos(elr);        /* cos EL, scale 2^1 */
-    const agc_dp_t ca  = agc_dp_cos(azr);        /* cos AZ, scale 2^1 */
-    const agc_dp_t sa  = agc_dp_sin(azr);        /* sin AZ, scale 2^1 */
+    const agc_dp_t elr = agc_rtb_cdulogic(el); /* EL, revs 2^0 */
+    const agc_dp_t azr = agc_rtb_cdulogic(az); /* AZ, revs 2^0 */
+    const agc_dp_t ce  = agc_dp_cos(elr);      /* cos EL, scale 2^1 */
+    const agc_dp_t ca  = agc_dp_cos(azr);      /* cos AZ, scale 2^1 */
+    const agc_dp_t sa  = agc_dp_sin(azr);      /* sin AZ, scale 2^1 */
 
     /* DMP SL1: the shift acts on the truncating DMP's TP product.          */
     *oa  = agc_vec_make(agc_dp_sin(elr),
@@ -281,9 +281,9 @@ static agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pai
  **********************************************************************/
 void agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_words_t *star_sm)
 {
-    const agc_dp_t yrot = agc_align_cdulogic(m->ycdu[0]); /* CURSOR, revs 2^0 */
-    const agc_dp_t srot = agc_align_cdulogic(m->ycdu[1]); /* SPIRAL, revs 2^0 */
-    agc_vec_t      v    = oa;                             /* OA (YSZERO), then the star in NB, half-unit (2^1) */
+    const agc_dp_t yrot = agc_rtb_cdulogic(m->ycdu[0]); /* CURSOR, revs 2^0 */
+    const agc_dp_t srot = agc_rtb_cdulogic(m->ycdu[1]); /* SPIRAL, revs 2^0 */
+    agc_vec_t      v    = oa;                           /* OA (YSZERO), then the star in NB, half-unit (2^1) */
 
     if ((yrot != 0) || (srot != 0))
     {
@@ -1110,7 +1110,7 @@ agc_status_t agc_aotmark_markrupt(void)
     s.cdu_yzx[0]      = agc_erase_cduy();
     s.cdu_yzx[1]      = agc_erase_cduz();
     s.cdu_yzx[2]      = agc_erase_cdux();
-    s.t               = align_loadtime();
+    s.t               = agc_rtb_loadtime();
     const uint16_t in = agc_chan_read(AGC_CHAN_NAVKEYIN); /* channel 16 (NAVKEYIN) */
 
     if ((in & MARK_KEYS) == 0u)

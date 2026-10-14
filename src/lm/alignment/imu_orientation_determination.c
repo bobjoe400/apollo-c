@@ -50,6 +50,7 @@
 
 #include "agc/core/flags_common.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 static agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx);
 static agc_status_t agc_job_lm_orientation_mark_star(void);

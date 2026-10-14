@@ -30,6 +30,7 @@
 #include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
+#include "agc/imu/imu.h"
 
 /* Flags whose flagword position differs between Comanche and Luminary, or
  * that exist in one vehicle only.  imu_vflag() returns the id for the
@@ -80,5 +81,13 @@ void         imu_modeexit(void); /* MODEEXIT: RELINT                  */
 
 /* One gyro pulse = 2^-21 revolution = 128 LSB of an agc_dp_t (2^28/rev). */
 #define IMU_DP_PER_GYRO_PULSE 128 /* 2^28 / 2^21: DP LSB per pulse */
+
+/* ---- moved from the public headers (used only in imu/) ---- */
+
+/* agc/imu/imu.h */
+void         agc_imu_pipa_fail_enable(void); /* PIPUSE1        */
+bool         agc_kalc_active(void);          /* ATTCADR != 0        */
+agc_status_t agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as);
+agc_sp_t     agc_imu_isitauto(void);
 
 #endif /* IMU_INTERNAL_H */

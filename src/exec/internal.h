@@ -181,4 +181,11 @@ agc_status_t exec_cp_nouveau_flags_lm(void);
 bool exec_cp_rendezvous_csm(uint8_t mm);
 bool exec_cp_rendezvous_lm(uint8_t mm);
 
+/* ---- moved from the public headers (used only in exec/) ---- */
+
+/* agc/exec/exec.h */
+agc_job_id_t agc_alarm_almcadr(void);     /* ALMCADR: alarming job */
+agc_status_t agc_phase_restart_all(void); /* RESTART  */
+agc_status_t agc_waitlist_t3rupt(void);
+
 #endif /* AGC_EXEC_INTERNAL_H */

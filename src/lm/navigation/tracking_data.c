@@ -287,8 +287,8 @@ agc_status_t agc_job_rendezvous_tracking_data_mark(agc_job_ctx_t *ctx)
     s->tangnb[1]   = n->tang[1];
     agc_relint();
     n->rdotm       = agc_dp_mul(&ip, agc_dp_shl(&ip, n->rdotmsav, 14), TD_RDOTCONV);
-    n->rrtrun      = agc_imu_cdulogic(n->tang[0]);
-    n->rrshaft     = agc_imu_cdulogic(n->tang[1]);
+    n->rrtrun      = agc_rtb_cdulogic(n->tang[0]);
+    n->rrshaft     = agc_rtb_cdulogic(n->tang[1]);
     n->rm          = agc_dp_shl_round(&ip, agc_dp_mul_trunc(agc_radar_samplsum(), TD_RANGCONV), 2);
     bool too_far   = false; /* range > 400 NM */
 

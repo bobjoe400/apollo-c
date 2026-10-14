@@ -62,6 +62,7 @@
 #include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
 #include "agc/programs/rendezvous.h"
+#include "internal.h"
 
 static agc_status_t agc_lm_updatevg(agc_interp_t *ip);
 

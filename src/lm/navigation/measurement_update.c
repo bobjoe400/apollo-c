@@ -618,24 +618,6 @@ static bool mu_incorp1(agc_interp_t *ip, agc_status_t *st)
 }
 
 /**********************************************************************
- * INCORP2 of the waiting measurement (MOONTHIS = LMOONFLG).
- * AGC: ASTOK, INCORP2 (P20-P25.agc p.586)
- *
- * FUNCTION NAME: mu_incorp2
- *
- * ARGUMENTS:
- *   Argument  Type            I/O  Description (scale)
- *   --------  --------------  ---  --------------------------------
- *   ip        agc_interp_t *  I/O  interpreter state (OVFIND)
- *
- * RETURNS: agc_status_t -- the INCORP2 status
- **********************************************************************/
-static agc_status_t mu_incorp2(agc_interp_t *ip)
-{
-    return (rz_incorp2(ip, &mu.inc, agc_flag_test(AGC_FLAG_LMOONFLG)));
-}
-
-/**********************************************************************
  * Range (RANGEBQ p.576): B0 = ULC (complemented if the LM is corrected),
  * DELTAQ = RM - RLC, VARIANCE = max(RLC^2 RANGEVAR, RVARMIN) (TP B-40).
  * AGC: RANGEBQ, QOK (P20-P25.agc pp.576-577)
@@ -850,7 +832,7 @@ static agc_status_t mu_run(agc_interp_t *ip)
             return (lmnav_residuals_display()); /* R22LEM96 */
         }
 
-        st = mu_incorp2(ip); /* ASTOK    */
+        st = rz_incorp2(ip, &mu.inc, agc_flag_test(AGC_FLAG_LMOONFLG)); /* ASTOK: INCORP2, MOONTHIS = LMOONFLG */
 
         if (st != AGC_STATUS_OK)
         {
@@ -889,7 +871,7 @@ agc_status_t lmnav_incorporate_accepted(agc_job_ctx_t *ctx)
     agc_interp_t ip; /* interpreter state */
 
     agc_interp_init(&ip);
-    agc_status_t st = mu_incorp2(&ip); /* INCORP2 */
+    agc_status_t st = rz_incorp2(&ip, &mu.inc, agc_flag_test(AGC_FLAG_LMOONFLG)); /* INCORP2, MOONTHIS = LMOONFLG */
 
     if (st != AGC_STATUS_OK)
     {

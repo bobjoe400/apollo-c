@@ -54,7 +54,9 @@
 #include <stdint.h>
 
 #include "agc/core/flags_common.h"
+#include "agc/io/service.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 #define PH_REALIGN ((uint16_t) 00254)    /* PROG52 (CM): group 4 phase 25    */
 #define PH_OPTION_RETURN \
@@ -334,13 +336,13 @@ agc_status_t agc_job_realign_time_proceed(agc_job_ctx_t *ctx)
     {
         if (major == 0)
         { /* BZF       */
-            align_set_dsptem1(align_loadtime());
+            align_set_dsptem1(agc_rtb_loadtime());
         }
 
         return (nominal ? agc_job_realign_nominal_orientation(ctx) : agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_LANDING_SITE)); /* S52.3 or P52LS */
     }
 
-    agc_align_ram()->talign = (major <= 0) ? align_loadtime() : t; /* BZMF   */
+    agc_align_ram()->talign = (major <= 0) ? agc_rtb_loadtime() : t; /* BZMF   */
 
     return (nominal ? agc_job_realign_nominal_orientation(ctx) : agc_exec_jump(ctx, AGC_JOB_IMU_REALIGN_LANDING_SITE)); /* S52.3 or P52LS */
 }

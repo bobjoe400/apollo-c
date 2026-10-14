@@ -316,16 +316,22 @@ agc_status_t agc_imu_axisgen(agc_interp_t *ip, const agc_vec_t a[2], const agc_v
  * sX sY sZ), YNB = ZNB x XNB; every product DMP (26D = sX sZ is DMP SL1
  * on the TP product).
  *
+ * The AGC reads SINCDU and COSCDU as CDUTRIG (or CD*TR*GS) left them;
+ * the trig block is that storage (Y, Z, X order).
+ *
  * ARGUMENTS:
- *   ip      agc_interp_t *  I/O  interpreter state
- *   sincdu  agc_vec_t       I    sin/2 of CDUX, Y, Z, 2^0
- *   coscdu  agc_vec_t       I    cos/2 of CDUX, Y, Z, 2^0
- *   nb      agc_mat_t *     O    XNB, YNB, ZNB, B1
+ *   ip  agc_interp_t *         I/O  interpreter state
+ *   t   const agc_cdutrig_t *  I    SINCDU, COSCDU: sin/2, cos/2 of the
+ *                                   CDU angles, 2^0
+ *   nb  agc_mat_t *            O    XNB, YNB, ZNB, B1
  *
  * RETURNS: agc_status_t -- OK, BAD_ARG on NULL or out of range
  **********************************************************************/
-agc_status_t agc_imu_calcsmsc(agc_interp_t *ip, agc_vec_t sincdu, agc_vec_t coscdu, agc_mat_t *nb)
+agc_status_t agc_imu_calcsmsc(agc_interp_t *ip, const agc_cdutrig_t *t, agc_mat_t *nb)
 {
+    const agc_vec_t sincdu = agc_vec_make(t->sincdu[AGC_TRIG_X], t->sincdu[AGC_TRIG_Y], t->sincdu[AGC_TRIG_Z]); /* SINCDU X, Y, Z, 2^0 */
+    const agc_vec_t coscdu = agc_vec_make(t->coscdu[AGC_TRIG_X], t->coscdu[AGC_TRIG_Y], t->coscdu[AGC_TRIG_Z]); /* COSCDU X, Y, Z, 2^0 */
+
     if (!AGC_ASSERT(vec_in_range(sincdu) && vec_in_range(coscdu)))
     {
         return (AGC_STATUS_BAD_ARG);

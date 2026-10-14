@@ -48,9 +48,11 @@ src/nav/
 src/guidance/       shared burn programs (external_delta_v,
                     burn_steering), servicer_common
 src/programs/
-  navigation/       shared P20 core: common, w_matrix_monitor,
-                    ground_track_determination, noun_data, flags_{csm,lm},
-                    internal.h
+  navigation/       shared P20 core: rendezvous_erasables,
+                    rendezvous_subroutines (P34-35 subroutines),
+                    state_vector_update (integration calls, INCORP2),
+                    w_matrix_monitor, ground_track_determination, noun_data,
+                    flags_{csm,lm}, internal.h
   targeting/        csi, csi_cdh_targeting, tpi, tpi_tpm_targeting,
                     stable_orbit, target_delta_v, initvel,
                     lambert_aimpoint_guidance_lm (LM only; lm/targeting/
@@ -61,7 +63,10 @@ src/programs/
                     sighting_data_and_gyro_torquing.c, geometry_csm.c
                     (CM sextant geometry: SXTNB, CALCSXA, SXTANG)
 src/csm/            Comanche-only
-  entry/            lexicon, reentry, programs, CM body attitude, dap
+  entry/            lexicon; REENTRY_CONTROL by phase: entry_guidance,
+                    entry_targeting, entry_initial_roll, entry_huntest,
+                    entry_upcontrol, entry_final_phase; programs, CM body
+                    attitude, dap, internal.h
   dap/rcs/          RCS DAP, jet selection, FDAI needles, DAP data load
   dap/tvc/          TVC init/executive/mass properties/restarts/pitch-yaw/
                     stroke test/roll DAP
@@ -73,7 +78,8 @@ src/csm/            Comanche-only
                     tracking_attitude, tracking_data, tpi_search
   optics/           sxtmark, s_band_antenna, sighting_mark,
                     auto_optics_positioning
-  prelaunch/        align, gyrocompass, verify, internal.h (P01-P03, IMUTEST)
+  prelaunch/        align, gyrocompass, verify, internal.h (P01-P03; P07's
+                    REDO and IMUTEST)
 src/lm/             Luminary-only
   navigation/       P20-P25 LM side: navigation, tracking_attitude,
                     tracking_data, measurement_update
@@ -82,6 +88,9 @@ src/lm/             Luminary-only
   landing/          guidance, displays, aborts, state, throttle,
                     findcduw, lunar_landing
   burns/            dps_burn*, ignition, servicer*
+  systems_test/     P07 IMU performance tests: test_erasables,
+                    imu_performance_test, drift_filter, job_entries,
+                    internal.h
   dap/rcs/          idler, P-axis, Q/R-axis, TJET law, rate/Kalman, T6RUPT,
                     needles, rcsmon (failure monitor), spsrcs (docked law)
   dap/              shared: interface.c (DAP_INTERFACE_SUBROUTINES), state.c, arith.c, accs.c and

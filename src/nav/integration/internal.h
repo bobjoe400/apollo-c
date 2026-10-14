@@ -55,7 +55,6 @@ typedef enum agc_integ_next
 /* ---- init.c --------------------------------------------- */
 agc_status_t     agc_integ_run(agc_interp_t *ip, agc_integ_ctx_t *ctx, agc_integ_next_t first); /* the driver */
 agc_status_t     agc_integ_integrate_permanent(agc_interp_t *ip, agc_integ_ctx_t *ctx);
-agc_dp_t         agc_integ_loadtime(void);                                                      /* LOADTIME  */
 agc_integ_next_t agc_integ_fail(agc_integ_ctx_t *ctx, agc_status_t st);                         /* keep st, INTEG_NEXT_FAIL */
 
 /* ---- jobs.c --------------------------------------------- */
@@ -77,5 +76,14 @@ void agc_integ_csm_set_amoonflg(bool on);
 
 /* FINDVAC priority PRIO5 (octal 05000 >> 9).                              */
 #define AGC_INTEG_PRIO5 ((agc_prio_t) 5) /* STATINT1 priority, PRIO5 */
+
+/* ---- moved from the public headers (used only in nav/integration/) ---- */
+
+/* agc/nav/integration.h */
+/* GRP2PC: PHASCHNG OCT 04022 (group 2).                                  */
+void agc_integ_grp2pc(void);
+
+/* THISVINT: VINTFLAG for this vehicle (CM: set, LM: clear).             */
+void agc_integ_thisvint(void);
 
 #endif /* INTEG_INTERNAL_H */

@@ -54,6 +54,7 @@
 #include "agc/core/flags_lm.h"
 #include "agc/guidance/guidance.h"
 #include "agc/programs/alignment.h"
+#include "internal.h"
 
 static agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx);
 
