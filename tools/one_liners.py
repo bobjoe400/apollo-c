@@ -46,6 +46,7 @@ PURE_LIB = {'abs', 'labs', 'llabs', 'floor', 'ceil', 'ldexp', 'fabs', 'sqrt', 's
 WORDS = 'word structure: the AGC word(s) the value is held in'
 INSTR = 'instruction semantics'
 HAND = {
+    'sim_host_downrupt_external': 'host override hook: the default (clock times DOWNRUPT); src/nassp/engine.c defines the NASSP one',
     'agc_w_join': WORDS, 'agc_w3_value': WORDS, 'agc_dp_high': WORDS, 'agc_dp_low': WORDS,
     'agc_dp_from_sp': WORDS, 'agc_tp_from_dp': WORDS, 'agc_tp_to_dp': WORDS,
     'agc_dp_from_words': WORDS, 'agc_tp_from_words': WORDS, 'noun_raw_word': WORDS,

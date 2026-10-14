@@ -32,7 +32,7 @@
  *   sim_clock_count      one 1/3200 s scaler count (src/sim/clock.c)
  *   sim_input            an input channel (src/sim/channels.c)
  *   sim_counter_increment  PINC/MINC/... on a counter (src/sim/counters.c)
- *   agc_erase_read/write_ecadr  the erasable by address (src/core/ecadr.c)
+ *   agc_erase_read/write_ecadr  the erasable by address (src/erasable_map/address_map.c)
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   agc_load_binfile returns 1 for a rope other than Comanche055 /
@@ -62,7 +62,7 @@
  *   mirror; the next step after power returns is a GOJAM (agc_rupt_go),
  *   which is the hardware's power-on.
  *   DEVIATION (save / restore): a scenario's AGC_BEGIN block restores the
- *   mapped erasables (src/core/ecadr.c) and the counters; the executive,
+ *   mapped erasables (src/erasable_map/address_map.c) and the counters; the executive,
  *   waitlist and restart tables have no address, so the computer restarts
  *   (GOJAM -> GOPROG) with the navigation state kept.
  **********************************************************************/

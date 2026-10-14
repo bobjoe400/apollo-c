@@ -743,4 +743,4 @@ src/sim/clock.c:200	sim_clock_standby	ACCESSOR	3	reads/writes module state
 src/sim/clock.c:211	sim_clock_stats	ACCESSOR	9	reads/writes module state
 src/sim/clock.c:728	sim_irq_pending	ACCESSOR	0	reads/writes module state
 src/sim/socket.c:590	sim_socket_lost_lockstep	ACCESSOR	1	reads/writes module state
-src/sim/socket.c:604	sim_host_downrupt_external	PLAIN	1	expression over its parameters and constants
+src/sim/socket.c:604	sim_host_downrupt_external	NAMED	1	by hand: host override hook: the default (clock times DOWNRUPT); src/nassp/engine.c defines the NASSP one

@@ -12,7 +12,7 @@ Updated: 2026-10-13
   items 1-9 met; stretch item 10 done (LM Simulator loop; the full Apollo
   11 mission in NASSP 9 on our AGC, all ten milestones matching stock on
   decisions and end state). 17 flight bugs from the mission fixed with
-  tests. All gates green: make, make test (36 binaries + 14 scenarios),
+  tests. All gates green: make, make test (38 binaries + 14 scenarios),
   make check (rules 0, style 0), prolog 0, always-ok 0, lm-sim 34/34,
   nassp-replay 5/5, no upward edge.
 - Known limitations (documented): zero-time executive (timing-born
