@@ -14,7 +14,8 @@ structured inside them. Each finding falls into one of three groups:
   that does not alter what the code does): the script
   `tools/apply_layout.sh` with its data in `tools/layout/`. It was tested on
   a scratch copy of the tree and passed `make`, `make test`, `make check`,
-  `make prolog-report`, `make always-ok-report` and `make nassp-replay`.
+  `make prolog-report` (0), `make always-ok-report` (0), `make nassp-replay`
+  (5/5) and `make lm-sim` (34/34).
   The lead runs it between NASSP milestones (see "How to apply").
 * **Findings only**: anything that would change behaviour, or that needs a
   reviewer to show the change is harmless. These are listed below with the
@@ -85,8 +86,8 @@ structured inside them. Each finding falls into one of three groups:
     sh tools/apply_layout.sh [--lm-sim]     # applies, regenerates xref and the module map, runs the gates, archives itself
 
 Every step is idempotent. The script stops if src, include, tests, sim,
-tools or the Makefile have uncommitted changes. The lists were made at
-7b99601 and touch no file of the NASSP lane's C code. If a lane changes
+tools or the Makefile have uncommitted changes. The lists were made on
+69bce7f (with the NASSP lane's edits of that time) and touch no file of the NASSP lane's C code. If a lane changes
 a listed file before the script runs, a row that no longer applies prints
 SKIP, and a gate failure names the row to drop. tools/layout/analyze.py
 regenerates the lists. After it runs, tell the

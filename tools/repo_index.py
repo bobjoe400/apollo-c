@@ -21,7 +21,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
 files = subprocess.run(['git', 'ls-files', '--cached', '--others', '--exclude-standard'], capture_output=True, text=True).stdout.split('\n')
-files = [f for f in files if f]
+files = [f for f in files if f and os.path.isfile(f)]
 # last commit date per file (one git log pass)
 last = {}
 log = subprocess.run(['git', 'log', '--format=@%cs', '--name-only'], capture_output=True, text=True).stdout

@@ -58,6 +58,7 @@ static void test_lm_pad_more(void);
 static void test_phase_tables(agc_vehicle_t v, uint16_t longbase);
 static void test_csm_rcs_dap(void);
 static void test_vectors_stored(void);
+static void test_servicer_start(agc_vehicle_t v, uint16_t rn1, uint16_t gdt, uint16_t rtx);
 
 #define CHECK(c) check((c), __LINE__, #c)
 
@@ -85,6 +86,8 @@ int main(void)
     test_phase_tables(AGC_VEHICLE_LM, 01151u);
     test_csm_rcs_dap();
     test_vectors_stored();
+    test_servicer_start(AGC_VEHICLE_LM, 03544u, 01236u, 02776u);
+    test_servicer_start(AGC_VEHICLE_CSM, 01231u, 01206u, 03745u);
     (void) printf("test_ecadr: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -471,4 +474,49 @@ static void test_vectors_stored(void)
 
     agc_erase_read_ecadr(01713u, &w);
     CHECK(w == 037777u);
+}
+
+/**********************************************************************
+ * AGC: none (test) -- the average-G start state MIDTOAV leaves before
+ * TIG-30 (flight bug 14): RN1, VN1 (6 words each), PIPTIME1, GDT1/2 and
+ * GDT/2, RTX1/RTX2. A scenario saved between MIDTOAV and TIG-30 (lunar
+ * liftoff at T-1m) resumes P12 at TIG-35, and PREREAD starts the
+ * servicer from these words: unmapped, the LM's position was 0.
+ *
+ * ARGUMENTS:
+ *   v    agc_vehicle_t  I  vehicle
+ *   rn1  uint16_t       I  RN1 ECADR (VN1 +6, PIPTIME1 +14, GDT1/2 +16)
+ *   gdt  uint16_t       I  GDT/2 ECADR
+ *   rtx  uint16_t       I  RTX1 ECADR (RTX2 +1)
+ **********************************************************************/
+static void test_servicer_start(agc_vehicle_t v, uint16_t rn1, uint16_t gdt, uint16_t rtx)
+{
+    const agc_dp_t     one = (agc_dp_t) 01234 * 040000; /* high word 01234, low 0, 2^-28 units */
+    const agc_avg_g_t *a   = &agc_guid_state()->avg;    /* average-G block */
+
+    agc_state_init(v);
+    store_vec(rn1, 01234u);
+    store_vec((uint16_t) (rn1 + 6u), 01234u);
+    CHECK(agc_erase_write_ecadr((uint16_t) (rn1 + 12u), 01234u) == AGC_STATUS_OK); /* PIPTIME1 */
+    CHECK(agc_erase_write_ecadr((uint16_t) (rn1 + 13u), 0u) == AGC_STATUS_OK);
+    store_vec((uint16_t) (rn1 + 14u), 01234u);
+    store_vec(gdt, 01234u);
+    CHECK(agc_erase_write_ecadr(rtx, 077765u) == AGC_STATUS_OK);                   /* RTX1 -10 */
+    CHECK(agc_erase_write_ecadr((uint16_t) (rtx + 1u), 2u) == AGC_STATUS_OK);      /* RTX2 2 */
+    CHECK(a->rn1.c[0] == one && a->rn1.c[2] == one);
+    CHECK(a->vn1.c[1] == one);
+    CHECK(a->piptime1 == one);
+    CHECK(a->gdt1_2.c[2] == one);
+    CHECK(a->gdt_2.c[0] == one);
+    CHECK(agc_rendz_erasable()->body.rtx1 == -10 && agc_rendz_erasable()->body.rtx2 == 2);
+    CHECK(agc_rendz_erasable()->body.moon);
+
+    if (v == AGC_VEHICLE_LM)
+    {
+        /* R(CSM), V(CSM) (01717, 01725): MUNRVG's CSM state, from which NORMLIZE
+         * forms UHYP (= QAXIS) every average-G cycle with MUNFLAG set. */
+        store_vec(01717u, 01234u);
+        store_vec(01725u, 01234u);
+        CHECK(agc_guid_state()->lm.r_csm.c[0] == one && agc_guid_state()->lm.v_csm.c[2] == one);
+    }
 }

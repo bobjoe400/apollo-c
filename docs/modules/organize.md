@@ -29,10 +29,17 @@ behaviour (duplicate translations, cross-vehicle placement, labelled
 routines nothing calls, file splits, internal.h prototypes).
 
 ## Verification
-- Working tree after the safe moves (scratch copy): make OK; make test 0
-  failures (35 binaries + scenarios); make check 0 hard, format clean, 0
-  style findings; make nassp-replay and make lm-sim: see below.
-- apply_layout.sh on a scratch copy (committed baseline): see below.
+- Working tree after the safe moves (scratch copy, 2026-10-13): make OK;
+  make test 0 failures; make check 0 hard, format-check clean, 0 style
+  findings in 325 files; make nassp-replay 5/5 images agree; make lm-sim
+  34/34 checkpoints matched.
+- apply_layout.sh on a scratch copy of bd7a7ee + this lane's edits, then:
+  make OK; make test (36 binaries + 14 scenarios) 0 failures; make check 0
+  hard, 0 style findings; prolog-report 0; always-ok-report 0;
+  nassp-replay 5/5; make lm-sim 34/34 checkpoints matched.
+- The lead committed the safe moves (bcc1329) after 7b99601 had swept in
+  only the staged renames. The old-path WORKLOG entry from bd7a7ee was
+  merged into docs/history/WORKLOG.md.
 
 ## How the index and the analysis were made
 (the analysis scripts are kept with the layout script: tools/layout/{analyze.py, owner.py, inc_verify.sh}; usage in their headers)

@@ -8,7 +8,7 @@ their previous path; "uncommitted" = new in this session). Verdicts: live, gener
 archived, or a proposal (docs/overview/ORGANIZATION.md, applied later by tools/apply_layout.sh).
 Regenerate: `python3 -I tools/repo_index.py > docs/overview/INDEX.md`._
 
-680 files. Areas: [(root)](#root) (4), [.vscode](#vscode) (2), [docs](#docs) (171), [include](#include) (29), [src](#src) (263), [tests](#tests) (37), [sim](#sim) (34), [tools](#tools) (140).
+679 files. Areas: [(root)](#root) (4), [.vscode](#vscode) (2), [docs](#docs) (170), [include](#include) (29), [src](#src) (263), [tests](#tests) (37), [sim](#sim) (34), [tools](#tools) (140).
 
 
 ## (root)
@@ -17,10 +17,10 @@ Build entry points and repository-wide configuration.
 
 | Path | Purpose | Owner | Referenced by | Last change | Size | Verdict |
 |---|---|---|---|---|---|---|
-| `.gitignore` | build outputs, oracle binaries, prove run logs, compile_commands.json | lead | docs(1), tools(1) | 2026-10-12 | 271 B | live |
+| `.gitignore` | build outputs, oracle binaries, prove run logs, compile_commands.json | lead | docs(1), tools(1) | 2026-10-13 | 271 B | live |
 | `Makefile` | apollo-c -- Power of Ten rule 10: pedantic warnings, zero tolerated. | lead | docs(25), lane notes(7), tools(13) | 2026-10-13 | 10 KB | live |
 | `README.md` | apollo-c | lead | docs(26), lane notes(2), tests(1), tools(4) | 2026-10-13 | 6963 B | live |
-| `uncrustify.cfg` | Uncrustify 0.72 configuration used by tools/format.sh (docs/STYLE.md) | style2, format2 | docs(9), tools(2) | 2026-10-11 | 15 KB | live |
+| `uncrustify.cfg` | Uncrustify 0.72 configuration used by tools/format.sh (docs/STYLE.md) | style2, format2 | docs(9), tools(2) | 2026-10-13 | 15 KB | live |
 
 ## .vscode
 
@@ -38,22 +38,21 @@ Operational docs at the top (README is the repo root; STATE, PLAN, ARCHITECTURE,
 | Path | Purpose | Owner | Referenced by | Last change | Size | Verdict |
 |---|---|---|---|---|---|---|
 | `docs/ARCHITECTURE.md` | ARCHITECTURE.md | lead | docs(12), lane notes(1), root(1), src(2), tools(3) | 2026-10-13 | 11 KB | live |
-| `docs/CODING_STANDARD.md` | CODING_STANDARD.md -- NASA/JPL "Power of Ten" applied to apollo-c | lead | docs(18), lane notes(1), root(1), src(2), tools(10) | 2026-10-12 | 13 KB | live |
+| `docs/CODING_STANDARD.md` | CODING_STANDARD.md -- NASA/JPL "Power of Ten" applied to apollo-c | lead | docs(18), lane notes(1), root(1), src(2), tools(10) | 2026-10-13 | 13 KB | live |
 | `docs/MODULE_STATUS.md` | MODULE_STATUS.md -- one line per agent, updated by that agent | lead | docs(10), lane notes(2), root(1), tools(1) | 2026-10-13 | 30 KB | live |
-| `docs/NAMING.md` | NAMING.md -- no program/routine/page numbers in identifiers | lead | docs(19), include(1), lane notes(10), root(1), tools(3) | 2026-10-11 | 18 KB | live |
-| `docs/PLAN.md` | PLAN.md -- management plan for the Apollo 11 -> C transposition | lead | docs(8), root(1) | 2026-10-13 | 17 KB | live |
+| `docs/NAMING.md` | NAMING.md -- no program/routine/page numbers in identifiers | lead | docs(19), include(1), lane notes(10), root(1), tools(3) | 2026-10-13 | 18 KB | live |
+| `docs/PLAN.md` | PLAN.md -- management plan for the Apollo 11 -> C transposition | lead | docs(8), root(1) | 2026-10-14 | 18 KB | live |
 | `docs/STATE.md` | STATE.md -- current state in one page (lead keeps this current) | lead | docs(1) | 2026-10-13 | 3621 B | live |
-| `docs/STYLE.md` | STYLE.md -- NASA SEL-94-003 "C Style Guide" (GSFC, Aug 1994) applied to apollo-c | lead | Makefile(1), docs(12), root(2), tools(4) | 2026-10-12 | 33 KB | live |
+| `docs/STYLE.md` | STYLE.md -- NASA SEL-94-003 "C Style Guide" (GSFC, Aug 1994) applied to apollo-c | lead | Makefile(1), docs(12), root(2), tools(4) | 2026-10-13 | 33 KB | live |
 | `docs/TIPS.md` | TIPS.md -- tips and tricks for translating AGC assembly into C | lead | docs(5), lane notes(1), root(1) | 2026-10-12 | 30 KB | live |
 | `docs/TRANSLATION_GUIDE.md` | TRANSLATION_GUIDE.md -- how AGC assembly maps onto apollo-c | lead | docs(2), include(1), lane notes(3), root(1), src(6) | 2026-10-12 | 8630 B | live |
-| `docs/WORKLOG.md` | 2026-10-14 Bug 13 (UNITW unmapped: entry target not rotated, 2.6 deg | lead | docs(1), tools(1) | 2026-10-13 | 424 B | live |
-| `docs/agents/_common.md` | Common preamble for every agent assignment | lead | docs(3), lane notes(2) | 2026-10-11 | 2717 B | live (process) |
+| `docs/agents/_common.md` | Common preamble for every agent assignment | lead | docs(3), lane notes(2) | 2026-10-13 | 2717 B | live (process) |
 | `docs/agents/brief.md` | brief.md -- instructions for every subagent (formerly docs/AGENT_BRIEF.md) | lead | docs(4), lane notes(2) | 2026-10-13 | 5325 B | live (process) |
 | `docs/agents/nassp-integration.md` | Assignment: nassp-integration (tier: integration; Opus) | nassp-integration | docs(1), lane notes(1) | 2026-10-12 | 6199 B | live (process) |
 | `docs/agents/review_items.md` | Lane-specific review items (routed from oracle findings, open questions, worklog) | lead | docs(9), lane notes(6) | 2026-10-13 | 20 KB | live (process) |
 | `docs/history/RENAMES.md` | RENAMES.md -- naming map (phase 1 of docs/history/assignments/naming.md) | lead | docs(12), lane notes(4), tools(3) | 2026-10-13 | 111 KB | history |
 | `docs/history/RENAMES_inventory.txt` | RENAMES_inventory.txt -- raw phase-1 inventory (identifier <TAB> kind <TAB> files) | lead | docs(5), tools(1) | 2026-10-13 | 60 KB | history |
-| `docs/history/WORKLOG.md` | WORKLOG.md -- lead's running log (newest at bottom) | lead | docs(4), root(1) | 2026-10-13 | 69 KB | history |
+| `docs/history/WORKLOG.md` | WORKLOG.md -- lead's running log (newest at bottom) | lead | docs(5), lane notes(1), root(1), tools(1) | 2026-10-14 | 71 KB | history |
 | `docs/history/assignments/collapse.md` | Assignment: collapse (tier: translation) | lead | Makefile(1), docs(2), tools(1) | 2026-10-13 | 4838 B | history |
 | `docs/history/assignments/core-numeric.md` | Assignment: core-numeric (tier: translation) | lead | **none** | 2026-10-13 | 1946 B | history |
 | `docs/history/assignments/dap-csm.md` | Assignment: dap-csm (tier: translation) | lead | **none** | 2026-10-13 | 941 B | history |
@@ -115,11 +114,11 @@ Operational docs at the top (README is the repo root; STATE, PLAN, ARCHITECTURE,
 | `docs/history/waves/style.md` | style -- NASA SEL-94-003 C Style Guide applied to apollo-c | style | docs(2) | 2026-10-13 | 6971 B | history |
 | `docs/history/waves/style2.md` | style2 -- port the formatter to Uncrustify (statement paragraphing) | style2 | docs(2), root(1) | 2026-10-13 | 10 KB | history |
 | `docs/history/waves/verify-collapse.md` | verify-collapse -- second pair of eyes on status-handling-2 | verify-collapse | docs(2), lane notes(1) | 2026-10-13 | 14 KB | history |
-| `docs/modules/closed-loop-fixes.md` | closed-loop-fixes -- LM Simulator bugs (L1-L3, S-L1..S-L3, PROG after POODOO) and the document wave's code findings | closed-loop-fixes | docs(1), lane notes(2), root(1), sim(2), src(1) | 2026-10-12 | 14 KB | live (lane note) |
+| `docs/modules/closed-loop-fixes.md` | closed-loop-fixes -- LM Simulator bugs (L1-L3, S-L1..S-L3, PROG after POODOO) and the document wave's code findings | closed-loop-fixes | docs(1), lane notes(2), root(1), sim(2), src(1) | 2026-10-13 | 14 KB | live (lane note) |
 | `docs/modules/core-numeric.md` | core-numeric -- fixed-point word model and interpretive arithmetic | core-numeric | docs(18), include(1), lane notes(1), src(1), tools(2) | 2026-10-12 | 17 KB | live (lane note) |
 | `docs/modules/dap-csm.md` | dap-csm -- CSM RCS and TVC digital autopilots (Comanche055) | dap-csm | docs(16) | 2026-10-12 | 22 KB | live (lane note) |
-| `docs/modules/dap-lm.md` | dap-lm -- Luminary 099 LM digital autopilot (RCS DAP, trim gimbal, 1/ACCS) | dap-lm | docs(16), src(1) | 2026-10-12 | 26 KB | live (lane note) |
-| `docs/modules/exec-sched.md` | exec-sched -- executive, waitlist, phase tables, restarts, alarms | exec-sched | docs(17), include(1), src(1) | 2026-10-12 | 25 KB | live (lane note) |
+| `docs/modules/dap-lm.md` | dap-lm -- Luminary 099 LM digital autopilot (RCS DAP, trim gimbal, 1/ACCS) | dap-lm | docs(16), src(1) | 2026-10-13 | 26 KB | live (lane note) |
+| `docs/modules/exec-sched.md` | exec-sched -- executive, waitlist, phase tables, restarts, alarms | exec-sched | docs(17), include(1), src(1) | 2026-10-13 | 25 KB | live (lane note) |
 | `docs/modules/guid-entry.md` | guid-entry -- Comanche entry (P61-P67), entry DAP, CM body attitude, P37, P11 | guid-entry | docs(18), include(1), lane notes(1), src(1) | 2026-10-12 | 23 KB | live (lane note) |
 | `docs/modules/guid-landing.md` | guid-landing -- Luminary landing, aborts, ascent, throttle, FINDCDUW | guid-landing | docs(16) | 2026-10-12 | 28 KB | live (lane note) |
 | `docs/modules/guid-powered.md` | guid-powered -- powered-flight guidance (P30s, P40s, SERVICER, BURNBABY) | guid-powered | docs(16), lane notes(1), src(3) | 2026-10-12 | 39 KB | live (lane note) |
@@ -132,34 +131,34 @@ Operational docs at the top (README is the repo root; STATE, PLAN, ARCHITECTURE,
 | `docs/modules/lm-simulator/lights_test.png` | screenshot for the lane note | lm-simulator | **none** | 2026-10-12 | 181 KB | live |
 | `docs/modules/lm-simulator/man_n20.png` | screenshot for the lane note | lm-simulator | **none** | 2026-10-12 | 186 KB | live |
 | `docs/modules/lm-simulator/rhc_pitch.png` | screenshot for the lane note | lm-simulator | **none** | 2026-10-12 | 180 KB | live |
-| `docs/modules/nassp-integration.md` | nassp-integration -- Apollo 11 in NASSP 9 on our AGC (PLAN item 10b+10c) | nassp-integration | Makefile(1), docs(2), lane notes(1), root(1), sim(1), tools(1) | 2026-10-13 | 42 KB | live (lane note) |
+| `docs/modules/nassp-integration.md` | nassp-integration -- Apollo 11 in NASSP 9 on our AGC (PLAN item 10b+10c) | nassp-integration | Makefile(1), docs(2), lane notes(1), root(1), sim(1), tools(1) | 2026-10-13 | 44 KB | live (lane note) |
 | `docs/modules/nav-aux.md` | nav-aux -- lat/long, planetary orientation, measurement incorporation, TFF, ephemerides, star tables | nav-aux | docs(16), lane notes(1), src(1) | 2026-10-12 | 14 KB | live (lane note) |
 | `docs/modules/nav-conic.md` | nav-conic -- CONIC_SUBROUTINES.agc (+ KEPPREP, CSMCONIC/LEMCONIC conic path) | nav-conic | docs(15), lane notes(1), tools(1) | 2026-10-12 | 18 KB | live (lane note) |
 | `docs/modules/nav-integ.md` | nav-integ -- INTEGRATION_INITIALIZATION + ORBITAL_INTEGRATION | nav-integ | docs(16), lane notes(1) | 2026-10-12 | 26 KB | live (lane note) |
 | `docs/modules/oracle-cases.md` | oracle-cases -- yaAGC differential cases for the numeric modules | oracle-cases | docs(4), lane notes(1), tests(11) | 2026-10-12 | 29 KB | live (lane note) |
 | `docs/modules/oracle.md` | oracle -- Virtual AGC differential-test rig | oracle | docs(2) | 2026-10-12 | 4786 B | live (lane note) |
-| `docs/modules/organize.md` | organize -- repository index, layout review, layout script | organize | docs(3) | uncommitted | 3137 B | live (lane note) |
+| `docs/modules/organize.md` | organize -- repository index, layout review, layout script | organize | docs(3) | 2026-10-13 | 3558 B | live (lane note) |
 | `docs/modules/p37.md` | p37 -- P37 return to earth (Comanche055 P37_P70.agc, pp. 890-933) | p37 | docs(16) | 2026-10-12 | 15 KB | live (lane note) |
 | `docs/modules/prog-align.md` | prog-align -- IMU alignment programs, optics marking, geometry, S-band, R63, R47 | prog-align | docs(16), include(1), lane notes(1) | 2026-10-12 | 30 KB | live (lane note) |
 | `docs/modules/prog-rendz.md` | prog-rendz -- rendezvous programs (P17, P20-P25, P31-P39, P72-P79, P76, P21, R30, R31, R36) | prog-rendz | docs(18), include(1), lane notes(1) | 2026-10-12 | 48 KB | live (lane note) |
-| `docs/modules/review-core-numeric.md` | review-core-numeric -- review of the core-numeric lane | review-core-numeric | docs(1) | 2026-10-12 | 11 KB | live (lane note) |
-| `docs/modules/review-dap-csm.md` | review-dap-csm -- review of the dap-csm lane | review-dap-csm | docs(1), src(1) | 2026-10-12 | 10 KB | live (lane note) |
+| `docs/modules/review-core-numeric.md` | review-core-numeric -- review of the core-numeric lane | review-core-numeric | docs(1) | 2026-10-13 | 11 KB | live (lane note) |
+| `docs/modules/review-dap-csm.md` | review-dap-csm -- review of the dap-csm lane | review-dap-csm | docs(1), src(1) | 2026-10-13 | 10 KB | live (lane note) |
 | `docs/modules/review-dap-lm.md` | review-dap-lm -- review of the LM DAP lane (src/lm/dap) | review-dap-lm | docs(1) | 2026-10-12 | 9668 B | live (lane note) |
-| `docs/modules/review-exec-sched.md` | review-exec-sched -- review of the exec-sched lane | review-exec-sched | docs(1), lane notes(1) | 2026-10-12 | 14 KB | live (lane note) |
+| `docs/modules/review-exec-sched.md` | review-exec-sched -- review of the exec-sched lane | review-exec-sched | docs(1), lane notes(1) | 2026-10-13 | 14 KB | live (lane note) |
 | `docs/modules/review-guid-entry.md` | review-guid-entry -- review of the guid-entry and p37 lanes | review-guid-entry | docs(1), lane notes(1), src(2) | 2026-10-12 | 13 KB | live (lane note) |
-| `docs/modules/review-guid-landing.md` | review-guid-landing -- review of the guid-landing lane | review-guid-landing | docs(1), tests(1) | 2026-10-12 | 13 KB | live (lane note) |
+| `docs/modules/review-guid-landing.md` | review-guid-landing -- review of the guid-landing lane | review-guid-landing | docs(1), tests(1) | 2026-10-13 | 13 KB | live (lane note) |
 | `docs/modules/review-guid-powered.md` | review-guid-powered -- review of the powered-flight guidance lane | review-guid-powered | docs(1), lane notes(1), src(3) | 2026-10-12 | 13 KB | live (lane note) |
-| `docs/modules/review-imu.md` | review-imu -- review of the imu lane | review-imu | docs(1), lane notes(1), src(2) | 2026-10-12 | 9315 B | live (lane note) |
-| `docs/modules/review-io-dsky.md` | review-io-dsky -- review of io-pinball + io-nouns | review-io-dsky | docs(2), lane notes(1) | 2026-10-12 | 12 KB | live (lane note) |
+| `docs/modules/review-imu.md` | review-imu -- review of the imu lane | review-imu | docs(1), lane notes(1), src(2) | 2026-10-13 | 9315 B | live (lane note) |
+| `docs/modules/review-io-dsky.md` | review-io-dsky -- review of io-pinball + io-nouns | review-io-dsky | docs(2), lane notes(1) | 2026-10-13 | 12 KB | live (lane note) |
 | `docs/modules/review-nav-aux.md` | review-nav-aux -- review of the nav-aux lane | review-nav-aux | docs(1), src(1), tests(1) | 2026-10-12 | 9101 B | live (lane note) |
-| `docs/modules/review-nav-conic.md` | review-nav-conic -- review of the nav-conic lane | review-nav-conic | docs(1), lane notes(1) | 2026-10-12 | 10 KB | live (lane note) |
-| `docs/modules/review-nav-integ.md` | review-nav-integ -- review of the nav-integ lane | review-nav-integ | lane notes(3), src(1), tools(1) | 2026-10-12 | 14 KB | live (lane note) |
-| `docs/modules/review-prog-align.md` | review-prog-align -- review of the prog-align lane | review-prog-align | docs(2), lane notes(1), src(1), tests(1) | 2026-10-12 | 20 KB | live (lane note) |
-| `docs/modules/review-prog-rendz.md` | review-prog-rendz -- review of the prog-rendz lane | review-prog-rendz | docs(1), lane notes(1), src(1), tests(2) | 2026-10-12 | 10 KB | live (lane note) |
-| `docs/modules/review-sim.md` | review-sim -- review of the sim harness lane | review-sim | docs(1), lane notes(1) | 2026-10-12 | 7764 B | live (lane note) |
+| `docs/modules/review-nav-conic.md` | review-nav-conic -- review of the nav-conic lane | review-nav-conic | docs(1), lane notes(1) | 2026-10-13 | 10 KB | live (lane note) |
+| `docs/modules/review-nav-integ.md` | review-nav-integ -- review of the nav-integ lane | review-nav-integ | lane notes(3), src(1), tools(1) | 2026-10-13 | 14 KB | live (lane note) |
+| `docs/modules/review-prog-align.md` | review-prog-align -- review of the prog-align lane | review-prog-align | docs(2), lane notes(1), src(1), tests(1) | 2026-10-13 | 20 KB | live (lane note) |
+| `docs/modules/review-prog-rendz.md` | review-prog-rendz -- review of the prog-rendz lane | review-prog-rendz | docs(1), lane notes(1), src(1), tests(2) | 2026-10-13 | 10 KB | live (lane note) |
+| `docs/modules/review-sim.md` | review-sim -- review of the sim harness lane | review-sim | docs(1), lane notes(1) | 2026-10-13 | 7764 B | live (lane note) |
 | `docs/modules/review-state-flags.md` | review-state-flags -- review note | review-state-flags | docs(3), include(1), lane notes(1) | 2026-10-12 | 7038 B | live (lane note) |
 | `docs/modules/review-sys-misc.md` | review-sys-misc -- review of the sys-misc lane | review-sys-misc | docs(1), lane notes(1) | 2026-10-12 | 15 KB | live (lane note) |
-| `docs/modules/sim.md` | sim -- host harness: clock/interrupt driver + yaAGC peripheral protocol | sim | Makefile(1), docs(20), lane notes(2), root(1), sim(1) | 2026-10-12 | 24 KB | live (lane note) |
+| `docs/modules/sim.md` | sim -- host harness: clock/interrupt driver + yaAGC peripheral protocol | sim | Makefile(1), docs(20), lane notes(2), root(1), sim(1) | 2026-10-13 | 24 KB | live (lane note) |
 | `docs/modules/sim/gui_csm_dsky_sequence.png` | screenshot for the lane note | sim | lane notes(1) | 2026-10-12 | 88 KB | live |
 | `docs/modules/sim/gui_csm_p30_p40.png` | screenshot for the lane note | sim | lane notes(1) | 2026-10-12 | 192 KB | live |
 | `docs/modules/sim/gui_csm_p52.png` | screenshot for the lane note | sim | lane notes(1) | 2026-10-12 | 169 KB | live |
@@ -174,8 +173,8 @@ Operational docs at the top (README is the repo root; STATE, PLAN, ARCHITECTURE,
 | `docs/modules/sim/yatelemetry_lm.png` | screenshot for the lane note | sim | lane notes(1) | 2026-10-10 | 56 KB | live |
 | `docs/modules/state-flags.md` | state-flags -- module note | state-flags | docs(18), include(1), src(3) | 2026-10-12 | 257 KB | live (lane note) |
 | `docs/modules/sys-misc.md` | sys-misc -- module note | sys-misc | docs(16) | 2026-10-12 | 31 KB | live (lane note) |
-| `docs/overview/INDEX.md` |  | lead | docs(3), lane notes(1), tools(1) | uncommitted | 0 B | live |
-| `docs/overview/ORGANIZATION.md` | Repository organisation: review, target layout, apply script | lead | docs(1), lane notes(1), tools(2) | uncommitted | 22 KB | live |
+| `docs/overview/INDEX.md` |  | lead | docs(3), lane notes(1), tools(1) | 2026-10-13 | 0 B | live |
+| `docs/overview/ORGANIZATION.md` | Repository organisation: review, target layout, apply script | lead | docs(1), lane notes(1), tools(2) | 2026-10-13 | 23 KB | live |
 | `docs/overview/README.md` | System overview | lead | docs(20), lane notes(1), root(1), tools(1) | 2026-10-13 | 46 KB | live |
 | `docs/overview/data/callgraph.dot` | generated by `make callgraph`: Graphviz call graph | lead | docs(3), tools(2) | 2026-10-13 | 643 KB | generated data |
 | `docs/overview/data/callgraph.tsv` | generated by `make callgraph`: one row per src/ function (callers, sites, label, dispatch) | lead | docs(4), lane notes(1), tools(6) | 2026-10-13 | 636 KB | generated data |
@@ -183,13 +182,13 @@ Operational docs at the top (README is the repo root; STATE, PLAN, ARCHITECTURE,
 | `docs/overview/data/guards.tsv` | generated by `make prove-classify`: every AGC_ASSERT guard with its EVA/AST class | lead | Makefile(1), docs(3), tools(3) | 2026-10-13 | 142 KB | generated data |
 | `docs/overview/data/long_statements.tsv` | statements wider than 120 columns (format2 review list) | lead | docs(7), tools(1) | 2026-10-13 | 30 KB | generated data |
 | `docs/overview/data/one_liners.tsv` | generated by tools/one_liners.py: one-line functions classified (tree kept at PLAIN 0) | lead | docs(5), tools(2) | 2026-10-13 | 63 KB | generated data |
-| `docs/overview/data/structure/a_wrong_owner.tsv` |  | lead | docs(1), tools(2) | uncommitted | 32 KB | generated data |
-| `docs/overview/data/structure/b_header_internals.tsv` |  | lead | docs(1), tools(1) | uncommitted | 124 KB | generated data |
-| `docs/overview/data/structure/c_duplicates.tsv` |  | lead | docs(1), tools(1) | uncommitted | 50 KB | generated data |
-| `docs/overview/data/structure/d_dead.tsv` |  | lead | docs(1), tools(1) | uncommitted | 5192 B | generated data |
-| `docs/overview/data/structure/e_files.tsv` |  | lead | docs(1), tools(1) | uncommitted | 7041 B | generated data |
-| `docs/overview/data/structure/f_vehicle.tsv` |  | lead | docs(1), tools(1) | uncommitted | 5805 B | generated data |
-| `docs/overview/data/structure/g_unused_includes.tsv` |  | lead | docs(1), tools(1) | uncommitted | 16 KB | generated data |
+| `docs/overview/data/structure/a_wrong_owner.tsv` |  | lead | docs(1), tools(2) | 2026-10-13 | 32 KB | generated data |
+| `docs/overview/data/structure/b_header_internals.tsv` |  | lead | docs(1), tools(1) | 2026-10-13 | 124 KB | generated data |
+| `docs/overview/data/structure/c_duplicates.tsv` |  | lead | docs(1), tools(1) | 2026-10-13 | 50 KB | generated data |
+| `docs/overview/data/structure/d_dead.tsv` |  | lead | docs(1), tools(1) | 2026-10-13 | 5192 B | generated data |
+| `docs/overview/data/structure/e_files.tsv` |  | lead | docs(1), tools(1) | 2026-10-13 | 7041 B | generated data |
+| `docs/overview/data/structure/f_vehicle.tsv` |  | lead | docs(1), tools(1) | 2026-10-13 | 5805 B | generated data |
+| `docs/overview/data/structure/g_unused_includes.tsv` |  | lead | docs(1), tools(1) | 2026-10-13 | 16 KB | generated data |
 | `docs/overview/flowcharts/README.md` | Flowcharts | lead | **none** | 2026-10-12 | 1806 B | live |
 | `docs/overview/flowcharts/earth-entry.md` | CSM Earth entry (P61 to P67) | lead | docs(1), lane notes(1) | 2026-10-12 | 6386 B | live |
 | `docs/overview/flowcharts/fresh-start.md` | Fresh start and hardware restart (GOJAM) | lead | docs(3) | 2026-10-12 | 4570 B | live |
@@ -327,7 +326,7 @@ Flight software (libagc) by subsystem; src/sim = the yaAGC drop-in harness (agc_
 | `src/csm/prelaunch_gyrocompass.c` | Comanche prelaunch alignment, part 2: P02 gyrocompassing. The half-second loop (SLEEPIE, SETGWLST, ALLOOP, ALFLT, NORMLOP), the erection ... | imu | docs(14), include(1), lane notes(3), src(2), tools(3) | 2026-10-12 | 31 KB | move -> `src/csm/prelaunch/gyrocompass.c` (apply_layout.sh) |
 | `src/csm/prelaunch_internal.h` | Declarations shared by the three files of the Comanche prelaunch alignment (src/csm/prelaunch_align.c, prelaunch_gyrocompass.c, ... | imu | docs(2), lane notes(1), src(3), tools(1) | 2026-10-12 | 6053 B | move -> `src/csm/prelaunch/internal.h` (apply_layout.sh) |
 | `src/csm/prelaunch_verify.c` | Comanche prelaunch alignment, part 3: P03 optical verification of the gyrocompass (V65). The crew loads the azimuth and elevation of two ... | imu | docs(8), include(1), lane notes(2), src(1), tests(1), tools(2) | 2026-10-13 | 20 KB | move -> `src/csm/prelaunch/verify.c` (apply_layout.sh) |
-| `src/erasable_map/address_map.c` | Erasable access by AGC address (ECADR), for the machine-address nouns of pinball (nouns 01-03, 07, 15: V01/V21/V25 of any erasable), the ... | nassp-integration | docs(4), include(1), lane notes(1), src(2), tests(1) | 2026-10-13 | 96 KB | live |
+| `src/erasable_map/address_map.c` | Erasable access by AGC address (ECADR), for the machine-address nouns of pinball (nouns 01-03, 07, 15: V01/V21/V25 of any erasable), the ... | nassp-integration | docs(4), include(1), lane notes(1), src(2), tests(1) | 2026-10-13 | 99 KB | live |
 | `src/exec/alarm.c` | Alarms and aborts: ALARM, VARALARM, PRIOLARM, CURTAINS, BAILOUT, POODOO, CCSHOLE, ABORT, WHIMPER (as a deferred ENEMA request), GOPOODOO ... | exec-sched | docs(22), lane notes(4), src(4), tools(1) | 2026-10-13 | 16 KB | live |
 | `src/exec/change_program/csm.c` | The Comanche parts of V37 (change program): the FCADRMM1 / PREMM1 / DNLADMM1 table, R00TOP00, and the CSM flag and outbit work of ... | exec-sched | docs(6), tools(2) | 2026-10-12 | 10 KB | live |
 | `src/exec/change_program/idle.c` | GOP00FIX (the P00 V37N99 request), INITSUB, the host power-on, and the few calls the restart code makes into higher layers (exec_up_*). ... | exec-sched | docs(14), lane notes(2), tools(2) | 2026-10-13 | 12 KB | live |
@@ -527,7 +526,7 @@ One test binary per file, mirroring src/ subsystems; tests/oracle = differential
 | `tests/csm/dap.c` | dap-csm unit tests (Comanche055 CSM RCS and TVC DAPs): 1. Jet selection (JET_SELECTION_LOGIC, PYTABLE p. 1042): +pitch with all quads ... | dap-csm | docs(5), lane notes(2) | 2026-10-12 | 16 KB | live |
 | `tests/csm/entry.c` | guid-entry unit tests (Comanche entry guidance, the entry DAP roll phase plane and SP helpers, XT1LIM of P37). 1. HUNTEST / RANGER for a ... | guid-entry | docs(7), lane notes(3) | 2026-10-12 | 17 KB | live |
 | `tests/csm/return_to_earth.c` | P37 return to earth unit tests (lane p37). 1. Coplanar conic return: CSM 300,000 km from the earth, in the X-Y plane, desired reentry ... | p37 | docs(4), lane notes(1) | 2026-10-12 | 16 KB | live |
-| `tests/erasable_map/address_map.c` | Erasable access by address (src/erasable_map/address_map.c): the address map onto the typed erasables, both ropes. A V71 state-vector / ... | nassp-integration | docs(4), include(1), lane notes(1), src(2) | 2026-10-13 | 19 KB | live |
+| `tests/erasable_map/address_map.c` | Erasable access by address (src/erasable_map/address_map.c): the address map onto the typed erasables, both ropes. A V71 state-vector / ... | nassp-integration | docs(4), include(1), lane notes(1), src(2) | 2026-10-13 | 22 KB | live |
 | `tests/exec/exec.c` | exec-sched unit tests: executive priorities and core sets, VAC exhaustion (1201), core-set exhaustion (1202), sleep/wake, PRIOCHNG, ... | exec-sched | docs(5), lane notes(5) | 2026-10-13 | 37 KB | live |
 | `tests/guidance/guidance.c` | Unit tests of the guid-powered lane: 1. CALCRVG (the average-G state update): with no PIPA counts and no previous gravity term, one 2-s ... | guid-powered | docs(7), lane notes(4) | 2026-10-13 | 25 KB | live |
 | `tests/imu/imu.c` | imu lane unit tests (CSM build unless noted): ARCTRIG quadrants; CALCGTA on an identity XDC/YDC/ZDC gives zero gyro torquing angles; ... | imu | docs(6), lane notes(3) | 2026-10-13 | 21 KB | live |
@@ -567,8 +566,8 @@ Harnesses that RUN the built AGC against existing tools: scenarios + sim_client.
 |---|---|---|---|---|---|---|
 | `sim/lm_simulator/harness.tcl` | harness.tcl -- run Virtual AGC's LM Simulator (Stephan Hotto, | lm-simulator | docs(2), lane notes(1), sim(1), tools(1) | 2026-10-13 | 4404 B | live |
 | `sim/lm_simulator/lm_sim.py` | lm_sim.py -- Virtual AGC's LM Simulator flown on build/agc_sim and on yaAGC. | lm-simulator | Makefile(1), docs(3), lane notes(2), sim(2), tools(1) | 2026-10-13 | 24 KB | live |
-| `sim/lm_simulator/tutorial.txt` | LM Simulator tutorial (virtualagc/Contributed/LM_Simulator, readme.html | lm-simulator | Makefile(1), docs(1), lane notes(2), sim(1) | 2026-10-12 | 5227 B | live |
-| `sim/nassp/edits.tsv` | NASSP mission edits: per milestone, the tolerance \|ours - stock\| may reach for each numeric | nassp-integration | Makefile(1), docs(2), lane notes(1), tools(2) | 2026-10-13 | 3631 B | move -> `sim/nassp/mission_tolerances.tsv` (apply_layout.sh) |
+| `sim/lm_simulator/tutorial.txt` | LM Simulator tutorial (virtualagc/Contributed/LM_Simulator, readme.html | lm-simulator | Makefile(1), docs(1), lane notes(2), sim(1) | 2026-10-13 | 5227 B | live |
+| `sim/nassp/edits.tsv` | NASSP mission edits: per milestone, the tolerance \|ours - stock\| may reach for each numeric | nassp-integration | Makefile(1), docs(2), lane notes(1), tools(2) | 2026-10-13 | 3696 B | move -> `sim/nassp/mission_tolerances.tsv` (apply_layout.sh) |
 | `sim/nassp/host/collect.sh` | collect.sh ROOT TAG: one poll (<= 60 s) of a session; when its script has logged "end" (or Orbiter | nassp-integration | lane notes(1), sim(1) | 2026-10-13 | 1213 B | live |
 | `sim/nassp/host/hrestore.sh` | hrestore.sh ROOT: put the install's own Orbiter_NG.cfg back after a headless session. | nassp-integration | lane notes(1), sim(2) | 2026-10-13 | 289 B | live |
 | `sim/nassp/host/hrun.sh` | hrun.sh ROOT SCENARIO TAG MAXSIMTIME [STEP]: one headless run to its script's "end", collected | nassp-integration | lane notes(1) | 2026-10-13 | 486 B | live |
@@ -608,39 +607,39 @@ Tools that work ON the tree: checks, formatter, generators, analysis, the yaAGC 
 |---|---|---|---|---|---|---|
 | `tools/agc_label.py` | agc_label.py -- exact AGC label lookup across both ropes. | lead | docs(6), lane notes(1), tools(3) | 2026-10-10 | 3024 B | live |
 | `tools/always_ok.py` | Report agc_status_t functions that can only return AGC_STATUS_OK. | always-ok | Makefile(1), docs(2), tools(1) | 2026-10-12 | 2426 B | live |
-| `tools/apply_layout.sh` | apply_layout.sh -- apply the layout proposal of docs/overview/ORGANIZATION.md | organize | docs(2), lane notes(1), tools(3) | uncommitted | 4204 B | one-off: archives itself after it runs |
+| `tools/apply_layout.sh` | apply_layout.sh -- apply the layout proposal of docs/overview/ORGANIZATION.md | organize | docs(2), lane notes(1), tools(3) | 2026-10-13 | 4204 B | one-off: archives itself after it runs |
 | `tools/archive/assert_recover.cocci` | assert_recover.cocci -- rules 5 and 7 (docs/CODING_STANDARD.md): an | naming, status-handling, finish (finished) | docs(4) | 2026-10-13 | 1427 B | archived (finished one-off) |
 | `tools/archive/gen_rename_cocci.py` | gen_rename_cocci.py -- build tools/archive/rename.cocci from docs/history/RENAMES.md. | naming, status-handling, finish (finished) | docs(5), tools(1) | 2026-10-13 | 5419 B | archived (finished one-off) |
 | `tools/archive/rename.cocci` | rename.cocci -- GENERATED by tools/archive/gen_rename_cocci.py from | naming, status-handling, finish (finished) | docs(6), tools(1) | 2026-10-13 | 36 KB | archived (finished one-off) |
 | `tools/archive/setter_status.cocci` | setter_status.cocci -- rule 7 (docs/CODING_STANDARD.md, "no silent | naming, status-handling, finish (finished) | docs(2) | 2026-10-13 | 1463 B | archived (finished one-off) |
 | `tools/archive/status_void.cocci` | status_void.cocci -- rule 7 (docs/CODING_STANDARD.md): callers of the | naming, status-handling, finish (finished) | docs(5) | 2026-10-13 | 7001 B | archived (finished one-off) |
 | `tools/archive/vehicle_guard.cocci` | Delete the vehicle assertion at the top of LM-only routines: everything | naming, status-handling, finish (finished) | docs(2) | 2026-10-13 | 452 B | archived (finished one-off) |
-| `tools/callgraph.py` | callgraph.py -- compiler-derived call graph and collapse candidates. | collapse | Makefile(1), docs(7), tools(2) | 2026-10-11 | 30 KB | live |
+| `tools/callgraph.py` | callgraph.py -- compiler-derived call graph and collapse candidates. | collapse | Makefile(1), docs(7), tools(2) | 2026-10-13 | 30 KB | live |
 | `tools/cgast.py` | cgast.py -- libclang helpers shared by callgraph.py and inline_one.py. | collapse | docs(2), tools(2) | 2026-10-10 | 17 KB | live |
 | `tools/cgast_assert.h` | cgast_assert.h -- force-included by tools/cgast.py (libclang analysis | collapse | docs(2), tools(1) | 2026-10-10 | 458 B | live |
 | `tools/check_rules.py` | check_rules.py -- mechanical checks for the Power of Ten rules. | lead, status-handling | Makefile(1), docs(21), lane notes(10), root(1), tools(3) | 2026-10-12 | 10 KB | live |
 | `tools/check_style.py` | check_style.py -- mechanical checks for docs/STYLE.md (NASA SEL-94-003). | style | Makefile(1), docs(8), lane notes(3), root(2) | 2026-10-10 | 33 KB | live |
-| `tools/cocci/always_ok_void.cocci` | always_ok_void.cocci -- rule 7 (docs/CODING_STANDARD.md): the functions | always-ok | docs(4), tools(1) | 2026-10-12 | 2418 B | live |
+| `tools/cocci/always_ok_void.cocci` | always_ok_void.cocci -- rule 7 (docs/CODING_STANDARD.md): the functions | always-ok | docs(4), tools(1) | 2026-10-13 | 2418 B | live |
 | `tools/compile_commands.py` | Write compile_commands.json for editors (clangd, VS Code C/C++). | lead | Makefile(1), docs(1) | 2026-10-12 | 604 B | live |
 | `tools/depgraph.py` | depgraph.py -- module dependency map of src/, rendered as Mermaid. | layering | docs(6), lane notes(1), root(1), tools(1) | 2026-10-13 | 15 KB | live |
 | `tools/drop_final_return.py` | Delete the `return;` that ends a void function's body (rule 7 / guide 5.6: a return with nothing after it is dead). Its trailing comment ... | always-ok | docs(4), tools(1) | 2026-10-12 | 2220 B | live |
 | `tools/fix_comments.py` | fix_comments.py -- comment placement, wraps, paragraphs and alignment. | format2 | Makefile(1), docs(8), root(2), tools(1) | 2026-10-11 | 33 KB | live |
 | `tools/format.sh` | format.sh -- the project formatter pipeline (docs/STYLE.md). | format2 | Makefile(1), docs(11), lane notes(4), root(2), tools(2) | 2026-10-11 | 1505 B | live |
 | `tools/gen_registry.py` | gen_registry.py -- write the job/task registry from tools/registry.tsv. | integrate | docs(10), include(1), lane notes(6), src(1), tools(1) | 2026-10-12 | 14 KB | live |
-| `tools/inline_one.py` | inline_one.py -- splice one single-use helper into its only caller. | collapse | docs(9), lane notes(2), tools(2) | 2026-10-11 | 30 KB | live |
-| `tools/layout/analyze.py` | analyze.py ROOT XREF.tsv OUTDIR -- structural findings (a)-(g) as TSVs. | organize | lane notes(1), tools(1) | uncommitted | 10 KB | one-off: archives itself after it runs |
-| `tools/layout/dead_functions.tsv` | function file -- no caller in src/, tests/, the sim or the NASSP shim, and no AGC label of its own | organize | docs(1), tools(1) | uncommitted | 546 B | one-off: archives itself after it runs |
-| `tools/layout/edits.py` | edits.py -- the editing steps of tools/apply_layout.sh (one-off). | organize | Makefile(1), docs(1), lane notes(1), sim(1), tools(3) | uncommitted | 11 KB | one-off: archives itself after it runs |
-| `tools/layout/inc_verify.sh` | inc_verify.sh FILE HEADER -- prints "OK FILE HEADER" when FILE without its | organize | lane notes(1) | uncommitted | 1549 B | one-off: archives itself after it runs |
-| `tools/layout/make_static.tsv` | function defining file header whose prototype goes | organize | docs(1), tools(1) | uncommitted | 8072 B | one-off: archives itself after it runs |
-| `tools/layout/moves.tsv` | old path new path (tools/apply_layout.sh step "moves"; rows already applied are skipped) | organize | docs(1), tools(2) | uncommitted | 1887 B | one-off: archives itself after it runs |
-| `tools/layout/owner.py` | owner.py ROOT ANALYSIS_DIR XREF.tsv -- judge analyze.py's a_wrong_owner.tsv by AGC section (one-off). | organize | lane notes(1) | uncommitted | 1874 B | one-off: archives itself after it runs |
-| `tools/layout/stale_prototypes.tsv` | prototype header -- declared, never defined | organize | docs(1), tools(1) | uncommitted | 195 B | one-off: archives itself after it runs |
-| `tools/layout/unused_includes.tsv` | file header -- the include line goes; object code (gcc -O2, objdump -d) identical without it, debug build compiles | organize | docs(1), tools(2) | uncommitted | 11 KB | one-off: archives itself after it runs |
+| `tools/inline_one.py` | inline_one.py -- splice one single-use helper into its only caller. | collapse | docs(9), lane notes(2), tools(2) | 2026-10-13 | 30 KB | live |
+| `tools/layout/analyze.py` | analyze.py ROOT XREF.tsv OUTDIR -- structural findings (a)-(g) as TSVs. | organize | docs(1), lane notes(1), tools(1) | 2026-10-13 | 10 KB | one-off: archives itself after it runs |
+| `tools/layout/dead_functions.tsv` | function file -- no caller in src/, tests/, the sim or the NASSP shim, and no AGC label of its own | organize | docs(1), tools(1) | 2026-10-13 | 546 B | one-off: archives itself after it runs |
+| `tools/layout/edits.py` | edits.py -- the editing steps of tools/apply_layout.sh (one-off). | organize | Makefile(1), docs(1), lane notes(1), sim(1), tools(3) | 2026-10-13 | 12 KB | one-off: archives itself after it runs |
+| `tools/layout/inc_verify.sh` | inc_verify.sh FILE HEADER -- prints "OK FILE HEADER" when FILE without its | organize | lane notes(1) | 2026-10-13 | 1549 B | one-off: archives itself after it runs |
+| `tools/layout/make_static.tsv` | function defining file header whose prototype goes | organize | docs(1), tools(1) | 2026-10-13 | 8072 B | one-off: archives itself after it runs |
+| `tools/layout/moves.tsv` | old path new path (tools/apply_layout.sh step "moves"; rows already applied are skipped) | organize | docs(1), tools(2) | 2026-10-13 | 1887 B | one-off: archives itself after it runs |
+| `tools/layout/owner.py` | owner.py ROOT ANALYSIS_DIR XREF.tsv -- judge analyze.py's a_wrong_owner.tsv by AGC section (one-off). | organize | lane notes(1) | 2026-10-13 | 1874 B | one-off: archives itself after it runs |
+| `tools/layout/stale_prototypes.tsv` | prototype header -- declared, never defined | organize | docs(1), tools(1) | 2026-10-13 | 195 B | one-off: archives itself after it runs |
+| `tools/layout/unused_includes.tsv` | file header -- the include line goes; object code (gcc -O2, objdump -d) identical without it, debug build compiles | organize | docs(1), tools(2) | 2026-10-13 | 11 KB | one-off: archives itself after it runs |
 | `tools/nassp_cl2lua.py` | nassp_cl2lua.py WORKBOOK.xls OUT.lua: compile a NASSP checklist workbook into a Lua table of steps. | nassp-integration | docs(1), lane notes(1), tools(1) | 2026-10-13 | 3193 B | move -> `sim/nassp/checklist_to_lua.py` (apply_layout.sh) |
 | `tools/nassp_edits.py` | nassp_edits.py -- `make nassp-mission`: the NASSP milestone tables, generated from the edit CSVs. | nassp-integration | Makefile(1), docs(1), lane notes(1), sim(1), tools(1) | 2026-10-13 | 12 KB | move -> `sim/nassp/mission_tables.py` (apply_layout.sh) |
 | `tools/nassp_replay.py` | nassp_replay.py -- `make nassp-replay`: NASSP scenario images on our AGC vs NASSP's yaAGC. | nassp-integration | Makefile(1), docs(1), lane notes(1), sim(1), tools(1) | 2026-10-13 | 12 KB | move -> `sim/nassp/replay.py` (apply_layout.sh) |
-| `tools/one_liners.py` | one_liners.py -- classify every one-line function (docs/CODING_STANDARD.md, "One-line functions"; ... | status-handling-2 | docs(3), tools(1) | 2026-10-11 | 7979 B | live |
+| `tools/one_liners.py` | one_liners.py -- classify every one-line function (docs/CODING_STANDARD.md, "One-line functions"; ... | status-handling-2 | docs(3), tools(1) | 2026-10-13 | 7979 B | live |
 | `tools/oracle/BUILD.md` | Building the oracle tool-chain | oracle (cases: oracle-cases) | docs(2), lane notes(2), tools(2) | 2026-10-09 | 3665 B | live |
 | `tools/oracle/Makefile` | tools/oracle/Makefile -- builds agc_probe against the vendored yaAGC engine | oracle (cases: oracle-cases) | tools(1) | 2026-10-09 | 1221 B | live |
 | `tools/oracle/README.md` | tools/oracle -- differential-test oracle (real AGC code in yaAGC) | oracle (cases: oracle-cases) | docs(4), lane notes(1), tests(1), tools(1) | 2026-10-09 | 7221 B | live |
@@ -735,14 +734,14 @@ Tools that work ON the tree: checks, formatter, generators, analysis, the yaAGC 
 | `tools/oracle/yaAGC-src/yaAGC.h` | Copyright 2003-2005,2009 Ronald S. Burkey <info@sandroid.org> | oracle (cases: oracle-cases) | tools(5) | 2026-10-09 | 4055 B | live |
 | `tools/prolog_check.py` | Prolog-versus-body consistency (report only). | prolog-consistency | Makefile(1), docs(5), lane notes(1) | 2026-10-12 | 10 KB | live |
 | `tools/prove/apply.py` | apply.py -- delete the guards a guards.tsv classifies GUARANTEED. | status-handling-2, finish | docs(3), lane notes(1) | 2026-10-11 | 6112 B | live |
-| `tools/prove/eta.py` | Progress meter for one running EVA entry (tools/prove/runs/<entry>.log). | status-handling-2, finish | docs(2) | 2026-10-12 | 6147 B | live |
+| `tools/prove/eta.py` | Progress meter for one running EVA entry (tools/prove/runs/<entry>.log). | status-handling-2, finish | docs(2) | 2026-10-13 | 6147 B | live |
 | `tools/prove/eva_assert.h` | eva_assert.h -- force-included by `make prove` (Frama-C EVA only, never | status-handling-2, finish | docs(2), tools(1) | 2026-10-12 | 720 B | live |
 | `tools/prove/eva_run.py` | eva_run.py -- Frama-C EVA over libagc, one analysis per entry point. | status-handling-2, finish | Makefile(1), docs(4), tools(1) | 2026-10-12 | 12 KB | live |
-| `tools/prove/guards.py` | guards.py -- classify every AGC_ASSERT guard (docs/history/assignments/status-handling-2.md). | status-handling-2, finish | Makefile(1), docs(3), tools(1) | 2026-10-11 | 37 KB | live |
+| `tools/prove/guards.py` | guards.py -- classify every AGC_ASSERT guard (docs/history/assignments/status-handling-2.md). | status-handling-2, finish | Makefile(1), docs(3), tools(1) | 2026-10-13 | 37 KB | live |
 | `tools/prove/manual.tsv` | manual.tsv -- guards classified by hand (tools/prove/guards.py reads it). | status-handling-2, finish | docs(7), lane notes(3), tools(2) | 2026-10-12 | 474 KB | live |
 | `tools/registry.tsv` | registry.tsv -- job/task registry (tools/gen_registry.py input). | integrate (rows: every lane) | docs(11), include(3), lane notes(5), src(1), tools(3) | 2026-10-13 | 84 KB | live |
-| `tools/repo_index.py` | repo_index.py -- docs/overview/INDEX.md: one row per file of the repository. | organize | docs(2), lane notes(1) | uncommitted | 16 KB | live |
-| `tools/returns.py` | returns.py -- dead and normal-flow early returns (docs/CODING_STANDARD.md, "Returns"; docs/history/assignments/status-handling-2.md step 8). | status-handling-2 | docs(1) | 2026-10-11 | 12 KB | live |
+| `tools/repo_index.py` | repo_index.py -- docs/overview/INDEX.md: one row per file of the repository. | organize | docs(2), lane notes(1) | 2026-10-13 | 16 KB | live |
+| `tools/returns.py` | returns.py -- dead and normal-flow early returns (docs/CODING_STANDARD.md, "Returns"; docs/history/assignments/status-handling-2.md step 8). | status-handling-2 | docs(1) | 2026-10-13 | 12 KB | live |
 | `tools/unpaste_prologs.py` | Turn function prologs pasted inside function bodies (an inline_one.py artefact) into section comments. | always-ok | docs(2), tools(1) | 2026-10-12 | 1809 B | live |
-| `tools/unwrap.py` | unwrap.py -- find and remove forwarding wrappers. | integrate | docs(2), lane notes(1) | 2026-10-10 | 16 KB | live |
+| `tools/unwrap.py` | unwrap.py -- find and remove forwarding wrappers. | integrate | docs(2), lane notes(1) | 2026-10-13 | 16 KB | live |
 | `tools/xref.py` | xref.py -- AGC label -> C function -> file:line cross-reference. | document | docs(5), lane notes(20), root(1), tools(1) | 2026-10-12 | 11 KB | live |
