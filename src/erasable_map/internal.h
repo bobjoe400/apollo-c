@@ -259,7 +259,15 @@ typedef enum ec_item
     EC_F_RANGRDOT,   /* RAW x2 RANGRDOT (LM)                   */
     EC_F_VSELECT,    /* SP   VSELECT (LM)                      */
     EC_F_VMEAS,      /* DP   VMEAS (LM)                        */
-    EC_F_HMEAS       /* DP   HMEAS (LM)                        */
+    EC_F_HMEAS,      /* DP   HMEAS (LM)                        */
+    EC_F_DNLSTCOD,   /* RAW x2 DNLSTCOD (the list code), DUMPCNT */
+    EC_F_AGSWORD,    /* RAW  AGSWORD, the saved list code (LM) */
+    EC_F_OPTIND,     /* SP   OPTIND, -0 = TVC takeover (CSM)   */
+    EC_F_OPTZONE,    /* SP   ZONE (CSM optics monitor)         */
+    EC_F_OPTMON,     /* SP x4 SWSAMPLE DESOPMOD WTOPTION ZOPTCNT (CSM) */
+    EC_F_DESOPT,     /* RAW x2 DESOPTT, DESOPTS (CSM)          */
+    EC_F_GCOMP,      /* DP x3 GCOMP gyro compensation, pulses 2^14 */
+    EC_F_PIPADT      /* SP   1/PIPADT, cs 2^8 or a TIME1 snapshot */
 } ec_item_t;
 
 /* How an item's words group into values.                                 */

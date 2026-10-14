@@ -111,19 +111,21 @@ agc_status_t agc_erase_set_delqeror(agc_sp_t v);
 agc_status_t agc_erase_set_delreror(agc_sp_t v);
 
 /* estimator outputs                                                        */
-agc_sp_t     agc_erase_omegap(void);    /* body rates, at pi/4             */
+agc_sp_t     agc_erase_omegap(void);                    /* body rates, at pi/4             */
 agc_sp_t     agc_erase_omegaq(void);
 agc_sp_t     agc_erase_omegar(void);
-agc_dp_t     agc_erase_aosq(void);      /* offset accel, DP at pi/2        */
+agc_dp_t     agc_erase_aosq(void);                      /* offset accel, DP at pi/2        */
 agc_dp_t     agc_erase_aosr(void);
 agc_status_t agc_erase_set_aosq(agc_dp_t v);
 agc_status_t agc_erase_set_aosr(agc_dp_t v);
-agc_sp_t     agc_erase_alphaq(void);    /* downlink copies of AOSQ/R       */
+agc_sp_t     agc_erase_alphaq(void);                    /* downlink copies of AOSQ/R       */
 agc_sp_t     agc_erase_alphar(void);
-agc_sp_t     agc_erase_downtork(int k); /* POSTORKP +k, k 0..5, 32 jet-s */
-agc_sp_t     agc_erase_1jacc(void);     /* 1-jet P accel, at pi/4          */
-agc_sp_t     agc_erase_1jaccq(void);    /* 1-jet Q accel, at pi/4          */
-agc_sp_t     agc_erase_1jaccr(void);    /* 1-jet R accel, at pi/4          */
+agc_sp_t     agc_erase_downtork(int k);                 /* POSTORKP +k, k 0..5, 32 jet-s */
+void         agc_erase_set_omegap_k(int k, agc_sp_t v); /* OMEGAP +k, k 0..4 (.. ALPHAR), by address */
+void         agc_erase_set_downtork(int k, agc_sp_t v); /* POSTORKP +k, by address */
+agc_sp_t     agc_erase_1jacc(void);                     /* 1-jet P accel, at pi/4          */
+agc_sp_t     agc_erase_1jaccq(void);                    /* 1-jet Q accel, at pi/4          */
+agc_sp_t     agc_erase_1jaccr(void);                    /* 1-jet R accel, at pi/4          */
 
 /* crew/pad-load parameters                                                 */
 agc_sp_t     agc_erase_stiksens(void);             /* RHC sensitivity                 */

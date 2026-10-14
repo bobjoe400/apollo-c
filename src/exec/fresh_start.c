@@ -779,6 +779,18 @@ uint16_t agc_restart_redoctr(void)
 }
 
 /**********************************************************************
+ * AGC: none -- REDOCTR, written by address (an image load, V21): the
+ * restart count the next GOPROG increments.
+ *
+ * ARGUMENTS:
+ *   v  uint16_t  I   C(REDOCTR), a count (any word: INCR counts it on)
+ **********************************************************************/
+void agc_restart_set_redoctr(uint16_t v)
+{
+    redoctr = v;
+}
+
+/**********************************************************************
  * GOTOPOOH (C p.194 / L p.223): protect the P00 request by restart
  * group 4 (CSM 4.1 = redisplay, LM 4.33 = GOP00FIX) and go to GOP00FIX.
  * Called from a job, the job continues as GOP00FIX (the caller returns

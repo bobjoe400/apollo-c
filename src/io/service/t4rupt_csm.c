@@ -211,6 +211,56 @@ agc_sp_t agc_erase_swsample(void)
 }
 
 /**********************************************************************
+ * SWSAMPLE, DESOPMOD, WTOPTION, ZOPTCNT, ZONE (ERASABLE_ASSIGNMENTS, CM;
+ * the optics monitor's words, OPTMON pp.160-164) -- read by address
+ *
+ * ARGUMENTS:
+ *   k  agc_optmon_word_t  I   the word
+ *
+ * RETURNS: agc_sp_t -- its value (SWSAMPLE, DESOPMOD +1 / 0 / -1;
+ *          WTOPTION, ZOPTCNT 480 ms counts; ZONE ones' CDUS, 2^14 = pi)
+ **********************************************************************/
+agc_sp_t agc_erase_optmon(agc_optmon_word_t k)
+{
+    const int w[AGC_OPTMON_WORDS] = {swsample, desopmod, wtoption, zoptcnt, zone}; /* in enum order */
+
+    return ((agc_sp_t) w[k]);
+}
+
+/**********************************************************************
+ * AGC: none -- the optics monitor's words, written by address (an image
+ * load, V21)
+ *
+ * ARGUMENTS:
+ *   k  agc_optmon_word_t  I   the word
+ *   v  agc_sp_t           I   its value (as agc_erase_optmon)
+ **********************************************************************/
+void agc_erase_set_optmon(agc_optmon_word_t k, agc_sp_t v)
+{
+    switch (k)
+    {
+        case AGC_OPTMON_SWSAMPLE:
+            swsample = (int) v;
+            break;
+        case AGC_OPTMON_DESOPMOD:
+            desopmod = (int) v;
+            break;
+        case AGC_OPTMON_WTOPTION:
+            wtoption = (int) v;
+            break;
+        case AGC_OPTMON_ZOPTCNT:
+            zoptcnt  = (int) v;
+            break;
+        case AGC_OPTMON_ZONE:
+            zone     = (int) v;
+            break;
+        case AGC_OPTMON_WORDS:
+        default:
+            break; /* not a word */
+    } /* switch */
+}
+
+/**********************************************************************
  * DOFSTART (FRESH_START_AND_RESTART.agc p.184, CM: OPTIND = -1,
  * OPTMODES = OPTINITF, WTOPTION = 0) / GOPROG (p.188: OPTMODES =
  * (OPTMODES & OPTINITR) + BIT7) -- optics state at fresh start / restart

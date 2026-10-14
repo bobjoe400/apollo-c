@@ -332,8 +332,10 @@ static int16_t reg_get2(int addr)
 
 /**********************************************************************
  * NASSP wrote register addr: store it in the typed counter (TIME1/2 as one
- * clock, CDUs, optics, RHC, INLINK, RNRAD; timers 3-6, PIPAs and drives
- * are the AGC's own).
+ * clock, CDUs, optics, RHC, INLINK, RNRAD, PIPAs; timers 3-6 and drives
+ * are the AGC's own). NASSP's PIPA pulses come through
+ * UnprogrammedIncrement, which keeps the cell and its shadow, so a PIPA
+ * cell changes here only at a scenario load.
  * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
  *
  * FUNCTION NAME: reg_set
@@ -389,8 +391,17 @@ static void reg_set(int addr, int16_t c)
         case RegRNRAD:
             agc_erase_set_rnrad(w);
             break;
+        case RegPIPAX:
+            agc_erase_set_pipax(sp_of_cell(c)); /* a load: the counts since the last READACCS */
+            break;
+        case RegPIPAY:
+            agc_erase_set_pipay(sp_of_cell(c));
+            break;
+        case RegPIPAZ:
+            agc_erase_set_pipaz(sp_of_cell(c));
+            break;
         default:
-            break; /* timers 3-6, PIPAs (counter pulses), drives: the AGC's own */
+            break;                              /* timers 3-6, drives: the AGC's own */
     } /* switch */
 } /* reg_set */
 

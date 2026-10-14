@@ -10,7 +10,8 @@ AGC_BEGIN..AGC_END block of the CSM) on two engines built from sim/nassp/replay.
 and compares their transcripts line for line: the CSM/LM state-vector blocks after each
 P00 integration step, and the result of an MCC-style uplink (V71 CSM state vector through
 INLINK/UPRUPT, then V33): UPBUFF, UPSVFLAG, the blocks, MODREG, DSPTAB. Last, the downlist
-both engines send with DOWNRUPT raised as NASSP's PCM does (CSM images; check_downlist).
+both engines send with DOWNRUPT raised as NASSP's PCM does (check_downlist: the CSM's after the
+uplink, the LGC's 40 s after the load), against stock run again with a GOJAM at the load.
 Seconds, no Orbiter.
 
 NASSP's yaAGC is GPL and not part of this repository: it is taken from NASSP_YAAGC_DIR
@@ -129,12 +130,13 @@ def build(args, ya):
     return ours, stock
 
 
-def run(exe, case):
+def run(exe, case, gojam=False):
     name, rope, secs, _, up = case
     img = os.path.abspath(os.path.join('sim', 'nassp', 'images', name + '.agc'))
     # cwd: the shim writes its apollo-c-agc-*.log sidecars into the working directory
     r = subprocess.run([os.path.abspath(exe), img, os.path.abspath(os.path.join('tools', 'oracle', 'ropes', rope)),
-                        str(secs), up], capture_output=True, text=True, timeout=600, cwd=os.path.dirname(os.path.abspath(exe)))
+                        str(secs), up] + (['gojam'] if gojam else []), capture_output=True, text=True, timeout=600,
+                       cwd=os.path.dirname(os.path.abspath(exe)))
     if r.returncode != 0:
         return None, r.stderr
     return r.stdout.splitlines(), ''
@@ -167,20 +169,33 @@ def dps(line):
     return f[0], [sp(w[k]) * 0o40000 + sp(w[k + 1]) for k in range(0, len(w) - 1, 2)]
 
 
-# The CSM coast and align downlist (CMCSTADL, ID 77777; Comanche055 DOWNLINK_LISTS p.173):
-# words the two engines cannot agree on after the image is loaded, by word number (1 = the
-# first after the ID word), with the reason. Every other word must agree (DP words as the
+# The downlists (DOWNLINK_LISTS: CSM coast and align CMCSTADL p.173 after P00 and the uplink;
+# LM descent/ascent LMDSASDL p.200, the list the resumed LGC images send): the words two engines
+# cannot agree on, by vehicle, list ID and word number (1 = the first after the ID word), with
+# the reason. The reference is stock restarted at the load (GOJAM, as our shim restarts), so a
+# restart's DAP, counters and channels compare. Every other word must agree (DP words as the
 # blocks: the same value, or within TOL_LSB where it comes from the integration).
+NO_CADR = 'CADRFLSH, CADRMARK, TEMPFLSH (continuation CADRs: the C keeps no rope addresses)'
+NO_BBQ = 'RSBBQ (BBANK and Q at the restart: the C has no bank or Q register)'
+NO_ARUPT = 'SPARE +1 = ARUPT (the A register an interrupt saved: the C has no A register)'
+DP_WORDS = ('the high word of a DP the AGC left with disagreeing signs (DAS): the C keeps the DP value '
+            '(DEVIATION, sign-agreeing words), 1 LSB')
+NO_PHSNAME = ('a variable restart (PHASE4 0402: PHSNAME4 holds a rope 2CADR, P63 36,3032): the C has no '
+              'rope addresses, so its GOPROG cannot restart that job and the display it shows')
 DOWNLIST_SKIP = {
-    0o77777: dict([(w, 'ADOT (RCS DAP rate estimate; ours restarts the DAP at the load, stock resumes)')
-                   for w in (10, 11, 12, 60, 61, 62)] +
-                  [(w, 'THETADX..Z (RCS DAP hold attitude; load restart)') for w in (15, 16, 65, 66)] +
-                  [(w, 'ERRORX..Z, THETADX (RCS DAP; load restart)') for w in (82, 83)] +
-                  [(w, 'CADRFLSH, CADRMARK, TEMPFLSH (rope addresses; the C keeps no CADR words)')
-                   for w in (68, 69, 70)] +
-                  [(w, 'CDUS, PIPAX..Z (counters; the shim zeroes the PIPAs at the load restart)')
-                   for w in (71, 72)] +
-                  [(w, 'channels 11-14, 30-33 (the shim\'s channel image)') for w in (90, 91, 92, 93)]),
+    ('csm', 0o77777): dict([(67, NO_BBQ)] + [(w, NO_CADR) for w in (68, 69, 70)] +
+                           [(w, 'THETADZ: ' + DP_WORDS + ' (CDUZD of the image, DCDUINCR)') for w in (16, 66)] +
+                           [(83, 'ERRORZ = CDUZ - THETADZ: follows THETADZ (DP words)')]),
+    ('lm', 0o77773): dict([(25, NO_ARUPT), (31, NO_BBQ)] + [(w, NO_CADR) for w in (60, 61, 62)] +
+                          [(40, 'FLAGWRD4 (pdi): ' + NO_PHSNAME)] +
+                          [(w, 'DSPTAB: pdi, ' + NO_PHSNAME + '; liftoff, the noun 74 digits follow TTOGO (99)')
+                           for w in (44, 45, 46, 47, 48)] +
+                          [(63, 'RADMODES bit 6: the shim keeps the image\'s LR position at the load (flight bug 5); '
+                                'a GOJAM\'d AGC re-reads it from channel 33')] +
+                          [(79, 'LEMMASS = MASS major word: ' + DP_WORDS)] +
+                          [(90, 'channel 11: VN FLASH (pdi, the display above); COMP ACTY (liftoff, job timing)')] +
+                          [(99, 'OPEN: TTOGO lags 0.4-0.8 s after the load restart (the restart phase of the task '
+                                'that counts it); reported, not a missing source')]),
 }
 
 
@@ -196,13 +211,13 @@ def downlist(lines):
     return lid, words
 
 
-def check_downlist(stock, ours):
-    """(ok, summary): the downlists of the two engines word by word (CSM images)."""
+def check_downlist(stock, ours, veh):
+    """(ok, summary): the downlists of the two engines word by word."""
     sid, sw = downlist(stock)
     oid, ow = downlist(ours)
     if sid is None or sid != oid or sorted(sw) != sorted(ow):
         return False, 'downlist ID %s (stock) vs %s (ours)' % (oct(sid) if sid else '-', oct(oid) if oid else '-')
-    skip = DOWNLIST_SKIP.get(sid, {})
+    skip = DOWNLIST_SKIP.get((veh, sid), {})
     equal, dp, known, bad = 0, 0, 0, []
     for k in sorted(sw):
         (a, b, wa), (c, d, wc) = sw[k], ow[k]
@@ -218,7 +233,7 @@ def check_downlist(stock, ours):
             bad.append('dn %02d stock %05o %05o ours %05o %05o' % (k, a, b, c, d))
     text = ('downlist %05o: %d words equal, %d DP words within %d LSB, %d known' %
             (sid, equal, dp, TOL_LSB, known))
-    return not bad, text + ''.join('\n       ' + x for x in bad[:12])
+    return not bad, text + ''.join('\n       ' + x for x in bad[:40])
 
 
 def compare(stock, ours):
@@ -262,8 +277,13 @@ def main():
             print('FAIL %-10s engine error: %s %s' % (name, ea.strip(), eb.strip()))
             fails += 1
             continue
+        g, eg = run(stock, case, gojam=True)
+        if g is None:
+            print('FAIL %-10s engine error (stock, GOJAM at the load): %s' % (name, eg.strip()))
+            fails += 1
+            continue
         if args.keep:
-            for tag, lines in (('ours', a), ('stock', b)):
+            for tag, lines in (('ours', a), ('stock', b), ('stockgj', g)):
                 with open(os.path.join(args.build, 'nassp', '%s.%s.txt' % (name, tag)), 'w') as f:
                     f.write('\n'.join(lines) + '\n')
         steps = sum(1 for x in b if x.startswith('step '))
@@ -292,14 +312,19 @@ def main():
                   (name, relay_digits(int(nn[0][2], 8)) if nn else '?', NOUN40[name]))
             fails += 1
             continue
+        dl_ok, dl_text = check_downlist(g, a, 'lm' if case[1].startswith('Luminary') else 'csm')
         if case[1].startswith('Luminary'):
-            # This harness's yaAGC restarts the LGC images by a TC trap (NASSP's does not), so
-            # stock is no reference here: the LM cases are checked against the image only.
+            # The LGC cases: the load restart's own checks, and the downlist. (The rest of the
+            # transcript is not compared: after the load the two engines take V37 differently.)
+            if not dl_ok:
+                fails += 1
+                print('FAIL %-10s %s' % (name, dl_text))
+                continue
             print('PASS %-10s load restart: LR position kept%s (own checks; %.1f s)' %
                   (name, ', program resumed' if name in NOUN40 else '', dt))
+            print('     %s' % dl_text)
             continue
         what = '%d integration steps' % steps + (' + uplink' if up != '-' else '')
-        dl_ok, dl_text = check_downlist(b, a)
         if not dl_ok:
             fails += 1
             print('FAIL %-10s %s' % (name, dl_text))

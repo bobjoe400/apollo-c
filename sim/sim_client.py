@@ -67,6 +67,9 @@ Scenario language (one command per line, `#` comments; times in cs):
   downlist nonzero N[-M] ...  words N..M of it (1 = the ID word, as the
                               "(28-29)" numbers of DOWNLINK_LISTS.agc) are
                               not both +0
+  downlist word N HI LO       word N is HI,LO (octal; '-' leaves a half
+                              unchecked)
+  downlist dump               print the last complete downlist
 Exit status 0 if every expectation held, 1 otherwise.
 """
 import argparse
@@ -492,6 +495,19 @@ class Scenario:
             if not ok:
                 self.fail += 1
                 self.say('FAIL downlist id %s: %s' % (args[1], '%05o' % words[0][0] if words else 'no list'))
+            return
+        if args[0] == 'dump':
+            self.say(' '.join('%d:%05o,%05o' % (n + 1, a, b) for n, (a, b) in enumerate(words)))
+            return
+        if args[0] == 'word':
+            n = int(args[1])
+            want = [None if x == '-' else int(x, 8) for x in args[2:4]]
+            self.checks += 1
+            got = words[n - 1] if len(words) == DN_WORDS else None
+            if got is None or any(w is not None and w != g for w, g in zip(want, got)):
+                self.fail += 1
+                self.say('FAIL downlist word %d: %s, %s expected' %
+                         (n, '%05o,%05o' % got if got else 'no list', ','.join(args[2:4])))
             return
         for spec in args[1:]:
             lo, _, hi = spec.partition('-')

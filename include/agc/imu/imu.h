@@ -219,9 +219,10 @@ typedef struct agc_imu_comp_params
 
 agc_status_t agc_imu_comp_load(const agc_imu_comp_params_t *p);
 void         agc_imu_comp_get(agc_imu_comp_params_t *p);
-agc_sp_t     agc_imu_gcompsw(void); /* GCOMPSW        */
+agc_sp_t     agc_imu_gcompsw(void);       /* GCOMPSW        */
 agc_status_t agc_imu_set_gcompsw(agc_sp_t v);
 agc_status_t agc_imu_set_pipa_interval(agc_sp_t v);
+agc_sp_t     agc_imu_pipa_interval(void); /* 1/PIPADT, read (cs x 2^8, or a TIME1 snapshot) */
 
 /* 1/PIPA: compensate the PIPA counts DELV (pulses x 2^14, X Y Z) in place
  * for scale factor and bias, then IRIGCOMP the gyros.                     */

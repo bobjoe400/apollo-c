@@ -9,12 +9,15 @@
  * and fed the same image. Both print the same transcript; the driver compares them
  * line for line. Host-only test tool, not part of libagc.
  *
- * Usage: replay IMAGE ROPE SECONDS UPLINK
+ * Usage: replay IMAGE ROPE SECONDS UPLINK [gojam]
  *   IMAGE   a scenario's AGC_BEGIN .. AGC_END block (sim/nassp/images/NAME.agc)
  *   ROPE    Comanche055.bin / Luminary099.bin
  *   SECONDS AGC seconds of P00 after RSET, V37E00E (the integration steps)
  *   UPLINK  a DSKY key string sent through INLINK + UPRUPT the way NASSP's PCM
  *           telemetry sends MCC uplinks (csm_telecom.cpp), or "-" for none
+ *   gojam   stock only: a GOJAM right after the load (yaAGC's ParityFail path), so the
+ *           reference restarts as our shim does; the driver compares the downlist to
+ *           this run (DAP, counters and channels after a restart, not a resumed image)
  *
  * Transcript ('#' lines are timing notes the driver does not compare):
  * for a Luminary image first "# radmodes-lrpos" (RADMODES bit 6 saved, and 5 s after the load),
@@ -23,7 +26,8 @@
  * "step csm TETCSM=hi,lo" / "step lem TETLEM=hi,lo" with that state-vector block (42
  * words, RRECT .. XKEP) whenever P00 integration moves TETCSM or TETLEM; then the
  * uplink's result (UPBUFF, UPSVFLAG, the blocks, DELVSLV and TIG, MODREG, DSPTAB);
- * "# dsky-latency" (V06N3, then the '6' key until the erasable shows noun 36); last the
+ * "# dsky-latency" (V06N3, then the '6' key until the erasable shows noun 36); last (a
+ * Luminary image: after "# noun40", the resumed program's list) the
  * downlist: DOWNRUPT 50 times a second as NASSP's PCM raises it, channels 34/35 from
  * ChannelOutput, one complete list ("#downlist ID", "#dn N hi lo wo" per word, wo the
  * word order code): '#' lines, compared by the driver word by word (DP tolerance, the
@@ -85,6 +89,16 @@ static unsigned dn_word[DN_MAX][3];
 void ChannelOutput(agc_t *s, int ch, int v)
 {
     (void) s;
+
+#ifdef REPLAY_YAAGC
+    if (ch == 07)
+    {
+        /* The superbank (FEB) is the host's to keep, as NASSP's ChannelOutput does
+         * (apolloguidance.cpp): without it a Luminary task in banks 30-37 runs in 40-47. */
+        vagc.InputChannel[07] = (int16_t) (v & 0160);
+        vagc.OutputChannel7   = (int16_t) (v & 0160);
+    }
+#endif
 
     if (ch == 013)
     {
@@ -432,9 +446,9 @@ static void load(const char *path)
 
 int main(int argc, char **argv)
 {
-    if (argc != 5)
+    if (argc != 5 && !(argc == 6 && strcmp(argv[5], "gojam") == 0))
     {
-        fprintf(stderr, "usage: replay IMAGE ROPE SECONDS UPLINK\n");
+        fprintf(stderr, "usage: replay IMAGE ROPE SECONDS UPLINK [gojam]\n");
 
         return (2);
     }
@@ -451,6 +465,13 @@ int main(int argc, char **argv)
 
     load(argv[1]);
 
+#ifdef REPLAY_YAAGC
+    if (argc == 6)
+    {
+        vagc.ParityFail = 1; /* the next cycle takes GOJAM (agc_engine.c: TriggeredAlarm || ParityFail) */
+    }
+#endif
+
     unsigned lrpos = word(ADDR_RADMODE) & RADM_LRPOS; /* as the scenario saved it */
 
     run(5.0);
@@ -463,13 +484,14 @@ int main(int argc, char **argv)
     /* LGC: the LR position the AGC wants (RADMODES bit 6). NASSP resumes the saved
      * image; our shim restarts it, and STARTSUB re-reads the bit from channel 33, where
      * an LR that is off reports no position: the shim must keep the saved bit. A '#'
-     * line: the driver checks it in our transcript (this harness's yaAGC restarts this
-     * image by a TC trap, unlike NASSP, so stock is no reference here). */
+     * line: the driver checks it in our transcript (stock resumes the image and does
+     * not restart, so it is no reference for the restart's bit). */
     if (strstr(argv[2], "Luminary") != NULL)
     {
         printf("# radmodes-lrpos image %o after-load %o\n", lrpos, word(ADDR_RADMODE) & RADM_LRPOS);
         run(35.0);
         printf("# noun40 %o\n", word(ADDR_DSPTAB + DSPTAB_NOUN)); /* the noun relay word 40 s after the load */
+        downlist();                                                  /* the list of the resumed program */
     }
 
     keys("R");
@@ -542,7 +564,10 @@ int main(int argc, char **argv)
 
     printf("# dsky-latency %.2f\n", lat);
 
-    downlist();
+    if (strstr(argv[2], "Luminary") == NULL)
+    {
+        downlist(); /* after P00 and the uplink (the LGC's was sent above) */
+    }
 
     return (0);
 }

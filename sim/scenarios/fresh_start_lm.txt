@@ -46,3 +46,15 @@ until PROG 00 within 300
 expect VERB blank
 expect NOUN blank
 expect LAMP PROG off
+# The coast and align downlist (LMCSTADL, Luminary099 DOWNLINK_LISTS p.195;
+# word 1 = the ID word): DOFSTART selected it (DNLSTCOD = 0). Exact: 50 and
+# 100 DSPTAB +10D (PROG 00 = 05265), 91 channels 11,12 (DSALMOUT: BIT14).
+# Non-zero: 40-44 FLAGWRD2-11 (STATE +2), 51 TIME2,TIME1, 64 RADMODES,DAPBOOLS,
+# 81 IMODES30,33 (IM30INIF, IM33INIT and the monitors), 92-94 channels 13,14
+# and 30-33.
+run 300
+downlist id 77777
+downlist word 50 05265 -
+downlist word 100 05265 -
+downlist word 91 20000 -
+downlist nonzero 40-44 51 64 81 92-94

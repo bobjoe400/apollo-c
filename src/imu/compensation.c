@@ -265,6 +265,16 @@ agc_status_t agc_imu_set_pipa_interval(agc_sp_t v)
     return (AGC_STATUS_OK);
 }
 
+/**********************************************************************
+ * AGC: none (accessor) -- 1/PIPADT, read (the erasable map)
+ *
+ * RETURNS: agc_sp_t -- 1/PIPADT, cs x 2^8 (or NBDONLY's TIME1 snapshot)
+ **********************************************************************/
+agc_sp_t agc_imu_pipa_interval(void)
+{
+    return (one_pipadt);
+}
+
 /* ---- GCOMP access (the GCOMP gyro buffer lives in mode.c) ----------- */
 
 /* GCOMP as its words.  The buffer holds the value; when something else

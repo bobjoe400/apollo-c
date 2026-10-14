@@ -39,7 +39,9 @@
  *   same code for every one. A value item is reached only through the
  *   owner's getter: it reads; it stores where the owner has a setter
  *   (TIME2/1, the counters, OPTMODES, LANDMARK, CMDAPMOD, CDUXD,
- *   OMEGAPD), otherwise a store leaves the typed value alone and the
+ *   OMEGAPD, DNLSTCOD, AGSWORD, REDOCTR, the CSM optics monitor words,
+ *   GCOMP, 1/PIPADT, the LM DAP's OMEGAP .. ALPHAR and DOWNTORK),
+ *   otherwise a store leaves the typed value alone and the
  *   address keeps the stored word until the owner writes it again.
  *   DP values give sign-agreeing words; ADOT and OMEGAB keep the two
  *   words as stored (agc_dp_words_t).
@@ -465,11 +467,12 @@ static bool value_word_csm(ec_item_t item, int j, uint16_t *w)
     agc_vec_t          other  = (item == EC_F_R_OTHER) ? agc_integ_r_other() : agc_integ_v_other();                           /* R-OTHER m 2^29 or V-OTHER m/cs 2^7 */
     bool               found  = true;                                                                                         /* one of these */
     agc_entry_dapmod_t m      = agc_entry_state()->cmdapmod;                                                                  /* CMDAPMOD */
+    agc_dp_t           g[3];                                                                                                  /* GCOMP, gyro pulses 2^14 */
 
     switch ((int) item)
     {
         case EC_F_TIME:
-            *w    = (uint16_t) ((j == 0) ? ((t >> F_TIME_SH) & F_LOW14) : (t & F_LOW14));             /* TIME2, TIME1 */
+            *w    = (uint16_t) ((j == 0) ? ((t >> F_TIME_SH) & F_LOW14) : (t & F_LOW14));                            /* TIME2, TIME1 */
             break;
         case EC_F_COUNTERS:
             *w    = cnt[j];
@@ -503,13 +506,35 @@ static bool value_word_csm(ec_item_t item, int j, uint16_t *w)
             *w    = dp_word(other.c[j / 2], j % 2);
             break;
         case EC_F_CMDAPMOD:
-            *w    = (m == AGC_ENTRY_DAPMOD_MINUS0) ? (uint16_t) F_NEG0 : ec_word_of_sp((agc_sp_t) m); /* -1, +0, +1 or -0 */
+            *w    = (m == AGC_ENTRY_DAPMOD_MINUS0) ? (uint16_t) F_NEG0 : ec_word_of_sp((agc_sp_t) m);                /* -1, +0, +1 or -0 */
             break;
         case EC_F_PREL:
             *w    = ec_word_of_sp(agc_erase_prel(j));
             break;
         case EC_F_PAXERR1:
             *w    = ec_word_of_sp(agc_erase_paxerr1());
+            break;
+        case EC_F_DNLSTCOD:
+            *w    = (j == 0) ? agc_erase_dnlstcod() : agc_erase_dumpcnt();                                           /* DNLSTCOD, DUMPCNT */
+            break;
+        case EC_F_OPTIND:
+            *w    = (agc_erase_optind() == AGC_OPTIND_NEG0) ? (uint16_t) F_NEG0 : ec_word_of_sp(agc_erase_optind()); /* -0: TVC takeover */
+            break;
+        case EC_F_OPTZONE:
+            *w    = ec_word_of_sp(agc_erase_optmon(AGC_OPTMON_ZONE));
+            break;
+        case EC_F_OPTMON:
+            *w    = ec_word_of_sp(agc_erase_optmon((agc_optmon_word_t) j));
+            break;
+        case EC_F_DESOPT:
+            *w    = (j == 0) ? agc_erase_desoptt() : agc_erase_desopts();                                            /* DESOPTT, DESOPTS */
+            break;
+        case EC_F_GCOMP:
+            agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g);
+            *w    = dp_word(g[j / 2], j % 2);
+            break;
+        case EC_F_PIPADT:
+            *w    = ec_word_of_sp(agc_imu_pipa_interval());
             break;
         default:
             found = false;
@@ -583,6 +608,9 @@ static uint16_t value_word_lm(ec_item_t item, int j)
         case EC_F_RM:
             w = dp_word(agc_erase_rm(), j);
             break;
+        case EC_F_AGSWORD:
+            w = agc_erase_agsword();
+            break;
         default:
             w = agc_erase_rangrdot(j);                                  /* EC_F_RANGRDOT */
             break;
@@ -610,6 +638,7 @@ static ec_layout_t value_layout(ec_item_t item)
         case EC_F_R_OTHER:
         case EC_F_V_OTHER:
         case EC_F_AGSK:
+        case EC_F_GCOMP:
         case EC_F_RR_MKTIME:
         case EC_F_NAV_MKTIME:
         case EC_F_RM:
@@ -625,6 +654,10 @@ static ec_layout_t value_layout(ec_item_t item)
         case EC_F_ALPHAQ:
         case EC_F_OMEGAPD:
         case EC_F_DOWNTORK:
+        case EC_F_OPTIND:
+        case EC_F_OPTZONE:
+        case EC_F_OPTMON:
+        case EC_F_PIPADT:
             l = EC_SP;
             break;
         default:
@@ -775,6 +808,88 @@ static agc_status_t lm_dap_store(ec_item_t item, const uint16_t *w)
 }
 
 /**********************************************************************
+ * AGC: none -- store a word an image load restores to its owner (the
+ * list code and dump count, the restart count, the CSM optics monitor,
+ * GCOMP, 1/PIPADT, the LM DAP's rates and torques, AGSWORD); any other
+ * value item keeps its typed value (the address keeps the stored word)
+ *
+ * ARGUMENTS:
+ *   item  ec_item_t         I   a value item
+ *   w     const uint16_t *  I   its words
+ *
+ * RETURNS: agc_status_t -- AGC_STATUS_OK, or 1/PIPADT's setter status
+ **********************************************************************/
+static agc_status_t load_store(ec_item_t item, const uint16_t *w)
+{
+    agc_status_t st    = AGC_STATUS_OK;                 /* the setter's status */
+    int          n     = (item == EC_F_OMEGAP) ? 3 : 2; /* words: OMEGAP..R, or ALPHAQ..R */
+    int          first = (item == EC_F_OMEGAP) ? 0 : 3; /* OMEGAP +first */
+
+    switch ((int) item)
+    {
+        case EC_F_DNLSTCOD:
+            agc_telem_select_list((int) w[0]);                                              /* NEWLIST refuses a code outside DNTABLE */
+            agc_erase_set_dumpcnt(w[1]);
+            break;
+        case EC_F_REDOCTR:
+            agc_restart_set_redoctr(w[0]);
+            break;
+        case EC_F_OPTIND:
+            agc_erase_set_optind((w[0] == F_NEG0) ? AGC_OPTIND_NEG0 : ec_sp_of_word(w[0])); /* -0: TVC takeover */
+            break;
+        case EC_F_OPTZONE:
+            agc_erase_set_optmon(AGC_OPTMON_ZONE, ec_sp_of_word(w[0]));
+            break;
+        case EC_F_OPTMON:
+
+            for (int k = 0; k < (int) AGC_OPTMON_ZONE; k++)
+            {
+                agc_erase_set_optmon((agc_optmon_word_t) k, ec_sp_of_word(w[k]));
+            }
+
+            break;
+        case EC_F_DESOPT:
+            agc_erase_set_desoptt(w[0]);
+            agc_erase_set_desopts(w[1]);
+            break;
+        case EC_F_GCOMP:
+        {
+            const agc_dp_t g[3] = {ec_dp_of(&w[0]), ec_dp_of(&w[2]), ec_dp_of(&w[4])}; /* gyro pulses 2^14 */
+
+            agc_imu_gyro_buf_set(AGC_IMU_GBUF_GCOMP, g);
+            break;
+        }
+        case EC_F_PIPADT:
+            st = agc_imu_set_pipa_interval(ec_sp_of_word(w[0]));
+            break;
+        case EC_F_OMEGAP:
+        case EC_F_ALPHAQ:
+
+            for (int k = 0; k < n; k++)
+            {
+                agc_erase_set_omegap_k(first + k, ec_sp_of_word(w[k])); /* OMEGAP +k / ALPHAQ +k */
+            }
+
+            break;
+        case EC_F_DOWNTORK:
+
+            for (int k = 0; k < 6; k++)
+            {
+                agc_erase_set_downtork(k, ec_sp_of_word(w[k]));
+            }
+
+            break;
+        case EC_F_AGSWORD:
+            agc_erase_set_agsword(w[0]);
+            break;
+        default:
+            break; /* read-only owner: the typed value stays */
+    } /* switch */
+
+    return (st);
+} /* load_store */
+
+/**********************************************************************
  * AGC: none -- store a value item whose owner has a setter; the others
  * keep their typed value (the address keeps the stored word)
  *
@@ -819,7 +934,8 @@ static agc_status_t value_store(ec_item_t item, const uint16_t *w)
             st                          = lm_dap_store(item, w);
             break;
         default:
-            break;                                                                                     /* read-only owner: the typed value stays */
+            st                          = load_store(item, w);                                         /* the words an image load restores, or a read-only owner */
+            break;
     } /* switch */
 
     return (st);

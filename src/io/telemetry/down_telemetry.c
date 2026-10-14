@@ -542,11 +542,45 @@ void agc_telem_restart(void)
  * AGC: none -- TS DNLSTCOD: select the list sent from the next NEWLIST on.
  *
  * ARGUMENTS:
- *   code  int  I   DNLSTCOD, a list code (0..4 CM, 0..5 LM)
+ *   code  int  I   DNLSTCOD, a list code (0..4 CM, 0..5 LM); a store by
+ *                  address (image load, V21) may hold any word
  **********************************************************************/
 void agc_telem_select_list(int code)
 {
-    dnlstcod = code; /* a list-code constant at every caller */
+    dnlstcod = code; /* a list code, AGSWORD, or a word stored at its address (NEWLIST refuses one outside DNTABLE) */
+}
+
+/**********************************************************************
+ * AGC: none -- DNLSTCOD, read: the code of the list sent from the next
+ * NEWLIST on (the erasable map's address 0332, both ropes)
+ *
+ * RETURNS: DNLSTCOD
+ **********************************************************************/
+uint16_t agc_erase_dnlstcod(void)
+{
+    return ((uint16_t) dnlstcod);
+}
+
+/**********************************************************************
+ * AGC: none -- DUMPCNT, read (the erasable map's 0333, both ropes)
+ *
+ * RETURNS: DUMPCNT (BIT12 one dump, BIT13 two, BIT14 four; the low
+ *          bits count the dumps sent)
+ **********************************************************************/
+uint16_t agc_erase_dumpcnt(void)
+{
+    return (dumpcnt);
+}
+
+/**********************************************************************
+ * AGC: none -- DUMPCNT, written by address (an image load, V21)
+ *
+ * ARGUMENTS:
+ *   v  uint16_t  I   DUMPCNT
+ **********************************************************************/
+void agc_erase_set_dumpcnt(uint16_t v)
+{
+    dumpcnt = v;
 }
 
 /**********************************************************************

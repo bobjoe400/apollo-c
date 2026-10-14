@@ -111,6 +111,9 @@ void         agc_telem_fresh_start(void);         /* DOFSTART: DNLSTCOD = 0  */
 void         agc_telem_slap1(void);               /* LM SLAP1: DUMPCNT       */
 void         agc_telem_restart(void);             /* STARTSUB: restart list  */
 void         agc_telem_select_list(int dnlstcod); /* TS DNLSTCOD             */
+uint16_t     agc_erase_dnlstcod(void);            /* DNLSTCOD, read          */
+uint16_t     agc_erase_dumpcnt(void);             /* DUMPCNT, read           */
+void         agc_erase_set_dumpcnt(uint16_t v);   /* DUMPCNT, by address     */
 agc_status_t agc_telem_downrupt(void);            /* DODOWNTM, every 20 ms   */
 void         agc_telem_start_dump(void);          /* V74: DNTMGOTO = DNDUMPI */
 uint16_t     agc_erase_agsword(void);             /* AGSWORD (LM): saved list */
@@ -152,9 +155,22 @@ void     agc_erase_set_optmodes(uint16_t v);
 agc_sp_t agc_erase_optind(void);          /* OPTIND (CM)              */
 void     agc_erase_set_optind(agc_sp_t v);
 agc_sp_t agc_erase_swsample(void);        /* SWSAMPLE (CM) +1 CSC, 0 manual, -1 zero optics */
-uint16_t agc_erase_desoptt(void);         /* DESOPTT (CM): OPTDRIVE trunnion, CDU word */
+
+/* The optics monitor's words (CM, OPTMON), by address (the erasable map).  */
+typedef enum agc_optmon_word
+{
+    AGC_OPTMON_SWSAMPLE = 0, /* SWSAMPLE 1314 */
+    AGC_OPTMON_DESOPMOD,     /* DESOPMOD 1315 */
+    AGC_OPTMON_WTOPTION,     /* WTOPTION 1316 */
+    AGC_OPTMON_ZOPTCNT,      /* ZOPTCNT  1317 */
+    AGC_OPTMON_ZONE,         /* ZONE     1307 */
+    AGC_OPTMON_WORDS
+} agc_optmon_word_t;
+agc_sp_t agc_erase_optmon(agc_optmon_word_t k);
+void     agc_erase_set_optmon(agc_optmon_word_t k, agc_sp_t v);
+uint16_t agc_erase_desoptt(void); /* DESOPTT (CM): OPTDRIVE trunnion, CDU word */
 void     agc_erase_set_desoptt(uint16_t v);
-uint16_t agc_erase_desopts(void);         /* DESOPTS (CM): OPTDRIVE shaft, CDU word */
+uint16_t agc_erase_desopts(void); /* DESOPTS (CM): OPTDRIVE shaft, CDU word */
 void     agc_erase_set_desopts(uint16_t v);
 
 /* LM radar monitor and DAP matrix (src/io/service/t4rupt_lm.c).                 */

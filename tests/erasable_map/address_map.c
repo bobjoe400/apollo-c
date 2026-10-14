@@ -35,6 +35,7 @@
 #include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
 #include "agc/erasable_map/address_map.h"
+#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"
@@ -69,6 +70,8 @@ static void     test_map_size(void);
 static void     test_downlink_fields_csm(void);
 static void     test_downlink_entry_dap_csm(void);
 static void     test_downlink_fields_lm(void);
+static void     test_load_words_csm(void);
+static void     test_load_words_lm(void);
 
 #define CHECK(c) check((c), __LINE__, #c)
 
@@ -102,6 +105,8 @@ int main(void)
     test_downlink_fields_csm();
     test_downlink_entry_dap_csm();
     test_downlink_fields_lm();
+    test_load_words_csm();
+    test_load_words_lm();
     (void) printf("test_ecadr: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -708,3 +713,68 @@ static void test_downlink_fields_lm(void)
     CHECK(agc_erase_write_ecadr(02636u, 00003u) == AGC_STATUS_OK); /* RGU X high */
     CHECK(agc_dp_high(ldg->rgu.c[0]) == 3);
 } /* test_downlink_fields_lm */
+
+/**********************************************************************
+ * AGC: none -- words a NASSP image load (a store by address) must give
+ * their owners, CSM (Comanche055 addresses): the list code, the restart
+ * count, the optics monitor, GCOMP and 1/PIPADT; an owner's later change
+ * shows at the address.
+ **********************************************************************/
+static void test_load_words_csm(void)
+{
+    agc_dp_t g[3]; /* GCOMP, gyro pulses 2^14 */
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    CHECK(agc_erase_write_ecadr(00332u, 3u) == AGC_STATUS_OK);      /* DNLSTCOD: rendezvous/prethrust */
+    CHECK(agc_erase_dnlstcod() == 3u);
+    agc_telem_select_list(1);
+    CHECK(rd(00332u) == 1u);
+    CHECK(agc_erase_write_ecadr(01154u, 5u) == AGC_STATUS_OK);      /* REDOCTR */
+    CHECK(agc_restart_redoctr() == 5u);
+    CHECK(agc_erase_write_ecadr(01303u, 077777u) == AGC_STATUS_OK); /* OPTIND -0 */
+    CHECK(agc_erase_optind() == AGC_OPTIND_NEG0 && rd(01303u) == 077777u);
+    CHECK(agc_erase_write_ecadr(01303u, 077776u) == AGC_STATUS_OK); /* OPTIND -1 */
+    CHECK(agc_erase_optind() == -1);
+    CHECK(agc_erase_write_ecadr(01314u, 077776u) == AGC_STATUS_OK); /* SWSAMPLE -1: zero optics */
+    CHECK(agc_erase_write_ecadr(01315u, 077776u) == AGC_STATUS_OK); /* DESOPMOD -1 */
+    CHECK(agc_erase_write_ecadr(01317u, 2u) == AGC_STATUS_OK);      /* ZOPTCNT */
+    CHECK(agc_erase_write_ecadr(01307u, 5u) == AGC_STATUS_OK);      /* ZONE */
+    CHECK(agc_erase_swsample() == -1 && agc_erase_optmon(AGC_OPTMON_DESOPMOD) == -1);
+    CHECK(agc_erase_optmon(AGC_OPTMON_ZOPTCNT) == 2 && agc_erase_optmon(AGC_OPTMON_ZONE) == 5);
+    CHECK(agc_erase_write_ecadr(01161u, 012345u) == AGC_STATUS_OK); /* DESOPTS */
+    CHECK(agc_erase_desopts() == 012345u);
+    CHECK(agc_erase_write_ecadr(01472u, 027212u) == AGC_STATUS_OK); /* GCOMP X low */
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g);
+    CHECK(g[0] == 027212);
+    CHECK(agc_erase_write_ecadr(01074u, 0120u) == AGC_STATUS_OK);   /* 1/PIPADT */
+    CHECK(agc_imu_pipa_interval() == 0120);
+}
+
+/**********************************************************************
+ * AGC: none -- the LM words a NASSP image load must give their owners
+ * (Luminary099 addresses): AGSWORD (GOPROG sets DNLSTCOD from it), the
+ * DAP rates and torques; a rate the image held and the DAP then zeroes
+ * reads 0 (the owner's value, not the stale word).
+ **********************************************************************/
+static void test_load_words_lm(void)
+{
+    agc_dp_t g[3]; /* GCOMP, gyro pulses 2^14 */
+
+    agc_state_init(AGC_VEHICLE_LM);
+    CHECK(agc_erase_write_ecadr(01324u, 4u) == AGC_STATUS_OK);      /* AGSWORD: descent/ascent */
+    CHECK(agc_erase_agsword() == 4u);
+    CHECK(agc_erase_write_ecadr(00332u, 4u) == AGC_STATUS_OK);      /* DNLSTCOD */
+    CHECK(agc_erase_dnlstcod() == 4u);
+    CHECK(agc_erase_write_ecadr(03021u, 4u) == AGC_STATUS_OK);      /* OMEGAP */
+    CHECK(agc_erase_write_ecadr(03025u, 3u) == AGC_STATUS_OK);      /* ALPHAR */
+    CHECK(agc_erase_omegap() == 4 && agc_erase_alphar() == 3);
+    agc_erase_set_omegap_k(0, 0);                                   /* the DAP restart zeroes the rate */
+    CHECK(rd(03021u) == 0u);
+    CHECK(agc_erase_write_ecadr(03114u, 05063u) == AGC_STATUS_OK);  /* NEGTORKP */
+    CHECK(agc_erase_downtork(1) == 05063);
+    CHECK(agc_erase_write_ecadr(01476u, 057777u) == AGC_STATUS_OK); /* GCOMP Z low */
+    agc_imu_gyro_buf_get(AGC_IMU_GBUF_GCOMP, g);
+    CHECK(g[2] == -(agc_dp_t) (077777 - 057777));
+    CHECK(agc_erase_write_ecadr(01075u, 011610u) == AGC_STATUS_OK); /* 1/PIPADT */
+    CHECK(agc_imu_pipa_interval() == 011610);
+}

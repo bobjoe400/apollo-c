@@ -899,3 +899,55 @@ agc_sp_t agc_erase_downtork(int k)
 {
     return (lm_dap_state()->downtork[k]);
 }
+
+/**********************************************************************
+ * AGC: none -- the DAP erasables OMEGAP .. ALPHAR (OMEGAP ERASE +4),
+ * written by address (an image load, V21: the erasable map)
+ *
+ * FUNCTION NAME: agc_erase_set_omegap_k
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   k         int       I    0..4: OMEGAP OMEGAQ OMEGAR (pi/4 rad/s), ALPHAQ ALPHAR (pi/2 rad/s^2)
+ *   v         agc_sp_t  I    the value
+ **********************************************************************/
+void agc_erase_set_omegap_k(int k, agc_sp_t v)
+{
+    lm_dap_t *d = lm_dap_state(); /* DAP erasables */
+
+    switch (k)
+    {
+        case 0:
+            d->omegap = v;
+            break;
+        case 1:
+            d->omegaq = v;
+            break;
+        case 2:
+            d->omegar = v;
+            break;
+        case 3:
+            d->alphaq = v;
+            break;
+        default:
+            d->alphar = v; /* k 4: the map's last word of the five */
+            break;
+    } /* switch */
+}
+
+/**********************************************************************
+ * AGC: none -- POSTORKP +k, written by address (the erasable map)
+ *
+ * FUNCTION NAME: agc_erase_set_downtork
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   k         int       I    0..5: POSTORKP NEGTORKP POSTORKU NEGTORKU POSTORKV NEGTORKV
+ *   v         agc_sp_t  I    the accumulated jet torque, 32 jet-s
+ **********************************************************************/
+void agc_erase_set_downtork(int k, agc_sp_t v)
+{
+    lm_dap_state()->downtork[k] = v;
+}

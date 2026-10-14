@@ -104,11 +104,33 @@ expect PROG 52
 keys 00E
 until PROG 00 within 300
 # The coast and align downlist (CMCSTADL, Comanche055 DOWNLINK_LISTS p.173) the
-# P52 has filled: word 2 RN (snapshot), 19 BESTI,BESTJ (the stars picked),
-# 20-22 MARKDOWN (the last mark: time, CDUY, S, Z, T; CDUX at 23 is 0 here),
-# 34 and 38 REFSMMAT XX and YY (identity), 40-44 FLAGWRD0-9, 51 TIME2,TIME1,
-# 74-76 OGC,IGC,MGC (the torquing angles). Before the lists were sent by
-# address, 19-22 and 74-76 went out as zero.
+# P52 has filled (word 1 = the ID word). Values the scenario fixes, exact:
+# 19 BESTI,BESTJ = 6 x the star index (35 -> 0322, 8 -> 060); 20-22 MARKDOWN,
+# the last mark (star 35: CDUS -8177 = 60017, CDUT 4681 = 11111); 24-26
+# MARK2DWN (star 8: CDUS 8860 = 21234, CDUT 3793 = 07321); 10 and 60 CDUZ,CDUT
+# and 72 CDUS,PIPAX (the sextant left on star 35); 34-39 REFSMMAT rows X and Y
+# (identity, 1 at 2^1 = 20000); 50 and 100 DSPTAB +10D (PROG 00 = 05265);
+# 88 REDOCTR,THETAD (one restart: power on). Non-zero: 2 RN, 6 VN +2,
+# 40-44 FLAGWRD0-9, 51 TIME2,TIME1, 74-76 OGC,IGC,MGC (the torquing angles),
+# 80 OPTMODES, 90 IMODES30,33, 92-94 channels 13,14, 30-33. Before the lists
+# were sent by address, 19-26 and 74-76 went out as zero.
 run 450
 downlist id 77777
-downlist nonzero 2 19 20-22 34 38 40-44 51 74-76
+downlist nonzero 2 6 19 20-22 24-26 34 38 40-44 51 74-76 80 90 92-94
+downlist word 19 00322 00060
+downlist word 21 00000 60017
+downlist word 22 00000 11111
+downlist word 25 00000 21234
+downlist word 26 00000 07321
+downlist word 10 - 11111
+downlist word 60 - 11111
+downlist word 72 60017 -
+downlist word 34 20000 00000
+downlist word 35 00000 00000
+downlist word 36 00000 00000
+downlist word 37 00000 00000
+downlist word 38 20000 00000
+downlist word 39 00000 00000
+downlist word 50 05265 -
+downlist word 100 05265 -
+downlist word 88 00001 -
