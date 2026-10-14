@@ -1019,3 +1019,13 @@
             check). Liftoff script uses the resumed P12 (freeze rule:
             stock reruns first). PDI/liftoff dev runs to be repeated under
             the new shim. Our entry running under frozen definitions.
+2026-10-14  ENTRY on our CMC (frozen definitions): splashdown 172.257 W /
+            10.873 N vs stock 172.251 W / 10.886 N (1.6 km); events within
+            1 s except P63 30 s early; all judged columns inside the
+            envelope except mass by 10 g; both traced to the free-drift
+            attitude history before entry (same release time, different
+            deadband phase), not code. Shim: saved ch 015 key code no
+            longer taken as a keystroke at load (OPR ERR; replay check).
+            Decision pending (user): zero-time C jobs as a documented
+            deviation vs a timing model. Open: optics CDUs not driven
+            after load (ch 14 70040 vs 76040).
