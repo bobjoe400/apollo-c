@@ -30,7 +30,7 @@ typedef enum agc_status
     AGC_STATUS_FULL,         /* table full (jobs, VACs, waitlist)       */
     AGC_STATUS_NOT_FOUND,
     AGC_STATUS_BUSY,
-    AGC_STATUS_UNIMPLEMENTED /* translation stub; see history/MODULE_STATUS.md */
+    AGC_STATUS_UNIMPLEMENTED /* translation stub */
 } agc_status_t;
 
 #endif /* AGC_STATUS_H */

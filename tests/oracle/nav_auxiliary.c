@@ -6,7 +6,7 @@
  *   LAT-LONG, LALOTORV, RP-TO-R, R-TO-RP, TFFCONIC, TFFRP/RA, CALCTFF,
  *   LSPOS and LUNVEL (CM), LSPOS (LM), INCORP2 (W update and state
  *   update).  Tolerances (LSB of the AGC word): see
- *   docs/overview/oracle-cases.md and history/lanes/review-nav-aux.md.
+ *   docs/overview/oracle-cases.md.
  *
  * AGC SOURCE:
  *   Comanche055 / Luminary099, the files cited in auxiliary.h.  Inputs

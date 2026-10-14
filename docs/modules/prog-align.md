@@ -1,7 +1,5 @@
 # prog-align -- IMU alignment programs, optics marking, geometry, S-band, R63, R47
 
-History of this lane: [history/lanes/prog-align.md](../../history/lanes/prog-align.md)
-
 ## Scope
 
 | AGC file (vehicle) | pages | C target |

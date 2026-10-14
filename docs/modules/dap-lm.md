@@ -1,7 +1,5 @@
 # dap-lm -- Luminary 099 LM digital autopilot (RCS DAP, trim gimbal, 1/ACCS)
 
-History of this lane: [history/lanes/dap-lm.md](../../history/lanes/dap-lm.md)
-
 ## Scope
 
 Luminary099 files (pages 1403-1506 plus 191-192):

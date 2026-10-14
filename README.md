@@ -27,16 +27,16 @@ Coding standard: NASA/JPL "Power of Ten" rules (Holzmann), see
 
 ## Layout
 
-See `docs/ARCHITECTURE.md`. Status of each module: `history/MODULE_STATUS.md`.
+See `docs/ARCHITECTURE.md`.
 Per-module notes: `docs/modules/<module>.md`. Everything under `docs/` describes the
-final program; how it was made (plan, worklog, assignments, diaries) is in `history/`.
+final program; how it was made is in the git log.
 
 ## Build
 
     make            # builds libagc and all modules with -Werror -Wpedantic
     make test       # runs unit tests
     make check      # check_rules.py (Power of Ten), format-check, style
-    make format     # tools/format.sh: fix_comments.py + uncrustify over src include tests (history/STYLE.md)
+    make format     # tools/format.sh: fix_comments.py + uncrustify over src include tests (docs/CODING_STANDARD.md)
     make style      # tools/check_style.py report (NASA SEL-94-003 rules)
 
 ## Run it
@@ -58,8 +58,7 @@ and screenshots: `docs/modules/sim.md`.
 
 ## Status
 
-**Complete** (2026-10-14). The definition of done (`history/PLAN.md`, items
-1-9) is met: every routine of both ropes is translated or a named,
+**Complete** (2026-10-14). The definition of done (items 1-9) is met: every routine of both ropes is translated or a named,
 justified stub; `make`, `make test` and `make check` pass with no
 upward module call; the numeric modules match yaAGC within documented
 tolerances (bit-exact where the ones'-complement -0 allows); every lane
@@ -96,8 +95,7 @@ scenario restore, and the downlist words the C cannot hold
 
 ## Documentation
 
-Start at `docs/README.md`. Generated from the final code (documentation wave
-and final pass, `history/waves/document.md`):
+Start at `docs/README.md`. Generated from the final code:
 
 * [Reader's guide](docs/guide/README.md) (`docs/guide/`) -- the AGC and
   this translation of it, in twelve chapters and a glossary, for a reader
@@ -112,20 +110,21 @@ and final pass, `history/waves/document.md`):
   P61-P67 entry, LM P12 ascent.
 * `docs/overview/xref.md` -- AGC label -> C function -> file:line, for both
   ropes (`python3 -I tools/xref.py`).
-* `history/INDEX.md` -- every file of the repository with its
-  purpose and owner (`python3 -I tools/repo_index.py`);
-  `history/data/` -- the generated call graph and one-liner tables
-  (`make callgraph`, `python3 -I tools/one_liners.py`).
+* `build/overview/` -- the generated call graph and one-liner tables
+  (`make callgraph`, `python3 -I tools/one_liners.py`); not tracked.
 * `docs/modules/<lane>.md` -- per lane: scope, design, deviations, stubs,
   tests and "Program flow and decisions" (decision points by function with flags,
   alarms, channel bits and the jobs/tasks started; shared erasables with
-  scale; AGC labels -> C functions). The lanes' process diaries (progress,
-  findings, requests, lessons) are in `history/lanes/`. The mission:
+  scale; AGC labels -> C functions). The development record is the git log. The mission:
   `docs/modules/nassp-integration.md`; the study before it:
   `docs/overview/nassp_integration.md`.
 * `docs/ARCHITECTURE.md` -- the layout, the layering, the verification
   tiers and the known limitations.
 * `docs/TIPS.md` -- tips for translating AGC assembly into C, by topic.
 * Reference: `docs/TRANSLATION_GUIDE.md` (with the rules the mission
-  taught), `docs/CODING_STANDARD.md`, `history/STYLE.md`, `docs/NAMING.md`,
-  `history/MODULE_STATUS.md`; history in `history/WORKLOG.md`.
+  taught), `docs/CODING_STANDARD.md`, `docs/NAMING.md`;
+  the development record is in the git log.
+
+## Licence
+
+GPL-2.0-or-later (see `LICENSE`); the Apollo Guidance Computer source it transposes is in the public domain. The patches under `sim/nassp/patches/` carry NASSP's licence.

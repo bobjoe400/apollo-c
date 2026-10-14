@@ -1,7 +1,5 @@
 # core-numeric -- fixed-point word model and interpretive arithmetic
 
-History of this lane: [history/lanes/core-numeric.md](../../history/lanes/core-numeric.md)
-
 ## Scope
 
 include/agc/core/word.h and include/agc/core/interp.h implementations, plus
@@ -57,7 +55,7 @@ interp/scalar.c, interp/trig.c, interp/vector.c, agc_vec_div.c
 
 ## Word-level MPAC API
 
-_Merged from the review-core-numeric review note (kept in [history/lanes/review-core-numeric.md](../../history/lanes/review-core-numeric.md)); the public word-level API as designed and verified in the review._
+_Merged from the review-core-numeric review note (see the git history); the public word-level API as designed and verified in the review._
 
 Requested by nav-aux, imu, prog-rendz, guid-entry, guid-landing, nav-conic
 (review_items core-numeric line). agc_dp_t keeps a value; the AGC keeps

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""guards.py -- classify every AGC_ASSERT guard (history/assignments/status-handling-2.md).
+"""guards.py -- classify every AGC_ASSERT guard.
 
 Usage (repo root):
     python3 -I tools/prove/guards.py index      # libclang index -> build/prove/index.pkl
-    python3 -I tools/prove/guards.py classify   # + EVA verdicts -> history/data/guards.tsv
+    python3 -I tools/prove/guards.py classify   # + EVA verdicts -> build/overview/guards.tsv
 
 A guard is `if (!AGC_ASSERT(c) [|| !AGC_ASSERT(d)]) { ...; return ...; }`.
 Each conjunct of its condition is a fact.  A fact is GUARANTEED when
@@ -930,6 +930,7 @@ def cmd_classify(out_path, index=INDEX):
             if m is not None and cls != 'GUARANTEED':
                 cls, why = m[0], 'by hand: ' + m[1] + ' (' + why + ')'
             rows.append((f['file'], g['line'], f['name'], kind, cond, ev_v, cls, why))
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, 'w') as fh:
         fh.write('file:line\tfunction\tkind\tcondition\teva\tclass\twhy\n')
         for r in rows:
@@ -946,7 +947,7 @@ def main(argv):
     if argv[1] == 'index':
         cmd_index()
     elif argv[1] == 'classify':
-        cmd_classify(argv[2] if len(argv) > 2 else os.path.join(ROOT, 'history', 'data', 'guards.tsv'),
+        cmd_classify(argv[2] if len(argv) > 2 else os.path.join(ROOT, 'build', 'overview', 'guards.tsv'),
                      argv[3] if len(argv) > 3 else INDEX)
     return 0
 

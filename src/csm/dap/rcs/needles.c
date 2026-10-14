@@ -45,7 +45,7 @@
  *   in the IMU error counter: EDRIVE = -AK/4 (CS QUARTER; MP AK) limited
  *   to +-384. The imu lane's agc_imu_hw_set_cducmd refuses counts beyond
  *   +-192 (the coarse-align limit), which a full needle swing exceeds:
- *   request in history/lanes/review-dap-csm.md.
+ *   a request to the imu lane.
  **********************************************************************/
 #include "../internal.h"
 

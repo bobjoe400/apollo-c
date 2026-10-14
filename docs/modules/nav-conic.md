@@ -1,7 +1,5 @@
 # nav-conic -- CONIC_SUBROUTINES.agc (+ KEPPREP, CSMCONIC/LEMCONIC conic path)
 
-History of this lane: [history/lanes/nav-conic.md](../../history/lanes/nav-conic.md)
-
 ## Scope
 
 * Comanche055 CONIC_SUBROUTINES.agc pp. 1262-1308 (Luminary099 pp. 1159-1204).

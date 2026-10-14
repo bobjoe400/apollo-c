@@ -2,8 +2,8 @@
 
 The final layout (2026-10-14, HEAD 3b97dc8). Generated companions: the
 module map with every call edge, docs/overview/README.md section 8
-(`python3 -I tools/depgraph.py`); one row per file, history/INDEX.md
-(`python3 -I tools/repo_index.py`).
+(`python3 -I tools/depgraph.py`); the call graph and one-liner tables,
+`make callgraph` (into build/overview/).
 
 ```
 include/agc/        public API, one folder per subsystem (Header layout below)
@@ -131,21 +131,15 @@ tools/              tools that work ON the tree: checks (check_rules,
                     check_style, prolog_check, always_ok, one_liners,
                     returns), format (format.sh, fix_comments), generators
                     (gen_registry + registry.tsv, xref, depgraph,
-                    repo_index, callgraph), analysis (cgast, inline_one,
-                    unwrap), agc_label, oracle/ (yaYUL, yaAGC, agc_probe and
-                    the cases), prove/ (Frama-C EVA), cocci/, archive/
-                    (finished one-offs, incl. apply_layout/)
+                    callgraph), analysis (cgast, inline_one, unwrap),
+                    agc_label, oracle/ (yaYUL, yaAGC, agc_probe and the
+                    cases), prove/ (Frama-C EVA)
 docs/               the final state of the program: guide/ (reader's guide),
                     overview/ (system overview and module map, flowcharts,
                     xref, nassp_integration study), modules/ (one
                     explanation per lane), this file, CODING_STANDARD,
                     NAMING, TRANSLATION_GUIDE, TIPS, reference/ (the
                     SEL-94-003 style guide), templates/ (prologs)
-history/            the production and planning record, kept intact: PLAN,
-                    STATE, MODULE_STATUS, STYLE (the SEL-94-003 audit),
-                    ORGANIZATION, INDEX, WORKLOG, RENAMES, assignments/,
-                    waves/, lanes/ (the lane diaries), agents/ (briefs,
-                    review_items), data/ (generated tables)
 ```
 
 ### src/nassp versus sim/nassp
@@ -297,8 +291,8 @@ cannot. How to run each is in README.md ("Status").
   size, how long a computation takes before a deadline, R22's mark pace)
   are expected deviations, listed with their traces in
   docs/modules/nassp-integration.md ("Expected deviations (timing)") and
-  not modelled (history/PLAN.md, "Principle: functional fidelity, not timing
-  emulation"). yaAGC remains the tool for timing-exact runs.
+  not modelled (principle: functional fidelity, not timing
+  emulation). yaAGC remains the tool for timing-exact runs.
 * **Scenario restore.** NASSP saves the running AGC (registers, core sets,
   VAC areas, waitlist); the C has no addresses for those, so a load
   restarts the computer (GOJAM -> GOPROG) with the erasable kept through
@@ -318,4 +312,4 @@ cannot. How to run each is in README.md ("Status").
 * **Stubs**: V27 DSPFMEM (fixed memory is not modelled) and the CM
   prelaunch IMU performance-test drift branches that end in the
   erasable-memory program LAT(SPL), which is not in the rope
-  (history/MODULE_STATUS.md).
+  (docs/modules/io-pinball.md, imu.md).

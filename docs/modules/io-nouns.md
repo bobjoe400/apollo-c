@@ -1,7 +1,5 @@
 # io-nouns -- PINBALL noun tables (PINBALL_NOUN_TABLES.agc, CSM + LM)
 
-History of this lane: [history/lanes/io-nouns.md](../../history/lanes/io-nouns.md)
-
 ## Scope
 Comanche055 pp. 268-284, Luminary099 pp. 301-319. Files: include/agc/io/nouns.h,
 src/io/dsky/nouns/tables_csm.c, noun_tables_lm.c, noun_scales.c, noun_data.c,
@@ -54,7 +52,7 @@ and not become -0. `agc_scale_info().is_dp/is_raw` tells pinball which.
 
 ## Noun write-path gaps
 
-_Merged from the review-io-dsky review note (kept in [history/lanes/review-io-dsky.md](../../history/lanes/review-io-dsky.md)); the loadable components that cannot be written._
+_Merged from the review-io-dsky review note (see the git history); the loadable components that cannot be written._
 
 Loadable (no NNTYPTAB no-load bit) components whose read works but whose
 write returns NOT_FOUND from agc_dispatch_noun (src/exec/nouns.c, not this

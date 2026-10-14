@@ -1,7 +1,5 @@
 # prog-rendz -- rendezvous programs (P17, P20-P25, P31-P39, P72-P79, P76, P21, R30, R31, R36)
 
-History of this lane: [history/lanes/prog-rendz.md](../../history/lanes/prog-rendz.md)
-
 ## Scope
 
 AGC sources (Comanche055 = CSM, Luminary099 = LM):

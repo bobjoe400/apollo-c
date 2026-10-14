@@ -5,7 +5,7 @@ ETA.  What the log does give:
 
   coverage   distinct functions EVA has finished at least once, against
              the functions reachable from the entry's main in the static
-             call graph (history/data/callgraph.tsv).  While this is
+             call graph (build/overview/callgraph.tsv).  While this is
              below 100 % the run is still discovering code and the rate
              gives a lower bound on the time to first full coverage.
   position   the call stack of the function EVA is computing right now
@@ -42,7 +42,7 @@ def reachable_from_main(entry):
     lists callee -> callers); for test entries the test file's own
     functions are not in the graph, so take every src function a test
     may call (public ones) as the upper bound."""
-    path = os.path.join(ROOT, 'history/data/callgraph.tsv')
+    path = os.path.join(ROOT, 'build/overview/callgraph.tsv')
     if not os.path.exists(path):
         return None
     callers_of = {}

@@ -44,8 +44,8 @@
  * NOTES:
  *   Interpretive DMP truncates (agc_dp_mul_trunc) and leaves the third
  *   product word in MPAC+2, which a following SL, NORM or SR shifts into
- *   the result (dmp_sl1, TP paths); DMPR rounds (agc_dp_mul). See
- *   history/lanes/review-guid-powered.md R2, R4, R7.
+ *   the result (dmp_sl1, TP paths); DMPR rounds (agc_dp_mul). Review
+ *   findings R2, R4, R7.
  *
  * ALGORITHM:
  *   As in the listing. Scales: UT half unit (2^1); VGTIG, VG, DELVREF,

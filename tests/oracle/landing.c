@@ -11,8 +11,7 @@
  *   filter outside PNGCS auto), ATMAG -> ASCENT -> P12RET, and RODCOMP
  *   up to THROTTLE +3.
  *
- *   Tolerances (LSB of the AGC word): see docs/overview/oracle-cases.md
- *   and history/lanes/review-guid-landing.md.
+ *   Tolerances (LSB of the AGC word): see docs/overview/oracle-cases.md.
  *
  * AGC SOURCE:
  *   Luminary099 THROTTLE_CONTROL_ROUTINES.agc, LUNAR_LANDING_GUIDANCE_

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """one_liners.py -- classify every one-line function (docs/CODING_STANDARD.md,
-"One-line functions"; history/assignments/status-handling-2.md step 6).
+"One-line functions").
 
 Usage (repo root):
-    python3 -I tools/one_liners.py [OUT.tsv]   # default history/data/one_liners.tsv
+    python3 -I tools/one_liners.py [OUT.tsv]   # default build/overview/one_liners.tsv
 
 A one-line function has a body of exactly one statement: a return of an
 expression or one expression statement.  Each is classified on the
@@ -162,7 +162,7 @@ def impure_set(funcs):
 
 
 def main(argv):
-    out = argv[1] if len(argv) > 1 else os.path.join(ROOT, 'history', 'data', 'one_liners.tsv')
+    out = argv[1] if len(argv) > 1 else os.path.join(ROOT, 'build', 'overview', 'one_liners.tsv')
     os.chdir(ROOT)
     labels, _ = callgraph.agc_labels()
     funcs, callers = scan()
@@ -184,6 +184,7 @@ def main(argv):
             cls = 'PLAIN'
             why = 'expression over its parameters and constants'
         rows.append((f['file'], f['line'], name, cls, callers.get(name, 0), why))
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     with open(out, 'w') as fh:
         fh.write('file:line\tfunction\tclass\tcalls\twhy\n')
         for r in rows:

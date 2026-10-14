@@ -6,10 +6,16 @@ prints erasables as octal.  `tests/oracle_*.c` compare the C translation
 against these dumps.
 
     tools/oracle/
-      bin/agc_probe, bin/yaYUL, bin/yaAGC     binaries (BUILD.md)
-      ropes/{Comanche055,Luminary099}.{bin,symtab}
+      bin/agc_probe, bin/yaYUL, bin/yaAGC     built, not tracked (BUILD.md)
+      ropes/{Comanche055,Luminary099}.bin     tracked inputs (73728 bytes each)
+      ropes/*.symtab                          generated, not tracked (11 MB each)
       cases/NAME.spec  -> cases/NAME.txt     (make cases)
       agc_probe.c, Makefile, yaAGC-src/       the driver and the engine it links
+
+Fetch and build the reference tool-chain (yaYUL, yaAGC from a sparse clone of
+virtualagc into build/virtualagc, GNU make only) and write the symbol tables
+with `make oracle-tools` at the repository root (or `make tools` here);
+`make cases` does the symbol tables on demand.  bin/agc_probe is `make` here.
 
 ## 1. Requesting a case (module agents)
 

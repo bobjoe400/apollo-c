@@ -11,7 +11,7 @@
  *   Comanche055 ERASABLE_ASSIGNMENTS.agc pp. 46-68 (FLAGWRD0..FLGWRD11)
  *   Luminary099 FLAGWORD_ASSIGNMENTS.agc pp. 61-88 (FLAGWRD0..FLGWRD13)
  *   Every enumerator value was checked against the assembled symbol
- *   tables of both ropes (history/lanes/review-state-flags.md).
+ *   tables of both ropes.
  *
  * REQUIRES:
  *   none (includes agc/core/state.h for agc_flag_id_t)

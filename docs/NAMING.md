@@ -52,7 +52,7 @@ satisfy ALL of the following:
    tree and docs/NAMING.md; reuse an existing stem. The job id, the job
    function, the file and the test share the stem:
    `AGC_JOB_ENTRY_UPCONTROL`, `agc_job_entry_upcontrol`, `entry_programs.c`.
-8. **Map first, apply second.** Write history/RENAMES.md completely (old |
+8. **Map first, apply second.** Write the rename map completely (old |
    new | file | AGC comment used), have it reviewed, then apply with
    word-boundary replacement in one pass over the whole tree.
 
@@ -159,7 +159,7 @@ itself is a number-free word (KEPLER, LAMBERT, SERVICER, CALCGTA) keep it.
 | S40.15 | CSM     | tvc_gains         | TVC DAP gains 1/CONACC, VARK                      |
 | V68    | CSM     | stroke_test       | TVC stroke test (STRKTSTI job keeps its label)    |
 
-### Added by naming (phase 1 map, history/RENAMES.md)
+### Added by naming (phase 1 map)
 
 | AGC     | Vehicle | Identifier stem              | AGC description                                         |
 |---------|---------|------------------------------|---------------------------------------------------------|

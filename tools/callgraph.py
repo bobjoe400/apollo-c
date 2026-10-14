@@ -3,7 +3,7 @@
 
 Usage (from the repo root; `make callgraph` does all of this):
     python3 -I tools/callgraph.py --ci-dir build/callgraph \
-        --cflow build/callgraph/cflow.txt --out history/data
+        --cflow build/callgraph/cflow.txt --out build/overview
 
 Inputs
   * GCC -fcallgraph-info=su,da VCG files (one .ci per TU, src/ and tests/,
@@ -142,7 +142,7 @@ def agc_label_refs():
     token equal to the label (TC, TCF, BZF, BZMF, CCS/INDEX tables, CADR,
     2CADR, ADRES, interpretive GOTO/CALL/BON operands ...), the defining
     label field and comments excluded.  The refined collapse rule
-    (history/assignments/collapse.md): a label entered from fewer than 2 places
+    (collapse candidates): a label entered from fewer than 2 places
     protects nothing."""
     if REFS:
         return REFS
@@ -465,7 +465,7 @@ def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument('--ci-dir', default='build/callgraph')
     ap.add_argument('--cflow', default='build/callgraph/cflow.txt')
-    ap.add_argument('--out', default='history/data')
+    ap.add_argument('--out', default='build/overview')
     opt = ap.parse_args(argv[1:])
     os.chdir(ROOT)
 

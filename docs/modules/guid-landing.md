@@ -1,7 +1,5 @@
 # guid-landing -- Luminary landing, aborts, ascent, throttle, FINDCDUW
 
-History of this lane: [history/lanes/guid-landing.md](../../history/lanes/guid-landing.md)
-
 ## Scope
 
 Luminary 099 only. AGC sources (pages are the Luminary 1A listing pages):

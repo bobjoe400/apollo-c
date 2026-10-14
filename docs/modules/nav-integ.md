@@ -1,7 +1,5 @@
 # nav-integ -- INTEGRATION_INITIALIZATION + ORBITAL_INTEGRATION
 
-History of this lane: [history/lanes/nav-integ.md](../../history/lanes/nav-integ.md)
-
 ## Scope
 
 Comanche055 INTEGRATION_INITIALIZATION.agc (pp. 1309-1333) and

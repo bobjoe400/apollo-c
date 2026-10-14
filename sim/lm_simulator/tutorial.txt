@@ -85,7 +85,7 @@ wait 2
 # From the first detent on, the closed loop (real-time AGC, Tcl simulator,
 # host scheduling, RHC timing) is not repeatable: two yaAGC runs differ by
 # up to 1.1 deg/s in the rate after a detent, 13 deg in attitude and 90
-# needle counts (history/lanes/closed-loop-fixes.md, "lm-sim
+# needle counts (the git log, "lm-sim
 # repeatability").  There the AGCs are compared on what is repeatable --
 # the displays and alarms, the jets used, the rate during a deflection --
 # and each AGC is checked on its own to hold its attitude (hold=R: every
@@ -168,7 +168,7 @@ wait 1
 # WAITLIST ends in POODOO 1204; the software restart (ENEMA) blanks the
 # DSKY (STARTSB2 DSPOFF), MMDSPLAY's DSPMMJOB lands in core set 0 and
 # GOP00FIX, run on by the restart code, sleeps in that core set: PROG
-# stays blank under the V37 flash (history/lanes/closed-loop-fixes.md D1).
+# stays blank under the V37 flash.
 keys V37E00E
 wait 2
 keys R

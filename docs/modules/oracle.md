@@ -1,7 +1,5 @@
 # oracle -- Virtual AGC differential-test rig
 
-History of this lane: [history/lanes/oracle.md](../../history/lanes/oracle.md)
-
 ## Scope
 
 Build yaYUL and yaAGC, assemble the Apollo 11 ropes, and provide

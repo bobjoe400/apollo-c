@@ -20,8 +20,8 @@ Companion documents:
 * [../TIPS.md](../TIPS.md) -- what the translation taught, by topic.
 * [../modules/](../modules) -- one note per lane; each translation lane
   has a "Program flow and decisions" section (flags tested, alarms,
-  branches, data with scale, AGC labels -> C functions). The lanes'
-  process diaries are in [../history/lanes/](../../history/lanes/README.md).
+  branches, data with scale, AGC labels -> C functions). The
+  development record is the git log.
 * The module map at the end of this page is generated from the compiler's
   call graph (`python3 -I tools/depgraph.py`).
 
@@ -146,7 +146,7 @@ reschedules itself with CHANG1 runs at most once a centisecond
 (`src/exec/executive.c:agc_exec_run_one`). Behaviours that exist only
 because of execution time (1201/1202 overloads, how long a computation
 takes before a deadline) are expected deviations, not modelled
-(history/PLAN.md, "Principle: functional fidelity, not timing emulation"). INHINT/RELINT are counted (`agc_inhint`, `agc_relint`) so nested
+(principle: functional fidelity, not timing emulation). INHINT/RELINT are counted (`agc_inhint`, `agc_relint`) so nested
 C calls keep interrupts inhibited until the outermost RELINT.
 
 ## 4. Erasable memory and flags

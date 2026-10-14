@@ -1,7 +1,5 @@
 # dap-csm -- CSM RCS and TVC digital autopilots (Comanche055)
 
-History of this lane: [history/lanes/dap-csm.md](../../history/lanes/dap-csm.md)
-
 ## Scope
 
 Comanche055 files (pages): RCS-CSM_DIGITAL_AUTOPILOT (1002-1024),
@@ -76,7 +74,7 @@ LEMMASS, IMODES33, THETAD) and flags from agc_flags_csm.h.
 - restarts.c CMDSOUT: the AGC writes -0 + PCMD to avoid a +0 command word. -0 is not represented.
 - mysubs.c DV: overflow (|dividend| >= |divisor|) is limited to +-POSMAX. The AGC result is undefined.
 - mysubs.c DPADD: the ones' complement +-0 handling in the "upper = 0" branches has the same value but is not modelled bit for bit; a sum of exactly +-180 deg gives POSMAX, POSMAX as in the AGC (review-dap-csm).
-- DAS/DDOUBL (mysubs.c) wrap on overflow like the AGC's overflow-corrected DAS. A large filter memory can therefore wrap DAP1 instead of saturating (see Lessons in [the lane history](../../history/lanes/dap-csm.md)).
+- DAS/DDOUBL (mysubs.c) wrap on overflow like the AGC's overflow-corrected DAS. A large filter memory can therefore wrap DAP1 instead of saturating (see Lessons in the git history).
 
 ## Stubs
 None. Every routine in scope is translated.

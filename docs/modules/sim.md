@@ -1,9 +1,7 @@
 # sim -- host harness: clock/interrupt driver + yaAGC peripheral protocol
 
-History of this lane: [history/lanes/sim.md](../../history/lanes/sim.md)
-
 ## Scope
-history/assignments/sim.md, REVISED SCOPE (2026-10-10): build/agc_sim drives the
+build/agc_sim drives the
 translated flight software with our own clock and interrupt driver and talks
 to Virtual AGC peripherals (yaDSKY2, yaTelemetry, ...) with yaAGC's socket
 protocol, so they connect to it as to yaAGC. No DSKY console, no device

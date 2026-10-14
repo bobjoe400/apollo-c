@@ -1,7 +1,5 @@
 # guid-powered -- powered-flight guidance (P30s, P40s, SERVICER, BURNBABY)
 
-History of this lane: [history/lanes/guid-powered.md](../../history/lanes/guid-powered.md)
-
 ## Scope
 
 | AGC file (Comanche055 / Luminary099)                       | C file |

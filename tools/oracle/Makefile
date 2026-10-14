@@ -3,6 +3,8 @@
 #
 #   make            build bin/agc_probe
 #   make cases      run every cases/*.spec -> cases/*.txt
+#   make tools      fetch + build yaYUL/yaAGC and write the rope symbol tables
+#                   (the project Makefile's oracle-tools; untracked outputs)
 #   make clean
 #
 # YAAGC_SRC may point at a virtualagc checkout's yaAGC/ directory instead of
@@ -19,7 +21,7 @@ ENGINE_CFLAGS := -O2 -w -DNVER='""' -DINSTALLDIR='""'
 SPECS := $(wildcard cases/*.spec)
 OUTS  := $(SPECS:%.spec=%.txt)
 
-.PHONY: all cases clean
+.PHONY: all cases tools clean
 all: bin/agc_probe
 
 bin/agc_probe: agc_probe.c $(ENGINE_OBJS) | bin
@@ -31,9 +33,15 @@ $(BUILD)/%.o: $(YAAGC_SRC)/%.c | $(BUILD)
 $(BUILD) bin:
 	mkdir -p $@
 
+tools:
+	$(MAKE) -C ../.. oracle-tools
+
+ropes/%.symtab:
+	$(MAKE) -C ../.. tools/oracle/ropes/$*.symtab
+
 cases: $(OUTS)
 
-cases/%.txt: cases/%.spec bin/agc_probe
+cases/%.txt: cases/%.spec bin/agc_probe ropes/Comanche055.symtab ropes/Luminary099.symtab
 	AGC_ORACLE_ROPES=ropes ./bin/agc_probe < $< > $@ || (cat $@; false)
 
 clean:

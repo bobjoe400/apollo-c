@@ -1,7 +1,5 @@
 # sys-misc -- module note
 
-History of this lane: [history/lanes/sys-misc.md](../../history/lanes/sys-misc.md)
-
 ## Scope
 
 T4RUPT_PROGRAM, EXTENDED_VERBS, DOWNLINK_LISTS, DOWN_TELEMETRY_PROGRAM,
@@ -13,7 +11,7 @@ Public API of this lane: `include/agc/io/service_internal.h`.  Symbols owned
 by other lanes / not yet in include/agc are declared in
 `src/io/service/sysmisc_ext.h` (service/T4RUPT side) and
 `src/io/verbs/pending.h` (verbs side, with the provisional job ids); see
-"Requested core additions" / "Requested jobs-tasks" ([the lane history](../../history/lanes/sys-misc.md)).
+"Requested core additions" / "Requested jobs-tasks" (the git history).
 
 ## Design table
 

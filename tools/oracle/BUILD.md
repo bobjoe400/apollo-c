@@ -1,5 +1,11 @@
 # Building the oracle tool-chain
 
+`make oracle-tools` (repository root) performs every step below: sparse clone
+of virtualagc at the commit named here into build/virtualagc, yaYUL and yaAGC
+into tools/oracle/bin/, both ropes assembled and the symbol tables written to
+tools/oracle/ropes/ (the assembled .bin is compared with the tracked one).  The
+binaries and symbol tables are not tracked.  The manual steps follow.
+
 Sources: clone of https://github.com/virtualagc/virtualagc at commit
 c239e9c96ebd52b81c1834cd91d12827bec7f620 (2026-10-09), referred to as
 `$SRC/virtualagc` below.  Host: Debian 12, gcc 12.2.0, GNU make.  `cmake` is
@@ -10,7 +16,7 @@ instead of the top-level CMake build (only yaYUL and yaAGC are needed, no GUI).
 
     cd $SRC/virtualagc/yaYUL
     make NATIVE=yes cc=gcc NVER='""'
-    cp yaYUL /home/cooperdesktop/git/apollo-c/tools/oracle/bin/
+    cp yaYUL tools/oracle/bin/
 
 (`cc=gcc`: the Makefile uses the lower-case variable `${cc}` that the
 top-level Makefile normally sets.  `NATIVE=yes` disables the IMCROSS
@@ -20,7 +26,7 @@ cross-compiler prefixes.)  No missing packages.
 
     cd $SRC/virtualagc/yaAGC
     make NATIVE=yes cc=gcc NVER='""' yaAGC
-    cp yaAGC /home/cooperdesktop/git/apollo-c/tools/oracle/bin/
+    cp yaAGC tools/oracle/bin/
 
 readline is permanently disabled by the Makefile (`NOREADLINE=yes`), so no
 dev packages were needed.  The build also produces `libyaAGC.a`.

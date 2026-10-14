@@ -1,7 +1,5 @@
 # imu -- IMU moding, compensation, alignment, attitude maneuvers
 
-History of this lane: [history/lanes/imu.md](../../history/lanes/imu.md)
-
 ## Scope
 AGC sources (CM = Comanche055, LM = Luminary099):
 * IMU_MODE_SWITCHING_ROUTINES.agc (CM pp.1420-1448, LM pp.1309-1337) -> src/imu/mode.c
@@ -93,7 +91,7 @@ tests/imu/imu.c.
 
 ## Deviations found in review
 
-_Merged from the review-imu review note (kept in [history/lanes/review-imu.md](../../history/lanes/review-imu.md)); deviations beyond those above._
+_Merged from the review-imu review note (see the git history); deviations beyond those above._
 
 * MODECADR -0 stored as -2 (agc_imu_modecadr_bzf for BZF tests).
 * GOODEND on a negative MODECADR resets it (Luminary) for both vehicles.

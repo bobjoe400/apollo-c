@@ -1,7 +1,5 @@
 # oracle-cases -- yaAGC differential cases for the numeric modules
 
-History of this lane: [history/lanes/oracle-cases.md](../../history/lanes/oracle-cases.md)
-
 ## Scope
 
 Definition-of-done item 6: per numeric module, a spec
@@ -310,6 +308,13 @@ generators tools/oracle/cases/gen/gen_*.py (+ agcw.py, snip.py,
 specgen.py, dvcheck.sh, dsky_show.py). `make test` builds and runs them;
 a missing case file prints SKIP. After editing oracle_txt.h touch the
 tests (the test rule has no header dependency).
+
+How to run: the .txt dumps are tracked, so `make test` needs nothing else.
+To regenerate them (or run a new spec), `make oracle-tools` fetches and builds
+Virtual AGC's yaYUL and yaAGC (sparse clone into build/virtualagc, GNU make)
+into tools/oracle/bin/ and writes the rope symbol tables to tools/oracle/ropes/
+(tracked: the two 73728-byte .bin rope images; not tracked: binaries and the
+11 MB .symtab files); then `make -C tools/oracle cases`.
 
 ## Program flow and decisions
 

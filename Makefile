@@ -18,12 +18,12 @@ SIM_OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SIM_SRCS))
 TEST_SRCS := $(shell find tests -name '*.c' | sort)
 TEST_BINS := $(patsubst tests/%.c,$(BUILD)/tests/%,$(TEST_SRCS))
 
-# NASA SEL-94-003 style (history/STYLE.md): Uncrustify 0.72 + tools/check_style.py
+# NASA SEL-94-003 style (docs/CODING_STANDARD.md): Uncrustify 0.72 + tools/check_style.py
 UNCRUSTIFY     ?= uncrustify
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim sim-debug scenarios lm-sim nassp-replay nassp-mission test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report always-ok-report clean
+.PHONY: all lib lib-debug sim sim-debug scenarios lm-sim nassp-replay nassp-mission test check check-rules format format-check style style-report lint callgraph oracle-tools prove prove-classify compile_commands prolog-report always-ok-report clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -69,13 +69,15 @@ LMSIM_REV  := c239e9c96ebd52b81c1834cd91d12827bec7f620
 LMSIM_REPO := $(BUILD)/virtualagc
 LMSIM_DIR  ?= $(LMSIM_REPO)/Contributed/LM_Simulator
 LMSIM_ARGS ?=
+# The same checkout also serves the oracle tool-chain (oracle-tools below).
+VA_DIRS    := Contributed/LM_Simulator yaYUL yaAGC yaDSKY yaDEDA Tools Comanche055 Luminary099
 lm-sim: $(BUILD)/agc_sim $(if $(filter $(LMSIM_REPO)/%,$(LMSIM_DIR)),$(LMSIM_REPO)/Contributed/LM_Simulator/lm_simulator.tcl)
 	python3 -I sim/lm_simulator/lm_sim.py --lmsim $(LMSIM_DIR) --sim $(BUILD)/agc_sim --sequence sim/lm_simulator/tutorial.txt --out $(BUILD)/lm_sim $(LMSIM_ARGS)
 
 $(LMSIM_REPO)/Contributed/LM_Simulator/lm_simulator.tcl:
 	@rm -rf $(LMSIM_REPO)
 	git clone --quiet --filter=blob:none --no-checkout https://github.com/virtualagc/virtualagc $(LMSIM_REPO)
-	git -C $(LMSIM_REPO) sparse-checkout set Contributed/LM_Simulator
+	git -C $(LMSIM_REPO) sparse-checkout set $(VA_DIRS)
 	git -C $(LMSIM_REPO) checkout --quiet $(LMSIM_REV)
 
 # NASSP 9 scenario images (sim/nassp/images) replayed on our AGC through the NASSP
@@ -150,11 +152,11 @@ style-report:
 lint:
 	@command -v cppcheck >/dev/null && cppcheck --std=c11 --enable=warning,style,performance,portability --error-exitcode=1 -Iinclude src || echo "cppcheck not installed"
 
-# Call graph from the compiler (history/assignments/collapse.md): every src/ and
+# Call graph from the compiler: every src/ and
 # tests/ TU compiled at -O0 -fno-inline with -fcallgraph-info=su,da (GCC
 # writes one VCG .ci file next to each object), cflow for the cross-TU
 # cross-check, libclang (inside the script) for extents and guard ASTs.
-# Writes history/data/callgraph.{tsv,dot} and collapse_candidates.tsv.
+# Writes build/overview/callgraph.{tsv,dot} and collapse_candidates.tsv.
 CG_DIR   := $(BUILD)/callgraph
 CG_SRCS  := $(shell find src -name '*.c' -not -path 'src/nassp/*' | sort)
 CG_TESTS := $(shell find tests -name '*.c' | sort)
@@ -163,7 +165,7 @@ CG_CIS   := $(patsubst %.c,$(CG_DIR)/%.ci,$(CG_SRCS) $(CG_TESTS))
 callgraph: $(CG_CIS)
 	cflow -b --omit-arguments --no-main -i s $(CG_SRCS) > $(CG_DIR)/cflow.txt 2>/dev/null
 	python3 -I tools/callgraph.py --ci-dir $(CG_DIR) --cflow $(CG_DIR)/cflow.txt \
-	    --out history/data
+	    --out build/overview
 
 $(CG_DIR)/src/%.ci: src/%.c
 	@mkdir -p $(dir $@)
@@ -173,7 +175,37 @@ $(CG_DIR)/tests/%.ci: tests/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CSTD) $(WARN) -O0 -fno-inline $(CPPFLAGS) -DAGC_HOST_DEBUG -fcallgraph-info=su,da -c -o $(@:.ci=.o) $<
 
-# Boundary-check discipline (history/waves/status-handling-2.md): Frama-C EVA
+# The oracle's reference tool-chain (tools/oracle/BUILD.md): Virtual AGC's
+# yaYUL (assembler) and yaAGC (emulator) built from the sparse checkout above
+# into tools/oracle/bin/, and the two rope symbol tables (tools/oracle/ropes/
+# *.symtab) written by assembling Comanche055 and Luminary099 with it.  None
+# of these is tracked; the rope images (*.bin) are small inputs and are.
+# Plain GNU make (no cmake).  Fetch on first use; ~1 minute.
+VA_SRC := $(LMSIM_REPO)
+ORACLE_BIN := tools/oracle/bin
+ORACLE_ROPES := Comanche055 Luminary099
+oracle-tools: $(ORACLE_BIN)/yaYUL $(ORACLE_BIN)/yaAGC $(patsubst %,tools/oracle/ropes/%.symtab,$(ORACLE_ROPES))
+
+$(VA_SRC)/yaYUL/Makefile:
+	@if [ ! -d $(VA_SRC)/.git ]; then \
+	  git clone --quiet --filter=blob:none --no-checkout https://github.com/virtualagc/virtualagc $(VA_SRC); fi
+	git -C $(VA_SRC) sparse-checkout set $(VA_DIRS)
+	git -C $(VA_SRC) checkout --quiet $(LMSIM_REV)
+
+$(ORACLE_BIN)/yaYUL: $(VA_SRC)/yaYUL/Makefile
+	$(MAKE) -C $(VA_SRC)/yaYUL NATIVE=yes cc=gcc NVER='""'
+	mkdir -p $(ORACLE_BIN) && cp $(VA_SRC)/yaYUL/yaYUL $@
+
+$(ORACLE_BIN)/yaAGC: $(VA_SRC)/yaYUL/Makefile
+	$(MAKE) -C $(VA_SRC)/yaAGC NATIVE=yes cc=gcc NVER='""' yaAGC
+	mkdir -p $(ORACLE_BIN) && cp $(VA_SRC)/yaAGC/yaAGC $@
+
+tools/oracle/ropes/%.symtab: $(ORACLE_BIN)/yaYUL
+	cd $(VA_SRC)/$* && $(CURDIR)/$(ORACLE_BIN)/yaYUL --unpound-page MAIN.agc > $*.lst
+	cp $(VA_SRC)/$*/MAIN.agc.symtab $@
+	cmp $(VA_SRC)/$*/MAIN.agc.bin tools/oracle/ropes/$*.bin
+
+# Boundary-check discipline: Frama-C EVA
 # proves or refutes every AGC_ASSERT, one analysis per entry point (each test
 # main, with the whole library; agc_sim's unbounded main is not one, see
 # tools/prove/eva_run.py), two at a time, 60 min each; it runs detached.
@@ -181,7 +213,7 @@ $(CG_DIR)/tests/%.ci: tests/%.c
 # tools/prove/progress.log (one line per run) and tools/prove/summary.txt
 # (done/total, verdicts, ETA).  When it has finished, `make prove-classify`
 # merges the verdicts with the libclang call-site classification into
-# history/data/guards.tsv: a guard left in src/ must be FALLIBLE
+# build/overview/guards.tsv: a guard left in src/ must be FALLIBLE
 # (classified GUARANTEED means it is dead code).
 prove:
 	@mkdir -p $(BUILD)/prove

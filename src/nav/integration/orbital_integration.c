@@ -51,7 +51,7 @@
  *   GAMCOMP, COMTERM, QUALITY1-3 and the OBLATE tail run on AGC words
  *   (agc_mpac_*, agc_vec_words_t): DSU/BDSU/DAD results whose words disagree
  *   in sign feed DMP, DMPR, VXSC and VSR exactly as the AGC holds them
- *   (history/lanes/review-nav-integ.md N8).
+ *   (review finding N8).
  *
  * ALGORITHM:
  *   One time step: TIMESTEP (origin / rectification test); INTGRATE

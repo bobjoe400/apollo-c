@@ -148,17 +148,15 @@ in the rope (chapter 1).
 ## 12.4 Where the history lives
 
 This guide and the rest of `docs/` describe the program as it is. How
-it was made -- the plan, the order of work, the assignments of the
-agents that translated each part, the reviews, every bug and how it was
-found -- is kept separately in `history/` (`history/README.md`):
+it was made -- the order of work, the reviews, every bug and how it was
+found -- is in the git log:
 
-* `history/WORKLOG.md`, the lead's running log;
-* `history/lanes/`, one diary per translation or review lane, with its
-  findings and lessons;
-* `history/waves/`, the notes of each tree-wide pass (naming, layout,
-  status handling, formatting);
-* `history/PLAN.md` and `history/STATE.md`, the plan with its definition
-  of done and the final state.
+* `git log --stat -- src/<area>` shows how a part was translated and
+  every later fix to it;
+* `git log --grep=review` (or the module name) finds the review passes
+  and their findings;
+* `git log -S<symbol>` finds the commit that introduced or removed a
+  name or a constant.
 
 `docs/TIPS.md` distils what translating AGC assembly taught, by topic,
 for anyone who wants to do the same for another rope.

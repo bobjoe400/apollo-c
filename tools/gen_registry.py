@@ -26,7 +26,7 @@ Outputs (both carry a GENERATED banner; edit the table, not the files):
   order (rule 9: no function pointers; each rope has its own labels), or
   `case AGC_JOB_X: agc_job_x(ctx); return (AGC_STATUS_OK);` for a handler
   that cannot fail and is declared void (rule 7), each
-  with a boxed prolog (history/STYLE.md).  The file carries the rule 4
+  with a boxed prolog (docs/CODING_STANDARD.md).  The file carries the rule 4
   exemption marker.  An id with no function on the vehicle being flown
   returns AGC_STATUS_NOT_FOUND.
 

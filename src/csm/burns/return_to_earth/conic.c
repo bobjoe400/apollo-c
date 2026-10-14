@@ -42,7 +42,7 @@
  *
  * NOTES:
  *   AUGEKUGL is a local copy (guid-powered's external_delta_v.c has
- *   another; request in history/lanes/review-guid-entry.md). DEVIATION: the
+ *   another). DEVIATION: the
  *   AGC walks the K1/K2 table with index registers; the C selects the same
  *   rows by speed band. DOT SL1 keeps the TP MPAC (CFPA, GAMMAEI, GAMMAE).
  **********************************************************************/

@@ -6,8 +6,7 @@
  *   INITVEL (conic, earth and moon, and one precision iteration through
  *   INTEGRVS), CDHMVR (the CDH maneuver of P32/P33) and S34/35.2 (the
  *   TPI required velocity: INTINT, ACTCENT, INITVEL, LOMAT -> DELVLVC).
- *   Tolerances (LSB of the AGC word): see docs/overview/oracle-cases.md
- *   and history/lanes/review-prog-rendz.md.
+ *   Tolerances (LSB of the AGC word): see docs/overview/oracle-cases.md.
  *
  * AGC SOURCE:
  *   Comanche055 P34-35_P74-75.agc, P32-P33_P72-P73.agc. Inputs and

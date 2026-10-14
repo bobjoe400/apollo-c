@@ -1,12 +1,10 @@
 # TIPS.md -- tips and tricks for translating AGC assembly into C
 
-Consolidated 2026-10-12 (documentation wave, PLAN.md item 9e) from the
-"Lessons" section of every note in docs/modules/ (now moved to
-history/lanes/), deduplicated and
+Consolidated 2026-10-12 from the
+"Lessons" section of every lane note, deduplicated and
 organised by topic. Each tip keeps the first-hand example that taught it;
 the lane in parentheses is where to read the full story
-(history/lanes/<lane>.md for the diary, docs/modules/<lane>.md for the explanation, or history/waves/<lane>.md for the
-tree-wide passes). Brought up to date 2026-10-14 (final documentation
+(docs/modules/<lane>.md for the explanation; the git log for the diary). Brought up to date 2026-10-14 (final documentation
 pass) with the Lessons of the notes written after the wave:
 nassp-integration (the mission), telemetry, structure, organize, layering
 and style-final. The translation rules the mission taught are also in
@@ -266,12 +264,12 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
   it sits at the top of the module graph). Map whole blocks: restoring only RN/VN
   left RCV/DELTAV at 0 and P00 integration exited at once; the 42-word
   state vector blocks, LAT/LONG/ALT and LAT(SPL)/LNG(SPL) (HA/HP were 5
-  nmi high without them) all had to be in it (WORKLOG, NASSP milestone 1).
+  nmi high without them) all had to be in it (NASSP milestone 1).
 * **Mixed-sign words survive a load.** V71 stores a DP or TP one word at a
   time; keep the raw words as loaded and rebuild the typed value from all
   of them; refresh the raw words from the typed value only for elements
   whose value changed, or the AGC's sign-disagreeing words are lost
-  (address_map.c sync_entry, WORKLOG milestone 1). Compare an element by
+  (address_map.c sync_entry, NASSP milestone 1). Compare an element by
   its bits against the shadow the map last saw, not by value against the
   raw image: values hide -0 vs +0 (CMDAPMOD) (telemetry).
 * **A scenario restore loses every erasable the map does not carry.**

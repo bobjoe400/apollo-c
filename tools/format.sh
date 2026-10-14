@@ -1,5 +1,5 @@
 #!/bin/sh
-# format.sh -- the project formatter pipeline (history/STYLE.md).
+# format.sh -- the project formatter pipeline (docs/CODING_STANDARD.md).
 #
 #   tools/format.sh FILE...           rewrite the files in place
 #   tools/format.sh --check FILE...   format copies; list each file that

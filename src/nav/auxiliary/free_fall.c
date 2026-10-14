@@ -439,8 +439,8 @@ static agc_status_t tff_general(agc_interp_t *ip, agc_tff_t *tff, agc_dp_words_t
  **********************************************************************/
 static agc_status_t tff_z(agc_interp_t *ip, agc_tff_t *tff, agc_dp_words_t num, agc_dp_words_t den, agc_dp_t q2, agc_dp_t *t_cs)
 {
-    const agc_dp_words_t lim_m22 = {AGC_SP_MAX, 16320}; /* LIM(-22) 2OCT 3777737700: 1 - 2^-22 */
-    const agc_dp_words_t dp_m22  = {0, DP_M22};         /* DP(-22) 2OCT 0000000100: 2^-22 */
+    const agc_dp_words_t lim_m22 = {AGC_SP_MAX, 16320};    /* LIM(-22) 2OCT 3777737700: 1 - 2^-22 */
+    const agc_dp_words_t dp_m22  = {0, (agc_sp_t) DP_M22}; /* DP(-22) 2OCT 0000000100: 2^-22 */
 
     tff->tffx = agc_dp_from_words(num);
 

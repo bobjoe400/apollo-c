@@ -1,7 +1,5 @@
 # guid-entry -- Comanche entry (P61-P67), entry DAP, CM body attitude, P37, P11
 
-History of this lane: [history/lanes/guid-entry.md](../../history/lanes/guid-entry.md)
-
 ## Scope
 Comanche055 only: ENTRY_LEXICON, REENTRY_CONTROL, P61-P67, CM_BODY_ATTITUDE,
 CM_ENTRY_DIGITAL_AUTOPILOT, P37_P70, P11. Output in src/csm/ plus the public
@@ -15,7 +13,7 @@ Files:
 * include/agc/csm/entry_lexicon.h/.c -- constants with scales; the static entry state
 * include/agc/csm/entry_internal.h -- prototypes shared between files of this lane only
 * include/agc/csm/entry_pending.h -- PENDING core symbols (flags, accessors, DSKY, nav,
-  IMU, job/task ids). Delete at integration; see "Requested core additions" in [the lane history](../../history/lanes/guid-entry.md).
+  IMU, job/task ids). Delete at integration; see "Requested core additions" in the git history.
 * src/csm/entry/reentry.c, programs.c, cm_body_attitude.c, dap.c, src/csm/burns/return_to_earth/program.c, earth_orbit_insertion.c
 * tests/csm/entry.c
 

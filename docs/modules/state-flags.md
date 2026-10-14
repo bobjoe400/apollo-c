@@ -1,7 +1,5 @@
 # state-flags -- module note
 
-History of this lane: [history/lanes/state-flags.md](../../history/lanes/state-flags.md)
-
 ## Scope
 
 The shared state layer: flagword bit enums, the I/O channel image and bit
@@ -28,7 +26,7 @@ Files: `include/agc/core/flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
 
 ### Flag naming and headers
 
-* C name `AGC_FLAG_<AGCNAME>`: upper case, `/`, `-`, `.` -> `_` (per `history/agents/_common.md`):
+* C name `AGC_FLAG_<AGCNAME>`: upper case, `/`, `-`, `.` -> `_`:
   `.05GSW` -> `AGC_FLAG__05GSW`, `CM/DSTBY` -> `AGC_FLAG_CM_DSTBY`, `P39/79SW` ->
   `AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE`, `S32.1F1` -> `AGC_FLAG_S32_1F1`, `ACC4-2FL` -> `AGC_FLAG_ACC4_2FL`.
 * Each header comment gives the AGC name, flagword, bit number, AGC decimal number nnnD,
@@ -73,7 +71,7 @@ Files: `include/agc/core/flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
   13 (S-IVB injection sequence start); channel 30 bits 1-4, 6 (ullage thrust, CM/SM separate,
   SPS ready, S-IVB separate/abort, guidance reference release); channel 32 bits 1-6 (minimum
   impulse, read by FREECONT) and 11 (LM attached); channel 33 bits 4/5 renamed ZEROOPTICS /
-  CMCOPTICS (OPTMON). CSM-unused bits say so. See history/lanes/review-state-flags.md.
+  CMCOPTICS (OPTMON). CSM-unused bits say so.
 * Inverted logic: channels 030-033 read ZERO when a signal is present. The image stores what
   READ returns (power-up 077777). `agc_chan_set_input` takes the raw sensed value;
   `agc_chan_set_signal(chan, mask, present)` does the inversion (requested addition, now in the header).

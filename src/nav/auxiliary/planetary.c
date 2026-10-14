@@ -42,7 +42,7 @@
  * NOTES:
  *   NEWANGLE can leave an angle as a sign-disagreeing word pair; SIN/COS
  *   of it differ by 1 LSB from the joined value (agc_dp_t cannot carry
- *   the split): MOONMX <= 4 LSB, history/lanes/review-nav-aux.md.
+ *   the split): MOONMX <= 4 LSB.
  *
  * ALGORITHM:
  *   See PURPOSE; each function prolog gives its AGC formula.
