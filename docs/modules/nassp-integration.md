@@ -435,6 +435,28 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   it: "# dsky-latency" (V06N3 then '6': noun 36 in the mirror within 0.2 s; ours was 0.71 s,
   stock 0.09-0.11 s, failing first). Dev runs before this change read our DSKY late; PDI,
   liftoff and entry dev runs are repeated with it (stock runs need not be: unchanged).
+- DONE milestone 10 (entry, scenario 14, headless, frozen scripts and tolerances, 2026-10-13;
+  ours with bugs 12-13 fixed and the cs display mirror): EI GET 702246.3 both; P64 EI+29 / +28 s;
+  P67 +139 / +138 s; max 6.20 / 6.22 g at EI+82 s; drogues EI+467 s both (12189 / 12167 m);
+  splashdown EI+866 / +865 s at -172.2510 / 10.8860 vs -172.2570 / 10.8731 deg. Events and end
+  state match except P63 30 s earlier (EI-600 vs -570 s); outside the stock envelope: mass
+  1.240 kg (tol 1.23) at EI+172 s; every other column inside (alt 304 m of 821, lng 0.012 deg
+  of 0.042, lat 0.013 of 0.033). Root cause of both (runs/{ref,agc}_entdiag, entdiag.lua): at
+  sim 4012 both builds release CMC attitude control (HOLDFLAG POSMAX on both, GDC alignment
+  sheet) and the CM drifts with the rate of its deadband limit cycle at that moment: stock at a
+  rate reversal, ours mid-drift (CDU Y +14 counts/10 s; 0.8 deg apart before, inside the
+  deadband). 3000 s later the attitudes differ by ~60 deg, so P62.1's CMDAPMOD test (P61-P67
+  p. 794) takes ours straight to P63 where stock waits for WAKEP62; the entry DAP brings both
+  to the same trajectory (mass: RCS used).
+- Findings kept open (2026-10-13): (1) C jobs cost no AGC time: R60's KALCMANU for a small
+  maneuver (NOGO) ends at once on ours where yaAGC's interpreter takes 1-2 s, so the entry
+  script's PRO check sees F50N18 again and falls back to V33E; same class as the liftoff 01703
+  slip. (2) After the load restart our CMC does not drive the optics CDUs (channel 14 70040 vs
+  stock 76040 from t = 0; a GOJAM drops the drive the image had). (3) THETAD from a normalised
+  CDUXD can differ by one count from the AGC's DPADD upper word. (4) Shim: a scenario load fed
+  the image's channel 015 key code to KEYRUPT, lighting OPR ERR at every load on ours; fixed
+  (015/016 stored without KEYRUPT before the first GOJAM; nassp-replay "# oprerr-at-load",
+  4 of 5 images failed before).
 - Saturn console mode (2026-10-13, about 25 min of the 60 allowed): bisected with oapiWriteLog
   markers to Saturn::clbkPostStep's unguarded `oapiCameraInternal() && oapiCockpitMode()` (VC
   animations): with no graphics client the camera query faults in Orbiter.exe. Fix:

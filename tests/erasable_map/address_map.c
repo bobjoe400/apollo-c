@@ -481,7 +481,8 @@ static void test_vectors_stored(void)
  * TIG-30 (flight bug 14): RN1, VN1 (6 words each), PIPTIME1, GDT1/2 and
  * GDT/2, RTX1/RTX2. A scenario saved between MIDTOAV and TIG-30 (lunar
  * liftoff at T-1m) resumes P12 at TIG-35, and PREREAD starts the
- * servicer from these words: unmapped, the LM's position was 0.
+ * servicer from these words: unmapped, the LM's position was 0. LM also
+ * R(CSM), V(CSM) (UHYP each cycle) and /LAND/ (the vertical rise).
  *
  * ARGUMENTS:
  *   v    agc_vehicle_t  I  vehicle
@@ -518,5 +519,10 @@ static void test_servicer_start(agc_vehicle_t v, uint16_t rn1, uint16_t gdt, uin
         store_vec(01717u, 01234u);
         store_vec(01725u, 01234u);
         CHECK(agc_guid_state()->lm.r_csm.c[0] == one && agc_guid_state()->lm.v_csm.c[2] == one);
+
+        /* /LAND/ (02332): the site radius CHECKALT ends the vertical rise against */
+        CHECK(agc_erase_write_ecadr(02332u, 03237u) == AGC_STATUS_OK);
+        CHECK(agc_erase_write_ecadr(02333u, 015100u) == AGC_STATUS_OK);
+        CHECK(agc_lm_ldg()->land_mag == (agc_dp_t) 03237 * 040000 + 015100);
     }
 }

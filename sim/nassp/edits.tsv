@@ -8,8 +8,8 @@
 # logged in docs/modules/nassp-integration.md "Test changes". A column with stock spread 0 (e.g.
 # liftoff eng) has tolerance 0. Euler angles near pitch 90 (liftoff bank / yaw) spread ~180 deg in
 # stock alone: their rows judge little; the CDU columns carry the attitude.
-# Derived 2026-10-13 from runs ref_pdi_H / ref_pdi_H01, ref_liftoff_H / ref_liftoff_H01 (to be re-derived:
-# liftoff script changed) and ref_entry_H / ref_entry_H01 (before the dev entry run with bug 12 fixed).
+# Derived 2026-10-13 from runs ref_pdi_H / ref_pdi_H01, ref_liftoff_H / ref_liftoff_H01 (re-derived 2026-10-14 after
+# the liftoff script change: P12 as loaded) and ref_entry_H / ref_entry_H01 (before the dev entry run with bug 12 fixed).
 # milestone	column	tolerance	note
 pdi	galt	478.9499999999989	stock spread 319.2999999999993 (1.5 x)
 pdi	hdot	2.3543894655	stock spread 1.5695929770000001 (1.5 x)
@@ -25,21 +25,21 @@ pdi	cdux	4.8284912109375	stock spread 3.218994140625 (1.5 x)
 pdi	cduy	22.313232421875	stock spread 14.87548828125 (1.5 x)
 pdi	cduz	2.5048828125	stock spread 1.669921875 (1.5 x)
 pdi	gc	1.5	stock spread 1.0 (1.5 x)
-liftoff	galt	810.0	stock spread 540.0 (1.5 x)
-liftoff	hdot	0.9279000000000011	stock spread 0.6186000000000007 (1.5 x)
-liftoff	vh	7.365000000000123	stock spread 4.910000000000082 (1.5 x)
-liftoff	lng	0.08252999999999977	stock spread 0.05501999999999985 (1.5 x)
-liftoff	lat	0.004804199999999998	stock spread 0.0032027999999999987 (1.5 x)
-liftoff	mass	6.705000000000382	stock spread 4.470000000000255 (1.5 x)
-liftoff	eng	0.0	stock spread 0.0 (1.5 x)
-liftoff	pitch	12.439950000000003	stock spread 8.293300000000002 (1.5 x)
-liftoff	bank	268.8972	stock spread 179.26479999999998 (1.5 x)
-liftoff	yaw	269.37105	stock spread 179.5807 (1.5 x)
-liftoff	cdux	13.11767578125	stock spread 8.7451171875 (1.5 x)
-liftoff	cduy	12.392578125	stock spread 8.26171875 (1.5 x)
-liftoff	cduz	7.3004150390625	stock spread 4.866943359375 (1.5 x)
-liftoff	apo	12210.0	stock spread 8140.0 (1.5 x)
-liftoff	peri	15075.0	stock spread 10050.0 (1.5 x)
+liftoff	galt	1021.9499999999989	stock spread 681.2999999999993 (1.5 x)
+liftoff	hdot	1.3331999999999997	stock spread 0.8887999999999998 (1.5 x)
+liftoff	vh	8.46000000000015	stock spread 5.6400000000001 (1.5 x)
+liftoff	lng	0.10110000000000152	stock spread 0.06740000000000101 (1.5 x)
+liftoff	lat	0.005955000000000002	stock spread 0.003970000000000001 (1.5 x)
+liftoff	mass	6.449999999998909	stock spread 4.299999999999272 (1.5 x)
+liftoff	eng	1.5	stock spread 1.0 (1.5 x)
+liftoff	pitch	26.522700000000004	stock spread 17.681800000000003 (1.5 x)
+liftoff	bank	176.8713	stock spread 117.9142 (1.5 x)
+liftoff	yaw	167.51265	stock spread 111.67510000000001 (1.5 x)
+liftoff	cdux	10.7611083984375	stock spread 7.174072265625 (1.5 x)
+liftoff	cduy	26.3507080078125	stock spread 17.567138671875 (1.5 x)
+liftoff	cduz	12.4090576171875	stock spread 8.272705078125 (1.5 x)
+liftoff	apo	28455.0	stock spread 18970.0 (1.5 x)
+liftoff	peri	25545.0	stock spread 17030.0 (1.5 x)
 entry	alt	820.5	stock spread 547.0 (1.5 x)
 entry	hdot	54.40845	stock spread 36.2723 (1.5 x)
 entry	vh	55.29000000000087	stock spread 36.86000000000058 (1.5 x)

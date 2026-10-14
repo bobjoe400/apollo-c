@@ -127,6 +127,7 @@ typedef enum ec_item
     EC_HBN10,        /* SP x15 HBN10 .. HBD32 (CSM TVC filter) */
     EC_CSM_INERTIA,  /* SP x3 IXX, IAVG, IAVG/TLX (CSM MASSPROP, DAPs) */
     EC_CSM_HOLDFLAG, /* SP  HOLDFLAG (CSM RCS DAP)              */
+    EC_RTX,          /* SP x2 RTX1, RTX2 (conic body: Earth / Moon) */
     EC_LM_HIASCENT,  /* SP   HIASCENT (LM DAP pad load)        */
     EC_LM_ROLLPIT,   /* SP x2 ROLLTIME, PITTIME (LM)           */
     EC_LM_DAPGAINS,  /* SP x7 DKTRAP DKOMEGAN DKKAOSN LMTRAP LMOMEGAN LMKAOSN DKDB (LM) */
@@ -209,6 +210,8 @@ typedef enum ec_item
     EC_LM_ATIGINC,   /* DP   ATIGINC (LM)                      */
     EC_LM_PTIGINC,   /* DP   PTIGINC (LM)                      */
     EC_LM_HDOTDISP,  /* DP   HDOTDISP = RDOT (LM SERVICER, ascent) */
+    EC_PIPTIME1,     /* DP   PIPTIME1 average-G start time, cs 2^28 */
+    EC_LM_LAND_MAG,  /* DP   /LAND/ site radius, m 2^24 (LM)   */
     EC_EMSALT,       /* DP   EMSALT (CSM entry)                */
     EC_LAT_SPL,      /* DP   LAT(SPL) entry target, revs (CSM) */
     EC_LNG_SPL,      /* DP   LNG(SPL) entry target, revs (CSM) */
@@ -226,6 +229,12 @@ typedef enum ec_item
     EC_LM_QAXIS,     /* VEC  QAXIS = UHYP (LM)                 */
     EC_LM_ZAXIS1,    /* VEC  ZAXIS1 = UHZP (LM)                */
     EC_UNITW,        /* VEC  UNITW Earth polar axis (CM; -AYO, AXO its first words) */
+    EC_RN1,          /* VEC  RN1 average-G start position      */
+    EC_VN1,          /* VEC  VN1 average-G start velocity      */
+    EC_GDT1_2,       /* VEC  GDT1/2 gravity of RN1             */
+    EC_GDT_2,        /* VEC  GDT/2 gravity of RN               */
+    EC_LM_R_CSM,     /* VEC  R(CSM) MUNRVG CSM position, SM (LM) */
+    EC_LM_V_CSM,     /* VEC  V(CSM) MUNRVG CSM velocity, SM (LM) */
     EC_SV_TEMP,      /* SV   RRECT..XKEP (uplink / integration buffer, 42 words) */
     EC_SV_CSM,       /* SV   RRECTCSM..XKEPCSM (42 words)       */
     EC_SV_LEM,       /* SV   RRECTLEM..XKEPLEM (42 words)       */
@@ -255,12 +264,13 @@ typedef struct ec_entry
  * first entry holding an address wins: FANG (1774) precedes EK3VAL, whose
  * DP K3VAL (S40.13 DDV) is EK3VAL with FANG as its low word, so a FANG
  * pad load reaches both (sp_set).                                         */
-static const ec_entry_t k_map_csm[] = { {00306u, 18, EC_XSMD}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01103u, 2, EC_LAT}, {01105u, 2, EC_LONG}, {01107u, 2, EC_ALT}, {01126u, 1, EC_TRKMKCNT}, {01131u, 2, EC_OPTION1}, {01155u, 3, EC_THETAD}, {01162u, 6, EC_DELV}, {01170u, 6, EC_RN}, {01176u, 6, EC_VN}, {01204u, 2, EC_PIPTIME}, {01320u, 1, EC_IMODES30}, {01321u, 1, EC_IMODES33}, {01330u, 1, EC_MARKSTAT}, {01336u, 2, EC_TEVENT}, {01341u, 1, EC_CDUCHKWD}, {01351u, 2, EC_RTED1}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01735u, 18, EC_REFSMMAT}, {02025u, 6, EC_RLS}, {02640u, 2, EC_T3TOT4}, {03066u, 1, EC_DAPDATR1}, {03067u, 1, EC_DAPDATR2}, {03073u, 1, EC_LEMMASS}, {03074u, 1, EC_CSMMASS}, {03325u, 1, EC_CM_GYMDT}, {03374u, 1, EC_S61DT}, {03376u, 1, EC_P37RANGE}, {03400u, 2, EC_LAT_SPL}, {03402u, 2, EC_LNG_SPL}, {03404u, 6, EC_DELVSLV}, {03412u, 2, EC_TIG}, {03427u, 2, EC_TGO}, {03502u, 7, EC_MARK2DWN}, {03660u, 2, EC_TTOGO}, {03662u, 2, EC_TTPI}, {03672u, 2, EC_P40TMP}, {03674u, 7, EC_MARKDOWN}, {03720u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 6, EC_UNITW}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02011u, 6, EC_504LM}, {02033u, 3, EC_TIMEMO}, {02036u, 60, EC_VECOEM}, {02132u, 6, EC_RESO}, {02140u, 6, EC_VESO}, {02146u, 2, EC_OMEGAES}, {00110u, 1, EC_EMDOT}, {01353u, 1, EC_DVTHRESH}, {01767u, 2, EC_EK1VAL}, {01771u, 2, EC_EK2VAL}, {01774u, 1, EC_FANG}, {01773u, 2, EC_EK3VAL}, {02017u, 2, EC_EMSALT}, {03007u, 1, EC_LADPAD}, {03010u, 1, EC_LODPAD}, {03011u, 1, EC_ALFAPAD}, {03012u, 1, EC_ETDECAY}, {03013u, 1, EC_ESTROKER}, {03014u, 2, EC_EKPRIME}, {03016u, 3, EC_EKTLX_I}, {03021u, 2, EC_EREPFRAC}, {03023u, 1, EC_PACTOFF}, {03024u, 1, EC_YACTOFF}, {03025u, 15, EC_HBN10}, {01776u, 2, EC_LUNARCOEF}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01135u, 2, EC_LONGBASE}, {03070u, 3, EC_CSM_INERTIA}, {01332u, 1, EC_CSM_HOLDFLAG}, {03172u, 3, EC_CSM_THETADX}, {03175u, 6, EC_CSM_DELCDU}, {03246u, 6, EC_CSM_CDUD}};
+static const ec_entry_t k_map_csm[] = { {00306u, 18, EC_XSMD}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01103u, 2, EC_LAT}, {01105u, 2, EC_LONG}, {01107u, 2, EC_ALT}, {01126u, 1, EC_TRKMKCNT}, {01131u, 2, EC_OPTION1}, {01155u, 3, EC_THETAD}, {01162u, 6, EC_DELV}, {01170u, 6, EC_RN}, {01176u, 6, EC_VN}, {01204u, 2, EC_PIPTIME}, {01320u, 1, EC_IMODES30}, {01321u, 1, EC_IMODES33}, {01330u, 1, EC_MARKSTAT}, {01336u, 2, EC_TEVENT}, {01341u, 1, EC_CDUCHKWD}, {01351u, 2, EC_RTED1}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01735u, 18, EC_REFSMMAT}, {02025u, 6, EC_RLS}, {02640u, 2, EC_T3TOT4}, {03066u, 1, EC_DAPDATR1}, {03067u, 1, EC_DAPDATR2}, {03073u, 1, EC_LEMMASS}, {03074u, 1, EC_CSMMASS}, {03325u, 1, EC_CM_GYMDT}, {03374u, 1, EC_S61DT}, {03376u, 1, EC_P37RANGE}, {03400u, 2, EC_LAT_SPL}, {03402u, 2, EC_LNG_SPL}, {03404u, 6, EC_DELVSLV}, {03412u, 2, EC_TIG}, {03427u, 2, EC_TGO}, {03502u, 7, EC_MARK2DWN}, {03660u, 2, EC_TTOGO}, {03662u, 2, EC_TTPI}, {03672u, 2, EC_P40TMP}, {03674u, 7, EC_MARKDOWN}, {03720u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 6, EC_UNITW}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02011u, 6, EC_504LM}, {02033u, 3, EC_TIMEMO}, {02036u, 60, EC_VECOEM}, {02132u, 6, EC_RESO}, {02140u, 6, EC_VESO}, {02146u, 2, EC_OMEGAES}, {00110u, 1, EC_EMDOT}, {01353u, 1, EC_DVTHRESH}, {01767u, 2, EC_EK1VAL}, {01771u, 2, EC_EK2VAL}, {01774u, 1, EC_FANG}, {01773u, 2, EC_EK3VAL}, {02017u, 2, EC_EMSALT}, {03007u, 1, EC_LADPAD}, {03010u, 1, EC_LODPAD}, {03011u, 1, EC_ALFAPAD}, {03012u, 1, EC_ETDECAY}, {03013u, 1, EC_ESTROKER}, {03014u, 2, EC_EKPRIME}, {03016u, 3, EC_EKTLX_I}, {03021u, 2, EC_EREPFRAC}, {03023u, 1, EC_PACTOFF}, {03024u, 1, EC_YACTOFF}, {03025u, 15, EC_HBN10}, {01776u, 2, EC_LUNARCOEF}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01135u, 2, EC_LONGBASE}, {03070u, 3, EC_CSM_INERTIA}, {01332u, 1, EC_CSM_HOLDFLAG}, {03172u, 3, EC_CSM_THETADX}, {03175u, 6, EC_CSM_DELCDU}, {03246u, 6, EC_CSM_CDUD}, {01206u, 6, EC_GDT_2}, {01231u, 6, EC_RN1}, {01237u, 6, EC_VN1}, {01245u, 2, EC_PIPTIME1}, {01247u, 6, EC_GDT1_2}, {03745u, 2, EC_RTX}};
 
 /* Luminary099 addresses (ERASABLE_ASSIGNMENTS, from the listing).        */
-static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}, {03000u, 1, EC_LM_HIASCENT}, {03001u, 2, EC_LM_ROLLPIT}, {03003u, 7, EC_LM_DAPGAINS}, {03012u, 2, EC_LM_IGNAOS}, {01354u, 2, EC_LM_RADSKAL}, {01356u, 1, EC_LM_SKALSKAL}, {02520u, 2, EC_LM_DELQFIX}, {02522u, 13, EC_LM_LRPAD}, {03420u, 2, EC_LM_LRHMAX}, {03427u, 2, EC_LM_RPCRT}, {03431u, 2, EC_LM_TNEWA}, {01244u, 2, EC_LM_MASS}, {01700u, 6, EC_X789}, {01770u, 2, EC_LM_RANGEVAR}, {01772u, 2, EC_LM_RATEVAR}, {01774u, 2, EC_LM_VARMIN}, {02000u, 10, EC_LM_NAVPAD}, {03400u, 2, EC_LM_ATIGINC}, {03402u, 2, EC_LM_PTIGINC}, {03253u, 6, EC_LM_UNFC}, {03261u, 6, EC_LM_UNWC}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01151u, 2, EC_LONGBASE}, {02262u, 6, EC_LM_ASC_ENG}, {02272u, 8, EC_LM_ASC_TGT}, {02354u, 6, EC_LM_ASC_ACC}, {03630u, 4, EC_LM_ASC_RCO}, {03645u, 6, EC_LM_VGVECT}, {02334u, 16, EC_LM_ASC_WRD}, {02270u, 2, EC_LM_ASC_GT}, {02314u, 2, EC_LM_ASC_GEFF}, {03473u, 2, EC_LM_HDOTDISP}, {02302u, 6, EC_LM_LAXIS}, {03717u, 6, EC_LM_QAXIS}, {03725u, 6, EC_LM_ZAXIS1}};
+static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}, {03000u, 1, EC_LM_HIASCENT}, {03001u, 2, EC_LM_ROLLPIT}, {03003u, 7, EC_LM_DAPGAINS}, {03012u, 2, EC_LM_IGNAOS}, {01354u, 2, EC_LM_RADSKAL}, {01356u, 1, EC_LM_SKALSKAL}, {02520u, 2, EC_LM_DELQFIX}, {02522u, 13, EC_LM_LRPAD}, {03420u, 2, EC_LM_LRHMAX}, {03427u, 2, EC_LM_RPCRT}, {03431u, 2, EC_LM_TNEWA}, {01244u, 2, EC_LM_MASS}, {01700u, 6, EC_X789}, {01770u, 2, EC_LM_RANGEVAR}, {01772u, 2, EC_LM_RATEVAR}, {01774u, 2, EC_LM_VARMIN}, {02000u, 10, EC_LM_NAVPAD}, {03400u, 2, EC_LM_ATIGINC}, {03402u, 2, EC_LM_PTIGINC}, {03253u, 6, EC_LM_UNFC}, {03261u, 6, EC_LM_UNWC}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01151u, 2, EC_LONGBASE}, {02262u, 6, EC_LM_ASC_ENG}, {02272u, 8, EC_LM_ASC_TGT}, {02354u, 6, EC_LM_ASC_ACC}, {03630u, 4, EC_LM_ASC_RCO}, {03645u, 6, EC_LM_VGVECT}, {02334u, 16, EC_LM_ASC_WRD}, {02270u, 2, EC_LM_ASC_GT}, {02314u, 2, EC_LM_ASC_GEFF}, {03473u, 2, EC_LM_HDOTDISP}, {02302u, 6, EC_LM_LAXIS}, {03717u, 6, EC_LM_QAXIS}, {03725u, 6, EC_LM_ZAXIS1}, {01236u, 6, EC_GDT_2}, {03544u, 6, EC_RN1}, {03552u, 6, EC_VN1}, {03560u, 2, EC_PIPTIME1}, {03562u, 6, EC_GDT1_2}, {02776u, 2, EC_RTX}, {01717u, 6, EC_LM_R_CSM}, {01725u, 6, EC_LM_V_CSM}, {02332u, 2, EC_LM_LAND_MAG}};
 
-static void vec_set_more(ec_item_t item, agc_vec_t v); /* the remaining VEC items (vec_set) */
+static void       vec_set_more(ec_item_t item, agc_vec_t v); /* the remaining VEC items (vec_set) */
+static agc_vec_t *avg_vec_field(ec_item_t item);             /* RN1 VN1 GDT1/2 GDT/2 (below) */
 
 /**********************************************************************
  * Whether an ECADR is one of the flagwords (STATE + 0..13).
@@ -851,24 +861,35 @@ static bool is_sp_field(ec_item_t item)
 }
 
 /**********************************************************************
- * The CSM inertia words, element k: IXX, IAVG, IAVG/TLX (MASSPROP).
- * AGC: none (address map; addresses from Comanche055 ERASABLE_ASSIGNMENTS.agc)
+ * SP fields beside the pad loads, element k: the CSM inertias IXX, IAVG,
+ * IAVG/TLX (MASSPROP), the CSM RCS DAP's HOLDFLAG, RTX1 / RTX2 (the conic
+ * body the integration and average-G use).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
  * FUNCTION NAME: csm_inertia_field
  *
  * ARGUMENTS:
  *   Argument  Type                I/O  Description (scale)
  *   --------  ------------------  ---  -------------------------------------
+ *   item      ec_item_t           I    EC_CSM_INERTIA, EC_CSM_HOLDFLAG or EC_RTX
  *   dc        agc_csm_dapcom_t *  I    the RCS/TVC common storage
  *   k         int                 I    element of the item, from 0
  *
  * RETURNS: agc_sp_t * -- the field
  **********************************************************************/
-static agc_sp_t *csm_inertia_field(agc_csm_dapcom_t *dc, int k)
+static agc_sp_t *csm_inertia_field(ec_item_t item, agc_csm_dapcom_t *dc, int k)
 {
-    agc_sp_t *f = &dc->iavg_tlx; /* k 2: IAVG/TLX */
+    agc_sp_t *f = &dc->iavg_tlx; /* EC_CSM_INERTIA k 2: IAVG/TLX */
 
-    if (k == 0)
+    if (item == EC_CSM_HOLDFLAG)
+    {
+        f = &agc_csm_dap_rcs()->holdflag;
+    }
+    else if (item == EC_RTX)
+    {
+        f = (k == 0) ? &agc_rendz_erasable()->body.rtx1 : &agc_rendz_erasable()->body.rtx2; /* ?: RTX1, RTX2 */
+    }
+    else if (k == 0)
     {
         f = &dc->ixx;
     }
@@ -949,10 +970,9 @@ static agc_sp_t *sp_field(ec_item_t item, int k)
         case EC_HBN10:
             break;
         case EC_CSM_INERTIA:
-            f = csm_inertia_field(dc, k);
-            break;
         case EC_CSM_HOLDFLAG:
-            f = &agc_csm_dap_rcs()->holdflag;
+        case EC_RTX:
+            f = csm_inertia_field(item, dc, k);
             break;
         default:
             f = (item >= EC_LM_BRK_SP) ? lm_sp_field(item, k) : lm_pad_field(item, k); /* LM landing pad (EC_LM_BRK_SP ..) or LM DAP / LR / nav pad */
@@ -1025,6 +1045,14 @@ static agc_dp_t *dp_field(ec_item_t item)
     else if (item == EC_LM_HDOTDISP)
     {
         f = &agc_guid_state()->lm.hdotdisp;
+    }
+    else if (item == EC_PIPTIME1)
+    {
+        f = &agc_guid_state()->avg.piptime1;
+    }
+    else if (item == EC_LM_LAND_MAG)
+    {
+        f = &agc_lm_ldg()->land_mag;
     }
     else if (item == EC_LM_RANGEVAR)
     {
@@ -1190,6 +1218,11 @@ static agc_status_t sp_set(ec_item_t item, int k, agc_sp_t v)
             *sp_field(item, k)           = v;                                                         /* the struct fields */
             break;
     } /* switch */
+
+    if (item == EC_RTX && k == 1)
+    {
+        agc_rendz_erasable()->body.moon = (v != 0); /* RTX2 2: the Moon's conics */
+    }
 
     return (st);
 } /* sp_set */
@@ -1973,6 +2006,14 @@ static agc_vec_t vec_get(ec_item_t item)
         case EC_UNITW:
             v = agc_guid_state()->avg.unitw;
             break;
+        case EC_RN1:
+        case EC_VN1:
+        case EC_GDT1_2:
+        case EC_GDT_2:
+        case EC_LM_R_CSM:
+        case EC_LM_V_CSM:
+            v = *avg_vec_field(item);
+            break;
         default:
             v = agc_rendz_erasable()->delvlvc; /* EC_DELVSLV */
             break;
@@ -2031,6 +2072,52 @@ static void vec_set(ec_item_t item, agc_vec_t v)
 }
 
 /**********************************************************************
+ * The average-G vectors MIDTOAV and SERVICER leave for the next cycle:
+ * RN1, VN1, GDT1/2 (of RN1) and GDT/2 (of RN), and the LM's R(CSM),
+ * V(CSM) (MUNRVG's CSM state, UHYP's source in NORMLIZE).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: avg_vec_field
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    EC_RN1, EC_VN1, EC_GDT1_2, EC_GDT_2,
+ *                             EC_LM_R_CSM or EC_LM_V_CSM
+ *
+ * RETURNS: agc_vec_t * -- the field (RN1 m 2^29, R(CSM) m 2^24, the
+ *          others m/cs 2^7)
+ **********************************************************************/
+static agc_vec_t *avg_vec_field(ec_item_t item)
+{
+    agc_avg_g_t *a = &agc_guid_state()->avg; /* average-G block */
+    agc_vec_t   *f = &a->gdt_2;              /* EC_GDT_2 */
+
+    if (item == EC_RN1)
+    {
+        f = &a->rn1;
+    }
+    else if (item == EC_VN1)
+    {
+        f = &a->vn1;
+    }
+    else if (item == EC_GDT1_2)
+    {
+        f = &a->gdt1_2;
+    }
+    else if (item == EC_LM_R_CSM || item == EC_LM_V_CSM)
+    {
+        f = (item == EC_LM_R_CSM) ? &agc_guid_state()->lm.r_csm : &agc_guid_state()->lm.v_csm; /* ?: R(CSM), V(CSM) */
+    }
+    else
+    {
+        /* GDT/2 */
+    }
+
+    return (f);
+}
+
+/**********************************************************************
  * VEC items vec_set leaves: the LM ascent's VGVECT, LAXIS, QAXIS (= UHYP),
  * ZAXIS1 (= UHZP) and the CM's UNITW, whose first four words are -AYO and
  * AXO (EQUALS UNITW, UNITW +2: the launch pad loads see the same words).
@@ -2068,6 +2155,14 @@ static void vec_set_more(ec_item_t item, agc_vec_t v)
             pad.neg_ayo                 = v.c[0]; /* -AYO EQUALS UNITW    */
             pad.axo                     = v.c[1]; /* AXO EQUALS UNITW +2  */
             agc_navaux_set_padload(&pad);
+            break;
+        case EC_RN1:
+        case EC_VN1:
+        case EC_GDT1_2:
+        case EC_GDT_2:
+        case EC_LM_R_CSM:
+        case EC_LM_V_CSM:
+            *avg_vec_field(item)        = v;
             break;
         default:
             break;                                /* every VEC item is listed above or in vec_set */
