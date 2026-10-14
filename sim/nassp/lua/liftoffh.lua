@@ -23,7 +23,7 @@ local function find_eng()  -- the largest thruster (the APS once staged; the DPS
   return best
 end
 local function vel()
-  local ok, w = pcall(function() return ac.v:get_horizonairspeedvector() end)
+  local ok, w = pcall(function() return ac.v:get_airspeedvector(REFFRAME.HORIZON) end)
   if ok and w then return w.y or 0, math.sqrt((w.x or 0) ^ 2 + (w.z or 0) ^ 2) end
   return 0, 0
 end

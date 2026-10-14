@@ -224,7 +224,7 @@ local function preflight(sheet, seen)
   if seen[sheet] or ac.skip[sheet] or not CL[sheet] then return end
   seen[sheet] = true
   for _, st in ipairs(CL[sheet]) do
-    if st.t == 'switch' and ac.v:get_panelswitch(st.item) == -1 then ac.die('switch not found: ' .. st.item .. ' (sheet ' .. sheet .. ')') end
+    if st.t == 'switch' and not st.item:match('^Panel') and ac.v:get_panelswitch(st.item) == -1 then ac.die('switch not found: ' .. st.item .. ' (sheet ' .. sheet .. ')') end
     if st.t == 'call' then preflight(st.sheet, seen) end
   end
 end
@@ -248,7 +248,11 @@ function ac.run(sheet, depth, from, to)
       ac.warp(1, 'MET ' .. st.met)
       while ac.get() < st.met do proc.wait_simdt(1) end
     end
-    if st.t == 'switch' then
+    if st.t == 'switch' and st.item:match('^Panel') and ac.v:get_panelswitch(st.item) == -1 then
+      -- a panel-display toggle (e.g. PanelOrdeal): NASSP registers it only with the 2D panel,
+      -- which a headless run does not build; nothing in the vehicle depends on it
+      ac.log(string.rep('  ', depth) .. 'panel toggle not built (headless): ' .. st.item .. ' (' .. st.text .. ')')
+    elseif st.t == 'switch' then
       ac.set(st.item, st.pos); proc.wait_simdt(0.3)
     elseif st.t == 'dsky' then
       local k = ac.subst[st.keys] or st.keys

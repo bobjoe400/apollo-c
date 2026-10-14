@@ -87,7 +87,15 @@ Closed loops (PLAN item 10, stretch), against the proven tools only:
   both the stock reference and ours). Flown unattended against the stock
   NASSP run with NASSP's own checklist workbook: insertion and the first
   MCC state-vector uplink, TLI, MCC-2, LOI-1 and TEI (SPS burns within
-  0.1 s and a few tenths of a ft/s of stock); LM milestones in progress.
+  0.1 s and a few tenths of a ft/s of stock). LM, headless against stock
+  with tolerances of 1.5 x stock's own run-to-run spread on every column
+  (`make nassp-mission`): PDI to touchdown: events and end state match;
+  attitude history outside the stock envelope: bank, yaw, CDU X (and
+  latitude 0.0019 vs 0.00125 deg). Lunar liftoff: end state (orbit,
+  cut-off) matches, ignition 23.5 s earlier than stock; attitude history
+  outside the stock envelope: pitch, CDU Y, CDU Z (and vertical speed,
+  apo/peri around cut-off). Entry: our CMC does not yet hold the CSM's
+  attitude in NASSP (open); rendezvous not yet flown.
   Two flight bugs found on the way (FANG/K3VAL address map, V82 after an
   escape burn), both fixed with tests. The integrated build lives in
   `C:\NASSP9-dev` (stock baseline `C:\NASSP9`). A light tier runs on

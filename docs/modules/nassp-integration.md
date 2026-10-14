@@ -73,8 +73,12 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
 4. Tables: `make nassp-mission NASSP_RUNS=<dir>` (tools/nassp_edits.py) pairs ref_<m>_H and
    agc_<m>_H for every milestone it finds and prints the milestone table (events found the
    same way in both edit CSVs), per quantity the max |ours - stock| against the tolerance in
-   sim/nassp/edits.tsv (1.5 x the stock run's own spread between -f 0.02 and -f 0.01), and
-   each run's major modes and alarms; exit 1 when a quantity leaves its tolerance.
+   sim/nassp/edits.tsv, and each run's major modes and alarms; exit 1 when a quantity leaves
+   its tolerance. Numeric columns without a tolerance row are printed as "not judged".
+   Tolerances: `tools/nassp_edits.py --derive <dir> <milestone>` prints the rows from the two
+   stock runs ref_<m>_H (-f 0.02) and ref_<m>_H01 (-f 0.01): every numeric column, exactly 1.5 x
+   their max difference, no rounding. They go into edits.tsv before the dev run is compared
+   and are then frozen (see "Test changes").
 
 ## Progress
 - DONE phase 1 STUDY: docs/overview/nassp_integration.md (embedding, engine API,
@@ -332,6 +336,11 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   23.7265/0.6695, P65 +660.8 s); no alarms, no assertion reports, no BAD_ARG on ours. Stock
   windowed vs stock headless differ by 30 s / 0.015 deg, the envelope ours lies in. Open: ours'
   true altitude runs ~30 m above stock from TIG+120 s and 85 m below at P64 (LR updates).
+  RESTATED under the mechanical tolerances (2026-10-13, see "Test changes"): events and end
+  state match (P65 +27.5 s is inside stock's own spread: stock -f 0.01 P65 at +659.5 s);
+  outside the stock envelope: attitude history bank 48.6 (tol 41.3) and yaw 46.8 (40.9) deg
+  from TIG+0, CDU X 10.4 (4.8) deg from TIG+341 s, and latitude 0.0019 (0.00125) deg from
+  TIG+136 s. Open findings to root-cause (DAP words against stock).
 - FLIGHT BUG 7 (PDI, ours only, fixed 2026-10-13): a spurious alarm 00401 once per PDI (TIG+267..
   292 s). FINDCDUW's MGA limit (p. 914) read the two's MGA as ones' and converted back after
   LIMITSUB; for MGA = two's -1 (ones' -0) the C got +0 back and the MSU was non-zero. LIMITSUB
@@ -360,6 +369,12 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   TIG+430.9 s both; vh / hdot at cut-off 1684.5 / 6.7 vs 1684.4 / 6.4 m/s; orbit radius
   1753.15 x 1790.76 vs 1753.27 x 1790.15 km; mass 2635.6 vs 2637.5 kg; N85 counts down on
   both. Open: vertical speed 1.4 m/s off stock at the pitchover (TIG+15 s; tolerance 0.93).
+  RESTATED under the mechanical tolerances (2026-10-13): end state matches (cut-off, orbit within
+  0.6 km, mass); events do NOT all match: ignition GET 448311.9 vs stock 448335.4 (23.5 s
+  earlier: the 01703 TIG slip differs; V99 at sim 59.1 vs 82.9 s). Outside the stock envelope:
+  hdot 1.39 (0.93) m/s from TIG+14 s, pitch 24.3 (12.4) and CDU Y 24.1 (12.4) deg from TIG+10 s,
+  CDU Z 10.8 (7.3) deg from TIG+476 s, engine level at the cut-off row (tolerance 0), apo / peri
+  radius 14.2 / 15.3 (12.2 / 15.1) km around cut-off. Open findings.
 - FLIGHT BUG 9 (liftoff, ours only, fixed 2026-10-13): ascent overshot to 1757.9 x 1901.0 km
   (vh 22 m/s high at cut-off). First diverging word VGVECT x at TIG+120 s while TGO, GEFF, DRDOT
   .. DZDOT, PCONS, PRATE, HDOTDISP agreed (all mapped into the edit CSV): Luminary has QAXIS
@@ -381,6 +396,32 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   must be mapped too for its later steps: for P12 now AT VE TTO TBUP RDOTD YDOTD ZDOTD /R/MAG
   Y DRDOT DYDOT DZDOT PCONS YCONS PRATE YRATE GEFF ATY ATR ATP RCO YCO VGVECT LAXIS
   QAXIS(UHYP) ZAXIS1(UHZP) HDOTDISP; the liftoff script still reselects P12 on both builds.
+- FLIGHT BUG 12 (CSM attitude hold, ours only, fixed 2026-10-13): after a scenario load our CMC
+  never held or maneuvered the CSM (entry run: bank drifting at the load's -0.045 deg/s for
+  1000 s, the R60 maneuver never ending; MCC-2 had the same V06N18 timeout). Host trace (Lua
+  daph.lua, scenario 14 at P00, both builds): stock's roll jets stop the drift at sim 12-20 s,
+  ours never fire although CDUs and channel 6 reach NASSP. Offline (harness dap.c on the
+  image, CDU X driven at 5 counts/s): stock fires ch6 240 at 10.92 s, ours never. The C DAP
+  state after the load restart: J/M = 0 (IXX, IAVG unmapped: MASSPROP's words, S40.14 forms
+  J/M from them at REDAP, so TAU = 0 always) and THETADX..Z = 0 with HOLDFLAG lost (the hold
+  reference; with HOLDFLAG -1 DCDUINCR rebuilds THETAD from CDUXD, also unmapped). Fix:
+  src/erasable_map/address_map.c maps IXX IAVG IAVG/TLX (03070), HOLDFLAG (01332), THETADX..Z
+  (03172), DELCDUX..Z (03175) and CDUXD..ZD (03246); tests/erasable_map/address_map.c
+  test_csm_rcs_dap (6 checks failed before). After: offline ours fires ch6 240 at 10.89 s
+  (stock 10.92), 111 vs 111 jet commands in 110 s; NASSP daph run identical to stock (bank
+  -0.857 vs -0.853 deg at 20.6 s, then the same -0.0088 deg/s). Open, smaller: the C keeps
+  CDUXD as a normalised DP value, so THETAD = the upper word of DPADD differs by one count
+  from the AGC when CDUXD's words have mixed signs (THETADY 27014 vs 27015 here).
+- Saturn console mode (2026-10-13, about 25 min of the 60 allowed): bisected with oapiWriteLog
+  markers to Saturn::clbkPostStep's unguarded `oapiCameraInternal() && oapiCockpitMode()` (VC
+  animations): with no graphics client the camera query faults in Orbiter.exe. Fix:
+  src/nassp/patches/0003-saturn-console-mode.patch (the focus guard the LEM already has),
+  applied in nassp-ref (Saturn5.dll + LEM.dll by nassp-work\build-ref2.bat; the release DLL
+  kept as Saturn5.dll.release-437) and nassp-agc. Columbia + MCC (focus MCC) runs headless.
+- Entry: scenario 15 (P63 at EI-60 s) cannot resume on our CMC (offline replay: restarts.c:106
+  'prdt != 0', PHSNAMEn is a rope address; servicer.c:692 no AVGEXIT job): entry flies from
+  scenario 14 (EI-2:15h) with P61 selected afresh, both builds. Panel-display toggles that
+  NASSP registers only with the 2D panel (PanelOrdeal) are logged and skipped headless.
 - LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
   get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only; 2026-10-13 also
   set_ttca_throttle and set_agcinputbit, the TTCA throttle and the ROD bits of channel 016 as
@@ -392,6 +433,36 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   LM Simulator itself (sparse virtualagc c239e9c into build/virtualagc).
 - Do not run Linux test loads during a host run: the stock AGC at 50x went to garbage (MODREG 227,
   FAILREG 207) when frames stretched under CPU load; that run was discarded.
+
+## Test changes
+Rule (lead, 2026-10-13): per milestone the Lua script, checklist sheets, edit columns and
+tolerances are frozen before the dev run; any later change repeats the stock run and is listed
+here. Scripts are deployed by copying one file to both installs; no script branches on the build.
+Audit of the runs before the rule (times UTC 2026-10-14):
+- PDI: script edits 03:01 (lone ENTER/PRO waits for a flash; from a stock race) and 03:12
+  (UNFC/UNWC columns, after both v1 runs) preceded ref_pdi_H (03:15). 03:26, after a dev
+  result: pdih.lua saves a scenario 20 s after LANDED (after every tabled event); stock not
+  rerun. Tolerances (sim/nassp/edits.tsv, 04:15-04:21) and the column choice were made after
+  the dev runs. Checked against the rule as written (1.5 x the -f 0.02 / 0.01 stock spread, every
+  numeric column, no rounding): lat 0.0019 vs 0.0012 (the file's 0.002 is a rounding that turned
+  a fail into a pass), bank 48.6 vs 41.3, yaw 46.8 vs 40.9, cdux 10.4 vs 4.8 deg are out.
+- Liftoff: 03:56, after a dev result (a running P12 does not resume on our load restart):
+  both scripts reselect P12 (V37E12E) at the load; stock rerun. 04:07: diagnostic columns
+  (ascent words), stock rerun. Tolerances after the dev runs. By the rule as written, out:
+  hdot 1.39 vs 0.93 (also out in the file), eng 0.40 vs 0.0, pitch 24.3 vs 12.4,
+  cduy 24.1 vs 12.4, cduz 10.8 vs 7.3 deg, apo 14.2 vs 12.2 km, peri 15.3 vs 15.1 km.
+- Entry: scenario 14 rather than 15 (our CMC cannot resume a running P63), on both builds,
+  chosen from the offline replay before any host entry run. The scripts were final before
+  ref_entry_H (04:44); the dev run used the same files. Tolerances not set yet.
+- 2026-10-13 (lead): edits.tsv regenerated by --derive (every numeric column, exact 1.5 x
+  spread, no rounding) from the existing stock pairs; no stock rerun needed (scripts unchanged).
+  The entry dev run (scripts frozen) was read before entry tolerances existed; it is void anyway
+  (CSM not under CMC attitude control, runs/discarded/agc_entry_H_csmdap) and is rerun after the
+  fix; entry tolerances come from ref_entry_H vs ref_entry_H01 by --derive before that rerun.
+- nassp-replay LM cases have no stock reference (this harness's yaAGC restarts LGC images
+  by a TC trap): pdi_lm expects the image's saved RADMODES bit 6 after the load (NASSP's yaAGC
+  continues the image); liftoff_lm expects noun 74 40 s after the load (stock NASSP showed
+  V06N74 25.8 s after loading the same scenario, runs/discarded/ref_liftoff_H_noreselect).
 
 ## Lessons
 - Orbiter_ng.exe only launches Modules\Server\Orbiter.exe and exits: wait on Orbiter.exe.

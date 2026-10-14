@@ -36,7 +36,7 @@ local function find_dps()
   return best
 end
 local function vel()  -- local horizon frame: x east-ish, y up, z north-ish (m/s)
-  local ok, w = pcall(function() return ac.v:get_horizonairspeedvector() end)
+  local ok, w = pcall(function() return ac.v:get_airspeedvector(REFFRAME.HORIZON) end)
   if ok and w then return w.y or 0, math.sqrt((w.x or 0) ^ 2 + (w.z or 0) ^ 2) end
   return 0, 0
 end
@@ -56,7 +56,7 @@ local function probe()
   local att = ''
   pcall(function()
     local t = ac.v:horizonrot(ac.v:get_thrustvector())
-    local w = ac.v:get_horizonairspeedvector()
+    local w = ac.v:get_airspeedvector(REFFRAME.HORIZON)
     local h = math.sqrt(w.x ^ 2 + w.z ^ 2)
     local along = h > 0 and (t.x * w.x + t.z * w.z) / h or 0
     local jets = 0

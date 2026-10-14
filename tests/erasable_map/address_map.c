@@ -31,6 +31,7 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/state.h"
+#include "agc/csm/dap.h"
 #include "agc/erasable_map/address_map.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
@@ -55,6 +56,7 @@ static void test_pad_loads(void);
 static void test_lm_landing_pad(void);
 static void test_lm_pad_more(void);
 static void test_phase_tables(agc_vehicle_t v, uint16_t longbase);
+static void test_csm_rcs_dap(void);
 
 #define CHECK(c) check((c), __LINE__, #c)
 
@@ -80,6 +82,7 @@ int main(void)
     test_lm_pad_more();
     test_phase_tables(AGC_VEHICLE_CSM, 01135u);
     test_phase_tables(AGC_VEHICLE_LM, 01151u);
+    test_csm_rcs_dap();
     (void) printf("test_ecadr: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -375,4 +378,45 @@ static void test_phase_tables(agc_vehicle_t v, uint16_t longbase)
     CHECK(w == 025u);
     agc_erase_read_ecadr(01062u, &w);
     CHECK(w == 0u);                                                 /* PHSPRDT4: not kept */
+}
+
+/**********************************************************************
+ * AGC: none (test) -- the CSM RCS DAP words a restart does not recompute
+ * (flight bug 12): IXX, IAVG, IAVG/TLX (03070, MASSPROP), HOLDFLAG
+ * (01332), THETADX..Z (03172), DELCDUX..Z (03175, DP) and CDUXD..ZD
+ * (03246, DP). Values of the Apollo 11 entry scenario's image: a load
+ * that drops them leaves J/M = 0 (no jet ever fires) and a hold
+ * reference of 0, 0, 0.
+ **********************************************************************/
+static void test_csm_rcs_dap(void)
+{
+    uint16_t                w = 0;                 /* a word read back */
+    const agc_csm_rcs_t    *r = agc_csm_dap_rcs(); /* RCS DAP erasables */
+    const agc_csm_dapcom_t *c = agc_csm_dap_com(); /* IXX, IAVG */
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    CHECK(agc_erase_write_ecadr(03070u, 00504u) == AGC_STATUS_OK);  /* IXX      */
+    CHECK(agc_erase_write_ecadr(03071u, 01730u) == AGC_STATUS_OK);  /* IAVG     */
+    CHECK(agc_erase_write_ecadr(03072u, 01454u) == AGC_STATUS_OK);  /* IAVG/TLX */
+    CHECK(agc_erase_write_ecadr(01332u, 077776u) == AGC_STATUS_OK); /* HOLDFLAG -1 */
+    CHECK(agc_erase_write_ecadr(03172u, 00045u) == AGC_STATUS_OK);  /* THETADX  */
+    CHECK(agc_erase_write_ecadr(03173u, 027015u) == AGC_STATUS_OK); /* THETADY  */
+    CHECK(agc_erase_write_ecadr(03174u, 00001u) == AGC_STATUS_OK);  /* THETADZ  */
+    CHECK(agc_erase_write_ecadr(03246u, 00045u) == AGC_STATUS_OK);  /* CDUXD    */
+    CHECK(agc_erase_write_ecadr(03247u, 031301u) == AGC_STATUS_OK);
+    CHECK(agc_erase_write_ecadr(03252u, 00001u) == AGC_STATUS_OK);  /* CDUZD    */
+    CHECK(agc_erase_write_ecadr(03253u, 076025u) == AGC_STATUS_OK);
+    CHECK(agc_erase_write_ecadr(03177u, 00002u) == AGC_STATUS_OK);  /* DELCDUY  */
+    CHECK(c->ixx == 0504 && c->iavg == 01730 && c->iavg_tlx == 01454);
+    CHECK(r->holdflag == -1);
+    CHECK(r->thetad[0] == 045u && r->thetad[1] == 027015u && r->thetad[2] == 1u);
+    CHECK(r->cdud[0] == (agc_dp_t) 045 * 040000 + 031301);
+    CHECK(r->cdud[2] == (agc_dp_t) 040000 - 01752);                 /* 1, -1752: signs free to disagree */
+    CHECK(r->delcdu[1] == (agc_dp_t) 2 * 040000);
+    agc_erase_read_ecadr(01332u, &w);
+    CHECK(w == 077776u);
+    agc_erase_read_ecadr(03173u, &w);
+    CHECK(w == 027015u);
+    agc_erase_read_ecadr(03070u, &w);
+    CHECK(w == 00504u);
 }

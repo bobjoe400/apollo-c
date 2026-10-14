@@ -1,18 +1,41 @@
-# NASSP mission edits: the quantities tools/nassp_edits.py compares between the stock run and ours,
-# per milestone, with the tolerance |ours - stock| may reach at the same time since ignition (from
-# ignition on). Each tolerance is 1.5 x the stock run's own spread: stock headless at -f 0.02
-# against stock headless at -f 0.01, same scenario and script (2026-10-13; the spread comes from
-# the host, e.g. a 0.6 s ignition shift over moving terrain, PDI P65 at TIG+630 vs +660 s). A
-# quantity out of tolerance is a difference our LGC makes. Events (ignition, cut-off, orbit,
-# contact, touchdown) are tabled separately. Columns are those of the edit CSVs that common.lua's
-# ac.edits writes (vessel truth from Orbiter, LGC words by address).
-# milestone	column	tolerance	unit / meaning (stock spread)
-pdi	galt	480	m, altitude above the surface (319)
-pdi	hdot	2.4	m/s, vertical speed (1.57)
-pdi	vh	11	m/s, horizontal speed (7.42)
-pdi	lng	0.09	deg, longitude (0.059)
-pdi	lat	0.002	deg, latitude (0.001)
-pdi	mass	170	kg, LM mass (110)
-liftoff	hdot	0.93	m/s, vertical speed (0.62)
-liftoff	vh	7.4	m/s, horizontal speed (4.91)
-liftoff	mass	6.7	kg, LM mass (4.47)
+# NASSP mission edits: per milestone, the tolerance |ours - stock| may reach for each numeric
+# column of the edit CSVs (common.lua's ac.edits: vessel truth from Orbiter, CMC/LGC words), at
+# the same time since ignition (entry: since 400,000 ft), from ignition on.
+# Rule (lead, 2026-10-13): every numeric column, exactly 1.5 x the stock run's own spread (stock
+# headless -f 0.02 against stock headless -f 0.01, same scenario and script), no rounding, no hand
+# choice. Rows are the output of `tools/nassp_edits.py --derive <runs> <milestone>` and are
+# frozen before the dev run of that milestone is compared; a change repeats the stock runs and is
+# logged in docs/modules/nassp-integration.md "Test changes". A column with stock spread 0 (e.g.
+# liftoff eng) has tolerance 0. Euler angles near pitch 90 (liftoff bank / yaw) spread ~180 deg in
+# stock alone: their rows judge little; the CDU columns carry the attitude.
+# Derived 2026-10-13 from runs ref_pdi_H / ref_pdi_H01 and ref_liftoff_H / ref_liftoff_H01.
+# milestone	column	tolerance	note
+pdi	galt	478.9499999999989	stock spread 319.2999999999993 (1.5 x)
+pdi	hdot	2.3543894655	stock spread 1.5695929770000001 (1.5 x)
+pdi	vh	11.132475000000003	stock spread 7.421650000000001 (1.5 x)
+pdi	lng	0.08879999999999555	stock spread 0.05919999999999703 (1.5 x)
+pdi	lat	0.0012480000000000824	stock spread 0.0008320000000000549 (1.5 x)
+pdi	mass	165.59999999999945	stock spread 110.39999999999964 (1.5 x)
+pdi	dps	0.6183029999999999	stock spread 0.41220199999999996 (1.5 x)
+pdi	pitch	22.310699999999994	stock spread 14.873799999999996 (1.5 x)
+pdi	bank	41.34599999999999	stock spread 27.563999999999993 (1.5 x)
+pdi	yaw	40.92	stock spread 27.28 (1.5 x)
+pdi	cdux	4.8284912109375	stock spread 3.218994140625 (1.5 x)
+pdi	cduy	22.313232421875	stock spread 14.87548828125 (1.5 x)
+pdi	cduz	2.5048828125	stock spread 1.669921875 (1.5 x)
+pdi	gc	1.5	stock spread 1.0 (1.5 x)
+liftoff	galt	810.0	stock spread 540.0 (1.5 x)
+liftoff	hdot	0.9279000000000011	stock spread 0.6186000000000007 (1.5 x)
+liftoff	vh	7.365000000000123	stock spread 4.910000000000082 (1.5 x)
+liftoff	lng	0.08252999999999977	stock spread 0.05501999999999985 (1.5 x)
+liftoff	lat	0.004804199999999998	stock spread 0.0032027999999999987 (1.5 x)
+liftoff	mass	6.705000000000382	stock spread 4.470000000000255 (1.5 x)
+liftoff	eng	0.0	stock spread 0.0 (1.5 x)
+liftoff	pitch	12.439950000000003	stock spread 8.293300000000002 (1.5 x)
+liftoff	bank	268.8972	stock spread 179.26479999999998 (1.5 x)
+liftoff	yaw	269.37105	stock spread 179.5807 (1.5 x)
+liftoff	cdux	13.11767578125	stock spread 8.7451171875 (1.5 x)
+liftoff	cduy	12.392578125	stock spread 8.26171875 (1.5 x)
+liftoff	cduz	7.3004150390625	stock spread 4.866943359375 (1.5 x)
+liftoff	apo	12210.0	stock spread 8140.0 (1.5 x)
+liftoff	peri	15075.0	stock spread 10050.0 (1.5 x)

@@ -16,6 +16,11 @@ attitude, ...). For each milestone this script pairs the stock run's CSV with ou
 Usage: nassp_edits.py STOCK.csv OURS.csv MILESTONE [--tolerances sim/nassp/edits.tsv]
        nassp_edits.py --runs DIR            (every milestone found in DIR: ref_<m>_H/ and
                                              agc_<m>_H/ holding apollo-c-<m>-edits.csv)
+       nassp_edits.py --derive DIR MILESTONE (print the milestone's tolerance rows from the two
+                                             STOCK runs ref_<m>_H (-f 0.02) and ref_<m>_H01
+                                             (-f 0.01) only: every numeric column, exactly 1.5 x
+                                             their max difference, no rounding; for edits.tsv,
+                                             written before the dev run is compared)
 Exit status 1 when a quantity is out of tolerance or a milestone event is missing in ours.
 Standard library only; run with python3 -I.
 """
@@ -94,6 +99,9 @@ def engine(rows):
 
 
 def ignition(rows):
+    """The row the milestone's times count from: ignition, or entry interface (400,000 ft)."""
+    if 'vair' in rows[0]:
+        return first(rows, lambda r: (num(r, 'alt') or 1e9) < 121920.0)
     e = engine(rows)
     return first(rows, lambda r: (num(r, e) or 0) > 0.05)
 
@@ -144,7 +152,32 @@ def ev_liftoff(rows):
     return ev
 
 
-EVENTS = {'pdi': ev_pdi, 'liftoff': ev_liftoff}
+def ev_entry(rows):
+    ev = {}
+    ei = ignition(rows)
+    if not ei:
+        return ev
+    t0 = ei['_t']
+    ev['entry interface (400,000 ft), GET s'] = '%.1f' % float(ei['get'])
+    for mm in (63, 64, 65, 66, 67):
+        r = first(rows, lambda r, mm=mm: int(r['modreg'], 8) == mm and r['_t'] >= t0 - 600)
+        if r:
+            ev['P%d, EI+ s' % mm] = '%.1f' % (r['_t'] - t0)
+    g = max((r for r in rows if r['_t'] >= t0), key=lambda r: num(r, 'g') or 0)
+    ev['max deceleration, g at EI+ s'] = '%.2f at %.1f' % (num(g, 'g'), g['_t'] - t0)
+    n0 = num(ei, 'nobj')
+    d = first(rows, lambda r: r['_t'] > t0 and (num(r, 'alt') or 1e9) < 12192.0 and num(r, 'nobj') != n0)
+    if d:
+        ev['apex cover / drogues, EI+ s'] = '%.1f (alt %.0f m)' % (d['_t'] - t0, num(d, 'alt'))
+        ev['DSKY at the drogues'] = display(d)
+    w = first(rows, lambda r: r['_t'] > t0 and (num(r, 'alt') or 1e9) < 3.0)
+    if w:
+        ev['splashdown, EI+ s'] = '%.1f' % (w['_t'] - t0)
+        ev['splashdown lng / lat, deg'] = '%.4f / %.4f' % (num(w, 'lng'), num(w, 'lat'))
+    return ev
+
+
+EVENTS = {'pdi': ev_pdi, 'liftoff': ev_liftoff, 'entry': ev_entry}
 
 
 def tolerances(path, milestone):
@@ -168,6 +201,61 @@ def changes(rows, key):
     return out
 
 
+ANGLES = ('lng', 'pitch', 'bank', 'yaw', 'cdux', 'cduy', 'cduz')  # wrap at 360 deg
+META = ('get', 't', 'modreg', 'time1', 'time2')                    # clocks and mode words
+
+
+def numeric_columns(rows):
+    """The truth / DAP columns compared by number: every column whose values all parse as one
+    number (channel, alarm and DSKY words, clocks and multi-word erasable dumps excluded)."""
+    cols = []
+    for k in rows[0]:
+        if k.startswith('_') or k in META or k.startswith(('ch', 'failreg', 'dsptab')):
+            continue
+        vals = [r[k] for r in rows if r.get(k) not in ('', None)]
+        try:
+            [float(v) for v in vals]
+        except ValueError:
+            continue
+        if vals:
+            cols.append(k)
+    return cols
+
+
+def diff(a, b, k, tol=None):
+    """max |b - a| of column k, rows paired by time since ignition (a's rows from ignition on,
+    b's nearest within 0.6 s); returns (max, at s, first s above tol or None)."""
+    ia, ib = ignition(a), ignition(b)
+    mx, at, out = 0.0, None, None
+    for r in a:
+        dt = r['_t'] - ia['_t']
+        if dt < 0:
+            continue  # before ignition the runs differ by their checklist timing only
+        s = nearest(b, ib['_t'] + dt)
+        x, y = num(r, k), (num(s, k) if s else None)
+        if x is None or y is None:
+            continue
+        d = abs(y - x)
+        if k in ANGLES and d > 180:
+            d = 360 - d
+        if d > mx:
+            mx, at = d, dt
+        if tol is not None and d > tol and out is None:
+            out = dt
+    return mx, at, out
+
+
+def derive(d, milestone):
+    """edits.tsv rows of a milestone from its two stock runs (the rule of the file's header)."""
+    a = load(os.path.join(d, 'ref_%s_H' % milestone, 'apollo-c-%s-edits.csv' % milestone))
+    b = load(os.path.join(d, 'ref_%s_H01' % milestone, 'apollo-c-%s-edits.csv' % milestone))
+    for k in numeric_columns(a):
+        if k in b[0]:
+            mx = diff(a, b, k)[0]
+            print('%s\t%s\t%r\tstock spread %r (1.5 x)' % (milestone, k, 1.5 * mx, mx))
+    return 0
+
+
 def compare(stock, ours, milestone, tolfile):
     """Print the tables; return the number of failures."""
     fails = 0
@@ -180,25 +268,14 @@ def compare(stock, ours, milestone, tolfile):
     if not (ia and ib):
         return fails + 1
     print('\n| quantity | tolerance | max abs diff | at TIG+ s | first TIG+ s out |\n|---|---|---|---|---|')
-    for k, tol in tolerances(tolfile, milestone).items():
+    tols = tolerances(tolfile, milestone)
+    for k in numeric_columns(stock):
+        if k in ours[0] and k not in tols:
+            print('| %s | none (no tolerance row: not judged) | %.3f | - | - |' % (k, diff(stock, ours, k)[0]))
+    for k, tol in tols.items():
         if k not in stock[0] or k not in ours[0]:
             continue
-        mx, at, out = 0.0, None, None
-        for r in stock:
-            dt = r['_t'] - ia['_t']
-            if dt < 0:
-                continue  # before ignition the runs differ by their checklist timing only
-            s = nearest(ours, ib['_t'] + dt)
-            x, y = num(r, k), (num(s, k) if s else None)
-            if x is None or y is None:
-                continue
-            d = abs(y - x)
-            if k in ('lng', 'pitch', 'bank', 'yaw', 'cdux', 'cduy', 'cduz') and d > 180:
-                d = 360 - d
-            if d > mx:
-                mx, at = d, dt
-            if d > tol and out is None:
-                out = dt
+        mx, at, out = diff(stock, ours, k, tol)
         fails += 1 if out is not None else 0
         print('| %s | %g | %.3f | %s | %s |' % (k, tol, mx, '%.0f' % at if at is not None else '-', '%.0f' % out if out is not None else 'none'))
     for name, rows, i in (('stock', stock, ia), ('ours', ours, ib)):
@@ -218,6 +295,8 @@ def main():
         tolfile = args[i + 1]
         del args[i:i + 2]
     pairs = []
+    if len(args) == 3 and args[0] == '--derive' and args[2] in EVENTS:
+        return derive(args[1], args[2])
     if args and args[0] == '--runs':
         d = args[1]
         for m in EVENTS:
