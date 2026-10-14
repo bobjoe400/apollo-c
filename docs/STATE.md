@@ -23,10 +23,9 @@ Updated: 2026-10-13
 - structure: DONE (da52cdc): duplicates to one owner (2 fidelity
   findings), cross-vehicle shared, CSM V92 and LM P20/P22 dispatch gaps
   wired, three files split, 118 prototypes internal.
-- telemetry (Opus): the downlink lists send 92 of 128 items as zero;
-  rebuilt as ECADR tables read through the erasable map (no upward
-  calls), per-list tests, replay/oracle/yaTelemetry checks. Note:
-  docs/modules/telemetry.md.
+- telemetry: DONE (bbfc11f): all 11 downlists match yaAGC (per-list
+  oracle 101/101, DNDUMP oracle ~2,000 words/vehicle), five more
+  load-restore bugs fixed. Only the rendezvous leg runs now.
 - Mission status on our AGC in NASSP 9 (decisions and end state, timing
   differences listed as expected deviations): insertion+uplink, TLI,
   MCC-2, LOI, DOI, PDI/landing, liftoff, TEI, entry/splashdown all match

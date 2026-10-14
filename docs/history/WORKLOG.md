@@ -1060,3 +1060,9 @@
             rendezvous flies unattended, tolerances frozen; telemetry
             coast-and-align 89/88/81 of 99 words equal to yaAGC). Both
             relaunched from their notes.
+2026-10-14  telemetry DONE (bbfc11f): downlists as rope ECADR tables via the
+            erasable map; 11/11 lists match yaAGC; DNDUMP oracle; LM
+            replay 'TC trap' was replay.c dropping channel 7; five
+            load-restore bugs + shim PIPA counts at load. Open: TTOGO
+            0.4-0.8 s behind after a load restart; variable restart phase
+            with rope-address PHSNAME not resumable (known limitation).
