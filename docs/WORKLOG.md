@@ -935,3 +935,16 @@
             with the LR breaker open). Fixed in nassp_engine.c with a
             replay case (4/4). LM coasting warp 5x passes on stock; both
             PDI runs rerun under the 5x-coast / 1x-burn schedule.
+2026-10-13  User: real-time NASSP runs are not how NASA verified; researched
+            MIT's process (all-digital bit-by-bit simulation with scripted
+            batch cases and 'edits' did the bulk; hybrid real-time sim
+            validated crew procedures; systems test lab last). Decision:
+            NASSP milestones move to Orbiter console mode + --fixedstep
+            (confirmed in the 2024 binary) with generated per-milestone
+            edits diffed by script; the GUI run stays the demo. PDI root
+            cause (ours): zero-time C jobs let LRVJOB's RADSTALL collide
+            with LRHJOB (BAILOUT 1210 every 2 s, LR data discarded, 500 m
+            altitude error at P64). Approved: LRVJOB waits while RADCADR is
+            held (DEVIATION + test) and one executive rule bounding
+            self-rerunning jobs to one pass per cs (R31/V83 starved the
+            host at 64 passes per cs).
