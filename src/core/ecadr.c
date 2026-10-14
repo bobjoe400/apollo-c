@@ -18,6 +18,9 @@
  *   Name      Type      I/O  Scale          Description
  *   --------  --------  ---  -------------  ----------------------
  *   g_image   uint16_t  I/O  raw 15-bit     one word per ECADR, 00000..77777
+ *   g_shadow  uint16_t  I/O  raw 15-bit     the address map's shadow words:
+ *                                           each map entry's typed value as
+ *                                           it last saw it (AGC_EC_SHADOW_WORDS)
  *
  * EXTERNAL REFERENCES:
  *   none
@@ -26,7 +29,8 @@
  *   none (an address is masked to 15 bits; every value is in range)
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
- *   Bit 16 of an ECADR is ignored. A fresh start sets every word +0.
+ *   Bit 16 of an ECADR is ignored. A fresh start sets every word +0,
+ *   the shadow words too (the map then sees every typed value as new).
  **********************************************************************/
 #include <stdint.h>
 
@@ -35,7 +39,8 @@
 #define EC_WORDS    0100000u /* address 00000 .. 77777 */
 #define EC_ADDR_MAX 077777u  /* a 15-bit address       */
 
-static uint16_t g_image[EC_WORDS]; /* erasable image, one 15-bit word per ECADR */
+static uint16_t g_image[EC_WORDS];             /* erasable image, one 15-bit word per ECADR */
+static uint16_t g_shadow[AGC_EC_SHADOW_WORDS]; /* the address map's shadow words  */
 
 /**********************************************************************
  * AGC: none (fresh start) -- set every word of the 15-bit address
@@ -50,6 +55,11 @@ void agc_erase_reset_ecadr(void)
     for (uint32_t i = 0; i < EC_WORDS; i++)
     {
         g_image[i] = 0;
+    }
+
+    for (uint32_t i = 0; i < AGC_EC_SHADOW_WORDS; i++)
+    {
+        g_shadow[i] = 0;
     }
 }
 
@@ -89,4 +99,43 @@ void agc_erase_raw_read(uint16_t ecadr, uint16_t *word)
 void agc_erase_raw_write(uint16_t ecadr, uint16_t word)
 {
     g_image[ecadr & EC_ADDR_MAX] = word;
+}
+
+/**********************************************************************
+ * AGC: none (erasable map bookkeeping) -- read shadow word index: the
+ *   word of a map entry's typed value as the map last saw it
+ *
+ * FUNCTION NAME: agc_erase_shadow_read
+ *
+ * ARGUMENTS:
+ *   Argument  Type        I/O  Description (scale)
+ *   --------  ----------  ---  ------------------------------------
+ *   index     uint16_t    I    0 .. AGC_EC_SHADOW_WORDS - 1 (the map
+ *                              lays its entries out below that bound,
+ *                              tests/erasable_map)
+ *   word      uint16_t *  O    the word, raw 15-bit
+ *
+ * RETURNS: none
+ **********************************************************************/
+void agc_erase_shadow_read(uint16_t index, uint16_t *word)
+{
+    *word = g_shadow[index % AGC_EC_SHADOW_WORDS];
+}
+
+/**********************************************************************
+ * AGC: none (erasable map bookkeeping) -- store shadow word index
+ *
+ * FUNCTION NAME: agc_erase_shadow_write
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  ------------------------------------
+ *   index     uint16_t  I    0 .. AGC_EC_SHADOW_WORDS - 1
+ *   word      uint16_t  I    the word, raw 15-bit
+ *
+ * RETURNS: none
+ **********************************************************************/
+void agc_erase_shadow_write(uint16_t index, uint16_t word)
+{
+    g_shadow[index % AGC_EC_SHADOW_WORDS] = word;
 }

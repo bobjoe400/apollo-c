@@ -1041,3 +1041,21 @@ agc_status_t agc_task_rr_remode(void)
 
     return (rr_remode_start());
 }
+
+/**********************************************************************
+ * LASTYCMD +k (LM): the last RR drive commands, sent on the downlists.
+ * AGC: LASTYCMD, LASTXCMD (Luminary099 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_lastycmd
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   k  int  I    0 LASTYCMD (trunnion), 1 LASTXCMD (shaft)
+ *
+ * RETURNS: agc_sp_t -- the last RR drive command, pulses unscaled
+ **********************************************************************/
+agc_sp_t agc_erase_lastycmd(int k)
+{
+    return (rr_designate_state.lastcmd[k]);
+}

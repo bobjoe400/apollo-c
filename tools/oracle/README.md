@@ -37,9 +37,15 @@ directives, `#` starts a comment:
     whatis SPSIN                  # print a symbol's address as a comment
     run sin_1/8rev                # execute; the tag names the CASE block
     rupts 1                       # allow interrupts (default 0: all rupts suppressed)
+    downlink 101                  # next run: DOWNRUPT only (requested at once, then by
+                                  # yaAGC's 20 ms timer), no stop label; prints LOAD ecadr
+                                  # word (each set word), CHAN ch word (11-14, 30-33) and
+                                  # DNLINK n ch34 ch35 wordorder for 101 word pairs
+                                  # (cases/downlink_*.spec, gen/gen_downlink.py)
     trace 1                       # one line per instruction on stderr
 
-Names: any symbol from the symtab, `NAME+n` / `NAME-n` (decimal word offset),
+Names: any symbol from the symtab (also 8NN, R-OTHER: the whole name is tried first),
+`NAME+n` / `NAME-n` (decimal word offset),
 unswitched erasable `0154`, banked erasable `E5,1532`, fixed `30,2000`,
 fixed-fixed `05033`.  `set` lines are consumed by the next `run` (the CPU is
 reset to power-up state before each run); `entry/stop/q/get/ebank/...`

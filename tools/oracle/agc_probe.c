@@ -64,6 +64,7 @@ static int ebank_override = -1;
 static int fbank_override = -1;
 static unsigned long long max_cycles = DEFAULT_MAX_CYCLES;
 static int allow_rupts = 0;
+static int downlink_n = 0;   /* 'downlink N': capture N DP words of channels 34/35 */
 static int trace = 0;
 static set_t sets[MAX_SETS]; static int nsets;
 static get_t gets[MAX_GETS]; static int ngets;
@@ -151,11 +152,33 @@ static void parse_loc(const char *text, loc_t *out)
     p = trim(buf);
     strncpy(out->name, p, sizeof out->name - 1); out->name[sizeof out->name - 1] = 0;
 
-    plus = strpbrk(p + 1, "+-");
-    if (plus && !isdigit((unsigned char)p[0]) ) {
+    /* A symbol as written (8NN starts with a digit; R-OTHER has a '-'). */
+    {
+        Symbol_t *whole = find_symbol(p);
+        if (whole) {
+            if (symbol_loc(whole, 0, out) != 0) die("symbol '%s' is not an address", p);
+            return;
+        }
+    }
+    /* NAME+n / NAME-n: the last sign followed only by digits (names such
+     * as R-OTHER contain a '-'). */
+    plus = NULL;
+    {
+        char *q;
+        for (q = p + strlen(p) - 1; q > p && isdigit((unsigned char)*q); q--) {}
+        if (q > p && (*q == '+' || *q == '-') && q[1]) plus = q;
+    }
+    if (plus && (!isdigit((unsigned char)p[0]) || find_symbol(p) == NULL) && strchr(p, ',') == NULL) {
         offset = (int)strtol(plus, NULL, 10);     /* AGC "+1" offsets are decimal */
         *plus = 0;
         p = trim(p);
+        {
+            Symbol_t *base = find_symbol(p);
+            if (base) {
+                if (symbol_loc(base, offset, out) != 0) die("symbol '%s' is not an address", p);
+                return;
+            }
+        }
     }
     if (p[0] == 'E' && isdigit((unsigned char)p[1]) && p[2] == ',') {
         int bank = p[1] - '0', s = (int)strtol(p + 3, NULL, 8);
@@ -349,6 +372,58 @@ static void print_get(agc_t *s, const get_t *g)
     }
 }
 
+/* ECADR of an erasable location (EEE RRRRRRRR; unswitched as is). */
+static int loc_ecadr(const loc_t *l)
+{
+    return (l->sreg < 01400) ? l->sreg : (l->bank << 8) | (l->sreg & 0377);
+}
+
+/* 'downlink N' run: the erasable as set, DOWNRUPT requested at once and
+ * then by yaAGC's own 20 ms timer after each channel 34/35 pair; every
+ * other interrupt suppressed.  Prints the loaded words (LOAD ecadr word),
+ * the channels the lists send (CHAN), then one DNLINK line per word pair
+ * (channel 34, channel 35, channel 13 bit 7 = word order code). */
+static void do_downlink(agc_t *s, const char *tag)
+{
+    static const int chans[] = {011, 012, 013, 014, 030, 031, 032, 033};
+    unsigned long long cyc = 0;
+    int i, n = 0, was = 0;
+
+    printf("CASE %s\n", tag);
+    printf("ROPE %s\n", rope_name);
+    printf("ENTRY %s\n", entry.name);
+    for (i = 0; i < nsets; i++) {
+        int w;
+        for (w = 0; w < sets[i].nwords; w++) {
+            loc_t l = sets[i].loc;
+            l.sreg += w;
+            printf("LOAD %05o %05o\n", loc_ecadr(&l), sets[i].words[w] & 077777);
+        }
+    }
+    for (i = 0; i < (int)(sizeof chans / sizeof chans[0]); i++)
+        printf("CHAN %03o %05o\n", chans[i], s->InputChannel[chans[i]] & 077777);
+    s->AllowInterrupt = 1;
+    s->InterruptRequests[8] = 1;
+    while (n < downlink_n && cyc < max_cycles) {
+        if (trace && !s->PendFlag) trace_step(s, cyc);
+        agc_engine(s);
+        cyc++;
+        for (i = 1; i <= NUM_INTERRUPT_TYPES; i++) if (i != 8) s->InterruptRequests[i] = 0;
+        if (s->DownruptTimeValid && !was)
+            printf("DNLINK %d %05o %05o %d\n", n++, s->InputChannel[034] & 077777,
+                   s->InputChannel[035] & 077777, (s->InputChannel[013] >> 6) & 1);
+        was = s->DownruptTimeValid;
+    }
+    nruns++;
+    printf("STATUS %s\n", n < downlink_n ? "LIMIT" : "OK");
+    printf("STOP DNLINK\n");
+    printf("CYCLES %llu\n", cyc);
+    printf("END\n");
+    if (n < downlink_n) exit_status = 1;
+    nsets = 0;
+    downlink_n = 0;
+}
+
 static void do_run(const char *tag)
 {
     agc_t *s = &cpu;
@@ -382,6 +457,8 @@ static void do_run(const char *tag)
     /* Keep BB consistent even if the spec poked EB/FB directly. */
     s->Erasable[0][RegBB] = (int16_t)((s->Erasable[0][RegFB] & 076000)
                                       | ((s->Erasable[0][RegEB] & 03400) >> 8));
+
+    if (downlink_n > 0) { do_downlink(s, tag); return; }
 
     for (;;) {
         if (!s->PendFlag) {
@@ -482,6 +559,7 @@ static void process_line(char *line)
     else if (!strcmp(kw, "fbank")) fbank_override = (int)strtol(arg, NULL, 8);
     else if (!strcmp(kw, "maxcycles")) max_cycles = strtoull(arg, NULL, 10);
     else if (!strcmp(kw, "rupts")) allow_rupts = atoi(arg);
+    else if (!strcmp(kw, "downlink")) downlink_n = atoi(arg);
     else if (!strcmp(kw, "trace")) trace = atoi(arg);
     else if (!strcmp(kw, "set")) {
         char *eq = strchr(arg, '='), *tok, *save;

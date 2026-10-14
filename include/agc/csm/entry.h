@@ -435,4 +435,9 @@ agc_sp_t entry_sp_mp(agc_sp_t a, agc_sp_t b); /* MP: high word of a b      */
  * 1-14, i.e. the sum modulo 1.0 (an angle/360 wraps by 360 deg).        */
 agc_sp_t entry_sp_store_ovf(int32_t sum);
 
+/* Entry DAP words the entry downlist sends (dap.c): PAXERR1 roll
+ * error/360 B0, PREL +k (k 0..2: PREL QREL RREL) rate x TCDU/180 B0.     */
+agc_sp_t agc_erase_paxerr1(void);
+agc_sp_t agc_erase_prel(int k);
+
 #endif /* AGC_CSM_ENTRY_H */

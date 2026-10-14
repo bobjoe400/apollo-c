@@ -1118,3 +1118,47 @@ agc_status_t agc_lm_rendz_noun_read(uint16_t data_id, agc_dp_t *v)
 
     return (AGC_STATUS_NOT_FOUND);
 }
+
+/**********************************************************************
+ * RM (LM, LRS22.1): the RR range of the mark, sent on the downlists.
+ * AGC: RM (Luminary099 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_rm
+ *
+ * RETURNS: agc_dp_t -- RM, m 2^29
+ **********************************************************************/
+agc_dp_t agc_erase_rm(void)
+{
+    return (lmnav_state()->rm);
+}
+
+/**********************************************************************
+ * MKTIME (LM, LRS22.1): the time of the RR mark, sent on the downlists.
+ * AGC: MKTIME (Luminary099 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_mktime
+ *
+ * RETURNS: agc_dp_t -- MKTIME, cs 2^28
+ **********************************************************************/
+agc_dp_t agc_erase_mktime(void)
+{
+    return (lmnav_state()->mktime);
+}
+
+/**********************************************************************
+ * RANGRDOT +k (LM): the raw RR range and range rate of the mark, sent on the downlists.
+ * AGC: RANGRDOT (Luminary099 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_rangrdot
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   k  int  I    0 raw range, 1 raw range rate
+ *
+ * RETURNS: uint16_t -- RANGRDOT +k, raw word
+ **********************************************************************/
+uint16_t agc_erase_rangrdot(int k)
+{
+    return (lmnav_state()->rangrdot[k]);
+}

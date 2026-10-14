@@ -85,6 +85,7 @@
 #include "agc/nav/integration.h"
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
+#include "internal.h"
 
 #define EC_STATE     0074u   /* STATE = FLAGWRD0 (both ropes, unswitched)   */
 #define EC_WORD_MAX  077777u /* one AGC word (15 bits)                  */
@@ -94,164 +95,6 @@
 #define EC_SV_DPS    21      /* DP values in a state vector block         */
 #define EC_DP_WORDS  2       /* words in a DP element                    */
 #define EC_TP_WORDS  3       /* words in a TP element                    */
-
-/* Named erasables with a typed home.                                      */
-typedef enum ec_item
-{
-    EC_MODREG = 0,   /* SP   MODREG                            */
-    EC_CSMMASS,      /* SP   CSMMASS, kg 2^16                  */
-    EC_LEMMASS,      /* SP   LEMMASS, kg 2^16                  */
-    EC_OPTION1,      /* SP x3 OPTION1..3 (CSM OPTION1..2)      */
-    EC_TRKMKCNT,     /* SP   TRKMKCNT                          */
-    EC_CDUCHKWD,     /* SP   CDUCHKWD (CSM)                    */
-    EC_P37RANGE,     /* SP   P37RANGE (CSM)                    */
-    EC_ZOOMTIME,     /* SP   ZOOMTIME (LM)                     */
-    EC_S61DT,        /* SP   S61DT (CSM)                       */
-    EC_CM_GYMDT,     /* SP   CM/GYMDT (CSM)                    */
-    EC_IMUCOMP,      /* SP x15 PBIASX PIPASCFX .. ADSRAZ (IMU compensation pad load) */
-    EC_GCOMPSW,      /* SP   GCOMPSW                           */
-    EC_LUNARCOEF,    /* SP x2 E3J22R2M, E32C31RM (lunar potential) */
-    EC_EMDOT,        /* SP   EMDOT SPS flow (CSM pad load)     */
-    EC_DVTHRESH,     /* SP   DVTHRESH (CSM)                    */
-    EC_FANG,         /* SP   FANG SPS thrust (CSM)             */
-    EC_LADPAD,       /* SP   LADPAD (CSM entry)                */
-    EC_LODPAD,       /* SP   LODPAD (CSM entry)                */
-    EC_ALFAPAD,      /* SP   ALFAPAD (CSM entry)               */
-    EC_ETDECAY,      /* SP   ETDECAY (CSM)                     */
-    EC_ESTROKER,     /* SP   ESTROKER (CSM TVC)                */
-    EC_EKPRIME,      /* SP x2 EKPRIME (CSM TVC)                */
-    EC_EKTLX_I,      /* SP x3 EKTLX/I (CSM TVC)                */
-    EC_EREPFRAC,     /* SP x2 EREPFRAC (CSM TVC)               */
-    EC_PACTOFF,      /* SP   PACTOFF (CSM)                     */
-    EC_YACTOFF,      /* SP   YACTOFF (CSM)                     */
-    EC_HBN10,        /* SP x15 HBN10 .. HBD32 (CSM TVC filter) */
-    EC_CSM_INERTIA,  /* SP x3 IXX, IAVG, IAVG/TLX (CSM MASSPROP, DAPs) */
-    EC_CSM_HOLDFLAG, /* SP  HOLDFLAG (CSM RCS DAP)              */
-    EC_RTX,          /* SP x2 RTX1, RTX2 (conic body: Earth / Moon) */
-    EC_LM_HIASCENT,  /* SP   HIASCENT (LM DAP pad load)        */
-    EC_LM_ROLLPIT,   /* SP x2 ROLLTIME, PITTIME (LM)           */
-    EC_LM_DAPGAINS,  /* SP x7 DKTRAP DKOMEGAN DKKAOSN LMTRAP LMOMEGAN LMKAOSN DKDB (LM) */
-    EC_LM_IGNAOS,    /* SP x2 IGNAOSQ, IGNAOSR (LM)            */
-    EC_LM_SKALSKAL,  /* SP   SKALSKAL (LM landing radar)       */
-    EC_LM_LRPAD,     /* SP x13 LRALPHA LRBETA1 LRALPHA2 LRBETA2 LRVMAX LRVF LRWVZ/Y/X LRWVFZ/Y/X LRWVFF (LM) */
-    EC_LM_LRHMAX,    /* SP x2 LRHMAX, LRWH (LM)                */
-    EC_LM_RPCRT,     /* SP x2 RPCRTIME, RPCRTQSW (LM)          */
-    EC_LM_NAVPAD,    /* SP x10 WRENDPOS WRENDVEL WSHAFT WTRUN RMAX VMAX WSURFPOS WSURFVEL SHAFTVAR TRUNVAR (LM) */
-    EC_LM_VARMIN,    /* SP x2 RVARMIN, VVARMIN (LM)            */
-    EC_LM_BRK_SP,    /* SP x2 TCGFBRAK, TCGIBRAK (LM)           */
-    EC_LM_APP_SP,    /* SP x2 TCGFAPPR, TCGIAPPR (LM)           */
-    EC_LM_CRIT,      /* SP x2 LOWCRIT, HIGHCRIT (LM)            */
-    EC_LM_RODSCALE,  /* SP  RODSCALE (LM)                       */
-    EC_LM_TEND,      /* SP x4 TENDBRAK TENDAPPR DELTTFAP LEADTIME (LM) */
-    EC_UPSVFLAG,     /* SP   UPSVFLAG                          */
-    EC_DAPDATR1,     /* RAW  DAPDATR1                          */
-    EC_DAPDATR2,     /* RAW  DAPDATR2 (CSM)                    */
-    EC_MARKSTAT,     /* RAW  MARKSTAT                          */
-    EC_IMODES30,     /* RAW  IMODES30                          */
-    EC_IMODES33,     /* RAW  IMODES33                          */
-    EC_DSPTAB,       /* RAW x12 DSPTAB                         */
-    EC_FAILREG,      /* RAW x3 FAILREG                         */
-    EC_THETAD,       /* RAW x3 THETAD                          */
-    EC_AOTAZ,        /* RAW x6 AOTAZ (LM)                      */
-    EC_AOTEL,        /* RAW x6 AOTEL (LM)                      */
-    EC_MARKDOWN,     /* RAW x7 MARKDOWN (CSM)                  */
-    EC_PHASES,       /* RAW x12 -PHASE1 PHASE1 .. -PHASE6 PHASE6 */
-    EC_TBASES,       /* RAW x12 TBASE1 PHSPRDT1 .. (PHSPRDTn not kept) */
-    EC_LONGBASE,     /* RAW x2 LONGBASE (TIME2, TIME1)         */
-    EC_LM_ASC_WRD,   /* RAW x16 Y DRDOT DYDOT DZDOT PCONS YCONS PRATE YRATE (LM ascent) */
-    EC_LM_ASC_GT,    /* RAW x2 TBUP or GEFF as stored (LM ascent): k 0 hi, 1 lo */
-    EC_LM_ASC_GEFF,  /* RAW x2 GEFF as stored (LM ascent)      */
-    EC_CSM_THETADX,  /* RAW x3 THETADX..Z hold reference (CSM RCS DAP) */
-    EC_MARK2DWN,     /* RAW x7 MARK2DWN (CSM)                  */
-    EC_PIPTIME,      /* DP   PIPTIME, cs 2^28                  */
-    EC_TIG,          /* DP   TIG                               */
-    EC_TTOGO,        /* DP   TTOGO                             */
-    EC_TGO,          /* DP   TGO                               */
-    EC_TTPI,         /* DP   TTPI                              */
-    EC_TEVENT,       /* DP   TEVENT                            */
-    EC_T3TOT4,       /* DP   T3TOT4 (CSM)                      */
-    EC_RR_AZ,        /* DP   RR-AZ (LM)                        */
-    EC_RR_ELEV,      /* DP   RR-ELEV (LM)                      */
-    EC_RTED1,        /* DP   RTED1 (CSM)                       */
-    EC_TLAND,        /* DP   TLAND (LM)                        */
-    EC_P40TMP,       /* DP   P40TMP (CSM)                      */
-    EC_SAVET_30,     /* DP   SAVET-30 (LM)                     */
-    EC_LM_MASS,      /* DP   MASS, kg 2^16 (LM)                */
-    EC_LAT,          /* DP   LAT, revs 2^0 (noun 43)           */
-    EC_LONG,         /* DP   LONG, revs 2^0                    */
-    EC_ALT,          /* DP   ALT, m 2^29                       */
-    EC_AZO,          /* DP   AZO, revs (launch pad load)       */
-    EC_NEG_AYO,      /* DP   -AYO, rad                         */
-    EC_AXO,          /* DP   AXO, rad                          */
-    EC_504LM,        /* DP x3 504LM, rad                       */
-    EC_VECOEM,       /* DP x30 VECOEM lunar ephemeris (CSM)    */
-    EC_RESO,         /* DP x3 RESO (CSM)                       */
-    EC_VESO,         /* DP x3 VESO (CSM)                       */
-    EC_OMEGAES,      /* DP   OMEGAES (CSM)                     */
-    EC_LM_BRK_DP,    /* DP x13 RBRFG VBRFG ABRFG VBRFG* ABRFG* JBRFG* GAINBRAK (LM) */
-    EC_LM_APP_DP,    /* DP x13 RAPFG .. GAINAPPR (LM)          */
-    EC_LM_IGN,       /* DP x6 VIGN RIGNX RIGNZ KIGNX/B4 KIGNY/B8 KIGNV/B4 (LM) */
-    EC_LM_V2FG,      /* DP x4 V2FG, TAUVERT (LM)               */
-    EC_LM_ABORT,     /* DP x17 TAUROD LAG/TAU MINFORCE MAXFORCE ABTCOF VMIN YLIM ABTRDOT COSTHET1/2 (LM) */
-    EC_LM_ASC_ENG,   /* DP x3 AT VE TTO (LM ascent engine data) */
-    EC_LM_ASC_TGT,   /* DP x4 RDOTD YDOTD ZDOTD /R/MAG (LM ascent) */
-    EC_LM_ASC_ACC,   /* DP x3 ATY ATR ATP (LM ascent thrust components) */
-    EC_LM_ASC_RCO,   /* DP x2 RCO YCO (LM ascent targets)       */
-    EC_CSM_DELCDU,   /* DP x3 DELCDUX..Z (CSM RCS DAP steering) */
-    EC_CSM_CDUD,     /* DP x3 CDUXD..ZD (CSM RCS DAP steering)  */
-    EC_EK1VAL,       /* DP   EK1VAL (CSM)                      */
-    EC_EK2VAL,       /* DP   EK2VAL (CSM)                      */
-    EC_EK3VAL,       /* DP   EK3VAL (CSM)                      */
-    EC_LM_RADSKAL,   /* DP   RADSKAL (LM landing radar)        */
-    EC_LM_DELQFIX,   /* DP   DELQFIX (LM landing radar)        */
-    EC_LM_TNEWA,     /* DP   TNEWA (LM)                        */
-    EC_LM_RANGEVAR,  /* DP   RANGEVAR (LM RR variance)         */
-    EC_LM_RATEVAR,   /* DP   RATEVAR (LM RR variance)          */
-    EC_LM_ATIGINC,   /* DP   ATIGINC (LM)                      */
-    EC_LM_PTIGINC,   /* DP   PTIGINC (LM)                      */
-    EC_LM_HDOTDISP,  /* DP   HDOTDISP = RDOT (LM SERVICER, ascent) */
-    EC_PIPTIME1,     /* DP   PIPTIME1 average-G start time, cs 2^28 */
-    EC_LM_LAND_MAG,  /* DP   /LAND/ site radius, m 2^24 (LM)   */
-    EC_EMSALT,       /* DP   EMSALT (CSM entry)                */
-    EC_LAT_SPL,      /* DP   LAT(SPL) entry target, revs (CSM) */
-    EC_LNG_SPL,      /* DP   LNG(SPL) entry target, revs (CSM) */
-    EC_RN,           /* VEC  RN                                */
-    EC_VN,           /* VEC  VN                                */
-    EC_DELV,         /* VEC  DELV                              */
-    EC_VGTIG,        /* VEC  VGTIG                             */
-    EC_RLS,          /* VEC  RLS                               */
-    EC_DELVSLV,      /* VEC  DELVSLV = DELVLVC (external dV)   */
-    EC_X789,         /* VEC  X789 (W-matrix states 7-9)         */
-    EC_LM_UNFC,      /* VEC  UNFC/2 thrust command (LM)        */
-    EC_LM_UNWC,      /* VEC  UNWC/2 window command (LM)        */
-    EC_LM_VGVECT,    /* VEC  VGVECT ascent velocity to be gained (LM) */
-    EC_LM_LAXIS,     /* VEC  LAXIS ascent cross-range axis (LM) */
-    EC_LM_QAXIS,     /* VEC  QAXIS = UHYP (LM)                 */
-    EC_LM_ZAXIS1,    /* VEC  ZAXIS1 = UHZP (LM)                */
-    EC_UNITW,        /* VEC  UNITW Earth polar axis (CM; -AYO, AXO its first words) */
-    EC_RN1,          /* VEC  RN1 average-G start position      */
-    EC_VN1,          /* VEC  VN1 average-G start velocity      */
-    EC_GDT1_2,       /* VEC  GDT1/2 gravity of RN1             */
-    EC_GDT_2,        /* VEC  GDT/2 gravity of RN               */
-    EC_LM_R_CSM,     /* VEC  R(CSM) MUNRVG CSM position, SM (LM) */
-    EC_LM_V_CSM,     /* VEC  V(CSM) MUNRVG CSM velocity, SM (LM) */
-    EC_SV_TEMP,      /* SV   RRECT..XKEP (uplink / integration buffer, 42 words) */
-    EC_SV_CSM,       /* SV   RRECTCSM..XKEPCSM (42 words)       */
-    EC_SV_LEM,       /* SV   RRECTLEM..XKEPLEM (42 words)       */
-    EC_XSMD,         /* MAT  XSMD.. desired REFSMMAT, 2^1      */
-    EC_REFSMMAT,     /* MAT  REFSMMAT, 2^1                     */
-    EC_TEPHEM,       /* TP   TEPHEM, cs 2^42                   */
-    EC_TIMEMO        /* TP   TIMEMO, cs 2^42 (CSM)             */
-} ec_item_t;
-
-/* How an item's words group into values.                                 */
-typedef enum ec_layout
-{
-    EC_SP = 0, /* one signed word per element               */
-    EC_RAW,    /* one bit-pattern word per element          */
-    EC_DP,     /* two words per element                     */
-    EC_TP      /* three words                               */
-} ec_layout_t;
 
 typedef struct ec_entry
 {
@@ -264,10 +107,10 @@ typedef struct ec_entry
  * first entry holding an address wins: FANG (1774) precedes EK3VAL, whose
  * DP K3VAL (S40.13 DDV) is EK3VAL with FANG as its low word, so a FANG
  * pad load reaches both (sp_set).                                         */
-static const ec_entry_t k_map_csm[] = { {00306u, 18, EC_XSMD}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01103u, 2, EC_LAT}, {01105u, 2, EC_LONG}, {01107u, 2, EC_ALT}, {01126u, 1, EC_TRKMKCNT}, {01131u, 2, EC_OPTION1}, {01155u, 3, EC_THETAD}, {01162u, 6, EC_DELV}, {01170u, 6, EC_RN}, {01176u, 6, EC_VN}, {01204u, 2, EC_PIPTIME}, {01320u, 1, EC_IMODES30}, {01321u, 1, EC_IMODES33}, {01330u, 1, EC_MARKSTAT}, {01336u, 2, EC_TEVENT}, {01341u, 1, EC_CDUCHKWD}, {01351u, 2, EC_RTED1}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01735u, 18, EC_REFSMMAT}, {02025u, 6, EC_RLS}, {02640u, 2, EC_T3TOT4}, {03066u, 1, EC_DAPDATR1}, {03067u, 1, EC_DAPDATR2}, {03073u, 1, EC_LEMMASS}, {03074u, 1, EC_CSMMASS}, {03325u, 1, EC_CM_GYMDT}, {03374u, 1, EC_S61DT}, {03376u, 1, EC_P37RANGE}, {03400u, 2, EC_LAT_SPL}, {03402u, 2, EC_LNG_SPL}, {03404u, 6, EC_DELVSLV}, {03412u, 2, EC_TIG}, {03427u, 2, EC_TGO}, {03502u, 7, EC_MARK2DWN}, {03660u, 2, EC_TTOGO}, {03662u, 2, EC_TTPI}, {03672u, 2, EC_P40TMP}, {03674u, 7, EC_MARKDOWN}, {03720u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 6, EC_UNITW}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02011u, 6, EC_504LM}, {02033u, 3, EC_TIMEMO}, {02036u, 60, EC_VECOEM}, {02132u, 6, EC_RESO}, {02140u, 6, EC_VESO}, {02146u, 2, EC_OMEGAES}, {00110u, 1, EC_EMDOT}, {01353u, 1, EC_DVTHRESH}, {01767u, 2, EC_EK1VAL}, {01771u, 2, EC_EK2VAL}, {01774u, 1, EC_FANG}, {01773u, 2, EC_EK3VAL}, {02017u, 2, EC_EMSALT}, {03007u, 1, EC_LADPAD}, {03010u, 1, EC_LODPAD}, {03011u, 1, EC_ALFAPAD}, {03012u, 1, EC_ETDECAY}, {03013u, 1, EC_ESTROKER}, {03014u, 2, EC_EKPRIME}, {03016u, 3, EC_EKTLX_I}, {03021u, 2, EC_EREPFRAC}, {03023u, 1, EC_PACTOFF}, {03024u, 1, EC_YACTOFF}, {03025u, 15, EC_HBN10}, {01776u, 2, EC_LUNARCOEF}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01135u, 2, EC_LONGBASE}, {03070u, 3, EC_CSM_INERTIA}, {01332u, 1, EC_CSM_HOLDFLAG}, {03172u, 3, EC_CSM_THETADX}, {03175u, 6, EC_CSM_DELCDU}, {03246u, 6, EC_CSM_CDUD}, {01206u, 6, EC_GDT_2}, {01231u, 6, EC_RN1}, {01237u, 6, EC_VN1}, {01245u, 2, EC_PIPTIME1}, {01247u, 6, EC_GDT1_2}, {03745u, 2, EC_RTX}};
+static const ec_entry_t k_map_csm[] = { {00306u, 18, EC_XSMD}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01103u, 2, EC_LAT}, {01105u, 2, EC_LONG}, {01107u, 2, EC_ALT}, {01126u, 1, EC_TRKMKCNT}, {01131u, 2, EC_OPTION1}, {01155u, 3, EC_THETAD}, {01162u, 6, EC_DELV}, {01170u, 6, EC_RN}, {01176u, 6, EC_VN}, {01204u, 2, EC_PIPTIME}, {01320u, 1, EC_IMODES30}, {01321u, 1, EC_IMODES33}, {01330u, 1, EC_MARKSTAT}, {01336u, 2, EC_TEVENT}, {01341u, 1, EC_CDUCHKWD}, {01351u, 2, EC_RTED1}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01735u, 18, EC_REFSMMAT}, {02025u, 6, EC_RLS}, {02640u, 2, EC_T3TOT4}, {03066u, 1, EC_DAPDATR1}, {03067u, 1, EC_DAPDATR2}, {03073u, 1, EC_LEMMASS}, {03074u, 1, EC_CSMMASS}, {03325u, 1, EC_CM_GYMDT}, {03374u, 1, EC_S61DT}, {03376u, 1, EC_P37RANGE}, {03400u, 2, EC_LAT_SPL}, {03402u, 2, EC_LNG_SPL}, {03404u, 6, EC_DELVSLV}, {03412u, 2, EC_TIG}, {03427u, 2, EC_TGO}, {03502u, 7, EC_MARK2DWN}, {03660u, 2, EC_TTOGO}, {03662u, 2, EC_TTPI}, {03672u, 2, EC_P40TMP}, {03674u, 7, EC_MARKDOWN}, {03720u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 6, EC_UNITW}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02011u, 6, EC_504LM}, {02033u, 3, EC_TIMEMO}, {02036u, 60, EC_VECOEM}, {02132u, 6, EC_RESO}, {02140u, 6, EC_VESO}, {02146u, 2, EC_OMEGAES}, {00110u, 1, EC_EMDOT}, {01353u, 1, EC_DVTHRESH}, {01767u, 2, EC_EK1VAL}, {01771u, 2, EC_EK2VAL}, {01774u, 1, EC_FANG}, {01773u, 2, EC_EK3VAL}, {02017u, 2, EC_EMSALT}, {03007u, 1, EC_LADPAD}, {03010u, 1, EC_LODPAD}, {03011u, 1, EC_ALFAPAD}, {03012u, 1, EC_ETDECAY}, {03013u, 1, EC_ESTROKER}, {03014u, 2, EC_EKPRIME}, {03016u, 3, EC_EKTLX_I}, {03021u, 2, EC_EREPFRAC}, {03023u, 1, EC_PACTOFF}, {03024u, 1, EC_YACTOFF}, {03025u, 15, EC_HBN10}, {01776u, 2, EC_LUNARCOEF}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01135u, 2, EC_LONGBASE}, {03070u, 3, EC_CSM_INERTIA}, {01332u, 1, EC_CSM_HOLDFLAG}, {03172u, 3, EC_CSM_THETADX}, {03175u, 6, EC_CSM_DELCDU}, {03246u, 6, EC_CSM_CDUD}, {01206u, 6, EC_GDT_2}, {01231u, 6, EC_RN1}, {01237u, 6, EC_VN1}, {01245u, 2, EC_PIPTIME1}, {01247u, 6, EC_GDT1_2}, {03745u, 2, EC_RTX}, /* the downlists */ {00024u, 2, EC_F_TIME}, {00032u, 8, EC_F_COUNTERS}, {00300u, 24, EC_F_UPLINK}, {00302u, 2, EC_F_BESTI}, {01154u, 1, EC_F_REDOCTR}, {01331u, 1, EC_F_OPTMODES}, {01125u, 1, EC_F_VHFCNT}, {01151u, 2, EC_F_VHFTIME}, {01721u, 6, EC_F_R_OTHER}, {01727u, 6, EC_F_V_OTHER}, {02320u, 6, EC_F_RANGE}, {02351u, 4, EC_F_HAPOX}, {02444u, 6, EC_F_DELVEET1}, {02610u, 2, EC_F_DELTAR}, {02632u, 2, EC_F_DIFFALT}, {02633u, 2, EC_F_LAUNCHAZ}, {02634u, 2, EC_F_TCDH}, {02636u, 2, EC_F_TCSI}, {02636u, 2, EC_F_DELVTPF}, {02747u, 1, EC_F_8NN}, {02751u, 1, EC_F_LANDMARK}, {02757u, 6, EC_F_OGC}, {03076u, 3, EC_F_AK}, {03101u, 1, EC_F_RCSFLAGS}, {03125u, 6, EC_F_WBODY}, {03125u, 6, EC_F_OMEGAC}, {03133u, 6, EC_F_ADOT}, {03133u, 6, EC_F_OMEGAB}, {03167u, 3, EC_F_ERRORX}, {03223u, 2, EC_F_PCMD}, {03265u, 2, EC_F_ALFA_180}, {03300u, 1, EC_F_CMDAPMOD}, {03301u, 3, EC_F_PREL}, {03313u, 1, EC_F_PAXERR1}, {03314u, 1, EC_F_ROLLTM}, {03315u, 2, EC_F_ROLLC}, {03414u, 6, EC_F_RTARG}, {03422u, 2, EC_F_DELLT4}, {03424u, 2, EC_F_ECSTEER}, {03537u, 36, EC_F_SVMRKDAT}, {03635u, 2, EC_F_L_D1}, {03645u, 6, EC_F_DELVEET3}, {03645u, 6, EC_F_DELVSIN}, {03655u, 2, EC_F_TPASS4}, {03666u, 6, EC_F_DELVEET2}, {03675u, 6, EC_F_LATANG}, {03702u, 2, EC_F_CSTEER}, {03724u, 4, EC_F_VIO}, {03743u, 2, EC_F_ELEV}, {03753u, 2, EC_F_CENTANG}, {03766u, 4, EC_F_VPRED}};
 
 /* Luminary099 addresses (ERASABLE_ASSIGNMENTS, from the listing).        */
-static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}, {03000u, 1, EC_LM_HIASCENT}, {03001u, 2, EC_LM_ROLLPIT}, {03003u, 7, EC_LM_DAPGAINS}, {03012u, 2, EC_LM_IGNAOS}, {01354u, 2, EC_LM_RADSKAL}, {01356u, 1, EC_LM_SKALSKAL}, {02520u, 2, EC_LM_DELQFIX}, {02522u, 13, EC_LM_LRPAD}, {03420u, 2, EC_LM_LRHMAX}, {03427u, 2, EC_LM_RPCRT}, {03431u, 2, EC_LM_TNEWA}, {01244u, 2, EC_LM_MASS}, {01700u, 6, EC_X789}, {01770u, 2, EC_LM_RANGEVAR}, {01772u, 2, EC_LM_RATEVAR}, {01774u, 2, EC_LM_VARMIN}, {02000u, 10, EC_LM_NAVPAD}, {03400u, 2, EC_LM_ATIGINC}, {03402u, 2, EC_LM_PTIGINC}, {03253u, 6, EC_LM_UNFC}, {03261u, 6, EC_LM_UNWC}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01151u, 2, EC_LONGBASE}, {02262u, 6, EC_LM_ASC_ENG}, {02272u, 8, EC_LM_ASC_TGT}, {02354u, 6, EC_LM_ASC_ACC}, {03630u, 4, EC_LM_ASC_RCO}, {03645u, 6, EC_LM_VGVECT}, {02334u, 16, EC_LM_ASC_WRD}, {02270u, 2, EC_LM_ASC_GT}, {02314u, 2, EC_LM_ASC_GEFF}, {03473u, 2, EC_LM_HDOTDISP}, {02302u, 6, EC_LM_LAXIS}, {03717u, 6, EC_LM_QAXIS}, {03725u, 6, EC_LM_ZAXIS1}, {01236u, 6, EC_GDT_2}, {03544u, 6, EC_RN1}, {03552u, 6, EC_VN1}, {03560u, 2, EC_PIPTIME1}, {03562u, 6, EC_GDT1_2}, {02776u, 2, EC_RTX}, {01717u, 6, EC_LM_R_CSM}, {01725u, 6, EC_LM_V_CSM}, {02332u, 2, EC_LM_LAND_MAG}};
+static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}, {03000u, 1, EC_LM_HIASCENT}, {03001u, 2, EC_LM_ROLLPIT}, {03003u, 7, EC_LM_DAPGAINS}, {03012u, 2, EC_LM_IGNAOS}, {01354u, 2, EC_LM_RADSKAL}, {01356u, 1, EC_LM_SKALSKAL}, {02520u, 2, EC_LM_DELQFIX}, {02522u, 13, EC_LM_LRPAD}, {03420u, 2, EC_LM_LRHMAX}, {03427u, 2, EC_LM_RPCRT}, {03431u, 2, EC_LM_TNEWA}, {01244u, 2, EC_LM_MASS}, {01700u, 6, EC_X789}, {01770u, 2, EC_LM_RANGEVAR}, {01772u, 2, EC_LM_RATEVAR}, {01774u, 2, EC_LM_VARMIN}, {02000u, 10, EC_LM_NAVPAD}, {03400u, 2, EC_LM_ATIGINC}, {03402u, 2, EC_LM_PTIGINC}, {03253u, 6, EC_LM_UNFC}, {03261u, 6, EC_LM_UNWC}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01151u, 2, EC_LONGBASE}, {02262u, 6, EC_LM_ASC_ENG}, {02272u, 8, EC_LM_ASC_TGT}, {02354u, 6, EC_LM_ASC_ACC}, {03630u, 4, EC_LM_ASC_RCO}, {03645u, 6, EC_LM_VGVECT}, {02334u, 16, EC_LM_ASC_WRD}, {02270u, 2, EC_LM_ASC_GT}, {02314u, 2, EC_LM_ASC_GEFF}, {03473u, 2, EC_LM_HDOTDISP}, {02302u, 6, EC_LM_LAXIS}, {03717u, 6, EC_LM_QAXIS}, {03725u, 6, EC_LM_ZAXIS1}, {01236u, 6, EC_GDT_2}, {03544u, 6, EC_RN1}, {03552u, 6, EC_VN1}, {03560u, 2, EC_PIPTIME1}, {03562u, 6, EC_GDT1_2}, {02776u, 2, EC_RTX}, {01717u, 6, EC_LM_R_CSM}, {01725u, 6, EC_LM_V_CSM}, {02332u, 2, EC_LM_LAND_MAG}, /* the downlists */ {00024u, 2, EC_F_TIME}, {00032u, 8, EC_F_COUNTERS}, {00112u, 2, EC_F_LASTCMD}, {00320u, 1, EC_F_REDOCTR}, {00735u, 1, EC_F_AOTCODE}, {01170u, 24, EC_F_UPLINK}, {01333u, 7, EC_F_DNRADAR}, {01776u, 2, EC_F_TCDH}, {02020u, 2, EC_F_AGSK}, {02200u, 14, EC_F_AGSBUFF}, {02230u, 6, EC_F_GSAV}, {02236u, 12, EC_F_YNBSAV}, {02256u, 2, EC_F_ELEV}, {02266u, 6, EC_F_DELVEET1}, {02274u, 6, EC_F_DELVEET2}, {02302u, 2, EC_F_DELTAR}, {02334u, 3, EC_F_LRCDUDL}, {02337u, 2, EC_F_LRVTIMDL}, {02347u, 2, EC_F_DELVTPF}, {02365u, 6, EC_F_DELVEET3}, {02636u, 6, EC_F_RGU}, {02737u, 6, EC_F_OGC}, {02755u, 2, EC_F_BESTI}, {02760u, 6, EC_F_STARSAV1}, {02766u, 6, EC_F_STARSAV2}, {02774u, 2, EC_F_TALIGN}, {03021u, 3, EC_F_OMEGAP}, {03024u, 2, EC_F_ALPHAQ}, {03113u, 6, EC_F_DOWNTORK}, {03235u, 3, EC_F_CDUXD}, {03243u, 3, EC_F_OMEGAPD}, {03443u, 6, EC_F_RTARG}, {03451u, 2, EC_F_DELLT4}, {03457u, 3, EC_F_RR_GIMBALS}, {03457u, 3, EC_F_LR_GIMBALS}, {03466u, 1, EC_F_NN}, {03577u, 2, EC_F_DIFFALT}, {03614u, 1, EC_F_PSEUDO55}, {03615u, 2, EC_F_FC}, {03620u, 2, EC_F_CENTANG}, {03626u, 6, EC_F_VGU}, {03630u, 2, EC_F_TPASS4}, {03633u, 2, EC_F_TCSI}, {03634u, 6, EC_F_LAND}, {03642u, 2, EC_F_TTF_8}, {03651u, 1, EC_F_VSELECT}, {03652u, 2, EC_F_VMEAS}, {03654u, 2, EC_F_HMEAS}, {03664u, 2, EC_F_DELTAH}, {03752u, 2, EC_F_RR_TANGNB}, {03754u, 2, EC_F_RR_MKTIME}, {03754u, 2, EC_F_NAV_MKTIME}, {03754u, 2, EC_F_LR_MKTIME}, {03756u, 2, EC_F_RM}, {03760u, 2, EC_F_RANGRDOT}};
 
 static void       vec_set_more(ec_item_t item, agc_vec_t v); /* the remaining VEC items (vec_set) */
 static agc_vec_t *avg_vec_field(ec_item_t item);             /* RN1 VN1 GDT1/2 GDT/2 (below) */
@@ -298,7 +141,7 @@ static bool is_flagword(uint16_t ecadr)
  * A signed value as its 15-bit ones'-complement word.
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
- * FUNCTION NAME: word_of_sp
+ * FUNCTION NAME: ec_word_of_sp
  *
  * ARGUMENTS:
  *   Argument  Type      I/O  Description (scale)
@@ -307,7 +150,7 @@ static bool is_flagword(uint16_t ecadr)
  *
  * RETURNS: uint16_t -- the word
  **********************************************************************/
-static uint16_t word_of_sp(agc_sp_t v)
+uint16_t ec_word_of_sp(agc_sp_t v)
 {
     return ((v < 0) ? (uint16_t) (~(uint16_t) (-(int32_t) v) & EC_WORD_MAX) : (uint16_t) v); /* negative: complement of the magnitude */
 }
@@ -316,7 +159,7 @@ static uint16_t word_of_sp(agc_sp_t v)
  * A 15-bit ones'-complement word as a signed value (-0 reads 0).
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
- * FUNCTION NAME: sp_of_word
+ * FUNCTION NAME: ec_sp_of_word
  *
  * ARGUMENTS:
  *   Argument  Type      I/O  Description (scale)
@@ -325,7 +168,7 @@ static uint16_t word_of_sp(agc_sp_t v)
  *
  * RETURNS: agc_sp_t -- the value (the erasable's scale)
  **********************************************************************/
-static agc_sp_t sp_of_word(uint16_t w)
+agc_sp_t ec_sp_of_word(uint16_t w)
 {
     return (((w & EC_SIGN) != 0u) ? (agc_sp_t) -(int32_t) ((uint16_t) ~w & EC_MAG) : (agc_sp_t) w); /* sign bit: minus the complement */
 }
@@ -334,7 +177,7 @@ static agc_sp_t sp_of_word(uint16_t w)
  * A DP value as its two sign-agreeing words.
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
- * FUNCTION NAME: dp_to
+ * FUNCTION NAME: ec_dp_to
  *
  * ARGUMENTS:
  *   Argument  Type        I/O  Description (scale)
@@ -342,19 +185,19 @@ static agc_sp_t sp_of_word(uint16_t w)
  *   v         agc_dp_t    I    the value (the erasable's scale)
  *   w         uint16_t *  O    the high and low words
  **********************************************************************/
-static void dp_to(agc_dp_t v, uint16_t *w)
+void ec_dp_to(agc_dp_t v, uint16_t *w)
 {
     agc_dp_words_t d = agc_dp_to_words(v); /* sign-agreeing pair */
 
-    w[0] = word_of_sp(d.hi);
-    w[1] = word_of_sp(d.lo);
+    w[0] = ec_word_of_sp(d.hi);
+    w[1] = ec_word_of_sp(d.lo);
 }
 
 /**********************************************************************
  * Two words (signs free to disagree) as a DP value.
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
- * FUNCTION NAME: dp_of
+ * FUNCTION NAME: ec_dp_of
  *
  * ARGUMENTS:
  *   Argument  Type              I/O  Description (scale)
@@ -363,9 +206,9 @@ static void dp_to(agc_dp_t v, uint16_t *w)
  *
  * RETURNS: agc_dp_t -- the value (the erasable's scale)
  **********************************************************************/
-static agc_dp_t dp_of(const uint16_t *w)
+agc_dp_t ec_dp_of(const uint16_t *w)
 {
-    agc_dp_words_t d = {sp_of_word(w[0]), sp_of_word(w[1])}; /* signs free */
+    agc_dp_words_t d = {ec_sp_of_word(w[0]), ec_sp_of_word(w[1])}; /* signs free */
 
     return (agc_dp_from_words(d));
 }
@@ -386,7 +229,7 @@ static void vec_to(agc_vec_t v, uint16_t *w)
 {
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        dp_to(v.c[i], &w[EC_DP_WORDS * i]);
+        ec_dp_to(v.c[i], &w[EC_DP_WORDS * i]);
     }
 }
 
@@ -409,7 +252,7 @@ static agc_vec_t vec_of(const uint16_t *w)
 
     for (int i = 0; i < AGC_VEC_N; i++)
     {
-        v.c[i] = dp_of(&w[EC_DP_WORDS * i]);
+        v.c[i] = ec_dp_of(&w[EC_DP_WORDS * i]);
     }
 
     return (v);
@@ -434,7 +277,11 @@ static ec_layout_t item_layout(ec_item_t item)
 {
     ec_layout_t l = EC_DP; /* DP, VEC, MAT */
 
-    if (item <= EC_UPSVFLAG)
+    if (item >= EC_F_TIME)
+    {
+        l = ec_field_layout(item);
+    }
+    else if (item <= EC_UPSVFLAG)
     {
         l = EC_SP;
     }
@@ -1327,7 +1174,7 @@ static uint16_t asc_word_get(ec_item_t item, int k)
         d = agc_dp_to_words(*asc_dp(k));
     }
 
-    return (word_of_sp(((k % 2) == 0) ? d.hi : d.lo)); /* major : minor word */
+    return (ec_word_of_sp(((k % 2) == 0) ? d.hi : d.lo)); /* major : minor word */
 }
 
 /**********************************************************************
@@ -1350,11 +1197,11 @@ static void asc_word_set(ec_item_t item, int k, uint16_t w)
 
     if ((k % 2) == 0)
     {
-        d.hi = sp_of_word(w);
+        d.hi = ec_sp_of_word(w);
     }
     else
     {
-        d.lo = sp_of_word(w);
+        d.lo = ec_sp_of_word(w);
     }
 
     if (p != NULL)
@@ -2312,11 +2159,15 @@ static void item_words(const ec_entry_t *e, uint16_t *w)
 {
     ec_layout_t l = item_layout(e->item); /* element layout */
 
-    if (l == EC_SP)
+    if (e->item >= EC_F_TIME)
+    {
+        ec_field_words(e->item, e->words, w);
+    }
+    else if (l == EC_SP)
     {
         for (int k = 0; k < e->words; k++)
         {
-            w[k] = word_of_sp(sp_get(e->item, k));
+            w[k] = ec_word_of_sp(sp_get(e->item, k));
         }
     }
     else if (l == EC_RAW)
@@ -2330,9 +2181,9 @@ static void item_words(const ec_entry_t *e, uint16_t *w)
     {
         agc_tp_words_t t = agc_tp_to_words((e->item == EC_TIMEMO) ? tp_timemo() : agc_erase_tephem()); /* TEPHEM / TIMEMO */
 
-        w[0] = word_of_sp(t.hi);
-        w[1] = word_of_sp(t.mid);
-        w[2] = word_of_sp(t.lo);
+        w[0] = ec_word_of_sp(t.hi);
+        w[1] = ec_word_of_sp(t.mid);
+        w[2] = ec_word_of_sp(t.lo);
     }
     else if (e->item == EC_REFSMMAT || e->item == EC_XSMD)
     {
@@ -2348,21 +2199,21 @@ static void item_words(const ec_entry_t *e, uint16_t *w)
         agc_latlong_t ll; /* LAT, LONG, ALT */
 
         agc_navaux_get_latlong(&ll);
-        dp_to(*latlong_field(&ll, e->item), w);
+        ec_dp_to(*latlong_field(&ll, e->item), w);
     }
     else if (is_splash(e->item))
     {
-        dp_to(*splash_field(e->item), w);
+        ec_dp_to(*splash_field(e->item), w);
     }
     else if (is_dp_field(e->item))
     {
-        dp_to(*dp_field(e->item), w);
+        ec_dp_to(*dp_field(e->item), w);
     }
     else if (is_lm_dp(e->item))
     {
         for (int k = 0; k < e->words / EC_DP_WORDS; k++)
         {
-            dp_to(*lm_dp_field(e->item, k), &w[EC_DP_WORDS * k]);
+            ec_dp_to(*lm_dp_field(e->item, k), &w[EC_DP_WORDS * k]);
         }
     }
     else if (is_group(e->item))
@@ -2373,7 +2224,7 @@ static void item_words(const ec_entry_t *e, uint16_t *w)
 
         for (int k = 0; k < e->words / EC_DP_WORDS; k++)
         {
-            dp_to(d[k], &w[EC_DP_WORDS * k]);
+            ec_dp_to(d[k], &w[EC_DP_WORDS * k]);
         }
     }
     else if (is_sv(e->item))
@@ -2386,12 +2237,12 @@ static void item_words(const ec_entry_t *e, uint16_t *w)
 
         for (int k = 0; k < EC_SV_DPS; k++)
         {
-            dp_to(d[k], &w[EC_DP_WORDS * k]);
+            ec_dp_to(d[k], &w[EC_DP_WORDS * k]);
         }
     }
     else if (e->words == EC_DP_WORDS)
     {
-        dp_to(dp_get(e->item), w);
+        ec_dp_to(dp_get(e->item), w);
     }
     else
     {
@@ -2418,11 +2269,15 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
     ec_layout_t  l  = item_layout(e->item); /* element layout */
     agc_status_t st = AGC_STATUS_OK;        /* first refusal */
 
-    if (l == EC_SP)
+    if (e->item >= EC_F_TIME)
+    {
+        st = ec_field_store(e->item, e->words, w);
+    }
+    else if (l == EC_SP)
     {
         for (int k = 0; k < e->words && st == AGC_STATUS_OK; k++)
         {
-            st = sp_set(e->item, k, sp_of_word(w[k]));
+            st = sp_set(e->item, k, ec_sp_of_word(w[k]));
         }
     }
     else if (l == EC_RAW)
@@ -2434,7 +2289,7 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
     }
     else if (l == EC_TP)
     {
-        agc_tp_words_t t = {sp_of_word(w[0]), sp_of_word(w[1]), sp_of_word(w[2])}; /* TEPHEM / TIMEMO words */
+        agc_tp_words_t t = {ec_sp_of_word(w[0]), ec_sp_of_word(w[1]), ec_sp_of_word(w[2])}; /* TEPHEM / TIMEMO words */
 
         if (e->item == EC_TIMEMO)
         {
@@ -2468,22 +2323,22 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
         agc_latlong_t ll; /* LAT, LONG, ALT */
 
         agc_navaux_get_latlong(&ll);
-        *latlong_field(&ll, e->item) = dp_of(w);
+        *latlong_field(&ll, e->item) = ec_dp_of(w);
         agc_navaux_set_latlong(&ll);
     }
     else if (is_splash(e->item))
     {
-        *splash_field(e->item) = dp_of(w);
+        *splash_field(e->item) = ec_dp_of(w);
     }
     else if (is_dp_field(e->item))
     {
-        *dp_field(e->item) = dp_of(w);
+        *dp_field(e->item) = ec_dp_of(w);
     }
     else if (is_lm_dp(e->item))
     {
         for (int k = 0; k < e->words / EC_DP_WORDS; k++)
         {
-            *lm_dp_field(e->item, k) = dp_of(&w[EC_DP_WORDS * k]);
+            *lm_dp_field(e->item, k) = ec_dp_of(&w[EC_DP_WORDS * k]);
         }
     }
     else if (is_group(e->item))
@@ -2492,33 +2347,7 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
 
         for (int k = 0; k < e->words / EC_DP_WORDS; k++)
         {
-            d[k] = dp_of(&w[EC_DP_WORDS * k]);
-        }
-
-        group_put(e->item, d);
-    }
-    else if (is_splash(e->item))
-    {
-        *splash_field(e->item) = dp_of(w);
-    }
-    else if (is_dp_field(e->item))
-    {
-        *dp_field(e->item) = dp_of(w);
-    }
-    else if (is_lm_dp(e->item))
-    {
-        for (int k = 0; k < e->words / EC_DP_WORDS; k++)
-        {
-            *lm_dp_field(e->item, k) = dp_of(&w[EC_DP_WORDS * k]);
-        }
-    }
-    else if (is_group(e->item))
-    {
-        agc_dp_t d[EC_MAX_WORDS / EC_DP_WORDS]; /* the DP values, each its erasable's scale */
-
-        for (int k = 0; k < e->words / EC_DP_WORDS; k++)
-        {
-            d[k] = dp_of(&w[EC_DP_WORDS * k]);
+            d[k] = ec_dp_of(&w[EC_DP_WORDS * k]);
         }
 
         group_put(e->item, d);
@@ -2530,7 +2359,7 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
 
         for (int k = 0; k < EC_SV_DPS; k++)
         {
-            d[k] = dp_of(&w[EC_DP_WORDS * k]);
+            d[k] = ec_dp_of(&w[EC_DP_WORDS * k]);
         }
 
         sv_of_dps(d, &sv);
@@ -2538,7 +2367,7 @@ static agc_status_t item_store(const ec_entry_t *e, const uint16_t *w)
     }
     else if (e->words == EC_DP_WORDS)
     {
-        dp_set(e->item, dp_of(w));
+        dp_set(e->item, ec_dp_of(w));
     }
     else
     {
@@ -2582,7 +2411,9 @@ static int element_words(ec_layout_t l)
 }
 
 /**********************************************************************
- * Whether two word images of one element hold the same value.
+ * Whether an element's typed words equal the words the map last saw:
+ * both are the typed value's own words (item_words), so they compare as
+ * bits (an SP -0 differs from +0, as in the AGC's memory).
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
  * FUNCTION NAME: same_element
@@ -2590,83 +2421,63 @@ static int element_words(ec_layout_t l)
  * ARGUMENTS:
  *   Argument  Type              I/O  Description (scale)
  *   --------  ----------------  ---  -------------------------------------
- *   l         ec_layout_t       I    the layout
+ *   n         int               I    words per element (1, 2 or 3)
  *   a         const uint16_t *  I    first image
  *   b         const uint16_t *  I    second image
  *
- * RETURNS: bool -- true for the same value
+ * RETURNS: bool -- true for the same words
  **********************************************************************/
-static bool same_element(ec_layout_t l, const uint16_t *a, const uint16_t *b)
+static bool same_element(int n, const uint16_t *a, const uint16_t *b)
 {
-    bool same = a[0] == b[0]; /* RAW: the bits */
+    bool same = true; /* every word equal */
 
-    if (l == EC_SP)
+    for (int j = 0; j < n; j++)
     {
-        same = sp_of_word(a[0]) == sp_of_word(b[0]);
-    }
-    else if (l == EC_TP)
-    {
-        agc_tp_words_t ta = {sp_of_word(a[0]), sp_of_word(a[1]), sp_of_word(a[2])}; /* a */
-        agc_tp_words_t tb = {sp_of_word(b[0]), sp_of_word(b[1]), sp_of_word(b[2])}; /* b */
-
-        same = agc_tp_from_words(ta) == agc_tp_from_words(tb);
-    }
-    else if (l == EC_DP)
-    {
-        same = dp_of(a) == dp_of(b);
-    }
-    else
-    {
-        /* RAW */
+        same = same && (a[j] == b[j]);
     }
 
     return (same);
 }
 
 /**********************************************************************
- * The map entry holding ecadr (the first that does), or NULL.
+ * The address map of the rope flown.
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
- * FUNCTION NAME: map_find
+ * FUNCTION NAME: rope_map
  *
  * ARGUMENTS:
  *   Argument  Type      I/O  Description (scale)
  *   --------  --------  ---  -------------------------------------
- *   ecadr     uint16_t  I    erasable address
+ *   n         size_t *  O    its entries
  *
- * RETURNS: const ec_entry_t * -- the entry, or NULL
+ * RETURNS: const ec_entry_t * -- k_map_lm or k_map_csm
  **********************************************************************/
-static const ec_entry_t *map_find(uint16_t ecadr)
+static const ec_entry_t *rope_map(size_t *n)
 {
-    bool              lm  = agc_state_vehicle() == AGC_VEHICLE_LM;                                                      /* which map */
-    const ec_entry_t *map = lm ? k_map_lm : k_map_csm;                                                                  /* the map */
-    size_t            n   = lm ? sizeof (k_map_lm) / sizeof (k_map_lm[0]) : sizeof (k_map_csm) / sizeof (k_map_csm[0]); /* entries */
-    const ec_entry_t *hit = NULL;                                                                                       /* found */
+    bool lm = agc_state_vehicle() == AGC_VEHICLE_LM; /* which map */
 
-    for (size_t i = 0; i < n && hit == NULL; i++)
-    {
-        if (ecadr >= map[i].ecadr && ecadr < map[i].ecadr + (uint16_t) map[i].words)
-        {
-            hit = &map[i];
-        }
-    }
+    *n = lm ? sizeof (k_map_lm) / sizeof (k_map_lm[0]) : sizeof (k_map_csm) / sizeof (k_map_csm[0]); /* LM or CSM entries */
 
-    return (hit);
+    return (lm ? k_map_lm : k_map_csm); /* Luminary099 or Comanche055 addresses */
 }
 
 /**********************************************************************
- * Bring the raw words of a mapped item up to date with its typed value,
- * element by element (an unchanged element keeps its words as stored).
+ * Bring the raw words of a mapped item up to date: each element whose
+ * typed value changed since the map last saw it (its shadow words)
+ * takes the words of the new value; an unchanged element keeps its
+ * words as stored. With several items at one address (the AGC's
+ * overlays) this makes the item written last the one the word shows.
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
- * FUNCTION NAME: refresh
+ * FUNCTION NAME: sync_entry
  *
  * ARGUMENTS:
  *   Argument  Type                I/O  Description (scale)
  *   --------  ------------------  ---  -------------------------------------
  *   e         const ec_entry_t *  I    the map entry
+ *   base      uint16_t            I    index of its first shadow word
  **********************************************************************/
-static void refresh(const ec_entry_t *e)
+static void sync_entry(const ec_entry_t *e, uint16_t base)
 {
     uint16_t w[EC_MAX_WORDS]; /* typed value as words */
 
@@ -2676,27 +2487,154 @@ static void refresh(const ec_entry_t *e)
     item_words(e, w);
 
     for (int k = 0; k + n <= e->words; k += n)
-    { /* only the elements whose value changed take the sign-agreeing words */
-        uint16_t raw[EC_TP_WORDS]; /* the element as stored */
+    {
+        uint16_t seen[EC_TP_WORDS]; /* the element as the map last saw it */
 
         for (int j = 0; j < n; j++)
         {
-            agc_erase_raw_read((uint16_t) (e->ecadr + (uint16_t) (k + j)), &raw[j]);
+            agc_erase_shadow_read((uint16_t) (base + (uint16_t) (k + j)), &seen[j]);
         }
 
-        if (!same_element(l, raw, &w[k]))
+        if (!same_element(n, seen, &w[k]))
         {
             for (int j = k; j < k + n; j++)
             {
                 agc_erase_raw_write((uint16_t) (e->ecadr + (uint16_t) j), w[j]);
+                agc_erase_shadow_write((uint16_t) (base + (uint16_t) j), w[j]);
             }
         }
     }
 }
 
 /**********************************************************************
+ * After a store into a mapped item: its typed value is what the map has
+ * seen. A refused store also puts the typed words back (the old value
+ * stays, in memory too).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: note_store
+ *
+ * ARGUMENTS:
+ *   Argument  Type                I/O  Description (scale)
+ *   --------  ------------------  ---  -------------------------------------
+ *   e         const ec_entry_t *  I    the map entry
+ *   base      uint16_t            I    index of its first shadow word
+ *   refused   bool                I    the owner refused the value
+ **********************************************************************/
+static void note_store(const ec_entry_t *e, uint16_t base, bool refused)
+{
+    uint16_t w[EC_MAX_WORDS]; /* typed value as words */
+
+    item_words(e, w);
+
+    for (int k = 0; k < e->words; k++)
+    {
+        agc_erase_shadow_write((uint16_t) (base + (uint16_t) k), w[k]);
+
+        if (refused)
+        {
+            agc_erase_raw_write((uint16_t) (e->ecadr + (uint16_t) k), w[k]);
+        }
+    }
+}
+
+/**********************************************************************
+ * Sync every map entry holding ecadr, last entry first, so that when
+ * several changed the first entry's words stay. The shadow words of entry
+ * i follow those of entries 0..i-1 (the map's total stays within
+ * AGC_EC_SHADOW_WORDS: agc_erase_map_words, tests/erasable_map).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: sync_holders
+ *
+ * ARGUMENTS:
+ *   Argument  Type      I/O  Description (scale)
+ *   --------  --------  ---  -------------------------------------
+ *   ecadr     uint16_t  I    erasable address
+ **********************************************************************/
+static void sync_holders(uint16_t ecadr)
+{
+    size_t            n    = 0;                     /* entries */
+    const ec_entry_t *map  = rope_map(&n);          /* the map */
+    uint32_t          base = agc_erase_map_words(); /* shadow index past entry i - 1 */
+
+    for (size_t i = n; i > 0; i--)
+    {
+        const ec_entry_t *e = &map[i - 1]; /* entry i - 1 */
+
+        base -= (uint32_t) e->words;
+
+        if (ecadr >= e->ecadr && ecadr < e->ecadr + (uint16_t) e->words)
+        {
+            sync_entry(e, (uint16_t) base);
+        }
+    }
+}
+
+/**********************************************************************
+ * The first map entry holding ecadr: the one a store goes to.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: first_holder
+ *
+ * ARGUMENTS:
+ *   Argument  Type                 I/O  Description (scale)
+ *   --------  -------------------  ---  -------------------------------------
+ *   ecadr     uint16_t             I    erasable address
+ *   index     size_t *             O    the entry's index in the map
+ *   base      uint16_t *           O    index of its first shadow word
+ *
+ * RETURNS: bool -- true when an entry holds ecadr
+ **********************************************************************/
+static bool first_holder(uint16_t ecadr, size_t *index, uint16_t *base)
+{
+    size_t            n    = 0;            /* entries */
+    const ec_entry_t *map  = rope_map(&n); /* the map */
+    uint32_t          at   = 0;            /* shadow index of entry i */
+    bool              held = false;        /* found */
+
+    for (size_t i = 0; i < n && !held; i++)
+    {
+        if (ecadr >= map[i].ecadr && ecadr < map[i].ecadr + (uint16_t) map[i].words)
+        {
+            *index = i;
+            *base  = (uint16_t) at;
+            held   = true;
+        }
+
+        at += (uint32_t) map[i].words;
+    }
+
+    return (held);
+}
+
+/**********************************************************************
+ * Shadow words the address map of the rope flown uses (one per word of
+ * each entry); at most AGC_EC_SHADOW_WORDS (tests/erasable_map).
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: agc_erase_map_words
+ *
+ * RETURNS: uint32_t -- the words
+ **********************************************************************/
+uint32_t agc_erase_map_words(void)
+{
+    size_t            n     = 0;            /* entries */
+    const ec_entry_t *map   = rope_map(&n); /* the map */
+    uint32_t          total = 0;            /* words */
+
+    for (size_t i = 0; i < n; i++)
+    {
+        total += (uint32_t) map[i].words;
+    }
+
+    return (total);
+}
+
+/**********************************************************************
  * Read the erasable word at ECADR (raw 15-bit word): a flagword, a
- * mapped erasable (refreshed from its typed value), or the raw image.
+ * mapped erasable (its holders synced from their typed values), or the
+ * raw image.
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
  * FUNCTION NAME: agc_erase_read_ecadr
@@ -2709,26 +2647,21 @@ static void refresh(const ec_entry_t *e)
  **********************************************************************/
 void agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
 {
-    const ec_entry_t *e = map_find(ecadr); /* named erasable */
-
     if (is_flagword(ecadr))
     {
         *word = (uint16_t) (agc_flagword_get((int) (ecadr - EC_STATE)) & EC_WORD_MAX);
     }
-    else if (e != NULL)
-    {
-        refresh(e);
-        agc_erase_raw_read(ecadr, word);
-    }
     else
     {
+        sync_holders(ecadr);
         agc_erase_raw_read(ecadr, word);
     }
 }
 
 /**********************************************************************
- * Store a raw 15-bit word at ECADR: a flagword, a mapped erasable
- * (typed value rebuilt from all its words), or the raw image.
+ * Store a raw 15-bit word at ECADR: a flagword, a mapped erasable (the
+ * first item holding the address rebuilt from all its words), or the
+ * raw image.
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
  * FUNCTION NAME: agc_erase_write_ecadr
@@ -2745,8 +2678,11 @@ void agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word)
  **********************************************************************/
 agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word)
 {
-    const ec_entry_t *e  = map_find(ecadr); /* named erasable */
-    agc_status_t      st = AGC_STATUS_OK;   /* outcome */
+    size_t            n    = 0;             /* map entries */
+    const ec_entry_t *map  = rope_map(&n);  /* the map */
+    size_t            i    = 0;             /* first holder */
+    uint16_t          base = 0;             /* its shadow */
+    agc_status_t      st   = AGC_STATUS_OK; /* outcome */
 
     if (!AGC_ASSERT(word <= EC_WORD_MAX))
     {
@@ -2756,11 +2692,12 @@ agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word)
     {
         agc_flagword_set((int) (ecadr - EC_STATE), word);
     }
-    else if (e != NULL)
+    else if (first_holder(ecadr, &i, &base))
     {
-        uint16_t w[EC_MAX_WORDS]; /* the item's words as stored */
+        const ec_entry_t *e = &map[i];     /* the entry the store goes to */
+        uint16_t          w[EC_MAX_WORDS]; /* the item's words as stored */
 
-        refresh(e);
+        sync_holders(ecadr);
         agc_erase_raw_write(ecadr, word);
 
         for (int k = 0; k < e->words; k++)
@@ -2769,6 +2706,7 @@ agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word)
         }
 
         st = item_store(e, w);
+        note_store(e, base, st != AGC_STATUS_OK);
     }
     else
     {
@@ -2776,4 +2714,4 @@ agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word)
     }
 
     return (st);
-}
+} /* agc_erase_write_ecadr */

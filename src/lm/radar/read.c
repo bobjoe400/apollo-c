@@ -779,3 +779,16 @@ agc_status_t agc_task_lr_position_settled(void)
 
     return (agc_task_rr_goodend());
 }
+
+/**********************************************************************
+ * DNINDEX (LM): the select code of the last radar read; the word between DNRRDOT and DNLRVELX the downlists send.
+ * AGC: DNINDEX (Luminary099 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_dnindex
+ *
+ * RETURNS: uint16_t -- DNINDEX, channel 13 radar select code
+ **********************************************************************/
+uint16_t agc_erase_dnindex(void)
+{
+    return (rd.dnindex);
+}

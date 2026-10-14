@@ -11,6 +11,8 @@
 # Derived 2026-10-13 from runs ref_pdi_H / ref_pdi_H01 (repeated 2026-10-14 under the current
 # common.lua: same values), ref_liftoff_H / ref_liftoff_H01 (re-derived 2026-10-14 after
 # the liftoff script change: P12 as loaded) and ref_entry_H / ref_entry_H01 (before the dev entry run with bug 12 fixed).
+# Rendezvous rows derived 2026-10-14 from ref_rendezvous_H / ref_rendezvous_H01 (start state "apollo-c
+# rndz start", rendh.lua frozen at md5 bad987d9), before the dev rendezvous run.
 # milestone	column	tolerance	note
 pdi	galt	478.9499999999989	stock spread 319.2999999999993 (1.5 x)
 pdi	hdot	2.354388567	stock spread 1.569592378 (1.5 x)
@@ -53,22 +55,18 @@ entry	pitch	35.154900000000005	stock spread 23.436600000000002 (1.5 x)
 entry	bank	268.57725	stock spread 179.0515 (1.5 x)
 entry	yaw	216.93300000000002	stock spread 144.622 (1.5 x)
 entry	nobj	12.0	stock spread 8.0 (1.5 x)
-# rendezvous: derived 2026-10-14 from ref_rendezvous_H / H01; the rendezvous script is not yet
-# working on stock (display waits time out), so re-derive after it is fixed
-rendezvous	range	7630.5	stock spread 5087.0 (1.5 x)
-rendezvous	rrate	11.264999999999986	stock spread 7.509999999999991 (1.5 x)
-rendezvous	galt	2044.5	stock spread 1363.0 (1.5 x)
-rendezvous	hdot	1.4155499999999996	stock spread 0.9436999999999998 (1.5 x)
-rendezvous	vh	8.339999999999918	stock spread 5.559999999999945 (1.5 x)
-rendezvous	lng	0.12390000000000168	stock spread 0.08260000000000112 (1.5 x)
-rendezvous	lat	0.030386999999999997	stock spread 0.020257999999999998 (1.5 x)
-rendezvous	mass	6.254999999999427	stock spread 4.169999999999618 (1.5 x)
-rendezvous	eng	1.5	stock spread 1.0 (1.5 x)
-rendezvous	pitch	27.357951	stock spread 18.238634 (1.5 x)
-rendezvous	bank	265.23209999999995	stock spread 176.82139999999998 (1.5 x)
-rendezvous	yaw	264.70304999999996	stock spread 176.46869999999998 (1.5 x)
-rendezvous	cdux	14.4195556640625	stock spread 9.613037109375 (1.5 x)
-rendezvous	cduy	26.5814208984375	stock spread 17.720947265625 (1.5 x)
-rendezvous	cduz	37.3590087890625	stock spread 24.906005859375 (1.5 x)
-rendezvous	apo	27870.0	stock spread 18580.0 (1.5 x)
-rendezvous	peri	25005.0	stock spread 16670.0 (1.5 x)
+rendezvous	range	1494.6000000000022	stock spread 996.4000000000015 (1.5 x)
+rendezvous	rrate	11.7528	stock spread 7.8352 (1.5 x)
+rendezvous	phi	30.745123500000002	stock spread 20.496749 (1.5 x)
+rendezvous	apo	14055.0	stock spread 9370.0 (1.5 x)
+rendezvous	peri	34830.0	stock spread 23220.0 (1.5 x)
+rendezvous	mass	13.049999999999727	stock spread 8.699999999999818 (1.5 x)
+rendezvous	pitch	30.8283	stock spread 20.5522 (1.5 x)
+rendezvous	bank	121.61744999999999	stock spread 81.0783 (1.5 x)
+rendezvous	yaw	110.48849999999999	stock spread 73.65899999999999 (1.5 x)
+rendezvous	cdux	18.0615234375	stock spread 12.041015625 (1.5 x)
+rendezvous	cduy	31.1627197265625	stock spread 20.775146484375 (1.5 x)
+rendezvous	cduz	37.078857421875	stock spread 24.71923828125 (1.5 x)
+rendezvous	cdut	15.721665000000002	stock spread 10.481110000000001 (1.5 x)
+rendezvous	cdus	30.882000000000033	stock spread 20.588000000000022 (1.5 x)
+rendezvous	markctr	40.5	stock spread 27.0 (1.5 x)

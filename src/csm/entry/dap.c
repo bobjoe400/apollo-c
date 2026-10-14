@@ -1625,3 +1625,36 @@ agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx)
 
     return (agc_job_cm_sm_separation_request(ctx)); /* POSTJUMP P62.2     */
 } /* agc_entry_dap_ic */
+
+/**********************************************************************
+ * PAXERR1 (CSM entry DAP): the integrated roll error, sent on the entry downlist.
+ * AGC: PAXERR1 (Comanche055 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_paxerr1
+ *
+ * RETURNS: agc_sp_t -- PAXERR1, roll error/360 B0
+ **********************************************************************/
+agc_sp_t agc_erase_paxerr1(void)
+{
+    return (paxerr1);
+}
+
+/**********************************************************************
+ * PREL +k (CSM entry DAP): the body rates x TCDU, sent after CMDAPMOD on the entry downlist.
+ * AGC: PREL, QREL, RREL (Comanche055 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_prel
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   k  int  I    0 PREL, 1 QREL, 2 RREL
+ *
+ * RETURNS: agc_sp_t -- the rate x TCDU/180, B0
+ **********************************************************************/
+agc_sp_t agc_erase_prel(int k)
+{
+    const agc_sp_t rel[3] = {prel, qrel, rrel}; /* PREL, QREL, RREL, TCDU/180 B0 */
+
+    return (rel[k]);
+}

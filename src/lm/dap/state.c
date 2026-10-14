@@ -881,3 +881,21 @@ agc_status_t agc_erase_set_neg_ratedb(agc_sp_t v)
 
     return (AGC_STATUS_OK);
 }
+
+/**********************************************************************
+ * DOWNTORK +k (LM DAP): the accumulated commanded jet torque, sent on the downlists.
+ * AGC: DOWNTORK (Luminary099 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_downtork
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   k  int  I    0..5: POSTORKP NEGTORKP POSTORKU NEGTORKU POSTORKV NEGTORKV
+ *
+ * RETURNS: agc_sp_t -- the accumulated jet torque, 32 jet-s
+ **********************************************************************/
+agc_sp_t agc_erase_downtork(int k)
+{
+    return (lm_dap_state()->downtork[k]);
+}

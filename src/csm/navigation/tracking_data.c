@@ -1072,3 +1072,16 @@ agc_status_t agc_csm_rendz_noun_read(uint16_t data_id, agc_dp_t *v)
 
     return (AGC_STATUS_NOT_FOUND);
 }
+
+/**********************************************************************
+ * VHFTIME (CSM): time of the last VHF range reading, sent on the downlist.
+ * AGC: VHFTIME (Comanche055 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_vhftime
+ *
+ * RETURNS: agc_dp_t -- VHFTIME, cs 2^28
+ **********************************************************************/
+agc_dp_t agc_erase_vhftime(void)
+{
+    return (td.vhftime);
+}

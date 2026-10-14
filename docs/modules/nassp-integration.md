@@ -507,6 +507,22 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   LM Simulator itself (sparse virtualagc c239e9c into build/virtualagc).
 - Do not run Linux test loads during a host run: the stock AGC at 50x went to garbage (MODREG 227,
   FAILREG 207) when frames stretched under CPU load; that run was discarded.
+- CHECKPOINT 2026-10-14 (rendezvous on stock, in progress): the earlier failures were script
+  faults, found with a stock P20 diagnostic run (runs/ref_rdiag, rdiag.lua: flags, RADMODES, RR
+  CDUs, LOS truth every 0.25 s): (1) the first ENTER on R60's F50N18 in P20 ends R60, but R61
+  asks again while the previous RR designate runs; a second ENTER later is taken and P20 locks on
+  (F50N72 ~100 s later); (2) the RR checkout V41N72 needs the antenna at the angles before the
+  breakers open (503 otherwise); (3) R22's F06N49 (first mark above the thresholds) sat behind
+  the crew's V16N45 with KEY REL lit, so no marks were incorporated and tracking stopped; (4)
+  common.lua read TIG as hi * 2^14 + lo, wrong by 327.67 s when the AGC leaves a negative low word
+  (TTPI after P34): P41 came 32 s before TIG and slipped (01703). Start state now "apollo-c rndz
+  start" (scenario 11 flown by stock through insertion, P00, CSM transponder on; rstart.lua),
+  identical on both builds. rendh.lua rewritten (PAD TIGs from the scenario's CSI data card,
+  crew answers for N49 / KEY REL / R61 requests, VG nulling by pulses with a stable "done").
+  11:15 UTC: stock ref_rendezvous_H (-f 0.02) and H01 (-f 0.01) fly the whole rendezvous
+  unattended (P20 lock-on, CSI / CDH / TPI targeted and burned, closing at 36 m/s 10 min after
+  TPI); tolerances derived into mission_tolerances.tsv, scripts frozen (rendh.lua md5 bad987d9);
+  dev run started.
 
 ## Expected deviations (timing)
 Rule (lead, 2026-10-14): no timing model; the C executive runs jobs in zero AGC time, and the
@@ -566,6 +582,29 @@ Audit of the runs before the rule (times UTC 2026-10-14):
   both builds. Stock runs ref_liftoff_H / H01 repeated under the change, tolerances re-derived
   before the dev run. Finding kept: a program that integrates before a deadline reaches
   it earlier on our build (no AGC time charged for C jobs).
+- Rendezvous (2026-10-14). The earlier scenario-11 attempts (liftoff then the "Rendezvous" sheet)
+  are void (runs/discarded/old_rendezvous): the script did not work on stock. The milestone now
+  starts from "apollo-c rndz start" (made once on stock by sim/nassp/lua/rstart.lua: scenario
+  11 flown through insertion, P00 settled, CSM transponder on; the same file in both installs).
+  rendh.lua was developed on stock only (trial runs T1-T6 discarded, each change found by a stock
+  failure: R22's N49 behind KEY REL, R61 re-requests, VG nulling ending on a display being
+  rewritten, N85 pulse gains, the R60 answer rule, a crew answer typed inside a sheet load). Then
+  frozen (md5 bad987d9) before ref_rendezvous_H / H01 and the tolerance derivation; both stock
+  runs and every dev run use that file. Crew actions the sheets do not list, all logged: KEY REL
+  after 10 s of its lamp, PRO on R22's F06N49, PRO on a W-matrix F06N99 left behind an R61
+  request, the R60 answer (ENTER within 30 s of a V06N18, else PRO); the CSI / TPI PAD TIGs from
+  the scenario's MCC CSI data card; the TPI sheet's five "POSS F 50 18" rows made one
+  conditional step (a lone PRO there would answer P34's F16N45). Not flown: P52, AGS / DEDA,
+  ORDEAL slews, the V90 N16 time loads and the "Load Negative LM Ydot in R2" rows (both builds
+  alike), MCC1 / MCC2 and braking.
+- common.lua (2026-10-14, rendezvous): ac.dp reads a DP erasable pair with ones'-complement word
+  signs; TIG was read as hi * 2^14 + lo, 327.67 s wrong when the low word is negative (TTPI after
+  P34). The TIGs of the earlier milestones' runs all had positive low words (logs: TIG=16351 3152,
+  4320 4226, 5260 10175), so their runs are unchanged by it; not rerun.
+- mission_tables.py (2026-10-14): ev_rendezvous for the post-insertion start (times from the
+  scenario load, which both builds share); nearest() by bisection (the rendezvous CSVs have
+  10,000 rows); radmodes is a mode word, not compared by value; the RR CDU columns wrap at 360.
+  Output for pdi / liftoff / entry identical to the previous version (checked).
 - nassp-replay LM cases have no stock reference (this harness's yaAGC restarts LGC images
   by a TC trap): pdi_lm expects the image's saved RADMODES bit 6 after the load (NASSP's yaAGC
   continues the image); liftoff_lm expects noun 74 40 s after the load (stock NASSP showed

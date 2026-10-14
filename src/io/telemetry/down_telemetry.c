@@ -12,11 +12,13 @@
  *   Luminary099 DOWN_TELEMETRY_PROGRAM.agc pp.988-997 (WOTEST only)
  *
  * EXTERNAL VARIABLES:
- *   (AGC erasables reached through accessors)
+ *   (AGC erasables reached by address, agc_erase_read_ecadr)
  *   Name          Type      I/O  Scale  Description
  *   ------------  --------  ---  -----  ----------------------------------
- *   the downlist  various   I    as     every item the lists name
- *   items                         kept
+ *   the downlist  uint16_t  I    words  every word the lists name, by ECADR
+ *   words
+ *   DNTMBUFF      uint16_t  I/O  words  the snapshot buffer (0340, both ropes)
+ *   TIME1         uint16_t  I    cs     sent after DUMPLOC
  *   CHAN13        uint16_t  I/O  bits   bit 7: word order code
  *   DUMPLOC words uint16_t  I    words  the dumped registers (ECADR image)
  *
@@ -24,8 +26,8 @@
  *   Name                   Description
  *   ---------------------  ------------------------------------------
  *   agc_dnlist_*           the list tables (downlink_lists_{csm,lm}.c)
- *   agc_erase_read_ecadr   DNDUMP2's register pair
- *   agc_dispatch_noun      DELVSLV (= DELVLVC), noun data above io
+ *   agc_erase_read_ecadr   FETCH2WD, SNAPLOOP, DNDUMP2: a word by address
+ *   agc_erase_write_ecadr  SNAPLOOP: the snapshot into DNTMBUFF
  *   agc_chan_*             channels 13, 34, 35
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
@@ -53,14 +55,12 @@
  *   become an item id, word offset and word count plus list indices with
  *   "last entry" flags.
  *
- *   DEVIATION (data words): the AGC reads the erasable addressed by the
- *   list. The C build has no flat erasable memory, so each downlist item
- *   is read through the owner's accessor where one exists (see item_word
- *   below); items whose owner exports no accessor yet are sent as zero
- *   (ERASZERO), which the AGC itself sends for SPARE entries.  The
- *   erasable dump reads its words by address (agc_erase_read_ecadr,
- *   src/erasable_map/address_map.c), so it sends the flagwords, the
- *   named erasables the address map holds and the raw image elsewhere.
+ *   Data words: as in the AGC, a list entry is the ECADR of the words it
+ *   sends, and FETCH2WD reads them by address (agc_erase_read_ecadr,
+ *   src/erasable_map: the address column at the top of the layering, which
+ *   reaches each erasable in its owner's storage); the snapshot goes into
+ *   DNTMBUFF by address too, so DNTMBUFF is erasable as in the AGC.  The
+ *   erasable dump reads its words the same way.
  *
  *   DUMPCNT is set by SLAP1 (LM fresh start, one dump).  The V21N01 load
  *   of DUMPCNT the AGC allows goes to the address image and does not
@@ -72,19 +72,18 @@
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
 #include "agc/erasable_map/address_map.h"
-#include "agc/exec/exec.h"
-#include "agc/io/nouns.h"
 #include "agc/io/service.h"
-#include "agc/lm/dap.h"
 
-#define WORD15         077777u /* one AGC word */
-#define BIT7           000100u /* CHAN13 bit 7: downlink word order code   */
-#define LOW8           000377u /* relative address in an EBANK */
-#define PRIO34         034000u /* DUMPLOC dump counter, bits 12-14         */
-#define ERASID_CSM     001777u /* ERASID EQUALS LOW10 (Comanche)           */
-#define ERASID_LM      001776u /* ERASID EQUALS BITS2-10 (Luminary)        */
-#define DNTMBUFF_WORDS 22      /* DNTMBUFF ERASE +21D: 11 DP words         */
-#define ECADR_MASK     003777u /* DUMPLOC EEE RRRRRRRR: the ECADR dumped   */
+#define WORD15       077777u /* one AGC word */
+#define BIT7         000100u /* CHAN13 bit 7: downlink word order code   */
+#define LOW8         000377u /* relative address in an EBANK */
+#define PRIO34       034000u /* DUMPLOC dump counter, bits 12-14         */
+#define ERASID_CSM   001777u /* ERASID EQUALS LOW10 (Comanche)           */
+#define ERASID_LM    001776u /* ERASID EQUALS BITS2-10 (Luminary)        */
+#define ADR_DNTMBUFF 00340u  /* DNTMBUFF ERASE +21D (both ropes, 0340)   */
+#define ADR_TIME2    00024u  /* TIME2 (register 024); TIME1 at 025       */
+#define ADR_TIME1    00025u  /* TIME1 (register 025)                     */
+#define ECADR_MASK   003777u /* DUMPLOC EEE RRRRRRRR: the ECADR dumped   */
 
 /* DNTMGOTO: where the next DOWNRUPT goes.                                 */
 typedef enum tm_phase
@@ -107,426 +106,34 @@ typedef struct tm_cursor
     bool          active; /* SUBLIST positive / CTLIST positive        */
 } tm_cursor_t;
 
-static tm_phase_t    dntmgoto = TM_PHASE1;     /* DNTMGOTO, the next phase */
-static int           dnlstcod;                 /* DNLSTCOD, B(1)PRM list code      */
-static uint16_t      agsword;                  /* AGSWORD (LM): saved DNLSTCOD     */
-static uint16_t      dumpcnt;                  /* DUMPCNT, B(1)PRM                 */
-static uint16_t      dumploc;                  /* DUMPLOC: dump counter + ECADR    */
-static tm_cursor_t   ctlist;                   /* CTLIST                           */
-static tm_cursor_t   sublist;                  /* SUBLIST                          */
-static agc_dn_item_t dn_item;                  /* DNECADR: item of the nDNADR      */
-static int           dn_offset;                /*   its next SP-word offset        */
-static int           dn_left;                  /*   DP words still to send (> 0)   */
-static uint16_t      dntmbuff[DNTMBUFF_WORDS]; /* DNTMBUFF snapshot buffer    */
+static tm_phase_t  dntmgoto = TM_PHASE1; /* DNTMGOTO, the next phase */
+static int         dnlstcod;             /* DNLSTCOD, B(1)PRM list code      */
+static uint16_t    agsword;              /* AGSWORD (LM): saved DNLSTCOD     */
+static uint16_t    dumpcnt;              /* DUMPCNT, B(1)PRM                 */
+static uint16_t    dumploc;              /* DUMPLOC: dump counter + ECADR    */
+static tm_cursor_t ctlist;               /* CTLIST                           */
+static tm_cursor_t sublist;              /* SUBLIST                          */
+static uint16_t    dn_ecadr;             /* DNECADR: next ECADR of the nDNADR */
+static int         dn_left;              /*   DP words still to send (> 0)   */
 
-/* ---- word images ------------------------------------------------------- */
+/* ---- words by address ------------------------------------------------- */
 
 /**********************************************************************
- * AGC: none -- a signed SP value as the 15-bit ones' complement word the AGC sends
+ * AGC: none -- the word at an ECADR (FETCH2WD's EBANK, DCA 1400 +R)
  *
  * ARGUMENTS:
- *   v  agc_sp_t  I   signed SP value
+ *   ecadr  uint16_t  I   the address
  *
- * RETURNS: the 15-bit ones' complement word
+ * RETURNS: the word, 15 bits
  **********************************************************************/
-static uint16_t sp_word(agc_sp_t v)
+static uint16_t word_at(uint16_t ecadr)
 {
-    int32_t w = (v >= 0) ? (int32_t) v : (int32_t) WORD15 + (int32_t) v; /* the word as an int */
+    uint16_t w = 0; /* the word */
 
-    return ((uint16_t) w);
-}
-
-/**********************************************************************
- * AGC: none -- Word k (0 = high, 1 = low) of a DP value.
- *
- * ARGUMENTS:
- *   v  agc_dp_t  I   DP value
- *   k  int       I   0 high word, 1 low word
- *
- * RETURNS: that word, 15 bits
- **********************************************************************/
-static uint16_t dp_word(agc_dp_t v, int k)
-{
-    return (sp_word((k == 0) ? agc_dp_high(v) : agc_dp_low(v))); /* major / minor word */
-}
-
-/**********************************************************************
- * AGC: none -- Word k (0..5) of a DP vector, X high first.
- *
- * ARGUMENTS:
- *   v  agc_vec_t  I   DP vector
- *   k  int        I   word 0..5 (X high first)
- *
- * RETURNS: that word, 15 bits
- **********************************************************************/
-static uint16_t vec_word(agc_vec_t v, int k)
-{
-    return (dp_word(v.c[k / 2], k % 2));
-}
-
-/**********************************************************************
- * AGC: none -- CDU and PIPA counter block, registers 032-042 in order: CDUX CDUY CDUZ
- * CDUT CDUS PIPAX PIPAY PIPAZ.
- *
- * ARGUMENTS:
- *   k  int  I   0..7: CDUX CDUY CDUZ CDUT CDUS PIPAX PIPAY PIPAZ
- *
- * RETURNS: the counter word (0 past the block)
- **********************************************************************/
-static uint16_t counter_word(int k)
-{
-    switch (k)
-    {
-        case 0:
-            return (agc_erase_cdux());
-        case 1:
-            return (agc_erase_cduy());
-        case 2:
-            return (agc_erase_cduz());
-        case 3:
-            return (agc_erase_cdut());
-        case 4:
-            return (agc_erase_cdus());
-        case 5:
-            return (sp_word(agc_erase_pipax()));
-        case 6:
-            return (sp_word(agc_erase_pipay()));
-        case 7:
-            return (sp_word(agc_erase_pipaz()));
-        default:
-            break;
-    }
-
-    return (0);
-}
-
-/**********************************************************************
- * AGC: none -- word k of a small block of consecutive registers (the
- * downlist sends them as they lie in erasable memory)
- *
- * ARGUMENTS:
- *   k     int               I   SP-word offset in the item
- *   n     int               I   words in the block
- *   list  const uint16_t *  I   the block's words
- *
- * RETURNS: list[k], or 0 past the block
- **********************************************************************/
-static uint16_t pick(int k, int n, const uint16_t *list)
-{
-    uint16_t w = 0u; /* past the block: 0 */
-
-    if (k >= 0 && k < n)
-    {
-        w = list[k];
-    }
+    agc_erase_read_ecadr(ecadr, &w);
 
     return (w);
 }
-
-/**********************************************************************
- * AGC: none -- word k of DELVSLV (= DELVLVC, X high first). The vector
- * is rendezvous noun data (nouns 81, 82, 86) held by programs/navigation
- * above this layer, so it is read by noun data id through
- * agc_dispatch_noun (exec/nouns), as pinball reads it.
- *
- * ARGUMENTS:
- *   k  int         I   SP-word offset in the item
- *   w  uint16_t *  O   the word (0 past the vector)
- *
- * RETURNS: true when the owner gave the component (always, for these
- *          ids); false sends the word as ERASZERO (item_word)
- **********************************************************************/
-static bool delvslv_word(int k, uint16_t *w)
-{
-    static const uint16_t ids[AGC_VEC_N] = {AGC_DATA_DELVLVC, AGC_DATA_DELVLVC_P2, AGC_DATA_DELVLVC_P4}; /* X, Y, Z */
-    agc_dp_t              c              = 0;                                                            /* the component, m/cs 2^7 */
-    agc_status_t          st             = AGC_STATUS_OK;                                                /* noun data read */
-
-    if (k < 2 * AGC_VEC_N)
-    {
-        st = agc_dispatch_noun(ids[k / 2], false, &c);
-    }
-
-    *w = dp_word(c, k % 2);
-
-    return (st == AGC_STATUS_OK);
-}
-
-/**********************************************************************
- * AGC: none -- Items that are plain DP times or vectors from agc_state.h.
- *
- * ARGUMENTS:
- *   item  agc_dn_item_t  I   the downlist item
- *   k     int            I   SP-word offset in the item
- *   w     uint16_t *     O   the word
- *
- * RETURNS: true when the item is one of these
- **********************************************************************/
-static bool item_word_state(agc_dn_item_t item, int k, uint16_t *w)
-{
-    bool      vec = true; /* the item is a vector */
-    agc_vec_t v   = {{0, 0, 0}};
-    agc_dp_t  t   = 0;    /* the DP time, cs 2^28 */
-
-    switch ((int) item)
-    {
-        case AGC_DN_RN:
-            v   = agc_erase_rn();
-            break;
-        case AGC_DN_VN:
-            v   = agc_erase_vn();
-            break;
-        case AGC_DN_DELV:
-            v   = agc_erase_delv();
-            break;
-        case AGC_DN_VGTIG:
-            v   = agc_erase_vgtig();
-            break;
-        case AGC_DN_DELVSLV:
-            return (delvslv_word(k, w)); /* DELVSLV = DELVLVC */
-        case AGC_DN_RLS:
-            v   = agc_erase_rls();
-            break;
-        case AGC_DN_PIPTIME:
-            vec = false;
-            t   = agc_erase_piptime();
-            break;
-        case AGC_DN_TIG:
-            vec = false;
-            t   = agc_erase_tig();
-            break;
-        case AGC_DN_TGO:
-            vec = false;
-            t   = agc_erase_tgo();
-            break;
-        case AGC_DN_TEVENT:
-            vec = false;
-            t   = agc_erase_tevent();
-            break;
-        case AGC_DN_TTPI:
-            vec = false;
-            t   = agc_erase_ttpi();
-            break;
-        default:
-            return (false);
-    } /* switch ((int) item) */
-
-    if (vec)
-    {
-        *w = (k < 2 * AGC_VEC_N) ? vec_word(v, k) : 0u; /* 0 past the vector */
-    }
-    else
-    {
-        *w = (k < 2) ? dp_word(t, k) : 0u; /* 0 past the DP */
-    }
-
-    return (true);
-} /* item_word_state */
-
-/**********************************************************************
- * AGC: none -- small multi-erasable items: the AGC sends consecutive registers
- *
- * ARGUMENTS:
- *   item  agc_dn_item_t  I   the downlist item
- *   k     int            I   SP-word offset in the item
- *   w     uint16_t *     O   the word
- *
- * RETURNS: true when the item is one of these
- **********************************************************************/
-static bool item_word_block(agc_dn_item_t item, int k, uint16_t *w)
-{
-    bool lm = (agc_state_vehicle() == AGC_VEHICLE_LM); /* LM build */
-
-    switch ((int) item)
-    {
-        case AGC_DN_TIME2:
-        {
-            const uint16_t r[2] = {sp_word(agc_erase_time2()), sp_word(agc_erase_time1())}; /* TIME2, TIME1 */
-
-            *w = pick(k, 2, r);
-        }
-        break;
-        case AGC_DN_STATE:
-        {
-            int nflag = lm ? AGC_FLAGWORDS_LM : AGC_FLAGWORDS_CSM; /* flagwords of the rope */
-
-            *w = (k < nflag) ? agc_flagword_get(k) : 0u; /* FLAGWRD0 .. */
-        }
-        break;
-        case AGC_DN_DSPTAB:
-            *w = (k < 12) ? agc_erase_dsptab(k) : 0u; /* DSPTAB +0..+11D */
-            break;
-        case AGC_DN_CDUX:
-            *w = counter_word(k);
-            break;
-        case AGC_DN_CDUZ:
-            *w = counter_word(2 + k);
-            break;
-        case AGC_DN_CDUS:
-            *w = counter_word(4 + k);
-            break;
-        case AGC_DN_IMODES30:
-        {
-            const uint16_t r[2] = {agc_erase_imodes30(), agc_erase_imodes33()}; /* IMODES30, IMODES33 */
-
-            *w = pick(k, 2, r);
-        }
-        break;
-        case AGC_DN_OPTMODES:
-            *w = (k == 0 && !lm) ? agc_erase_optmodes() : 0u;   /* OPTMODES (CM); HOLDFLAG not sent */
-            break;
-        case AGC_DN_RADMODES:
-            /* RADMODES,DAPBOOLS = FLGWRD12,FLGWRD13 (LM only) */
-            *w = (lm && k < 2) ? agc_flagword_get(12 + k) : 0u; /* FLGWRD12, 13 */
-            break;
-        case AGC_DN_LEMMASS:
-        {
-            const uint16_t r[2] = {sp_word(agc_erase_lemmass()), sp_word(agc_erase_csmmass())}; /* LEMMASS, CSMMASS */
-
-            *w = pick(k, 2, r);
-        }
-        break;
-        case AGC_DN_DAPDATR1:
-        {
-            const uint16_t r[2] = {agc_erase_dapdatr1(), agc_erase_dapdatr2()}; /* DAPDATR1, DAPDATR2 */
-
-            *w = pick(k, 2, r);
-        }
-        break;
-        case AGC_DN_CADRFLSH:
-            *w = (k >= 3 && k < 6) ? agc_erase_failreg(k - 3) : 0u; /* FAILREG +0..+2 after CADRFLSH */
-            break;
-        case AGC_DN_REDOCTR:
-        {
-            const uint16_t r[4] = {agc_restart_redoctr(), agc_erase_thetad(0), agc_erase_thetad(1), agc_erase_thetad(2)}; /* REDOCTR, THETAD +0..+2 */
-
-            *w = pick(k, 4, r);
-        }
-        break;
-        case AGC_DN_COMPNUMB:
-            *w = agc_uplink_update_dnword(k);
-            break;
-        case AGC_DN_UPBUFF:
-            *w = agc_uplink_update_dnword(4 + k);
-            break;
-        case AGC_DN_DNTMBUFF:
-            *w = (k < DNTMBUFF_WORDS) ? dntmbuff[k] : 0u; /* the snapshot buffer */
-            break;
-        default:
-            return (false);
-    } /* switch ((int) item) */
-
-    return (true);
-} /* item_word_block */
-
-/**********************************************************************
- * AGC: none -- LM DAP downlink words (agc_lm_dap.h).
- *
- * ARGUMENTS:
- *   item  agc_dn_item_t  I   the downlist item
- *   k     int            I   SP-word offset in the item
- *   w     uint16_t *     O   the word
- *
- * RETURNS: true when the item is one of these (LM only)
- **********************************************************************/
-static bool item_word_lm_dap(agc_dn_item_t item, int k, uint16_t *w)
-{
-    if (agc_state_vehicle() != AGC_VEHICLE_LM)
-    {
-        return (false);
-    }
-
-    switch ((int) item)
-    {
-        case AGC_DN_CDUXD:
-        {
-            const uint16_t r[3] = {agc_erase_cduxd(), agc_erase_cduyd(), agc_erase_cduzd()}; /* CDUXD, CDUYD, CDUZD */
-
-            *w = pick(k, 3, r);
-        }
-        break;
-        case AGC_DN_OMEGAP:
-        {
-            const uint16_t r[3] = {sp_word(agc_erase_omegap()), sp_word(agc_erase_omegaq()), sp_word(agc_erase_omegar())}; /* OMEGAP, OMEGAQ, OMEGAR */
-
-            *w = pick(k, 3, r);
-        }
-        break;
-        case AGC_DN_OMEGAPD:
-        {
-            const uint16_t r[3] = {sp_word(agc_erase_omegapd()), sp_word(agc_erase_omegaqd()), sp_word(agc_erase_omegard())}; /* OMEGAPD, OMEGAQD, OMEGARD */
-
-            *w = pick(k, 3, r);
-        }
-        break;
-        case AGC_DN_ALPHAQ:
-        {
-            const uint16_t r[2] = {sp_word(agc_erase_alphaq()), sp_word(agc_erase_alphar())}; /* ALPHAQ, ALPHAR */
-
-            *w = pick(k, 2, r);
-        }
-        break;
-        default:
-            return (false);
-    }
-
-    return (true);
-} /* item_word_lm_dap */
-
-/**********************************************************************
- * AGC: none -- SP word at offset k of a downlist item (FETCH2WD's DCA 1400 +ECADR).
- *
- * ARGUMENTS:
- *   item  agc_dn_item_t  I   the downlist item (DNADR ECADR)
- *   k     int            I   SP-word offset in the item
- *
- * RETURNS: the word sent, 15 bits (0 for SPARE and items without an
- *          accessor)
- **********************************************************************/
-static uint16_t item_word(agc_dn_item_t item, int k)
-{
-    uint16_t w = 0; /* the word (accessor items) */
-
-    if (item == AGC_DN_R_OTHER || item == AGC_DN_V_OTHER || item == AGC_DN_T_OTHER)
-    {
-        /* The other vehicle's state vector words (R-OTHER, V-OTHER, T-OTHER).     */
-        agc_state_vector_t sv; /* the other vehicle's state vector */
-
-        agc_sv_get(AGC_SV_OTHER, &sv);
-
-        if (item == AGC_DN_R_OTHER)
-        {
-            return (vec_word(sv.r, k));
-        }
-
-        if (item == AGC_DN_V_OTHER)
-        {
-            return (vec_word(sv.v, k));
-        }
-
-        return ((k < 2) ? dp_word(sv.t, k) : 0u); /* T-OTHER */
-    }
-
-    if (item == AGC_DN_REFSMMAT)
-    {
-        /* REFSMMAT: 9 DP elements row by row = 18 words.                          */
-        if (k >= 6 * AGC_VEC_N)
-        {
-            return (0); /* past the matrix */
-        }
-
-        agc_mat_t m = agc_erase_refsmmat(); /* REFSMMAT, half-unit */
-
-        return (vec_word(m.row[k / 6], k % 6));
-    }
-
-    if (item_word_state(item, k, &w) || item_word_block(item, k, &w) || item_word_lm_dap(item, k, &w))
-    {
-        return ((uint16_t) (w & WORD15));
-    }
-
-    return (0); /* ERASZERO / no accessor   */
-} /* item_word */
 
 /* ---- channel output ---------------------------------------------------- */
 
@@ -623,13 +230,49 @@ static agc_dn_entry_t cursor_take(tm_cursor_t *c)
  **********************************************************************/
 static void fetch2wd(void)
 {
-    uint16_t a = item_word(dn_item, dn_offset);     /* word to channel 34 */
-    uint16_t l = item_word(dn_item, dn_offset + 1); /* word to channel 35 */
+    uint16_t a = word_at(dn_ecadr);                   /* word to channel 34 */
+    uint16_t l = word_at((uint16_t) (dn_ecadr + 1u)); /* word to channel 35 */
 
-    dn_offset += 2; /* ADS DNECADR (74001)      */
+    dn_ecadr = (uint16_t) (dn_ecadr + 2u); /* ADS DNECADR (74001)      */
     dn_left--;
 
     dntmexit(a, l);
+}
+
+/**********************************************************************
+ * AGC: none -- SNAPLOOP / SNAPEND: copy all but the last entry of a
+ * snapshot sublist into DNTMBUFF (DCA, DXCH DNTMBUFF +TMINDEX) and send
+ * the last one now.
+ *
+ * ARGUMENTS:
+ *   sub  const agc_dn_list_t *  I   the snapshot sublist (1DNADRs that fit
+ *                                   DNTMBUFF: tests/io/service_verbs_telemetry.c)
+ *
+ * RETURNS: AGC_STATUS_OK, or the status of a store into DNTMBUFF
+ **********************************************************************/
+static agc_status_t snapshot(const agc_dn_list_t *sub)
+{
+    agc_status_t   st  = AGC_STATUS_OK;              /* store status */
+    agc_dn_entry_t now = sub->entry[sub->count - 1]; /* the entry sent now */
+
+    for (int i = 0; i + 1 < sub->count && st == AGC_STATUS_OK; i++)
+    {
+        uint16_t to = (uint16_t) (ADR_DNTMBUFF + 2u * (uint16_t) i); /* DNTMBUFF +TMINDEX */
+
+        st = agc_erase_write_ecadr(to, word_at(sub->entry[i].ref));
+
+        if (st == AGC_STATUS_OK)
+        {
+            st = agc_erase_write_ecadr((uint16_t) (to + 1u), word_at((uint16_t) (sub->entry[i].ref + 1u)));
+        }
+    }
+
+    sublist.active = false; /* SUBLIST, DNECADR = -1    */
+    dn_left        = 0;
+
+    dntmexit(word_at(now.ref), word_at((uint16_t) (now.ref + 1u)));
+
+    return (st);
 }
 
 /**********************************************************************
@@ -650,7 +293,7 @@ static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
 {
     agc_dn_entry_t now = e; /* the entry sent now (a sublist's first) */
 
-    if (from_control && e.op == 1 && e.ref == (uint16_t) AGC_DN_TIME2)
+    if (from_control && e.op == 1 && e.ref == ADR_TIME2)
     {
         wozero(); /* SETWO                    */
     }
@@ -668,21 +311,7 @@ static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
 
         if (sub.snapshot)
         {
-            /* SNAPLOOP / SNAPEND: copy all but the last entry of the snapshot
-             * into DNTMBUFF and send the last one now.                             */
-            for (int i = 0; i + 1 < sub.count; i++)
-            {
-                dntmbuff[2 * i]     = item_word((agc_dn_item_t) sub.entry[i].ref, sub.entry[i].offset);
-                dntmbuff[2 * i + 1] = item_word((agc_dn_item_t) sub.entry[i].ref, sub.entry[i].offset + 1);
-            }
-
-            now            = sub.entry[sub.count - 1];
-            sublist.active = false; /* SUBLIST, DNECADR = -1    */
-            dn_left        = 0;
-
-            dntmexit(item_word((agc_dn_item_t) now.ref, now.offset), item_word((agc_dn_item_t) now.ref, now.offset + 1));
-
-            return (AGC_STATUS_OK);
+            return (snapshot(&sub)); /* SNAPLOOP / SNAPEND */
         }
 
         /* DOSUBLST, NEXTINSL: the sublist's first entry, then the common
@@ -701,9 +330,8 @@ static agc_status_t do_entry(agc_dn_entry_t e, bool from_control)
         return (AGC_STATUS_OK);
     }
 
-    dn_item   = (agc_dn_item_t) now.ref;
-    dn_offset = now.offset;
-    dn_left   = now.op;
+    dn_ecadr = now.ref;
+    dn_left  = now.op;
 
     fetch2wd();
 
@@ -838,7 +466,7 @@ agc_status_t agc_telem_downrupt(void)
         case TM_DUMP_LOC: /* DUMPLOC and TIME1        */
             dntmgoto = TM_DUMP_FIRST;
 
-            dntmexit(dumploc, sp_word(agc_erase_time1()));
+            dntmexit(dumploc, word_at(ADR_TIME1)); /* CA TIME1 */
 
             return (AGC_STATUS_OK);
         case TM_DUMP_FIRST: /* DNDUMP1 -> DNDUMP2       */

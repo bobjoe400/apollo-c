@@ -22,8 +22,12 @@
  * the running program from the saved phase table, PHASEn / TBASEn / LONGBASE);
  * "step csm TETCSM=hi,lo" / "step lem TETLEM=hi,lo" with that state-vector block (42
  * words, RRECT .. XKEP) whenever P00 integration moves TETCSM or TETLEM; then the
- * uplink's result (UPBUFF, UPSVFLAG, the blocks, DELVSLV and TIG, MODREG, DSPTAB); last
- * "# dsky-latency" (V06N3, then the '6' key until the erasable shows noun 36).
+ * uplink's result (UPBUFF, UPSVFLAG, the blocks, DELVSLV and TIG, MODREG, DSPTAB);
+ * "# dsky-latency" (V06N3, then the '6' key until the erasable shows noun 36); last the
+ * downlist: DOWNRUPT 50 times a second as NASSP's PCM raises it, channels 34/35 from
+ * ChannelOutput, one complete list ("#downlist ID", "#dn N hi lo wo" per word, wo the
+ * word order code): '#' lines, compared by the driver word by word (DP tolerance, the
+ * TIME2,TIME1 word and the words a load restart cannot reproduce left out).
  *
  * Timing: NASSP calls agc_engine once per memory cycle (11.71875 us); so does this.
  * Keys: channel 015 + KEYRUPT1, held 0.3 s, as NASSP's DSKY does.
@@ -61,14 +65,42 @@
 #define ROPE_OK 0
 #endif
 
+#define DN_MAX    512  /* downlink word pairs kept                    */
+#define DN_CYCLES 1707 /* 20 ms of memory cycles: NASSP's PCM DOWNRUPT */
+#define DN_LIST   100  /* DP words of a downlist, the ID word included */
+#define DN_SYNC   077340 /* LOWIDCOD, channel 35 of an ID word          */
+
 static agc_t vagc;
 
-/* NASSP callbacks the engines call; nothing is attached here. */
+/* The downlink as NASSP's PCM sees it: channel 34, then 35 (with channel 13 bit 7, the
+ * word order code, at that write).                                                    */
+static int      dn_on;
+static long     dn_cycle;
+static int      dn_n;
+static unsigned dn_hi;
+static unsigned dn_ch13;
+static unsigned dn_word[DN_MAX][3];
+
+/* NASSP callbacks the engines call: the downlink channels are kept. */
 void ChannelOutput(agc_t *s, int ch, int v)
 {
     (void) s;
-    (void) ch;
-    (void) v;
+
+    if (ch == 013)
+    {
+        dn_ch13 = (unsigned) v;
+    }
+    else if (ch == 034)
+    {
+        dn_hi = (unsigned) v & 077777u;
+    }
+    else if (ch == 035 && dn_on && dn_n < DN_MAX)
+    {
+        dn_word[dn_n][0] = dn_hi;
+        dn_word[dn_n][1] = (unsigned) v & 077777u;
+        dn_word[dn_n][2] = (dn_ch13 >> 6) & 1u;
+        dn_n++;
+    }
 }
 
 void RequestRadarData(agc_t *s)
@@ -114,6 +146,47 @@ static void run(double s)
     for (long i = 0; i < n; i++)
     {
         agc_engine(&vagc);
+
+        if (dn_on && ++dn_cycle >= DN_CYCLES)
+        {
+            dn_cycle                   = 0;
+            vagc.InterruptRequests[8] = 1; /* DOWNRUPT, as NASSP's PCM raises it */
+        }
+    }
+}
+
+/* The last complete downlist of a few seconds of downlink (an ID word, 99 words, the
+ * next ID word).                                                                       */
+static void downlist(void)
+{
+    int at = -1;
+
+    dn_on = 1;
+    run(5.0);
+    dn_on = 0;
+
+    for (int i = 0; i + DN_LIST < dn_n; i++)
+    {
+        if (dn_word[i][1] == DN_SYNC && dn_word[i + DN_LIST][1] == DN_SYNC && dn_word[i][2] == 0u)
+        {
+            at = i;
+        }
+    }
+
+    if (at < 0)
+    {
+        printf("#downlist none (%d words)\n", dn_n);
+
+        return;
+    }
+
+    printf("#downlist %05o\n", dn_word[at][0]);
+
+    for (int k = 1; k < DN_LIST; k++)
+    {
+        const unsigned *w = dn_word[at + k];
+
+        printf("#dn %02d %05o %05o %u\n", k, w[0], w[1], w[2]);
     }
 }
 
@@ -468,6 +541,8 @@ int main(int argc, char **argv)
     }
 
     printf("# dsky-latency %.2f\n", lat);
+
+    downlist();
 
     return (0);
 }

@@ -9,7 +9,9 @@ AGC_BEGIN..AGC_END block of the CSM) on two engines built from sim/nassp/replay.
 
 and compares their transcripts line for line: the CSM/LM state-vector blocks after each
 P00 integration step, and the result of an MCC-style uplink (V71 CSM state vector through
-INLINK/UPRUPT, then V33): UPBUFF, UPSVFLAG, the blocks, MODREG, DSPTAB. Seconds, no Orbiter.
+INLINK/UPRUPT, then V33): UPBUFF, UPSVFLAG, the blocks, MODREG, DSPTAB. Last, the downlist
+both engines send with DOWNRUPT raised as NASSP's PCM does (CSM images; check_downlist).
+Seconds, no Orbiter.
 
 NASSP's yaAGC is GPL and not part of this repository: it is taken from NASSP_YAAGC_DIR
 (<NASSP>/Orbitersdk/samples/ProjectApollo/src_sys/yaAGC) when set, else downloaded from
@@ -165,6 +167,60 @@ def dps(line):
     return f[0], [sp(w[k]) * 0o40000 + sp(w[k + 1]) for k in range(0, len(w) - 1, 2)]
 
 
+# The CSM coast and align downlist (CMCSTADL, ID 77777; Comanche055 DOWNLINK_LISTS p.173):
+# words the two engines cannot agree on after the image is loaded, by word number (1 = the
+# first after the ID word), with the reason. Every other word must agree (DP words as the
+# blocks: the same value, or within TOL_LSB where it comes from the integration).
+DOWNLIST_SKIP = {
+    0o77777: dict([(w, 'ADOT (RCS DAP rate estimate; ours restarts the DAP at the load, stock resumes)')
+                   for w in (10, 11, 12, 60, 61, 62)] +
+                  [(w, 'THETADX..Z (RCS DAP hold attitude; load restart)') for w in (15, 16, 65, 66)] +
+                  [(w, 'ERRORX..Z, THETADX (RCS DAP; load restart)') for w in (82, 83)] +
+                  [(w, 'CADRFLSH, CADRMARK, TEMPFLSH (rope addresses; the C keeps no CADR words)')
+                   for w in (68, 69, 70)] +
+                  [(w, 'CDUS, PIPAX..Z (counters; the shim zeroes the PIPAs at the load restart)')
+                   for w in (71, 72)] +
+                  [(w, 'channels 11-14, 30-33 (the shim\'s channel image)') for w in (90, 91, 92, 93)]),
+}
+
+
+def downlist(lines):
+    """(ID, {word: (hi, lo, word order)}) of the '#downlist' / '#dn' lines."""
+    lid, words = None, {}
+    for x in lines:
+        f = x.split()
+        if f and f[0] == '#downlist' and f[1] != 'none':
+            lid = int(f[1], 8)
+        elif f and f[0] == '#dn':
+            words[int(f[1])] = (int(f[2], 8), int(f[3], 8), int(f[4]))
+    return lid, words
+
+
+def check_downlist(stock, ours):
+    """(ok, summary): the downlists of the two engines word by word (CSM images)."""
+    sid, sw = downlist(stock)
+    oid, ow = downlist(ours)
+    if sid is None or sid != oid or sorted(sw) != sorted(ow):
+        return False, 'downlist ID %s (stock) vs %s (ours)' % (oct(sid) if sid else '-', oct(oid) if oid else '-')
+    skip = DOWNLIST_SKIP.get(sid, {})
+    equal, dp, known, bad = 0, 0, 0, []
+    for k in sorted(sw):
+        (a, b, wa), (c, d, wc) = sw[k], ow[k]
+        if (a, b, wa) == (c, d, wc):
+            equal += 1
+        elif wa == 0 and wc == 0 and a == c:
+            known += 1          # TIME2,TIME1 (word order 0): TIME1 runs on, the clocks differ
+        elif k in skip:
+            known += 1
+        elif wa == wc and abs((sp(a) * 0o40000 + sp(b)) - (sp(c) * 0o40000 + sp(d))) <= TOL_LSB:
+            dp += 1
+        else:
+            bad.append('dn %02d stock %05o %05o ours %05o %05o' % (k, a, b, c, d))
+    text = ('downlist %05o: %d words equal, %d DP words within %d LSB, %d known' %
+            (sid, equal, dp, TOL_LSB, known))
+    return not bad, text + ''.join('\n       ' + x for x in bad[:12])
+
+
 def compare(stock, ours):
     """(ok, words differing only in representation, [pairs off by 1..TOL_LSB])."""
     a = [x for x in stock if not x.startswith('#')]
@@ -243,6 +299,11 @@ def main():
                   (name, ', program resumed' if name in NOUN40 else '', dt))
             continue
         what = '%d integration steps' % steps + (' + uplink' if up != '-' else '')
+        dl_ok, dl_text = check_downlist(b, a)
+        if not dl_ok:
+            fails += 1
+            print('FAIL %-10s %s' % (name, dl_text))
+            continue
         if same and steps == want:
             print('PASS %-10s %s %s (%.1f s)' % (name, what, 'identical' if not off else
                   'identical but %d DP pairs within %d LSB' % (len(off), TOL_LSB), dt))
@@ -250,6 +311,7 @@ def main():
                 print('     %s LSB (ours - stock)' % o)
             if rep and not off:
                 print('     %d words differ only in the sign of a zero high word' % rep)
+            print('     %s' % dl_text)
         else:
             fails += 1
             print('FAIL %-10s %s, %d expected (%.1f s)' % (name, what, want, dt))

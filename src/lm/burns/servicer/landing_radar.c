@@ -796,8 +796,9 @@ agc_status_t agc_job_lrvjob(void)
 }
 
 /**********************************************************************
- * LRVJOB after RADSTALL / ENDLRV / VBAD / VSTILBAD (p.892-893). DEVIATION:
- * the downlink copies LRVTIMDL, LRXCDUDL, LRZCDUDL are not kept.
+ * LRVJOB after RADSTALL / ENDLRV / VBAD / VSTILBAD (p.892-893); a good
+ * reading also keeps LRVTIME, LRXCDU, LRYCDU, LRZCDU for the downlink
+ * (LRVTIMDL, LRXCDUDL, LRYCDUDL, LRZCDUDL).
  *
  * FUNCTION NAME: agc_job_lrvjob_done
  *
@@ -820,7 +821,11 @@ void agc_job_lrvjob_done(void)
     else
     {
         agc_inhint();
-        lm->vmeas = agc_radar_samplsum(); /* STOW AWAY VMEAS        */
+        lm->vmeas      = agc_radar_samplsum(); /* STOW AWAY VMEAS        */
+        lm->lrvtimdl   = lm->lrvtime;          /* DCA LRVTIME, DXCH LRVTIMDL (FOR DOWNLINK) */
+        lm->lrcdudl[0] = lm->lrcdu[0];         /* DCA LRXCDU, DXCH LRXCDUDL */
+        lm->lrcdudl[1] = lm->lrcdu[1];
+        lm->lrcdudl[2] = lm->lrcdu[2];         /* CA LRZCDU, TS LRZCDUDL  */
         agc_flag_set(AGC_FLAG_VELDATA);
         agc_relint();
     }

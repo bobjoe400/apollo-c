@@ -103,3 +103,12 @@ expect FLASH on
 expect PROG 52
 keys 00E
 until PROG 00 within 300
+# The coast and align downlist (CMCSTADL, Comanche055 DOWNLINK_LISTS p.173) the
+# P52 has filled: word 2 RN (snapshot), 19 BESTI,BESTJ (the stars picked),
+# 20-22 MARKDOWN (the last mark: time, CDUY, S, Z, T; CDUX at 23 is 0 here),
+# 34 and 38 REFSMMAT XX and YY (identity), 40-44 FLAGWRD0-9, 51 TIME2,TIME1,
+# 74-76 OGC,IGC,MGC (the torquing angles). Before the lists were sent by
+# address, 19-22 and 74-76 went out as zero.
+run 450
+downlist id 77777
+downlist nonzero 2 19 20-22 34 38 40-44 51 74-76

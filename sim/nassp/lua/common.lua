@@ -90,10 +90,17 @@ end
 ac.get0 = 0       -- GET at sim time 0 (scenario MISSNTIME)
 function ac.get() return oapi.get_simtime() + ac.get0 end
 ac.tigaddr = 1802 -- CSM TIG 03412; LM 03441 = 1825
+-- a double-precision erasable pair as a number (ones' complement words: a word >= 040000 is
+-- negative, so a pair with a negative low word, as the AGC leaves TIG / TTPI after DP arithmetic,
+-- is hi * 2^14 - (077777 - lo))
+function ac.dp(a)
+  local hi, lo = ac.e(a), ac.e(a + 1)
+  if hi >= 16384 then hi = hi - 32767 end
+  if lo >= 16384 then lo = lo - 32767 end
+  return hi * 16384 + lo
+end
 function ac.tig_minus_now()  -- cs from the AGC clock to TIG
-  local tig = ac.e(ac.tigaddr) * 16384 + ac.e(ac.tigaddr + 1)
-  local now = ac.e(20) * 16384 + ac.e(21)
-  return tig - now
+  return ac.dp(ac.tigaddr) - ac.dp(20)
 end
 function ac.wait_vn(v, n, flash, timeout)
   local t0 = oapi.get_simtime()
@@ -173,7 +180,7 @@ local function note(step)
     ac.wait_until(function() return ac.tig_minus_now() <= lead end, 7200)
     ac.dump('  at ' .. tx .. ' (TIG - now = ' .. ac.tig_minus_now() .. ' cs)')
     if lead == 500 then
-      ac.tig0 = ac.e(ac.tigaddr) * 16384 + ac.e(ac.tigaddr + 1) -- ignition time (TIG may move later)
+      ac.tig0 = ac.dp(ac.tigaddr) -- ignition time (TIG may move later)
       ac.wait_until(function() local vv, nn, pp, fl = ac.vn(); return vv == '99' and fl end, 20); ac.dump('  V99 flash')  -- V99N40 (P40) or V99N62 (P63)
     end
     return
@@ -194,7 +201,7 @@ local function note(step)
     local lead = (tonumber(am) * 60 + (tonumber(asec) or 0)) * 100
     local function since_ign()
       if ac.tig0 == nil then return -ac.tig_minus_now() end
-      return ac.e(20) * 16384 + ac.e(21) - ac.tig0
+      return ac.dp(20) - ac.tig0
     end
     ac.wait_until(function() return since_ign() >= lead end, 1200)
     ac.dump('  at ' .. tx)

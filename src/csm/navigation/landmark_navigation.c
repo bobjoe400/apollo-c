@@ -1293,3 +1293,34 @@ agc_status_t agc_job_orbital_navigation_site_terminate(void)
 
     return (agc_exec_gotopooh());
 }
+
+/**********************************************************************
+ * 8NN (CSM, S22.1): the number of landmark marks, sent on the P22 downlist.
+ * AGC: 8NN (Comanche055 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_8nn
+ *
+ * RETURNS: agc_sp_t -- 8NN, unscaled
+ **********************************************************************/
+agc_sp_t agc_erase_8nn(void)
+{
+    return (ln.n);
+}
+
+/**********************************************************************
+ * SVMRKDAT (CSM, S22.1): the landmark mark data, sent on the P22 downlist.
+ * AGC: SVMRKDAT (Comanche055 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_svmrkdat
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   k  int  I    word 0..35 (five marks of 7 words: time DP, CDUY S Z T X; one pad)
+ *
+ * RETURNS: uint16_t -- SVMRKDAT +k, raw word
+ **********************************************************************/
+uint16_t agc_erase_svmrkdat(int k)
+{
+    return (ln.svmrkdat[k]);
+}

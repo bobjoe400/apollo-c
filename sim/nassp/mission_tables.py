@@ -24,6 +24,7 @@ Usage: mission_tables.py STOCK.csv OURS.csv MILESTONE [--tolerances sim/nassp/mi
 Exit status 1 when a quantity is out of tolerance or a milestone event is missing in ours.
 Standard library only; run with python3 -I.
 """
+import bisect
 import csv
 import os
 import sys
@@ -88,8 +89,19 @@ def first(rows, f):
     return None
 
 
+_TIMES = {}
+
+
 def nearest(rows, t):
-    best = min(rows, key=lambda r: abs(r['_t'] - t))
+    """The row of rows (in time order) nearest to sim time t, if within 0.6 s."""
+    ts = _TIMES.get(id(rows))
+    if ts is None or len(ts) != len(rows):
+        ts = _TIMES[id(rows)] = [r['_t'] for r in rows]
+    i = bisect.bisect_left(ts, t)
+    cand = [rows[j] for j in (i - 1, i) if 0 <= j < len(rows)]
+    if not cand:
+        return None
+    best = min(cand, key=lambda r: abs(r['_t'] - t))
     return best if abs(best['_t'] - t) <= 0.6 else None
 
 
@@ -99,7 +111,10 @@ def engine(rows):
 
 
 def ignition(rows):
-    """The row the milestone's times count from: ignition, or entry interface (400,000 ft)."""
+    """The row the milestone's times count from: ignition, entry interface (400,000 ft), or the
+    scenario load (rendezvous: both builds start from the same post-insertion state)."""
+    if 'markctr' in rows[0]:
+        return rows[0]
     if 'vair' in rows[0]:
         return first(rows, lambda r: (num(r, 'alt') or 1e9) < 121920.0)
     e = engine(rows)
@@ -177,24 +192,63 @@ def ev_entry(rows):
     return ev
 
 
+def regs(r):
+    """R1 R2 R3 of a row's DSKY, as shown."""
+    d = display(r)
+    return '%s %s %s' % (d[d.index('R1 ') + 3:][:6], d[d.index('R2 ') + 3:][:6], d[d.index('R3 ') + 3:][:6])
+
+
+def noun(r):
+    d = display(r)
+    return d[d.index('NOUN ') + 5:][:2]
+
+
+def verb(r):
+    d = display(r)
+    return d[d.index('VERB ') + 5:][:2]
+
+
 def ev_rendezvous(rows):
-    """Liftoff and rendezvous: insertion as in ev_liftoff, then the P32 / P33 / P34 starts, each
-    burn's TIG (engine or RCS: mass drop) and the closest approach to the CSM."""
-    ev = ev_liftoff(rows)
-    ign = ignition(rows)
-    if not ign:
-        return ev
-    t0 = ign['_t']
-    for mm in (20, 32, 33, 34, 35):
-        r = first(rows, lambda r, mm=mm: int(r['modreg'], 8) == mm and r['_t'] > t0)
-        if r:
-            ev['P%d, TIG+ s' % mm] = '%.1f (range %.1f km)' % (r['_t'] - t0, (num(r, 'range') or 0) / 1000)
-    rr = [r for r in rows if r['_t'] > t0 + 600 and (num(r, 'range') or -1) >= 0]
-    if rr:
-        m = min(rr, key=lambda r: num(r, 'range'))
-        ev['closest approach, TIG+ s'] = '%.1f (range %.2f km, rate %.2f m/s)' % (m['_t'] - t0, num(m, 'range') / 1000, num(m, 'rrate'))
-        last = rows[-1]
-        ev['end: range km, mass kg'] = '%.2f, %.1f' % (num(last, 'range') / 1000, num(last, 'mass'))
+    """Rendezvous from the post-insertion start (times in sim s from the scenario load, the same GET
+    on both builds): P20 and the RR lock-on, then per burn (CSI in P32, CDH in P33, TPI in P34) the
+    targeting displays the crew last saw before it (N75 / N81 / N82, N37 / N58), the burn as the
+    script nulled it (start, duration, RCS used, residual N85), and the relative state at the end."""
+    ev = {}
+    t = lambda r: '%.0f' % r['_t']
+    r = first(rows, lambda r: int(r['modreg'], 8) == 20)
+    if r:
+        ev['P20 selected, s'] = t(r)
+    r = first(rows, lambda r: noun(r) == '72' and verb(r) == '50')
+    if r:
+        ev['RR lock-on (F50N72), s'] = '%s (range %.1f km)' % (t(r), num(r, 'range') / 1000)
+    for prog, b, nouns in ((32, 'csi', ('11', '75', '81', '82')), (33, 'cdh', ('13', '75', '81')), (34, 'tpi', ('37', '58', '59', '81'))):
+        p = first(rows, lambda r, prog=prog: int(r['modreg'], 8) == prog)
+        if not p:
+            continue
+        ev['P%d, s (marks)' % prog] = '%s (%s)' % (t(p), p.get('markctr', '?'))
+        s = first(rows, lambda r, b=b: r.get('phase', '').startswith(b + ' burn'))
+        end = s['_t'] if s else rows[-1]['_t']
+        for n in nouns:
+            last = None
+            for r in rows:
+                if p['_t'] <= r['_t'] < end and noun(r) == n and verb(r) in ('06', '16'):
+                    last = r
+            if last:
+                ev['%s N%s (last before the burn)' % (b.upper(), n)] = regs(last)
+        if not s:
+            continue
+        burn = [r for r in rows if r.get('phase', '').startswith(b + ' ')]
+        e = burn[-1]
+        ev['%s burn start s, nulling s' % b.upper()] = '%s, %.0f' % (t(s), e['_t'] - s['_t'])
+        ev['%s RCS used, kg' % b.upper()] = '%.1f' % (num(s, 'mass') - num(e, 'mass'))
+        clean = [r for r in burn if noun(r) == '85' and '?' not in regs(r)]
+        ev['%s N85 after nulling' % b.upper()] = regs(clean[-1]) if clean else '(%s)' % display(e)
+        o = nearest(rows, e['_t'] + 60) or e
+        ev['%s orbit peri x apo, km (+60 s)' % b.upper()] = '%.2f x %.2f' % (num(o, 'peri') / 1000, num(o, 'apo') / 1000)
+    s = first(rows, lambda r: r.get('phase', '').startswith('tpi burn'))
+    e = nearest(rows, s['_t'] + 600) if s else None
+    if e:
+        ev['TPI burn + 600 s: range km, range rate m/s'] = '%.2f, %.2f' % (num(e, 'range') / 1000, num(e, 'rrate'))
     return ev
 
 
@@ -222,8 +276,8 @@ def changes(rows, key):
     return out
 
 
-ANGLES = ('lng', 'pitch', 'bank', 'yaw', 'cdux', 'cduy', 'cduz')  # wrap at 360 deg
-META = ('get', 't', 'modreg', 'time1', 'time2')                    # clocks and mode words
+ANGLES = ('lng', 'pitch', 'bank', 'yaw', 'cdux', 'cduy', 'cduz', 'cdut', 'cdus')  # wrap at 360 deg
+META = ('get', 't', 'modreg', 'time1', 'time2', 'radmodes')        # clocks and mode words
 
 
 def numeric_columns(rows):

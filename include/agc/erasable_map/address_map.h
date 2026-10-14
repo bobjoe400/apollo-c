@@ -34,4 +34,9 @@ void agc_erase_read_ecadr(uint16_t ecadr, uint16_t *word);
  * value the owner refuses (e.g. UPSVFLAG outside -2..2).                  */
 agc_status_t agc_erase_write_ecadr(uint16_t ecadr, uint16_t word);
 
+/* Shadow words the map of the rope flown uses; the map keeps each entry's
+ * typed value as last seen in core's shadow store, which holds
+ * AGC_EC_SHADOW_WORDS (agc/core/state.h).                                 */
+uint32_t agc_erase_map_words(void);
+
 #endif /* AGC_ERASABLE_MAP_ADDRESS_MAP_H */

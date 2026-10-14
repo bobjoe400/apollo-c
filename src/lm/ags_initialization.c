@@ -528,3 +528,16 @@ agc_status_t agc_job_ags_initialization_end(void)
 {
     return (agc_dsky_endmark());
 }
+
+/**********************************************************************
+ * AGSK (LM): the AGS clock zero, sent on the downlists.
+ * AGC: AGSK (Luminary099 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_agsk
+ *
+ * RETURNS: agc_dp_t -- AGSK, cs 2^28
+ **********************************************************************/
+agc_dp_t agc_erase_agsk(void)
+{
+    return (agsk);
+}

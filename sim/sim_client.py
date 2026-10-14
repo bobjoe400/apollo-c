@@ -62,6 +62,11 @@ Scenario language (one command per line, `#` comments; times in cs):
                               pass is reported XPASS (bug fixed: turn it
                               into expect) and fails the run under --strict
   show                        print the display
+  downlist id OCT             the last complete downlist (channels 34/35:
+                              the ID word, then 99 words) has ID word OCT
+  downlist nonzero N[-M] ...  words N..M of it (1 = the ID word, as the
+                              "(28-29)" numbers of DOWNLINK_LISTS.agc) are
+                              not both +0
 Exit status 0 if every expectation held, 1 otherwise.
 """
 import argparse
@@ -75,6 +80,7 @@ import time
 
 CH_RELAY, CH_LAMPS11, CH_DSKY163 = 0o10, 0o11, 0o163
 CH_STEP, CH_STEP_ACK = 0o150, 0o151
+CH_DNTM1, CH_DNTM2, DN_SYNC, DN_WORDS = 0o34, 0o35, 0o77340, 100
 
 RELAY_DIGIT = {0o25: '0', 0o3: '1', 0o31: '2', 0o33: '3', 0o17: '4',
                0o36: '5', 0o34: '6', 0o23: '7', 0o35: '8', 0o37: '9', 0: ' '}
@@ -205,6 +211,9 @@ class Link:
         self.dsky = Dsky()
         self.cs = 0
         self.trace = trace
+        self.dn_hi = 0                     # channel 34 of the word being sent
+        self.dn_cur = []                   # the downlist being sent: (34, 35) pairs
+        self.dn_last = []                  # the last complete downlist
 
     def send(self, chan, value, ubit=False):
         self.s.sendall(form_packet(chan, value, ubit))
@@ -238,7 +247,20 @@ class Link:
             if self.trace:
                 print('  %7d < %04o %05o' % (self.cs, chan, value))
             self.dsky.take(chan, value)
+            self.downlink(chan, value)
         return acked
+
+    def downlink(self, chan, value):
+        """Channels 34, 35 (DNTM1, DNTM2): one DP word; an ID word (35 = LOWIDCOD)
+        starts a downlist, and the list before it is complete at 100 words."""
+        if chan == CH_DNTM1:
+            self.dn_hi = value
+        elif chan == CH_DNTM2:
+            if value == DN_SYNC:
+                if len(self.dn_cur) == DN_WORDS:
+                    self.dn_last = self.dn_cur
+                self.dn_cur = []
+            self.dn_cur.append((self.dn_hi, value))
 
     def step(self, n):
         while n > 0:
@@ -456,8 +478,28 @@ class Scenario:
             self.clock_base = value - (self.enter_cs or 0)
         elif op == 'show':
             self.say(self.link.dsky.text())
+        elif op == 'downlist':
+            self.downlist(w[1:])
         else:
             raise SystemExit('sim_client: unknown command %r' % line)
+
+    def downlist(self, args):
+        """downlist id OCT / downlist nonzero N[-M] ... (module docstring)."""
+        words = self.link.dn_last
+        if args[0] == 'id':
+            self.checks += 1
+            ok = len(words) == DN_WORDS and words[0][0] == int(args[1], 8)
+            if not ok:
+                self.fail += 1
+                self.say('FAIL downlist id %s: %s' % (args[1], '%05o' % words[0][0] if words else 'no list'))
+            return
+        for spec in args[1:]:
+            lo, _, hi = spec.partition('-')
+            for n in range(int(lo), int(hi or lo) + 1):
+                self.checks += 1
+                if len(words) != DN_WORDS or words[n - 1] == (0, 0):
+                    self.fail += 1
+                    self.say('FAIL downlist word %d is +0 +0' % n)
 
     def play(self, lines):
         for raw in lines:

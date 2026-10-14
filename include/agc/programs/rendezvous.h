@@ -446,6 +446,8 @@ void         agc_radar_lrvel(agc_sp_t beam2);          /* LRVEL 0,2,4 = Z,Y,X */
 agc_status_t agc_rendz_radar_read(void);               /* RADAREAD (rupt) */
 agc_dp_t     agc_radar_samplsum(void);                 /* SAMPLSUM counts */
 uint16_t     agc_erase_dnrrange(int index);            /* DNRRANGE +index */
+uint16_t     agc_erase_dnindex(void);                  /* DNINDEX         */
+agc_sp_t     agc_erase_lastycmd(int k);                /* LASTYCMD +k (k 1: LASTXCMD) */
 void         agc_radar_landing_radar_lights(void);     /* R12LITES      */
 agc_status_t agc_radar_powered_flight_designate(void); /* R29 (SERVICER) */
 
@@ -492,6 +494,11 @@ typedef struct agc_rr_downlink
 } agc_rr_downlink_t;
 
 const agc_rr_downlink_t *agc_rendz_rr_downlink(void);
+
+/* The RR mark words the downlists send (LRS22.1, lm/navigation).         */
+agc_dp_t agc_erase_rm(void);        /* RM: RR range, m 2^29            */
+agc_dp_t agc_erase_mktime(void);    /* MKTIME: mark time, cs 2^28      */
+uint16_t agc_erase_rangrdot(int k); /* RANGRDOT +k: raw range, rate    */
 
 /* R29REM0J */
 agc_status_t agc_job_powered_flight_remode(void);
@@ -910,6 +917,7 @@ void         agc_job_rendezvous_tracking_data_csm_residuals_proceed(void);
 void         agc_job_rendezvous_tracking_data_csm_residuals_recycle(void);
 agc_status_t agc_job_rendezvous_tracking_data_csm_residuals_wait(void);
 agc_status_t agc_rendz_vhf_read(void); /* VHFREAD (rupt) */
+agc_dp_t     agc_erase_vhftime(void);  /* VHFTIME (downlink), cs 2^28 */
 
 /* V89 (CM) */
 agc_status_t agc_job_rendezvous_final_attitude_csm(agc_job_ctx_t *ctx);
@@ -923,6 +931,8 @@ agc_status_t agc_job_rendezvous_final_attitude_csm_maneuver(agc_job_ctx_t *ctx);
 /* csm/navigation/landmark_navigation.c (S22.1) */
 agc_status_t agc_job_orbital_navigation_marks(agc_job_ctx_t *ctx); /* S22.1 */
 agc_status_t agc_job_orbital_navigation_mark(agc_job_ctx_t *ctx);  /* S22NXTIN */
+agc_sp_t     agc_erase_8nn(void);                                  /* 8NN: marks, unscaled (downlink) */
+uint16_t     agc_erase_svmrkdat(int k);                            /* SVMRKDAT +k, k 0..35 (downlink) */
 
 /* S22BOX42 */
 agc_status_t agc_job_orbital_navigation_delta_accept(agc_job_ctx_t *ctx);

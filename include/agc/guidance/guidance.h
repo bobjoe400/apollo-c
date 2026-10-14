@@ -208,6 +208,8 @@ typedef struct agc_guid_lm
     agc_sp_t  stilbadv;   /* STILBADV; 2-s passes to wait after bad V, unscaled */
     agc_dp_t  lrvtime;    /* LRVTIME  cs, scale 2^28                         */
     uint16_t  lrcdu[3];   /* LRXCDU LRYCDU LRZCDU                            */
+    agc_dp_t  lrvtimdl;   /* LRVTIMDL downlink copy of LRVTIME, cs 2^28      */
+    uint16_t  lrcdudl[3]; /* LRXCDUDL LRYCDUDL LRZCDUDL downlink copies       */
     agc_sp_t  piptem[3];  /* PIPTEM   raw PIPAs at RDGIMS; unscaled */
     agc_vec_t gnur;       /* GNUR = GNUV updated R1S or V1S; scale of R1S (m 2^24) or V1S (m/cs 2^7) */
     agc_dp_t  radskal;    /* RADSKAL  doppler scale (PL)                     */

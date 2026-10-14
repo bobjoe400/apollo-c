@@ -354,6 +354,7 @@ agc_status_t agc_job_crew_defined_maneuver_terminate(agc_job_ctx_t *ctx); /* V34
 
 /* Pad erasable load: LATITUDE, AZIMUTH (of ZNB), LAUNCHAZ, rev 2^0.     */
 agc_status_t agc_csm_prelaunch_set_pad(agc_dp_t latitude, agc_dp_t azimuth, agc_dp_t launchaz);
+agc_dp_t     agc_erase_launchaz(void); /* LAUNCHAZ, rev 2^0 (downlink) */
 
 /* P11 at liftoff: ERCOMP += (XSM THETAN) VSL1, then EARTHR +3 at
  * TEMPTIME = TLIFTOFF (cs 2^28).                                          */

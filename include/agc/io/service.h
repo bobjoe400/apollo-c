@@ -63,154 +63,23 @@ agc_vec_t    agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift, agc_dp_
 agc_vec_t    agc_rtb_vecsgnag(agc_vec_t v);                                                               /* VECSGNAG         */
 
 /* ======================================================================
- * Downlink lists (src/io/downlink_lists_csm.c, src/io/downlink_lists_lm.c)
+ * Downlink lists (src/io/telemetry/downlink_lists_csm.c, _lm.c): the
+ * rope's tables of erasable addresses; the down-telemetry program reads
+ * the words by address (agc_erase_read_ecadr, the erasable map).
  * ==================================================================== */
-
-/* Downlinked erasable items.  An entry names an item plus a word offset;
- * telemetry fetches two consecutive SP words per DP downlink word.        */
-typedef enum agc_dn_item
-{
-    AGC_DN_SPARE = 0, /* SPARE / UNKNOWN = ERASZERO (register 7, zero) */
-    AGC_DN_DNTMBUFF,  /* the snapshot buffer itself                    */
-    AGC_DN_TIME2,     /* TIME2,TIME1                                   */
-    AGC_DN_STATE,     /* FLAGWRD0..FLAGWRD11                           */
-    AGC_DN_DSPTAB,    /* DSPTAB +0..+11D                               */
-    AGC_DN_RN,
-    AGC_DN_VN,
-    AGC_DN_PIPTIME,
-    AGC_DN_R_OTHER,
-    AGC_DN_V_OTHER,
-    AGC_DN_T_OTHER,
-    AGC_DN_TIG,
-    AGC_DN_REFSMMAT,
-    AGC_DN_CDUX,      /* CDUX,CDUY,CDUZ,CDUT (LM order)                */
-    AGC_DN_CDUZ,      /* CDUZ,CDUT (CM order)                          */
-    AGC_DN_CDUS,      /* CDUS,PIPAX,PIPAY,PIPAZ                        */
-    AGC_DN_IMODES30,  /* IMODES30,IMODES33                             */
-    AGC_DN_OPTMODES,  /* OPTMODES,HOLDFLAG (CM)                        */
-    AGC_DN_RADMODES,  /* RADMODES,DAPBOOLS (LM)                        */
-    AGC_DN_COMPNUMB,  /* COMPNUMB,UPOLDMOD,UPVERB,UPCOUNT,UPBUFF...    */
-    AGC_DN_UPBUFF,    /* UPBUFF +0..+19D                               */
-    AGC_DN_CADRFLSH,  /* CADRFLSH,+1,+2,FAILREG,+1,+2                  */
-    AGC_DN_REDOCTR,
-    AGC_DN_RSBBQ,
-    AGC_DN_LEMMASS,
-    AGC_DN_DAPDATR1,
-    AGC_DN_ADOT,
-    AGC_DN_AK,
-    AGC_DN_THETADX,
-    AGC_DN_ERRORX,
-    AGC_DN_WBODY,
-    AGC_DN_DELLT4,
-    AGC_DN_RTARG,
-    AGC_DN_TGO,
-    AGC_DN_PIPTIME1,
-    AGC_DN_DELV,
-    AGC_DN_PACTOFF,
-    AGC_DN_PCMD,
-    AGC_DN_CSTEER,
-    AGC_DN_DELVEET1,
-    AGC_DN_DELVEET2,
-    AGC_DN_DELVEET3,
-    AGC_DN_ELEV,
-    AGC_DN_CENTANG,
-    AGC_DN_DELTAR,
-    AGC_DN_TEVENT,
-    AGC_DN_VGTIG,
-    AGC_DN_BESTI,
-    AGC_DN_MARKDOWN,
-    AGC_DN_MARK2DWN,
-    AGC_DN_HAPOX,
-    AGC_DN_OGC,
-    AGC_DN_LAUNCHAZ,
-    AGC_DN_VHFTIME,
-    AGC_DN_VHFCNT,
-    AGC_DN_TTPI,
-    AGC_DN_ECSTEER,
-    AGC_DN_DELVTPF,
-    AGC_DN_TCDH,
-    AGC_DN_TPASS4,
-    AGC_DN_DELVSLV,
-    AGC_DN_RANGE,
-    AGC_DN_DIFFALT,
-    AGC_DN_RTHETA,
-    AGC_DN_LAT_SPL,
-    AGC_DN_VPRED,
-    AGC_DN_CMDAPMOD,
-    AGC_DN_L_D1,
-    AGC_DN_PAXERR1,
-    AGC_DN_LATANG,
-    AGC_DN_ALFA_180,
-    AGC_DN_ROLLTM,
-    AGC_DN_GAMMAEI,
-    AGC_DN_TTE,
-    AGC_DN_VIO,
-    AGC_DN_SVMRKDAT,
-    AGC_DN_LANDMARK,
-    AGC_DN_LONG,
-    AGC_DN_ALT,
-    AGC_DN_LAT,
-    AGC_DN_8NN,
-    AGC_DN_RLS,
-    /* Luminary-only items */
-    AGC_DN_TCSI,
-    AGC_DN_DNLRVELZ,
-    AGC_DN_DNLRVELX,
-    AGC_DN_OMEGAP,
-    AGC_DN_CDUXD,
-    AGC_DN_OMEGAPD,
-    AGC_DN_POSTORKU,
-    AGC_DN_DNRRANGE,
-    AGC_DN_ALPHAQ,
-    AGC_DN_POSTORKP,
-    AGC_DN_AGSK,
-    AGC_DN_TALIGN,
-    AGC_DN_AOTCODE,
-    AGC_DN_X789,
-    AGC_DN_LASTYCMD,
-    AGC_DN_STARSAV1,
-    AGC_DN_STARSAV2,
-    AGC_DN_AIG,
-    AGC_DN_AOG,
-    AGC_DN_TANGNB,
-    AGC_DN_MKTIME,
-    AGC_DN_RANGRDOT,
-    AGC_DN_NN,
-    AGC_DN_LRZCDUDL,
-    AGC_DN_VSELECT,
-    AGC_DN_LRVTIMDL,
-    AGC_DN_VMEAS,
-    AGC_DN_HMEAS,
-    AGC_DN_RM,
-    AGC_DN_LRXCDUDL,
-    AGC_DN_UNFC_2,
-    AGC_DN_VGVECT,
-    AGC_DN_TTF_8,
-    AGC_DN_DELTAH,
-    AGC_DN_RGU,
-    AGC_DN_VGU,
-    AGC_DN_LAND,
-    AGC_DN_AT,
-    AGC_DN_TLAND,
-    AGC_DN_FC,
-    AGC_DN_PSEUDO55,
-    AGC_DN_TTOGO,
-    AGC_DN_YNBSAV,
-    AGC_DN_GSAV,
-    AGC_DN_AGSBUFF,
-    AGC_DN_ITEM_COUNT
-} agc_dn_item_t;
 
 /* Entry op codes: 1..6 = 1DNADR..6DNADR (n DP words), DNCHAN, DNPTR.      */
 #define AGC_DN_OP_CHAN 7 /* DNCHAN: channels n, n+1          */
 #define AGC_DN_OP_PTR  8 /* DNPTR: a sublist                   */
 
+/* One DNADR word of a list, as in the rope: the count and the ECADR of
+ * the first word sent (nDNADR X +k: ECADR(X) + k), a channel, or a
+ * sublist.                                                               */
 typedef struct agc_dn_entry
 {
-    uint8_t  op;     /* 1..6 = nDNADR, AGC_DN_OP_CHAN, AGC_DN_OP_PTR       */
-    bool     neg;    /* written negated in the AGC list (-xDNADR etc.)    */
-    uint16_t ref;    /* agc_dn_item_t, channel number, or sublist id       */
-    uint8_t  offset; /* SP-word offset from the item (e.g. RN +2 -> 2)     */
+    uint8_t  op;  /* 1..6 = nDNADR, AGC_DN_OP_CHAN, AGC_DN_OP_PTR          */
+    bool     neg; /* written negated in the AGC list (-xDNADR etc.)       */
+    uint16_t ref; /* ECADR of the first word, channel number, or sublist id */
 } agc_dn_entry_t;
 
 typedef struct agc_dn_list

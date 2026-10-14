@@ -410,6 +410,14 @@ void     agc_erase_set_tland(agc_dp_t v);
 void agc_erase_raw_read(uint16_t ecadr, uint16_t *word);
 void agc_erase_raw_write(uint16_t ecadr, uint16_t word);
 
+/* The address map's shadow words beside the image: for each map entry,
+ * its typed value as words when the map last saw it, so that a read of
+ * an address several C owners share (the AGC's overlays) takes the words
+ * of the owner that changed last. Cleared with the image.                */
+#define AGC_EC_SHADOW_WORDS 04000u /* words for every map entry of a rope */
+void agc_erase_shadow_read(uint16_t index, uint16_t *word);
+void agc_erase_shadow_write(uint16_t index, uint16_t word);
+
 /* ---- restart-table delay times (src/core/restart_delays.c) ---------------
  * P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs),
  * S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables.          */

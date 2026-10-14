@@ -266,6 +266,7 @@ void agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm, agc_vec
 void            agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1, agc_vec_t vatt1, const agc_mat_t *refsmmat, uint16_t out[6]);
 agc_dp_t        agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t agsk);
 const uint16_t *agc_ags_buffer(void); /* AGSBUFF, 14 raw words           */
+agc_dp_t        agc_erase_agsk(void); /* AGSK, AGS clock zero, cs 2^28  */
 
 /* ---- SXTMARK (CSM, src/csm/optics/sxtmark.c) ------------------------------------ */
 agc_status_t agc_sxtmark(agc_sp_t nmarks); /* SXTMARK       */

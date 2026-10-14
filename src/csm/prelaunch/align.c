@@ -865,3 +865,16 @@ agc_status_t agc_job_systems_test_csm(agc_job_ctx_t *ctx)
 
     return (prelaunch_imutest(ctx)); /* FALL INTO IMUTEST */
 }
+
+/**********************************************************************
+ * LAUNCHAZ (CSM prelaunch): the launch azimuth, sent on the coast and align downlist.
+ * AGC: LAUNCHAZ (Comanche055 ERASABLE_ASSIGNMENTS.agc)
+ *
+ * FUNCTION NAME: agc_erase_launchaz
+ *
+ * RETURNS: agc_dp_t -- LAUNCHAZ, rev 2^0
+ **********************************************************************/
+agc_dp_t agc_erase_launchaz(void)
+{
+    return (pl.launchaz);
+}

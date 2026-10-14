@@ -31,7 +31,9 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/state.h"
+#include "agc/core/word.h"
 #include "agc/csm/dap.h"
+#include "agc/csm/entry.h"
 #include "agc/erasable_map/address_map.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
@@ -40,25 +42,33 @@
 #include "agc/lm/landing.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
+#include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"
 
 static int g_checks;   /* checks run    */
 static int g_failures; /* checks failed */
 
 /* Prototypes: main() comes first (STYLE 4.6). */
-static void check(bool ok, int line, const char *text);
-static void store_block(uint16_t ecadr, const uint16_t *w, int n);
-static void test_refsmmat(agc_vehicle_t v, uint16_t ecadr);
-static void test_state_vector_uplink(agc_vehicle_t v);
-static void test_tephem_and_follow(agc_vehicle_t v);
-static void test_unmapped_and_flags(agc_vehicle_t v);
-static void test_pad_loads(void);
-static void test_lm_landing_pad(void);
-static void test_lm_pad_more(void);
-static void test_phase_tables(agc_vehicle_t v, uint16_t longbase);
-static void test_csm_rcs_dap(void);
-static void test_vectors_stored(void);
-static void test_servicer_start(agc_vehicle_t v, uint16_t rn1, uint16_t gdt, uint16_t rtx);
+static void     check(bool ok, int line, const char *text);
+static void     store_block(uint16_t ecadr, const uint16_t *w, int n);
+static void     test_refsmmat(agc_vehicle_t v, uint16_t ecadr);
+static void     test_state_vector_uplink(agc_vehicle_t v);
+static void     test_tephem_and_follow(agc_vehicle_t v);
+static void     test_unmapped_and_flags(agc_vehicle_t v);
+static void     test_pad_loads(void);
+static void     test_lm_landing_pad(void);
+static void     test_lm_pad_more(void);
+static void     test_phase_tables(agc_vehicle_t v, uint16_t longbase);
+static void     test_csm_rcs_dap(void);
+static void     test_vectors_stored(void);
+static void     test_servicer_start(agc_vehicle_t v, uint16_t rn1, uint16_t gdt, uint16_t rtx);
+static uint16_t rd(uint16_t ecadr);
+static uint16_t sp_word(agc_sp_t v);
+static bool     dp_at(uint16_t ecadr, agc_dp_t v);
+static void     test_map_size(void);
+static void     test_downlink_fields_csm(void);
+static void     test_downlink_entry_dap_csm(void);
+static void     test_downlink_fields_lm(void);
 
 #define CHECK(c) check((c), __LINE__, #c)
 
@@ -88,6 +98,10 @@ int main(void)
     test_vectors_stored();
     test_servicer_start(AGC_VEHICLE_LM, 03544u, 01236u, 02776u);
     test_servicer_start(AGC_VEHICLE_CSM, 01231u, 01206u, 03745u);
+    test_map_size();
+    test_downlink_fields_csm();
+    test_downlink_entry_dap_csm();
+    test_downlink_fields_lm();
     (void) printf("test_ecadr: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -526,3 +540,171 @@ static void test_servicer_start(agc_vehicle_t v, uint16_t rn1, uint16_t gdt, uin
         CHECK(agc_lm_ldg()->land_mag == (agc_dp_t) 03237 * 040000 + 015100);
     }
 }
+
+/**********************************************************************
+ * AGC: none (test helper) -- the word at an ECADR
+ *
+ * ARGUMENTS:
+ *   ecadr  uint16_t  I  the address
+ *
+ * RETURNS: uint16_t -- the word
+ **********************************************************************/
+static uint16_t rd(uint16_t ecadr)
+{
+    uint16_t w = 0; /* the word */
+
+    agc_erase_read_ecadr(ecadr, &w);
+
+    return (w);
+}
+
+/**********************************************************************
+ * AGC: none (test helper) -- a signed SP value as its ones' complement word
+ *
+ * ARGUMENTS:
+ *   v  agc_sp_t  I  the value
+ *
+ * RETURNS: uint16_t -- the word
+ **********************************************************************/
+static uint16_t sp_word(agc_sp_t v)
+{
+    return ((uint16_t) ((v < 0) ? (077777 + v) : v)); /* negative: ones' complement */
+}
+
+/**********************************************************************
+ * AGC: none (test helper) -- the two words at ecadr are those of DP v
+ *
+ * ARGUMENTS:
+ *   ecadr  uint16_t  I  the address of the high word
+ *   v      agc_dp_t  I  the value
+ *
+ * RETURNS: bool -- true when they are (sign-agreeing words)
+ **********************************************************************/
+static bool dp_at(uint16_t ecadr, agc_dp_t v)
+{
+    agc_dp_words_t d = agc_dp_to_words(v); /* sign-agreeing pair */
+
+    return (rd(ecadr) == sp_word(d.hi) && rd((uint16_t) (ecadr + 1u)) == sp_word(d.lo));
+}
+
+/**********************************************************************
+ * AGC: none -- the map of each rope fits core's shadow store
+ **********************************************************************/
+static void test_map_size(void)
+{
+    agc_state_init(AGC_VEHICLE_CSM);
+    CHECK(agc_erase_map_words() <= AGC_EC_SHADOW_WORDS);
+    agc_state_init(AGC_VEHICLE_LM);
+    CHECK(agc_erase_map_words() <= AGC_EC_SHADOW_WORDS);
+}
+
+/**********************************************************************
+ * AGC: none -- the CSM words the downlists send reach their owners'
+ * storage (Comanche055 addresses): a value the program stores shows at
+ * the address; at an address two owners share (the AGC's overlays) the
+ * one written last shows; a store by address reaches the owner.
+ **********************************************************************/
+static void test_downlink_fields_csm(void)
+{
+    agc_rendz_t      *rz  = agc_rendz_erasable(); /* rendezvous erasables */
+    agc_csm_rcs_t    *rcs = agc_csm_dap_rcs();    /* RCS DAP */
+    agc_csm_tvc_t    *tvc = agc_csm_dap_tvc();    /* TVC DAP */
+    agc_csm_dapcom_t *dc  = agc_csm_dap_com();    /* AK, RCSFLAGS */
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    rz->delveet1.c[1]      = 01234567;                             /* DELVEET1 +2 */
+    CHECK(dp_at(02446u, rz->delveet1.c[1]));
+    rz->tcsi               = 0777;                                 /* TCSI = TCDH +2 = DELVTPF (02636) */
+    CHECK(dp_at(02636u, 0777));
+    rz->delvtpf            = -0123456;                             /* the later writer shows */
+    CHECK(dp_at(02636u, -0123456));
+    rz->tcsi               = 0555;
+    CHECK(dp_at(02636u, 0555));
+    dc->ak[2]              = -5;                                   /* AK2 */
+    dc->rcsflags           = 012345u;
+    CHECK(rd(03100u) == 077772u && rd(03101u) == 012345u);
+    rcs->wbody[0]          = 0700000;                              /* WBODY = OMEGAC (03125) */
+    CHECK(dp_at(03125u, 0700000));
+    tvc->omegac[0]         = -0300;
+    CHECK(dp_at(03125u, -0300));
+    rcs->adot[1].hi        = 5;                                    /* ADOT +2, +3 as stored */
+    rcs->adot[1].lo        = -3;
+    CHECK(rd(03135u) == 5u && rd(03136u) == 077774u);
+    agc_align_ram()->besti = 0123;                                 /* BESTI = UPVERB (0302) */
+    CHECK(rd(0302u) == 0123u);
+    agc_time_set_cs(0x1234567u);                                   /* TIME2, TIME1 */
+    CHECK(rd(024u) == ((0x1234567u >> 14) & 037777u) && rd(025u) == (0x1234567u & 037777u));
+    CHECK(agc_erase_write_ecadr(025u, 5u) == AGC_STATUS_OK);
+    CHECK((agc_time_now_cs() & 037777u) == 5u);
+    agc_erase_set_cdux(012345u);                                   /* CDUX */
+    CHECK(rd(032u) == 012345u);
+    CHECK(agc_erase_write_ecadr(037u, 077770u) == AGC_STATUS_OK);  /* PIPAX -7 */
+    CHECK(agc_erase_pipax() == -7);
+    CHECK(agc_erase_write_ecadr(02751u, 3u) == AGC_STATUS_OK);     /* LANDMARK */
+    CHECK(agc_erase_landmark() == 3);
+    CHECK(agc_erase_write_ecadr(03414u, 00012u) == AGC_STATUS_OK); /* RTARG X high */
+    CHECK(agc_dp_high(rz->rtarg.c[0]) == 012);
+} /* test_downlink_fields_csm */
+
+/**********************************************************************
+ * AGC: none -- the CSM entry words of the entry downlist (Comanche055
+ * addresses): VPRED, GAMMAEI, LATANG, RDOT, THETAH, CMDAPMOD's four values
+ **********************************************************************/
+static void test_downlink_entry_dap_csm(void)
+{
+    agc_entry_state_t *es = agc_entry_state(); /* entry erasables */
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    es->vpred    = 0200000;
+    es->gammaei  = -0400;
+    CHECK(dp_at(03766u, 0200000) && dp_at(03770u, -0400));
+    es->rdot     = 0333; /* LATANG +2 */
+    es->thetah   = 0444;
+    CHECK(dp_at(03677u, 0333) && dp_at(03701u, 0444));
+    es->cmdapmod = AGC_ENTRY_DAPMOD_MINUS0;
+    CHECK(rd(03300u) == 077777u);
+    es->cmdapmod = AGC_ENTRY_DAPMOD_MINUS1;
+    CHECK(rd(03300u) == 077776u);
+    CHECK(agc_erase_write_ecadr(03300u, 1u) == AGC_STATUS_OK);
+    CHECK(es->cmdapmod == AGC_ENTRY_DAPMOD_PLUS1);
+    es->alfa_180 = -2;
+    es->beta_180 = 3;
+    CHECK(rd(03265u) == 077775u && rd(03266u) == 3u);
+}
+
+/**********************************************************************
+ * AGC: none -- the LM words the downlists send reach their owners'
+ * storage (Luminary099 addresses), with the overlays of the ascent
+ * guidance (DELVEET1 = TTO..) and of the mark time (MKTIME)
+ **********************************************************************/
+static void test_downlink_fields_lm(void)
+{
+    agc_rendz_t     *rz  = agc_rendz_erasable();  /* rendezvous erasables */
+    agc_lm_ldg_t    *ldg = agc_lm_ldg();          /* landing guidance */
+    agc_guid_lm_t   *lm  = &agc_guid_state()->lm; /* LM guidance */
+    agc_align_ram_t *ram = agc_align_ram();       /* alignment */
+
+    agc_state_init(AGC_VEHICLE_LM);
+    ldg->rgu.c[2]          = -01234567;                            /* RGU +4 */
+    CHECK(dp_at(02642u, -01234567));
+    ldg->ttf_8             = -0100000;
+    CHECK(dp_at(03642u, -0100000));
+    agc_lm_thr()->pseudo55 = 0321;
+    CHECK(rd(03614u) == 0321u);
+    ram->ynbsav.c[0]       = 0111;
+    ram->znbsav.c[2]       = 0222;                                 /* YNBSAV +10D = ZNBSAV +4 */
+    CHECK(dp_at(02236u, 0111) && dp_at(02250u, 0222));
+    lm->lrcdudl[2]         = 054321u;                              /* LRZCDUDL */
+    lm->hmeas              = 0777777;
+    CHECK(rd(02336u) == 054321u && dp_at(03654u, 0777777));
+    CHECK(agc_erase_write_ecadr(02266u, 00007u) == AGC_STATUS_OK); /* TTO high (ascent) = DELVEET1 */
+    CHECK(rd(02266u) == 00007u);
+    rz->delveet1.c[0]      = 0654321;                              /* the rendezvous program writes DELVEET1 */
+    CHECK(dp_at(02266u, 0654321));
+    lm->mktime             = 01000;                                /* MKTIME of the LR mark */
+    CHECK(dp_at(03754u, 01000));
+    CHECK(agc_erase_write_ecadr(03243u, 0100u) == AGC_STATUS_OK);  /* OMEGAPD */
+    CHECK(agc_erase_omegapd() == 0100);
+    CHECK(agc_erase_write_ecadr(02636u, 00003u) == AGC_STATUS_OK); /* RGU X high */
+    CHECK(agc_dp_high(ldg->rgu.c[0]) == 3);
+} /* test_downlink_fields_lm */
