@@ -926,3 +926,6 @@
             warp: LM runs at 1x). Patch 0002 adds set_ttca_throttle and
             the ROD input bits. Tree committed; STATE.md has the resume
             plan and host map.
+2026-10-13  After the restart: scratchpad intact, tree clean at 865dc0f,
+            build green, no Orbiter. nassp-integration relaunched: our PDI
+            to touchdown first.

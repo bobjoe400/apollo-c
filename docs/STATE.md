@@ -3,9 +3,9 @@
 Updated: 2026-10-13
 
 ## Running agents (max 2)
-- NONE (computer restart 2026-10-13). RESUME: launch `nassp-integration`
-  (Opus) from docs/modules/nassp-integration.md Progress (CHECKPOINT
-  bullet has the exact commands) with docs/agents/nassp-integration.md
+- nassp-integration (Opus, resumed after the restart): our PDI to
+  touchdown vs the stock record, then liftoff, rendezvous, entry. Runs
+  from docs/modules/nassp-integration.md Progress (CHECKPOINT bullet) with docs/agents/nassp-integration.md
   (hard rules: unattended runs, held warp, one Orbiter at a time, short
   polls, answer via SendMessage to main; LM runs at 1x: warp tumbled the
   stock LM). Host: C:\NASSP9 stock baseline (untouched), C:\NASSP9-ref
