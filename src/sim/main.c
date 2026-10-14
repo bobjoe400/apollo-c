@@ -48,7 +48,7 @@
  *     --fast      server without real-time pacing.
  *     --lockstep  server whose clock advances only when a client asks
  *                 (channel 0150 = N cs, answered by 0151); used by
- *                 tools/sim_client.py so scenarios are deterministic.
+ *                 sim/sim_client.py so scenarios are deterministic.
  *     --headless  no sockets: run --max-cs centiseconds (default 1000)
  *                 and print a summary.
  *     --script F  timed input packets (script.c), in any mode.

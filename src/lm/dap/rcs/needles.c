@@ -51,7 +51,6 @@
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/imu/imu.h"
-#include "agc/lm/dap.h"
 
 #define NDL_ONETENTH ((agc_sp_t) 03146) /* ONETENTH: 0.1 at 1             */
 #define NDL_DACMAX   384                /* 384 bits = 42 3/16 deg (DAC)   */

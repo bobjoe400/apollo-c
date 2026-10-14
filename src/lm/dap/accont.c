@@ -51,7 +51,6 @@
  *   BLOCKTOP stores are the AGC's GENTRAN / DXCH copies.
  **********************************************************************/
 #include "agc/core/assertion.h"
-#include "agc/lm/dap.h"
 #include "internal.h"
 
 #define T_ATEM1  0  /* 1/ATEM1 (+2): 1/ANET for one sense              */

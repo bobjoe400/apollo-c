@@ -134,7 +134,7 @@ agc_status_t agc_lm_stclok2(agc_sp_t dispdex, agc_job_id_t ret_job)
  *
  * RETURNS: agc_status_t -- the status of the routine it continues in
  **********************************************************************/
-agc_status_t agc_lm_stclok1(void)
+static agc_status_t agc_lm_stclok1(void)
 {
     agc_guid_state()->lm.dispdex = 0;
 
@@ -276,7 +276,7 @@ agc_status_t agc_job_clokjob(agc_job_ctx_t *ctx)
  *
  * ARGUMENTS: none
  **********************************************************************/
-void agc_lm_nullclok(void)
+static void agc_lm_nullclok(void)
 {
     agc_inhint();
     agc_lm_noullage();

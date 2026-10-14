@@ -98,7 +98,7 @@ static const agc_dp_t VSCAL[3] = {145245838, 203089473, -107912228};
  *   index     agc_sp_t    I    ALTCRIT table index (0, 2, 4, 6)
  *   below     bool *      O    HCALC at or below the criterion
  **********************************************************************/
-void agc_lm_altchk(agc_sp_t index, bool *below)
+static void agc_lm_altchk(agc_sp_t index, bool *below)
 {
     agc_ovf_t ovf = 0;                                                                    /* overflow of the DAS (not tested, as in the AGC) */
     agc_dp_t  d   = agc_dp_sub_raw(ALTCRIT[index / 2], agc_guid_state()->lm.hcalc, &ovf); /* ALTCRIT - HCALC, m 2^24 */
@@ -977,7 +977,7 @@ void agc_lm_setpos1(void)
  * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
  *          otherwise the status of the routine it continues in
  **********************************************************************/
-agc_status_t agc_lm_setpos2(void)
+static agc_status_t agc_lm_setpos2(void)
 {
     if (!AGC_ASSERT(agc_guid_state()->lm.vselect <= 2))
     {

@@ -39,8 +39,6 @@
  *   TJx is not a time here: +HALF / -HALF fire for the whole pass, 0 is off.
  **********************************************************************/
 #include "../internal.h"
-#include "agc/core/assertion.h"
-#include "agc/lm/dap.h"
 
 #define SR_HALF     ((agc_sp_t) 8192) /* HALF                            */
 #define SR_RATELIM1 ((agc_sp_t) 032)  /* CALLCODE 00032: 1.73 deg/s      */

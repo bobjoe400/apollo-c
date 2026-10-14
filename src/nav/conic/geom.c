@@ -41,7 +41,6 @@
  *   degrees the inverse form (INVRSEQN, 1/WLOOP), then a 7-term power
  *   series (POLYCOEF), then x, xi, KEPC1 and KEPC2 for DELTIME (XCOMMON).
  *********************************************************************/
-#include "agc/core/assertion.h"
 #include "internal.h"
 
 /* POLYCOEF series (p. 1293), argument R1A/W^2 at 2^0, assembled 2DEC. */

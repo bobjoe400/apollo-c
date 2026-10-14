@@ -52,13 +52,14 @@
 #include <stddef.h>
 
 #include "../../programs/navigation/internal.h"
-#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
 #include "agc/core/state.h"
 #include "agc/csm/dap.h"
 #include "agc/imu/imu.h"
 #include "agc/programs/alignment.h"
+
+static agc_status_t agc_job_rendezvous_navigation_csm(void);
 
 #define NC_PRIO26       ((agc_prio_t) 026) /* PRIO26 */
 #define NC_PRIO14       ((agc_prio_t) 014) /* PRIO14 */
@@ -268,7 +269,7 @@ agc_status_t agc_job_rendezvous_navigation_csm_check(void)
  *          ended or queued its successor, else the status of the executive,
  *          display or navigation call that failed
  **********************************************************************/
-agc_status_t agc_job_rendezvous_navigation_csm(void)
+static agc_status_t agc_job_rendezvous_navigation_csm(void)
 {
     agc_status_t st = agc_imu_status_check(); /* R02BOTH  */
 

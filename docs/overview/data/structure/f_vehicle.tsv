@@ -1,7 +1,7 @@
 function	file	finding	caller_dirs
 agc_job_servexit	src/csm/burns/servicer.c	vehicle code called by the other vehicle	csm,csm*,exec,lm,lm*
 agc_job_sband_b5off	src/csm/optics/s_band_antenna.c	vehicle code called by the other vehicle	csm*,exec,lm*
-agc_csm_prelaunch_imutest	src/csm/prelaunch_align.c	vehicle code called by the other vehicle	lm
+agc_csm_prelaunch_imutest	src/csm/prelaunch/align.c	vehicle code called by the other vehicle	lm
 agc_guid_preferred_thrust_attitude_csm	src/guidance/burn_steering.c	shared-folder code called by one vehicle only	csm
 agc_guid_preferred_thrust_attitude_lm	src/guidance/burn_steering.c	shared-folder code called by one vehicle only	lm
 agc_guid_steering_tgo_csm	src/guidance/burn_steering.c	shared-folder code called by one vehicle only	csm

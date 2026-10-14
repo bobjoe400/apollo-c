@@ -1,7 +1,7 @@
 # review-io-dsky -- review of io-pinball + io-nouns
 
 ## Scope
-src/io/dsky/display_if.c, src/io/dsky/pinball/*.c, src/io/dsky/nouns/*.c,
+src/io/dsky/display_interface.c, src/io/dsky/pinball/*.c, src/io/dsky/nouns/*.c,
 include/agc/io/dsky.h, include/agc/io/nouns.h, tests/io/dsky.c,
 tests/io/nouns.c, tests/oracle/dsky.c. AGC: PINBALL_GAME_BUTTONS_AND_LIGHTS,
 PINBALL_NOUN_TABLES, DISPLAY_INTERFACE_ROUTINES, KEYRUPT_UPRUPT (CM + LM).
@@ -26,7 +26,7 @@ PINBALL_NOUN_TABLES, DISPLAY_INTERFACE_ROUTINES, KEYRUPT_UPRUPT (CM + LM).
   file prologs, decl/define/ternary/scale/closing-brace comments, nested
   ternaries rewritten as if/else); no line > 80; uncrustify clean.
 - DONE (session 3) make lib: lane compiles; the one leftover
-  agc_dsky_endext caller (src/csm/prelaunch_align.c:544) -> endmark.
+  agc_dsky_endext caller (src/csm/prelaunch/align.c:544) -> endmark.
   Remaining lib breakage is review-imu's mid-rewrite of prelaunch_align.c /
   prelaunch_gyrocompass.c / exec/dispatch.c (missing AGC_JOB_* ids and
   imu.h prototypes), not this lane. Tests via SCRATCH/review-io-dsky/tb.sh.
@@ -90,7 +90,7 @@ PINBALL_NOUN_TABLES, DISPLAY_INTERFACE_ROUTINES, KEYRUPT_UPRUPT (CM + LM).
 | 4 | tests/io/dsky.c | 4 unit failures | fixed (session 1); 200/0 |
 | 5 | display_if.c CLEANDSP/KLEENEX | without a continuation the caller's job slept forever in C | DEVIATION: own MAKEPLAY job (io-pinball.md); test_cleandsp_no_continuation |
 | 6 | scale.c pin_dspdcput | one routine for the whole SFOUTABR fan, > 60 lines | split: SFOUTABR fan, pin_2intout, pin_sfout_dspdcend |
-| 7 | 7 forwarding wrappers | agc_dsky_falton/loadlv/releasedsp/blanksub/endidle/nvsubusy/endext added nothing | wrappers are now the implementations; endext removed, 13 callers -> agc_dsky_endmark (ENDEXT EQUALS ENDMARK), last one src/csm/prelaunch_align.c this session |
+| 7 | 7 forwarding wrappers | agc_dsky_falton/loadlv/releasedsp/blanksub/endidle/nvsubusy/endext added nothing | wrappers are now the implementations; endext removed, 13 callers -> agc_dsky_endmark (ENDEXT EQUALS ENDMARK), last one src/csm/prelaunch/align.c this session |
 | 8 | pinball/internal.h | "/*" inside a comment (nested comment) | fixed (session 2) |
 | 9 | scale.c pin_own_id | returned 0 (a valid DSPTEM index) on a failed precondition, kind unset | returns -1 (callers test < 0) |
 | 10 | scale.c pin_dspdcput | read the scale of component k before checking k | check first |
@@ -149,7 +149,7 @@ angles, mark buffers, P11 readout, TET) except N55 NN/NN1 (P34/P35
 iteration count, which the crew may load) -- see Requests.
 
 ## Requests (outside this lane)
-* review-imu (src/csm/prelaunch_align.c, prelaunch_gyrocompass.c,
+* review-imu (src/csm/prelaunch/align.c, prelaunch_gyrocompass.c,
   src/exec/dispatch.c): `make lib` fails on the unfinished prelaunch
   rewrite (AGC_JOB_PRELAUNCH_*, GYROCOMPASSING_*, IMU_TEST_* ids and the
   imu.h prototypes in review-imu.md items 29-44). The one dsky-related

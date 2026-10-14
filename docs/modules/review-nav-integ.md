@@ -5,7 +5,7 @@
 docs/history/assignments/review.md for lane nav-integ (docs/modules/nav-integ.md):
 src/nav/integration/{init,jobs,orbital_integration,flags_csm,setitctr_lm,
 svdwn}.c, internal.h, pending.h, include/agc/nav/integration.h,
-tests/nav/integration.c, tests/oracle/nav_integ.c.
+tests/nav/integration.c, tests/oracle/nav_integration.c.
 AGC: INTEGRATION_INITIALIZATION.agc, ORBITAL_INTEGRATION.agc (both ropes),
 STATEUP/THISVINT (FRESH_START_AND_RESTART).
 
@@ -17,7 +17,7 @@ from 3f9ede8 (lane files unchanged since) with the lane files overlaid.
 
 State at checkpoint (2026-10-12, resume): lane files edited for the
 DMP/DMPR and shift audits (orbital_integration.c, init.c,
-tests/oracle/nav_integ.c); unit 158 / oracle 439 checks pass.  Scratch
+tests/oracle/nav_integration.c); unit 158 / oracle 439 checks pass.  Scratch
 harnesses (SCRATCH/review-nav-integ/): try.sh (oracle against the
 DV-patched probe, dvrun/), oblbuild.sh / moonbuild.sh / gambuild.sh
 (OBLATE earth 3000 cases, OBLATE moon 600, GAMCOMP 600 run alone in the
@@ -29,7 +29,7 @@ patched probe and compared word for word).
 | constants vs assembled rope (both ropes) | DONE (N1 fixed) |
 | review items Q1-Q4 (oracle / TEPHEM / X2 / state machine) | DONE |
 | X2 after A-PCHK origin change | DONE (N2: include/agc/nav/integration.h AGC_INTEG_X2_ORIGEX, init.c a_pchk/atop, svdwn.c) |
-| new oracle cases (spec+txt regenerated, tests/oracle/nav_integ.c) | DONE: origchng_timestep/_apchk, integ_earth_long, third_earth_1step/_multi, third_moon_1step/_multi, third_sphere_entry, wmatrix_6x6 |
+| new oracle cases (spec+txt regenerated, tests/oracle/nav_integration.c) | DONE: origchng_timestep/_apchk, integ_earth_long, third_earth_1step/_multi, third_moon_1step/_multi, third_sphere_entry, wmatrix_6x6 |
 | AGC_INTEG_MAX_PASSES comment | DONE (header) |
 | fidelity: orbital_integration.c | DONE (oracle-verified) |
 | fidelity: init.c | DONE, no further discrepancy |
@@ -42,7 +42,7 @@ patched probe and compared word for word).
 | shift rounding audit (SR/SRR/VSR, overflow wrap vs saturate) | DONE (N8): SR then SR1R/SR2R and DOT SL1R carried MPAC+2 (GAMCOMP rho/4, DOT, POOHCHK 4DT, NORFINAL); VSR on sign-disagreeing words incl. VRIGHT2; all overflow stores wrap; agc_integ_vshift/dshift (clamping guard, same as agc_vec_shl/agc_dp_shl) deleted |
 | status-handling-2 diff (1b72892..a02850c) | DONE (N11): deleted guards confirmed (by construction: internal ctx/stage/pbody/area, NULL of &locals); repaired: INTEG_NEXT_FAIL / ACC_FAIL now carry the callee status (ctx->fail) instead of BAD_ARG; 9 `!AGC_ASSERT(st ...)` callee checks -> plain propagation; 8 tautological asserts deleted (MOONFLAG after set, AVEMIDSW after clear, !rect, rc/d >= 0, stage, TDEC1 >= 0 x3); inlined label helpers restored as functions (USEPIOS, STATEUP, SETCOAST, OTHERS, INTGRATE..ENDSTATE); RELOADSV case block; regrab/agc_integ_vshift/dshift wrappers removed; setmoon, set_lunar_coeffs void |
 | GRP2PC rerun safety (exec R11) | DONE (N12): restart left REINTFLG set with INTFLBIT clear -> the rerun segment's INTSTALL slept for ever: install now takes the area over (DEVIATION, unit test); INTSTALL never sleeps a NONE resume (EVA JOBWAKE lead), FULL instead of a silently dropped sleeper; W integration interrupted mid-columns is re-integrated from the moved state (documented DEVIATION); INTWAKEU's 04026 reruns the P27 segment (request) |
-| style debt (859 findings at resume) | DONE: 0 in src/nav/integration, integration.h, tests/nav/integration.c, tests/oracle/nav_integ.c (prologs via SCRATCH/review-nav-integ/pro.py + *.spec, decl comments annot.py + *.map, tests main-first via mainfirst.py); make format on lane files only |
+| style debt (859 findings at resume) | DONE: 0 in src/nav/integration, integration.h, tests/nav/integration.c, tests/oracle/nav_integration.c (prologs via SCRATCH/review-nav-integ/pro.py + *.spec, decl comments annot.py + *.map, tests main-first via mainfirst.py); make format on lane files only |
 | nav-integ.md deviation list update (X2 deviation gone) | DONE |
 | make / make test / make check / make scenarios / check_rules | DONE: make OK, make test 34/34 (unit 161, oracle 439 checks), scenarios 8/8, check_rules 0 hard; check-rules and style-report clean; format-check clean on the lane files (fails only on other lanes' in-flight files: src/lm/radar/acquisition.c, src/programs/navigation/common.c, internal.h) |
 
@@ -57,7 +57,7 @@ patched probe and compared word for word).
 | N6 | tests | ACCOMP MIDFLAG path (LSPOS, secondary body + sun GAMCOMP), CHKSWTCH / DOSWITCH / ORIGCHNG with LUNVEL | no oracle case had MIDFLAG set | new cases third_earth_1step/_multi, third_moon_1step/_multi, third_sphere_entry (nav_aux ephemeris pad loads): agree to 1 LSB |
 | N7 | tests | W matrix: AMOVED/NEXTCOL/DOW../DIFEQ+2 JSWITCH/RELOADSV, INTEGRV from the permanent state | only a finite-difference unit test | new case wmatrix_6x6 (10 min, 6x6, MODREG 20): W, RRECTCSM, VRECTCSM, TETCSM bit-exact |
 | N8 | orbital_integration.c GAMCOMP, COMTERM, QUALITY1-3, OBLATE tail; init.c NORFINAL, POOHCHK | DMP (DMPSUB, no round) at COMTERM DMP* J4REQ/J3 (x2), QUALITY2 DMP 5/8, QUALITY3 DMP 5/8 / DMP DMP URPV 5/8 / DMP DMP URPV+4 5/8; LM TIMESTEP DOT DMP; SR*/SR4 then SR1R/SR2R and DOT then SL1R round the bits left in MPAC+2; DSU/BDSU/DAD results whose words disagree in sign feed DMPR, VXSC (DVXSC DMPSUB) and VSR (MPACSRND, VRIGHT2) word by word; BDDV* J2REQSQ carries MPAC+2 under the dividend | C used agc_dp_mul (DMPR) at all 9 DMP sites, rounded the DP after an SR, and did the f(q), Legendre and J22/C31 chains on values: OBLATE alone 16/200 TVEC and FV off by 1-8 LSB, GAMCOMP alone 14/600, moon OBLATE 59/600 | word-level chains (agc_mpac_*, local vec_words_t: VXSC, VAD, VSL/VSR incl. VRIGHT2); OBLATE earth 3000/3000, GAMCOMP 600/600 exact against the probe; moon OBLATE FV exact except where RP-TO-R / R-TO-RP (nav-aux, value API) differ (N10) |
-| N9 | tests/oracle/nav_integ.c | | against the DV-patched probe the lane now agrees exactly except VATT 1 LSB (integ_moon_1step, third_moon_1step, integ_earth_long) and FV 288 LSB at 3 h: TNUV is stored as the Nystrom VAD leaves its words and RECTIFY / RECTOUT VSR round those words; the C keeps TNUV as a value in agc_integ_sv_t (shared with nav lanes) | documented; tolerances tightened to the committed-oracle (F1) maxima: 45 changed |
+| N9 | tests/oracle/nav_integration.c | | against the DV-patched probe the lane now agrees exactly except VATT 1 LSB (integ_moon_1step, third_moon_1step, integ_earth_long) and FV 288 LSB at 3 h: TNUV is stored as the Nystrom VAD leaves its words and RECTIFY / RECTOUT VSR round those words; the C keeps TNUV as a value in agc_integ_sv_t (shared with nav lanes) | documented; tolerances tightened to the committed-oracle (F1) maxima: 45 changed |
 | N10 | nav-aux RP-TO-R / R-TO-RP | | moon OBLATE FV 1-2 LSB in ~8% of cases: the rotation takes values, the AGC's VXM/MXV sees the words QUALITY3 leaves | request to nav-aux (word-level input) |
 | N5 | tests | F1 (yaAGC DV bug) | against the DV-patched probe (SCRATCH/review-nav-integ/dvrun) every case now agrees except N9 (earth_multi and moon_multi exact; before N8 they were off by up to 1280 LSB, which had been put down to N4) | tolerances set to the committed-oracle (F1) maxima |
 | N11 | status-handling-2 diff | | INTEG_NEXT_FAIL / ACC_FAIL mapped every callee failure to BAD_ARG (driver); 9 `!AGC_ASSERT(st ...)` callee checks (some `return BAD_ARG`, some ignoring POODOO/BUSY from INTEGRV in STATEUP/SETCOAST/INT-W); tautological asserts; label helpers (USEPIOS, STATEUP, SETCOAST, OTHERS, INTGRATE) inlined into nested blocks; RELOADSV case block | ctx->fail carries the callee status to agc_integ_run; plain propagation; asserts deleted; helpers restored |
@@ -93,7 +93,7 @@ patched probe and compared word for word).
 * core-numeric: a public word-level vector API (VXSC with MPAC scalar,
   VAD, VSL, VSR incl. VRIGHT2) would replace the lane-local vec_words_t
   helpers in orbital_integration.c.
-* prog-align (tests/programs/align.c checks agc_integ_svdwn's status) and
+* prog-align (tests/programs/alignment.c checks agc_integ_svdwn's status) and
   prog-rendz (src/programs/navigation/common.c checks agc_integ_rectify's):
   both cannot fail; make them void once the callers drop the check.
 * io/uplink (P27): INTWAKEU ends with PHASCHNG 04026 (group 6), which now

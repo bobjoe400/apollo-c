@@ -51,7 +51,6 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
 
 /* ---- constants (pp. 789, 820-822) -------------------------------------- */
 #define LL_DPSTHRSH      36                    /* DPSTHRSH: THRESH1 + THRESH3 for P63     */

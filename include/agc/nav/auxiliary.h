@@ -71,18 +71,12 @@ void agc_navaux_get_padload(agc_navaux_padload_t *out);
 agc_status_t agc_planet_newangle(agc_interp_t *ip, agc_tp_t timsubo, agc_dp_t t_cs, agc_dp_t x0, agc_dp_t xdot, int xdot_shift, agc_dp_t *x);
 agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m); /* EARTHMX */
 agc_status_t agc_planet_moonmx(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_dp_t t_cs, agc_mat_t *m);  /* MOONMX  */
-void         agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l);                                   /* EARTHL  */
 
 /* R-TO-RP: RP = M(T) (R - L x R); RP-TO-R: R = MT(T) (RP + LP x RP).
  * Scale preserving: 2^29 m (earth) / 2^27 m (moon) in the AGC callers, or
  * a half-unit vector.  moon selects MOONMX/504LM versus EARTHMX/EARTHL.   */
 agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t r, agc_dp_t t_cs, agc_vec_t *rp);
 agc_status_t agc_planet_rp_to_r(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_t rp, agc_dp_t t_cs, agc_vec_t *r);
-
-/* The same on stored words (agc_vec_words_t, core/word.h): VXV, BVSU/VAD,
- * MXV/VXM and VSL1 see the words of 504RPR as the caller holds them.     */
-agc_status_t agc_planet_r_to_rp_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t r, agc_dp_t t_cs, agc_vec_words_t *rp);
-agc_status_t agc_planet_rp_to_r_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t rp, agc_dp_t t_cs, agc_vec_words_t *r);
 
 /* ======================================================================
  * Latitude / longitude (latlong.c)
@@ -118,9 +112,6 @@ agc_dp_t agc_latlong_geterad(agc_interp_t *ip, agc_dp_t half_sin_lat);
 
 /* ARCTAN: sinth, costh scale 2^1; returns theta revs 2^0 in [-1/2, 1/2].  */
 agc_dp_t agc_latlong_arctan(agc_interp_t *ip, agc_dp_t sinth, agc_dp_t costh);
-
-/* SETGAMMA: b^2/a^2 (earth) or 1 (moon), scale 2^1.                       */
-agc_dp_t agc_latlong_setgamma(bool lunar);
 
 /* SETRE: radius ERADM scale 2^29 m.                                        */
 void agc_latlong_setre(agc_interp_t *ip, const agc_navaux_padload_t *pad, agc_latlong_opt_t opt, agc_dp_t half_sin_lat, agc_dp_t *eradm);

@@ -65,9 +65,7 @@
 #include "agc/csm/entry_lexicon.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
-#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
 
@@ -166,7 +164,7 @@ agc_interp_t *entry_ip(void)
  *
  * RETURNS: agc_dp_t -- agc_dp_t -- +DPOSMAX or -DPOSMAX, B0
  **********************************************************************/
-agc_dp_t entry_signmpac(agc_dp_t x)
+static agc_dp_t entry_signmpac(agc_dp_t x)
 {
     return ((x >= 0) ? AGC_ENTRY_DPOSMAX : (agc_dp_t) (-AGC_ENTRY_DPOSMAX)); /* +0 or positive */
 }
@@ -187,7 +185,7 @@ agc_dp_t entry_signmpac(agc_dp_t x)
  *
  * RETURNS: agc_dp_t -- agc_dp_t -- -ln(x)/32, B5
  **********************************************************************/
-agc_dp_t entry_log(agc_interp_t *ip, agc_dp_t x)
+static agc_dp_t entry_log(agc_interp_t *ip, agc_dp_t x)
 {
     int      shift = 0; /* NORM shift count */
     agc_dp_t xn;        /* x normalised to [.5, 1), B0 */
@@ -373,7 +371,7 @@ static void targ_ldcalc(agc_interp_t *ip, agc_entry_state_t *es)
  *
  * RETURNS: none
  **********************************************************************/
-void agc_entry_targeting(void)
+static void agc_entry_targeting(void)
 {
     agc_interp_t      *ip    = entry_ip();                  /* entry job interpreter state */
     agc_entry_state_t *es    = agc_entry_state();           /* entry erasables */

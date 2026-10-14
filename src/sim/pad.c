@@ -74,7 +74,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/word.h"

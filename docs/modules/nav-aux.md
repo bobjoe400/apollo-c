@@ -73,7 +73,7 @@ MXV(rows blk[b][3a..3a+2]) BVECTOR[b]; OMEGA[b] = sum_a VXM(ZI[a], same).
 | measurement.c (INCORP1 NEWZCOMP INCORP2) | DONE agc_incorp_state_deviation agc_incorp_update_w agc_incorp_update_state src/nav/auxiliary/measurement.c |
 | ephemerides.c (CM LSPOS LUNPOS LUNVEL SOLPOS, LM LSPOS, agc_lsposition) | DONE agc_ephem_* agc_lsposition src/nav/auxiliary/ephemerides.c |
 | star_tables.c | DONE agc_star_vector src/nav/auxiliary/star_tables.c (37 stars, rope-verified) |
-| tests/nav/navaux.c | DONE (compiles; links once core-numeric lands) |
+| tests/nav/auxiliary.c | DONE (compiles; links once core-numeric lands) |
 
 All files compile with the project flags (-Werror); tools/check_rules.py:
 0 hard violations, 0 warnings for the nav-aux files.  The whole lane plus
@@ -133,7 +133,7 @@ belong to the caller / nav-integ; see Deviations).
 
 ## Tests written
 
-tests/nav/navaux.c (CSM build, agc_state_init(AGC_VEHICLE_CSM)):
+tests/nav/auxiliary.c (CSM build, agc_state_init(AGC_VEHICLE_CSM)):
 * LAT-LONG of an equatorial point (inertial +Y, 6 h after epoch, ERAD):
   lat 0, long = 1/4 rev - WEARTH t, alt 100 km.
 * LALOTORV -> LAT-LONG round trip on the Fischer ellipsoid (Cape Kennedy).

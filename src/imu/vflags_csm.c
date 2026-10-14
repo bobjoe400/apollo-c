@@ -29,7 +29,6 @@
  * ALGORITHM:
  *   Table lookup.
  **********************************************************************/
-#include "agc/core/assertion.h"
 #include "agc/core/flags_csm.h"
 #include "internal.h"
 

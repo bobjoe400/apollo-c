@@ -71,6 +71,9 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 
+static agc_status_t agc_entry_ems_data(void);
+static agc_status_t agc_job_entry_imu_check(agc_job_ctx_t *ctx);
+
 /* Verb/noun codes (VN pseudo-op: verb, noun in decimal digits).          */
 #define VN_ENTRY_PREDICTION_DISPLAY 6, 60 /* V06N60 GMAX VPRED GAMMAEI */
 #define VN_ENTRY_TARGET_DISPLAY     6, 61 /* V06N61 LAT LNG HEADSUP    */
@@ -1074,7 +1077,7 @@ agc_status_t agc_job_entry_imu_check_extrapolated(void)
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_job_entry_imu_check(agc_job_ctx_t *ctx)
+static agc_status_t agc_job_entry_imu_check(agc_job_ctx_t *ctx)
 {
     agc_status_t st = agc_imu_status_check(); /* IMU status check       */
 
@@ -1301,7 +1304,7 @@ static agc_dp_t fishcalc(agc_interp_t *ip, agc_dp_t sdelf2, agc_dp_t cdelf2)
  *
  * RETURNS: agc_dp_t -- agc_dp_t -- the range angle ACOS(u.rt), revs B0
  **********************************************************************/
-agc_dp_t agc_entry_vrcalc(agc_vec_t u, agc_vec_t rt)
+static agc_dp_t agc_entry_vrcalc(agc_vec_t u, agc_vec_t rt)
 {
     agc_interp_t *ip = entry_ip(); /* entry job interpreter state */
 
@@ -1389,7 +1392,7 @@ agc_dp_t agc_entry_vgamcalc(agc_interp_t *ip, agc_tff_t *t, agc_dp_t rterm, agc_
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a failed
  *          assertion
  **********************************************************************/
-agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam, agc_dp_t *gmax)
+static agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam, agc_dp_t *gmax)
 {
     agc_interp_t *ip = entry_ip(); /* entry job interpreter state */
     agc_dp_t      vb;              /* VBARSQ, B2 */
@@ -1485,7 +1488,7 @@ static agc_status_t ems_altitude_range(agc_interp_t *ip, agc_entry_state_t *es, 
  *          or state assertion fails; otherwise the status of the first
  *          service call that failed
  **********************************************************************/
-agc_status_t agc_entry_ems_data(void)
+static agc_status_t agc_entry_ems_data(void)
 {
     agc_interp_t      *ip    = entry_ip();                         /* entry job interpreter state */
     agc_entry_state_t *es    = agc_entry_state();                  /* entry erasables */

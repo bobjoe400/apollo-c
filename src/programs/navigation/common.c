@@ -68,6 +68,8 @@
 #include "agc/guidance/guidance.h"
 #include "internal.h"
 
+static void agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t rvec, agc_vec_t vvec, agc_rendz_periapo_t *out);
+
 /* The rendezvous erasables (E-bank storage of ERASABLE_ASSIGNMENTS). */
 static agc_rendz_t rendz_erasable; /* rendezvous erasables */
 
@@ -1020,7 +1022,7 @@ void agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz, agc_v
  *
  * RETURNS: none
  **********************************************************************/
-void agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t rvec, agc_vec_t vvec, agc_rendz_periapo_t *out)
+static void agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t rvec, agc_vec_t vvec, agc_rendz_periapo_t *out)
 {
     agc_conic_body_t body = agc_conic_body_of_x1(rz->body.rtx1); /* X1 */
 

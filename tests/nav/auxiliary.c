@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: navaux.c
+ * FILE NAME: auxiliary.c
  *
  * PURPOSE:
  *   nav-aux unit tests: latitude/longitude, planetary orientation, time
@@ -8,7 +8,7 @@
  *   formulas the AGC routines implement, with the AGC's own constants
  *   (WEARTH, modified earth MU from 1/RTMU), and compared with
  *   tolerances that allow for 28-bit fixed point.  Bit-exact comparisons
- *   are in tests/oracle/nav_aux.c.
+ *   are in tests/oracle/nav_auxiliary.c.
  *
  * AGC SOURCE:
  *   none (tests of src/nav/auxiliary/, whose prologs cite the listings)

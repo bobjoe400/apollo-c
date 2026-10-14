@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: guid_state.c
+ * FILE NAME: state.c
  *
  * PURPOSE:
  *   The erasable block owned by the powered-flight guidance routines
@@ -38,15 +38,10 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
-#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
-#include "agc/io/service.h"
 
 static agc_guid_t g_guid; /* the guidance erasables (see guidance.h) */
 

@@ -138,7 +138,7 @@ Scratch: SCRATCH/verify-collapse/.
   signatures; 0 callees still take it). 155/155 agree.
 - SKIPPED 8 (scope): test_sysmisc (sys-misc) and test_integration
   (nav/integration) are excluded. Recorded for the owning reviews: two
-  in-scope tests also count reports -- tests/nav/navaux.c:502
+  in-scope tests also count reports -- tests/nav/auxiliary.c:502
   `CHECK(g_assert_reports == before + 2)` (the two agc_star_vector
   BAD_ARG statuses are already checked on the lines before; the count
   line is redundant) and tests/lm/dap.c:444 `CHECK(g_assert_reports ==
@@ -153,7 +153,7 @@ added. Minor items, recorded for the owning reviews / document lane:
    (bare `return;`) at 1b72892. Proper fix (agc_rendz_reset returns the
    status, or selectmu becomes void once `rtmu > 0` is shown) touches the
    flight caller in src/exec/change_program/idle.c (excluded).
-2. src/io/dsky/display_if.c:1063 dif_nvdsp: `st = agc_dsky_blanksub()` is
+2. src/io/dsky/display_interface.c:1063 dif_nvdsp: `st = agc_dsky_blanksub()` is
    a dead store since the BUSY guard went (BUSY is unreachable there; the
    AGC's BLANKCHK `TCF NVDSP` path is dead for the same reason).
 3. src/imu/maneuver.c:874 `if (!AGC_ASSERT(tm_hi >= 0 && tm_lo >=

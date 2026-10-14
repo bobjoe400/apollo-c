@@ -57,14 +57,9 @@
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "agc/nav/auxiliary.h"
-#include "agc/nav/integration.h"
-#include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
 
 /* ---- constants (p. 925) ------------------------------------------------ */
 static const agc_sp_t fc_gainfltr[2] = {
@@ -188,7 +183,7 @@ static agc_sp_t fc_mp_dbl(agc_sp_t a, agc_sp_t b)
  *
  * RETURNS: uint16_t -- the two's complement 15-bit word
  **********************************************************************/
-uint16_t agc_lm_onesto2s(agc_sp_t a)
+static uint16_t agc_lm_onesto2s(agc_sp_t a)
 {
     uint16_t w = (uint16_t) ((int32_t) a & 0x7FFF); /* 15-bit two's complement word */
 
@@ -206,7 +201,7 @@ uint16_t agc_lm_onesto2s(agc_sp_t a)
  *
  * RETURNS: agc_sp_t -- x limited to +-limit, scale 2^S
  **********************************************************************/
-agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit)
+static agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit)
 {
     if (x >= limit)
     {
@@ -230,7 +225,7 @@ agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit)
  *
  * RETURNS: agc_sp_t -- arcsin(x), half-revolutions (180 deg) 2^0
  **********************************************************************/
-agc_sp_t agc_lm_sparcsin(agc_sp_t x)
+static agc_sp_t agc_lm_sparcsin(agc_sp_t x)
 {
     agc_sp_t sr = (agc_sp_t) (x / 2);        /* TS SR: x/2, scale 2^1 */
     agc_sp_t x2 = agc_lm_mp_hi(x, x);        /* MP A, TS TEM1: x^2, scale 2^0 */
@@ -281,7 +276,7 @@ agc_sp_t agc_lm_sparcsin_doubled(agc_sp_t x2)
  *
  * RETURNS: agc_sp_t -- the angle, 2's complement, scale pi
  **********************************************************************/
-agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
+static agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c)
 {
     if (s == 0)
     { /* SINZERO           */

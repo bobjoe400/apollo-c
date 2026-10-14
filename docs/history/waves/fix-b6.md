@@ -28,7 +28,7 @@ same defect (V99Nxx / V97Nxx passed as the first part).
 * src/csm/burns/sps/clock.c cknvwrd1(): first part agc_dsky_vn(6, 40); the
   display's NVWORD1 is set to -BIT9 (077377) / -0 (077777) just before the
   CLOCPLAY. The display interface already modelled the paste
-  (src/io/dsky/display_if.c dif_second_vn, DIF_CLOCK); nothing new there.
+  (src/io/dsky/display_interface.c dif_second_vn, DIF_CLOCK); nothing new there.
 * src/lm/burns/ignition/clock.c: -13 and -35 pass agc_dsky_vn(6, noun)
   (the countdown noun) instead of V99/V97 (NVWORD1 was already set there).
 
@@ -94,4 +94,4 @@ B6 fixed the scenario reached code it had never run, and needed:
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), HEAD 99b2c6e._ B6 changed one decision: the CLOCKJOB display word NVWORD1 (`src/csm/burns/sps/clock.c`, CKNVWRD1) selects the V99 engine-enable request or the V97 engine-fail flash, and the display interface pastes V97 / V99 from it on a CLOCPLAY display (`src/io/dsky/display_if.c:dif_second_vn`, `agc_dsky_set_nvword1`). Flows: [guid-powered](../../modules/guid-powered.md#program-flow-and-decisions), [io-pinball](../../modules/io-pinball.md#program-flow-and-decisions).
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ B6 changed one decision: the CLOCKJOB display word NVWORD1 (`src/csm/burns/sps/clock.c`, CKNVWRD1) selects the V99 engine-enable request or the V97 engine-fail flash, and the display interface pastes V97 / V99 from it on a CLOCPLAY display (`src/io/dsky/display_interface.c:dif_second_vn`, `agc_dsky_set_nvword1`). Flows: [guid-powered](../../modules/guid-powered.md#program-flow-and-decisions), [io-pinball](../../modules/io-pinball.md#program-flow-and-decisions).

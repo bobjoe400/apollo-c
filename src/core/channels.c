@@ -50,7 +50,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 
 /* The program's channel writes in order, for the simulator's peripheral

@@ -144,7 +144,7 @@ static void tps_store(agc_rendz_t *rz, bool lm, const agc_integ_out_t *o)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG on a bad
  *          argument, else the integration or SELECTMU status
  **********************************************************************/
-agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
+static agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {
@@ -594,7 +594,7 @@ static tps_label_t tps_rngetest(agc_interp_t *ip, agc_rendz_t *rz)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
+static agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz)
 {
     int       x2     = tps_work.xrs[1];               /* X2: 0 or 2 */
     agc_vec_t v      = rz_vshift(ip, rz->vpass4, x2); /* VSR* 0,2, m/cs 2^7 */
@@ -713,7 +713,7 @@ static agc_status_t tps_enden(agc_interp_t *ip, agc_rendz_t *rz)
  *          (ALARUMS), AGC_STATUS_NO_CONVERGE (bound), AGC_STATUS_BAD_ARG,
  *          else the integration status
  **********************************************************************/
-agc_status_t agc_rendz_tpi_search_sector(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
+static agc_status_t agc_rendz_tpi_search_sector(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(resume != AGC_JOB_NONE))
     {

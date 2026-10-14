@@ -47,10 +47,11 @@
 #include <stdint.h>
 
 #include "agc/core/flags_common.h"
-#include "agc/core/flags_lm.h"
 #include "agc/core/interp_words.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
+
+static agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx);
 
 #define PH_SURFACE_ALIGN ((uint16_t) 04024)        /* OCT 04024                      */
 #define VN_STAR_CODE     ALIGN_VN(1, 70)           /* V01N70* VN 170                 */
@@ -352,7 +353,7 @@ agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx)
+static agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx)
 {
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_CURSOR, AGC_JOB_GOTOPOOH, AGC_JOB_LUNAR_SURFACE_STAR_POSITIONED, AGC_JOB_LUNAR_SURFACE_STAR_ACQUISITION));
 }

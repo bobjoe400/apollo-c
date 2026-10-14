@@ -55,16 +55,12 @@
 #include <stddef.h>
 
 #include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/interp_words.h"
 #include "agc/core/state.h"
-#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
-#include "agc/io/service.h"
 #include "agc/programs/rendezvous.h"
 
 /* THETACON 2DEC .31830989 B-8 (1/pi).                                     */
@@ -155,7 +151,7 @@ static agc_status_t vg_to_lvc(agc_interp_t *ip, agc_vehicle_t veh, agc_vec_t vg)
  *          precondition failed); otherwise the status of the routine it
  *          continues in
  **********************************************************************/
-agc_status_t agc_guid_calcut(agc_interp_t *ip)
+static agc_status_t agc_guid_calcut(agc_interp_t *ip)
 {
     agc_guid_t  *g  = agc_guid_state();                      /* avg, burn */
     agc_rendz_t *rz = agc_rendz_erasable();                  /* RTIG VIPRIME */

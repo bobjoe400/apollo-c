@@ -44,7 +44,6 @@
 #include <stdint.h>
 
 #include "agc/core/flags_common.h"
-#include "agc/core/flags_lm.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
 

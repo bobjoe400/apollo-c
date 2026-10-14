@@ -51,18 +51,14 @@
 #include <stddef.h>
 
 #include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
-#include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
-#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/rendezvous.h"
@@ -84,7 +80,7 @@ static const agc_dp_t MARSDP = (agc_dp_t) 035100; /* .01 deg, rev 2^0 */
  *          precondition failed); otherwise the status of the routine it
  *          continues in
  **********************************************************************/
-agc_status_t agc_csm_comptgo(void)
+static agc_status_t agc_csm_comptgo(void)
 {
     agc_guid_state()->csm.nvword1 = 0;                                       /* NVWORD1 = 0           */
     agc_flag_set(AGC_FLAG_TIMRFLAG);

@@ -377,7 +377,7 @@
             Relaunching 3: review-io-dsky, review-guid-entry, review-nav-aux.
 2026-10-11  review-nav-aux DONE (143 + 484 checks; 0 style findings). Tree
             build broken by review-imu's half-added gyrocompassing ids in
-            src/csm/prelaunch_align.c -> review-imu moved to the front of
+            src/csm/prelaunch/align.c -> review-imu moved to the front of
             the queue. Requests to core-numeric: TP-input ASIN/ACOS,
             word-level MPAC (residual 1-4 LSB diffs).
 2026-10-11  review-io-dsky DONE: dsky oracle 1627 bit-exact (64 KNOWN fixed);

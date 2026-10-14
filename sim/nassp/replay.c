@@ -1,9 +1,9 @@
 /*
  * replay.c -- replay a NASSP scenario's AGC image on one engine (make nassp-replay).
  *
- * Built twice by tools/nassp_replay.py against NASSP's own src_sys/yaAGC/agc_engine.h
+ * Built twice by sim/nassp/replay.py against NASSP's own src_sys/yaAGC/agc_engine.h
  * (the agc_t struct NASSP's C++ uses; GPL, downloaded at build time, never committed):
- *   ours:  this file + src/nassp/nassp_engine.c (the shim) + src/sim clock/channels/
+ *   ours:  this file + src/nassp/engine.c (the shim) + src/sim clock/channels/
  *          counters/rope + build/libagc.a
  *   stock: this file -DREPLAY_YAAGC + NASSP's yaAGC engine (agc_engine.c, ...)
  * and fed the same image. Both print the same transcript; the driver compares them

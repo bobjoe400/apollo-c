@@ -52,17 +52,11 @@
 #include <stddef.h>
 
 #include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
-#include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
 #include "agc/io/service.h"
-#include "agc/lm/dap.h"
-#include "agc/lm/landing.h"
 #include "agc/nav/conic.h"
 #include "agc/programs/rendezvous.h"
 

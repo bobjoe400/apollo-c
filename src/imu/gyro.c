@@ -60,13 +60,10 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
-#include "agc/core/interp.h"
-#include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service.h"
 #include "internal.h"
 
 #define GYROFRAC    ((agc_dp_t) 28) /* 2DEC .215 B-21: .215 pulse, LSBs  */

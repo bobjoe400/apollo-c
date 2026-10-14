@@ -278,13 +278,13 @@ src/csm/optics/sxtmark.c:657	mark_flash	ACCESSOR	2	calls align_flash
 src/csm/optics/sxtmark.c:679	agc_job_mark_request_flash	ACCESSOR	1	calls mark_flash
 src/csm/optics/sxtmark.c:809	agc_task_endmarks	ACCESSOR	2	calls agc_imu_goodend
 src/csm/optics/sxtmark.c:847	agc_sxtmark_mark	ACCESSOR	4	calls agc_align_ram
-src/csm/prelaunch_align.c:99	prelaunch_ram	ACCESSOR	29	reads/writes module state
-src/csm/prelaunch_align.c:137	agc_csm_prelaunch_ervector	ACCESSOR	0	reads/writes module state
-src/csm/prelaunch_align.c:147	agc_csm_prelaunch_thetan	ACCESSOR	0	reads/writes module state
-src/csm/prelaunch_align.c:177	prelaunch_tmark	ACCESSOR	1	reads/writes module state
-src/csm/prelaunch_align.c:211	prelaunch_posn17c	ACCESSOR	2	reads/writes module state
-src/csm/prelaunch_gyrocompass.c:290	agc_job_gyrocompassing_start	ACCESSOR	1	calls prelaunch_estims
-src/csm/prelaunch_gyrocompass.c:442	agc_task_gyrocompassing_filter_start	ACCESSOR	2	calls agc_exec_findvac
+src/csm/prelaunch/align.c:99	prelaunch_ram	ACCESSOR	29	reads/writes module state
+src/csm/prelaunch/align.c:137	agc_csm_prelaunch_ervector	ACCESSOR	0	reads/writes module state
+src/csm/prelaunch/align.c:147	agc_csm_prelaunch_thetan	ACCESSOR	0	reads/writes module state
+src/csm/prelaunch/align.c:177	prelaunch_tmark	ACCESSOR	1	reads/writes module state
+src/csm/prelaunch/align.c:211	prelaunch_posn17c	ACCESSOR	2	reads/writes module state
+src/csm/prelaunch/gyrocompass.c:290	agc_job_gyrocompassing_start	ACCESSOR	1	calls prelaunch_estims
+src/csm/prelaunch/gyrocompass.c:442	agc_task_gyrocompassing_filter_start	ACCESSOR	2	calls agc_exec_findvac
 src/exec/alarm.c:121	agc_alarm_almcadr	ACCESSOR	1	reads/writes module state
 src/exec/alarm.c:184	agc_exec_varalarm	ACCESSOR	5	calls agc_alarm
 src/exec/alarm.c:224	exec_request_enema	ACCESSOR	6	reads/writes module state
@@ -298,8 +298,8 @@ src/exec/change_program/idle.c:327	exec_up_goprog_downlist	ACCESSOR	1	calls agc_
 src/exec/change_program/lm.c:111	exec_cp_setup_abort	ACCESSOR	1	calls agc_lm_job_aps_abort, agc_lm_job_dps_abort
 src/exec/change_program/sequence.c:81	exec_cp_mmnumber	ACCESSOR	1	reads/writes module state
 src/exec/change_program/sequence.c:95	cp_modes	ACCESSOR	3	calls agc_state_vehicle
-src/exec/erasable.c:43	agc_erase_modecadr	ACCESSOR	6	reads/writes module state
-src/exec/erasable.c:56	agc_erase_set_modecadr	ACCESSOR	4	reads/writes module state
+src/exec/modecadr.c:43	agc_erase_modecadr	ACCESSOR	6	reads/writes module state
+src/exec/modecadr.c:56	agc_erase_set_modecadr	ACCESSOR	4	reads/writes module state
 src/exec/executive.c:230	exec_restart_generation	ACCESSOR	2	reads/writes module state
 src/exec/executive.c:860	exec_in_job	ACCESSOR	2	reads/writes module state
 src/exec/executive.c:873	exec_running_job_loc	ACCESSOR	2	reads/writes module state
@@ -336,9 +336,9 @@ src/guidance/external_delta_v.c:484	agc_job_external_delta_v	ACCESSOR	2	calls ig
 src/guidance/external_delta_v.c:502	agc_job_external_delta_v_display_dv	ACCESSOR	2	calls flash
 src/guidance/external_delta_v.c:599	agc_job_lambert_aimpoint_guidance_csm	ACCESSOR	1	calls ignition_time_entry
 src/guidance/external_delta_v.c:650	agc_job_lambert_aimpoint_display_dv	ACCESSOR	3	calls flash
-src/guidance/guid_state.c:63	agc_guid_state	ACCESSOR	292	reads/writes module state
-src/guidance/guid_state.c:134	agc_guid_nav_set_resume	ACCESSOR	4	reads/writes module state
-src/guidance/guid_state.c:148	agc_guid_nav_resume	ACCESSOR	5	reads/writes module state
+src/guidance/state.c:63	agc_guid_state	ACCESSOR	292	reads/writes module state
+src/guidance/state.c:134	agc_guid_nav_set_resume	ACCESSOR	4	reads/writes module state
+src/guidance/state.c:148	agc_guid_nav_resume	ACCESSOR	5	reads/writes module state
 src/guidance/powered_flight.c:234	words_dmpsub	NAMED	11	AGC label: DMPSUB as AX*SR*T calls it (INTERPRETER.agc p.1136): MPAC, MPAC+1
 src/guidance/powered_flight.c:423	agc_guid_smnb	NAMED	14	AGC label: *SMNB* (CM p.1369, LM p.1263): SM -> NB with the present SINCDU/COSCDU.
 src/guidance/powered_flight.c:441	agc_guid_nbsm	NAMED	8	AGC label: *NBSM* (CM p.1369, LM p.1263): NB -> SM with the present SINCDU/COSCDU.
@@ -360,10 +360,10 @@ src/imu/mode.c:273	iss_lamps_write	ACCESSOR	2	calls agc_erase_set_dsptab
 src/imu/mode.c:294	setissw	ACCESSOR	4	calls agc_t4_setissw
 src/imu/mode.c:517	agc_imu_cducmd	ACCESSOR	10	reads/writes module state
 src/imu/mode.c:1427	agc_imu_stall_outcome	ACCESSOR	18	reads/writes module state
-src/io/dsky/display_if.c:191	f4	ACCESSOR	17	calls agc_flagword_get
-src/io/dsky/display_if.c:242	dif_priobort	ACCESSOR	3	calls agc_poodoo
-src/io/dsky/display_if.c:1692	agc_dsky_display	ACCESSOR	77	calls agc_dsky_display_ecadr
-src/io/dsky/display_if.c:1772	agc_dsky_set_nvword1	ACCESSOR	4	reads/writes module state
+src/io/dsky/display_interface.c:191	f4	ACCESSOR	17	calls agc_flagword_get
+src/io/dsky/display_interface.c:242	dif_priobort	ACCESSOR	3	calls agc_poodoo
+src/io/dsky/display_interface.c:1692	agc_dsky_display	ACCESSOR	77	calls agc_dsky_display_ecadr
+src/io/dsky/display_interface.c:1772	agc_dsky_set_nvword1	ACCESSOR	4	reads/writes module state
 src/io/dsky/nouns/data.c:625	agc_noun_read	ACCESSOR	15	calls noun_data_access
 src/io/dsky/nouns/scales.c:761	sf_pair_value	NAMED	4	AGC label: AGC: GTSFIN, GTSFOUT (PINBALL_NOUN_TABLES.agc, CM p. 271)
 src/io/dsky/nouns/scales.c:866	agc_scale_info	ACCESSOR	2	calls agc_state_vehicle

@@ -42,8 +42,6 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
-#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/io/service.h"

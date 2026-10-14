@@ -24,7 +24,7 @@ uplink write path for P27; V91 MPAC+2 display address) with every caller
 updated; (3) DMP/DMPR audit and word-level adoption in the eight
 early-reviewed lanes where the review predates the word-level API, with
 oracle tolerances re-tightened (report counts changed); (4) test hygiene
-(no test counts assertion reports: tests/nav/navaux.c:502,
+(no test counts assertion reports: tests/nav/auxiliary.c:502,
 tests/lm/dap.c:444); dead leftovers (display_if.c:1063, maneuver.c:874,
 entry_earrot duplicate); prog-rendz targeting tolerances tightened.
 

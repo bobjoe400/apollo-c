@@ -14,7 +14,7 @@ ls = subprocess.run(['git', 'ls-files'], capture_output=True, text=True).stdout.
 csrc = [f for f in ls if f.startswith('src/') and f.endswith(('.c', '.h')) and not f.startswith('src/nassp/')]
 hdrs = [f for f in ls if f.startswith('include/') and f.endswith('.h')]
 tests = [f for f in ls if f.startswith('tests/') and f.endswith(('.c', '.h'))]
-extra = [f for f in ['src/nassp/nassp_engine.c', 'sim/nassp/replay.c'] if os.path.exists(f)]
+extra = [f for f in ['src/nassp/engine.c', 'sim/nassp/replay.c'] if os.path.exists(f)]
 allf = csrc + hdrs + tests + extra
 raw = {f: read(f) for f in allf}
 txt = {f: strip(raw[f]) for f in allf}

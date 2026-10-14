@@ -41,7 +41,6 @@
 #include <stdint.h>
 
 #include "agc/core/flags_common.h"
-#include "agc/core/flags_lm.h"
 #include "agc/programs/alignment.h"
 
 #define VN_STAR_CODE ALIGN_VN(1, 70)     /* V01N70 VN 0170                 */

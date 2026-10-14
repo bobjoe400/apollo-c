@@ -23,7 +23,7 @@
  *   Name                  Description
  *   --------------------  ------------------------------------------
  *   agc_imu_*, agc_kalc_*  the functions under test (imu.h)
- *   agc_job_optical_      P03 jobs (src/csm/prelaunch_verify.c)
+ *   agc_job_optical_      P03 jobs (src/csm/prelaunch/verify.c)
  *   verification*
  *
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:

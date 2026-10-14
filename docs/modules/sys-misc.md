@@ -70,7 +70,7 @@ by other lanes / not yet in include/agc are declared in
 - DONE  self-check / show-banksum  src/io/service/self_check.c
 - PARTIAL LM P07 systems test: ZEROING, FINETIME, OVERFFIX done; REDO stub  src/lm/systems_test.c
 - DONE  interbank.c (comment file)  src/io/service/interbank.c
-- DONE  tests/io/sysmisc.c (271 checks pass against a scratch build of the tree with link
+- DONE  tests/io/service_verbs_telemetry.c (271 checks pass against a scratch build of the tree with link
         stubs for other lanes' missing symbols; the tree does not link yet)
 
 ## Deviations
@@ -118,7 +118,7 @@ names follow docs/agents/_common.md.  Array erasables take an index argument.
 
 ## Tests written
 
-tests/io/sysmisc.c: every downlist (CM 5, LM 6) is 100 DP words; DOWNRUPT sequence of
+tests/io/service_verbs_telemetry.c: every downlist (CM 5, LM 6) is 100 DP words; DOWNRUPT sequence of
 the CM coast-and-align list (ID/sync, TIME2/TIME1, next list, UPDNLIST); LOADTIME;
 SGNAGREE / TPAGREE sign fix-up; ROPECHK/SHOWSUM bank sums; UPFLAG/DOWNFLAG, GENTRAN,
 B5OFF/EXTVBACT; LM T4RUPT fills M11..M32 from CDUZ/CDUX; V44 RRDESEND outside continuous

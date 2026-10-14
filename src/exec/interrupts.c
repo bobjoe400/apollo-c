@@ -68,6 +68,8 @@
 #include "agc/programs/rendezvous.h"
 #include "internal.h"
 
+static agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt);
+
 #define RUPT_TIME4_SB 037775u /* STARTSUB: 37775 to TIME4         */
 #define RUPT_TIME5_SB 037774u /* STARTSUB: 37774 to TIME5         */
 #define RUPT_HALF_SEC 50      /* .5SEC DEC 50 (cs)                */
@@ -451,7 +453,7 @@ void agc_task_t5idloc(void)
  *          interrupts enabled or for an unknown id; AGC_STATUS_NOT_FOUND
  *          for T6RUPT on the CSM (no T6 handler)
  **********************************************************************/
-agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
+static agc_status_t agc_dispatch_rupt(agc_rupt_id_t rupt)
 {
     bool         lm = agc_state_vehicle() == AGC_VEHICLE_LM; /* Luminary rope */
     agc_status_t st = AGC_STATUS_BAD_ARG;                    /* handler outcome */

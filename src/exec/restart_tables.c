@@ -41,7 +41,6 @@
  *   3.2SPOT = 4.2SPOT, Luminary 2.2SPOT = 3.2SPOT = 6.2SPOT = 1.2SPOT.
  *   The AGC's "DEC 0" placeholder entries are kind NONE.
  **********************************************************************/
-#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "internal.h"

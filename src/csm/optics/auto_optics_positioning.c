@@ -132,7 +132,7 @@ static bool cmc_mode(void)
  *
  * RETURNS: agc_vec_t -- the rotated LOS, half-unit (2^1)
  **********************************************************************/
-agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t angle)
+static agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t angle)
 {
     const agc_dp_t  s  = agc_dp_sin(angle);                                                      /* 1/2 SIN of the angle, scale 2^1 */
     const agc_vec_t t1 = agc_vec_shl(ip, agc_vec_scale(ip, agc_vec_cross(ip, axis, los), s), 2); /* (UR x LOS) SIN VSL2, half-unit (2^1) */
@@ -164,7 +164,7 @@ agc_vec_t agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job, agc_vec_t *los)
+static agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job, agc_vec_t *los)
 {
     agc_align_ram_t     *ram = agc_align_ram(); /* alignment erasables */
     agc_navaux_padload_t pad;                   /* pad loads (ephemeris, RLS) */
@@ -251,7 +251,7 @@ static int trunnion_class(uint16_t pac)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_job_id_t resume_job, int *result)
+static agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_job_id_t resume_job, int *result)
 {
     agc_align_ram_t *ram = agc_align_ram(); /* alignment erasables */
 

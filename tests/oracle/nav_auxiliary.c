@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: nav_aux.c
+ * FILE NAME: nav_auxiliary.c
  *
  * PURPOSE:
  *   nav-aux against the real AGC code (yaAGC oracle).  Routines:

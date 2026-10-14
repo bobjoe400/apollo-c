@@ -5,7 +5,7 @@ from its entry to PERFERAS +1 (the EXIT before TC ATIGINC) on E5 with
 random filter words; XSM and DELV get sign-agreeing words (the C keeps
 them as values), every other word may disagree in sign.  The PIP cases
 enter PIPJOBB +10 (CCS DATAPL +1, after CHECKG) with NDXCTR = 1 and stop
-at COAALIGN.  tests/io/sysmisc.c replays them.
+at COAALIGN.  tests/io/service_verbs_telemetry.c replays them.
 """
 import random
 

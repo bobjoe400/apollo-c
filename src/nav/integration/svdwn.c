@@ -37,7 +37,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "agc/nav/integration.h"

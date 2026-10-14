@@ -1,8 +1,8 @@
 # review-imu -- review of the imu lane
 
 Lane files: src/imu/*.c, src/imu/internal.h, include/agc/imu/imu.h,
-src/csm/prelaunch_align.c, src/csm/prelaunch_gyrocompass.c,
-src/csm/prelaunch_verify.c, src/csm/prelaunch_internal.h, tests/imu/imu.c,
+src/csm/prelaunch/align.c, src/csm/prelaunch/gyrocompass.c,
+src/csm/prelaunch/verify.c, src/csm/prelaunch/internal.h, tests/imu/imu.c,
 tests/oracle/imu.c (+ registry rows in tools/registry.tsv).
 AGC: IMU_MODE_SWITCHING_ROUTINES, IMU_COMPENSATION_PACKAGE,
 INFLIGHT_ALIGNMENT_ROUTINES, GIMBAL_LOCK_AVOIDANCE, KALCMANU_STEERING,

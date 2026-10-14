@@ -207,7 +207,7 @@ Then: lead assert.h rename; ONE Frama-C EVA run (`make prove`, `make
 3. Rules pass: DONE except two files. check-rules 0 hard, format-check
    clean, rule 5 by its spirit (no density quota; checkers reject the
    dodges). `make style`: 0 findings outside src/erasable_map/
-   address_map.c and src/nassp/nassp_engine.c (236 there, the NASSP
+   address_map.c and src/nassp/engine.c (236 there, the NASSP
    lane's in-progress files; on its closing list).
 4. Naming: DONE (NAMING.md applied, RENAMES.md ledger complete, no
    program/verb/noun numbers in identifiers or file names).

@@ -49,10 +49,8 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/interp_words.h"
 #include "agc/nav/auxiliary.h"
-#include "internal.h"
 
 /* B2XSC 2DEC .0179450689, oct 00446 00305: B^2, scale 2^51 m^2.          */
 static const agc_dp_t B2XSC = 4817093; /* B^2, 2^51 m^2       */
@@ -113,7 +111,7 @@ static agc_tp_t sum_of_squares(agc_interp_t *ip, agc_dp_t a, agc_dp_t b)
  * RETURNS: agc_dp_t -- GAMRP, scale 2^1: B^2/A^2 for the earth, 1 (1B1 =
  *          DP1/2) for the moon
  **********************************************************************/
-agc_dp_t agc_latlong_setgamma(bool lunar)
+static agc_dp_t agc_latlong_setgamma(bool lunar)
 {
     agc_dp_t gamrp = B2_A2; /* GAMRP, scale 2^1  */
 

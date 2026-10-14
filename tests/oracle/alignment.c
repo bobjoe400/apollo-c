@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: align.c
+ * FILE NAME: alignment.c
  *
  * PURPOSE:
  *   The prog-align lane against the real AGC code (yaAGC oracle).  Inputs
@@ -51,7 +51,6 @@
 #include <stdio.h>
 
 #include "agc/core/assertion.h"
-#include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/io/dsky.h"

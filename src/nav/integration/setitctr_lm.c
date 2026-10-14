@@ -27,7 +27,6 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/flags_lm.h"
 #include "agc/nav/integration.h"
 

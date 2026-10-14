@@ -145,9 +145,9 @@ MANUAL = {
  'tools/oracle/ropes/Luminary099.symtab': 'yaYUL symbol table of the LM rope (oracle `whatis`)',
  'tools/oracle/yaAGC-src/COPYING': 'GPL licence of the vendored yaAGC engine',
 }
-MANUAL['src/nassp/patches/0001-apollo-c-agc-backend.patch'] = "patch to NASSP's CMake: build the CMC/LGC on apollo-c (-DAPOLLO_C_DIR) instead of yaAGC"
-MANUAL['src/nassp/patches/0002-lem-lua-test-interface.patch'] = "patch to NASSP: the LEM gets the Saturn's Lua test methods (stock reference and ours)"
-MANUAL['src/nassp/patches/0003-saturn-console-mode.patch'] = "patch to NASSP: Saturn console-mode (headless) crash fix"
+MANUAL['sim/nassp/patches/0001-apollo-c-agc-backend.patch'] = "patch to NASSP's CMake: build the CMC/LGC on apollo-c (-DAPOLLO_C_DIR) instead of yaAGC"
+MANUAL['sim/nassp/patches/0002-lem-lua-test-interface.patch'] = "patch to NASSP: the LEM gets the Saturn's Lua test methods (stock reference and ours)"
+MANUAL['sim/nassp/patches/0003-saturn-console-mode.patch'] = "patch to NASSP: Saturn console-mode (headless) crash fix"
 for f in ['insertion', 'liftoff_lm', 'mcc2', 'pdi_lm', 'tli']:
     MANUAL['sim/nassp/images/%s.agc' % f] = 'AGC erasable image of the NASSP Apollo 11 scenario (%s), input of `make nassp-replay`' % f
 for f in ['NullAPI', 'agc_engine', 'agc_engine_init', 'agc_symtab', 'agc_utilities', 'rfopen']:

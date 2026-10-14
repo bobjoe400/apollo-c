@@ -4,7 +4,7 @@
  * PURPOSE:
  *   Private state (pin_state_t) and helpers shared by the pinball
  *   translation units (the .c files of src/io/dsky/pinball and
- *   src/io/dsky/display_if.c).
+ *   src/io/dsky/display_interface.c).
  *
  * AGC SOURCE:
  *   PINBALL_GAME_BUTTONS_AND_LIGHTS.agc CM pp. 310-312 (the pinball

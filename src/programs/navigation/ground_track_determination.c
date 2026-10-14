@@ -49,7 +49,6 @@
  *   Scales: RATT m 2^29, VATT m/cs 2^7, base vectors body scale, times
  *   cs 2^28, LAT LONG revolutions, P21ALT m 2^29 (altitude / 100).
  **********************************************************************/
-#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/nav/auxiliary.h"
 #include "internal.h"
@@ -151,7 +150,7 @@ agc_status_t agc_job_ground_track_time(agc_job_ctx_t *ctx)
  *   vel       agc_dp_t *      O    |V|, m/cs 2^7
  *   gamma     agc_dp_t *      O    flight path angle, revolutions 2^0
  **********************************************************************/
-void agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2, agc_dp_t *vel, agc_dp_t *gamma)
+static void agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2, agc_dp_t *vel, agc_dp_t *gamma)
 {
     /* ABVAL SL* 0,2: count 0 - X2, so the moon-scale 2^5 speed is shifted
      * right 2 to 2^7.                                                   */

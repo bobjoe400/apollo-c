@@ -49,14 +49,10 @@
 #include <stddef.h>
 
 #include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
-#include "agc/io/service.h"
 #include "agc/programs/rendezvous.h"
 
 /* ---- constants (SERVICER207 p.836 / SERVICER p.881, CONTROLLED_CONSTANTS) */

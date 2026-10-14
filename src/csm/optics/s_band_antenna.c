@@ -45,7 +45,6 @@
 #include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
 
 #define HIDP1_4           AGC_DP_QUARTER   /* HIDP1/4 .25 rev = 90 deg      */
 #define VN_ANTENNA_ANGLES ALIGN_VN(6, 51)  /* VN 0651                         */

@@ -50,6 +50,8 @@
 #include "agc/guidance/guidance.h"
 #include "internal.h"
 
+static agc_status_t agc_lm_avgexit(void);
+
 #define TWO_SECS 200                    /* 2SECS, cs                                  */
 #define ABORT_MONITOR_FIRST_CS \
     20                                  /* OCT24: first R10,R11 in .200 seconds       */
@@ -387,7 +389,7 @@ static void massmon(agc_guid_lm_t *lm)
  *
  * ARGUMENTS: none
  **********************************************************************/
-void agc_lm_tmptospt(void)
+static void agc_lm_tmptospt(void)
 {
     const agc_guid_t *g    = agc_guid_state(); /* guidance erasables */
     agc_cdutrig_t    *trig = agc_imu_trig();   /* CDUSPOT */
@@ -483,7 +485,7 @@ agc_vec_t agc_lm_mungrav(agc_interp_t *ip, agc_vec_t r)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, AGC_STATUS_BAD_ARG (a
  *          precondition failed)
  **********************************************************************/
-agc_status_t agc_lm_rvboth(agc_interp_t *ip)
+static agc_status_t agc_lm_rvboth(agc_interp_t *ip)
 {
     agc_guid_t *g  = agc_guid_state();                          /* guidance erasables */
     agc_vec_t   gv = agc_vec_add(ip, g->lm.g_csm, g->lm.v_csm); /* VAD V(CSM); G(CSM) + V(CSM), m/cs 2^7 */
@@ -536,7 +538,7 @@ static void rvboth_store(agc_guid_t *g)
  *
  * RETURNS: none
  **********************************************************************/
-void agc_lm_munrvg(agc_interp_t *ip)
+static void agc_lm_munrvg(agc_interp_t *ip)
 {
     agc_guid_t   *g   = agc_guid_state();                              /* guidance erasables */
     agc_lm_ldg_t *ldg = agc_lm_ldg();                                  /* landing guidance erasables */
@@ -795,7 +797,7 @@ agc_status_t agc_lm_serv_copycycl(void)
  * RETURNS: agc_status_t -- AGC_STATUS_BAD_ARG (a precondition failed);
  *          otherwise the status of the routine it continues in
  **********************************************************************/
-agc_status_t agc_lm_avgexit(void)
+static agc_status_t agc_lm_avgexit(void)
 {
     agc_job_id_t exit_job = agc_guid_state()->avg.avgexit; /* AVGEXIT */
 

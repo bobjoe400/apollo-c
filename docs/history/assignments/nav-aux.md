@@ -21,6 +21,6 @@ Scope, into src/nav/ with a header you create, include/agc/nav/auxiliary.h:
 Diff CM vs LM, translate once where identical. Structs/params, not globals;
 scale factors in comments; constants with octal and engineering values.
 
-Tests: tests/nav/navaux.c (compiles now): lat/long of an equatorial point
+Tests: tests/nav/auxiliary.c (compiles now): lat/long of an equatorial point
 at a known time; RP-TO-R round trip; TFF for a circular orbit (no-perigee
 special case); star table unit length. List oracle cases in your note.

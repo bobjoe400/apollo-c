@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: dapif.c
+ * FILE NAME: interface.c
  *
  * PURPOSE:
  *   DAP_INTERFACE_SUBROUTINES.agc (Luminary 099 pp.1406-1409): the

@@ -56,7 +56,7 @@ src/erasable_map/address_map.c 169 findings (function-prolog 29,
 function-separator 24, function-prolog-agc 24, ternary-comment 25,
 function-prolog-returns 20, function-prolog-args 19, scale-comment 14,
 long-block-comment 11, decl/define/file-prolog 1 each);
-src/nassp/nassp_engine.c 67 (function-prolog 18, separator 10, agc 10,
+src/nassp/engine.c 67 (function-prolog 18, separator 10, agc 10,
 ternary 8, args 8, long-block 6, returns 5, scale 1, case-unique 1).
 The pinball and socket files have none.
 
@@ -74,4 +74,4 @@ make OK; make test exit 0 (incl. scenarios); make check exit 0;
 make prolog-report 0; make always-ok-report 0; make lm-sim 34/34 matched
 (LMSIM_DIR=scratchpad/src/virtualagc/Contributed/LM_Simulator).
 `make style`: 646 -> 236, all in src/erasable_map/address_map.c (169) and
-src/nassp/nassp_engine.c (67).
+src/nassp/engine.c (67).

@@ -48,7 +48,6 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
 #include "agc/guidance/guidance.h"
 #include "internal.h"
 
@@ -233,7 +232,7 @@ static agc_status_t steering_after_vg_update(agc_interp_t *ip)
  *
  * RETURNS: agc_status_t -- the status of the routine it continues in
  **********************************************************************/
-agc_status_t agc_csm_cross_product_steering(agc_interp_t *ip)
+static agc_status_t agc_csm_cross_product_steering(agc_interp_t *ip)
 {
     agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
@@ -333,7 +332,7 @@ static agc_status_t setup_9(agc_interp_t *ip)
  *
  * RETURNS: agc_status_t -- the status of the routine it continues in
  **********************************************************************/
-agc_status_t agc_csm_updatevg(agc_interp_t *ip, bool *vtogain_started)
+static agc_status_t agc_csm_updatevg(agc_interp_t *ip, bool *vtogain_started)
 {
     agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 

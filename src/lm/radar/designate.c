@@ -67,7 +67,6 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
-#include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
@@ -698,7 +697,7 @@ agc_status_t agc_job_rr_designate_command(void)
  *
  * RETURNS: agc_status_t -- as agc_rr_designate_nb
  **********************************************************************/
-agc_status_t agc_rr_designate_gimbal(bool *started)
+static agc_status_t agc_rr_designate_gimbal(bool *started)
 {
     agc_interp_t ip; /* interpreter state */
 

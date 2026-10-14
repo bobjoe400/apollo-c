@@ -53,7 +53,6 @@
 #include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/nav/auxiliary.h"
-#include "internal.h"
 
 /* ---- constants (p. 1251; LM CONTROLLED_CONSTANTS p. 52-53) ------------ */
 /* COSI 2DEC .99964173 B-1, oct 17775 02052: cos(I) scale 2^1, I = 1 deg
@@ -317,7 +316,7 @@ agc_status_t agc_planet_earthmx(agc_interp_t *ip, const agc_navaux_padload_t *pa
  *
  * RETURNS: none
  **********************************************************************/
-void agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l)
+static void agc_planet_earthl(const agc_navaux_padload_t *pad, agc_vec_t *l)
 {
     *l = agc_vec_make(agc_dp_neg(pad->axo), pad->neg_ayo, 0); /* 504LPL  */
 }
@@ -554,7 +553,7 @@ static agc_status_t planet_m_and_l(agc_interp_t *ip, const agc_navaux_padload_t 
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the matrix
  *          routines
  **********************************************************************/
-agc_status_t agc_planet_r_to_rp_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t r, agc_dp_t t_cs, agc_vec_words_t *rp)
+static agc_status_t agc_planet_r_to_rp_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t r, agc_dp_t t_cs, agc_vec_words_t *rp)
 {
     agc_vec_words_t m[3];                                                   /* MMATRIX words, 2^1 */
     agc_vec_words_t l;                                                      /* L, scale 2^0 rad */
@@ -627,7 +626,7 @@ agc_status_t agc_planet_r_to_rp(agc_interp_t *ip, const agc_navaux_padload_t *pa
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the matrix
  *          routines
  **********************************************************************/
-agc_status_t agc_planet_rp_to_r_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t rp, agc_dp_t t_cs, agc_vec_words_t *r)
+static agc_status_t agc_planet_rp_to_r_words(agc_interp_t *ip, const agc_navaux_padload_t *pad, bool moon, agc_vec_words_t rp, agc_dp_t t_cs, agc_vec_words_t *r)
 {
     agc_vec_words_t m[3];                                                   /* MMATRIX words, 2^1 */
     agc_vec_words_t lp;                                                     /* LP, scale 2^0 rad */

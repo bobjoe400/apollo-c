@@ -1,7 +1,7 @@
 # apollo_c_agc: the C flight software (libagc), the src/sim clock and
 # interrupt driver, and the NASSP engine shim, as one static library that
 # NASSP's vessel DLLs link instead of compiling yaAGC (src_sys/yaAGC).
-# Added to NASSP's build by src/nassp/patches/0001-apollo-c-agc-backend.patch
+# Added to NASSP's build by sim/nassp/patches/0001-apollo-c-agc-backend.patch
 # (configure NASSP with -DAPOLLO_C_DIR=<this checkout>); NASSP_YAAGC_DIR is
 # NASSP's src_sys/yaAGC, whose agc_engine.h the shim implements.
 cmake_minimum_required(VERSION 3.19)
@@ -17,7 +17,7 @@ add_library(apollo_c_agc STATIC
     ${APOLLO_C_ROOT}/src/sim/channels.c
     ${APOLLO_C_ROOT}/src/sim/counters.c
     ${APOLLO_C_ROOT}/src/sim/rope.c
-    ${APOLLO_C_ROOT}/src/nassp/nassp_engine.c
+    ${APOLLO_C_ROOT}/src/nassp/engine.c
 )
 set_target_properties(apollo_c_agc PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
 target_include_directories(apollo_c_agc PRIVATE ${APOLLO_C_ROOT}/include ${NASSP_YAAGC_DIR})

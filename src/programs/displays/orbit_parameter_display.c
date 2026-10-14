@@ -54,8 +54,6 @@
  **********************************************************************/
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
-#include "agc/core/flags_common.h"
-#include "agc/guidance/guidance.h"
 #include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 

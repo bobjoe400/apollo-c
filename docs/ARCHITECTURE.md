@@ -29,7 +29,7 @@ src/exec/           executive, waitlist, restarts, alarms; dispatch.c (the job
                     sequence.c, csm.c, lm.c; idle.c: GOP00FIX, INITSUB, resets)
 src/io/             downlink_lists_{csm,lm}.c (telemetry; < 3 files so no subfolder)
   dsky/             PINBALL (display, keys, load, monitor, nvsub, scale,
-                    sfin, state, verbs, internal.h), display_if.c, noun_*.c
+                    sfin, state, verbs, internal.h), display_interface.c, noun_*.c
   service/          t4rupt*.c (common, csm optics, lm radar), service.c,
                     rtb_ops.c, self_check.c, interbank.c
   (telemetry/, verbs/ are not created until they hold >= 3 files: down
@@ -73,7 +73,7 @@ src/csm/            Comanche-only
                     tracking_attitude, tracking_data, tpi_search
   optics/           sxtmark, s_band_antenna, sighting_mark,
                     auto_optics_positioning
-  prelaunch_align.c (< 3 files in prelaunch/)
+  prelaunch/        align, gyrocompass, verify, internal.h (P01-P03, IMUTEST)
 src/lm/             Luminary-only
   navigation/       P20-P25 LM side: navigation, tracking_attitude,
                     tracking_data, measurement_update
@@ -84,14 +84,14 @@ src/lm/             Luminary-only
   burns/            dps_burn*, ignition, servicer*
   dap/rcs/          idler, P-axis, Q/R-axis, TJET law, rate/Kalman, T6RUPT,
                     needles, rcsmon (failure monitor), spsrcs (docked law)
-  dap/              shared: dapif.c, state.c, arith.c, accs.c and
+  dap/              shared: interface.c (DAP_INTERFACE_SUBROUTINES), state.c, arith.c, accs.c and
                     accont.c (1/ACCS, 1/ACCONT), gts.c (trim gimbal),
                     internal.h
   ascent.c, s_band_antenna.c, lem_geometry.c  (ascent/, optics/ not yet
                     >= 3 files)
 src/sim/            host harness (not in libagc): agc_sim, the yaAGC drop-in
                     (clock and interrupt driver, peripheral sockets, rope, pad)
-src/nassp/          NASSP engine shim (nassp_engine.c) and the CMake project
+src/nassp/          NASSP engine shim (engine.c) and the CMake project
                     NASSP's build adds (not in libagc; nassp-integration lane)
 src/erasable_map/   erasable access by AGC address (top of the layering)
 tests/              unit tests, mirroring src/ (core exec nav io imu guidance
@@ -100,7 +100,7 @@ tests/              unit tests, mirroring src/ (core exec nav io imu guidance
 sim/                harnesses that RUN the built AGC: scenarios/ +
                     sim_client.py (headless DSKY, `make scenarios`),
                     lm_simulator/ (`make lm-sim`), nassp/ (`make nassp-replay`,
-                    `make nassp-mission`, host scripts, Lua, scenario images)
+                    `make nassp-mission`, NASSP patches, host scripts, Lua, scenario images)
 tools/              tools that work ON the tree: checks (check_rules,
                     check_style, prolog_check, always_ok, one_liners,
                     returns), format (format.sh, fix_comments), generators

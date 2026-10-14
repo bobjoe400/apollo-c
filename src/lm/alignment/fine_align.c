@@ -51,6 +51,8 @@
 #include "agc/core/flags_common.h"
 #include "agc/programs/alignment.h"
 
+static agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx);
+
 #define PH_FINE_ALIGN    ((uint16_t) 04024)        /* OCT 04024                     */
 #define CHK_ACQUIRE      ((uint16_t) 015)          /* OCT15: V50N25 00015           */
 #define CHK_FINE_RECHECK ((uint16_t) 014)          /* OCT14: V50N25 00014           */
@@ -273,7 +275,7 @@ agc_status_t agc_job_lm_fine_align_first_star(agc_job_ctx_t *ctx)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx)
+static agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx)
 {
     align_phase4(PH_FINE_ALIGN);
 

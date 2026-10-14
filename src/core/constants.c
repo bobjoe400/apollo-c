@@ -30,7 +30,6 @@
  *   DP word after the previous); the second copy ZUNIT/YUNIT/XUNIT/
  *   ZEROVEC holds the same words (checked against the assembled ropes).
  **********************************************************************/
-#include "agc/core/assertion.h"
 #include "agc/core/constants.h"
 
 /**********************************************************************

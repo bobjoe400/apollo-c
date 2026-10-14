@@ -38,7 +38,6 @@
  *   -0 is not modelled (interp_words.h): a word the AGC leaves as -0 is
  *   +0 here.
  *********************************************************************/
-#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"

@@ -61,8 +61,9 @@
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "agc/nav/conic.h"
 #include "agc/programs/rendezvous.h"
+
+static agc_status_t agc_lm_updatevg(agc_interp_t *ip);
 
 #define ONE_SEC   100  /* 1SEC, cs */
 #define HALF_SEC  50   /* 0.5 s, cs */
@@ -956,7 +957,7 @@ agc_status_t agc_task_coastset(void)
  * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
  *          routine it continues in
  **********************************************************************/
-agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
+static agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
 {
     agc_guid_t *g = agc_guid_state(); /* guidance erasables */
 
@@ -1035,7 +1036,7 @@ agc_status_t agc_lm_cross_product_steering(agc_interp_t *ip)
  * RETURNS: agc_status_t -- AGC_STATUS_OK; otherwise the status of the
  *          routine it continues in
  **********************************************************************/
-agc_status_t agc_lm_updatevg(agc_interp_t *ip)
+static agc_status_t agc_lm_updatevg(agc_interp_t *ip)
 {
     agc_guid_t  *g  = agc_guid_state();                  /* guidance erasables */
     agc_rendz_t *rz = agc_rendz_erasable();              /* targeting erasables */

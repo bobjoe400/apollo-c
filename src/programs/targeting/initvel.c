@@ -58,7 +58,6 @@
  **********************************************************************/
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
-#include "agc/core/flags_common.h"
 
 /* Work cells of one INITVEL call (AGC erasables RTARG1 R1VEC R2VEC UN
  * COZY4 ITCTR VTARGTAG VTARGET and the Lambert inputs).                */

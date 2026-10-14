@@ -27,7 +27,7 @@ agc_lm_setpos2	src/lm/burns/servicer/landing_radar.c	include/agc/guidance/guidan
 agc_lm_stclok1	src/lm/burns/ignition/clock.c	include/agc/guidance/guidance.h
 agc_lm_tmptospt	src/lm/burns/servicer/average_g.c	include/agc/guidance/guidance.h
 agc_lm_updatevg	src/lm/burns/dps_burn.c	include/agc/guidance/guidance.h
-agc_csm_prelaunch_posn17c	src/csm/prelaunch_align.c	include/agc/imu/imu.h
+agc_csm_prelaunch_posn17c	src/csm/prelaunch/align.c	include/agc/imu/imu.h
 agc_imu_axisrot_words	src/imu/cdu_trig.c	include/agc/imu/imu.h
 agc_imu_endimu	src/imu/mode.c	include/agc/imu/imu.h
 agc_imu_modecadr_bzf	src/imu/mode.c	include/agc/imu/imu.h

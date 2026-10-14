@@ -65,7 +65,7 @@ Moved .c files and lane-private .h files into subsystem subfolders per the assig
 | src/csm/sps_burn_steer.c | src/csm/burns/sps_burn_steer.c |
 | src/csm/sxtmark.c | src/csm/optics/sxtmark.c |
 | src/csm/t4rupt_csm.c | src/io/service/t4rupt_csm.c |
-| src/exec/exec_erasable.c | src/exec/erasable.c |
+| src/exec/exec_erasable.c | src/exec/modecadr.c |
 | src/exec/exec_internal.h | src/exec/internal.h |
 | src/imu/imu_comp.c | src/imu/compensation.c |
 | src/imu/imu_gyro.c | src/imu/gyro.c |
@@ -75,7 +75,7 @@ Moved .c files and lane-private .h files into subsystem subfolders per the assig
 | src/imu/imu_vflags.c | src/imu/vflags.c |
 | src/imu/imu_vflags_csm.c | src/imu/vflags_csm.c |
 | src/imu/imu_vflags_lm.c | src/imu/vflags_lm.c |
-| src/io/display_if.c | src/io/dsky/display_if.c |
+| src/io/display_if.c | src/io/dsky/display_interface.c |
 | src/io/noun_data.c | src/io/dsky/nouns/data.c |
 | src/io/noun_scales.c | src/io/dsky/nouns/scales.c |
 | src/io/noun_tables_csm.c | src/io/dsky/nouns/tables_csm.c |
@@ -96,7 +96,7 @@ Moved .c files and lane-private .h files into subsystem subfolders per the assig
 | src/io/t4rupt.c | src/io/service/t4rupt.c |
 | src/lm/dap/arith.c | src/lm/dap/arith.c |
 | src/lm/dap/dapidler.c | src/lm/dap/rcs/dapidler.c |
-| src/lm/dap/dapif.c | src/lm/dap/dapif.c |
+| src/lm/dap/interface.c | src/lm/dap/interface.c |
 | src/lm/dap/needles.c | src/lm/dap/rcs/needles.c |
 | src/lm/dap/paxis.c | src/lm/dap/rcs/paxis.c |
 | src/lm/dap/pmanual.c | src/lm/dap/rcs/pmanual.c |
@@ -176,7 +176,7 @@ Moved .c files and lane-private .h files into subsystem subfolders per the assig
 * src/io/service/t4rupt_{csm,lm}.c (from csm/ and lm/) and sysmisc_ext.h: assignment lists t4rupt*.c under io/service.
 * src/csm/dap/{mysubs,state}.c: common/ would hold only 2 files once the two shared headers were promoted, so they stay in src/csm/dap/ (rcs/ and tvc/ are subfolders). dap/rcs gets needles.c (FDAI needles, RCS-CSM DAP text).
 * src/csm/optics/geometry.c (sextant line of sight): placed with optics. src/lm/lem_geometry.c (RR gimbal angles) would be lm/optics but that folder has < 3 files, so it stays in src/lm/ with s_band_antenna_lm.c.
-* src/lm/dap/gts.c: gimbal/ has 1 file, stays in src/lm/dap/. src/lm/ascent.c: ascent/ has 1 file, stays in src/lm/. src/csm/prelaunch_align.c: prelaunch/ has 1 file, stays in src/csm/.
+* src/lm/dap/gts.c: gimbal/ has 1 file, stays in src/lm/dap/. src/lm/ascent.c: ascent/ has 1 file, stays in src/lm/. src/csm/prelaunch/align.c: prelaunch/ has 1 file, stays in src/csm/.
 * src/programs/alignment/{imu_realign.c,sighting_data_and_gyro_torquing.c}: P52 realign and R54/R55 sighting/gyro torquing, shared alignment programs.
 * src/nav/svdwn.c -> nav/integration (per assignment). lm/landing_state.c -> lm/landing. csm/{servicer_csm,external_delta_v_csm}.c -> csm/burns.
 * Not created (no files yet): io/verbs, io/telemetry, lm/tests, csm/prelaunch, lm/optics, lm/ascent, lm/dap/gimbal, csm/dap/common. Planned files named in older notes (extended_verbs, uplink_update, self_check, aotmark, ags_init, imu_tests) go to these folders once they reach 3 files.
@@ -243,13 +243,13 @@ Split of src/programs/rendezvous by subject, return_to_earth grouping, tests/ mi
 | tests/test_exec.c | tests/exec/exec.c |
 | tests/test_conic.c | tests/nav/conic.c |
 | tests/test_integration.c | tests/nav/integration.c |
-| tests/test_navaux.c | tests/nav/navaux.c |
+| tests/test_navaux.c | tests/nav/auxiliary.c |
 | tests/test_dsky.c | tests/io/dsky.c |
 | tests/test_nouns.c | tests/io/nouns.c |
-| tests/test_sysmisc.c | tests/io/sysmisc.c |
+| tests/test_sysmisc.c | tests/io/service_verbs_telemetry.c |
 | tests/test_imu.c | tests/imu/imu.c |
 | tests/test_guidance.c | tests/guidance/guidance.c |
-| tests/test_align.c | tests/programs/align.c |
+| tests/test_align.c | tests/programs/alignment.c |
 | tests/test_rendezvous.c | tests/programs/rendezvous.c |
 | tests/test_csm_dap.c | tests/csm/dap.c |
 | tests/test_entry.c | tests/csm/entry.c |

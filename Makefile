@@ -79,21 +79,21 @@ $(LMSIM_REPO)/Contributed/LM_Simulator/lm_simulator.tcl:
 	git -C $(LMSIM_REPO) checkout --quiet $(LMSIM_REV)
 
 # NASSP 9 scenario images (sim/nassp/images) replayed on our AGC through the NASSP
-# shim (src/nassp/nassp_engine.c) and on NASSP's own yaAGC engine, compared word for
+# shim (src/nassp/engine.c) and on NASSP's own yaAGC engine, compared word for
 # word: state-vector blocks after the P00 integration steps and an MCC state-vector
 # uplink (docs/modules/nassp-integration.md).  Seconds, no Orbiter.  NASSP's yaAGC
 # (GPL) is downloaded into build/nassp at the pinned commit, or taken from
 # NASSP_YAAGC_DIR; without either the target skips.  Not part of `make test`.
 nassp-replay: $(BUILD)/libagc.a $(SIM_OBJS)
-	python3 -I tools/nassp_replay.py --build $(BUILD)
+	python3 -I sim/nassp/replay.py --build $(BUILD)
 
 # The NASSP mission milestone tables (docs/modules/nassp-integration.md, "How to run it"),
 # generated from the edit CSVs of the host runs: NASSP_RUNS=<dir> holding ref_<m>_H/ and
-# agc_<m>_H/ (stock and ours) with apollo-c-<m>-edits.csv; tolerances in sim/nassp/edits.tsv.
+# agc_<m>_H/ (stock and ours) with apollo-c-<m>-edits.csv; tolerances in sim/nassp/mission_tolerances.tsv.
 NASSP_RUNS ?=
 nassp-mission:
 	@test -n "$(NASSP_RUNS)" || { echo "usage: make nassp-mission NASSP_RUNS=<dir of ref_<m>_H/ agc_<m>_H/>"; exit 2; }
-	python3 -I tools/nassp_edits.py --runs $(NASSP_RUNS)
+	python3 -I sim/nassp/mission_tables.py --runs $(NASSP_RUNS)
 
 $(BUILD)/debug/%.o: %.c
 	@mkdir -p $(dir $@)

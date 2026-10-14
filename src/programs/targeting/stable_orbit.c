@@ -190,7 +190,7 @@ static agc_status_t so_intrpvp(agc_interp_t *ip, agc_dp_t tdec1, agc_job_id_t re
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t ratt, agc_vec_t vatt)
+static agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t ratt, agc_vec_t vatt)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {

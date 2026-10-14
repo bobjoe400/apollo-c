@@ -37,7 +37,7 @@ No further EVA runs.
 - DONE fallout of step 1: unused buf_ok (gyro.c) deleted; restart_tables.c
   rst_table_lookup void (its only failure was the deleted index guard);
   parameters dropped: agc_dnlist_word_count's `v` (only the deleted
-  vehicle assertion read it; tests/io/sysmisc.c updated by spatch),
+  vehicle assertion read it; tests/io/service_verbs_telemetry.c updated by spatch),
   agc_job_dspmmjb's `ctx` (job entry f(void), dispatch regenerated);
   tools/gen_registry.py no longer emits the task-entry
   agc_interrupts_inhibited() guard (dispatch.c:2860 was VALID).
@@ -98,7 +98,7 @@ No further EVA runs.
 ## Findings
 * EVA's VALID is "valid on every path EVA reached". Two test misuse calls
   violate VALID guards because EVA never reached them (its analysis of
-  those tests stopped propagating earlier): tests/io/sysmisc.c
+  those tests stopped propagating earlier): tests/io/service_verbs_telemetry.c
   `agc_selfcheck_set_rope(NULL, 3) == BAD_ARG` (removed; the one real
   caller passes the static rope and AGC_ROPE_BANKS) and tests/io/nouns.c
   `agc_scale_sfconst(CSM, 20) == BAD_ARG` (replaced by code 19 == OK; the

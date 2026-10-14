@@ -142,7 +142,7 @@ static void csi_set_cycle(bool first_cycle)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG for a NULL
  *          pointer
  **********************************************************************/
-agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v, agc_vec_t *out)
+static agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v, agc_vec_t *out)
 {
     /* PUSH PUSH; DOT VXSC UP1 UP1; VSL2 BVSU; UNIT PDVL; ABVAL VXSC; VSL1 */
     agc_vec_t proj; /* V's scale x 2^2 */

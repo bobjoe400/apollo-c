@@ -281,7 +281,6 @@ agc_status_t  agc_rupt_rupt10(void);
 void          agc_rupt_set_t5_task(agc_task_id_t task); /* DXCH T5ADR/T5LOC */
 void          agc_rupt_set_t6_task(agc_task_id_t task); /* T6LOC (CSM)      */
 agc_task_id_t agc_rupt_t5_task(void);
-agc_status_t  agc_dispatch_rupt(agc_rupt_id_t rupt);    /* interrupts.c: handlers in other lanes */
 
 /* ---- added by exec-sched (second pass) -------------------------------- */
 /* Software restart requests. BAILOUT, POODOO and ABORT end in WHIMPER ->

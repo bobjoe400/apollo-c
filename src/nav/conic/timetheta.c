@@ -36,7 +36,6 @@
  *   PARAM gives P, R1A and COGA, GETX the universal variable x, DELTIME
  *   the time and NEWSTATE the new state.
  *********************************************************************/
-#include "agc/core/assertion.h"
 #include "internal.h"
 
 /**********************************************************************

@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: nav_integ.c
+ * FILE NAME: nav_integration.c
  *
  * PURPOSE:
  *   nav-integ against the real AGC integration (yaAGC oracle).  Inputs

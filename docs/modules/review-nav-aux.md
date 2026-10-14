@@ -1,7 +1,7 @@
 # review-nav-aux -- review of the nav-aux lane
 
 Lane files: src/nav/auxiliary/*.c, internal.h, include/agc/nav/auxiliary.h,
-tests/nav/navaux.c, tests/oracle/nav_aux.c.
+tests/nav/auxiliary.c, tests/oracle/nav_auxiliary.c.
 AGC: LATITUDE_LONGITUDE_SUBROUTINES, PLANETARY_INERTIAL_ORIENTATION,
 MEASUREMENT_INCORPORATION, TIME_OF_FREE_FALL,
 LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES (CM and LM), STAR_TABLES.
@@ -60,12 +60,12 @@ LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES (CM and LM), STAR_TABLES.
 * [x] fidelity pass: latlong, planetary, free_fall, measurement (INCORP1;
       INCORP2 oracle bit-exact), ephemerides CM+LM, star_tables (rope-
       verified by nav-aux). Findings table below.
-* [x] oracle tolerances tightened in tests/oracle/nav_aux.c: LM LSPOS
+* [x] oracle tolerances tightened in tests/oracle/nav_auxiliary.c: LM LSPOS
       8 -> 2, TFF 16 -> 12, TFFX 256 -> 32 (484/0). No KNOWN entries exist
       for this lane (F2-F4 were tolerances).
 * [x] style debt: 588 check_style findings -> 0 in all 11 lane files
       (src/nav/auxiliary/*.c, internal.h, include/agc/nav/auxiliary.h,
-      tests/nav/navaux.c, tests/oracle/nav_aux.c): template file and
+      tests/nav/auxiliary.c, tests/oracle/nav_auxiliary.c): template file and
       function prologs (AGC label + pages, argument tables with scales,
       RETURNS), decl/scale comments, ternaries rewritten as if/else,
       closing-brace comments on blocks > 40 lines, main() first in the
@@ -79,7 +79,7 @@ LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES (CM and LM), STAR_TABLES.
 
 State of files: all lane files and every includer of auxiliary.h
 compile with -Werror; test_navaux 143/0, oracle_nav_aux 484/0 (private
-build: full `make` is blocked by src/csm/prelaunch_align.c, another
+build: full `make` is blocked by src/csm/prelaunch/align.c, another
 lane's in-progress job/task ids).  check_style 0, check_rules 0/0,
 uncrustify --check clean on the lane.  No file is mid-edit.  REVIEW DONE.
 

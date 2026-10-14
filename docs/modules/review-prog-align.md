@@ -7,7 +7,7 @@ STATUS: DONE (resume 3, 2026-10-11).  Open: KNOWN PA-W4 (guid-powered request), 
 docs/history/assignments/review.md for lane prog-align (docs/modules/prog-align.md):
 src/programs/alignment, src/csm/alignment, src/csm/optics, src/lm/alignment,
 src/lm/optics, src/lm/ags_initialization.c, src/lm/rendezvous_final_attitude.c,
-include/agc/programs/alignment.h, tests/programs/align.c.
+include/agc/programs/alignment.h, tests/programs/alignment.c.
 
 ## Progress
 
@@ -15,8 +15,8 @@ include/agc/programs/alignment.h, tests/programs/align.c.
 |---|---|
 | R63 UNIT precision (open question) | DONE: AGC uses RTB NORMUNIT; C fixed (A1) |
 | N70/N71 AOTCODE orphan components | DONE (A2) |
-| realistic-range tests | DONE: R63 300 m..50 km; P52 fine align with 0.5 deg drift, non-identity REFSMMAT (tests/programs/align.c test_realign_realistic_drift) |
-| oracle test tests/oracle/align.c + tools/oracle/cases/gen/gen_align.py -> cases/align{,_lm}.spec/.txt (regenerate: cd tools/oracle/cases/gen && python3 -I gen_align.py && cd ../.. && make cases) | DONE: RRNB, RRANGLES (18), SCALEVEC, SXTNB (KNOWN PA-W2), SXTANG (17), LOG, S-band CM (4) bit-exact; S-band LM exact but KNOWN PA-W3 (sband_lm_c pitch 1 LSB) |
+| realistic-range tests | DONE: R63 300 m..50 km; P52 fine align with 0.5 deg drift, non-identity REFSMMAT (tests/programs/alignment.c test_realign_realistic_drift) |
+| oracle test tests/oracle/alignment.c + tools/oracle/cases/gen/gen_align.py -> cases/align{,_lm}.spec/.txt (regenerate: cd tools/oracle/cases/gen && python3 -I gen_align.py && cd ../.. && make cases) | DONE: RRNB, RRANGLES (18), SCALEVEC, SXTNB (KNOWN PA-W2), SXTANG (17), LOG, S-band CM (4) bit-exact; S-band LM exact but KNOWN PA-W3 (sband_lm_c pitch 1 LSB) |
 | new src/programs/alignment/word_forms.c (MPAC word forms, align_dot_shl, align_dmp_shl) + decls in include/agc/programs/alignment.h | DONE, compiles |
 | align_dot_shl / DMP sites: CHKSDATA (locsam.c, done earlier), R59 INCAZ/R59D DOT SL1 x2 + DMP SL4 (lunar_surface_sighting.c), OANB DMP SL1 x2 + SURFSTAR DMP (aotmark.c), SR52 SLOAD DMP MPERIOD (csm auto_optics_positioning.c) | DONE (resume 2) |
 | KNOWN PA-W2 (SXTNB SIN SL1) and PA-W3 (LM S-band ABVAL SIGN ASIN): word-level agc_mpac_* | DONE: hard at 0 |
@@ -38,7 +38,7 @@ include/agc/programs/alignment.h, tests/programs/align.c.
 | (d) inlined helper header blocks -> section comments: prelaunch_align PIPACHK, prelaunch_gyrocompass NORMLOP/ALCGKK/ENDGTSAL (also `_normlop`/`_endgtsal` names gone; LASTGTS now checks the ERCOMP read before using it), prelaunch_verify NEXTBNKS/NEXBNKSS +5, csm auto_optics LEM52/LMK52 (`_los`/`_drive` names gone; LEM52 no longer copies RATT before the LEMCONIC status) | DONE |
 | checkpoint resume 3: make, scratch make test (all pass; test_align 137, oracle_align 600 / 1 known W4), check_rules 0 hard, make format on my 31 files | -- |
 | (e) style: function prologs, decl/scale/define/ternary/long-block comments done for every lane .c file and include/agc/programs/alignment.h (scratch tools review-prog-align/style/{pa.py, defaults.py, labels.py, defc.py, spec/*.spec}); on the way, never-fail statuses removed (agc_align_locsam_from, agc_align_chksdata_angle -> value, agc_ags_scalevec, agc_ags_time -> value, agc_sband_cm/lm_angles, agc_csm_earrot2; unused agc_ags_set_agsk deleted), inliner names (st_angles, st_sbandex, st_trim, ip_angles, _los, _drive) gone, nested ternary in AOTMARK next-action replaced, NEXTBNKS / NEXBNKSS +5 re-extracted (prelaunch_verify) | DONE |
-| tests/programs/align.c, tests/oracle/align.c: main first (prototypes), long int, sizeof (x), prologs, decl comments, no nested ?: | DONE (style 0 apart from the file prolog) |
+| tests/programs/alignment.c, tests/oracle/alignment.c: main first (prototypes), long int, sizeof (x), prologs, decl comments, no nested ?: | DONE (style 0 apart from the file prolog) |
 | file prologs: 25 lane .c files, include/agc/programs/alignment.h and the two test files rewritten to the template (scratch fprolog.py + fprolog_data.py); prelaunch_*.c already had them | DONE: check_style 0 findings in all 33 lane files |
 | status-handling-2 diff (1b72892..a02850c) so far: 43 manual.tsv GUARANTEED rows in the lane checked, all hold (planet star code masked to 6 bits, crew-range check kept in locsam); leftovers repaired: dead `st = OK` stores before void calls (lunar_surface_gravity, csm auto_optics), assertion-wrapped callee statuses (62 sites), silent recoveries (6), `if (st != OK) return st; return st;` (B5OFF); inline_one.py header blocks still to rewrite (d) | -- |
 | requests (other lanes): agc_csm_sxtnb, agc_lm_rrnb, agc_lm_rrangles now cannot fail -> void, but callers are in src/lm/radar, src/lm/navigation, src/programs/displays, src/io/verbs (not this lane); guidance owner: TRG*NBSM / *NBSM* on agc_dp_words_t (W4) | -- |
@@ -47,7 +47,7 @@ include/agc/programs/alignment.h, tests/programs/align.c.
 | rule-5 density | report only (spirit over letter): lane density 19 asserts / 339 functions = 0.06 after removing the guards that could not fail; the 19 left check crew/erasable inputs (QPRET / MKDEX / MARKCNTR slots, star code range, LOG x > 0, stall outcome, the NONE continuation in align_goto) and public pointers |
 | make / make test / make check | DONE (resume 3): make clean, make test 32/32 binaries (test_align 127, oracle_align 600 with 1 KNOWN W4), make check (check_rules 0 hard, format-check clean) |
 
-Files touched this session (all compile): src/lm/ags_initialization.c, src/lm/optics/lem_geometry.c, src/csm/optics/geometry.c, src/csm/optics/s_band_antenna.c, src/programs/alignment/word_forms.c (new), include/agc/programs/alignment.h, tests/programs/align.c, tests/oracle/align.c (new), tools/oracle/cases/gen/gen_align.py (new), tools/oracle/cases/align{,_lm}.{spec,txt} (new). Not yet `make format`ted.
+Files touched this session (all compile): src/lm/ags_initialization.c, src/lm/optics/lem_geometry.c, src/csm/optics/geometry.c, src/csm/optics/s_band_antenna.c, src/programs/alignment/word_forms.c (new), include/agc/programs/alignment.h, tests/programs/alignment.c, tests/oracle/alignment.c (new), tools/oracle/cases/gen/gen_align.py (new), tools/oracle/cases/align{,_lm}.{spec,txt} (new). Not yet `make format`ted.
 
 ## Findings
 
@@ -58,7 +58,7 @@ Files touched this session (all compile): src/lm/ags_initialization.c, src/lm/op
 | A3 | src/lm/ags_initialization.c ags_words | SCALEVEC p.209 VAD AGSRND1, VAD AGSRND2, VECSGNAG | a negative rounded word under one LSB gave +0 (AEA reads 0); the AGC's two-step add leaves -0 (77777, AEA -1): oracle scalevec_small | -0 major word when r < 0 and hi == 0; test in align.c and oracle |
 | A4 | src/lm/optics/lem_geometry.c RRNB | RRNB1 `COS DMP / SL1`, `SIN DMP / SL1` | SL1 after DMP shifts the TP product (MPAC +2's top bit into the DP); C shifted the truncated DP: 1 LSB off in 4 of 6 components | agc_tp_shift(agc_dp_mul_tp) then agc_tp_to_dp: bit-exact |
 | A5 | src/lm/optics/lem_geometry.c RRANGLES, src/csm/optics/geometry.c SXTANG1 | 2V1STO2S / 1STO2S of ASIN, ARCTRIG, ACOS SL2 DSU results | 1TO2SUB reads the major word after DDOUBL; ASINEX (DCS, AD QUARTER) and SUBTR leave sign-disagreeing words, so the AGC rounds such angles up (+,-) or down (-,+) where the value truncates: MODEA/MODEB/SAC/PAC 1 count off in 7 of 10 first cases | new src/programs/alignment/word_forms.c (ASIN/ACOS/ARCTRIG word forms, DAS on words, 1TO2SUB on words); 24 random oracle cases bit-exact |
-| W2 | src/csm/optics/geometry.c SXTNB | `SIN SL1` (TSSL shifts MPAC +2 in) | agc_dp_sin returns two words, so sin TA is 1 LSB low half the time; 32D 2 LSB off (sxtnb_a, sxtnb_c) | KNOWN PA-W2 in tests/oracle/align.c (hard at 2 LSB); request to core-numeric: a SIN/COS that returns the TP MPAC |
+| W2 | src/csm/optics/geometry.c SXTNB | `SIN SL1` (TSSL shifts MPAC +2 in) | agc_dp_sin returns two words, so sin TA is 1 LSB low half the time; 32D 2 LSB off (sxtnb_a, sxtnb_c) | KNOWN PA-W2 in tests/oracle/alignment.c (hard at 2 LSB); request to core-numeric: a SIN/COS that returns the TP MPAC |
 | C1 | R63 rendezvous_final_attitude.c | V89CALL..ALINEZ p.338-341 | confirmed: responses, OPTIONX, DP1MIN 6000 (rope 00000 13560), CPHI = THETAD, NORMUNIT | -- |
 | C2 | R47 ags_initialization.c | AGSINIT..SCALEVEC p.206-210 | confirmed: CKSTALL (wait while IMUCADR != +0), TAT for CSMPREC, constants RSCALE/VSCALE/TSCALE/20SEC/AGSRND1/2 against the rope; SCALEVEC bit-exact on the oracle | A3 |
 | C3 | lem_geometry.c | RRANGLES, RRNB, RRNBMPAC p.322-324 | confirmed apart from A4/A5: ASIN(-Y), BDSU LODPHALF, ARCTRIG of the X-Z unit, mode-2 swap on ANTENBIT 04000, BOVB LUNDESCH | A4, A5 |

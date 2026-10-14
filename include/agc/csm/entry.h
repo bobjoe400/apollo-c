@@ -225,7 +225,6 @@ agc_status_t agc_entry_scalepop(bool *display);
 
 /* REFAZE10: GOTO GOTOADDR */
 agc_status_t agc_entry_reestablish_sequencer(bool *display);
-void         agc_entry_targeting(void);                               /* TARGETNG */
 agc_status_t agc_job_pre_hunt(agc_job_ctx_t *ctx);                    /* PRE-HUNT  4.47 restart */
 agc_status_t agc_job_reestablish_entry_sequencer(agc_job_ctx_t *ctx); /* REFAZE10  5.3 restart  */
 
@@ -290,7 +289,6 @@ agc_status_t agc_job_entry_final_phase_display(agc_job_ctx_t *ctx);
 
 /* P67.1 PROCEED */
 agc_status_t agc_job_entry_final_phase_end(void);
-agc_status_t agc_job_entry_imu_check(agc_job_ctx_t *ctx);     /* S61.1 (return job set by caller) */
 agc_status_t agc_job_entry_imu_axis_test(agc_job_ctx_t *ctx); /* S61.1A  4.45 */
 agc_status_t agc_job_entry_imu_check_extrapolated(void);      /* S61.1 MIDTOAV2 retry*/
 
@@ -298,13 +296,8 @@ agc_status_t agc_job_entry_imu_check_extrapolated(void);      /* S61.1 MIDTOAV2 
 agc_status_t agc_job_entry_imu_check_return(agc_job_ctx_t *ctx);
 agc_status_t agc_task_entry_start_average_g(void);  /* S61.1C  4.43        */
 agc_status_t agc_task_wake_cm_sm_separation(void);  /* WAKEP62 4.33        */
-agc_status_t agc_entry_ems_data(void);              /* S61.2 N60/N63 data  */
 agc_status_t agc_entry_desired_gimbal_angles(void); /* S62.3 CPHI for N22  */
 agc_status_t agc_entry_final_phase_latlong(void);   /* P67.2 LAT LONG ALT  */
-
-/* S61.2 helpers (pure, used by the oracle).                               */
-agc_dp_t     agc_entry_vrcalc(agc_vec_t urh, agc_vec_t rt);                   /* VRCALC, revs */
-agc_status_t agc_entry_gmaxcalc(agc_dp_t vgam, agc_dp_t gam, agc_dp_t *gmax); /* GMAX 100g B-14      */
 
 /* TFF subroutines on the debris CALCTFF leaves in *t (also DELRSPL's).  */
 agc_dp_t agc_entry_tff_trig(agc_interp_t *ip, const agc_tff_t *t, agc_dp_t *cdelf2);         /* TFF/TRIG: .5 sin   */
@@ -320,7 +313,6 @@ agc_status_t agc_task_jetcall(void);                    /* JETCALL   roll jet ta
 agc_status_t agc_job_cm_dapon(agc_job_ctx_t *ctx);      /* CM/DAPON        */
 agc_status_t agc_job_cm_dapon_wait(agc_job_ctx_t *ctx); /* NOTYET +4       */
 agc_status_t agc_entry_dap_ic(agc_job_ctx_t *ctx);      /* CM/DAPIC        */
-void         agc_entry_dap_flushjet(void);              /* FLUSHJET        */
 
 /* Roll phase-plane solution of CM/RCS (pp. 1081-1086) for a roll error and
  * roll rate, as a pure function (used by CM/RCS and by unit tests).       */
@@ -338,7 +330,6 @@ typedef struct agc_entry_roll_cmd
  * (COMPAT); mvt_180: -2 V T/180 as formed at CM/RCS entry.                */
 void     agc_entry_dap_roll_phase_plane(agc_sp_t lcx_360, agc_sp_t mvt_180, agc_entry_roll_cmd_t *out);
 uint16_t agc_entry_dap_roll_jet_bits(int jndx); /* P/RJCODE[jndx]           */
-uint16_t agc_entry_dap_yaw_jet_bits(int jndx);  /* YJETCODE[jndx]           */
 
 /* Entry DAP erasables other lanes read (AOG = BCDU in EBANK6, CM/GYMDT). */
 agc_sp_t agc_erase_aog(void); /* AOG outer gimbal /180, 2s comp  */
@@ -416,10 +407,6 @@ typedef struct agc_earth_orbit_insertion_monitor_padload
 
 agc_status_t agc_earth_orbit_insertion_monitor_set_padload(const agc_earth_orbit_insertion_monitor_padload_t *pad);
 
-/* ATERJOB attitude-error kernel (pp. 543-545): desired gimbal angles
- * (OGC IGC MGC, DP revs) and present CDUs -> AK AK1 AK2 (SP, error/180).  */
-void agc_earth_orbit_insertion_monitor_attitude_errors(const agc_dp_t desired[3], const uint16_t cdu[3], agc_sp_t ak[3]);
-
 /* Priorities: PRIOnn octal (agc_prio_t = PRIOnn >> 9, see agc_exec.h).     */
 #define AGC_ENTRY_PRIO1  ((agc_prio_t) 001) /* PRIO1  (ATERJOB)          */
 #define AGC_ENTRY_PRIO13 ((agc_prio_t) 013) /* PRIO13 (P62, S61.1, P65)  */
@@ -435,14 +422,9 @@ void agc_earth_orbit_insertion_monitor_attitude_errors(const agc_dp_t desired[3]
  * ==================================================================== */
 /* reentry.c */
 agc_interp_t *entry_ip(void);                                                    /* shared interpreter state (OVFIND) */
-agc_dp_t      entry_signmpac(agc_dp_t x);                                        /* SIGNMPAC: +-DPOSMAX */
-agc_dp_t      entry_log(agc_interp_t *ip, agc_dp_t x);                           /* LOG: -ln(x)/32               */
 void          entry_earrot(agc_interp_t *ip, agc_entry_state_t *es, bool first); /* EARROT1/2 */
 agc_status_t  entry_endexit(agc_job_ctx_t *ctx, agc_entry_state_t *es);          /* OVERNOUT */
 agc_status_t  entry_initial_target(agc_interp_t *ip, agc_entry_state_t *es);     /* STARTEN1 */
-
-/* cm_body_attitude.c: SERVNOUT (CHANG1 if a job waits, then SERVEXIT).  */
-agc_status_t entry_servnout(void);
 
 /* programs.c: mode/display changes called from the steering via RTB.        */
 agc_status_t entry_post_0_05g(agc_entry_state_t *es);

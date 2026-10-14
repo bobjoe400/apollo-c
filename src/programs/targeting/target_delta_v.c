@@ -44,7 +44,6 @@
  *   down), RATT m 2^29, VATT m/cs 2^7, RCV VCV body scale.
  **********************************************************************/
 #include "../navigation/internal.h"
-#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 
 /* PHASCHNG OCT 04024: group 4, phase 2, type A. */
@@ -78,7 +77,7 @@ static tdv_work_t tdv_work; /* state between the jobs */
  *                                  2^7
  *
  **********************************************************************/
-void agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t dv_lv, agc_vec_t *v_new)
+static void agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t dv_lv, agc_vec_t *v_new)
 {
     agc_mat_t m; /* LV -> reference rows, unit 2^1 */
 

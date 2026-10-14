@@ -4,7 +4,7 @@
 Replays the AGC images of NASSP 9 Apollo 11 scenarios (sim/nassp/images/*.agc, the
 AGC_BEGIN..AGC_END block of the CSM) on two engines built from sim/nassp/replay.c:
 
-  ours   src/nassp/nassp_engine.c (the shim NASSP's vessels link) over build/libagc.a
+  ours   src/nassp/engine.c (the shim NASSP's vessels link) over build/libagc.a
   stock  NASSP's own yaAGC engine (src_sys/yaAGC at NASSP 5470bf1)
 
 and compares their transcripts line for line: the CSM/LM state-vector blocks after each
@@ -119,7 +119,7 @@ def build(args, ya):
     # The shim and the harness under the project's warnings (NASSP's header as a
     # system header); NASSP's yaAGC below is third-party code compiled as is.
     subprocess.run([cc, '-std=c11', '-O2'] + WARN + ['-Iinclude', '-isystem', ya, '-o', ours,
-                    'sim/nassp/replay.c', 'src/nassp/nassp_engine.c'] + sim +
+                    'sim/nassp/replay.c', 'src/nassp/engine.c'] + sim +
                    [os.path.join(args.build, 'libagc.a'), '-lm'], check=True)
     subprocess.run([cc, '-std=gnu11', '-O2', '-w', '-DREPLAY_YAAGC', '-I', ya, '-o', stock,
                     'sim/nassp/replay.c'] + [os.path.join(ya, f) for f in YAAGC_SRCS] + ['-lm'],

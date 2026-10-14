@@ -89,7 +89,7 @@
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_rendezvous_parameter_display_compdisp(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rone, agc_vec_t vone, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t axis_sm, const agc_mat_t *refsmmat)
+static agc_status_t agc_rendezvous_parameter_display_compdisp(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rone, agc_vec_t vone, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t axis_sm, const agc_mat_t *refsmmat)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL) || !AGC_ASSERT(refsmmat != NULL))
     {

@@ -58,8 +58,8 @@ agc_sband_gammasb	src/csm/optics/s_band_antenna.c	86	src/exec	1	far	uses-statics
 agc_csm_alternate_los_sighting_mark	src/csm/optics/sighting_mark.c	303	src/csm/alignment	2	far	movable	yes	section in neither (P51_P53)
 agc_csm_sxtsm_marks	src/csm/optics/sighting_mark.c	537	src/csm/alignment	2	far	uses-statics:mark_words	yes	section in neither (P51_P53)
 agc_sxtmark_markrupt	src/csm/optics/sxtmark.c	334	src/exec	1	far	uses-statics:mk	yes	section in neither (AOTMARK,SXTMARK)
-agc_csm_prelaunch_earthr_at_liftoff	src/csm/prelaunch_align.c	304	src/csm/burns	1	near	uses-statics:earthr_at,pl	yes	section in neither (P11)
-agc_csm_prelaunch_imutest	src/csm/prelaunch_align.c	730	src/lm	1	far	uses-statics:pl	yes	section matches own file: keep
+agc_csm_prelaunch_earthr_at_liftoff	src/csm/prelaunch/align.c	304	src/csm/burns	1	near	uses-statics:earthr_at,pl	yes	section in neither (P11)
+agc_csm_prelaunch_imutest	src/csm/prelaunch/align.c	730	src/lm	1	far	uses-statics:pl	yes	section matches own file: keep
 agc_curtains	src/exec/alarm.c	194	src/programs/alignment	2	far	movable	yes	section matches own file: keep
 exec_up_servidle	src/exec/change_program/idle.c	84	src/exec	1	near	movable	yes	SECTION OF TARGET: move
 exec_up_setcoars	src/exec/change_program/idle.c	108	src/exec	1	near	movable	yes	section in neither (IMU_MODE_SWITCHING_ROUTINES)
@@ -95,7 +95,7 @@ agc_guid_steering_tgo_csm	src/guidance/burn_steering.c	672	src/csm/burns/sps	1	f
 agc_guid_steering_tgo_lm	src/guidance/burn_steering.c	725	src/lm/burns	1	far	uses-statics:MFOURDT	yes	section in neither (P40_P47)
 agc_guid_steering_cross_product	src/guidance/burn_steering.c	773	src/csm/burns/sps	1	far	movable	yes	section in neither (P40_P47)
 agc_guid_timeburn_csm	src/guidance/burn_steering.c	858	src/csm/burns/sps	1	far	uses-statics:TWO_JET_IMPULSE,timeburn_csm	yes	section in neither (P40_P47)
-agc_guid_init	src/guidance/guid_state.c	85	src/sim	1	far	uses-statics:g_guid	yes	no-label (accessor/helper: keep with its storage)
+agc_guid_init	src/guidance/state.c	85	src/sim	1	far	uses-statics:g_guid	yes	no-label (accessor/helper: keep with its storage)
 agc_imu_calcsmsc	src/imu/alignment.c	327	src/programs/alignment	1	far	uses-statics:vec_in_range	yes	section matches own file: keep
 agc_erase_fdai	src/imu/attitude_maneuver.c	153	src/exec	1	far	uses-statics:fdai	no	no-label (accessor/helper: keep with its storage)
 agc_imu_vecpoint_from_cdus	src/imu/attitude_maneuver.c	388	src/lm/navigation	1	far	uses-statics:vecpoint_from	yes	section matches own file: keep

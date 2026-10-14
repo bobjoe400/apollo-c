@@ -3,7 +3,7 @@
 Apply docs/NAMING.md to already-committed code. Other agents are still
 writing in some directories, so your scope is strictly:
   include/agc/, src/core/, src/exec/, src/nav/, src/imu/,
-  src/io/dsky/pinball_*.c src/io/dsky/display_if.c src/io/dsky/noun_*.c,
+  src/io/dsky/pinball_*.c src/io/dsky/display_interface.c src/io/dsky/noun_*.c,
   src/csm/ EXCEPT src/csm/burns/return_to_earth/program.c and src/csm/dap/,
   src/lm/ EXCEPT src/lm/dap/,
   tests/ files belonging to those lanes, docs/modules notes of those lanes.

@@ -65,16 +65,19 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
-#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
+
+static agc_status_t agc_t4_c33test(void);
+static agc_status_t agc_t4_glockmon(void);
+static agc_status_t agc_t4_imumon(void);
+static agc_status_t agc_t4_tnontest(void);
 
 #define BIT1   000001u /* BIT1 */
 #define BIT2   000002u /* BIT2 */
@@ -187,7 +190,7 @@ static agc_status_t call_wait(uint16_t dt, agc_task_id_t task)
  *
  * RETURNS: true when a lamp test is in progress (AGC L+1)
  **********************************************************************/
-bool agc_t4_lamptest(void)
+static bool agc_t4_lamptest(void)
 {
     return ((agc_erase_imodes33() & BIT1) != 0u);
 }
@@ -500,7 +503,7 @@ void agc_t4_setissw(void)
  * CAGESUB2 (p.158): flags for caging / turn-on; inhibit ISS warnings and
  * the DAP auto and hold modes.
  **********************************************************************/
-void agc_t4_cagesub2(void)
+static void agc_t4_cagesub2(void)
 {
     agc_erase_set_imodes30((uint16_t) (agc_erase_imodes30() | OCT75));
     agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | BIT6));
@@ -519,7 +522,7 @@ static void t4_cagesub1(void)
  * CAGESUB (p.158): outbits for turn-on or cage: error counter disabled,
  * delay-complete removed, zero + coarse sent.
  **********************************************************************/
-void agc_t4_cagesub(void)
+static void agc_t4_cagesub(void)
 {
     chan_clear((int) AGC_CHAN_CHAN12, (uint16_t) BIT15_6);
     agc_chan_or((int) AGC_CHAN_CHAN12, (uint16_t) BITS4_5);
@@ -721,7 +724,7 @@ static agc_status_t t4_ifailjmp(int bit, uint16_t newbit, bool *stop)
  * RETURNS: the status of TNONTEST or C33TEST (the rest of the chain), or
  *          the WAITLIST status of ISSZERO
  **********************************************************************/
-agc_status_t agc_t4_imumon(void)
+static agc_status_t agc_t4_imumon(void)
 {
     uint16_t im30    = agc_erase_imodes30();                                                    /* IMODES30 bits */
     uint16_t changes = (uint16_t) ((im30 ^ agc_chan_read((int) AGC_CHAN_CHAN30)) & IM30_RDMSK); /* changed bits of chan 30 */
@@ -802,7 +805,7 @@ static agc_status_t t4_proctnon(void)
  * RETURNS: the C33TEST status (the rest of the chain), or PROCTNON's
  *          WAITLIST status
  **********************************************************************/
-agc_status_t agc_t4_tnontest(void)
+static agc_status_t agc_t4_tnontest(void)
 {
     uint16_t im30 = agc_erase_imodes30(); /* IMODES30 bits */
 
@@ -833,7 +836,7 @@ agc_status_t agc_t4_tnontest(void)
  *
  * RETURNS: the GLOCKMON status
  **********************************************************************/
-agc_status_t agc_t4_c33test(void)
+static agc_status_t agc_t4_c33test(void)
 {
     uint16_t now = (uint16_t) (agc_chan_read((int) AGC_CHAN_CHAN33) & IM33_RDMSK); /* chan 33 flip-flop bits */
 
@@ -911,7 +914,7 @@ static void t4_setglock(bool want_on)
  * RETURNS: AGC_STATUS_OK (GLOCKOK = RESUME), or the WAITLIST status of
  *          CA+ECE after a coarse align
  **********************************************************************/
-agc_status_t agc_t4_glockmon(void)
+static agc_status_t agc_t4_glockmon(void)
 {
     /* Magnitude of a CDU counter word as CCS sees it (ones' complement).     */
     uint16_t cdu = agc_erase_cduz(); /* middle gimbal CDU, 2s comp */

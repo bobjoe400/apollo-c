@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: align.c
+ * FILE NAME: alignment.c
  *
  * PURPOSE:
  *   prog-align unit tests (alignment math, optics and radar geometry,
@@ -62,7 +62,6 @@
 #include "agc/core/state.h"
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
-#include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/nouns.h"

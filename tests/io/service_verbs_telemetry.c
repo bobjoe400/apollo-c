@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: sysmisc.c
+ * FILE NAME: service_verbs_telemetry.c
  *
  * PURPOSE:
  *   Unit tests of the sys-misc lane, both vehicles, against the real
@@ -48,11 +48,9 @@
 #include "agc/core/state.h"
 #include "agc/erasable_map/address_map.h"
 #include "agc/exec/exec.h"
-#include "agc/guidance/guidance.h"
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
 
 static int g_checks;   /* checks run */
 static int g_failures; /* checks failed */

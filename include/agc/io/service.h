@@ -53,7 +53,6 @@ agc_dp_t     agc_rtb_sgnagree_dp(agc_sp_t hi, agc_sp_t lo);
 uint16_t     agc_rtb_1sto2s(agc_dp_t angle_rev);                                                          /* 1STO2S            */
 void         agc_rtb_v1sto2s(agc_vec_t angles_rev, uint16_t out[3]);                                      /* V1STO2S  */
 void         agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2]);
-uint16_t     agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc);                                        /* CDUINC   */
 void         agc_rtb_incrcdus(uint16_t thetad[3], agc_vec_t incr);                                        /* INCRCDUS */
 agc_vec_t    agc_rtb_readpips(void);                                                                      /* READPIPS */
 agc_status_t agc_rtb_pulseimu(agc_vec_t gyro_cmds);                                                       /* PULSEIMU */
@@ -61,7 +60,6 @@ void         agc_rtb_transp(agc_mat_t *m);                                      
 agc_dp_t     agc_rtb_signmpac(agc_dp_t mpac);                                                             /* SIGNMPAC         */
 agc_vec_t    agc_rtb_normunit(agc_interp_t *ip, agc_vec_t v, int *shift, agc_dp_t *abval, agc_dp_t *vsq); /* NORMUNIT/NORMUNX1 */
 agc_vec_t    agc_rtb_vecsgnag(agc_vec_t v);                                                               /* VECSGNAG         */
-agc_vec_t    agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m);
 agc_status_t agc_rtb_quality1(agc_interp_t *ip, agc_vec_t urpv, bool moonflag, agc_sp_t e3j22r2m, agc_vec_t *out);
 
 /* ======================================================================
@@ -275,13 +273,6 @@ void         agc_t4_startsub_reset(void);     /* STARTSUB: DSRUPTSW = +0  */
 void         agc_t4_fresh_start_flush(void);  /* SLAP1: DSRUPTSW = -PRIO12 */
 agc_status_t agc_t4_task(agc_task_id_t task); /* ENDTNON UNZ2 ISSUP ENDZOPT */
 void         agc_t4_setissw(void);            /* SETISSW (called by imu)  */
-void         agc_t4_cagesub(void);            /* CAGESUB                  */
-void         agc_t4_cagesub2(void);           /* CAGESUB2                 */
-bool         agc_t4_lamptest(void);           /* LAMPTEST: true if on     */
-agc_status_t agc_t4_imumon(void);             /* IMUMON .. GLOCKMON       */
-agc_status_t agc_t4_tnontest(void);           /* TNONTEST                 */
-agc_status_t agc_t4_c33test(void);            /* C33TEST                  */
-agc_status_t agc_t4_glockmon(void);           /* GLOCKMON                 */
 
 /* CSM optics (src/io/service/t4rupt_csm.c). OPTIND -0 is AGC_OPTIND_NEG0.      */
 #define AGC_OPTIND_NEG0 ((agc_sp_t) -2)              /* OPTIND -0: optics reserved (TVC) */
@@ -329,13 +320,11 @@ agc_status_t agc_extverb_goto_tracking_terminate(void); /* GOTOV56: V56 TRACKTRM
 
 /* ---- shared parts of the extended verbs (extended_verbs.c) -------------- */
 /* The verb and noun GOEXTVB was entered with (VERBREG, NOUNREG).          */
-int          agc_extverb_verb(void);
 int          agc_extverb_noun(void);
 agc_status_t agc_extverb_testxact(bool *ok);        /* TESTXACT: false = ALM/END done */
 agc_status_t agc_extverb_alm_end(void);             /* ALM/END: FALTON, PINBRNCH     */
 agc_status_t agc_extverb_gopin(void);               /* GOPIN: PINBRNCH               */
 agc_status_t agc_extverb_chkpooh(bool *p00);        /* CHKPOOH: P00 (ALM/END if not) */
-agc_status_t agc_extverb_ckmodcad(bool *free);      /* CKMODCAD: no IMU mode user     */
 agc_status_t agc_extverb_goloadlv(void);            /* GOLOADLV: please-perform done */
 agc_status_t agc_extverb_upflag(agc_flag_id_t f);   /* TC UPFLAG, TC GOPIN       */
 agc_status_t agc_extverb_downflag(agc_flag_id_t f); /* TC DOWNFLAG, TC GOPIN     */
@@ -463,7 +452,6 @@ void         agc_uplink_update_fresh_start(void);                   /* UPSVFLAG 
 /* The word an ECADR load/write puts into COMPNUMB..UPBUFF +19D (0..23) or
  * UPTEMP (24); agc_uplink_update_target() = the index the V21N01/N02 on
  * the DSKY loads (the AGC's MPAC+2).                                      */
-agc_status_t agc_uplink_update_write(int idx, uint16_t word);
 int          agc_uplink_update_target(void);
 agc_sp_t     agc_erase_upsvflag(void);                          /* UPSVFLAG: 0, +-1 earth, +-2 moon (+CSM -LM) */
 agc_status_t agc_erase_set_upsvflag(agc_sp_t v);                /* BAD_ARG outside -2..2 */
@@ -502,8 +490,6 @@ uint16_t     agc_selfcheck_error_count(void);            /* ERCOUNT (ALMCADR +2)
  * P07 IMU performance tests (src/lm/systems_test.c; Luminary099
  * SYSTEM_TEST_STANDARD_LEAD_INS, IMU_PERFORMANCE_TEST_2, _TESTS_4)
  * ==================================================================== */
-agc_status_t agc_systems_test_zeroing(uint16_t *block, int n);          /* ZEROING  */
-agc_dp_t     agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a);   /* OVERFFIX */
 agc_status_t agc_job_systems_test(agc_job_ctx_t *ctx);                  /* REDO (V92) */
 agc_status_t agc_job_systems_test_imu_zeroed(agc_job_ctx_t *ctx);       /* IMUBACK          */
 agc_status_t agc_job_systems_test_site_display(agc_job_ctx_t *ctx);     /* LATAZCHK V06N41  */

@@ -243,38 +243,26 @@ void agc_lm_initcduw(void);
  * (agc_lm_ldg()->unfc_2).                                        */
 agc_status_t agc_lm_findcduw(agc_interp_t *ip, agc_vec_t unfc_2);
 agc_status_t agc_lm_findcduw_from_unfc(agc_interp_t *ip);
-agc_sp_t     agc_lm_sparcsin(agc_sp_t x); /* arg scale 1, angle 180 deg */
 
 /* SPARCSIN -1: arg scale 2 */
 agc_sp_t agc_lm_sparcsin_doubled(agc_sp_t x);
-agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c); /* 2's comp, pi    */
-agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit);
 agc_sp_t agc_lm_findcduw_limit_mga(agc_sp_t mga); /* FINDCDUW MGA limit, alarm 00401 (p. 914) */
-uint16_t agc_lm_onesto2s(agc_sp_t a);             /* -> 15-bit 2's comp word    */
 
 /* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (guidance.c) --------------
  * Job functions take the executive's job context (dispatch.c calls them);
  * display continuations are job ids.                                     */
-#define AGC_LM_ROOT_MAX_DEGREE 5                              /* ROOTPSRS erasables allow N <= 5      */
-#define AGC_LM_ROOT_MAX_PASSES 8                              /* "Klumpp says give up after 8 passes" */
-agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, agc_sp_t precroot, agc_dp_t *root, agc_sp_t *root_hi, int *passes);
-#define AGC_LM_ENTRY_GUILDRET 0                               /* normal pass via LUNLAND/GUILDEN     */
-#define AGC_LM_ENTRY_GUIDSUB  1                               /* IGNALG passes after the first       */
-#define AGC_LM_ENTRY_QGUIDSUB 2                               /* ?GUIDSUB first IGNALG pass          */
-#define AGC_LM_ENTRY_VERTGUID 3                               /* straight to VERTGUID                */
-agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx);          /* LUNLAND      */
+#define AGC_LM_ROOT_MAX_DEGREE 5                     /* ROOTPSRS erasables allow N <= 5      */
+#define AGC_LM_ROOT_MAX_PASSES 8                     /* "Klumpp says give up after 8 passes" */
+#define AGC_LM_ENTRY_GUILDRET  0                     /* normal pass via LUNLAND/GUILDEN     */
+#define AGC_LM_ENTRY_GUIDSUB   1                     /* IGNALG passes after the first       */
+#define AGC_LM_ENTRY_QGUIDSUB  2                     /* ?GUIDSUB first IGNALG pass          */
+#define AGC_LM_ENTRY_VERTGUID  3                     /* straight to VERTGUID                */
+agc_status_t agc_lm_job_lunland(agc_job_ctx_t *ctx); /* LUNLAND      */
 agc_status_t agc_lm_guidpass(const agc_job_ctx_t *ctx, int entry);
-agc_status_t agc_lm_start_approach_phase(void);               /* STARTP64     */
-agc_status_t agc_lm_start_velocity_nulling(void);             /* P65START     */
-agc_status_t agc_lm_ttfincr(agc_interp_t *ip);                /* TTFINCR      */
-agc_status_t agc_lm_calcrgvg(agc_interp_t *ip);               /* CALCRGVG     */
-void         agc_lm_rgvgcalc(agc_interp_t *ip);               /* RGVGCALC     */
-agc_status_t agc_lm_ttf8cl(agc_interp_t *ip);                 /* TTF/8CL      */
-agc_status_t agc_lm_quadguid(agc_interp_t *ip);               /* QUADGUID     */
-agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg); /* AFCCALC1 */
-void         agc_lm_cgcalc(agc_interp_t *ip);                 /* CGCALC       */
-agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip);
-agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip);
+void         agc_lm_rgvgcalc(agc_interp_t *ip);      /* RGVGCALC     */
+agc_status_t agc_lm_ttf8cl(agc_interp_t *ip);        /* TTF/8CL      */
+agc_status_t agc_lm_quadguid(agc_interp_t *ip);      /* QUADGUID     */
+void         agc_lm_cgcalc(agc_interp_t *ip);        /* CGCALC       */
 agc_status_t agc_lm_dispexit(const agc_job_ctx_t *ctx, bool kill_group3);
 
 /* P63DISPS -2 */
@@ -285,7 +273,6 @@ agc_status_t agc_lm_job_approach_phase_display(agc_job_ctx_t *ctx);
 
 /* P64CEED */
 void     agc_lm_job_approach_phase_proceed(void);
-void     agc_lm_tdispset(void);  /* TDISPSET     */
 agc_sp_t agc_lm_ttf8_high(void); /* CA TTF/8: the raw high word      */
 
 /* ---- landing program flow (lunar_landing.c) ----------------------------- */
@@ -347,9 +334,7 @@ agc_status_t agc_lm_job_abort_to_ascent_guidance(void);
 
 /* OLDTIME restart */
 agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx);
-agc_sp_t     agc_lm_pipctr1(void);             /* PIPCTR1 for LANDISP */
-void         agc_lm_tgocomp(agc_interp_t *ip); /* TGOCOMP      */
-void         agc_lm_throtup(void);             /* THROTUP      */
+agc_sp_t     agc_lm_pipctr1(void); /* PIPCTR1 for LANDISP */
 
 /* ---- P12 and ASCENT_GUIDANCE (ascent.c) --------------------------------- */
 agc_status_t agc_lm_guidinit(agc_interp_t *ip);
@@ -365,14 +350,11 @@ agc_status_t agc_lm_job_powered_ascent_flash(agc_job_ctx_t *ctx);
 
 /* P12LMB */
 agc_status_t agc_lm_job_powered_ascent_at_ignition(agc_job_ctx_t *ctx);
-agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 
 /* P12RET tail */
 agc_status_t agc_lm_job_powered_ascent_burn(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_atmag(agc_job_ctx_t *ctx);          /* ATMAG (AVGEXIT) */
-agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 agc_dp_t     agc_lm_ycomp(agc_interp_t *ip);
-agc_dp_t     agc_lm_logsub(agc_interp_t *ip, agc_dp_t x);
 agc_status_t agc_lm_task_ascent_engine_off(void);
 agc_status_t agc_lm_job_cutoff(agc_job_ctx_t *ctx);
 agc_status_t agc_lm_job_cutoff_display(agc_job_ctx_t *ctx); /* CUTOFF -5    */
@@ -384,7 +366,6 @@ agc_status_t agc_lm_job_termasc(void);
 agc_status_t agc_lm_landisp(void);
 agc_status_t agc_lm_task_intlze(void);
 agc_status_t agc_lm_task_speedrun_resume(void);
-agc_status_t agc_lm_vmonitor(void);
 
 /* ---- alarm codes raised by the landing programs (octal) ------------ */
 #define AGC_ALARM_00401 \

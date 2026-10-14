@@ -914,23 +914,6 @@ void agc_erase_set_dsptemx(agc_dp_t v)
 }
 
 /**********************************************************************
- * AGC: none (erasable read)
- *
- * XREG / YREG / ZREG as last loaded (octal word).
- *
- * ARGUMENTS:
- *   Argument  Type  I/O  Description (scale)
- *   --------  ----  ---  -------------------
- *   index     int   I    0 XREG, 1 YREG, 2 ZREG
- *
- * RETURNS: uint16_t -- the register's 15-bit word (0 on a bad index)
- **********************************************************************/
-uint16_t agc_dsky_xyzreg(int index)
-{
-    return (g_pin.xyz_oct[index]);
-}
-
-/**********************************************************************
  * AGC: RECALTST (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 376)
  *
  * Verb and noun of the answer that woke the job in ENDIDLE.

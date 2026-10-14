@@ -50,6 +50,8 @@
 #include "agc/core/flags_csm.h"
 #include "agc/programs/alignment.h"
 
+static agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx);
+
 #define PH_SIGHTING       ((uint16_t) 05024) /* OCT 05024, OCT 13000: R52-R53  */
 #define VN_STAR_CODE      ALIGN_VN(1, 70)    /* V01N70 VN 0170                 */
 #define BLANK_R2_R3       ((uint16_t) 06)    /* CAF SIX, TC BLANKET            */
@@ -103,7 +105,7 @@ agc_status_t agc_job_csm_fine_align(agc_job_ctx_t *ctx)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx)
+static agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx)
 {
     agc_flag_clear(AGC_FLAG_TARG2FLG);
     agc_flag_clear(AGC_FLAG_TARG1FLG);

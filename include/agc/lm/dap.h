@@ -56,12 +56,10 @@ void agc_lm_dap_restart(void);     /* STARTSB1 DAP part (both)        */
     ((agc_alarm_code_t) 02004) /* no U,V rotation policy     */
 
 /* ---- interrupts --------------------------------------------------------- */
-agc_status_t agc_lm_dap_t5rupt(void);                 /* T5RUPT via T5ADR (DAPIDLER/PAXIS) */
-agc_status_t agc_lm_dap_t6rupt(void);                 /* DOT6RUPT                          */
-agc_status_t agc_lm_dap_t6jobchk(void);               /* T6JOBCHK                          */
-void         agc_lm_dap_time6_count(uint16_t counts); /* sim: TIME6 DINC pulses */
-bool         agc_lm_dap_t6_pending(void);             /* TIME6 = -0: a T6RUPT is due       */
-agc_status_t agc_lm_dap_rcsmon(void);                 /* RCSMONIT, from T4RUPT every 480 ms */
+agc_status_t agc_lm_dap_t5rupt(void);     /* T5RUPT via T5ADR (DAPIDLER/PAXIS) */
+agc_status_t agc_lm_dap_t6rupt(void);     /* DOT6RUPT                          */
+bool         agc_lm_dap_t6_pending(void); /* TIME6 = -0: a T6RUPT is due       */
+agc_status_t agc_lm_dap_rcsmon(void);     /* RCSMONIT, from T4RUPT every 480 ms */
 
 /* T5ADR programs as exec tasks (agc_rupt_set_t5_task / dispatch.c).        */
 agc_status_t agc_task_dapidler(void); /* AGC_TASK_DAPIDLER: DAPIDLER     */

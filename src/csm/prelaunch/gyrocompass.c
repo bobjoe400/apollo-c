@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: prelaunch_gyrocompass.c
+ * FILE NAME: gyrocompass.c
  *
  * PURPOSE:
  *   Comanche prelaunch alignment, part 2: P02 gyrocompassing.  The
@@ -63,7 +63,6 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
-#include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
@@ -75,7 +74,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-#include "prelaunch_internal.h"
+#include "internal.h"
 
 #define GEOCONS1     ((agc_dp_t) 26843546)        /* 2DEC .1    (03146 14632)    */
 #define GEOCONS2     ((agc_dp_t) 1342177)         /* 2DEC .005  (00121 35341)    */

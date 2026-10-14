@@ -61,12 +61,10 @@
 #include "agc/core/status.h"
 #include "agc/core/word.h"
 #include "agc/exec/exec.h"
-#include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
-#include "agc/programs/rendezvous.h"
 #include "internal.h"
 
 #define SINGIMLC ((agc_dp_t) 115047034)  /* 2DEC .4285836003 = sin(59)/2  */

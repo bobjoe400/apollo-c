@@ -61,7 +61,6 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
-#include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/status.h"
@@ -70,10 +69,8 @@
 #include "agc/csm/entry.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/nouns.h"
-#include "agc/io/service.h"
 #include "agc/nav/conic.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/rendezvous.h"

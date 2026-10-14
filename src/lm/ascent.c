@@ -39,7 +39,6 @@
  *   none (no alarms; the job ends at ASCTERM or in P00 after TERMASC)
  **********************************************************************/
 #include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
 #include "agc/core/interp_words.h"
@@ -54,7 +53,8 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
+
+static agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t *ip);
 
 /* ---- constants (pp. 842, 836, 852, 855-856; CONTROLLED_CONSTANTS) ----- */
 #define AS_THRESH2  308                    /* THRESH2: DVMON threshold after ignition (APS) */
@@ -226,7 +226,7 @@ agc_dp_t agc_lm_ycomp(agc_interp_t *ip)
  *
  * RETURNS: agc_dp_t -- -LOG(X), scale 2^5
  **********************************************************************/
-agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
+static agc_dp_t agc_lm_logsub(agc_interp_t *ip, agc_dp_t x)
 {
     int      n   = 0;                                                          /* NORM shift count (MPAC+6 = -n) */
     agc_dp_t xn  = agc_dp_norm(x, &n);                                         /* NORM: x left-justified, 2^0 */
@@ -645,7 +645,7 @@ static agc_dp_t as_vgvect(agc_interp_t *ip)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
@@ -1183,7 +1183,7 @@ agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_status_t agc_lm_powered_ascent_return(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 

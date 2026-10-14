@@ -195,7 +195,7 @@ agc_task_start_thrust_monitor	first-attempt	include/agc/guidance/guidance.h src/
 agc_task_tig_30_1	numbered	include/agc/guidance/guidance.h src/lm/ignition.c
 dps_burn_auto_ret	first-attempt	include/agc/guidance/guidance.h
 sps_burn_tmp	first-attempt	include/agc/guidance/guidance.h src/csm/sps_burn.c src/csm/sps_burn_ignition.c
-agc_csm_prelaunch_posn17c	numbered	include/agc/imu/imu.h src/csm/prelaunch_align.c
+agc_csm_prelaunch_posn17c	numbered	include/agc/imu/imu.h src/csm/prelaunch/align.c
 agc_imu_attitude_maneuver	first-attempt	include/agc/imu/imu.h src/csm/sps_burn.c src/imu/attitude_maneuver.c src/lm/dps_burn.c src/lm/lunar_landing.c
 agc_imu_fin20	numbered	include/agc/imu/imu.h src/imu/imu_mode.c
 agc_imu_standby	first-attempt	include/agc/imu/imu.h src/imu/imu_mode.c
@@ -459,7 +459,7 @@ AGC_TASK_V97TRCS	numbered	src/guidance/guid_pending.h
 AGC_TASK_V97TTASK	numbered	src/guidance/guid_pending.h
 AGC_TASK_V99FLASH	numbered	src/guidance/guid_pending.h
 agc_exec_canv37	numbered	src/guidance/guid_pending.h
-AGC_LM_WHICH_P40	numbered	src/guidance/guid_state.c src/lm/ignition.c
+AGC_LM_WHICH_P40	numbered	src/guidance/state.c src/lm/ignition.c
 FILE:p30.c	numbered	src/guidance/p30.c
 agc_job_p30	numbered	src/guidance/p30.c
 agc_job_p30_all_done	numbered	src/guidance/p30.c
@@ -517,7 +517,7 @@ AS_ATRCS	numbered	src/lm/ascent.c
 ARITH_SIGN15	numbered	src/lm/dap/arith.c
 lm_dap_ones_to_twos	stem-name	src/lm/dap/arith.c src/lm/dap/lm_dap_internal.h src/lm/dap/paxis.c
 AGC_JOB_JET_ACCEL_RESET	stem-name	src/lm/dap/dapidler.c src/lm/dap/lm_dap_pending.h
-AGC_JOB_JET_ACCEL_UPDATE	stem-name	src/lm/dap/dapif.c src/lm/dap/lm_dap_pending.h
+AGC_JOB_JET_ACCEL_UPDATE	stem-name	src/lm/dap/interface.c src/lm/dap/lm_dap_pending.h
 lm_dap_switch_curves	stem-name	src/lm/dap/lm_dap_internal.h
 T6_IDX_P	numbered	src/lm/dap/t6rupt.c
 AGC_JOB_APS_BURN	first-attempt	src/lm/dps_burn.c

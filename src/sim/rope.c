@@ -47,7 +47,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "agc/core/assertion.h"
 #include "agc/io/service.h"
 #include "internal.h"
 

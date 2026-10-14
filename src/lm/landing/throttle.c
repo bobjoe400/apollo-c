@@ -37,9 +37,7 @@
  **********************************************************************/
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
-#include "agc/core/interp.h"
 #include "agc/core/state.h"
-#include "agc/guidance/guidance.h"
 #include "agc/lm/landing.h"
 
 /* SCALEFAC 2DEC* +7.97959872E+2 B-16* (CONTROLLED_CONSTANTS): pulses per

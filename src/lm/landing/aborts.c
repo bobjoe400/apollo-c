@@ -39,15 +39,9 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
-#include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "agc/nav/auxiliary.h"
-#include "agc/nav/integration.h"
-#include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
 
 #define AB_OCT31   25                     /* OCT31: R10,R11 period, cs                */
 #define AB_OCTAL27 027                    /* 4.27 (P70A) / 4.31 (P71A) restart phase  */
@@ -386,7 +380,7 @@ agc_status_t agc_lm_job_aps_abort_commanded(void)
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND)
  **********************************************************************/
-void agc_lm_tgocomp(agc_interp_t *ip)
+static void agc_lm_tgocomp(agc_interp_t *ip)
 {
     agc_tp_words_t m = agc_mpac_dsu(ip, agc_mpac_dload(agc_dp_to_words(agc_rtb_loadtime())), agc_dp_to_words(agc_erase_tig())); /* TIME - TIG, 2^28 cs */
 
@@ -396,7 +390,7 @@ void agc_lm_tgocomp(agc_interp_t *ip)
 /**********************************************************************
  * THROTUP (p. 836): full throttle (THRUST = BIT13, drive enabled).
  **********************************************************************/
-void agc_lm_throtup(void)
+static void agc_lm_throtup(void)
 {
     agc_erase_set_thrust(AGC_LM_FEXTRA);
     agc_chan_or(AGC_CHAN_CHAN14, AGC_CH014_THRUSTACT);

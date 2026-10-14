@@ -51,10 +51,8 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
-#include "agc/core/flags_lm.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
 
 #define ALM_NO_REFSMMAT ((agc_alarm_code_t) 0220) /* OCT 220: no REFSMMAT */
 #define VN_AGS_TIME     ALIGN_VN(6, 16)           /* V06N16 VN 0616                */
@@ -96,22 +94,6 @@ const uint16_t *agc_ags_buffer(void)
     _Static_assert(AGC_ALIGN_AGSBUFF_WORDS == 14, "AGC constant");
 
     return (agsbuff);
-}
-
-/**********************************************************************
- * AGC: none (accessor of AGSK)
- *
- * AGSK, the AGS clock zero.
- *
- * FUNCTION NAME: agc_ags_agsk
- *
- * ARGUMENTS: none
- *
- * RETURNS: agc_dp_t -- AGSK, cs 2^28
- **********************************************************************/
-agc_dp_t agc_ags_agsk(void)
-{
-    return (agsk);
 }
 
 /**********************************************************************

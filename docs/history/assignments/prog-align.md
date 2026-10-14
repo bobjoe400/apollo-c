@@ -17,6 +17,6 @@ geometry constants); S-BAND_ANTENNA_FOR_CM.agc and S-BAND_ANTENNA_FOR_LM.agc
 (Luminary, R47 AGS initialisation downlink). Star vectors come from the
 nav-aux star table (include/agc/nav/auxiliary.h; code against
 `agc_star_vector(index, &vec)` and list it if the name differs).
-Tests: tests/programs/align.c (compiles): P52 option 3 with identity REFSMMAT
+Tests: tests/programs/alignment.c (compiles): P52 option 3 with identity REFSMMAT
 and two orthogonal star sightings gives identity; S-band antenna angles for
 earth directly along the +X body axis.

@@ -71,11 +71,12 @@
 
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
-#include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
+
+static agc_status_t agc_sxtmark_markcont(void);
+static agc_status_t agc_sxtmark_mkreject(void);
 
 #define MS_VAC_MASK     ((uint16_t) 0777)          /* LOW9: VAC area               */
 #define MS_REJECT_OK    ((uint16_t) 01000)         /* BIT10                        */
@@ -480,7 +481,7 @@ static void to_mrkbuf1(bool shift_to_buf2)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_sxtmark_markcont(void)
+static agc_status_t agc_sxtmark_markcont(void)
 {
     if (agc_flag_test(AGC_FLAG_MARKRUPT_OPTION_ONE))
     {
@@ -571,7 +572,7 @@ agc_status_t agc_sxtmark_mark2(void)
  *          (executive, display, IMU, integration or an input check);
  *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
-agc_status_t agc_sxtmark_mkreject(void)
+static agc_status_t agc_sxtmark_mkreject(void)
 {
     agc_align_ram_t *ram = agc_align_ram(); /* alignment erasables */
 

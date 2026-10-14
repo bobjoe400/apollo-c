@@ -48,15 +48,14 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "agc/nav/auxiliary.h"
 #include "agc/nav/integration.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
+
+static agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg);
 
 /* ---- constants (pp. 827-828; CONTROLLED_CONSTANTS) -------------------- */
 #define LDG_HIGHESTF \
@@ -257,7 +256,7 @@ agc_sp_t agc_lm_ttf8_high(void)
  * redesignation, which reaches zero two passes before TCGFAPPR:
  * TREDES = max(0, min(99, -.08 (TCGFAPPR + TTF/8) - 4)).
  **********************************************************************/
-void agc_lm_tdispset(void)
+static void agc_lm_tdispset(void)
 {
     agc_lm_ldg_t *l  = agc_lm_ldg();       /* landing erasables */
     agc_sp_t      t8 = agc_lm_ttf8_high(); /* CA TTF/8, cs (scale 2^14 cs) */
@@ -281,7 +280,7 @@ void agc_lm_tdispset(void)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
+static agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
 {
     agc_lm_ldg_t *l  = agc_lm_ldg();                                                  /* landing erasables */
     agc_dp_t      dt = agc_dp_shl_round(ip, agc_dp_sub(ip, l->tpip, l->tpipold), 11); /* TPIP - TPIPOLD, rescaled to 2^17 cs */
@@ -316,7 +315,7 @@ agc_status_t agc_lm_ttfincr(agc_interp_t *ip)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_calcrgvg(agc_interp_t *ip)
+static agc_status_t agc_lm_calcrgvg(agc_interp_t *ip)
 {
     agc_mat_t refsmmat = agc_erase_refsmmat();                              /* REFSMMAT, half unit */
     agc_vec_t vatt1    = agc_integ_shared_ctx()->out.vatt1;                 /* 2^5 m/cs   */
@@ -389,7 +388,7 @@ void agc_lm_rgvgcalc(agc_interp_t *ip)
  *          passes; AGC_STATUS_NO_CONVERGE after eight passes (BADROOT;
  *          outputs as the last pass left them)
  **********************************************************************/
-agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, agc_sp_t precroot, agc_dp_t *root, agc_sp_t *root_hi, int *passes)
+static agc_status_t agc_lm_rootpsrs(const agc_dp_t *coef, int degree, agc_dp_t guess, agc_sp_t precroot, agc_dp_t *root, agc_sp_t *root_hi, int *passes)
 {
     agc_interp_t ip; /* interpreter state (OVFIND) */
 
@@ -560,7 +559,7 @@ agc_status_t agc_lm_quadguid(agc_interp_t *ip)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
+static agc_status_t agc_lm_afccalc(agc_interp_t *ip, agc_vec_t acg)
 {
     agc_lm_ldg_t *l = agc_lm_ldg();                                             /* landing erasables */
     agc_vec_t     a = agc_vec_shl(ip, agc_vec_mat(ip, acg, &l->cg), 1);         /* VXM CG, VSL1: ACG in SM, 2^-4 m/cs^2 */
@@ -702,7 +701,7 @@ static void ldg_ratestop(void)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_status_t agc_lm_steer_exit(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     if (!agc_flag_test(AGC_FLAG_STEERSW))
     {
@@ -863,7 +862,7 @@ agc_status_t agc_lm_job_braking_phase_display(agc_job_ctx_t *ctx)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip)
+static agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 {
     agc_lm_ldg_t *l = agc_lm_ldg(); /* landing erasables */
 
@@ -896,7 +895,7 @@ agc_status_t agc_lm_vertguid(const agc_job_ctx_t *ctx, agc_interp_t *ip)
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_start_approach_phase(void)
+static agc_status_t agc_lm_start_approach_phase(void)
 {
     agc_status_t  st = agc_phase_newmode(64); /* NEWMODEX         */
     agc_lm_ldg_t *l  = agc_lm_ldg();          /* landing erasables */
@@ -922,7 +921,7 @@ agc_status_t agc_lm_start_approach_phase(void)
  *
  * RETURNS: agc_status_t -- the status of NEWMODE
  **********************************************************************/
-agc_status_t agc_lm_start_velocity_nulling(void)
+static agc_status_t agc_lm_start_velocity_nulling(void)
 {
     agc_status_t st = agc_phase_newmode(65); /* step status */
 

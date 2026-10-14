@@ -42,7 +42,6 @@
  *   one C function serves both.
  **********************************************************************/
 #include "../mpac.h"
-#include "agc/core/assertion.h"
 
 #define VSHIFT_MAX 43 /* a VSL past 42 places leaves zero        */
 

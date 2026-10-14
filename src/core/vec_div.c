@@ -37,7 +37,6 @@
  *   by a root taken from the low words of |v|^2 and is as coarse as the
  *   AGC's (bit-exact); R63 avoids it with RTB NORMUNIT.
  **********************************************************************/
-#include "agc/core/assertion.h"
 #include "mpac.h"
 
 #define VDIV_NORM_MAX 28 /* divisor doublings: |s| >= 2^-28         */

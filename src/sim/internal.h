@@ -76,7 +76,6 @@ agc_status_t sim_socket_open(int base_port);
 void         sim_socket_close(void);
 void         sim_socket_poll(void);                          /* accept, read inbound packets  */
 void         sim_socket_send(uint16_t chan, uint16_t value); /* broadcast */
-int          sim_socket_clients(void);
 bool         sim_socket_wait(int timeout_ms);                /* input or timeout     */
 uint32_t     sim_socket_take_steps(void);                    /* lockstep credit       */
 void         sim_socket_ack(uint32_t done);                  /* lockstep: N cs run    */

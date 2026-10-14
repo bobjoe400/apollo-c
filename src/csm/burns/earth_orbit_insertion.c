@@ -63,7 +63,6 @@
 #include "agc/core/word.h"
 #include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
-#include "agc/csm/entry_lexicon.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
@@ -642,7 +641,7 @@ agc_status_t agc_task_atertask(void)
  *
  * RETURNS: none
  **********************************************************************/
-void agc_earth_orbit_insertion_monitor_attitude_errors(const agc_dp_t desired[3], const uint16_t cdu[3], agc_sp_t ak_out[3])
+static void agc_earth_orbit_insertion_monitor_attitude_errors(const agc_dp_t desired[3], const uint16_t cdu[3], agc_sp_t ak_out[3])
 {
     agc_interp_t *ip = entry_ip(); /* entry job interpreter state */
     agc_dp_t      d[3];            /* DTHETA DPSI DPHI, revs B0 */

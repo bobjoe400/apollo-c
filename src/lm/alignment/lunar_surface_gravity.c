@@ -55,6 +55,8 @@
 #include "agc/guidance/guidance.h"
 #include "agc/programs/alignment.h"
 
+static agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx);
+
 #define PH_SURFACE_ALIGN ((uint16_t) 04024)  /* OCT 04024                     */
 #define THETA_42DEG      ((uint16_t) 07357)  /* 42DEG OCT 07357               */
 #define THETA_MINUS_42   ((uint16_t) 070420) /* COM of 42DEG                  */
@@ -358,7 +360,7 @@ agc_status_t agc_job_lunar_gravity_measured(agc_job_ctx_t *ctx)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx)
+static agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx)
 {
     return (align_flash(ctx, AGC_DSKY_GOFLASH, VN_GRAVITY, AGC_JOB_GOTOPOOH, AGC_JOB_LUNAR_GRAVITY_ACCEPTED, AGC_JOB_LUNAR_GRAVITY_RECYCLE));
 }

@@ -37,7 +37,6 @@
  **********************************************************************/
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
-#include "agc/guidance/guidance.h"
 #include "agc/lm/dap.h"
 #include "internal.h"
 

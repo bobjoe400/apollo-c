@@ -312,14 +312,10 @@ typedef struct agc_rendz_periapo
 void agc_rendz_periapo_body_scale(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out);
 
 /* PERIAPO: r, v already at body scale (RVEC, VVEC).                        */
-void         agc_rendz_periapo(agc_interp_t *ip, const agc_rendz_t *rz, agc_vec_t r, agc_vec_t v, agc_rendz_periapo_t *out);
 agc_status_t agc_rendz_los_and_normal(agc_interp_t *ip, agc_rendz_t *rz);
 void         agc_rendz_lomat(agc_interp_t *ip, const agc_rendz_t *rz, agc_mat_t *m);
 agc_status_t agc_rendz_get_lvc(agc_interp_t *ip, agc_vec_t rinit, agc_vec_t vinit, agc_vec_t dv, agc_vec_t *delvlvc);
 void         agc_rendz_get_mga(agc_interp_t *ip, agc_vec_t dv, const agc_mat_t *refsmmat, agc_dp_t *mga);
-
-/* ---- CSI / CDH (P32-P33_P72-P73.agc pp.663-682) ------------------------ */
-agc_status_t agc_rendz_rotate(agc_interp_t *ip, agc_vec_t up1, agc_vec_t v, agc_vec_t *out);
 
 /* Calls that integrate take `resume`: AGC_STATUS_BUSY means INTSTALL put
  * the job to sleep and it will be resumed as that job (which redoes the
@@ -372,43 +368,26 @@ agc_status_t agc_rendz_havegues(agc_interp_t *ip, agc_rendz_t *rz, agc_sp_t numi
  * DELVTPF, POSTTPI, TIG.                                                 */
 agc_status_t agc_rendz_tpi_compute(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
 
-/* ---- R36 out-of-plane parameters ---------------------------------------- */
-agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rp, agc_vec_t vp, agc_vec_t ra, agc_vec_t va);
-
 /* ---- R31 rendezvous parameters (COMPDISP) ------------------------------- */
 /* COMPDISP (R31.agc): RANGE, RRATE of the other vehicle (RATT VATT) seen
  * from this one (RONE VONE), m 2^29 / m/cs 2^7, and RTHETA, the angle
  * of the vehicle axis (stable-member half unit, before REFSMMAT) above
  * the local horizontal, revolutions.                                    */
-agc_status_t agc_rendezvous_parameter_display_compdisp(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rone, agc_vec_t vone, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t axis_sm, const agc_mat_t *refsmmat);
 
 /* ---- P38/P39 stable orbit ----------------------------------------------- */
 /* DELTTIME (P38 RECYCLE, STABLE_ORBIT p.528): time to traverse DELTAR at
  * the passive horizontal speed, |RP| DELTAR / |VP x RP|, cs 2^28.        */
-agc_status_t agc_rendz_stable_orbit_deltt(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t ratt, agc_vec_t vatt);
 
 /* ---- P17 TPI search (Comanche) ------------------------------------------ */
 /* S17.1: both vehicles to TTPI (conic), DELHITE, KFLAG, E2, THETZERO.   */
-agc_status_t agc_rendz_tpi_search_phase(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
-
-/* S17.2: the search; OK solution, ALARM no safe pericenter (00124).     */
-agc_status_t agc_rendz_tpi_search_sector(agc_interp_t *ip, agc_rendz_t *rz, agc_job_id_t resume);
-
-/* TRANSANG: CENTANG of the passive vehicle over TF.                    */
-agc_status_t agc_rendz_transang(agc_interp_t *ip, agc_rendz_t *rz);
 
 /* ---- P21 ground track ---------------------------------------------------- */
 /* P21VSAVE (p.458): |V| (VATT1 SL* 0,2, m/cs 2^7) and the flight path
  * angle asin(unit(RATT) . VATT / |V|), revolutions.                       */
-void agc_ground_track_determination_flight_path(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t vatt1, int x2, agc_dp_t *vel, agc_dp_t *gamma);
-
-/* ---- P76 ---------------------------------------------------------------- */
-void agc_target_delta_v_lv_to_ref(agc_interp_t *ip, agc_vec_t ratt, agc_vec_t vatt, agc_vec_t dv_lv, agc_vec_t *v_new);
 
 /* ---- P20-P25 measurement processing -------------------------------------- */
 /* BVECTORS (CSM R22, P20-P25.agc p.576): B vector and DELTAQ for an optics
  * mark. ustar, um, b: unit vectors 2^1; rclp: LM-CSM, body scale.         */
-agc_status_t agc_rendz_tracking_bvectors(agc_interp_t *ip, agc_vec_t rclp, agc_vec_t um, agc_vec_t *ustar, agc_vec_t *bvec, agc_dp_t *deltaq);
 
 /* ---- navigation pad loads (P20-P25; ERASABLE_ASSIGNMENTS "PL") --------
  * Initial W-matrix values, maximum state vector changes and measurement
@@ -521,7 +500,6 @@ void         agc_erase_set_rstack(int index, agc_dp_t v);
 
 /* RRDESNB to TANG, TANG +1 (verb 41 noun 72); *started false when the
  * job ended instead (angles rejected, or a job already in RADSTALL).    */
-agc_status_t agc_rr_designate_gimbal(bool *started);
 agc_status_t agc_job_rr_designate_drive(void); /* RRDESK2 (V41 N72): RRDESNB, RADSTALL */
 agc_sp_t     agc_erase_tang(int index);        /* TANG +index   */
 void         agc_erase_set_tang(int index, agc_sp_t v);
@@ -916,7 +894,6 @@ agc_status_t agc_job_orbital_navigation(agc_job_ctx_t *ctx);
 agc_status_t agc_job_orbital_navigation_csm(agc_job_ctx_t *ctx);
 
 /* PROG20 (CM) */
-agc_status_t agc_job_rendezvous_navigation_csm(void);
 agc_status_t agc_job_rendezvous_navigation_csm_integrate(void);
 
 /* PIKUP20 */

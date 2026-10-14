@@ -153,7 +153,7 @@ uint16_t agc_uplink_update_dnword(int idx)
  *
  * RETURNS: AGC_STATUS_OK, BAD_ARG for an index or word out of range
  **********************************************************************/
-agc_status_t agc_uplink_update_write(int idx, uint16_t word)
+static agc_status_t agc_uplink_update_write(int idx, uint16_t word)
 {
     if (!AGC_ASSERT(idx >= 0 && idx <= UP_UPTEMP) || !AGC_ASSERT(word <= WORD15))
     {

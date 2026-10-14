@@ -60,13 +60,10 @@
 #include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
-#include "agc/csm/dap.h"
 #include "agc/csm/entry.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
-#include "agc/io/service.h"
 #include "agc/programs/rendezvous.h"
 
 #define MAXDELV  6398  /* -MAXDELV DEC -6398: 3200 pps for 2 s, less 1 (CCS) */

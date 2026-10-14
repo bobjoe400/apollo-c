@@ -135,7 +135,7 @@ static agc_dp_t occos(agc_interp_t *ip, agc_dp_t radius, agc_dp_t rmag)
  *
  * RETURNS: none
  **********************************************************************/
-void agc_align_locsam_from(agc_interp_t *ip, const agc_state_vector_t *sv, agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *out)
+static void agc_align_locsam_from(agc_interp_t *ip, const agc_state_vector_t *sv, agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *out)
 {
     if (agc_state_vehicle() == AGC_VEHICLE_CSM)
     {
@@ -279,7 +279,7 @@ agc_status_t agc_align_locsam(agc_interp_t *ip, agc_dp_t time_cs, agc_job_id_t r
  *
  * RETURNS: bool -- CULTFLAG: true when the star is inside one of the cones
  **********************************************************************/
-bool agc_align_occult(agc_interp_t *ip, const agc_align_locsam_t *ls, agc_vec_t star)
+static bool agc_align_occult(agc_interp_t *ip, const agc_align_locsam_t *ls, agc_vec_t star)
 {
     agc_mat_t cultrix; /* CULTRIX: VEARTH, VSUN, VMOON rows, half-unit */
 

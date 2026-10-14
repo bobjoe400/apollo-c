@@ -34,7 +34,6 @@
  *   (P-AXIS_RCS_AUTOPILOT.agc p.1422 1STOTWOS / OVERSUB, AOSTASK_AND_AOSJOB.agc
  *   p.1492-1493 DVOVSUB, FIXED_FIXED_CONSTANT_POOL LIMITS).
  **********************************************************************/
-#include "agc/core/assertion.h"
 #include "agc/core/interp_words.h"
 #include "internal.h"
 

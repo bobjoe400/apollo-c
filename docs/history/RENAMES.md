@@ -112,7 +112,7 @@ Conventions used for every row:
 | `AGC_TASK_P63ZOOM` | `AGC_TASK_BRAKING_PHASE_ZOOM` | src/guidance/guid_pending.h src/lm/ignition.c | LM P63ZOOM: AVEGEXIT=LUNLAND, FLATOUT |
 | `AGC_TASK_TIG_30_1` | `AGC_TASK_RESTORE_BURN_DISPLAY` | src/guidance/guid_pending.h src/lm/ignition.c | LM TIG-30.1: "SET UP JOB TO RESTORE DISPLAY AT TIG-30" (TIG-30A) |
 | `agc_task_tig_30_1` | `agc_task_restore_burn_display` | include/agc/guidance/guidance.h src/lm/ignition.c | LM TIG-30.1 |
-| `AGC_LM_WHICH_P40` | `AGC_LM_WHICH_DPS_BURN` | src/guidance/guid_state.c src/lm/ignition.c | WHICH -> P40TABLE |
+| `AGC_LM_WHICH_P40` | `AGC_LM_WHICH_DPS_BURN` | src/guidance/state.c src/lm/ignition.c | WHICH -> P40TABLE |
 | `agc_csm_rcs_burn_dsp` | `agc_csm_rcs_burn_display` | src/csm/sps_burn.c src/csm/sps_burn_ignition.c src/csm/sps_burn_internal.h | first-attempt name |
 | `agc_csm_sps_burn_convert_vg_body` | `agc_csm_convert_vg_body` | src/csm/sps_burn_clock.c src/csm/sps_burn_ignition.c src/csm/sps_burn_internal.h src/csm/sps_burn_steer.c | first-attempt name (5 words) |
 | `SPS_BURN_CKLS2` | `GIMBAL_TEST_CHECKLIST` | src/csm/sps_burn.c | first-attempt name |
@@ -721,7 +721,7 @@ Conventions used for every row:
 | `RZ_SN359` | src/programs/rendz_csi.c src/programs/rendz_internal.h | sin(359 deg) constant |
 | `SIN33` | src/programs/align_locsam.c | SIN33 constant |
 | `T6_IDX_P` | src/lm/dap/t6rupt.c | P-axis index |
-| `agc_csm_prelaunch_posn17c` | include/agc/imu/imu.h src/csm/prelaunch_align.c | POSN17C AGC label "COMPASS POSITION Z DOWN" (not noun 17) |
+| `agc_csm_prelaunch_posn17c` | include/agc/imu/imu.h src/csm/prelaunch/align.c | POSN17C AGC label "COMPASS POSITION Z DOWN" (not noun 17) |
 | `agc_erase_imodes30` | include/agc/core/state.h src/core/agc_erasable.c src/exec/change_program_idle.c src/exec/fresh_start.c src/imu/imu_mode.c src/io/pinball_keys.c src/io/pinball_monitor.c src/io/t4rupt.c docs:state-flags | IMODES30 (channel 30 image) |
 | `agc_erase_imodes33` | include/agc/core/state.h src/core/agc_erasable.c src/csm/dap/rcs_dap.c src/csm/entry_dap.c src/csm/t4rupt_csm.c src/exec/fresh_start.c src/imu/imu_mode.c src/io/pinball_keys.c src/io/pinball_monitor.c src/io/t4rupt.c src/lm/dap/dapidler.c src/lm/landing_aborts.c src/lm/landing_displays.c docs:dap-lm,state-flags | IMODES33 (channel 33 image) |
 | `agc_erase_s61dt` | include/agc/csm/entry.h src/csm/entry_programs.c docs:exec-sched | erasable accessor for S61DT (agc_erase_<agcname> convention) |
@@ -844,7 +844,7 @@ changed headers but not the paused lanes) are:
 src/csm/dap/rcs_filter.c, src/csm/external_delta_v_csm.c, src/csm/p37.c,
 src/csm/s_band_antenna_csm.c, src/csm/servicer_csm.c, src/csm/sps_burn.c,
 src/csm/sps_burn_clock.c, src/csm/sps_burn_ignition.c, src/csm/sxtmark.c,
-src/guidance/guid_state.c, src/guidance/p30.c, src/io/service.c,
+src/guidance/state.c, src/guidance/p30.c, src/io/service.c,
 src/lm/dps_burn.c, src/lm/ignition.c, src/lm/lunar_landing.c,
 src/lm/s_band_antenna_lm.c, src/lm/servicer_lm.c, src/programs/align_common.c,
 src/programs/imu_realign.c, src/programs/rendz_flags_csm.c,

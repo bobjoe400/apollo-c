@@ -33,7 +33,6 @@
  *   bit for bit against yaAGC (tests/oracle/core_numeric.c).
  **********************************************************************/
 #include "../mpac.h"
-#include "agc/core/assertion.h"
 
 #define POLY_MAX_DEGREE 15 /* loop bound on N; the ropes use N <= 9 */
 

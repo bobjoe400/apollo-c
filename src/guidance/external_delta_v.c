@@ -51,15 +51,12 @@
 #include <stddef.h>
 
 #include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
-#include "agc/io/service.h"
 #include "agc/programs/rendezvous.h"
 
 #define GRP4 4 /* restart group 4 (P30/P31 display) */
@@ -368,7 +365,7 @@ agc_status_t agc_guid_again(agc_interp_t *ip, agc_dp_t tdec1)
  *          precondition failed); otherwise the status of the routine it
  *          continues in
  **********************************************************************/
-agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
+static agc_status_t agc_guid_lambert_aimpoint_vectors(agc_interp_t *ip)
 {
     agc_rendz_t *rz = agc_rendz_erasable();                /* targeting erasables */
     agc_status_t st = agc_guid_again(ip, agc_erase_tig()); /* TDEC1 = TIG */

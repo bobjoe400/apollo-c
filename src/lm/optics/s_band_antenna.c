@@ -50,7 +50,6 @@
 #include "agc/core/interp_words.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
 
 #define REMDIST           ((agc_dp_t) 192201000) /* mean earth-moon distance B-29 m */
 #define ONEOVSQRT2        ((agc_dp_t) 189812531) /* 1OVSQRT2 .7071067815            */

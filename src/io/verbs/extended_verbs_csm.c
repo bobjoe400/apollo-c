@@ -53,7 +53,6 @@
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
-#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/csm/dap.h"
 #include "agc/exec/exec.h"
@@ -61,7 +60,6 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/integration.h"
-#include "agc/programs/rendezvous.h"
 
 #define WORD15                077777u                    /* one AGC word */
 #define BIT4                  000010u                    /* DAPDATR1 bit 4: max deadband */

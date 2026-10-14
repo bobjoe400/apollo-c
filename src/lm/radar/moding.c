@@ -57,8 +57,6 @@
 #include "../../programs/navigation/internal.h"
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
-#include "agc/core/flags_common.h"
-#include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
 #include "agc/imu/imu.h"
 #include "agc/io/service.h"

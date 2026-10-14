@@ -21,7 +21,6 @@
  * ABNORMAL TERMINATION CONDITIONS, ALARMS:
  *   none
  **********************************************************************/
-#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "internal.h"

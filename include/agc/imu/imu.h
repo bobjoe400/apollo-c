@@ -76,7 +76,6 @@ void     agc_imu_cdtrigs(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);          
 void     agc_imu_cdutrig(agc_cdutrig_t *t);                                                               /* CDUTRIG(S) */
 void     agc_imu_quictrig(agc_cdutrig_t *t, const uint16_t cdu_yzx[3]);                                   /* QUICTRIG */
 void     agc_imu_axisrot(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_t *v);                    /* AX*SR*T  */
-void     agc_imu_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_words_t *v);        /* AX*SR*T on VBUF words */
 void     agc_imu_smnb(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *SMNB*   */
 void     agc_imu_nbsm(const agc_cdutrig_t *t, agc_vec_t *v);                                              /* *NBSM*   */
 void     agc_imu_cdu_smnb(agc_cdutrig_t *t, agc_vec_t *v);                                                /* CDU*SMNB */
@@ -160,7 +159,6 @@ agc_imu_stall_result_t agc_imu_stall_outcome(agc_imu_device_t dev);
 
 agc_status_t agc_imu_goodend(agc_imu_device_t dev); /* GOODEND        */
 agc_status_t agc_imu_badend(agc_imu_device_t dev);  /* BADEND         */
-agc_status_t agc_imu_endimu(void);                  /* ENDIMU         */
 
 agc_status_t agc_imu_imubad(void);       /* IMUBAD         */
 agc_status_t agc_imu_status_check(void); /* R02BOTH        */
@@ -185,10 +183,9 @@ void agc_imu_clear_cmds(void); /* -0 into CDUXCMD..Z, GYROCMD    */
  * "complete, failed"; agc_sp_t has no -0, so -2 stands in.  Code that
  * tests the word with BZF (CKMODCAD, OPTCOARK, LM DESRETRN) treats +0
  * and -0 alike and must use agc_imu_modecadr_bzf, not "== 0".            */
-#define AGC_MODECADR_FREE ((agc_sp_t) 0)         /* +0: free / in progress  */
-#define AGC_MODECADR_GOOD ((agc_sp_t) -1)        /* -1: complete, good      */
-#define AGC_MODECADR_BAD  ((agc_sp_t) -2)        /* -0: complete, failed    */
-bool agc_imu_modecadr_bzf(agc_imu_device_t dev); /* C(MODECADR) = +-0  */
+#define AGC_MODECADR_FREE ((agc_sp_t) 0)  /* +0: free / in progress  */
+#define AGC_MODECADR_GOOD ((agc_sp_t) -1) /* -1: complete, good      */
+#define AGC_MODECADR_BAD  ((agc_sp_t) -2) /* -0: complete, failed    */
 
 /* Simulator side of the hardware command counters: the harness drains
  * GYROCMD and CDUXCMD..CDUZCMD as it emits the pulses.                    */
@@ -224,9 +221,8 @@ typedef struct agc_imu_comp_params
 
 agc_status_t agc_imu_comp_load(const agc_imu_comp_params_t *p);
 void         agc_imu_comp_get(agc_imu_comp_params_t *p);
-agc_sp_t     agc_imu_gcompsw(void);       /* GCOMPSW        */
+agc_sp_t     agc_imu_gcompsw(void); /* GCOMPSW        */
 agc_status_t agc_imu_set_gcompsw(agc_sp_t v);
-agc_sp_t     agc_imu_pipa_interval(void); /* 1/PIPADT, cs x 2^8 (or TIME1)   */
 agc_status_t agc_imu_set_pipa_interval(agc_sp_t v);
 
 /* 1/PIPA: compensate the PIPA counts DELV (pulses x 2^14, X Y Z) in place
@@ -309,11 +305,8 @@ typedef struct agc_kalc_setup
 agc_status_t agc_kalc_compute(agc_interp_t *ip, const uint16_t bcdu[3], const uint16_t cphi[3], agc_kalc_setup_t *out);
 
 agc_status_t agc_kalc_set_rateindx(agc_sp_t idx); /* RATEINDX 0,2,4,6   */
-agc_sp_t     agc_kalc_rateindx(void);
 bool         agc_kalc_active(void);               /* ATTCADR != 0        */
 
-/* GOMANUR: start KALCMAN3 for the calling job; on completion job wake_as
- * is woken (ATTSTALL-like); agc_kalc_outcome() gives good/bad.            */
 agc_status_t           agc_imu_gomanur(const agc_job_ctx_t *ctx, agc_job_id_t wake_as);
 agc_imu_stall_result_t agc_kalc_outcome(void);
 
@@ -323,7 +316,6 @@ agc_status_t agc_task_updtcall(void);                    /* UPDTCALL            
 agc_status_t agc_task_manustop(void);                    /* MANUSTOP            */
 agc_status_t agc_task_endmanu(void);                     /* ENDMANU / GOODMANU  */
 void         agc_kalc_stoprate(void);                    /* STOPRATE            */
-agc_status_t agc_kalc_zeroerror(void);                   /* ZEROERROR (CM)      */
 
 /* ======================================================================= */
 /* R60 / R62 / VECPOINT / BALLANGS (R60_62.agc)                            */
@@ -362,15 +354,11 @@ agc_status_t agc_job_crew_defined_maneuver_terminate(agc_job_ctx_t *ctx); /* V34
 
 /* ======================================================================= */
 /* CM prelaunch alignment pieces (IMU_CALIBRATION_AND_ALIGNMENT.agc,       */
-/* src/csm/prelaunch_align.c)                                              */
+/* src/csm/prelaunch/align.c)                                              */
 /* ======================================================================= */
 
 /* Pad erasable load: LATITUDE, AZIMUTH (of ZNB), LAUNCHAZ, rev 2^0.     */
 agc_status_t agc_csm_prelaunch_set_pad(agc_dp_t latitude, agc_dp_t azimuth, agc_dp_t launchaz);
-
-/* POSN17C: XSM, YSM, ZSM for the compass position (Z down, X downrange)
- * from azimuth (revolutions from north, clockwise); rows half-unit.      */
-void agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm);
 
 /* ERTHRVSE: ERVECTOR = (sin LAT, -cos LAT, 0) OMEG/MS; TMARK = now;
  * ERCOMP1 = 0.  latitude in revolutions.                                 */
@@ -379,8 +367,6 @@ agc_status_t agc_csm_prelaunch_erthrvse(agc_interp_t *ip, agc_dp_t latitude);
 /* P11 at liftoff: ERCOMP += (XSM THETAN) VSL1, then EARTHR +3 at
  * TEMPTIME = TLIFTOFF (cs 2^28).                                          */
 agc_status_t agc_csm_prelaunch_earthr_at_liftoff(agc_interp_t *ip, agc_dp_t tliftoff);
-agc_vec_t    agc_csm_prelaunch_ervector(void); /* ERVECTOR               */
-agc_vec_t    agc_csm_prelaunch_thetan(void);   /* THETAN1, rev 2^0       */
 
 /* P01 prelaunch initialization and the IMU positioning (GEOIMUTT).     */
 agc_status_t agc_job_prelaunch_initialization(agc_job_ctx_t *ctx); /* GTSCPSS */

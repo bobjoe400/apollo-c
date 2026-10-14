@@ -83,7 +83,7 @@ reported as information only.
     out-parameters for the TIME4 delay and the IMUMON/RRCDUCHK "go on"
     results; SETISSW, CAGESUB, CAGESUB2, agc_imu_clear_cmds void; 15-bit
     erasable/CDU words, store postconditions and vehicle-only accessors
-    deleted. tests/io/sysmisc.c accepts BAILOUT from T4RUPTs run without
+    deleted. tests/io/service_verbs_telemetry.c accepts BAILOUT from T4RUPTs run without
     servicing the waitlist. check_rules 676.
   - DONE src/io/dsky, io/telemetry, io/verbs (76 guards): pinball module
     invariants, postconditions and ranges by construction deleted;

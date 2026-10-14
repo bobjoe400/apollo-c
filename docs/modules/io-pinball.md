@@ -219,7 +219,7 @@ over a normal display and ENDMARK, LOADITIS (V21 of another noun -> redisplay).
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/io/dsky/pinball/*.c`, `src/io/dsky/display_if.c`._
+_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/io/dsky/pinball/*.c`, `src/io/dsky/display_interface.c`._
 
 The DSKY loop is drawn in [docs/overview/README.md](../overview/README.md)
 (section "The DSKY loop") and V37 in
@@ -256,7 +256,7 @@ The decision points:
   resequence/proceed/terminate, V35 lamp test (TSTLTS2/3 tasks), V37
   change program. Illegal verb/noun: DSPALARM (`pin_dspalarm`) = OPR ERR
   when keyed, POODOO 01501 when an internal NVSUB asked for it.
-* **Program displays** (`nvsub.c`, `src/io/dsky/display_if.c`): NVSUB
+* **Program displays** (`nvsub.c`, `src/io/dsky/display_interface.c`): NVSUB
   (`pin_nvsub1`: noun +0 pastes the verb, verb +0 shows only the noun)
   returns BUSY while the display system is held; a second job waiting in
   CADRSTOR or DSPLIST is POODOO 01206 (`pin_check_lists`). The GO entries

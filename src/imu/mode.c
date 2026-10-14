@@ -68,7 +68,6 @@
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
-#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
@@ -77,6 +76,8 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "internal.h"
+
+static agc_status_t agc_imu_endimu(void);
 
 #define ALARM_ZERO_IN_GLOCK ((agc_alarm_code_t) 00206) /* zero in coarse+lock */
 #define ALARM_IMU_NOT_OPER  ((agc_alarm_code_t) 00210) /* IMU not operating  */
@@ -167,7 +168,7 @@ static modecadr_word_t mc_get(int dev)
  *
  * RETURNS: bool -- true if C(MODECADR + dev) is +0 or -0
  **********************************************************************/
-bool agc_imu_modecadr_bzf(agc_imu_device_t dev)
+static bool agc_imu_modecadr_bzf(agc_imu_device_t dev)
 {
     agc_sp_t v = agc_erase_modecadr((int) dev); /* MODECADR, B0 */
 
@@ -1307,7 +1308,7 @@ agc_status_t agc_imu_imubad(void)
  *
  * RETURNS: agc_status_t -- OK, or BAD_ARG
  **********************************************************************/
-agc_status_t agc_imu_endimu(void)
+static agc_status_t agc_imu_endimu(void)
 {
     if ((agc_chan_read(AGC_CHAN_DSALMOUT) & AGC_CH011_ISSWARN) != 0u)
     {

@@ -69,7 +69,6 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"
-#include "agc/io/service.h"
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
 #include "agc/programs/rendezvous.h"

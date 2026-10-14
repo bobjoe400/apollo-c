@@ -57,8 +57,6 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/interp.h"
 #include "agc/core/interp_words.h"
 #include "agc/core/state.h"
@@ -348,7 +346,7 @@ static agc_dp_words_t rotate_component(agc_dp_words_t term, agc_dp_words_t comp,
  *   v         agc_vec_words_t *      I/O  VBUF, rotated in place, any
  *                                         scale |v| < 1
  **********************************************************************/
-void agc_imu_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_words_t *v)
+static void agc_imu_axisrot_words(const agc_cdutrig_t *t, agc_axisrot_dir_t dir, agc_vec_words_t *v)
 {
     /* INDEXI pairs in DP word offsets 4,2 / 2,0 / 0,4, halved to indices. */
     static const int indexi[4] = {2, 1, 0, 2};

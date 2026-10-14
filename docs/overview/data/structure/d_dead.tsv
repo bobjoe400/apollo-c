@@ -21,9 +21,9 @@ agc_entry_dap_roll_phase_plane	src/csm/entry/dap.c	1095	yes	1	yes
 agc_entry_huntest_predict	src/csm/entry/reentry.c	2344	yes	1	yes
 agc_entry_range_predict	src/csm/entry/reentry.c	2374	yes	1	yes
 agc_erase_trunbias	src/csm/navigation/cislunar_navigation.c	127	yes	0	yes
-agc_csm_prelaunch_set_pad	src/csm/prelaunch_align.c	118	yes	1	yes
-agc_csm_prelaunch_ervector	src/csm/prelaunch_align.c	137	no	0	yes
-agc_csm_prelaunch_thetan	src/csm/prelaunch_align.c	147	no	0	yes
+agc_csm_prelaunch_set_pad	src/csm/prelaunch/align.c	118	yes	1	yes
+agc_csm_prelaunch_ervector	src/csm/prelaunch/align.c	137	no	0	yes
+agc_csm_prelaunch_thetan	src/csm/prelaunch/align.c	147	no	0	yes
 agc_abort_restart	src/exec/alarm.c	473	yes	0	yes
 exec_running_job_prio	src/exec/executive.c	246	no	0	no
 agc_exec_idle	src/exec/executive.c	985	yes	3	yes
@@ -65,7 +65,7 @@ agc_erase_set_rsampdt	src/io/verbs/extended_verbs_lm_radar.c	137	no	1	yes
 agc_uplink_update_target	src/io/verbs/uplink_update.c	182	no	1	yes
 agc_ags_buffer	src/lm/ags_initialization.c	94	yes	0	yes
 agc_ags_agsk	src/lm/ags_initialization.c	112	no	0	yes
-agc_lm_dap_needles_init	src/lm/dap/dapif.c	265	yes	0	yes
+agc_lm_dap_needles_init	src/lm/dap/interface.c	265	yes	0	yes
 agc_lm_dap_t5rupt	src/lm/dap/rcs/dapidler.c	344	yes	0	yes
 agc_lm_dap_time6_count	src/lm/dap/rcs/t6rupt.c	376	no	0	yes
 agc_lm_dap_t6_pending	src/lm/dap/rcs/t6rupt.c	398	yes	0	yes

@@ -128,7 +128,7 @@ void agc_lm_noullage(void)
  *
  * ARGUMENTS: none
  **********************************************************************/
-void agc_lm_onullage(void)
+static void agc_lm_onullage(void)
 {
     agc_flag_set(AGC_FLAG_ULLAGFLG);
 }

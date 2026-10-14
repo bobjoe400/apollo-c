@@ -85,7 +85,7 @@ AGC_CH030_IMUCAGE	enumerator	include/agc/core/channels.h	314	-	unused	0
 AGC_CH030_IMUFAIL	enumerator	include/agc/core/channels.h	318	-	unused	0
 AGC_CH030_INVERT_ALL	enumerator	include/agc/core/channels.h	324	-	unused	0
 AGC_CH030_ISSTURNON	enumerator	include/agc/core/channels.h	320	-	unused	0
-AGC_CH030_LIFTOFF	enumerator	include/agc/core/channels.h	294	src/csm/prelaunch_gyrocompass.c	file-local (one .c)	0
+AGC_CH030_LIFTOFF	enumerator	include/agc/core/channels.h	294	src/csm/prelaunch/gyrocompass.c	file-local (one .c)	0
 AGC_CH030_LMCONTROL	enumerator	include/agc/core/channels.h	312	src/lm/landing/findcduw.c	file-local (one .c)	0
 AGC_CH030_OCDUFAIL	enumerator	include/agc/core/channels.h	302	-	unused	0
 AGC_CH030_RRCDUFAIL	enumerator	include/agc/core/channels.h	304	-	unused	0
@@ -355,7 +355,7 @@ AGC_FLAG_AUTR2FLG	enumerator	include/agc/core/flags_lm.h	334	src/imu/vflags_lm.c
 AGC_FLAG_AUXFLAG	enumerator	include/agc/core/flags_lm.h	137	src/lm/burns/servicer/average_g.c	file-local (one .c)	0
 AGC_FLAG_CALCMAN3	enumerator	include/agc/core/flags_lm.h	92	src/imu/vflags_lm.c	file-local (one .c)	0
 AGC_FLAG_CDESFLAG	enumerator	include/agc/core/flags_lm.h	326	src/io/verbs/extended_verbs_lm_radar.c	file-local (one .c) + tests	1
-AGC_FLAG_DBSELFLG	enumerator	include/agc/core/flags_lm.h	342	src/lm/dap/dapif.c	file-local (one .c)	0
+AGC_FLAG_DBSELFLG	enumerator	include/agc/core/flags_lm.h	342	src/lm/dap/interface.c	file-local (one .c)	0
 AGC_FLAG_DESIGFLG	enumerator	include/agc/core/flags_lm.h	308	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
 AGC_FLAG_DIDFLAG	enumerator	include/agc/core/flags_lm.h	89	src/lm/landing/displays.c	file-local (one .c) + tests	1
 AGC_FLAG_FLPC	enumerator	include/agc/core/flags_lm.h	219	src/lm/ascent.c	file-local (one .c) + tests	1
@@ -633,7 +633,7 @@ AGC_CORE_FREE	enumerator	include/agc/exec/exec.h	170	src/exec/executive.c	file-l
 AGC_CORE_SLEEPING	enumerator	include/agc/exec/exec.h	172	src/exec/executive.c	file-local (one .c) + tests	2
 AGC_EXEC_CORE_SETS_CSM	macro	include/agc/exec/exec.h	142	src/exec/executive.c	file-local (one .c)	0
 AGC_EXEC_MAX_VACS	macro	include/agc/exec/exec.h	35	src/exec/executive.c	file-local (one .c) + tests	1
-AGC_MODECADR_N	macro	include/agc/exec/exec.h	318	src/exec/erasable.c	file-local (one .c)	0
+AGC_MODECADR_N	macro	include/agc/exec/exec.h	318	src/exec/modecadr.c	file-local (one .c)	0
 AGC_PRIO14	macro	include/agc/exec/exec.h	58	src/csm/burns/sps/burn.c	file-local (one .c)	0
 AGC_PRIO15	macro	include/agc/exec/exec.h	59	src/csm/burns/sps/ignition.c	file-local (one .c)	0
 AGC_PRIO16	macro	include/agc/exec/exec.h	60	src/lm/burns/ignition/burnbaby.c	file-local (one .c)	0
@@ -732,11 +732,11 @@ agc_guid_calcut	prototype	include/agc/guidance/guidance.h	288	src/guidance/burn_
 agc_guid_csm	struct	include/agc/guidance/guidance.h	152	-	unused	0
 agc_guid_delrspl	prototype	include/agc/guidance/guidance.h	280	src/csm/burns/external_delta_v.c	internal (def file + tests)	1
 agc_guid_external_delta_v_vectors	prototype	include/agc/guidance/guidance.h	275	src/guidance/external_delta_v.c	internal (def file + tests)	1
-agc_guid_init	prototype	include/agc/guidance/guidance.h	272	src/guidance/guid_state.c	internal (def file + tests)	6
+agc_guid_init	prototype	include/agc/guidance/guidance.h	272	src/guidance/state.c	internal (def file + tests)	6
 agc_guid_lambert_aimpoint_vectors	prototype	include/agc/guidance/guidance.h	276	src/guidance/external_delta_v.c	file-static	0
 agc_guid_lm	struct	include/agc/guidance/guidance.h	171	-	unused	0
 agc_guid_midgim	prototype	include/agc/guidance/guidance.h	283	src/guidance/external_delta_v.c	internal.h of src/guidance	0
-agc_guid_nav_resume	prototype	include/agc/guidance/guidance.h	267	src/guidance/guid_state.c	internal.h of src/guidance	0
+agc_guid_nav_resume	prototype	include/agc/guidance/guidance.h	267	src/guidance/state.c	internal.h of src/guidance	0
 agc_guid_preread1_csm	prototype	include/agc/guidance/guidance.h	330	src/csm/burns/servicer.c	internal.h of src/csm/burns	0
 agc_lm_altchk	prototype	include/agc/guidance/guidance.h	367	src/lm/burns/servicer/landing_radar.c	file-static	0
 agc_lm_avgexit	prototype	include/agc/guidance/guidance.h	358	src/lm/burns/servicer/average_g.c	file-static	0
@@ -763,11 +763,11 @@ AGC_MODECADR_GOOD	macro	include/agc/imu/imu.h	189	src/imu/mode.c	file-local (one
 agc_axisrot_dir	enum	include/agc/imu/imu.h	68	-	unused	0
 agc_axisrot_dir_t	typedef	include/agc/imu/imu.h	72	src/imu/cdu_trig.c	file-local (one .c)	0
 agc_cdutrig	struct	include/agc/imu/imu.h	56	-	unused	0
-agc_csm_prelaunch_erthrvse	prototype	include/agc/imu/imu.h	377	src/csm/prelaunch_align.c	internal.h of src/csm	0
-agc_csm_prelaunch_ervector	prototype	include/agc/imu/imu.h	382	src/csm/prelaunch_align.c	file-static	0
-agc_csm_prelaunch_posn17c	prototype	include/agc/imu/imu.h	373	src/csm/prelaunch_align.c	file-static	0
-agc_csm_prelaunch_set_pad	prototype	include/agc/imu/imu.h	369	src/csm/prelaunch_align.c	internal (def file + tests)	1
-agc_csm_prelaunch_thetan	prototype	include/agc/imu/imu.h	383	src/csm/prelaunch_align.c	file-static	0
+agc_csm_prelaunch_erthrvse	prototype	include/agc/imu/imu.h	377	src/csm/prelaunch/align.c	internal.h of src/csm	0
+agc_csm_prelaunch_ervector	prototype	include/agc/imu/imu.h	382	src/csm/prelaunch/align.c	file-static	0
+agc_csm_prelaunch_posn17c	prototype	include/agc/imu/imu.h	373	src/csm/prelaunch/align.c	file-static	0
+agc_csm_prelaunch_set_pad	prototype	include/agc/imu/imu.h	369	src/csm/prelaunch/align.c	internal (def file + tests)	1
+agc_csm_prelaunch_thetan	prototype	include/agc/imu/imu.h	383	src/csm/prelaunch/align.c	file-static	0
 agc_imu_axisrot_words	prototype	include/agc/imu/imu.h	79	src/imu/cdu_trig.c	file-static	0
 agc_imu_comp_irig	prototype	include/agc/imu/imu.h	237	src/imu/compensation.c	file-static	0
 agc_imu_comp_params	struct	include/agc/imu/imu.h	216	-	unused	0
@@ -795,7 +795,7 @@ agc_kalc_setup	struct	include/agc/imu/imu.h	295	-	unused	0
 agc_kalc_zeroerror	prototype	include/agc/imu/imu.h	326	src/imu/maneuver.c	file-static	0
 AGC_DSKY_BLANK	macro	include/agc/io/dsky.h	91	src/io/dsky/pinball/state.c	file-local (one .c) + tests	1
 AGC_DSKY_CAUTION_RESET	macro	include/agc/io/dsky.h	88	-	unused	0
-AGC_DSKY_DISP_COUNT	enumerator	include/agc/io/dsky.h	254	src/io/dsky/display_if.c	file-local (one .c)	0
+AGC_DSKY_DISP_COUNT	enumerator	include/agc/io/dsky.h	254	src/io/dsky/display_interface.c	file-local (one .c)	0
 AGC_DSKY_GODSP	enumerator	include/agc/io/dsky.h	224	-	unused	0
 AGC_DSKY_GOMARK	enumerator	include/agc/io/dsky.h	242	-	unused	0
 AGC_DSKY_GOMARK2R	enumerator	include/agc/io/dsky.h	247	-	unused	0
@@ -1061,7 +1061,7 @@ AGC_ALARM_02003	macro	include/agc/lm/dap.h	53	src/lm/dap/rcs/paxis.c	file-local 
 AGC_ALARM_02004	macro	include/agc/lm/dap.h	55	src/lm/dap/rcs/qrjets.c	file-local (one .c)	0
 AGC_LM_DAP_PADLOADS	macro	include/agc/lm/dap.h	96	src/lm/dap/state.c	file-local (one .c)	0
 agc_erase_stiksens	prototype	include/agc/lm/dap.h	130	src/lm/dap/state.c	file-static	0
-agc_lm_dap_needles_init	prototype	include/agc/lm/dap.h	84	src/lm/dap/dapif.c	file-static	0
+agc_lm_dap_needles_init	prototype	include/agc/lm/dap.h	84	src/lm/dap/interface.c	file-static	0
 agc_lm_dap_t5rupt	prototype	include/agc/lm/dap.h	59	src/lm/dap/rcs/dapidler.c	file-static	0
 agc_lm_dap_t6_pending	prototype	include/agc/lm/dap.h	63	src/lm/dap/rcs/t6rupt.c	file-static	0
 agc_lm_dap_t6jobchk	prototype	include/agc/lm/dap.h	61	src/lm/dap/rcs/t6rupt.c	file-static	0

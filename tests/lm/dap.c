@@ -77,7 +77,6 @@
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
-#include "agc/guidance/guidance.h"
 #include "agc/lm/dap.h"
 
 static int g_checks;         /* checks run */

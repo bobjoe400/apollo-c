@@ -5,7 +5,7 @@ self_check,interbank}.c; src/io/telemetry/{downlink_lists_csm,
 downlink_lists_lm,down_telemetry}.c; src/io/verbs/{extended_verbs,
 extended_verbs_csm,extended_verbs_lm,extended_verbs_lm_radar,
 uplink_update}.c; src/lm/systems_test.c; include/agc/io/service.h (lane
-declarations); tests/io/sysmisc.c.
+declarations); tests/io/service_verbs_telemetry.c.
 Review items (review_items.md): LM P07 REDO stub; N08 ALMCADR orphans;
 RADMODES one word; sysmisc test free of scratch stand-ins.
 
@@ -159,8 +159,8 @@ files excepted).
   findings (prologs, declaration / ternary / define comments, closing-
   brace comments; DNTMEXIT, SENDID, DNDUMPI+2, FETCH2WD void; nested ?:
   replaced; one-liners cdu_ones / iabs cite OZONE/CMDSETUP, word_sp
-  inlined: PLAIN 0). TODO: tests/io/sysmisc.c style.
-* DONE tests/io/sysmisc.c: links the real library (no stand-ins), no
+  inlined: PLAIN 0). TODO: tests/io/service_verbs_telemetry.c style.
+* DONE tests/io/service_verbs_telemetry.c: links the real library (no stand-ins), no
   assertion-report counting (negative tests judged by status); style TODO
 * No file is mid-edit; every touched file compiles (-Werror) and is clean.
 * Tools (scratch): prolog.py / declcmt.py / tercmt.py / agcnone.py /

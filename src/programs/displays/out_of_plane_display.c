@@ -49,7 +49,6 @@
  **********************************************************************/
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"
-#include "agc/core/flags_common.h"
 
 /* State between the jobs of R36 (the AGC's RPASS36, UNP36, OPTIONY). */
 typedef struct oop_work
@@ -79,7 +78,7 @@ static oop_work_t oop_work = {{{0, 0, 0}}, 1U};
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or AGC_STATUS_BAD_ARG on a bad
  *          argument
  **********************************************************************/
-agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rp, agc_vec_t vp, agc_vec_t ra, agc_vec_t va)
+static agc_status_t agc_rendz_out_of_plane_compute(agc_interp_t *ip, agc_rendz_t *rz, agc_vec_t rp, agc_vec_t vp, agc_vec_t ra, agc_vec_t va)
 {
     if (!AGC_ASSERT(ip != NULL && rz != NULL))
     {

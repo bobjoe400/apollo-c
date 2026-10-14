@@ -37,19 +37,11 @@
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_lm.h"
-#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
 #include "agc/io/service.h"
-#include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "agc/nav/auxiliary.h"
-#include "agc/nav/integration.h"
-#include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
 
 #define LD_ARCONV   10498   /* OCT 24402: 656.1679798 B-10, rate to bits */
 #define LD_ARTOA    873     /* DEC .1066098 B-1: .25/2.345, 4x/s cycle   */
@@ -546,7 +538,7 @@ static agc_sp_t ld_vmon_delta(agc_sp_t vel, agc_sp_t metr, agc_sp_t trak, agc_sp
  * RETURNS: agc_status_t -- AGC_STATUS_OK, or the status of the step that
  *          failed (AGC_STATUS_BAD_ARG on a failed precondition)
  **********************************************************************/
-agc_status_t agc_lm_vmonitor(void)
+static agc_status_t agc_lm_vmonitor(void)
 {
     for (int i = 1; i >= 0; i--)
     { /* ITEMP5 1, 0   */

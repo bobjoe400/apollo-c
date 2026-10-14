@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: prelaunch_verify.c
+ * FILE NAME: verify.c
  *
  * PURPOSE:
  *   Comanche prelaunch alignment, part 3: P03 optical verification of
@@ -61,7 +61,6 @@
 #include <stdint.h>
 
 #include "agc/core/assertion.h"
-#include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
@@ -72,7 +71,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-#include "prelaunch_internal.h"
+#include "internal.h"
 
 #define VN_TARGET_NUMBER ((uint16_t) ((5 << 7) | 30)) /* V05N30E: VN 0530 */
 #define VN_TARGET_AZ_EL  ((uint16_t) ((6 << 7) | 41)) /* VN0641: V06N41  */

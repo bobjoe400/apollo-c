@@ -63,6 +63,9 @@
 #include "agc/nav/auxiliary.h"
 #include "agc/programs/alignment.h"
 
+static agc_status_t agc_job_lunar_surface_solve(agc_job_ctx_t *ctx);
+static agc_status_t agc_job_lunar_surface_stored_attitude(agc_job_ctx_t *ctx);
+
 #define PH_SURFACE_ALIGN ((uint16_t) 04024)        /* OCT 04024                      */
 #define PH_OPTION        ((uint16_t) 00014)        /* OCT 00014                      */
 #define OPT_CODE_1       ((uint16_t) 1)            /* CAF BIT1 for GOPERF4R          */
@@ -630,7 +633,7 @@ static agc_status_t same_type(agc_job_ctx_t *ctx, agc_vec_t first, agc_vec_t sec
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_job_lunar_surface_stored_attitude(agc_job_ctx_t *ctx)
+static agc_status_t agc_job_lunar_surface_stored_attitude(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram(); /* alignment erasables */
 
@@ -829,7 +832,7 @@ agc_status_t agc_job_lunar_surface_data_checked(agc_job_ctx_t *ctx)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_job_lunar_surface_solve(agc_job_ctx_t *ctx)
+static agc_status_t agc_job_lunar_surface_solve(agc_job_ctx_t *ctx)
 {
     agc_align_ram_t *ram = agc_align_ram(); /* alignment erasables */
     agc_interp_t     ip;                    /* interpreter state */

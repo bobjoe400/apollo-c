@@ -74,7 +74,6 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/nav/integration.h"
-#include "agc/programs/rendezvous.h"
 
 #define WORD15                    077777u            /* one AGC word */
 #define BIT6                      000040u            /* DSALMOUT bit 6: flash */
@@ -129,16 +128,6 @@ void agc_erase_set_extvbact(uint16_t v)
 bool agc_extverb_busy(void)
 {
     return (extvbact != 0u);
-}
-
-/**********************************************************************
- * AGC: none -- VERBREG at GOEXTVB (the AGC's MPAC holds verb - 40)
- *
- * RETURNS: the verb, 40..99
- **********************************************************************/
-int agc_extverb_verb(void)
-{
-    return (xv_verb);
 }
 
 /**********************************************************************
@@ -233,7 +222,7 @@ agc_status_t agc_extverb_chkpooh(bool *p00)
  *
  * RETURNS: AGC_STATUS_OK, or the ALM/END status
  **********************************************************************/
-agc_status_t agc_extverb_ckmodcad(bool *free)
+static agc_status_t agc_extverb_ckmodcad(bool *free)
 {
     *free = (agc_erase_modecadr(0) == 0);
 

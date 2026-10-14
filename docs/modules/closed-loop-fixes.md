@@ -17,7 +17,7 @@ the sim protocol. Acceptance: `make lm-sim` exits 0, with make, make test
 | S-L2 / S-L3 | yaAGC PushCduFifo / ServiceCduFifo | src/sim/counters.c, src/sim/channels.c, src/sim/internal.h | CDUX-CDUZ PCDU/MCDU queued per CDU, applied at 400 (slow) / 6400 (fast) counts a second | tests/sim/harness.c test_cdu_fifo |
 | P40TMP | P40SET C p.686, CALLT-35 L p.734, LONGCALL/WAITLIST | src/csm/burns/sps/burn.c (+internal.h), src/lm/burns/ignition/burnbaby.c (+internal.h) | a delay <= 0 goes to LONGCALL as 0: POODOO 1204 as in the AGC (was: silently 1 cs; LM: BAD_ARG / 1 cs) | tests/guidance/guidance.c test_preburn_late |
 | D1 PROG after POODOO | GOTOPOOH / GOP00FIX L p.223 (C p.194), NOVAC2 / SPECTEST L pp.1106-1107, STARTSB2 DSPOFF L p.221, DSPMMJB L p.458 | src/exec/executive.c, src/exec/internal.h, src/exec/fresh_start.c | restart code reaching GOTOPOOH runs on as the job SPECTEST put in core set 0 (MMDSPLAY's DSPMMJOB): GOP00FIX replaces it (exec_core0_continue_as) | tests/exec/exec.c test_poodoo_lm, test_waitlist_zero_delay (+ test_goprog updated); sim/lm_simulator/tutorial.txt poodoo_p00 |
-| WOTEST (found here) | DODOWNTM / WOTEST L p.997 (Comanche C p.1096 writes every time) | src/io/telemetry/down_telemetry.c | LM: WOR CHAN13 only when the word order bit is 0 | tests/io/sysmisc.c test_downrupt_word_order_writes |
+| WOTEST (found here) | DODOWNTM / WOTEST L p.997 (Comanche C p.1096 writes every time) | src/io/telemetry/down_telemetry.c | LM: WOR CHAN13 only when the word order bit is 0 | tests/io/service_verbs_telemetry.c test_downrupt_word_order_writes |
 | stale comments | -- | src/core/erasable.c, src/core/state.c, include/agc/core/state.h, src/programs/alignment/imu_realign.c, src/exec/executive.c | prologs say what the code does | -- |
 | repeated assertions | rule 5 | src/lm/ascent.c (x3), src/lm/landing/lunar_landing.c, src/lm/landing/guidance.c, src/exec/change_program/idle.c | deleted | -- |
 
@@ -138,7 +138,7 @@ the sim protocol. Acceptance: `make lm-sim` exits 0, with make, make test
 - tests/lm/dap.c test_t6_list_zero_delta (L3: MIDORLST and LASTCHG)
 - tests/exec/exec.c test_poodoo_lm, test_waitlist_zero_delay (D1; test_goprog's DSPMMJB expectation corrected)
 - tests/guidance/guidance.c test_preburn_late (P40SET, CALLT-35)
-- tests/io/sysmisc.c test_downrupt_word_order_writes (WOTEST)
+- tests/io/service_verbs_telemetry.c test_downrupt_word_order_writes (WOTEST)
 - tests/sim/harness.c test_output_writes (S-L1), test_cdu_fifo (S-L2);
   test_counters' PCDU/MCDU wrap moved to CDUT (CDUX-Z are paced now)
 Each fails on the code before its fix (checked by running it against the

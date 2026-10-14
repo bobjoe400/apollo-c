@@ -56,7 +56,7 @@ the same protocol.
 - DONE SBY/PRO circuit (yaAGC): PRO held over the 1.28 s sample + 0.64 s decision with ch13 b11 -> standby (GOJAM clears 5,6,010-014,034,035; 0163 STBY + EL-off; only the scaler runs); again -> GOPROG. Scenarios standby_{csm,lm}.txt: P06 V50N25 00062, STBY/ELOFF, POSTAND restores the clock from the scaler, V37 flash. Client: `pro N` hold, lamp ELOFF.
 - DONE renamed scenarios to NAMING.md stems: p52_realign_csm -> imu_realign_csm, p07_systems_test_lm -> systems_test_lm.
 - DONE yaAGC command line in main.c (step 4, part 1): one or two dashes, --core/--exec/positional rope -> vehicle (Comanche055 CSM, Luminary099 LM, others refused), --cfg CMSIM/LMSIM, --port, --cd, --quiet; --resume/--debug/--symtab/--directory/... logged and ignored.
-- State (older): src/sim compiles with -Werror (all files, incl. pad.c with its prototype in internal.h). `make` currently fails in flight code edited by review agents (src/guidance/burn_steering.c:295 earlier, src/csm/prelaunch_align.c now), not in src/sim. No file mid-edit.
+- State (older): src/sim compiles with -Werror (all files, incl. pad.c with its prototype in internal.h). `make` currently fails in flight code edited by review agents (src/guidance/burn_steering.c:295 earlier, src/csm/prelaunch/align.c now), not in src/sim. No file mid-edit.
 
 ## How to run it
 `ln -sf $PWD/build/agc_sim ~/VirtualAGC/bin/yaAGC && ~/VirtualAGC/bin/VirtualAGC`

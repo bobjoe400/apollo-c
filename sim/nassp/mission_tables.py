@@ -8,12 +8,12 @@ attitude, ...). For each milestone this script pairs the stock run's CSV with ou
 
   1. the milestone table: the events found the same way in both files (ignition, throttle-up,
      program changes, displays at marks, cut-off, contact, orbit),
-  2. per quantity of sim/nassp/edits.tsv: the tolerance, max |ours - stock| and where, and the
+  2. per quantity of sim/nassp/mission_tolerances.tsv: the tolerance, max |ours - stock| and where, and the
      first time out of tolerance (rows paired by time since ignition, nearest within 0.6 s, from
      ignition on),
   3. the major-mode changes and alarms of each run.
 
-Usage: nassp_edits.py STOCK.csv OURS.csv MILESTONE [--tolerances sim/nassp/edits.tsv]
+Usage: nassp_edits.py STOCK.csv OURS.csv MILESTONE [--tolerances sim/nassp/mission_tolerances.tsv]
        nassp_edits.py --runs DIR            (every milestone found in DIR: ref_<m>_H/ and
                                              agc_<m>_H/ holding apollo-c-<m>-edits.csv)
        nassp_edits.py --derive DIR MILESTONE (print the milestone's tolerance rows from the two

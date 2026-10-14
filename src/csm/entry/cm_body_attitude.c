@@ -57,8 +57,6 @@
 #include "agc/exec/exec.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
-#include "agc/io/service.h"
 
 /* Restart storage TEMPROLL, TEMPALFA, TEMPBETA (ENTRY RESTART PROTECTION
  * STORAGE): the updated angles /180, SP 2s complement.                    */
@@ -254,7 +252,7 @@ static agc_sp_t atup_angle(agc_dp_t mpac, agc_sp_t pip, agc_sp_t now, bool wrap)
  *          from the NEWJOB assertion (cannot fail after the CCS test; kept
  *          while the EVA run is in progress)
  **********************************************************************/
-agc_status_t entry_servnout(void)
+static agc_status_t entry_servnout(void)
 {
     int nj; /* NEWJOB: priority waiting */
 

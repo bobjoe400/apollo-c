@@ -9,7 +9,7 @@
  *   on include/agc/core/interp_words.h; 1TO2SUB reads the major word
  *   after DDOUBL, so the same value converts to counts differing by one
  *   when the words disagree in sign.  The yaAGC oracle
- *   (tests/oracle/align.c: RRANGLES, SXTANG, RRNB, OANB) shows the
+ *   (tests/oracle/alignment.c: RRANGLES, SXTANG, RRNB, OANB) shows the
  *   AGC result.
  *
  * AGC SOURCE:
@@ -37,7 +37,6 @@
 #include <stdint.h>
 
 #include "agc/core/interp_words.h"
-#include "agc/imu/imu.h"
 #include "agc/programs/alignment.h"
 
 #define WORD_MAX 16383 /* largest 14-bit magnitude                    */

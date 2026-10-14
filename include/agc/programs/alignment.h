@@ -213,9 +213,7 @@ bool         agc_align_coarse_needed(const uint16_t thetad[3], const uint16_t cd
 void         agc_align_gyro_coarse_dc(agc_interp_t *ip, const agc_mat_t *smd, const agc_mat_t *refsmmat, agc_mat_t *xdc);
 
 /* LOCSAM from an integrated state and LSPOS output (pure).               */
-void         agc_align_locsam_from(agc_interp_t *ip, const agc_state_vector_t *sv, agc_vec_t moon, agc_vec_t sun, agc_align_locsam_t *out);
 agc_status_t agc_align_locsam(agc_interp_t *ip, agc_dp_t time_cs, agc_job_id_t resume_job, agc_align_locsam_t *out);
-bool         agc_align_occult(agc_interp_t *ip, const agc_align_locsam_t *ls, agc_vec_t star);
 agc_status_t agc_align_picapar(agc_interp_t *ip, const agc_align_locsam_t *ls, const agc_mat_t *refsmmat, const uint16_t cdu[3], agc_sp_t *besti, agc_sp_t *bestj, bool *found);
 
 /* PLANET for a star6 that needs no display (catalogue, sun, earth, moon,
@@ -282,7 +280,6 @@ void agc_rendezvous_final_attitude_los(agc_interp_t *ip, agc_vec_t rcsm, agc_vec
 void            agc_ags_scalevec(agc_interp_t *ip, agc_vec_t ratt1, agc_vec_t vatt1, const agc_mat_t *refsmmat, uint16_t out[6]);
 agc_dp_t        agc_ags_time(agc_interp_t *ip, agc_dp_t tat, agc_dp_t agsk);
 const uint16_t *agc_ags_buffer(void); /* AGSBUFF, 14 raw words           */
-agc_dp_t        agc_ags_agsk(void);   /* AGSK cs B28                     */
 
 /* ---- SXTMARK (CSM, src/csm/optics/sxtmark.c) ------------------------------------ */
 agc_status_t agc_sxtmark(agc_sp_t nmarks); /* SXTMARK       */
@@ -290,9 +287,7 @@ agc_status_t agc_sxtmark_reserve(void);    /* SXTMARK +2    */
 agc_status_t agc_sxtmark_mkreleas(void);   /* MKRELEAS      */
 agc_status_t agc_sxtmark_free_vac(void);   /* MARKSTAT = 0  */
 agc_status_t agc_sxtmark_markrupt(void);   /* MARKRUPT      */
-agc_status_t agc_sxtmark_markcont(void);   /* MARKCONT      */
 agc_status_t agc_sxtmark_mark2(void);      /* MARK2/VACSTOR */
-agc_status_t agc_sxtmark_mkreject(void);   /* MKREJECT      */
 agc_sp_t     agc_sxtmark_marks_made(void); /* QPRET count   */
 void         agc_sxtmark_mark(int mark, agc_align_sxt_mark_t *out);
 
@@ -302,7 +297,6 @@ agc_status_t agc_aotmark_markrupt(void); /* MARKRUPT      */
 void         agc_aot_oanb(agc_interp_t *ip, uint16_t az, uint16_t el, agc_vec_t *oa, agc_vec_t *uxp, agc_vec_t *uyp);
 void         agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t rot, agc_vec_t *xpnb, agc_vec_t *ypnb);
 void         agc_aot_surfstar(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t oa, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_words_t *star_sm);
-agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm);
 void         agc_aot_aveit(agc_interp_t *ip, agc_sp_t n, agc_vec_words_t star, agc_vec_t *ave);
 
 /* ---- CSM sighting and optics routines (src/csm/optics/) ---------------- */
@@ -311,13 +305,6 @@ void agc_csm_sxtsm(agc_interp_t *ip, const agc_align_sxt_mark_t *m, agc_vec_t *l
 
 /* SXTSM as called: TSIGHT = first mark time, MARKDOWN / MARK2DWN, LOS.     */
 void agc_csm_sxtsm_marks(agc_interp_t *ip, agc_vec_t *los_sm);
-
-/* SR52.1: AOPTIME = now + 1.3 s unless resumed after an integration wait;
- * SAC/PAC for the target; result 0 = trunnion > 90 deg, 1 = > 50 deg,
- * 2 = < 50 deg (the AGC's three returns).                                 */
-agc_status_t agc_csm_target_optics_angles(agc_interp_t *ip, bool resumed, agc_job_id_t resume_job, int *result);
-agc_status_t agc_csm_advtrack(agc_interp_t *ip, agc_job_id_t resume_job, agc_vec_t *los);   /* ADVTRACK      */
-agc_vec_t    agc_csm_rota(agc_interp_t *ip, agc_vec_t axis, agc_vec_t los, agc_dp_t angle); /* ROTA          */
 
 /* Interpretive subroutines entered from a job: ret is the job continued
  * as on return (SAVQR52 / R53EXIT).                                       */
@@ -355,7 +342,6 @@ agc_status_t agc_lm_lunar_surface_surfline(agc_job_ctx_t *ctx);    /* SURFLINE *
 /* ==== job and task entry points (BEGIN generated list) ==== */
 /* src/csm/alignment/fine_align.c */
 agc_status_t agc_job_csm_fine_align(agc_job_ctx_t *ctx);
-agc_status_t agc_job_csm_fine_align_next_star(agc_job_ctx_t *ctx);
 agc_status_t agc_job_csm_fine_align_star_code(agc_job_ctx_t *ctx);
 agc_status_t agc_job_csm_fine_align_star_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_csm_fine_align_star_accepted(agc_job_ctx_t *ctx);
@@ -450,7 +436,6 @@ agc_status_t agc_job_lm_fine_align_star_acquire(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_fine_align_pick_stars(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_fine_align_stars_located(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_fine_align_first_star(agc_job_ctx_t *ctx);
-agc_status_t agc_job_lm_fine_align_next_star(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_fine_align_mark(void);
 agc_status_t agc_job_lm_fine_align_marked(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_fine_align_first_located(agc_job_ctx_t *ctx);
@@ -461,13 +446,11 @@ agc_status_t agc_job_lm_fine_align_recheck(agc_job_ctx_t *ctx);
 
 /* src/lm/alignment/imu_orientation_determination.c */
 agc_status_t agc_job_lm_imu_orientation_determination(agc_job_ctx_t *ctx);
-agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_orientation_coarse(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_orientation_coarse_verb(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_orientation_coarse_start(void);
 agc_status_t agc_job_lm_orientation_coarse_done(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_orientation_mark_setup(void);
-agc_status_t agc_job_lm_orientation_mark_star(void);
 agc_status_t agc_job_lm_orientation_marked(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lm_orientation_first_star(void);
 agc_status_t agc_job_lm_orientation_second_star(agc_job_ctx_t *ctx);
@@ -489,10 +472,8 @@ agc_status_t agc_job_lunar_surface_site_orientation(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_options_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_options_chosen(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_attitude_check(agc_job_ctx_t *ctx);
-agc_status_t agc_job_lunar_surface_stored_attitude(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_realign(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_data_checked(agc_job_ctx_t *ctx);
-agc_status_t agc_job_lunar_surface_solve(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_torque_test(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_aligned(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_post(agc_job_ctx_t *ctx);
@@ -505,7 +486,6 @@ agc_status_t agc_task_lunar_gravity_sample(void);
 agc_status_t agc_job_lunar_gravity_accumulate(void);
 agc_status_t agc_job_lunar_gravity_rotate(void);
 agc_status_t agc_job_lunar_gravity_measured(agc_job_ctx_t *ctx);
-agc_status_t agc_job_lunar_gravity_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_gravity_recycle(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_gravity_accepted(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_trim_pulse(void);
@@ -519,7 +499,6 @@ agc_status_t agc_job_lunar_surface_coarse_trimmed(void);
 bool         agc_lm_aot_find_detent(agc_interp_t *ip, agc_vec_t star); /* INCAZ..R59D */
 agc_status_t agc_job_lunar_surface_star_acquisition(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_star_chosen(agc_job_ctx_t *ctx);
-agc_status_t agc_job_lunar_surface_star_position_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_lunar_surface_star_positioned(void);
 agc_status_t agc_job_lunar_surface_star_mark(void);
 agc_status_t agc_job_lunar_surface_star_marked(agc_job_ctx_t *ctx);
@@ -535,7 +514,6 @@ agc_status_t agc_job_aot_mark_coas_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_aot_mark_coas_loaded(agc_job_ctx_t *ctx);
 agc_status_t agc_job_aot_mark_check(agc_job_ctx_t *ctx);
 agc_status_t agc_job_aot_mark_next_action(agc_job_ctx_t *ctx);
-agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx);
 agc_status_t agc_job_aot_mark_surface_end(agc_job_ctx_t *ctx);
 agc_status_t agc_job_aot_mark_surface_answer(agc_job_ctx_t *ctx);
 

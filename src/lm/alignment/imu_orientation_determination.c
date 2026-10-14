@@ -51,6 +51,9 @@
 #include "agc/core/flags_common.h"
 #include "agc/programs/alignment.h"
 
+static agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx);
+static agc_status_t agc_job_lm_orientation_mark_star(void);
+
 #define IMODES30_IMU_OFF       ((uint16_t) 0400)         /* BIT9                           */
 #define ALM_IMU_OFF            ((agc_alarm_code_t) 0210) /* OCT 210: IMU not operating */
 #define CHK_ACQUIRE            ((uint16_t) 015)          /* OCT15                          */
@@ -135,7 +138,7 @@ agc_status_t agc_job_lm_imu_orientation_determination(agc_job_ctx_t *ctx)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx)
+static agc_status_t agc_job_lm_orientation_acquire_display(agc_job_ctx_t *ctx)
 {
     return (align_flash(ctx, AGC_DSKY_GOPERF1, CHK_ACQUIRE, AGC_JOB_GOTOPOOH, AGC_JOB_LM_ORIENTATION_MARK_SETUP, AGC_JOB_LM_ORIENTATION_COARSE));
 }
@@ -275,7 +278,7 @@ agc_status_t agc_job_lm_orientation_mark_setup(void)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_job_lm_orientation_mark_star(void)
+static agc_status_t agc_job_lm_orientation_mark_star(void)
 {
     align_phase4(PH_ORIENTATION);
     agc_status_t st = agc_aotmark(); /* status of the call */

@@ -44,7 +44,7 @@
  *   CYCLSHFT pass by construction (they still count SCOUNT +1).
  *   DEVIATION (fixed memory): ROPECHK and SHOW-BANKSUM sum the rope image
  *   the simulator registers with agc_selfcheck_set_rope() (the real
- *   Comanche055/Luminary099 binary passes: tests/io/sysmisc.c). With no
+ *   Comanche055/Luminary099 binary passes: tests/io/service_verbs_telemetry.c). With no
  *   image the C program has no fixed memory to test: every bank passes
  *   and SHOW-BANKSUM sums +0 words.
  *   DEVIATION (timing): the AGC sums one word per CHECKNJ, giving way to
@@ -61,7 +61,6 @@
 #include <stddef.h>
 
 #include "agc/core/assertion.h"
-#include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/io/service.h"
 

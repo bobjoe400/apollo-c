@@ -69,7 +69,6 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/state.h"
 #include "agc/erasable_map/address_map.h"
@@ -638,7 +637,7 @@ static void fetch2wd(void)
  * (word order code to zero) is made only for control-list entries.  The
  * list tables obey the AGC's own constraints (no DNCHAN 0, sublists do
  * not nest, snapshot sublists hold 1DNADRs that fit DNTMBUFF), checked
- * over every list in tests/io/sysmisc.c.
+ * over every list in tests/io/service_verbs_telemetry.c.
  *
  * ARGUMENTS:
  *   e             agc_dn_entry_t  I   the list entry

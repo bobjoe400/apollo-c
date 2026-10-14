@@ -166,7 +166,7 @@ restart. That is the documented save/restore deviation.
 NASSP's own `src_sys/yaAGC/agc_engine.h` is kept (the C++ includes it via
 `"yaAGC/agc_engine.h"` relative to src_sys/, so it cannot be swapped by an
 include path); only the six yaAGC .c files are replaced by our
-`src/nassp/nassp_engine.c`, compiled against that header, plus libagc and
+`src/nassp/engine.c`, compiled against that header, plus libagc and
 src/sim's clock.c, channels.c, counters.c, rope.c. So NASSP's C++
 compiles unchanged; the one NASSP edit is the CMake source list (option
 `NASSP_AGC_BACKEND=apollo-c`).
@@ -212,7 +212,7 @@ serviced only for the duration of a scaler count.
 - Scripting: the Saturn vessel exposes Lua (`get_agcerasable`,
   `set_agcerasable`, `get_agcchannel`, panel switch get/set); the LEM in
   NASSP 9 exposes none (correction, 2026-10-13: LEM has no clbkGeneric /
-  Lua_InitInstance). Test hook src/nassp/patches/0002-lem-lua-test-interface.patch
+  Lua_InitInstance). Test hook sim/nassp/patches/0002-lem-lua-test-interface.patch
   gives the LEM the same four read/press methods (get/set_panelswitch,
   get_agcerasable, get_agcchannel; no set_agcerasable, no behaviour change:
   only a Lua binding and the Lua link library), plus two hand-controller

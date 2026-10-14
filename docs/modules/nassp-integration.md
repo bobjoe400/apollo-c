@@ -34,7 +34,7 @@ residuals documented in review-nav-integ.md (every pair off is listed). NASSP's 
 not in this repository: the target downloads the eight src_sys/yaAGC files from GitHub at
 the pinned commit into build/nassp/yaagc, or uses NASSP_YAAGC_DIR=<NASSP>/Orbitersdk/
 samples/ProjectApollo/src_sys/yaAGC; with neither it prints SKIP and exits 0.
-`python3 -I tools/nassp_replay.py --keep` leaves both transcripts in build/nassp.
+`python3 -I sim/nassp/replay.py --keep` leaves both transcripts in build/nassp.
 
 (The other closed loop, `make lm-sim`, needs no setup either: it fetches Virtual AGC's
 Contributed/LM_Simulator, a sparse checkout of virtualagc at c239e9c, into
@@ -49,7 +49,7 @@ nassp-work\apollo-c; -DAPOLLO_C_ASSERT_REPORTS=ON makes failed AGC_ASSERTs print
 apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds TCP 14242).
 
 1. Checklists: compile NASSP's LM/CSM checklist workbook
-   (<install>\Config\ProjectApollo\Checklists\*.xls) with tools/nassp_cl2lua.py (needs
+   (<install>\Config\ProjectApollo\Checklists\*.xls) with sim/nassp/checklist_to_lua.py (needs
    xlrd) into cl_lm.lua / cl_csm.lua and copy them to <install>\Script\apollo-c.
 2. Scenario: `sim/nassp/host/mkscn_lm.sh C:\NASSP9-dev "Apollo 11 - 10 - PDI T-15m.scn"
    "A11 PDI H" pdih` (and the same for C:\NASSP9-ref) writes Scenarios\apollo-c\A11 PDI
@@ -70,12 +70,12 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
    logs "end", copies apollo-c-*.log and the edit CSV to $NASSP_RUNS/<tag>, restores the
    configuration (hrestore.sh). Scripts hold 1x (no warp: the fixed step removes the
    warp-induced LM tumbling).
-4. Tables: `make nassp-mission NASSP_RUNS=<dir>` (tools/nassp_edits.py) pairs ref_<m>_H and
+4. Tables: `make nassp-mission NASSP_RUNS=<dir>` (sim/nassp/mission_tables.py) pairs ref_<m>_H and
    agc_<m>_H for every milestone it finds and prints the milestone table (events found the
    same way in both edit CSVs), per quantity the max |ours - stock| against the tolerance in
-   sim/nassp/edits.tsv, and each run's major modes and alarms; exit 1 when a quantity leaves
+   sim/nassp/mission_tolerances.tsv, and each run's major modes and alarms; exit 1 when a quantity leaves
    its tolerance. Numeric columns without a tolerance row are printed as "not judged".
-   Tolerances: `tools/nassp_edits.py --derive <dir> <milestone>` prints the rows from the two
+   Tolerances: `sim/nassp/mission_tables.py --derive <dir> <milestone>` prints the rows from the two
    stock runs ref_<m>_H (-f 0.02) and ref_<m>_H01 (-f 0.01): every numeric column, exactly 1.5 x
    their max difference, no rounding. They go into edits.tsv before the dev run is compared
    and are then frozen (see "Test changes").
@@ -101,7 +101,7 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   - src/sim: clock.c sim_clock_count (one scaler count; tick = 32 of them), sim_irq_pending,
     host hooks sim_host_downrupt_external / sim_host_radar_read (socket.c: agc_sim values);
     rope.c made portable (the /proc default-rope lookup moved to main.c).
-  - src/nassp/nassp_engine.c: yaAGC API (agc_engine_init, agc_load_binfile, agc_engine,
+  - src/nassp/engine.c: yaAGC API (agc_engine_init, agc_load_binfile, agc_engine,
     WriteIO, UnprogrammedIncrement, ...) over libagc + clock; Erasable mirror with shadow
     diff; NASSP channel renumbering; LM thrust/ALTM drives. Linux smoke harness (scratch
     harness/smoke.c against NASSP's header): power-on P00 V37 flash, RSET, V37E00E, V35,
@@ -190,7 +190,7 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   first, a FANG store also sets K3VAL's low word (K3VAL = EK3VAL,FANG as DDV reads it);
   tests/erasable_map/address_map.c +5 checks. Offline (Linux replay of the MCC-2 image,
   V37E40E .. V99 PRO): TGO 0,341 (225 cs) and engine off at the new TIG, as stock.
-- `make nassp-replay` (light tier, 2026-10-13): sim/nassp/replay.c + tools/nassp_replay.py,
+- `make nassp-replay` (light tier, 2026-10-13): sim/nassp/replay.c + sim/nassp/replay.py,
   images sim/nassp/images/{insertion,tli,mcc2}.agc. Results: insertion 2 integration steps +
   CSM SV uplink identical (23 words differ only as -0/+0 high words of mixed-sign pairs);
   TLI 2 steps + P30 target uplink identical except DELTAV.y -1, NUV.x +2, NUV.y -2 LSB (the
@@ -226,7 +226,7 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   telemetry sums); CSM: ENTRYVN, PGNCSALT, HORIZALT, TRANSM1, the CSM W/variance pad,
   AZIMUTH/LATITUDE/LAUNCHAZ, TAZEL1, DELVTPI, the Saturn takeover block (AOG .. POSEXIT,
   SATRATE ..), ECSTEER (milestones 1-4 and TEI matched without them; mapped next if a milestone needs it).
-- src/nassp/nassp_engine.c now reopens stderr into apollo-c-agc-stderr.log, so src/sim's
+- src/nassp/engine.c now reopens stderr into apollo-c-agc-stderr.log, so src/sim's
   BAD_ARG diagnostics from inside NASSP land on disk.
 - DONE milestone 6 (TEI, scenario 13, 2026-10-13): stock vs ours burn 160.26 vs 160.28 s, VG/dVM
   1.1/3306.8 vs 0.9/3306.7 ft/s, N85 -0.8/+0.8/0.0 vs -0.6/+0.7/-0.1, F16N44 HP 57.8 and TFF
@@ -316,7 +316,7 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   (L p.219) sets RADMODES bit 6 (LR position 2 wanted) from channel 33; the scenario's LR breaker
   is open until PDI-5, the LR reports no position, so our LGC wanted position 2 (RADMODES 0142;
   stock 04102, both logged in NASSP, runs/{agc,ref}_lrdbg); once the LR came on in position 1
-  LRPOSCHK failed. Fix (shim only, libagc unchanged): src/nassp/nassp_engine.c keeps the image's
+  LRPOSCHK failed. Fix (shim only, libagc unchanged): src/nassp/engine.c keeps the image's
   RADMODES bit 6 across the load restart of the LGC (not on a power-on, Z = 04000); the sidecar
   logs channel 33 input changes. Test: make nassp-replay case pdi_lm (sim/nassp/images/pdi_lm.agc,
   RADMODES bit 6 after the load = the image's; FAIL before, PASS after; this harness's yaAGC
@@ -460,14 +460,14 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
 - Saturn console mode (2026-10-13, about 25 min of the 60 allowed): bisected with oapiWriteLog
   markers to Saturn::clbkPostStep's unguarded `oapiCameraInternal() && oapiCockpitMode()` (VC
   animations): with no graphics client the camera query faults in Orbiter.exe. Fix:
-  src/nassp/patches/0003-saturn-console-mode.patch (the focus guard the LEM already has),
+  sim/nassp/patches/0003-saturn-console-mode.patch (the focus guard the LEM already has),
   applied in nassp-ref (Saturn5.dll + LEM.dll by nassp-work\build-ref2.bat; the release DLL
   kept as Saturn5.dll.release-437) and nassp-agc. Columbia + MCC (focus MCC) runs headless.
 - Entry: scenario 15 (P63 at EI-60 s) cannot resume on our CMC (offline replay: restarts.c:106
   'prdt != 0', PHSNAMEn is a rope address; servicer.c:692 no AVGEXIT job): entry flies from
   scenario 14 (EI-2:15h) with P61 selected afresh, both builds. Panel-display toggles that
   NASSP registers only with the 2D panel (PanelOrdeal) are logged and skipped headless.
-- LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
+- LM test hook: sim/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
   get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only; 2026-10-13 also
   set_ttca_throttle and set_agcinputbit, the TTCA throttle and the ROD bits of channel 016 as
   LEM.cpp's keyboard/VESIM handlers set them, for the landing). Reference LEM.dll in
@@ -487,7 +487,7 @@ Audit of the runs before the rule (times UTC 2026-10-14):
 - PDI: script edits 03:01 (lone ENTER/PRO waits for a flash; from a stock race) and 03:12
   (UNFC/UNWC columns, after both v1 runs) preceded ref_pdi_H (03:15). 03:26, after a dev
   result: pdih.lua saves a scenario 20 s after LANDED (after every tabled event); stock not
-  rerun. Tolerances (sim/nassp/edits.tsv, 04:15-04:21) and the column choice were made after
+  rerun. Tolerances (sim/nassp/mission_tolerances.tsv, 04:15-04:21) and the column choice were made after
   the dev runs. Checked against the rule as written (1.5 x the -f 0.02 / 0.01 stock spread, every
   numeric column, no rounding): lat 0.0019 vs 0.0012 (the file's 0.002 is a rounding that turned
   a fail into a pass), bank 48.6 vs 41.3, yaw 46.8 vs 40.9, cdux 10.4 vs 4.8 deg are out.

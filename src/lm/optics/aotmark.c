@@ -76,13 +76,12 @@
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
-#include "agc/core/flags_lm.h"
 #include "agc/core/interp_words.h"
-#include "agc/guidance/guidance.h"
 #include "agc/io/service.h"
 #include "agc/lm/landing.h"
 #include "agc/programs/alignment.h"
-#include "agc/programs/rendezvous.h"
+
+static agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx);
 
 #define MS_VAC         ((uint16_t) 0777)          /* LOW9                            */
 #define MS_X           ((uint16_t) 01000)         /* BIT10                           */
@@ -236,7 +235,7 @@ void agc_aot_optaxis(agc_interp_t *ip, agc_vec_t uxp, agc_vec_t uyp, uint16_t ro
  *          (executive, display, IMU, integration or an input check);
  *          AGC_STATUS_BAD_ARG on a failed precondition
  **********************************************************************/
-agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm)
+static agc_status_t agc_aot_flight_los(agc_interp_t *ip, const agc_align_aot_pair_t *m, agc_vec_t xpnb, agc_vec_t ypnb, agc_vec_t *star_sm)
 {
     if (!AGC_ASSERT((ip != NULL) && (m != NULL)) || !AGC_ASSERT(star_sm != NULL))
     {
@@ -863,7 +862,7 @@ agc_status_t agc_job_aot_mark_next_action(agc_job_ctx_t *ctx)
  *          successor; otherwise the status of the call that failed
  *          (executive, display, IMU, integration or an input check)
  **********************************************************************/
-agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx)
+static agc_status_t agc_job_aot_mark_surface_display(agc_job_ctx_t *ctx)
 {
     return (align_flash(ctx, AGC_DSKY_GOMARKF, VN_CURSOR, AGC_JOB_AOT_MARK_KILL, AGC_JOB_AOT_MARK_SURFACE_END, AGC_JOB_AOT_MARK_SURFACE_ANSWER));
 }

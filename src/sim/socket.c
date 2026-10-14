@@ -68,7 +68,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "agc/core/assertion.h"
 #include "internal.h"
 
 #define SOCK_SLOTS    10    /* yaAGC DEFAULT_MAX_CLIENTS              */
@@ -515,25 +514,6 @@ void sim_socket_poll(void)
             }
         }
     }
-}
-
-/**********************************************************************
- * AGC: none -- clients connected.
- *
- * ARGUMENTS: none
- *
- * RETURNS: int -- number of clients
- **********************************************************************/
-int sim_socket_clients(void)
-{
-    int n = 0; /* clients */
-
-    for (int i = 0; i < SOCK_SLOTS; i++)
-    {
-        n += (g_client[i].fd >= 0) ? 1 : 0; /* count the connected slots */
-    }
-
-    return (n);
 }
 
 /**********************************************************************

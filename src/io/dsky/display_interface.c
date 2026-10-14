@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: display_if.c
+ * FILE NAME: display_interface.c
  *
  * PURPOSE:
  *   The display interface between mission programs and PINBALL: the GO*

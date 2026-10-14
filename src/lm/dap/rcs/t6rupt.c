@@ -281,7 +281,7 @@ agc_status_t lm_dap_jtlst(void)
  *          failed assertion, else the status of the routine it
  *          ends in
  **********************************************************************/
-agc_status_t agc_lm_dap_t6jobchk(void)
+static agc_status_t agc_lm_dap_t6jobchk(void)
 {
     uint16_t raw = agc_rupt_time(6); /* TIME6 register */
 
@@ -356,33 +356,6 @@ agc_status_t agc_lm_dap_t6jobchk(void)
 agc_status_t agc_lm_dap_t6rupt(void)
 {
     return (agc_lm_dap_t6jobchk()); /* T6JOBCHK; TIME6 may be -0 again (a zero list delta) */
-}
-
-/**********************************************************************
- * Sim harness: apply `counts` DINC pulses to TIME6 while channel 13 bit
- * 15 enables it. The DINC of +1 makes -0 (ones' complement adder),
- * which requests the T6RUPT.
- * AGC: none (helper)
- *
- * FUNCTION NAME: agc_lm_dap_time6_count
- *
- * ARGUMENTS:
- *   Argument  Type      I/O  Description (scale)
- *   --------  --------  ---  --------------------
- *   counts    uint16_t  I    DINC pulses since the last call
- *
- * RETURNS: none
- **********************************************************************/
-void agc_lm_dap_time6_count(uint16_t counts)
-{
-    uint16_t raw = agc_rupt_time(6); /* TIME6 register */
-
-    if (!((agc_chan_read(013) & T6_ENABLE) == 0u || raw > LM_T6_POSMAX || counts == 0u)) /* idle, or rupt already due */
-    {
-        uint16_t next = (counts >= raw) ? (uint16_t) LM_T6_NEGZERO : (uint16_t) (raw - counts); /* +1 - 1 = -0 in the adder: a T6RUPT is due */
-
-        agc_rupt_set_time(6, next);
-    }
 }
 
 /**********************************************************************

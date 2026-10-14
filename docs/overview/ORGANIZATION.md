@@ -27,7 +27,7 @@ structured inside them. Each finding falls into one of three groups:
 |---|---|---|---|---|
 | 1 | Flight code by subsystem, harness by purpose, tools by task, history by date, without the lane notes | src/ by subsystem (good); harness drivers in tools/; history mixed into docs/ and docs/modules/ | sim/ holds every harness (driver and data together); docs/history/ holds the dated record; INDEX.md groups the tools by task | prelaunch/ subfolder; the NASSP files in two folders, each with one stated role |
 | 2 | No finished files beside live ones | 41 finished assignments (with the resume note), 20 wave notes, 6 one-off coccinelle/generator files, wave output TSVs in overview/ | moved to docs/history/, tools/archive/, docs/overview/data/ | the script archives itself |
-| 3 | Names say what a thing does (no lane names or dates) | `tests/io/sysmisc.c`, `tests/nav/navaux.c`, `tests/oracle/nav_integ.c`, `src/exec/erasable.c` (holds MODECADR), `src/io/dsky/display_if.c`, `src/lm/dap/dapif.c`, `src/guidance/guid_state.c` (repeats its folder), `src/nassp/nassp_engine.c`, `tools/nassp_edits.py` | `sim/lm_simulator/harness.tcl` | all renamed (section 3) |
+| 3 | Names say what a thing does (no lane names or dates) | `tests/io/service_verbs_telemetry.c`, `tests/nav/auxiliary.c`, `tests/oracle/nav_integration.c`, `src/exec/modecadr.c` (holds MODECADR), `src/io/dsky/display_interface.c`, `src/lm/dap/interface.c`, `src/guidance/state.c` (repeats its folder), `src/nassp/engine.c`, `sim/nassp/mission_tables.py` | `sim/lm_simulator/harness.tcl` | all renamed (section 3) |
 | 4 | Operational docs apart from the process record | WORKLOG, RENAMES, AGENT_BRIEF and finished assignments next to STATE/PLAN | docs/history/ (record), docs/agents/ (live process only: `_common.md`, `brief.md`, `nassp-integration.md`, `review_items.md`) | none needed |
 | 5 | Makefile targets grouped, documented, none dead | every target has a comment and none is dead; `make callgraph` was broken (it compiled src/nassp, which needs NASSP's headers; free_fall.c fails `-Werror` at -O0) | callgraph writes to docs/overview/data/; src/nassp excluded from CG_SRCS (M1, applied) | M2 (the -O0 warning in free_fall.c) is a flight-code cast, routed as a finding |
 | 6 | Tests mirror src | yes at subsystem level. Six files carry lane or abbreviated names (sysmisc, navaux, nav_aux, nav_integ, align x2) | -- | renamed |
@@ -60,14 +60,14 @@ structured inside them. Each finding falls into one of three groups:
   `cocci/setter_status.cocci`, `cocci/vehicle_guard.cocci` (finish). Kept
   live: `cocci/always_ok_void.cocci` with `drop_final_return.py`, which are
   the fix procedure behind the live `make always-ok-report` gate.
-* Harness drivers -> sim/: `tools/sim_client.py` -> `sim/sim_client.py`,
-  `tools/lm_sim.py` -> `sim/lm_simulator/lm_sim.py`,
-  `tools/lm_sim_harness.tcl` -> `sim/lm_simulator/harness.tcl` (import
+* Harness drivers -> sim/: `sim/sim_client.py` -> `sim/sim_client.py`,
+  `sim/lm_simulator/lm_sim.py` -> `sim/lm_simulator/lm_sim.py`,
+  `sim/lm_simulator/harness.tcl` -> `sim/lm_simulator/harness.tcl` (import
   path and ROOT updated).
 * All references were rewritten (Makefile, README, docs, tool paths,
   relative Markdown links in the moved notes, uncrustify.cfg comments).
   Not edited: the NASSP lane's two docs, which reference none of the moved
-  paths, and `src/sim/main.c:51` (a comment naming tools/sim_client.py).
+  paths, and `src/sim/main.c:51` (a comment naming sim/sim_client.py).
   apply_layout.sh rewrites that comment.
 * New: `tools/repo_index.py` (renders INDEX.md; rerun after any move),
   `docs/overview/data/structure/` (the per-item lists behind section 4), and
@@ -94,9 +94,9 @@ regenerates the lists. After it runs, tell the
 nassp-integration lane its new paths:
 
 * `tools/nassp_*.py` -> `sim/nassp/{replay,mission_tables,checklist_to_lua}.py`
-* `sim/nassp/edits.tsv` -> `sim/nassp/mission_tolerances.tsv`
+* `sim/nassp/mission_tolerances.tsv` -> `sim/nassp/mission_tolerances.tsv`
 * patches -> `sim/nassp/patches/`
-* `src/nassp/nassp_engine.c` -> `src/nassp/engine.c`
+* `src/nassp/engine.c` -> `src/nassp/engine.c`
 
 src/nassp/CMakeLists.txt is updated by the script. The host trees need no
 re-patch: patch 0001 still points at src/nassp. Update the host sync script
@@ -116,28 +116,28 @@ re-patch: patch 0001 still points at src/nassp. Update the host sync script
 ### The git mv list (tools/layout/moves.tsv)
 
 ```
-tools/nassp_replay.py                      sim/nassp/replay.py
-tools/nassp_edits.py                       sim/nassp/mission_tables.py
-tools/nassp_cl2lua.py                      sim/nassp/checklist_to_lua.py
-sim/nassp/edits.tsv                        sim/nassp/mission_tolerances.tsv
-src/nassp/patches/0001-apollo-c-agc-backend.patch     sim/nassp/patches/
-src/nassp/patches/0002-lem-lua-test-interface.patch   sim/nassp/patches/
-src/nassp/patches/0003-saturn-console-mode.patch      sim/nassp/patches/
-src/nassp/nassp_engine.c                   src/nassp/engine.c
-src/csm/prelaunch_align.c                  src/csm/prelaunch/align.c
-src/csm/prelaunch_gyrocompass.c            src/csm/prelaunch/gyrocompass.c
-src/csm/prelaunch_verify.c                 src/csm/prelaunch/verify.c
-src/csm/prelaunch_internal.h               src/csm/prelaunch/internal.h
-src/guidance/guid_state.c                  src/guidance/state.c
-src/io/dsky/display_if.c                   src/io/dsky/display_interface.c
-src/lm/dap/dapif.c                         src/lm/dap/interface.c
-src/exec/erasable.c                        src/exec/modecadr.c
-tests/nav/navaux.c                         tests/nav/auxiliary.c
-tests/programs/align.c                     tests/programs/alignment.c
-tests/io/sysmisc.c                         tests/io/service_verbs_telemetry.c
-tests/oracle/nav_aux.c                     tests/oracle/nav_auxiliary.c
-tests/oracle/nav_integ.c                   tests/oracle/nav_integration.c
-tests/oracle/align.c                       tests/oracle/alignment.c
+sim/nassp/replay.py                      sim/nassp/replay.py
+sim/nassp/mission_tables.py                       sim/nassp/mission_tables.py
+sim/nassp/checklist_to_lua.py                      sim/nassp/checklist_to_lua.py
+sim/nassp/mission_tolerances.tsv                        sim/nassp/mission_tolerances.tsv
+sim/nassp/patches/0001-apollo-c-agc-backend.patch     sim/nassp/patches/
+sim/nassp/patches/0002-lem-lua-test-interface.patch   sim/nassp/patches/
+sim/nassp/patches/0003-saturn-console-mode.patch      sim/nassp/patches/
+src/nassp/engine.c                   src/nassp/engine.c
+src/csm/prelaunch/align.c                  src/csm/prelaunch/align.c
+src/csm/prelaunch/gyrocompass.c            src/csm/prelaunch/gyrocompass.c
+src/csm/prelaunch/verify.c                 src/csm/prelaunch/verify.c
+src/csm/prelaunch/internal.h               src/csm/prelaunch/internal.h
+src/guidance/state.c                  src/guidance/state.c
+src/io/dsky/display_interface.c                   src/io/dsky/display_interface.c
+src/lm/dap/interface.c                         src/lm/dap/interface.c
+src/exec/modecadr.c                        src/exec/modecadr.c
+tests/nav/auxiliary.c                         tests/nav/auxiliary.c
+tests/programs/alignment.c                     tests/programs/alignment.c
+tests/io/service_verbs_telemetry.c                         tests/io/service_verbs_telemetry.c
+tests/oracle/nav_auxiliary.c                     tests/oracle/nav_auxiliary.c
+tests/oracle/nav_integration.c                   tests/oracle/nav_integration.c
+tests/oracle/alignment.c                       tests/oracle/alignment.c
 ```
 
 tools/registry.tsv keeps `csm` as the owning-folder group of the prelaunch

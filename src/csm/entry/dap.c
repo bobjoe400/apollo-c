@@ -59,7 +59,6 @@
 #include "agc/core/assertion.h"
 #include "agc/core/channels.h"
 #include "agc/core/flags_csm.h"
-#include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/status.h"
 #include "agc/core/word.h"
@@ -67,9 +66,6 @@
 #include "agc/csm/entry.h"
 #include "agc/csm/entry_lexicon.h"
 #include "agc/exec/exec.h"
-#include "agc/guidance/guidance.h"
-#include "agc/imu/imu.h"
-#include "agc/io/dsky.h"
 #include "agc/io/service.h"
 
 /* ---- module erasables (EBANK6, "ANGLE REGISTERS FOR ENTRY DAPS") ------ */
@@ -421,7 +417,7 @@ static int dap_biasedz(agc_sp_t rate, agc_sp_t err)
  *
  * RETURNS: uint16_t -- uint16_t -- channel 5 yaw jet bits
  **********************************************************************/
-uint16_t agc_entry_dap_yaw_jet_bits(int jndx)
+static uint16_t agc_entry_dap_yaw_jet_bits(int jndx)
 {
     static const uint16_t yjetcode[3] = {00120, 00000, 00240};
 
@@ -501,7 +497,7 @@ agc_sp_t agc_erase_amg(void)
  *
  * RETURNS: none
  **********************************************************************/
-void agc_entry_dap_flushjet(void)
+static void agc_entry_dap_flushjet(void)
 {
     agc_chan_write(AGC_CHAN_ROLLJETS, 0);
     agc_chan_write(AGC_CHAN_PYJETS, 0);

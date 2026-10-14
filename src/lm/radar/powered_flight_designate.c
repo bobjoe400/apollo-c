@@ -69,7 +69,6 @@
 #include "agc/core/state.h"
 #include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
-#include "agc/io/service.h"
 #include "radar.h"
 
 #define PFD_GAIN        (-8786)             /* RR29GAIN DEC -.53624   */

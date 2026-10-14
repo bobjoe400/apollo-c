@@ -39,7 +39,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 
 #define EW15_MAX 077777u /* a raw 15-bit AGC word */

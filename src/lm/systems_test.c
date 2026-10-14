@@ -11,7 +11,7 @@
  * AGC SOURCE:
  *   Luminary099 SYSTEM_TEST_STANDARD_LEAD_INS.agc pp.370-372,
  *   IMU_PERFORMANCE_TEST_2.agc pp.373-381, IMU_PERFORMANCE_TESTS_4.agc
- *   pp.382-389 (Comanche055 falls into IMUTEST, src/csm/prelaunch_align.c)
+ *   pp.382-389 (Comanche055 falls into IMUTEST, src/csm/prelaunch/align.c)
  *
  * EXTERNAL VARIABLES:
  *   (AGC erasables reached through accessors or by ECADR)
@@ -80,7 +80,7 @@
  *   yields (CHANG1) between the reads.
  *
  *   Also translated: ZEROING, OVERFFIX, ERTHRVSE / EARTHR (the
- *   same text as the CM prelaunch ones, src/csm/prelaunch_align.c).  The
+ *   same text as the CM prelaunch ones, src/csm/prelaunch/align.c).  The
  *   erasable-memory program helpers in SYSTEM_TEST_STANDARD_LEAD_INS
  *   (E/BKCALL, E/CALL, E/SWITCH, E/JOBWAK) exist only so that programs
  *   loaded into erasable memory can make bank calls; they vanish in C
@@ -90,7 +90,6 @@
 #include <stddef.h>
 
 #include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/interp.h"
 #include "agc/core/interp_words.h"
@@ -489,7 +488,7 @@ static agc_status_t st_flush(void)
  *
  * RETURNS: AGC_STATUS_OK, BAD_ARG for a count outside 1..256
  **********************************************************************/
-agc_status_t agc_systems_test_zeroing(uint16_t *block, int n)
+static agc_status_t agc_systems_test_zeroing(uint16_t *block, int n)
 {
     if (!AGC_ASSERT(n >= 1 && n <= ZEROING_MAX))
     {
@@ -514,7 +513,7 @@ agc_status_t agc_systems_test_zeroing(uint16_t *block, int n)
  *
  * RETURNS: a + 2^28, cs 2^28
  **********************************************************************/
-agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a)
+static agc_dp_t agc_systems_test_overffix(agc_interp_t *ip, agc_dp_t a)
 {
     agc_dp_t s = agc_dp_add(ip, a, AGC_DP_MAX); /* running sum, cs 2^28 */
 

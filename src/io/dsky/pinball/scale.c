@@ -205,7 +205,7 @@ static uint16_t *pin_own_word(int idx)
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition,
  *          NOT_FOUND
  **********************************************************************/
-agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value)
+static agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value)
 {
     int kind = -1;                         /* id kind: 0 SP raw, 1 SP, 2 DP */
     int idx  = pin_own_id(data_id, &kind); /* word index or -1 */

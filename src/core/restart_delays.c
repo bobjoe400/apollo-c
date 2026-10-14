@@ -36,7 +36,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 
 static agc_dp_t g_p40tmp;   /* P40TMP: LONGCALL / TIGON delay, cs 2^28 */

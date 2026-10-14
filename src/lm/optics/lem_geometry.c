@@ -40,7 +40,6 @@
 
 #include "agc/core/interp_words.h"
 #include "agc/core/state.h"
-#include "agc/exec/exec.h"
 #include "agc/imu/imu.h"
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"

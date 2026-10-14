@@ -1064,7 +1064,7 @@ agc_status_t agc_dsky_uprupt(uint16_t inlink)
  * RETURNS: agc_status_t -- OK, BAD_ARG on a failed precondition; else the
  *          status of the routine it calls
  **********************************************************************/
-agc_status_t agc_dsky_key(uint8_t code)
+static agc_status_t agc_dsky_key(uint8_t code)
 {
     if (!AGC_ASSERT(code <= PIN_LOW5) || !AGC_ASSERT(code != 0u))
     {

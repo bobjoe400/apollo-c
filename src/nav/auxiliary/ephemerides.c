@@ -65,7 +65,6 @@
 #include "agc/core/interp_words.h"
 #include "agc/core/state.h"
 #include "agc/nav/auxiliary.h"
-#include "internal.h"
 
 /* ---------------- CM constants and uplinked data ----------------------- */
 /* NINEB4 2DEC 9.0 B-4 (oct 22000 00000): 9 scale 2^4.                    */

@@ -40,7 +40,6 @@
  **********************************************************************/
 #include "../internal.h"
 #include "agc/core/assertion.h"
-#include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_csm.h"
 #include "agc/core/state.h"

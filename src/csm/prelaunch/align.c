@@ -1,5 +1,5 @@
 /**********************************************************************
- * FILE NAME: prelaunch_align.c
+ * FILE NAME: align.c
  *
  * PURPOSE:
  *   Comanche prelaunch alignment, part 1: P01 prelaunch initialization
@@ -71,7 +71,7 @@
 #include "agc/io/dsky.h"
 #include "agc/io/service.h"
 #include "agc/programs/alignment.h"
-#include "prelaunch_internal.h"
+#include "internal.h"
 
 #define OMEG_MS        ((agc_dp_t) 65334634)        /* OMEG/MS 2DEC .24339048 (07623 26552) */
 #define TIME_WRAP      ((agc_dp_t) 0x10000000L)     /* DPPOSMAX + ONEDPP: 2^28 cs */
@@ -130,26 +130,6 @@ agc_status_t agc_csm_prelaunch_set_pad(agc_dp_t latitude, agc_dp_t azimuth, agc_
 }
 
 /**********************************************************************
- * AGC: none (accessors for tests and P11) -- ERVECTOR and THETAN1
- *
- * RETURNS: agc_vec_t -- ERVECTOR (rev/cs x 2^-19 B0)
- **********************************************************************/
-agc_vec_t agc_csm_prelaunch_ervector(void)
-{
-    return (ervector);
-}
-
-/**********************************************************************
- * AGC: none (accessor) -- THETAN1, the compass commands of this cycle
- *
- * RETURNS: agc_vec_t -- THETAN1, rev 2^0
- **********************************************************************/
-agc_vec_t agc_csm_prelaunch_thetan(void)
-{
-    return (pl.filt.thetan1);
-}
-
-/**********************************************************************
  * AGC: none (accessors) -- TMARK for the gyrocompass file
  *
  * ARGUMENTS:
@@ -191,7 +171,7 @@ agc_dp_t prelaunch_tmark(void)
  *
  * RETURNS: none
  **********************************************************************/
-void agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm)
+static void agc_csm_prelaunch_posn17c(agc_dp_t azimuth, agc_mat_t *xsm)
 {
     agc_dp_t s = agc_dp_sin(azimuth); /* sin AZ / 2, 2^0           */
     agc_dp_t c = agc_dp_cos(azimuth); /* cos AZ / 2, 2^0           */

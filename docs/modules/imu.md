@@ -9,7 +9,7 @@ AGC sources (CM = Comanche055, LM = Luminary099):
 * GIMBAL_LOCK_AVOIDANCE.agc, KALCMANU_STEERING.agc, ANGLFIND.agc (CM) /
   ATTITUDE_MANEUVER_ROUTINE.agc (LM) -> src/imu/maneuver.c
 * R60_62.agc (both) -> src/imu/attitude_maneuver.c
-* IMU_CALIBRATION_AND_ALIGNMENT.agc (CM only, pp.423-455) -> src/csm/prelaunch_align.c
+* IMU_CALIBRATION_AND_ALIGNMENT.agc (CM only, pp.423-455) -> src/csm/prelaunch/align.c
 * Public header include/agc/imu/imu.h; pending externals in src/imu/pending.h.
 
 Note: IMUMON / SETISSW / PIPFAIL / GLOCKMON live in T4RUPT_PROGRAM.agc, which is
@@ -78,7 +78,7 @@ src/imu/mode.c (moding, STALL/GOODEND/BADEND, R02, P06 stub), src/imu/gyro.c (IM
 torquing tasks), src/imu/compensation.c, src/imu/alignment.c, src/imu/maneuver_calc.c (KALCMANU mathematics),
 src/imu/maneuver.c (GOMANUR/KALCMAN3/steering), src/imu/attitude_maneuver.c (VECPOINT, BALLANGS, R60, R62),
 src/imu/imu_vflags*.c (vehicle-specific flag ids, rendz pattern), src/imu/internal.h (lane-private),
-src/imu/pending.h (assumed external interfaces), src/csm/prelaunch_align.c, include/agc/imu/imu.h,
+src/imu/pending.h (assumed external interfaces), src/csm/prelaunch/align.c, include/agc/imu/imu.h,
 tests/imu/imu.c.
 
 ## Deviations
@@ -109,7 +109,7 @@ tests/imu/imu.c.
 ## Stubs
 * agc_imu_standby, agc_imu_postand (P06 standby / POSTAND time recovery: needs scaler snapshot, GOPERF1
   loop, restart to POSTAND).
-* src/csm/prelaunch_align.c: IMUTEST, ESTIMS (gyrocompass/drift-test filter loop), ALWAYSG/COMPGS,
+* src/csm/prelaunch/align.c: IMUTEST, ESTIMS (gyrocompass/drift-test filter loop), ALWAYSG/COMPGS,
   RESTAIER, CHKCOMED, TAR/EREF, GCOMPVER, OPTDATA, LATAZCHK, AZMTHCG1, TARGDRVE (agc_csm_prelaunch_*).
   Translated there: FINETIME, POSN17C, ERTHRVSE, EARTHR/OVERFFIX.
 
@@ -219,7 +219,7 @@ prelaunch programs P01-P03. The realign that uses them is drawn in
   in GOTOPOOH (or GOTOV56 in R61); RELINUS restarts a priority display
   only with TRACKFLG / RNDVZFLG. The auto test reads channel 31 bits
   13-15 (CM) or channel 30 bit 10 then channel 31 bit 14 (LM ISITAUTO).
-* **CSM prelaunch** (`src/csm/prelaunch_align.c`,
+* **CSM prelaunch** (`src/csm/prelaunch/align.c`,
   `prelaunch_gyrocompass.c`, `prelaunch_verify.c`): P01 after P11
   (NOP01FLG) is POODOO 01521; a mode switch or torquing ending bad is
   ALARM 01601 and ENDTEST1 (`prelaunch_somerr2`). P02 loops every 0.5 s

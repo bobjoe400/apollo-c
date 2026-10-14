@@ -39,7 +39,6 @@
 
 #include "agc/core/assertion.h"
 #include "agc/nav/auxiliary.h"
-#include "internal.h"
 
 static const agc_vec_t STAR_TABLE[AGC_STAR_COUNT] = { /* scale 2^1 */
     /*  1 (oct 01) Alpheratz */

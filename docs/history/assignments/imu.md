@@ -13,7 +13,7 @@ Scope, into src/imu/ with include/agc/imu/imu.h (you create it):
   diff and translate both where they differ) -> maneuver.c
 - R60_62.agc (attitude maneuver R60, crew-defined maneuver R62) -> r60.c
 - IMU_CALIBRATION_AND_ALIGNMENT.agc (Comanche; prelaunch P01-P03 pieces) ->
-  src/csm/prelaunch_align.c
+  src/csm/prelaunch/align.c
 Diff CM vs LM for shared files. The IMU hardware side (CDU counters,
 channel 012/014/030 bits, PIPA counters) is accessed via agc_channels.h and
 agc_state.h accessors. Waitlist tasks and jobs via agc_exec.h.

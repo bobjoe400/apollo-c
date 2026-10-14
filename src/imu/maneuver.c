@@ -366,7 +366,7 @@ agc_status_t agc_kalc_set_rateindx(agc_sp_t idx)
  *
  * RETURNS: agc_sp_t -- RATEINDX 0, 2, 4, 6
  **********************************************************************/
-agc_sp_t agc_kalc_rateindx(void)
+static agc_sp_t agc_kalc_rateindx(void)
 {
     agc_sp_t idx = rateindx_lm; /* RATEINDX, B0 */
 
@@ -393,21 +393,6 @@ agc_sp_t agc_kalc_rateindx(void)
 bool agc_kalc_active(void)
 {
     return (attcadr != AGC_JOB_NONE);
-}
-
-/**********************************************************************
- * AGC: none (ATTSTALL view) -- KALCMANU has no failure return
- *
- * ENDMANU / GOODMANU always resume the user (the AGC's "all returns
- * are now made via GOODEND").
- *
- * RETURNS: agc_imu_stall_result_t -- SLEEPING while active, else GOOD
- **********************************************************************/
-agc_imu_stall_result_t agc_kalc_outcome(void)
-{
-    /* KALCMANU has no failure return: ENDMANU / GOODMANU always resume
-     * the user (the AGC's "all returns are now made via GOODEND").       */
-    return (agc_kalc_active() ? AGC_IMU_STALL_SLEEPING : AGC_IMU_STALL_GOOD); /* ATTCADR */
 }
 
 /* ======================================================================= */
@@ -465,7 +450,7 @@ void agc_kalc_stoprate(void)
  * RETURNS: agc_status_t -- OK; AGC_STATUS_BAD_ARG on a failed
  *          precondition
  **********************************************************************/
-agc_status_t agc_kalc_zeroerror(void)
+static agc_status_t agc_kalc_zeroerror(void)
 {
     if (is_lm())
     {

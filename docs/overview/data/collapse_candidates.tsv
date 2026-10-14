@@ -1,5 +1,5 @@
 helper	file	line	caller	site_line	sites	helper_lines	caller_lines	guards	guards_dedup	dedup_lines	merged_lines	fits60	shape	mech	refuse	root	root_merged	protection	helper_comment
-prelaunch_tmark	src/csm/prelaunch_align.c	187	agc_job_gyrocompassing_filter_restart	693	1	1	47	0	0	0	48	yes	assign	no	cross-file;value-assign	agc_job_gyrocompassing_filter_restart	48	none	AGC: none (accessor) -- TMARK
+prelaunch_tmark	src/csm/prelaunch/align.c	187	agc_job_gyrocompassing_filter_restart	693	1	1	47	0	0	0	48	yes	assign	no	cross-file;value-assign	agc_job_gyrocompassing_filter_restart	48	none	AGC: none (accessor) -- TMARK
 exec_cp_modes_csm	src/exec/change_program/csm.c	78	cp_modes	54	1	1	1	0	0	0	2	yes	expr	no	cross-file;value-expr	cp_modes	3	none	-
 exec_cp_modes_lm	src/exec/change_program/lm.c	66	cp_modes	54	1	1	1	0	0	0	2	yes	expr	no	cross-file;value-expr	cp_modes	3	none	-
 exec_cp_mmnumber	src/exec/change_program/sequence.c	47	exec_up_servidle	55	1	1	5	0	0	0	6	yes	expr	no	cross-file;value-expr	gopoodoo	24	none	-
@@ -32,7 +32,7 @@ dp_shift	src/lm/burns/dps_burn_rasteer.c	62	rs_geometry	86	2	3	21	0	0	0	24	yes	a
 rz_sp_to_word	src/programs/displays/display.c	847	rz_set_dsptem_dp	898	2	3	2	0	0	0	5	yes	expr	no	multi-site;value-expr;renamed-args;early-return	rz_set_dsptem_dp	5	none	A signed SP value as a raw 15-bit ones' complement word.
 rz_word_to_sp	src/programs/displays/display.c	824	rz_dsptem_dp	875	2	3	5	0	0	0	8	yes	assign	no	multi-site;value-assign;renamed-args;early-return	rz_dsptem_dp	8	none	A raw 15-bit ones' complement word as a signed SP value.
 words_for_vehicle	src/core/state.c	192	agc_flag_valid	223	1	4	3	0	0	0	7	yes	expr	no	value-expr	agc_flag_valid	7	none	AGC: none (helper) -- number of flagwords in this vehicle's rope
-prelaunch_set_tmark	src/csm/prelaunch_align.c	170	agc_job_gyrocompassing_torque	753	1	4	18	1	0	0	22	yes	init	no	cross-file;value-init;renamed-args;early-return	agc_job_gyrocompassing_torque	22	none	AGC: none (accessors) -- TMARK for the gyrocompass file
+prelaunch_set_tmark	src/csm/prelaunch/align.c	170	agc_job_gyrocompassing_torque	753	1	4	18	1	0	0	22	yes	init	no	cross-file;value-init;renamed-args;early-return	agc_job_gyrocompassing_torque	22	none	AGC: none (accessors) -- TMARK for the gyrocompass file
 vec_ok	src/imu/attitude_maneuver.c	97	agc_imu_set_scaxis	119	2	4	6	0	0	0	10	yes	expr	no	multi-site;value-expr	agc_imu_set_scaxis	10	none	AGC: none (checker) -- every component a valid DP
 params_in_range	src/imu/compensation.c	212	agc_imu_comp_load	237	1	4	4	0	0	0	8	yes	expr	no	value-expr	agc_imu_comp_load	8	none	AGC: none (checker) -- compensation coefficients within a word
 pin_id_is_raw	src/io/dsky/pinball/scale.c	304	pin_comp_scale	344	1	4	10	0	0	0	14	yes	assign	no	value-assign;renamed-args;early-return	pin_comp_scale	14	none	AGC: none (data layer)
@@ -92,7 +92,7 @@ mul_half	src/nav/auxiliary/planetary.c	288	agc_planet_moonmx	376	4	1	29	0	0	0	30
 agc_conic_mu_	src/nav/conic/common.c	108	agc_conic_kepprep	568	1	1	23	0	0	0	24	yes	assign	no	cross-file;value-assign;renamed-args	agc_conic_kepprep	47	page-only	MUEARTH,2 / MUM (ORBITAL_INTEGRATION.agc p. 1354) -- MU of the body as
 rz_set_csm_residuals	src/csm/navigation/tracking_data.c	1080	agc_job_cislunar_midcourse_navigation_incorporate	1301	2	2	59	0	0	0	60	yes	stmt	no	cross-file;multi-site;renamed-args	agc_job_cislunar_midcourse_navigation_incorporate	60	page-only	Store N49DISP +index (P23 uses it too).
 exec_cp_stop_servicer_lm	src/exec/change_program/lm.c	85	cp_select	121	1	2	20	0	0	0	21	yes	stmt	no	cross-file	cp_select	21	page-only	ISSERVON (L p.228): DOWNFLAG AVEGFLAG, OUTROUTE = V37RET, ENDOFJOB.
-exec_clear_modecadr	src/exec/erasable.c	36	startsb2	137	1	2	16	0	0	0	17	yes	stmt	no	cross-file	startsb2	37	page-only	STARTSB2: TS IMUCADR / TS OPTCADR / TS RADCADR (+0).
+exec_clear_modecadr	src/exec/modecadr.c	36	startsb2	137	1	2	16	0	0	0	17	yes	stmt	no	cross-file	startsb2	37	page-only	STARTSB2: TS IMUCADR / TS OPTCADR / TS RADCADR (+0).
 del_diag	src/imu/maneuver_calc.c	291	agc_kalc_delcomp	351	3	2	20	0	0	0	22	yes	assign	no	multi-site;value-assign;renamed-args	agc_kalc_delcomp	26	page-only	DELCOMP diagonal (ANGLFIND.agc p.407) -- u u (1 - cos A) + cos A
 pin_nountest	src/io/dsky/pinball/verbs.c	278	pin_load_verb	430	1	2	17	0	0	0	19	yes	expr	no	cross-file;value-expr;collision:s	pin_verbfan	326	page-only	AGC: NOUNTEST (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 332)
 net_min	src/lm/dap/accont.c	200	axis_against_aos	465	3	2	29	0	0	0	31	yes	init	no	multi-site;value-init;collision:a	agc_lm_dap_jet_accel_update	251	page-only	1/NETMIN (p.1504): ratio ANET / ACOAST of the opposite sense.
@@ -157,7 +157,7 @@ rz_landmark_marks_start	src/csm/navigation/landmark_navigation.c	627	agc_job_orb
 exec_up_servidle	src/exec/change_program/idle.c	48	gopoodoo	367	1	5	18	2	0	0	23	yes	init	no	cross-file;value-init;early-return	gopoodoo	24	page-only	STRTIDLE (L p.1383): SERVIDLE puts SERVICER into its ground state and
 dcm_quadrant	src/imu/maneuver_calc.c	227	agc_kalc_dcmtocdu	267	2	5	10	0	0	0	15	yes	init	no	multi-site;value-init;renamed-args;early-return	agc_kalc_dcmtocdu	15	label<2refs:SUHALFA=1	SUHALFA / SUHALFAP (ANGLFIND.agc p.410) -- DCMTOCDU quadrant
 del_pair	src/imu/maneuver_calc.c	313	agc_kalc_delcomp	356	3	5	20	0	0	0	24	yes	stmt	no	multi-site;renamed-args;param-written	agc_kalc_delcomp	26	page-only	DELCOMP off-diagonal pair (ANGLFIND.agc pp.408-409)
-dif_cleanend	src/io/dsky/display_if.c	826	dif_nvdsp	1041	1	5	25	1	0	0	30	yes	init	no	value-init;early-return;collision:st	dif_nvdsp	58	page-only	AGC: CLEANEND (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1478)
+dif_cleanend	src/io/dsky/display_interface.c	826	dif_nvdsp	1041	1	5	25	1	0	0	30	yes	init	no	value-init;early-return;collision:st	dif_nvdsp	58	page-only	AGC: CLEANEND (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1478)
 pin_arout1	src/io/dsky/pinball/scale.c	827	pin_sfout_dspdcend	1099	1	5	24	1	0	0	28	yes	return-tail	no	renamed-args	pin_verbfan	326	page-only	AGC: AROUT1SF (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 336)
 pin_reqadd	src/io/dsky/pinball/verbs.c	425	pin_testnn	506	1	5	16	0	0	0	20	yes	return-tail	no	collision:s	pin_testnn	20	page-only	AGC: REQADD (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 324)
 lm_dap_time6_value	src/lm/dap/rcs/t6rupt.c	70	lm_dap_jtlst	225	1	5	28	0	0	0	33	yes	init	no	value-init;early-return	lm_dap_jtlst	33	page-only	TIME6 as a ones'-complement value (-0, the "rupt due" state, is 0).
@@ -187,8 +187,8 @@ rte_precision_start	src/csm/burns/return_to_earth/precision.c	194	agc_job_return
 roll_coast_region	src/csm/dap/tvc/rolldap.c	235	roll_regions	295	1	7	24	0	0	0	31	yes	expr	no	value-expr;collision:t	agc_task_rolldap	103	page-only	REG2TST .. REG5TST (TVCROLLDAP.agc pp. 991-992) -- the coast regions
 dofstart_csm	src/exec/fresh_start.c	267	dofstart	316	1	7	11	0	0	0	18	yes	assign	no	value-assign	dofstart	30	page-only	DOFSTART (C p.183): outputs off and fresh-start initialisation.
 phase_tables_ok	src/exec/fresh_start.c	370	goprog3	394	1	7	23	0	0	0	30	yes	init	no	value-init;renamed-args;early-return;collision:ok	goprog3	30	label<2refs:PCLOOP=1	PCLOOP .. PTBAD (C p.188 / L p.218): every group's -PHASEn must be
-dif_first_vn	src/io/dsky/display_if.c	998	dif_nvdsp	1037	1	7	25	0	0	0	32	yes	init	no	value-init;early-return	dif_nvdsp	58	page-only	AGC: NVDSP (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1476)
-dif_second_vn	src/io/dsky/display_if.c	965	dif_nvdsp	1071	1	7	25	0	0	0	32	yes	assign	no	value-assign;renamed-args;early-return;collision:vn	dif_nvdsp	58	page-only	AGC: 1STOR2ND (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1477)
+dif_first_vn	src/io/dsky/display_interface.c	998	dif_nvdsp	1037	1	7	25	0	0	0	32	yes	init	no	value-init;early-return	dif_nvdsp	58	page-only	AGC: NVDSP (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1476)
+dif_second_vn	src/io/dsky/display_interface.c	965	dif_nvdsp	1071	1	7	25	0	0	0	32	yes	assign	no	value-assign;renamed-args;early-return;collision:vn	dif_nvdsp	58	page-only	AGC: 1STOR2ND (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1477)
 pin_arthinsf	src/io/dsky/pinball/sfin.c	142	pin_sfin_const	379	1	7	16	1	0	0	22	yes	return-tail	no	renamed-args	pin_enter	287	page-only	AGC: ARTHINSF (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 350)
 t4_cdrve	src/io/service/t4rupt.c	216	t4_display_pass	260	1	7	8	0	0	0	15	yes	expr	no	value-expr;early-return	agc_t4rupt	54	page-only	CDRVE (T4RUPT_PROGRAM.agc p.134 LM, p.134 CM) -- send the DSPTAB +11D
 t4_rrgimon	src/io/service/t4rupt_lm.c	307	agc_t4_rr_monitor	412	1	7	21	0	0	0	28	yes	assign	no	value-assign;early-return	agc_t4_rr_monitor	28	label<2refs:RRGIMON=1	RRGIMON / MONREPOS (T4RUPT_PROGRAM.agc pp.186-187) -- RR gimbal limit
@@ -201,8 +201,8 @@ tps_timethet	src/csm/navigation/tpi_search.c	212	tps_limits	266	2	8	26	0	0	0	34	
 exec_cp_cleanup_lm	src/exec/change_program/lm.c	118	agc_job_change_program_continue	337	1	8	12	1	0	0	20	yes	assign	no	cross-file;value-assign;early-return	agc_job_change_program_continue	104	page-only	R00 after INTSTALL (L p.229): 3AXISFLG down, FLGWRD11 = LRBYBIT (R12),
 cjw_kind	src/exec/phase_table.c	245	store_var	287	1	8	12	0	0	0	20	yes	assign	no	value-assign;renamed-args;collision:k	store_var	20	page-only	The restart kind a type C phase names by its CJW bits, as RESTARTS
 coarse_slice	src/imu/mode.c	811	agc_task_coarse_align_pulses	851	1	8	21	0	0	0	29	yes	expr	no	value-expr;renamed-args;early-return	agc_task_coarse_align_pulses	29	label<2refs:COMPOS=1	COMPOS / COMNEG / COMZERO (IMU_MODE_SWITCHING_ROUTINES.agc
-dif_goanidle	src/io/dsky/display_if.c	931	dif_nvdsp	1075	1	8	25	0	0	0	32	yes	return-tail	no	renamed-args	dif_nvdsp	58	page-only	AGC: GOANIDLE (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1477)
-dif_rest	src/io/dsky/display_if.c	896	dif_nvdsp	1052	1	8	25	1	0	0	32	yes	return-tail	no	collision:st	dif_nvdsp	58	page-only	AGC: REST (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1478)
+dif_goanidle	src/io/dsky/display_interface.c	931	dif_nvdsp	1075	1	8	25	0	0	0	32	yes	return-tail	no	renamed-args	dif_nvdsp	58	page-only	AGC: GOANIDLE (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1477)
+dif_rest	src/io/dsky/display_interface.c	896	dif_nvdsp	1052	1	8	25	1	0	0	32	yes	return-tail	no	collision:st	dif_nvdsp	58	page-only	AGC: REST (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1478)
 t4_display_pass	src/io/service/t4rupt.c	258	agc_t4rupt	422	1	8	11	0	0	0	19	yes	init	no	value-init;renamed-args;early-return;collision:st	agc_t4rupt	54	label<2refs:CDRVE=0	CDRVE / DSPOUT / NODSPOUT (pp.134-137): returns the TIME4 delay.
 verb_zero_imu	src/io/verbs/extended_verbs.c	273	fan_shared	433	1	8	56	1	0	0	64	no	expr	no	value-expr;early-return;collision:st	agc_job_extended_verb	102	label<2refs:VBZERO=1	VBZERO (V40, C p.238 / L p.265), IMU part: zero the ICDUs, then GOPIN.
 rs_speed	src/lm/burns/dps_burn_rasteer.c	114	agc_lm_rasteer1	223	2	8	39	0	0	0	47	yes	init	no	multi-site;value-init;renamed-args;collision:q	agc_lm_rasteer1	97	page-only	One velocity component (p.777-778): with L = SS - 30D (for A) or SS
@@ -285,7 +285,7 @@ exec_cp_engine_off_to_idle	src/exec/change_program/csm.c	88	agc_change_program	1
 exec_up_dofstart	src/exec/change_program/idle.c	195	dofstart	324	1	13	11	0	0	0	23	yes	return-tail	no	cross-file;collision:st	dofstart	30	page-only	DOFSTART's resets of the erasables other modules own (C p.183-184 /
 wtlst4	src/exec/waitlist.c	144	wait2	207	2	13	20	0	0	0	32	yes	return-tail	no	multi-site;renamed-args	wait2	32	label<2refs:WTLST4=1	WTLST4 + WTLST2 (C pp.1227,1230 / L pp.1123,1127): insert `task` as
 external_delta_v_vectors_lm	src/guidance/external_delta_v.c	235	agc_guid_external_delta_v_vectors	288	1	13	6	0	0	0	19	yes	expr	no	value-expr;early-return	agc_guid_external_delta_v_vectors	34	page-only	S30.1 Luminary (p.616-617): LEMPREC; the LV axes at TIG built inline:
-dif_start_makeplay	src/io/dsky/display_if.c	1594	agc_dsky_display	1678	2	13	27	0	0	0	39	yes	return-tail	no	multi-site;renamed-args	agc_dsky_display	39	page-only	AGC: GODSPRS1, BOTHJOBS (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1472)
+dif_start_makeplay	src/io/dsky/display_interface.c	1594	agc_dsky_display	1678	2	13	27	0	0	0	39	yes	return-tail	no	multi-site;renamed-args	agc_dsky_display	39	page-only	AGC: GODSPRS1, BOTHJOBS (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1472)
 pin_mmchang_resume	src/io/dsky/pinball/monitor.c	437	pin_load_resume	519	1	13	29	1	0	0	41	yes	return-tail	no	cross-file	pin_enter	287	page-only	AGC: MMCHANG (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 365)
 as_engoff	src/lm/ascent.c	502	agc_lm_ascent	601	1	13	55	0	0	0	67	no	stmt	no	early-return;collision:a	agc_lm_ascent	93	label<2refs:ENGOFF=1	ENGOFF (pp. 852-853): engine-off task at TGO, restart protected in
 timeburn_aps	src/lm/burns/dps_burn.c	835	agc_job_timeburn_lm	933	1	13	24	0	0	0	37	yes	assign	no	value-assign;renamed-args;early-return;collision:g	agc_job_timeburn_lm	37	page-only	S40.13 short-burn branch, APS (p.773-774): v = |VGTIG| less the 4 s of
@@ -298,7 +298,7 @@ step_downcntl	src/csm/entry/reentry.c	1248	entry_upcontrol_step	2254	1	14	59	0	0
 cn_tangents	src/csm/navigation/cislunar_navigation.c	383	cn_horiz	453	1	14	32	0	0	0	45	yes	stmt	no	param-written	cn_pointaxs	116	page-only	The two tangent points of the horizon ellipse (semi-axes AH, BH) seen
 exec_cp_rendezvous_csm	src/exec/change_program/csm.c	182	cp_nouveau	302	1	14	29	0	0	0	43	yes	assign	no	cross-file;value-assign;renamed-args;early-return	agc_job_change_program_continue	104	label<2refs:REV37=1	RENDV00 .. REV37 (C p.201): P20 requested while P20 runs: STATQUO (keep
 initial_vg_lambert_csm	src/guidance/burn_steering.c	210	agc_guid_initial_velocity_to_gain	329	1	14	33	0	0	0	47	yes	expr	no	value-expr;early-return;collision:rz	agc_guid_initial_velocity_to_gain	72	label<2refs:S40.1B=1	S40.1B Comanche (p.710-711): VIPRIME at TIG - 2 s (kept in UT), then
-dif_makenorm	src/io/dsky/display_if.c	749	dif_makeplay	810	1	14	6	0	0	0	19	yes	return-tail	yes	-	dif_makeplay	50	page-only	AGC: IFLEGAL, OKTOPLAY (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1470-1471)
+dif_makenorm	src/io/dsky/display_interface.c	749	dif_makeplay	810	1	14	6	0	0	0	19	yes	return-tail	yes	-	dif_makeplay	50	page-only	AGC: IFLEGAL, OKTOPLAY (DISPLAY_INTERFACE_ROUTINES.agc, CM pp. 1470-1471)
 pin_enter_once	src/io/dsky/pinball/keys.c	396	pin_enter	455	1	14	8	2	0	0	22	yes	assign	no	value-assign;early-return	pin_enter	287	page-only	AGC: ENTER, ENTPASHI, ACCEPTWD
 pin_sign_key	src/io/dsky/pinball/keys.c	326	pin_charin2	784	2	14	49	2	0	0	62	no	return-tail	no	multi-site;collision:s	pin_charin	182	page-only	AGC: POSGN, NEGSGN, BOTHSGN
 t4_getopcmd	src/io/service/t4rupt_csm.c	703	agc_t4_optics_drive	832	2	14	32	0	0	0	46	yes	assign	no	multi-site;value-assign;renamed-args	agc_t4_optics_drive	52	label<2refs:GETOPCMD=1	GETOPCMD (p.167) -- drive command from the desired and actual CDU
@@ -332,10 +332,10 @@ csm_rcs_attitude_control_phase	src/csm/dap/rcs/t5rupt.c	420	rcs_sett5	161	1	16	1
 entry_sequencer	src/csm/entry/reentry.c	2537	agc_entry_reestablish_sequencer	2644	1	16	15	0	0	0	31	yes	assign	no	value-assign;renamed-args;early-return;param-written	agc_entry_reestablish_sequencer	399	page-only	AGC: none (the GOTO chain of REENTRY_CONTROL.agc pp. 847-875) -- run the
 step_glimiter	src/csm/entry/reentry.c	1608	entry_final_phase_step	2353	1	16	49	0	0	0	64	no	return-tail	no	collision:es,m	agc_entry_reestablish_sequencer	399	label<2refs:GLIMITER=1	GLIMITER (p. 872): above GMAX/2 limit the downlift so that RDOT +
 step_upcontrol_reference	src/csm/entry/reentry.c	1088	entry_upcontrol_step	2128	1	16	59	0	0	0	74	no	return-tail	no	collision:es,ip,m	agc_entry_reestablish_sequencer	399	label<2refs:CONT3=1	CONT3 (pp. 864-865): VREF = FACT1 (1 - SQRT(FACT2 D + ALP)), RDOTREF =
-setgwlst	src/csm/prelaunch_gyrocompass.c	118	agc_job_gyrocompassing_wait	252	1	16	8	1	0	0	24	yes	assign	no	value-assign;early-return;collision:st	agc_job_gyrocompassing_wait	24	label<2refs:SETGWLST=1	SETGWLST (IMU_CALIBRATION_AND_ALIGNMENT.agc p.436) -- WAITLIST ALLOOP
+setgwlst	src/csm/prelaunch/gyrocompass.c	118	agc_job_gyrocompassing_wait	252	1	16	8	1	0	0	24	yes	assign	no	value-assign;early-return;collision:st	agc_job_gyrocompassing_wait	24	label<2refs:SETGWLST=1	SETGWLST (IMU_CALIBRATION_AND_ALIGNMENT.agc p.436) -- WAITLIST ALLOOP
 torque	src/imu/gyro.c	379	gselect	432	1	16	7	0	0	0	23	yes	assign	no	value-assign;early-return	gselect	23	label<2refs:MAJ+=1	MAJ+ / MAJ- / GMERGE / LONGGYRO (IMU_MODE_SWITCHING_ROUTINES.agc
 cofmaxgo	src/imu/maneuver_calc.c	383	agc_kalc_compute	531	1	16	46	0	0	0	62	no	assign	no	value-assign;renamed-args;param-written;collision:r	agc_kalc_compute	64	label<2refs:COFMAXGO=0	COFMAXGO / METHOD1-3 (ANGLFIND.agc pp.401-403) -- signs of the
-dif_makemark	src/io/dsky/display_if.c	697	dif_makeplay	802	1	16	6	1	0	0	21	yes	return-tail	yes	-	dif_makeplay	50	page-only	AGC: MAKEMARK, CHKPRIO, MARSLEEP
+dif_makemark	src/io/dsky/display_interface.c	697	dif_makeplay	802	1	16	6	1	0	0	21	yes	return-tail	yes	-	dif_makeplay	50	page-only	AGC: MAKEMARK, CHKPRIO, MARSLEEP
 pin_dspdcput	src/io/dsky/pinball/scale.c	1132	pin_decdsp	1193	1	16	15	0	0	0	31	yes	assign	no	value-assign;renamed-args;early-return;collision:st	pin_verbfan	326	page-only	AGC: DSPDCPUT (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 333)
 pin_sfin_const	src/io/dsky/pinball/sfin.c	374	pin_putdecsf	474	1	16	40	0	0	0	56	yes	assign	no	value-assign;renamed-args;early-return	pin_enter	287	page-only	AGC: SFINTABR (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 349)
 t4_quikdsp	src/io/service/t4rupt.c	289	agc_t4rupt	416	1	16	11	0	0	0	27	yes	assign	no	value-assign;early-return;collision:st	agc_t4rupt	54	label<2refs:QUIKDSP=1	QUIKDSP / QUIKOFF / NODSPY / SYNCT4 (pp.137-138).
@@ -349,7 +349,7 @@ tvc_init_filter_timing	src/csm/dap/tvc/init.c	278	agc_task_tvc_initialize	407	1	
 pp_getoff	src/csm/entry/dap.c	963	dap_phase_plane	1050	2	17	47	0	0	0	63	no	stmt	no	multi-site;renamed-args	dap_phase_plane	63	label<2refs:GETON2=1	GETON2 / GETOFF / TOFFOVFL / GETOFF2 / TIMSCAL (pp. 1085-1086).
 rst_table_lookup	src/exec/restart_tables.c	273	restart_table	180	2	17	15	2	0	0	32	yes	init	no	cross-file;multi-site;value-init;renamed-args;early-return	agc_restart_group	60	page-only	ITSATBL / ITSEVEN / PHSPART2 (RESTARTS_ROUTINE C pp.1416-1419): the
 timechk	src/imu/maneuver.c	578	incrdcdu_tmanuchk	693	1	17	53	0	0	0	70	no	init	no	value-init;early-return	incrdcdu_tmanuchk	73	label<2refs:TIMECHK=1	TIMECHK / MANUOFF / 2NDRETRN (KALCMANU_STEERING.agc p.415 CM; LM
-dif_makeprio	src/io/dsky/display_if.c	645	dif_makeplay	807	1	17	6	1	0	0	22	yes	return-tail	yes	-	dif_makeplay	50	page-only	AGC: MAKEPRIO (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1469)
+dif_makeprio	src/io/dsky/display_interface.c	645	dif_makeplay	807	1	17	6	1	0	0	22	yes	return-tail	yes	-	dif_makeplay	50	page-only	AGC: MAKEPRIO (DISPLAY_INTERFACE_ROUTINES.agc, CM p. 1469)
 pin_nvcom	src/io/dsky/pinball/keys.c	245	pin_charin2	778	2	17	49	2	0	0	65	no	return-tail	no	multi-site;collision:s	pin_charin	182	page-only	AGC: NVCOM (PINBALL_GAME_BUTTONS_AND_LIGHTS.agc, CM p. 319)
 pin_load_verb	src/io/dsky/pinball/load.c	407	pin_vbfandir	599	1	17	51	0	0	0	67	no	return-tail	no	cross-file	pin_verbfan	326	page-only	AGC: ALOAD, BLOAD, CLOAD
 t4_imucage	src/io/service/t4rupt.c	612	agc_t4_imumon	738	1	17	60	0	0	0	77	no	assign	no	value-assign;renamed-args;early-return	agc_t4_imumon	77	label<2refs:IMUCAGE=1	IMUCAGE (p.152): channel 30 bit 11 changed.  Returns true when the
@@ -580,7 +580,7 @@ tvcx_exec_copy	src/csm/dap/tvc/exec.c	135	tvcx_step	-	1	6	48	-	-	-	-	-	-	kept	la
 tvcx_corsetup	src/csm/dap/tvc/exec.c	209	tvcx_step	-	1	6	48	-	-	-	-	-	-	kept	label-entered:CORSETUP=2	-	-	label-distinct	CORSETUP (TVCEXECUTIVE.agc p. 948) -- the correction fraction used
 rcs_dzcall	src/csm/entry/dap.c	1315	dap_cm_rcs	-	1	6	53	-	-	-	-	-	-	kept	label-entered:DZCALL=2	-	-	label-distinct	DZCALL (p. 1089): in the dead zone: ROLLHOLD = ROLL (mode -0) or the roll
 to_mrkbuf1	src/csm/optics/sxtmark.c	300	agc_sxtmark_markcont	-	2	6	16	-	-	-	-	-	-	kept	label-entered:GENTRAN=14	-	-	label-distinct	GENTRAN of the mark into MRKBUF1 (and MRKBUF1 into MRKBUF2 first).
-prelaunch_earthr_star	src/csm/prelaunch_align.c	425	agc_job_gyrocompassing_torque	-	1	6	18	-	-	-	-	-	-	kept	label-entered:EARTHR=2	-	-	label-distinct	EARTHR* / PROUT (IMU_CALIBRATION_AND_ALIGNMENT.agc p.430) -- EARTHR
+prelaunch_earthr_star	src/csm/prelaunch/align.c	425	agc_job_gyrocompassing_torque	-	1	6	18	-	-	-	-	-	-	kept	label-entered:EARTHR=2	-	-	label-distinct	EARTHR* / PROUT (IMU_CALIBRATION_AND_ALIGNMENT.agc p.430) -- EARTHR
 end_of_job	src/exec/executive.c	559	agc_exec_run_one	-	1	6	42	-	-	-	-	-	-	kept	label-entered:ENDOFJOB=159	-	-	label-distinct	ENDOFJOB / ENDJOB1 (C pp.1210,1218 / L pp.1105,1113): release core set
 gcompsub	src/imu/compensation.c	470	irig_axis	-	6	6	13	-	-	-	-	-	-	kept	label-entered:GCOMPSUB=6	-	-	label-distinct	GCOMPSUB (IMU_COMPENSATION_PACKAGE.agc p.301) -- GCOMP += coefficient
 dnphase1	src/io/telemetry/down_telemetry.c	522	agc_telem_downrupt	-	2	6	37	-	-	-	-	-	-	kept	label-entered:DNPHASE1=2	-	-	label-distinct	DNPHASE1: reset the pointers and restart the current list.
@@ -620,7 +620,7 @@ dap_exdap_yaw_pitch_jets	src/csm/entry/dap.c	737	dap_exdap	-	3	8	32	-	-	-	-	-	-	
 step_roll_command	src/csm/entry/reentry.c	1700	entry_final_phase_step	-	1	8	49	-	-	-	-	-	-	kept	label-entered:L355=4	-	-	label-distinct	L355 (p. 873): ROLLC = SIGN(K2ROLL) ACOS(L/D1 / LAD); clear NOSWITCH.
 ln_rowdot	src/csm/navigation/landmark_navigation.c	471	ln_reduce_w_to_six	-	3	8	39	-	-	-	-	-	-	kept	label-entered:ROWDOT=3	-	-	label-distinct	ROWDOT: sum over the nine W rows of W(word I) W(word J) (DMPR, DAD); an
 on_abde	src/csm/navigation/orbital_navigation.c	308	agc_job_orbital_navigation_code_check	-	2	8	19	-	-	-	-	-	-	kept	label-entered:S22ABDE=2	-	-	label-distinct	S22ABDE: unknown landmark: done; known: DE = 00 coordinates from noun
-prelaunch_endtest1	src/csm/prelaunch_align.c	449	prelaunch_somerr2	-	1	8	6	-	-	-	-	-	-	kept	label-entered:ENDTEST1=3	-	-	label-distinct	ENDTEST1 (IMU_CALIBRATION_AND_ALIGNMENT.agc p.427) -- end of the test
+prelaunch_endtest1	src/csm/prelaunch/align.c	449	prelaunch_somerr2	-	1	8	6	-	-	-	-	-	-	kept	label-entered:ENDTEST1=3	-	-	label-distinct	ENDTEST1 (IMU_CALIBRATION_AND_ALIGNMENT.agc p.427) -- end of the test
 adsum	src/io/service/self_check.c	90	agc_selfcheck_banksum	-	1	8	19	-	-	-	-	-	-	kept	label-entered:ADSUM=2	-	-	label-distinct	ADSUM: SKEEP1 = SKEEP1 + word; on overflow TS stores the overflow-
 t4_cancoars	src/io/service/t4rupt_csm.c	366	agc_t4_optics_monitor	-	1	8	50	-	-	-	-	-	-	kept	label-entered:CANCOARS=2	-	-	label-distinct	CANCOARS (p.163) -- switch left CMC: kill coarse optics, disable the
 gts_inputs	src/lm/dap/gts.c	297	lm_dap_gts	-	1	8	50	-	-	-	-	-	-	kept	label-entered:GOQTRIMG=2	-	-	label-distinct	GOQTRIMG .. GTSQAXIS (p.1473): AOS rescaled to pi/4 (limited), rate,
@@ -652,7 +652,7 @@ int_w	src/nav/integration/jobs.c	252	agc_integ_avetomid	-	1	11	37	-	-	-	-	-	-	ke
 gobaque	src/nav/integration/orbital_integration.c	311	agc_integ_timestep	-	2	11	40	-	-	-	-	-	-	kept	label-entered:GOBAQUE=3	-	-	label-distinct	GOBAQUE / INT-ABRT (p. 1340): on overflow back the conic up by H to the
 tvcd_fwdfltr	src/csm/dap/tvc/daps.c	202	tvcd_entry	-	1	12	47	-	-	-	-	-	-	kept	label-entered:FWDFLTR=2	-	-	label-distinct	FWDFLTR, OPTVARK (TVCDAPS.agc pp. 972-973) -- the filter's present
 tps_interp	src/csm/navigation/tpi_search.c	418	tps_decide	-	2	12	26	-	-	-	-	-	-	kept	label-entered:INTERP=2	-	-	label-distinct	INTERP (pp.556-557): SET ITSWICH; linear interpolation of the time step
-alwaysg	src/csm/prelaunch_gyrocompass.c	512	agc_job_gyrocompassing_filter_restart	-	1	12	47	-	-	-	-	-	-	kept	label-entered:ALWAYSG=2	-	-	label-distinct	ALWAYSG (IMU_CALIBRATION_AND_ALIGNMENT.agc p.444) -- level filter on
+alwaysg	src/csm/prelaunch/gyrocompass.c	512	agc_job_gyrocompassing_filter_restart	-	1	12	47	-	-	-	-	-	-	kept	label-entered:ALWAYSG=2	-	-	label-distinct	ALWAYSG (IMU_CALIBRATION_AND_ALIGNMENT.agc p.444) -- level filter on
 store_var	src/exec/phase_table.c	280	phaschng_common	-	1	12	15	-	-	-	-	-	-	kept	label-entered:GETPRIO=2	-	-	label-distinct	GETPRIO / OLDPRIO / GETNEWNM / CON2 (C pp.1410-1412 / L pp.1299-1301):
 pin_endnmtst	src/io/dsky/pinball/keys.c	108	pin_num	-	1	12	34	-	-	-	-	-	-	kept	label-entered:ENDNMTST=2	-	-	label-distinct	ENDNMTST / ENDNUM / ENDALL / MORNUM (pp. 317-318).
 zone_beyond_switch	src/lm/dap/rcs/tjetlaw.c	196	finelaw	-	2	12	50	-	-	-	-	-	-	kept	label-entered:ZONE1=2	-	-	label-distinct	ZONE1 (pp.1466-1467): beyond the switch curve. H = 4 (FIREFCT -
@@ -660,7 +660,7 @@ mu_incorp1	src/lm/navigation/measurement_update.c	612	mu_run	-	1	12	17	-	-	-	-	-
 body_gravity_gradient	src/nav/integration/orbital_integration.c	776	dow	-	2	12	10	-	-	-	-	-	-	kept	label-entered:DOW..1=2	-	-	label-distinct	DOW..1 (p. 1352): gravity-gradient derivative of a W column,
 t6_replace	src/csm/dap/rcs/jet_select.c	630	agc_task_t6start	-	1	13	24	-	-	-	-	-	-	kept	label-entered:REPLACER=3	-	-	label-distinct	REPLACER, REPLACEP, REPLACEY (JET_SELECTION_LOGIC.agc p. 1062) -- the
 td_getum	src/csm/navigation/tracking_data.c	218	td_optics_mark	-	1	13	18	-	-	-	-	-	-	kept	label-entered:GETUM=2	-	-	label-distinct	GETUM (p.578): the optics LOS of the mark in reference axes (SXTNB,
-compgs	src/csm/prelaunch_gyrocompass.c	547	agc_job_gyrocompassing_filter_restart	-	1	13	47	-	-	-	-	-	-	kept	label-entered:ALWAYSG=2	-	-	label-distinct	ALWAYSG +7 / COMPGS / ADDINDRF (IMU_CALIBRATION_AND_ALIGNMENT.agc
+compgs	src/csm/prelaunch/gyrocompass.c	547	agc_job_gyrocompassing_filter_restart	-	1	13	47	-	-	-	-	-	-	kept	label-entered:ALWAYSG=2	-	-	label-distinct	ALWAYSG +7 / COMPGS / ADDINDRF (IMU_CALIBRATION_AND_ALIGNMENT.agc
 verb_terminate_tracking	src/io/verbs/extended_verbs_csm.c	206	fan_50s_60s	-	1	13	47	-	-	-	-	-	-	kept	label-entered:TRACKTRM=2	-	-	label-distinct	TRACKTRM (V56, p.251): knock down the rendezvous, track, update and
 ldg_extlogic	src/lm/landing/guidance.c	660	ldg_quadratic	-	1	13	46	-	-	-	-	-	-	kept	label-entered:EXTLOGIC=2	-	-	label-distinct	EXTLOGIC (p. 811): decide how to exit and whether to switch phases.
 nav_uppsv	src/lm/navigation/navigation.c	257	agc_job_rendezvous_navigation_update_states	-	1	13	6	-	-	-	-	-	-	kept	label-entered:UPPSV=2	-	-	label-distinct	UPPSV: the updated vehicle (with W when valid) to TDEC1, then the other

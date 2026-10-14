@@ -236,24 +236,6 @@ uint16_t exec_restart_generation(void)
 }
 
 /**********************************************************************
- * AGC: none -- Priority of the job in core set 0 (PRIORITY bits 10-14).
- *
- * ARGUMENTS: none
- *
- * RETURNS: int -- priority number 1..037, or -1 when idle (NEWJOB = -0) or
- *          core set 0 is not active
- **********************************************************************/
-int exec_running_job_prio(void)
-{
-    if (newjob == EXEC_NEWJOB_IDLE || core[0].state != AGC_CORE_ACTIVE)
-    {
-        return (-1);
-    }
-
-    return ((int) core[0].prio);
-}
-
-/**********************************************************************
  * Executive power-on: the STARTSB2 part of FRESH_START_AND_RESTART.agc
  * (C p.191 / L p.221) for the core sets and VAC areas, activity light off.
  *

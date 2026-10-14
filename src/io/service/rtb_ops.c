@@ -59,7 +59,6 @@
  **********************************************************************/
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
@@ -311,7 +310,7 @@ void agc_rtb_2v1sto2s(agc_dp_t a_rev, agc_dp_t b_rev, uint16_t out[2])
  *
  * RETURNS: the new 2's complement pattern
  **********************************************************************/
-uint16_t agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc)
+static uint16_t agc_rtb_cduinc(uint16_t angle_pattern, agc_sp_t inc)
 {
     int32_t a = cdu_pattern_value(angle_pattern); /* angle, 2^-14 half-rev */
 
@@ -518,7 +517,7 @@ agc_vec_t agc_rtb_vecsgnag(agc_vec_t v)
  *
  * RETURNS: the J22 term x R^4, B61
  **********************************************************************/
-agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
+static agc_vec_t agc_rtb_quality2(agc_interp_t *ip, agc_vec_t urpv, agc_sp_t e3j22r2m)
 {
     static const agc_dp_t five_eighths = 0x0A000000;             /* 5/8: 2DEC 5 B-3 */
     agc_dp_t              x2           = agc_dp_sq(urpv.c[0]);   /* B2              */

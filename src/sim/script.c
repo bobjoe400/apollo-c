@@ -44,7 +44,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "agc/core/assertion.h"
 #include "internal.h"
 
 #define SCRIPT_LINE      256      /* longest line read                    */

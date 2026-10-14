@@ -274,7 +274,6 @@ agc_status_t lm_dap_altdsply(void);     /* ALTDSPLY                  */
 agc_status_t lm_dap_needler(void);      /* NEEDLER                   */
 
 /* ---- P axis (paxis.c, pmanual.c, rate.c) -------------------------------- */
-agc_status_t lm_dap_paxis(void);                /* PAXIS T5RUPT program      */
 void         lm_dap_rateloop(void);             /* RATELOOP + ROTORQUE       */
 agc_status_t lm_dap_backp(void);                /* BACKP rate derivation     */
 agc_status_t lm_dap_offset_est(void);           /* offset estimator          */

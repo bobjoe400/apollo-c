@@ -131,6 +131,6 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - core-numeric: src/nav/auxiliary/free_fall.c:443 trips -Werror=conversion when built at -O0 (not the project's flags); make the expression explicit so every optimisation level builds.
 
 ## Upstream to NASSP after the mission (2026-10-13)
-- File an issue/PR on rcflyinghokie/NASSP (or orbiternassp) for the Saturn console-mode crash: Saturn::clbkPostStep calls oapiCameraInternal()/oapiCockpitMode() without the focus guard the LEM has; Orbiter 2024 faults with no graphics client. Patch: src/nassp/patches/0003-saturn-console-mode.patch.
+- File an issue/PR on rcflyinghokie/NASSP (or orbiternassp) for the Saturn console-mode crash: Saturn::clbkPostStep calls oapiCameraInternal()/oapiCockpitMode() without the focus guard the LEM has; Orbiter 2024 faults with no graphics client. Patch: sim/nassp/patches/0003-saturn-console-mode.patch.
 - Note the deprecated Orbiter API use (get_horizonairspeedvector logged every frame in console mode during entry) as a 2024-compatibility item; NASSP's code, not ours.
 - Offer patch 0002 (LEM Lua test interface) as an optional test hook.

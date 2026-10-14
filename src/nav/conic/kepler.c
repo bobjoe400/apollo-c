@@ -45,8 +45,6 @@
  *   is first reduced modulo the period.
  *********************************************************************/
 #include "agc/core/assertion.h"
-#include "agc/core/flags_common.h"
-#include "agc/core/state.h"
 #include "internal.h"
 
 /* KEPLER erasables that are not shared with the other conic routines. */

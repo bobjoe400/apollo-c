@@ -33,7 +33,6 @@
  * that sees it change knows the job/task tables were re-initialised.     */
 uint16_t exec_restart_generation(void);
 void     exec_clear_tables(void);                  /* STARTSB2: core sets, VACs  */
-int      exec_running_job_prio(void);              /* prio of core set 0, -1 none */
 bool     exec_core0_continue_as(agc_job_id_t job); /* restart code runs on as core set 0 */
 
 /* ---- waitlist (waitlist.c) -------------------------------------------- */

@@ -53,7 +53,6 @@
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
-#include "agc/guidance/guidance.h"
 #include "agc/imu/imu.h"
 #include "agc/lm/dap.h"
 

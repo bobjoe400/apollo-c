@@ -48,11 +48,9 @@
 
 #include "../../programs/navigation/internal.h"
 #include "agc/core/assertion.h"
-#include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
 #include "agc/imu/imu.h"
-#include "radar.h"
 
 #define LEADIN_PRIO25 ((agc_prio_t) 025) /* DORSAMP job priority */
 

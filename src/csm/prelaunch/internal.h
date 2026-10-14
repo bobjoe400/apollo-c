@@ -1,9 +1,9 @@
 /**********************************************************************
- * FILE NAME: prelaunch_internal.h
+ * FILE NAME: internal.h
  *
  * PURPOSE:
  *   Declarations shared by the three files of the Comanche prelaunch
- *   alignment (src/csm/prelaunch_align.c, prelaunch_gyrocompass.c,
+ *   alignment (src/csm/prelaunch/align.c, prelaunch_gyrocompass.c,
  *   prelaunch_verify.c): the AINLA erasable overlay and the subroutines
  *   one file calls in another.  Not part of the public API.
  *

@@ -112,7 +112,6 @@ void agc_dsky_init(void);
 
 /* ---- keyboard / uplink ------------------------------------------------ */
 /* Sim convenience: KEYRUPT1 + immediate CHARIN for one key code.       */
-agc_status_t agc_dsky_key(uint8_t code);
 
 /* Same, for a string such as "V06N36E" (V N E C R K + - and digits;
  * 'P' = PRO via PROCKEY). Stops at the first error.                    */
@@ -155,13 +154,9 @@ void     agc_erase_set_optionx(int index, agc_sp_t v);
 agc_dp_t agc_erase_dsptemx(void);
 void     agc_erase_set_dsptemx(agc_dp_t v);
 
-/* XREG YREG ZREG as the AGC keeps them for noun 07 (octal words).      */
-uint16_t agc_dsky_xyzreg(int index);
-
 /* Pinball resolves the noun data ids that name its own erasables
  * (DSPTEM1.., DSPTEM2.., DSPTEMX.., OPTIONX.., XREG/YREG/ZREG).
  * NOT_FOUND when the id is not one of them.                            */
-agc_status_t agc_dsky_noun_read(uint16_t data_id, agc_dp_t *value);
 agc_status_t agc_dsky_noun_write(uint16_t data_id, agc_dp_t value);
 
 /* Verb and noun at the time the operator answered ENDIDLE (the AGC left

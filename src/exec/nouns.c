@@ -51,7 +51,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "agc/core/assertion.h"
 #include "agc/core/state.h"
 #include "agc/csm/dap.h"
 #include "agc/csm/entry.h"

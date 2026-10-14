@@ -30,7 +30,6 @@
 #include <stddef.h>
 
 #include "../internal.h"
-#include "agc/core/assertion.h"
 #include "agc/core/flags_common.h"
 #include "agc/core/flags_lm.h"
 #include "agc/core/state.h"
@@ -39,7 +38,6 @@
 #include "agc/io/service.h"
 #include "agc/lm/dap.h"
 #include "agc/lm/landing.h"
-#include "agc/programs/rendezvous.h"
 
 #define CP_PRIO13     ((agc_prio_t) 013)  /* PRIO13: program start priority (PREMM1) */
 #define CP_COSTALIN   0                   /* downlist codes (DNLADMM1, L p.235-236) */
