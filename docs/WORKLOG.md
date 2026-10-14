@@ -965,3 +965,8 @@
             jobs) fixed with harness tests; executive self-loop pacing
             rule. Open: 00401 at TIG+292 s. Next liftoff headless, Saturn
             console-crash bisection (60 min cap), rendezvous, entry.
+2026-10-13  Bugs 7 (MGA limit -0 -> +0, spurious 00401) and 8 (ALTOUT -0
+            high word after touchdown) fixed with tests (9e1beff); PDI on
+            our LGC runs with no alarms, deterministic headless. NASSP
+            build option prints failed assertions to the sidecar. Tools
+            edits_diff.py / dsky.py move into tools/. Next liftoff.
