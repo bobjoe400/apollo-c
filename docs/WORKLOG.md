@@ -958,3 +958,10 @@
             markers), else rendezvous/entry windowed at 1x. Step 1 (LRVJOB
             wait) and step 2 (self-loop pacing rule) implemented with
             failing-first tests; gates running.
+2026-10-13  OUR LM LANDED in NASSP (headless fixed-step, deterministic):
+            touchdown TIG+701.8 s at -0.92 m/s, 23.7245 E / 0.6696 N;
+            stock 23.7410/0.6689 (stock's own run-to-run spread 440 m).
+            Bug 6 (LRVJOB + HIGATJOB RADSTALL collisions from zero-time
+            jobs) fixed with harness tests; executive self-loop pacing
+            rule. Open: 00401 at TIG+292 s. Next liftoff headless, Saturn
+            console-crash bisection (60 min cap), rendezvous, entry.
