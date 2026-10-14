@@ -1071,3 +1071,8 @@
             load dropped), 17 (MUASTEER) fixed with tests. Mission report
             written. PROJECT COMPLETE: definition of done 1-9 and stretch
             10. STATE.md records limitations, risks and optional follow-ups.
+2026-10-14  User: what about the documentation? The wave predates the
+            layout, splits, telemetry and the mission report. Launched
+            document-final (Opus, alone): regenerate, fix citations, flow
+            sections for post-wave notes, ARCHITECTURE, the mission's
+            rules into the guides, TIPS, README, MODULE_STATUS.

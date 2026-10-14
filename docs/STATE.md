@@ -3,7 +3,12 @@
 Updated: 2026-10-13
 
 ## Running agents (max 2)
-- NONE. PROJECT COMPLETE as of 2026-10-14 (a5bcdb1): definition of done
+- document-final (Opus, alone): regenerate overview/xref/index, fix
+  flowchart citations after the moves/splits, flow sections for the
+  post-wave notes, ARCHITECTURE final layout + tiers + limitations, the
+  mission's rules into TRANSLATION_GUIDE/CODING_STANDARD, TIPS, README,
+  MODULE_STATUS paths. Then the project is closed.
+- Code COMPLETE as of 2026-10-14 (a5bcdb1): definition of done
   items 1-9 met; stretch item 10 done (LM Simulator loop; the full Apollo
   11 mission in NASSP 9 on our AGC, all ten milestones matching stock on
   decisions and end state). 17 flight bugs from the mission fixed with
