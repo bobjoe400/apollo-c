@@ -20,10 +20,13 @@ Updated: 2026-10-13
 - Layout APPLIED (755db91): src/nassp (engine.c, CMake) vs sim/nassp
   (harness: images, lua, host, patches, replay.py, mission_tables.py,
   mission_tolerances.tsv, checklist_to_lua.py); docs/history, tools/archive.
-- structure (Opus): ORGANIZATION.md proposals 2-5 (duplicate translations
-  to the owner's copy, cross-vehicle routines, uncalled labelled routines
-  classified, three file splits, internal.h prototypes). Note:
-  docs/modules/structure.md. Keeps out of the NASSP areas.
+- structure: DONE (da52cdc): duplicates to one owner (2 fidelity
+  findings), cross-vehicle shared, CSM V92 and LM P20/P22 dispatch gaps
+  wired, three files split, 118 prototypes internal.
+- telemetry (Opus): the downlink lists send 92 of 128 items as zero;
+  rebuilt as ECADR tables read through the erasable map (no upward
+  calls), per-list tests, replay/oracle/yaTelemetry checks. Note:
+  docs/modules/telemetry.md.
 - Mission status on our AGC in NASSP 9 (decisions and end state, timing
   differences listed as expected deviations): insertion+uplink, TLI,
   MCC-2, LOI, DOI, PDI/landing, liftoff, TEI, entry/splashdown all match

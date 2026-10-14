@@ -1048,3 +1048,11 @@
             deviations listed). Rendezvous not yet working on stock
             (00503, display waits): lane relaunched for that leg + the
             final mission report. Full make test after the layout: green.
+2026-10-14  structure DONE (da52cdc): 10 duplicate groups collapsed (F1
+            QUALITY DP copy 8 LSB off, F2 1TO2SUB DP form 1 count off on
+            mixed-sign words: word forms kept), SERVEXIT/B5OFF shared, CSM
+            V92 and LM P20/P22 dispatch gaps found and wired, 2 uncalled
+            routines wired, 3 files split, 118 prototypes internal; gates
+            green each task. Finding: 92/128 downlink items sent as zero
+            -> telemetry lane launched (downlists as ECADR tables read
+            through the erasable map).
