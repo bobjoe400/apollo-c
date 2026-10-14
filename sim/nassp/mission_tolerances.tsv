@@ -8,11 +8,12 @@
 # logged in docs/modules/nassp-integration.md "Test changes". A column with stock spread 0 (e.g.
 # liftoff eng) has tolerance 0. Euler angles near pitch 90 (liftoff bank / yaw) spread ~180 deg in
 # stock alone: their rows judge little; the CDU columns carry the attitude.
-# Derived 2026-10-13 from runs ref_pdi_H / ref_pdi_H01, ref_liftoff_H / ref_liftoff_H01 (re-derived 2026-10-14 after
+# Derived 2026-10-13 from runs ref_pdi_H / ref_pdi_H01 (repeated 2026-10-14 under the current
+# common.lua: same values), ref_liftoff_H / ref_liftoff_H01 (re-derived 2026-10-14 after
 # the liftoff script change: P12 as loaded) and ref_entry_H / ref_entry_H01 (before the dev entry run with bug 12 fixed).
 # milestone	column	tolerance	note
 pdi	galt	478.9499999999989	stock spread 319.2999999999993 (1.5 x)
-pdi	hdot	2.3543894655	stock spread 1.5695929770000001 (1.5 x)
+pdi	hdot	2.354388567	stock spread 1.569592378 (1.5 x)
 pdi	vh	11.132475000000003	stock spread 7.421650000000001 (1.5 x)
 pdi	lng	0.08879999999999555	stock spread 0.05919999999999703 (1.5 x)
 pdi	lat	0.0012480000000000824	stock spread 0.0008320000000000549 (1.5 x)
@@ -52,3 +53,22 @@ entry	pitch	35.154900000000005	stock spread 23.436600000000002 (1.5 x)
 entry	bank	268.57725	stock spread 179.0515 (1.5 x)
 entry	yaw	216.93300000000002	stock spread 144.622 (1.5 x)
 entry	nobj	12.0	stock spread 8.0 (1.5 x)
+# rendezvous: derived 2026-10-14 from ref_rendezvous_H / H01; the rendezvous script is not yet
+# working on stock (display waits time out), so re-derive after it is fixed
+rendezvous	range	7630.5	stock spread 5087.0 (1.5 x)
+rendezvous	rrate	11.264999999999986	stock spread 7.509999999999991 (1.5 x)
+rendezvous	galt	2044.5	stock spread 1363.0 (1.5 x)
+rendezvous	hdot	1.4155499999999996	stock spread 0.9436999999999998 (1.5 x)
+rendezvous	vh	8.339999999999918	stock spread 5.559999999999945 (1.5 x)
+rendezvous	lng	0.12390000000000168	stock spread 0.08260000000000112 (1.5 x)
+rendezvous	lat	0.030386999999999997	stock spread 0.020257999999999998 (1.5 x)
+rendezvous	mass	6.254999999999427	stock spread 4.169999999999618 (1.5 x)
+rendezvous	eng	1.5	stock spread 1.0 (1.5 x)
+rendezvous	pitch	27.357951	stock spread 18.238634 (1.5 x)
+rendezvous	bank	265.23209999999995	stock spread 176.82139999999998 (1.5 x)
+rendezvous	yaw	264.70304999999996	stock spread 176.46869999999998 (1.5 x)
+rendezvous	cdux	14.4195556640625	stock spread 9.613037109375 (1.5 x)
+rendezvous	cduy	26.5814208984375	stock spread 17.720947265625 (1.5 x)
+rendezvous	cduz	37.3590087890625	stock spread 24.906005859375 (1.5 x)
+rendezvous	apo	27870.0	stock spread 18580.0 (1.5 x)
+rendezvous	peri	25005.0	stock spread 16670.0 (1.5 x)

@@ -91,13 +91,16 @@ Closed loops (PLAN item 10, stretch), against the proven tools only:
   with tolerances of 1.5 x stock's own run-to-run spread on every column
   (`make nassp-mission`): PDI to touchdown: events and end state match;
   attitude history outside the stock envelope: bank, yaw, CDU X (and
-  latitude 0.0019 vs 0.00125 deg). Lunar liftoff: end state (orbit,
-  cut-off) matches, ignition 23.5 s earlier than stock; attitude history
-  outside the stock envelope: pitch, CDU Y, CDU Z (and vertical speed,
-  apo/peri around cut-off). Entry: our CMC does not yet hold the CSM's
-  attitude in NASSP (open); rendezvous not yet flown.
-  Two flight bugs found on the way (FANG/K3VAL address map, V82 after an
-  escape burn), both fixed with tests. The integrated build lives in
+  latitude 0.0019 vs 0.00125 deg). Lunar liftoff (the scenario's running P12):
+  events and end state match (cut-off TIG+431.9 s both, orbit within 0.4
+  km, no alarms); outside the stock envelope only CDU Z after insertion
+  (P12 ends 16 s earlier: an expected timing deviation). Entry: events and
+  end state match (splashdown 1.6 km from stock; P63 30 s earlier and CM
+  RCS mass 1.24 kg, both from the attitude drift phase at the CMC's
+  control release: timing deviations). Rendezvous: the script does not yet work on stock (open).
+  Fourteen flight bugs found on the way (most: erasables a scenario load
+  must restore, e.g. the CSM RCS DAP state, UNITW, the average-G start
+  state), each fixed with a test; see docs/modules/nassp-integration.md. The integrated build lives in
   `C:\NASSP9-dev` (stock baseline `C:\NASSP9`). A light tier runs on
   Linux in about a minute, no Orbiter:
 

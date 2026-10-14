@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""nassp_edits.py -- `make nassp-mission`: the NASSP milestone tables, generated from the edit CSVs.
+"""mission_tables.py -- `make nassp-mission`: the NASSP milestone tables, generated from the edit CSVs.
 
 A NASSP mission run (docs/modules/nassp-integration.md, "How to run it") writes one edit CSV per
 vehicle and run: every second the GET, the LGC/CMC words (MODREG, FAILREG, channels 11 12 14 30 33,
@@ -13,13 +13,13 @@ attitude, ...). For each milestone this script pairs the stock run's CSV with ou
      ignition on),
   3. the major-mode changes and alarms of each run.
 
-Usage: nassp_edits.py STOCK.csv OURS.csv MILESTONE [--tolerances sim/nassp/mission_tolerances.tsv]
-       nassp_edits.py --runs DIR            (every milestone found in DIR: ref_<m>_H/ and
+Usage: mission_tables.py STOCK.csv OURS.csv MILESTONE [--tolerances sim/nassp/mission_tolerances.tsv]
+       mission_tables.py --runs DIR            (every milestone found in DIR: ref_<m>_H/ and
                                              agc_<m>_H/ holding apollo-c-<m>-edits.csv)
-       nassp_edits.py --derive DIR MILESTONE (print the milestone's tolerance rows from the two
+       mission_tables.py --derive DIR MILESTONE (print the milestone's tolerance rows from the two
                                              STOCK runs ref_<m>_H (-f 0.02) and ref_<m>_H01
                                              (-f 0.01) only: every numeric column, exactly 1.5 x
-                                             their max difference, no rounding; for edits.tsv,
+                                             their max difference, no rounding; for mission_tolerances.tsv,
                                              written before the dev run is compared)
 Exit status 1 when a quantity is out of tolerance or a milestone event is missing in ours.
 Standard library only; run with python3 -I.
@@ -177,7 +177,28 @@ def ev_entry(rows):
     return ev
 
 
-EVENTS = {'pdi': ev_pdi, 'liftoff': ev_liftoff, 'entry': ev_entry}
+def ev_rendezvous(rows):
+    """Liftoff and rendezvous: insertion as in ev_liftoff, then the P32 / P33 / P34 starts, each
+    burn's TIG (engine or RCS: mass drop) and the closest approach to the CSM."""
+    ev = ev_liftoff(rows)
+    ign = ignition(rows)
+    if not ign:
+        return ev
+    t0 = ign['_t']
+    for mm in (20, 32, 33, 34, 35):
+        r = first(rows, lambda r, mm=mm: int(r['modreg'], 8) == mm and r['_t'] > t0)
+        if r:
+            ev['P%d, TIG+ s' % mm] = '%.1f (range %.1f km)' % (r['_t'] - t0, (num(r, 'range') or 0) / 1000)
+    rr = [r for r in rows if r['_t'] > t0 + 600 and (num(r, 'range') or -1) >= 0]
+    if rr:
+        m = min(rr, key=lambda r: num(r, 'range'))
+        ev['closest approach, TIG+ s'] = '%.1f (range %.2f km, rate %.2f m/s)' % (m['_t'] - t0, num(m, 'range') / 1000, num(m, 'rrate'))
+        last = rows[-1]
+        ev['end: range km, mass kg'] = '%.2f, %.1f' % (num(last, 'range') / 1000, num(last, 'mass'))
+    return ev
+
+
+EVENTS = {'pdi': ev_pdi, 'liftoff': ev_liftoff, 'entry': ev_entry, 'rendezvous': ev_rendezvous}
 
 
 def tolerances(path, milestone):
@@ -246,7 +267,7 @@ def diff(a, b, k, tol=None):
 
 
 def derive(d, milestone):
-    """edits.tsv rows of a milestone from its two stock runs (the rule of the file's header)."""
+    """mission_tolerances.tsv rows of a milestone from its two stock runs (the rule of the file's header)."""
     a = load(os.path.join(d, 'ref_%s_H' % milestone, 'apollo-c-%s-edits.csv' % milestone))
     b = load(os.path.join(d, 'ref_%s_H01' % milestone, 'apollo-c-%s-edits.csv' % milestone))
     for k in numeric_columns(a):
@@ -289,7 +310,7 @@ def compare(stock, ours, milestone, tolfile):
 
 def main():
     args = sys.argv[1:]
-    tolfile = os.path.join('sim', 'nassp', 'edits.tsv')
+    tolfile = os.path.join('sim', 'nassp', 'mission_tolerances.tsv')
     if '--tolerances' in args:
         i = args.index('--tolerances')
         tolfile = args[i + 1]

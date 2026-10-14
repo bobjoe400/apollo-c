@@ -77,7 +77,7 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
    its tolerance. Numeric columns without a tolerance row are printed as "not judged".
    Tolerances: `sim/nassp/mission_tables.py --derive <dir> <milestone>` prints the rows from the two
    stock runs ref_<m>_H (-f 0.02) and ref_<m>_H01 (-f 0.01): every numeric column, exactly 1.5 x
-   their max difference, no rounding. They go into edits.tsv before the dev run is compared
+   their max difference, no rounding. They go into sim/nassp/mission_tolerances.tsv before the dev run is compared
    and are then frozen (see "Test changes").
 
 ## Progress
@@ -448,15 +448,44 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   deadband). 3000 s later the attitudes differ by ~60 deg, so P62.1's CMDAPMOD test (P61-P67
   p. 794) takes ours straight to P63 where stock waits for WAKEP62; the entry DAP brings both
   to the same trajectory (mass: RCS used).
-- Findings kept open (2026-10-13): (1) C jobs cost no AGC time: R60's KALCMANU for a small
-  maneuver (NOGO) ends at once on ours where yaAGC's interpreter takes 1-2 s, so the entry
-  script's PRO check sees F50N18 again and falls back to V33E; same class as the liftoff 01703
-  slip. (2) After the load restart our CMC does not drive the optics CDUs (channel 14 70040 vs
-  stock 76040 from t = 0; a GOJAM drops the drive the image had). (3) THETAD from a normalised
-  CDUXD can differ by one count from the AGC's DPADD upper word. (4) Shim: a scenario load fed
-  the image's channel 015 key code to KEYRUPT, lighting OPR ERR at every load on ours; fixed
-  (015/016 stored without KEYRUPT before the first GOJAM; nassp-replay "# oprerr-at-load",
-  4 of 5 images failed before).
+- FLIGHT BUG 14 (lunar liftoff from the resumed P12, ours only, fixed 2026-10-14): with the
+  scenario's running P12 (Test changes), our LM never reached orbit. Edit CSV: HDOTDISP (RDOT)
+  ran away from TIG-30 s; offline (keyrun.c, liftoff_lm image) the servicer started from RN of
+  about 0. The scenario is saved after P12's MIDTOAV, so PREREAD at TIG-30 starts average-G from
+  RN1 / VN1 / PIPTIME1 (and GDT1/2, GDT/2, RTX1/RTX2), all unmapped. Mapped (both ropes); then
+  UHYP (= QAXIS) became (1, 0, 0) at TIG-30: NORMLIZE forms it from R(CSM) x V(CSM) every cycle
+  with MUNFLAG set (LM 01717 / 01725, unmapped); mapped. The flight then reached orbit
+  (1752.91 x 1825.97 vs stock 1752.85 x 1826.15 km) but pitched over at TIG+4 s: CHECKALT ends
+  the vertical rise when |R| - /LAND/ - 25 kft >= 0, and /LAND/ (02332) was 0; mapped.
+  tests/erasable_map/address_map.c test_servicer_start (LM and CSM).
+- Rendezvous (2026-10-14, NOT DONE): rendh.lua (sim/nassp/lua; scenario 11 with Columbia, the
+  scenario's P12, then NASSP's "Rendezvous" sheets with the burns nulled through the TTCA
+  translation bits) does not yet work on stock. Its display waits time out (900 s each: V06N47
+  after insertion, V50N72 in P20, F06N11 under a pending V50N18 in P32), alarm 00503 (RR
+  designate fail) on both builds, and the -t 14000 s limit ends every run in P32 before CSI.
+  Because stock and ours time out at different rows (stock waits for V06N47, ours sees it),
+  the runs drift apart in sim time and the edit-CSV comparison is not meaningful yet. Next:
+  fix the script on stock (answer the R60 V50N18 in P20, the RR designate/lock, the N47 row),
+  repeat stock H / H01, re-derive, then the dev run. The ours-only V06N47 is to be looked at
+  then. Optics after load (channel 14 70040 vs 76040): offline both builds refuse V41N91 alike
+  (alarm 00115 without OPT MODE CMC); the stock bits are the image's stale drive bits, a
+  GOJAM clears them, and any new optics drive sets them on both: not a functional difference.
+- Shim (2026-10-13): a scenario load fed the image's channel 015 key code to KEYRUPT, lighting
+  OPR ERR at every load on ours; 015/016 are now stored without KEYRUPT before the first GOJAM
+  (nassp-replay "# oprerr-at-load": 4 of 5 images failed before).
+- DONE milestone 9 again (lunar liftoff with the scenario's running P12, headless, 2026-10-14,
+  stock H / H01 repeated under the script, tolerances re-derived first, dev from HEAD 755db91 +
+  bug 14): ignition GET 448308.9 / 448307.9; cut-off TIG+431.9 s both (vh 1692.5 both, hdot
+  10.5 / 10.1 m/s); orbit radius 1752.85 x 1826.15 vs 1752.94 x 1825.82 km; mass 2629.5 /
+  2628.9 kg; no alarms on either. Every column inside the stock envelope except CDU Z after
+  insertion (16.3 deg, tol 12.4, from TIG+520 s), where P12 ends at TIG+472 on ours and +488 s
+  on stock (an expected timing deviation, below).
+- PDI dev rerun from HEAD (2026-10-14; stock H / H01 repeated under the current common.lua:
+  identical tolerances): identical to the earlier dev run (deterministic). Events and end
+  state match: touchdown 23.7245 / 0.6696 vs 23.7410 / 0.6689 deg (lng 0.017 of tol 0.089,
+  lat 0.0007 at touchdown); outside the envelope during braking: latitude 0.0019 deg (tol
+  0.00125) from TIG+136 s, and the attitude columns (bank / yaw Euler-degenerate at pitch -87,
+  CDU X from the windows-up roll starting 1.0 s early).
 - Saturn console mode (2026-10-13, about 25 min of the 60 allowed): bisected with oapiWriteLog
   markers to Saturn::clbkPostStep's unguarded `oapiCameraInternal() && oapiCockpitMode()` (VC
   animations): with no graphics client the camera query faults in Orbiter.exe. Fix:
@@ -479,6 +508,28 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
 - Do not run Linux test loads during a host run: the stock AGC at 50x went to garbage (MODREG 227,
   FAILREG 207) when frames stretched under CPU load; that run was discarded.
 
+## Expected deviations (timing)
+Rule (lead, 2026-10-14): no timing model; the C executive runs jobs in zero AGC time, and the
+two ordering deviations (radar-read wait, self-rerunning job pacing) stand in for AGC execution
+time. Milestones are judged on decisions and end state; differences that trace to execution
+time are listed here with their trace and not root-caused further.
+- 01703 TIG slip size (liftoff with a re-selected P12): the work before MIDTOAV1 costs yaAGC
+  ~25 s and ours ~0, so the slip lands at sim 38.5 vs 15 s (27.3 vs 3.3 s). The scripts now use
+  the scenario's running P12, which avoids the slip on both builds.
+- R60 small maneuver (entry R62): KALCMANU's NOGO path ends at once on ours, 1-2 s in yaAGC's
+  interpreter; the script's PRO check sees F50N18 again and falls back to V33E (same effect).
+- Entry attitude drift phase: at sim 4012 both builds release CMC attitude control (GDC
+  alignment sheet); the CM then drifts with its limit-cycle rate of that moment, which differs
+  between builds (stock at a reversal, ours mid-drift). Consequences: P63 30 s earlier (P62.1
+  CMDAPMOD path), CM RCS mass 1.24 kg (tol 1.23); splashdown 1.6 km apart.
+- Program start seconds: P65 TIG+657 vs +630 s in PDI (stock's own -f 0.01 run: +659.5 s);
+  P12's end TIG+472 vs +488 s at liftoff (CDU Z after insertion); windows-up roll in P63 1.0 s
+  early (CDU X).
+Other open items (not timing): after the load restart our CMC no longer drives the optics CDUs
+(channel 14 70040 vs stock 76040: a GOJAM drops the drive the image had); THETAD from a
+normalised CDUXD can differ by one count from the AGC's DPADD upper word; PDI latitude during
+braking 0.0019 deg (tol 0.00125; touchdown within 0.0007).
+
 ## Test changes
 Rule (lead, 2026-10-13): per milestone the Lua script, checklist sheets, edit columns and
 tolerances are frozen before the dev run; any later change repeats the stock run and is listed
@@ -499,7 +550,7 @@ Audit of the runs before the rule (times UTC 2026-10-14):
 - Entry: scenario 14 rather than 15 (our CMC cannot resume a running P63), on both builds,
   chosen from the offline replay before any host entry run. The scripts were final before
   ref_entry_H (04:44); the dev run used the same files. Tolerances not set yet.
-- 2026-10-13 (lead): edits.tsv regenerated by --derive (every numeric column, exact 1.5 x
+- 2026-10-13 (lead): the tolerance file (now sim/nassp/mission_tolerances.tsv) regenerated by --derive (every numeric column, exact 1.5 x
   spread, no rounding) from the existing stock pairs; no stock rerun needed (scripts unchanged).
   The entry dev run (scripts frozen) was read before entry tolerances existed; it is void anyway
   (CSM not under CMC attitude control, runs/discarded/agc_entry_H_csmdap) and is rerun after the
