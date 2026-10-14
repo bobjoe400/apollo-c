@@ -519,4 +519,4 @@ static void test_lr_reads(void)
 
     CHECK(!two_users);
     CHECK(repositioning);
-}
+} /* test_lr_reads */

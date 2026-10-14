@@ -13,6 +13,16 @@
  *      ADG T^2/2, v(T) = VDG + ADG T is commanded ACG = ADG (zero
  *      correction); a 10 m position offset gives the 12 dr / TTF^2
  *      correction.
+ *   3. IGNALG reads the one TLAND.
+ *   4. FINDCDUW MGA limit (p. 914): inside the 70 degree cone the MGA
+ *      comes back unchanged with no alarm, two's -1 (ones' -0) included
+ *      (a spurious 00401 in NASSP's PDI, 2026-10-13); beyond it +-CDUZDLIM
+ *      and alarm 00401.
+ *   5. R10 ALTOUT (LANDING_ANALOG_DISPLAYS.agc pp. 899-900): new altitude
+ *      data below zero (ALTBITS high word -0, the LGC altitude after
+ *      touchdown) is taken as new data and ZERODATA sends 0 to the
+ *      altitude meter; SPEEDRN2 ended in BAD_ARG every R10 pass after
+ *      the NASSP landing (2026-10-13).
  *
  * AGC SOURCE:
  *   Luminary099 THROTTLE_CONTROL_ROUTINES.agc pp. 793-796,
@@ -36,7 +46,9 @@
 #include <stdint.h>
 
 #include "agc/core/assertion.h"
+#include "agc/core/channels.h"
 #include "agc/core/flags_common.h"
+#include "agc/core/flags_lm.h"
 #include "agc/core/interp.h"
 #include "agc/core/state.h"
 #include "agc/core/word.h"
@@ -61,6 +73,8 @@ static void     test_throttle_band(void);
 static void     setup_trajectory(double tgo_s, double dx_m, const double rd[3], const double vd[3], const double ad[3]);
 static void     test_quadguid_on_trajectory(void);
 static void     test_ignalg_uses_tland(void);
+static void     test_mga_limit(void);
+static void     test_altout_negative_altitude(void);
 
 /**********************************************************************
  * AGC: none -- run the tests; the exit status reports failures.
@@ -72,6 +86,8 @@ int main(void)
     test_throttle_band();
     test_quadguid_on_trajectory();
     test_ignalg_uses_tland();
+    test_mga_limit();
+    test_altout_negative_altitude();
     (void) printf("test_landing: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -339,4 +355,47 @@ static void test_ignalg_uses_tland(void)
 
     CHECK(st == AGC_STATUS_POODOO);        /* no state vector here: 1406 at the first TTF/8 */
     CHECK(agc_lm_ldg()->tpipold == tland); /* the first pass starts at TLAND (TPIPOLD = TPIP = TLAND) */
+}
+
+/**********************************************************************
+ * AGC: none -- 4. FINDCDUW MGA limit: LIMITSUB returns L unchanged inside
+ * the cone (MSU zero, no alarm), +-CDUZDLIM (the ones' word read as two's)
+ * beyond it with ALARM 00401.
+ **********************************************************************/
+static void test_mga_limit(void)
+{
+    const agc_sp_t in[]    = {0, -1, 1, 6000, -6000, 7000, -7000}; /* MGA, 2's, scale pi */
+    const agc_sp_t out[]   = {0, -1, 1, 6000, -6000, 6372, -6373}; /* limited MGA       */
+    const bool     alarm[] = {false, false, false, false, false, true, true};
+
+    for (int i = 0; i < 7; i++)
+    {
+        fresh_lm();
+        agc_erase_set_failreg(0, 0);
+        CHECK(agc_lm_findcduw_limit_mga(in[i]) == out[i]);
+        CHECK((agc_erase_failreg(0) == 00401) == alarm[i]);
+    }
+}
+
+/**********************************************************************
+ * AGC: none -- 5. R10 ALTOUT with a negative new altitude: LANDISP on the
+ * altitude path (IMODES33 bit 7), then SPEEDRN2 after the 40 ms pause:
+ * OK, ALTM = 0 (ZERODATA), ALTBITS -1 for the next pass.
+ **********************************************************************/
+static void test_altout_negative_altitude(void)
+{
+    fresh_lm();
+    agc_waitlist_init();                                               /* room for the SPEEDRN2 task */
+    agc_flag_set(AGC_FLAG_SWANDISP);
+    agc_flag_set(AGC_FLAG_DIDFLAG);
+    agc_flag_clear(AGC_FLAG_ALTITUDE_METERS_ONLY);
+    CHECK(agc_chan_set_signal(AGC_CHAN_CHAN30, AGC_CH030_DISPINERT, true) == AGC_STATUS_OK);
+    agc_erase_set_imodes33((uint16_t) (agc_erase_imodes33() | 0100u)); /* bit 7: altitude next */
+    agc_guid_state()->lm.altbits = (agc_dp_t) -5;                      /* 5 bits (12 ft) below the surface */
+    agc_erase_set_altm(01234u);
+
+    CHECK(agc_lm_landisp() == AGC_STATUS_OK);
+    CHECK(agc_lm_task_speedrun_resume() == AGC_STATUS_OK);
+    CHECK(agc_erase_altm() == 0u);                        /* ZERODATA */
+    CHECK(agc_dp_high(agc_guid_state()->lm.altbits) < 0); /* -1: extrapolate next pass */
 }

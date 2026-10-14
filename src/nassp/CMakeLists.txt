@@ -21,6 +21,12 @@ add_library(apollo_c_agc STATIC
 )
 set_target_properties(apollo_c_agc PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
 target_include_directories(apollo_c_agc PRIVATE ${APOLLO_C_ROOT}/include ${NASSP_YAAGC_DIR})
+# -DAPOLLO_C_ASSERT_REPORTS=ON: failed AGC_ASSERTs print file:line to stderr
+# (apollo-c-agc-stderr.log next to Orbiter), as the Linux debug library does.
+option(APOLLO_C_ASSERT_REPORTS "report failed AGC_ASSERTs on stderr" OFF)
+if(APOLLO_C_ASSERT_REPORTS)
+    target_compile_definitions(apollo_c_agc PRIVATE AGC_HOST_DEBUG)
+endif()
 if(MSVC)
     # C4996: fopen etc. (rope.c reads the rope file NASSP names).
     target_compile_definitions(apollo_c_agc PRIVATE _CRT_SECURE_NO_WARNINGS)

@@ -324,12 +324,10 @@ static agc_status_t ld_continue(void)
             return (ld_extrapolate(LD_ARTOA)); /* OLDDATA        */
         }
 
-        ld_altsave = g->altbits; /* new data       */
-
-        if (!AGC_ASSERT(ld_altsave >= 0))
-        {
-            return (AGC_STATUS_BAD_ARG);
-        }
+        /* New data. CCS ALTBITS takes a -0 high word (an LGC altitude just
+         * below zero, after touchdown) as new data too: ALTSAVE may be
+         * negative, and ZERODATA (ld_extrapolate) sends 0 to the meter. */
+        ld_altsave = g->altbits;
 
         g->altbits   = agc_dp_from_sp(-1);                       /* -1: extrapolate next pass     */
         agc_sp_t dt9 = agc_lm_dv((agc_dp_t) ld_dt * 16384, 512); /* DT rescaled to 2^9 cs */

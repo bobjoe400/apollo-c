@@ -295,6 +295,36 @@ and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (st
   earlier 10x run tumbled (4-jet rotation, PDI-9). Adopted: 5x for every LM coasting wait, 1x from
   TIG-75 s through the burn/landing, both builds. Both runs logged a warp drop to 1x at sim 195 s
   that NASSP or Orbiter makes (re-asserted by the script).
+- DONE milestone 8 (PDI/landing, 2026-10-13, headless fixed step, both builds, the table generated
+  by tools/edits_diff.py from the edit CSVs; SCRATCH runs/{ref,agc}_pdi_H): ignition GET 369646.9
+  both; throttle-up TIG+25.5 s both; P64 TIG+495.7 s both (galt 2202 vs 2116 m); P65 auto
+  TIG+630.4 vs 657.9 s (galt 46 / 45 m); contact TIG+673.2 vs 701.8 s at -0.88 vs -0.92 m/s
+  (vh 0.40 both); touchdown lng/lat 23.7410/0.6689 vs 23.7245/0.6696 (windowed 1x stock:
+  23.7265/0.6695, P65 +660.8 s); no alarms, no assertion reports, no BAD_ARG on ours. Stock
+  windowed vs stock headless differ by 30 s / 0.015 deg, the envelope ours lies in. Open: ours'
+  true altitude runs ~30 m above stock from TIG+120 s and 85 m below at P64 (LR updates).
+- FLIGHT BUG 7 (PDI, ours only, fixed 2026-10-13): a spurious alarm 00401 once per PDI (TIG+267..
+  292 s). FINDCDUW's MGA limit (p. 914) read the two's MGA as ones' and converted back after
+  LIMITSUB; for MGA = two's -1 (ones' -0) the C got +0 back and the MSU was non-zero. LIMITSUB
+  returns L itself inside the cone. Fix: agc_lm_findcduw_limit_mga (src/lm/landing/findcduw.c)
+  keeps the word unless limited; tests/lm/landing.c test 4 (fails before). Found by mapping
+  UNFC/2, UNWC/2 (LM 03253, 03261) into the address map and comparing them in the edit CSVs
+  (identical within 0.1 deg on both builds, so the alarm came from the limit, not the inputs).
+- FLIGHT BUG 8 (after touchdown, ours only, fixed 2026-10-13): R10's SPEEDRN2 task returned
+  BAD_ARG every 0.5 s (T3RUPT diagnostic now names the waitlist head task: 137 SPEEDRUN_RESUME;
+  the NASSP build with -DAPOLLO_C_ASSERT_REPORTS=ON printed displays.c:329 'ld_altsave >= 0').
+  ALTOUT's CCS ALTBITS takes a -0 high word (LGC altitude just below zero) as new data and
+  ZERODATA zeroes the meter (pp. 899-900); the C asserted a non-negative ALTSAVE. Fix: assertion
+  gone (src/lm/landing/displays.c); tests/lm/landing.c test 5 (fails before).
+- Headless harness (lead 2026-10-13): Modules\Server\Orbiter.exe -s SCN -f 0.02 -t T -x with
+  D3D9Client and XRSound removed from Orbiter_NG.cfg (SCRATCH hstart.sh / hrestore.sh / hrun.sh),
+  about 20x real time, deterministic (two runs identical). NASSP needs focus on a vessel that is not
+  a Saturn/LEM (focus MCC; a focused LEM crashes console mode in its cockpit setup) and no Saturn in
+  the scenario (Columbia crashes it even unfocused: Orbiter.exe 0xc0000005 at 0x113557 after
+  "Finished setting up render state"). An unfocused LEM skips JoystickTimestep (channel 31 and the
+  TTCA throttle stay as saved). Scripts write edit CSVs (ac.edits: MODREG, FAILREG, channels
+  11/12/14/30/33, TIME, DSPTAB, vessel truth, UNFC/2, UNWC/2) diffed by tools/edits_diff.py with
+  per-quantity tolerances.
 - LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
   get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only; 2026-10-13 also
   set_ttca_throttle and set_agcinputbit, the TTCA throttle and the ROD bits of channel 016 as

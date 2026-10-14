@@ -583,10 +583,15 @@ static bool clock_rupts(void)
         g_stats.rupts[i]++;
         taken    = true;
 
+        int16_t       lst1 = 0;             /* LST1 of the waitlist head (unused) */
+        agc_task_id_t head = AGC_TASK_NONE; /* the task a T3RUPT runs, for the diagnostic */
+
+        agc_waitlist_entry(0, &lst1, &head);
+
         if (take_rupt((sim_irq_t) i) == AGC_STATUS_BAD_ARG)
         {
             g_stats.errors++;
-            (void) fprintf(stderr, "agc_sim: %lu cs: interrupt %d returned BAD_ARG\n", (unsigned long int) g_cs, i); /* stdlib diagnostic */
+            (void) fprintf(stderr, "agc_sim: %lu cs: interrupt %d returned BAD_ARG (waitlist head task %d)\n", (unsigned long int) g_cs, i, (int) head); /* stdlib diagnostic */
         }
 
         sim_channels_sync();
@@ -607,7 +612,7 @@ static bool clock_rupts(void)
     }
 
     return (taken);
-}
+} /* clock_rupts */
 
 /**********************************************************************
  * AGC: none -- the executive until DUMMYJOB would run (EXECUTIVE C
@@ -681,7 +686,7 @@ static void clock_exec(bool idle_pass)
         }
 
         sim_channels_sync();
-    }
+    } /* the jobs of one call */
 
     g_stats.busy_ticks += (n == SIM_JOBS_PER_CALL) ? 1u : 0u; /* the bound was hit */
 } /* clock_exec */

@@ -639,9 +639,11 @@ static void trace(const char *what, double cpu_s)
     }
 }
 
+static agc_exec_core_info_t g_sets[8]; /* the core sets before this count, for the alarm trace */
+
 /**********************************************************************
  * One sidecar line when FAILREG changes (an alarm): the three codes and
- * every core set's state, priority and job (agc_job_id_t), so an alarm
+ * every core set's priority and job (agc_job_id_t, 0 free), so an alarm
  * seen in NASSP can be tied to the jobs that were running or stalled.
  * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
  *
@@ -649,13 +651,11 @@ static void trace(const char *what, double cpu_s)
  *
  * ARGUMENTS: none
  **********************************************************************/
-static agc_exec_core_info_t g_sets[8]; /* the core sets before this count, for the alarm trace */
-
 static void trace_alarms(void)
 {
-    static uint16_t last[3];     /* FAILREG as last traced */
-    static agc_sp_t radcadr = 0; /* RADCADR as last traced */
-    bool            changed = false;
+    static uint16_t last[3];         /* FAILREG as last traced */
+    static agc_sp_t radcadr = 0;     /* RADCADR as last traced, a job id (B0) */
+    bool            changed = false; /* FAILREG differs from the last trace */
 
     if (agc_erase_modecadr(2) != radcadr)
     {
@@ -679,8 +679,8 @@ static void trace_alarms(void)
 
         for (int c = 0; c < agc_exec_core_sets() && c < 8 && n < sizeof (what); c++)
         {
-            agc_exec_core_info_t j = g_sets[c];                                                                                                    /* core set c before the count */
-            n                      += (size_t) snprintf(what + n, sizeof (what) - n, " %d:%d/%d/%d", c, (int) j.state, (int) j.prio, (int) j.loc); /* stdlib: host trace */
+            agc_exec_core_info_t j = g_sets[c];                                                                                  /* core set c before the count */
+            n                      += (size_t) snprintf(what + n, sizeof (what) - n, " %d:%d/%d", c, (int) j.prio, (int) j.loc); /* stdlib: host trace */
         }
 
         trace(what, 0.0);

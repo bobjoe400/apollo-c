@@ -499,6 +499,48 @@ static void fc_noattcnt(bool alarm)
 }
 
 /**********************************************************************
+ * MGA limit (p. 914): CA MPAC +2 / TS L / CA CDUZDLIM / TC LIMITSUB /
+ * XCH MPAC +2 / MSU MPAC +2 / BZF / TCF ALARMMGA. LIMITSUB divides the
+ * two's complement MGA in L (read as ones') by the limit: inside the cone
+ * it returns L itself, so the MSU is zero; at or beyond it +-CDUZDLIM, a
+ * ones' word now read as two's ("1 bit error possible"), and the MSU of a
+ * changed word alarms 00401.
+ *
+ * FUNCTION NAME: agc_lm_findcduw_limit_mga
+ *
+ * ARGUMENTS:
+ *   mga  agc_sp_t  I    required middle gimbal angle (CDUZ), 2's, scale pi
+ *
+ * RETURNS: agc_sp_t -- the MGA limited to the 70 degree cone, 2's, scale pi
+ **********************************************************************/
+agc_sp_t agc_lm_findcduw_limit_mga(agc_sp_t mga)
+{
+    /* Value of a two's complement word when the AGC reads it as ones'. */
+
+    agc_sp_t mga_1s = mga; /* CDUZ read as ones' complement, scale pi */
+
+    if (mga < 0)
+    {
+        mga_1s = (agc_sp_t) (mga + 1);
+    }
+
+    agc_sp_t lim     = agc_lm_limitsub(mga_1s, FC_CDUZDLIM); /* 1's, scale pi */
+    agc_sp_t limited = mga;                                  /* 2's, scale pi; inside the cone L itself (two's -1 is ones' -0, not +0) */
+
+    if (lim != mga_1s)
+    { /* limited: the ones' limit word read as two's */
+        limited = (lim < 0) ? (agc_sp_t) (lim - 1) : lim; /* negative ones' word as two's: one less */
+    }
+
+    if (fc_wrap15((int32_t) mga - limited) != 0)
+    {
+        agc_alarm(AGC_ALARM_00401); /* ALARMMGA         */
+    }
+
+    return (limited);
+}
+
+/**********************************************************************
  * Limit the MGA (alarm 00401), output CPHI.. for N22, and form the
  * unlimited -DELGMB = CDUxD - required angle (pp. 914-915, MGARET loop).
  *
@@ -508,30 +550,7 @@ static void fc_noattcnt(bool alarm)
  **********************************************************************/
 static void fc_gimbal_changes(agc_sp_t cdu[3])
 {
-    /* Value of a two's complement word when the AGC reads it as ones'. */
-
-    agc_sp_t cduz_1s = cdu[2]; /* CDUZ read as ones' complement, scale pi */
-
-    if (cdu[2] < 0)
-    {
-        cduz_1s = (agc_sp_t) (cdu[2] + 1);
-    }
-
-    agc_sp_t lim = agc_lm_limitsub(cduz_1s, FC_CDUZDLIM); /* 1's, scale pi */
-
-    /* Value of a ones' complement word when the AGC reads it as two's. */
-
-    agc_sp_t limited = lim; /* back to two's complement, scale pi */
-
-    if (lim < 0)
-    {
-        limited = (agc_sp_t) (lim - 1);
-    }
-
-    if (fc_wrap15((int32_t) cdu[2] - limited) != 0)
-    {
-        agc_alarm(AGC_ALARM_00401); /* ALARMMGA         */
-    }
+    agc_sp_t limited = agc_lm_findcduw_limit_mga(cdu[2]); /* MGA in the cone, 2's, scale pi */
 
     cdu[2]                 = limited;
     const uint16_t cdud[3] = {agc_erase_cduxd(), agc_erase_cduyd(), agc_erase_cduzd()};

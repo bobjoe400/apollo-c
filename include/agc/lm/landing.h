@@ -251,6 +251,7 @@ agc_sp_t     agc_lm_sparcsin(agc_sp_t x); /* arg scale 1, angle 180 deg */
 agc_sp_t agc_lm_sparcsin_doubled(agc_sp_t x);
 agc_sp_t agc_lm_arctrgsp(agc_sp_t s, agc_sp_t c); /* 2's comp, pi    */
 agc_sp_t agc_lm_limitsub(agc_sp_t x, agc_sp_t limit);
+agc_sp_t agc_lm_findcduw_limit_mga(agc_sp_t mga); /* FINDCDUW MGA limit, alarm 00401 (p. 914) */
 uint16_t agc_lm_onesto2s(agc_sp_t a);             /* -> 15-bit 2's comp word    */
 
 /* ---- LUNAR_LANDING_GUIDANCE_EQUATIONS (guidance.c) --------------
