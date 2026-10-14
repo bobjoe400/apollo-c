@@ -7,6 +7,15 @@ host. Paths below are relative to `Orbitersdk/samples/ProjectApollo/`.
 Line numbers are those of 5470bf1. Note: many NASSP sources contain a
 stray non-ASCII byte, so `grep` treats them as binary; use `grep -a`.
 
+> Status (final documentation pass, 2026-10-14): this is the phase 1
+> study, kept as written. What was built from it: the engine shim is
+> `src/nassp/engine.c` (the study's `nassp_engine.c`); the address map
+> the study places in `src/core/ecadr.c` is `src/erasable_map/address_map.c`
+> (core keeps only the raw image and the shadow words); the harness is
+> `sim/nassp/` (`make nassp-replay`, `make nassp-mission`). The flight
+> results, the seventeen flight bugs and the host procedure are in
+> [docs/modules/nassp-integration.md](../modules/nassp-integration.md).
+
 ## 1. How NASSP embeds the AGC
 
 NASSP compiles a modified copy of yaAGC's engine straight into each vessel

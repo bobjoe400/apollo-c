@@ -82,7 +82,7 @@ Language: C11, no extensions. Build flags (Makefile):
    constants and `AGC_ASSERT`. No token pasting, no variadics, no recursive
    macros, no function-like macros that hide control flow. Conditional
    compilation only for the include guard and the single `AGC_HOST_DEBUG`
-   switch in agc_assert.h.
+   switch in include/agc/core/assertion.h.
 9. **Limited pointers.** At most one level of dereference. No function
    pointers: the executive dispatches jobs/tasks through an `enum` + `switch`
    (`src/exec/dispatch.c`). No pointer arithmetic beyond array indexing. No
@@ -106,10 +106,47 @@ Language: C11, no extensions. Build flags (Makefile):
   all-caps prose into a readable sentence case.
 * Scale factors: every DP/SP variable carries a comment `scale 2^N unit`,
   and the struct definitions in headers repeat them. Do not silently rescale.
-* Status returns: `agc_status_t` from `agc_status.h`. AGC `ALARM`/`BAILOUT`/
+* Status returns: `agc_status_t` from `include/agc/core/status.h`. AGC `ALARM`/`BAILOUT`/
   `POODOO` become `agc_alarm(code)` / `agc_bailout(code)` calls followed by an
   error return; the octal alarm codes are preserved (e.g. `AGC_ALARM_01201`).
 * No `printf` in library code; the sim harness owns all I/O.
+
+## Rules from the mission (2026-10-14)
+
+The NASSP flight of Apollo 11 found seventeen faults that every gate had
+passed; the translation rules they teach are in TRANSLATION_GUIDE.md
+section 8 with each bug. As coding rules:
+
+* **One AGC erasable, one C object.** An EQUALS / `=` alias in
+  ERASABLE_ASSIGNMENTS is the same object under two names: one owner, one
+  declaration (the alias named in its comment), one accessor or setter
+  that every reader and writer uses. A second copy, even in another
+  lane's struct, is a defect (flight bugs 3, 4, 9, 10, 11; restore side
+  14).
+* **Assert only what the AGC cannot accept.** A sign, a -0 word, a zero
+  or a range the listing reads as data is not a precondition. Rule 5's
+  "only where a real execution could violate a fact" includes the -0
+  high word and the either-signed store (bugs 2, 7, 8).
+* **Sign tests on the words.** A test the AGC makes with CCS, BZMF, BPL
+  or SIGNMPAC on MPAC is written on the major word (`agc_dp_words_t`,
+  include/agc/core/interp_words.h), never on the collapsed DP value
+  (bug 15).
+* **Read and write paths agree.** A noun component that can be displayed
+  and that the listing lets the crew load is also stored by the noun's
+  write path; a test loads it and reads the erasable back (bug 16).
+* **Push-down operands are followed, not guessed.** An STODL / STCALL
+  without an address takes the pushed value; the C names that value in a
+  local where it was pushed and uses it there (bug 17).
+* **Addressable erasable is in the map.** Any erasable a host can load
+  or save, or a restarted program reads, has its ECADR in
+  src/erasable_map with its one owner; an owner's new erasable that the
+  AGC keeps across a restart gets its map entry and a load test
+  (tests/erasable_map/address_map.c) in the same change (bugs 1, 5,
+  12-14).
+* **A flight fault is fixed with a test that fails first,** at the lowest
+  tier that can show it (unit, oracle, scenario, nassp-replay), after it
+  is reproduced offline; the mission tiers then confirm the flight
+  (ARCHITECTURE.md, "Verification tiers").
 
 ## Tooling
 

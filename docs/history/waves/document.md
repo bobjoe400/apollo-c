@@ -88,3 +88,61 @@ New, from the HEAD 99b2c6e pass (comments only, except the layering one):
 ## Program flow and decisions
 
 _Documentation wave (2026-10-12), HEAD 99b2c6e._ This lane writes documentation only. Its two generators: `tools/depgraph.py` (ctags + the #include and call graph -> the Mermaid module map in docs/overview/README.md section 8) and `tools/xref.py` (the AGC labels named in each function prolog, checked against the rope listings -> docs/overview/xref.md). Every lane section above was assembled from prose written by reading the code plus tables extracted from the function bodies.
+
+## Final pass (2026-10-14, agent document-final, HEAD 3b97dc8)
+
+Code final (project complete); docs and the generators only. Scratch:
+SCRATCH/document-final/ (chk.py / chk2.py / chk3.py citation checkers,
+gen/ = decisions.py + assemble.py with the lane globs at the final layout,
+narr/ = the lane prose, extra/ = the post-wave sections, addsec.py).
+
+* DONE regenerated: docs/overview/README.md module map (depgraph: 252 TUs,
+  4039 functions, no upward call), xref.md (3095 labels, 3007 functions,
+  4206 rows), INDEX.md (repo_index.py), data/callgraph.{tsv,dot},
+  collapse_candidates.tsv (`make callgraph` in a private BUILD; WARN
+  without -Werror for the -O0 conversion warning in free_fall.c:443),
+  data/one_liners.tsv. No generator needed a path fix.
+* DONE flowcharts: every `file:function` and path resolved by script.
+  Fixed: earth-entry (11 reentry.c citations -> entry_{guidance,targeting,
+  initial_roll,huntest,upcontrol,final_phase}.c), lunar-landing
+  (agc_lm_guidinit is in ascent.c; LR read wait DEVIATION added), sps-burn
+  (SERVEXIT in guidance/servicer_common.c), program-change
+  (exec_cp_modes_csm/_lm, exec_cp_rendezvous_csm/_lm), fresh-start,
+  job-preemption, software-restart, waitlist-tick (src/sim/ paths);
+  imu-realign (P52 seams by agc_exec_jump), job-preemption (the
+  self-rescheduled-loop BUSY deviation), powered-ascent (QAXIS = UHYP,
+  VGBODY, TGO = DVCNTR +1 as one store each), software-restart (scenario
+  restore of the phase tables).
+* DONE "Program flow and decisions": the 19 code lanes regenerated
+  (tables from the final bodies; prose updated for the splits: guid-entry
+  entry_*.c, prog-rendz rendezvous_*.c / state_vector_update.c, sys-misc
+  lm/systems_test/ and the downlists by ECADR, state-flags erasable_map,
+  imu prelaunch/, dap-lm interface.c); new sections: nassp-integration,
+  telemetry, structure, organize, layering, style-final; citations fixed
+  in loose-ends and closed-loop-fixes.
+* DONE docs/ARCHITECTURE.md (final layout, src/nassp vs sim/nassp, the
+  address map at the top, internal.h, verification tiers, known
+  limitations), TRANSLATION_GUIDE.md section 8 and CODING_STANDARD.md
+  "Rules from the mission" (EQUALS alias = one object; -0 is data; sign
+  from the major word; crew loads; push-down operands; restore through
+  the map; mission tiers), TIPS.md (Lessons of the post-wave notes),
+  README.md Status and Documentation, MODULE_STATUS.md (every lane DONE,
+  file paths at the final layout, remaining stubs named),
+  overview/README.md hand sections (src/sim paths, display_interface.c,
+  erasable by address, zero-time executive), overview/nassp_integration.md
+  status note, nassp-integration.md (engine.c path).
+
+Findings (comments only; not fixed here, docs-only lane):
+
+* src/nassp/engine.c file prolog still names src/core/ecadr.c for
+  agc_erase_read/write_ecadr and for scenario restore; both are in
+  src/erasable_map/address_map.c.
+* tools/one_liners.py now reports PLAIN 1 (finish recorded 0):
+  src/sim/socket.c:sim_host_downrupt_external, the agc_sim side of a host
+  hook that src/nassp/engine.c replaces at link time; a constant by design.
+* STATE.md says "make test (36 binaries + 14 scenarios)"; tests/ holds 38
+  test sources (downlink_oracle.c and downlink_dump_oracle.c came with
+  telemetry), so make test builds 38 binaries.
+* src/lm/radar/*.c and src/lm/navigation/measurement_update.c include
+  `../../programs/navigation/internal.h` (cross-folder private header,
+  recorded in ARCHITECTURE.md "internal.h").

@@ -23,7 +23,7 @@ Light tier, Linux only, about a minute, no Orbiter:
 replays the CMC images of three NASSP 9 Apollo 11 scenarios (sim/nassp/images:
 02 Insertion, 03 TLI T-15m, 05 MCC-2 T-15m; the scenario's AGC_BEGIN..AGC_END block,
 GPL data from NASSP) on two engines built from sim/nassp/replay.c: ours (src/nassp/
-nassp_engine.c, the shim NASSP's vessels link, over build/libagc.a) and stock (NASSP's own
+engine.c, the shim NASSP's vessels link, over build/libagc.a) and stock (NASSP's own
 yaAGC, src_sys/yaAGC at 5470bf1). Each image: RSET, V37E00E, P00 for 20 minutes of AGC
 time (one integration step of each state vector), then an uplink sent as NASSP's PCM sends
 MCC uplinks (INLINK + UPRUPT, 0.1 s apart): the CSM state vector (V71 21 words at 1501) or
@@ -956,3 +956,72 @@ Audit of the runs before the rule (times UTC 2026-10-14):
   the CAPCOM "Ready for uplink" answer (TAB, 2 on the focused Saturn).
 - NASSP's Lua set_agcerasable stores the address as the value (LuaCall_SetAGCErasable reads
   argument 3 twice): unusable for pokes.
+
+## Program flow and decisions
+
+_Final documentation pass (2026-10-14), from `src/nassp/engine.c`,
+`src/erasable_map/address_map.c`, `sim/nassp/replay.py` and
+`sim/nassp/mission_tables.py` at HEAD 3b97dc8. The flight code the
+mission exercised is in the owning lanes' sections; the bugs it found are
+in the table above, each with its file and test._
+
+* **Engine API** (`src/nassp/engine.c`, host-only: not in libagc, built
+  by NASSP's CMake through `src/nassp/CMakeLists.txt` and
+  `sim/nassp/patches/0001`). NASSP's C++ calls yaAGC's API; the shim
+  answers it over libagc and the src/sim clock. `agc_engine_init` sets
+  yaAGC's power-on inputs (channels 030-033, Z = 04000, RESTART lamp).
+  `agc_load_binfile` takes the vehicle from the rope's name
+  (`sim_rope_vehicle`; anything but Comanche055 / Luminary099 returns 1
+  and the computer never starts), then `agc_power_on`, `sim_rope_load`,
+  `sim_clock_init`, `sim_channels_init`, and opens the sidecar trace
+  `apollo-c-agc-<vehicle>.log` (`trace`). `agc_engine` is one memory
+  cycle (11.71875 us); every 80/3 calls is one 1/3200 s scaler count,
+  `one_count`, the only place the shim works.
+* **One scaler count** (`one_count`): import NASSP's stores
+  (`import_erasable`: the registers and counters every count, the whole
+  mirror once a centisecond, each changed cell stored by address through
+  `agc_erase_write_ecadr`; Z = 04000 means power came back),
+  `import_channels` (a key code left in channel 015/016 by a scenario
+  load is stored without KEYRUPT; otherwise `sim_input`), then GOJAM
+  when due (`power_up` -> `agc_rupt_go`: first count after the load, or a
+  power cycle; an LGC scenario load keeps the image's RADMODES bit 6,
+  flight bug 5), `import_rupts`, one `sim_clock_count`, `trace_alarms`,
+  `lm_drives` (THRUST on 0142, ALTM on 0143 when channel 14 enables
+  them), then export: the registers every count, the display words every
+  centisecond (`export_display`), the whole erasable every 0.1 s
+  (`export_erasable`, through `agc_erase_read_ecadr`), all channels and
+  the superbank (`export_channels`), pending interrupts (`export_rupts`),
+  Standby.
+* **Host hooks** (src/sim's `internal.h`, defined here instead of
+  src/sim/socket.c): `sim_socket_send` renumbers the optics/TVC drives to
+  NASSP's 0140/0141 and mirrors the DSKY lamp channel 0163;
+  `sim_host_downrupt_external` returns true (NASSP's PCM telemetry raises
+  DOWNRUPT, not the clock); `sim_host_radar_read` asks NASSP for the
+  radar word (`RequestRadarData`) and stores RNRAD.
+* **Scenario restore** (`src/erasable_map/address_map.c`): a scenario's
+  AGC_BEGIN block reaches every erasable through the map; a flagword goes
+  to `agc_flagword_get/set`, a mapped address to its owner (the first map
+  entry holding it, `first_holder`), anything else to the raw image. The
+  executive, waitlist and phase-table continuations have no address, so
+  the load restarts the computer (GOJAM -> GOPROG) with the erasable
+  kept, and the restart groups re-run from PHASEn / TBASEn. Five of the
+  seventeen flight bugs (1, 5, 12-14) were erasables the map did not
+  carry. Known limitation: a type C phase whose PHSNAMEn is a rope
+  address is not resumed (the C keeps job ids; `agc_restart_group` ends
+  BAD_ARG for that group).
+* **Offline tier** (`make nassp-replay`, `sim/nassp/replay.py:main`):
+  builds `sim/nassp/replay.c` twice, over our shim and over NASSP's yaAGC
+  (downloaded at the pinned commit, or SKIP), replays the five images of
+  `sim/nassp/images/` (RSET, V37E00E, 20 minutes of P00 integration, an
+  MCC uplink by INLINK + UPRUPT, V33) and `compare`s the transcripts word
+  for word: the state-vector blocks, UPBUFF, UPSVFLAG, MODREG, DSPTAB, and
+  each image's downlist (`check_downlist`, `DOWNLIST_SKIP` for the words
+  the C cannot hold; docs/modules/telemetry.md). DP pairs compare by
+  value within TOL_LSB = 2.
+* **Mission tier** (`make nassp-mission`, `sim/nassp/mission_tables.py`):
+  pairs the stock and dev edit CSVs of each milestone (`compare`), finds
+  the events the same way in both (`ev_pdi`, `ev_liftoff`,
+  `ev_rendezvous`, `ev_entry`), and checks every column against
+  `sim/nassp/mission_tolerances.tsv`, derived by `derive` from two stock
+  runs (1.5 x their spread) and frozen before the dev run; exit 1 when a
+  quantity leaves its tolerance or an event is missing.

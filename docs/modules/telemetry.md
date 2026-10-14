@@ -343,3 +343,39 @@ accessor"):
 * Downlink differences on a loaded image are a good probe of what the
   address map misses: every unmapped owner word the restart reads shows
   up as a downlist word.
+
+## Program flow and decisions
+
+_Final documentation pass (2026-10-14), from
+`src/io/telemetry/down_telemetry.c`, the two list files and
+`src/erasable_map/address_map.c` at HEAD 3b97dc8. The DOWNRUPT
+decisions are also in [sys-misc](sys-misc.md#program-flow-and-decisions)._
+
+* **DOWNRUPT** (`down_telemetry.c:agc_telem_downrupt`, every 20 ms under
+  agc_sim, when NASSP's PCM asks under NASSP): the word-order bit (channel
+  13 bit 7) is set every time on the CSM and only when it is 0 on the LM
+  (WOTEST), then the state DNTMGOTO decides: PHASE1 starts the list
+  (`dnphase1` -> `newlist`: the control list of DNLSTCOD, its ID word
+  sent first); PHASE2 sends the next DP word: a DNADR still in progress
+  (`fetch2wd`), the next sublist entry (NEXTINSL) or control-list entry
+  (NEXTINCL), and at the end of the control list a new list (CHKLIST);
+  the erasable dump states (V74) step DUMPLOC one DP word at a time,
+  send each EBANK's ID (`dndump_id`), and after DUMPCNT complete dumps go
+  back to the downlist (`dnphase1`). An unknown state is BAD_ARG.
+* **An entry** (`do_entry`): the TIME2 entry of the control list resets
+  the word-order bit (SETWO); a DNPTR names a sublist (`list_lookup`;
+  a snapshot sublist is copied into DNTMBUFF first by `snapshot`,
+  SNAPLOOP); a DNCHAN sends two channels; anything else is a DNADR: the
+  count and the ECADR, read two words at a time by address (`word_at`,
+  `fetch2wd` -> `agc_erase_read_ecadr`).
+* **The lists** (`downlink_lists_csm.c`, `downlink_lists_lm.c`): the
+  rope's DNADR tables as `{count, neg, ECADR}` rows, the addresses from
+  the yaYUL symbol tables. What each word holds is decided by the address
+  map, not here: an overlaid address shows the owner that changed last
+  (`sync_holders`); words with no C storage (CADRFLSH, CADRMARK,
+  TEMPFLSH, RSBBQ, ARUPT) show the raw image (Deviations).
+* **List selection**: `agc_telem_select_list` (DNLSTCOD, set by the
+  programs' NEWMODE and by V74's dump request `agc_telem_start_dump`);
+  a fresh start, SLAP1 and a restart reset it (`agc_telem_fresh_start`,
+  `agc_telem_slap1`, `agc_telem_restart`; GOPROG takes DNLSTCOD from
+  AGSWORD on the LM).

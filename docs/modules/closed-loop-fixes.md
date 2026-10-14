@@ -166,14 +166,14 @@ old code, or for P40TMP/CALLT-35 by the old inline logic: 1 cs / BAD_ARG).
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the code at HEAD 99b2c6e. Each fix
+_Documentation wave (2026-10-12), from the code at HEAD 99b2c6e; citations checked at the final tree (HEAD 3b97dc8). Each fix
 changed a decision point; the full flow of each is in the owning lane's
 section (linked)._
 
 | fix | decision as the code now takes it | lane section |
 |---|---|---|
 | L1 | `src/io/dsky/pinball/keys.c:pin_enter` re-enters ENTER only while `verbs.c:pin_recycle` sees the `almcycle` mark that `pin_almcycle` sets; an ALARM status from a called routine (V37BAD) ends the job | [io-pinball](io-pinball.md#program-flow-and-decisions) |
-| L2 | `src/imu/gyro.c:gyro_words`: the OGC buffer is `agc_align_ram()->ogc`, the one erasable V25N93 loads and IMUPULSE reads | [imu](imu.md#program-flow-and-decisions) |
+| L2 | `src/imu/gyro.c:gyro_words`: the OGC buffer is one erasable, which V25N93 loads and IMUPULSE reads; first `agc_align_ram()->ogc`, now owned by imu, `src/imu/gyro.c:agc_imu_ogc` (layering) | [imu](imu.md#program-flow-and-decisions) |
 | L3 | `src/lm/dap/rcs/t6rupt.c:set_time6`: a zero T6 delta loads TIME6 = -0; `agc_lm_dap_t6jobchk`: -0 runs T6JOB, +0 is the CCS hole | [dap-lm](dap-lm.md#program-flow-and-decisions) |
 | S-L1 | `src/core/channels.c:wlog_add` logs every WRITE/WOR/WAND; `src/sim/channels.c:send_writes` sends one packet per entry | [state-flags](state-flags.md#program-flow-and-decisions), [sim](sim.md#program-flow-and-decisions) |
 | S-L2/3 | `src/sim/counters.c:sim_counters_tick`: CDUX-Z counts queued per CDU, 400 / 6400 counts a second | [sim](sim.md#program-flow-and-decisions) |

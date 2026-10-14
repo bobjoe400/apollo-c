@@ -12,9 +12,11 @@ contract; this document explains the intent behind them.
 | TP (MPAC 3 wd) | `agc_tp_t`   | int64_t; sign + 42 bits; fraction = v / 2^42     |
 | Overflow flag  | `agc_ovf_t`  | +1 / 0 / -1 (OVFIND / A overflow bit)            |
 
-Ones' complement -0 is not represented. Where the AGC relies on -0 (CCS on a
-negative zero, sign of a zero result, `DCOMP` of zero) comment it and model
-the observable behaviour, not the bit pattern.
+Ones' complement -0 is not represented in the value types. Where the AGC
+relies on -0 (CCS on a negative zero, sign of a zero result, `DCOMP` of
+zero) comment it and model the observable behaviour; where it depends on
+the words themselves, keep the words (`agc_dp_words_t`, below, and section
+8: a -0 is data).
 
 All AGC quantities are fractions scaled by a power of two. **Preserve the
 AGC scale factor** and write it in a comment. Helpers:
@@ -100,12 +102,15 @@ sign test. `INDEX`/table lookups are array indexing with a bounds assertion.
 (BANK, EBANK=, SETLOC, 2CADR, BBCON, superbank) is dropped; there is one flat
 address space.
 
-Shared erasables: use the accessors in `agc_state.h`. Module-private
-erasables: `static` variables in the module's `.c` file, named after the AGC
-label (lower case), with the AGC scale in a comment.
+Shared erasables: use the accessors in `include/agc/core/state.h` (or the
+owning subsystem's public header). Module-private erasables: `static`
+variables in the module's `.c` file, named after the AGC label (lower
+case), with the AGC scale in a comment. One AGC erasable is one C object,
+whatever names the listing gives it (section 8).
 
-Flags: the AGC flagwords FLAGWRD0..FLAGWRD11 are bit-named in
-`agc_flags_csm.h` / `agc_flags_lm.h`. Use `agc_flag_test(AGC_FLAG_xxx)`.
+Flags: the AGC flagwords FLAGWRD0..FLAGWRD11 (CSM) / ..FLGWRD13 (LM) are
+bit-named in `include/agc/core/flags_common.h`, `flags_csm.h`,
+`flags_lm.h`. Use `agc_flag_test(AGC_FLAG_xxx)`.
 
 ## 4. Executive and waitlist (include/agc/exec/exec.h)
 
@@ -131,7 +136,7 @@ Flags: the AGC flagwords FLAGWRD0..FLAGWRD11 are bit-named in
 
 `READ`/`WRITE`/`ROR`/`WAND`/etc. become `agc_chan_read(n)` /
 `agc_chan_write(n, v)` / `agc_chan_or` / `agc_chan_and` on the 15-bit channel
-image kept in core. Bit names are in `agc_channels.h` (from the LM
+image kept in core. Bit names are in `include/agc/core/channels.h` (from the LM
 INPUT_OUTPUT_CHANNEL_BIT_DESCRIPTIONS and the CM erasable comments).
 
 ## 6. DSKY / pinball (include/agc/io/dsky.h)
@@ -146,3 +151,78 @@ Keep: labels (as comments and as function names), page numbers, the author's
 functional descriptions, scale factors, alarm codes, iteration bounds,
 constants with their decimal and octal forms. Drop: bank bookkeeping,
 COUNT/SETLOC/BLOCK pseudo-ops, address arithmetic.
+
+## 8. Rules the mission taught (NASSP, 2026-10-13/14)
+
+Flying Apollo 11 in NASSP on this code (docs/modules/nassp-integration.md,
+"Flight bugs found by the mission") found seventeen faults that the unit
+and oracle tests had passed. Each rule below names the bug that taught it
+(bug numbers are that table's); each fix came with a test that failed
+before it.
+
+* **An EQUALS / `=` alias is one C variable.** When ERASABLE_ASSIGNMENTS
+  says `QAXIS EQUALS UHYP`, `VGDISP = DELVSAB`, `TGO EQUALS DVCNTR +1`, the
+  two names are one word of memory: a write under one name is a read
+  under the other. Give the erasable one owner and one C object, name the
+  alias in the declaration's comment, and make every reader and writer
+  use it. Two copies stay apart silently, and each lane's tests pass.
+  Bug 3 (DOI: P30 N42 DV REQ 0; the LM wrote DELVSAB, N42 read VGDISP),
+  bug 4 (PDI: alarm 01406; TLAND = W loaded by address never reached
+  P63's own copy), bug 9 (liftoff overshoot; QAXIS = UHYP and ZAXIS1 =
+  UHZP kept apart, so the ascent's downrange axis never moved), bug 10
+  (P12 N85 00000; VGBODY written to one copy, shown from the other), bug
+  11 (P12 TIG from a DPS burn's TGO; TGO and DVCNTR +1 apart). Bug 14 is
+  the restore side of the same rule: UHYP (= QAXIS), /LAND/ and the
+  average-G start state had to be mapped at their one address. Check:
+  grep the listing's ERASABLE_ASSIGNMENTS for EQUALS / `=` on any
+  erasable you translate.
+* **A -0 is data, not an error.** The AGC reads a -0 word as a value
+  (CCS takes it as the -0 branch; a -0 high word is a small negative
+  number with a zero major part). Never assert on a sign, a range or a
+  zero the listing accepts, and never round-trip a word through a
+  conversion that cannot hold -0. Bug 7 (PDI: spurious 00401; FINDCDUW's
+  MGA limit converted a two's -1 to ones' -0 and back to +0), bug 8 (after
+  touchdown: SPEEDRN2 BAD_ARG every 0.5 s; an assertion refused the -0
+  high word ALTOUT takes as new data), and bug 2 (TEI: DSKY blank after
+  V82; an assertion of `-TPER <= 0` where SKIPTPER stores -TPER of either
+  sign).
+* **A sign is taken from the major word.** SIGNMPAC, CCS, BZMF, BPL and
+  the sign tests of the RTB ops look at the high word of MPAC, not at the
+  DP value: after an overflow the major word can be +0 while the minor
+  words are negative. Write such a test on the words (`agc_dp_words_t`).
+  Bug 15 (rendezvous P20: the LM swung 40-60 deg in roll; BOVB SIGNMPAC in
+  COMPMATX took the sign of the DP value, so DELCOMP's diagonal became -1
+  and VECPNT1's outer gimbal flipped 180 deg).
+* **Crew loads reach their erasable.** Every noun component the DSKY can
+  display and the listing lets the crew load (V24/V25) must be stored
+  into the same erasable by the noun's write path; a component readable
+  but not writable is a load silently dropped. Bug 16 (rendezvous P32:
+  alarms 00603/00604, no CSI; the crew's N55 R1 never reached NN, which
+  kept the scenario's 7512).
+* **Constants come from the value the listing pushed.** An interpretive
+  STODL or STCALL with no address loads the push-down list, so the value
+  is the one pushed earlier in the routine, not the variable named in
+  the comment beside it. Follow the push-down list through the routine
+  before writing the expression. Bug 17 (TPI: ABORT 01302 at P41; INITVELX's
+  `STODL MU/A / SR 6 / STORE MUASTEER` was read as MU/A SR 6 where it
+  pops the pushed MU: MUASTEER = MU SR 6).
+* **Erasable restore goes through the address map.** A host that loads
+  or saves the AGC as memory (NASSP scenarios, V71/V72, the downlink
+  dump) reaches erasable only through `src/erasable_map/address_map.c`.
+  An erasable a program keeps across a restart, or a loaded program
+  reads later, must have its ECADR in the map with its one owner, or the
+  load drops it. Bug 1 (MCC-2: the map put EK3VAL over FANG), bug 5 (PDI:
+  the load restart re-read RADMODES bit 6 from an unpowered LR), bug 12
+  (the CSM RCS DAP state unmapped: the CMC never held the CSM after a
+  load), bug 13 (UNITW unmapped, vector stores misplaced: splashdown 2.6
+  deg short), bug 14 (the average-G start state, MUNFLAG's CSM vectors,
+  /LAND/ unmapped: the resumed P12 never reached orbit).
+* **Test at the mission level too.** Unit and oracle tests prove a
+  routine against the listing on the inputs someone chose; only a closed
+  loop exercises the paths a flight takes (overflow to exactly 1, a -0
+  altitude at touchdown, a crew load, a scenario restore). The tiers are
+  `make test`, `make scenarios`, `make lm-sim`, `make nassp-replay` and
+  the NASSP mission tables (docs/ARCHITECTURE.md, "Verification tiers");
+  every flight bug is reproduced offline (the replay harness or a saved
+  state on the debug library) and fixed with a test that fails first.
+

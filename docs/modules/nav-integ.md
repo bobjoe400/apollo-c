@@ -250,7 +250,7 @@ erasables, interpretive entry through INTPRET):
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/nav/integration/*.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/nav/integration/*.c`._
 
 Encke integration of a state vector's deviation from a conic, plus the
 jobs that keep the permanent state vectors current. Both vehicles; the
@@ -312,7 +312,7 @@ PRECIFLG, NEWIFLG, MIDAVFLG, AVEMIDSW, QUITFLAG, REINTFLG).
 
 ### Decision points by function
 
-52 of the lane's 107 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+52 of the lane's 106 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|

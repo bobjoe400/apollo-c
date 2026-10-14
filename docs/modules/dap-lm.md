@@ -197,7 +197,7 @@ a scratch stub file (exec/alarm/inhint, M-matrix, RHC counters, IMU CDU commands
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/lm/dap/*.c`, `src/lm/dap/rcs/*.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/lm/dap/*.c`, `src/lm/dap/rcs/*.c`._
 
 The LM RCS digital autopilot and trim gimbal, all at interrupt level
 (T5RUPT every 100 ms, T6RUPT for jet timing). Basic (machine) code on
@@ -245,7 +245,7 @@ ones'-complement words (`src/lm/dap/arith.c`). The decision points:
   ACCOKFLG is set when done. RCSMON (`rcsmon.c`, T4RUPT every 480 ms)
   turns a changed isolation-valve switch (channel 32 bits 1-8) into jet
   inhibit masks and a 1/ACCS run.
-* **Program interface** (`dapif.c`): deadband set/restore
+* **Program interface** (`interface.c`): deadband set/restore
   (`agc_lm_dap_restordb`, DBSELFLG), ALLCOAST (`agc_lm_dap_allcoast`,
   sets DRIFTDFL), STOPRATE / zeroing of commanded attitude and rates.
   Needles (`needles.c:lm_dap_altdsply`): every 100 ms alternate error
@@ -253,7 +253,7 @@ ones'-complement words (`src/lm/dap/arith.c`). The decision points:
 
 ### Decision points by function
 
-34 of the lane's 181 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+34 of the lane's 184 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|
@@ -262,9 +262,9 @@ ones'-complement words (`src/lm/dap/arith.c`). The decision points:
 | `spscont` (accs.c) | SPSCONT DOCKTEST | USEQRFLG | - | - | - | - |
 | `agc_lm_dap_jet_accel_update` (accs.c) | 1/ACCS | CSMDKFLG | +ACCOKFLG | - | - | - |
 | `lm_dap_accfix` (accs.c) | - | - | - | - | - | job jet_accel_update |
-| `lm_dap_callaccs` (dapif.c) | CALLACCS | - | - | - | - | job jet_accel_update |
-| `agc_lm_dap_restordb` (dapif.c) | RESTORDB | DBSELFLG | - | - | - | - |
-| `agc_lm_dap_allcoast` (dapif.c) | ALLCOAST | - | +DRIFTDFL | - | - | - |
+| `lm_dap_callaccs` (interface.c) | CALLACCS | - | - | - | - | job jet_accel_update |
+| `agc_lm_dap_restordb` (interface.c) | RESTORDB | DBSELFLG | - | - | - | - |
+| `agc_lm_dap_allcoast` (interface.c) | ALLCOAST | - | +DRIFTDFL | - | - | - |
 | `agc_task_dapidler` (dapidler.c) | DAPIDLER | ACCOKFLG | - | - | - | job jet_accel_reset |
 | `lm_dap_altdsply` (needles.c) | ALTDSPLY | NEEDLFLG | - | - | - | - |
 | `altsyst` (paxis.c) | ALTSYST | - | ~AORBSFLG | - | - | - |
@@ -301,6 +301,7 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `1jacc` | none -- accessor of the DAP erasable 1JACC (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
 | `1jaccq` | none -- accessor of the DAP erasable 1JACCQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
 | `1jaccr` | none -- accessor of the DAP erasable 1JACCR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `abdelv` | /DELV/ of the last PIPA reading, cm/s, scale 2^14 (ABDELV, LM) | 2 | 1 |
 | `alphaq` | none -- accessor of the DAP erasable ALPHAQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
 | `alphar` | none -- accessor of the DAP erasable ALPHAR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
 | `aosq` | AOSQ/AOSR are DP word pairs at pi/2 (the minor word may disagree in sign after DAS, as in the AGC); the accessor returns their value. AGC: none (helpe | 1 | 1 |
@@ -318,6 +319,7 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `delperor` | - | 0 | 1 |
 | `delqeror` | - | 0 | 1 |
 | `delreror` | - | 0 | 1 |
+| `downtork` | DOWNTORK +k (LM DAP): the accumulated commanded jet torque, sent on the downlists. AGC: DOWNTORK (Luminary099 ERASABLE_ASSIGNMENTS.agc); returns agc_s | 1 | 1 |
 | `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 1 | 0 |
 | `lemmass` | LM mass, kg, scale 2^16 (LEMMASS; DSP noun 47 R2) | 3 | 1 |
 | `m11` | M11 (GPMATRIX, T4RUPT_PROGRAM.agc p.188) -- SIN(MG), read by the DAP RETURNS: M11, scaled at 1; returns M11, scaled at 1 | 3 | 0 |
@@ -325,8 +327,10 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `m22` | M22 (GPMATRIX, T4RUPT_PROGRAM.agc p.188) -- SIN(OG), also MR22 RETURNS: M22, scaled at 1; returns M22, scaled at 1 | 3 | 0 |
 | `m31` | M31 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- -SIN(OG)COS(MG) RETURNS: M31, scaled at 1; returns M31, scaled at 1 | 3 | 0 |
 | `m32` | M32 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- COS(OG), also MR23 RETURNS: M32, scaled at 1; returns M32, scaled at 1 | 3 | 0 |
+| `mass` | LM vehicle mass, kg, scale 2^16, DP (MASS: SERVICER MASSMON, 1/ACCS) | 1 | 1 |
 | `neg_ratedb` | - | 0 | 1 |
 | `omegap` | none -- accessor of the DAP erasable OMEGAP (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `omegap_k` | - | 0 | 1 |
 | `omegapd` | none -- accessor of the DAP erasable OMEGAPD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
 | `omegaq` | none -- accessor of the DAP erasable OMEGAQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
 | `omegaqd` | none -- accessor of the DAP erasable OMEGAQD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |

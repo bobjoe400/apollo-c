@@ -270,13 +270,17 @@ V57/V54/V89 CSM -> the _CSM jobs (LM V89 is prog-align's R63).
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/programs/navigation/*.c`, `src/programs/targeting/*.c`, `src/programs/displays/*.c`, `src/csm/navigation/*.c`, `src/lm/navigation/*.c`, `src/lm/radar/*.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/programs/navigation/*.c`, `src/programs/targeting/*.c`, `src/programs/displays/*.c`, `src/csm/navigation/*.c`, `src/lm/navigation/*.c`, `src/lm/radar/*.c`._
 
 Rendezvous navigation, targeting and the orbit / rendezvous displays of
 both vehicles, plus the LM radars. Every AGC program is one job that
 sleeps on its flashing displays; here every display return and every
 INTSTALL resumption is its own job (`agc_job_*`). Common subroutines and
-erasables are in `src/programs/navigation/common.c`; vehicle-specific
+erasables are in `src/programs/navigation/`: `rendezvous_erasables.c`
+(the erasables, vehicle flags, word conversions),
+`rendezvous_subroutines.c` (P34-35 subroutines SELECTMU .. MIDGIM,
+P20FLGON, AVFLAGA/P) and `state_vector_update.c` (THISPREC / OTHPREC,
+INTSTALL / INTEGRVS set-up, INCORP2, BVECTORS); vehicle-specific
 flag ids come from `flags_csm.c` / `flags_lm.c`.
 
 * **P20 / P22 navigation.** CSM (`src/csm/navigation/navigation.c`):
@@ -340,7 +344,7 @@ flag ids come from `flags_csm.c` / `flags_lm.c`.
 
 ### Decision points by function
 
-170 of the lane's 657 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+164 of the lane's 643 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|
@@ -369,7 +373,6 @@ flag ids come from `flags_csm.c` / `flags_lm.c`.
 | `agc_job_orbital_navigation_landmark` (orbital_navigation.c) | PROG22A PROG22B | CMOONFLG | - | - | - | - |
 | `on_site_from_rls` (orbital_navigation.c) | S22LSITE | ERADFLAG LUNAFLAG | - | - | - | - |
 | `on_abde` (orbital_navigation.c) | S22ABDE OBTAINLL | KNOWNFLG | - | - | - | - |
-| `tps_store` (tpi_search.c) | LEMSTORE CSMSTORE | AVFLAG | - | - | - | - |
 | `tps_limits` (tpi_search.c) | S17.2 | KFLAG | - | - | - | - |
 | `tps_trial` (tpi_search.c) | CONCAUL JUNCT3 PERIAPO | AVFLAG | - | - | - | - |
 | `tps_step` (tpi_search.c) | JUNCT1 JUNCT2 | KFLAG | - | - | - | - |
@@ -394,8 +397,9 @@ flag ids come from `flags_csm.c` / `flags_lm.c`.
 | `mu_wlinit` (measurement_update.c) | WLINIT | SURFFLAG | - | - | - | - |
 | `mu_integrate` (measurement_update.c) | LSR22.3 | RENDWFLG VEHUPFLG | - | - | - | - |
 | `mu_incorp1` (measurement_update.c) | LGCUPDTE | DMENFLG | - | - | - | - |
-| `mu_incorp2` (measurement_update.c) | ASTOK INCORP2 | LMOONFLG | - | - | - | - |
 | `mu_next` (measurement_update.c) | RENDEND | SURFFLAG | - | - | - | - |
+| `mu_run` (measurement_update.c) | LSR22.3 | LMOONFLG | - | - | - | - |
+| `lmnav_incorporate_accepted` (measurement_update.c) | R22LEM7 ASTOK | LMOONFLG | - | - | - | - |
 | `agc_job_rendezvous_tracking_data_incorporate` (measurement_update.c) | LSR22.3 LSR22.4 MARKTEST | RENDWFLG SURFFLAG | - | - | - | - |
 | `agc_job_rendezvous_tracking_data_measure` (measurement_update.c) | RANGEBQ1 | LMOONFLG | - | - | - | - |
 | `lmnav_los` (navigation.c) | LPS20.1 | LOSCMFLG RNDVZFLG SURFFLAG | - | - | - | - |
@@ -441,11 +445,9 @@ flag ids come from `flags_csm.c` / `flags_lm.c`.
 | `agc_job_rr_designate_command` (designate.c) | DODES | LOKONSW | - | - | - | - |
 | `agc_task_radsamp` (leadin.c) | RADSAMP | - | - | - | - | task radsamp, job radar_sample |
 | `agc_job_radar_sample_done` (leadin.c) | DORSAMP | RADAR_ALARMS_SUPPRESSED | - | - | - | - |
-| `rr_radnoop` (moding.c) | RADNOOP | - | - | - | - | task rr_goodend |
 | `rr_zero_begin` (moding.c) | RRZEROSB | - | - | - | - | task rr_zero_counters |
 | `agc_task_rr_zero_counters` (moding.c) | RRZEROSB | - | - | - | - | task rr_zero_settled |
 | `agc_task_rr_zero_settled` (moding.c) | RRZEROSB | - | - | - | - | task rr_turnon_done |
-| `agc_rr_zero` (moding.c) | RRZERO | - | - | ALARM 0510 | - | task rr_zero |
 | `rr_axis_pass` (moding.c) | RR1AX2 | - | - | - | - | task rr_one_axis |
 | `agc_task_dorrepos` (moding.c) | DORREPOS | - | - | - | - | task rr_reposition_drive |
 | `agc_radar_powered_flight_designate` (powered_flight_designate.c) | R29 | LOSCMFLG NO_POWERED_DESIGNATE OLDESFLG | - | - | - | task powered_flight_preposition, job powered_flight_remode, task powered_flight_designate |
@@ -460,7 +462,6 @@ flag ids come from `flags_csm.c` / `flags_lm.c`.
 | `rd_lr_lamp` (read.c) | HLIGHT VLIGHT | SCALBAD | - | - | - | - |
 | `rd_nomore` (read.c) | NOMORE | ALARM_521_SUPPRESSED LRBYPASS | - | ALARM 0521 | - | - |
 | `agc_rendz_radar_read` (read.c) | RADAREAD | RADAR_ALARMS_SUPPRESSED | - | ALARM 0520, ALARM 0522 | - | - |
-| `agc_radar_lrpos2` (read.c) | LRPOS2 | - | - | - | - | task lr_position_scan |
 | `agc_task_lr_position_scan` (read.c) | LRPOSCAN | - | - | - | - | task lr_position_check |
 | `agc_task_lr_position_check` (read.c) | LRPOSNXT | - | - | - | - | task lr_position_settled, task lr_position_check |
 | `rz_alarm_flash` (display.c) | ALMXIT | - | - | ALARM code) | - | - |
@@ -484,33 +485,30 @@ flag ids come from `flags_csm.c` / `flags_lm.c`.
 | `agc_task_rendezvous_parameter_display` (rendezvous_parameter_display.c) | R31CALL | - | - | - | - | job rendezvous_params_start, task rendezvous_params_wait |
 | `agc_job_rendezvous_params_wait` (rendezvous_parameter_display.c) | DSPDELAY | - | - | - | - | job rendezvous_params_wait |
 | `agc_task_rendezvous_params_wait` (rendezvous_parameter_display.c) | DSPDELAY | - | - | - | - | task rendezvous_params_wait, job rendezvous_params_monitor |
-| `rz_tracking_flags_on` (common.c) | P20FLGON | - | +TRACKFLG +UPDATFLG | - | - | - |
-| `rz_precset` (common.c) | PRECSET LEMSTORE CSMSTORE | AVFLAG | - | - | - | - |
-| `rz_intint` (common.c) | INTINT | CMOONFLG | - | - | - | - |
-| `agc_rendz_get_lvc` (common.c) | GET.LVC | - | +MGLVFLAG | - | - | - |
-| `agc_rendz_get_mga` (common.c) | GET+MGA | - | -MGLVFLAG | - | - | - |
-| `rz_incorp2` (common.c) | INCORP2 | VEHUPFLG | - | - | - | - |
 | `agc_job_ground_track_compute` (ground_track_determination.c) | P21PROG1 P21DSP | SURFFLAG | - | - | - | - |
+| `rz_selectmu_display` (rendezvous_subroutines.c) | SELECTMU RTRNMU | CMOONFLG | - | - | - | - |
+| `rz_tracking_flags_on` (rendezvous_subroutines.c) | P20FLGON | - | +TRACKFLG +UPDATFLG | - | - | - |
+| `rz_vehicle_store` (rendezvous_subroutines.c) | LEMSTORE CSMSTORE | AVFLAG | - | - | - | - |
+| `rz_intint` (rendezvous_subroutines.c) | INTINT | CMOONFLG | - | - | - | - |
+| `agc_rendz_get_lvc` (rendezvous_subroutines.c) | GET.LVC | - | +MGLVFLAG | - | - | - |
+| `agc_rendz_get_mga` (rendezvous_subroutines.c) | GET+MGA | - | -MGLVFLAG | - | - | - |
+| `rz_incorp2` (state_vector_update.c) | INCORP2 | VEHUPFLG | - | - | - | - |
 | `agc_job_w_matrix_monitor_proceed` (w_matrix_monitor.c) | V06N9933 V6N99PRO | SURFFLAG W_MATRIX_OVERWRITE | - | - | - | - |
 | `agc_rendz_advance` (csi.c) | ADVANCE | - | +XDELVFLG | - | - | - |
 | `csi_apsis` (csi.c) | CSI/B3 | CMOONFLG | - | - | - | - |
-| `csi_selectmu` (csi_cdh_targeting.c) | SELECTMU | CMOONFLG | -FINALFLG | - | - | - |
 | `csi_almxit` (csi_cdh_targeting.c) | ALMXIT | - | - | ALARM (agc_alarm_code_t) c | - | - |
 | `agc_job_csi_compute` (csi_cdh_targeting.c) | P32/P72B | FINALFLG | +UPDATFLG | - | - | - |
 | `cdh_results` (csi_cdh_targeting.c) | P33/P73C P33/P73F | FINALFLG | +UPDATFLG | - | - | - |
 | `agc_job_lambert_aimpoint_compute_lm` (lambert_aimpoint_guidance_lm.c) | V06N33 | - | -UPDATFLG -XDELVFLG | - | - | - |
 | `agc_job_marks_tfi_mga_monitor` (lambert_aimpoint_guidance_lm.c) | REVN1645 | - | +FINALFLG | - | - | - |
 | `so_intrpvp` (stable_orbit.c) | INTRPVP | AVFLAG | - | - | - | - |
-| `agc_job_stable_orbit_start` (stable_orbit.c) | JUNCTN1 | CMOONFLG | - | - | - | - |
 | `agc_job_stable_orbit_recycle` (stable_orbit.c) | RECYCLE JUNCTN2 | OPTNSW | - | - | - | - |
 | `agc_job_stable_orbit_target` (stable_orbit.c) | MAINRTNE | FINALFLG STABLE_ORBIT_MIDCOURSE_ACTIVE | - | - | - | - |
 | `agc_job_stable_orbit_dv_accepted` (stable_orbit.c) | DSPLY81 | STABLE_ORBIT_MIDCOURSE_ACTIVE | - | - | - | - |
-| `som_start` (stable_orbit.c) | P39/P79A | CMOONFLG | - | - | - | - |
 | `tdv_moonflag` (target_delta_v.c) | P76SUB1 | CMOONFLG | - | - | - | - |
 | `agc_job_target_delta_v` (target_delta_v.c) | P76 | - | +TRACKFLG | - | - | - |
 | `agc_job_target_delta_v_store` (target_delta_v.c) | INTSTALL | - | +REINTFLG | - | - | - |
 | `tpi_search_pass` (tpi.c) | ELCALC ADTIME | ETPIFLAG | - | - | - | - |
-| `tpi_selectmu` (tpi_tpm_targeting.c) | SELECTMU | CMOONFLG | -FINALFLG | - | - | - |
 | `agc_job_tpi_after_elev` (tpi_tpm_targeting.c) | P34/P74A P34/P74B | - | -ETPIFLAG +ETPIFLAG | - | - | - |
 | `agc_job_tpi_cycle` (tpi_tpm_targeting.c) | P34/P74C | ETPIFLAG | - | - | - | - |
 | `tpi_after_search` (tpi_tpm_targeting.c) | SWCHCLR P34/P74D | ETPIFLAG | - | - | - | - |
@@ -521,6 +519,7 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 
 | erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
 |---|---|---|---|
+| `8nn` | 8NN (CSM, S22.1): the number of landmark marks, sent on the P22 downlist. AGC: 8NN (Comanche055 ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- 8NN, un | 1 | 0 |
 | `cdus` | CSM optics shaft CDU raw word (CDUS / OPTX); LM: rendezvous radar shaft | 8 | 1 |
 | `cdut` | CSM optics trunnion CDU raw word (CDUT / OPTY); LM: rendezvous radar trunnion | 9 | 1 |
 | `cdutcmd` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 0 | 1 |
@@ -530,23 +529,27 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `cduyd` | none -- accessor of the DAP erasable CDUYD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
 | `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 5 | 0 |
 | `cduzd` | none -- accessor of the DAP erasable CDUZD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
+| `dnindex` | DNINDEX (LM): the select code of the last radar read; the word between DNRRDOT and DNLRVELX the downlists send. AGC: DNINDEX (Luminary099 ERASABLE_ASS | 1 | 0 |
 | `dnrrange` | DNRRANGE .. (downlink): index 0..6 = select code 1..7. AGC: DNRRANGE (ERASABLE_ASSIGNMENTS.agc); returns uint16_t -- the last raw RNRAD of that code ( | 3 | 0 |
-| `dsptab` | display panel relay buffer DSPTAB +0..+10D, +11D is the C/S lights word (15-bit relay words) Index 0..11. | 2 | 1 |
 | `extvbact` | EXTVBACT (ERASABLE_ASSIGNMENTS; TESTXACT p.237 C / p.264 L) -- the extended verb activity bits, read RETURNS: EXTVBACT, 15 bits; returns EXTVBACT, 15  | 5 | 2 |
 | `horizon` | HORIZON (CM noun 70/71 R3), raw word. AGC: HORIZON (ERASABLE_ASSIGNMENTS.agc); returns uint16_t -- the raw 15-bit word | 3 | 2 |
-| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 3 | 0 |
-| `landmark` | LANDMARK (CM P22 code ABCDE, V52) as a signed SP number. AGC: LANDMARK (ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- the code (0 when the word is ou | 6 | 3 |
+| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 2 | 0 |
+| `landmark` | LANDMARK (CM P22 code ABCDE, V52), a signed SP number | 5 | 2 |
+| `lastycmd` | LASTYCMD +k (LM): the last RR drive commands, sent on the downlists. AGC: LASTYCMD, LASTXCMD (Luminary099 ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t  | 1 | 0 |
 | `markdown` | MARKDOWN +0..+6 / MARK2DWN +0..+6: mark data for the downlink (time high/low, CDUY, CDUS(OPTX), CDUZ, CDUT(OPTY), CDUX), raw words. | 0 | 3 |
+| `mktime` | MKTIME (LM, LRS22.1): the time of the RR mark, sent on the downlists. AGC: MKTIME (Luminary099 ERASABLE_ASSIGNMENTS.agc); returns agc_dp_t -- MKTIME,  | 1 | 0 |
 | `modecadr` | C(MODECADR +dev) (ERASABLE_ASSIGNMENTS.agc "MODE SWITCHING ERASABLE").; returns agc_sp_t -- the word (+0 none, positive a waiting job) | 1 | 2 |
-| `modreg` | MODREG major mode (program) | 4 | 0 |
-| `mrkbuf` | One raw word of MRKBUF1 / MRKBUF2 (layout above). AGC: MRKBUF1, MRKBUF2 (ERASABLE_ASSIGNMENTS.agc); returns uint16_t -- the raw 15-bit word (0 for a b | 7 | 6 |
-| `mrkbuf2` | MRKBUF2 +index as an SP number (P76 ENDP76, R22: -1 = invalid). AGC: MRKBUF2 (ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- MRKBUF2 +index as a signe | 2 | 4 |
+| `modreg` | MODREG major mode (program) | 3 | 0 |
+| `mrkbuf` | MRKBUF1 / MRKBUF2 (CM): two seven-word mark buffers (time DP, CDUY, word 0 = -1 (77776) marks a buffer empty. mrkbuf2 / set_mrkbuf2 read and store MRK | 5 | 4 |
+| `mrkbuf2` | MRKBUF1 / MRKBUF2 (CM): two seven-word mark buffers (time DP, CDUY, word 0 = -1 (77776) marks a buffer empty. mrkbuf2 / set_mrkbuf2 read and store MRK | 1 | 3 |
 | `piptime` | time of the PIPA reading / this vehicle's state vector, centiseconds, scale 2^28 (PIPTIME, B(2)PRM) | 2 | 0 |
 | `r61cntr` | R61CNTR: R61 passes to skip (positive) or KALCMANU running (-1). AGC: R61CNTR (ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- R61CNTR, a count | 2 | 2 |
-| `radmodes` | RADMODES (ERASABLE_ASSIGNMENTS; EQUALS FLGWRD12, FLAGWORD_ASSIGNMENTS p.85) -- the radar mode bit word, read RETURNS: uint16_t -- RADMODES (15 bits);  | 11 | 6 |
+| `radmodes` | RADMODES (ERASABLE_ASSIGNMENTS; EQUALS FLGWRD12, FLAGWORD_ASSIGNMENTS p.85) -- the radar mode bit word, read RETURNS: uint16_t -- RADMODES (15 bits);  | 10 | 6 |
+| `rangrdot` | RANGRDOT +k (LM): the raw RR range and range rate of the mark, sent on the downlists. AGC: RANGRDOT (Luminary099 ERASABLE_ASSIGNMENTS.agc); returns ui | 1 | 0 |
 | `refsmmat` | reference-to-stable-member matrix, row-major, DP elements, scale 2^1 (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') | 13 | 0 |
 | `rfailcnt` | none -- RFAILCNT (R04Z, RADSAMP) -- bad samples counted RETURNS: RFAILCNT; returns RFAILCNT | 1 | 1 |
 | `rls` | landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing | 2 | 0 |
+| `rm` | RM (LM, LRS22.1): the RR range of the mark, sent on the downlists. AGC: RM (Luminary099 ERASABLE_ASSIGNMENTS.agc); returns agc_dp_t -- RM, m 2^29 | 1 | 0 |
 | `rn` | this vehicle's position, meters, scale 2^29 (earth) or 2^27 (moon) (RN, B(6)PRM) | 2 | 0 |
 | `rnrad` | RNRAD (046): the radar reading (RR, LR or VHF range), raw 15-bit word. | 3 | 0 |
 | `rsampdt` | none -- RSAMPDT (R04 / R77, read by RADSAMP) -- the sampling interval RETURNS: RSAMPDT: interval + 1, cs (0 stops the sampling); returns RSAMPDT: inte | 1 | 0 |
@@ -555,6 +558,7 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `rtstdex` | none -- RTSTDEX (R04X) -- which radar is sampled RETURNS: RTSTDEX: 1 RR, 2 LR (test index); returns RTSTDEX: 1 RR, 2 LR (test index) | 1 | 1 |
 | `rtstloc` | none -- RTSTLOC (R04Z, RADSAMP) -- the next sample slot RETURNS: RTSTLOC; returns RTSTLOC | 2 | 1 |
 | `rtstmax` | none -- RTSTMAX (R04C) -- the last sample slot RETURNS: 2 for the RR, 6 for the LR; returns 2 for the RR, 6 for the LR | 1 | 0 |
+| `svmrkdat` | SVMRKDAT (CSM, S22.1): the landmark mark data, sent on the P22 downlist. AGC: SVMRKDAT (Comanche055 ERASABLE_ASSIGNMENTS.agc); returns uint16_t -- SVM | 1 | 0 |
 | `tang` | TANG, TANG +1 (LM, noun 72): RR gimbal command or, for RRDESNB, the desired trunnion and shaft CDU words, as ones' complement SP numbers. AGC: TANG (E | 5 | 7 |
 | `tetcsm` | time of the permanent CSM state vector, centiseconds, scale 2^28 (TETCSM) | 2 | 0 |
 | `tetlem` | time of the permanent LM state vector, centiseconds, scale 2^28 (TETLEM) | 3 | 0 |
@@ -564,6 +568,7 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `trunbias` | TRUNBIAS: the R57 trunnion bias. AGC: TRUNBIAS (ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- TRUNBIAS, CDU units | 1 | 0 |
 | `ttpi` | TPI time, centiseconds, scale 2^28 (TTPI; DSP noun 37) | 13 | 3 |
 | `vhfcnt` | VHFCNT (CM): VHF range mark count. AGC: VHFCNT (ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- VHFCNT, a count | 3 | 5 |
+| `vhftime` | VHFTIME (CSM): time of the last VHF range reading, sent on the downlist. AGC: VHFTIME (Comanche055 ERASABLE_ASSIGNMENTS.agc); returns agc_dp_t -- VHFT | 1 | 0 |
 | `vn` | this vehicle's velocity, m/cs, scale 2^7 (earth) or 2^5 (moon) (VN, B(6)PRM) | 2 | 0 |
 | `x789` | X789: the radar / landmark bias states of the 9-dimensional W. AGC: X789 (ERASABLE_ASSIGNMENTS.agc); returns agc_vec_t -- X789 at the bias scales | 8 | 4 |
 

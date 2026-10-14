@@ -148,7 +148,7 @@ missing symbols: 23 checks, 0 failures, 0 assert reports):
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/csm/entry/*.c`, `src/csm/burns/earth_orbit_insertion.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/csm/entry/*.c`, `src/csm/burns/earth_orbit_insertion.c`._
 
 The P61-P67 sequence is drawn in
 [flowcharts/earth-entry.md](../overview/flowcharts/earth-entry.md).
@@ -173,8 +173,13 @@ CSM only. The decision points:
   trajectory and body triads (`agc_entry_cm_pose_triad`,
   `agc_entry_cm_trio`: UYA held at OLDUYA once |VREL| <= VQUIT) and goes
   to POSEXIT; SERVNOUT's BAILOUT outranks the guidance status.
-* **Guidance** (`reentry.c`, one call per pass through `entry_sequencer`,
-  each AGC section a step function): TARGETNG (`agc_entry_targeting`:
+* **Guidance** (REENTRY_CONTROL, split at its own phase boundaries:
+  `entry_guidance.c` the sequencer and ENDEXIT, `entry_targeting.c`
+  STARTENT and TARGETNG, `entry_initial_roll.c`, `entry_huntest.c`,
+  `entry_upcontrol.c` with KEP2, `entry_final_phase.c` PREFINAL,
+  PREDICT3, the G limiter, the lateral logic and the roll command; one
+  call per pass through `entry_sequencer`, each AGC section a step
+  function): TARGETNG (`agc_entry_targeting`:
   D, RT, THETAH, GONEBY, .05GSW, L/D from `targ_ldcalc` skipped on
   overflow) then the phase in GOTOADDR: INITIAL ROLL (INRLSW, `step_inrolout`)
   -> HUNTEST (`step_huntest`: RANGER, PREFINAL or constant drag) ->
@@ -231,6 +236,23 @@ CSM only. The decision points:
 | `agc_job_cm_dapon_wait` (dap.c) | CM/DAPON | GAMDIFSW | +CMDAPARM +NODOFLAG | - | - | job cm_dapon_wait |
 | `agc_job_cm_dapon` (dap.c) | CM/DAPON | - | -DAPBIT1 -DAPBIT2 | - | - | - |
 | `agc_entry_dap_ic` (dap.c) | CM/DAPIC | CM_DSTBY | +CM_DSTBY +LATSW | - | - | task readgymb |
+| `step_prefinal` (entry_final_phase.c) | PREFINAL | - | +EGSW | - | - | - |
+| `step_final_predict` (entry_final_phase.c) | PREDICT3 | GONEBY GONEPAST | +GONEPAST | - | - | - |
+| `step_limitld` (entry_final_phase.c) | LIMITL/D L350 | GONEPAST | - | - | - | - |
+| `step_roll_command` (entry_final_phase.c) | L355 | - | -NOSWITCH | - | - | - |
+| `entry_final_phase_step` (entry_final_phase.c) | - | NOSWITCH | -NOSWITCH | - | - | job entry_final_phase_display |
+| `entry_endexit` (entry_guidance.c) | ENDEXIT OVERNOUT NODISKY | ENTRYDSP | - | - | - | - |
+| `entry_huntest_step` (entry_huntest.c) | - | HIND | +HIND | - | - | - |
+| `step_inrolout` (entry_initial_roll.c) | INROLOUT | INRLSW | +INRLSW | - | - | - |
+| `agc_job_pre_hunt` (entry_initial_roll.c) | PRE-HUNT | - | -HIND | - | - | - |
+| `entry_initial_roll_step` (entry_initial_roll.c) | - | INRLSW _05GSW | -GONEPAST | - | - | - |
+| `targ_geteta` (entry_targeting.c) | GETETA SUBETA SUBETA2 | EGSW | +RELVELSW | - | - | - |
+| `agc_entry_targeting` (entry_targeting.c) | TARGETNG | GONEBY RELVELSW | -GONEBY +GONEBY -_05GSW +_05GSW | - | - | - |
+| `entry_initial_target` (entry_targeting.c) | STARTEN1 | - | -ERADFLAG -LUNAFLAG | - | - | - |
+| `agc_entry_startent` (entry_targeting.c) | STARTENT | - | +ENTRYDSP +GONEPAST +LATSW | - | - | - |
+| `step_upcontrl` (entry_upcontrol.c) | UPCONTRL VLTEST | - | +NOSWITCH | - | - | - |
+| `step_negtests` (entry_upcontrol.c) | NEGTESTS | - | -LATSW | - | - | - |
+| `step_kepler_test` (entry_upcontrol.c) | KEP2 | _05GSW | - | - | - | - |
 | `agc_job_cm_sm_separation_end_hold` (programs.c) | P62.1 PROCEED | - | +ENTRYDSP | - | - | - |
 | `agc_task_wake_cm_sm_separation` (programs.c) | WAKEP62 | - | - | - | - | job entry_initialization |
 | `entry_post_0_05g` (programs.c) | P64 | _05GSW | - | - | - | - |
@@ -246,23 +268,6 @@ CSM only. The decision points:
 | `agc_task_entry_start_average_g` (programs.c) | S61.1C | - | - | - | - | job entry_imu_axis_test |
 | `agc_job_entry_imu_axis_test` (programs.c) | S61.1A S61.1B | - | - | ALARM code) | - | job entry_imu_check_return |
 | `agc_entry_desired_gimbal_angles` (programs.c) | S62.3 | - | -CPHIFLAG | - | - | - |
-| `targ_geteta` (reentry.c) | GETETA SUBETA SUBETA2 | EGSW | +RELVELSW | - | - | - |
-| `agc_entry_targeting` (reentry.c) | TARGETNG | GONEBY RELVELSW | -GONEBY +GONEBY -_05GSW +_05GSW | - | - | - |
-| `entry_initial_target` (reentry.c) | STARTEN1 | - | -ERADFLAG -LUNAFLAG | - | - | - |
-| `agc_entry_startent` (reentry.c) | STARTENT | - | +ENTRYDSP +GONEPAST +LATSW | - | - | - |
-| `step_inrolout` (reentry.c) | INROLOUT | INRLSW | +INRLSW | - | - | - |
-| `agc_job_pre_hunt` (reentry.c) | PRE-HUNT | - | -HIND | - | - | - |
-| `step_upcontrl` (reentry.c) | UPCONTRL VLTEST | - | +NOSWITCH | - | - | - |
-| `step_negtests` (reentry.c) | NEGTESTS | - | -LATSW | - | - | - |
-| `step_kepler_test` (reentry.c) | KEP2 | _05GSW | - | - | - | - |
-| `step_prefinal` (reentry.c) | PREFINAL | - | +EGSW | - | - | - |
-| `step_final_predict` (reentry.c) | PREDICT3 | GONEBY GONEPAST | +GONEPAST | - | - | - |
-| `step_limitld` (reentry.c) | LIMITL/D L350 | GONEPAST | - | - | - | - |
-| `step_roll_command` (reentry.c) | L355 | - | -NOSWITCH | - | - | - |
-| `entry_initial_roll_step` (reentry.c) | - | INRLSW _05GSW | -GONEPAST | - | - | - |
-| `entry_huntest_step` (reentry.c) | - | HIND | +HIND | - | - | - |
-| `entry_final_phase_step` (reentry.c) | - | NOSWITCH | -NOSWITCH | - | - | job entry_final_phase_display |
-| `entry_endexit` (reentry.c) | ENDEXIT OVERNOUT NODISKY | ENTRYDSP | - | - | - | - |
 
 ### Shared erasables read and written
 
@@ -282,7 +287,9 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `extvbact` | EXTVBACT (ERASABLE_ASSIGNMENTS; TESTXACT p.237 C / p.264 L) -- the extended verb activity bits, read RETURNS: EXTVBACT, 15 bits; returns EXTVBACT, 15  | 0 | 1 |
 | `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 1 | 0 |
 | `modreg` | MODREG major mode (program) | 1 | 0 |
+| `paxerr1` | PAXERR1 (CSM entry DAP): the integrated roll error, sent on the entry downlist. AGC: PAXERR1 (Comanche055 ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t  | 1 | 0 |
 | `piptime` | time of the PIPA reading / this vehicle's state vector, centiseconds, scale 2^28 (PIPTIME, B(2)PRM) | 4 | 0 |
+| `prel` | PREL +k (CSM entry DAP): the body rates x TCDU, sent after CMDAPMOD on the entry downlist. AGC: PREL, QREL, RREL (Comanche055 ERASABLE_ASSIGNMENTS.agc | 1 | 0 |
 | `refsmmat` | reference-to-stable-member matrix, row-major, DP elements, scale 2^1 (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') | 3 | 1 |
 | `rls` | landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing | 1 | 0 |
 | `rn` | this vehicle's position, meters, scale 2^29 (earth) or 2^27 (moon) (RN, B(6)PRM) | 4 | 0 |

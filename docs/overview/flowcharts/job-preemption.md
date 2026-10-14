@@ -33,11 +33,13 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    S["agc_exec_run_one<br/>(ADVAN / NUDIRECT; called by sim/clock.c:clock_exec)"] --> T{"NEWJOB"}
+    S["agc_exec_run_one<br/>(ADVAN / NUDIRECT; called by src/sim/clock.c:clock_exec)"] --> T{"NEWJOB"}
     T -- "-0" --> T0["DUMMYJOB: return NOT_FOUND (idle)<br/>clock.c:clock_exec runs agc_selfcheck_idle_pass"]
     T -- "+k" --> U["CHANJOB: swap core set 0 and k, NEWJOB = +0<br/>executive.c:chanjob  (PRE-EMPTION)"]
-    T -- "+0" --> V
-    U --> V["activity light on; dispatch core set 0 at LOC<br/>dispatch.c:agc_dispatch_job -> agc_job_*(ctx)"]
+    T -- "+0" --> T1{"core set 0 a self-rescheduled loop<br/>that already ran this cs?"}
+    U --> T1
+    T1 -- "yes" --> T2["return BUSY: next pass in the next cs<br/>(DEVIATION: job pacing)"]
+    T1 -- "no" --> V["activity light on; dispatch core set 0 at LOC<br/>dispatch.c:agc_dispatch_job -> agc_job_*(ctx)"]
     V --> W["interpreter alarms of the job<br/>alarm.c:exec_service_interp_alarm<br/>(1301 ALARM, 1302 POODOO)"]
     W --> X{"software restart requested?<br/>alarm.c:agc_exec_restart_pending"}
     X -- "yes" --> X1["ENEMA now<br/>alarm.c:agc_exec_service_restart<br/>(see software-restart.md)"]
@@ -67,4 +69,11 @@ Other entries that move NEWJOB:
 Deviation (executive.c NOTES): a long C job body delays a newly created
 higher-priority job until it returns or yields; MPAC, OVFIND and the VAC
 contents are not saved by the executive (a job keeps its data in locals
-or module erasables).
+or module erasables). A job whose last pass ended in CHANG1 to its own
+LOC (a polling or recomputing loop: R31/R34 V83 COMPDISP, CHECKG1's PIPA
+catch) gets its next pass in the next centisecond (`agc_exec_run_one`
+returns BUSY until then): a C pass takes no AGC time, so without it such
+a loop ran up to the host's job bound where the AGC runs it a few times a
+second. With the landing radar read wait (`landing_radar.c:agc_job_lrvjob`)
+it is one of the two ordering deviations that stand in for AGC execution
+time (docs/ARCHITECTURE.md, "Known limitations").

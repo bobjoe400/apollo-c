@@ -15,9 +15,9 @@ hardware restart keeps them and re-runs them from the phase tables.
 
 ```mermaid
 flowchart TD
-    P0["sim/main.c:start"] --> P1["agc_power_on(vehicle)<br/>change_program/idle.c<br/>state, lane erasables, executive, waitlist"]
-    P1 --> P2["rope, pad / --resume pad<br/>main.c:load_rope, sim/pad.c:sim_pad_load"]
-    P2 --> P3["clock and power-on channels<br/>sim/clock.c:sim_clock_init, sim/channels.c:sim_channels_init"]
+    P0["src/sim/main.c:start"] --> P1["agc_power_on(vehicle)<br/>change_program/idle.c<br/>state, lane erasables, executive, waitlist"]
+    P1 --> P2["rope, pad / --resume pad<br/>main.c:load_rope, src/sim/pad.c:sim_pad_load"]
+    P2 --> P3["clock and power-on channels<br/>src/sim/clock.c:sim_clock_init, src/sim/channels.c:sim_channels_init"]
     P3 --> G0["GOJAM: interrupts.c:agc_rupt_go"]
     G0 --> G1["GOPROG<br/>fresh_start.c:agc_restart_goprog<br/>INCR REDOCTR, INHINT"]
     G1 --> G2{"vehicle"}

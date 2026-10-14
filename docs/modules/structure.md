@@ -286,3 +286,19 @@ headers stayed. Each user file includes its folder's internal.h.
 - CHECKPOINT task 5 and final, main tree: make OK; make test 36 binaries + 14 scenarios, 0 failures; make check 0 hard, format clean, 0 style findings in 350 files; prolog-report 0; always-ok-report 0; lm-sim 34/34 matched; nassp-replay 5/5; depgraph no upward edge
 - DONE docs/overview regenerated (depgraph.py -> README.md, xref.py -> xref.md, repo_index.py -> INDEX.md), MODULE_STATUS row
 - Work was done in a scratch copy (SCRATCH/structure/wt, one commit per task) and written into this tree task by task (SCRATCH/structure/sync.sh), each followed by the gates above. No file under src/nassp, sim/nassp or src/erasable_map was changed.
+
+## Program flow and decisions
+
+_Final documentation pass (2026-10-14). This lane changed where code
+lives and wired two dispatch paths; the decisions themselves are in the
+owning lanes' sections._
+
+| change | decision as the code now takes it | lane section |
+|---|---|---|
+| task 1, 1STO2S | `src/io/service/rtb_ops.c`: one 1TO2SUB on the MPAC words for every caller (`agc_rtb_1sto2s`, `agc_rtb_1sto2s_words`, V1STO2S, 2V1STO2S); `src/lm/optics/lem_geometry.c:agc_lm_rrangles` and `src/programs/alignment/geometry_csm.c:agc_csm_sxtang` call the RTB ops as the listing does | [sys-misc](sys-misc.md#program-flow-and-decisions), [prog-align](prog-align.md#program-flow-and-decisions) |
+| task 1, QUALITY1/2 | the lunar J22 term only in `src/nav/integration/orbital_integration.c:lunar_j22_term` (word level, exact against yaAGC) | [nav-integ](nav-integ.md#program-flow-and-decisions) |
+| task 1, SELECTMU | one SELECTMU with the VN1645 display, `src/programs/navigation/rendezvous_subroutines.c:rz_selectmu_display`, used by CSI, TPI and stable orbit; MUTABLE words from nav/conic | [prog-rendz](prog-rendz.md#program-flow-and-decisions) |
+| task 2, V92 | the CSM REDO is `src/csm/prelaunch/align.c:agc_job_systems_test_csm` (NEWMODEX 07, IMUTEST), the registry's CSM handler of AGC_JOB_SYSTEMS_TEST | [imu](imu.md#program-flow-and-decisions) |
+| task 2, P20/P22 | the registry dispatches V37 N20 / N22 by vehicle (CSM `agc_job_rendezvous_navigation_csm`, `agc_job_orbital_navigation_csm`; LM `agc_job_rendezvous_navigation_lm` for both) | [prog-rendz](prog-rendz.md#program-flow-and-decisions) |
+| task 2, SERVEXIT / B5OFF | `src/guidance/servicer_common.c:agc_job_servexit` (both vehicles), `src/io/service/service.c:agc_job_sband_b5off` | [guid-powered](guid-powered.md#program-flow-and-decisions), [sys-misc](sys-misc.md#program-flow-and-decisions) |
+| task 4, splits | REENTRY_CONTROL in `src/csm/entry/entry_{guidance,targeting,initial_roll,huntest,upcontrol,final_phase}.c`; the rendezvous common code in `src/programs/navigation/{rendezvous_erasables,rendezvous_subroutines,state_vector_update}.c`; P07 in `src/lm/systems_test/` | [guid-entry](guid-entry.md#program-flow-and-decisions), [prog-rendz](prog-rendz.md#program-flow-and-decisions), [sys-misc](sys-misc.md#program-flow-and-decisions) |

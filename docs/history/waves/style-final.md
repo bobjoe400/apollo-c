@@ -75,3 +75,10 @@ make prolog-report 0; make always-ok-report 0; make lm-sim 34/34 matched
 (LMSIM_DIR=scratchpad/src/virtualagc/Contributed/LM_Simulator).
 `make style`: 646 -> 236, all in src/erasable_map/address_map.c (169) and
 src/nassp/engine.c (67).
+
+## Program flow and decisions
+
+_Final documentation pass (2026-10-14)._ Comments, prologs and
+declaration layout only; no decision changed (the gates before and
+after were identical). The flows of the files it touched are in their
+owning lanes' sections.

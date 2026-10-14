@@ -62,3 +62,12 @@ routines nothing calls, file splits, internal.h prototypes).
 - An include whose symbols a file does not use can still be load-bearing
   (transitive declarations): prove removals by compiling and comparing
   object code, one line at a time, then all together.
+
+## Program flow and decisions
+
+_Final documentation pass (2026-10-14)._ This lane wrote no flight code:
+it indexed the repository (`tools/repo_index.py` -> docs/overview/INDEX.md)
+and prepared the layout script (applied as 755db91, kept in
+`tools/archive/apply_layout/`). The layout it produced is described in
+docs/ARCHITECTURE.md; the code-structure findings it raised were settled
+by [structure](structure.md#program-flow-and-decisions).

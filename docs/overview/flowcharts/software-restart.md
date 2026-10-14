@@ -12,7 +12,7 @@ would make the call graph recursive (rule 1), so the request is
 recorded and served at the next **service point**: the end of the job
 (`executive.c:agc_exec_run_one`), the end of T3RUPT
 (`waitlist.c:agc_waitlist_t3rupt`), the exit of any interrupt
-(`interrupts.c:rupt_exit`) or the harness loop (`sim/clock.c:clock_exec`,
+(`interrupts.c:rupt_exit`) or the harness loop (`src/sim/clock.c:clock_exec`,
 `rupt_t3`). The function that raised it returns `AGC_STATUS_BAILOUT` /
 `AGC_STATUS_POODOO` and every caller passes that up.
 
@@ -93,6 +93,13 @@ flowchart TD
 * The KLEAN routines kill groups: `agc_phase_change_program_klean`
   (V37KLEAN: 3, 5, 6 and LM 1), `agc_phase_idle_klean` (P00KLEAN: 4, CSM
   also 1), `agc_phase_mr_klean` (MR.KLEAN: 2, then all).
+* Scenario restore (NASSP, `src/nassp/engine.c` through
+  `src/erasable_map/address_map.c`): the loaded image's PHASEn and TBASEn
+  words reach the phase tables (`agc_phase_table_set_word`,
+  `agc_phase_set_tbase_word`), but a type C PHSNAMEn is a rope address
+  with no C job or task id, so that group's restart ends BAD_ARG and is
+  not resumed (seen on the PDI image, PHASE4 0402 in P63; known
+  limitation, docs/ARCHITECTURE.md).
 * Deviation (phase_table.c `store_return_point`): a type A/B phase whose
   restart point is "the return address of PHASCHNG" restarts the job
   segment that made the phase change, the nearest point C can name.

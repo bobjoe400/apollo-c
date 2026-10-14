@@ -4,7 +4,12 @@ Consolidated 2026-10-12 (documentation wave, PLAN.md item 9e) from the
 "Lessons" section of every note in docs/modules/, deduplicated and
 organised by topic. Each tip keeps the first-hand example that taught it;
 the lane in parentheses is where to read the full story
-(docs/modules/<lane>.md).
+(docs/modules/<lane>.md, or docs/history/waves/<lane>.md for the
+tree-wide passes). Brought up to date 2026-10-14 (final documentation
+pass) with the Lessons of the notes written after the wave:
+nassp-integration (the mission), telemetry, structure, organize, layering
+and style-final. The translation rules the mission taught are also in
+TRANSLATION_GUIDE.md section 8.
 
 Contents: 1 Numbers are words, not values -- 2 Basic-language idioms --
 3 Interpretive idioms -- 4 Jobs, displays and scheduling -- 5 Erasables
@@ -71,6 +76,21 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
   takes the fourth branch; 1 + (-1) = -0 does the same (LONGGYRO N = 1)
   (dap-lm, review-imu). Model the observable behaviour, write the
   DEVIATION, and give oracle tests the one-LSB tolerance only there.
+* **A -0 the AGC accepts is data: do not assert on it, and do not
+  convert it away.** FINDCDUW's MGA limit read a two's -1 as ones' -0 and
+  converted back to +0, a spurious 00401 once per PDI; ALTOUT takes a -0
+  high word (altitude just below zero) as new data, and an assertion on a
+  non-negative ALTSAVE returned BAD_ARG every 0.5 s after touchdown;
+  SKIPTPER stores -TPER of either sign, and an assertion of its sign
+  blanked the DSKY after V82 on the escape hyperbola (nassp-integration,
+  flight bugs 7, 8, 2).
+* **A sign is the major word's sign.** SIGNMPAC does CCS on MPAC's high
+  word: after an SL overflow to exactly 1 the major word is +0 while the
+  minor words are negative, so the sign is +. Taking the DP value's sign
+  made DELCOMP's diagonal -1 and turned VECPNT1's outer gimbal 180 deg for
+  a 0.01 deg correction: the LM swung 40-60 deg in roll during P20
+  (nassp-integration, flight bug 15). Write such a test on
+  `agc_dp_words_t`.
 * **SIGN is "negate if negative", not copysign** (CALCTFF's gone-past
   test). **BZF/BZMF after DCA test only the major word**: a C DP compare
   with zero is a different test (review-prog-align).
@@ -144,6 +164,12 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
   value in module storage (p37). PDDL/PDVL with no operand exchange with
   the top; relative offsets (+11) are octal; NORM stores -shifts, and
   indexed shift counts are addr - C(X) (prog-rendz).
+* **STODL / STCALL with no address pop the push-down list.** INITVELX's
+  `STODL MU/A / SR 6 / STORE MUASTEER` reads like MU/A SR 6, but the
+  STODL loads the MU pushed at the top of the routine: MUASTEER = MU SR 6.
+  Read as written, TPI's aimpoint steering took the square root of a
+  negative (ABORT 01302 at P41) (nassp-integration, flight bug 17).
+  Follow the push-down list through the routine before translating a line.
 * **"MPAC on entry" matters.** GETX, LAMENTER, POLY read whatever MPAC
   holds (PARAM's SR* MPAC+2, ABVAL's TP words): read the caller's last
   instruction before the CALL (review-nav-conic). RP-TO-R / R-TO-RP pick
@@ -189,6 +215,24 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
   Luminary and does not clear NODOFLAG; only the routine's own DOWNFLAG
   does (prog-align). A restart reruns CANV37 / V37XEQ with whatever
   MINDEX holds, so their checks stay (review-exec-sched).
+* **A jump into a vehicle's code is a jump, not a call.** The AGC's
+  TC/TCF/POSTJUMP to a label of the rope being flown becomes
+  `agc_exec_jump(ctx, id)` with one registry row naming the CSM and the LM
+  body (P52's star, recheck and landing-site steps, V46 DAPFIG, V82CALL);
+  never use it to launder a subroutine CALL (DELRSPL is a CALL: its
+  caller CANDEL moved next to it instead) (layering).
+* **A vehicle switch inside one registry handler hides dispatch gaps.**
+  The other vehicle's column stays '-' and its job ends NOT_FOUND: the CSM
+  V92 and the LM's V37 N20 / N22 never ran. Give each vehicle its own
+  registry entry and test the dispatch per vehicle (structure).
+* **Zero AGC time changes order, not decisions, unless a deadline is
+  involved.** The C executive runs a job in no AGC time. Two places needed
+  a stand-in for execution time: the landing radar reads (LRVJOB reached
+  RADSTALL 5 cs after LRHJOB and BAILOUT 01210 lost every LR update;
+  flight bug 6) and self-rescheduling loops (one pass per cs). Everything
+  else that differs only in time (01703's slip size, R22's mark pace, a
+  4 s earlier R61 switch test) is an expected deviation: judge on
+  decisions and end state and list the trace (nassp-integration).
 * **Interrupt timing needs the scaler, not the centisecond.** Taking
   interrupts once per cs lost the rest of a T6RUPT chain and ran T5 before
   T3; stepping the 3200 Hz scaler 32 counts per cs gives yaAGC's phases
@@ -197,16 +241,28 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
 
 ## 5. Erasables and shared state
 
-* **One AGC erasable must be one C store.** OGC/IGC/MGC lived in the noun
-  table and in the gyro driver; the keyboard load wrote one and V42
-  torqued the other, so fine align did nothing in the LM Simulator
-  (closed-loop-fixes L2). Check EQUALS / `=` aliases of every shared
-  erasable against the C storage: the DELVSLV/DELVLVC split compiled,
-  passed every test and zeroed P30's input (review-state-flags).
+* **One AGC erasable must be one C store; an EQUALS / `=` alias is the
+  same store.** OGC/IGC/MGC lived in the noun table and in the gyro
+  driver; the keyboard load wrote one and V42 torqued the other, so fine
+  align did nothing in the LM Simulator (closed-loop-fixes L2). The
+  DELVSLV/DELVLVC split compiled, passed every test and zeroed P30's input
+  (review-state-flags). The mission found five more, each a silent wrong
+  answer: VGDISP = DELVSAB (P30 N42 DV REQ 0), two TLANDs (alarm 01406 at
+  P63), QAXIS = UHYP and ZAXIS1 = UHZP (the ascent overshot to 1757.9 x
+  1901.0 km),
+  VGBODY (N85 00000), TGO = DVCNTR +1 (P12 TIG from a DPS TGO)
+  (nassp-integration, flight bugs 3, 4, 9-11). Grep ERASABLE_ASSIGNMENTS
+  for EQUALS / `=` on every erasable you own.
+* **Crew loads must reach the erasable.** A noun component the DSKY shows
+  and the crew may load needs a write path to the same erasable: N55 R1
+  (NN) was readable but not loadable, so P32 kept the scenario's 7512 and
+  alarmed 00603 (nassp-integration, flight bug 16). Test a load and read
+  the erasable back.
 * **Erasable by address needs a map, element by element.** Pinball's
   machine-address nouns, V71/V72 uplink and hosts that restore scenarios
   (NASSP) address erasable by ECADR; typed C storage needs an explicit
-  address map (src/core/ecadr.c). Map whole blocks: restoring only RN/VN
+  address map (src/erasable_map/address_map.c; it reaches every owner, so
+  it sits at the top of the module graph). Map whole blocks: restoring only RN/VN
   left RCV/DELTAV at 0 and P00 integration exited at once; the 42-word
   state vector blocks, LAT/LONG/ALT and LAT(SPL)/LNG(SPL) (HA/HP were 5
   nmi high without them) all had to be in it (WORKLOG, NASSP milestone 1).
@@ -214,7 +270,32 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
   time; keep the raw words as loaded and rebuild the typed value from all
   of them; refresh the raw words from the typed value only for elements
   whose value changed, or the AGC's sign-disagreeing words are lost
-  (ecadr.c refresh, WORKLOG milestone 1). Ground-loaded test erasables
+  (address_map.c sync_entry, WORKLOG milestone 1). Compare an element by
+  its bits against the shadow the map last saw, not by value against the
+  raw image: values hide -0 vs +0 (CMDAPMOD) (telemetry).
+* **A scenario restore loses every erasable the map does not carry.**
+  NASSP saves the running AGC; the C restarts on a load, so whatever a
+  program reads after the restart must be mapped: the CSM RCS DAP state
+  (the CMC never held the CSM after a load), UNITW (splashdown 2.6 deg
+  short), the average-G start state RN1/VN1/PIPTIME1, MUNFLAG's CSM
+  vectors and /LAND/ (the resumed P12 never reached orbit), EK3VAL over
+  FANG (an SPS burn of 2.53 s for 2.21 s), RADMODES bit 6 (no LR data)
+  (nassp-integration, flight bugs 1, 5, 12-14). Downlink differences on a loaded image are
+  the cheapest probe: every unmapped word the restart reads shows up as a
+  downlist word (telemetry).
+* **Downlists are address tables; keep them as addresses.** The rope's
+  DNADR tables are counts and ECADRs; translating them to named items lost
+  the overlays the AGC relies on (UPBUFF +2 = XSMD, BESTI = UPVERB, one
+  MKTIME for three owners) and sent 92 of 128 items as zero. As ECADR
+  tables read through the address map, all 11 lists match yaAGC word for
+  word; the map's overlay rule (the owner that changed last wins) is the
+  AGC's one memory word (telemetry; structure finding T1).
+* **A downlist item whose owner sits above io is noun data**: read it by
+  noun id (agc_dispatch_noun) rather than moving the owner's storage down
+  (DELVSLV). Small mode-switch starters (RRZERO, LRPOS2, CLRADMOD) belong
+  with the word they set (RADMODES, io/service), not with the program that
+  also uses them; their waitlist tasks stay where they are and are reached
+  by id (layering). Ground-loaded test erasables
   (P07) likewise are reachable only at their ECADR (review-sys-misc).
 * **Lane "reset" functions are power-on helpers, not DOFSTART**: the AGC
   never clears program erasable on a fresh start (integrate). C module
@@ -223,7 +304,23 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
   display-interface state survive (review-sim).
 * **Before adding a "missing" routine, grep for a second copy**: several
   lanes had translated CSMCONIC/LEMCONIC, SETMINDB, CDUTCMD storage,
-  RADMODES; keep the owner's (integrate).
+  RADMODES; keep the owner's (integrate). Most of xref's "one label,
+  several functions" rows are adapters (they marshal erasables and call
+  the owner) or vehicle variants, about five times fewer real duplicates
+  than the rows suggest; read each, and compare outputs where there is
+  arithmetic: exhaustively when the input is a word (65,536 CDU words),
+  otherwise millions of values plus the edges (+-0, the overflow
+  boundaries). 16 groups gave 10 real copies, 2 with a fidelity finding
+  (structure, organize).
+* **A value-typed copy of a word routine cannot be exact.** 1STO2S,
+  QUALITY2 and VECSGNAG run on MPAC words; an `agc_dp_t` copy cannot hold
+  words whose signs disagree and was one count (1STO2S) to 8 LSB
+  (QUALITY2) off. The word form is the faithful one; the value form calls
+  it (structure).
+* **Judge ownership by the AGC section and the statics a function
+  touches, not by where its callers are**: "every caller in another
+  folder" is mostly by design here (storage accessors, the restart resets
+  each module supplies to change_program) (organize).
 
 ## 6. Reading the AGC text
 
@@ -357,6 +454,18 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
   tests count only their own (sys-misc). Run the sim scenarios on a debug
   build after adding preconditions (review-io-dsky).
 
+* **agc_probe can be an oracle for interrupt-driven code**: run the real
+  vector with every other interrupt suppressed and watch yaAGC's own timer
+  (DownruptTimeValid) instead of hooking the channel output (telemetry).
+* **Restart the reference the way you restart yours.** To compare a
+  restarted engine with yaAGC, give yaAGC the same restart (ParityFail = 1
+  gives a GOJAM); then every word that still differs is a real difference
+  (telemetry).
+* **A reference harness must do what the host does.** NASSP's
+  ChannelOutput keeps channel 7 (the superbank); a stock yaAGC harness
+  without it ran Luminary's banks 30-37 code from 40-47 and looked like a
+  TC trap (telemetry).
+
 ## 9. Tools: formatting, rewriting, analysis
 
 * **Rename and rewrite with Coccinelle, inventory with ctags or libclang**:
@@ -408,6 +517,20 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
   EVA-only deletions rest on the test mains' inputs, so re-derive them from
   the call sites (status-handling-2, verify-collapse).
 
+* **Coccinelle cannot rewrite inside macro arguments** (the tests'
+  CHECK()); edit those few sites by hand (structure).
+* **An include whose symbols a file does not use can still be
+  load-bearing** (transitive declarations): prove each removal by
+  compiling and comparing object code, one line at a time, then all
+  together (organize).
+* **Splitting a file whose code indexes a file-static array**: give the
+  array an accessor and a local pointer in each function that uses it
+  (`st_words()` in lm/systems_test), which keeps rule 6 and leaves every
+  expression as it was (structure).
+* **A tool that globs src/** must follow the build's own exclusions**:
+  the module map failed on the host-only src/nassp until depgraph.py
+  skipped what the Makefile's LIB_SRCS skips (document).
+
 ## 10. Closed loops: VirtualAGC GUI, LM Simulator, NASSP
 
 * **The launcher has no AGC-binary setting**: it runs `../bin/yaAGC`, so
@@ -443,12 +566,40 @@ rewriting, analysis -- 10 Closed loops: GUI, LM Simulator, NASSP --
   quantity a mission scenario or MCC uplink writes must reach its typed C
   store (section 5); find gaps by replaying a scenario's AGC image through
   the shim on Linux next to NASSP's own yaAGC engine built offline
-  (nassp-integration).
+  (`make nassp-replay`) (nassp-integration).
+* **Reproduce offline before any host run.** Every one of the seventeen
+  flight bugs was reproduced on Linux first, from the run's saved
+  scenario image or the edit CSV, on the debug library under gdb, and
+  fixed with a test that failed before; the host run then only confirmed
+  it. A host run costs minutes and an Orbiter session; the offline replay
+  costs seconds (nassp-integration).
+* **Fly headless at a fixed step.** `Orbiter.exe -s SCN -f 0.02 -t T -x`
+  without a graphics client (console mode) runs about 20x real time and is
+  deterministic: two runs give the same numbers. Warp is not: at 10x-20x
+  the stock LM tumbled into gimbal lock and fired the DPS upward. Console
+  mode crashes with a NASSP Saturn in the scenario or a focused LEM: focus
+  the MCC vessel, reach vessels by name from Lua (nassp-integration).
+* **Generate the comparison and derive its tolerances from stock.** Each
+  run writes an edit CSV (DSKY words, channels, vessel truth every
+  second); `make nassp-mission` finds the events the same way in both and
+  checks every column against 1.5 x the spread between two stock runs at
+  -f 0.02 and -f 0.01, no rounding: a hand-picked tolerance (0.002 for
+  0.0012) once turned a fail into a pass (nassp-integration).
+* **Freeze the test before the dev run.** Script, checklist sheets, edit
+  columns and tolerances are fixed before ours flies; any later change
+  repeats the stock runs and is logged ("Test changes"). Scripts are
+  copied to both installs and never branch on the build; crew actions the
+  sheets do not list are logged (nassp-integration).
+* **Read DP pairs from the host with ones'-complement word signs.** A Lua
+  `hi * 2^14 + lo` was 327.67 s wrong whenever the low word was negative
+  (TTPI after P34) (nassp-integration).
 * **Step cost per frame is the integration's budget.** NASSP steps the AGC
   by warp x real dt each Orbiter frame; a full 2048-word mirror export
   every centisecond (~15 ms CPU per AGC second) made frames grow until
   Orbiter stopped responding at 50x. Counters per scaler count, import per
-  cs, full export per second brought it to ~6 ms, like yaAGC. Do not run
+  cs, full export per second brought it to ~6 ms, like yaAGC (the final
+  shim exports the display words every cs and the whole erasable every
+  0.1 s, src/nassp/engine.c:one_count). Do not run
   other CPU load on the host during a run: the stock AGC itself went to
   garbage when frames stretched (nassp-integration).
 * **One Orbiter session at a time.** NASSP's PCM telemetry binds TCP 14242

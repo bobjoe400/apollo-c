@@ -215,7 +215,7 @@ X1 = work-area 38D: 77775 (-2, earth) or 77765 (-10D, moon).
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/nav/conic/*.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/nav/conic/*.c`._
 
 The conic subroutines run inside the caller's job on both vehicles and
 work on the conic context `agc_conic_ctx_t` (the AGC's conic erasables:
@@ -265,7 +265,7 @@ read by the LM's RASTEER after INITVEL).
 
 ### Decision points by function
 
-2 of the lane's 58 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+2 of the lane's 59 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|

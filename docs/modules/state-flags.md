@@ -2370,7 +2370,7 @@ Special registers and channels (not in the erasable log sections above):
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/core/state.c`, `src/core/channels.c`, `src/core/erasable.c`, `src/core/counters.c`, `src/core/display_erasables.c`, `src/core/pad_loads.c`, `src/core/restart_delays.c`, `src/core/ecadr.c`, `src/core/assert.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/core/state.c`, `src/core/channels.c`, `src/core/erasable.c`, `src/core/counters.c`, `src/core/display_erasables.c`, `src/core/pad_loads.c`, `src/core/restart_delays.c`, `src/core/ecadr.c`, `src/core/assert.c`._
 
 The lane is storage: the flagwords, the clock, the channel image and the
 erasables that more than one subsystem reads. It makes no flight
@@ -2416,23 +2416,29 @@ on.
   the high words of DELV (PIPASR without scaling).
   `restart_delays.c` holds the times restart code re-reads (P40TMP,
   SAVET-30, ZOOMTIME, S61DT, CM/GYMDT).
-* **Erasable by address** (`ecadr.c:agc_erase_read_ecadr`,
-  `agc_erase_write_ecadr`): for pinball's machine-address nouns, V71/V72
-  uplink, the downlink dump and src/nassp. Three cases: a flagword
-  address (074..0111) goes to `agc_flagword_get/set`; an address in the
-  per-rope map (`map_find` over `k_map_csm` / `k_map_lm`: REFSMMAT,
-  TEPHEM, the 42-word state vector blocks, uplink buffer, LAT/LONG/ALT,
-  LAT(SPL)/LNG(SPL), IMU compensation and burn/entry pad loads, DAP
-  words, display registers) is stored in a raw image and the typed value
-  rebuilt from all its words (`item_store`); anything else stays in the
-  raw image only (DEVIATION). Before a read or store of a mapped address,
-  `refresh` rewrites from the typed value only the elements whose value
-  changed (`same_element`), so words loaded one at a time keep the
-  AGC's mixed signs. A word above 077777 is BAD_ARG.
+* **Erasable by address.** Core keeps only the raw word image and the
+  map's shadow words (`ecadr.c:agc_erase_raw_read`, `agc_erase_raw_write`,
+  `agc_erase_shadow_read`, `agc_erase_shadow_write`). The address map
+  itself is `src/erasable_map/address_map.c` (moved there by
+  nassp-integration and layering; it reaches every owner, so it sits at
+  the top of the module graph): `agc_erase_read_ecadr` /
+  `agc_erase_write_ecadr` serve pinball's machine-address nouns, V71/V72,
+  the downlists and the erasable dump, the LM systems test and
+  src/nassp. A flagword address (074..0111) goes to
+  `agc_flagword_get/set`; an address in the per-rope map (`k_map_csm` /
+  `k_map_lm`, found by `first_holder` / `sync_holders`) is stored in the
+  raw image and the typed value rebuilt from all its words
+  (`item_store`); anything else stays in the raw image only (DEVIATION).
+  Before a read, every entry holding the address whose typed value
+  changed since the map last looked (`same_element` against the shadow)
+  rewrites its words (`sync_entry`): the last writer wins, as in the
+  AGC's one memory word, and words loaded one at a time keep the AGC's
+  mixed signs. A store goes to the first entry holding the address. A
+  word above 077777 is BAD_ARG.
 
 ### Decision points by function
 
-2 of the lane's 232 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+2 of the lane's 198 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|
@@ -2445,86 +2451,92 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 
 | erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
 |---|---|---|---|
+| `abdelv` | /DELV/ of the last PIPA reading, cm/s, scale 2^14 (ABDELV, LM) | 1 | 1 |
 | `altm` | ALTM (LM 060): altitude / altitude-rate meter drive, raw 15-bit word. | 1 | 1 |
-| `aotaz` | AOTAZ -1+n, AOTEL -1+n (LM, detent n = 1..6): AOT azimuth / elevation, CDU words (2^15 = 1 revolution). | 2 | 2 |
-| `aotel` | AOTAZ -1+n, AOTEL -1+n (LM, detent n = 1..6): AOT azimuth / elevation, CDU words (2^15 = 1 revolution). | 2 | 2 |
-| `cduchkwd` | CDUCHKWD (CSM): CDU check delay, cs (0 = use the default). | 2 | 2 |
+| `aotaz` | AOTAZ -1+n, AOTEL -1+n (LM, detent n = 1..6): AOT azimuth / elevation, CDU words (2^15 = 1 revolution). | 1 | 1 |
+| `aotel` | AOTAZ -1+n, AOTEL -1+n (LM, detent n = 1..6): AOT azimuth / elevation, CDU words (2^15 = 1 revolution). | 1 | 1 |
+| `cduchkwd` | CDUCHKWD (CSM): CDU check delay, cs (0 = use the default). | 1 | 1 |
 | `cdus` | CSM optics shaft CDU raw word (CDUS / OPTX); LM: rendezvous radar shaft | 1 | 1 |
 | `cdut` | CSM optics trunnion CDU raw word (CDUT / OPTY); LM: rendezvous radar trunnion | 1 | 1 |
 | `cdutcmd` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 3 | 3 |
 | `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 1 | 1 |
 | `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 1 | 1 |
 | `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 1 | 1 |
-| `cm_gymdt` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 2 | 2 |
-| `csmmass` | CSM mass, kg, scale 2^16 (CSMMASS; TVCMASSPROP 'B+16 KILOGRAMS'; noun 47 R1) | 2 | 2 |
-| `dapdatr1` | DAP configuration word 1 (DAPDATR1, DSP noun 46 R1) | 2 | 2 |
-| `dapdatr2` | DAP configuration word 2 (DAPDATR2, DSP noun 46 R2; Comanche only, storage exists in both builds) | 2 | 2 |
-| `delv` | accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM. KPIP1  | 2 | 3 |
-| `dsptab` | display panel relay buffer DSPTAB +0..+10D, +11D is the C/S lights word (15-bit relay words) Index 0..11. | 2 | 2 |
-| `failreg` | three alarm code registers FAILREG +0..+2 (octal alarm codes) Index 0..2. | 2 | 2 |
-| `imodes30` | last-sampled channel 30 bits, T4RUPT IMUMON (IMODES30, B(1)PRM) | 2 | 2 |
-| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 2 | 2 |
+| `cm_gymdt` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 1 | 1 |
+| `csmmass` | CSM mass, kg, scale 2^16 (CSMMASS; TVCMASSPROP 'B+16 KILOGRAMS'; noun 47 R1) | 1 | 1 |
+| `dapdatr1` | DAP configuration word 1 (DAPDATR1, DSP noun 46 R1) | 1 | 1 |
+| `dapdatr2` | DAP configuration word 2 (DAPDATR2, DSP noun 46 R2; Comanche only, storage exists in both builds) | 1 | 1 |
+| `delv` | accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM. KPIP1  | 1 | 2 |
+| `dsptab` | display panel relay buffer DSPTAB +0..+10D, +11D is the C/S lights word (15-bit relay words) Index 0..11. | 1 | 1 |
+| `failreg` | three alarm code registers FAILREG +0..+2 (octal alarm codes) Index 0..2. | 1 | 1 |
+| `imodes30` | last-sampled channel 30 bits, T4RUPT IMUMON (IMODES30, B(1)PRM) | 1 | 1 |
+| `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 1 | 1 |
 | `inlink` | INLINK (045): uplink word for UPRUPT, raw 15-bit word. | 1 | 1 |
-| `lemmass` | LM mass, kg, scale 2^16 (LEMMASS; DSP noun 47 R2) | 2 | 2 |
-| `mark2dwn` | MARKDOWN +0..+6 / MARK2DWN +0..+6: mark data for the downlink (time high/low, CDUY, CDUS(OPTX), CDUZ, CDUT(OPTY), CDUX), raw words. | 2 | 2 |
-| `markdown` | MARKDOWN +0..+6 / MARK2DWN +0..+6: mark data for the downlink (time high/low, CDUY, CDUS(OPTX), CDUZ, CDUT(OPTY), CDUX), raw words. | 2 | 2 |
-| `markstat` | mark status bit word (MARKSTAT, B(1)PRM; SXTMARK/R21/R22/P20/P23) | 2 | 2 |
-| `modreg` | MODREG major mode (program) | 2 | 2 |
-| `option1` | OPTION1 +index (index 0..2 = OPTION1, OPTION2, OPTION3; noun 06), octal. | 2 | 2 |
-| `p40tmp` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 2 | 2 |
+| `landmark` | LANDMARK (CM P22 code ABCDE, V52), a signed SP number | 1 | 1 |
+| `lemmass` | LM mass, kg, scale 2^16 (LEMMASS; DSP noun 47 R2) | 1 | 1 |
+| `mark2dwn` | MARKDOWN +0..+6 / MARK2DWN +0..+6: mark data for the downlink (time high/low, CDUY, CDUS(OPTX), CDUZ, CDUT(OPTY), CDUX), raw words. | 1 | 1 |
+| `markdown` | MARKDOWN +0..+6 / MARK2DWN +0..+6: mark data for the downlink (time high/low, CDUY, CDUS(OPTX), CDUZ, CDUT(OPTY), CDUX), raw words. | 1 | 1 |
+| `markstat` | mark status bit word (MARKSTAT, B(1)PRM; SXTMARK/R21/R22/P20/P23) | 1 | 1 |
+| `mass` | LM vehicle mass, kg, scale 2^16, DP (MASS: SERVICER MASSMON, 1/ACCS) | 1 | 1 |
+| `modreg` | MODREG major mode (program) | 1 | 1 |
+| `mrkbuf` | MRKBUF1 / MRKBUF2 (CM): two seven-word mark buffers (time DP, CDUY, word 0 = -1 (77776) marks a buffer empty. mrkbuf2 / set_mrkbuf2 read and store MRK | 2 | 2 |
+| `mrkbuf2` | MRKBUF1 / MRKBUF2 (CM): two seven-word mark buffers (time DP, CDUY, word 0 = -1 (77776) marks a buffer empty. mrkbuf2 / set_mrkbuf2 read and store MRK | 1 | 1 |
+| `option1` | OPTION1 +index (index 0..2 = OPTION1, OPTION2, OPTION3; noun 06), octal. | 1 | 1 |
+| `p40tmp` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 1 | 1 |
 | `p_rhcctr` | P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP. | 1 | 1 |
 | `pipax` | PIPA X pulse count since last read (register PIPAX, 037), unscaled pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) | 2 | 2 |
 | `pipay` | PIPA Y pulse count (register PIPAY) | 2 | 2 |
 | `pipaz` | PIPA Z pulse count (register PIPAZ) | 2 | 2 |
-| `piptime` | time of the PIPA reading / this vehicle's state vector, centiseconds, scale 2^28 (PIPTIME, B(2)PRM) | 3 | 3 |
+| `piptime` | time of the PIPA reading / this vehicle's state vector, centiseconds, scale 2^28 (PIPTIME, B(2)PRM) | 2 | 2 |
 | `q_rhcctr` | P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP. | 1 | 1 |
 | `r_rhcctr` | P-, Q-, R-RHCCTR (LM 042-044): rotational hand controller counts, SP. | 1 | 1 |
-| `read_ecadr` | Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074) map onto agc_flagword_*; other addresses use a raw image (no map to the typed er | 1 | 0 |
-| `refsmmat` | reference-to-stable-member matrix, row-major, DP elements, scale 2^1 (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') | 2 | 2 |
+| `raw_read` | Address 00000-77777 (bit 16 ignored). Erasable access by address, with the flagwords and named erasables mapped onto typed storage, is agc/erasable_ma | 1 | 0 |
+| `raw_write` | Address 00000-77777 (bit 16 ignored). Erasable access by address, with the flagwords and named erasables mapped onto typed storage, is agc/erasable_ma | 1 | 0 |
+| `refsmmat` | reference-to-stable-member matrix, row-major, DP elements, scale 2^1 (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') | 1 | 1 |
 | `reset` | zero every shared erasable below (used by agc_state_init) | 2 | 0 |
-| `reset_counters` | Fresh-start zeroing of the files above (called by agc_erase_reset). | 2 | 0 |
-| `reset_display` | Fresh-start zeroing of the files above (called by agc_erase_reset). | 2 | 0 |
+| `reset_counters` | none (fresh start) -- zero every counter cell (called by   agc_erase_reset); returns none | 2 | 0 |
+| `reset_display` | none (fresh start) -- zero the display and downlink registers   (called by agc_erase_reset); returns none | 2 | 0 |
 | `reset_ecadr` | Fresh-start zeroing of the files above (called by agc_erase_reset). | 2 | 0 |
-| `reset_pad_loads` | Fresh-start zeroing of the files above (called by agc_erase_reset). | 2 | 0 |
-| `reset_restart_delays` | Fresh-start zeroing of the files above (called by agc_erase_reset). | 2 | 0 |
-| `return_to_earth_range` | P37RANGE (CSM, = R61CNTR +1): P37 entry range override, revs (0 = use the computed range). | 2 | 2 |
-| `rls` | landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing | 2 | 2 |
-| `rn` | this vehicle's position, meters, scale 2^29 (earth) or 2^27 (moon) (RN, B(6)PRM) | 3 | 3 |
+| `reset_pad_loads` | none (fresh start) -- zero the pad-loaded erasables (called by   agc_erase_reset); returns none | 2 | 0 |
+| `reset_restart_delays` | none (fresh start) -- zero the restart delay cells (called by   agc_erase_reset); returns none | 2 | 0 |
+| `return_to_earth_range` | P37RANGE (CSM, = R61CNTR +1): P37 entry range override, revs (0 = use the computed range). | 1 | 1 |
+| `rls` | landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing | 1 | 1 |
+| `rn` | this vehicle's position, meters, scale 2^29 (earth) or 2^27 (moon) (RN, B(6)PRM) | 2 | 2 |
 | `rnrad` | RNRAD (046): the radar reading (RR, LR or VHF range), raw 15-bit word. | 1 | 1 |
-| `rr_az` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 2 | 2 |
-| `rr_elev` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 2 | 2 |
+| `rr_az` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 1 | 1 |
+| `rr_elev` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 1 | 1 |
 | `rrectcsm` | permanent CSM position, meters, scale 2^29 earth / 2^27 moon (RRECTCSM) | 2 | 2 |
 | `rrectlem` | permanent LM position, meters, scale 2^29 earth / 2^27 moon (RRECTLEM) | 2 | 2 |
-| `rted1` | RTED1 (CSM): P37 VGAMMA polynomial coefficient D1, scale 2^-3. | 2 | 2 |
-| `s61dt` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 2 | 2 |
+| `rted1` | RTED1 (CSM): P37 VGAMMA polynomial coefficient D1, scale 2^-3. | 1 | 1 |
+| `s61dt` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 1 | 1 |
 | `samptime` | SAMPTIME: sampled TIME2,TIME1 (noun 65), cs 2^28. | 1 | 1 |
-| `savet_30` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 2 | 2 |
+| `savet_30` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 1 | 1 |
 | `sfail` | SFAIL (= SELFERAS): self-check failure address, raw word. | 1 | 1 |
-| `t3tot4` | T3TOT4 (= RELDELV +2): transfer time for noun 39, cs 2^28. | 2 | 2 |
+| `shadow_read` | The address map's shadow words beside the image: for each map entry, its typed value as words when the map last saw it, so that a read of an address s | 1 | 0 |
+| `shadow_write` | The address map's shadow words beside the image: for each map entry, its typed value as words when the map last saw it, so that a read of an address s | 1 | 0 |
+| `t3tot4` | T3TOT4 (= RELDELV +2): transfer time for noun 39, cs 2^28. | 1 | 1 |
 | `tem` | PIPASR +3: read PIPAX..Z into TEMX..Z and the high words of DELV, zero the PIPAs (no PIPTIME1). TEMX..TEMZ (axis 0..2): those counts, SP. | 1 | 1 |
-| `tephem` | time of the ephemeris epoch (TEPHEM = TIMSUBO, TP, centiseconds, scale 2^42: L "CSEC B-42 (TRIPLE PRECISION)"; P11 sets it at liftoff) | 2 | 2 |
+| `tephem` | time of the ephemeris epoch (TEPHEM = TIMSUBO, TP, centiseconds, scale 2^42: L "CSEC B-42 (TRIPLE PRECISION)"; P11 sets it at liftoff) | 1 | 1 |
 | `tetcsm` | time of the permanent CSM state vector, centiseconds, scale 2^28 (TETCSM) | 2 | 2 |
 | `tetlem` | time of the permanent LM state vector, centiseconds, scale 2^28 (TETLEM) | 2 | 2 |
-| `tevent` | time of event for downlist, centiseconds, scale 2^28 (TEVENT; TLIFTOFF in P11) | 2 | 2 |
-| `tgo` | time to go in the burn / guidance, centiseconds, scale 2^28 (TGO) | 2 | 2 |
-| `thetad` | desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style words, 2^15 = 1 revolution Index 0..2. | 2 | 2 |
+| `tevent` | time of event for downlist, centiseconds, scale 2^28 (TEVENT; TLIFTOFF in P11) | 1 | 1 |
+| `tgo` | time to go in the burn / guidance, centiseconds, scale 2^28 (TGO) | 1 | 1 |
+| `thetad` | desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style words, 2^15 = 1 revolution Index 0..2. | 1 | 1 |
 | `thrust` | THRUST (LM 055): descent engine throttle command pulses, SP. | 1 | 1 |
-| `tig` | time of ignition, centiseconds, scale 2^28 (TIG; DSP noun 33) | 2 | 2 |
+| `tig` | time of ignition, centiseconds, scale 2^28 (TIG; DSP noun 33) | 1 | 1 |
 | `time1` | ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private | 1 | 0 |
 | `time2` | ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private | 1 | 0 |
-| `tland` | TLAND (LM, = W): nominal time of landing, cs 2^28. | 2 | 2 |
-| `trkmkcnt` | TRKMKCNT: rendezvous tracking mark count (noun 45 R1), whole number. | 2 | 2 |
-| `ttogo` | time to go, centiseconds, scale 2^28 (TTOGO; DSP nouns 35,40,45,59,99) | 2 | 2 |
-| `ttpi` | TPI time, centiseconds, scale 2^28 (TTPI; DSP noun 37) | 2 | 2 |
+| `tland` | TLAND (LM, = W): nominal time of landing, cs 2^28. | 1 | 1 |
+| `trkmkcnt` | TRKMKCNT: rendezvous tracking mark count (noun 45 R1), whole number. | 1 | 1 |
+| `ttogo` | time to go, centiseconds, scale 2^28 (TTOGO; DSP nouns 35,40,45,59,99) | 1 | 1 |
+| `ttpi` | TPI time, centiseconds, scale 2^28 (TTPI; DSP noun 37) | 1 | 1 |
 | `tvcpitch` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 1 | 1 |
 | `tvcyaw` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 1 | 1 |
-| `upsvflag` | UPSVFLAG (UPDATE_PROGRAM.agc, INTWAKEU) -- the state vector a P27 update replaced RETURNS: UPSVFLAG: 0, +-1 earth, +-2 moon (+ CSM, - LM); returns UPS | 1 | 1 |
-| `vgtig` | velocity to be gained at TIG, m/cs, scale 2^7 (VGTIG, P40-P47: 'VG IGNITION SCALED AT 2(+7) M/CS') | 2 | 2 |
-| `vn` | this vehicle's velocity, m/cs, scale 2^7 (earth) or 2^5 (moon) (VN, B(6)PRM) | 3 | 3 |
+| `vgtig` | velocity to be gained at TIG, m/cs, scale 2^7 (VGTIG, P40-P47: 'VG IGNITION SCALED AT 2(+7) M/CS') | 1 | 1 |
+| `vn` | this vehicle's velocity, m/cs, scale 2^7 (earth) or 2^5 (moon) (VN, B(6)PRM) | 2 | 2 |
 | `vrectcsm` | permanent CSM velocity, m/cs, scale 2^7 earth / 2^5 moon (VRECTCSM) | 2 | 2 |
 | `vrectlem` | permanent LM velocity, m/cs, scale 2^7 earth / 2^5 moon (VRECTLEM) | 2 | 2 |
-| `write_ecadr` | Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074) map onto agc_flagword_*; other addresses use a raw image (no map to the typed er | 1 | 0 |
-| `zoomtime` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 2 | 2 |
+| `zoomtime` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 1 | 1 |
 
 ### AGC labels -> C functions
 

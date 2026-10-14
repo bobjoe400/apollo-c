@@ -93,7 +93,7 @@ flowchart TD
     G5 --> G9
     G8 --> G9
     G10 --> G9{"IMPULSW and SPS on?<br/>steer.c:steering_tail"}
-    G9 -- "no" --> G11["SERVEXIT<br/>servicer.c:agc_job_servexit"]
+    G9 -- "no" --> G11["SERVEXIT<br/>servicer_common.c:agc_job_servexit"]
     G9 -- "yes" --> G12["ENGINOFF at TIG (at least 1 cs);<br/>3.15 / 5.3 restart points"]
 ```
 

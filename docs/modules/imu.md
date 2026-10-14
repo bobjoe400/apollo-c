@@ -162,7 +162,7 @@ symbols stubbed in a scratch file, not committed).
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/imu/*.c`, `src/csm/prelaunch_*.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/imu/*.c`, `src/csm/prelaunch/*.c`._
 
 IMU mode switching, gyro torquing, compensation, KALCMANU and the CSM
 prelaunch programs P01-P03. The realign that uses them is drawn in
@@ -220,7 +220,7 @@ prelaunch programs P01-P03. The realign that uses them is drawn in
   only with TRACKFLG / RNDVZFLG. The auto test reads channel 31 bits
   13-15 (CM) or channel 30 bit 10 then channel 31 bit 14 (LM ISITAUTO).
 * **CSM prelaunch** (`src/csm/prelaunch/align.c`,
-  `prelaunch_gyrocompass.c`, `prelaunch_verify.c`): P01 after P11
+  `gyrocompass.c`, `verify.c`): P01 after P11
   (NOP01FLG) is POODOO 01521; a mode switch or torquing ending bad is
   ALARM 01601 and ENDTEST1 (`prelaunch_somerr2`). P02 loops every 0.5 s
   (`setgwlst`, ALLOOP/ALFLT: erection while ERECTIM1 > 0, then
@@ -233,20 +233,20 @@ prelaunch programs P01-P03. The realign that uses them is drawn in
 
 ### Decision points by function
 
-49 of the lane's 259 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+49 of the lane's 280 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|
-| `prelaunch_endtest1` (prelaunch_align.c) | ENDTEST1 | - | -IMUSE | - | - | - |
-| `prelaunch_somerr2` (prelaunch_align.c) | SOMERR2 | - | - | ALARM 1601 | - | - |
-| `agc_job_prelaunch_initialization` (prelaunch_align.c) | GTSCPSS GTSCPSSA NXXTENN | NO_PRELAUNCH_INITIALIZATION | - | POODOO 1521 | - | - |
-| `agc_job_prelaunch_imu_zeroed` (prelaunch_align.c) | IMUBACK NBPOSPL | GLOKFAIL | -GLOKFAIL | - | - | - |
-| `agc_job_prelaunch_imu_fine_aligned` (prelaunch_align.c) | IMUBACK | - | - | - | - | task gyrocompassing_wake |
-| `setgwlst` (prelaunch_gyrocompass.c) | SETGWLST | - | - | - | - | task gyrocompassing_sample |
-| `chkcomed` (prelaunch_gyrocompass.c) | CHKCOMED PRELTERM | GRRBKFLG | - | - | ch30 LIFTOFF | - |
-| `agc_task_gyrocompassing_filter_start` (prelaunch_gyrocompass.c) | SPECSTS | - | - | - | - | job gyrocompassing_filter |
-| `agc_job_optical_verification_marked` (prelaunch_verify.c) | RETARG | TRM03FLG | - | ALARM 1602 | - | - |
-| `agc_job_optical_verification_end` (prelaunch_verify.c) | GCOMP5 | - | -TRM03FLG | - | - | - |
+| `prelaunch_endtest1` (align.c) | ENDTEST1 | - | -IMUSE | - | - | - |
+| `prelaunch_somerr2` (align.c) | SOMERR2 | - | - | ALARM 1601 | - | - |
+| `agc_job_prelaunch_initialization` (align.c) | GTSCPSS GTSCPSSA NXXTENN | NO_PRELAUNCH_INITIALIZATION | - | POODOO 1521 | - | - |
+| `agc_job_prelaunch_imu_zeroed` (align.c) | IMUBACK NBPOSPL | GLOKFAIL | -GLOKFAIL | - | - | - |
+| `agc_job_prelaunch_imu_fine_aligned` (align.c) | IMUBACK | - | - | - | - | task gyrocompassing_wake |
+| `setgwlst` (gyrocompass.c) | SETGWLST | - | - | - | - | task gyrocompassing_sample |
+| `chkcomed` (gyrocompass.c) | CHKCOMED PRELTERM | GRRBKFLG | - | - | ch30 LIFTOFF | - |
+| `agc_task_gyrocompassing_filter_start` (gyrocompass.c) | SPECSTS | - | - | - | - | job gyrocompassing_filter |
+| `agc_job_optical_verification_marked` (verify.c) | RETARG | TRM03FLG | - | ALARM 1602 | - | - |
+| `agc_job_optical_verification_end` (verify.c) | GCOMP5 | - | -TRM03FLG | - | - | - |
 | `agc_imu_calcga` (alignment.c) | CALCGA CALCGA1 | - | +GLOKFAIL | ALARM 0401 | - | - |
 | `final_angles` (attitude_maneuver.c) | REDOMANN REDOMANC | 3AXISFLG | - | - | - | - |
 | `chklinus` (attitude_maneuver.c) | CHKLINUS | PDSPFLAG | - | - | - | - |
@@ -296,11 +296,11 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `1jacc` | none -- accessor of the DAP erasable 1JACC (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
 | `1jaccq` | none -- accessor of the DAP erasable 1JACCQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
 | `1jaccr` | none -- accessor of the DAP erasable 1JACCR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
-| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 5 | 1 |
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 6 | 1 |
 | `cduxd` | none -- accessor of the DAP erasable CDUXD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
-| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 4 | 1 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 5 | 1 |
 | `cduyd` | none -- accessor of the DAP erasable CDUYD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
-| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 4 | 1 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 5 | 1 |
 | `cduzd` | none -- accessor of the DAP erasable CDUZD (ERASABLE_ASSIGNMENTS.agc).; returns uint16_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |
 | `delcdux` | - | 0 | 1 |
 | `delcduy` | - | 0 | 1 |
@@ -309,10 +309,13 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `delqeror` | - | 0 | 1 |
 | `delreror` | - | 0 | 1 |
 | `delv` | accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM. KPIP1  | 3 | 3 |
+| `desopts` | DESOPTS (ERASABLE_ASSIGNMENTS.agc, CM) -- the shaft angle OPTDRIVE drives to, read RETURNS: DESOPTS, CDU word (2^15 = 1 rev); returns DESOPTS, CDU wor | 0 | 1 |
+| `desoptt` | DESOPTT (ERASABLE_ASSIGNMENTS.agc, CM) -- the trunnion angle OPTDRIVE drives to, read RETURNS: DESOPTT, CDU word (2^15 = 1 rev); returns DESOPTT, CDU  | 0 | 1 |
 | `dsptab` | display panel relay buffer DSPTAB +0..+10D, +11D is the C/S lights word (15-bit relay words) Index 0..11. | 4 | 1 |
 | `fdai` | none (accessor) -- FDAIX, FDAIY, FDAIZ (LM, noun 18); returns uint16_t -- FDAI angle, CDU pattern | 1 | 0 |
 | `imodes30` | last-sampled channel 30 bits, T4RUPT IMUMON (IMODES30, B(1)PRM) | 8 | 2 |
 | `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 1 | 1 |
+| `launchaz` | LAUNCHAZ (CSM prelaunch): the launch azimuth, sent on the coast and align downlist. AGC: LAUNCHAZ (Comanche055 ERASABLE_ASSIGNMENTS.agc); returns agc_ | 1 | 0 |
 | `modecadr` | C(MODECADR +dev) (ERASABLE_ASSIGNMENTS.agc "MODE SWITCHING ERASABLE").; returns agc_sp_t -- the word (+0 none, positive a waiting job) | 2 | 1 |
 | `modreg` | MODREG major mode (program) | 1 | 0 |
 | `omegapd` | none -- accessor of the DAP erasable OMEGAPD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 0 | 1 |

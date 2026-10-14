@@ -2,14 +2,16 @@
 
 AGC: Comanche055 P61-P67.agc (pp.789-818), REENTRY_CONTROL.agc
 (pp.844-875), CM_BODY_ATTITUDE.agc (pp.883-888), CM_ENTRY_DIGITAL_
-AUTOPILOT.agc, ENTRY_LEXICON.agc. C: `src/csm/entry/{programs,reentry,
-cm_body_attitude,dap,lexicon}.c`.
+AUTOPILOT.agc, ENTRY_LEXICON.agc. C: `src/csm/entry/{programs,
+cm_body_attitude,dap,lexicon}.c` and REENTRY_CONTROL split by its own
+phases: `src/csm/entry/{entry_guidance,entry_targeting,entry_initial_roll,
+entry_huntest,entry_upcontrol,entry_final_phase}.c`.
 
 P61 and P62 are crew dialogues before entry; from P63 on the programs are
 selected by the entry guidance itself as the flight passes its phase
 boundaries. Guidance runs once per 2-second SERVICER pass as the AVGEXIT
 job CM/POSE; its sections are step functions run by `entry_sequencer`
-(reentry.c), resuming at GOTOADDR, the AGC's own restart-protected
+(entry_guidance.c), resuming at GOTOADDR, the AGC's own restart-protected
 continuation.
 
 ## Preparation (P61, P62)
@@ -47,11 +49,11 @@ flowchart TD
 flowchart TD
     S["SERVICER pass -> AVGEXIT = CM/POSE<br/>cm_body_attitude.c:agc_job_cm_pose<br/>body triad (CM/POSE, CM/TRIO), angles"] --> PX{"POSEXIT<br/>cm_body_attitude.c:entry_posexit"}
     PX -- "P62.3 desired gimbals" --> PG["S62.3<br/>programs.c:agc_entry_desired_gimbal_angles"]
-    PX -- "STARTENT (first pass)" --> SE["STARTENT: MM 63, STARTEN1, GOTOADDR = INITROLL<br/>reentry.c:agc_entry_startent"]
-    PX -- "SCALEPOP (every later pass)" --> SP["SCALEPOP: TARGETNG (velocity, drag D,<br/>target RT, THETAH, .05GSW, L/D measured)<br/>reentry.c:agc_entry_scalepop, agc_entry_targeting"]
-    SP --> RF["REFAZE10: restart 5.3; GOTO GOTOADDR<br/>reentry.c:agc_entry_reestablish_sequencer -> entry_sequencer"]
+    PX -- "STARTENT (first pass)" --> SE["STARTENT: MM 63, STARTEN1, GOTOADDR = INITROLL<br/>entry_targeting.c:agc_entry_startent"]
+    PX -- "SCALEPOP (every later pass)" --> SP["SCALEPOP: TARGETNG (velocity, drag D,<br/>target RT, THETAH, .05GSW, L/D measured)<br/>entry_guidance.c:agc_entry_scalepop,<br/>entry_targeting.c:agc_entry_targeting"]
+    SP --> RF["REFAZE10: restart 5.3; GOTO GOTOADDR<br/>entry_guidance.c:agc_entry_reestablish_sequencer -> entry_sequencer"]
     RF --> IR{"GOTOADDR"}
-    IR -- "INITROLL" --> I0{"INITROLL<br/>reentry.c:entry_initial_roll_step"}
+    IR -- "INITROLL" --> I0{"INITROLL<br/>entry_initial_roll.c:entry_initial_roll_step"}
     I0 -- "D < .05 g" --> LL["LIMITL/D, roll command"]
     I0 -- "first .05 g pass" --> I1["P64: MM 64, N74 (ROLLC VI D)<br/>programs.c:entry_post_0_05g<br/>KAT; GONEPAST down"]
     I1 --> I2{"V >= VFINAL1?"}
@@ -60,23 +62,23 @@ flowchart TD
     I0 -- "INRLSW set" --> I4{"RDOT + VRCONT >= 0?"}
     I4 -- "no" --> I5["KATEST: KAT - D >= 0 ? LIMITL/D : CONSTD"]
     I4 -- "yes" --> H0
-    IR -- "HUNTEST" --> H0["HUNTEST: predict range at nominal L/D;<br/>RANGER: DIFF vs THETAH<br/>reentry.c:entry_huntest_step"]
+    IR -- "HUNTEST" --> H0["HUNTEST: predict range at nominal L/D;<br/>RANGER: DIFF vs THETAH<br/>entry_huntest.c:entry_huntest_step"]
     H0 --> H1{"|DIFF| < 25 NM?"}
     H1 -- "yes" --> U0["GOTOUPSY: P65 (MM 65, V16N69 job);<br/>GOTOADDR = UPCONTRL<br/>programs.c:entry_upcontrol"]
     H1 -- "no" --> H2["GETDLEWD secant step on LEWD;<br/>SIDETRAK: 4.47, PRIO16, iterate<br/>(bounded per pass: DEVIATION)"]
     H2 --> H0
-    IR -- "UPCONTRL" --> U1{"UPCONTRL<br/>reentry.c:step_upcontrl"}
+    IR -- "UPCONTRL" --> U1{"UPCONTRL<br/>entry_upcontrol.c:step_upcontrl"}
     U0 --> U1
     U1 -- "V >= V1" --> U2["DOWNCNTL"]
     U1 -- "D < Q7" --> K0["KEP: P66 ballistic, MM 66, N22;<br/>GOTOADDR = KEP2<br/>programs.c:entry_ballistic"]
     U1 -- "RDOT < 0 and V - VL < C18" --> F0
     U1 -- "otherwise" --> U3["CONT1..UPCNTRL3: reference trajectory,<br/>L/D command; NEGTESTS"]
-    IR -- "KEP2" --> K1{"D > Q7F + KDMIN?<br/>reentry.c:step_kepler_test"}
+    IR -- "KEP2" --> K1{"D > Q7F + KDMIN?<br/>entry_upcontrol.c:step_kepler_test"}
     K0 --> K1
     KEP --> K1
     K1 -- "no" --> K2["hold ROLLC (zero below .05 g);<br/>S62.3 trim gimbal angles"]
-    K1 -- "yes" --> F0["PREFINAL: P67 final phase, MM 67, N66;<br/>EGSW; GOTOADDR = PREDICT3<br/>reentry.c:step_prefinal -> programs.c:entry_final_phase"]
-    IR -- "PREDICT3" --> F1{"PREDICT3: V < VQUIT?<br/>reentry.c:step_final_predict"}
+    K1 -- "yes" --> F0["PREFINAL: P67 final phase, MM 67, N66;<br/>EGSW; GOTOADDR = PREDICT3<br/>entry_final_phase.c:step_prefinal -> programs.c:entry_final_phase"]
+    IR -- "PREDICT3" --> F1{"PREDICT3: V < VQUIT?<br/>entry_final_phase.c:step_final_predict"}
     F0 --> F1
     F1 -- "yes" --> F2["steering stops; P67.1: V16N67 RTOGO LAT LONG;<br/>end: entry DAP off, SERVEXIT, P00<br/>agc_job_entry_final_phase_display, _end"]
     F1 -- "no" --> F3["range error DNRNGERR -> L/D (HAVDNRNG) or<br/>GONEGLAD past the target; G-LIMITER"]
@@ -85,8 +87,8 @@ flowchart TD
     I3 --> LL
     I5 --> LL
     F3 --> LL
-    LL --> RC["LIMITL/D lateral corridor (LATSW, roll-over);<br/>L355: ROLLC = SIGN ACOS(L/D / LAD)<br/>reentry.c:step_limitld, step_roll_command"]
-    RC --> EX["ENDEXIT / OVERNOUT: entry display ENTRYVN<br/>reentry.c:entry_endexit; SERVNOUT"]
+    LL --> RC["LIMITL/D lateral corridor (LATSW, roll-over);<br/>L355: ROLLC = SIGN ACOS(L/D / LAD)<br/>entry_final_phase.c:step_limitld, step_roll_command"]
+    RC --> EX["ENDEXIT / OVERNOUT: entry display ENTRYVN<br/>entry_guidance.c:entry_endexit; SERVNOUT"]
     K2 --> EX
     SE --> SN["SERVNOUT (no display on the first pass)"]
     PG --> EX

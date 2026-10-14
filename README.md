@@ -57,90 +57,70 @@ and screenshots: `docs/modules/sim.md`.
 
 ## Status
 
-The definition of done (`docs/PLAN.md`, items 1-9) is met: every routine
-of both ropes is translated or a named, justified stub; `make`, `make test`
-(unit, oracle and 14 headless scenarios) and `make check` pass; the
-numeric modules match yaAGC within documented tolerances (bit-exact where
-the ones'-complement -0 allows); every lane was reviewed against its AGC
-source; and `build/agc_sim` runs under the stock VirtualAGC GUI. The
-gates were green at the code freeze (`docs/history/waves/finish.md`) and again
-after the closed-loop fixes.
+**Complete** (2026-10-14). The definition of done (`docs/PLAN.md`, items
+1-9) is met: every routine of both ropes is translated or a named,
+justified stub; `make`, `make test` and `make check` pass with no
+upward module call; the numeric modules match yaAGC within documented
+tolerances (bit-exact where the ones'-complement -0 allows); every lane
+was reviewed against its AGC source; `build/agc_sim` runs under the
+stock VirtualAGC GUI; and the documentation is generated from the final
+code. The stretch goal (item 10) is done too.
 
-Closed loops (PLAN item 10, stretch), against the proven tools only:
+The mission: all ten Apollo 11 milestones -- insertion and the first
+state-vector uplink, TLI, MCC-2, LOI, DOI, PDI to touchdown, lunar
+liftoff, rendezvous, TEI, and entry to splashdown -- were flown unattended
+in NASSP 9 (Orbiter 2024) on this AGC and matched the stock NASSP run
+(NASSP's own yaAGC) on every decision and on the end state, the remaining
+differences coming from AGC execution time, which the C does not model.
+Seventeen flight bugs that the unit and oracle tests had passed were found
+on the way and fixed, each with a test that failed before the fix
+(`docs/modules/nassp-integration.md`, "Mission report").
 
-* **LM Simulator** (Virtual AGC `Contributed/LM_Simulator`, unmodified):
-  34 of 34 checkpoints match yaAGC flying the same crew sequence (IMU
-  zero, coarse and fine align, RCS DAP attitude hold, rate command,
-  minimum impulse, V49 manoeuvre, a POODOO restart):
+How to run each tier (what each proves: `docs/ARCHITECTURE.md`,
+"Verification tiers"):
 
-      make lm-sim
+| tier | command | time, needs |
+|---|---|---|
+| build, rules | `make && make check` | seconds |
+| unit, oracle, scenarios | `make test` (38 test binaries, then the 14 headless scenarios of `make scenarios`) | minutes |
+| VirtualAGC GUI | `ln -sf $PWD/build/agc_sim ~/VirtualAGC/bin/yaAGC && ~/VirtualAGC/bin/VirtualAGC` (Run it, above) | a Virtual AGC install |
+| LM Simulator | `make lm-sim` (`LMSIM_ARGS="--gui --xshot DIR"` shows the windows) | about 11 minutes; Tcl/Tk; fetches the simulator on first use |
+| NASSP replay | `make nassp-replay` | about a minute; no Orbiter; fetches NASSP's yaAGC at the pinned commit |
+| NASSP mission | the host procedure in `docs/modules/nassp-integration.md` ("Host procedure": build the DLLs into `C:\NASSP9-dev`, stock reference `C:\NASSP9-ref`, one Orbiter session at a time), then `make nassp-mission NASSP_RUNS=<dir>` | Windows host with Orbiter 2024 + NASSP 9 |
 
-  (about 11 minutes real time; the first run fetches the LM Simulator, a
-  sparse checkout of virtualagc at the verified commit, into
-  `build/virtualagc`; `LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator`
-  uses your own; `LMSIM_ARGS="--gui --xshot DIR"` shows the windows). Details: `docs/modules/lm-simulator.md`,
-  `docs/modules/closed-loop-fixes.md`.
-* **NASSP 9** (Orbiter 2024, Apollo 11, on the Windows host via WSL
-  interop): NASSP's Saturn5/LEM modules built against libagc through the
-  engine shim `src/nassp/` (CMake project plus a patch to NASSP's top
-  CMakeLists; `patches/0002` gives the LEM the Saturn's Lua test hooks, on
-  both the stock reference and ours). Flown unattended against the stock
-  NASSP run with NASSP's own checklist workbook: insertion and the first
-  MCC state-vector uplink, TLI, MCC-2, LOI-1 and TEI (SPS burns within
-  0.1 s and a few tenths of a ft/s of stock). LM, headless against stock
-  with tolerances of 1.5 x stock's own run-to-run spread on every column
-  (`make nassp-mission`): PDI to touchdown: events and end state match;
-  attitude history outside the stock envelope: bank, yaw, CDU X (and
-  latitude 0.0019 vs 0.00125 deg). Lunar liftoff (the scenario's running P12):
-  events and end state match (cut-off TIG+431.9 s both, orbit within 0.4
-  km, no alarms); outside the stock envelope only CDU Z after insertion
-  (P12 ends 16 s earlier: an expected timing deviation). Entry: events and
-  end state match (splashdown 1.6 km from stock; P63 30 s earlier and CM
-  RCS mass 1.24 kg, both from the attitude drift phase at the CMC's
-  control release: timing deviations). Rendezvous (P20 lock-on and marks, CSI, CDH and TPI
-  targeted and burned): every display, targeting result and burn as stock, no alarms; 37.1 km
-  closing at 34.2 m/s ten minutes after TPI (stock 38.9 km, 35.5 m/s); CDH 42 s earlier and more RR
-  marks incorporated (execution time). All ten milestones flown. Seventeen flight bugs found on the
-  way (restore gaps of the scenario load, e.g. the CSM RCS DAP state, UNITW, the average-G start
-  state; and translation faults, e.g. SIGNMPAC's sign rule in VECPOINT, the N55 NN load, INITVELX's
-  MUASTEER), each fixed with a test that failed before; final report in
-  docs/modules/nassp-integration.md ("Mission report"). The integrated build lives in
-  `C:\NASSP9-dev` (stock baseline `C:\NASSP9`). A light tier runs on
-  Linux in about a minute, no Orbiter:
-
-      make nassp-replay
-
-  (NASSP scenario images on our AGC through the shim and on NASSP's own
-  yaAGC, downloaded at the pinned commit: state-vector blocks after the
-  P00 integration steps and MCC uplinks compared word for word).
-  Details: `docs/modules/nassp-integration.md`,
-  `docs/overview/nassp_integration.md`.
-
-How to run each: `make scenarios` (headless, both vehicles);
-`make lm-sim` and `make nassp-replay` (above); the VirtualAGC launcher with `bin/yaAGC` linked to
-`build/agc_sim` (Run it, above); NASSP: start Orbiter from
-`C:\NASSP9-dev` with an `apollo-c` scenario (one Orbiter session at a
-time).
+Known limitations (`docs/ARCHITECTURE.md`, "Known limitations"): the
+zero-time executive and its two ordering deviations, the limits of
+scenario restore, and the downlist words the C cannot hold
+(DOWNLIST_SKIP).
 
 ## Documentation
 
-Generated from the final code (documentation wave, `docs/history/waves/document.md`):
+Generated from the final code (documentation wave and final pass,
+`docs/history/waves/document.md`):
 
 * `docs/overview/README.md` -- the system: the two vehicles, executive and
-  waitlist, interrupts and clock, erasable and flag layout, the DSKY loop,
-  how a program starts, runs, displays and ends, restart groups, and the
-  module map (`python3 -I tools/depgraph.py`).
+  waitlist, interrupts and clock, erasable and flag layout (and erasable
+  by address), the DSKY loop, how a program starts, runs, displays and
+  ends, restart groups, and the module map (`python3 -I tools/depgraph.py`).
 * `docs/overview/flowcharts/` -- Mermaid flowcharts from the C control
   flow: fresh start, software restart, job pre-emption, waitlist tick, V37
   program change, CSM P40 burn, P52 realign, LM P63-P66 landing, CSM
   P61-P67 entry, LM P12 ascent.
 * `docs/overview/xref.md` -- AGC label -> C function -> file:line, for both
   ropes (`python3 -I tools/xref.py`).
+* `docs/overview/INDEX.md` -- every file of the repository with its
+  purpose and owner (`python3 -I tools/repo_index.py`);
+  `docs/overview/data/` -- the generated call graph and one-liner tables
+  (`make callgraph`, `python3 -I tools/one_liners.py`).
 * `docs/modules/<lane>.md` -- per lane: scope, decisions, findings, and
   "Program flow and decisions" (decision points by function with flags,
   alarms, channel bits and the jobs/tasks started; shared erasables with
-  scale; AGC labels -> C functions).
+  scale; AGC labels -> C functions). The mission:
+  `docs/modules/nassp-integration.md`; the study before it:
+  `docs/overview/nassp_integration.md`.
+* `docs/ARCHITECTURE.md` -- the layout, the layering, the verification
+  tiers and the known limitations.
 * `docs/TIPS.md` -- tips for translating AGC assembly into C, by topic.
-* Reference: `docs/TRANSLATION_GUIDE.md`, `docs/CODING_STANDARD.md`,
-  `docs/STYLE.md`, `docs/NAMING.md`, `docs/ARCHITECTURE.md`,
+* Reference: `docs/TRANSLATION_GUIDE.md` (with the rules the mission
+  taught), `docs/CODING_STANDARD.md`, `docs/STYLE.md`, `docs/NAMING.md`,
   `docs/MODULE_STATUS.md`; history in `docs/history/WORKLOG.md`.

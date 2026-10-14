@@ -173,7 +173,7 @@ complement) and AGS time, R63 line of sight.
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/programs/alignment/*.c`, `src/csm/alignment/*.c`, `src/csm/optics/*.c`, `src/lm/alignment/*.c`, `src/lm/optics/*.c`, `src/lm/ags_initialization.c`, `src/lm/rendezvous_final_attitude.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/programs/alignment/*.c`, `src/csm/alignment/*.c`, `src/csm/optics/*.c`, `src/lm/alignment/*.c`, `src/lm/optics/*.c`, `src/lm/ags_initialization.c`, `src/lm/rendezvous_final_attitude.c`._
 
 P51-P54, P57 and the alignment and marking routines of both vehicles;
 P52 is drawn in [flowcharts/imu-realign.md](../overview/flowcharts/imu-realign.md).
@@ -232,7 +232,7 @@ ends (CURTAINS, BAILOUT done) end the job with OK
 
 ### Decision points by function
 
-84 of the lane's 366 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+85 of the lane's 363 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|
@@ -254,7 +254,6 @@ ends (CURTAINS, BAILOUT done) end the job with OK
 | `agc_csm_auto_optics_advanced_orbit` (auto_optics_positioning.c) | ADVORB | - | +ADVTRK +LUNAFLAG +ERADFLAG | - | - | - |
 | `agc_job_auto_optics_positioning_delayed` (auto_optics_positioning.c) | R52F | TARG1FLG TERMIFLG | - | - | - | - |
 | `agc_job_auto_optics_positioning_tracked` (auto_optics_positioning.c) | R52HA | PRFTRKAT TRACKFLG UPDATFLG | - | - | - | - |
-| `sxtang1` (geometry.c) | SXTANG1 | - | =CULTFLAG | - | - | - |
 | `agc_job_sbandant_cm_recycle` (s_band_antenna.c) | SBANDANT | - | - | - | - | job sbandant_cm_recycle |
 | `agc_csm_sighting_mark` (sighting_mark.c) | R53 | - | +SIGHTING_MARK_REQUESTED | - | - | - |
 | `sighting_mark_done` (sighting_mark.c) | R53D | - | +TERMIFLG | - | - | - |
@@ -309,10 +308,12 @@ ends (CURTAINS, BAILOUT done) end the job with OK
 | `vacstor` (aotmark.c) | VACSTOR | - | - | - | - | job aot_mark_next_action |
 | `mark_button` (aotmark.c) | XMKRUPT YMKRUPT | - | - | ALARM 0107, ALARM 0114 | - | - |
 | `agc_aotmark_markrupt` (aotmark.c) | MARKRUPT | - | - | ALARM 0113, ALARM 0112 | ch16 AOTREJECT, ch16 YAXISMARK | job aot_mark_next_action |
+| `agc_job_rr_los_display` (lem_geometry.c) | RRLOSDSP | - | - | - | - | job rr_los_display_next |
 | `agc_job_rendezvous_final_attitude_maneuver` (rendezvous_final_attitude.c) | V06N18 | - | -3AXISFLG | - | - | - |
 | `align_stall` (common.c) | IMUSTALL | - | - | CURTAINS 0217 | - | - |
 | `align_stall_outcome` (common.c) | - | - | - | CURTAINS 0217 | - | - |
 | `align_set1_pdt` (common.c) | SET1/PDT | - | +DRIFTFLG | - | - | - |
+| `sxtang1` (geometry_csm.c) | SXTANG1 | - | =CULTFLAG | - | - | - |
 | `agc_job_imu_realign` (imu_realign.c) | PROG52 | PFRATFLG | -UPDATFLG -TRACKFLG | - | - | - |
 | `agc_job_coarse_align_fineonly` (imu_realign.c) | FINEONLY | - | +REFSMFLG -PFRATFLG | - | - | - |
 | `agc_job_gycrs` (imu_realign.c) | GYCRS | - | -DRIFTFLG -REFSMFLG | - | - | - |
@@ -327,27 +328,30 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 
 | erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
 |---|---|---|---|
+| `agsk` | AGSK (LM): the AGS clock zero, sent on the downlists. AGC: AGSK (Luminary099 ERASABLE_ASSIGNMENTS.agc); returns agc_dp_t -- AGSK, cs 2^28 | 1 | 0 |
 | `agsword` | none -- AGSWORD (LM): the downlist to return to after AGS initialization. RETURNS: AGSWORD; returns AGSWORD | 1 | 0 |
 | `aotaz` | AOTAZ -1+n, AOTEL -1+n (LM, detent n = 1..6): AOT azimuth / elevation, CDU words (2^15 = 1 revolution). | 3 | 0 |
 | `aotel` | AOTAZ -1+n, AOTEL -1+n (LM, detent n = 1..6): AOT azimuth / elevation, CDU words (2^15 = 1 revolution). | 1 | 0 |
 | `cduchkwd` | CDUCHKWD (CSM): CDU check delay, cs (0 = use the default). | 2 | 0 |
-| `cdus` | CSM optics shaft CDU raw word (CDUS / OPTX); LM: rendezvous radar shaft | 2 | 0 |
-| `cdut` | CSM optics trunnion CDU raw word (CDUT / OPTY); LM: rendezvous radar trunnion | 2 | 0 |
+| `cdus` | CSM optics shaft CDU raw word (CDUS / OPTX); LM: rendezvous radar shaft | 3 | 0 |
+| `cdut` | CSM optics trunnion CDU raw word (CDUT / OPTY); LM: rendezvous radar trunnion | 3 | 0 |
 | `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 5 | 0 |
 | `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 5 | 0 |
 | `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 5 | 0 |
 | `delv` | accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM. KPIP1  | 1 | 1 |
+| `desopts` | DESOPTS (ERASABLE_ASSIGNMENTS.agc, CM) -- the shaft angle OPTDRIVE drives to, read RETURNS: DESOPTS, CDU word (2^15 = 1 rev); returns DESOPTS, CDU wor | 0 | 3 |
+| `desoptt` | DESOPTT (ERASABLE_ASSIGNMENTS.agc, CM) -- the trunnion angle OPTDRIVE drives to, read RETURNS: DESOPTT, CDU word (2^15 = 1 rev); returns DESOPTT, CDU  | 0 | 3 |
 | `dsptemx` | none (erasable read) DSPTEMX,+1 (= DSPTEM2 +1, +2) as a DP.; returns agc_dp_t -- DSPTEMX,+1 as a DP | 1 | 1 |
-| `extvbact` | EXTVBACT (ERASABLE_ASSIGNMENTS; TESTXACT p.237 C / p.264 L) -- the extended verb activity bits, read RETURNS: EXTVBACT, 15 bits; returns EXTVBACT, 15  | 5 | 3 |
+| `extvbact` | EXTVBACT (ERASABLE_ASSIGNMENTS; TESTXACT p.237 C / p.264 L) -- the extended verb activity bits, read RETURNS: EXTVBACT, 15 bits; returns EXTVBACT, 15  | 6 | 3 |
 | `imodes30` | last-sampled channel 30 bits, T4RUPT IMUMON (IMODES30, B(1)PRM) | 2 | 0 |
 | `imucadr` | C(IMUCADR) = MODECADR +0 (ERASABLE_ASSIGNMENTS.agc; read by SVCT3).; returns agc_sp_t -- the word (+0: nobody uses the IMU) | 1 | 0 |
-| `landmark` | LANDMARK (CM P22 code ABCDE, V52) as a signed SP number. AGC: LANDMARK (ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- the code (0 when the word is ou | 1 | 0 |
+| `landmark` | LANDMARK (CM P22 code ABCDE, V52), a signed SP number | 1 | 0 |
 | `mark2dwn` | MARKDOWN +0..+6 / MARK2DWN +0..+6: mark data for the downlink (time high/low, CDUY, CDUS(OPTX), CDUZ, CDUT(OPTY), CDUX), raw words. | 0 | 1 |
 | `markdown` | MARKDOWN +0..+6 / MARK2DWN +0..+6: mark data for the downlink (time high/low, CDUY, CDUS(OPTX), CDUZ, CDUT(OPTY), CDUX), raw words. | 0 | 2 |
 | `markstat` | mark status bit word (MARKSTAT, B(1)PRM; SXTMARK/R21/R22/P20/P23) | 16 | 15 |
 | `modecadr` | C(MODECADR +dev) (ERASABLE_ASSIGNMENTS.agc "MODE SWITCHING ERASABLE").; returns agc_sp_t -- the word (+0 none, positive a waiting job) | 0 | 1 |
 | `modreg` | MODREG major mode (program) | 1 | 0 |
-| `mrkbuf` | One raw word of MRKBUF1 / MRKBUF2 (layout above). AGC: MRKBUF1, MRKBUF2 (ERASABLE_ASSIGNMENTS.agc); returns uint16_t -- the raw 15-bit word (0 for a b | 2 | 2 |
+| `mrkbuf` | MRKBUF1 / MRKBUF2 (CM): two seven-word mark buffers (time DP, CDUY, word 0 = -1 (77776) marks a buffer empty. mrkbuf2 / set_mrkbuf2 read and store MRK | 2 | 2 |
 | `optind` | OPTIND (ERASABLE_ASSIGNMENTS.agc, CM) -- coarse optics state, read RETURNS: OPTIND: -1, 0, 1, or AGC_OPTIND_NEG0 for -0; returns OPTIND: -1, 0, 1, or  | 0 | 2 |
 | `option1` | OPTION1 +index (index 0..2 = OPTION1, OPTION2, OPTION3; noun 06), octal. | 1 | 3 |
 | `optionx` | none (erasable read) OPTIONX +index (= DSPTEM2 +1 +index).; returns agc_sp_t -- OPTIONX +index as SP | 1 | 1 |
@@ -359,6 +363,8 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `refsmmat` | reference-to-stable-member matrix, row-major, DP elements, scale 2^1 (REFSMMAT, I(18D)PRM; 'REFSMMAT SCALE OF B1') | 17 | 5 |
 | `rls` | landing site vector, moon-fixed reference, meters, scale 2^27 (RLS; R30 'SCALED AT (-27)M'); used by P20/P22/P52 lat-long, R30, P57, landing | 4 | 1 |
 | `rn` | this vehicle's position, meters, scale 2^29 (earth) or 2^27 (moon) (RN, B(6)PRM) | 0 | 1 |
+| `rr_az` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 0 | 1 |
+| `rr_elev` | RR-AZ, RR-ELEV (LM, noun 56): rendezvous radar LOS angles, revs 2^0. | 0 | 1 |
 | `rrectcsm` | permanent CSM position, meters, scale 2^29 earth / 2^27 moon (RRECTCSM) | 2 | 0 |
 | `samptime` | SAMPTIME: sampled TIME2,TIME1 (noun 65), cs 2^28. | 1 | 1 |
 | `swsample` | SWSAMPLE (ERASABLE_ASSIGNMENTS, CM; set in OPTMON p.160) -- the optics mode switch as last sampled (read by V41 N91 and R52) RETURNS: +1 computer (CSC | 1 | 0 |

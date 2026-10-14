@@ -5,7 +5,10 @@ node names the C function (`file:function`) that implements the step, so
 a reader can check the chart against the code; the AGC label and listing
 page of every function are in its prolog and in [../xref.md](../xref.md).
 The scheduler and restart model they rest on is described in
-[../README.md](../README.md).
+[../README.md](../README.md). Every `file:function` citation was checked
+against the final tree (HEAD 3b97dc8, 2026-10-14: the REENTRY_CONTROL
+split into `entry_*.c`, the P52 seams through `agc_exec_jump`, the moves
+of the layout and layering passes).
 
 Scheduler paths:
 

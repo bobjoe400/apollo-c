@@ -280,7 +280,7 @@ those two until core-numeric lands.
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/io/dsky/nouns/*.c`, `src/exec/nouns.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/io/dsky/nouns/*.c`, `src/exec/nouns.c`._
 
 The noun tables are data; the decisions are how a noun component is
 found, scaled and stored.

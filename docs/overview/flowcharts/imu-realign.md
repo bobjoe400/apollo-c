@@ -11,7 +11,13 @@ PICAPAR), R51 (R51.3, R51DSP, R51ST, R51A, R51K), R54 (CHKSDATA), R55
 
 The program is a dialogue: each flash carries three continuations
 (terminate / proceed / enter), written below as V34 / V33 / ENTER.
-Every V34 goes to P00 (`AGC_JOB_GOTOPOOH`).
+Every V34 goes to P00 (`AGC_JOB_GOTOPOOH`). Where the shared steps go on
+in the vehicle's own code (the AGC's TC/TCF to a label of the rope being
+flown) the C jumps by registry id, `agc_exec_jump(ctx, id)`, and the one
+row names the CSM and the LM body (tools/registry.tsv):
+`AGC_JOB_IMU_REALIGN_STARS` (CSM P52C, LM R51),
+`AGC_JOB_IMU_REALIGN_RECHECK` (R51K) and
+`AGC_JOB_IMU_REALIGN_LANDING_SITE` (P52LS).
 
 ```mermaid
 flowchart TD
@@ -31,7 +37,7 @@ flowchart TD
     T2 --> T4{"nominal (OPTION2 bit 2)?"}
     T3 --> T4
     T4 -- "yes" --> T5["S52.3 nominal REFSMMAT (integrates the state;<br/>may sleep in INTSTALL)<br/>agc_job_realign_nominal_orientation"]
-    T4 -- "no" --> T6["P52LS landing-site orientation<br/>csm/alignment/imu_realign.c:agc_job_csm_imu_realign_landing_site"]
+    T4 -- "no" --> T6["P52LS landing-site orientation (jump AGC_JOB_IMU_REALIGN_LANDING_SITE)<br/>csm/alignment/imu_realign.c:agc_job_csm_imu_realign_landing_site"]
     T5 --> D
     T6 --> D
     D["P52D: S52.2 gimbal angles for XSMD;<br/>flash V06N22<br/>agc_job_realign_gimbal_display"] -- "V33" --> C0
@@ -44,7 +50,7 @@ flowchart TD
     C3 --> C4["FINEONLY: REFSMMAT = XSM; REFSMFLG up<br/>agc_job_coarse_align_fineonly"]
     G0["GYCRS: XDC = desired SM wrt present SM;<br/>CALCGTA; DRIFTFLG, REFSMFLG down;<br/>monitor gimbals; IMUPULSE + IMUSTALL<br/>agc_job_gycrs .. agc_job_gycrs_pulsed"] --> G1["REFSMMAT = XSMD; PFRATFLG down, REFSMFLG up;<br/>drift compensation restarted<br/>agc_job_gycrs_torqued"]
     G1 --> K
-    C4 --> SS["P52C: 4.2; V50N25 00015 (star acquisition)<br/>csm/alignment/imu_realign.c:agc_job_csm_realign_star_selection"]
+    C4 --> SS["P52C: 4.2; V50N25 00015 (star acquisition)<br/>(jump AGC_JOB_IMU_REALIGN_STARS)<br/>csm/alignment/imu_realign.c:agc_job_csm_realign_star_selection"]
     SS -- "V33 (computer picks)" --> P0["TSIGHT = now + 4 min; LOCSAM; PICAPAR<br/>agc_job_csm_realign_pick_stars, realign_pick_stars"]
     SS -- "ENTER (crew picks)" --> R0
     P0 --> P1{"star pair found?"}
@@ -69,7 +75,7 @@ flowchart TD
     S2 -- "V33" --> S3["IMUPULSE OGC buffer; IMUSTALL (bad end: CURTAINS)<br/>agc_job_gyro_torquing_pulse"]
     S2 -- "ENTER: no torquing" --> S4
     S3 --> S4["PFRATFLG down<br/>agc_job_csm_fine_align_torqued"]
-    S4 --> K["R51K: V50N25 00014 (fine align check)<br/>agc_job_csm_fine_align_recheck"]
+    S4 --> K["R51K: V50N25 00014 (fine align check)<br/>(from GYCRS: jump AGC_JOB_IMU_REALIGN_RECHECK)<br/>fine_align.c:agc_job_csm_fine_align_recheck"]
     K -- "V33" --> SS
     K -- "ENTER" --> Z["P00 (GOTOPOOH)"]
 ```

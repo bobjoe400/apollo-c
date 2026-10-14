@@ -161,7 +161,7 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/sim/*.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/sim/*.c`._
 
 The harness that makes build/agc_sim a drop-in for yaAGC: the clock and
 interrupt driver and the peripheral protocol, nothing else (no device
@@ -206,7 +206,7 @@ models). It raises no AGC alarms; its decisions are timing and protocol.
 
 ### Decision points by function
 
-None of the lane's 103 functions tests a flag, raises an alarm or starts a job or task; its decisions are the numeric branches described above.
+None of the lane's 102 functions tests a flag, raises an alarm or starts a job or task; its decisions are the numeric branches described above.
 
 ### Shared erasables read and written
 

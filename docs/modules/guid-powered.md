@@ -187,7 +187,7 @@ the full libagc link currently fails on other lanes' undefined symbols):
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/guidance/*.c`, `src/csm/burns/servicer.c`, `src/csm/burns/external_delta_v.c`, `src/csm/burns/sps/*.c`, `src/lm/burns/*.c`, `src/lm/burns/*/*.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/guidance/*.c`, `src/csm/burns/servicer.c`, `src/csm/burns/external_delta_v.c`, `src/csm/burns/sps/*.c`, `src/lm/burns/*.c`, `src/lm/burns/*/*.c`._
 
 The CSM P40 sequence is drawn in
 [flowcharts/sps-burn.md](../overview/flowcharts/sps-burn.md). This lane
@@ -254,7 +254,7 @@ the shared steering mathematics, BURN BABY BURN and both SERVICERs.
 
 ### Decision points by function
 
-160 of the lane's 348 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+161 of the lane's 329 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|
@@ -412,9 +412,10 @@ the shared steering mathematics, BURN BABY BURN and both SERVICERs.
 | `agc_lm_serv_vmeaschk` (landing_radar.c) | VMEASCHK VELUPDAT VUPDAT | LRINH VELDATA VXINH | -VFLSHFLG -VXINH | - | - | - |
 | `agc_lm_serv_valtchk` (landing_radar.c) | VALTCHK READV | READVEL | +READVEL | - | - | job lrvjob |
 | `agc_lm_lrhtask` (landing_radar.c) | LRHTASK | LRBYPASS NOLRREAD READLR | - | - | - | job lrhjob |
-| `agc_job_lrvjob` (landing_radar.c) | LRVJOB | - | - | - | - | task rdgims |
+| `agc_job_lrvjob` (landing_radar.c) | LRVJOB | - | - | - | - | job lrvjob, task rdgims |
 | `agc_job_lrvjob_done` (landing_radar.c) | LRVJOB | - | +VELDATA | - | - | - |
 | `agc_job_lrhjob_done` (landing_radar.c) | LRHJOB | RNGSCFLG | -RNGSCFLG +RNGEDATA | - | - | - |
+| `agc_job_higatjob` (landing_radar.c) | HIGATJOB | - | - | - | - | job higatjob |
 | `posgood` (landing_radar.c) | POSGOOD | - | -NOLRREAD | - | - | - |
 | `posalarm` (landing_radar.c) | POSALARM | - | - | PRIOLARM 0523 | - | - |
 | `agc_job_posalarm_pro` (landing_radar.c) | POSALARM | - | - | - | ch33 LRPOS2 | - |
@@ -425,21 +426,24 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 
 | erasable (accessor) | meaning and scale (accessor prolog) | read by | written by |
 |---|---|---|---|
+| `abdelv` | /DELV/ of the last PIPA reading, cm/s, scale 2^14 (ABDELV, LM) | 2 | 2 |
 | `aig` | none (AIG erasable, CM_ENTRY_DIGITAL_AUTOPILOT.agc p. 1063) -- accessor for other lanes.; returns agc_sp_t -- agc_sp_t -- AIG inner gimbal angle /180, | 1 | 0 |
 | `amg` | none (AMG erasable, CM_ENTRY_DIGITAL_AUTOPILOT.agc p. 1063) -- accessor for other lanes.; returns agc_sp_t -- agc_sp_t -- AMG middle gimbal angle /180 | 1 | 0 |
 | `aog` | none (AOG erasable, CM_ENTRY_DIGITAL_AUTOPILOT.agc p. 1063) -- accessor for other lanes.; returns agc_sp_t -- agc_sp_t -- AOG outer gimbal angle /180, | 1 | 0 |
 | `aosq` | AOSQ/AOSR are DP word pairs at pi/2 (the minor word may disagree in sign after DAS, as in the AGC); the accessor returns their value. AGC: none (helpe | 1 | 1 |
 | `aosr` | none -- accessor of the DAP erasable AOSR (ERASABLE_ASSIGNMENTS.agc).; returns agc_dp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
-| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 5 | 0 |
-| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 4 | 0 |
-| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 4 | 0 |
+| `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 4 | 0 |
+| `cduy` | CDU Y (inner gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUY) | 3 | 0 |
+| `cduz` | CDU Z (middle gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (CDUZ) | 3 | 0 |
 | `cm_gymdt` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 0 | 1 |
 | `csmmass` | CSM mass, kg, scale 2^16 (CSMMASS; TVCMASSPROP 'B+16 KILOGRAMS'; noun 47 R1) | 3 | 1 |
 | `dapdatr1` | DAP configuration word 1 (DAPDATR1, DSP noun 46 R1) | 2 | 0 |
 | `delv` | accumulated PIPA delta-V, stable-member axes (DELV, I(6)): PIPA pulses scale 2^14 (count in the high word); 1 pulse = 5.85 cm/s CSM, 1 cm/s LM. KPIP1  | 8 | 2 |
 | `geomsgn` | none (accessor of erasable GEOMSGN, CONIC_SUBROUTINES.agc p. 1306) -- GEOMSGN as LAMBERT left it; returns agc_sp_t -- GEOMSGN, +.5 short way / -.5 lon | 1 | 0 |
-| `modreg` | MODREG major mode (program) | 3 | 0 |
-| `mrkbuf2` | MRKBUF2 +index as an SP number (P76 ENDP76, R22: -1 = invalid). AGC: MRKBUF2 (ERASABLE_ASSIGNMENTS.agc); returns agc_sp_t -- MRKBUF2 +index as a signe | 0 | 1 |
+| `mass` | LM vehicle mass, kg, scale 2^16, DP (MASS: SERVICER MASSMON, 1/ACCS) | 3 | 2 |
+| `modecadr` | C(MODECADR +dev) (ERASABLE_ASSIGNMENTS.agc "MODE SWITCHING ERASABLE").; returns agc_sp_t -- the word (+0 none, positive a waiting job) | 2 | 0 |
+| `modreg` | MODREG major mode (program) | 4 | 0 |
+| `mrkbuf2` | MRKBUF1 / MRKBUF2 (CM): two seven-word mark buffers (time DP, CDUY, word 0 = -1 (77776) marks a buffer empty. mrkbuf2 / set_mrkbuf2 read and store MRK | 0 | 1 |
 | `optind` | OPTIND (ERASABLE_ASSIGNMENTS.agc, CM) -- coarse optics state, read RETURNS: OPTIND: -1, 0, 1, or AGC_OPTIND_NEG0 for -0; returns OPTIND: -1, 0, 1, or  | 0 | 2 |
 | `p40tmp` | P40TMP (CSM, DP cs), SAVET-30 (LM, DP cs), ZOOMTIME (LM pad load, cs), S61DT and CM/GYMDT (CSM entry, cs): read by the restart tables. | 1 | 2 |
 | `pipax` | PIPA X pulse count since last read (register PIPAX, 037), unscaled pulses: 1 pulse = 5.85 cm/s (CSM SERVICER207), 1 cm/s (LM) | 2 | 0 |

@@ -219,7 +219,7 @@ over a normal display and ENDMARK, LOADITIS (V21 of another noun -> redisplay).
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/io/dsky/pinball/*.c`, `src/io/dsky/display_interface.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/io/dsky/pinball/*.c`, `src/io/dsky/display_interface.c`._
 
 The DSKY loop is drawn in [docs/overview/README.md](../overview/README.md)
 (section "The DSKY loop") and V37 in
@@ -281,14 +281,14 @@ The decision points:
 
 ### Decision points by function
 
-16 of the lane's 242 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+16 of the lane's 241 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|
-| `dif_priobort` (display_if.c) | PRIOBORT | - | - | POODOO 1502 | - | - |
-| `dif_cleanend` (display_if.c) | CLEANEND | - | - | - | - | job jamterm |
-| `dif_normret` (display_if.c) | NORMRET | - | - | - | - | job playjum1 |
-| `dif_start_makeplay` (display_if.c) | GODSPRS1 BOTHJOBS | - | - | - | - | job makeplay |
+| `dif_priobort` (display_interface.c) | PRIOBORT | - | - | POODOO 1502 | - | - |
+| `dif_cleanend` (display_interface.c) | CLEANEND | - | - | - | - | job jamterm |
+| `dif_normret` (display_interface.c) | NORMRET | - | - | - | - | job playjum1 |
+| `dif_start_makeplay` (display_interface.c) | GODSPRS1 BOTHJOBS | - | - | - | - | job makeplay |
 | `agc_dsky_prockey_request` (keys.c) | PROCKEY | - | - | - | - | job prockey |
 | `pin_keycom` (keys.c) | KEYCOM ACCEPTUP | - | +DSKYFLAG | - | - | job charin |
 | `agc_dsky_uprupt` (keys.c) | UPRUPT | UPLOCKFL | +UPLOCKFL -UPLOCKFL | - | - | - |
@@ -320,11 +320,11 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `optionx` | none (erasable read) OPTIONX +index (= DSPTEM2 +1 +index).; returns agc_sp_t -- OPTIONX +index as SP | 1 | 1 |
 | `optmodes` | OPTMODES (ERASABLE_ASSIGNMENTS.agc, CM) -- the optics mode bit word, read RETURNS: OPTMODES, 15 bits (0 in an LM build); returns OPTMODES, 15 bits (0  | 2 | 2 |
 | `radmodes` | RADMODES (ERASABLE_ASSIGNMENTS; EQUALS FLGWRD12, FLAGWORD_ASSIGNMENTS p.85) -- the radar mode bit word, read RETURNS: uint16_t -- RADMODES (15 bits);  | 2 | 2 |
-| `read_ecadr` | Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074) map onto agc_flagword_*; other addresses use a raw image (no map to the typed er | 2 | 0 |
+| `read_ecadr` | Read the erasable word at ECADR (raw 15-bit word): a flagword, a mapped erasable (its holders synced from their typed values), or the raw image. AGC:  | 2 | 0 |
 | `samptime` | SAMPTIME: sampled TIME2,TIME1 (noun 65), cs 2^28. | 0 | 1 |
 | `sfail` | SFAIL (= SELFERAS): self-check failure address, raw word. | 0 | 1 |
 | `time1` | ---- time: TIME1/TIME2 (centiseconds, DP), TIME3..TIME6 are exec-private | 2 | 0 |
-| `write_ecadr` | Address 00000-77777 (erasable 0000-3777). The flagwords (STATE = 074) map onto agc_flagword_*; other addresses use a raw image (no map to the typed er | 2 | 0 |
+| `write_ecadr` | Store a raw 15-bit word at ECADR: a flagword, a mapped erasable (the first item holding the address rebuilt from all its words), or the raw image. AGC | 2 | 0 |
 
 ### AGC labels -> C functions
 

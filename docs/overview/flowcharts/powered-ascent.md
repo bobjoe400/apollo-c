@@ -12,11 +12,11 @@ flowchart TD
     A1 -- "bad" --> A0["P00 (R02 alarmed)"]
     A1 -- "ok" --> A2["MUNFLAG, ACC4-2FL (4-jet), R10FLAG;<br/>RADMODES for R29; RNDVZFLG down;<br/>DVTHRUSH, DVCNTR = 4"]
     A2 --> A3["flash V06N33 TIG<br/>agc_lm_job_powered_ascent_flash"]
-    A3 -- "PROCEED" --> B0["WM, /LAND/ (GUIDINIT); APS data (P12INIT,<br/>COMMINIT targets: RCO = /LAND/ + 60 000 ft, QAXIS);<br/>LEMPREC to TIG (may wait for the integration)<br/>agc_lm_job_powered_ascent_proceed"]
+    A3 -- "PROCEED" --> B0["WM, /LAND/ (GUIDINIT); APS data (P12INIT,<br/>COMMINIT targets: RCO = /LAND/ + 60 000 ft,<br/>QAXIS, stored as UHYP: one erasable);<br/>LEMPREC to TIG (may wait for the integration)<br/>agc_lm_job_powered_ascent_proceed"]
     A3 -- "TERMINATE" --> A0
     B0 --> B1["P12LMB: V1S, R, gravity, UNIT/R/ at TIG;<br/>XRANGE for N76; injection targets<br/>agc_lm_job_powered_ascent_at_ignition"]
     B1 --> B2["NEWLOAD: flash V06N76 cross range, apolune<br/>agc_lm_job_newload"]
-    B2 -- "PROCEED" --> B3["YCO; tip-over velocity V(IGN) + 49 ft/s UNIT/R/;<br/>RDOT, ZAXIS1; FLPI set: one ASCENT pass<br/>agc_lm_job_newload_proceed"]
+    B2 -- "PROCEED" --> B3["YCO; tip-over velocity V(IGN) + 49 ft/s UNIT/R/;<br/>RDOT, ZAXIS1 (= UHZP); FLPI set: one ASCENT pass<br/>agc_lm_job_newload_proceed"]
     B3 --> B4["P12RET: yaw and pitch of the thrust command,<br/>1 deg deadband<br/>agc_lm_powered_ascent_return"]
     B4 --> B5["P12BURN: FLPI off; BURNBABY countdown<br/>(TIG-35, TIG-30, TIG-5, V99, TIG-0 as in lunar-landing.md)<br/>agc_lm_job_powered_ascent_burn -> burnbaby.c:agc_lm_burnbaby"]
     B5 --> B6["IGNITION; P12IGN: DAP bias AOSQ, AOSR from pad;<br/>ABRTIGN: CLOKTASK off, AVGEXIT = ATMAG, R10 on<br/>burnbaby.c:ascent_bias_load, ascent_ignition"]
@@ -26,10 +26,10 @@ flowchart TD
     C2 -- "yes" --> C3["ASCTERM4: zero attitude errors,<br/>no guidance this cycle, N63 display"]
     C2 -- "no" --> C4["SURFFLAG, RENDWFLG down;<br/>1/DV history -> TBUP, AT"]
     C1 -- "yes" --> C5
-    C4 --> C5["ASCENT: state in the ascent frame, GEFF, VG,<br/>VGBODY for N85<br/>ascent.c:agc_lm_ascent, as_vgvect"]
+    C4 --> C5["ASCENT: state in the ascent frame, GEFF, VG,<br/>VGBODY for N85 (the burn's VGBODY, one erasable)<br/>ascent.c:agc_lm_ascent, as_vgvect"]
     C5 --> C6{"FLRCS?"}
     C6 -- "yes" --> C7["TGO = VG / ATRCS; end"]
-    C6 -- "no" --> C8["MAINENG: TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO;<br/>TTOGO"]
+    C6 -- "no" --> C8["MAINENG: TGO = TBUP (VG/VE)(1 - KT VG/VE) - TTO;<br/>TTOGO (TGO = DVCNTR +1: ascent.c:agc_lm_asc_set_tgo)"]
     C8 --> C9{"TGO < 4 s and DVMON on (IDLEFLAG clear)?"}
     C9 -- "yes" --> C10["ENGOFF: engine-off task at TGO (at least 1 cs),<br/>group 4 variable restart; IDLEFLAG (DVMON off)<br/>ascent.c:as_engoff"]
     C9 -- "no" --> C11
@@ -57,3 +57,10 @@ flowchart TD
     E1 -- "TERMINATE" --> E3
     E2 -- "PROCEED / TERMINATE" --> E3["TERMASC: crew deadband restored,<br/>aborts disallowed, P00<br/>agc_lm_job_termasc"]
 ```
+
+The ascent shares erasables with the descent and the burn programs by
+EQUALS (ERASABLE_ASSIGNMENTS): QAXIS = UHYP, ZAXIS1 = UHZP, VGBODY (N85)
+and TGO = DVCNTR +1 are each one C variable, written once
+(`agc_guid_state()->lm.uhyp` / `.uhzp`, `->burn.vgbody`,
+`agc_lm_asc_set_tgo`); keeping them as separate copies was flight bugs
+9-11 of the NASSP mission (docs/modules/nassp-integration.md).

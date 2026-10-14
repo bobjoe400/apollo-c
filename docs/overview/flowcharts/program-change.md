@@ -29,7 +29,7 @@ flowchart TD
     S0 --> S1{"Nxx = 00 ?"}
     S1 -- "no" --> S2{"NODOFLAG set?<br/>(V37 not allowed)"}
     S2 -- "yes" --> X1
-    S2 -- "no" --> S3{"Nxx in the vehicle's mode table?<br/>CHECKTAB (csm.c / lm.c:exec_cp_modes_*)"}
+    S2 -- "no" --> S3{"Nxx in the vehicle's mode table?<br/>CHECKTAB<br/>csm.c:exec_cp_modes_csm, lm.c:exec_cp_modes_lm"}
     S3 -- "no" --> X2["V37NONO: OPR ERR lamp, RELDSP<br/>sequence.c:cp_refuse(false)"]
     S3 -- "yes: MINDEX" --> S4
     S1 -- "yes" --> S4{"SERVICER running?<br/>(AVEGFLAG)"}
@@ -67,7 +67,7 @@ Decision points and their alarms:
 | CSM engine on or TVC DAP | `exec_cp_engine_off_to_idle` | engine stopped, then P00 |
 | AVEGFLAG (SERVICER on) | `cp_select` | wait for SERVICER's last pass |
 | INTSTALL busy | `agc_job_change_program_continue` | sleep until the integration ends |
-| RNDVZFLG / P25 flag with Nxx = 20 / 25 | `exec_cp_rendezvous_*` | STATQUO: keep the running P20/P25 |
+| RNDVZFLG / P25 flag with Nxx = 20 / 25 | `exec_cp_rendezvous_csm` / `_lm` | STATQUO: keep the running P20/P25 |
 
 Deviation (sequence.c NOTES): the AGC's group 4 shows 4.1 (INITDSP
 jumping to TEMPFLSH -3); the C uses a type C job phase (PHASE4 reads

@@ -195,7 +195,7 @@ none
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/core/divide.c`, `src/core/mpac.c`, `src/core/shift.c`, `src/core/word.c`, `src/core/sp_trig.c`, `src/core/constants.c`, `src/core/vec_div.c`, `src/core/interp/*.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/core/divide.c`, `src/core/mpac.c`, `src/core/shift.c`, `src/core/word.c`, `src/core/sp_trig.c`, `src/core/constants.c`, `src/core/vec_div.c`, `src/core/interp/*.c`._
 
 This lane has no scheduling, flags or alarms of its own: it is the AGC's
 arithmetic, and its decisions are the branches inside the interpreter

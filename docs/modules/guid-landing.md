@@ -153,7 +153,7 @@ SPEEDRUN2.
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/lm/landing/*.c`, `src/lm/ascent.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/lm/landing/*.c`, `src/lm/ascent.c`._
 
 The P63-P66 sequence is drawn in
 [flowcharts/lunar-landing.md](../overview/flowcharts/lunar-landing.md)
@@ -213,7 +213,7 @@ The decision points:
 
 ### Decision points by function
 
-67 of the lane's 177 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
+67 of the lane's 179 functions test or change a flag, raise an alarm, test a channel bit or start a job/task (AGC = the label(s) the prolog names; "+F" sets flag F, "-F" clears it; "starts" = NOVAC/FINDVAC, WAITLIST, LONGCALL, DELAYJOB targets).
 
 | C function | AGC | flags tested | flags set (+) / cleared (-) | alarms | channel bits | starts |
 |---|---|---|---|---|---|---|
@@ -257,7 +257,7 @@ The decision points:
 | `agc_lm_task_speedrun_resume` (displays.c) | SPEEDRUN | ALTITUDE_METERS_ONLY | - | - | - | - |
 | `fc_fetch_basic` (findcduw.c) | - | CSMDKFLG XOVINFLG | - | - | ch30 LMCONTROL, ch31 AUTOSTAB | - |
 | `fc_noattcnt` (findcduw.c) | NOATTCNT | - | - | ALARM 0402 | - | - |
-| `fc_gimbal_changes` (findcduw.c) | - | - | - | ALARM 0401 | - | - |
+| `agc_lm_findcduw_limit_mga` (findcduw.c) | - | - | - | ALARM 0401 | - | - |
 | `agc_lm_findcduw` (findcduw.c) | FINDCDUW | ENGONFLG | - | - | - | - |
 | `ldg_ratestop` (guidance.c) | RATESTOP | - | - | - | ch31 ATTHOLD | - |
 | `agc_lm_steer_exit` (guidance.c) | EXVERT EXOVFLOW RATESTOP | STEERSW | - | ALARM 1410 | - | - |
@@ -294,6 +294,7 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `1jacc` | none -- accessor of the DAP erasable 1JACC (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
 | `1jaccq` | none -- accessor of the DAP erasable 1JACCQ (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
 | `1jaccr` | none -- accessor of the DAP erasable 1JACCR (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 0 |
+| `abdelv` | /DELV/ of the last PIPA reading, cm/s, scale 2^14 (ABDELV, LM) | 1 | 0 |
 | `altm` | ALTM (LM 060): altitude / altitude-rate meter drive, raw 15-bit word. | 1 | 1 |
 | `cdutcmd` | CDUTCMD (053) / CDUSCMD (054): optics (CSM) or RR (LM) CDU error counter drive, SP pulse counts; which 0 = CDUTCMD, 1 = CDUSCMD. In TVC mode the same  | 0 | 1 |
 | `cdux` | CDU X (outer gimbal) counter, raw 15-bit word, 2^15 counts = 1 revolution (register CDUX, 032) | 1 | 0 |
@@ -312,6 +313,7 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `imodes33` | last-sampled channel 33 / DAP-enable bits, T4RUPT C33TEST (IMODES33, B(1)PRM) | 6 | 1 |
 | `m22` | M22 (GPMATRIX, T4RUPT_PROGRAM.agc p.188) -- SIN(OG), also MR22 RETURNS: M22, scaled at 1; returns M22, scaled at 1 | 1 | 0 |
 | `m32` | M32 (GPMATRIX, T4RUPT_PROGRAM.agc p.189) -- COS(OG), also MR23 RETURNS: M32, scaled at 1; returns M32, scaled at 1 | 1 | 0 |
+| `mass` | LM vehicle mass, kg, scale 2^16, DP (MASS: SERVICER MASSMON, 1/ACCS) | 4 | 0 |
 | `modreg` | MODREG major mode (program) | 11 | 1 |
 | `omegapd` | none -- accessor of the DAP erasable OMEGAPD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
 | `omegaqd` | none -- accessor of the DAP erasable OMEGAQD (ERASABLE_ASSIGNMENTS.agc).; returns agc_sp_t -- the erasable, at the scale given in agc/lm/dap.h | 1 | 1 |
@@ -326,9 +328,11 @@ Accessors of `include/agc/core/state.h` and the lanes' public headers called by 
 | `rrectcsm` | permanent CSM position, meters, scale 2^29 earth / 2^27 moon (RRECTCSM) | 1 | 0 |
 | `tem` | PIPASR +3: read PIPAX..Z into TEMX..Z and the high words of DELV, zero the PIPAs (no PIPTIME1). TEMX..TEMZ (axis 0..2): those counts, SP. | 2 | 1 |
 | `tevent` | time of event for downlist, centiseconds, scale 2^28 (TEVENT; TLIFTOFF in P11) | 0 | 1 |
+| `tgo` | time to go in the burn / guidance, centiseconds, scale 2^28 (TGO) | 0 | 1 |
 | `thetad` | desired gimbal angles THETAD +0..+2 (CPHI/CTHETA/CPSI), raw 15-bit CDU-style words, 2^15 = 1 revolution Index 0..2. | 0 | 1 |
 | `thrust` | THRUST (LM 055): descent engine throttle command pulses, SP. | 1 | 2 |
 | `tig` | time of ignition, centiseconds, scale 2^28 (TIG; DSP noun 33) | 2 | 1 |
+| `tland` | TLAND (LM, = W): nominal time of landing, cs 2^28. | 2 | 0 |
 | `trkmkcnt` | TRKMKCNT: rendezvous tracking mark count (noun 45 R1), whole number. | 0 | 1 |
 | `ttogo` | time to go, centiseconds, scale 2^28 (TTOGO; DSP nouns 35,40,45,59,99) | 1 | 1 |
 | `vrectcsm` | permanent CSM velocity, m/cs, scale 2^7 earth / 2^5 moon (VRECTCSM) | 1 | 0 |

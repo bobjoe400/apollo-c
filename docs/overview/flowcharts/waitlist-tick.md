@@ -40,7 +40,7 @@ the first matching LST2 entry with TASKOVER.
 
 ```mermaid
 flowchart TD
-    K["sim/clock.c:time1_phase, every 10 ms"] --> L{"TIME3 at its last count?"}
+    K["src/sim/clock.c:time1_phase, every 10 ms"] --> L{"TIME3 at its last count?"}
     L -- "no" --> L1["PINC TIME3<br/>waitlist.c:agc_waitlist_tick(1)"]
     L -- "yes" --> L2["request T3RUPT; when taken:<br/>clock.c:rupt_t3 -> agc_waitlist_tick(1)<br/>(TIME3 -> 0: overflow)"]
     L2 --> M["T3RUPT<br/>waitlist.c:agc_waitlist_t3rupt (INHINT)"]

@@ -131,7 +131,7 @@ tests/csm/dap.c (791 checks, 0 failures; linked with scratch stubs for the missi
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/csm/dap/*.c`, `src/csm/dap/*/*.c`._
+_Documentation wave (2026-10-12); prose and tables brought to the final tree (HEAD 3b97dc8) by the final pass (2026-10-14). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/csm/dap/*.c`, `src/csm/dap/*/*.c`._
 
 The CSM RCS and TVC autopilots, both T5 programs (only one owns T5 at a
 time; FLAGWRD6 bits 15-14 = DAPBIT1/DAPBIT2 say which: 01 RCS, 10 TVC,

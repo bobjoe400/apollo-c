@@ -102,3 +102,30 @@ oracle_imu, oracle_align and `make lm-sim` are the acceptance.
   uses them; their waitlist tasks stay put and are reached by id.
 - A downlist item whose owner sits above io is noun data: read it by id
   (agc_dispatch_noun) rather than moving the owner's storage.
+
+## Program flow and decisions
+
+_Final documentation pass (2026-10-14), HEAD 3b97dc8._ This lane moved
+storage and job bodies so that no module calls a higher one; every move
+kept the decision it moved (gates and lm-sim unchanged). The one new
+control-flow primitive:
+
+* **`src/exec/executive.c:agc_exec_jump(ctx, id)`**: a job goes on at a
+  registry body by id, the C form of the AGC's TC/TCF/POSTJUMP to a
+  label of the rope being flown. The registry row names the CSM and the
+  LM body. Used for V46's DAPFIG (`src/io/verbs/extended_verbs_csm.c`),
+  V82CALL (`src/io/verbs/extended_verbs.c`) and the three P52 seams
+  (`src/programs/alignment/imu_realign.c`: AGC_JOB_IMU_REALIGN_STARS,
+  _RECHECK, _LANDING_SITE; [imu-realign
+  flowchart](../../overview/flowcharts/imu-realign.md)).
+
+Where the moved code now decides (each in its owner's section):
+OGC/IGC/MGC buffers in `src/imu/gyro.c` ([imu](../../modules/imu.md#program-flow-and-decisions));
+FINETIME in `src/imu/mode.c`, the CDU trig and AX*SR*T in
+`src/imu/cdu_trig.c`; DESOPTT/S in `src/io/service/t4rupt_csm.c`;
+RRLIMCHK, SETTRKF, RRZERO, LRPOS2, RADNOOP and CLRADMOD with RADMODES in
+`src/io/service/t4rupt_lm.c` ([sys-misc](../../modules/sys-misc.md#program-flow-and-decisions));
+MASS, ABDELV, MRKBUF1/2 and LANDMARK in `src/core/erasable.c`
+([state-flags](../../modules/state-flags.md#program-flow-and-decisions));
+SXTNB in `src/programs/alignment/geometry_csm.c`; DELVSLV read for the
+downlink by noun id through `src/exec/nouns.c:agc_dispatch_noun`.

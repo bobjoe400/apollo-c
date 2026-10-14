@@ -20,7 +20,7 @@ flowchart TD
     A["V37 N63: P63LM / FLAGORGY<br/>lunar_landing.c:agc_lm_job_braking_phase<br/>restart point (PHASCHNG 04024)"] --> A1["R02 IMU status"]
     A1 -- "bad" --> A2["P00 (R02 alarmed)"]
     A1 -- "ok" --> A3["WHICH = P63 row; DVTHRUSH, DVCNTR = 4;<br/>WCHPHASE = IGNALG; RR lock-on off;<br/>NOTHROTL, REDFLAG, LRBYPASS down; MUNFLAG up;<br/>P25 and P20 (RNDVZFLG) off"]
-    A3 --> A4["landing site RLS to SM at TLAND; LAND;<br/>GUIDINIT (WM, /LAND/)<br/>nav:agc_planet_rp_to_r, guidance.c:agc_lm_guidinit"]
+    A3 --> A4["landing site RLS to SM at TLAND; LAND;<br/>GUIDINIT (WM, /LAND/)<br/>nav:agc_planet_rp_to_r, ascent.c:agc_lm_guidinit"]
     A4 --> A5["IGNALG: LEMPREC to TLAND - GUIDDURN<br/>lunar_landing.c:ll_ignalg_prec<br/>(integration busy: sleep, agc_lm_job_ignalg_prec)"]
     A5 --> B0["IGNALOOP pass<br/>lunar_landing.c:ll_ignaloop"]
     B0 --> B1["?GUIDSUB / GUIDSUB: three quadratic guidance passes<br/>lunar_landing.c:ll_ign_guidance -> guidance.c:agc_lm_guidpass"]
@@ -56,7 +56,7 @@ flowchart TD
 flowchart TD
     S0["READACCS task (2 s)<br/>average_g.c:agc_task_readaccs_lm"] --> S1["SERVICER: GETABVAL, mass (MASSMON), MUNRVG<br/>(LM + CSM state, spherical moon)<br/>average_g.c:agc_job_servicer_lm, getabval"]
     S1 --> S2["DVMON: thrust seen (ABDELV > DVTHRUSH)?<br/>STEERSW up; else LOTHRUST countdown<br/>average_g.c:dvmon, lothrust"]
-    S2 --> S3["landing radar: altitude below 50 000 ft enabled;<br/>UPDATCHK / VMEASCHK accept or reject readings,<br/>LR lamps (R12)<br/>landing_radar.c:agc_lm_serv_munretrn .. vmeaschk"]
+    S2 --> S3["landing radar: altitude below 50 000 ft enabled;<br/>UPDATCHK / VMEASCHK accept or reject readings,<br/>LR lamps (R12); LRVJOB / HIGATJOB wait while<br/>LRHJOB holds the radar (DEVIATION: AGC time)<br/>landing_radar.c:agc_lm_serv_munretrn .. vmeaschk, agc_job_lrvjob"]
     S3 --> S4["COPYCYCL; SERVOUT: 1/ACCS, AVGEXIT<br/>average_g.c:agc_lm_serv_copycycl, servout"]
     S4 --> L0["LUNLAND (AVGEXIT)<br/>guidance.c:agc_lm_job_lunland<br/>group 5 PIPA only; group 3 = LUNLAND at PRIO21"]
     L0 --> R13{"R13 GUILDENSTERN<br/>lunar_landing.c:agc_lm_guildenstern"}
