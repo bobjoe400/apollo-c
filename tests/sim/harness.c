@@ -6,8 +6,9 @@
  *   yaAGC's behaviour: packet format, unprogrammed counter increments,
  *   the scaler-phase timing of TIME6 / T6RUPT, the radar cycle and
  *   RADARUPT, the HANDRUPT traps, the channel 33 latches, the CDU
- *   drive pacing, one packet per output-channel write, and the CDU
- *   count FIFO.
+ *   drive pacing, one packet per output-channel write, the CDU
+ *   count FIFO, and the two LR reads of one SERVICER pass on the
+ *   radar cycle (LRHJOB, then LRVJOB 5 cs later: no 01210).
  *
  * AGC SOURCE:
  *   No AGC routine: virtualagc yaAGC/agc_utilities.c (FormIoPacket,
@@ -64,6 +65,7 @@ static void test_channel33(void);
 static void test_cdu_drive(void);
 static void test_output_writes(void);
 static void test_cdu_fifo(void);
+static void test_lr_reads(void);
 static int  client_connect(int port);
 static int  client_count(int fd, uint16_t chan);
 
@@ -87,6 +89,7 @@ int main(void)
     power_on(AGC_VEHICLE_LM);
     test_radar();
     test_handrupt();
+    test_lr_reads();
     (void) printf("test_harness: %d checks, %d failures\n", g_checks, g_failures); /* stdlib */
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -439,4 +442,81 @@ static void test_cdu_fifo(void)
     CHECK(sim_channels_tick(102) == AGC_STATUS_OK && agc_erase_cduy() == (uint16_t) (0100000u - 22u)); /* 2 slow, 32 fast: 10 - 32 */
     CHECK(sim_channels_tick(103) == AGC_STATUS_OK && agc_erase_cduy() == (uint16_t) (0100000u - 86u)); /* 64 fast more  */
     CHECK(sim_channels_tick(104) == AGC_STATUS_OK && agc_erase_cduy() == (uint16_t) (0100000u - 90u)); /* the last 4    */
+}
+
+/**********************************************************************
+ * AGC: none -- the two LR reads of one SERVICER pass on the radar cycle
+ * (Luminary SERVICER.agc pp.872, 889, 892-893): LRHTASK starts LRHJOB
+ * (RADSTALL for one altitude sample), and 5 cs later, where the C
+ * SERVICER reaches VALTCHK, LRVJOB starts. LRVJOB must not RADSTALL
+ * while LRHJOB holds RADCADR (BAILOUT 01210, NASSP PDI 2026-10-13); it
+ * reads its beam after LRHJOB's sample.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_lr_reads(void)
+{
+    bool lrv_read  = false; /* LRVJOB reached RADSTALL */
+    bool two_users = false; /* 01210 in FAILREG */
+
+    for (int i = 0; i < 3; i++)
+    {
+        agc_erase_set_failreg(i, 0);
+    }
+
+    CHECK(agc_exec_novac(AGC_PRIO32, AGC_JOB_LRHJOB) == AGC_STATUS_OK); /* LRHTASK */
+
+    for (int i = 0; i < 5; i++)
+    {
+        sim_clock_tick();
+    }
+
+    CHECK(agc_erase_modecadr(AGC_IMU_DEV_RADAR) == (agc_sp_t) AGC_JOB_LRHJOB_DONE);
+    CHECK(agc_exec_novac(AGC_PRIO32, AGC_JOB_LRVJOB) == AGC_STATUS_OK); /* VALTCHK */
+
+    for (int i = 0; i < 200; i++)
+    {
+        sim_clock_tick();
+        lrv_read = lrv_read || agc_erase_modecadr(AGC_IMU_DEV_RADAR) == (agc_sp_t) AGC_JOB_LRVJOB_DONE;
+
+        for (int k = 0; k < 3; k++)
+        {
+            two_users = two_users || (agc_erase_failreg(k) & 07777u) == 01210u;
+        }
+    }
+
+    CHECK(!two_users);
+    CHECK(lrv_read);
+
+    /* P64 entry: HIGATASK (in SERVICER) starts HIGATJOB, which repositions
+     * the antenna, 5 cs after LRHTASK started an altitude read.        */
+    bool repositioning = false; /* HIGATJOB reached RADSTALL */
+
+    for (int i = 0; i < 200; i++)
+    {
+        sim_clock_tick(); /* the reads above end */
+    }
+
+    CHECK(agc_exec_novac(AGC_PRIO32, AGC_JOB_LRHJOB) == AGC_STATUS_OK); /* LRHTASK */
+
+    for (int i = 0; i < 5; i++)
+    {
+        sim_clock_tick();
+    }
+
+    CHECK(agc_exec_findvac(AGC_PRIO32, AGC_JOB_HIGATJOB) == AGC_STATUS_OK); /* HIGATASK */
+
+    for (int i = 0; i < 100; i++)
+    {
+        sim_clock_tick();
+        repositioning = repositioning || agc_erase_modecadr(AGC_IMU_DEV_RADAR) == (agc_sp_t) AGC_JOB_HIGATJOB_DONE;
+
+        for (int k = 0; k < 3; k++)
+        {
+            two_users = two_users || (agc_erase_failreg(k) & 07777u) == 01210u;
+        }
+    }
+
+    CHECK(!two_users);
+    CHECK(repositioning);
 }

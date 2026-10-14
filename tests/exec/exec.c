@@ -82,6 +82,7 @@ static void test_goprog(void);
 static void test_poodoo_lm(void);
 static void test_inhint(void);
 static void test_interp_alarms(void);
+static void test_self_loop_pace(void);
 
 /**********************************************************************
  * AGC: none (test) -- run every test
@@ -98,6 +99,7 @@ int main(void)
     test_core_exhaustion();
     test_sleep_wake();
     test_prio_change();
+    test_self_loop_pace();
     test_bailout_in_job();
     test_waitlist_order();
     test_waitlist_ruptagn_insert();
@@ -171,6 +173,7 @@ static void check(bool ok, int line, const char *text)
 #define TJ_ACOS    ((agc_job_id_t) 0x0F14)  /* ACOS out of range: 1301 */
 #define TJ_SQRT    ((agc_job_id_t) 0x0F15)  /* SQRT of a negative: 1302 */
 #define TJ_GRP2PC  ((agc_job_id_t) 0x0F16)  /* PHASCHNG OCT 04022, return address */
+#define TJ_LOOP    ((agc_job_id_t) 0x0F17)  /* CHANG1 to its own LOC (a polling loop) */
 #define TT_A       ((agc_task_id_t) 0x0F41) /* plain test task */
 #define TT_B       ((agc_task_id_t) 0x0F42) /* plain test task */
 #define TT_C       ((agc_task_id_t) 0x0F43) /* plain test task */
@@ -241,6 +244,10 @@ agc_status_t agc_dispatch_job(agc_job_ctx_t *ctx)
     {
         agc_phase_set_priority(2, 026); /* CAF PRIO26 / TS PHSPRDT2 */
         agc_phase_change(04022);        /* type C job, A and D clear */
+    }
+    else if (ctx->id == TJ_LOOP)
+    {
+        st = agc_exec_job_yield(TJ_LOOP);
     }
     else if (ctx->id == AGC_JOB_ENDOFJOB)
     {
@@ -584,6 +591,32 @@ static void test_prio_change(void)
     CHECK(prio_nj2 > 0);                             /* 5 < 20: change job    */
     CHECK(run_all() == 2);
     CHECK(job_log[1] == TJ_C && job_log[2] == TJ_A); /* C, then resumed */
+}
+
+/**********************************************************************
+ * AGC: none (test) -- a job that yields (CHANG1) to its own LOC runs once
+ * per centisecond (DEVIATION in agc_exec_run_one): the second pass in the
+ * same cs is BUSY, the next cs runs it; a job yielding to another LOC
+ * (TJ_PRIO -> TJ_A in test_prio_change) is not held.
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void test_self_loop_pace(void)
+{
+    reset(AGC_VEHICLE_CSM);
+    agc_time_set_cs(1000u);
+    CHECK(agc_exec_novac(010, TJ_LOOP) == AGC_STATUS_OK);
+    CHECK(agc_exec_run_one() == AGC_STATUS_OK);        /* pass 1 */
+    CHECK(agc_exec_run_one() == AGC_STATUS_BUSY);      /* same cs */
+    CHECK(agc_exec_run_one() == AGC_STATUS_BUSY);
+    CHECK(job_n == 1);
+    agc_time_advance_cs(1u);
+    CHECK(agc_exec_run_one() == AGC_STATUS_OK);        /* pass 2 in the next cs */
+    CHECK(agc_exec_run_one() == AGC_STATUS_BUSY);
+    CHECK(job_n == 2 && job_log[1] == TJ_LOOP);
+    CHECK(agc_exec_novac(020, TJ_A) == AGC_STATUS_OK); /* a higher job still runs at once */
+    CHECK(agc_exec_run_one() == AGC_STATUS_OK);
+    CHECK(job_n == 3 && job_log[2] == TJ_A);
 }
 
 /**********************************************************************

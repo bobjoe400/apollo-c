@@ -98,11 +98,13 @@
 
 typedef struct core_set
 {
-    agc_core_state_t state; /* sign of PRIORITY                        */
-    agc_prio_t       prio;  /* PRIORITY bits 10-14                     */
-    int              vac;   /* -1 NOVAC, else VAC area 0..4            */
-    agc_job_id_t     loc;   /* LOC (the job's 2CADR)                   */
-    agc_sp_t         arg;   /* MPAC as loaded by the creator, B0 word  */
+    agc_core_state_t state;    /* sign of PRIORITY                        */
+    agc_prio_t       prio;     /* PRIORITY bits 10-14                     */
+    int              vac;      /* -1 NOVAC, else VAC area 0..4            */
+    agc_job_id_t     loc;      /* LOC (the job's 2CADR)                   */
+    agc_sp_t         arg;      /* MPAC as loaded by the creator, B0 word  */
+    bool             again;    /* last pass ended in CHANG1 to its own LOC */
+    uint32_t         again_cs; /* TIME2,TIME1 (cs) of that pass          */
 } core_set_t;
 
 static core_set_t core[AGC_EXEC_MAX_JOBS];     /* PRIORITY, LOC, ... */
@@ -205,6 +207,7 @@ void exec_clear_tables(void)
         core[i].vac   = -1;
         core[i].loc   = AGC_JOB_NONE;
         core[i].arg   = 0;
+        core[i].again = false;
     }
 
     for (int v = 0; v < AGC_EXEC_MAX_VACS; v++)
@@ -358,6 +361,7 @@ static agc_status_t novac2(agc_prio_t prio, agc_job_id_t job, int vac)
     core[found].vac   = vac;
     core[found].loc   = job;
     core[found].arg   = 0;
+    core[found].again = false;
     locctr            = found;
 
     if (found == 0)
@@ -792,12 +796,21 @@ agc_status_t agc_exec_job_yield(agc_job_id_t resume_as)
  * DUMMYJOB / ADVAN / NUCHANG2 / NUDIRECT (C p.1220 / L p.1116): run the
  * highest-priority ready job once. Returns NOT_FOUND when idle (the AGC
  * would sit in DUMMYJOB / SELFCHK), otherwise the job's own status.
+ * DEVIATION: a job whose last pass ended in CHANG1 to its own LOC (a
+ * polling or recomputing loop: R31/R34 V83 COMPDISP, CHECKG1's PIPA
+ * catch) gets its next pass in the next centisecond (BUSY until then).
+ * A C pass takes no AGC time, so such a loop ran up to the host's job
+ * bound (64 passes a call) where the AGC, whose pass takes tens of ms or
+ * more, runs it a few times a second; under NASSP at 5x the host could
+ * not keep up (2026-10-13). One pass per cs is still faster than any AGC
+ * pass of these loops.
  *
  * ARGUMENTS: none
  *
  * RETURNS: agc_status_t -- the job's own status; NOT_FOUND when idle (NEWJOB = -0);
- *          the CCSHOLE status when core set 0 is not active; BAD_ARG on a
- *          failed precondition
+ *          BUSY when the ready job is a self-rescheduled loop that already
+ *          ran this centisecond; the CCSHOLE status when core set 0 is not
+ *          active; BAD_ARG on a failed precondition
  **********************************************************************/
 agc_status_t agc_exec_run_one(void)
 {
@@ -816,6 +829,11 @@ agc_status_t agc_exec_run_one(void)
         return (agc_ccshole());
     }
 
+    if (core[0].again && core[0].again_cs == agc_time_now_cs())
+    {
+        return (AGC_STATUS_BUSY); /* DEVIATION: next pass in the next cs */
+    }
+
     activity_light(true); /* NUDIRECT            */
     agc_job_ctx_t ctx;    /* the job's context for dispatch */
 
@@ -825,6 +843,7 @@ agc_status_t agc_exec_run_one(void)
     ctx.vac_index = core[0].vac;
     ctx.arg       = core[0].arg;
     yielded       = false;
+    core[0].again = false;
     uint16_t gen  = generation; /* STARTSB2 count before the job runs */
 
     in_job          = true;
@@ -859,6 +878,9 @@ agc_status_t agc_exec_run_one(void)
         }
         else if (yielded)
         {
+            core[0].again    = core[0].loc == ctx.id; /* CHANG1 to its own LOC */
+            core[0].again_cs = agc_time_now_cs();
+
             if (newjob > 0)
             {
                 chanjob(newjob); /* CHANG1 -> CHANJOB   */

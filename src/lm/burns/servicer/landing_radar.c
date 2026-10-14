@@ -54,6 +54,7 @@
 #include "internal.h"
 
 #define RDGIMS_DELAY 17 /* 170MS EQUALS ND1 (OCT 21 = 17 cs)          */
+#define LRV_WAIT_CS  2  /* LRVJOB, HIGATJOB: recheck RADCADR every 20 ms (DEVIATION) */
 
 /* ALTCRIT table (p.878), m 2^24: 25KFT 7620 m, 50KFT 15240 m, 50FT 15.24 m,
  * 30KFT 9144 m (indices 0, 2, 4, 6 as in the listing).                     */
@@ -747,6 +748,15 @@ void agc_task_rdgims(void)
 /**********************************************************************
  * LRVJOB (p.892): read the next velocity beam (VSELECT cycles 2, 1, 0),
  * sleep in RADSTALL for about 500 ms.
+ * DEVIATION: LRVJOB first waits (DELAYJOB, LRV_WAIT_CS) while another job
+ * sleeps in RADSTALL (RADCADR holds a job). In the AGC the two LR reads
+ * never meet: LRHTASK starts LRHJOB (one altitude sample, about 90 ms in
+ * RADSTALL) 50 ms before READACCS, and SERVICER spends its own AGC time
+ * on the navigation update before VALTCHK starts LRVJOB. The C SERVICER
+ * reaches VALTCHK in no AGC time, 5 cs after LRHJOB stalled, and the
+ * second RADSTALL was BAILOUT 01210 (two programs using one device) on
+ * every 2 s pass below 2000 ft/s: no LR update was ever taken (NASSP PDI,
+ * 2026-10-13). The wait stands in for that SERVICER time.
  *
  * FUNCTION NAME: agc_job_lrvjob
  *
@@ -756,6 +766,11 @@ void agc_task_rdgims(void)
  **********************************************************************/
 agc_status_t agc_job_lrvjob(void)
 {
+    if (agc_erase_modecadr(AGC_IMU_DEV_RADAR) > 0)
+    { /* LRHJOB still in RADSTALL: wait for it (DEVIATION above) */
+        return (agc_svc_delayjob(LRV_WAIT_CS, AGC_JOB_LRVJOB));
+    }
+
     agc_guid_lm_t *lm = &agc_guid_state()->lm;                            /* LM guidance erasables */
     agc_status_t   sw = agc_waitlist_call(RDGIMS_DELAY, AGC_TASK_RDGIMS); /* status of agc_waitlist_call */
 
@@ -976,6 +991,10 @@ agc_status_t agc_lm_setpos2(void)
 
 /**********************************************************************
  * HIGATJOB (p.895): reposition the antenna to POS2 and sleep until done.
+ * DEVIATION: first waits while another job sleeps in RADSTALL, as LRVJOB
+ * does (HIGATASK runs inside the C SERVICER in no AGC time; at P64 entry
+ * the HIGATJOB RADSTALL met LRHJOB's: BAILOUT 01210, the reposition was
+ * lost and every later LR read alarmed 00511, NASSP PDI 2026-10-13).
  *
  * FUNCTION NAME: agc_job_higatjob
  *
@@ -988,6 +1007,11 @@ agc_status_t agc_lm_setpos2(void)
  **********************************************************************/
 agc_status_t agc_job_higatjob(agc_job_ctx_t *ctx)
 {
+    if (agc_erase_modecadr(AGC_IMU_DEV_RADAR) > 0)
+    { /* LRHJOB still in RADSTALL: wait for it (DEVIATION at LRVJOB) */
+        return (agc_svc_delayjob(LRV_WAIT_CS, AGC_JOB_HIGATJOB));
+    }
+
     agc_status_t sw = agc_radar_lrpos2(); /* status of agc_radar_lrpos2 */
 
     if (sw != AGC_STATUS_OK)

@@ -639,6 +639,54 @@ static void trace(const char *what, double cpu_s)
     }
 }
 
+/**********************************************************************
+ * One sidecar line when FAILREG changes (an alarm): the three codes and
+ * every core set's state, priority and job (agc_job_id_t), so an alarm
+ * seen in NASSP can be tied to the jobs that were running or stalled.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: trace_alarms
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static agc_exec_core_info_t g_sets[8]; /* the core sets before this count, for the alarm trace */
+
+static void trace_alarms(void)
+{
+    static uint16_t last[3];     /* FAILREG as last traced */
+    static agc_sp_t radcadr = 0; /* RADCADR as last traced */
+    bool            changed = false;
+
+    if (agc_erase_modecadr(2) != radcadr)
+    {
+        char what[96]; /* the trace line */
+
+        radcadr = agc_erase_modecadr(2);
+        (void) snprintf(what, sizeof (what), "RADCADR %d, chan 13 %05o, chan 33 %05o", (int) radcadr, (unsigned int) agc_chan_read(013), (unsigned int) agc_chan_read(033)); /* stdlib: host trace */
+        trace(what, 0.0);
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        changed = changed || agc_erase_failreg(i) != last[i];
+        last[i] = agc_erase_failreg(i);
+    }
+
+    if (changed)
+    {
+        char   what[400];                                                                                                                                                                      /* the trace line */
+        size_t n = (size_t) snprintf(what, sizeof (what), "alarm FAILREG %05o %05o %05o; core sets before the count", (unsigned int) last[0], (unsigned int) last[1], (unsigned int) last[2]); /* stdlib: host trace */
+
+        for (int c = 0; c < agc_exec_core_sets() && c < 8 && n < sizeof (what); c++)
+        {
+            agc_exec_core_info_t j = g_sets[c];                                                                                                    /* core set c before the count */
+            n                      += (size_t) snprintf(what + n, sizeof (what) - n, " %d:%d/%d/%d", c, (int) j.state, (int) j.prio, (int) j.loc); /* stdlib: host trace */
+        }
+
+        trace(what, 0.0);
+    }
+}
+
 /* ---- one scaler count ------------------------------------------------------ */
 
 /**********************************************************************
@@ -694,6 +742,11 @@ static void one_count(void)
 
     import_rupts();
 
+    for (int c = 0; c < agc_exec_core_sets() && c < 8; c++)
+    {
+        agc_exec_core_info(c, &g_sets[c]);
+    }
+
     clock_t c0 = clock(); /* CPU time before the count */
 
     sim_clock_count();
@@ -710,6 +763,7 @@ static void one_count(void)
         trace("heartbeat", (double) clock() / (double) CLOCKS_PER_SEC);
     }
 
+    trace_alarms();
     lm_drives();
 
     g_count = (g_count + 1) % NS_COUNTS_CS;

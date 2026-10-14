@@ -651,6 +651,11 @@ static void clock_exec(bool idle_pass)
         agc_exec_core_info((set > 0) ? set : 0, &job); /* set 0 when idle or running */
         agc_status_t st = agc_exec_run_one();          /* the job's outcome */
 
+        if (st == AGC_STATUS_BUSY)
+        {
+            break; /* a self-rescheduled loop already ran this cs: the AGC is busy with it, no idle pass */
+        }
+
         if (st == AGC_STATUS_NOT_FOUND)
         {
             if (idle_pass)

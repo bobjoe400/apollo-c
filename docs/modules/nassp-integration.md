@@ -274,6 +274,27 @@ and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (st
   mkscn.sh and runs/ref_pdi* are in C:\Users\cnama\nassp-work\scratch-backup; the deployed
   pdi.lua/common.lua/cl_lm.lua are in C:\NASSP9-{ref,dev}\Script\apollo-c. Linux gates not
   rerun since the last commit (only docs and the patch file changed).
+- FLIGHT BUG 5 (PDI, ours only, fixed 2026-10-13): our 1x PDI (runs/discarded/agc_pdi_1x_bug5)
+  matched stock to P64 (ignition sim 902.3 vs 903.0, throttle-up TIG+26.6 s both, P64 TIG+496.9 vs
+  +496.7 s) but took no LR data: alarm 00522 (LRPOSCHK, P20-P25 p.556) on every LR read from
+  TIG-26 s, so at P64 the LGC altitude was 7660 ft against 6027 ft true; R12 reads then collided
+  (BAILOUT 01210 in the yaw maneuver) and the LM hit the ground at 35 m/s horizontal in P64/P66.
+  Cause: the shim restarts a running LGC on scenario load (GOJAM; yaAGC resumes), and STARTSUB
+  (L p.219) sets RADMODES bit 6 (LR position 2 wanted) from channel 33; the scenario's LR breaker
+  is open until PDI-5, the LR reports no position, so our LGC wanted position 2 (RADMODES 0142;
+  stock 04102, both logged in NASSP, runs/{agc,ref}_lrdbg); once the LR came on in position 1
+  LRPOSCHK failed. Fix (shim only, libagc unchanged): src/nassp/nassp_engine.c keeps the image's
+  RADMODES bit 6 across the load restart of the LGC (not on a power-on, Z = 04000); the sidecar
+  logs channel 33 input changes. Test: make nassp-replay case pdi_lm (sim/nassp/images/pdi_lm.agc,
+  RADMODES bit 6 after the load = the image's; FAIL before, PASS after; this harness's yaAGC
+  restarts the image on a TC trap, so stock is no reference for that line).
+- LM coasting warp (lead request 2026-10-13), stock, PDI scenario load to TIG-75 s, body rates,
+  jets, CDUs, middle gimbal, alarms every 2 s (lua/pdiw.lua): 5x PASS (max 0.28 deg/s, commanded
+  maneuvers only; FAILREG 0; middle gimbal < 4 deg; runs/ref_pdiw5); 10x no tumble this time but
+  a deadband firing overshot to 0.35 deg/s and left 3x the drift (runs/ref_pdiw10), and the
+  earlier 10x run tumbled (4-jet rotation, PDI-9). Adopted: 5x for every LM coasting wait, 1x from
+  TIG-75 s through the burn/landing, both builds. Both runs logged a warp drop to 1x at sim 195 s
+  that NASSP or Orbiter makes (re-asserted by the script).
 - LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
   get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only; 2026-10-13 also
   set_ttca_throttle and set_agcinputbit, the TTCA throttle and the ROD bits of channel 016 as
