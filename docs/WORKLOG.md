@@ -929,3 +929,9 @@
 2026-10-13  After the restart: scratchpad intact, tree clean at 865dc0f,
             build green, no Orbiter. nassp-integration relaunched: our PDI
             to touchdown first.
+2026-10-13  Our first PDI: guidance matched stock to P64 (within metres) but
+            no LR data (alarm 522 every read): flight bug 5 in the shim
+            (scenario-load restart re-derived RADMODES bit 6 from ch 33
+            with the LR breaker open). Fixed in nassp_engine.c with a
+            replay case (4/4). LM coasting warp 5x passes on stock; both
+            PDI runs rerun under the 5x-coast / 1x-burn schedule.
