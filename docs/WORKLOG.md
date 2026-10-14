@@ -948,3 +948,13 @@
             held (DEVIATION + test) and one executive rule bounding
             self-rerunning jobs to one pass per cs (R31/V83 starved the
             host at 64 passes per cs).
+2026-10-13  Headless fixed-step harness (Orbiter console mode, -f 0.02):
+            works for the LM + MCC (stock PDI to TIG-73 s in 38 s wall,
+            ~21x, event sequence identical to the windowed run); any NASSP
+            Saturn crashes Orbiter in console mode (NASSP-side graphics
+            call at init). Approved: PDI and liftoff headless on both
+            builds with generated edit CSVs + diff script; then a 60-min
+            time-boxed bisection of the Saturn console crash (patch 0003
+            markers), else rendezvous/entry windowed at 1x. Step 1 (LRVJOB
+            wait) and step 2 (self-loop pacing rule) implemented with
+            failing-first tests; gates running.
