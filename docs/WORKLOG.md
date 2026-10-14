@@ -1009,3 +1009,7 @@
             111 vs 111 commands). Tables regenerated under the mechanical
             rule; PDI/liftoff restated honestly. Entry tolerances being
             frozen from two stock runs before our run.
+2026-10-14  User: send an agent to index the project and judge whether it
+            is optimally organised after all the additions. Launched
+            organize (Opus): index, safe moves/archiving outside the live
+            NASSP areas, proposal for the rest.

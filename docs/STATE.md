@@ -16,6 +16,9 @@ Updated: 2026-10-13
   P64 at TIG+496.7 s, auto P65 at +660.8 s, touchdown +706.9 s at
   -0.85 m/s, lng 23.7265 lat 0.6695), compare, then liftoff, rendezvous,
   entry.
+- organize (Opus): indexes the whole repo (docs/overview/INDEX.md), applies
+  safe cleanups outside the NASSP lane's areas, proposes the rest
+  (docs/overview/ORGANIZATION.md). Note: docs/modules/organize.md.
 - Mission status on our AGC in NASSP 9: insertion+uplink, TLI, MCC-2, LOI,
   TEI, LM DOI PASS; PDI pending. Flight bugs found by the mission: 4, all
   fixed with tests (FANG/EK3VAL map, V82 on a hyperbola, VGDISP = DELVSAB,
