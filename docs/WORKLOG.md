@@ -970,3 +970,9 @@
             our LGC runs with no alarms, deterministic headless. NASSP
             build option prints failed assertions to the sidecar. Tools
             edits_diff.py / dsky.py move into tools/. Next liftoff.
+2026-10-13  Liftoff headless: phase table mapped (running program survives
+            the load restart; liftoff replay case). OPEN flight bugs:
+            ascent guidance diverges after TIG+200 s (vh +22 m/s, orbit
+            1758x1901 vs 1753x1791 km) and N85 VG = 0 throughout P12 on
+            ours. Lane: edit CSV of the P12 erasables, first divergence,
+            offline root cause, fix with test.
