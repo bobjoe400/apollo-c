@@ -112,10 +112,11 @@ Generated from the final code (documentation wave and final pass,
   purpose and owner (`python3 -I tools/repo_index.py`);
   `docs/overview/data/` -- the generated call graph and one-liner tables
   (`make callgraph`, `python3 -I tools/one_liners.py`).
-* `docs/modules/<lane>.md` -- per lane: scope, decisions, findings, and
-  "Program flow and decisions" (decision points by function with flags,
+* `docs/modules/<lane>.md` -- per lane: scope, design, deviations, stubs,
+  tests and "Program flow and decisions" (decision points by function with flags,
   alarms, channel bits and the jobs/tasks started; shared erasables with
-  scale; AGC labels -> C functions). The mission:
+  scale; AGC labels -> C functions). The lanes' process diaries (progress,
+  findings, requests, lessons) are in `docs/history/lanes/`. The mission:
   `docs/modules/nassp-integration.md`; the study before it:
   `docs/overview/nassp_integration.md`.
 * `docs/ARCHITECTURE.md` -- the layout, the layering, the verification

@@ -32,7 +32,7 @@ Updated: 2026-10-13
 2. follow-up-done-lanes (DMP audit + word-pair API adoption for the eight
    early-reviewed lanes).
 3. Lead: rename include/agc/core/assert.h -> agc_assert.h (237 includes;
-   commands in docs/modules/review-state-flags.md).
+   commands in docs/history/lanes/review-state-flags.md).
 3. ORDER (user, 2026-10-12): (a) loose ends closed, `make prolog-report`
    and `make always-ok-report` at 0, gates green, tree frozen; (b) ONE EVA run at the very end (after reviews and the GUI-verified sim):
    cleanup of provably-dead guards, not a working-code step (user,

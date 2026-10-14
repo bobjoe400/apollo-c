@@ -1,5 +1,7 @@
 # state-flags -- module note
 
+History of this lane: [docs/history/lanes/state-flags.md](../history/lanes/state-flags.md)
+
 ## Scope
 
 The shared state layer: flagword bit enums, the I/O channel image and bit
@@ -11,21 +13,6 @@ Files: `include/agc/core/flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
 `agc_channels.h` (edited), `agc_state.h` (extended), `src/core/state.c`,
 `src/core/channels.c`, `src/core/erasable.c`, `tests/core/state.c`,
 `tests/core/state_lm.c`.
-
-## Progress
-
-- DONE agc_flags_common.h (83 flags with identical name and position in CSM and LM)
-- DONE agc_flags_csm.h (CSM-only and position-differing flags; FLAGWRD0..11)
-- DONE agc_flags_lm.h (LM-only and position-differing flags; FLAGWRD0..13)
-- DONE agc_channels.h: `AGC_CH<octal>_<NAME>` bit constants for channels 5,6,7,10-16,30-33
-- DONE agc_channels.c (15-bit image, read/write/or/and, sim input side, inverted 030-033)
-- DONE agc_state.h / agc_state.c (vehicle, TIME1/2, flagwords, state vectors)
-- DONE agc_erasable.c (36 scalar/vector/matrix + 3 array erasables, generated)
-- DONE tests: test_state (146 checks after review), test_state_lm (44), both pass, -Werror clean
-- DONE lookup table (below). `tools/check_rules.py`: 0 violations, density >= 2.0 in all my files
-- DONE MODULE_STATUS row
-- Nothing TODO. Generated pieces came from throw-away scripts parsing the AGC text; the
-  headers are now the source of truth (edit by hand if the AGC text is re-read).
 
 ## Design table
 
@@ -142,27 +129,6 @@ Everything else stays module-private in its owner.
 
 None.
 
-## Requested core additions
-
-I own the headers below, so these were made directly; other lanes should know:
-
-* `agc_state.h`: `AGC_FLAGWORDS` raised 12 -> 14 (LM has FLGWRD12/13); added
-  `AGC_FLAGWORDS_CSM/LM`; `agc_flag_valid/word/bit/mask`; `agc_erase_reset`;
-  `AGC_TIME_MODULUS_CS`; `agc_erase_time1/2`; all `agc_erase_*` accessors listed above.
-  `agc_time_set_cs` is `void` (status-handling lane); t >= 2^28 is an assertion report and ignored.
-* `agc_channels.h`: bit constants, `AGC_CHAN_MASK`, `AGC_CHAN_FIRST/LAST_INVERTED`,
-  `agc_chan_set_signal`; `agc_chan_set_input` now returns BAD_ARG for non-input channels.
-* No requests for lead-owned headers.
-* Names used from `_common.md` convention: `AGC_FLAG_<AGCNAME>`, `AGC_CH<oct>_<NAME>`,
-  `agc_erase_<name>()` / `agc_erase_set_<name>()`. Note `AGC_CH030_IMUOPER` is the name for
-  channel 30 bit 9 (the example in `_common.md` spelled it that way and I used it). Other lanes
-  guessing names should grep `include/agc/core/channels.h`; names are in AGC-source spirit,
-  not the AGC symbols (the AGC has none for individual bits).
-
-## Requested jobs-tasks
-
-None.
-
 ## Tests written
 
 * `tests/core/state.c` (CSM): flag id decoding vs AGC decimal numbers, aliases, set/clear/invert/test,
@@ -173,14 +139,6 @@ None.
   of flag ids, OTHER = CSM state vector, LM channel names.
 * Build used: `gcc ... -DAGC_HOST_DEBUG tests/core/state.c src/core/state.c src/core/channels.c
   src/core/erasable.c` (does not depend on other lanes' objects).
-
-## Open questions
-
-Resolved in review (docs/modules/review-state-flags.md): CSM channel bits; DELV is PIPA pulses
-at 2^14 (5.85 cm/s per pulse CSM, 1 cm/s LM; KPIP1 -> 2^7 m/cs); TEPHEM is TP cs at 2^42
-(L "CSEC B-42"); DELVSLV = DELVLVC is one vector (accessor removed, use
-`agc_rendz_erasable()->delvlvc`). Promotion of further erasables: other lanes have since added
-the accessors they needed to state.h (counters, display, pad loads, restart delays).
 
 ## Lookup table: AGC erasable name -> C accessor or owner
 

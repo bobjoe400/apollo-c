@@ -17,7 +17,8 @@ Companion documents:
 * [../TIPS.md](../TIPS.md) -- what the translation taught, by topic.
 * [../modules/](../modules) -- one note per lane; each translation lane
   has a "Program flow and decisions" section (flags tested, alarms,
-  branches, data with scale, AGC labels -> C functions).
+  branches, data with scale, AGC labels -> C functions). The lanes'
+  process diaries are in [../history/lanes/](../history/lanes/README.md).
 * The module map at the end of this page is generated from the compiler's
   call graph (`python3 -I tools/depgraph.py`).
 

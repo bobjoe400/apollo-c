@@ -141,7 +141,8 @@ docs/               operational docs (this file, STATE, PLAN, CODING_STANDARD,
                     ORGANIZATION, nassp_integration study, data/ =
                     generated tables); modules/ (one note per lane);
                     agents/ (brief, review_items); history/ (WORKLOG,
-                    RENAMES, finished assignments, tree-wide wave notes)
+                    RENAMES, finished assignments, tree-wide wave notes,
+                    lanes/ = the lane diaries)
 ```
 
 ### src/nassp versus sim/nassp

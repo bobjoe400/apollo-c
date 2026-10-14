@@ -1,5 +1,7 @@
 # oracle -- Virtual AGC differential-test rig
 
+History of this lane: [docs/history/lanes/oracle.md](../history/lanes/oracle.md)
+
 ## Scope
 
 Build yaYUL and yaAGC, assemble the Apollo 11 ropes, and provide
@@ -44,26 +46,10 @@ Exact commands:
 
 None.
 
-## Requested core additions
-
-None.  (Tests will want a tiny parser for the `NAME octal` format; the
-format is documented in `tools/oracle/README.md` section 2.)
-
-## Requested jobs-tasks
-
-None.
-
 ## Tests written
 
 Oracle cases only (`tools/oracle/cases/*.spec|txt`); `tests/oracle_*.c`
 are for the module agents / integrate agent.
-
-## Open questions
-
-* The `.symtab` files are 11.8 MB each (yaYUL dumps every source line);
-  keep them, or regenerate on demand from `BUILD.md`?
-* Routines that live in superbank (FBANK 40-43) are addressed through the
-  symtab's `Super` bit and channel 7; exercised in code, not yet by a case.
 
 ## Program flow and decisions
 

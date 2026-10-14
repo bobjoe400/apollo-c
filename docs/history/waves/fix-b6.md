@@ -1,7 +1,7 @@
 # fix-b6 -- flight bug B6: the V99 / V97 engine flashes (CLOCPLAY paste)
 
 ## Scope
-B6 (docs/modules/sim.md "Bugs found"): at TIG-5 the CSM CLOCKJOB passed
+B6 (docs/history/lanes/sim.md "Bugs found"): at TIG-5 the CSM CLOCKJOB passed
 V99N40 as the VN of a CLOCPLAY display, so pinball executed extended verb
 99 (GOLOADLV -> LOADLV -> RECALTST), which woke the display's ENDIDLE at
 once with the ENTER return: V99E, SPS bypassed (P40RCS), V16N85 with the

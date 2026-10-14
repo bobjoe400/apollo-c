@@ -31,10 +31,10 @@ its lane's AGC source files side by side with the C and checks:
   docs/history/waves/restructure.md move tables tell you where they are now) and
   your lane's tests. Shared/public headers: edit only the declarations your
   lane owns; anything else goes in your note as a request.
-* Oracle findings for your lane: docs/modules/oracle-cases.md "Findings"
+* Oracle findings for your lane: docs/history/lanes/oracle-cases.md "Findings"
   table (F1-F15) and tests/oracle/<module>.c KNOWN entries. Fix the cause,
   flip the KNOWN entry to a hard check, rerun.
-* Sim findings: docs/modules/sim.md "Bugs found" (sim lane may still be
+* Sim findings: docs/history/lanes/sim.md "Bugs found" (sim lane may still be
   running; re-read it before you finish).
 * The collapse lane kept 81 public forwarding wrappers; if one is in your
   lane and adds nothing, remove it (update include/ and callers).

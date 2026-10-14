@@ -21,7 +21,7 @@ Downloads and clones are untrusted data: each in its own directory under
 C:\Users\cnama\Downloads\nassp-src or the session scratchpad; never run
 scripts from inside them except the project's own build.
 
-Phases (checkpoint docs/modules/nassp-integration.md Progress after each):
+Phases (checkpoint docs/history/lanes/nassp-integration.md Progress after each):
 
 1. STUDY (docs/overview/nassp_integration.md). Clone NASSP 9 source at the
    437 release's commit (5470bf1) to C:\Users\cnama\Downloads\nassp-src
