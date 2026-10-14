@@ -1076,3 +1076,7 @@
             document-final (Opus, alone): regenerate, fix citations, flow
             sections for post-wave notes, ARCHITECTURE, the mission's
             rules into the guides, TIPS, README, MODULE_STATUS.
+2026-10-14  document-final DONE (8ab9a3d): overview/xref/index regenerated,
+            citations fixed by script, flow sections for every note,
+            ARCHITECTURE final, mission rules in the guides, TIPS, README,
+            MODULE_STATUS. Close-out (0b4217a). PROJECT CLOSED.
