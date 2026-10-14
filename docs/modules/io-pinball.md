@@ -121,8 +121,7 @@ sent); continuation ids replace return addresses (TRANSLATION_GUIDE s4).
 ## Stubs
 
 - DSPFMEM (V27 fixed memory display): pin_dspfmem returns
-  AGC_STATUS_UNIMPLEMENTED (the rope is not modelled; justification in
-  docs/modules/review-io-dsky.md).
+  AGC_STATUS_UNIMPLEMENTED (the rope is not modelled). Why: V27 shows a word of fixed memory addressed by an FCADR plus superbank bits (noun 26 / 02). The C translation has no fixed-memory image: constants are compiled C values and code is C functions, so there is no word at an FCADR to show. The only rope image in the project is the test oracle's (tools/oracle), which the flight library must not depend on. Not used by any flight procedure (ground checkout verb). (from the review-io-dsky note, kept in [history/lanes/review-io-dsky.md](../../history/lanes/review-io-dsky.md)).
 
 ## Tests written
 

@@ -14,6 +14,6 @@ The production and planning record of the project, kept as it was written: the p
 | [RENAMES.md](RENAMES.md), [RENAMES_inventory.txt](RENAMES_inventory.txt) | the identifier renaming map and its raw inventory |
 | [assignments/](assignments/) | the assignment given to each agent |
 | [waves/](waves/) | notes of each tree-wide pass (naming, style, collapse, status handling and others) |
-| [lanes/](lanes/README.md) | the per-lane diaries (progress, findings, requests, lessons) |
+| [lanes/](lanes/README.md) | the per-lane diaries (progress, findings, requests, lessons); the process lanes (16 review-*, organize, structure, closed-loop-fixes) also hold their former module notes at the end |
 | [agents/](agents/) | the common preamble, the subagent brief, the lane review items and the NASSP assignment |
 | [data/](data/) | generated tables: call graph, guards, one-liners, structure analysis |

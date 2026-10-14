@@ -42,7 +42,7 @@ Sequence language (one command per line, `#` comments, times in s):
                       each AGC on its own: every body rate within R deg/s
                       (the DAP holds the attitude); used where the
                       closed loop is not repeatable run to run, even
-                      yaAGC against itself (docs/modules/closed-loop-fixes.md)
+                      yaAGC against itself (history/lanes/closed-loop-fixes.md)
   jets reset          zero the jet statistics
   shot NAME           (--gui) save the simulator windows as NAME_*.png
   tcl SCRIPT          evaluate SCRIPT in the simulator

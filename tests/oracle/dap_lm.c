@@ -55,7 +55,7 @@
  *   (the T4RUPT DAP matrix) and one pass of the KALMAN_FILTER rate/offset
  *   estimator (RATELOOP, ROTORQUE, BACKP, offset estimator).
  *
- *   Tolerances (LSB of the AGC word): see docs/modules/oracle-cases.md.
+ *   Tolerances (LSB of the AGC word): see docs/overview/oracle-cases.md.
  **********************************************************************/
 #include <stdio.h>
 

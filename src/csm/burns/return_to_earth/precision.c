@@ -45,7 +45,7 @@
  *   which integration (RTENCK3 from TIG, or RTENCK2 by DT21) to redo, and
  *   all other iteration state is in the module erasables, as in the AGC.
  *   The PREC155 / PREC205 arithmetic keeps the TP MPAC (finding F14,
- *   docs/modules/review-guid-entry.md).
+ *   history/lanes/review-guid-entry.md).
  **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>

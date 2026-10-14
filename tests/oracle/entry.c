@@ -31,7 +31,7 @@
  *   exit status 1 when a comparison fails (oracle_finish)
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
- *   Tolerances (LSB of the AGC word): docs/modules/oracle-cases.md and
+ *   Tolerances (LSB of the AGC word): docs/overview/oracle-cases.md and
  *   the comment of compare().
  **********************************************************************/
 #include <stdio.h>

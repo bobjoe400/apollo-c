@@ -91,6 +91,18 @@ tests/imu/imu.c.
   two's-complement CDU pattern, keeping the low word.
 * ENDMANU1 runs the return continuation (TEMPR60) in the same job via agc_dispatch_job (BANKJUMP).
 
+## Deviations found in review
+
+_Merged from the review-imu review note (kept in [history/lanes/review-imu.md](../../history/lanes/review-imu.md)); deviations beyond those above._
+
+* MODECADR -0 stored as -2 (agc_imu_modecadr_bzf for BZF tests).
+* GOODEND on a negative MODECADR resets it (Luminary) for both vehicles.
+* gyro.c: augment count in a module variable, not the buffer's major word.
+* CONTMANU: NEXTIME == TIME1 gives 1 cs, not a zero WAITLIST delay.
+* F5 residuals (<= 4 LSB, CALCGA +-1 CDU): word splits the agc_dp_t value cannot hold.
+* prelaunch: STOREDTA keeps only the compass words; ALTIM -0 as +0; GYROBUSY reruns
+  RESTAIER (see prelaunch_gyrocompass.c prolog).
+
 ## Stubs
 * agc_imu_standby, agc_imu_postand (P06 standby / POSTAND time recovery: needs scaler snapshot, GOPERF1
   loop, restart to POSTAND).

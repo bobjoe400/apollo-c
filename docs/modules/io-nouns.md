@@ -52,6 +52,24 @@ and not become -0. `agc_scale_info().is_dp/is_raw` tells pinball which.
 * Table typos in the AGC comments (OCATAL, DPDEG(360 ...) are ignored; the octal words rule.
 * CSM nouns 6 / LM noun 06: CSM 2 comp, LM 3 comp (OPTION1..3) exactly as the tables say.
 
+## Noun write-path gaps
+
+_Merged from the review-io-dsky review note (kept in [history/lanes/review-io-dsky.md](../../history/lanes/review-io-dsky.md)); the loadable components that cannot be written._
+
+Loadable (no NNTYPTAB no-load bit) components whose read works but whose
+write returns NOT_FOUND from agc_dispatch_noun (src/exec/nouns.c, not this
+lane): the values are computed on read (noun_derived) or owned by a
+module that exposes a reader only.
+* CSM: N17/N96 CPHIX..+2, N38 TET, N49 DELTAR/DELTAV/source code, N51
+  RHOSB/GAMMASB, N55 NN1, N62 HDOT/ALTI (P11 readout), N87/N94 MRKBUF1+3/+5,
+  N95 PRAXIS..+2.
+* LM: N18 FDAIX..Z, N38 TET, N49 DELTAR/DELTAV/WHCHREAD, N51 ALPHASB/BETASB,
+  N55 NN, N67/N78 RSTACK words, N80 DATAGOOD/OMEGAD.
+In the AGC a V21/V25 on these stores into the erasable; in C the load
+stops with NOT_FOUND. All are displays the programs overwrite (FDAI
+angles, mark buffers, P11 readout, TET) except N55 NN/NN1 (P34/P35
+iteration count, which the crew may load) -- see Requests.
+
 ## Stubs
 None in the tables. `agc_noun_read/write` return AGC_STATUS_UNIMPLEMENTED for the ids
 listed next (core has no accessor yet).

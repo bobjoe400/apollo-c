@@ -52,7 +52,7 @@
  *   repeats: the LM Simulator sets its jets from the packet before the
  *   one it has just received, so the DAP's rewrite of channels 5/6 on
  *   every pass is what lets it fire the jets in time
- *   (docs/modules/closed-loop-fixes.md S-L1): WRITEU and WRITEV each
+ *   (history/lanes/closed-loop-fixes.md S-L1): WRITEU and WRITEV each
  *   write channel 5 in one DAP pass, and the simulator acts on the U
  *   jets at the second packet.
  *   DEVIATION (timing): the packets of one interrupt or job leave

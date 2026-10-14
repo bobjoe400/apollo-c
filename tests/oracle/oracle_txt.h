@@ -801,7 +801,7 @@ static inline bool oracle_cmp(const char *tag, const char *what, long int got, l
  *                                quantity
  *   want      long int      I    the AGC result, same unit
  *   tol       long int      I    allowed difference, same unit
- *   id        const char *  I    entry of docs/modules/oracle-cases.md
+ *   id        const char *  I    entry of docs/overview/oracle-cases.md
  *                                Findings
  *
  * RETURNS: none
@@ -834,7 +834,7 @@ static inline void oracle_cmp_known(const char *tag, const char *what, long int 
  *   got       agc_vec_t     I    the C vector
  *   want      agc_vec_t     I    the AGC vector, same scale
  *   tol       long int      I    allowed difference per component
- *   id        const char *  I    entry of docs/modules/oracle-cases.md
+ *   id        const char *  I    entry of docs/overview/oracle-cases.md
  *                                Findings
  *
  * RETURNS: none

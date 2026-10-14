@@ -1,6 +1,6 @@
 # review-prog-align -- lane history
 
-Process diary of the review-prog-align lane, moved verbatim out of [docs/modules/review-prog-align.md](../../docs/modules/review-prog-align.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-14 (first and last commit touching the note).
+Process diary of the review-prog-align lane, moved verbatim out of docs/modules/review-prog-align.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-14 (first and last commit touching the note).
 
 ## Progress
 
@@ -94,3 +94,19 @@ Files touched this session (all compile): src/lm/ags_initialization.c, src/lm/op
 * A status return that only ever says OK spreads: every caller grows an `if (st != OK)` that hides real failures next to it (align_stall_outcome's callers swallowed BAD_ARG this way).  Make never-fail routines void or value-returning first, then the real failure paths stand out.
 * For prolog work: an AGC label index (label -> rope, file, page) built from the listings' "# Page" markers gives exact cites automatically; several hand-written page numbers in this lane were off by up to five pages (e.g. MKVB51 is p. 232, not 227).
 
+
+
+## Module note (kept explanation)
+
+STATUS: DONE (resume 3, 2026-10-11).  Open: KNOWN PA-W4 (guid-powered request), the requests below.
+
+### Scope
+
+history/assignments/review.md for lane prog-align (docs/modules/prog-align.md):
+src/programs/alignment, src/csm/alignment, src/csm/optics, src/lm/alignment,
+src/lm/optics, src/lm/ags_initialization.c, src/lm/rendezvous_final_attitude.c,
+include/agc/programs/alignment.h, tests/programs/alignment.c.
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [prog-align](../../docs/modules/prog-align.md#program-flow-and-decisions).

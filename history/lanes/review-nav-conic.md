@@ -1,6 +1,6 @@
 # review-nav-conic -- lane history
 
-Process diary of the review-nav-conic lane, moved verbatim out of [docs/modules/review-nav-conic.md](../../docs/modules/review-nav-conic.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-13 (first and last commit touching the note).
+Process diary of the review-nav-conic lane, moved verbatim out of docs/modules/review-nav-conic.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-13 (first and last commit touching the note).
 
 ## Progress
 
@@ -60,3 +60,21 @@ Comanche CONIC_SUBROUTINES + KEPPREP: 12 DMPR sites (KEPLERN VSQ DMPR 1/MU p. 12
 * gcov over the oracle test shows which AGC paths no case reaches; here the near-360 GETX branch and every LAMBERT retreat were untested although RTE uses them. Generate cases for those paths before trusting a tolerance of 0.
 * Tests in other lanes that were tuned to the old C (a 50 m bound, a 128 LSB F14 chain) move when a dependency becomes exact; check them against the oracle before loosening (kep_leo_10min showed the AGC's own 53.4 m).
 
+
+
+## Module note (kept explanation)
+
+### Scope
+
+history/assignments/review.md for lane nav-conic (docs/modules/nav-conic.md):
+src/nav/conic/*, include/agc/nav/conic.h, tests/nav/conic.c,
+tests/oracle/conic.c, tools/oracle/cases/nav_conic{,_lm}.{spec,txt}.
+
+Build note: the live tree has other lanes' edits in flight (and HEAD's
+src/imu/mode.c does not compile), so the lane was built and tested in a
+scratch snapshot (git archive HEAD + lane files overlaid; SCRATCH/
+review-nav-conic/t.sh).
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [nav-conic](../../docs/modules/nav-conic.md#program-flow-and-decisions).

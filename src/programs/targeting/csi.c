@@ -56,7 +56,7 @@
  *   Scales: r m 2^29, v m/cs 2^7, t cs 2^28, angles revolutions, unit
  *   vectors 2^1, RTMU 2^36. "Body scale" = 2^27 / 2^5 about the moon.
  *   F13 (CDH DIFFALT 62 m vs the AGC) is a GETX word-form effect in
- *   nav-conic: docs/modules/review-prog-rendz.md P1.
+ *   nav-conic: history/lanes/review-prog-rendz.md P1.
  **********************************************************************/
 #include "../navigation/internal.h"
 #include "agc/core/assertion.h"

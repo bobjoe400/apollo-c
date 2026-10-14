@@ -1,6 +1,6 @@
 # review-state-flags -- lane history
 
-Process diary of the review-state-flags lane, moved verbatim out of [docs/modules/review-state-flags.md](../../docs/modules/review-state-flags.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-12 (first and last commit touching the note).
+Process diary of the review-state-flags lane, moved verbatim out of docs/modules/review-state-flags.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-12 (first and last commit touching the note).
 
 ## Progress
 
@@ -75,3 +75,14 @@ aliasing, no E-bank overlay layout (TIG EQUALS DELVSLV +6 etc.).
 * Style checkers with regex type parsing need word boundaries; `\w+_t`
   matched `g_t` of `g_tig` and produced dozens of false findings.
 
+
+
+## Module note (kept explanation)
+
+Lane: state-flags. Files: include/agc/core/{flags_common,flags_csm,flags_lm,
+channels,state}.h; src/core/{state,channels,erasable}.c;
+tests/core/{state,state_lm}.c.
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [state-flags](../../docs/modules/state-flags.md#program-flow-and-decisions).

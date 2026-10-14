@@ -237,7 +237,7 @@ static agc_dp_t dp_absdiff(agc_dp_t a, agc_dp_t b)
  * Not a circular orbit: there APSIDES takes SQRT(1/64 - P R1A 2^4) of a
  * difference of one or two LSB, and the AGC DMP sees R1A as the word
  * pair PARAM left (00401, 40000) where C holds the value (Findings P1
- * in docs/modules/review-prog-rendz.md). For R = 3339068, V = 23241
+ * in history/lanes/review-prog-rendz.md). For R = 3339068, V = 23241
  * 00170 the AGC gives ECC 0 and RAPO - RPER = 8 LSB, C ECC 23164 and
  * 4614 LSB: a word-form effect magnified by the SQRT, not a defect of
  * SR30.1.

@@ -47,7 +47,7 @@
  *   are stubbed (AGC_STATUS_UNIMPLEMENTED).  IMUTEST, GUESS, LATAZCHK
  *   and the positioning are translated.
  *   DEVIATION: LATITUDE, AZIMUTH and LAUNCHAZ are also kept in the P11
- *   pad load (src/csm/burns); see docs/modules/review-imu.md.
+ *   pad load (src/csm/burns); see history/lanes/review-imu.md.
  *
  * ALGORITHM:
  *   P01: P11 already done -> 1521.  Else GEOCOMP1 = 1, 1/PIPADT = 50 cs,

@@ -1,6 +1,6 @@
 # review-dap-csm -- lane history
 
-Process diary of the review-dap-csm lane, moved verbatim out of [docs/modules/review-dap-csm.md](../../docs/modules/review-dap-csm.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-13 (first and last commit touching the note).
+Process diary of the review-dap-csm lane, moved verbatim out of docs/modules/review-dap-csm.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-13 (first and last commit touching the note).
 
 ## Progress
 STATUS: DONE (2026-10-11). `make`, `make test` green (test_csm_dap 800/0, oracle_dap_csm 533 checks / 40 cases, 0 failures, 0 KNOWN); `make format-check` clean; check_rules: 0 hard violations in the lane (rule-5 density warnings only, see Lessons); check_style: 0 findings in all 21 lane files. While the shared tree was broken by another lane, scratch review-dap-csm/t3.sh built the tree at 4b46b01 with this lane's files overlaid.
@@ -62,3 +62,20 @@ New oracle cases (tools/oracle/cases/gen/gen_dap_csm.py): rate_* (5), needles_* 
 * yaAGC drains CDUXCMD through its coarse-align burst model once channel 14 is set, so counter outputs cannot be compared at a fixed stop label.
 * Deleting guaranteed guards drops rule-5 density far below 2.0 in arithmetic-heavy files; the density target and the no-silent-failure rule pull in opposite directions, and the latter wins.
 
+
+
+## Module note (kept explanation)
+
+Lane files: src/csm/dap/{mysubs,state}.c, src/csm/dap/internal.h,
+src/csm/dap/rcs/*.c, src/csm/dap/tvc/*.c, include/agc/csm/dap.h,
+tests/csm/dap.c, tests/oracle/dap_csm.c.
+AGC (Comanche055): MYSUBS, RCS-CSM_DIGITAL_AUTOPILOT, AUTOMATIC_MANEUVERS,
+RCS-CSM_DAP_EXECUTIVE_PROGRAMS, JET_SELECTION_LOGIC, TVCINITIALIZE,
+TVCEXECUTIVE, TVCMASSPROP, TVCRESTARTS, TVCDAPS, TVCSTROKETEST, TVCROLLDAP,
+P40-P47 S41.2/S40.14/RCSDAPON.
+
+(Earlier run left no note; restarted 2026-10-10 from scratch.)
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [dap-csm](../../docs/modules/dap-csm.md#program-flow-and-decisions).

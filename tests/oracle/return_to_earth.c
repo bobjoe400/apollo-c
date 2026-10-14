@@ -27,7 +27,7 @@
  *   (finding F14) are reported, not failed.
  *
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
- *   Tolerances (LSB of the AGC word): docs/modules/oracle-cases.md.
+ *   Tolerances (LSB of the AGC word): docs/overview/oracle-cases.md.
  **********************************************************************/
 #include <stdio.h>
 

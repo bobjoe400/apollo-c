@@ -1,6 +1,6 @@
 # review-dap-lm -- lane history
 
-Process diary of the review-dap-lm lane, moved verbatim out of [docs/modules/review-dap-lm.md](../../docs/modules/review-dap-lm.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-12 (first and last commit touching the note).
+Process diary of the review-dap-lm lane, moved verbatim out of docs/modules/review-dap-lm.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-12 (first and last commit touching the note).
 
 ## Progress
 
@@ -115,3 +115,10 @@ t.sh runs one test against it.
 
 Oracle cases added by this review: accs_aos_* (13, earlier run), accs_docked_thrust/_aps/_fix, gts_a..f, tg_a..d, tjs_* (20), kal_docked, kal_docked_pw.
 
+
+
+## Module note (kept explanation)
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [dap-lm](../../docs/modules/dap-lm.md#program-flow-and-decisions).

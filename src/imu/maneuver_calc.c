@@ -41,7 +41,7 @@
  *   (scale 2^0, "scaled 2 pi" in the AGC comments); COF is half-unit.
  *   Every product in these routines is DMP (truncating); oracle finding
  *   F5 residuals (<= 4 LSB) are word-split effects the agc_dp_t value
- *   type cannot carry (see docs/modules/review-imu.md).
+ *   type cannot carry (see history/lanes/review-imu.md).
  *
  * ALGORITHM:
  *   As the AGC listing; see each function prolog.

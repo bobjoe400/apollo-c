@@ -1,6 +1,6 @@
 # review-nav-integ -- lane history
 
-Process diary of the review-nav-integ lane, moved verbatim out of [docs/modules/review-nav-integ.md](../../docs/modules/review-nav-integ.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-14 (first and last commit touching the note).
+Process diary of the review-nav-integ lane, moved verbatim out of docs/modules/review-nav-integ.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-14 (first and last commit touching the note).
 
 ## Progress
 
@@ -123,3 +123,23 @@ patched probe and compared word for word).
   and returns NO_CONVERGE (header comment corrected; it claimed
   "2^28 cs / 128 cs-steps x 3", which is 6.3 million).
 
+
+
+## Module note (kept explanation)
+
+### Scope
+
+history/assignments/review.md for lane nav-integ (docs/modules/nav-integ.md):
+src/nav/integration/{init,jobs,orbital_integration,flags_csm,setitctr_lm,
+svdwn}.c, internal.h, pending.h, include/agc/nav/integration.h,
+tests/nav/integration.c, tests/oracle/nav_integration.c.
+AGC: INTEGRATION_INITIALIZATION.agc, ORBITAL_INTEGRATION.agc (both ropes),
+STATEUP/THISVINT (FRESH_START_AND_RESTART).
+
+Build note: HEAD (4f35a43 checkpoint) does not build (other review lanes
+mid-edit, e.g. src/imu/mode.c). Lane work is verified in a scratch tree
+from 3f9ede8 (lane files unchanged since) with the lane files overlaid.
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [nav-integ](../../docs/modules/nav-integ.md#program-flow-and-decisions).

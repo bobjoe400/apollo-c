@@ -1,6 +1,6 @@
 # review-guid-entry -- lane history
 
-Process diary of the review-guid-entry lane, moved verbatim out of [docs/modules/review-guid-entry.md](../../docs/modules/review-guid-entry.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-12 (first and last commit touching the note).
+Process diary of the review-guid-entry lane, moved verbatim out of docs/modules/review-guid-entry.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-12 (first and last commit touching the note).
 
 ## Progress
 (resume 2026-10-11: velocity.c F14 fix verified complete -- compiles
@@ -190,3 +190,23 @@ VPRED); DUMPP61 retries at most 4 times.
   style debt into a writing task; keep trailing comments short enough
   for 80 columns or split after '='.
 
+
+
+## Module note (kept explanation)
+
+Lane files: src/csm/entry/{lexicon.c,reentry.c,programs.c,cm_body_attitude.c,dap.c},
+src/csm/burns/earth_orbit_insertion.c, src/csm/burns/return_to_earth/*,
+include/agc/csm/entry*.h, tests/csm/{entry,return_to_earth}.c,
+tests/oracle/{entry,return_to_earth}.c.
+AGC: ENTRY_LEXICON, REENTRY_CONTROL, P61-P67, CM_BODY_ATTITUDE,
+CM_ENTRY_DIGITAL_AUTOPILOT, P11, P37_P70 (Comanche055).
+
+Tools (scratch, review-guid-entry/): probe.c = agc_probe + `istop LABEL n`
+(stop at the n-th interpretive dispatch of LABEL) and `itfrom LABEL n`
+(trace MPAC per interpretive instruction); mk.py builds per-pass specs
+from a case; rt.sh builds a test against fresh lane objects + a private
+snapshot library (mylib.sh) because the shared tree is mid-edit.
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [guid-entry](../../docs/modules/guid-entry.md#program-flow-and-decisions), [p37](../../docs/modules/p37.md#program-flow-and-decisions).

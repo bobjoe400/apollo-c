@@ -1,6 +1,6 @@
 # review-guid-powered -- lane history
 
-Process diary of the review-guid-powered lane, moved verbatim out of [docs/modules/review-guid-powered.md](../../docs/modules/review-guid-powered.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-12 (first and last commit touching the note).
+Process diary of the review-guid-powered lane, moved verbatim out of docs/modules/review-guid-powered.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-12 (first and last commit touching the note).
 
 ## Progress
 
@@ -115,3 +115,20 @@ Process diary of the review-guid-powered lane, moved verbatim out of [docs/modul
 * A rope reader is 20 lines of Python (whatis via agc_probe + .bin offset,
   banks 02/03 first); use it for every constant, table and alias question.
 
+
+
+## Module note (kept explanation)
+
+STATUS: DONE (resume 2, 2026-10-12). Open: the requests below.
+
+### Scope
+
+Lane files (docs/modules/guid-powered.md, after restructure):
+src/guidance/{powered_flight,servicer_common,external_delta_v,burn_steering,guid_state,guid_nav_glue}.c,
+src/csm/burns/{servicer,external_delta_v}.c, src/csm/burns/sps/*.c,
+src/lm/burns/servicer/*.c, src/lm/burns/dps_burn*.c, src/lm/burns/ignition/*.c,
+include/agc/guidance/{guidance,pending}.h, tests/guidance/, tests/oracle/guidance.c.
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [guid-powered](../../docs/modules/guid-powered.md#program-flow-and-decisions).

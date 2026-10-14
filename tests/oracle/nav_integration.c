@@ -11,7 +11,7 @@
  *   alone; origin changes; third bodies; the W matrix.  ACCOMP is not a
  *   separate entry in C, so it is checked through FV, the disturbing
  *   acceleration of the last stage.  Tolerances in DP LSB (2^-28 of the
- *   scale): see the CASES table and docs/modules/oracle-cases.md (F1).
+ *   scale): see the CASES table and docs/overview/oracle-cases.md (F1).
  *
  * AGC SOURCE:
  *   Comanche055 INTEGRATION_INITIALIZATION.agc, ORBITAL_INTEGRATION.agc
@@ -51,7 +51,7 @@ typedef struct run_case
 } run_case_t;
 
 /* Tolerances are the residuals left by yaAGC's DV bug (F1 in
- * docs/modules/oracle-cases.md): against the DV-patched probe
+ * docs/overview/oracle-cases.md): against the DV-patched probe
  * (tools/oracle/cases/gen/dvcheck.sh) every case below agrees exactly
  * except integ_moon_1step / third_moon_1step VATT (1 LSB) and
  * integ_earth_long (1 LSB velocity), the TNUV words the Nystrom step

@@ -46,7 +46,7 @@
  *   Noun 08 (ALMCADR +0..+2): R1 is the job that raised the last alarm
  *   (the AGC shows its return address), R2 +0 (the AGC shows the bank;
  *   DEVIATION: one flat address space), R3 ERCOUNT.  LM AOTCODE +1/+2 (N70/N71 R2, R3) are
- *   SINCDUY (docs/modules/review-prog-align.md).
+ *   SINCDUY (history/lanes/review-prog-align.md).
  **********************************************************************/
 #include <stdbool.h>
 #include <stddef.h>

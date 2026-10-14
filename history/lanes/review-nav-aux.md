@@ -1,6 +1,6 @@
 # review-nav-aux -- lane history
 
-Process diary of the review-nav-aux lane, moved verbatim out of [docs/modules/review-nav-aux.md](../../docs/modules/review-nav-aux.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-14 (first and last commit touching the note).
+Process diary of the review-nav-aux lane, moved verbatim out of docs/modules/review-nav-aux.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-14 (first and last commit touching the note).
 
 ## Progress
 * [x] NEWANGLE: TP product shifted then rounded once (agc_tp_shift /
@@ -125,3 +125,16 @@ resolved (one TEPHEM/RLS store).
   words; most residues were DMPR/DP-shift substitutions for TP chains.
 * The remaining residues are ones'-complement word splits, not logic.
 
+
+
+## Module note (kept explanation)
+
+Lane files: src/nav/auxiliary/*.c, internal.h, include/agc/nav/auxiliary.h,
+tests/nav/auxiliary.c, tests/oracle/nav_auxiliary.c.
+AGC: LATITUDE_LONGITUDE_SUBROUTINES, PLANETARY_INERTIAL_ORIENTATION,
+MEASUREMENT_INCORPORATION, TIME_OF_FREE_FALL,
+LUNAR_AND_SOLAR_EPHEMERIDES_SUBROUTINES (CM and LM), STAR_TABLES.
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [nav-aux](../../docs/modules/nav-aux.md#program-flow-and-decisions).

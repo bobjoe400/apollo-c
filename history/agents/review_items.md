@@ -49,7 +49,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - document lane: 82 function headers still say "BAD_ARG for a NULL ctx" on functions without ctx; inline_one.py pasted 77 helper header blocks into caller bodies: rewrite as section comments.
 - tools/prove/manual.tsv: the "why" column is one boilerplate text per directory; it records the decision, not the evidence (lesson for the end-of-project EVA pass: per-row evidence or none).
 
-## From review-exec-sched (2026-10-11; note docs/modules/review-exec-sched.md)
+## From review-exec-sched (2026-10-11; note history/lanes/review-exec-sched.md)
 - DONE PHSPRDT5 preset at SIDETRAK + test; history/waves/follow-up-done-lanes.md item 1.3.
 - DONE PHSPRDT2 presets (R22LEM3, P23, CSM R22) + test; history/waves/follow-up-done-lanes.md item 1.4.
 - nav-integ: plain type-C PHASCHNG calls (GRP2PC 04022 family) made from a running job now store the current job segment as the restart point and a group-2 restart reruns that segment from its top (DEVIATION in exec): check each such segment in your files is safe to rerun. (prog-rendz part DONE: rz_grp2pc names the restart job at 30 sites; history/waves/follow-up-done-lanes.md item 1.7.)
@@ -60,7 +60,7 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 
 ## From review-prog-align checkpoint (2026-10-11; note history/lanes/review-prog-align.md)
 - DONE agc_csm_sxtnb / agc_lm_rrnb / agc_lm_rrangles void (and SXTSM, SXTSM marks, GETUM after them); history/waves/follow-up-done-lanes.md item 2.1.
-- DONE *NBSM* word-level form: review-guid-powered R11 (docs/modules/review-guid-powered.md); KNOWN PA-W4 closed.
+- DONE *NBSM* word-level form: review-guid-powered R11 (history/lanes/review-guid-powered.md); KNOWN PA-W4 closed.
 
 ## From review-prog-align final (2026-10-11; note history/lanes/review-prog-align.md, findings A1-A15, C1-C10)
 - DONE entry uses agc_csm_earrot1/2 (one EARROT); history/waves/follow-up-done-lanes.md item 4.2.
@@ -72,11 +72,11 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - DONE P27's loads arrive through the MPAC+2 ECADR of the V21N01/N02 display; history/waves/follow-up-done-lanes.md item 2.5.
 - sim: drive the scaler channels 3 and 4 (the AGC's SCALER1/SCALER2 read-back) as yaAGC does.
 
-## From review-guid-powered final (2026-10-12; note docs/modules/review-guid-powered.md, R10-R15)
+## From review-guid-powered final (2026-10-12; note history/lanes/review-guid-powered.md, R10-R15)
 - DONE agc_vec_words_t in word.h, DOT/VXM/MXV/VXV/VXSC/VAD/VSL/VSR on stored words; s40_2 sps 0 LSB; radial 10 LSB remain (word-level UNIT not built); history/waves/follow-up-done-lanes.md item 2.3.
 - DONE prog-align KNOWN PA-W4 closed (oracle_align 570/0 at tolerance 0; review-guid-powered R11).
 
-## From review-nav-integ final (2026-10-12; note docs/modules/review-nav-integ.md, N8-N12)
+## From review-nav-integ final (2026-10-12; note history/lanes/review-nav-integ.md, N8-N12)
 - DONE RP-TO-R / R-TO-RP / MOONMX / NEWANGLE word-level, word-input entry points; latlong_moon exact; history/waves/follow-up-done-lanes.md item 5.1.
 - DONE KEPPREP: 24 repro runs exact against the DV-patched probe at HEAD (not reproduced); history/waves/follow-up-done-lanes.md item 5.2.
 - DONE one word vector type and API in core (nav-integ's local copy replaced); history/waves/follow-up-done-lanes.md items 2.3, 5.3.
@@ -107,20 +107,20 @@ EVA is the project-end cleanup step; these are leads for the owning reviews, not
 - ~~post-eva: `make check` fails on exactly those 21 (check-rules "silent skip") until they are resolved; note `python3 tools/check_rules.py` run bare reports 0 and "density 0/1" (it does not scan the same set as the Makefile's check-rules target): make the bare invocation match the target.~~ DONE (finish, 2026-10-12): `make check` passes; a bare check_rules.py scans src include (DEFAULT_ROOTS), the Makefile target uses the bare form.
 
 ## From the document wave (2026-10-12, history/waves/document.md Findings; for a closed-loop-fixes lane with the LM Simulator bugs)
-- ~~guid-powered: src/csm/burns/sps/burn.c: a failed assertion on P40TMP silently sets it to 1 (rule 7: delete if guaranteed, else return a status the caller handles).~~ DONE (closed-loop-fixes, P40TMP; docs/modules/closed-loop-fixes.md)
-- ~~core: src/core/erasable.c and include/agc/core/state.h comments describe assertion checks the accessors no longer contain: fix the comments.~~ DONE (closed-loop-fixes, stale comments; docs/modules/closed-loop-fixes.md)
-- ~~all: about six assertions repeat the statement just above them and cannot fail: delete (list in document.md Findings).~~ DONE (closed-loop-fixes, repeated assertions; docs/modules/closed-loop-fixes.md)
-- ~~prog-align: two P52 function prologs name the label "CALL" instead of S52.3 / S52.2.~~ DONE (closed-loop-fixes, stale comments; docs/modules/closed-loop-fixes.md)
-- ~~exec: agc_exec_vac_claim's prolog describes an output pointer as an input index.~~ DONE (closed-loop-fixes, stale comments; docs/modules/closed-loop-fixes.md)
+- ~~guid-powered: src/csm/burns/sps/burn.c: a failed assertion on P40TMP silently sets it to 1 (rule 7: delete if guaranteed, else return a status the caller handles).~~ DONE (closed-loop-fixes, P40TMP; history/lanes/closed-loop-fixes.md)
+- ~~core: src/core/erasable.c and include/agc/core/state.h comments describe assertion checks the accessors no longer contain: fix the comments.~~ DONE (closed-loop-fixes, stale comments; history/lanes/closed-loop-fixes.md)
+- ~~all: about six assertions repeat the statement just above them and cannot fail: delete (list in document.md Findings).~~ DONE (closed-loop-fixes, repeated assertions; history/lanes/closed-loop-fixes.md)
+- ~~prog-align: two P52 function prologs name the label "CALL" instead of S52.3 / S52.2.~~ DONE (closed-loop-fixes, stale comments; history/lanes/closed-loop-fixes.md)
+- ~~exec: agc_exec_vac_claim's prolog describes an output pointer as an input index.~~ DONE (closed-loop-fixes, stale comments; history/lanes/closed-loop-fixes.md)
 
 ## From lm-simulator (2026-10-12; closed loop vs yaAGC; history/lanes/lm-simulator.md "Bugs found" and Findings) -- closed-loop-fixes lane
-- ~~L1 (io-dsky/exec): a V37 refused with alarm 1520 also lights OPR ERR: cp_refuse returns AGC_STATUS_ALARM, which PIN_STATUS_RECYCLE aliases (src/io/dsky/pinball/internal.h:52), so ENTER runs again (change_program/sequence.c:117, pinball/keys.c:448). AGC CANTROD/V37BAD, Luminary p.227.~~ DONE (closed-loop-fixes, L1; docs/modules/closed-loop-fixes.md)
-- ~~L2 (imu/verbs): extended_verbs.c:828 FINEK2 pulses gyro.c's private OGC buffer but the V25N93 load writes agc_align_ram()->ogc (nouns.c:235): V42 fine align never torques. EXTENDED_VERBS Luminary p.273.~~ DONE (closed-loop-fixes, L2; docs/modules/closed-loop-fixes.md)
-- ~~L3 (dap-lm): t6rupt.c:252 MIDORLST computes +0 where the AGC's SU TIME6 gives -0; T6JOBCHK then hits CCSHOLE and POODOO 01103 during jet firings. Q_R-AXIS Luminary p.1457.~~ DONE (closed-loop-fixes, L3; docs/modules/closed-loop-fixes.md)
-- ~~PROG display after a POODOO restart: yaAGC blank, ours 00 (not root-caused).~~ DONE (closed-loop-fixes, D1: GOP00FIX runs on in core set 0 over DSPMMJOB; docs/modules/closed-loop-fixes.md)
-- ~~S-L1 (sim): channels.c:200 broadcasts ch5/6 only on change; yaAGC sends a packet on every write and the LM Simulator applies jets one packet late: match yaAGC.~~ DONE (closed-loop-fixes, S-L1; docs/modules/closed-loop-fixes.md)
-- ~~S-L2 (sim): CDU counts applied at once where yaAGC paces them at 400/6400 per second (review-sim paced the drive; check the LM Simulator path).~~ DONE (closed-loop-fixes, S-L2; docs/modules/closed-loop-fixes.md)
-- ~~S-L3 (alignment): coarse-align alarm 00211 raised by yaAGC, not by ours (finding in the note).~~ DONE (closed-loop-fixes, S-L2 / S-L3; docs/modules/closed-loop-fixes.md)
+- ~~L1 (io-dsky/exec): a V37 refused with alarm 1520 also lights OPR ERR: cp_refuse returns AGC_STATUS_ALARM, which PIN_STATUS_RECYCLE aliases (src/io/dsky/pinball/internal.h:52), so ENTER runs again (change_program/sequence.c:117, pinball/keys.c:448). AGC CANTROD/V37BAD, Luminary p.227.~~ DONE (closed-loop-fixes, L1; history/lanes/closed-loop-fixes.md)
+- ~~L2 (imu/verbs): extended_verbs.c:828 FINEK2 pulses gyro.c's private OGC buffer but the V25N93 load writes agc_align_ram()->ogc (nouns.c:235): V42 fine align never torques. EXTENDED_VERBS Luminary p.273.~~ DONE (closed-loop-fixes, L2; history/lanes/closed-loop-fixes.md)
+- ~~L3 (dap-lm): t6rupt.c:252 MIDORLST computes +0 where the AGC's SU TIME6 gives -0; T6JOBCHK then hits CCSHOLE and POODOO 01103 during jet firings. Q_R-AXIS Luminary p.1457.~~ DONE (closed-loop-fixes, L3; history/lanes/closed-loop-fixes.md)
+- ~~PROG display after a POODOO restart: yaAGC blank, ours 00 (not root-caused).~~ DONE (closed-loop-fixes, D1: GOP00FIX runs on in core set 0 over DSPMMJOB; history/lanes/closed-loop-fixes.md)
+- ~~S-L1 (sim): channels.c:200 broadcasts ch5/6 only on change; yaAGC sends a packet on every write and the LM Simulator applies jets one packet late: match yaAGC.~~ DONE (closed-loop-fixes, S-L1; history/lanes/closed-loop-fixes.md)
+- ~~S-L2 (sim): CDU counts applied at once where yaAGC paces them at 400/6400 per second (review-sim paced the drive; check the LM Simulator path).~~ DONE (closed-loop-fixes, S-L2; history/lanes/closed-loop-fixes.md)
+- ~~S-L3 (alignment): coarse-align alarm 00211 raised by yaAGC, not by ours (finding in the note).~~ DONE (closed-loop-fixes, S-L2 / S-L3; history/lanes/closed-loop-fixes.md)
 
 ## From the document wave, final (2026-10-12; history/waves/document.md Findings) -- layering + comments lane after NASSP milestones
 - ~~LAYERING (definition of done item 2): src/core/ecadr.c (NASSP scenario-restore address map) includes and calls csm, guidance, programs and other higher-level headers; src/imu/gyro.c calls agc_align_ram() in programs (closed-loop fix L2). core must not call upward. Fix: move the address map out of core into a top-of-graph module (e.g. src/erasable_map/ or alongside src/sim, which already depends on everything) with core keeping only the generic ECADR mechanics; move the OGC/IGC/MGC gyro-command words into imu (their owner) so alignment calls imu, not the reverse. Regenerate docs/overview module map after (tools/depgraph.py) and show no upward edge from core.~~ DONE (nassp-integration: src/erasable_map; layering: OGC in imu, every other upward edge removed, depgraph shows none; history/waves/layering.md "Decisions per edge")

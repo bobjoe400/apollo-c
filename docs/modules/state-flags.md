@@ -73,7 +73,7 @@ Files: `include/agc/core/flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
   13 (S-IVB injection sequence start); channel 30 bits 1-4, 6 (ullage thrust, CM/SM separate,
   SPS ready, S-IVB separate/abort, guidance reference release); channel 32 bits 1-6 (minimum
   impulse, read by FREECONT) and 11 (LM attached); channel 33 bits 4/5 renamed ZEROOPTICS /
-  CMCOPTICS (OPTMON). CSM-unused bits say so. See docs/modules/review-state-flags.md.
+  CMCOPTICS (OPTMON). CSM-unused bits say so. See history/lanes/review-state-flags.md.
 * Inverted logic: channels 030-033 read ZERO when a signal is present. The image stores what
   READ returns (power-up 077777). `agc_chan_set_input` takes the raw sensed value;
   `agc_chan_set_signal(chan, mask, present)` does the inversion (requested addition, now in the header).

@@ -2,7 +2,7 @@
 
 Organize lane, 2026-10-13. Index of every file: [INDEX.md](INDEX.md)
 (`python3 -I tools/repo_index.py > docs/overview/INDEX.md`). Lane
-note: [docs/modules/organize.md](../docs/modules/organize.md).
+note: [docs/modules/organize.md](lanes/organize.md).
 
 This review covers two things: where files sit, and how the code is
 structured inside them. Each finding falls into one of three groups:

@@ -1,6 +1,6 @@
 # oracle-cases -- lane history
 
-Process diary of the oracle-cases lane, moved verbatim out of [docs/modules/oracle-cases.md](../../docs/modules/oracle-cases.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-14 (first and last commit touching the note).
+Process diary of the oracle-cases lane, moved verbatim out of [docs/overview/oracle-cases.md](../../docs/overview/oracle-cases.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-14 (first and last commit touching the note).
 
 ## Progress
 

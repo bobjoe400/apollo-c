@@ -1,6 +1,6 @@
 # review-guid-landing -- lane history
 
-Process diary of the review-guid-landing lane, moved verbatim out of [docs/modules/review-guid-landing.md](../../docs/modules/review-guid-landing.md), which keeps the reader-facing explanation. Note dates: 2026-10-10 to 2026-10-13 (first and last commit touching the note).
+Process diary of the review-guid-landing lane, moved verbatim out of docs/modules/review-guid-landing.md. The rest of that note (its explanation) is appended at the end, under "Module note (kept explanation)". Note dates: 2026-10-10 to 2026-10-13 (first and last commit touching the note).
 
 ## Progress
 
@@ -70,3 +70,14 @@ Process diary of the review-guid-landing lane, moved verbatim out of [docs/modul
 - **Erasable names that start with a digit (1/DV1) are parsed as numbers by agc_probe**: give the E-bank address.
 - **TS/XCH of an overflowed A stores the overflow-corrected word** (16383 + 1 -> +0); a saturating C helper hides the AGC behaviour even when it is asserted unreachable.
 
+
+
+## Module note (kept explanation)
+
+Scope: src/lm/landing/{throttle,guidance,lunar_landing,aborts,displays,findcduw,state}.c,
+src/lm/ascent.c, include/agc/lm/landing.h, tests/lm/landing.c,
+tests/oracle/landing.c. AGC: Luminary099 pp. 785-856, 898-925.
+
+### Program flow and decisions
+
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ This review lane owns no code of its own; the program flow, decision points and data of the code it reviewed, as the code stands after its fixes, are in [guid-landing](../../docs/modules/guid-landing.md#program-flow-and-decisions).

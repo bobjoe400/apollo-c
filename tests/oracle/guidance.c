@@ -32,7 +32,7 @@
  *
  * NOTES:
  *   Tolerances are in LSB of the AGC word (0 = bit exact); the residuals
- *   are explained at the calls in main and in docs/modules/oracle-cases.md.
+ *   are explained at the calls in main and in docs/overview/oracle-cases.md.
  *
  * ALGORITHM:
  *   Load the case, run the C routine, compare word by word.

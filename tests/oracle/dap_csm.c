@@ -33,7 +33,7 @@
  * ASSUMPTIONS, CONSTRAINTS, RESTRICTIONS:
  *   Every comparison is bit-exact, word by word for the DP filter
  *   quantities (the DAP keeps the AGC's sign-disagreeing word pairs,
- *   oracle finding F9). Tolerances: docs/modules/oracle-cases.md.
+ *   oracle finding F9). Tolerances: docs/overview/oracle-cases.md.
  **********************************************************************/
 #include <stdio.h>
 
