@@ -38,7 +38,7 @@ Updated: 2026-10-13
    cleanup of provably-dead guards, not a working-code step (user,
    2026-10-11). No EVA runs before that. The sim entry runs unbounded,
    alone, with no timeout (it converges; memory is the limit).
-5. document (docs/agents/document.md), last.
+5. document (docs/history/assignments/document.md), last.
 Stretch: NASSP integration (docs/PLAN.md item 10). No own world model.
 
 ## Tree health (last verified)

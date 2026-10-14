@@ -1,11 +1,11 @@
 # sim -- host harness: clock/interrupt driver + yaAGC peripheral protocol
 
 ## Scope
-docs/agents/sim.md, REVISED SCOPE (2026-10-10): build/agc_sim drives the
+docs/history/assignments/sim.md, REVISED SCOPE (2026-10-10): build/agc_sim drives the
 translated flight software with our own clock and interrupt driver and talks
 to Virtual AGC peripherals (yaDSKY2, yaTelemetry, ...) with yaAGC's socket
 protocol, so they connect to it as to yaAGC. No DSKY console, no device
-physics. Scripted scenarios run through tools/sim_client.py, which speaks
+physics. Scripted scenarios run through sim/sim_client.py, which speaks
 the same protocol.
 
 ## Design
@@ -28,13 +28,13 @@ the same protocol.
 - REVIEWED 2026-10-12 by review-sim (docs/modules/review-sim.md): clock reworked to per-scaler-count phases, protocol fixes S1-S13, style 524 -> 0, unit test tests/sim/harness.c.
 - DONE design (this note)
 - DONE src/sim/internal.h, clock.c (counters, priority interrupts, exec), channels.c (outputs, 0163, drives, inputs), counters.c (PINC..SHANC map), socket.c (server, packets, lockstep), script.c (--script), main.c (modes; power-on = GOJAM -> GOPROG)
-- DONE tools/sim_client.py (lockstep or --connect/--realtime; relay decoding as yaDSKY2; scenario language)
+- DONE sim/sim_client.py (lockstep or --connect/--realtime; relay decoding as yaDSKY2; scenario language)
 - DONE cross-check: same client script against tools/oracle/bin/yaAGC + Comanche055 rope: P00, V06N36, V35 sequences match (relay order differs slightly during V35)
 - DONE yaDSKY2 (virtualagc, built against Debian wx 3.2 unpacked in the scratchpad) connected to agc_sim in real time, keys clicked on yaDSKY2 via XTest: P00, V06N36 clock, V35 lights, V16N36 monitor, both vehicles: docs/modules/sim/yadsky2_{csm,lm}.png
 - DONE Makefile: sim, sim-debug (debug lib, assertions reported), scenarios
 - DONE yaTelemetry (built the same way) on LM port 19800 decodes agc_sim's downlink: Coast and Align list (ID 77777, SYNC 77340): docs/modules/sim/yatelemetry_lm.png; default ports by vehicle (CSM 19697, LM 19797)
 - DONE check_rules hard violations: internal.h comment "..." (rule 8 regex), main.c opt_value double pointer -> returns the value (0 hard)
-- DONE tools/sim_client.py `xexpect BUG ...` / `xuntil BUG ...` (known flight-code bug: XFAIL does not fail the run, XPASS reported; --strict fails on XPASS)
+- DONE sim/sim_client.py `xexpect BUG ...` / `xuntil BUG ...` (known flight-code bug: XFAIL does not fail the run, XPASS reported; --strict fails on XPASS)
 - DONE sim/scenarios/fresh_start_{csm,lm}.txt (scenario a); both also run against yaAGC (XPASS on B1 there)
 - DONE sim/scenarios/lights_test_{csm,lm}.txt (b), clock_{csm,lm}.txt (c; client `clockref`, `CLOCK now`); all pass, also against yaAGC
 - DONE src/sim/pad.c (`--pad`: refsmmat, flagword, sv csm|lm), client `pad` lines
@@ -45,7 +45,7 @@ the same protocol.
 - DONE step 5 prep (2026-10-12): `--resume=F` loads F as a pad file when it is one (pad.c sim_pad_is_pad), else logs "fresh start": the launcher's "custom core file" start-up option carries the P52/P40 pads (REFSMMAT, state vector) into the GUI run. B5 now XPASS (fixed by a review lane): show_banksum_* flipped to expect.
 - DONE GUI CSM DSKY sequence (2026-10-12): stock VirtualAGC launcher (scratch build sim/build/vagc with the stock -DYADSKY2 -DYADEDA2, install tree sim/vagc_tree, bin/yaAGC -> build/agc_sim), Apollo 11 Command Module, DSKY + Telemetry Downlink Monitor, Run!: the launcher's simulate script started agc_sim, yaDSKY2 and yaTelemetry (port 19700). Clicked on yaDSKY2: power-on RESTART lamp; RSET + V37E00E -> PROG 00; V05N09E + V36E -> all blank; V35 -> all 88 / lamps; V16N36 -> clock 47.57 s; yaTelemetry Coast and Align list live. docs/modules/sim/gui_csm_dsky_sequence.png, gui_csm_telemetry.png, gui_launcher_csm.png, gui_csm_simstatus.png. Windows closed.
 - DONE GUI LM DSKY sequence (2026-10-12): same launcher, Apollo 11 Lunar Module (agc_sim --core Luminary099 --port 19797, yaDSKY2 LM.ini, yaTelemetry 19800): power-on RESTART, P00, V36 blank, V35 (ALT/VEL lamps too), V16N36 clock 40.00 s; yaTelemetry LM Coast and Align. gui_lm_dsky_sequence.png, gui_lm_telemetry.png. Windows closed.
-- DONE GUI CSM P52 (2026-10-12): launcher with AGC Startup "Custom" core file = the scenario's pad (--resume=imu_realign_csm.pad: yaTelemetry shows RN 6563000, VN+2 77.933, REFSMMAT diagonal 1); keys, IMU-operate discrete, sextant CDU drives and the two marks from tools/sim_client.py --connect localhost:19701 --realtime (a second peripheral, like the LEB DSKY) running sim/scenarios/imu_realign_csm.txt with three screenshot holds: 40 checks, 0 failed, in real time. yaDSKY2: V22N06 option 3, V01N70 star 10, V06N05 +00000, V06N93 -0.008/-0.005/+0.005 deg, V50N25 00014. gui_csm_p52.png, gui_csm_p52_telemetry.png. Windows closed.
+- DONE GUI CSM P52 (2026-10-12): launcher with AGC Startup "Custom" core file = the scenario's pad (--resume=imu_realign_csm.pad: yaTelemetry shows RN 6563000, VN+2 77.933, REFSMMAT diagonal 1); keys, IMU-operate discrete, sextant CDU drives and the two marks from sim/sim_client.py --connect localhost:19701 --realtime (a second peripheral, like the LEB DSKY) running sim/scenarios/imu_realign_csm.txt with three screenshot holds: 40 checks, 0 failed, in real time. yaDSKY2: V22N06 option 3, V01N70 star 10, V06N05 +00000, V06N93 -0.008/-0.005/+0.005 deg, V50N25 00014. gui_csm_p52.png, gui_csm_p52_telemetry.png. Windows closed.
 - DONE GUI CSM P30 + P40 (2026-10-12): same set-up with the scenario-e pad as the Custom core file; sim_client --connect runs sim/scenarios/external_delta_v_burn_csm.txt (+ four 4 s screenshot holds): 35 checks, 0 failed, 5 xfail (B6), the same as headless. yaDSKY2: V06N42 HAPO 109.6 / HPER 101.0 / DELVSIN 10.0, V16N45 (TFI counting, MGA), V50N18 burn attitude, V06N40 countdown, TIGBLNK at TIG-35, and at TIG-5 B6 in the GUI too: no V99 flash, V16N85 with the full 8.4 / 5.4 / 0.7 ft/s. gui_csm_p30_p40.png. Windows closed.
 - DONE step 5: every GUI sequence (fresh start, V35, V16N36 both vehicles; CSM P52; CSM P30/P40) also runs headless under `make scenarios` (fresh_start_*, lights_test_*, clock_*, imu_realign_csm, external_delta_v_burn_csm): 13/13 pass, 5 xfail (B6). LM P63 not run (f decision: skipped). The paced GUI copies of the scenarios (holds only) and the launcher/click helpers live in the scratchpad sim/gui/, not in the repo.
 - DONE re-run 2026-10-11 on the status-handling-2 tree (a02850c/826f7e5): `make` and `make sim` up to date, `make scenarios` green: all 7 (fresh_start, lights_test, clock x csm/lm; p52_realign_csm) pass, 0 failed, 0 xfail, 0 xpass, 0 errors/restarts. agc_sim_debug on fresh_start csm/lm and LM headless 2000 cs: no assertion reports.
@@ -65,7 +65,7 @@ DSKY + Telemetry Downlink Monitor, Run!). For a P52 / P40 start, put a pad
 file (pad.c format) in the launcher's AGC Startup "Custom" core-file box:
 it arrives as `--resume=FILE`. A scripted second peripheral (keys,
 discretes, CDU / PIPA counts) can join on any free port of the ten:
-`tools/sim_client.py --connect localhost:19701 --realtime --scenario F`.
+`sim/sim_client.py --connect localhost:19701 --realtime --scenario F`.
 
 ## Lessons
 - The launcher has no "AGC binary" setting: it always writes
@@ -133,7 +133,7 @@ Scenario lines that check the AGC-correct behaviour use `xexpect <id>`.
   the C call passes no address (agc_dsky_nvsub_mctbs exists for this) and
   SKEEP1-3 are not readable through the ECADR image (src/core/ecadr.c), so
   R1-R3 show 00000 for every bank. Scenarios show_banksum_* xexpect B5.
-- B6 FIXED (fix-b6, 2026-10-12; docs/modules/fix-b6.md). CKNVWRD1
+- B6 FIXED (fix-b6, 2026-10-12; docs/history/waves/fix-b6.md). CKNVWRD1
   (src/csm/burns/sps/clock.c) showed the engine-on enable / engine-fail
   flashes as CLOCPLAY of V99N40 / V97N40, so pinball ran extended verb 99
   (GOLOADLV -> LOADLV -> RECALTST), which answered the flash with ENTER

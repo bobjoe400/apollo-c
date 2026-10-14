@@ -32,7 +32,7 @@ Each item: fix with the AGC page reference, a test where behaviour
 changes, and strike the line in review_items.md (replace it with a
 one-line DONE + commit-less pointer to your note). docs/CODING_STANDARD.md
 and docs/NAMING.md apply; `make format` on files you edit only;
-no Frama-C EVA. Note: docs/modules/follow-up-done-lanes.md with a
+no Frama-C EVA. Note: docs/history/waves/follow-up-done-lanes.md with a
 Progress checklist (one line per item, checkpoint after each), Findings,
 Lessons; row in docs/MODULE_STATUS.md. Gates before the report: `make`,
 `make test`, `make scenarios`, `make check`, `python3 tools/check_rules.py`

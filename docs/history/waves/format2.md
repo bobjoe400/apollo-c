@@ -12,7 +12,7 @@ comment that starts a paragraph. The whole tree was reformatted.
 Files: `tools/fix_comments.py` (new, libclang tokens), `tools/format.sh`
 (new: the pipeline), `uncrustify.cfg`, `Makefile` (format/format-check),
 `tools/check_rules.py` (assertion count per occurrence), docs/STYLE.md,
-docs/CODING_STANDARD.md, README.md, docs/overview/long_statements.tsv
+docs/CODING_STANDARD.md, README.md, docs/overview/data/long_statements.tsv
 (new), and 306 files under src include tests (layout only).
 
 ## Design table
@@ -120,7 +120,7 @@ aligned within each paragraph, e.g.
   statements merged into trailing comments; 69 multi-line trailing comments
   put on one line; 1253 paragraph blank lines added; 50 outer-call wraps
   kept (CALCGRAV shape).
-* docs/overview/long_statements.tsv: 777 rows (file:line, lines, width) --
+* docs/overview/data/long_statements.tsv: 777 rows (file:line, lines, width) --
   11 kept wraps with > 2 continuation lines, 766 one-line statements wider
   than 120 columns (616 in src/) -- for the review wave to split with
   named temporaries. Not split here.
@@ -196,4 +196,4 @@ None (formatter). Scratch scripts: SCRATCH/format2/ (pipe.sh, toks.py).
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (comment placement and statement layout): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](exec-sched.md#program-flow-and-decisions), [core-numeric](core-numeric.md#program-flow-and-decisions), [state-flags](state-flags.md#program-flow-and-decisions), [nav-conic](nav-conic.md#program-flow-and-decisions), [nav-integ](nav-integ.md#program-flow-and-decisions), [nav-aux](nav-aux.md#program-flow-and-decisions), [io-pinball](io-pinball.md#program-flow-and-decisions), [io-nouns](io-nouns.md#program-flow-and-decisions), [imu](imu.md#program-flow-and-decisions), [guid-powered](guid-powered.md#program-flow-and-decisions), [guid-landing](guid-landing.md#program-flow-and-decisions), [guid-entry](guid-entry.md#program-flow-and-decisions), [p37](p37.md#program-flow-and-decisions), [dap-lm](dap-lm.md#program-flow-and-decisions), [dap-csm](dap-csm.md#program-flow-and-decisions), [prog-rendz](prog-rendz.md#program-flow-and-decisions), [prog-align](prog-align.md#program-flow-and-decisions), [sys-misc](sys-misc.md#program-flow-and-decisions), [sim](sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../overview/README.md) and its flowcharts.
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (comment placement and statement layout): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](../../modules/exec-sched.md#program-flow-and-decisions), [core-numeric](../../modules/core-numeric.md#program-flow-and-decisions), [state-flags](../../modules/state-flags.md#program-flow-and-decisions), [nav-conic](../../modules/nav-conic.md#program-flow-and-decisions), [nav-integ](../../modules/nav-integ.md#program-flow-and-decisions), [nav-aux](../../modules/nav-aux.md#program-flow-and-decisions), [io-pinball](../../modules/io-pinball.md#program-flow-and-decisions), [io-nouns](../../modules/io-nouns.md#program-flow-and-decisions), [imu](../../modules/imu.md#program-flow-and-decisions), [guid-powered](../../modules/guid-powered.md#program-flow-and-decisions), [guid-landing](../../modules/guid-landing.md#program-flow-and-decisions), [guid-entry](../../modules/guid-entry.md#program-flow-and-decisions), [p37](../../modules/p37.md#program-flow-and-decisions), [dap-lm](../../modules/dap-lm.md#program-flow-and-decisions), [dap-csm](../../modules/dap-csm.md#program-flow-and-decisions), [prog-rendz](../../modules/prog-rendz.md#program-flow-and-decisions), [prog-align](../../modules/prog-align.md#program-flow-and-decisions), [sys-misc](../../modules/sys-misc.md#program-flow-and-decisions), [sim](../../modules/sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../../overview/README.md) and its flowcharts.

@@ -212,6 +212,11 @@ def main():
                     f.write('\n'.join(lines) + '\n')
         steps = sum(1 for x in b if x.startswith('step '))
         same, rep, off = compare(b, a)
+        oe = [x.split()[2] for x in a if x.startswith('# oprerr-at-load')]
+        if not oe or oe[0] != '0':
+            print('FAIL %-10s OPR ERR lit 5 s after the load (a key the load did not press)' % name)
+            fails += 1
+            continue
         la = [float(x.split()[2]) for x in a if x.startswith('# dsky-latency')]
         if not la or la[0] > DSKY_LATENCY_S:
             print('FAIL %-10s erasable mirror shows noun 36 %s s after the key (stock %s s; at most %.2f s)' %

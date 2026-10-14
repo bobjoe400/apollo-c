@@ -1,7 +1,7 @@
 # review-exec-sched -- review of the exec-sched lane
 
 ## Scope
-docs/agents/review.md items 1-5 for src/exec (executive, waitlist, phase
+docs/history/assignments/review.md items 1-5 for src/exec (executive, waitlist, phase
 table, restarts, restart tables, alarm/abort, interrupts, fresh start,
 change_program/, nouns.c, dispatch.c via tools/gen_registry.py),
 include/agc/exec/{exec,jobs}.h (exec-owned declarations), tests/exec/exec.c.

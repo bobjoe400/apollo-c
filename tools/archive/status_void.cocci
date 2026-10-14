@@ -3,7 +3,7 @@
 // called with valid arguments; bad arguments are caught by AGC_ASSERT
 // inside). The lists below are the full record of those functions.
 //
-//   spatch --sp-file tools/status_void.cocci --in-place --dir src \
+//   spatch --sp-file tools/archive/status_void.cocci --in-place --dir src \
 //          --include-headers -I include
 //
 // 1. `(void) f(args);`  ->  `f(args);`

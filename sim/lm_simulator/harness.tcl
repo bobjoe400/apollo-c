@@ -1,8 +1,8 @@
-# lm_sim_harness.tcl -- run Virtual AGC's LM Simulator (Stephan Hotto,
+# harness.tcl -- run Virtual AGC's LM Simulator (Stephan Hotto,
 # virtualagc/Contributed/LM_Simulator) unmodified, with a control port.
 #
-# Usage:  wish   tools/lm_sim_harness.tcl LMSIM_DIR CTRL_PORT ?--port=N? ?--cfg=F?
-#         tclsh  tools/lm_sim_harness.tcl LMSIM_DIR CTRL_PORT ?--port=N? ?--cfg=F?
+# Usage:  wish   sim/lm_simulator/harness.tcl LMSIM_DIR CTRL_PORT ?--port=N? ?--cfg=F?
+#         tclsh  sim/lm_simulator/harness.tcl LMSIM_DIR CTRL_PORT ?--port=N? ?--cfg=F?
 #
 # The simulator's own lm_simulator.tcl is sourced as is, from LMSIM_DIR
 # (it loads ./modules and ./doc relative to the working directory); the
@@ -10,7 +10,7 @@
 #
 # CTRL_PORT (127.0.0.1) takes one Tcl script per line, evaluated at global
 # level inside the simulator's interpreter; the reply is one line,
-# "OK result" or "ERR message".  tools/lm_sim.py uses it to press the
+# "OK result" or "ERR message".  sim/lm_simulator/lm_sim.py uses it to press the
 # simulator's own buttons (`.dsky.b16 invoke`, `.crewinp.cb6b invoke`), to
 # move its RHC the way its scale does (`write_rhc PITCH 20`), and to read
 # its model state (IMUX_ANGLE, Omega_Pitch, ...).  Nothing of the

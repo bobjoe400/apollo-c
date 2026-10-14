@@ -11,5 +11,5 @@ the two public entry points that pick the vehicle. Put the marker
 generated file (docs/CODING_STANDARD.md rule 4 exemption). Delete the 89
 chunk functions. Regenerate include/agc/exec/jobs.h unchanged in content.
 Run `make format`, `make`, `make test`, `make check` (0 hard). Update
-docs/modules/integrate.md (registry section) and docs/ARCHITECTURE.md
+docs/history/waves/integrate.md (registry section) and docs/ARCHITECTURE.md
 (dispatch sentence). Report <= 8 lines.

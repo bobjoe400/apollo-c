@@ -12,4 +12,4 @@ one element per line. Then the paragraph alignment step aligns the
 trailing comments of the joined declarations with the rest of their
 paragraph. Run tools/format.sh tree-wide, confirm idempotence and `gcc -E`
 token parity, `make`, `make test`. Show the user's example before/after in
-docs/modules/format3.md. Report <= 6 lines.
+docs/history/waves/format3.md. Report <= 6 lines.

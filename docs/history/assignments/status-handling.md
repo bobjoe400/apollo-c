@@ -14,7 +14,7 @@ may edit for this task):
    void; keep the AGC_ASSERT on arguments inside. Add
    `void agc_interp_clear_ovf(agc_interp_t *ip)` and use it where code
    void-casts agc_interp_test_ovf() just to clear OVFIND.
-2. Update all callers with a Coccinelle patch (tools/status_void.cocci):
+2. Update all callers with a Coccinelle patch (tools/archive/status_void.cocci):
    `(void)f(args);` -> `f(args);` for those callees only. Fix tests.
 
 Phase B -- genuinely fallible calls (waitlist_call/vardelay/longcall,
@@ -33,5 +33,5 @@ can return NOT_FOUND/UNIMPLEMENTED):
    not a cast.
 4. Keep functions <= 60 lines; splitting is allowed.
 5. `make`, `make test`, `make check` (0 hard violations), and the oracle
-   tests must pass as before. Write docs/modules/status-handling.md with
+   tests must pass as before. Write docs/history/waves/status-handling.md with
    the per-callee decisions and a Lessons section.

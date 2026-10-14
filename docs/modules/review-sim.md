@@ -1,7 +1,7 @@
 # review-sim -- review of the sim harness lane
 
 Lane: src/sim/** (clock/interrupt driver, yaAGC peripheral protocol, pad,
-rope, script, main), tools/sim_client.py, sim/scenarios/** (except
+rope, script, main), sim/sim_client.py, sim/scenarios/** (except
 external_delta_v_burn_csm.txt: fix-b6 owns it). Reference: virtualagc
 yaAGC agc_engine.c (scaler, counters, interrupts, standby), SocketAPI.c
 (ChannelInput/ChannelOutput/UpdateAgcPeripheralConnect), agc_utilities.c
@@ -37,7 +37,7 @@ interrupt driver and the protocol; nothing else.
   template, decl/define comments, main first, no side effects in tests,
   `long int`, upper-case L); tools/format.sh on every lane file;
   format-check clean.
-- DONE (5) tools/sim_client.py: pycodestyle and pyflakes clean (scratch
+- DONE (5) sim/sim_client.py: pycodestyle and pyflakes clean (scratch
   venv); dead downlink capture removed; `self.l` -> `self.link`; usage
   and options documented in the docstring next to the scenario language.
 - DONE gates 2026-10-12: make; make test (all unit/oracle tests, 13/13

@@ -54,6 +54,7 @@
 #define DSPTAB_NOUN  8             /* DSPTAB +8: the noun digits' relay word   */
 #define NOUN_DIGITS  01777         /* its two digit codes (bits 10-6, 5-1)     */
 #define NOUN36       01574         /* '3' 27, '6' 28                           */
+#define CH11_OPRERR  0100          /* channel 011 bit 7: OPR ERR lamp          */
 #ifdef REPLAY_YAAGC
 #define ROPE_OK 5                  /* NASSP's yaAGC agc_load_binfile: 5 when loaded */
 #else
@@ -380,6 +381,11 @@ int main(int argc, char **argv)
     unsigned lrpos = word(ADDR_RADMODE) & RADM_LRPOS; /* as the scenario saved it */
 
     run(5.0);
+
+    /* A load is no keystroke: the image's channel 015 still holds the last key code, and
+     * NASSP's yaAGC takes keys only from its interrupt requests ('#': the driver checks the
+     * OPR ERR lamp, channel 011 bit 7, 5 s after the load on ours). */
+    printf("# oprerr-at-load %o\n", (unsigned) ReadIO(&vagc, 011) & CH11_OPRERR);
 
     /* LGC: the LR position the AGC wants (RADMODES bit 6). NASSP resumes the saved
      * image; our shim restarts it, and STARTSUB re-reads the bit from channel 33, where

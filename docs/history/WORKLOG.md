@@ -123,7 +123,7 @@
             lane progress). NAMING.md gained 8 derivation rules (read the
             AGC source for every label; no opaque suffixes; no stutter;
             2-4 words; map before apply). Single Opus `naming` agent runs
-            phase 1 (inventory + map only); lead reviews docs/RENAMES.md,
+            phase 1 (inventory + map only); lead reviews docs/history/RENAMES.md,
             then phase 2 applies tree-wide; then all 7 lanes resume
             (guid-powered, dap-lm, dap-csm, prog-rendz, prog-align, sys-misc,
             p37) with instructions to re-read NAMING.md and RENAMES.md.
@@ -158,7 +158,7 @@
 2026-10-10  Filename pass DONE: 83 files lost folder-redundant prefixes;
             nav/aux -> nav/auxiliary; compile parity (172/177). Pause over.
             Resuming all 7 lanes (guid-powered, dap-lm, dap-csm, prog-rendz,
-            prog-align, sys-misc, p37) with docs/agents/_resume_after_naming.md.
+            prog-align, sys-misc, p37) with docs/history/assignments/resume_after_naming.md.
 2026-10-10  Folder rules tightened (user): no common/ folders (lm/dap/common
             flattened); >=3 files sharing a prefix -> subfolder named by the
             prefix (core/interp, dsky/pinball, dsky/nouns done by lead;
@@ -275,7 +275,7 @@
             blank lines. Tree-wide `make format` runs after status-handling.
 2026-10-10  status-handling DONE: 0 hard violations (was 713 + 3,233 after
             widening); 105 APIs made void; assertions given recovery by
-            return type (tools/assert_recover.cocci, status_void.cocci);
+            return type (tools/archive/assert_recover.cocci, status_void.cocci);
             bugs fixed: agc_vec_zero/agc_vec_make mutual recursion, two
             GODSPRET calls with NULL continuation (V16N85 never shown).
             Open: CLEANDSP can sleep a job without continuation; core
@@ -302,7 +302,7 @@
             peripherals instead of writing a DSKY/device model. build/agc_sim
             speaks yaAGC's peripheral socket protocol (port 19697) so
             yaDSKY2/yaTelemetry connect to our C as if to yaAGC; scenarios
-            via tools/sim_client.py; our part is the clock/interrupt driver.
+            via sim/sim_client.py; our part is the clock/interrupt driver.
             virtualagc clone has yaDSKY2, yaTelemetry, yaACA, piPeripheral.
 2026-10-10  collapse phase 1 reviewed: 4,140 functions, 25,201 edges; 1,004
             single-caller helpers, 176 candidates under the loose label rule.
@@ -311,7 +311,7 @@
             label DISTINCT from the caller's (page-only inheritance does not
             protect). Phase 2 (apply) running.
 2026-10-10  User paused the sim lane (GUI peripherals interfering with their
-            desktop). Sim agent stopped mid-way through tools/sim_client.py.
+            desktop). Sim agent stopped mid-way through sim/sim_client.py.
             collapse phase 2 and oracle-cases continue (command-line only).
             Sim resumes headless-first on user go.
 2026-10-10  collapse DONE: 153 helpers merged (150 by tools/inline_one.py),
@@ -439,7 +439,7 @@
             ~620 in-expression comments merged into trailing comments, 1253
             paragraph blank lines; paragraph-scoped column alignment done by
             the script (Uncrustify 0.72 aligns across blank lines). Token-
-            identical on 270/270. docs/overview/long_statements.tsv: 777
+            identical on 270/270. docs/overview/data/long_statements.tsv: 777
             statements >120 cols for the review wave to split with
             temporaries. Launching dispatch (4 flat switches) + review-core-
             numeric.
@@ -683,7 +683,7 @@
             tools/unpaste_prologs.py; check_rules now rejects an indented
             box; rule in CODING_STANDARD. The 22 vehicle assertions at the
             top of LM-only routines (src/lm/dap, src/lm/landing) deleted
-            by tools/cocci/vehicle_guard.cocci (guaranteed by construction:
+            by tools/archive/vehicle_guard.cocci (guaranteed by construction:
             LM dispatch only); exec_up_servidle's stays (reached from the
             shared POODOO path, caller checks the status).
 2026-10-12  review-sim DONE (three real clock faults: T6 chain, T5/T3 order,
@@ -1013,3 +1013,9 @@
             is optimally organised after all the additions. Launched
             organize (Opus): index, safe moves/archiving outside the live
             NASSP areas, proposal for the rest.
+2026-10-14  Bug 13 (UNITW unmapped: entry target not rotated, 2.6 deg
+            short) + a map vector-store bug fixed (7b99601); shim DSKY
+            mirror now per-cs (was 1 s late on ours; replay latency
+            check). Liftoff script uses the resumed P12 (freeze rule:
+            stock reruns first). PDI/liftoff dev runs to be repeated under
+            the new shim. Our entry running under frozen definitions.

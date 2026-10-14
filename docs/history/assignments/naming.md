@@ -16,9 +16,9 @@ Phase 1 -- inventory and map (STOP after this phase and report):
    _p40_, p30, canv37, v37_, noun36), plus the bad names from the first
    attempt (grep for `_entry_entry`, `_E\b`, `_P\b`, `_T\b`, `_1B`, `_1\b`,
    `TASK2`, `EJOB`, `TJOB`, `TTASK`, `PTASK`, `ETASK`, `E40_6`, `TRCS` in identifiers; any label fragment pasted onto the prefix). Write the raw inventory to
-   docs/RENAMES_inventory.txt (one per line with file).
+   docs/history/RENAMES_inventory.txt (one per line with file).
 2. For EACH, read the AGC label's comment/code (SRC/Apollo-11/...) and
-   derive the name per the rules. Write docs/RENAMES.md as a table:
+   derive the name per the rules. Write docs/history/RENAMES.md as a table:
    `old | new | files | AGC source + comment used (one line)`. Group by
    lane. Where you keep a name (word label), list it too with "keep".
    Add any new stems to the canonical table in docs/NAMING.md.
@@ -31,12 +31,12 @@ Phase 1 -- inventory and map (STOP after this phase and report):
 
 Phase 2 -- apply (only when the lead says go):
 5. Apply the map tree-wide with Coccinelle, not sed: generate ONE
-   semantic patch (tools/rename.cocci) from docs/RENAMES.md with a rule
+   semantic patch (tools/archive/rename.cocci) from docs/history/RENAMES.md with a rule
    per identifier kind (function names via `identifier` metavariables on
    declarations/definitions/calls; type names; enum members; struct
-   fields; macros), run `spatch --sp-file tools/rename.cocci --in-place
+   fields; macros), run `spatch --sp-file tools/archive/rename.cocci --in-place
    --dir src --dir include --dir tests`, and keep the generator script in
-   tools/gen_rename_cocci.py. If `spatch` is not installed, stop and tell
+   tools/archive/gen_rename_cocci.py. If `spatch` is not installed, stop and tell
    the lead. Identifiers inside comments must NOT change (that is where
    the AGC labels live) -- Coccinelle does this naturally; verify with a
    grep that comment occurrences of old labels survive. Use `git mv` for
@@ -48,4 +48,4 @@ Phase 2 -- apply (only when the lead says go):
    Files that failed to compile BEFORE your change (record the list in
    phase 1 by compiling first) may still fail, but no NEW failures.
 7. Run tools/check_rules.py; run the wave-1 tests that linked before (see
-   each lane's note for the link command). Write docs/modules/naming.md.
+   each lane's note for the link command). Write docs/history/waves/naming.md.

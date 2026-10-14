@@ -2,7 +2,7 @@
 
 ## Scope
 
-docs/agents/review.md for lane nav-integ (docs/modules/nav-integ.md):
+docs/history/assignments/review.md for lane nav-integ (docs/modules/nav-integ.md):
 src/nav/integration/{init,jobs,orbital_integration,flags_csm,setitctr_lm,
 svdwn}.c, internal.h, pending.h, include/agc/nav/integration.h,
 tests/nav/integration.c, tests/oracle/nav_integ.c.

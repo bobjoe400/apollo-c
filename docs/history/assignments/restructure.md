@@ -60,7 +60,7 @@ Steps:
 4. Update docs/ARCHITECTURE.md to the new tree (replace the layout block),
    every docs/modules/*.md and docs/agents/*.md path mention (plain text
    substitution), and docs/MODULE_STATUS.md "Files produced".
-5. Write docs/modules/restructure.md: the move table, includes you fixed,
+5. Write docs/history/waves/restructure.md: the move table, includes you fixed,
    files you had to place by judgment. Report <= 15 lines. Do not use git
    except `git mv`.
 

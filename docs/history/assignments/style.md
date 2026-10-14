@@ -43,5 +43,5 @@ Deliverables:
    `make format-check` (--dry-run --Werror), `make style` (check_style.py);
    add format-check and style to `make check`. If clang-format is not
    installed, say so in your report; do not run it.
-Do not reformat any code in this task. Write docs/modules/style.md with a
+Do not reformat any code in this task. Write docs/history/waves/style.md with a
 Lessons section. Report <= 15 lines.

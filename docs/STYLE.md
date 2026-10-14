@@ -15,7 +15,7 @@ the guide's rule is recorded as overridden, not silently dropped.
 
 * `uncrustify` -- `uncrustify.cfg` (Uncrustify 0.72.0; every option is
   documented in the file with the guide section it serves -- validation
-  in docs/modules/style2.md and docs/modules/format2.md). It replaced
+  in docs/history/waves/style2.md and docs/history/waves/format2.md). It replaced
   clang-format 14 (`.clang-format`, kept in git history) because
   clang-format cannot insert the blank lines of statement paragraphing
   (5.5).
@@ -139,7 +139,7 @@ the full warning set).
 | 5.2 | Declare argument types in the definition (even `int`); definition starts in column 1. | compiler `-Wstrict-prototypes`, C11 (no implicit int); uncrustify (column 1; `nl_func_type_name = remove`) | K&R-style argument lists are not valid in this build. |
 | 5.2 | Arguments are explained in the prolog, not by comments after the declaration. | review | |
 | 5.3 | Declare external variables right after the function's opening brace. | n/a -- overridden; check_rules [extern-in-c] | CS rule 6: no `extern` variables; shared state via accessors, declarations in headers. |
-| 5.4 | Internal variables after externs, with names aligned in one column. | fix_comments: within a paragraph, at one brace level (function bodies, file scope, struct members), one-line statements are columns: type, name (`*` dangling left of it), assignment operator, expression, trailing comment; uncrustify `align_func_params_span = 1`, `align_func_proto_span = 1` | Placement overridden: CS rule 6 says declare where used (smallest scope), not at the top of the function. User reference: agc_guid_calcut / calcthet (docs/modules/format2.md). |
+| 5.4 | Internal variables after externs, with names aligned in one column. | fix_comments: within a paragraph, at one brace level (function bodies, file scope, struct members), one-line statements are columns: type, name (`*` dangling left of it), assignment operator, expression, trailing comment; uncrustify `align_func_params_span = 1`, `align_func_proto_span = 1` | Placement overridden: CS rule 6 says declare where used (smallest scope), not at the top of the function. User reference: agc_guid_calcut / calcthet (docs/history/waves/format2.md). |
 | 5.4 | One internal variable per line, each with an explanatory comment; loop indices may share a line and a comment. | check_rules [one-declaration] (`i, j, k` exempt), [decl-comment] | |
 | 5.4 | Same parameter/variable name for the same thing across a group of functions. | review | |
 | 5.4 | No declarations that hide outer ones. | compiler `-Wshadow` | |
@@ -182,7 +182,7 @@ the full warning set).
 | 6.7 | No side-effect operators inside relational expressions. | check_rules [side-effect-condition] (in `if`/`while`/`switch` tests) | |
 | 6.7 | Comma operator only where essential (e.g. `for` headers). | review | |
 | 6.7 | Parenthesise liberally, especially masks with shifts. | compiler `-Wparentheses` (in `-Wall`) for the common traps; review | |
-| 6.7 | A long condition is split AFTER the logical operators. | overridden: no column limit, one statement per line (`code_width = 0`); fix_comments joins every wrap except the one allowed shape -- the outermost call of a statement with one argument per line (the first line of a call may carry two, e.g. `ip`), at least two continuation lines, breaks only after that call's commas; uncrustify `indent_align_paren = true` puts each argument under the first | User direction 2026-10-11 (CALCGRAV call in agc_guid_calcut is the reference). A statement unreadable on one line is split with named temporaries (review; docs/overview/long_statements.tsv). |
+| 6.7 | A long condition is split AFTER the logical operators. | overridden: no column limit, one statement per line (`code_width = 0`); fix_comments joins every wrap except the one allowed shape -- the outermost call of a statement with one argument per line (the first line of a call may carry two, e.g. `ip`), at least two continuation lines, breaks only after that call's commas; uncrustify `indent_align_paren = true` puts each argument under the first | User direction 2026-10-11 (CALCGRAV call in agc_guid_calcut is the reference). A statement unreadable on one line is split with named temporaries (review; docs/overview/data/long_statements.tsv). |
 | 6.8 | Embedded assignments very sparingly (the `while ((c = getchar()) != EOF)` idiom at most). | check_rules [side-effect-condition] reports them all | |
 | 6.9 | Avoid conditional expressions unless very clear; comment the ones you use. | check_rules [ternary-comment] (uncommented or nested `?:`) | |
 | 6.10 | `* / %` before `+ -`; parenthesise everything else. | review; compiler `-Wparentheses` | |
@@ -253,7 +253,7 @@ the full warning set).
   are not added: the formatter is set never to change tokens (review and
   check_style [return-parens]).
 * Column limit: none (user direction 2026-10-11; the guide states none).
-  `code_width = 0`. docs/overview/long_statements.tsv lists statements
+  `code_width = 0`. docs/overview/data/long_statements.tsv lists statements
   wider than 120 columns or kept on more than three lines, for the review
   wave to split with named temporaries.
 * Paragraph alignment (2.3, 5.4) and paragraph blank lines (2.2.1) are done
@@ -279,7 +279,7 @@ does not count blank lines, so rule 4 results are unchanged (one finding,
 reentry.c `entry_step_a`, before and after). check_style [long-block-comment]
 does count them: blocks longer than 40 lines rise from 122 to 292.
 
-format2 (2026-10-11, docs/modules/format2.md): joining wraps onto one line
+format2 (2026-10-11, docs/history/waves/format2.md): joining wraps onto one line
 lowers the code-line counts, and tools/check_rules.py now counts every
 `AGC_ASSERT(` on a line (two guards joined by `||` are two assertions) and
 recognises function headers that used to be wrapped; hard violations are

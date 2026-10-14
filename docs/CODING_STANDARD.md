@@ -177,7 +177,7 @@ Language: C11, no extensions. Build flags (Makefile):
   with one row per line). Never a partial wrap inside the braces.
 * A statement that is unreadable on one line because of nesting is split
   with named temporaries (review item), not wrapped.
-  docs/overview/long_statements.tsv lists the candidates (wider than 120
+  docs/overview/data/long_statements.tsv lists the candidates (wider than 120
   columns or kept on more than three lines).
 
 ## One-line functions (user direction, 2026-10-11)
@@ -189,7 +189,7 @@ module state (the module boundary, where the entry check lives). A one-line
 function that is merely an expression over its parameters is inlined at
 every caller, whatever the caller count.
 `python3 -I tools/one_liners.py` classifies every one-line function (body of
-one return or expression statement) into docs/overview/one_liners.tsv:
+one return or expression statement) into docs/overview/data/one_liners.tsv:
 ACCESSOR (reads or writes file-scope/static storage, directly or through a
 callee; const tables are not state; pointer parameters are the function's
 own), NAMED (state-free, header comment names an AGC label, or listed in
@@ -199,7 +199,7 @@ and delete). The tree is kept at PLAIN 0.
 * `frama-c -eva` (Frama-C value analysis) to prove or refute assertions
   statically; `make prove` runs the project configuration (detached; see
   tools/prove/progress.log and summary.txt) and `make prove-classify`
-  folds its verdicts into docs/overview/guards.tsv. A guard EVA proves
+  folds its verdicts into docs/overview/data/guards.tsv. A guard EVA proves
   VALID on every path is dead code and is deleted. EVA's verdicts hold for
   the code and entry points it analysed: rerun `make prove` after any
   review or change that alters control flow, and in a lane not yet

@@ -2,7 +2,7 @@
 // assertion must have an explicit recovery; `(void) AGC_ASSERT(cond);` has
 // none. The mechanical cases, keyed on the enclosing function's return type:
 //
-//   spatch --sp-file tools/assert_recover.cocci --in-place --dir src \
+//   spatch --sp-file tools/archive/assert_recover.cocci --in-place --dir src \
 //          -I include
 //
 //   agc_status_t function: if (!AGC_ASSERT(c)) { return AGC_STATUS_BAD_ARG; }
@@ -14,7 +14,7 @@
 // _Static_assert, `AGC_ASSERT(false)` markers keep only their recovery, an
 // assertion inside INHINT also needs agc_relint() before the return, and
 // dead checks in pointer accessors are deleted: all done by hand (see
-// docs/modules/status-handling.md).
+// docs/history/waves/status-handling.md).
 
 @status@
 typedef agc_status_t;

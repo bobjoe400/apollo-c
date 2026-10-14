@@ -89,14 +89,32 @@ src/lm/             Luminary-only
                     internal.h
   ascent.c, s_band_antenna.c, lem_geometry.c  (ascent/, optics/ not yet
                     >= 3 files)
-src/sim/            host harness (not in libagc): main.c drives the clock and
-                    the executive (stub; the full harness is a later lane)
+src/sim/            host harness (not in libagc): agc_sim, the yaAGC drop-in
+                    (clock and interrupt driver, peripheral sockets, rope, pad)
+src/nassp/          NASSP engine shim (nassp_engine.c) and the CMake project
+                    NASSP's build adds (not in libagc; nassp-integration lane)
+src/erasable_map/   erasable access by AGC address (top of the layering)
 tests/              unit tests, mirroring src/ (core exec nav io imu guidance
-                    programs csm lm oracle); one binary per file found
-                    recursively, -DAGC_HOST_DEBUG
-tools/              check_rules.py (Power of Ten lint), gen_registry.py +
-                    registry.tsv (jobs.h / dispatch.c), rename.cocci
-docs/modules/       working notes per agent/module
+                    programs csm lm sim erasable_map) and oracle/ (yaAGC
+                    differential); one binary per file, -DAGC_HOST_DEBUG
+sim/                harnesses that RUN the built AGC: scenarios/ +
+                    sim_client.py (headless DSKY, `make scenarios`),
+                    lm_simulator/ (`make lm-sim`), nassp/ (`make nassp-replay`,
+                    `make nassp-mission`, host scripts, Lua, scenario images)
+tools/              tools that work ON the tree: checks (check_rules,
+                    check_style, prolog_check, always_ok, one_liners,
+                    returns), format (format.sh, fix_comments), generators
+                    (gen_registry + registry.tsv, xref, depgraph), analysis
+                    (callgraph, cgast, inline_one, unwrap), agc_label,
+                    oracle/ (yaAGC), prove/ (Frama-C EVA), cocci/, archive/
+                    (finished one-offs); index: docs/overview/INDEX.md
+docs/               operational docs (this file, STATE, PLAN, CODING_STANDARD,
+                    NAMING, STYLE, TRANSLATION_GUIDE, TIPS, MODULE_STATUS);
+                    overview/ (system overview, flowcharts, xref, INDEX,
+                    ORGANIZATION, data/ = generated tables); modules/ (one
+                    note per lane); agents/ (live assignments, brief,
+                    review_items); history/ (WORKLOG, RENAMES, finished
+                    assignments, tree-wide wave notes)
 ```
 
 Layering (lower may not call higher; tools/depgraph.py checks it and the

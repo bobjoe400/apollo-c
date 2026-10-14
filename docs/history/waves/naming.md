@@ -4,18 +4,18 @@
 Apply docs/NAMING.md to every identifier and file name in include/, src/,
 tests/ and the docs/modules notes, replacing both the original numbered
 names and the names left by the stopped mechanical rename (commit 23aa58d).
-Map: docs/RENAMES.md (phase 1, reviewed). Raw inventory:
-docs/RENAMES_inventory.txt.
+Map: docs/history/RENAMES.md (phase 1, reviewed). Raw inventory:
+docs/history/RENAMES_inventory.txt.
 
 ## Method (phase 2)
-1. `tools/gen_rename_cocci.py` reads the lane tables of docs/RENAMES.md
-   (446 C identifiers) and writes ONE semantic patch, `tools/rename.cocci`:
+1. `tools/archive/gen_rename_cocci.py` reads the lane tables of docs/history/RENAMES.md
+   (446 C identifiers) and writes ONE semantic patch, `tools/archive/rename.cocci`:
    a Python table plus 21 rules, one per identifier kind (function
    definitions, prototypes, parameters, variables and arrays, struct fields
    and `.`/`->` access, enumerators in plain/typedef/anonymous enums,
    `#define` names, and every remaining expression use). Each rule builds
    the new name with a `fresh identifier`, so the rule count is fixed.
-2. `spatch --sp-file tools/rename.cocci --in-place --include-headers --dir D`
+2. `spatch --sp-file tools/archive/rename.cocci --in-place --include-headers --dir D`
    once per directory (spatch 1.1.1 keeps only the LAST `--dir`, so
    `--dir src --dir include --dir tests` silently processes tests/ only).
 3. spatch re-pretty-prints every line it touches (breaks long initializer
@@ -96,4 +96,4 @@ docs/RENAMES_inventory.txt.
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (identifier renames): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](exec-sched.md#program-flow-and-decisions), [core-numeric](core-numeric.md#program-flow-and-decisions), [state-flags](state-flags.md#program-flow-and-decisions), [nav-conic](nav-conic.md#program-flow-and-decisions), [nav-integ](nav-integ.md#program-flow-and-decisions), [nav-aux](nav-aux.md#program-flow-and-decisions), [io-pinball](io-pinball.md#program-flow-and-decisions), [io-nouns](io-nouns.md#program-flow-and-decisions), [imu](imu.md#program-flow-and-decisions), [guid-powered](guid-powered.md#program-flow-and-decisions), [guid-landing](guid-landing.md#program-flow-and-decisions), [guid-entry](guid-entry.md#program-flow-and-decisions), [p37](p37.md#program-flow-and-decisions), [dap-lm](dap-lm.md#program-flow-and-decisions), [dap-csm](dap-csm.md#program-flow-and-decisions), [prog-rendz](prog-rendz.md#program-flow-and-decisions), [prog-align](prog-align.md#program-flow-and-decisions), [sys-misc](sys-misc.md#program-flow-and-decisions), [sim](sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../overview/README.md) and its flowcharts.
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (identifier renames): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](../../modules/exec-sched.md#program-flow-and-decisions), [core-numeric](../../modules/core-numeric.md#program-flow-and-decisions), [state-flags](../../modules/state-flags.md#program-flow-and-decisions), [nav-conic](../../modules/nav-conic.md#program-flow-and-decisions), [nav-integ](../../modules/nav-integ.md#program-flow-and-decisions), [nav-aux](../../modules/nav-aux.md#program-flow-and-decisions), [io-pinball](../../modules/io-pinball.md#program-flow-and-decisions), [io-nouns](../../modules/io-nouns.md#program-flow-and-decisions), [imu](../../modules/imu.md#program-flow-and-decisions), [guid-powered](../../modules/guid-powered.md#program-flow-and-decisions), [guid-landing](../../modules/guid-landing.md#program-flow-and-decisions), [guid-entry](../../modules/guid-entry.md#program-flow-and-decisions), [p37](../../modules/p37.md#program-flow-and-decisions), [dap-lm](../../modules/dap-lm.md#program-flow-and-decisions), [dap-csm](../../modules/dap-csm.md#program-flow-and-decisions), [prog-rendz](../../modules/prog-rendz.md#program-flow-and-decisions), [prog-align](../../modules/prog-align.md#program-flow-and-decisions), [sys-misc](../../modules/sys-misc.md#program-flow-and-decisions), [sim](../../modules/sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../../overview/README.md) and its flowcharts.

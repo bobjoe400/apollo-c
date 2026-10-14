@@ -32,7 +32,7 @@ No file is mid-edit.
   sites + 2 DOT SL1 TP shifts; 6 DMPR sites confirmed; SR/VSR as the AGC.
 * DONE fidelity pass of every lane file against Comanche055 (and Luminary099 where the
   lane has LM code); fixes in Findings.
-* DONE naming: digit-suffixed labels spelled out (docs/RENAMES.md "review-imu").
+* DONE naming: digit-suffixed labels spelled out (docs/history/RENAMES.md "review-imu").
 * DONE style debt 984 -> 0; rule 7 (void)-cast asserts made checked.
 * DONE tests: test_imu 65 -> 104 checks; oracle_imu 211 checks with tolerances
   tightened (calcgta 1 -> 0, pipa GCOMP 1 -> 0, GCOMPSW 2+sign -> 0, kalc_small AM

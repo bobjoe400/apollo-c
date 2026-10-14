@@ -30,7 +30,7 @@ tests still do not link (integration's job, unchanged).
 ## Phase A -- infallible APIs made void
 Bad arguments are programming errors: each keeps its `AGC_ASSERT`s and returns
 early, and returns nothing. Callers were rewritten with
-`tools/status_void.cocci` (`(void) f(a);` -> `f(a);`, `return f(a);` ->
+`tools/archive/status_void.cocci` (`(void) f(a);` -> `f(a);`, `return f(a);` ->
 `f(a); return;` in a void function or `f(a); return AGC_STATUS_OK;`), then the
 `st = f(a);` assignments the compiler reported ("void value not ignored") were
 rewritten (call kept; dead checks of `st` removed; `st` kept as a constant
@@ -70,7 +70,7 @@ Core/exec (lead-owned headers, edited for this task):
 Module functions whose only failure was a bad argument (checked one by one:
 every non-OK return sits under an AGC_ASSERT, and no fallible call inside),
 made void the same way, in dependency order: see the regex list in
-`tools/status_void.cocci` (105 functions with the core ones above, e.g. `agc_guid_smnb/nbsm/axisrot/
+`tools/archive/status_void.cocci` (105 functions with the core ones above, e.g. `agc_guid_smnb/nbsm/axisrot/
 reference_to_body`, `agc_imu_setcoars/pipuse1/pipfree`, `agc_lm_dap_stoprate/
 zatteror`, `agc_csm_spsoff/tvczap/setmindb/setmaxdb/dap_zerojet/massprop`,
 `agc_radar_lralt/lrvel`, `agc_rendz_flip/clradmod`, `agc_erase_set_thetad/
@@ -106,7 +106,7 @@ require the three flash continuations in `agc_dsky_display`.
 
 ## Assertions (`(void) AGC_ASSERT`)
 Done with a transformer keyed on the enclosing function's return type
-(scratch script; `tools/assert_recover.cocci` is the reusable Coccinelle form
+(scratch script; `tools/archive/assert_recover.cocci` is the reusable Coccinelle form
 of the mechanical part -- it converts 2,212 of the 3,222 sites of the
 original tree), then by hand:
 * agc_status_t: `return AGC_STATUS_BAD_ARG;` void: `return;`.
@@ -136,7 +136,7 @@ imu/gyro.c 1.88, nav/integration/jobs.c 1.94, core/interp/vector.c 1.95,
 nav/conic/common.c 1.97.
 
 ## Tools changed
-* tools/status_void.cocci (new), tools/assert_recover.cocci (new).
+* tools/archive/status_void.cocci (new), tools/archive/assert_recover.cocci (new).
 * tools/check_rules.py: a statement `if (...)` inside a function with a
   multi-line signature was taken for a definition named `if` ("direct
   recursion in if", display_if.c); C keywords are no longer function names.
@@ -179,4 +179,4 @@ nav/conic/common.c 1.97.
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass ((void)-cast calls and assertions (rule 7)): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](exec-sched.md#program-flow-and-decisions), [core-numeric](core-numeric.md#program-flow-and-decisions), [state-flags](state-flags.md#program-flow-and-decisions), [nav-conic](nav-conic.md#program-flow-and-decisions), [nav-integ](nav-integ.md#program-flow-and-decisions), [nav-aux](nav-aux.md#program-flow-and-decisions), [io-pinball](io-pinball.md#program-flow-and-decisions), [io-nouns](io-nouns.md#program-flow-and-decisions), [imu](imu.md#program-flow-and-decisions), [guid-powered](guid-powered.md#program-flow-and-decisions), [guid-landing](guid-landing.md#program-flow-and-decisions), [guid-entry](guid-entry.md#program-flow-and-decisions), [p37](p37.md#program-flow-and-decisions), [dap-lm](dap-lm.md#program-flow-and-decisions), [dap-csm](dap-csm.md#program-flow-and-decisions), [prog-rendz](prog-rendz.md#program-flow-and-decisions), [prog-align](prog-align.md#program-flow-and-decisions), [sys-misc](sys-misc.md#program-flow-and-decisions), [sim](sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../overview/README.md) and its flowcharts.
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass ((void)-cast calls and assertions (rule 7)): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](../../modules/exec-sched.md#program-flow-and-decisions), [core-numeric](../../modules/core-numeric.md#program-flow-and-decisions), [state-flags](../../modules/state-flags.md#program-flow-and-decisions), [nav-conic](../../modules/nav-conic.md#program-flow-and-decisions), [nav-integ](../../modules/nav-integ.md#program-flow-and-decisions), [nav-aux](../../modules/nav-aux.md#program-flow-and-decisions), [io-pinball](../../modules/io-pinball.md#program-flow-and-decisions), [io-nouns](../../modules/io-nouns.md#program-flow-and-decisions), [imu](../../modules/imu.md#program-flow-and-decisions), [guid-powered](../../modules/guid-powered.md#program-flow-and-decisions), [guid-landing](../../modules/guid-landing.md#program-flow-and-decisions), [guid-entry](../../modules/guid-entry.md#program-flow-and-decisions), [p37](../../modules/p37.md#program-flow-and-decisions), [dap-lm](../../modules/dap-lm.md#program-flow-and-decisions), [dap-csm](../../modules/dap-csm.md#program-flow-and-decisions), [prog-rendz](../../modules/prog-rendz.md#program-flow-and-decisions), [prog-align](../../modules/prog-align.md#program-flow-and-decisions), [sys-misc](../../modules/sys-misc.md#program-flow-and-decisions), [sim](../../modules/sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../../overview/README.md) and its flowcharts.

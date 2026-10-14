@@ -8,3 +8,5 @@ tools/prove/runs/
 tools/prove/progress.log
 tools/prove/summary.txt
 compile_commands.json
+# NASSP shim run logs (the shim writes them to the working directory)
+apollo-c-agc-*.log

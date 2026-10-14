@@ -2,7 +2,7 @@
 
 ## Scope
 
-docs/agents/review.md for lane nav-conic (docs/modules/nav-conic.md):
+docs/history/assignments/review.md for lane nav-conic (docs/modules/nav-conic.md):
 src/nav/conic/*, include/agc/nav/conic.h, tests/nav/conic.c,
 tests/oracle/conic.c, tools/oracle/cases/nav_conic{,_lm}.{spec,txt}.
 

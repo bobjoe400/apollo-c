@@ -34,7 +34,7 @@ agc_dp_sub(ip,` line.
    Uncrustify twice; add the script to the Makefile target), then `make`,
    `make test`, `make check` (0 hard), oracle tests unchanged.
 4. Count the remaining statements with more than two continuation lines
-   (docs/overview/long_statements.tsv: file:line, lines) so the review wave
+   (docs/overview/data/long_statements.tsv: file:line, lines) so the review wave
    can split them with temporaries; do not split them yourself.
-5. docs/modules/format2.md with before/after for the three user examples,
+5. docs/history/waves/format2.md with before/after for the three user examples,
    counts (comments moved, files changed), Lessons. Update docs/STYLE.md.

@@ -1,7 +1,7 @@
 # status-handling-2 -- rule 7: no silent or sentinel failures
 
 ## Scope
-docs/agents/status-handling-2.md, run alone over the whole tree.
+docs/history/assignments/status-handling-2.md, run alone over the whole tree.
 Baseline (2026-10-11, commit 1b72892): `tools/check_rules.py src include`
 reports 755 silent failures (void function returns on a failed
 AGC_ASSERT) and 1,535 sentinel failures (value function returns a
@@ -126,7 +126,7 @@ reported as information only.
   (7 scenarios) green.
 - DONE step 6, one-liners: tools/one_liners.py (libclang; state =
   file-scope/static non-const storage, transitively through callees) ->
-  docs/overview/one_liners.tsv: 562 one-line functions, ACCESSOR 473,
+  docs/overview/data/one_liners.tsv: 562 one-line functions, ACCESSOR 473,
   NAMED 89 (53 by AGC label, 36 by hand: word structure, instruction
   semantics, scale conversions, VN/flag coding), PLAIN 0. PLAIN ones
   removed: inlined agc_conic_value_ (41 calls -> agc_dp_from_words),
@@ -264,4 +264,4 @@ reported as information only.
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (silent and sentinel failures (rule 7)): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](exec-sched.md#program-flow-and-decisions), [core-numeric](core-numeric.md#program-flow-and-decisions), [state-flags](state-flags.md#program-flow-and-decisions), [nav-conic](nav-conic.md#program-flow-and-decisions), [nav-integ](nav-integ.md#program-flow-and-decisions), [nav-aux](nav-aux.md#program-flow-and-decisions), [io-pinball](io-pinball.md#program-flow-and-decisions), [io-nouns](io-nouns.md#program-flow-and-decisions), [imu](imu.md#program-flow-and-decisions), [guid-powered](guid-powered.md#program-flow-and-decisions), [guid-landing](guid-landing.md#program-flow-and-decisions), [guid-entry](guid-entry.md#program-flow-and-decisions), [p37](p37.md#program-flow-and-decisions), [dap-lm](dap-lm.md#program-flow-and-decisions), [dap-csm](dap-csm.md#program-flow-and-decisions), [prog-rendz](prog-rendz.md#program-flow-and-decisions), [prog-align](prog-align.md#program-flow-and-decisions), [sys-misc](sys-misc.md#program-flow-and-decisions), [sim](sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../overview/README.md) and its flowcharts.
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (silent and sentinel failures (rule 7)): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](../../modules/exec-sched.md#program-flow-and-decisions), [core-numeric](../../modules/core-numeric.md#program-flow-and-decisions), [state-flags](../../modules/state-flags.md#program-flow-and-decisions), [nav-conic](../../modules/nav-conic.md#program-flow-and-decisions), [nav-integ](../../modules/nav-integ.md#program-flow-and-decisions), [nav-aux](../../modules/nav-aux.md#program-flow-and-decisions), [io-pinball](../../modules/io-pinball.md#program-flow-and-decisions), [io-nouns](../../modules/io-nouns.md#program-flow-and-decisions), [imu](../../modules/imu.md#program-flow-and-decisions), [guid-powered](../../modules/guid-powered.md#program-flow-and-decisions), [guid-landing](../../modules/guid-landing.md#program-flow-and-decisions), [guid-entry](../../modules/guid-entry.md#program-flow-and-decisions), [p37](../../modules/p37.md#program-flow-and-decisions), [dap-lm](../../modules/dap-lm.md#program-flow-and-decisions), [dap-csm](../../modules/dap-csm.md#program-flow-and-decisions), [prog-rendz](../../modules/prog-rendz.md#program-flow-and-decisions), [prog-align](../../modules/prog-align.md#program-flow-and-decisions), [sys-misc](../../modules/sys-misc.md#program-flow-and-decisions), [sim](../../modules/sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../../overview/README.md) and its flowcharts.

@@ -71,5 +71,5 @@ Step 5 -- verify: compile every .c in src/ and tests/ with the brief's
   flags (-c); compare against the list before you started (record it) --
   no new failures. `python3 -I tools/check_rules.py src include` unchanged
   hard-violation count. Update docs/ARCHITECTURE.md layout block and
-  docs/modules/restructure.md (append a "Pass 2" move table). Report
+  docs/history/waves/restructure.md (append a "Pass 2" move table). Report
   <= 12 lines.

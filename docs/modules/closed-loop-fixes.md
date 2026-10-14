@@ -32,7 +32,7 @@ the sim protocol. Acceptance: `make lm-sim` exits 0, with make, make test
 - DONE six repeated assertions
 - DONE D1 exec_core0_continue_as (executive.c), agc_exec_gotopooh (fresh_start.c)
 - DONE WOTEST agc_telem_downrupt (LM only, as Luminary)
-- DONE harness: tools/lm_sim.py =skip / hold=R; tutorial tolerances from yaAGC's own spread; POODOO checkpoint
+- DONE harness: sim/lm_simulator/lm_sim.py =skip / hold=R; tutorial tolerances from yaAGC's own spread; POODOO checkpoint
 - DONE `make lm-sim` exit 0: 34 checkpoints, all matched, twice in a row (2026-10-12); make test 0 (all unit/oracle tests, 14 scenarios)
 
 ## Findings
@@ -117,7 +117,7 @@ the sim protocol. Acceptance: `make lm-sim` exits 0, with make, make test
   inside its 5 deg deadband). The tutorial's per-snap tolerances there
   (rate 0.2-0.4, deg 2-5, needle 30-80) were tighter than the reference's
   own spread, so `make lm-sim` could not pass for yaAGC against yaAGC.
-  tools/lm_sim.py gained `=skip` for deg/rate/needle and `hold=R` (each
+  sim/lm_simulator/lm_sim.py gained `=skip` for deg/rate/needle and `hold=R` (each
   AGC on its own: every body rate within R deg/s); from the first detent
   the tutorial compares displays, alarms, jets used and the rate during a
   deflection, and checks that each AGC holds its attitude (hold=1.5,

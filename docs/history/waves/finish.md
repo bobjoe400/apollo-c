@@ -21,7 +21,7 @@ No further EVA runs.
 | VALID guards, plain `if (!AGC_ASSERT(..) [|| ..]) {..}` | tools/prove/apply.py --match (scratch tsv from eva_verdicts.tsv + CSV function names) | 96 deleted |
 | VALID guards mixed with normal flow | by hand | 3 split, 1 statement deleted whole |
 | always-OK fallout | tools/cocci/always_ok_void.cocci (6 waves, regex regenerated per wave), tools/drop_final_return.py, compiler-guided call sites, tools/gen_registry.py for void jobs | `make always-ok-report` 0 |
-| setter guards | tools/cocci/setter_status.cocci (definition + prototypes), callers by hand | 20 converted |
+| setter guards | tools/archive/setter_status.cocci (definition + prototypes), callers by hand | 20 converted |
 | prologs | scripted from `make prolog-report` (returns-void -> `RETURNS: none`), 6 stale BAD_ARG texts by hand | `make prolog-report` 0 |
 
 ## Progress
@@ -92,7 +92,7 @@ No further EVA runs.
 * Gates: make OK; make test 35 unit binaries 0 failures + 14 scenarios;
   make check OK (check-rules 0 hard, format-check clean, style report
   only, 416 findings tree-wide); make prolog-report 0; make
-  always-ok-report 0; one-liners PLAIN 0 (docs/overview/one_liners.tsv
+  always-ok-report 0; one-liners PLAIN 0 (docs/overview/data/one_liners.tsv
   regenerated). Style findings in the 110 touched files: 39 (40 before).
 
 ## Findings
@@ -125,4 +125,4 @@ No further EVA runs.
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (the EVA guard deletions and the final gates): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](exec-sched.md#program-flow-and-decisions), [core-numeric](core-numeric.md#program-flow-and-decisions), [state-flags](state-flags.md#program-flow-and-decisions), [nav-conic](nav-conic.md#program-flow-and-decisions), [nav-integ](nav-integ.md#program-flow-and-decisions), [nav-aux](nav-aux.md#program-flow-and-decisions), [io-pinball](io-pinball.md#program-flow-and-decisions), [io-nouns](io-nouns.md#program-flow-and-decisions), [imu](imu.md#program-flow-and-decisions), [guid-powered](guid-powered.md#program-flow-and-decisions), [guid-landing](guid-landing.md#program-flow-and-decisions), [guid-entry](guid-entry.md#program-flow-and-decisions), [p37](p37.md#program-flow-and-decisions), [dap-lm](dap-lm.md#program-flow-and-decisions), [dap-csm](dap-csm.md#program-flow-and-decisions), [prog-rendz](prog-rendz.md#program-flow-and-decisions), [prog-align](prog-align.md#program-flow-and-decisions), [sys-misc](sys-misc.md#program-flow-and-decisions), [sim](sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../overview/README.md) and its flowcharts.
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (the EVA guard deletions and the final gates): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](../../modules/exec-sched.md#program-flow-and-decisions), [core-numeric](../../modules/core-numeric.md#program-flow-and-decisions), [state-flags](../../modules/state-flags.md#program-flow-and-decisions), [nav-conic](../../modules/nav-conic.md#program-flow-and-decisions), [nav-integ](../../modules/nav-integ.md#program-flow-and-decisions), [nav-aux](../../modules/nav-aux.md#program-flow-and-decisions), [io-pinball](../../modules/io-pinball.md#program-flow-and-decisions), [io-nouns](../../modules/io-nouns.md#program-flow-and-decisions), [imu](../../modules/imu.md#program-flow-and-decisions), [guid-powered](../../modules/guid-powered.md#program-flow-and-decisions), [guid-landing](../../modules/guid-landing.md#program-flow-and-decisions), [guid-entry](../../modules/guid-entry.md#program-flow-and-decisions), [p37](../../modules/p37.md#program-flow-and-decisions), [dap-lm](../../modules/dap-lm.md#program-flow-and-decisions), [dap-csm](../../modules/dap-csm.md#program-flow-and-decisions), [prog-rendz](../../modules/prog-rendz.md#program-flow-and-decisions), [prog-align](../../modules/prog-align.md#program-flow-and-decisions), [sys-misc](../../modules/sys-misc.md#program-flow-and-decisions), [sim](../../modules/sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../../overview/README.md) and its flowcharts.

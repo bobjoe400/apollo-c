@@ -44,8 +44,8 @@ you write; `make format` on files you edit.
    Record agree / disagree per row; disagree means you show an input or
    state that reaches the site with the fact false.
 4. **Status conversions.** For each function that gained an agc_status_t
-   return (list in docs/modules/status-handling-2.md Counts and the
-   final report in docs/WORKLOG.md), trace the new failure path to where
+   return (list in docs/history/waves/status-handling-2.md Counts and the
+   final report in docs/history/WORKLOG.md), trace the new failure path to where
    the AGC's behaviour happens (BAILOUT/POODOO reaching the restart
    machinery, or the caller's own AGC-defined handling). A status that is
    returned but ignored by a caller, or compared with `!= BAD_ARG`
@@ -66,7 +66,7 @@ you write; `make format` on files you edit.
    files no other lane is editing, otherwise record them.
 
 ## Output
-- docs/modules/verify-collapse.md: Progress (checkpoint after every
+- docs/history/waves/verify-collapse.md: Progress (checkpoint after every
   numbered item), Findings (file:line, what was changed, why it is wrong,
   what you did), Agree/disagree counts per item, Lessons for
   docs/TIPS.md. Row in docs/MODULE_STATUS.md.

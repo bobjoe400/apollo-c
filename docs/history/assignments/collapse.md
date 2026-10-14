@@ -17,7 +17,7 @@ reader follows one function instead of hopping through four.
    compared structurally, not textually). Mark functions referenced from
    src/exec/dispatch.c (job/task entries), from tests/, and from public
    headers.
-   Output docs/overview/callgraph.tsv: callee | callers | sites | lines |
+   Output docs/overview/data/callgraph.tsv: callee | callers | sites | lines |
    static? | agc_label? (true if the function's header comment names an
    AGC label or page). Also emit a Graphviz .dot (handy for the document
    wave).
@@ -35,7 +35,7 @@ reader follows one function instead of hopping through four.
    reverts on failure. The agent handles only the candidates the script
    refuses (renamed parameters, early returns, value results used in an
    expression), and reviews the script's diffs for readability.
-   Produce the candidate list (docs/overview/collapse_candidates.tsv) and
+   Produce the candidate list (docs/overview/data/collapse_candidates.tsv) and
    STOP for the lead's review before applying, as the naming lane did.
    **Collapse** each candidate into its caller when the caller stays
    <= 60 code lines after inlining (brace-only lines don't count) and the
@@ -57,7 +57,7 @@ reader follows one function instead of hopping through four.
 4. After each file: compile with the Makefile flags, `make format`,
    `make check` 0 hard. At the end: `make`, `make test`, oracle tests
    unchanged. Report counts (candidates, collapsed, kept-with-reason) and
-   the 10 biggest readability wins in docs/modules/collapse.md with a
+   the 10 biggest readability wins in docs/history/waves/collapse.md with a
    Lessons section. Add `make callgraph` to regenerate the tsv/dot.
 
 Scope boundary (parallel run): do not touch src/sim/ or tests/; the sim and

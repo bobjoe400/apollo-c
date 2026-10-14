@@ -3,10 +3,10 @@
 Runs after status-handling. You own the whole tree. Goal: definition-of-done
 items 2, 4, 5 in docs/PLAN.md: `make`, `make test`, `make check` all clean,
 one flat job/task registry, no scaffolding files, layering respected.
-Read docs/WORKLOG.md ("Integration:" lines) and every docs/modules/*.md
+Read docs/history/WORKLOG.md ("Integration:" lines) and every docs/modules/*.md
 "Requested core additions" / "Requested jobs-tasks" / "Open questions"
 section first; they are the worklist. Keep a Progress section in
-docs/modules/integrate.md from the start.
+docs/history/waves/integrate.md from the start.
 
 1. **Job/task registry.** Collect every provisional id from all
    `pending.h`, `ext.h`, `*_pending.h`, `sysmisc_ext.h` into
@@ -52,5 +52,5 @@ docs/modules/integrate.md from the start.
    clean; `make style` is allowed to report for now), oracle tests
    (tests/oracle/*) pass. Add a debug library target so tests see
    AGC_HOST_DEBUG asserts (sys-misc note).
-6. **Report** <= 15 lines; docs/modules/integrate.md has the decisions,
+6. **Report** <= 15 lines; docs/history/waves/integrate.md has the decisions,
    anything deferred, and Lessons. Update docs/MODULE_STATUS.md.

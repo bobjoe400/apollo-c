@@ -11,7 +11,7 @@ its lane's AGC source files side by side with the C and checks:
    Record each confirmed routine and each discrepancy in
    docs/modules/review-<lane>.md.
 2. **Open questions.** Resolve the lane note's "Open questions" and the
-   REVIEW items in docs/WORKLOG.md for this lane (e.g. ZOOM alias scope,
+   REVIEW items in docs/history/WORKLOG.md for this lane (e.g. ZOOM alias scope,
    docked 1/ACCS COEFCTR reading, BIGAOS 2*DB, UNIT precision at B27 for
    short vectors, R63 ranges) by reading the page images via the oracle
    rope where the text is ambiguous. State the answer and fix the code.
@@ -28,7 +28,7 @@ its lane's AGC source files side by side with the C and checks:
 
 ## Scope and inputs (added at launch, 2026-10-10)
 * Edit only your lane's files (docs/MODULE_STATUS.md "Files produced" and
-  docs/modules/restructure.md move tables tell you where they are now) and
+  docs/history/waves/restructure.md move tables tell you where they are now) and
   your lane's tests. Shared/public headers: edit only the declarations your
   lane owns; anything else goes in your note as a request.
 * Oracle findings for your lane: docs/modules/oracle-cases.md "Findings"

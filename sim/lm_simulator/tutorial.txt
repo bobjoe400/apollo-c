@@ -1,5 +1,5 @@
 # LM Simulator tutorial (virtualagc/Contributed/LM_Simulator, readme.html
-# section 4) flown by tools/lm_sim.py on build/agc_sim and on yaAGC with the
+# section 4) flown by sim/lm_simulator/lm_sim.py on build/agc_sim and on yaAGC with the
 # Luminary099 rope.  Crew actions go through the simulator's own controls;
 # `snap` checkpoints are compared across the two AGCs (docs/modules/
 # lm-simulator.md).  Times are wall-clock seconds: both AGCs run real time.

@@ -58,7 +58,7 @@ yaAGC from the peripherals' point of view:
    connected to build/agc_sim: V35 lights test lights the lamps; V06N36
    shows the clock; keys arrive as KEYRUPT. Also try yaTelemetry on the
    downlink.
-3. Scripted scenarios: a small Python client (tools/sim_client.py) that
+3. Scripted scenarios: a small Python client (sim/sim_client.py) that
    speaks the same protocol: sends key packets, collects channel 010/011
    packets, decodes relay words into VERB/NOUN/PROG/R1-R3 and lamps, and
    asserts expected displays. Scenarios a-e of the original list run
@@ -71,7 +71,7 @@ Keep the minimal `main.c` that integrate wrote working for `--headless`.
 
 ## RESUMED (user, 2026-10-10)
 GUI verification with yaDSKY2/yaTelemetry is allowed again. Order of work:
-protocol server + headless scripted scenarios via tools/sim_client.py
+protocol server + headless scripted scenarios via sim/sim_client.py
 first; GUI verification last. Close GUI windows when a check is done.
 The collapse lane is editing src/ (not src/sim) concurrently; do not edit
 flight code, record bugs in your note.

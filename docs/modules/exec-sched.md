@@ -126,7 +126,7 @@ Build (the full libagc does not build yet because of other lanes):
 
 _Documentation wave (2026-10-12), from the final tree (HEAD 99b2c6e). The prose was written by reading the code; the two tables were extracted from the function bodies (flag, alarm, channel and scheduling calls; `agc_erase_*` accessors) and list only what the code does. Files: `src/exec/executive.c`, `src/exec/waitlist.c`, `src/exec/interrupts.c`, `src/exec/fresh_start.c`, `src/exec/alarm.c`, `src/exec/restarts.c`, `src/exec/phase_table.c`, `src/exec/restart_tables.c`, `src/exec/erasable.c`, `src/exec/dispatch.c`, `src/exec/change_program/*.c`._
 
-The scheduler paths are drawn in [docs/overview/flowcharts/](../overview/flowcharts/)
+The scheduler paths are drawn in [docs/overview/flowcharts/](../overview/flowcharts)
 (job-preemption, waitlist-tick, software-restart, fresh-start,
 program-change); this is the summary with the decision points.
 

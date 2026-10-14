@@ -2,7 +2,7 @@
 
 ## Scope
 
-docs/agents/review.md for lane core-numeric (docs/modules/core-numeric.md):
+docs/history/assignments/review.md for lane core-numeric (docs/modules/core-numeric.md):
 src/core/{mpac.c,mpac.h,divide.c,shift.c,word.c,sp_trig.c,constants.c,
 vec_div.c}, src/core/interp/{scalar,trig,vector}.c,
 include/agc/core/{interp.h,word.h,constants.h}, tests/core/numeric.c,

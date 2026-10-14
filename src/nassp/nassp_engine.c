@@ -543,11 +543,23 @@ static void import_channels(void)
 
         if (g_agc->InputChannel[c] != g_chan_seen[c])
         {
-            int16_t was = g_chan_seen[c]; /* the value last exported */
+            int16_t  was = g_chan_seen[c];                                           /* the value last exported */
+            uint16_t v   = (uint16_t) ((uint16_t) g_agc->InputChannel[c] & NS_WORD); /* the new value */
 
-            if (sim_input((uint16_t) c, (uint16_t) ((uint16_t) g_agc->InputChannel[c] & NS_WORD), NS_WORD))
+            if ((c == 015 || c == 016) && !g_started)
+            {
+                /* A scenario load leaves the last key code in channel 015 (016); NASSP's
+                 * yaAGC takes a key only from its interrupt request, so the load is no
+                 * keystroke (a KEYRUPT here lit OPR ERR at every load). */
+                g_errors += (agc_chan_set_input(c, v) == AGC_STATUS_OK) ? 0u : 1u; /* refused: a shim error */
+            }
+            else if (sim_input((uint16_t) c, v, NS_WORD))
             {
                 g_keys++; /* 015 / 016: KEYRUPT1 / 2 requested */
+            }
+            else
+            {
+                /* not a key channel, or no interrupt asked */
             }
 
             if (c == 033)

@@ -1,0 +1,4 @@
+# prototype	header   -- declared, never defined
+agc_csm_vtogain_body	src/csm/burns/sps/internal.h
+agc_rendz_tracking_bvectors	include/agc/programs/rendezvous.h
+lm_dap_paxis	src/lm/dap/internal.h

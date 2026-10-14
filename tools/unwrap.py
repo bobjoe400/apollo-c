@@ -123,11 +123,11 @@ _EXTERN = None
 
 
 def extern_file(name):
-    """The src/ file defining extern function name (docs/overview/callgraph.tsv)."""
+    """The src/ file defining extern function name (docs/overview/data/callgraph.tsv)."""
     global _EXTERN
     if _EXTERN is None:
         _EXTERN = {}
-        for row in io1._tsv(os.path.join('docs', 'overview', 'callgraph.tsv')):
+        for row in io1._tsv(os.path.join('docs', 'overview', 'data', 'callgraph.tsv')):
             if row['static'] == 'extern':
                 _EXTERN[row['callee']] = row['file']
     return _EXTERN.get(name)

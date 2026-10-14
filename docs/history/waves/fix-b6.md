@@ -94,4 +94,4 @@ B6 fixed the scenario reached code it had never run, and needed:
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), HEAD 99b2c6e._ B6 changed one decision: the CLOCKJOB display word NVWORD1 (`src/csm/burns/sps/clock.c`, CKNVWRD1) selects the V99 engine-enable request or the V97 engine-fail flash, and the display interface pastes V97 / V99 from it on a CLOCPLAY display (`src/io/dsky/display_if.c:dif_second_vn`, `agc_dsky_set_nvword1`). Flows: [guid-powered](guid-powered.md#program-flow-and-decisions), [io-pinball](io-pinball.md#program-flow-and-decisions).
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ B6 changed one decision: the CLOCKJOB display word NVWORD1 (`src/csm/burns/sps/clock.c`, CKNVWRD1) selects the V99 engine-enable request or the V97 engine-fail flash, and the display interface pastes V97 / V99 from it on a CLOCPLAY display (`src/io/dsky/display_if.c:dif_second_vn`, `agc_dsky_set_nvword1`). Flows: [guid-powered](../../modules/guid-powered.md#program-flow-and-decisions), [io-pinball](../../modules/io-pinball.md#program-flow-and-decisions).

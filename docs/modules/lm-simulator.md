@@ -1,7 +1,7 @@
 # lm-simulator -- Virtual AGC LM Simulator closed loop on build/agc_sim vs yaAGC
 
 ## Scope
-PLAN item 10, phase 1 (docs/agents/lm-simulator.md). Stephan Hotto's LM
+PLAN item 10, phase 1 (docs/history/assignments/lm-simulator.md). Stephan Hotto's LM
 Simulator (SRC/virtualagc/Contributed/LM_Simulator, Tcl/Tk, v1.0 with Ron
 Burkey's 2009/2025 fixes) attached to build/agc_sim (Luminary099) exactly
 as to yaAGC, then the same sequence against tools/oracle/bin/yaAGC. Nothing
@@ -32,10 +32,10 @@ of the simulator is modified; no device model on our side.
 - DONE step 1 (connect): agc_sim LM peripheral server + stock
   lm_simulator.ini; simulator connects on 19801, all six windows up, DSKY
   Lite shows PROG 00 / VERB 37 flashing after power-on.
-- DONE harness (2026-10-12): tools/lm_sim_harness.tcl sources the
+- DONE harness (2026-10-12): sim/lm_simulator/harness.tcl sources the
   simulator unmodified (wish = its windows; tclsh = inert Tk stand-ins that
   keep each widget's -command/-variable so `invoke` runs its own button
-  script) and adds a control port; tools/lm_sim.py starts an AGC (agc_sim or
+  script) and adds a control port; sim/lm_simulator/lm_sim.py starts an AGC (agc_sim or
   yaAGC) on a free LM port range, the simulator on base+4, a monitor
   peripheral on base+1 (DSKY decode as yaDSKY2, jet log from ch 5/6), plays
   a sequence of crew actions and compares checkpoints.
@@ -89,7 +89,7 @@ Scripted comparison (both AGCs, same crew sequence, real time ~11 min):
     make lm-sim LMSIM_DIR=$LMSIM LMSIM_ARGS="--gui --xshot DIR"   # windows + screenshots
     make lm-sim LMSIM_DIR=$LMSIM LMSIM_ARGS=--repeat-jets         # diagnostic relay
 
-= `python3 -I tools/lm_sim.py --lmsim $LMSIM [--agc ours|yaagc|both]
+= `python3 -I sim/lm_simulator/lm_sim.py --lmsim $LMSIM [--agc ours|yaagc|both]
 [--sequence sim/lm_simulator/tutorial.txt] [--out build/lm_sim]`. Per AGC
 it writes build/lm_sim/<agc>/run.log (sequence log + the simulator's own
 log lines: CDU drive, gyro pulses) and snaps.json; then a side-by-side
@@ -129,7 +129,7 @@ Line numbers as of 2026-10-12 (tree c77e3e5 + the finish lane's edits).
   Seen in every RHC run that fired jets (FAILREG 01103 01103 01103).
 
 ## Findings (tutorial phases, build/agc_sim vs yaAGC, same simulator and crew sequence)
-Runs: `tools/lm_sim.py --agc both` with sim/lm_simulator/tutorial.txt,
+Runs: `sim/lm_simulator/lm_sim.py --agc both` with sim/lm_simulator/tutorial.txt,
 headless and --gui (2026-10-12; agc_sim built from c77e3e5 + working tree).
 
 | Phase (tutorial section) | Loop closed? | yaAGC | build/agc_sim | Verdict |
@@ -159,7 +159,7 @@ headless and --gui (2026-10-12; agc_sim built from c77e3e5 + working tree).
   applies the previous packet's jets; with yaAGC's 20 writes/s the lag is
   one DAP pass, with agc_sim it is a whole firing (jets act when they have
   stopped). That breaks every RCS loop. A drop-in agc_sim must send a packet
-  per channel write (at least 5, 6). Shown by tools/lm_sim.py --repeat-jets
+  per channel write (at least 5, 6). Shown by sim/lm_simulator/lm_sim.py --repeat-jets
   (a relay re-sending the last ch5/6 words every 50 ms): the RCS loops then
   close and match yaAGC within tolerance.
 - S-L2 (src/sim, counters): src/sim/counters.c applies PCDU/MCDU (and the
@@ -195,19 +195,19 @@ headless and --gui (2026-10-12; agc_sim built from c77e3e5 + working tree).
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), from tools/lm_sim.py,
-tools/lm_sim_harness.tcl and sim/lm_simulator/tutorial.txt at HEAD
+_Documentation wave (2026-10-12), from sim/lm_simulator/lm_sim.py,
+sim/lm_simulator/harness.tcl and sim/lm_simulator/tutorial.txt at HEAD
 99b2c6e. This lane owns no flight code; the AGC paths the simulator
 exercises are in the lane notes named below._
 
-* **Harness** (`tools/lm_sim.py:main`): for `--agc both` it flies the
+* **Harness** (`sim/lm_simulator/lm_sim.py:main`): for `--agc both` it flies the
   same sequence twice, ours then yaAGC, and compares (`compare`); exit 1
   on any mismatch. Per AGC (`Flight`): a free LM port range
   (`free_base`), the AGC process (build/agc_sim `--core` or
   tools/oracle/bin/yaAGC `--no-resume`), a monitor peripheral on base+1
   (`Monitor`: decodes channel 010/011 like yaDSKY2, logs channel 5/6 jet
   words), the simulator on base+4 (`Harness`: `tclsh` headless or `wish`
-  with `--gui`, through `tools/lm_sim_harness.tcl`, which sources the
+  with `--gui`, through `sim/lm_simulator/harness.tcl`, which sources the
   unmodified simulator and opens a control socket; `tcl` refuses any
   reply that is not `OK`). `--repeat-jets` puts a relay (`Relay`) between
   ours and the simulator that re-sends the last ch5/6 words every 50 ms

@@ -49,12 +49,12 @@ sim-debug: $(BUILD)/agc_sim_debug
 $(BUILD)/agc_sim_debug: $(SIM_OBJS) $(BUILD)/libagc_debug.a
 	$(CC) $(CFLAGS) -o $@ $^
 
-# End-to-end scenarios (docs/modules/sim.md): tools/sim_client.py drives
+# End-to-end scenarios (docs/modules/sim.md): sim/sim_client.py drives
 # build/agc_sim in lockstep over the yaAGC peripheral protocol.
 SCENARIOS := $(sort $(wildcard sim/scenarios/*.txt))
 scenarios: $(BUILD)/agc_sim
 	@for s in $(SCENARIOS); do echo "== $$s"; \
-	  python3 -I tools/sim_client.py --sim $(BUILD)/agc_sim --scenario $$s || exit 1; done
+	  python3 -I sim/sim_client.py --sim $(BUILD)/agc_sim --scenario $$s || exit 1; done
 
 # Virtual AGC's LM Simulator (virtualagc/Contributed/LM_Simulator, Tcl/Tk,
 # unmodified) flown on build/agc_sim and on yaAGC with the same crew
@@ -70,7 +70,7 @@ LMSIM_REPO := $(BUILD)/virtualagc
 LMSIM_DIR  ?= $(LMSIM_REPO)/Contributed/LM_Simulator
 LMSIM_ARGS ?=
 lm-sim: $(BUILD)/agc_sim $(if $(filter $(LMSIM_REPO)/%,$(LMSIM_DIR)),$(LMSIM_REPO)/Contributed/LM_Simulator/lm_simulator.tcl)
-	python3 -I tools/lm_sim.py --lmsim $(LMSIM_DIR) --sim $(BUILD)/agc_sim --sequence sim/lm_simulator/tutorial.txt --out $(BUILD)/lm_sim $(LMSIM_ARGS)
+	python3 -I sim/lm_simulator/lm_sim.py --lmsim $(LMSIM_DIR) --sim $(BUILD)/agc_sim --sequence sim/lm_simulator/tutorial.txt --out $(BUILD)/lm_sim $(LMSIM_ARGS)
 
 $(LMSIM_REPO)/Contributed/LM_Simulator/lm_simulator.tcl:
 	@rm -rf $(LMSIM_REPO)
@@ -150,20 +150,20 @@ style-report:
 lint:
 	@command -v cppcheck >/dev/null && cppcheck --std=c11 --enable=warning,style,performance,portability --error-exitcode=1 -Iinclude src || echo "cppcheck not installed"
 
-# Call graph from the compiler (docs/agents/collapse.md): every src/ and
+# Call graph from the compiler (docs/history/assignments/collapse.md): every src/ and
 # tests/ TU compiled at -O0 -fno-inline with -fcallgraph-info=su,da (GCC
 # writes one VCG .ci file next to each object), cflow for the cross-TU
 # cross-check, libclang (inside the script) for extents and guard ASTs.
-# Writes docs/overview/callgraph.{tsv,dot} and collapse_candidates.tsv.
+# Writes docs/overview/data/callgraph.{tsv,dot} and collapse_candidates.tsv.
 CG_DIR   := $(BUILD)/callgraph
-CG_SRCS  := $(shell find src -name '*.c' | sort)
+CG_SRCS  := $(shell find src -name '*.c' -not -path 'src/nassp/*' | sort)
 CG_TESTS := $(shell find tests -name '*.c' | sort)
 CG_CIS   := $(patsubst %.c,$(CG_DIR)/%.ci,$(CG_SRCS) $(CG_TESTS))
 
 callgraph: $(CG_CIS)
 	cflow -b --omit-arguments --no-main -i s $(CG_SRCS) > $(CG_DIR)/cflow.txt 2>/dev/null
 	python3 -I tools/callgraph.py --ci-dir $(CG_DIR) --cflow $(CG_DIR)/cflow.txt \
-	    --out docs/overview
+	    --out docs/overview/data
 
 $(CG_DIR)/src/%.ci: src/%.c
 	@mkdir -p $(dir $@)
@@ -173,7 +173,7 @@ $(CG_DIR)/tests/%.ci: tests/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CSTD) $(WARN) -O0 -fno-inline $(CPPFLAGS) -DAGC_HOST_DEBUG -fcallgraph-info=su,da -c -o $(@:.ci=.o) $<
 
-# Boundary-check discipline (docs/modules/status-handling-2.md): Frama-C EVA
+# Boundary-check discipline (docs/history/waves/status-handling-2.md): Frama-C EVA
 # proves or refutes every AGC_ASSERT, one analysis per entry point (each test
 # main, with the whole library; agc_sim's unbounded main is not one, see
 # tools/prove/eva_run.py), two at a time, 60 min each; it runs detached.
@@ -181,7 +181,7 @@ $(CG_DIR)/tests/%.ci: tests/%.c
 # tools/prove/progress.log (one line per run) and tools/prove/summary.txt
 # (done/total, verdicts, ETA).  When it has finished, `make prove-classify`
 # merges the verdicts with the libclang call-site classification into
-# docs/overview/guards.tsv: a guard left in src/ must be FALLIBLE
+# docs/overview/data/guards.tsv: a guard left in src/ must be FALLIBLE
 # (classified GUARANTEED means it is dead code).
 prove:
 	@mkdir -p $(BUILD)/prove

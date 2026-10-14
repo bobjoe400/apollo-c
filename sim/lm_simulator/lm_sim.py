@@ -2,7 +2,7 @@
 """lm_sim.py -- Virtual AGC's LM Simulator flown on build/agc_sim and on yaAGC.
 
 Runs Stephan Hotto's LM Simulator (virtualagc/Contributed/LM_Simulator,
-unmodified, through tools/lm_sim_harness.tcl) against an AGC on the LM
+unmodified, through sim/lm_simulator/harness.tcl) against an AGC on the LM
 peripheral ports, plays a sequence of crew actions on the simulator's own
 controls (DSKY Lite keys, crew switches, RHC), and records checkpoints:
 the DSKY (decoded from a second peripheral connection, as yaDSKY2 does),
@@ -57,11 +57,11 @@ import sys
 import threading
 import time
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import sim_client  # noqa: E402  (same directory; python3 -I drops it from the path)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sim_client  # noqa: E402  (sim/sim_client.py; python3 -I drops the script's own directory from the path)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))
 ROPE = os.path.join(ROOT, 'tools', 'oracle', 'ropes', 'Luminary099.bin')
 
 KEY_BUTTON = {'+': 'b1', '7': 'b2', '8': 'b3', '9': 'b4', 'C': 'b5',
@@ -266,7 +266,7 @@ class Relay(threading.Thread):
 
 
 class Harness:
-    """The LM Simulator under tools/lm_sim_harness.tcl."""
+    """The LM Simulator under sim/lm_simulator/harness.tcl."""
 
     def __init__(self, lmsim, ctrl_port, agc_port, gui, log):
         prog = 'wish' if gui else 'tclsh'
@@ -274,7 +274,7 @@ class Harness:
             prog,
             os.path.join(
                 HERE,
-                'lm_sim_harness.tcl'),
+                'harness.tcl'),
             lmsim,
             str(ctrl_port),
             '--port=%d' %

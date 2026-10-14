@@ -2,7 +2,7 @@
 
 ## Scope
 
-docs/agents/document.md deliverables a-e plus the root README.md
+docs/history/assignments/document.md deliverables a-e plus the root README.md
 "Status" and "Documentation" sections, generated from the final tree
 (HEAD 99b2c6e; no edits under src/ include/ tests/ tools/prove src/nassp).
 Writes only docs/, README.md and tools/{depgraph,xref}.py.
@@ -23,7 +23,7 @@ compact.py, addsec.py, narr/<lane>.md, extra/<note>.md, lanes/, dig/).
   mtime within 10 min at each check). 19 code lanes: prose from the code
   (narr/) + generated tables (decisions.py: decision points by function,
   shared erasables with scale) via assemble.py. lm-simulator and
-  closed-loop-fixes: hand-written from tools/lm_sim.py and the fixed
+  closed-loop-fixes: hand-written from sim/lm_simulator/lm_sim.py and the fixed
   functions; review-*, tree-wide passes, oracle*, fix-b6, loose-ends,
   document: short sections pointing at the owning lanes (extra/, addsec.py).
   nassp-integration.md SKIPPED: its lane is running (note written 17:46,

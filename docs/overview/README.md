@@ -10,12 +10,12 @@ function's prolog.
 
 Companion documents:
 
-* [flowcharts/](flowcharts/) -- Mermaid flowcharts of the scheduler
+* [flowcharts/](flowcharts) -- Mermaid flowcharts of the scheduler
   paths and the major program sequences, drawn from the C control flow.
 * [xref.md](xref.md) -- generated index AGC label -> C function ->
   file:line (`python3 -I tools/xref.py`).
 * [../TIPS.md](../TIPS.md) -- what the translation taught, by topic.
-* [../modules/](../modules/) -- one note per lane; each translation lane
+* [../modules/](../modules) -- one note per lane; each translation lane
   has a "Program flow and decisions" section (flags tested, alarms,
   branches, data with scale, AGC labels -> C functions).
 * The module map at the end of this page is generated from the compiler's

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""guards.py -- classify every AGC_ASSERT guard (docs/agents/status-handling-2.md).
+"""guards.py -- classify every AGC_ASSERT guard (docs/history/assignments/status-handling-2.md).
 
 Usage (repo root):
     python3 -I tools/prove/guards.py index      # libclang index -> build/prove/index.pkl
-    python3 -I tools/prove/guards.py classify   # + EVA verdicts -> docs/overview/guards.tsv
+    python3 -I tools/prove/guards.py classify   # + EVA verdicts -> docs/overview/data/guards.tsv
 
 A guard is `if (!AGC_ASSERT(c) [|| !AGC_ASSERT(d)]) { ...; return ...; }`.
 Each conjunct of its condition is a fact.  A fact is GUARANTEED when
@@ -946,7 +946,7 @@ def main(argv):
     if argv[1] == 'index':
         cmd_index()
     elif argv[1] == 'classify':
-        cmd_classify(argv[2] if len(argv) > 2 else os.path.join(ROOT, 'docs', 'overview', 'guards.tsv'),
+        cmd_classify(argv[2] if len(argv) > 2 else os.path.join(ROOT, 'docs', 'overview', 'data', 'guards.tsv'),
                      argv[3] if len(argv) > 3 else INDEX)
     return 0
 

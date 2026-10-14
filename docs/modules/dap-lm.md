@@ -85,7 +85,7 @@ t6rupt.c, tjetlaw.c, gts.c, accs.c, accont.c, rcsmon.c, spsrcs.c.
 * DONE pmanual.c (state logic, min impulse, DETENTCK, RATERROR, PEGI, JUSTOUT, RATEDONE, ZEROENBL)
 * DONE tjetlaw.c (TJETLAW all zones + RUFLAW1-3), t6rupt.c (JTLST, T6JOB, T6JOBCHK, DOT6RUPT, WRITEP/U/V,
   TIME6 DINC model)
-* Session 3: NAMING rule applied (1/ACCS -> jet_accel_update etc., see docs/RENAMES.md)
+* Session 3: NAMING rule applied (1/ACCS -> jet_accel_update etc., see docs/history/RENAMES.md)
 * DONE qraxis.c (QRAXIS, CALLQERR, TRYGTS, RCS, SENSEGET, QRCONTRL, QERRCALC, STILLRCS), qrmanual.c
   (min impulse, CHEKSTIK, RHCACTIV, ENTERUV), qrjets.c (U,V loop bodies, AFTERTJ, DOSKIP, SELCTSUB, XTRANS,
   ROT-TOUV, CLOSEOUT)

@@ -110,7 +110,7 @@ PINBALL_NOUN_TABLES, DISPLAY_INTERFACE_ROUTINES, KEYRUPT_UPRUPT (CM + LM).
   implements agc_change_program, which MMCHANG calls.
 * io-pinball "unwired data ids": reads are complete except N08 ALMCADR
   +0..+2 (the AGC alarm return address; no owner in C, NOT_FOUND by
-  design, docs/modules/integrate.md). SPECIFY_ADDR (N01-03),
+  design, docs/history/waves/integrate.md). SPECIFY_ADDR (N01-03),
   SPECIFY_CHANNEL (N10) and INCREMENT_ADDR (N15) are NOT_FOUND in the data
   layer because pinball handles them itself (MCTBS, CHANDSP, V15).
   Writes: see below.

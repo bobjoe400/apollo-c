@@ -42,9 +42,9 @@ alignment, pinball, etc.). We translate:
 | 2    | sys-misc      | T4RUPT_PROGRAM, EXTENDED_VERBS, DOWNLINK_LISTS, DOWN_TELEMETRY_PROGRAM, UPDATE_PROGRAM, SERVICE_ROUTINES, AGC_BLOCK_TWO_SELF_CHECK, SYSTEM_TEST_STANDARD_LEAD_INS, IMU_PERFORMANCE_TESTS, INTER-BANK_COMMUNICATION, RTB_OP_CODES | src/io/, src/csm/, src/lm/ |
 | 3    | integrate     | build all, fix -Werror, sim harness, tests, rule checker, review | src/sim/, tests/ |
 
-## Rules for subagents (summary; full text in docs/AGENT_BRIEF.md)
+## Rules for subagents (summary; full text in docs/agents/brief.md)
 
-* Read docs/AGENT_BRIEF.md, docs/TRANSLATION_GUIDE.md, docs/CODING_STANDARD.md
+* Read docs/agents/brief.md, docs/TRANSLATION_GUIDE.md, docs/CODING_STANDARD.md
   and the headers in include/agc/ before translating.
 * Write code only in your assigned target directory, plus your module note
   `docs/modules/<agent-id>.md` and your row in docs/MODULE_STATUS.md.
@@ -90,7 +90,7 @@ bits), split that part off to a Sonnet agent.
 3. Rules pass: `make check` zero hard violations AND assertion-density
    warnings cleared; `make format-check` and `make style` clean (NASA
    SEL-94-003 C Style Guide via .clang-format + tools/check_style.py).
-4. Naming: docs/NAMING.md applied everywhere; docs/RENAMES.md fully done.
+4. Naming: docs/NAMING.md applied everywhere; docs/history/RENAMES.md fully done.
 5. Tests: `make test` green through the real library (no scratch stand-ins).
 6. Oracle: every numeric module has committed yaAGC cases passing within a
    documented tolerance; bit-exact where -0 quirks allow.
@@ -104,7 +104,7 @@ bits), split that part off to a Sonnet agent.
    from the real DSKY window, fresh start, V35 lamp test, V16N36 clock,
    CSM P52 realign with simulated marks, CSM P40 burn, LM P63 braking start,
    each producing the AGC's expected displays; headless scripted scenarios
-   (tools/sim_client.py) cover the same sequences for `make test`. Fresh-
+   (sim/sim_client.py) cover the same sequences for `make test`. Fresh-
    starts either vehicle and completes at least one real program sequence
    per vehicle
    (e.g. P52 realign with simulated marks; P40 with a simulated burn) with
@@ -240,8 +240,8 @@ Then: lead assert.h rename; ONE Frama-C EVA run (`make prove`, `make
     a. LM Simulator (Virtual AGC Contributed/LM_Simulator, Tcl/Tk): the
        one closed-loop flight test available with an existing proven tool
        on Linux; LM only; compared side by side with yaAGC on the same
-       sequence (docs/agents/lm-simulator.md).
-    b. NASSP integration study (docs/agents/nassp-study.md): NASSP embeds
+       sequence (docs/history/assignments/lm-simulator.md).
+    b. NASSP integration study (docs/history/assignments/nassp-study.md): NASSP embeds
        yaAGC's engine and reads/writes erasable directly; inventory of
        its AGC interface, the erasable map onto our typed storage, the
        shim design, the build/run plan. NASSP/Orbiter are Windows

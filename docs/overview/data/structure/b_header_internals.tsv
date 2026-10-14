@@ -1,0 +1,1320 @@
+symbol	kind	header	line	only_user	proposal	test_users
+agc_assert_report	prototype	include/agc/core/assertion.h	29	src/core/assert.c	internal (def file + tests)	32
+AGC_CH005_PYJET5	enumerator	include/agc/core/channels.h	86	-	unused	0
+AGC_CH005_PYJET6	enumerator	include/agc/core/channels.h	88	-	unused	0
+AGC_CH005_PYJET7	enumerator	include/agc/core/channels.h	90	-	unused	0
+AGC_CH005_PYJET8	enumerator	include/agc/core/channels.h	92	-	unused	0
+AGC_CH006_ROLLJET1	enumerator	include/agc/core/channels.h	95	-	unused	0
+AGC_CH006_ROLLJET2	enumerator	include/agc/core/channels.h	97	-	unused	0
+AGC_CH006_ROLLJET3	enumerator	include/agc/core/channels.h	99	-	unused	0
+AGC_CH006_ROLLJET4	enumerator	include/agc/core/channels.h	101	-	unused	0
+AGC_CH006_ROLLJET5	enumerator	include/agc/core/channels.h	103	-	unused	0
+AGC_CH006_ROLLJET6	enumerator	include/agc/core/channels.h	105	-	unused	0
+AGC_CH006_ROLLJET7	enumerator	include/agc/core/channels.h	107	-	unused	0
+AGC_CH006_ROLLJET8	enumerator	include/agc/core/channels.h	109	-	unused	0
+AGC_CH007_FEXT0	enumerator	include/agc/core/channels.h	112	-	unused	0
+AGC_CH007_FEXT1	enumerator	include/agc/core/channels.h	114	-	unused	0
+AGC_CH007_FEXT2	enumerator	include/agc/core/channels.h	116	-	unused	0
+AGC_CH007_FEXT_MASK	enumerator	include/agc/core/channels.h	118	-	unused	0
+AGC_CH011_CAUTRESET	enumerator	include/agc/core/channels.h	139	src/io/dsky/pinball/internal.h	file-local (one .c)	0
+AGC_CH011_COMPACT	enumerator	include/agc/core/channels.h	123	src/exec/executive.c	file-local (one .c)	0
+AGC_CH011_ISSWARN	enumerator	include/agc/core/channels.h	121	src/imu/mode.c	file-local (one .c) + tests	1
+AGC_CH011_KEYREL	enumerator	include/agc/core/channels.h	129	src/io/dsky/pinball/internal.h	file-local (one .c)	0
+AGC_CH011_OPERERR	enumerator	include/agc/core/channels.h	133	src/io/dsky/pinball/internal.h	file-local (one .c)	0
+AGC_CH011_SPARE11	enumerator	include/agc/core/channels.h	141	-	unused	0
+AGC_CH011_SPARE12	enumerator	include/agc/core/channels.h	143	-	unused	0
+AGC_CH011_SPARE15	enumerator	include/agc/core/channels.h	149	-	unused	0
+AGC_CH011_SPARE8	enumerator	include/agc/core/channels.h	135	-	unused	0
+AGC_CH011_TEMPCAUT	enumerator	include/agc/core/channels.h	127	src/io/dsky/pinball/internal.h	file-local (one .c)	0
+AGC_CH011_VNFLASH	enumerator	include/agc/core/channels.h	131	src/io/dsky/pinball/internal.h	file-local (one .c)	0
+AGC_CH012_DISOPTDAC	enumerator	include/agc/core/channels.h	182	-	unused	0
+AGC_CH012_DISPINERT	enumerator	include/agc/core/channels.h	172	src/lm/landing/displays.c	file-local (one .c)	0
+AGC_CH012_ENBRRCDUERR	enumerator	include/agc/core/channels.h	158	src/lm/landing/displays.c	file-local (one .c)	0
+AGC_CH012_ISSDELAYDONE	enumerator	include/agc/core/channels.h	196	-	unused	0
+AGC_CH012_LRPOS2CMD	enumerator	include/agc/core/channels.h	190	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_CH012_NOTUSED3	enumerator	include/agc/core/channels.h	160	-	unused	0
+AGC_CH012_RRLOCKON	enumerator	include/agc/core/channels.h	194	src/lm/landing/lunar_landing.c	file-local (one .c)	0
+AGC_CH012_SIVCUTOFF	enumerator	include/agc/core/channels.h	192	-	unused	0
+AGC_CH012_SPARE7	enumerator	include/agc/core/channels.h	168	-	unused	0
+AGC_CH012_TRIMPITCHM	enumerator	include/agc/core/channels.h	176	src/lm/burns/dps_burn.c	file-local (one .c) + tests	1
+AGC_CH012_TRIMPITCHP	enumerator	include/agc/core/channels.h	180	src/lm/burns/dps_burn.c	file-local (one .c)	0
+AGC_CH012_TRIMROLLM	enumerator	include/agc/core/channels.h	184	src/lm/burns/dps_burn.c	file-local (one .c)	0
+AGC_CH012_TRIMROLLP	enumerator	include/agc/core/channels.h	186	src/lm/burns/dps_burn.c	file-local (one .c)	0
+AGC_CH012_TVCENABLE	enumerator	include/agc/core/channels.h	170	src/csm/dap/tvc/restarts.c	file-local (one .c) + tests	1
+AGC_CH012_ZEROICDU	enumerator	include/agc/core/channels.h	164	src/imu/mode.c	file-local (one .c)	0
+AGC_CH012_ZEROOCDU	enumerator	include/agc/core/channels.h	152	-	unused	0
+AGC_CH012_ZERORRCDU	enumerator	include/agc/core/channels.h	154	-	unused	0
+AGC_CH013_DNTMWORD	enumerator	include/agc/core/channels.h	211	-	unused	0
+AGC_CH013_NOTUSED5	enumerator	include/agc/core/channels.h	207	-	unused	0
+AGC_CH013_RADARA	enumerator	include/agc/core/channels.h	203	-	unused	0
+AGC_CH013_RADARACT	enumerator	include/agc/core/channels.h	205	-	unused	0
+AGC_CH013_RADARB	enumerator	include/agc/core/channels.h	201	-	unused	0
+AGC_CH013_RADARC	enumerator	include/agc/core/channels.h	199	-	unused	0
+AGC_CH013_RHCCNTENB	enumerator	include/agc/core/channels.h	213	-	unused	0
+AGC_CH013_RHCSTART	enumerator	include/agc/core/channels.h	215	-	unused	0
+AGC_CH013_RSTTRAP31B	enumerator	include/agc/core/channels.h	223	-	unused	0
+AGC_CH013_RSTTRAP32	enumerator	include/agc/core/channels.h	225	-	unused	0
+AGC_CH013_STANDBYENB	enumerator	include/agc/core/channels.h	219	src/imu/mode.c	file-local (one .c)	0
+AGC_CH013_TESTALM	enumerator	include/agc/core/channels.h	217	src/io/dsky/pinball/internal.h	file-local (one .c)	0
+AGC_CH013_ULKBLOCK	enumerator	include/agc/core/channels.h	209	-	unused	0
+AGC_CH014_ALTMETERACT	enumerator	include/agc/core/channels.h	234	src/lm/landing/displays.c	file-local (one .c)	0
+AGC_CH014_ALTRATESEL	enumerator	include/agc/core/channels.h	232	src/lm/landing/displays.c	file-local (one .c)	0
+AGC_CH014_DRIVECDUX	enumerator	include/agc/core/channels.h	258	src/imu/mode.c	file-local (one .c) + tests	1
+AGC_CH014_DRIVECDUY	enumerator	include/agc/core/channels.h	256	src/imu/mode.c	file-local (one .c)	0
+AGC_CH014_DRIVECDUZ	enumerator	include/agc/core/channels.h	254	src/imu/mode.c	file-local (one .c)	0
+AGC_CH014_GYRONEG	enumerator	include/agc/core/channels.h	246	src/imu/gyro.c	file-local (one .c)	0
+AGC_CH014_GYROPWR	enumerator	include/agc/core/channels.h	240	src/imu/gyro.c	file-local (one .c)	0
+AGC_CH014_GYROSELA	enumerator	include/agc/core/channels.h	244	-	unused	0
+AGC_CH014_GYROSELB	enumerator	include/agc/core/channels.h	242	-	unused	0
+AGC_CH014_OUTLINKACT	enumerator	include/agc/core/channels.h	230	-	unused	0
+AGC_CH014_SPARE5	enumerator	include/agc/core/channels.h	238	-	unused	0
+AGC_CH016_AOTREJECT	enumerator	include/agc/core/channels.h	265	src/lm/optics/aotmark.c	file-local (one .c)	0
+AGC_CH016_DESCENTDN	enumerator	include/agc/core/channels.h	273	src/lm/landing/lunar_landing.c	file-local (one .c)	0
+AGC_CH016_DESCENTUP	enumerator	include/agc/core/channels.h	269	src/lm/landing/lunar_landing.c	file-local (one .c)	0
+AGC_CH016_MARK	enumerator	include/agc/core/channels.h	267	src/csm/optics/sxtmark.c	file-local (one .c) + tests	1
+AGC_CH016_MARKREJECT	enumerator	include/agc/core/channels.h	271	src/csm/optics/sxtmark.c	file-local (one .c)	0
+AGC_CH016_NAVKEY_MASK	enumerator	include/agc/core/channels.h	275	src/csm/optics/sxtmark.c	file-local (one .c)	0
+AGC_CH016_XAXISMARK	enumerator	include/agc/core/channels.h	261	-	unused	0
+AGC_CH016_YAXISMARK	enumerator	include/agc/core/channels.h	263	src/lm/optics/aotmark.c	file-local (one .c)	0
+AGC_CH030_ABORTAPS	enumerator	include/agc/core/channels.h	292	src/lm/landing/aborts.c	file-local (one .c)	0
+AGC_CH030_ABORTDPS	enumerator	include/agc/core/channels.h	280	src/lm/landing/aborts.c	file-local (one .c) + tests	1
+AGC_CH030_CMSMSEP	enumerator	include/agc/core/channels.h	282	-	unused	0
+AGC_CH030_DISPINERT	enumerator	include/agc/core/channels.h	300	src/lm/landing/displays.c	file-local (one .c) + tests	1
+AGC_CH030_ICDUFAIL	enumerator	include/agc/core/channels.h	316	-	unused	0
+AGC_CH030_IMUCAGE	enumerator	include/agc/core/channels.h	314	-	unused	0
+AGC_CH030_IMUFAIL	enumerator	include/agc/core/channels.h	318	-	unused	0
+AGC_CH030_INVERT_ALL	enumerator	include/agc/core/channels.h	324	-	unused	0
+AGC_CH030_ISSTURNON	enumerator	include/agc/core/channels.h	320	-	unused	0
+AGC_CH030_LIFTOFF	enumerator	include/agc/core/channels.h	294	src/csm/prelaunch_gyrocompass.c	file-local (one .c)	0
+AGC_CH030_LMCONTROL	enumerator	include/agc/core/channels.h	312	src/lm/landing/findcduw.c	file-local (one .c)	0
+AGC_CH030_OCDUFAIL	enumerator	include/agc/core/channels.h	302	-	unused	0
+AGC_CH030_RRCDUFAIL	enumerator	include/agc/core/channels.h	304	-	unused	0
+AGC_CH030_SCCTLSATURN	enumerator	include/agc/core/channels.h	310	src/csm/burns/earth_orbit_insertion.c	file-local (one .c)	0
+AGC_CH030_SPARE8	enumerator	include/agc/core/channels.h	306	-	unused	0
+AGC_CH030_SPSREADY	enumerator	include/agc/core/channels.h	286	-	unused	0
+AGC_CH030_UNUSED2	enumerator	include/agc/core/channels.h	284	-	unused	0
+AGC_CH031_AUTOSTAB	enumerator	include/agc/core/channels.h	355	src/lm/landing/findcduw.c	file-local (one .c)	0
+AGC_CH031_CMCCONTROL	enumerator	include/agc/core/channels.h	357	src/csm/dap/rcs/t5rupt.c	file-local (one .c)	0
+AGC_CH031_MINUSPITCH	enumerator	include/agc/core/channels.h	329	-	unused	0
+AGC_CH031_MINUSROLL	enumerator	include/agc/core/channels.h	337	-	unused	0
+AGC_CH031_MINUSX	enumerator	include/agc/core/channels.h	341	-	unused	0
+AGC_CH031_MINUSY	enumerator	include/agc/core/channels.h	345	-	unused	0
+AGC_CH031_MINUSYAW	enumerator	include/agc/core/channels.h	333	-	unused	0
+AGC_CH031_MINUSZ	enumerator	include/agc/core/channels.h	349	-	unused	0
+AGC_CH031_PLUSPITCH	enumerator	include/agc/core/channels.h	327	-	unused	0
+AGC_CH031_PLUSROLL	enumerator	include/agc/core/channels.h	335	-	unused	0
+AGC_CH031_PLUSX	enumerator	include/agc/core/channels.h	339	src/csm/burns/sps/steer.c	file-local (one .c)	0
+AGC_CH031_PLUSY	enumerator	include/agc/core/channels.h	343	-	unused	0
+AGC_CH031_PLUSYAW	enumerator	include/agc/core/channels.h	331	-	unused	0
+AGC_CH031_PLUSZ	enumerator	include/agc/core/channels.h	347	-	unused	0
+AGC_CH031_ROT_MASK	enumerator	include/agc/core/channels.h	361	-	unused	0
+AGC_CH031_XLATE_MASK	enumerator	include/agc/core/channels.h	363	-	unused	0
+AGC_CH032_DPSGIMBDIS	enumerator	include/agc/core/channels.h	394	src/lm/burns/servicer/average_g.c	file-local (one .c)	0
+AGC_CH032_DPSGIMBFAIL	enumerator	include/agc/core/channels.h	396	-	unused	0
+AGC_CH032_MINIMPPITCHM	enumerator	include/agc/core/channels.h	370	-	unused	0
+AGC_CH032_MINIMPPITCHP	enumerator	include/agc/core/channels.h	366	-	unused	0
+AGC_CH032_MINIMPROLLP	enumerator	include/agc/core/channels.h	382	-	unused	0
+AGC_CH032_MINIMPYAWM	enumerator	include/agc/core/channels.h	378	-	unused	0
+AGC_CH032_MINIMPYAWP	enumerator	include/agc/core/channels.h	374	-	unused	0
+AGC_CH032_THR1011DIS	enumerator	include/agc/core/channels.h	392	-	unused	0
+AGC_CH032_THR1315DIS	enumerator	include/agc/core/channels.h	388	-	unused	0
+AGC_CH032_THR13DIS	enumerator	include/agc/core/channels.h	376	-	unused	0
+AGC_CH032_THR1416DIS	enumerator	include/agc/core/channels.h	384	-	unused	0
+AGC_CH032_THR24DIS	enumerator	include/agc/core/channels.h	368	-	unused	0
+AGC_CH032_THR58DIS	enumerator	include/agc/core/channels.h	372	-	unused	0
+AGC_CH032_THR67DIS	enumerator	include/agc/core/channels.h	380	-	unused	0
+AGC_CH032_THR912DIS	enumerator	include/agc/core/channels.h	390	-	unused	0
+AGC_CH033_BLOCKUPLINK	enumerator	include/agc/core/channels.h	430	-	unused	0
+AGC_CH033_DOWNLINKFAST	enumerator	include/agc/core/channels.h	434	-	unused	0
+AGC_CH033_FLIPFLOP_MASK	enumerator	include/agc/core/channels.h	442	src/core/channels.c	file-local (one .c) + tests	1
+AGC_CH033_LRPOS2	enumerator	include/agc/core/channels.h	424	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_CH033_LRRANGEGOOD	enumerator	include/agc/core/channels.h	419	-	unused	0
+AGC_CH033_LRRANGELOW	enumerator	include/agc/core/channels.h	428	-	unused	0
+AGC_CH033_LRVELGOOD	enumerator	include/agc/core/channels.h	426	-	unused	0
+AGC_CH033_OSCSTOPPED	enumerator	include/agc/core/channels.h	440	-	unused	0
+AGC_CH033_REPEATEDALM	enumerator	include/agc/core/channels.h	438	-	unused	0
+AGC_CH033_RRAUTOPWR	enumerator	include/agc/core/channels.h	409	-	unused	0
+AGC_CH033_RRRANGELOW	enumerator	include/agc/core/channels.h	411	-	unused	0
+AGC_CH033_SPARE1	enumerator	include/agc/core/channels.h	405	-	unused	0
+AGC_CH033_UPLINKFAST	enumerator	include/agc/core/channels.h	432	-	unused	0
+AGC_CHAN_FIRST_INVERTED	macro	include/agc/core/channels.h	46	src/core/channels.c	file-local (one .c)	0
+AGC_CHAN_L	enumerator	include/agc/core/channels.h	51	src/core/channels.c	file-local (one .c)	0
+AGC_CHAN_LAST_INVERTED	macro	include/agc/core/channels.h	47	src/core/channels.c	file-local (one .c)	0
+AGC_CHAN_Q	enumerator	include/agc/core/channels.h	52	src/core/channels.c	file-local (one .c)	0
+agc_chan_reset	prototype	include/agc/core/channels.h	453	src/core/channels.c	internal.h of src/core	2
+agc_chan_set_signal	prototype	include/agc/core/channels.h	452	src/core/channels.c	internal (def file + tests)	5
+agc_channel_bits	enum	include/agc/core/channels.h	74	-	unused	0
+agc_channel_number	enum	include/agc/core/channels.h	49	-	unused	0
+AGC_K_13_14_15	macro	include/agc/core/constants.h	182	-	unused	0
+AGC_K_1SEC	macro	include/agc/core/constants.h	107	-	unused	0
+AGC_K_2K	macro	include/agc/core/constants.h	259	-	unused	0
+AGC_K_2SECS	macro	include/agc/core/constants.h	110	-	unused	0
+AGC_K_3SECS	macro	include/agc/core/constants.h	116	-	unused	0
+AGC_K_4SECS	macro	include/agc/core/constants.h	119	-	unused	0
+AGC_K_63_64P1	macro	include/agc/core/constants.h	166	-	unused	0
+AGC_K_ALARM_CODES_DISPLAY	macro	include/agc/core/constants.h	126	-	unused	0
+AGC_K_B12T14	macro	include/agc/core/constants.h	292	-	unused	0
+AGC_K_BIT1	macro	include/agc/core/constants.h	70	-	unused	0
+AGC_K_BIT10	macro	include/agc/core/constants.h	61	-	unused	0
+AGC_K_BIT11	macro	include/agc/core/constants.h	60	-	unused	0
+AGC_K_BIT12	macro	include/agc/core/constants.h	59	-	unused	0
+AGC_K_BIT13	macro	include/agc/core/constants.h	58	-	unused	0
+AGC_K_BIT13_14	macro	include/agc/core/constants.h	289	-	unused	0
+AGC_K_BIT14	macro	include/agc/core/constants.h	55	-	unused	0
+AGC_K_BIT15	macro	include/agc/core/constants.h	52	-	unused	0
+AGC_K_BIT15P6	macro	include/agc/core/constants.h	176	-	unused	0
+AGC_K_BIT2	macro	include/agc/core/constants.h	69	-	unused	0
+AGC_K_BIT3	macro	include/agc/core/constants.h	68	-	unused	0
+AGC_K_BIT4	macro	include/agc/core/constants.h	67	-	unused	0
+AGC_K_BIT5	macro	include/agc/core/constants.h	66	-	unused	0
+AGC_K_BIT6	macro	include/agc/core/constants.h	65	-	unused	0
+AGC_K_BIT7	macro	include/agc/core/constants.h	64	-	unused	0
+AGC_K_BIT8	macro	include/agc/core/constants.h	63	-	unused	0
+AGC_K_BIT9	macro	include/agc/core/constants.h	62	-	unused	0
+AGC_K_BITS2_10	macro	include/agc/core/constants.h	131	-	unused	0
+AGC_K_BITS4_5	macro	include/agc/core/constants.h	81	-	unused	0
+AGC_K_C1_2	macro	include/agc/core/constants.h	159	src/core/sp_trig.c	file-local (one .c) + tests	1
+AGC_K_C3_2	macro	include/agc/core/constants.h	181	src/core/sp_trig.c	file-local (one .c) + tests	1
+AGC_K_C5_2	macro	include/agc/core/constants.h	123	src/core/sp_trig.c	file-local (one .c)	0
+AGC_K_CALLCODE	macro	include/agc/core/constants.h	82	-	unused	0
+AGC_K_DEC45	macro	include/agc/core/constants.h	92	-	unused	0
+AGC_K_DEC_12	macro	include/agc/core/constants.h	322	-	unused	0
+AGC_K_DEC_6	macro	include/agc/core/constants.h	321	-	unused	0
+AGC_K_DLOADCOD	macro	include/agc/core/constants.h	172	-	unused	0
+AGC_K_DLOAD_STAR	macro	include/agc/core/constants.h	175	-	unused	0
+AGC_K_DPHALF	macro	include/agc/core/constants.h	311	src/core/constants.c	file-local (one .c)	0
+AGC_K_DPOSMAX	macro	include/agc/core/constants.h	40	-	unused	0
+AGC_K_EBANK3	macro	include/agc/core/constants.h	247	-	unused	0
+AGC_K_EBANK4	macro	include/agc/core/constants.h	262	-	unused	0
+AGC_K_EBANK5	macro	include/agc/core/constants.h	136	-	unused	0
+AGC_K_EBANK6	macro	include/agc/core/constants.h	268	-	unused	0
+AGC_K_EBANK7	macro	include/agc/core/constants.h	138	-	unused	0
+AGC_K_EIGHT	macro	include/agc/core/constants.h	226	-	unused	0
+AGC_K_ELEVEN	macro	include/agc/core/constants.h	78	-	unused	0
+AGC_K_FIVE	macro	include/agc/core/constants.h	74	-	unused	0
+AGC_K_FOUR	macro	include/agc/core/constants.h	217	-	unused	0
+AGC_K_GN_CCODE	macro	include/agc/core/constants.h	113	-	unused	0
+AGC_K_HALF	macro	include/agc/core/constants.h	283	src/core/sp_trig.c	file-local (one .c)	0
+AGC_K_HALFDP	macro	include/agc/core/constants.h	312	-	unused	0
+AGC_K_HIGH4	macro	include/agc/core/constants.h	184	-	unused	0
+AGC_K_HIGH9	macro	include/agc/core/constants.h	188	-	unused	0
+AGC_K_LIMITS	macro	include/agc/core/constants.h	49	-	unused	0
+AGC_K_LM_OCT33	macro	include/agc/core/constants.h	304	-	unused	0
+AGC_K_LM_OCT35	macro	include/agc/core/constants.h	307	-	unused	0
+AGC_K_LODPMAX	macro	include/agc/core/constants.h	315	-	unused	0
+AGC_K_LODPMAX1	macro	include/agc/core/constants.h	316	-	unused	0
+AGC_K_LOW10	macro	include/agc/core/constants.h	132	-	unused	0
+AGC_K_LOW2	macro	include/agc/core/constants.h	214	-	unused	0
+AGC_K_LOW3	macro	include/agc/core/constants.h	223	-	unused	0
+AGC_K_LOW4	macro	include/agc/core/constants.h	80	-	unused	0
+AGC_K_LOW7P2K	macro	include/agc/core/constants.h	135	-	unused	0
+AGC_K_LOW9	macro	include/agc/core/constants.h	120	-	unused	0
+AGC_K_MINUS1	macro	include/agc/core/constants.h	199	-	unused	0
+AGC_K_MINUS_1_8	macro	include/agc/core/constants.h	183	-	unused	0
+AGC_K_MINUS_BIT14	macro	include/agc/core/constants.h	178	-	unused	0
+AGC_K_NEG1	macro	include/agc/core/constants.h	202	-	unused	0
+AGC_K_NEG2	macro	include/agc/core/constants.h	192	-	unused	0
+AGC_K_NEG3	macro	include/agc/core/constants.h	191	-	unused	0
+AGC_K_NEGONE	macro	include/agc/core/constants.h	195	-	unused	0
+AGC_K_NINE	macro	include/agc/core/constants.h	229	-	unused	0
+AGC_K_NOUTCON	macro	include/agc/core/constants.h	235	-	unused	0
+AGC_K_OCT120	macro	include/agc/core/constants.h	253	-	unused	0
+AGC_K_OCT140	macro	include/agc/core/constants.h	256	-	unused	0
+AGC_K_OCT1400	macro	include/agc/core/constants.h	127	-	unused	0
+AGC_K_OCT15	macro	include/agc/core/constants.h	79	-	unused	0
+AGC_K_OCT17770	macro	include/agc/core/constants.h	148	-	unused	0
+AGC_K_OCT23	macro	include/agc/core/constants.h	238	-	unused	0
+AGC_K_OCT25	macro	include/agc/core/constants.h	241	-	unused	0
+AGC_K_OCT37766	macro	include/agc/core/constants.h	167	-	unused	0
+AGC_K_OCT37774	macro	include/agc/core/constants.h	168	-	unused	0
+AGC_K_OCT37776	macro	include/agc/core/constants.h	169	-	unused	0
+AGC_K_OCT40200	macro	include/agc/core/constants.h	177	-	unused	0
+AGC_K_OCT50	macro	include/agc/core/constants.h	89	-	unused	0
+AGC_K_OCT60000	macro	include/agc/core/constants.h	301	-	unused	0
+AGC_K_ONE	macro	include/agc/core/constants.h	205	-	unused	0
+AGC_K_POS1_2	macro	include/agc/core/constants.h	277	-	unused	0
+AGC_K_POSMAX	macro	include/agc/core/constants.h	43	src/core/sp_trig.c	file-local (one .c) + tests	1
+AGC_K_PRIO1	macro	include/agc/core/constants.h	244	-	unused	0
+AGC_K_PRIO10	macro	include/agc/core/constants.h	274	-	unused	0
+AGC_K_PRIO11	macro	include/agc/core/constants.h	142	-	unused	0
+AGC_K_PRIO13	macro	include/agc/core/constants.h	143	-	unused	0
+AGC_K_PRIO14	macro	include/agc/core/constants.h	144	-	unused	0
+AGC_K_PRIO15	macro	include/agc/core/constants.h	145	-	unused	0
+AGC_K_PRIO16	macro	include/agc/core/constants.h	146	-	unused	0
+AGC_K_PRIO17	macro	include/agc/core/constants.h	147	-	unused	0
+AGC_K_PRIO2	macro	include/agc/core/constants.h	250	-	unused	0
+AGC_K_PRIO20	macro	include/agc/core/constants.h	280	-	unused	0
+AGC_K_PRIO21	macro	include/agc/core/constants.h	149	-	unused	0
+AGC_K_PRIO22	macro	include/agc/core/constants.h	150	-	unused	0
+AGC_K_PRIO23	macro	include/agc/core/constants.h	151	-	unused	0
+AGC_K_PRIO24	macro	include/agc/core/constants.h	152	-	unused	0
+AGC_K_PRIO25	macro	include/agc/core/constants.h	153	-	unused	0
+AGC_K_PRIO26	macro	include/agc/core/constants.h	154	-	unused	0
+AGC_K_PRIO27	macro	include/agc/core/constants.h	155	-	unused	0
+AGC_K_PRIO3	macro	include/agc/core/constants.h	137	-	unused	0
+AGC_K_PRIO30	macro	include/agc/core/constants.h	286	-	unused	0
+AGC_K_PRIO31	macro	include/agc/core/constants.h	156	-	unused	0
+AGC_K_PRIO32	macro	include/agc/core/constants.h	160	-	unused	0
+AGC_K_PRIO33	macro	include/agc/core/constants.h	161	-	unused	0
+AGC_K_PRIO34	macro	include/agc/core/constants.h	162	-	unused	0
+AGC_K_PRIO35	macro	include/agc/core/constants.h	163	-	unused	0
+AGC_K_PRIO36	macro	include/agc/core/constants.h	164	-	unused	0
+AGC_K_PRIO37	macro	include/agc/core/constants.h	165	-	unused	0
+AGC_K_PRIO4	macro	include/agc/core/constants.h	265	-	unused	0
+AGC_K_PRIO5	macro	include/agc/core/constants.h	139	-	unused	0
+AGC_K_PRIO6	macro	include/agc/core/constants.h	140	-	unused	0
+AGC_K_PRIO7	macro	include/agc/core/constants.h	141	-	unused	0
+AGC_K_PT5SEC	macro	include/agc/core/constants.h	98	-	unused	0
+AGC_K_QUARTER	macro	include/agc/core/constants.h	271	-	unused	0
+AGC_K_SEVEN	macro	include/agc/core/constants.h	75	-	unused	0
+AGC_K_SIX	macro	include/agc/core/constants.h	220	-	unused	0
+AGC_K_SUPER011	macro	include/agc/core/constants.h	95	-	unused	0
+AGC_K_SUPER101	macro	include/agc/core/constants.h	101	-	unused	0
+AGC_K_SUPER110	macro	include/agc/core/constants.h	104	-	unused	0
+AGC_K_TBUILDFX	macro	include/agc/core/constants.h	85	-	unused	0
+AGC_K_TDECAYFX	macro	include/agc/core/constants.h	88	-	unused	0
+AGC_K_TEN	macro	include/agc/core/constants.h	232	-	unused	0
+AGC_K_THREE	macro	include/agc/core/constants.h	211	-	unused	0
+AGC_K_TWO	macro	include/agc/core/constants.h	208	-	unused	0
+AGC_K_VLOADCOD	macro	include/agc/core/constants.h	298	-	unused	0
+AGC_K_ZERO	macro	include/agc/core/constants.h	73	-	unused	0
+AGC_K_ZERODP	macro	include/agc/core/constants.h	318	-	unused	0
+agc_k_unitx	prototype	include/agc/core/constants.h	328	src/core/constants.c	internal (def file + tests)	1
+agc_k_unity	prototype	include/agc/core/constants.h	329	src/core/constants.c	internal (def file + tests)	1
+agc_k_unitz	prototype	include/agc/core/constants.h	330	src/core/constants.c	internal (def file + tests)	1
+agc_k_zerovec	prototype	include/agc/core/constants.h	331	src/core/constants.c	internal (def file + tests)	1
+AGC_FLAG_360SW	enumerator	include/agc/core/flags_common.h	293	-	unused	0
+AGC_FLAG_APSESW	enumerator	include/agc/core/flags_common.h	305	src/nav/conic/common.c	file-local (one .c)	0
+AGC_FLAG_CALCMAN2	enumerator	include/agc/core/flags_common.h	95	src/imu/maneuver.c	file-local (one .c)	0
+AGC_FLAG_COGAFLAG	enumerator	include/agc/core/flags_common.h	299	src/nav/conic/common.c	file-local (one .c)	0
+AGC_FLAG_CULTFLAG	enumerator	include/agc/core/flags_common.h	156	src/programs/alignment/geometry_csm.c	file-local (one .c)	0
+AGC_FLAG_GUESSW	enumerator	include/agc/core/flags_common.h	65	src/csm/burns/sps/steer.c	file-local (one .c)	0
+AGC_FLAG_INFINFLG	enumerator	include/agc/core/flags_common.h	314	src/nav/conic/common.c	file-local (one .c)	0
+AGC_FLAG_INTFLAG	enumerator	include/agc/core/flags_common.h	362	src/exec/fresh_start.c	file-local (one .c) + tests	2
+AGC_FLAG_JSWITCH	enumerator	include/agc/core/flags_common.h	61	src/nav/integration/orbital_integration.c	file-local (one .c) + tests	1
+AGC_FLAG_MGLVFLAG	enumerator	include/agc/core/flags_common.h	235	src/programs/navigation/common.c	file-local (one .c)	0
+AGC_FLAG_MID1FLAG	enumerator	include/agc/core/flags_common.h	351	src/nav/integration/jobs.c	file-local (one .c)	0
+AGC_FLAG_MKOVFLAG	enumerator	include/agc/core/flags_common.h	181	-	unused	0
+AGC_FLAG_MRKIDFLG	enumerator	include/agc/core/flags_common.h	227	-	unused	0
+AGC_FLAG_MRKNVFLG	enumerator	include/agc/core/flags_common.h	205	-	unused	0
+AGC_FLAG_MRUPTFLG	enumerator	include/agc/core/flags_common.h	189	-	unused	0
+AGC_FLAG_MWAITFLG	enumerator	include/agc/core/flags_common.h	213	-	unused	0
+AGC_FLAG_NEWIFLG	enumerator	include/agc/core/flags_common.h	332	src/nav/integration/init.c	file-local (one .c)	0
+AGC_FLAG_NRMIDFLG	enumerator	include/agc/core/flags_common.h	221	-	unused	0
+AGC_FLAG_NRMNVFLG	enumerator	include/agc/core/flags_common.h	201	-	unused	0
+AGC_FLAG_NRUPTFLG	enumerator	include/agc/core/flags_common.h	185	-	unused	0
+AGC_FLAG_NWAITFLG	enumerator	include/agc/core/flags_common.h	209	-	unused	0
+AGC_FLAG_OPTNSW	enumerator	include/agc/core/flags_common.h	114	src/programs/targeting/stable_orbit.c	file-local (one .c) + tests	2
+AGC_FLAG_ORDERSW	enumerator	include/agc/core/flags_common.h	309	src/nav/conic/lambert.c	file-local (one .c)	0
+AGC_FLAG_PINBRFLG	enumerator	include/agc/core/flags_common.h	193	-	unused	0
+AGC_FLAG_PRIODFLG	enumerator	include/agc/core/flags_common.h	224	-	unused	0
+AGC_FLAG_PRONVFLG	enumerator	include/agc/core/flags_common.h	197	-	unused	0
+AGC_FLAG_SLOPESW	enumerator	include/agc/core/flags_common.h	70	-	unused	0
+AGC_FLAG_SOLNSW	enumerator	include/agc/core/flags_common.h	241	src/nav/conic/common.c	file-local (one .c)	0
+AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE	enumerator	include/agc/core/flags_common.h	320	src/programs/targeting/stable_orbit.c	file-local (one .c) + tests	1
+AGC_FLAG_TFFSW	enumerator	include/agc/core/flags_common.h	263	-	unused	0
+AGC_FLAG_UPLOCKFL	enumerator	include/agc/core/flags_common.h	269	src/io/dsky/pinball/keys.c	file-local (one .c) + tests	1
+AGC_FLAG_VERIFLAG	enumerator	include/agc/core/flags_common.h	266	src/io/verbs/uplink_update.c	file-local (one .c)	0
+AGC_FLAG_VFLAG	enumerator	include/agc/core/flags_common.h	165	src/programs/alignment/locsam.c	file-local (one .c)	0
+AGC_FLAG_XDSPFLAG	enumerator	include/agc/core/flags_common.h	178	src/lm/ags_initialization.c	file-local (one .c)	0
+agc_flag_common_id	enum	include/agc/core/flags_common.h	38	-	unused	0
+AGC_FLAG_22DSPFLG	enumerator	include/agc/core/flags_csm.h	111	src/csm/navigation/landmark_navigation.c	file-local (one .c)	0
+AGC_FLAG_ADVTRK	enumerator	include/agc/core/flags_csm.h	231	src/csm/optics/auto_optics_positioning.c	file-local (one .c)	0
+AGC_FLAG_ATTCHFLG	enumerator	include/agc/core/flags_csm.h	210	src/csm/dap/rcs/dapdata.c	file-local (one .c)	0
+AGC_FLAG_COMPUTER	enumerator	include/agc/core/flags_csm.h	127	src/programs/navigation/flags_csm.c	file-local (one .c)	0
+AGC_FLAG_EGSW	enumerator	include/agc/core/flags_csm.h	172	src/csm/entry/reentry.c	file-local (one .c) + tests	2
+AGC_FLAG_ENG2FLAG	enumerator	include/agc/core/flags_csm.h	90	src/csm/burns/sps/burn.c	file-local (one .c)	0
+AGC_FLAG_F2RTE	enumerator	include/agc/core/flags_csm.h	52	-	unused	0
+AGC_FLAG_GONEBY	enumerator	include/agc/core/flags_csm.h	213	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_FLAG_GONEPAST	enumerator	include/agc/core/flags_csm.h	187	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_FLAG_HIND	enumerator	include/agc/core/flags_csm.h	165	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_FLAG_INRLSW	enumerator	include/agc/core/flags_csm.h	160	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_FLAG_KFLAG	enumerator	include/agc/core/flags_csm.h	42	src/csm/navigation/tpi_search.c	file-local (one .c) + tests	1
+AGC_FLAG_NORFHOR	enumerator	include/agc/core/flags_csm.h	65	src/csm/navigation/cislunar_navigation.c	file-local (one .c)	0
+AGC_FLAG_NOSWITCH	enumerator	include/agc/core/flags_csm.h	169	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_FLAG_RELVELSW	enumerator	include/agc/core/flags_csm.h	183	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_FLAG_RENDEZVOUS_TRACKING_BUSY	enumerator	include/agc/core/flags_csm.h	242	-	unused	0
+AGC_FLAG_RETROFLG	enumerator	include/agc/core/flags_csm.h	143	src/csm/burns/return_to_earth/conic.c	file-local (one .c) + tests	1
+AGC_FLAG_SAVECFLG	enumerator	include/agc/core/flags_csm.h	253	src/csm/navigation/cislunar_navigation.c	file-local (one .c)	0
+AGC_FLAG_SKIPVHF	enumerator	include/agc/core/flags_csm.h	104	src/csm/navigation/tracking_data.c	file-local (one .c)	0
+AGC_FLAG_SOURCFLG	enumerator	include/agc/core/flags_csm.h	246	src/csm/navigation/tracking_data.c	file-local (one .c)	0
+AGC_FLAG_STRULLSW	enumerator	include/agc/core/flags_csm.h	201	src/csm/burns/sps/ignition.c	file-local (one .c)	0
+AGC_FLAG_SWTOVER	enumerator	include/agc/core/flags_csm.h	265	src/csm/dap/tvc/init.c	file-local (one .c)	0
+AGC_FLAG_TRACKING_USE_MANEUVER	enumerator	include/agc/core/flags_csm.h	121	src/imu/vflags_csm.c	file-local (one .c)	0
+AGC_FLAG_TRUNFLAG	enumerator	include/agc/core/flags_csm.h	49	src/csm/optics/auto_optics_positioning.c	file-local (one .c)	0
+AGC_FLAG_TRUNNION_BIAS_KNOWN	enumerator	include/agc/core/flags_csm.h	179	src/csm/navigation/cislunar_navigation.c	file-local (one .c) + tests	1
+AGC_FLAG_ZMEASURE	enumerator	include/agc/core/flags_csm.h	62	src/csm/navigation/cislunar_navigation.c	file-local (one .c)	0
+agc_flag_csm_id	enum	include/agc/core/flags_csm.h	37	-	unused	0
+AGC_FLAG_ALTSCALE	enumerator	include/agc/core/flags_lm.h	304	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_FLAG_ANTENFLG	enumerator	include/agc/core/flags_lm.h	315	-	unused	0
+AGC_FLAG_AORBSFLG	enumerator	include/agc/core/flags_lm.h	346	src/lm/dap/rcs/paxis.c	file-local (one .c)	0
+AGC_FLAG_ATTFLAG	enumerator	include/agc/core/flags_lm.h	132	src/lm/alignment/lunar_surface_align.c	file-local (one .c)	0
+AGC_FLAG_AUTOMODE	enumerator	include/agc/core/flags_lm.h	279	-	unused	0
+AGC_FLAG_AUTR1FLG	enumerator	include/agc/core/flags_lm.h	329	src/imu/vflags_lm.c	file-local (one .c) + tests	1
+AGC_FLAG_AUTR2FLG	enumerator	include/agc/core/flags_lm.h	334	src/imu/vflags_lm.c	file-local (one .c)	0
+AGC_FLAG_AUXFLAG	enumerator	include/agc/core/flags_lm.h	137	src/lm/burns/servicer/average_g.c	file-local (one .c)	0
+AGC_FLAG_CALCMAN3	enumerator	include/agc/core/flags_lm.h	92	src/imu/vflags_lm.c	file-local (one .c)	0
+AGC_FLAG_CDESFLAG	enumerator	include/agc/core/flags_lm.h	326	src/io/verbs/extended_verbs_lm_radar.c	file-local (one .c) + tests	1
+AGC_FLAG_DBSELFLG	enumerator	include/agc/core/flags_lm.h	342	src/lm/dap/dapif.c	file-local (one .c)	0
+AGC_FLAG_DESIGFLG	enumerator	include/agc/core/flags_lm.h	308	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_FLAG_DIDFLAG	enumerator	include/agc/core/flags_lm.h	89	src/lm/landing/displays.c	file-local (one .c) + tests	1
+AGC_FLAG_FLPC	enumerator	include/agc/core/flags_lm.h	219	src/lm/ascent.c	file-local (one .c) + tests	1
+AGC_FLAG_FLPI	enumerator	include/agc/core/flags_lm.h	216	src/lm/ascent.c	file-local (one .c) + tests	1
+AGC_FLAG_FSPASFLG	enumerator	include/agc/core/flags_lm.h	70	src/lm/radar/acquisition.c	file-local (one .c)	0
+AGC_FLAG_GMBDRVSW	enumerator	include/agc/core/flags_lm.h	151	src/lm/burns/dps_burn.c	file-local (one .c)	0
+AGC_FLAG_LRALTFLG	enumerator	include/agc/core/flags_lm.h	291	-	unused	0
+AGC_FLAG_LRPOSFLG	enumerator	include/agc/core/flags_lm.h	294	-	unused	0
+AGC_FLAG_LRVELFLG	enumerator	include/agc/core/flags_lm.h	300	-	unused	0
+AGC_FLAG_MANUFLAG	enumerator	include/agc/core/flags_lm.h	187	-	unused	0
+AGC_FLAG_NOLRREAD	enumerator	include/agc/core/flags_lm.h	261	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_FLAG_NTARGFLG	enumerator	include/agc/core/flags_lm.h	141	src/programs/navigation/flags_lm.c	file-local (one .c)	0
+AGC_FLAG_OLDESFLG	enumerator	include/agc/core/flags_lm.h	49	src/lm/radar/powered_flight_designate.c	file-local (one .c)	0
+AGC_FLAG_PSTHIGAT	enumerator	include/agc/core/flags_lm.h	264	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_FLAG_RCDU0FLG	enumerator	include/agc/core/flags_lm.h	318	-	unused	0
+AGC_FLAG_RCDUFAIL	enumerator	include/agc/core/flags_lm.h	297	-	unused	0
+AGC_FLAG_READLR	enumerator	include/agc/core/flags_lm.h	246	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_FLAG_READVEL	enumerator	include/agc/core/flags_lm.h	243	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_FLAG_REMODFLG	enumerator	include/agc/core/flags_lm.h	322	-	unused	0
+AGC_FLAG_REPOSMON	enumerator	include/agc/core/flags_lm.h	312	-	unused	0
+AGC_FLAG_RHCSCFLG	enumerator	include/agc/core/flags_lm.h	352	-	unused	0
+AGC_FLAG_RNGEDATA	enumerator	include/agc/core/flags_lm.h	240	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_FLAG_RODFLAG	enumerator	include/agc/core/flags_lm.h	85	src/lm/landing/lunar_landing.c	file-local (one .c)	0
+AGC_FLAG_RRDATAFL	enumerator	include/agc/core/flags_lm.h	287	-	unused	0
+AGC_FLAG_RRRSFLAG	enumerator	include/agc/core/flags_lm.h	283	-	unused	0
+AGC_FLAG_SCALBAD	enumerator	include/agc/core/flags_lm.h	237	src/lm/radar/read.c	file-local (one .c)	0
+AGC_FLAG_USE_TRACKING_ATTITUDE	enumerator	include/agc/core/flags_lm.h	81	src/lm/navigation/tracking_attitude.c	file-local (one .c)	0
+AGC_FLAG_VELDATA	enumerator	include/agc/core/flags_lm.h	249	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_FLAG_VXINH	enumerator	include/agc/core/flags_lm.h	268	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_FLAG_W_MATRIX_OVERWRITE	enumerator	include/agc/core/flags_lm.h	179	src/programs/navigation/w_matrix_monitor.c	file-local (one .c)	0
+AGC_FLAG_XORFLG	enumerator	include/agc/core/flags_lm.h	257	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+agc_flag_lm_id	enum	include/agc/core/flags_lm.h	45	-	unused	0
+AGC_INTERP_SWITCHES	macro	include/agc/core/interp.h	77	src/core/interp/scalar.c	file-local (one .c)	0
+agc_dp_acos_chk	prototype	include/agc/core/interp.h	169	src/core/interp/trig.c	internal (def file + tests)	2
+agc_dp_asin_chk	prototype	include/agc/core/interp.h	168	src/core/interp/trig.c	internal (def file + tests)	2
+agc_dp_div_ovf_only	prototype	include/agc/core/interp.h	108	src/core/interp/scalar.c	file-static	0
+agc_interp	struct	include/agc/core/interp.h	89	-	unused	0
+agc_mat	struct	include/agc/core/interp.h	84	-	unused	0
+agc_vec	struct	include/agc/core/interp.h	79	-	unused	0
+agc_mpac_vdot	prototype	include/agc/core/interp_words.h	101	src/core/interp/vector_words.c	internal (def file + tests)	1
+AGC_FLAGWORDS	macro	include/agc/core/state.h	63	src/core/state.c	file-local (one .c)	0
+AGC_SV_OTHER	enumerator	include/agc/core/state.h	100	src/io/telemetry/down_telemetry.c	file-local (one .c) + tests	2
+agc_erase_reset	prototype	include/agc/core/state.h	50	src/core/erasable.c	internal.h of src/core	1
+agc_erase_reset_counters	prototype	include/agc/core/state.h	428	src/core/counters.c	internal.h of src/core	0
+agc_erase_reset_display	prototype	include/agc/core/state.h	429	src/core/display_erasables.c	internal.h of src/core	0
+agc_erase_reset_ecadr	prototype	include/agc/core/state.h	431	src/core/ecadr.c	internal.h of src/core	1
+agc_erase_reset_pad_loads	prototype	include/agc/core/state.h	430	src/core/pad_loads.c	internal.h of src/core	0
+agc_erase_reset_restart_delays	prototype	include/agc/core/state.h	432	src/core/restart_delays.c	internal.h of src/core	0
+agc_erase_sfail	prototype	include/agc/core/state.h	357	src/core/display_erasables.c	file-static	0
+agc_flag_bit	prototype	include/agc/core/state.h	68	src/core/state.c	internal (def file + tests)	2
+agc_state_vector	struct	include/agc/core/state.h	79	-	unused	0
+agc_sv_set	prototype	include/agc/core/state.h	104	src/core/state.c	internal (def file + tests)	3
+agc_vehicle	enum	include/agc/core/state.h	42	-	unused	0
+agc_vehicle_sv	enum	include/agc/core/state.h	97	-	unused	0
+agc_vehicle_sv_t	typedef	include/agc/core/state.h	101	src/core/state.c	file-local (one .c)	0
+agc_status	enum	include/agc/core/status.h	21	-	unused	0
+AGC_TP_MIN	macro	include/agc/core/word.h	48	src/core/mpac.c	file-local (one .c)	0
+agc_dp_mul_raw	prototype	include/agc/core/word.h	112	src/core/word.c	file-static	0
+agc_dp_round	prototype	include/agc/core/word.h	119	src/core/word.c	internal (def file + tests)	1
+agc_dp_sgn	prototype	include/agc/core/word.h	123	src/core/word.c	internal (def file + tests)	1
+agc_dp_to_double	prototype	include/agc/core/word.h	89	src/core/word.c	internal (def file + tests)	10
+agc_dp_words	struct	include/agc/core/word.h	62	-	unused	0
+agc_sp_add	prototype	include/agc/core/word.h	107	src/core/word.c	internal (def file + tests)	1
+agc_sp_to_double	prototype	include/agc/core/word.h	88	src/core/word.c	internal (def file + tests)	1
+agc_tp_words	struct	include/agc/core/word.h	69	-	unused	0
+agc_vec_words	struct	include/agc/core/word.h	80	-	unused	0
+AGC_CSM_N10_WORDS	macro	include/agc/csm/dap.h	45	src/csm/dap/tvc/init.c	file-local (one .c) + tests	1
+AGC_CSM_RCSF_DAMPING	macro	include/agc/csm/dap.h	59	-	unused	0
+AGC_CSM_RCSF_FDAIALT	macro	include/agc/csm/dap.h	55	src/csm/dap/rcs/filter.c	file-local (one .c)	0
+AGC_CSM_RCSF_FORCED	macro	include/agc/csm/dap.h	57	-	unused	0
+AGC_CSM_RCSF_NEEDLE2	macro	include/agc/csm/dap.h	51	src/csm/dap/rcs/needles.c	file-local (one .c)	0
+AGC_CSM_RCSF_NORATE	macro	include/agc/csm/dap.h	61	src/csm/dap/rcs/t5rupt.c	file-local (one .c)	0
+AGC_CSM_T5P_ATTITUDE_CONTROL	enumerator	include/agc/csm/dap.h	71	src/csm/dap/rcs/t5rupt.c	file-local (one .c)	0
+AGC_CSM_T5P_RESTART	enumerator	include/agc/csm/dap.h	72	src/csm/dap/rcs/t5rupt.c	file-local (one .c)	0
+AGC_CSM_VARST_WORDS	macro	include/agc/csm/dap.h	46	src/csm/dap/tvc/massprop.c	file-local (one .c)	0
+agc_csm_blast	struct	include/agc/csm/dap.h	84	-	unused	0
+agc_csm_blast_t	typedef	include/agc/csm/dap.h	88	src/csm/dap/rcs/jet_select.c	file-local (one .c)	0
+agc_csm_dap_fixcw	prototype	include/agc/csm/dap.h	274	src/csm/dap/tvc/massprop.c	internal.h of src/csm/dap/tvc	0
+agc_csm_dapcom	struct	include/agc/csm/dap.h	138	-	unused	0
+agc_csm_jet_axis	enum	include/agc/csm/dap.h	77	-	unused	0
+agc_csm_jet_axis_t	typedef	include/agc/csm/dap.h	82	src/csm/dap/rcs/jet_select.c	file-local (one .c)	0
+agc_csm_jet_in	struct	include/agc/csm/dap.h	237	-	unused	0
+agc_csm_jet_in_t	typedef	include/agc/csm/dap.h	246	src/csm/dap/rcs/jet_select.c	file-local (one .c) + tests	2
+agc_csm_jet_out	struct	include/agc/csm/dap.h	248	-	unused	0
+agc_csm_jet_out_t	typedef	include/agc/csm/dap.h	260	src/csm/dap/rcs/jet_select.c	file-local (one .c) + tests	2
+agc_csm_jet_select	prototype	include/agc/csm/dap.h	262	src/csm/dap/rcs/jet_select.c	internal (def file + tests)	2
+agc_csm_rcs	struct	include/agc/csm/dap.h	91	-	unused	0
+agc_csm_t5phase	enum	include/agc/csm/dap.h	68	-	unused	0
+agc_csm_t5phase_t	typedef	include/agc/csm/dap.h	74	-	unused	0
+agc_csm_tvc	struct	include/agc/csm/dap.h	167	-	unused	0
+AGC_EARTH_ORBIT_INSERTION_MONITOR_POLY_MAX	macro	include/agc/csm/entry.h	399	src/csm/burns/earth_orbit_insertion.c	file-local (one .c)	0
+AGC_ENTRY_DAPMOD_MINUS0	enumerator	include/agc/csm/entry.h	74	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_DAPMOD_PLUS1	enumerator	include/agc/csm/entry.h	73	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_DNLSTCOD_ENTRY	macro	include/agc/csm/entry.h	430	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_DNLSTCOD_POWERED	macro	include/agc/csm/entry.h	431	-	unused	0
+AGC_ENTRY_GOTO_ENDEXIT	enumerator	include/agc/csm/entry.h	52	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_GOTO_FINAL_PHASE_LATLONG	enumerator	include/agc/csm/entry.h	53	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_GOTO_FINAL_PREDICT	enumerator	include/agc/csm/entry.h	51	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_ENTRY_GOTO_HUNTEST	enumerator	include/agc/csm/entry.h	47	src/csm/entry/reentry.c	file-local (one .c) + tests	2
+AGC_ENTRY_GOTO_KEPLER	enumerator	include/agc/csm/entry.h	49	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_ENTRY_GOTO_PREFINAL	enumerator	include/agc/csm/entry.h	50	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_ENTRY_GOTO_UPCONTRL	enumerator	include/agc/csm/entry.h	48	src/csm/entry/programs.c	file-local (one .c) + tests	1
+AGC_ENTRY_HUNT_CONSTD	enumerator	include/agc/csm/entry.h	240	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_ENTRY_HUNT_PREFINAL	enumerator	include/agc/csm/entry.h	239	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_HUNT_RANGER	enumerator	include/agc/csm/entry.h	238	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+AGC_ENTRY_POSEXIT_ENDEXIT	enumerator	include/agc/csm/entry.h	63	src/csm/entry/cm_body_attitude.c	file-local (one .c)	0
+AGC_ENTRY_PRIO1	macro	include/agc/csm/entry.h	424	src/csm/burns/earth_orbit_insertion.c	file-local (one .c)	0
+AGC_ENTRY_PRIO16	macro	include/agc/csm/entry.h	426	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_PRIO20	macro	include/agc/csm/entry.h	427	-	unused	0
+agc_earth_orbit_insertion_monitor_attitude_errors	prototype	include/agc/csm/entry.h	421	src/csm/burns/earth_orbit_insertion.c	file-static	0
+agc_earth_orbit_insertion_monitor_padload	struct	include/agc/csm/entry.h	401	-	unused	0
+agc_earth_orbit_insertion_monitor_padload_t	typedef	include/agc/csm/entry.h	415	src/csm/burns/earth_orbit_insertion.c	file-local (one .c)	0
+agc_earth_orbit_insertion_monitor_set_padload	prototype	include/agc/csm/entry.h	417	src/csm/burns/earth_orbit_insertion.c	file-static	0
+agc_entry_cm_pose_triad	prototype	include/agc/csm/entry.h	251	src/csm/entry/cm_body_attitude.c	internal (def file + tests)	1
+agc_entry_cm_trio	prototype	include/agc/csm/entry.h	255	src/csm/entry/cm_body_attitude.c	internal (def file + tests)	1
+agc_entry_dap_flushjet	prototype	include/agc/csm/entry.h	323	src/csm/entry/dap.c	file-static	0
+agc_entry_dap_ic	prototype	include/agc/csm/entry.h	322	src/csm/entry/dap.c	internal.h of src/csm/entry	0
+agc_entry_dap_roll_jet_bits	prototype	include/agc/csm/entry.h	340	src/csm/entry/dap.c	internal (def file + tests)	1
+agc_entry_dap_roll_phase_plane	prototype	include/agc/csm/entry.h	339	src/csm/entry/dap.c	internal (def file + tests)	1
+agc_entry_dap_yaw_jet_bits	prototype	include/agc/csm/entry.h	341	src/csm/entry/dap.c	file-static	0
+agc_entry_dapmod	enum	include/agc/csm/entry.h	69	-	unused	0
+agc_entry_dapmod_t	typedef	include/agc/csm/entry.h	76	-	unused	0
+agc_entry_desired_gimbal_angles	prototype	include/agc/csm/entry.h	302	src/csm/entry/programs.c	internal.h of src/csm/entry	0
+agc_entry_ems_data	prototype	include/agc/csm/entry.h	301	src/csm/entry/programs.c	file-static	0
+agc_entry_final_phase_latlong	prototype	include/agc/csm/entry.h	303	src/csm/entry/programs.c	internal.h of src/csm/entry	0
+agc_entry_gmaxcalc	prototype	include/agc/csm/entry.h	307	src/csm/entry/programs.c	file-static	0
+agc_entry_goto	enum	include/agc/csm/entry.h	44	-	unused	0
+agc_entry_goto_t	typedef	include/agc/csm/entry.h	55	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+agc_entry_hunt_result	enum	include/agc/csm/entry.h	236	-	unused	0
+agc_entry_hunt_result_t	typedef	include/agc/csm/entry.h	241	src/csm/entry/reentry.c	file-local (one .c) + tests	1
+agc_entry_huntest_predict	prototype	include/agc/csm/entry.h	243	src/csm/entry/reentry.c	internal (def file + tests)	1
+agc_entry_posexit	enum	include/agc/csm/entry.h	58	-	unused	0
+agc_entry_posexit_t	typedef	include/agc/csm/entry.h	65	-	unused	0
+agc_entry_range_predict	prototype	include/agc/csm/entry.h	244	src/csm/entry/reentry.c	internal (def file + tests)	1
+agc_entry_reestablish_sequencer	prototype	include/agc/csm/entry.h	227	src/csm/entry/reentry.c	internal.h of src/csm/entry	1
+agc_entry_roll_cmd	struct	include/agc/csm/entry.h	327	-	unused	0
+agc_entry_roll_cmd_t	typedef	include/agc/csm/entry.h	335	src/csm/entry/dap.c	file-local (one .c) + tests	1
+agc_entry_scalepop	prototype	include/agc/csm/entry.h	224	src/csm/entry/reentry.c	internal.h of src/csm/entry	1
+agc_entry_startent	prototype	include/agc/csm/entry.h	221	src/csm/entry/reentry.c	internal.h of src/csm/entry	1
+agc_entry_targeting	prototype	include/agc/csm/entry.h	228	src/csm/entry/reentry.c	file-static	0
+agc_entry_vrcalc	prototype	include/agc/csm/entry.h	306	src/csm/entry/programs.c	file-static	0
+agc_job_cm_dapon	prototype	include/agc/csm/entry.h	320	src/csm/entry/dap.c	internal.h of src/csm/entry	0
+agc_job_entry_imu_check	prototype	include/agc/csm/entry.h	293	src/csm/entry/programs.c	file-static	0
+agc_return_to_earth_xt1lim	prototype	include/agc/csm/entry.h	373	src/csm/burns/return_to_earth/velocity.c	internal (def file + tests)	2
+entry_ballistic	prototype	include/agc/csm/entry.h	450	src/csm/entry/programs.c	internal.h of src/csm/entry	0
+entry_disable_restart_group	prototype	include/agc/csm/entry.h	452	src/csm/entry/programs.c	internal.h of src/csm/entry	0
+entry_earrot	prototype	include/agc/csm/entry.h	440	src/csm/entry/reentry.c	internal.h of src/csm/entry	0
+entry_endexit	prototype	include/agc/csm/entry.h	441	src/csm/entry/reentry.c	internal.h of src/csm/entry	0
+entry_final_phase	prototype	include/agc/csm/entry.h	451	src/csm/entry/programs.c	internal.h of src/csm/entry	0
+entry_initial_target	prototype	include/agc/csm/entry.h	442	src/csm/entry/reentry.c	internal.h of src/csm/entry	0
+entry_log	prototype	include/agc/csm/entry.h	439	src/csm/entry/reentry.c	file-static	0
+entry_post_0_05g	prototype	include/agc/csm/entry.h	448	src/csm/entry/programs.c	internal.h of src/csm/entry	0
+entry_servnout	prototype	include/agc/csm/entry.h	445	src/csm/entry/cm_body_attitude.c	file-static	0
+entry_signmpac	prototype	include/agc/csm/entry.h	438	src/csm/entry/reentry.c	file-static	0
+entry_sp_sat	prototype	include/agc/csm/entry.h	463	src/csm/entry/dap.c	internal.h of src/csm/entry	0
+entry_upcontrol	prototype	include/agc/csm/entry.h	449	src/csm/entry/programs.c	internal.h of src/csm/entry	0
+AGC_ENTRY_180_8ATT	macro	include/agc/csm/entry_lexicon.h	227	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_2JETT	macro	include/agc/csm/entry_lexicon.h	229	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_2T_TCDU	macro	include/agc/csm/entry_lexicon.h	225	-	unused	0
+AGC_ENTRY_4D_SLIM	macro	include/agc/csm/entry_lexicon.h	207	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_4JETT	macro	include/agc/csm/entry_lexicon.h	231	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_C001	macro	include/agc/csm/entry_lexicon.h	96	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_C12	macro	include/agc/csm/entry_lexicon.h	52	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_C18	macro	include/agc/csm/entry_lexicon.h	40	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_C20	macro	include/agc/csm/entry_lexicon.h	60	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_C21	macro	include/agc/csm/entry_lexicon.h	62	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_C30LIM	macro	include/agc/csm/entry_lexicon.h	138	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_C45LIM	macro	include/agc/csm/entry_lexicon.h	215	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_CH1	macro	include/agc/csm/entry_lexicon.h	86	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_CHOOK	macro	include/agc/csm/entry_lexicon.h	83	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_CLOG2_32	macro	include/agc/csm/entry_lexicon.h	130	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_CM_BIAS	macro	include/agc/csm/entry_lexicon.h	211	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_COS15	macro	include/agc/csm/entry_lexicon.h	118	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_COSTRIM	macro	include/agc/csm/entry_lexicon.h	219	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_DLEWD0	macro	include/agc/csm/entry_lexicon.h	36	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_DPOSMAX	macro	include/agc/csm/entry_lexicon.h	187	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_FOURTH	macro	include/agc/csm/entry_lexicon.h	171	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_G05	macro	include/agc/csm/entry_lexicon.h	77	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_GMAX_HALF	macro	include/agc/csm/entry_lexicon.h	38	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_HALVE	macro	include/agc/csm/entry_lexicon.h	168	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_HUNTEST_MAX_ITER	macro	include/agc/csm/entry_lexicon.h	191	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_K1D	macro	include/agc/csm/entry_lexicon.h	65	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_K2D	macro	include/agc/csm/entry_lexicon.h	67	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KA2	macro	include/agc/csm/entry_lexicon.h	109	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KA3	macro	include/agc/csm/entry_lexicon.h	110	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KA4	macro	include/agc/csm/entry_lexicon.h	111	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KACOS	macro	include/agc/csm/entry_lexicon.h	82	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KALIM	macro	include/agc/csm/entry_lexicon.h	113	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KASCALE	macro	include/agc/csm/entry_lexicon.h	71	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KC3	macro	include/agc/csm/entry_lexicon.h	88	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KFT20_PER_S	macro	include/agc/csm/entry_lexicon.h	146	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KFT290	macro	include/agc/csm/entry_lexicon.h	141	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KFT300	macro	include/agc/csm/entry_lexicon.h	160	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KFT36_PER_S	macro	include/agc/csm/entry_lexicon.h	144	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KFT400	macro	include/agc/csm/entry_lexicon.h	157	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KR1	macro	include/agc/csm/entry_lexicon.h	148	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KR2	macro	include/agc/csm/entry_lexicon.h	151	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KR3	macro	include/agc/csm/entry_lexicon.h	153	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KR4	macro	include/agc/csm/entry_lexicon.h	158	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KT1	macro	include/agc/csm/entry_lexicon.h	75	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KTETA	macro	include/agc/csm/entry_lexicon.h	73	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KTETA1	macro	include/agc/csm/entry_lexicon.h	142	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_KTRCS	macro	include/agc/csm/entry_lexicon.h	239	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_KVSCALE	macro	include/agc/csm/entry_lexicon.h	69	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_KWE	macro	include/agc/csm/entry_lexicon.h	80	src/csm/entry/cm_body_attitude.c	file-local (one .c)	0
+AGC_ENTRY_LATBIAS	macro	include/agc/csm/entry_lexicon.h	78	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_LEWD1	macro	include/agc/csm/entry_lexicon.h	32	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_LOG_C1	macro	include/agc/csm/entry_lexicon.h	132	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_LOG_C2	macro	include/agc/csm/entry_lexicon.h	134	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_LOG_C3	macro	include/agc/csm/entry_lexicon.h	136	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_M6_05DEG	macro	include/agc/csm/entry_lexicon.h	149	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_MAXRNG	macro	include/agc/csm/entry_lexicon.h	177	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_MINUS_HSCALED	macro	include/agc/csm/entry_lexicon.h	114	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_MINUS_KSCALE	macro	include/agc/csm/entry_lexicon.h	116	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_MINUS_ONE_OVER_KB2	macro	include/agc/csm/entry_lexicon.h	56	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_MKVSCALE	macro	include/agc/csm/entry_lexicon.h	126	src/csm/entry/cm_body_attitude.c	file-local (one .c)	0
+AGC_ENTRY_MVM_360K	macro	include/agc/csm/entry_lexicon.h	235	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_NEAR1_4	macro	include/agc/csm/entry_lexicon.h	174	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_NEARONE	macro	include/agc/csm/entry_lexicon.h	124	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_NSEC	macro	include/agc/csm/entry_lexicon.h	205	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_ONEBIT_DP	macro	include/agc/csm/entry_lexicon.h	183	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_ONEBIT_DP_P1	macro	include/agc/csm/entry_lexicon.h	185	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_ONE_12TH	macro	include/agc/csm/entry_lexicon.h	180	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_ONE_24TH	macro	include/agc/csm/entry_lexicon.h	84	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_ONE_OVER_K44	macro	include/agc/csm/entry_lexicon.h	101	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_ONE_OVER_KA1	macro	include/agc/csm/entry_lexicon.h	107	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_ONE_OVER_KB1	macro	include/agc/csm/entry_lexicon.h	54	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_ONE_OVER_WIE	macro	include/agc/csm/entry_lexicon.h	128	-	unused	0
+AGC_ENTRY_ONE_THIRD	macro	include/agc/csm/entry_lexicon.h	119	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_POINT1	macro	include/agc/csm/entry_lexicon.h	34	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_PT1_16	macro	include/agc/csm/entry_lexicon.h	100	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_Q21	macro	include/agc/csm/entry_lexicon.h	47	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_Q22	macro	include/agc/csm/entry_lexicon.h	48	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_Q3	macro	include/agc/csm/entry_lexicon.h	43	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_Q5	macro	include/agc/csm/entry_lexicon.h	44	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_Q6	macro	include/agc/csm/entry_lexicon.h	45	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_Q7F	macro	include/agc/csm/entry_lexicon.h	46	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_Q7FKDMIN	macro	include/agc/csm/entry_lexicon.h	41	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_RTMU_INV_EARTH	macro	include/agc/csm/entry_lexicon.h	164	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_RTMU_INV_LUNENT	macro	include/agc/csm/entry_lexicon.h	166	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_RTRIAL	macro	include/agc/csm/entry_lexicon.h	155	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_SEC500	macro	include/agc/csm/entry_lexicon.h	122	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_SEC60_DP	macro	include/agc/csm/entry_lexicon.h	140	-	unused	0
+AGC_ENTRY_SEQ_MAX_STEPS	macro	include/agc/csm/entry_lexicon.h	193	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_SINTRIM	macro	include/agc/csm/entry_lexicon.h	217	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_SPVQUIT	macro	include/agc/csm/entry_lexicon.h	201	src/csm/entry/cm_body_attitude.c	file-local (one .c)	0
+AGC_ENTRY_TCDU	macro	include/agc/csm/entry_lexicon.h	203	src/csm/entry/cm_body_attitude.c	file-local (one .c)	0
+AGC_ENTRY_TOL_25NM	macro	include/agc/csm/entry_lexicon.h	63	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_TWO_C1_HS	macro	include/agc/csm/entry_lexicon.h	98	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_TWO_HS	macro	include/agc/csm/entry_lexicon.h	92	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_TWO_HS_GMAX_SQ	macro	include/agc/csm/entry_lexicon.h	94	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_T_M3	macro	include/agc/csm/entry_lexicon.h	221	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_VEMSCON	macro	include/agc/csm/entry_lexicon.h	162	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_ENTRY_VFINAL	macro	include/agc/csm/entry_lexicon.h	103	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_VFINAL1	macro	include/agc/csm/entry_lexicon.h	105	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_VLMIN	macro	include/agc/csm/entry_lexicon.h	50	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_VQUIT	macro	include/agc/csm/entry_lexicon.h	58	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_VRCONT	macro	include/agc/csm/entry_lexicon.h	90	src/csm/entry/reentry.c	file-local (one .c)	0
+AGC_ENTRY_VREFER_TABLES	macro	include/agc/csm/entry_lexicon.h	197	src/csm/entry/lexicon.c	file-local (one .c)	0
+AGC_ENTRY_VSQMIN	macro	include/agc/csm/entry_lexicon.h	223	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_XMIN_360	macro	include/agc/csm/entry_lexicon.h	233	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_XS_360	macro	include/agc/csm/entry_lexicon.h	237	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_YAWLIM	macro	include/agc/csm/entry_lexicon.h	213	src/csm/entry/dap.c	file-local (one .c)	0
+AGC_ENTRY_YDOTLIM	macro	include/agc/csm/entry_lexicon.h	209	src/csm/entry/dap.c	file-local (one .c)	0
+agc_entry_vrefer	prototype	include/agc/csm/entry_lexicon.h	243	src/csm/entry/lexicon.c	internal.h of src/csm/entry	0
+AGC_ALARM_00217	macro	include/agc/exec/exec.h	146	src/exec/alarm.c	file-local (one .c)	0
+AGC_ALARM_01103	macro	include/agc/exec/exec.h	148	src/exec/alarm.c	file-local (one .c)	0
+AGC_ALARM_01107	macro	include/agc/exec/exec.h	150	src/exec/fresh_start.c	file-local (one .c)	0
+AGC_ALARM_01201	macro	include/agc/exec/exec.h	152	src/exec/executive.c	file-local (one .c)	0
+AGC_ALARM_01202	macro	include/agc/exec/exec.h	154	src/exec/executive.c	file-local (one .c)	0
+AGC_ALARM_01204	macro	include/agc/exec/exec.h	158	src/exec/waitlist.c	file-local (one .c)	0
+AGC_ALARM_01520	macro	include/agc/exec/exec.h	160	src/exec/change_program/sequence.c	file-local (one .c)	0
+AGC_CORE_ACTIVE	enumerator	include/agc/exec/exec.h	171	src/exec/executive.c	file-local (one .c) + tests	1
+AGC_CORE_FREE	enumerator	include/agc/exec/exec.h	170	src/exec/executive.c	file-local (one .c) + tests	1
+AGC_CORE_SLEEPING	enumerator	include/agc/exec/exec.h	172	src/exec/executive.c	file-local (one .c) + tests	2
+AGC_EXEC_CORE_SETS_CSM	macro	include/agc/exec/exec.h	142	src/exec/executive.c	file-local (one .c)	0
+AGC_EXEC_MAX_VACS	macro	include/agc/exec/exec.h	35	src/exec/executive.c	file-local (one .c) + tests	1
+AGC_MODECADR_N	macro	include/agc/exec/exec.h	318	src/exec/erasable.c	file-local (one .c)	0
+AGC_PRIO14	macro	include/agc/exec/exec.h	58	src/csm/burns/sps/burn.c	file-local (one .c)	0
+AGC_PRIO15	macro	include/agc/exec/exec.h	59	src/csm/burns/sps/ignition.c	file-local (one .c)	0
+AGC_PRIO16	macro	include/agc/exec/exec.h	60	src/lm/burns/ignition/burnbaby.c	file-local (one .c)	0
+AGC_PRIO22	macro	include/agc/exec/exec.h	64	src/lm/burns/servicer/average_g.c	file-local (one .c)	0
+AGC_PRIO23	macro	include/agc/exec/exec.h	65	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_PRIO25	macro	include/agc/exec/exec.h	66	src/lm/burns/servicer/average_g.c	file-local (one .c)	0
+AGC_PRIO30	macro	include/agc/exec/exec.h	68	src/csm/burns/sps/ignition.c	file-local (one .c)	0
+AGC_PRIO31	macro	include/agc/exec/exec.h	69	-	unused	0
+AGC_PRIO5	macro	include/agc/exec/exec.h	53	src/lm/burns/dps_burn.c	file-local (one .c) + tests	1
+AGC_PRIO6	macro	include/agc/exec/exec.h	54	-	unused	0
+AGC_RUPT_DOWNRUPT	enumerator	include/agc/exec/exec.h	265	src/exec/interrupts.c	file-local (one .c)	0
+AGC_RUPT_HAND	enumerator	include/agc/exec/exec.h	267	src/exec/interrupts.c	file-local (one .c)	0
+AGC_RUPT_KEY1	enumerator	include/agc/exec/exec.h	262	src/exec/interrupts.c	file-local (one .c)	0
+AGC_RUPT_KEY2	enumerator	include/agc/exec/exec.h	263	src/exec/interrupts.c	file-local (one .c)	0
+AGC_RUPT_RADAR	enumerator	include/agc/exec/exec.h	266	src/exec/interrupts.c	file-local (one .c)	0
+AGC_RUPT_T3	enumerator	include/agc/exec/exec.h	260	src/exec/interrupts.c	file-local (one .c)	0
+AGC_RUPT_T4	enumerator	include/agc/exec/exec.h	261	src/exec/interrupts.c	file-local (one .c)	0
+AGC_RUPT_T5	enumerator	include/agc/exec/exec.h	259	src/exec/interrupts.c	file-local (one .c)	0
+AGC_RUPT_T6	enumerator	include/agc/exec/exec.h	258	src/exec/interrupts.c	file-local (one .c)	0
+AGC_RUPT_UPRUPT	enumerator	include/agc/exec/exec.h	264	src/exec/interrupts.c	file-local (one .c)	0
+AGC_VAC_WORDS	macro	include/agc/exec/exec.h	38	-	unused	0
+AGC_WAITLIST_MAX_TASKS	macro	include/agc/exec/exec.h	36	src/exec/waitlist.c	file-local (one .c) + tests	1
+agc_abort_restart	prototype	include/agc/exec/exec.h	121	src/exec/alarm.c	file-static	0
+agc_alarm_almcadr	prototype	include/agc/exec/exec.h	120	src/exec/alarm.c	internal.h of src/exec	0
+agc_core_state	enum	include/agc/exec/exec.h	168	-	unused	0
+agc_core_state_t	typedef	include/agc/exec/exec.h	173	src/exec/executive.c	file-local (one .c)	0
+agc_dispatch_rupt	prototype	include/agc/exec/exec.h	284	src/exec/interrupts.c	file-static	0
+agc_dispatch_task	prototype	include/agc/exec/exec.h	189	src/exec/dispatch.c	internal.h of src/exec	1
+agc_exec_idle	prototype	include/agc/exec/exec.h	96	src/exec/executive.c	internal (def file + tests)	1
+agc_fresh_dofstart	prototype	include/agc/exec/exec.h	248	src/exec/fresh_start.c	file-static	0
+agc_job_ctx	struct	include/agc/exec/exec.h	43	-	unused	0
+agc_job_endofjob	prototype	include/agc/exec/exec.h	307	src/exec/executive.c	internal.h of src/exec	1
+agc_job_gopoodoo	prototype	include/agc/exec/exec.h	301	src/exec/alarm.c	internal.h of src/exec	0
+agc_job_gotopooh	prototype	include/agc/exec/exec.h	299	src/exec/fresh_start.c	internal.h of src/exec	0
+agc_phase_mr_klean	prototype	include/agc/exec/exec.h	235	src/exec/phase_table.c	internal.h of src/exec	1
+agc_phase_new	prototype	include/agc/exec/exec.h	126	src/exec/phase_table.c	file-static	0
+agc_phase_restart_all	prototype	include/agc/exec/exec.h	134	src/exec/restarts.c	internal.h of src/exec	0
+agc_phase_var	struct	include/agc/exec/exec.h	215	-	unused	0
+agc_restart_goprog	prototype	include/agc/exec/exec.h	250	src/exec/fresh_start.c	internal.h of src/exec	1
+agc_restart_group	prototype	include/agc/exec/exec.h	240	src/exec/restarts.c	internal (def file + tests)	4
+agc_restart_kind	enum	include/agc/exec/exec.h	204	-	unused	0
+agc_rupt_id	enum	include/agc/exec/exec.h	256	-	unused	0
+agc_rupt_id_t	typedef	include/agc/exec/exec.h	268	src/exec/interrupts.c	file-local (one .c)	0
+agc_rupt_t3	prototype	include/agc/exec/exec.h	273	src/exec/interrupts.c	file-static	0
+agc_task_endtask	prototype	include/agc/exec/exec.h	308	src/exec/waitlist.c	internal.h of src/exec	1
+agc_task_getcadr	prototype	include/agc/exec/exec.h	311	src/exec/waitlist.c	internal.h of src/exec	1
+agc_task_longcycl	prototype	include/agc/exec/exec.h	310	src/exec/waitlist.c	internal.h of src/exec	1
+agc_task_svct3	prototype	include/agc/exec/exec.h	309	src/exec/waitlist.c	internal.h of src/exec	1
+agc_task_t5idloc	prototype	include/agc/exec/exec.h	312	src/exec/interrupts.c	internal.h of src/exec	1
+agc_task_taskover	prototype	include/agc/exec/exec.h	313	src/exec/waitlist.c	internal.h of src/exec	1
+agc_waitlist_t3rupt	prototype	include/agc/exec/exec.h	197	src/exec/waitlist.c	internal.h of src/exec	0
+AGC_JOB_APS_ABORT	enumerator	include/agc/exec/jobs.h	726	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_CISLUNAR_MIDCOURSE_NAVIGATION_CHECKLIST	enumerator	include/agc/exec/jobs.h	457	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_DPS_ABORT	enumerator	include/agc/exec/jobs.h	735	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_DUMMY	enumerator	include/agc/exec/jobs.h	37	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_EARTH_ORBIT_INSERTION_MONITOR	enumerator	include/agc/exec/jobs.h	354	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_ENTRY_DISPLAY_PROTECT	enumerator	include/agc/exec/jobs.h	433	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_IMU_TEST_SITE_DISPLAY	enumerator	include/agc/exec/jobs.h	290	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_KALCMANU_START	enumerator	include/agc/exec/jobs.h	123	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_MANUAL_ACQUISITION	enumerator	include/agc/exec/jobs.h	801	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_ORBIT_DISPLAY_REPEAT	enumerator	include/agc/exec/jobs.h	180	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_RADAR_SEARCH_POINT	enumerator	include/agc/exec/jobs.h	821	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_RENDEZVOUS_FINAL_ATTITUDE_CSM	enumerator	include/agc/exec/jobs.h	498	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_RENDEZVOUS_NAVIGATION_START	enumerator	include/agc/exec/jobs.h	761	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_RENDEZVOUS_SIGHTING_MARK	enumerator	include/agc/exec/jobs.h	823	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_RENDEZVOUS_SIGHTING_MARK_AHEAD	enumerator	include/agc/exec/jobs.h	824	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_RENDEZVOUS_SIGHTING_MARK_ALARM	enumerator	include/agc/exec/jobs.h	825	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_RENDEZVOUS_SIGHTING_MARK_COVERAGE_ALARM	enumerator	include/agc/exec/jobs.h	827	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_RENDEZVOUS_TRACKING_DATA_UPDATE	enumerator	include/agc/exec/jobs.h	780	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_SERVIDLE	enumerator	include/agc/exec/jobs.h	702	src/exec/dispatch.c	file-local (one .c)	0
+AGC_JOB_STABLE_ORBIT_TIG	enumerator	include/agc/exec/jobs.h	254	src/exec/dispatch.c	file-local (one .c)	0
+AGC_TASK_RCSUP	enumerator	include/agc/exec/jobs.h	945	src/exec/dispatch.c	file-local (one .c)	0
+AGC_TASK_TIGTASK	enumerator	include/agc/exec/jobs.h	992	src/exec/dispatch.c	file-local (one .c)	0
+agc_job_id	enum	include/agc/exec/jobs.h	28	-	unused	0
+agc_task_id	enum	include/agc/exec/jobs.h	840	-	unused	0
+AGC_ALARM_00205	macro	include/agc/guidance/guidance.h	558	src/csm/burns/servicer.c	file-local (one .c)	0
+AGC_ALARM_00511	macro	include/agc/guidance/guidance.h	560	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_ALARM_00523	macro	include/agc/guidance/guidance.h	562	src/lm/burns/servicer/landing_radar.c	file-local (one .c)	0
+AGC_ALARM_01706	macro	include/agc/guidance/guidance.h	566	src/lm/burns/dps_burn.c	file-local (one .c)	0
+AGC_LM_WHICH_ABORT	enumerator	include/agc/guidance/guidance.h	513	src/lm/landing/aborts.c	file-local (one .c)	0
+AGC_LM_WHICH_APS_BURN	enumerator	include/agc/guidance/guidance.h	511	src/lm/burns/dps_burn.c	file-local (one .c)	0
+AGC_LM_WHICH_BRAKING_PHASE	enumerator	include/agc/guidance/guidance.h	512	src/lm/landing/lunar_landing.c	file-local (one .c)	0
+AGC_LM_WHICH_COUNT	enumerator	include/agc/guidance/guidance.h	514	src/lm/burns/ignition/burnbaby.c	file-local (one .c)	0
+AGC_LM_WHICH_POWERED_ASCENT	enumerator	include/agc/guidance/guidance.h	508	src/lm/ascent.c	file-local (one .c) + tests	1
+AGC_LM_WHICH_RCS_BURN	enumerator	include/agc/guidance/guidance.h	510	src/lm/burns/dps_burn.c	file-local (one .c)	0
+agc_avg_g	struct	include/agc/guidance/guidance.h	64	-	unused	0
+agc_burn	struct	include/agc/guidance/guidance.h	121	-	unused	0
+agc_copy_kind	enum	include/agc/guidance/guidance.h	107	-	unused	0
+agc_copy_kind_t	typedef	include/agc/guidance/guidance.h	112	src/guidance/servicer_common.c	file-local (one .c)	0
+agc_csm_comptgo	prototype	include/agc/guidance/guidance.h	433	src/csm/burns/external_delta_v.c	file-static	0
+agc_csm_cross_product_steering	prototype	include/agc/guidance/guidance.h	434	src/csm/burns/sps/steer.c	file-static	0
+agc_csm_updatevg	prototype	include/agc/guidance/guidance.h	435	src/csm/burns/sps/steer.c	file-static	0
+agc_guid	struct	include/agc/guidance/guidance.h	253	-	unused	0
+agc_guid_again	prototype	include/agc/guidance/guidance.h	287	src/guidance/external_delta_v.c	internal.h of src/guidance	0
+agc_guid_calcut	prototype	include/agc/guidance/guidance.h	288	src/guidance/burn_steering.c	file-static	0
+agc_guid_csm	struct	include/agc/guidance/guidance.h	152	-	unused	0
+agc_guid_delrspl	prototype	include/agc/guidance/guidance.h	280	src/csm/burns/external_delta_v.c	internal (def file + tests)	1
+agc_guid_external_delta_v_vectors	prototype	include/agc/guidance/guidance.h	275	src/guidance/external_delta_v.c	internal (def file + tests)	1
+agc_guid_init	prototype	include/agc/guidance/guidance.h	272	src/guidance/guid_state.c	internal (def file + tests)	6
+agc_guid_lambert_aimpoint_vectors	prototype	include/agc/guidance/guidance.h	276	src/guidance/external_delta_v.c	file-static	0
+agc_guid_lm	struct	include/agc/guidance/guidance.h	171	-	unused	0
+agc_guid_midgim	prototype	include/agc/guidance/guidance.h	283	src/guidance/external_delta_v.c	internal.h of src/guidance	0
+agc_guid_nav_resume	prototype	include/agc/guidance/guidance.h	267	src/guidance/guid_state.c	internal.h of src/guidance	0
+agc_guid_preread1_csm	prototype	include/agc/guidance/guidance.h	330	src/csm/burns/servicer.c	internal.h of src/csm/burns	0
+agc_lm_altchk	prototype	include/agc/guidance/guidance.h	367	src/lm/burns/servicer/landing_radar.c	file-static	0
+agc_lm_avgexit	prototype	include/agc/guidance/guidance.h	358	src/lm/burns/servicer/average_g.c	file-static	0
+agc_lm_cross_product_steering	prototype	include/agc/guidance/guidance.h	496	src/lm/burns/dps_burn.c	file-static	0
+agc_lm_munrvg	prototype	include/agc/guidance/guidance.h	364	src/lm/burns/servicer/average_g.c	file-static	0
+agc_lm_nullclok	prototype	include/agc/guidance/guidance.h	521	src/lm/burns/ignition/clock.c	file-static	0
+agc_lm_onullage	prototype	include/agc/guidance/guidance.h	523	src/lm/burns/ignition/burnbaby.c	file-static	0
+agc_lm_rasteer1	prototype	include/agc/guidance/guidance.h	497	src/lm/burns/dps_burn_rasteer.c	internal.h of src/lm/burns	0
+agc_lm_rvboth	prototype	include/agc/guidance/guidance.h	365	src/lm/burns/servicer/average_g.c	file-static	0
+agc_lm_setpos2	prototype	include/agc/guidance/guidance.h	371	src/lm/burns/servicer/landing_radar.c	file-static	0
+agc_lm_stclok1	prototype	include/agc/guidance/guidance.h	520	src/lm/burns/ignition/clock.c	file-static	0
+agc_lm_tmptospt	prototype	include/agc/guidance/guidance.h	368	src/lm/burns/servicer/average_g.c	file-static	0
+agc_lm_updatevg	prototype	include/agc/guidance/guidance.h	498	src/lm/burns/dps_burn.c	file-static	0
+agc_lm_which	enum	include/agc/guidance/guidance.h	506	-	unused	0
+agc_lm_which_t	typedef	include/agc/guidance/guidance.h	515	-	unused	0
+agc_tgo_in	struct	include/agc/guidance/guidance.h	298	-	unused	0
+agc_xprod_in	struct	include/agc/guidance/guidance.h	310	-	unused	0
+AGC_AXISROT_NBSM	enumerator	include/agc/imu/imu.h	71	src/imu/cdu_trig.c	file-local (one .c)	0
+AGC_IMU_DEV_COUNT	enumerator	include/agc/imu/imu.h	105	src/imu/mode.c	file-local (one .c)	0
+AGC_IMU_GBUF_COUNT	enumerator	include/agc/imu/imu.h	124	src/imu/gyro.c	file-local (one .c)	0
+AGC_MODECADR_BAD	macro	include/agc/imu/imu.h	190	src/imu/mode.c	file-local (one .c)	0
+AGC_MODECADR_FREE	macro	include/agc/imu/imu.h	188	src/imu/mode.c	file-local (one .c)	0
+AGC_MODECADR_GOOD	macro	include/agc/imu/imu.h	189	src/imu/mode.c	file-local (one .c)	0
+agc_axisrot_dir	enum	include/agc/imu/imu.h	68	-	unused	0
+agc_axisrot_dir_t	typedef	include/agc/imu/imu.h	72	src/imu/cdu_trig.c	file-local (one .c)	0
+agc_cdutrig	struct	include/agc/imu/imu.h	56	-	unused	0
+agc_csm_prelaunch_erthrvse	prototype	include/agc/imu/imu.h	377	src/csm/prelaunch_align.c	internal.h of src/csm	0
+agc_csm_prelaunch_ervector	prototype	include/agc/imu/imu.h	382	src/csm/prelaunch_align.c	file-static	0
+agc_csm_prelaunch_posn17c	prototype	include/agc/imu/imu.h	373	src/csm/prelaunch_align.c	file-static	0
+agc_csm_prelaunch_set_pad	prototype	include/agc/imu/imu.h	369	src/csm/prelaunch_align.c	internal (def file + tests)	1
+agc_csm_prelaunch_thetan	prototype	include/agc/imu/imu.h	383	src/csm/prelaunch_align.c	file-static	0
+agc_imu_axisrot_words	prototype	include/agc/imu/imu.h	79	src/imu/cdu_trig.c	file-static	0
+agc_imu_comp_irig	prototype	include/agc/imu/imu.h	237	src/imu/compensation.c	file-static	0
+agc_imu_comp_params	struct	include/agc/imu/imu.h	216	-	unused	0
+agc_imu_device	enum	include/agc/imu/imu.h	100	-	unused	0
+agc_imu_endimu	prototype	include/agc/imu/imu.h	163	src/imu/mode.c	file-static	0
+agc_imu_gomanur	prototype	include/agc/imu/imu.h	317	src/imu/maneuver.c	internal.h of src/imu	0
+agc_imu_gyro_buf	enum	include/agc/imu/imu.h	119	-	unused	0
+agc_imu_gyro_buf_t	typedef	include/agc/imu/imu.h	125	src/imu/gyro.c	file-local (one .c)	0
+agc_imu_isitauto	prototype	include/agc/imu/imu.h	348	src/imu/attitude_maneuver.c	internal.h of src/imu	0
+agc_imu_mode_init	prototype	include/agc/imu/imu.h	127	src/imu/mode.c	internal (def file + tests)	1
+agc_imu_modecadr_bzf	prototype	include/agc/imu/imu.h	191	src/imu/mode.c	file-static	0
+agc_imu_pipa_fail_enable	prototype	include/agc/imu/imu.h	133	src/imu/mode.c	internal.h of src/imu	0
+agc_imu_pipa_interval	prototype	include/agc/imu/imu.h	229	src/imu/compensation.c	file-static	0
+agc_imu_stall_result	enum	include/agc/imu/imu.h	109	-	unused	0
+agc_kalc_active	prototype	include/agc/imu/imu.h	313	src/imu/maneuver.c	internal.h of src/imu	0
+agc_kalc_case	enum	include/agc/imu/imu.h	287	-	unused	0
+agc_kalc_case_t	typedef	include/agc/imu/imu.h	293	-	unused	0
+agc_kalc_cdutodcm	prototype	include/agc/imu/imu.h	276	src/imu/maneuver_calc.c	internal.h of src/imu	1
+agc_kalc_compute	prototype	include/agc/imu/imu.h	309	src/imu/maneuver_calc.c	internal.h of src/imu	2
+agc_kalc_dcmtocdu	prototype	include/agc/imu/imu.h	280	src/imu/maneuver_calc.c	internal.h of src/imu	2
+agc_kalc_delcomp	prototype	include/agc/imu/imu.h	284	src/imu/maneuver_calc.c	internal.h of src/imu	2
+agc_kalc_outcome	prototype	include/agc/imu/imu.h	318	src/imu/maneuver.c	file-static	0
+agc_kalc_rateindx	prototype	include/agc/imu/imu.h	312	src/imu/maneuver.c	file-static	0
+agc_kalc_setup	struct	include/agc/imu/imu.h	295	-	unused	0
+agc_kalc_zeroerror	prototype	include/agc/imu/imu.h	326	src/imu/maneuver.c	file-static	0
+AGC_DSKY_BLANK	macro	include/agc/io/dsky.h	91	src/io/dsky/pinball/state.c	file-local (one .c) + tests	1
+AGC_DSKY_CAUTION_RESET	macro	include/agc/io/dsky.h	88	-	unused	0
+AGC_DSKY_DISP_COUNT	enumerator	include/agc/io/dsky.h	254	src/io/dsky/display_if.c	file-local (one .c)	0
+AGC_DSKY_GODSP	enumerator	include/agc/io/dsky.h	224	-	unused	0
+AGC_DSKY_GOMARK	enumerator	include/agc/io/dsky.h	242	-	unused	0
+AGC_DSKY_GOMARK2R	enumerator	include/agc/io/dsky.h	247	-	unused	0
+AGC_DSKY_GOMARK3	enumerator	include/agc/io/dsky.h	248	src/lm/ags_initialization.c	file-local (one .c)	0
+AGC_DSKY_GOMARK3R	enumerator	include/agc/io/dsky.h	249	src/io/verbs/extended_verbs_lm.c	file-local (one .c)	0
+AGC_DSKY_GOMARKR	enumerator	include/agc/io/dsky.h	243	-	unused	0
+AGC_DSKY_GOPERF1R	enumerator	include/agc/io/dsky.h	235	src/csm/entry/programs.c	file-local (one .c)	0
+AGC_DSKY_GOPERF2	enumerator	include/agc/io/dsky.h	236	-	unused	0
+AGC_DSKY_KEY_0	enumerator	include/agc/io/dsky.h	60	-	unused	0
+AGC_DSKY_KEY_1	enumerator	include/agc/io/dsky.h	51	-	unused	0
+AGC_DSKY_KEY_2	enumerator	include/agc/io/dsky.h	52	-	unused	0
+AGC_DSKY_KEY_3	enumerator	include/agc/io/dsky.h	53	-	unused	0
+AGC_DSKY_KEY_4	enumerator	include/agc/io/dsky.h	54	-	unused	0
+AGC_DSKY_KEY_5	enumerator	include/agc/io/dsky.h	55	-	unused	0
+AGC_DSKY_KEY_6	enumerator	include/agc/io/dsky.h	56	-	unused	0
+AGC_DSKY_KEY_7	enumerator	include/agc/io/dsky.h	57	-	unused	0
+AGC_DSKY_KEY_8	enumerator	include/agc/io/dsky.h	58	-	unused	0
+AGC_DSKY_KEY_9	enumerator	include/agc/io/dsky.h	59	-	unused	0
+AGC_DSKY_KEY_CLR	enumerator	include/agc/io/dsky.h	67	src/io/dsky/pinball/keys.c	file-local (one .c)	0
+AGC_DSKY_KEY_ENTR	enumerator	include/agc/io/dsky.h	66	src/io/dsky/pinball/keys.c	file-local (one .c)	0
+AGC_DSKY_KEY_KEYREL	enumerator	include/agc/io/dsky.h	63	src/io/dsky/pinball/keys.c	file-local (one .c)	0
+AGC_DSKY_KEY_MINUS	enumerator	include/agc/io/dsky.h	65	src/io/dsky/pinball/keys.c	file-local (one .c)	0
+AGC_DSKY_KEY_NOUN	enumerator	include/agc/io/dsky.h	68	src/io/dsky/pinball/keys.c	file-local (one .c)	0
+AGC_DSKY_KEY_PLUS	enumerator	include/agc/io/dsky.h	64	src/io/dsky/pinball/keys.c	file-local (one .c)	0
+AGC_DSKY_KEY_RSET	enumerator	include/agc/io/dsky.h	62	src/io/dsky/pinball/keys.c	file-local (one .c)	0
+AGC_DSKY_KEY_VERB	enumerator	include/agc/io/dsky.h	61	src/io/dsky/pinball/keys.c	file-local (one .c)	0
+AGC_DSKY_LAMP_FLASH	macro	include/agc/io/dsky.h	86	-	unused	0
+AGC_DSKY_LAMP_KEYREL	macro	include/agc/io/dsky.h	85	-	unused	0
+AGC_DSKY_LAMP_OPRERR	macro	include/agc/io/dsky.h	87	-	unused	0
+AGC_DSKY_LAMP_TEMP	macro	include/agc/io/dsky.h	84	-	unused	0
+AGC_DSKY_LAMP_UPACT	macro	include/agc/io/dsky.h	83	-	unused	0
+AGC_DSKY_RDIGITS	macro	include/agc/io/dsky.h	92	src/io/dsky/pinball/state.c	file-local (one .c) + tests	1
+AGC_DSKY_RELAY_BLANK	macro	include/agc/io/dsky.h	75	-	unused	0
+agc_dsky_cont	struct	include/agc/io/dsky.h	215	-	unused	0
+agc_dsky_disp	enum	include/agc/io/dsky.h	222	-	unused	0
+agc_dsky_dspmm	prototype	include/agc/io/dsky.h	200	src/io/dsky/pinball/nvsub.c	internal.h of src/io/dsky/pinball	0
+agc_dsky_get_state	prototype	include/agc/io/dsky.h	140	src/io/dsky/pinball/state.c	internal (def file + tests)	3
+agc_dsky_jamproc	prototype	include/agc/io/dsky.h	199	src/io/dsky/pinball/nvsub.c	file-static	0
+agc_dsky_jamterm	prototype	include/agc/io/dsky.h	198	src/io/dsky/pinball/nvsub.c	file-static	0
+agc_dsky_key	enum	include/agc/io/dsky.h	49	src/io/dsky/pinball/keys.c	file-local (one .c)	0
+agc_dsky_key	prototype	include/agc/io/dsky.h	115	src/io/dsky/pinball/keys.c	file-static	0
+agc_dsky_keys	prototype	include/agc/io/dsky.h	119	src/io/dsky/pinball/keys.c	internal (def file + tests)	3
+agc_dsky_noun_read	prototype	include/agc/io/dsky.h	164	src/io/dsky/pinball/scale.c	file-static	0
+agc_dsky_noun_write	prototype	include/agc/io/dsky.h	165	src/io/dsky/pinball/scale.c	internal (def file + tests)	1
+agc_dsky_nout	prototype	include/agc/io/dsky.h	139	src/io/dsky/pinball/state.c	internal (def file + tests)	1
+agc_dsky_nvmonopt	prototype	include/agc/io/dsky.h	176	src/io/dsky/pinball/nvsub.c	file-static	0
+agc_dsky_nvsbwait	prototype	include/agc/io/dsky.h	185	src/io/dsky/pinball/nvsub.c	file-static	0
+agc_dsky_nvsub	prototype	include/agc/io/dsky.h	174	src/io/dsky/pinball/nvsub.c	internal (def file + tests)	2
+agc_dsky_nvsub_mctbs	prototype	include/agc/io/dsky.h	175	src/io/dsky/pinball/nvsub.c	internal (def file + tests)	1
+agc_dsky_relay_code	prototype	include/agc/io/dsky.h	79	src/io/dsky/pinball/state.c	internal.h of src/io/dsky/pinball	1
+agc_dsky_relay_digit	prototype	include/agc/io/dsky.h	80	src/io/dsky/pinball/state.c	internal (def file + tests)	1
+agc_dsky_state	struct	include/agc/io/dsky.h	94	-	unused	0
+agc_dsky_state_t	typedef	include/agc/io/dsky.h	108	src/io/dsky/pinball/state.c	file-local (one .c) + tests	3
+agc_dsky_xyzreg	prototype	include/agc/io/dsky.h	159	src/io/dsky/pinball/state.c	file-static	0
+AGC_DATA_COUNT	enumerator	include/agc/io/nouns.h	384	src/io/dsky/nouns/data.c	file-local (one .c) + tests	1
+AGC_DATA_FIRST_ERASABLE	macro	include/agc/io/nouns.h	388	-	unused	0
+AGC_NOUN_FIRST_MIXED	macro	include/agc/io/nouns.h	63	-	unused	0
+AGC_NOUN_MAX_COMP	macro	include/agc/io/nouns.h	64	src/io/dsky/nouns/data.c	file-local (one .c) + tests	1
+AGC_SCALE_ALT_RATE	enumerator	include/agc/io/nouns.h	145	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SCALE_COUNT	enumerator	include/agc/io/nouns.h	158	src/io/dsky/nouns/scales.c	file-local (one .c) + tests	1
+AGC_SCALE_DEG180	enumerator	include/agc/io/nouns.h	107	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SCALE_DP_DEGREES	enumerator	include/agc/io/nouns.h	156	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SCALE_FWD_LAT_VEL	enumerator	include/agc/io/nouns.h	147	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SCALE_INERTIA	enumerator	include/agc/io/nouns.h	127	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SCALE_INIT_FINAL_ALT	enumerator	include/agc/io/nouns.h	144	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SCALE_RHC_RATE	enumerator	include/agc/io/nouns.h	149	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SCALE_THRUST_MOMENT	enumerator	include/agc/io/nouns.h	128	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SCALE_TIME_SEC_DP	enumerator	include/agc/io/nouns.h	117	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SCALE_TRACKER_AZ_DEG	enumerator	include/agc/io/nouns.h	138	src/io/dsky/nouns/scales.c	file-local (one .c)	0
+AGC_SFR_ARITH	enumerator	include/agc/io/nouns.h	76	-	unused	0
+AGC_SFR_ARITH1	enumerator	include/agc/io/nouns.h	86	-	unused	0
+AGC_SFR_CDU360	enumerator	include/agc/io/nouns.h	89	-	unused	0
+AGC_SFR_DP1	enumerator	include/agc/io/nouns.h	78	-	unused	0
+AGC_SFR_DP2	enumerator	include/agc/io/nouns.h	79	-	unused	0
+AGC_SFR_DP3	enumerator	include/agc/io/nouns.h	82	-	unused	0
+AGC_SFR_DP4	enumerator	include/agc/io/nouns.h	85	-	unused	0
+AGC_SFR_DP_FRACTION	enumerator	include/agc/io/nouns.h	88	-	unused	0
+AGC_SFR_FRACTION	enumerator	include/agc/io/nouns.h	74	-	unused	0
+AGC_SFR_LR_POSITION	enumerator	include/agc/io/nouns.h	81	-	unused	0
+AGC_SFR_MIN_SEC	enumerator	include/agc/io/nouns.h	84	-	unused	0
+AGC_SFR_OCTAL	enumerator	include/agc/io/nouns.h	73	-	unused	0
+AGC_SFR_TWO_INT	enumerator	include/agc/io/nouns.h	87	-	unused	0
+AGC_SFR_Y_OPTICS	enumerator	include/agc/io/nouns.h	80	-	unused	0
+agc_noun	struct	include/agc/io/nouns.h	391	-	unused	0
+agc_noun_data	enum	include/agc/io/nouns.h	170	-	unused	0
+agc_noun_data_t	typedef	include/agc/io/nouns.h	385	-	unused	0
+agc_noun_lookup_vehicle	prototype	include/agc/io/nouns.h	411	src/io/dsky/nouns/data.c	internal (def file + tests)	1
+agc_scale	enum	include/agc/io/nouns.h	99	-	unused	0
+agc_scale_info_vehicle	prototype	include/agc/io/nouns.h	435	src/io/dsky/nouns/scales.c	internal (def file + tests)	1
+agc_scale_sfconst	prototype	include/agc/io/nouns.h	439	src/io/dsky/nouns/scales.c	internal (def file + tests)	1
+agc_sf_routine	enum	include/agc/io/nouns.h	71	-	unused	0
+agc_sf_routine_t	typedef	include/agc/io/nouns.h	90	-	unused	0
+AGC_DNLIST_CSM_COUNT	macro	include/agc/io/service.h	225	src/io/telemetry/downlink_lists_csm.c	file-local (one .c) + tests	1
+AGC_DNLIST_LM_COUNT	macro	include/agc/io/service.h	227	src/io/telemetry/downlink_lists_lm.c	file-local (one .c) + tests	1
+AGC_DN_8NN	enumerator	include/agc/io/service.h	155	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_ADOT	enumerator	include/agc/io/service.h	101	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_AGSBUFF	enumerator	include/agc/io/service.h	202	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_AGSK	enumerator	include/agc/io/service.h	168	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_AIG	enumerator	include/agc/io/service.h	175	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_AK	enumerator	include/agc/io/service.h	102	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_ALFA_180	enumerator	include/agc/io/service.h	145	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_ALT	enumerator	include/agc/io/service.h	153	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_AOG	enumerator	include/agc/io/service.h	176	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_AOTCODE	enumerator	include/agc/io/service.h	170	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_AT	enumerator	include/agc/io/service.h	195	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_CMDAPMOD	enumerator	include/agc/io/service.h	141	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_CSTEER	enumerator	include/agc/io/service.h	113	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_DELTAH	enumerator	include/agc/io/service.h	191	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_DNLRVELX	enumerator	include/agc/io/service.h	160	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_DNLRVELZ	enumerator	include/agc/io/service.h	159	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_DNRRANGE	enumerator	include/agc/io/service.h	165	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_ECSTEER	enumerator	include/agc/io/service.h	131	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_ERRORX	enumerator	include/agc/io/service.h	104	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_FC	enumerator	include/agc/io/service.h	197	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_GAMMAEI	enumerator	include/agc/io/service.h	147	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_GSAV	enumerator	include/agc/io/service.h	201	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_HAPOX	enumerator	include/agc/io/service.h	125	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_HMEAS	enumerator	include/agc/io/service.h	185	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_ITEM_COUNT	enumerator	include/agc/io/service.h	203	-	unused	0
+AGC_DN_LAND	enumerator	include/agc/io/service.h	194	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_LANDMARK	enumerator	include/agc/io/service.h	151	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_LASTYCMD	enumerator	include/agc/io/service.h	172	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_LAT	enumerator	include/agc/io/service.h	154	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_LATANG	enumerator	include/agc/io/service.h	144	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_LAT_SPL	enumerator	include/agc/io/service.h	139	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_LAUNCHAZ	enumerator	include/agc/io/service.h	127	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_LONG	enumerator	include/agc/io/service.h	152	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_LOWIDCOD	macro	include/agc/io/service.h	230	src/io/telemetry/down_telemetry.c	file-local (one .c) + tests	1
+AGC_DN_LRVTIMDL	enumerator	include/agc/io/service.h	183	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_LRXCDUDL	enumerator	include/agc/io/service.h	187	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_LRZCDUDL	enumerator	include/agc/io/service.h	181	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_L_D1	enumerator	include/agc/io/service.h	142	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_MARK2DWN	enumerator	include/agc/io/service.h	124	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_MARKDOWN	enumerator	include/agc/io/service.h	123	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_MKTIME	enumerator	include/agc/io/service.h	178	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_NN	enumerator	include/agc/io/service.h	180	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_PACTOFF	enumerator	include/agc/io/service.h	111	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_PAXERR1	enumerator	include/agc/io/service.h	143	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_PCMD	enumerator	include/agc/io/service.h	112	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_POSTORKP	enumerator	include/agc/io/service.h	167	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_POSTORKU	enumerator	include/agc/io/service.h	164	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_PSEUDO55	enumerator	include/agc/io/service.h	198	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_RANGE	enumerator	include/agc/io/service.h	136	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_RANGRDOT	enumerator	include/agc/io/service.h	179	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_RGU	enumerator	include/agc/io/service.h	192	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_RM	enumerator	include/agc/io/service.h	186	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_ROLLTM	enumerator	include/agc/io/service.h	146	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_RTHETA	enumerator	include/agc/io/service.h	138	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_STARSAV1	enumerator	include/agc/io/service.h	173	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_STARSAV2	enumerator	include/agc/io/service.h	174	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_SVMRKDAT	enumerator	include/agc/io/service.h	150	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_TALIGN	enumerator	include/agc/io/service.h	169	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_TANGNB	enumerator	include/agc/io/service.h	177	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_TCSI	enumerator	include/agc/io/service.h	158	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_THETADX	enumerator	include/agc/io/service.h	103	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_TLAND	enumerator	include/agc/io/service.h	196	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_TTE	enumerator	include/agc/io/service.h	148	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_TTF_8	enumerator	include/agc/io/service.h	190	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_TTOGO	enumerator	include/agc/io/service.h	199	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_UNFC_2	enumerator	include/agc/io/service.h	188	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_VGU	enumerator	include/agc/io/service.h	193	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_VGVECT	enumerator	include/agc/io/service.h	189	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_VHFCNT	enumerator	include/agc/io/service.h	129	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_VHFTIME	enumerator	include/agc/io/service.h	128	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_VIO	enumerator	include/agc/io/service.h	149	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_VMEAS	enumerator	include/agc/io/service.h	184	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_VPRED	enumerator	include/agc/io/service.h	140	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_VSELECT	enumerator	include/agc/io/service.h	182	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_WBODY	enumerator	include/agc/io/service.h	105	src/io/telemetry/downlink_lists_csm.c	file-local (one .c)	0
+AGC_DN_X789	enumerator	include/agc/io/service.h	171	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_DN_YNBSAV	enumerator	include/agc/io/service.h	200	src/io/telemetry/downlink_lists_lm.c	file-local (one .c)	0
+AGC_ROPE_BANKS	macro	include/agc/io/service.h	481	src/sim/rope.c	file-local (one .c) + tests	1
+agc_dn_entry	struct	include/agc/io/service.h	210	-	unused	0
+agc_dn_item	enum	include/agc/io/service.h	73	-	unused	0
+agc_dn_item_t	typedef	include/agc/io/service.h	204	src/io/telemetry/down_telemetry.c	file-local (one .c)	0
+agc_dn_list	struct	include/agc/io/service.h	218	-	unused	0
+agc_dnlist_csm_control	prototype	include/agc/io/service.h	232	src/io/telemetry/downlink_lists_csm.c	internal.h of src/io/telemetry	1
+agc_dnlist_csm_sublist	prototype	include/agc/io/service.h	233	src/io/telemetry/downlink_lists_csm.c	internal.h of src/io/telemetry	1
+agc_dnlist_lm_control	prototype	include/agc/io/service.h	234	src/io/telemetry/downlink_lists_lm.c	internal.h of src/io/telemetry	1
+agc_dnlist_lm_sublist	prototype	include/agc/io/service.h	235	src/io/telemetry/downlink_lists_lm.c	internal.h of src/io/telemetry	1
+agc_dnlist_word_count	prototype	include/agc/io/service.h	238	src/io/telemetry/down_telemetry.c	internal (def file + tests)	1
+agc_erase_cosmg	prototype	include/agc/io/service.h	321	src/io/service/t4rupt_lm.c	internal (def file + tests)	1
+agc_erase_desopts	prototype	include/agc/io/service.h	299	src/io/service/t4rupt_csm.c	internal (def file + tests)	1
+agc_erase_desoptt	prototype	include/agc/io/service.h	297	src/io/service/t4rupt_csm.c	internal (def file + tests)	1
+agc_erase_set_rsampdt	prototype	include/agc/io/service.h	447	src/io/verbs/extended_verbs_lm_radar.c	internal (def file + tests)	1
+agc_extverb_alm_end	prototype	include/agc/io/service.h	335	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_busy	prototype	include/agc/io/service.h	384	src/io/verbs/extended_verbs.c	internal (def file + tests)	1
+agc_extverb_chkpooh	prototype	include/agc/io/service.h	337	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_ckmodcad	prototype	include/agc/io/service.h	338	src/io/verbs/extended_verbs.c	file-static	0
+agc_extverb_csm	prototype	include/agc/io/service.h	381	src/io/verbs/extended_verbs_csm.c	internal.h of src/io/verbs	0
+agc_extverb_downflag	prototype	include/agc/io/service.h	341	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_flash	prototype	include/agc/io/service.h	345	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_goloadlv	prototype	include/agc/io/service.h	339	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_lm	prototype	include/agc/io/service.h	382	src/io/verbs/extended_verbs_lm.c	internal.h of src/io/verbs	0
+agc_extverb_lm_attck2	prototype	include/agc/io/service.h	361	src/io/verbs/extended_verbs_lm.c	internal.h of src/io/verbs	0
+agc_extverb_lr_position_two	prototype	include/agc/io/service.h	354	src/io/verbs/extended_verbs_lm_radar.c	internal.h of src/io/verbs	0
+agc_extverb_lr_spurious_test	prototype	include/agc/io/service.h	356	src/io/verbs/extended_verbs_lm_radar.c	internal.h of src/io/verbs	0
+agc_extverb_lr_spurious_test_end	prototype	include/agc/io/service.h	357	src/io/verbs/extended_verbs_lm_radar.c	internal.h of src/io/verbs	0
+agc_extverb_noun	prototype	include/agc/io/service.h	333	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_radar_test	prototype	include/agc/io/service.h	355	src/io/verbs/extended_verbs_lm_radar.c	internal.h of src/io/verbs	0
+agc_extverb_rr_designate	prototype	include/agc/io/service.h	352	src/io/verbs/extended_verbs_lm_radar.c	internal.h of src/io/verbs	0
+agc_extverb_rr_designate_end	prototype	include/agc/io/service.h	353	src/io/verbs/extended_verbs_lm_radar.c	internal.h of src/io/verbs	1
+agc_extverb_rr_los_display	prototype	include/agc/io/service.h	358	src/io/verbs/extended_verbs_lm_radar.c	internal.h of src/io/verbs	0
+agc_extverb_rr_zero	prototype	include/agc/io/service.h	351	src/io/verbs/extended_verbs_lm_radar.c	internal.h of src/io/verbs	0
+agc_extverb_schedule	prototype	include/agc/io/service.h	342	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_state_vector_copy	prototype	include/agc/io/service.h	360	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_testxact	prototype	include/agc/io/service.h	334	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_upflag	prototype	include/agc/io/service.h	340	src/io/verbs/extended_verbs.c	internal.h of src/io/verbs	0
+agc_extverb_verb	prototype	include/agc/io/service.h	332	src/io/verbs/extended_verbs.c	file-static	0
+agc_job_attitude_error_load_csm	prototype	include/agc/io/service.h	365	src/io/verbs/extended_verbs_csm.c	internal.h of src/io/verbs	0
+agc_job_attitude_error_load_lm	prototype	include/agc/io/service.h	366	src/io/verbs/extended_verbs_lm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_config_csm	prototype	include/agc/io/service.h	371	src/io/verbs/extended_verbs_csm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_config_lm	prototype	include/agc/io/service.h	372	src/io/verbs/extended_verbs_lm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_mass_csm	prototype	include/agc/io/service.h	375	src/io/verbs/extended_verbs_csm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_mass_lm	prototype	include/agc/io/service.h	376	src/io/verbs/extended_verbs_lm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_noun46_csm	prototype	include/agc/io/service.h	369	src/io/verbs/extended_verbs_csm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_noun46_lm	prototype	include/agc/io/service.h	370	src/io/verbs/extended_verbs_lm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_noun47_csm	prototype	include/agc/io/service.h	373	src/io/verbs/extended_verbs_csm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_noun47_lm	prototype	include/agc/io/service.h	374	src/io/verbs/extended_verbs_lm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_noun48_csm	prototype	include/agc/io/service.h	377	src/io/verbs/extended_verbs_csm.c	internal.h of src/io/verbs	0
+agc_job_dap_data_load_noun48_lm	prototype	include/agc/io/service.h	378	src/io/verbs/extended_verbs_lm.c	internal.h of src/io/verbs	0
+agc_job_tracking_terminate_csm	prototype	include/agc/io/service.h	367	src/io/verbs/extended_verbs_csm.c	internal.h of src/io/verbs	0
+agc_job_tracking_terminate_lm	prototype	include/agc/io/service.h	368	src/io/verbs/extended_verbs_lm.c	internal.h of src/io/verbs	0
+agc_mpac_tp	struct	include/agc/io/service.h	44	-	unused	0
+agc_mpac_tp_t	typedef	include/agc/io/service.h	47	src/io/service/rtb_ops.c	file-local (one .c) + tests	1
+agc_rtb_2v1sto2s	prototype	include/agc/io/service.h	55	src/io/service/rtb_ops.c	file-static	0
+agc_rtb_cduinc	prototype	include/agc/io/service.h	56	src/io/service/rtb_ops.c	file-static	0
+agc_rtb_incrcdus	prototype	include/agc/io/service.h	57	src/io/service/rtb_ops.c	file-static	0
+agc_rtb_pulseimu	prototype	include/agc/io/service.h	59	src/io/service/rtb_ops.c	file-static	0
+agc_rtb_quality1	prototype	include/agc/io/service.h	65	src/io/service/rtb_ops.c	file-static	0
+agc_rtb_quality2	prototype	include/agc/io/service.h	64	src/io/service/rtb_ops.c	file-static	0
+agc_rtb_readpips	prototype	include/agc/io/service.h	58	src/io/service/rtb_ops.c	file-static	0
+agc_rtb_sgnagree	prototype	include/agc/io/service.h	51	src/io/service/rtb_ops.c	internal (def file + tests)	1
+agc_rtb_sgnagree_dp	prototype	include/agc/io/service.h	52	src/io/service/rtb_ops.c	internal (def file + tests)	1
+agc_rtb_transp	prototype	include/agc/io/service.h	60	src/io/service/rtb_ops.c	file-static	0
+agc_rtb_vecsgnag	prototype	include/agc/io/service.h	63	src/io/service/rtb_ops.c	file-static	0
+agc_selfcheck_banksum	prototype	include/agc/io/service.h	490	src/io/service/self_check.c	internal (def file + tests)	1
+agc_svc_downent2	prototype	include/agc/io/service.h	258	src/io/service/service.c	file-static	0
+agc_svc_gentran	prototype	include/agc/io/service.h	262	src/io/service/service.c	internal (def file + tests)	1
+agc_svc_upent2	prototype	include/agc/io/service.h	257	src/io/service/service.c	file-static	0
+agc_systems_test_overffix	prototype	include/agc/io/service.h	506	src/lm/systems_test.c	file-static	0
+agc_systems_test_zeroing	prototype	include/agc/io/service.h	505	src/lm/systems_test.c	file-static	0
+agc_t4_c33test	prototype	include/agc/io/service.h	283	src/io/service/t4rupt.c	file-static	0
+agc_t4_cagesub	prototype	include/agc/io/service.h	278	src/io/service/t4rupt.c	file-static	0
+agc_t4_cagesub2	prototype	include/agc/io/service.h	279	src/io/service/t4rupt.c	file-static	0
+agc_t4_gimbal_matrix	prototype	include/agc/io/service.h	304	src/io/service/t4rupt_lm.c	internal.h of src/io/service	1
+agc_t4_glockmon	prototype	include/agc/io/service.h	284	src/io/service/t4rupt.c	file-static	0
+agc_t4_imumon	prototype	include/agc/io/service.h	281	src/io/service/t4rupt.c	file-static	0
+agc_t4_lamptest	prototype	include/agc/io/service.h	280	src/io/service/t4rupt.c	file-static	0
+agc_t4_optics_drive	prototype	include/agc/io/service.h	289	src/io/service/t4rupt_csm.c	internal.h of src/io/service	0
+agc_t4_optics_monitor	prototype	include/agc/io/service.h	288	src/io/service/t4rupt_csm.c	internal.h of src/io/service	0
+agc_t4_optics_task	prototype	include/agc/io/service.h	290	src/io/service/t4rupt_csm.c	internal.h of src/io/service	0
+agc_t4_rr_monitor	prototype	include/agc/io/service.h	303	src/io/service/t4rupt_lm.c	internal.h of src/io/service	0
+agc_t4_tnontest	prototype	include/agc/io/service.h	282	src/io/service/t4rupt.c	file-static	0
+agc_t4rupt	prototype	include/agc/io/service.h	272	src/io/service/t4rupt.c	internal (def file + tests)	1
+agc_uplink_update_start	prototype	include/agc/io/service.h	459	src/io/verbs/uplink_update.c	internal.h of src/io/verbs	1
+agc_uplink_update_target	prototype	include/agc/io/service.h	467	src/io/verbs/uplink_update.c	internal (def file + tests)	1
+agc_uplink_update_write	prototype	include/agc/io/service.h	466	src/io/verbs/uplink_update.c	file-static	0
+AGC_ALARM_02000	macro	include/agc/lm/dap.h	47	src/lm/dap/rcs/paxis.c	file-local (one .c)	0
+AGC_ALARM_02001	macro	include/agc/lm/dap.h	49	src/lm/dap/rcs/paxis.c	file-local (one .c)	0
+AGC_ALARM_02002	macro	include/agc/lm/dap.h	51	src/lm/dap/rcs/qraxis.c	file-local (one .c)	0
+AGC_ALARM_02003	macro	include/agc/lm/dap.h	53	src/lm/dap/rcs/paxis.c	file-local (one .c)	0
+AGC_ALARM_02004	macro	include/agc/lm/dap.h	55	src/lm/dap/rcs/qrjets.c	file-local (one .c)	0
+AGC_LM_DAP_PADLOADS	macro	include/agc/lm/dap.h	96	src/lm/dap/state.c	file-local (one .c)	0
+agc_erase_stiksens	prototype	include/agc/lm/dap.h	130	src/lm/dap/state.c	file-static	0
+agc_lm_dap_needles_init	prototype	include/agc/lm/dap.h	84	src/lm/dap/dapif.c	file-static	0
+agc_lm_dap_t5rupt	prototype	include/agc/lm/dap.h	59	src/lm/dap/rcs/dapidler.c	file-static	0
+agc_lm_dap_t6_pending	prototype	include/agc/lm/dap.h	63	src/lm/dap/rcs/t6rupt.c	file-static	0
+agc_lm_dap_t6jobchk	prototype	include/agc/lm/dap.h	61	src/lm/dap/rcs/t6rupt.c	file-static	0
+agc_lm_dap_time6_count	prototype	include/agc/lm/dap.h	62	src/lm/dap/rcs/t6rupt.c	file-static	0
+AGC_ALARM_00401	macro	include/agc/lm/landing.h	390	src/lm/landing/findcduw.c	file-local (one .c)	0
+AGC_ALARM_00402	macro	include/agc/lm/landing.h	392	src/lm/landing/findcduw.c	file-local (one .c)	0
+AGC_ALARM_01406	macro	include/agc/lm/landing.h	394	src/lm/landing/guidance.c	file-local (one .c)	0
+AGC_ALARM_01410	macro	include/agc/lm/landing.h	396	src/lm/landing/guidance.c	file-local (one .c)	0
+AGC_ALARM_01412	macro	include/agc/lm/landing.h	398	src/lm/landing/lunar_landing.c	file-local (one .c)	0
+AGC_LM_3SECS	macro	include/agc/lm/landing.h	53	src/lm/landing/throttle.c	file-local (one .c)	0
+AGC_LM_ENTRY_QGUIDSUB	macro	include/agc/lm/landing.h	263	src/lm/landing/lunar_landing.c	file-local (one .c)	0
+AGC_LM_FMAXODD	macro	include/agc/lm/landing.h	49	src/lm/landing/throttle.c	file-local (one .c) + tests	1
+AGC_LM_FMAXPOS	macro	include/agc/lm/landing.h	50	src/lm/landing/throttle.c	file-local (one .c) + tests	1
+AGC_LM_PHASE_APPRQUAD	macro	include/agc/lm/landing.h	45	src/lm/landing/guidance.c	file-local (one .c)	0
+AGC_LM_PHASE_BRAKQUAD	macro	include/agc/lm/landing.h	44	src/lm/landing/guidance.c	file-local (one .c) + tests	1
+AGC_LM_ROOT_MAX_DEGREE	macro	include/agc/lm/landing.h	258	src/lm/landing/guidance.c	file-local (one .c)	0
+AGC_LM_ROOT_MAX_PASSES	macro	include/agc/lm/landing.h	259	src/lm/landing/guidance.c	file-local (one .c)	0
+AGC_LM_THROTLAG	macro	include/agc/lm/landing.h	52	src/lm/landing/throttle.c	file-local (one .c)	0
+agc_lm_ad	prototype	include/agc/lm/landing.h	229	src/lm/landing/state.c	internal.h of src/lm/landing	0
+agc_lm_afccalc	prototype	include/agc/lm/landing.h	274	src/lm/landing/guidance.c	file-static	0
+agc_lm_arctrgsp	prototype	include/agc/lm/landing.h	250	src/lm/landing/findcduw.c	file-static	0
+agc_lm_ascent	prototype	include/agc/lm/landing.h	373	src/lm/ascent.c	file-static	0
+agc_lm_calcrgvg	prototype	include/agc/lm/landing.h	270	src/lm/landing/guidance.c	file-static	0
+agc_lm_cgcalc	prototype	include/agc/lm/landing.h	275	src/lm/landing/guidance.c	internal (def file + tests)	1
+agc_lm_chan_bit_present	prototype	include/agc/lm/landing.h	231	src/lm/landing/state.c	internal.h of src/lm/landing	0
+agc_lm_das	prototype	include/agc/lm/landing.h	230	src/lm/landing/state.c	internal.h of src/lm/landing	0
+agc_lm_dispexit	prototype	include/agc/lm/landing.h	278	src/lm/landing/guidance.c	internal.h of src/lm/landing	0
+agc_lm_dv	prototype	include/agc/lm/landing.h	227	src/lm/landing/state.c	internal.h of src/lm/landing	0
+agc_lm_fastchng	prototype	include/agc/lm/landing.h	225	src/lm/landing/state.c	internal.h of src/lm/landing	0
+agc_lm_findcduw	prototype	include/agc/lm/landing.h	244	src/lm/landing/findcduw.c	internal (def file + tests)	1
+agc_lm_findcduw_limit_mga	prototype	include/agc/lm/landing.h	252	src/lm/landing/findcduw.c	internal (def file + tests)	1
+agc_lm_guidpass	prototype	include/agc/lm/landing.h	266	src/lm/landing/guidance.c	internal.h of src/lm/landing	0
+agc_lm_guildenstern	prototype	include/agc/lm/landing.h	310	src/lm/landing/lunar_landing.c	internal.h of src/lm/landing	0
+agc_lm_landisp	prototype	include/agc/lm/landing.h	384	src/lm/landing/displays.c	internal.h of src/lm/landing	1
+agc_lm_limitsub	prototype	include/agc/lm/landing.h	251	src/lm/landing/findcduw.c	file-static	0
+agc_lm_logsub	prototype	include/agc/lm/landing.h	375	src/lm/ascent.c	file-static	0
+agc_lm_manual_landing_vertical	prototype	include/agc/lm/landing.h	315	src/lm/landing/lunar_landing.c	internal.h of src/lm/landing	0
+agc_lm_mp_hi	prototype	include/agc/lm/landing.h	228	src/lm/landing/state.c	internal.h of src/lm/landing	0
+agc_lm_onesto2s	prototype	include/agc/lm/landing.h	253	src/lm/landing/findcduw.c	file-static	0
+agc_lm_pipctr1	prototype	include/agc/lm/landing.h	350	src/lm/landing/aborts.c	internal.h of src/lm/landing	0
+agc_lm_powered_ascent_return	prototype	include/agc/lm/landing.h	368	src/lm/ascent.c	file-static	0
+agc_lm_quadguid	prototype	include/agc/lm/landing.h	273	src/lm/landing/guidance.c	internal (def file + tests)	2
+agc_lm_rate_of_descent_vertical	prototype	include/agc/lm/landing.h	314	src/lm/landing/lunar_landing.c	internal.h of src/lm/landing	0
+agc_lm_redesig	prototype	include/agc/lm/landing.h	311	src/lm/landing/lunar_landing.c	internal.h of src/lm/landing	0
+agc_lm_rgvgcalc	prototype	include/agc/lm/landing.h	271	src/lm/landing/guidance.c	internal.h of src/lm/landing	1
+agc_lm_rootpsrs	prototype	include/agc/lm/landing.h	260	src/lm/landing/guidance.c	file-static	0
+agc_lm_sparcsin	prototype	include/agc/lm/landing.h	246	src/lm/landing/findcduw.c	file-static	0
+agc_lm_sparcsin_doubled	prototype	include/agc/lm/landing.h	249	src/lm/landing/findcduw.c	internal.h of src/lm/landing	0
+agc_lm_start_approach_phase	prototype	include/agc/lm/landing.h	267	src/lm/landing/guidance.c	file-static	0
+agc_lm_start_velocity_nulling	prototype	include/agc/lm/landing.h	268	src/lm/landing/guidance.c	file-static	0
+agc_lm_steer_exit	prototype	include/agc/lm/landing.h	277	src/lm/landing/guidance.c	file-static	0
+agc_lm_target	struct	include/agc/lm/landing.h	57	-	unused	0
+agc_lm_tdispset	prototype	include/agc/lm/landing.h	288	src/lm/landing/guidance.c	file-static	0
+agc_lm_tgocomp	prototype	include/agc/lm/landing.h	351	src/lm/landing/aborts.c	file-static	0
+agc_lm_thr	prototype	include/agc/lm/landing.h	218	src/lm/landing/state.c	internal.h of src/lm/landing	2
+agc_lm_throttle	prototype	include/agc/lm/landing.h	234	src/lm/landing/throttle.c	internal.h of src/lm/landing	1
+agc_lm_throttle_measured	prototype	include/agc/lm/landing.h	235	src/lm/landing/throttle.c	internal.h of src/lm/landing	1
+agc_lm_throtup	prototype	include/agc/lm/landing.h	352	src/lm/landing/aborts.c	file-static	0
+agc_lm_time1	prototype	include/agc/lm/landing.h	226	src/lm/landing/state.c	internal.h of src/lm/landing	1
+agc_lm_ttf8cl	prototype	include/agc/lm/landing.h	272	src/lm/landing/guidance.c	internal (def file + tests)	1
+agc_lm_ttfincr	prototype	include/agc/lm/landing.h	269	src/lm/landing/guidance.c	file-static	0
+agc_lm_vertguid	prototype	include/agc/lm/landing.h	276	src/lm/landing/guidance.c	file-static	0
+agc_lm_vmonitor	prototype	include/agc/lm/landing.h	387	src/lm/landing/displays.c	file-static	0
+AGC_STAR_COUNT	macro	include/agc/nav/auxiliary.h	269	src/nav/auxiliary/star_tables.c	file-local (one .c) + tests	1
+AGC_TFF_NEARONE	macro	include/agc/nav/auxiliary.h	226	src/nav/auxiliary/free_fall.c	file-local (one .c) + tests	1
+agc_ephem_csm	struct	include/agc/nav/auxiliary.h	234	-	unused	0
+agc_ephem_csm_lspos	prototype	include/agc/nav/auxiliary.h	251	src/nav/auxiliary/ephemerides.c	internal (def file + tests)	2
+agc_ephem_csm_solpos	prototype	include/agc/nav/auxiliary.h	250	src/nav/auxiliary/ephemerides.c	file-static	0
+agc_ephem_lm_lspos	prototype	include/agc/nav/auxiliary.h	254	src/nav/auxiliary/ephemerides.c	internal (def file + tests)	2
+agc_incorp	struct	include/agc/nav/auxiliary.h	142	-	unused	0
+agc_incorp_sv	struct	include/agc/nav/auxiliary.h	159	-	unused	0
+agc_incorp_w	struct	include/agc/nav/auxiliary.h	137	-	unused	0
+agc_latlong	struct	include/agc/nav/auxiliary.h	96	-	unused	0
+agc_latlong_opt	struct	include/agc/nav/auxiliary.h	90	-	unused	0
+agc_latlong_setgamma	prototype	include/agc/nav/auxiliary.h	123	src/nav/auxiliary/latlong.c	file-static	0
+agc_navaux_padload	struct	include/agc/nav/auxiliary.h	50	-	unused	0
+agc_planet_earthl	prototype	include/agc/nav/auxiliary.h	74	src/nav/auxiliary/planetary.c	file-static	0
+agc_planet_earthmx	prototype	include/agc/nav/auxiliary.h	72	src/nav/auxiliary/planetary.c	file-static	0
+agc_planet_newangle	prototype	include/agc/nav/auxiliary.h	71	src/nav/auxiliary/planetary.c	file-static	0
+agc_planet_r_to_rp_words	prototype	include/agc/nav/auxiliary.h	84	src/nav/auxiliary/planetary.c	file-static	0
+agc_planet_rp_to_r_words	prototype	include/agc/nav/auxiliary.h	85	src/nav/auxiliary/planetary.c	file-static	0
+agc_tff	struct	include/agc/nav/auxiliary.h	186	-	unused	0
+agc_tff_poly	prototype	include/agc/nav/auxiliary.h	224	src/nav/auxiliary/free_fall.c	internal (def file + tests)	1
+AGC_CONIC_ALARM_ABTCONIC	macro	include/agc/nav/conic.h	55	src/nav/conic/common.c	file-local (one .c)	0
+AGC_CONIC_KEPLER_ITERCTR	macro	include/agc/nav/conic.h	52	src/nav/conic/kepler.c	file-local (one .c) + tests	1
+AGC_CONIC_LAMBERT_ITERCTR_AVEG	macro	include/agc/nav/conic.h	54	src/nav/integration/setitctr_lm.c	file-local (one .c)	0
+agc_apsides_out	struct	include/agc/nav/conic.h	211	-	unused	0
+agc_conic_body	enum	include/agc/nav/conic.h	46	-	unused	0
+agc_conic_iterator	prototype	include/agc/nav/conic.h	161	src/nav/conic/lambert.c	file-static	0
+agc_conic_param_out	struct	include/agc/nav/conic.h	230	-	unused	0
+agc_conic_time_out	struct	include/agc/nav/conic.h	164	-	unused	0
+agc_iterator	struct	include/agc/nav/conic.h	146	-	unused	0
+agc_iterator_t	typedef	include/agc/nav/conic.h	158	src/nav/conic/lambert.c	file-local (one .c)	0
+agc_kepler_in	struct	include/agc/nav/conic.h	58	-	unused	0
+agc_kepler_out	struct	include/agc/nav/conic.h	69	-	unused	0
+agc_lambert_in	struct	include/agc/nav/conic.h	104	-	unused	0
+agc_lambert_out	struct	include/agc/nav/conic.h	119	-	unused	0
+agc_timerad_in	struct	include/agc/nav/conic.h	194	-	unused	0
+agc_timetheta_in	struct	include/agc/nav/conic.h	184	-	unused	0
+AGC_INTEG_ALARM_INT_ABRT	macro	include/agc/nav/integration.h	67	src/nav/integration/init.c	file-local (one .c)	0
+AGC_INTEG_ALARM_NOTIME	macro	include/agc/nav/integration.h	71	src/nav/integration/jobs.c	file-local (one .c)	0
+AGC_INTEG_ALARM_WMATEND	macro	include/agc/nav/integration.h	69	src/nav/integration/orbital_integration.c	file-local (one .c)	0
+AGC_INTEG_AREAS_CSM	macro	include/agc/nav/integration.h	53	src/nav/integration/init.c	file-local (one .c)	0
+AGC_INTEG_AREAS_LM	macro	include/agc/nav/integration.h	54	src/nav/integration/init.c	file-local (one .c)	0
+AGC_INTEG_AREAS_MAX	macro	include/agc/nav/integration.h	55	src/nav/integration/init.c	file-local (one .c)	0
+AGC_INTEG_MAX_PASSES	macro	include/agc/nav/integration.h	62	src/nav/integration/init.c	file-local (one .c)	0
+AGC_INTEG_VECTAB	macro	include/agc/nav/integration.h	64	-	unused	0
+AGC_INTEG_W_COLUMNS	macro	include/agc/nav/integration.h	63	-	unused	0
+agc_integ_ctx	struct	include/agc/nav/integration.h	104	-	unused	0
+agc_integ_ctx_init	prototype	include/agc/nav/integration.h	152	src/nav/integration/init.c	internal (def file + tests)	3
+agc_integ_eraswake	prototype	include/agc/nav/integration.h	177	src/nav/integration/init.c	internal (def file + tests)	1
+agc_integ_grp2pc	prototype	include/agc/nav/integration.h	237	src/nav/integration/init.c	internal.h of src/nav/integration	0
+agc_integ_midtoav_out	struct	include/agc/nav/integration.h	139	-	unused	0
+agc_integ_othprec	prototype	include/agc/nav/integration.h	188	src/nav/integration/init.c	file-static	0
+agc_integ_out	struct	include/agc/nav/integration.h	90	-	unused	0
+agc_integ_r_other	prototype	include/agc/nav/integration.h	276	src/nav/integration/svdwn.c	internal (def file + tests)	1
+agc_integ_sv	struct	include/agc/nav/integration.h	76	-	unused	0
+agc_integ_svdwn	prototype	include/agc/nav/integration.h	275	src/nav/integration/svdwn.c	internal.h of src/nav/integration	1
+agc_integ_thisvint	prototype	include/agc/nav/integration.h	243	src/nav/integration/init.c	internal.h of src/nav/integration	0
+agc_integ_v_other	prototype	include/agc/nav/integration.h	277	src/nav/integration/svdwn.c	internal (def file + tests)	1
+AGC_ALIGN_AGSBUFF_WORDS	macro	include/agc/programs/alignment.h	63	src/lm/ags_initialization.c	file-local (one .c)	0
+AGC_ALIGN_AOT_PAIRS	macro	include/agc/programs/alignment.h	62	src/lm/optics/aotmark.c	file-local (one .c)	0
+AGC_ALIGN_NSTARS	macro	include/agc/programs/alignment.h	58	src/programs/alignment/locsam.c	file-local (one .c)	0
+AGC_ALIGN_STAR_CODE_MAX	macro	include/agc/programs/alignment.h	59	src/programs/alignment/locsam.c	file-local (one .c)	0
+AGC_ALIGN_SXT_MARKS	macro	include/agc/programs/alignment.h	61	-	unused	0
+ALIGN_PH_00014	macro	include/agc/programs/alignment.h	707	-	unused	0
+ALIGN_PH_00254	macro	include/agc/programs/alignment.h	709	-	unused	0
+ALIGN_PH_05024	macro	include/agc/programs/alignment.h	708	src/programs/alignment/sighting_data_and_gyro_torquing.c	file-local (one .c)	0
+ALIGN_PRIO15	macro	include/agc/programs/alignment.h	699	src/lm/optics/aotmark.c	file-local (one .c) + tests	1
+ALIGN_PRIO24	macro	include/agc/programs/alignment.h	700	src/csm/optics/auto_optics_positioning.c	file-local (one .c)	0
+ALIGN_PRIO32	macro	include/agc/programs/alignment.h	701	src/csm/optics/sxtmark.c	file-local (one .c)	0
+ALIGN_PRIO4	macro	include/agc/programs/alignment.h	703	-	unused	0
+ALIGN_PRIO5	macro	include/agc/programs/alignment.h	702	src/csm/optics/sxtmark.c	file-local (one .c)	0
+agc_ags_agsk	prototype	include/agc/programs/alignment.h	285	src/lm/ags_initialization.c	file-static	0
+agc_ags_buffer	prototype	include/agc/programs/alignment.h	284	src/lm/ags_initialization.c	file-static	0
+agc_ags_scalevec	prototype	include/agc/programs/alignment.h	282	src/lm/ags_initialization.c	internal (def file + tests)	2
+agc_ags_time	prototype	include/agc/programs/alignment.h	283	src/lm/ags_initialization.c	internal (def file + tests)	1
+agc_align_aot_pair	struct	include/agc/programs/alignment.h	91	-	unused	0
+agc_align_aot_pair_t	typedef	include/agc/programs/alignment.h	95	src/lm/optics/aotmark.c	file-local (one .c) + tests	1
+agc_align_calcsmsc	prototype	include/agc/programs/alignment.h	200	src/programs/alignment/common.c	internal.h of src/programs/alignment	0
+agc_align_cdutrig	prototype	include/agc/programs/alignment.h	197	src/programs/alignment/common.c	internal.h of src/programs/alignment	0
+agc_align_chksdata_angle	prototype	include/agc/programs/alignment.h	224	src/programs/alignment/locsam.c	internal.h of src/programs/alignment	1
+agc_align_coarse_needed	prototype	include/agc/programs/alignment.h	212	src/programs/alignment/orientation.c	internal.h of src/programs/alignment	0
+agc_align_gimbal_angles	prototype	include/agc/programs/alignment.h	203	src/programs/alignment/orientation.c	internal.h of src/programs/alignment	0
+agc_align_gyro_coarse_dc	prototype	include/agc/programs/alignment.h	213	src/programs/alignment/orientation.c	internal.h of src/programs/alignment	1
+agc_align_locsam_from	prototype	include/agc/programs/alignment.h	216	src/programs/alignment/locsam.c	file-static	0
+agc_align_locsam_t	typedef	include/agc/programs/alignment.h	75	src/programs/alignment/locsam.c	file-local (one .c)	0
+agc_align_mfref	prototype	include/agc/programs/alignment.h	344	src/lm/alignment/lunar_surface_align.c	internal (def file + tests)	1
+agc_align_nominal_orientation	prototype	include/agc/programs/alignment.h	210	src/programs/alignment/orientation.c	internal.h of src/programs/alignment	0
+agc_align_nominal_orientation_axes	prototype	include/agc/programs/alignment.h	206	src/programs/alignment/orientation.c	internal (def file + tests)	1
+agc_align_occult	prototype	include/agc/programs/alignment.h	218	src/programs/alignment/locsam.c	file-static	0
+agc_align_ones_to_twos	prototype	include/agc/programs/alignment.h	194	src/programs/alignment/common.c	internal (def file + tests)	1
+agc_align_planet_vector	prototype	include/agc/programs/alignment.h	223	src/programs/alignment/locsam.c	internal.h of src/programs/alignment	0
+agc_align_sxt_mark	struct	include/agc/programs/alignment.h	79	-	unused	0
+agc_aot_aveit	prototype	include/agc/programs/alignment.h	306	src/lm/optics/aotmark.c	internal (def file + tests)	1
+agc_aot_flight_los	prototype	include/agc/programs/alignment.h	305	src/lm/optics/aotmark.c	file-static	0
+agc_aot_optaxis	prototype	include/agc/programs/alignment.h	303	src/lm/optics/aotmark.c	internal (def file + tests)	1
+agc_aot_surfstar	prototype	include/agc/programs/alignment.h	304	src/lm/optics/aotmark.c	internal (def file + tests)	1
+agc_csm_advtrack	prototype	include/agc/programs/alignment.h	319	src/csm/optics/auto_optics_positioning.c	file-static	0
+agc_csm_earrot	struct	include/agc/programs/alignment.h	243	-	unused	0
+agc_csm_log	prototype	include/agc/programs/alignment.h	241	src/programs/alignment/geometry_csm.c	internal (def file + tests)	2
+agc_csm_rota	prototype	include/agc/programs/alignment.h	320	src/csm/optics/auto_optics_positioning.c	file-static	0
+agc_csm_sxtlogic	prototype	include/agc/programs/alignment.h	237	src/programs/alignment/geometry_csm.c	internal (def file + tests)	1
+agc_csm_target_optics_angles	prototype	include/agc/programs/alignment.h	318	src/csm/optics/auto_optics_positioning.c	file-static	0
+agc_job_aot_mark_surface_display	prototype	include/agc/programs/alignment.h	538	src/lm/optics/aotmark.c	file-static	0
+agc_job_csm_fine_align_next_star	prototype	include/agc/programs/alignment.h	358	src/csm/alignment/fine_align.c	file-static	0
+agc_job_lm_fine_align_next_star	prototype	include/agc/programs/alignment.h	453	src/lm/alignment/fine_align.c	file-static	0
+agc_job_lm_orientation_acquire_display	prototype	include/agc/programs/alignment.h	464	src/lm/alignment/imu_orientation_determination.c	file-static	0
+agc_job_lm_orientation_mark_star	prototype	include/agc/programs/alignment.h	470	src/lm/alignment/imu_orientation_determination.c	file-static	0
+agc_job_lunar_gravity_display	prototype	include/agc/programs/alignment.h	508	src/lm/alignment/lunar_surface_gravity.c	file-static	0
+agc_job_lunar_surface_attitude_check	prototype	include/agc/programs/alignment.h	491	src/lm/alignment/lunar_surface_align.c	internal.h of src/lm/alignment	0
+agc_job_lunar_surface_solve	prototype	include/agc/programs/alignment.h	495	src/lm/alignment/lunar_surface_align.c	file-static	0
+agc_job_lunar_surface_star_position_display	prototype	include/agc/programs/alignment.h	522	src/lm/alignment/lunar_surface_sighting.c	file-static	0
+agc_job_lunar_surface_stored_attitude	prototype	include/agc/programs/alignment.h	492	src/lm/alignment/lunar_surface_align.c	file-static	0
+agc_lm_aot_find_detent	prototype	include/agc/programs/alignment.h	519	src/lm/alignment/lunar_surface_sighting.c	internal (def file + tests)	1
+agc_lm_auto_optics_positioning	prototype	include/agc/programs/alignment.h	340	src/lm/alignment/auto_optics_positioning.c	internal.h of src/lm/alignment	0
+agc_lm_imu_check	prototype	include/agc/programs/alignment.h	333	src/lm/alignment/imu_orientation_determination.c	internal.h of src/lm/alignment	0
+agc_lm_landing_site_latlong	prototype	include/agc/programs/alignment.h	337	src/lm/alignment/imu_realign.c	internal.h of src/lm/alignment	0
+agc_lm_lunar_surface_coarse_trim	prototype	include/agc/programs/alignment.h	350	src/lm/alignment/lunar_surface_gravity.c	internal.h of src/lm/alignment	0
+agc_lm_lunar_surface_gravity	prototype	include/agc/programs/alignment.h	348	src/lm/alignment/lunar_surface_gravity.c	internal.h of src/lm/alignment	0
+agc_lm_lunar_surface_just_trim	prototype	include/agc/programs/alignment.h	349	src/lm/alignment/lunar_surface_gravity.c	internal.h of src/lm/alignment	0
+agc_lm_lunar_surface_one_star	prototype	include/agc/programs/alignment.h	352	src/lm/alignment/lunar_surface_sighting.c	internal.h of src/lm/alignment	0
+agc_lm_lunar_surface_surfline	prototype	include/agc/programs/alignment.h	353	src/lm/alignment/lunar_surface_align.c	internal.h of src/lm/alignment	0
+agc_lm_lunar_surface_two_stars	prototype	include/agc/programs/alignment.h	351	src/lm/alignment/lunar_surface_sighting.c	internal.h of src/lm/alignment	0
+agc_rendezvous_final_attitude_los	prototype	include/agc/programs/alignment.h	276	src/lm/rendezvous_final_attitude.c	internal (def file + tests)	1
+agc_sband_cm_angles	prototype	include/agc/programs/alignment.h	268	src/csm/optics/s_band_antenna.c	internal (def file + tests)	2
+agc_sband_lm_angles	prototype	include/agc/programs/alignment.h	269	src/lm/optics/s_band_antenna.c	internal (def file + tests)	2
+agc_sxtmark_mark2	prototype	include/agc/programs/alignment.h	294	src/csm/optics/sxtmark.c	internal (def file + tests)	1
+agc_sxtmark_markcont	prototype	include/agc/programs/alignment.h	293	src/csm/optics/sxtmark.c	file-static	0
+agc_sxtmark_mkreject	prototype	include/agc/programs/alignment.h	295	src/csm/optics/sxtmark.c	file-static	0
+agc_sxtmark_reserve	prototype	include/agc/programs/alignment.h	289	src/csm/optics/sxtmark.c	internal.h of src/csm/optics	0
+align_integ_kind	enum	include/agc/programs/alignment.h	597	-	unused	0
+align_integ_kind_t	typedef	include/agc/programs/alignment.h	603	src/programs/alignment/common.c	file-local (one .c)	0
+AGC_ALARM_00124	macro	include/agc/programs/rendezvous.h	81	src/csm/navigation/tpi_search.c	file-local (one .c)	0
+AGC_ALARM_01211	macro	include/agc/programs/rendezvous.h	82	-	unused	0
+AGC_ALARM_CSI_00601	macro	include/agc/programs/rendezvous.h	74	-	unused	0
+AGC_ALARM_CSI_00602	macro	include/agc/programs/rendezvous.h	75	-	unused	0
+AGC_ALARM_CSI_00603	macro	include/agc/programs/rendezvous.h	76	-	unused	0
+AGC_ALARM_CSI_00604	macro	include/agc/programs/rendezvous.h	77	-	unused	0
+AGC_ALARM_CSI_00605	macro	include/agc/programs/rendezvous.h	78	-	unused	0
+AGC_ALARM_CSI_00606	macro	include/agc/programs/rendezvous.h	79	-	unused	0
+AGC_RENDZ_600SEC_CS	macro	include/agc/programs/rendezvous.h	69	-	unused	0
+AGC_RENDZ_60MIN_CS	macro	include/agc/programs/rendezvous.h	70	-	unused	0
+AGC_RENDZ_CSI_LOOPMX	macro	include/agc/programs/rendezvous.h	65	-	unused	0
+AGC_RENDZ_INITVEL_MAXITER	macro	include/agc/programs/rendezvous.h	67	src/programs/targeting/initvel.c	file-local (one .c)	0
+AGC_RENDZ_TPISRCH_MAXITER	macro	include/agc/programs/rendezvous.h	68	src/csm/navigation/tpi_search.c	file-local (one .c)	0
+AGC_RENDZ_TPI_MAXITER	macro	include/agc/programs/rendezvous.h	66	src/programs/targeting/tpi.c	file-local (one .c)	0
+AGC_RR_DESIGNATE_RESULT_COUNT	enumerator	include/agc/programs/rendezvous.h	475	src/lm/radar/acquisition.c	file-local (one .c)	0
+agc_erase_r61cntr	prototype	include/agc/programs/rendezvous.h	907	src/csm/navigation/tracking_attitude.c	internal.h of src/csm/navigation	0
+agc_erase_rstack	prototype	include/agc/programs/rendezvous.h	519	src/programs/navigation/common.c	internal.h of src/programs/navigation	0
+agc_erase_set_horizon	prototype	include/agc/programs/rendezvous.h	950	src/programs/navigation/common.c	internal.h of src/programs/navigation	0
+agc_erase_set_r61cntr	prototype	include/agc/programs/rendezvous.h	908	src/csm/navigation/tracking_attitude.c	internal.h of src/csm/navigation	0
+agc_erase_trunbias	prototype	include/agc/programs/rendezvous.h	948	src/csm/navigation/cislunar_navigation.c	file-static	0
+agc_ground_track_determination_flight_path	prototype	include/agc/programs/rendezvous.h	403	src/programs/navigation/ground_track_determination.c	file-static	0
+agc_job_orbital_navigation_csm	prototype	include/agc/programs/rendezvous.h	916	src/csm/navigation/orbital_navigation.c	internal.h of src/csm/navigation	0
+agc_job_rendezvous_navigation_csm	prototype	include/agc/programs/rendezvous.h	919	src/csm/navigation/navigation.c	file-static	0
+agc_orbit_params_compute	prototype	include/agc/programs/rendezvous.h	282	src/programs/displays/orbit_parameter_display.c	internal (def file + tests)	1
+agc_orbit_params_in	struct	include/agc/programs/rendezvous.h	261	-	unused	0
+agc_orbit_params_in_t	typedef	include/agc/programs/rendezvous.h	269	src/programs/displays/orbit_parameter_display.c	file-local (one .c) + tests	1
+agc_orbit_params_out	struct	include/agc/programs/rendezvous.h	271	-	unused	0
+agc_orbit_params_out_t	typedef	include/agc/programs/rendezvous.h	279	src/programs/displays/orbit_parameter_display.c	file-local (one .c) + tests	1
+agc_orbit_params_select_body	prototype	include/agc/programs/rendezvous.h	290	src/programs/displays/orbit_parameter_display.c	internal (def file + tests)	1
+agc_radar_lr_velocity_beam	prototype	include/agc/programs/rendezvous.h	491	src/lm/radar/read.c	internal.h of src/lm/radar	0
+agc_rendezvous_parameter_display_compdisp	prototype	include/agc/programs/rendezvous.h	383	src/programs/displays/rendezvous_parameter_display.c	file-static	0
+agc_rendz	struct	include/agc/programs/rendezvous.h	95	-	unused	0
+agc_rendz_advance	prototype	include/agc/programs/rendezvous.h	328	src/programs/targeting/csi.c	internal.h of src/programs/targeting	0
+agc_rendz_body	struct	include/agc/programs/rendezvous.h	85	-	unused	0
+agc_rendz_body_t	typedef	include/agc/programs/rendezvous.h	92	-	unused	0
+agc_rendz_cdhmvr	prototype	include/agc/programs/rendezvous.h	333	src/programs/targeting/csi.c	internal.h of src/programs/targeting	1
+agc_rendz_csi_a	prototype	include/agc/programs/rendezvous.h	332	src/programs/targeting/csi.c	internal.h of src/programs/targeting	1
+agc_rendz_csi_cdh_dv_to_reference	prototype	include/agc/programs/rendezvous.h	337	src/programs/targeting/csi.c	internal.h of src/programs/targeting	0
+agc_rendz_intercept_velocity	prototype	include/agc/programs/rendezvous.h	357	src/programs/targeting/tpi.c	internal.h of src/programs/targeting	0
+agc_rendz_llasrd	prototype	include/agc/programs/rendezvous.h	587	src/csm/navigation/navigation.c	internal.h of src/csm/navigation	0
+agc_rendz_llasrda	prototype	include/agc/programs/rendezvous.h	588	src/csm/navigation/navigation.c	internal.h of src/csm/navigation	0
+agc_rendz_out_of_plane_compute	prototype	include/agc/programs/rendezvous.h	376	src/programs/displays/out_of_plane_display.c	file-static	0
+agc_rendz_periapo	prototype	include/agc/programs/rendezvous.h	315	src/programs/navigation/common.c	file-static	0
+agc_rendz_periapo	struct	include/agc/programs/rendezvous.h	299	src/programs/navigation/common.c	file-local (one .c)	0
+agc_rendz_rotate	prototype	include/agc/programs/rendezvous.h	322	src/programs/targeting/csi.c	file-static	0
+agc_rendz_rr_downlink	prototype	include/agc/programs/rendezvous.h	542	src/lm/radar/powered_flight_designate.c	file-static	0
+agc_rendz_stable_orbit_deltt	prototype	include/agc/programs/rendezvous.h	388	src/programs/targeting/stable_orbit.c	file-static	0
+agc_rendz_tpi_compute	prototype	include/agc/programs/rendezvous.h	373	src/programs/targeting/tpi.c	internal.h of src/programs/targeting	0
+agc_rendz_tpi_required_velocity	prototype	include/agc/programs/rendezvous.h	353	src/programs/targeting/tpi.c	internal.h of src/programs/targeting	1
+agc_rendz_tpi_search_phase	prototype	include/agc/programs/rendezvous.h	392	src/csm/navigation/tpi_search.c	file-static	0
+agc_rendz_tpi_search_sector	prototype	include/agc/programs/rendezvous.h	395	src/csm/navigation/tpi_search.c	file-static	0
+agc_rendz_tpi_time_search	prototype	include/agc/programs/rendezvous.h	347	src/programs/targeting/tpi.c	internal.h of src/programs/targeting	0
+agc_rendz_tpi_time_search_cont	prototype	include/agc/programs/rendezvous.h	350	src/programs/targeting/tpi.c	internal.h of src/programs/targeting	0
+agc_rendz_tracking_angles	prototype	include/agc/programs/rendezvous.h	909	src/programs/navigation/common.c	internal.h of src/programs/navigation	0
+agc_rendz_tracking_bvectors	prototype	include/agc/programs/rendezvous.h	411	-	file-static	0
+agc_rendz_transang	prototype	include/agc/programs/rendezvous.h	398	src/csm/navigation/tpi_search.c	file-static	0
+agc_rr_designate_gimbal	prototype	include/agc/programs/rendezvous.h	524	src/lm/radar/designate.c	file-static	0
+agc_rr_designate_nb	prototype	include/agc/programs/rendezvous.h	484	src/lm/radar/designate.c	internal.h of src/lm/radar	0
+agc_rr_designate_result	enum	include/agc/programs/rendezvous.h	460	-	unused	0
+agc_rr_designate_sm	prototype	include/agc/programs/rendezvous.h	481	src/lm/radar/designate.c	internal.h of src/lm/radar	0
+agc_rr_downlink	struct	include/agc/programs/rendezvous.h	531	-	unused	0
+agc_rr_downlink_t	typedef	include/agc/programs/rendezvous.h	540	src/lm/radar/powered_flight_designate.c	file-local (one .c)	0
+agc_target_delta_v_lv_to_ref	prototype	include/agc/programs/rendezvous.h	406	src/programs/targeting/target_delta_v.c	file-static	0

@@ -12,7 +12,7 @@ delta-V), GROUND_TRACKING_DETERMINATION_PROGRAM.agc (P21),
 GENERAL_LAMBERT_AIMPOINT_GUIDANCE.agc (Luminary), RADAR_LEADIN_ROUTINES.agc
 (Luminary). These call the conic routines (include/agc/nav/conic.h, written
 in parallel by nav-conic; if not present, code against the struct names in
-docs/agents/nav-conic.md) and integration (agc_integ.h). Display through
+docs/history/assignments/nav-conic.md) and integration (agc_integ.h). Display through
 the agc_dsky.h interface; scheduling through agc_exec.h.
 Tests: tests/programs/rendezvous.c (compiles): CSI targeting on a coplanar
 circular case gives a delta-V of the expected sign; R30 apogee/perigee of

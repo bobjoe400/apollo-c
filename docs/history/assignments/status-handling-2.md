@@ -18,7 +18,7 @@ Method (tooling first, hand work last):
    small shim header so EVA sees `//@ assert cond;`). EVA reports each
    assertion as VALID (proven true on all paths -> GUARANTEED, delete),
    UNKNOWN or INVALID (-> FALLIBLE, convert to agc_status_t). Record the
-   command and the per-assertion verdict in docs/overview/guards.tsv.
+   command and the per-assertion verdict in docs/overview/data/guards.tsv.
    Precision knobs: -eva-precision, -eva-slevel on the interpreter core.
 1b. Fallback, or for guards EVA leaves UNKNOWN because of imprecision:
    classify with libclang (reuse tools/cgast.py and the call graph from
@@ -29,7 +29,7 @@ Method (tooling first, hand work last):
    from a loop bounded by the array size or a constant below it, scaled
    values come straight from a function documented to produce that range.
    Everything else is FALLIBLE. Write the classification to
-   docs/overview/guards.tsv (file:line, function, condition, class, why).
+   docs/overview/data/guards.tsv (file:line, function, condition, class, why).
 2. GUARANTEED guards: delete them (the precondition is established by
    construction; say so in a one-line comment only where it is not obvious
    from the call site). Keep rule-5 density with real postconditions
@@ -51,7 +51,7 @@ Method (tooling first, hand work last):
    could still be added; the lead decides whether to relax the 2.0 target),
    `make format`. Report counts
    (guaranteed-deleted / fallible-converted / callers updated) in
-   docs/modules/status-handling-2.md with Lessons.
+   docs/history/waves/status-handling-2.md with Lessons.
 
 6. One-line functions (user direction, 2026-10-11). Using libclang (body
    is a single return/expression statement) and the call graph, classify
@@ -64,10 +64,10 @@ Method (tooling first, hand work last):
      channel-bit test named after the AGC bit) -> keep.
    - ACCESSOR: reads/writes erasable or module state -> keep (module
      boundary; rule 6 data hiding; it is where the entry check lives).
-   Record the classification in docs/overview/one_liners.tsv and the counts
+   Record the classification in docs/overview/data/one_liners.tsv and the counts
    in your note. Add the classification rule to docs/CODING_STANDARD.md.
 
-7. Collapse re-run under the refined label rule (docs/agents/collapse.md,
+7. Collapse re-run under the refined label rule (docs/history/assignments/collapse.md,
    "Refined protection rule"): extend tools/callgraph.py with an AGC
    reference count per label (from the .agc sources via the header
    comments' labels; `tools/agc_label.py --grep` or a direct grep), mark

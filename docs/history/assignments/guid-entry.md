@@ -15,6 +15,6 @@ Scope (Comanche only), into src/csm/ with include/agc/csm/entry.h:
   -- read and describe) -> p37.c
 - P11.agc (earth-orbit insertion monitor) -> p11.c
 Use agc_channels.h, agc_exec.h, the agc_dsky.h display interface as in
-docs/agents/guid-powered.md. Tests: tests/csm/entry.c (compiles):
+docs/history/assignments/guid-powered.md. Tests: tests/csm/entry.c (compiles):
 HUNTEST / range prediction for a nominal entry state produces a finite
 range; entry DAP roll command sign for a positive roll error.

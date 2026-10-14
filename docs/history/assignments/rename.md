@@ -15,7 +15,7 @@ Steps:
 1. grep for identifiers containing program/routine/verb/noun/page numbers:
    patterns like \b[pP][0-9]{2}\b inside identifiers (p40_, _p63, P37,
    AGC_JOB_P52, r60_, v37, canv37, noun36 handler names, pg1234). Build a
-   rename map BEFORE editing: docs/RENAMES.md with columns
+   rename map BEFORE editing: docs/history/RENAMES.md with columns
    old identifier | new identifier | file(s). Use the canonical stems in
    docs/NAMING.md; add rows to NAMING.md for anything missing (e.g. labels
    like P63SPOT2 -> braking_phase_spot2, R51K -> fine_align_k, CANV37 ->
@@ -26,7 +26,7 @@ Steps:
    src/imu/attitude_maneuver.c, src/csm/burns/earth_orbit_insertion.c -> earth_orbit_insertion.c.
 3. Apply the renames across your scope (sed with word boundaries), then
    grep the EXCLUDED directories for any old identifier you changed and
-   append those occurrences to docs/RENAMES.md under "Callers outside
+   append those occurrences to docs/history/RENAMES.md under "Callers outside
    scope to update at integration" (do not edit them).
 4. Compile every file in scope with the brief's flags (-c). Run
    tools/check_rules.py on scope. Run the wave-1 tests that linked before

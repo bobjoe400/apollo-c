@@ -1,4 +1,4 @@
-# AGENT_BRIEF.md -- instructions for every translation subagent
+# brief.md -- instructions for every subagent (formerly docs/AGENT_BRIEF.md)
 
 You are translating one group of Apollo 11 AGC assembly files into C for the
 apollo-c project. The lead is coordinating many agents in parallel, so stay

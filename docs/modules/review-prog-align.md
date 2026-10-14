@@ -4,7 +4,7 @@ STATUS: DONE (resume 3, 2026-10-11).  Open: KNOWN PA-W4 (guid-powered request), 
 
 ## Scope
 
-docs/agents/review.md for lane prog-align (docs/modules/prog-align.md):
+docs/history/assignments/review.md for lane prog-align (docs/modules/prog-align.md):
 src/programs/alignment, src/csm/alignment, src/csm/optics, src/lm/alignment,
 src/lm/optics, src/lm/ags_initialization.c, src/lm/rendezvous_final_attitude.c,
 include/agc/programs/alignment.h, tests/programs/align.c.

@@ -1,7 +1,7 @@
 # integrate -- wave 3: one registry, no scaffolding, make/test/check clean
 
 ## Scope
-docs/agents/integrate.md items 1-6 (definition of done items 2, 4, 5), plus
+docs/history/assignments/integrate.md items 1-6 (definition of done items 2, 4, 5), plus
 the two GODSPRET continuation jobs of status-handling and its open items
 (CLEANDSP continuation; ALARM 1301 / ABORT 1302 raised by the callers of
 sqrt/asin/acos).
@@ -11,7 +11,7 @@ sqrt/asin/acos).
   tools/gen_registry.py -> include/agc/exec/jobs.h + src/exec/dispatch.c
   (generated; chunked switch by enum range, <= 60 lines each). All 957
   provisional #defines deleted; 40 duplicate/placeholder ids merged via
-  docs/RENAMES.md "integrate" section + tools/rename.cocci; 12 dead ids
+  docs/history/RENAMES.md "integrate" section + tools/archive/rename.cocci; 12 dead ids
   dropped. agc_dispatch_rupt moved to src/exec/interrupts.c. New
   handlers: prelaunch ALLOOP1/SPECSTS task stubs, CSM REDO5.5/CHEKAVEG,
   LM REDO5.5, LM REDO2.17, LM R31CALL task; P31 split _csm/_lm (was a
@@ -149,4 +149,4 @@ sqrt/asin/acos).
 
 ## Program flow and decisions
 
-_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (one job/task registry (generated dispatch: see exec-sched) and clean builds): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](exec-sched.md#program-flow-and-decisions), [core-numeric](core-numeric.md#program-flow-and-decisions), [state-flags](state-flags.md#program-flow-and-decisions), [nav-conic](nav-conic.md#program-flow-and-decisions), [nav-integ](nav-integ.md#program-flow-and-decisions), [nav-aux](nav-aux.md#program-flow-and-decisions), [io-pinball](io-pinball.md#program-flow-and-decisions), [io-nouns](io-nouns.md#program-flow-and-decisions), [imu](imu.md#program-flow-and-decisions), [guid-powered](guid-powered.md#program-flow-and-decisions), [guid-landing](guid-landing.md#program-flow-and-decisions), [guid-entry](guid-entry.md#program-flow-and-decisions), [p37](p37.md#program-flow-and-decisions), [dap-lm](dap-lm.md#program-flow-and-decisions), [dap-csm](dap-csm.md#program-flow-and-decisions), [prog-rendz](prog-rendz.md#program-flow-and-decisions), [prog-align](prog-align.md#program-flow-and-decisions), [sys-misc](sys-misc.md#program-flow-and-decisions), [sim](sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../overview/README.md) and its flowcharts.
+_Documentation wave (2026-10-12), HEAD 99b2c6e._ A tree-wide pass (one job/task registry (generated dispatch: see exec-sched) and clean builds): it changed code owned by the translation lanes without changing what the program decides, so it has no program flow of its own. The flows as the code now stands are in the lane sections: [exec-sched](../../modules/exec-sched.md#program-flow-and-decisions), [core-numeric](../../modules/core-numeric.md#program-flow-and-decisions), [state-flags](../../modules/state-flags.md#program-flow-and-decisions), [nav-conic](../../modules/nav-conic.md#program-flow-and-decisions), [nav-integ](../../modules/nav-integ.md#program-flow-and-decisions), [nav-aux](../../modules/nav-aux.md#program-flow-and-decisions), [io-pinball](../../modules/io-pinball.md#program-flow-and-decisions), [io-nouns](../../modules/io-nouns.md#program-flow-and-decisions), [imu](../../modules/imu.md#program-flow-and-decisions), [guid-powered](../../modules/guid-powered.md#program-flow-and-decisions), [guid-landing](../../modules/guid-landing.md#program-flow-and-decisions), [guid-entry](../../modules/guid-entry.md#program-flow-and-decisions), [p37](../../modules/p37.md#program-flow-and-decisions), [dap-lm](../../modules/dap-lm.md#program-flow-and-decisions), [dap-csm](../../modules/dap-csm.md#program-flow-and-decisions), [prog-rendz](../../modules/prog-rendz.md#program-flow-and-decisions), [prog-align](../../modules/prog-align.md#program-flow-and-decisions), [sys-misc](../../modules/sys-misc.md#program-flow-and-decisions), [sim](../../modules/sim.md#program-flow-and-decisions); the system view is [docs/overview/README.md](../../overview/README.md) and its flowcharts.

@@ -1,7 +1,7 @@
 // always_ok_void.cocci -- rule 7 (docs/CODING_STANDARD.md): the functions
 // tools/always_ok.py reports (every return is AGC_STATUS_OK, nothing can
 // fail) become void, and their callers' status plumbing goes.  The regex
-// below is the record of one wave (docs/modules/always-ok.md); the file is
+// below is the record of one wave (docs/history/waves/always-ok.md); the file is
 // regenerated per wave.
 //
 //   spatch --sp-file tools/cocci/always_ok_void.cocci --in-place \

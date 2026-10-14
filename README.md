@@ -40,7 +40,7 @@ Per-module working notes: `docs/modules/<module>.md`.
 
 ## Run it
 
-    make sim && make scenarios      # build/agc_sim; headless scenarios (sim/scenarios, tools/sim_client.py)
+    make sim && make scenarios      # build/agc_sim; headless scenarios (sim/scenarios, sim/sim_client.py)
 
 `build/agc_sim` is a drop-in for Virtual AGC's `yaAGC`: same command line,
 same peripheral sockets. The stock VirtualAGC launcher always starts
@@ -63,7 +63,7 @@ of both ropes is translated or a named, justified stub; `make`, `make test`
 numeric modules match yaAGC within documented tolerances (bit-exact where
 the ones'-complement -0 allows); every lane was reviewed against its AGC
 source; and `build/agc_sim` runs under the stock VirtualAGC GUI. The
-gates were green at the code freeze (`docs/modules/finish.md`) and again
+gates were green at the code freeze (`docs/history/waves/finish.md`) and again
 after the closed-loop fixes.
 
 Closed loops (PLAN item 10, stretch), against the proven tools only:
@@ -117,7 +117,7 @@ time).
 
 ## Documentation
 
-Generated from the final code (documentation wave, `docs/modules/document.md`):
+Generated from the final code (documentation wave, `docs/history/waves/document.md`):
 
 * `docs/overview/README.md` -- the system: the two vehicles, executive and
   waitlist, interrupts and clock, erasable and flag layout, the DSKY loop,
@@ -136,4 +136,4 @@ Generated from the final code (documentation wave, `docs/modules/document.md`):
 * `docs/TIPS.md` -- tips for translating AGC assembly into C, by topic.
 * Reference: `docs/TRANSLATION_GUIDE.md`, `docs/CODING_STANDARD.md`,
   `docs/STYLE.md`, `docs/NAMING.md`, `docs/ARCHITECTURE.md`,
-  `docs/MODULE_STATUS.md`; history in `docs/WORKLOG.md`.
+  `docs/MODULE_STATUS.md`; history in `docs/history/WORKLOG.md`.
