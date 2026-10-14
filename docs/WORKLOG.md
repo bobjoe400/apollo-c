@@ -976,3 +976,12 @@
             1758x1901 vs 1753x1791 km) and N85 VG = 0 throughout P12 on
             ours. Lane: edit CSV of the P12 erasables, first divergence,
             offline root cause, fix with test.
+2026-10-13  LIFTOFF PASS on our LGC (orbit 1753.27x1790.08 vs stock
+            1753.15x1790.76 km, cutoff identical). Bug 9: ascent axes
+            QAXIS/ZAXIS1 are Luminary aliases of UHYP/UHZP (renewed each
+            SERVICER pass); C had frozen copies. VGBODY and TGO aliases
+            fixed too (four alias bugs from the mission so far). NASSP
+            patch 0003 fixes the Saturn console-mode crash (focus guard
+            missing in Saturn::clbkPostStep): CSM milestones go headless.
+            Harness in repo: make nassp-mission, edits.tsv, host scripts,
+            Lua. Entry from scenario 14 running (stock then ours).
