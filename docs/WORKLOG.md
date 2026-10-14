@@ -985,3 +985,21 @@
             missing in Saturn::clbkPostStep): CSM milestones go headless.
             Harness in repo: make nassp-mission, edits.tsv, host scripts,
             Lua. Entry from scenario 14 running (stock then ours).
+2026-10-14  User: is the test being changed, or the problems fixed? Audit
+            (lane, confirmed by the repo): scripts identical on both
+            builds (md5), no branch on build; but PDI/liftoff tolerances
+            and columns were chosen AFTER our results, with rounding and
+            omitted columns that hid failures. Under the rule as written
+            (every column, 1.5x stock's own spread, no rounding): PDI lat
+            0.0019/0.0012, bank 48.6/41.3, yaw 46.8/40.9, cdux 10.4/4.8
+            deg OUT; liftoff hdot 1.39/0.93, pitch 24.3/12.4, cduy/cduz,
+            apo 14.2/12.2 km OUT. CORRECTION to the entries above: PDI and
+            liftoff are "events and end state match; attitude history
+            outside the stock envelope", not PASS. Mechanical tolerance
+            rule adopted; freeze rule (tolerances/scripts before the dev
+            run, changes repeat stock and are logged under 'Test changes').
+            Flight-bug fixes themselves are listing-cited with failing-
+            first tests; the two DEVIATIONs (radar wait, self-loop pacing)
+            are model-level accommodations for zero-time jobs, stated as
+            such. OPEN: our CMC does not hold attitude in NASSP (entry,
+            earlier MCC-2 symptom); DAP words to be diffed.
