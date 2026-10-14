@@ -390,7 +390,7 @@ void agc_lm_tgocomp(agc_interp_t *ip)
 {
     agc_tp_words_t m = agc_mpac_dsu(ip, agc_mpac_dload(agc_dp_to_words(agc_rtb_loadtime())), agc_dp_to_words(agc_erase_tig())); /* TIME - TIG, 2^28 cs */
 
-    agc_lm_asc()->tgo = agc_mpac_store(agc_mpac_shift(ip, m, 11)); /* SL 11D, as stored */
+    agc_lm_asc_set_tgo(agc_mpac_store(agc_mpac_shift(ip, m, 11))); /* SL 11D, as stored */
 }
 
 /**********************************************************************
@@ -525,7 +525,7 @@ agc_status_t agc_lm_job_abort_to_ascent_guidance(void)
  **********************************************************************/
 agc_status_t agc_lm_job_aps_abort_oldtime(agc_job_ctx_t *ctx)
 {
-    agc_lm_asc()->tgo = agc_lm_asc()->tgo1;
+    agc_lm_asc_set_tgo(agc_lm_asc()->tgo1);
 
     if (!AGC_ASSERT(agc_flag_test(AGC_FLAG_FLAP)))
     {

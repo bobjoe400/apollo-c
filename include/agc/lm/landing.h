@@ -181,8 +181,6 @@ typedef struct agc_lm_asc
     agc_dp_t       rdotd;    /* RDOTD desired radial rate, 2^7 m/cs            */
     agc_dp_t       ydotd;    /* YDOTD desired cross-range rate, 2^7 m/cs       */
     agc_dp_t       zdotd;    /* ZDOTD desired downrange rate, 2^7 m/cs         */
-    agc_vec_t      qaxis;    /* QAXIS unit normal to CSM orbit, half unit 2^1 */
-    agc_vec_t      zaxis1;   /* ZAXIS1 downrange axis, half unit 2^1          */
     agc_vec_t      laxis;    /* LAXIS cross-range axis, 2^1                    */
     agc_dp_t       y;        /* Y cross range, 2^24 m                          */
     agc_dp_t       ydot;     /* YDOT 2^7 m/cs                                  */
@@ -194,7 +192,6 @@ typedef struct agc_lm_asc
     agc_dp_words_t dydot;    /* DYDOT 2^7 m/cs                                 */
     agc_dp_words_t drdot;    /* DRDOT 2^7 m/cs                                 */
     agc_vec_t      vgvect;   /* VGVECT velocity to be gained, 2^7 m/cs         */
-    agc_vec_t      vgbody;   /* VGBODY body-frame VG for N85, 2^7 m/cs         */
     agc_dp_t       ttogo;    /* TTOGO 2^28 cs (negative)                       */
     agc_dp_t       prate;    /* PRATE B, 2^-8 (derived)                        */
     agc_dp_t       yrate;    /* YRATE D, 2^-8                                  */
@@ -220,6 +217,7 @@ agc_lm_pad_t *agc_lm_pad(void);
 agc_lm_ldg_t *agc_lm_ldg(void);
 agc_lm_thr_t *agc_lm_thr(void);
 agc_lm_asc_t *agc_lm_asc(void);
+void          agc_lm_asc_set_tgo(agc_dp_words_t w); /* TGO, ascent words = the TGO erasable */
 void          agc_lm_landing_reset(void);
 
 /* basic-language helpers shared by the lane (state.c) */

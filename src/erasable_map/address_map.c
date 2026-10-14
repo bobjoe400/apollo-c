@@ -155,6 +155,9 @@ typedef enum ec_item
     EC_PHASES,      /* RAW x12 -PHASE1 PHASE1 .. -PHASE6 PHASE6 */
     EC_TBASES,      /* RAW x12 TBASE1 PHSPRDT1 .. (PHSPRDTn not kept) */
     EC_LONGBASE,    /* RAW x2 LONGBASE (TIME2, TIME1)         */
+    EC_LM_ASC_WRD,  /* RAW x16 Y DRDOT DYDOT DZDOT PCONS YCONS PRATE YRATE (LM ascent) */
+    EC_LM_ASC_GT,   /* RAW x2 TBUP or GEFF as stored (LM ascent): k 0 hi, 1 lo */
+    EC_LM_ASC_GEFF, /* RAW x2 GEFF as stored (LM ascent)      */
     EC_MARK2DWN,    /* RAW x7 MARK2DWN (CSM)                  */
     EC_PIPTIME,     /* DP   PIPTIME, cs 2^28                  */
     EC_TIG,         /* DP   TIG                               */
@@ -186,6 +189,10 @@ typedef enum ec_item
     EC_LM_IGN,      /* DP x6 VIGN RIGNX RIGNZ KIGNX/B4 KIGNY/B8 KIGNV/B4 (LM) */
     EC_LM_V2FG,     /* DP x4 V2FG, TAUVERT (LM)               */
     EC_LM_ABORT,    /* DP x17 TAUROD LAG/TAU MINFORCE MAXFORCE ABTCOF VMIN YLIM ABTRDOT COSTHET1/2 (LM) */
+    EC_LM_ASC_ENG,  /* DP x3 AT VE TTO (LM ascent engine data) */
+    EC_LM_ASC_TGT,  /* DP x4 RDOTD YDOTD ZDOTD /R/MAG (LM ascent) */
+    EC_LM_ASC_ACC,  /* DP x3 ATY ATR ATP (LM ascent thrust components) */
+    EC_LM_ASC_RCO,  /* DP x2 RCO YCO (LM ascent targets)       */
     EC_EK1VAL,      /* DP   EK1VAL (CSM)                      */
     EC_EK2VAL,      /* DP   EK2VAL (CSM)                      */
     EC_EK3VAL,      /* DP   EK3VAL (CSM)                      */
@@ -196,6 +203,7 @@ typedef enum ec_item
     EC_LM_RATEVAR,  /* DP   RATEVAR (LM RR variance)          */
     EC_LM_ATIGINC,  /* DP   ATIGINC (LM)                      */
     EC_LM_PTIGINC,  /* DP   PTIGINC (LM)                      */
+    EC_LM_HDOTDISP, /* DP   HDOTDISP = RDOT (LM SERVICER, ascent) */
     EC_EMSALT,      /* DP   EMSALT (CSM entry)                */
     EC_LAT_SPL,     /* DP   LAT(SPL) entry target, revs (CSM) */
     EC_LNG_SPL,     /* DP   LNG(SPL) entry target, revs (CSM) */
@@ -208,6 +216,10 @@ typedef enum ec_item
     EC_X789,        /* VEC  X789 (W-matrix states 7-9)         */
     EC_LM_UNFC,     /* VEC  UNFC/2 thrust command (LM)        */
     EC_LM_UNWC,     /* VEC  UNWC/2 window command (LM)        */
+    EC_LM_VGVECT,   /* VEC  VGVECT ascent velocity to be gained (LM) */
+    EC_LM_LAXIS,    /* VEC  LAXIS ascent cross-range axis (LM) */
+    EC_LM_QAXIS,    /* VEC  QAXIS = UHYP (LM)                 */
+    EC_LM_ZAXIS1,   /* VEC  ZAXIS1 = UHZP (LM)                */
     EC_SV_TEMP,     /* SV   RRECT..XKEP (uplink / integration buffer, 42 words) */
     EC_SV_CSM,      /* SV   RRECTCSM..XKEPCSM (42 words)       */
     EC_SV_LEM,      /* SV   RRECTLEM..XKEPLEM (42 words)       */
@@ -240,7 +252,7 @@ typedef struct ec_entry
 static const ec_entry_t k_map_csm[] = { {00306u, 18, EC_XSMD}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01103u, 2, EC_LAT}, {01105u, 2, EC_LONG}, {01107u, 2, EC_ALT}, {01126u, 1, EC_TRKMKCNT}, {01131u, 2, EC_OPTION1}, {01155u, 3, EC_THETAD}, {01162u, 6, EC_DELV}, {01170u, 6, EC_RN}, {01176u, 6, EC_VN}, {01204u, 2, EC_PIPTIME}, {01320u, 1, EC_IMODES30}, {01321u, 1, EC_IMODES33}, {01330u, 1, EC_MARKSTAT}, {01336u, 2, EC_TEVENT}, {01341u, 1, EC_CDUCHKWD}, {01351u, 2, EC_RTED1}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01735u, 18, EC_REFSMMAT}, {02025u, 6, EC_RLS}, {02640u, 2, EC_T3TOT4}, {03066u, 1, EC_DAPDATR1}, {03067u, 1, EC_DAPDATR2}, {03073u, 1, EC_LEMMASS}, {03074u, 1, EC_CSMMASS}, {03325u, 1, EC_CM_GYMDT}, {03374u, 1, EC_S61DT}, {03376u, 1, EC_P37RANGE}, {03400u, 2, EC_LAT_SPL}, {03402u, 2, EC_LNG_SPL}, {03404u, 6, EC_DELVSLV}, {03412u, 2, EC_TIG}, {03427u, 2, EC_TGO}, {03502u, 7, EC_MARK2DWN}, {03660u, 2, EC_TTOGO}, {03662u, 2, EC_TTPI}, {03672u, 2, EC_P40TMP}, {03674u, 7, EC_MARKDOWN}, {03720u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02011u, 6, EC_504LM}, {02033u, 3, EC_TIMEMO}, {02036u, 60, EC_VECOEM}, {02132u, 6, EC_RESO}, {02140u, 6, EC_VESO}, {02146u, 2, EC_OMEGAES}, {00110u, 1, EC_EMDOT}, {01353u, 1, EC_DVTHRESH}, {01767u, 2, EC_EK1VAL}, {01771u, 2, EC_EK2VAL}, {01774u, 1, EC_FANG}, {01773u, 2, EC_EK3VAL}, {02017u, 2, EC_EMSALT}, {03007u, 1, EC_LADPAD}, {03010u, 1, EC_LODPAD}, {03011u, 1, EC_ALFAPAD}, {03012u, 1, EC_ETDECAY}, {03013u, 1, EC_ESTROKER}, {03014u, 2, EC_EKPRIME}, {03016u, 3, EC_EKTLX_I}, {03021u, 2, EC_EREPFRAC}, {03023u, 1, EC_PACTOFF}, {03024u, 1, EC_YACTOFF}, {03025u, 15, EC_HBN10}, {01776u, 2, EC_LUNARCOEF}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01135u, 2, EC_LONGBASE}};
 
 /* Luminary099 addresses (ERASABLE_ASSIGNMENTS, from the listing).        */
-static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}, {03000u, 1, EC_LM_HIASCENT}, {03001u, 2, EC_LM_ROLLPIT}, {03003u, 7, EC_LM_DAPGAINS}, {03012u, 2, EC_LM_IGNAOS}, {01354u, 2, EC_LM_RADSKAL}, {01356u, 1, EC_LM_SKALSKAL}, {02520u, 2, EC_LM_DELQFIX}, {02522u, 13, EC_LM_LRPAD}, {03420u, 2, EC_LM_LRHMAX}, {03427u, 2, EC_LM_RPCRT}, {03431u, 2, EC_LM_TNEWA}, {01244u, 2, EC_LM_MASS}, {01700u, 6, EC_X789}, {01770u, 2, EC_LM_RANGEVAR}, {01772u, 2, EC_LM_RATEVAR}, {01774u, 2, EC_LM_VARMIN}, {02000u, 10, EC_LM_NAVPAD}, {03400u, 2, EC_LM_ATIGINC}, {03402u, 2, EC_LM_PTIGINC}, {03253u, 6, EC_LM_UNFC}, {03261u, 6, EC_LM_UNWC}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01151u, 2, EC_LONGBASE}};
+static const ec_entry_t k_map_lm[] = { {00321u, 3, EC_THETAD}, {00324u, 6, EC_DELV}, {00375u, 3, EC_FAILREG}, {01011u, 1, EC_MODREG}, {01023u, 12, EC_DSPTAB}, {01120u, 2, EC_LAT}, {01122u, 2, EC_LONG}, {01124u, 2, EC_ALT}, {01144u, 3, EC_OPTION1}, {01220u, 6, EC_RN}, {01226u, 6, EC_VN}, {01234u, 2, EC_PIPTIME}, {01302u, 1, EC_IMODES30}, {01303u, 1, EC_IMODES33}, {01312u, 1, EC_MARKSTAT}, {01331u, 1, EC_LEMMASS}, {01332u, 1, EC_CSMMASS}, {01343u, 1, EC_DAPDATR1}, {01344u, 2, EC_TEVENT}, {01501u, 1, EC_UPSVFLAG}, {01502u, 42, EC_SV_TEMP}, {01554u, 42, EC_SV_CSM}, {01626u, 42, EC_SV_LEM}, {01706u, 3, EC_TEPHEM}, {01733u, 18, EC_REFSMMAT}, {02022u, 6, EC_RLS}, {02200u, 2, EC_RR_AZ}, {02202u, 2, EC_RR_ELEV}, {02400u, 2, EC_TLAND}, {03404u, 6, EC_AOTAZ}, {03412u, 6, EC_AOTEL}, {03422u, 1, EC_ZOOMTIME}, {03433u, 6, EC_DELVSLV}, {03441u, 2, EC_TIG}, {03453u, 2, EC_TTOGO}, {03462u, 1, EC_TRKMKCNT}, {03477u, 2, EC_SAVET_30}, {03516u, 2, EC_TGO}, {03606u, 18, EC_XSMD}, {03635u, 2, EC_TTPI}, {03700u, 6, EC_VGTIG}, {01452u, 15, EC_IMUCOMP}, {01477u, 1, EC_GCOMPSW}, {01711u, 2, EC_AZO}, {01713u, 2, EC_NEG_AYO}, {01715u, 2, EC_AXO}, {02012u, 6, EC_504LM}, {01352u, 2, EC_LUNARCOEF}, {02402u, 26, EC_LM_BRK_DP}, {02434u, 2, EC_LM_BRK_SP}, {02436u, 26, EC_LM_APP_DP}, {02470u, 2, EC_LM_APP_SP}, {02472u, 12, EC_LM_IGN}, {02506u, 2, EC_LM_CRIT}, {02510u, 8, EC_LM_V2FG}, {02537u, 1, EC_LM_RODSCALE}, {02540u, 34, EC_LM_ABORT}, {03423u, 4, EC_LM_TEND}, {03000u, 1, EC_LM_HIASCENT}, {03001u, 2, EC_LM_ROLLPIT}, {03003u, 7, EC_LM_DAPGAINS}, {03012u, 2, EC_LM_IGNAOS}, {01354u, 2, EC_LM_RADSKAL}, {01356u, 1, EC_LM_SKALSKAL}, {02520u, 2, EC_LM_DELQFIX}, {02522u, 13, EC_LM_LRPAD}, {03420u, 2, EC_LM_LRHMAX}, {03427u, 2, EC_LM_RPCRT}, {03431u, 2, EC_LM_TNEWA}, {01244u, 2, EC_LM_MASS}, {01700u, 6, EC_X789}, {01770u, 2, EC_LM_RANGEVAR}, {01772u, 2, EC_LM_RATEVAR}, {01774u, 2, EC_LM_VARMIN}, {02000u, 10, EC_LM_NAVPAD}, {03400u, 2, EC_LM_ATIGINC}, {03402u, 2, EC_LM_PTIGINC}, {03253u, 6, EC_LM_UNFC}, {03261u, 6, EC_LM_UNWC}, {00752u, 12, EC_PHASES}, {01053u, 12, EC_TBASES}, {01151u, 2, EC_LONGBASE}, {02262u, 6, EC_LM_ASC_ENG}, {02272u, 8, EC_LM_ASC_TGT}, {02354u, 6, EC_LM_ASC_ACC}, {03630u, 4, EC_LM_ASC_RCO}, {03645u, 6, EC_LM_VGVECT}, {02334u, 16, EC_LM_ASC_WRD}, {02270u, 2, EC_LM_ASC_GT}, {02314u, 2, EC_LM_ASC_GEFF}, {03473u, 2, EC_LM_HDOTDISP}, {02302u, 6, EC_LM_LAXIS}, {03717u, 6, EC_LM_QAXIS}, {03725u, 6, EC_LM_ZAXIS1}};
 
 /**********************************************************************
  * Whether an ECADR is one of the flagwords (STATE + 0..13).
@@ -678,7 +690,29 @@ static agc_dp_t *lm_dp_field(ec_item_t item, int k)
     agc_dp_t     *abt[9] = {&pad->taurod, &pad->lag_tau, &pad->minforce, &pad->maxforce, &pad->vmin, &pad->ylim, &pad->abtrdot, &pad->costhet1, &pad->costhet2}; /* EC_LM_ABORT less ABTCOF */
     agc_dp_t     *f      = NULL;                                                                                                                                 /* the element */
 
-    if (item == EC_LM_BRK_DP || item == EC_LM_APP_DP)
+    agc_lm_asc_t *a      = agc_lm_asc();                                 /* the ascent erasables */
+    agc_dp_t     *eng[3] = {&a->at, &a->ve, &a->tto};                    /* EC_LM_ASC_ENG */
+    agc_dp_t     *tgt[4] = {&a->rdotd, &a->ydotd, &a->zdotd, &a->r_mag}; /* EC_LM_ASC_TGT */
+    agc_dp_t     *acc[3] = {&a->aty, &a->atr, &a->atp};                  /* EC_LM_ASC_ACC */
+    agc_dp_t     *rco[2] = {&a->rco, &a->yco};                           /* EC_LM_ASC_RCO */
+
+    if (item == EC_LM_ASC_ENG)
+    {
+        f = eng[k];
+    }
+    else if (item == EC_LM_ASC_TGT)
+    {
+        f = tgt[k];
+    }
+    else if (item == EC_LM_ASC_ACC)
+    {
+        f = acc[k];
+    }
+    else if (item == EC_LM_ASC_RCO)
+    {
+        f = rco[k];
+    }
+    else if (item == EC_LM_BRK_DP || item == EC_LM_APP_DP)
     {
         f = lm_target_dp(&pad->target[(item == EC_LM_BRK_DP) ? 0 : 1], k); /* braking 0, approach 1 */
     }
@@ -704,7 +738,7 @@ static agc_dp_t *lm_dp_field(ec_item_t item, int k)
     }
 
     return (f);
-}
+} /* lm_dp_field */
 
 /**********************************************************************
  * Whether an item is an LM landing / abort DP list.
@@ -721,7 +755,7 @@ static agc_dp_t *lm_dp_field(ec_item_t item, int k)
  **********************************************************************/
 static bool is_lm_dp(ec_item_t item)
 {
-    return (item >= EC_LM_BRK_DP && item <= EC_LM_ABORT);
+    return (item >= EC_LM_BRK_DP && item <= EC_LM_ASC_RCO);
 }
 
 /**********************************************************************
@@ -936,6 +970,10 @@ static agc_dp_t *dp_field(ec_item_t item)
     {
         f = &agc_guid_state()->lm.tnewa;
     }
+    else if (item == EC_LM_HDOTDISP)
+    {
+        f = &agc_guid_state()->lm.hdotdisp;
+    }
     else if (item == EC_LM_RANGEVAR)
     {
         f = &agc_rendz_nav_pad()->rangevar;
@@ -1105,6 +1143,146 @@ static agc_status_t sp_set(ec_item_t item, int k, agc_sp_t v)
 } /* sp_set */
 
 /**********************************************************************
+ * The ascent guidance's words between Y and YRATE (ERASABLE_ASSIGNMENTS
+ * L: Y, DRDOT, DYDOT, DZDOT, PCONS, YCONS, PRATE, YRATE), word k as
+ * stored: the DSU results keep their words, the DPs give their words.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: asc_words
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    EC_LM_ASC_WRD, EC_LM_ASC_GT (TBUP) or EC_LM_ASC_GEFF
+ *   k         int        I    word of the item, from 0
+ *
+ * RETURNS: agc_dp_words_t * -- the word pair holding word k, or NULL for
+ *          the DP items (Y, PRATE, YRATE: see asc_dp)
+ **********************************************************************/
+static agc_dp_words_t *asc_words(ec_item_t item, int k)
+{
+    agc_lm_asc_t   *a    = agc_lm_asc();                                                              /* ascent erasables */
+    agc_dp_words_t *w[8] = {NULL, &a->drdot, &a->dydot, &a->dzdot, &a->pcons, &a->ycons, NULL, NULL}; /* the stored pairs */
+    agc_dp_words_t *p    = w[(k / 2) % 8];                                                            /* pair k / 2 */
+
+    if (item == EC_LM_ASC_GT)
+    {
+        p = &a->tbup;
+    }
+    else if (item == EC_LM_ASC_GEFF)
+    {
+        p = &a->geff;
+    }
+    else
+    {
+        /* EC_LM_ASC_WRD */
+    }
+
+    return (p);
+}
+
+/**********************************************************************
+ * The DPs among the ascent words (Y, PRATE, YRATE), as asc_words.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: asc_dp
+ *
+ * ARGUMENTS:
+ *   Argument  Type  I/O  Description (scale)
+ *   --------  ----  ---  -------------------------------------
+ *   k         int   I    word of EC_LM_ASC_WRD, from 0
+ *
+ * RETURNS: agc_dp_t * -- the DP holding word k
+ **********************************************************************/
+static agc_dp_t *asc_dp(int k)
+{
+    agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
+    agc_dp_t     *d = &a->y;        /* Y at words 0, 1 */
+
+    if (k / 2 == 6)
+    {
+        d = &a->prate;
+    }
+    else if (k / 2 == 7)
+    {
+        d = &a->yrate;
+    }
+    else
+    {
+        /* Y */
+    }
+
+    return (d);
+}
+
+/**********************************************************************
+ * Word k of an ascent words item (EC_LM_ASC_WRD, _GT, _GEFF), as stored.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: asc_word_get
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    word of the item, from 0
+ *
+ * RETURNS: uint16_t -- the word
+ **********************************************************************/
+static uint16_t asc_word_get(ec_item_t item, int k)
+{
+    agc_dp_words_t d; /* the word pair holding word k */
+
+    if (asc_words(item, k) != NULL)
+    {
+        d = *asc_words(item, k);
+    }
+    else
+    {
+        d = agc_dp_to_words(*asc_dp(k));
+    }
+
+    return (word_of_sp(((k % 2) == 0) ? d.hi : d.lo)); /* major : minor word */
+}
+
+/**********************************************************************
+ * Store word k of an ascent words item, as asc_word_get reads it.
+ * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
+ *
+ * FUNCTION NAME: asc_word_set
+ *
+ * ARGUMENTS:
+ *   Argument  Type       I/O  Description (scale)
+ *   --------  ---------  ---  -------------------------------------
+ *   item      ec_item_t  I    the mapped erasable
+ *   k         int        I    word of the item, from 0
+ *   w         uint16_t   I    the word
+ **********************************************************************/
+static void asc_word_set(ec_item_t item, int k, uint16_t w)
+{
+    agc_dp_words_t *p = asc_words(item, k);                             /* a stored pair, or NULL for a DP */
+    agc_dp_words_t  d = (p != NULL) ? *p : agc_dp_to_words(*asc_dp(k)); /* the pair now */
+
+    if ((k % 2) == 0)
+    {
+        d.hi = sp_of_word(w);
+    }
+    else
+    {
+        d.lo = sp_of_word(w);
+    }
+
+    if (p != NULL)
+    {
+        *p = d;
+    }
+    else
+    {
+        *asc_dp(k) = agc_dp_from_words(d);
+    }
+}
+
+/**********************************************************************
  * RAW items: the word of element k.
  * AGC: none (address map; addresses from ERASABLE_ASSIGNMENTS.agc of both ropes)
  *
@@ -1166,10 +1344,15 @@ static uint16_t raw_get(ec_item_t item, int k)
         case EC_LONGBASE:
             w = (uint16_t) ((k == 0) ? (agc_phase_longbase() >> 14) : (agc_phase_longbase() & 037777u)); /* TIME2, TIME1 */
             break;
+        case EC_LM_ASC_WRD:
+        case EC_LM_ASC_GT:
+        case EC_LM_ASC_GEFF:
+            w = asc_word_get(item, k);
+            break;
         default:
             w = agc_erase_mark2dwn(k);                                                                   /* EC_MARK2DWN */
             break;
-    }
+    } /* item */
 
     return ((uint16_t) (w & EC_WORD_MAX));
 } /* raw_get */
@@ -1239,14 +1422,19 @@ static void raw_set(ec_item_t item, int k, uint16_t w)
             }
 
             break;
+        case EC_LM_ASC_WRD:
+        case EC_LM_ASC_GT:
+        case EC_LM_ASC_GEFF:
+            asc_word_set(item, k, w);
+            break;
         case EC_LONGBASE:
-            agc_phase_set_longbase((k == 0) ? (((uint32_t) w << 14) | (agc_phase_longbase() & 037777u)) : ((agc_phase_longbase() & ~(uint32_t) 037777u) | w));
+            agc_phase_set_longbase((k == 0) ? (((uint32_t) w << 14) | (agc_phase_longbase() & 037777u)) : ((agc_phase_longbase() & ~(uint32_t) 037777u) | w)); /* k 0: TIME2 word, k 1: TIME1 word */
             break;
         default:
-            agc_erase_set_mark2dwn(k, w); /* EC_MARK2DWN */
+            agc_erase_set_mark2dwn(k, w);                                                                                                                      /* EC_MARK2DWN */
             break;
-    }
-}
+    } /* item */
+} /* raw_set */
 
 /**********************************************************************
  * DP items (one element): the value.
@@ -1712,13 +1900,25 @@ static agc_vec_t vec_get(ec_item_t item)
         case EC_LM_UNWC:
             v = agc_lm_ldg()->unwc_2;
             break;
+        case EC_LM_VGVECT:
+            v = agc_lm_asc()->vgvect;
+            break;
+        case EC_LM_LAXIS:
+            v = agc_lm_asc()->laxis;
+            break;
+        case EC_LM_QAXIS:
+            v = agc_guid_state()->lm.uhyp;     /* QAXIS EQUALS UHYP */
+            break;
+        case EC_LM_ZAXIS1:
+            v = agc_guid_state()->lm.uhzp;     /* ZAXIS1 EQUALS UHZP */
+            break;
         default:
             v = agc_rendz_erasable()->delvlvc; /* EC_DELVSLV */
             break;
     }
 
     return (v);
-}
+} /* vec_get */
 
 /**********************************************************************
  * VEC items: store the vector.

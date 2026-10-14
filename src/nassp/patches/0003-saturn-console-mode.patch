@@ -1,0 +1,16 @@
+diff --git a/Orbitersdk/samples/ProjectApollo/src_csm/saturn.cpp b/Orbitersdk/samples/ProjectApollo/src_csm/saturn.cpp
+index a1775d8..c50f4e2 100644
+--- a/Orbitersdk/samples/ProjectApollo/src_csm/saturn.cpp
++++ b/Orbitersdk/samples/ProjectApollo/src_csm/saturn.cpp
+@@ -1699,8 +1699,9 @@ void Saturn::clbkPostStep(double simt, double simdt, double mjd)
+ 	MainPanel.timestep(MissionTime);
+ 	checkControl.timestep(MissionTime, eventControl);
+ 
+-	// Update VC animations
+-	if (oapiCameraInternal() && oapiCockpitMode() == COCKPIT_VIRTUAL)
++	// Update VC animations (only for the focus vessel: with no graphics client, Orbiter's
++	// console mode, the camera queries fail; the LEM checks the focus the same way)
++	if ((oapiGetFocusObject() == GetHandle()) && oapiCameraInternal() && oapiCockpitMode() == COCKPIT_VIRTUAL)
+ 	{
+ 		MainPanelVC.OnPostStep(simt, simdt, mjd);
+ 	}

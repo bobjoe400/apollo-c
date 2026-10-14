@@ -1,0 +1,18 @@
+# NASSP mission edits: the quantities tools/nassp_edits.py compares between the stock run and ours,
+# per milestone, with the tolerance |ours - stock| may reach at the same time since ignition (from
+# ignition on). Each tolerance is 1.5 x the stock run's own spread: stock headless at -f 0.02
+# against stock headless at -f 0.01, same scenario and script (2026-10-13; the spread comes from
+# the host, e.g. a 0.6 s ignition shift over moving terrain, PDI P65 at TIG+630 vs +660 s). A
+# quantity out of tolerance is a difference our LGC makes. Events (ignition, cut-off, orbit,
+# contact, touchdown) are tabled separately. Columns are those of the edit CSVs that common.lua's
+# ac.edits writes (vessel truth from Orbiter, LGC words by address).
+# milestone	column	tolerance	unit / meaning (stock spread)
+pdi	galt	480	m, altitude above the surface (319)
+pdi	hdot	2.4	m/s, vertical speed (1.57)
+pdi	vh	11	m/s, horizontal speed (7.42)
+pdi	lng	0.09	deg, longitude (0.059)
+pdi	lat	0.002	deg, latitude (0.001)
+pdi	mass	170	kg, LM mass (110)
+liftoff	hdot	0.93	m/s, vertical speed (0.62)
+liftoff	vh	7.4	m/s, horizontal speed (4.91)
+liftoff	mass	6.7	kg, LM mass (4.47)

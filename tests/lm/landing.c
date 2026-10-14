@@ -23,6 +23,10 @@
  *      touchdown) is taken as new data and ZERODATA sends 0 to the
  *      altitude meter; SPEEDRN2 ended in BAD_ARG every R10 pass after
  *      the NASSP landing (2026-10-13).
+ *   6. COMMINIT (P12.agc p. 841): QAXIS EQUALS UHYP (and ZAXIS1 EQUALS
+ *      UHZP, which NOR29NOW renews every SERVICER pass): the CSM orbit
+ *      normal lands in UHYP. A separate C QAXIS / ZAXIS1 froze the ascent's
+ *      downrange axis at liftoff (NASSP liftoff, 2026-10-13).
  *
  * AGC SOURCE:
  *   Luminary099 THROTTLE_CONTROL_ROUTINES.agc pp. 793-796,
@@ -75,6 +79,7 @@ static void     test_quadguid_on_trajectory(void);
 static void     test_ignalg_uses_tland(void);
 static void     test_mga_limit(void);
 static void     test_altout_negative_altitude(void);
+static void     test_comminit_qaxis_is_uhyp(void);
 
 /**********************************************************************
  * AGC: none -- run the tests; the exit status reports failures.
@@ -88,6 +93,7 @@ int main(void)
     test_ignalg_uses_tland();
     test_mga_limit();
     test_altout_negative_altitude();
+    test_comminit_qaxis_is_uhyp();
     (void) printf("test_landing: %d checks, %d failures, %d assertion reports\n", g_checks, g_failures, g_assert_reports);
 
     return ((g_failures == 0) ? 0 : 1); /* exit status */
@@ -398,4 +404,33 @@ static void test_altout_negative_altitude(void)
     CHECK(agc_lm_task_speedrun_resume() == AGC_STATUS_OK);
     CHECK(agc_erase_altm() == 0u);                        /* ZERODATA */
     CHECK(agc_dp_high(agc_guid_state()->lm.altbits) < 0); /* -1: extrapolate next pass */
+}
+
+/**********************************************************************
+ * AGC: none -- 6. COMMINIT stores QAXIS = UNIT(REFSMMAT (VCSM x RCSM))
+ * in UHYP (QAXIS EQUALS UHYP): with REFSMMAT the identity and the CSM in
+ * a +X/+Y orbit, UHYP is -Z (V x R) as a half unit.
+ **********************************************************************/
+static void test_comminit_qaxis_is_uhyp(void)
+{
+    agc_interp_t ip; /* interpreter state */
+    agc_mat_t    m;  /* identity REFSMMAT, half unit */
+
+    fresh_lm();
+    agc_interp_init(&ip);
+    m.row[0]                  = agc_vec_make(AGC_DP_HALF, 0, 0);
+    m.row[1]                  = agc_vec_make(0, AGC_DP_HALF, 0);
+    m.row[2]                  = agc_vec_make(0, 0, AGC_DP_HALF);
+    agc_erase_set_refsmmat(m);
+    agc_erase_set_rrectcsm(agc_vec_make(AGC_DP_HALF / 4, 0, 0)); /* +X */
+    agc_erase_set_vrectcsm(agc_vec_make(0, AGC_DP_HALF / 4, 0)); /* +Y */
+    agc_guid_state()->lm.uhyp = agc_vec_zero();
+
+    agc_lm_comminit(&ip);
+
+    agc_vec_t u = agc_guid_state()->lm.uhyp; /* UHYP = QAXIS, half unit 2^1 */
+
+    CHECK(u.c[0] > -16 && u.c[0] < 16);
+    CHECK(u.c[1] > -16 && u.c[1] < 16);
+    CHECK(u.c[2] < -(AGC_DP_HALF - 64)); /* V x R = -Z */
 }

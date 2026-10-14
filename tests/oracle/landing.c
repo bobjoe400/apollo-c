@@ -370,7 +370,7 @@ static void ascent(const char *t)
 
     agc_state_init(AGC_VEHICLE_LM);
     agc_exec_init();
-    agc_dsky_init(); /* P12RET goes on into BURNBABY's display */
+    agc_dsky_init();                             /* P12RET goes on into BURNBABY's display */
     agc_guid_init(AGC_VEHICLE_LM);
     agc_lm_landing_reset();
     g->lm.abdvconv = oracle_in_dp(t, "ABDVCONV", 0);
@@ -386,8 +386,8 @@ static void ascent(const char *t)
     g->lm.v        = oracle_in_vec(t, "V");
     g->avg.unitr   = oracle_in_vec(t, "UNIT/R/");
     g->avg.gdt1_2  = oracle_in_vec(t, "GDT1/2");
-    a->qaxis       = oracle_in_vec(t, "QAXIS");
-    a->zaxis1      = oracle_in_vec(t, "ZAXIS1");
+    g->lm.uhyp     = oracle_in_vec(t, "QAXIS");  /* QAXIS EQUALS UHYP   */
+    g->lm.uhzp     = oracle_in_vec(t, "ZAXIS1"); /* ZAXIS1 EQUALS UHZP */
     a->rco         = oracle_in_dp(t, "RCO", 0);
     a->yco         = oracle_in_dp(t, "YCO", 0);
     a->tgo.hi      = (agc_sp_t) oracle_in(t, "TGO", 0);
@@ -425,11 +425,11 @@ static void ascent(const char *t)
     (void) oracle_cmp(t, "YCONS hi", a->ycons.hi, oracle_out_sp(t, "YCONS"), 0);
     oracle_cmp_vec(t, "LAXIS", a->laxis, oracle_out_vec(t, "LAXIS"), 0);
     oracle_cmp_vec(t, "VGVECT", a->vgvect, oracle_out_vec(t, "VGVECT"), 0);
-    oracle_cmp_vec(t, "VGBODY", a->vgbody, oracle_out_vec(t, "VGBODY"), 0);
+    oracle_cmp_vec(t, "VGBODY", agc_guid_state()->burn.vgbody, oracle_out_vec(t, "VGBODY"), 0); /* the one VGBODY (N85) */
     oracle_cmp_vec(t, "UNFC/2", agc_lm_ldg()->unfc_2, oracle_out_vec(t, "UNFC/2"), 0);
-    long int flpc = agc_flag_test(AGC_FLAG_FLPC) ? 1 : 0; /* C FLPC  */
-    int      w9   = oracle_out_sp(t, "FLAGWRD9");         /* FLPC = bit 12 */
-    long int want = ((w9 & 04000) != 0) ? 1 : 0;          /* rope's FLPC */
+    long int flpc = agc_flag_test(AGC_FLAG_FLPC) ? 1 : 0;                                       /* C FLPC  */
+    int      w9   = oracle_out_sp(t, "FLAGWRD9");                                               /* FLPC = bit 12 */
+    long int want = ((w9 & 04000) != 0) ? 1 : 0;                                                /* rope's FLPC */
 
     (void) oracle_cmp(t, "FLPC", flpc, want, 0);
 } /* ascent */

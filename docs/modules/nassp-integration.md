@@ -41,11 +41,40 @@ Contributed/LM_Simulator, a sparse checkout of virtualagc at c239e9c, into
 build/virtualagc on first use; LMSIM_DIR=<virtualagc>/Contributed/LM_Simulator uses
 another checkout. Tcl/Tk (tclsh) must be installed.)
 
-Full tier, Windows host (C:\NASSP9-dev, one Orbiter session at a time): build the
-DLLs with C:\Users\cnama\nassp-work\build-agc.bat after syncing the sources
-(SCRATCH sync.sh), then run an `apollo-c\<scenario>` with `Orbiter_ng.exe -s ... -T N`;
-each scenario's Lua script (Script\apollo-c) drives the checklist workbook unattended
-and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (stock).
+Full tier, Windows host, headless (the way every milestone is flown and compared since
+2026-10-13). Installs: C:\NASSP9-ref (stock NASSP 9 5470bf1 + patches/0002, the LEM Lua
+test hook) and C:\NASSP9-dev (ours: patches/0001 + 0002, built with
+C:\Users\cnama\nassp-work\build-agc.bat after copying src/ and include/ to
+nassp-work\apollo-c; -DAPOLLO_C_ASSERT_REPORTS=ON makes failed AGC_ASSERTs print to
+apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds TCP 14242).
+
+1. Checklists: compile NASSP's LM/CSM checklist workbook
+   (<install>\Config\ProjectApollo\Checklists\*.xls) with tools/nassp_cl2lua.py (needs
+   xlrd) into cl_lm.lua / cl_csm.lua and copy them to <install>\Script\apollo-c.
+2. Scenario: `sim/nassp/host/mkscn_lm.sh C:\NASSP9-dev "Apollo 11 - 10 - PDI T-15m.scn"
+   "A11 PDI H" pdih` (and the same for C:\NASSP9-ref) writes Scenarios\apollo-c\A11 PDI
+   H.scn: the Lua script added (sim/nassp/lua/pdih.lua, liftoffh.lua; common.lua alongside),
+   the focus on the MCC vessel, Columbia dropped. Orbiter's console mode crashes with a
+   NASSP Saturn in the scenario (focused or not) or with the LEM in focus (Orbiter.exe
+   0xc0000005 right after "Finished setting up render state"); the Lua API reaches the
+   vessels by name and needs no cockpit. An unfocused LEM skips JoystickTimestep (channel 31
+   and the TTCA throttle keep their saved values). Milestones with a CSM (rendezvous, entry)
+   run windowed until that crash is understood.
+3. Run: `NASSP_RUNS=<dir> sim/nassp/host/hrun.sh C:\NASSP9-dev "apollo-c\A11 PDI H"
+   agc_pdi_H 1800` and the same from C:\NASSP9-ref as ref_pdi_H. hstart.sh keeps the
+   install's Orbiter_NG.cfg as Orbiter_NG.cfg.windowed, runs from a copy without D3D9Client
+   (no graphics client: console mode) and XRSound, MFD modules kept, and starts
+   `Modules\Server\Orbiter.exe -s <scenario> -f 0.02 -t <max sim s> -x` (fixed 20 ms
+   steps, as fast as the CPU allows: PDI to touchdown in about 90 s, deterministic: two runs
+   give the same numbers); hrun.sh polls (collect.sh, at most 50 s a call) until the script
+   logs "end", copies apollo-c-*.log and the edit CSV to $NASSP_RUNS/<tag>, restores the
+   configuration (hrestore.sh). Scripts hold 1x (no warp: the fixed step removes the
+   warp-induced LM tumbling).
+4. Tables: `make nassp-mission NASSP_RUNS=<dir>` (tools/nassp_edits.py) pairs ref_<m>_H and
+   agc_<m>_H for every milestone it finds and prints the milestone table (events found the
+   same way in both edit CSVs), per quantity the max |ours - stock| against the tolerance in
+   sim/nassp/edits.tsv (1.5 x the stock run's own spread between -f 0.02 and -f 0.01), and
+   each run's major modes and alarms; exit 1 when a quantity leaves its tolerance.
 
 ## Progress
 - DONE phase 1 STUDY: docs/overview/nassp_integration.md (embedding, engine API,
@@ -325,6 +354,33 @@ and writes apollo-c-<name>.log; compare with the same run from C:\NASSP9-ref (st
   TTCA throttle stay as saved). Scripts write edit CSVs (ac.edits: MODREG, FAILREG, channels
   11/12/14/30/33, TIME, DSPTAB, vessel truth, UNFC/2, UNWC/2) diffed by tools/edits_diff.py with
   per-quantity tolerances.
+- DONE milestone 9 (lunar liftoff, scenario 11, headless, both builds, `make nassp-mission`,
+  2026-10-13): P12 selected afresh (RSET, V37E12E, PRO on F06N33 / F06N76, the sheet from
+  T-0:35; both builds slip TIG with 01703 since T-1m is too short for a fresh P12); cut-off
+  TIG+430.9 s both; vh / hdot at cut-off 1684.5 / 6.7 vs 1684.4 / 6.4 m/s; orbit radius
+  1753.15 x 1790.76 vs 1753.27 x 1790.15 km; mass 2635.6 vs 2637.5 kg; N85 counts down on
+  both. Open: vertical speed 1.4 m/s off stock at the pitchover (TIG+15 s; tolerance 0.93).
+- FLIGHT BUG 9 (liftoff, ours only, fixed 2026-10-13): ascent overshot to 1757.9 x 1901.0 km
+  (vh 22 m/s high at cut-off). First diverging word VGVECT x at TIG+120 s while TGO, GEFF, DRDOT
+  .. DZDOT, PCONS, PRATE, HDOTDISP agreed (all mapped into the edit CSV): Luminary has QAXIS
+  EQUALS UHYP and ZAXIS1 EQUALS UHZP, and NOR29NOW renews UHZP = UNIT(UNIT/R/ x UHYP) every
+  SERVICER pass (ascent runs with LRBYPASS through COPYCYC1); the C kept agc_lm_asc()->qaxis
+  / zaxis1 apart, so the ascent's downrange axis stayed at the liftoff point. Fix: the fields
+  are gone, src/lm/ascent.c uses lm.uhyp / uhzp; tests/lm/landing.c test 6 (fails before);
+  tests/oracle/landing.c feeds QAXIS / ZAXIS1 through UHYP / UHZP.
+- FLIGHT BUG 10 (P12 N85 00000, fixed 2026-10-13): VGBODY is one erasable (SAVET-30 +2); ascent
+  wrote agc_lm_asc()->vgbody, N85 read burn.vgbody. Fix: ascent writes burn.vgbody, the field
+  is gone (tests/oracle/landing.c compares VGBODY there).
+- FLIGHT BUG 11 (TGO, fixed 2026-10-13): TGO EQUALS DVCNTR +1 is one erasable; the ascent's
+  words (agc_lm_asc()->tgo) and agc_erase_tgo() were apart, so P12's IGNITION set TIG = TIME +
+  a DPS burn's TGO. Fix: agc_lm_asc_set_tgo stores both (ascent.c, aborts.c).
+- Scenario-load restart (2026-10-13): a program running at the load (P12 at T-1m) needs its
+  restart group: the phase table is mapped (PHASEn / -PHASEn 0752, TBASEn 01053, LONGBASE CSM
+  01135 / LM 01151; PHSNAMEn / PHSPRDTn are rope addresses and stay unmapped); nassp-replay
+  case liftoff_lm (V06N74 40 s after the load; blank before). The program's own erasables
+  must be mapped too for its later steps: for P12 now AT VE TTO TBUP RDOTD YDOTD ZDOTD /R/MAG
+  Y DRDOT DYDOT DZDOT PCONS YCONS PRATE YRATE GEFF ATY ATR ATP RCO YCO VGVECT LAXIS
+  QAXIS(UHYP) ZAXIS1(UHZP) HDOTDISP; the liftoff script still reselects P12 on both builds.
 - LM test hook: src/nassp/patches/0002-lem-lua-test-interface.patch (LEM gets Saturn's
   get/set_panelswitch, get_agcerasable, get_agcchannel; Lua link only; 2026-10-13 also
   set_ttca_throttle and set_agcinputbit, the TTCA throttle and the ROD bits of channel 016 as

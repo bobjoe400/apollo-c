@@ -562,6 +562,7 @@ uint32_t phase_longbase(void)
 /**********************************************************************
  * -PHASEn / PHASEn as the erasable holds them (ERASABLE_ASSIGNMENTS: the
  * pairs at -PHASE1 .. PHASE6), read for the address map.
+ * AGC: none (host restore of a saved erasable image, address map)
  *
  * FUNCTION NAME: agc_phase_table_word
  *
@@ -577,7 +578,7 @@ uint16_t agc_phase_table_word(int group, bool negative)
 
     if (group_ok(group))
     {
-        w = negative ? nphase_w[group] : phase_w[group];
+        w = negative ? nphase_w[group] : phase_w[group]; /* -PHASEn : PHASEn */
     }
 
     return (w);
@@ -588,6 +589,7 @@ uint16_t agc_phase_table_word(int group, bool negative)
  * restoring a scenario before its restart: GOPROG3 then checks the pair
  * and restarts the group as the AGC would). The variable restart point
  * PHSNAMEn / PHSPRDTn is not part of it (a rope address has no C job id).
+ * AGC: none (host restore of a saved erasable image, address map)
  *
  * FUNCTION NAME: agc_phase_table_set_word
  *
@@ -614,6 +616,7 @@ void agc_phase_table_set_word(int group, bool negative, uint16_t w)
 /**********************************************************************
  * TBASEn word (TIME1 when the phase was set, 14 bits), read for the
  * address map.
+ * AGC: none (host restore of a saved erasable image, address map)
  *
  * FUNCTION NAME: agc_phase_tbase_word
  *
@@ -629,6 +632,7 @@ uint16_t agc_phase_tbase_word(int group)
 
 /**********************************************************************
  * TBASEn word (TIME1 when the phase was set, 14 bits), as above.
+ * AGC: none (host restore of a saved erasable image, address map)
  *
  * FUNCTION NAME: agc_phase_set_tbase_word
  *
@@ -646,6 +650,7 @@ void agc_phase_set_tbase_word(int group, uint16_t w)
 
 /**********************************************************************
  * LONGBASE (TIME2,TIME1 when the last LONGCALL phase was set), as above.
+ * AGC: none (host restore of a saved erasable image, address map)
  *
  * FUNCTION NAME: agc_phase_longbase
  *
@@ -658,6 +663,7 @@ uint32_t agc_phase_longbase(void)
 
 /**********************************************************************
  * Store LONGBASE as a saved image holds it, as above.
+ * AGC: none (host restore of a saved erasable image, address map)
  *
  * FUNCTION NAME: agc_phase_set_longbase
  *
@@ -666,7 +672,7 @@ uint32_t agc_phase_longbase(void)
  **********************************************************************/
 void agc_phase_set_longbase(uint32_t t_cs)
 {
-    longbase = t_cs & (AGC_TIME_MODULUS_CS - 1u);
+    longbase = t_cs & (AGC_TIME_MODULUS_CS - 1u); /* LONGBASE, cs */
 }
 
 /**********************************************************************

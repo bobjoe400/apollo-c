@@ -23,7 +23,7 @@ UNCRUSTIFY     ?= uncrustify
 FORMAT_SRCS = $(shell find src include tests -name '*.[ch]' | sort)
 STYLE_FLAGS ?=
 
-.PHONY: all lib lib-debug sim sim-debug scenarios lm-sim nassp-replay test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report always-ok-report clean
+.PHONY: all lib lib-debug sim sim-debug scenarios lm-sim nassp-replay nassp-mission test check check-rules format format-check style style-report lint callgraph prove prove-classify compile_commands prolog-report always-ok-report clean
 all: lib sim
 
 # The archive is rebuilt from scratch: several objects share a base name
@@ -86,6 +86,14 @@ $(LMSIM_REPO)/Contributed/LM_Simulator/lm_simulator.tcl:
 # NASSP_YAAGC_DIR; without either the target skips.  Not part of `make test`.
 nassp-replay: $(BUILD)/libagc.a $(SIM_OBJS)
 	python3 -I tools/nassp_replay.py --build $(BUILD)
+
+# The NASSP mission milestone tables (docs/modules/nassp-integration.md, "How to run it"),
+# generated from the edit CSVs of the host runs: NASSP_RUNS=<dir> holding ref_<m>_H/ and
+# agc_<m>_H/ (stock and ours) with apollo-c-<m>-edits.csv; tolerances in sim/nassp/edits.tsv.
+NASSP_RUNS ?=
+nassp-mission:
+	@test -n "$(NASSP_RUNS)" || { echo "usage: make nassp-mission NASSP_RUNS=<dir of ref_<m>_H/ agc_<m>_H/>"; exit 2; }
+	python3 -I tools/nassp_edits.py --runs $(NASSP_RUNS)
 
 $(BUILD)/debug/%.o: %.c
 	@mkdir -p $(dir $@)

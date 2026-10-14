@@ -92,6 +92,25 @@
 /* LOGSUB polynomial (p. 856), -LOG via ln(1 - u)/32. */
 static const agc_dp_t as_logcoef[8] = {2, -8388994, -4179185, -3019954, -497816, -7693572, 10350833, -11257160};
 
+/**********************************************************************
+ * TGO (ERASABLE_ASSIGNMENTS L: TGO EQUALS DVCNTR +1, one erasable): the
+ * ascent guidance's TGO words (2^17 cs) and the TGO the burn routines,
+ * IGNITION (TIG = TIME + TGO), the restart tables and the downlink read
+ * (agc_erase_tgo) are the same two words; every ascent store goes to
+ * both. Before this, IGNITION in P12 read the TGO a DPS burn had left.
+ * AGC: TS TGO (ASCENT_GUIDANCE.agc pp. 846-850; P12.agc p. 839)
+ *
+ * FUNCTION NAME: agc_lm_asc_set_tgo
+ *
+ * ARGUMENTS:
+ *   w  agc_dp_words_t  I    TGO as stored, 2^17 cs
+ **********************************************************************/
+void agc_lm_asc_set_tgo(agc_dp_words_t w)
+{
+    agc_lm_asc()->tgo = w;
+    agc_erase_set_tgo(agc_dp_from_words(w));
+}
+
 /* ======================================================================
  * Initialisation (P12.agc pp. 840-842)
  * ====================================================================== */
@@ -149,7 +168,7 @@ void agc_lm_comminit(agc_interp_t *ip)
     agc_mat_t m = agc_erase_refsmmat();                                          /* REFSMMAT, half unit */
     agc_vec_t h = agc_vec_cross(ip, agc_erase_vrectcsm(), agc_erase_rrectcsm()); /* VCSM x RCSM: CSM orbit normal, 2^36 */
 
-    a->qaxis = agc_vec_unit(ip, agc_mat_vec(ip, &m, h), NULL, NULL);
+    agc_guid_state()->lm.uhyp = agc_vec_unit(ip, agc_mat_vec(ip, &m, h), NULL, NULL); /* QAXIS EQUALS UHYP */
 }
 
 /**********************************************************************
@@ -190,7 +209,7 @@ agc_dp_t agc_lm_ycomp(agc_interp_t *ip)
     agc_lm_asc_t *a = agc_lm_asc(); /* ascent erasables */
 
     /* DOT SL2: the shift takes in MPAC+2 of the DOT's TP product.     */
-    agc_dp_t d = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, agc_guid_state()->avg.unitr, a->qaxis), 2)); /* UNIT/R/ . QAXIS SL2, scale 2^0 */
+    agc_dp_t d = agc_tp_to_dp(agc_tp_shift(ip, agc_vec_dot_tp(ip, agc_guid_state()->avg.unitr, agc_guid_state()->lm.uhyp), 2)); /* UNIT/R/ . QAXIS SL2, scale 2^0 */
 
     a->y = agc_dp_mul_trunc(d, a->rco);
 
@@ -378,7 +397,7 @@ static void as_cmponent(agc_interp_t *ip)
     a->atp = agc_dp_from_words(agc_mpac_store(m));
 
     /* VXSC ZAXIS1 VSL1 VAD 00D: UNFC/2, scale 2^-9 m/cs^2.               */
-    agc_lm_ldg()->unfc_2 = agc_vec_from_words(agc_mpac_vad(ip, agc_mpac_vshift(ip, agc_mpac_vxsc(ip, m, agc_vec_to_words(a->zaxis1)), 1), ah));
+    agc_lm_ldg()->unfc_2 = agc_vec_from_words(agc_mpac_vad(ip, agc_mpac_vshift(ip, agc_mpac_vxsc(ip, m, agc_vec_to_words(agc_guid_state()->lm.uhzp)), 1), ah)); /* ZAXIS1 = UHZP */
 } /* as_cmponent */
 
 /**********************************************************************
@@ -568,10 +587,10 @@ static agc_dp_t as_vgvect(agc_interp_t *ip)
 
     /* DOT SL1 (twice below): the shift takes in MPAC+2 of the TP; ZDOT
      * and YDOT are stored as the top two words, which the DSUs read.    */
-    const agc_dp_words_t zdot = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dot(ip, a->zaxis1, g->lm.v), 1)); /* ZDOT, 2^7 m/cs */
+    const agc_dp_words_t zdot = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dot(ip, g->lm.uhzp, g->lm.v), 1)); /* ZDOT (ZAXIS1 = UHZP), 2^7 m/cs */
 
     a->zdot  = agc_dp_from_words(zdot);
-    a->laxis = agc_vec_shl(ip, agc_vec_cross(ip, a->zaxis1, ur), 1);
+    a->laxis = agc_vec_shl(ip, agc_vec_cross(ip, g->lm.uhzp, ur), 1);
 
     const agc_dp_words_t ydot = agc_mpac_store(agc_mpac_shift(ip, agc_mpac_dot(ip, a->laxis, g->lm.v), 1)); /* YDOT, 2^7 m/cs */
 
@@ -592,7 +611,7 @@ static agc_dp_t as_vgvect(agc_interp_t *ip)
     agc_vec_words_t       vg  = agc_mpac_vxsc(ip, agc_mpac_dload(a->drdot), urw); /* 2^7 m/cs */
 
     vg = agc_mpac_vad(ip, vg, agc_mpac_vxsc(ip, agc_mpac_dload(a->dydot), agc_vec_to_words(a->laxis)));
-    vg = agc_mpac_vshift(ip, agc_mpac_vad(ip, vg, agc_mpac_vxsc(ip, agc_mpac_dload(a->dzdot), agc_vec_to_words(a->zaxis1))), 1);
+    vg = agc_mpac_vshift(ip, agc_mpac_vad(ip, vg, agc_mpac_vxsc(ip, agc_mpac_dload(a->dzdot), agc_vec_to_words(g->lm.uhzp))), 1);
 
     /* DLOAD TGO DMP GEFF VXSC UNIT/R/ VSL1 BVSU VGVECT.                   */
     const agc_vec_words_t tg = agc_mpac_vshift(ip, agc_mpac_vxsc(ip, agc_mpac_dmp(agc_mpac_dload(a->tgo), a->geff), urw), 1); /* TGO GEFF UR, 2^7 m/cs */
@@ -609,8 +628,8 @@ static agc_dp_t as_vgvect(agc_interp_t *ip)
         xnb[i] = agc_vec_to_words(g->lm.xnbpip.row[i]);
     }
 
-    a->vgvect = agc_vec_from_words(vg);
-    a->vgbody = agc_vec_from_words(agc_mpac_vshift(ip, agc_mpac_mxv(ip, xnb, vg), 1)); /* MXV VSL1 XNBPIP */
+    a->vgvect      = agc_vec_from_words(vg);
+    g->burn.vgbody = agc_vec_from_words(agc_mpac_vshift(ip, agc_mpac_mxv(ip, xnb, vg), 1)); /* MXV VSL1 XNBPIP: VGBODY, the one N85 shows */
 
     return (agc_vec_abval(ip, a->vgvect)); /* ABVAL */
 } /* as_vgvect */
@@ -635,7 +654,7 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
 
     if (agc_flag_test(AGC_FLAG_FLRCS))
     {
-        a->tgo = agc_mpac_store(agc_mpac_ddv(ip, agc_mpac_dload(agc_dp_to_words(vgmag)), agc_dp_to_words(AS_ATRCS))); /* TGO = VG/AT */
+        agc_lm_asc_set_tgo(agc_mpac_store(agc_mpac_ddv(ip, agc_mpac_dload(agc_dp_to_words(vgmag)), agc_dp_to_words(AS_ATRCS)))); /* TGO = VG/AT */
 
         return (AGC_STATUS_OK); /* ASCTERM2      */
     }
@@ -648,10 +667,10 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
     agc_lm_asc_t        *a_maineng = agc_lm_asc();                                                                                             /* ascent erasables */
     const agc_dp_words_t r         = agc_mpac_store(agc_mpac_ddv(ip, agc_mpac_dload(agc_dp_to_words(vgmag)), agc_dp_to_words(a_maineng->ve))); /* VG/VE, PDL 0, 2^0 */
 
-    m              = agc_mpac_bdsu(ip, agc_mpac_dmp(agc_mpac_dload(r), agc_dp_to_words(AS_KT1)), agc_dp_to_words(AS_NEARONE)); /* 1 - KT VG/VE */
-    m              = agc_mpac_dsu(ip, agc_mpac_dmp(agc_mpac_dmp(m, r), a_maineng->tbup), agc_dp_to_words(a_maineng->tto));
-    a_maineng->tgo = agc_mpac_store(m);
-    agc_erase_set_ttogo(agc_dp_from_words(agc_mpac_store(agc_mpac_dcomp(agc_mpac_shift(ip, m, -11)))));                        /* SR 11D DCOMP, 2^28 */
+    m = agc_mpac_bdsu(ip, agc_mpac_dmp(agc_mpac_dload(r), agc_dp_to_words(AS_KT1)), agc_dp_to_words(AS_NEARONE)); /* 1 - KT VG/VE */
+    m = agc_mpac_dsu(ip, agc_mpac_dmp(agc_mpac_dmp(m, r), a_maineng->tbup), agc_dp_to_words(a_maineng->tto));
+    agc_lm_asc_set_tgo(agc_mpac_store(m));
+    agc_erase_set_ttogo(agc_dp_from_words(agc_mpac_store(agc_mpac_dcomp(agc_mpac_shift(ip, m, -11)))));           /* SR 11D DCOMP, 2^28 */
 
     if (!agc_flag_test(AGC_FLAG_IDLEFLAG) && (agc_tp_from_words(agc_mpac_dsu(ip, agc_mpac_dload(a->tgo), agc_dp_to_words(AS_4SEC17))) < 0))
     {
@@ -685,8 +704,8 @@ agc_status_t agc_lm_ascent(const agc_job_ctx_t *ctx, agc_interp_t *ip)
             return (as_exitvr(ctx, ip));
         }
 
-        agc_flag_set(AGC_FLAG_XOVINFLG);                                                                                                                /* prohibit X override    */
-        agc_vec_t los = agc_vec_add(ip, agc_vec_scale(ip, a_checkalt->laxis, a_checkalt->aty), agc_vec_scale(ip, a_checkalt->zaxis1, a_checkalt->atp)); /* ATY LAXIS + ATP ZAXIS1 (LOSVEC), 2^8 */
+        agc_flag_set(AGC_FLAG_XOVINFLG);                                                                                                                 /* prohibit X override    */
+        agc_vec_t los = agc_vec_add(ip, agc_vec_scale(ip, a_checkalt->laxis, a_checkalt->aty), agc_vec_scale(ip, g_checkalt->lm.uhzp, a_checkalt->atp)); /* ATY LAXIS + ATP ZAXIS1 (= UHZP) (LOSVEC), 2^8 */
 
         los        = agc_vec_unit(ip, los, NULL, NULL);
         agc_dp_t s = agc_dp_abs(agc_vec_dot(ip, los, g_checkalt->lm.xnbpip.row[1])); /* |LOS . YNBPIP|, scale 2^2 */
@@ -1054,7 +1073,7 @@ agc_status_t agc_lm_job_powered_ascent_proceed(agc_job_ctx_t *ctx)
 
     agc_flag_set(AGC_FLAG_FLPI);
     agc_lm_powered_ascent_init(&ip);
-    agc_lm_asc()->tgo = agc_dp_to_words(AS_TGOA); /* initial nominal TGO         */
+    agc_lm_asc_set_tgo(agc_dp_to_words(AS_TGOA)); /* initial nominal TGO         */
 
     return (agc_lm_job_powered_ascent_at_ignition(ctx));
 }
@@ -1147,7 +1166,7 @@ agc_status_t agc_lm_job_newload_proceed(agc_job_ctx_t *ctx)
 
     g->lm.v        = agc_vec_add(&ip, agc_vec_scale(&ip, ur, AS_49FPS), a->v1s);
     g->lm.hdotdisp = agc_tp_to_dp(agc_tp_shift(&ip, agc_vec_dot_tp(&ip, g->lm.v, ur), 1)); /* RDOT: DOT SL1 on the TP */
-    a->zaxis1      = agc_vec_unit(&ip, agc_vec_cross(&ip, ur, a->qaxis), NULL, NULL);
+    g->lm.uhzp     = agc_vec_unit(&ip, agc_vec_cross(&ip, ur, g->lm.uhyp), NULL, NULL);    /* ZAXIS1 EQUALS UHZP, QAXIS UHYP */
     agc_flag_set(AGC_FLAG_FLVR);
 
     return (agc_lm_ascent(ctx, &ip));
