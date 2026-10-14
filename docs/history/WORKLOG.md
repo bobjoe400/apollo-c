@@ -1066,3 +1066,8 @@
             load-restore bugs + shim PIPA counts at load. Open: TTOGO
             0.4-0.8 s behind after a load restart; variable restart phase
             with rope-address PHSNAME not resumable (known limitation).
+2026-10-14  RENDEZVOUS PASS (a5bcdb1): P20/CSI/CDH/TPI on our LGC match
+            stock, no alarms; bugs 15 (SIGNMPAC major-word sign), 16 (N55
+            load dropped), 17 (MUASTEER) fixed with tests. Mission report
+            written. PROJECT COMPLETE: definition of done 1-9 and stretch
+            10. STATE.md records limitations, risks and optional follow-ups.

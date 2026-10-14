@@ -3,38 +3,23 @@
 Updated: 2026-10-13
 
 ## Running agents (max 2)
-- nassp-integration (Opus, rendezvous leg): make the P20/CSI/CDH/TPI
-  script work on STOCK first (alarm 00503, display waits), derive
-  tolerances, fly ours, then the final mission report. Runs from
-  docs/modules/nassp-integration.md Progress with docs/agents/nassp-integration.md
-  (hard rules: unattended runs, held warp, one Orbiter at a time, short
-  polls, answer via SendMessage to main; LM runs at 1x: warp tumbled the
-  stock LM). Host: C:\NASSP9 stock baseline (untouched), C:\NASSP9-ref
-  (stock + LEM test hook 0002), C:\NASSP9-dev (ours); sources under
-  C:\Users\cnama\Downloads\nassp-src and nassp-work; the lane's scratch
-  is backed up at C:\Users\cnama\nassp-work\scratch-backup.
-  Next: rerun OUR PDI from the scenario (stock LANDED unattended:
-  P64 at TIG+496.7 s, auto P65 at +660.8 s, touchdown +706.9 s at
-  -0.85 m/s, lng 23.7265 lat 0.6695), compare, then liftoff, rendezvous,
-  entry.
-- Layout APPLIED (755db91): src/nassp (engine.c, CMake) vs sim/nassp
-  (harness: images, lua, host, patches, replay.py, mission_tables.py,
-  mission_tolerances.tsv, checklist_to_lua.py); docs/history, tools/archive.
-- structure: DONE (da52cdc): duplicates to one owner (2 fidelity
-  findings), cross-vehicle shared, CSM V92 and LM P20/P22 dispatch gaps
-  wired, three files split, 118 prototypes internal.
-- telemetry: DONE (bbfc11f): all 11 downlists match yaAGC (per-list
-  oracle 101/101, DNDUMP oracle ~2,000 words/vehicle), five more
-  load-restore bugs fixed. Only the rendezvous leg runs now.
-- Mission status on our AGC in NASSP 9 (decisions and end state, timing
-  differences listed as expected deviations): insertion+uplink, TLI,
-  MCC-2, LOI, DOI, PDI/landing, liftoff, TEI, entry/splashdown all match
-  stock; rendezvous in progress. 14 flight bugs found by the mission,
-  all fixed with failing-first tests. Flight bugs found by the mission: 4, all
-  fixed with tests (FANG/EK3VAL map, V82 on a hyperbola, VGDISP = DELVSAB,
-  one TLAND).
-- Definition of done: all nine items met (PLAN.md status block); `make
-  style` 0 tree-wide; layering restored; docs generated at HEAD.
+- NONE. PROJECT COMPLETE as of 2026-10-14 (a5bcdb1): definition of done
+  items 1-9 met; stretch item 10 done (LM Simulator loop; the full Apollo
+  11 mission in NASSP 9 on our AGC, all ten milestones matching stock on
+  decisions and end state). 17 flight bugs from the mission fixed with
+  tests. All gates green: make, make test (36 binaries + 14 scenarios),
+  make check (rules 0, style 0), prolog 0, always-ok 0, lm-sim 34/34,
+  nassp-replay 5/5, no upward edge.
+- Known limitations (documented): zero-time executive (timing-born
+  behaviours are expected deviations, PLAN.md principle); scenario
+  restore cannot resume a variable restart phase whose PHSNAME is a rope
+  address; DOWNLIST_SKIP words (docs/modules/telemetry.md).
+- Risks noted by the last lane: milestones 1-9 not reflown after bug 15
+  (SIGNMPAC major-word sign; matters only when a term overflows to 1);
+  stock's V77 OPR ERR not root-caused; the 42 s CDH and RR mark-count
+  differences attributed to execution time, not proven.
+- Optional follow-ups: NASSP upstream items (review_items.md), the -O0
+  conversion warning (free_fall.c:443), hi-res Orbiter textures.
 
 ## Queue after it (two at a time)
 1. (review queue empty once guid-powered and nav-integ finish) -- items in docs/agents/review_items.md

@@ -228,9 +228,15 @@ Then: lead assert.h rename; ONE Frama-C EVA run (`make prove`, `make
    routed finding closed (docs/agents/review_items.md).
 9. Documented: DONE (47ae168): overview + generated module map, 10
    flowcharts, per-lane program-flow sections, xref (3,071 labels), TIPS.
-10. Stretch, in progress: LM Simulator closed loop DONE; NASSP 9 on our
-    AGC: milestones 1 (insertion + uplink) and 2 (TLI) PASS, 3 (SPS burn)
-    running; `make nassp-replay` light tier being added.
+10. Stretch, DONE (2026-10-14): LM Simulator closed loop (make lm-sim,
+    34/34 vs yaAGC); the Apollo 11 mission in NASSP 9 on our AGC, all ten
+    milestones (insertion + uplink, TLI, MCC-2, LOI, DOI, PDI/landing,
+    liftoff, rendezvous, TEI, entry/splashdown) matching stock on
+    decisions and end state, headless and unattended, timing-born
+    differences listed as expected deviations; 17 flight bugs found and
+    fixed with failing-first tests; `make nassp-replay` (offline images)
+    and `make nassp-mission` (generated tables); mission report in
+    docs/modules/nassp-integration.md.
 
 ## Stretch (not yet in the definition of done; user to decide)
 
