@@ -1,10 +1,10 @@
 # review-core-numeric -- review of the core-numeric lane
 
-History of this lane: [docs/history/lanes/review-core-numeric.md](../history/lanes/review-core-numeric.md)
+History of this lane: [history/lanes/review-core-numeric.md](../../history/lanes/review-core-numeric.md)
 
 ## Scope
 
-docs/history/assignments/review.md for lane core-numeric (docs/modules/core-numeric.md):
+history/assignments/review.md for lane core-numeric (docs/modules/core-numeric.md):
 src/core/{mpac.c,mpac.h,divide.c,shift.c,word.c,sp_trig.c,constants.c,
 vec_div.c}, src/core/interp/{scalar,trig,vector}.c,
 include/agc/core/{interp.h,word.h,constants.h}, tests/core/numeric.c,
@@ -12,7 +12,7 @@ tests/oracle/core_numeric.c, tools/oracle/cases/core_numeric.{spec,txt};
 added by this review: include/agc/core/interp_words.h,
 src/core/interp/words.c, tests/oracle/core_words.c,
 tools/oracle/cases/core_words.{spec,txt}, tools/oracle/cases/gen/gen_core_words.py.
-Review items (docs/agents/review_items.md): UNIT precision at B27 for short
+Review items (history/agents/review_items.md): UNIT precision at B27 for short
 vectors (R63); oracle F1-F6; stale-DVSIGN deviation on V/SC and UNIT.
 
 Lane build while other lanes have the tree broken: SCRATCH/review-core-numeric/

@@ -1,6 +1,6 @@
 # review-guid-entry -- review of the guid-entry and p37 lanes
 
-History of this lane: [docs/history/lanes/review-guid-entry.md](../history/lanes/review-guid-entry.md)
+History of this lane: [history/lanes/review-guid-entry.md](../../history/lanes/review-guid-entry.md)
 
 Lane files: src/csm/entry/{lexicon.c,reentry.c,programs.c,cm_body_attitude.c,dap.c},
 src/csm/burns/earth_orbit_insertion.c, src/csm/burns/return_to_earth/*,

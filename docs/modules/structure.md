@@ -1,8 +1,8 @@
 # structure -- duplicates, cross-vehicle placement, uncalled labels, splits, internal.h
 
-History of this lane: [docs/history/lanes/structure.md](../history/lanes/structure.md)
+History of this lane: [history/lanes/structure.md](../../history/lanes/structure.md)
 
-Scope: ORGANIZATION.md (docs/overview/) proposals 2-5 on the tree after
+Scope: history/ORGANIZATION.md proposals 2-5 on the tree after
 tools/apply_layout.sh (HEAD 755db91): (1) the 16 duplicate-translation
 groups, (2) the 5 cross-vehicle routines, (3) the 39 labelled routines
 nothing calls, (4) splitting programs/navigation/common.c,

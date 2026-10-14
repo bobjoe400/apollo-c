@@ -1,6 +1,6 @@
 # review-sim -- review of the sim harness lane
 
-History of this lane: [docs/history/lanes/review-sim.md](../history/lanes/review-sim.md)
+History of this lane: [history/lanes/review-sim.md](../../history/lanes/review-sim.md)
 
 Lane: src/sim/** (clock/interrupt driver, yaAGC peripheral protocol, pad,
 rope, script, main), sim/sim_client.py, sim/scenarios/** (except

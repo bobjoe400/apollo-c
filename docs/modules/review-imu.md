@@ -1,6 +1,6 @@
 # review-imu -- review of the imu lane
 
-History of this lane: [docs/history/lanes/review-imu.md](../history/lanes/review-imu.md)
+History of this lane: [history/lanes/review-imu.md](../../history/lanes/review-imu.md)
 
 Lane files: src/imu/*.c, src/imu/internal.h, include/agc/imu/imu.h,
 src/csm/prelaunch/align.c, src/csm/prelaunch/gyrocompass.c,

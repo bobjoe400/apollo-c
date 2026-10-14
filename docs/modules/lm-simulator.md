@@ -1,9 +1,9 @@
 # lm-simulator -- Virtual AGC LM Simulator closed loop on build/agc_sim vs yaAGC
 
-History of this lane: [docs/history/lanes/lm-simulator.md](../history/lanes/lm-simulator.md)
+History of this lane: [history/lanes/lm-simulator.md](../../history/lanes/lm-simulator.md)
 
 ## Scope
-PLAN item 10, phase 1 (docs/history/assignments/lm-simulator.md). Stephan Hotto's LM
+PLAN item 10, phase 1 (history/assignments/lm-simulator.md). Stephan Hotto's LM
 Simulator (SRC/virtualagc/Contributed/LM_Simulator, Tcl/Tk, v1.0 with Ron
 Burkey's 2009/2025 fixes) attached to build/agc_sim (Luminary099) exactly
 as to yaAGC, then the same sequence against tools/oracle/bin/yaAGC. Nothing

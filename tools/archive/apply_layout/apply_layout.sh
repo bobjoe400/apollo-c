@@ -1,5 +1,5 @@
 #!/bin/sh
-# apply_layout.sh -- apply the layout proposal of docs/overview/ORGANIZATION.md
+# apply_layout.sh -- apply the layout proposal of history/ORGANIZATION.md
 # (organize lane, 2026-10-13).  ONE-OFF: after it has run and been committed,
 # it archives itself (tools/archive/apply_layout/).
 #
@@ -24,7 +24,7 @@
 #      sources, see tools/agc_label.py; skipped with a note otherwise);
 #   7. gates: make, make test, make check, make nassp-replay [, make lm-sim];
 #   8. archive this script and tools/layout/.
-# Nothing here changes what a function computes; see ORGANIZATION.md for the
+# Nothing here changes what a function computes; see history/ORGANIZATION.md for the
 # findings that would (they are not applied).
 set -eu
 DRY=; GATES=1; LMSIM=
@@ -94,4 +94,4 @@ echo "== 8. archive the one-off"
 mkdir -p tools/archive/apply_layout
 git mv tools/apply_layout.sh tools/archive/apply_layout/apply_layout.sh
 for f in $L/*; do git mv "$f" tools/archive/apply_layout/; done
-echo "done: review 'git status', commit; tell the nassp lane its new paths (ORGANIZATION.md, NASSP area)"
+echo "done: review 'git status', commit; tell the nassp lane its new paths (history/ORGANIZATION.md, NASSP area)"

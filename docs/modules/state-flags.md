@@ -1,6 +1,6 @@
 # state-flags -- module note
 
-History of this lane: [docs/history/lanes/state-flags.md](../history/lanes/state-flags.md)
+History of this lane: [history/lanes/state-flags.md](../../history/lanes/state-flags.md)
 
 ## Scope
 
@@ -28,7 +28,7 @@ Files: `include/agc/core/flags_common.h`, `agc_flags_csm.h`, `agc_flags_lm.h`,
 
 ### Flag naming and headers
 
-* C name `AGC_FLAG_<AGCNAME>`: upper case, `/`, `-`, `.` -> `_` (per `_common.md`):
+* C name `AGC_FLAG_<AGCNAME>`: upper case, `/`, `-`, `.` -> `_` (per `history/agents/_common.md`):
   `.05GSW` -> `AGC_FLAG__05GSW`, `CM/DSTBY` -> `AGC_FLAG_CM_DSTBY`, `P39/79SW` ->
   `AGC_FLAG_STABLE_ORBIT_MIDCOURSE_ACTIVE`, `S32.1F1` -> `AGC_FLAG_S32_1F1`, `ACC4-2FL` -> `AGC_FLAG_ACC4_2FL`.
 * Each header comment gives the AGC name, flagword, bit number, AGC decimal number nnnD,

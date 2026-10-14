@@ -1,9 +1,9 @@
 # closed-loop-fixes -- LM Simulator bugs (L1-L3, S-L1..S-L3, PROG after POODOO) and the document wave's code findings
 
-History of this lane: [docs/history/lanes/closed-loop-fixes.md](../history/lanes/closed-loop-fixes.md)
+History of this lane: [history/lanes/closed-loop-fixes.md](../../history/lanes/closed-loop-fixes.md)
 
 ## Scope
-docs/agents/review_items.md "From lm-simulator" and "From the document
+history/agents/review_items.md "From lm-simulator" and "From the document
 wave". Reference: the AGC listing (SRC/Apollo-11/Luminary099,
 Comanche055) for flight code; yaAGC (virtualagc yaAGC/agc_engine.c) for
 the sim protocol. Acceptance: `make lm-sim` exits 0, with make, make test

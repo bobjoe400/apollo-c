@@ -1,10 +1,10 @@
 # review-nav-conic -- review of the nav-conic lane
 
-History of this lane: [docs/history/lanes/review-nav-conic.md](../history/lanes/review-nav-conic.md)
+History of this lane: [history/lanes/review-nav-conic.md](../../history/lanes/review-nav-conic.md)
 
 ## Scope
 
-docs/history/assignments/review.md for lane nav-conic (docs/modules/nav-conic.md):
+history/assignments/review.md for lane nav-conic (docs/modules/nav-conic.md):
 src/nav/conic/*, include/agc/nav/conic.h, tests/nav/conic.c,
 tests/oracle/conic.c, tools/oracle/cases/nav_conic{,_lm}.{spec,txt}.
 

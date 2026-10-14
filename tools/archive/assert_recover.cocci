@@ -14,7 +14,7 @@
 // _Static_assert, `AGC_ASSERT(false)` markers keep only their recovery, an
 // assertion inside INHINT also needs agc_relint() before the return, and
 // dead checks in pointer accessors are deleted: all done by hand (see
-// docs/history/waves/status-handling.md).
+// history/waves/status-handling.md).
 
 @status@
 typedef agc_status_t;

@@ -1,6 +1,6 @@
 # oracle -- Virtual AGC differential-test rig
 
-History of this lane: [docs/history/lanes/oracle.md](../history/lanes/oracle.md)
+History of this lane: [history/lanes/oracle.md](../../history/lanes/oracle.md)
 
 ## Scope
 

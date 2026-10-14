@@ -7,8 +7,8 @@ Usage (from the repo root):
                                    [--max-lines 60]
 
 --file (the helper's file) defaults to the helper's row in
-docs/overview/data/collapse_candidates.tsv; --caller-file defaults to the
-helper's file, else the caller's row in docs/overview/data/callgraph.tsv.
+history/data/collapse_candidates.tsv; --caller-file defaults to the
+helper's file, else the caller's row in history/data/callgraph.tsv.
 Everything is decided on the libclang AST; the script refuses (exit 2,
 reason on stdout) whatever it cannot transform exactly.
 
@@ -87,14 +87,14 @@ def _tsv(path):
 
 def lookup_files(helper, caller, hfile, cfile):
     if hfile is None:
-        for row in _tsv(os.path.join('docs', 'overview', 'data', 'collapse_candidates.tsv')):
+        for row in _tsv(os.path.join('history', 'data', 'collapse_candidates.tsv')):
             if row['helper'] == helper and row['caller'] == caller:
                 hfile = row['file']
                 break
     if hfile is None:
         raise Refuse(f'{helper} -> {caller} not in collapse_candidates.tsv; pass --file')
     if cfile is None:
-        rows = [r for r in _tsv(os.path.join('docs', 'overview', 'data', 'callgraph.tsv'))
+        rows = [r for r in _tsv(os.path.join('history', 'data', 'callgraph.tsv'))
                 if r['callee'] == caller]
         same = [r for r in rows if r['file'] == hfile]
         if same or not rows:

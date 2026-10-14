@@ -1,6 +1,6 @@
 # guid-landing -- Luminary landing, aborts, ascent, throttle, FINDCDUW
 
-History of this lane: [docs/history/lanes/guid-landing.md](../history/lanes/guid-landing.md)
+History of this lane: [history/lanes/guid-landing.md](../../history/lanes/guid-landing.md)
 
 ## Scope
 

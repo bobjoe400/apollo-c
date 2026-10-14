@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """returns.py -- dead and normal-flow early returns (docs/CODING_STANDARD.md,
-"Returns"; docs/history/assignments/status-handling-2.md step 8).
+"Returns"; history/assignments/status-handling-2.md step 8).
 
 Usage (repo root):
     python3 -I tools/returns.py report [FILES...]   # counts and a list

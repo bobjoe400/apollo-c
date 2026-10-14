@@ -1,6 +1,6 @@
 # review-io-dsky -- review of io-pinball + io-nouns
 
-History of this lane: [docs/history/lanes/review-io-dsky.md](../history/lanes/review-io-dsky.md)
+History of this lane: [history/lanes/review-io-dsky.md](../../history/lanes/review-io-dsky.md)
 
 ## Scope
 src/io/dsky/display_interface.c, src/io/dsky/pinball/*.c, src/io/dsky/nouns/*.c,

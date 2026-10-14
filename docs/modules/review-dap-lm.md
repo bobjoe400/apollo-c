@@ -1,6 +1,6 @@
 # review-dap-lm -- review of the LM DAP lane (src/lm/dap)
 
-History of this lane: [docs/history/lanes/review-dap-lm.md](../history/lanes/review-dap-lm.md)
+History of this lane: [history/lanes/review-dap-lm.md](../../history/lanes/review-dap-lm.md)
 
 ## Program flow and decisions
 

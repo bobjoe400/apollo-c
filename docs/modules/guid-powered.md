@@ -1,6 +1,6 @@
 # guid-powered -- powered-flight guidance (P30s, P40s, SERVICER, BURNBABY)
 
-History of this lane: [docs/history/lanes/guid-powered.md](../history/lanes/guid-powered.md)
+History of this lane: [history/lanes/guid-powered.md](../../history/lanes/guid-powered.md)
 
 ## Scope
 

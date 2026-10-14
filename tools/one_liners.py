@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """one_liners.py -- classify every one-line function (docs/CODING_STANDARD.md,
-"One-line functions"; docs/history/assignments/status-handling-2.md step 6).
+"One-line functions"; history/assignments/status-handling-2.md step 6).
 
 Usage (repo root):
-    python3 -I tools/one_liners.py [OUT.tsv]   # default docs/overview/data/one_liners.tsv
+    python3 -I tools/one_liners.py [OUT.tsv]   # default history/data/one_liners.tsv
 
 A one-line function has a body of exactly one statement: a return of an
 expression or one expression statement.  Each is classified on the
@@ -162,7 +162,7 @@ def impure_set(funcs):
 
 
 def main(argv):
-    out = argv[1] if len(argv) > 1 else os.path.join(ROOT, 'docs', 'overview', 'data', 'one_liners.tsv')
+    out = argv[1] if len(argv) > 1 else os.path.join(ROOT, 'history', 'data', 'one_liners.tsv')
     os.chdir(ROOT)
     labels, _ = callgraph.agc_labels()
     funcs, callers = scan()

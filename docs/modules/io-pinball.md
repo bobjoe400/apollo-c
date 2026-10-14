@@ -1,6 +1,6 @@
 # io-pinball -- DSKY / PINBALL / display interface / KEYRUPT
 
-History of this lane: [docs/history/lanes/io-pinball.md](../history/lanes/io-pinball.md)
+History of this lane: [history/lanes/io-pinball.md](../../history/lanes/io-pinball.md)
 
 ## Scope
 

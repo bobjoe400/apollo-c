@@ -1,13 +1,13 @@
 # review-exec-sched -- review of the exec-sched lane
 
-History of this lane: [docs/history/lanes/review-exec-sched.md](../history/lanes/review-exec-sched.md)
+History of this lane: [history/lanes/review-exec-sched.md](../../history/lanes/review-exec-sched.md)
 
 ## Scope
-docs/history/assignments/review.md items 1-5 for src/exec (executive, waitlist, phase
+history/assignments/review.md items 1-5 for src/exec (executive, waitlist, phase
 table, restarts, restart tables, alarm/abort, interrupts, fresh start,
 change_program/, nouns.c, dispatch.c via tools/gen_registry.py),
 include/agc/exec/{exec,jobs}.h (exec-owned declarations), tests/exec/exec.c.
-Routed items (docs/agents/review_items.md): deferred-restart vs immediate
+Routed items (history/agents/review_items.md): deferred-restart vs immediate
 ENEMA; V37 handoff completeness; activity-light mask fix; P23/R22LEM
 restart priority; ZOOM/P40ZOOMA group-3 question.
 

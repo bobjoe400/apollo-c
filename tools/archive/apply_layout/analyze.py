@@ -29,7 +29,7 @@ def write(name, header, rows):
     print(name, len(rows))
 # ---- call graph
 cg = []
-with open('docs/overview/data/callgraph.tsv') as fh:
+with open('history/data/callgraph.tsv') as fh:
     hdr = fh.readline().rstrip('\n').split('\t')
     for line in fh:
         r = dict(zip(hdr, line.rstrip('\n').split('\t')))

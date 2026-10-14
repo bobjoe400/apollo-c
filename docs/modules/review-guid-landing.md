@@ -1,6 +1,6 @@
 # review-guid-landing -- review of the guid-landing lane
 
-History of this lane: [docs/history/lanes/review-guid-landing.md](../history/lanes/review-guid-landing.md)
+History of this lane: [history/lanes/review-guid-landing.md](../../history/lanes/review-guid-landing.md)
 
 Scope: src/lm/landing/{throttle,guidance,lunar_landing,aborts,displays,findcduw,state}.c,
 src/lm/ascent.c, include/agc/lm/landing.h, tests/lm/landing.c,

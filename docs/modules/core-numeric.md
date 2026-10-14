@@ -1,6 +1,6 @@
 # core-numeric -- fixed-point word model and interpretive arithmetic
 
-History of this lane: [docs/history/lanes/core-numeric.md](../history/lanes/core-numeric.md)
+History of this lane: [history/lanes/core-numeric.md](../../history/lanes/core-numeric.md)
 
 ## Scope
 

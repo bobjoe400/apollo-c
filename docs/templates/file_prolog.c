@@ -40,10 +40,10 @@
  *   the AGC listing cited above is the design document.>
  *
  * (FILE REFERENCES and DEVELOPMENT HISTORY are omitted: the library does
- *  no file I/O, and git log is the history. See docs/STYLE.md 4.1.)
+ *  no file I/O, and git log is the history. See history/STYLE.md 4.1.)
  **********************************************************************/
 
-/* ---- include order (STYLE.md 4.3): <stdio.h>/<stdlib.h>, other system
+/* ---- include order (history/STYLE.md 4.3): <stdio.h>/<stdlib.h>, other system
  *      headers, then project headers, alphabetical within each group --- */
 #include <stdbool.h>
 #include <stdint.h>

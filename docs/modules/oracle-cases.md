@@ -1,6 +1,6 @@
 # oracle-cases -- yaAGC differential cases for the numeric modules
 
-History of this lane: [docs/history/lanes/oracle-cases.md](../history/lanes/oracle-cases.md)
+History of this lane: [history/lanes/oracle-cases.md](../../history/lanes/oracle-cases.md)
 
 ## Scope
 

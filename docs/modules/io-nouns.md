@@ -1,6 +1,6 @@
 # io-nouns -- PINBALL noun tables (PINBALL_NOUN_TABLES.agc, CSM + LM)
 
-History of this lane: [docs/history/lanes/io-nouns.md](../history/lanes/io-nouns.md)
+History of this lane: [history/lanes/io-nouns.md](../../history/lanes/io-nouns.md)
 
 ## Scope
 Comanche055 pp. 268-284, Luminary099 pp. 301-319. Files: include/agc/io/nouns.h,

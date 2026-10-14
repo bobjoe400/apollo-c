@@ -5,7 +5,7 @@
 // when c fails, else OK after the store) and every caller handles it
 // (by hand, from the compiler's "void value not ignored" being absent:
 // tools/check_rules.py and review).  The regex is the record of the
-// finish lane (docs/history/waves/finish.md).
+// finish lane (history/waves/finish.md).
 //
 //   spatch --sp-file tools/archive/setter_status.cocci --in-place \
 //          -I include --include-headers <files>

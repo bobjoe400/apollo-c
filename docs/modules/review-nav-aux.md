@@ -1,6 +1,6 @@
 # review-nav-aux -- review of the nav-aux lane
 
-History of this lane: [docs/history/lanes/review-nav-aux.md](../history/lanes/review-nav-aux.md)
+History of this lane: [history/lanes/review-nav-aux.md](../../history/lanes/review-nav-aux.md)
 
 Lane files: src/nav/auxiliary/*.c, internal.h, include/agc/nav/auxiliary.h,
 tests/nav/auxiliary.c, tests/oracle/nav_auxiliary.c.

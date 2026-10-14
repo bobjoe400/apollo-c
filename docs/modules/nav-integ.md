@@ -1,6 +1,6 @@
 # nav-integ -- INTEGRATION_INITIALIZATION + ORBITAL_INTEGRATION
 
-History of this lane: [docs/history/lanes/nav-integ.md](../history/lanes/nav-integ.md)
+History of this lane: [history/lanes/nav-integ.md](../../history/lanes/nav-integ.md)
 
 ## Scope
 

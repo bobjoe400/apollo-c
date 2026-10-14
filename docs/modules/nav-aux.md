@@ -1,6 +1,6 @@
 # nav-aux -- lat/long, planetary orientation, measurement incorporation, TFF, ephemerides, star tables
 
-History of this lane: [docs/history/lanes/nav-aux.md](../history/lanes/nav-aux.md)
+History of this lane: [history/lanes/nav-aux.md](../../history/lanes/nav-aux.md)
 
 ## Scope
 

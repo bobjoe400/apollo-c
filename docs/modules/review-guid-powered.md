@@ -1,6 +1,6 @@
 # review-guid-powered -- review of the powered-flight guidance lane
 
-History of this lane: [docs/history/lanes/review-guid-powered.md](../history/lanes/review-guid-powered.md)
+History of this lane: [history/lanes/review-guid-powered.md](../../history/lanes/review-guid-powered.md)
 
 STATUS: DONE (resume 2, 2026-10-12). Open: the requests below.
 

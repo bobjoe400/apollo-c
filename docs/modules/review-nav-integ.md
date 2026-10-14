@@ -1,10 +1,10 @@
 # review-nav-integ -- review of the nav-integ lane
 
-History of this lane: [docs/history/lanes/review-nav-integ.md](../history/lanes/review-nav-integ.md)
+History of this lane: [history/lanes/review-nav-integ.md](../../history/lanes/review-nav-integ.md)
 
 ## Scope
 
-docs/history/assignments/review.md for lane nav-integ (docs/modules/nav-integ.md):
+history/assignments/review.md for lane nav-integ (docs/modules/nav-integ.md):
 src/nav/integration/{init,jobs,orbital_integration,flags_csm,setitctr_lm,
 svdwn}.c, internal.h, pending.h, include/agc/nav/integration.h,
 tests/nav/integration.c, tests/oracle/nav_integration.c.

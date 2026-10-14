@@ -1,6 +1,6 @@
 # exec-sched -- executive, waitlist, phase tables, restarts, alarms
 
-History of this lane: [docs/history/lanes/exec-sched.md](../history/lanes/exec-sched.md)
+History of this lane: [history/lanes/exec-sched.md](../../history/lanes/exec-sched.md)
 
 ## Scope
 

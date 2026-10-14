@@ -14,7 +14,7 @@
 #
 # Cases where stock yaAGC hits its DV emulation bug (a -0 minor word in L is
 # taken as a borrow by SpToDecent, so the quotient is one major LSB low)
-# were dropped; see docs/history/lanes/core-numeric.md "Open questions".
+# were dropped; see history/lanes/core-numeric.md "Open questions".
 rope Comanche055
 entry INTPRET
 q VAC2USE

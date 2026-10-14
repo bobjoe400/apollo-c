@@ -1,6 +1,6 @@
 # review-dap-csm -- review of the dap-csm lane
 
-History of this lane: [docs/history/lanes/review-dap-csm.md](../history/lanes/review-dap-csm.md)
+History of this lane: [history/lanes/review-dap-csm.md](../../history/lanes/review-dap-csm.md)
 
 Lane files: src/csm/dap/{mysubs,state}.c, src/csm/dap/internal.h,
 src/csm/dap/rcs/*.c, src/csm/dap/tvc/*.c, include/agc/csm/dap.h,

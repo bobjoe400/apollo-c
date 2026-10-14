@@ -2,10 +2,10 @@
 
 Consolidated 2026-10-12 (documentation wave, PLAN.md item 9e) from the
 "Lessons" section of every note in docs/modules/ (now moved to
-docs/history/lanes/), deduplicated and
+history/lanes/), deduplicated and
 organised by topic. Each tip keeps the first-hand example that taught it;
 the lane in parentheses is where to read the full story
-(docs/history/lanes/<lane>.md for the diary, docs/modules/<lane>.md for the explanation, or docs/history/waves/<lane>.md for the
+(history/lanes/<lane>.md for the diary, docs/modules/<lane>.md for the explanation, or history/waves/<lane>.md for the
 tree-wide passes). Brought up to date 2026-10-14 (final documentation
 pass) with the Lessons of the notes written after the wave:
 nassp-integration (the mission), telemetry, structure, organize, layering

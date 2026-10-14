@@ -1,6 +1,6 @@
 # telemetry -- every downlist sends what the AGC sends
 
-History of this lane: [docs/history/lanes/telemetry.md](../history/lanes/telemetry.md)
+History of this lane: [history/lanes/telemetry.md](../../history/lanes/telemetry.md)
 
 Lane note (agent `telemetry`, 2026-10-14). Assignment: the downlists send
 the words the AGC sends, read by address through the erasable map

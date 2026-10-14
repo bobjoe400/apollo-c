@@ -1,6 +1,6 @@
 # review-state-flags -- review note
 
-History of this lane: [docs/history/lanes/review-state-flags.md](../history/lanes/review-state-flags.md)
+History of this lane: [history/lanes/review-state-flags.md](../../history/lanes/review-state-flags.md)
 
 Lane: state-flags. Files: include/agc/core/{flags_common,flags_csm,flags_lm,
 channels,state}.h; src/core/{state,channels,erasable}.c;

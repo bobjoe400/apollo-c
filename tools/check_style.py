@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""check_style.py -- mechanical checks for docs/STYLE.md (NASA SEL-94-003).
+"""check_style.py -- mechanical checks for history/STYLE.md (NASA SEL-94-003).
 
 Usage:
     python3 -I tools/check_style.py [options] <dir|file>...
@@ -10,7 +10,7 @@ Options:
     --list-rules     print the rule ids with their guide sections and exit
     --exit-zero      always exit 0 (report-only use in CI)
 
-Covers the rows of docs/STYLE.md marked `check_rules` that are cheap to test
+Covers the rows of history/STYLE.md marked `check_rules` that are cheap to test
 on text: prologs, `return`/`sizeof` parentheses, explicit numeric tests,
 one statement / one declaration per line, comments on declarations and
 constants, numeric literal forms, side effects, switch defaults, long-block
