@@ -1029,3 +1029,8 @@
             Decision pending (user): zero-time C jobs as a documented
             deviation vs a timing model. Open: optics CDUs not driven
             after load (ch 14 70040 vs 76040).
+2026-10-14  User: the goal is a readable, functionally faithful AGC in C
+            for study, not a timing emulator; the AGC's timing-born
+            behaviours (1202 etc.) need not be reproduced. Decision
+            recorded in PLAN.md; NASSP lane told: judge decisions and end
+            state, list timing-born differences as expected deviations.

@@ -255,6 +255,18 @@ Then: lead assert.h rename; ONE Frama-C EVA run (`make prove`, `make
        mission scripting are the risks.
     This is the ONLY closed-loop route: we do not build a world model.
 
+## Principle: functional fidelity, not timing emulation (user, 2026-10-14)
+
+The aim is a readable AGC in C that does what the original did, so a
+reader can see what a guidance computer looks like. Instruction timing
+is a property of the 1960s machine, not of the guidance logic: no timing
+model. The zero-time C executive stays; the two ordering deviations
+(landing-radar read wait, self-rerunning job pacing) stand in for AGC
+execution time and are documented. Behaviours that exist only because
+of execution time (1201/1202 overload alarms, 01703 slip timing, how long
+a manoeuvre computation takes) are expected deviations, listed with
+their traces, not chased. yaAGC remains the tool for timing-exact runs.
+
 ## Principle: build only the AGC software (user, 2026-10-11)
 
 This project rewrites the AGC flight software in C. Everything around it is
