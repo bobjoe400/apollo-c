@@ -75,12 +75,9 @@ ac.hook['F 16 85 VG XYZ (LM)'] = seen('16', '85', 30)
 ac.hook['F 16 44 HA, HP, TFF'] = seen('16', '44', 30)
 ac.hook['F 37'] = function(st) ac.wait_until(function() local v, n, p, fl = ac.vn(); return v == '37' end, 30); ac.dump('  F 37 ' .. sv()) end
 ac.hook['At TIG +2m'] = function(st) ac.wait_until(function() return since_tig() >= 120 end, 300); ac.dump('  at TIG +2m ' .. sv()) end
--- P12 is selected afresh on both builds (a scenario's running P12 does not survive our load
--- restart: its program erasables are not all mapped), with the PAD TIG and targets as loaded
-ac.keys('R')
-ac.select(12)
-if ac.wait_vn('06', '33', true, 30) then proc.wait_simdt(1); ac.dump('  F 06 33 (TIG) ' .. sv()); ac.pro() end
-if ac.wait_vn('06', '76', true, 30) then proc.wait_simdt(1); ac.dump('  F 06 76 (VH, HDOT, XRNG) ' .. sv()); ac.pro() end
+-- The scenario's running P12 is used as loaded (test change 2026-10-13: the P12 reselect of
+-- 03:56 is gone; it forced a TIG slip whose size depends on how much AGC time P12's
+-- integration takes, and our load restart now resumes P12 from the phase table)
 ac.run('Lunar Liftoff', 0, 'T-0:35')
 ac.dump('after Lunar Liftoff ' .. sv())
 proc.wait_simdt(10)

@@ -412,6 +412,29 @@ apollo-c-agc-stderr.log). One Orbiter session at a time (NASSP's telemetry binds
   -0.857 vs -0.853 deg at 20.6 s, then the same -0.0088 deg/s). Open, smaller: the C keeps
   CDUXD as a normalised DP value, so THETAD = the upper word of DPADD differs by one count
   from the AGC when CDUXD's words have mixed signs (THETADY 27014 vs 27015 here).
+- FLIGHT BUG 13 (entry targeting and LM ascent vectors, ours only, fixed 2026-10-13): with the
+  attitude hold fixed the CM still splashed 2.6 deg short (-174.84 vs -172.25 deg). First
+  diverging display: P61's N63 RTGO 939.0 vs stock 1215.2 nmi (N60, N61 identical). Stock's P61
+  erasables dumped by Lua (p61diag.lua) against ours offline from the same pre-P61 image (harness
+  keyrun.c): RTEAST = RTNORM = 0 and RT = RTINIT on ours, i.e. EARROT never rotated the target
+  for the Earth's rotation: UNITW (Comanche 01713, the polar axis; -AYO and AXO EQUALS its first
+  four words) was not in the CSM map (only -AYO, AXO were). The test written for it also showed
+  that the address map's vector store dropped VGVECT, LAXIS, QAXIS (UHYP) and ZAXIS1 (UHZP),
+  mapped for the liftoff restart, into DELVLVC (vec_set's default branch); reads were right, so
+  the replay case and the edit CSVs never showed it. Fix: src/erasable_map/address_map.c
+  EC_UNITW (6 words at 01713, ahead of -AYO / AXO; a store also sets -AYO, AXO) and
+  vec_set_more for the five vectors; tests/erasable_map/address_map.c test_vectors_stored (6
+  checks failed before). After: offline RTGO 01630 33356 vs stock 01631 00735 (P61 run 2 s
+  apart), RTEAST / RTNORM / RT as stock.
+- Shim display mirror (2026-10-13): NASSP's Lua get_agcerasable (and MFDs) read the vagc.Erasable
+  mirror, which the shim exported once per second; the scripts read DSKY verb/noun from DSPTAB,
+  so on ours a display appeared up to 1 s late (entry: "PRO not taken" fallbacks where stock
+  took the PRO; offline V49: V06N22 in the mirror 0.8 s after ENTER vs stock 0.1 s, though the
+  channel 010 relay words were on time on both). Now MODREG, FAILREG, DSPTAB every centisecond
+  and the whole mirror every 0.1 s (about 1.5 ms CPU per AGC second). make nassp-replay checks
+  it: "# dsky-latency" (V06N3 then '6': noun 36 in the mirror within 0.2 s; ours was 0.71 s,
+  stock 0.09-0.11 s, failing first). Dev runs before this change read our DSKY late; PDI,
+  liftoff and entry dev runs are repeated with it (stock runs need not be: unchanged).
 - Saturn console mode (2026-10-13, about 25 min of the 60 allowed): bisected with oapiWriteLog
   markers to Saturn::clbkPostStep's unguarded `oapiCameraInternal() && oapiCockpitMode()` (VC
   animations): with no graphics client the camera query faults in Orbiter.exe. Fix:
@@ -459,6 +482,17 @@ Audit of the runs before the rule (times UTC 2026-10-14):
   The entry dev run (scripts frozen) was read before entry tolerances existed; it is void anyway
   (CSM not under CMC attitude control, runs/discarded/agc_entry_H_csmdap) and is rerun after the
   fix; entry tolerances come from ref_entry_H vs ref_entry_H01 by --derive before that rerun.
+- 2026-10-13 liftoff, after the dev result (ignition 23.5 s before stock): root cause is the
+  03:56 P12 reselect itself. After the PRO on F06N76, P12 reaches MIDTOAV1 (integrate to
+  TIG - 30 s) and, finding too little time, alarms 01703 and slips TIG to now + TIMEDELT + 30 s.
+  Stock got there at sim 38.5 s (slip 27.3 s), ours at sim 15 s (slip 3.3 s; offline the slip
+  follows the PRO at once): the AGC time the work before MIDTOAV1 takes in yaAGC is ~0 in the
+  C executive, so the slip size measures our timing model, not the guidance. Our load restart
+  now resumes the running P12 (phase table and ascent erasables mapped; offline the image runs
+  V06N74 down to TIG with no 01703), so liftoffh.lua again uses the scenario's P12 as loaded on
+  both builds. Stock runs ref_liftoff_H / H01 repeated under the change, tolerances re-derived
+  before the dev run. Finding kept: a program that integrates before a deadline reaches
+  it earlier on our build (no AGC time charged for C jobs).
 - nassp-replay LM cases have no stock reference (this harness's yaAGC restarts LGC images
   by a TC trap): pdi_lm expects the image's saved RADMODES bit 6 after the load (NASSP's yaAGC
   continues the image); liftoff_lm expects noun 74 40 s after the load (stock NASSP showed

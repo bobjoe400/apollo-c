@@ -8,7 +8,8 @@
 # logged in docs/modules/nassp-integration.md "Test changes". A column with stock spread 0 (e.g.
 # liftoff eng) has tolerance 0. Euler angles near pitch 90 (liftoff bank / yaw) spread ~180 deg in
 # stock alone: their rows judge little; the CDU columns carry the attitude.
-# Derived 2026-10-13 from runs ref_pdi_H / ref_pdi_H01 and ref_liftoff_H / ref_liftoff_H01.
+# Derived 2026-10-13 from runs ref_pdi_H / ref_pdi_H01, ref_liftoff_H / ref_liftoff_H01 (to be re-derived:
+# liftoff script changed) and ref_entry_H / ref_entry_H01 (before the dev entry run with bug 12 fixed).
 # milestone	column	tolerance	note
 pdi	galt	478.9499999999989	stock spread 319.2999999999993 (1.5 x)
 pdi	hdot	2.3543894655	stock spread 1.5695929770000001 (1.5 x)
@@ -39,3 +40,15 @@ liftoff	cduy	12.392578125	stock spread 8.26171875 (1.5 x)
 liftoff	cduz	7.3004150390625	stock spread 4.866943359375 (1.5 x)
 liftoff	apo	12210.0	stock spread 8140.0 (1.5 x)
 liftoff	peri	15075.0	stock spread 10050.0 (1.5 x)
+entry	alt	820.5	stock spread 547.0 (1.5 x)
+entry	hdot	54.40845	stock spread 36.2723 (1.5 x)
+entry	vh	55.29000000000087	stock spread 36.86000000000058 (1.5 x)
+entry	vair	59.7522	stock spread 39.8348 (1.5 x)
+entry	g	3.0456825	stock spread 2.030455 (1.5 x)
+entry	lng	0.04200000000003001	stock spread 0.02800000000002001 (1.5 x)
+entry	lat	0.03301500000000113	stock spread 0.02201000000000075 (1.5 x)
+entry	mass	1.2299999999995634	stock spread 0.819999999999709 (1.5 x)
+entry	pitch	35.154900000000005	stock spread 23.436600000000002 (1.5 x)
+entry	bank	268.57725	stock spread 179.0515 (1.5 x)
+entry	yaw	216.93300000000002	stock spread 144.622 (1.5 x)
+entry	nobj	12.0	stock spread 8.0 (1.5 x)

@@ -57,6 +57,7 @@ static void test_lm_landing_pad(void);
 static void test_lm_pad_more(void);
 static void test_phase_tables(agc_vehicle_t v, uint16_t longbase);
 static void test_csm_rcs_dap(void);
+static void test_vectors_stored(void);
 
 #define CHECK(c) check((c), __LINE__, #c)
 
@@ -83,6 +84,7 @@ int main(void)
     test_phase_tables(AGC_VEHICLE_CSM, 01135u);
     test_phase_tables(AGC_VEHICLE_LM, 01151u);
     test_csm_rcs_dap();
+    test_vectors_stored();
     (void) printf("test_ecadr: %d checks, %d failures\n", g_checks, g_failures);
 
     return ((g_failures == 0) ? 0 : 1); /* exit 1 on any failure */
@@ -419,4 +421,54 @@ static void test_csm_rcs_dap(void)
     CHECK(w == 027015u);
     agc_erase_read_ecadr(03070u, &w);
     CHECK(w == 00504u);
+}
+
+/**********************************************************************
+ * AGC: none (test helper) -- store a vector's six words (x hi lo, y, z)
+ *
+ * ARGUMENTS:
+ *   ecadr  uint16_t  I  first address
+ *   hi     uint16_t  I  the high word of each component (low words 0)
+ **********************************************************************/
+static void store_vec(uint16_t ecadr, uint16_t hi)
+{
+    for (uint16_t i = 0; i < 6u; i++)
+    {
+        CHECK(agc_erase_write_ecadr((uint16_t) (ecadr + i), ((i % 2u) == 0u) ? hi : 0u) == AGC_STATUS_OK); /* ?: high word, low word 0 */
+    }
+}
+
+/**********************************************************************
+ * AGC: none (test) -- vector erasables reach their own homes (flight
+ * bug 13): the LM ascent's VGVECT (03645), LAXIS (02302), QAXIS = UHYP
+ * (03717), ZAXIS1 = UHZP (03725) were stored into DELVLVC, and the CM's
+ * UNITW (01713, Earth's polar axis; -AYO and AXO are its first four
+ * words) was not mapped, so entry targeting (EARROT) lost the Earth's
+ * rotation.
+ **********************************************************************/
+static void test_vectors_stored(void)
+{
+    const agc_dp_t one = (agc_dp_t) 01234 * 040000; /* high word 01234, low 0, 2^-28 units */
+
+    agc_state_init(AGC_VEHICLE_LM);
+    agc_rendz_erasable()->delvlvc = agc_vec_make(0, 0, 0);
+    store_vec(03645u, 01234u);
+    CHECK(agc_lm_asc()->vgvect.c[0] == one && agc_lm_asc()->vgvect.c[2] == one);
+    store_vec(02302u, 01234u);
+    CHECK(agc_lm_asc()->laxis.c[1] == one);
+    store_vec(03717u, 01234u);
+    CHECK(agc_guid_state()->lm.uhyp.c[0] == one);
+    store_vec(03725u, 01234u);
+    CHECK(agc_guid_state()->lm.uhzp.c[2] == one);
+    CHECK(agc_rendz_erasable()->delvlvc.c[0] == 0);
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    store_vec(01713u, 037777u);
+    CHECK(agc_guid_state()->avg.unitw.c[0] == (agc_dp_t) 037777 * 040000);
+    CHECK(agc_guid_state()->avg.unitw.c[2] == (agc_dp_t) 037777 * 040000);
+    CHECK(agc_erase_write_ecadr(01717u, 040000u) == AGC_STATUS_OK); /* UNITW z high word -0 */
+    uint16_t w = 0;                                                 /* a word read back */
+
+    agc_erase_read_ecadr(01713u, &w);
+    CHECK(w == 037777u);
 }

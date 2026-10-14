@@ -68,6 +68,10 @@ CASES = [
 # The display a resumed program shows 40 s after the load (Luminary images): liftoff's P12
 # at TIG-35 s (25 s after the load) shows V06N74.
 NOUN40 = {'liftoff_lm': '74'}
+# The erasable NASSP reads (Lua get_agcerasable, MFDs) must show a display soon after the key:
+# NASSP's yaAGC works in that memory itself; the shim mirrors ours into it. 0.2 s is twice the
+# Lua scripts' 0.1 s polling step.
+DSKY_LATENCY_S = 0.2
 RELAY_DIGIT = {0: ' ', 21: '0', 3: '1', 25: '2', 27: '3', 15: '4', 30: '5', 28: '6', 19: '7', 29: '8', 31: '9'}
 
 
@@ -208,6 +212,13 @@ def main():
                     f.write('\n'.join(lines) + '\n')
         steps = sum(1 for x in b if x.startswith('step '))
         same, rep, off = compare(b, a)
+        la = [float(x.split()[2]) for x in a if x.startswith('# dsky-latency')]
+        if not la or la[0] > DSKY_LATENCY_S:
+            print('FAIL %-10s erasable mirror shows noun 36 %s s after the key (stock %s s; at most %.2f s)' %
+                  (name, la[0] if la else '?', ' '.join(x.split()[2] for x in b if x.startswith('# dsky-latency')) or '?',
+                   DSKY_LATENCY_S))
+            fails += 1
+            continue
         lr = [x.split() for x in a if x.startswith('# radmodes-lrpos')]
         if lr and lr[0][3] != lr[0][5]:
             print('FAIL %-10s RADMODES bit 6 (LR position wanted) %s after the load, %s in the image' %

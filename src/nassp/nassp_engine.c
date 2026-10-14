@@ -50,7 +50,8 @@
  *   scaler count, and only then does the shim do work: import what
  *   NASSP wrote (input channels, the erasable mirror against its shadow
  *   copy, interrupt requests), run one clock count, export (registers
- *   and counters every count, the whole erasable once per second, all
+ *   and counters every count, the display words (MODREG, FAILREG,
+ *   DSPTAB) every centisecond, the whole erasable every 0.1 s, all
  *   channels, the pending interrupts). NASSP's stores are imported the
  *   same way: counters every count, the whole mirror every centisecond.
  *   NASSP's channel numbering: optics / TVC drives on 0140 (CDUSCMD) and
@@ -84,7 +85,7 @@
 #define NS_SCALER_STEP   3                    /* yaAGC SCALER_DIVIDER, per MCT          */
 #define NS_SCALER_COUNT  80                   /* yaAGC SCALER_OVERFLOW: one 1/3200 s    */
 #define NS_COUNTS_CS     32                   /* scaler counts per centisecond          */
-#define NS_EXPORT_COUNTS 3200                 /* full erasable export: once per second  */
+#define NS_EXPORT_COUNTS 320                  /* full erasable export: every 0.1 s      */
 #define NS_BEAT_CS       6000u                /* trace heartbeat: every minute of AGC time */
 #define NS_SLOW_CLOCKS   (CLOCKS_PER_SEC / 4) /* a scaler count slower than 0.25 s CPU */
 #define NS_ERASABLE      04000                /* erasable words, E0-E7                  */
@@ -94,6 +95,9 @@
 #define NS_REG_FIRST     024                  /* first counter register (TIME2)         */
 #define NS_REG_LAST      060                  /* last counter register (ALTM)           */
 #define NS_FLAG_FIRST    074                  /* first flagword (STATE)                 */
+#define NS_ADDR_FAILREG  0375                 /* FAILREG x3 (both ropes)                */
+#define NS_ADDR_MODREG   01011                /* MODREG (both ropes)                    */
+#define NS_ADDR_DSPTAB   01023                /* DSPTAB x12 (both ropes)                */
 #define NS_WORD          077777u              /* one AGC word                           */
 #define NS_SIGN          040000u              /* ones'-complement sign                  */
 #define NS_MAG           037777u              /* ones'-complement magnitude             */
@@ -433,6 +437,35 @@ static void export_erasable(void)
     }
 
     export_registers();
+}
+
+/**********************************************************************
+ * The words a display reader polls (NASSP's Lua get_agcerasable, MFDs:
+ * MODREG, FAILREG, DSPTAB) into the mirror and its shadow. NASSP's yaAGC
+ * works in that memory itself, so a reader sees a display at once; the
+ * whole-mirror export every 0.1 s alone left it up to 0.1 s late.
+ * AGC: none (host shim; NASSP 9 5470bf1 src_sys/yaAGC/agc_engine.c)
+ *
+ * FUNCTION NAME: export_display
+ *
+ * ARGUMENTS: none
+ **********************************************************************/
+static void export_display(void)
+{
+    static const int first[3] = {NS_ADDR_FAILREG, NS_ADDR_MODREG, NS_ADDR_DSPTAB}; /* first addresses */
+    static const int words[3] = {3, 1, 12};                                        /* their lengths   */
+
+    for (int b = 0; b < 3; b++)
+    {
+        for (int a = first[b]; a < first[b] + words[b]; a++)
+        {
+            uint16_t w = 0; /* the word */
+
+            agc_erase_read_ecadr((uint16_t) a, &w);
+            *cell(a)    = (int16_t) w;
+            g_shadow[a] = (int16_t) w;
+        }
+    }
 }
 
 /**********************************************************************
@@ -777,6 +810,11 @@ static void one_count(void)
     else
     {
         export_registers();
+
+        if (g_count == 0)
+        {
+            export_display(); /* each centisecond */
+        }
     }
 
     export_channels();

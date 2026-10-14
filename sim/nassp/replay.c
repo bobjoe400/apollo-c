@@ -22,7 +22,8 @@
  * the running program from the saved phase table, PHASEn / TBASEn / LONGBASE);
  * "step csm TETCSM=hi,lo" / "step lem TETLEM=hi,lo" with that state-vector block (42
  * words, RRECT .. XKEP) whenever P00 integration moves TETCSM or TETLEM; then the
- * uplink's result (UPBUFF, UPSVFLAG, the blocks, DELVSLV and TIG, MODREG, DSPTAB).
+ * uplink's result (UPBUFF, UPSVFLAG, the blocks, DELVSLV and TIG, MODREG, DSPTAB); last
+ * "# dsky-latency" (V06N3, then the '6' key until the erasable shows noun 36).
  *
  * Timing: NASSP calls agc_engine once per memory cycle (11.71875 us); so does this.
  * Keys: channel 015 + KEYRUPT1, held 0.3 s, as NASSP's DSKY does.
@@ -51,6 +52,8 @@
 #define ADDR_RADMODE 0110          /* RADMODES = FLGWRD12 (Luminary)          */
 #define RADM_LRPOS   040           /* RADMODES bit 6: LR position 2 desired   */
 #define DSPTAB_NOUN  8             /* DSPTAB +8: the noun digits' relay word   */
+#define NOUN_DIGITS  01777         /* its two digit codes (bits 10-6, 5-1)     */
+#define NOUN36       01574         /* '3' 27, '6' 28                           */
 #ifdef REPLAY_YAAGC
 #define ROPE_OK 5                  /* NASSP's yaAGC agc_load_binfile: 5 when loaded */
 #else
@@ -441,6 +444,24 @@ int main(int argc, char **argv)
         words("  modreg", ADDR_MODREG, 1);
         words("  dsptab", ADDR_DSPTAB, 11);
     }
+
+    /* How soon the erasable NASSP sees (the Lua hook, MFDs) shows a display: V06N3,
+     * then the time from the '6' key press until DSPTAB's noun word reads 36. NASSP's
+     * yaAGC works in that memory itself; the shim mirrors it ('#': the driver checks
+     * ours against DSKY_LATENCY_S). */
+    keys("V06N3");
+    WriteIO(&vagc, 015, key_code('6'));
+    vagc.InterruptRequests[RUPT_KEY1] = 1;
+
+    double lat = 0.0; /* s from the key press */
+
+    while (lat < 3.0 && (word(ADDR_DSPTAB + DSPTAB_NOUN) & NOUN_DIGITS) != NOUN36)
+    {
+        run(0.01);
+        lat += 0.01;
+    }
+
+    printf("# dsky-latency %.2f\n", lat);
 
     return (0);
 }
