@@ -208,6 +208,12 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_
 /**********************************************************************
  * BOVB SIGNMPAC on the word-level MPAC (ANGLFIND.agc DELCOMP): on an
  * overflow the stored words are the signed maximum SIGNMPAC leaves.
+ * SIGNMPAC (RTB_OP_CODES.agc p.1399) takes the sign by CCS on the major
+ * word alone: +, +0 give +DPOSMAX; -, -0 give -DPOSMAX. A shift that
+ * overflows leaves the overflow-corrected major word (TSSL: TS MPAC), so
+ * a positive overflow to exactly 1 leaves +0 there whatever the minor
+ * words hold; the C words keep no -0, so a zero major word takes the
+ * sign of the overflow (OVFIND).
  *
  * ARGUMENTS:
  *   ip  agc_interp_t *  I/O  interpreter state (OVFIND, cleared)
@@ -217,11 +223,13 @@ agc_status_t agc_kalc_cdutodcm(agc_interp_t *ip, const uint16_t cdu[3], agc_mat_
  **********************************************************************/
 static agc_dp_words_t store_signmpac(agc_interp_t *ip, agc_tp_words_t m)
 {
-    agc_dp_words_t w = agc_mpac_store(m); /* MPAC, MPAC+1 as held */
+    agc_dp_words_t  w   = agc_mpac_store(m); /* MPAC, MPAC+1 as held */
+    const agc_ovf_t ovf = ip->ovfind;        /* sign of the overflow */
 
     if (agc_interp_test_ovf(ip))
     {
-        w = agc_dp_to_words(agc_rtb_signmpac(agc_dp_from_words(w))); /* SIGNMPAC */
+        const bool neg = (w.hi != 0) ? (w.hi < 0) : (ovf < 0);            /* CCS A on the major word */
+        w              = agc_dp_to_words(neg ? -AGC_DP_MAX : AGC_DP_MAX); /* SIGNMPAC: DCA / DCS DPOSMAX */
     }
 
     return (w);

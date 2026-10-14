@@ -71,6 +71,8 @@ static void      test_gyro_pulse(void);
 static void      test_gyro_pulse_loaded_angles(void);
 static void      test_kalc_compute(void);
 static void      test_vecpoint(void);
+static void      test_vecpoint_tiny_turn(void);
+static void      test_delcomp_unit_diagonal(void);
 static void      test_lastbias_pipuse(void);
 static void      test_pipfree_alarm(void);
 static void      p03_mark(const uint16_t imu[3], agc_job_ctx_t *ctx);
@@ -98,6 +100,8 @@ int main(void)
     test_gyro_pulse_loaded_angles();
     test_kalc_compute();
     test_vecpoint();
+    test_vecpoint_tiny_turn();
+    test_delcomp_unit_diagonal();
     test_pipfree_alarm();
     test_lastbias_pipuse();
     test_optical_verification();
@@ -452,6 +456,57 @@ static void test_vecpoint(void)
     CHECK(near(cdu_to_deg(g[0]), 0.0, 0.05));
     CHECK(near(cdu_to_deg(g[1]), 30.0, 0.05));
     CHECK(near(cdu_to_deg(g[2]), 0.0, 0.05));
+}
+
+/**********************************************************************
+ * AGC: none (test) -- VECPNT1 for a turn of 0.01 deg (LM R65 in P20)
+ *
+ *  From the desired CDUs 77763 72525 75124 to point +Z (HIUNITZ) along
+ * the +Z axis of the attitude 77763 72523 75126: the answer is that
+ * attitude. A DELCOMP diagonal of 1 - 2^-14 shifted into an overflow
+ * (MPAC +0, OVFIND) took SIGNMPAC's sign from the minor words: -1, the
+ * outer gimbal came out 40016 (180 deg off; NASSP rendezvous, flight bug
+ * 15).
+ **********************************************************************/
+static void test_vecpoint_tiny_turn(void)
+{
+    agc_interp_t ip; /* interpreter state */
+
+    agc_interp_init(&ip);
+    const uint16_t from[3] = {077763u, 072525u, 075124u}; /* CDUXD..ZD   */
+    const uint16_t to[3]   = {077763u, 072523u, 075126u}; /* target attitude */
+    agc_mat_t      m;                                     /* target S/C to SM, B1 */
+
+    CHECK(agc_kalc_cdutodcm(&ip, to, &m) == AGC_STATUS_OK);
+    agc_vec_t pv = agc_vec_make(m.row[0].c[2], m.row[1].c[2], m.row[2].c[2]); /* target +Z in SM, B1 */
+    agc_vec_t z  = agc_vec_make(0, 0, AGC_DP_HALF);                           /* HIUNITZ, B1 */
+    uint16_t  g[3];                                                           /* CPHI, CTHETA, CPSI */
+
+    CHECK(agc_imu_vecpoint_from_cdus(&ip, from, pv, z, g) == AGC_STATUS_OK);
+
+    for (int i = 0; i < 3; i++)
+    {
+        CHECK(near(cdu_to_deg(g[i]), cdu_to_deg(to[i]), 0.02));
+    }
+}
+
+/**********************************************************************
+ * AGC: none (test) -- DELCOMP about +Z by 0.02 deg: DEL(3,3) = 1
+ *
+ *  u3 u3 (1 - cos A) + cos A of a half-unit axis reaches 1 (SL3 overflows
+ * to MPAC +0); BOVB SIGNMPAC (CCS on the major word) gives +DPOSMAX.
+ **********************************************************************/
+static void test_delcomp_unit_diagonal(void)
+{
+    agc_interp_t ip; /* interpreter state */
+
+    agc_interp_init(&ip);
+    agc_vec_t u = agc_vec_make(0, 0, AGC_DP_HALF); /* axis, B1 */
+    agc_mat_t del;                                 /* DEL, 2^0 */
+
+    CHECK(agc_kalc_delcomp(&ip, u, 16491, &del) == AGC_STATUS_OK);
+    CHECK(near(agc_dp_to_double(del.row[2].c[2], 0), 1.0, 1e-4));
+    CHECK(near(agc_dp_to_double(del.row[0].c[0], 0), 1.0, 1e-4));
 }
 
 /**********************************************************************

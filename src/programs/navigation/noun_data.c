@@ -383,6 +383,14 @@ agc_status_t agc_rendz_noun_write(uint16_t data_id, agc_dp_t value)
     {
         agc_rendz_erasable()->rtheta = agc_dp_from_sp(agc_dp_high(value));
     }
+    else if (data_id == AGC_DATA_NN || data_id == AGC_DATA_NN1)
+    {
+        /* N55 R1 (WHOLE): the crew's number of apsidal crossings for CSI
+         * (LM NN, CSM NN1), the high word as the read gives it.          */
+        agc_sp_t *nn = (data_id == AGC_DATA_NN) ? &agc_rendz_erasable()->nn : &agc_rendz_erasable()->nn1; /* NN or NN1 */
+
+        *nn = agc_dp_high(value);
+    }
     else if (data_id == AGC_DATA_LANDMARK)
     {
         agc_erase_set_landmark((agc_sp_t) rz_word_value((uint16_t) (value & 077777)));

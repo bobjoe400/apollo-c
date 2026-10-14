@@ -146,9 +146,23 @@ local waitvn1 = ac.wait_vn
 function ac.wait_vn(v, n, flash, timeout) ac.waiting = v .. n; ac.last_wait = v .. n; local r = waitvn1(v, n, flash, timeout); ac.waiting = nil; return r end
 -- the sheet's ENTER on F50N18 (P20 after the maneuver, P41's bypass): R61 may ask again while the
 -- RR designate of the pass before runs; the crew answers again every 10 s (as above), at most 12
+-- The DAP mode verbs V76E / V77E (minimum impulse / rate command and attitude hold) are checked:
+-- if OPR ERR comes on with the entry, the crew resets and keys it again (once). A V77 that lit OPR
+-- ERR on stock left the DAP in minimum impulse, so the translation pulses of the next burn tumbled
+-- the LM (CDH, stock ref_rendezvous_H under af918f3c).
+local function oprerr() return math.floor(ac.v:get_agcchannel(9) / 64) % 2 == 1 end
 function ac.keys(seq, n)
   local was = f5018()
+  local dapverb = (seq == 'V76E' or seq == 'V77E') and not oprerr()
   keys0(seq)
+  if dapverb then
+    proc.wait_simdt(1)
+    if oprerr() then
+      dump0('  crew: OPR ERR after ' .. seq .. ': RSET, key it again')
+      keys0('R'); proc.wait_simdt(1); keys0(seq); proc.wait_simdt(1)
+      dump0('  ' .. seq .. ' again: OPR ERR ' .. (oprerr() and 'still on' or 'off'))
+    end
+  end
   if seq ~= 'E' or not was then return end
   hold()
   for i = 1, 12 do
@@ -326,6 +340,21 @@ do
   end
   if #out ~= #t - 5 then ac.die('TPI sheet: POSS F 50 18 rows not as expected') end
   CL['TPI'] = out
+end
+-- Rendezvous sheet: "MODE CONT PGNS - AUTO" comes before "V37E 20E" (the sheet has it right after).
+-- R61's first G+N,AUTO test (channel 31 bit 14) runs after LPS20.1, which takes the AGC about 4 s of
+-- interpreter time: the sheet's order works on yaAGC because the switch lands inside that time. The
+-- C executive runs the job in zero AGC time, so the test saw ATT HOLD, skipped R60 and designated the
+-- RR off the LOS (alarm 503). With the switch first both builds see AUTO at the test (P00 in AUTO
+-- holds the attitude it has).
+do
+  local t, iv, im = CL['Rendezvous'], nil, nil
+  for i, st in ipairs(t) do
+    if st.keys == 'V37E20E' then iv = i end
+    if iv and not im and st.item == 'ModeControlPGNSSwitch' and st.pos == 2 then im = i end
+  end
+  if not iv or im ~= iv + 1 then ac.die('Rendezvous sheet: V37E 20E / MODE CONT AUTO rows not as expected') end
+  t[iv], t[im] = t[im], t[iv]
 end
 ac.hook['POSS F 50 18 Request Maneuver to FDAI RPY angles'] = function(st)
   if not ac.wait_until(f5018, 30) then dump0('  no F50N18 within 30 s (P34 attitude request not made)'); return end

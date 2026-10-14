@@ -97,10 +97,14 @@ Closed loops (PLAN item 10, stretch), against the proven tools only:
   (P12 ends 16 s earlier: an expected timing deviation). Entry: events and
   end state match (splashdown 1.6 km from stock; P63 30 s earlier and CM
   RCS mass 1.24 kg, both from the attitude drift phase at the CMC's
-  control release: timing deviations). Rendezvous: the script does not yet work on stock (open).
-  Fourteen flight bugs found on the way (most: erasables a scenario load
-  must restore, e.g. the CSM RCS DAP state, UNITW, the average-G start
-  state), each fixed with a test; see docs/modules/nassp-integration.md. The integrated build lives in
+  control release: timing deviations). Rendezvous (P20 lock-on and marks, CSI, CDH and TPI
+  targeted and burned): every display, targeting result and burn as stock, no alarms; 37.1 km
+  closing at 34.2 m/s ten minutes after TPI (stock 38.9 km, 35.5 m/s); CDH 42 s earlier and more RR
+  marks incorporated (execution time). All ten milestones flown. Seventeen flight bugs found on the
+  way (restore gaps of the scenario load, e.g. the CSM RCS DAP state, UNITW, the average-G start
+  state; and translation faults, e.g. SIGNMPAC's sign rule in VECPOINT, the N55 NN load, INITVELX's
+  MUASTEER), each fixed with a test that failed before; final report in
+  docs/modules/nassp-integration.md ("Mission report"). The integrated build lives in
   `C:\NASSP9-dev` (stock baseline `C:\NASSP9`). A light tier runs on
   Linux in about a minute, no Orbiter:
 

@@ -278,8 +278,8 @@ static void iv_finish(agc_interp_t *ip, agc_rendz_t *rz, iv_work_t *w)
 
         a = agc_dp_shr(agc_dp_mul_trunc(mu, w->lout.r1a), 1);
 
-        rz->mu_a     = agc_dp_div(ip, a, w->lout.r1); /* MU/A        */
-        rz->muasteer = agc_dp_shr(rz->mu_a, 6);       /* SR 6        */
+        rz->mu_a     = agc_dp_div(ip, a, w->lout.r1); /* STODL MU/A  */
+        rz->muasteer = agc_dp_shr(mu, 6);             /* (DLOAD of the pushed MU) SR 6 */
     }
 
     rz->rtarg = w->rtarg1;

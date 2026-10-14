@@ -23,6 +23,13 @@
  *        pericenter: CALCTPER gives TPER < 0, SR30.1 stores -TPER > 0
  *        as is and the job goes on (NASSP TEI finding: the C refused a
  *        positive -TPER, ended the V82 job and left the DSKY blank).
+ *     7. N55 R1 (NN, LM; NN1 on the CSM) is loadable: the crew's V25N55
+ *        +00001 reaches NN, which NTP/2 multiplies by HAFPA1 for TCDH
+ *        (NASSP rendezvous, flight bug 16: the load was lost, NN kept
+ *        the scenario's word, TCDH came out days late, alarm 00603/4).
+ *     8. LM INITVELX: MUASTEER = MU SR 6 (STODL MU/A pops the pushed MU
+ *        for the SR 6), not MU/A SR 6 (NASSP rendezvous, flight bug 17:
+ *        RASTEER1's SQRT at TPI ignition went negative, ABORT 01302).
  *
  * AGC SOURCE:
  *   Comanche055 R30.agc (SR30.1, MAXCHK), P32-P33_P72-P73.agc (CSI/A),
@@ -52,7 +59,9 @@
 #include "agc/core/state.h"
 #include "agc/exec/exec.h"
 #include "agc/io/dsky.h"
+#include "agc/io/nouns.h"
 #include "agc/nav/auxiliary.h"
+#include "agc/nav/conic.h"
 #include "agc/programs/rendezvous.h"
 
 #define CHECK(c) check((c), __LINE__, #c) /* count and report a check */
@@ -79,6 +88,8 @@ static agc_dp_t     mga_expected(agc_vec_t dv, agc_vec_t ysm, bool twice);
 static void         test_get_mga_per_rope(void);
 static void         test_v82_average_g_departing(void);
 static void         test_vehicle_dispatch(void);
+static void         test_n55_loads_nn(void);
+static void         test_initvel_muasteer_lm(void);
 
 /**********************************************************************
  * AGC: none (test driver) -- the three tests, CSM build
@@ -99,6 +110,8 @@ int main(void)
     test_get_mga_per_rope();
     test_v82_average_g_departing();
     test_vehicle_dispatch();
+    test_n55_loads_nn();
+    test_initvel_muasteer_lm();
     (void) printf("test_rendezvous: %d checks, %d failures\n", g_checks, g_failures);
 
     if (g_failures != 0)
@@ -592,5 +605,72 @@ static void test_vehicle_dispatch(void)
     ctx.prio = 020;
     CHECK(agc_dispatch_job(&ctx) != AGC_STATUS_NOT_FOUND); /* CSM REDO */
     CHECK(agc_erase_modreg() == 07);                       /* NEWMODEX 07 */
+    agc_state_init(AGC_VEHICLE_CSM);
+}
+
+/**********************************************************************
+ * N55 R1 loads NN (LM) and NN1 (CSM) through the noun dispatcher, as
+ * pinball's V25N55 load does (PINBALL_NOUN_TABLES.agc: 55 ECADR NN,
+ * WHOLE).
+ * AGC: none (test)
+ *
+ * FUNCTION NAME: test_n55_loads_nn
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_n55_loads_nn(void)
+{
+    agc_dp_t v = agc_dp_from_sp(1); /* +00001, WHOLE: unscaled, B14 */
+
+    agc_state_init(AGC_VEHICLE_LM);
+    agc_rendz_erasable()->nn = 7512; /* a scenario's leftover word */
+    CHECK(agc_dispatch_noun(AGC_DATA_NN, true, &v) == AGC_STATUS_OK);
+    CHECK(agc_rendz_erasable()->nn == 1);
+
+    agc_state_init(AGC_VEHICLE_CSM);
+    agc_rendz_erasable()->nn1 = 7512;
+    CHECK(agc_dispatch_noun(AGC_DATA_NN1, true, &v) == AGC_STATUS_OK);
+    CHECK(agc_rendz_erasable()->nn1 == 1);
+    agc_state_init(AGC_VEHICLE_CSM);
+}
+
+/**********************************************************************
+ * LM INITVEL (one Lambert, no offsets) on the circular orbits of test 2:
+ * INITVELX stores MU/A = MU R1A / (2 R1), then DLOADs the pushed MU
+ * (STODL with no load address) and stores it SR 6 in MUASTEER
+ * (P34-35_P74-75.agc INITVELX).
+ * AGC: none (test)
+ *
+ * FUNCTION NAME: test_initvel_muasteer_lm
+ *
+ * ARGUMENTS: none
+ *
+ * RETURNS: none
+ **********************************************************************/
+static void test_initvel_muasteer_lm(void)
+{
+    agc_interp_t ip; /* interpreter state */
+
+    agc_state_init(AGC_VEHICLE_LM);
+    agc_interp_init(&ip);
+    agc_rendz_t *rz = agc_rendz_erasable(); /* rendezvous erasables */
+
+    agc_rendz_reset(rz);
+    agc_rendz_selectmu(rz, false);
+    double rp = R0 + 15.0 * 1852.0; /* target radius, m      */
+    double th = 2.5;                /* transfer angle, rad   */
+
+    rz->rinit       = pos(R0, 0.0, 0.0);
+    rz->vinit       = vel(0.0, sqrt(MU / R0), 0.0);
+    rz->rtarg       = pos(rp * cos(th), rp * sin(th), 0.0);
+    rz->dellt4      = agc_dp_from_double(40.0 * 60.0 * 100.0, 28);           /* 40 min, cs 2^28 */
+    agc_status_t st = agc_rendz_initvel(&ip, rz, 0, 0, AGC_JOB_CSI_COMPUTE); /* INITVEL */
+    agc_dp_t     mu = agc_dp_from_words(agc_conic_mu_(AGC_CONIC_EARTH));     /* MUTABLE, body scale */
+
+    CHECK(st == AGC_STATUS_OK);
+    CHECK(rz->mu_a > 0);
+    CHECK(rz->muasteer == agc_dp_shr(mu, 6));
     agc_state_init(AGC_VEHICLE_CSM);
 }
