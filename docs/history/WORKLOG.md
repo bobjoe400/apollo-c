@@ -1087,3 +1087,10 @@
             no guided reader's path exists. Launched guide (12-chapter
             reader's guide from the code) and docs-split (module notes
             keep explanation; diaries to docs/history/lanes/).
+2026-10-14  User: docs/ is bloated with production and planning documents;
+            only the final state belongs there. Launched docs-prune
+            (Sonnet): docs/ = guide, overview, flowcharts, xref,
+            ARCHITECTURE, TRANSLATION_GUIDE, CODING_STANDARD, NAMING, TIPS,
+            modules; everything else (plan, state, status, worklog, agents,
+            ledgers, audits, index, organisation study) to top-level
+            history/ via git mv with link checking.
